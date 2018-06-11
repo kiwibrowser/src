@@ -429,7 +429,7 @@ class OrderfileGenerator(object):
 
     if options.profile:
       output_directory = os.path.join(self._instrumented_out_dir, 'Release')
-      host_cyglog_dir = os.path.join(output_directory, 'cyglog_data')
+      host_profile_dir = os.path.join(output_directory, 'profile_data')
       urls = [profile_android_startup.AndroidProfileTool.TEST_URL]
       use_wpr = True
       simulate_user = False
@@ -437,7 +437,7 @@ class OrderfileGenerator(object):
       use_wpr = not options.no_wpr
       simulate_user = options.simulate_user
       self._profiler = profile_android_startup.AndroidProfileTool(
-          output_directory, host_cyglog_dir, use_wpr, urls, simulate_user)
+          output_directory, host_profile_dir, use_wpr, urls, simulate_user)
 
     self._output_data = {}
     self._step_recorder = StepRecorder(options.buildbot)
@@ -479,7 +479,7 @@ class OrderfileGenerator(object):
       files = self._profiler.CollectProfile(
           self._compiler.chrome_apk,
           constants.PACKAGE_INFO['chrome'])
-      self._step_recorder.BeginStep('Process cyglog')
+      self._step_recorder.BeginStep('Process profile')
       assert os.path.exists(self._compiler.lib_chrome_so)
       offsets = process_profiles.GetReachedOffsetsFromDumpFiles(
           files, self._compiler.lib_chrome_so)

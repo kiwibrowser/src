@@ -2,12 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "tools/cygprofile/lightweight_cygprofile.h"
+#include "base/android/orderfile/orderfile_instrumentation.h"
+
+#include <time.h>
+#include <unistd.h>
 
 #include <atomic>
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "base/android/library_loader/anchor_functions.h"
@@ -25,8 +29,15 @@
 // Must be applied to all functions within this file.
 #define NO_INSTRUMENT_FUNCTION __attribute__((no_instrument_function))
 
-namespace cygprofile {
+namespace base {
+namespace android {
+namespace orderfile {
+
 namespace {
+
+// Constants used for StartDelayedDump().
+constexpr int kDelayInSeconds = 30;
+constexpr int kInitialDelayInSeconds = kPhases == 1 ? kDelayInSeconds : 5;
 
 // These are large overestimates, which is not an issue, as the data is
 // allocated in .bss, and on linux doesn't take any actual memory when it's not
@@ -154,8 +165,7 @@ NO_INSTRUMENT_FUNCTION void StopAndDumpToFile(int pid,
 
   for (int phase = 0; phase < kPhases; phase++) {
     auto path = base::StringPrintf(
-        "/data/local/tmp/chrome/cyglog/"
-        "cygprofile-instrumented-code-hitmap-%d-%" PRIu64 ".txt_%d",
+        "/data/local/tmp/chrome/orderfile/profile-hitmap-%d-%" PRIu64 ".txt_%d",
         pid, start_ns_since_epoch, phase);
     DumpToFile(base::FilePath(path), g_data[phase]);
   }
@@ -185,6 +195,24 @@ NO_INSTRUMENT_FUNCTION bool SwitchToNextPhaseOrDump(
   return false;
 }
 
+NO_INSTRUMENT_FUNCTION void StartDelayedDump() {
+  // Using std::thread and not using base::TimeTicks() in order to to not call
+  // too many base:: symbols that would pollute the reached symbol dumps.
+  struct timespec ts;
+  if (clock_gettime(CLOCK_MONOTONIC, &ts))
+    PLOG(FATAL) << "clock_gettime.";
+  uint64_t start_ns_since_epoch =
+      static_cast<uint64_t>(ts.tv_sec) * 1000 * 1000 * 1000 + ts.tv_nsec;
+  int pid = getpid();
+
+  std::thread([pid, start_ns_since_epoch]() {
+    sleep(kInitialDelayInSeconds);
+    while (!SwitchToNextPhaseOrDump(pid, start_ns_since_epoch))
+      sleep(kDelayInSeconds);
+  })
+      .detach();
+}
+
 NO_INSTRUMENT_FUNCTION void ResetForTesting() {
   Disable();
   g_data_index = 0;
@@ -212,12 +240,14 @@ NO_INSTRUMENT_FUNCTION std::vector<size_t> GetOrderedOffsetsForTesting() {
   return result;
 }
 
-}  // namespace cygprofile
+}  // namespace orderfile
+}  // namespace android
+}  // namespace base
 
 extern "C" {
 
 NO_INSTRUMENT_FUNCTION void __cyg_profile_func_enter_bare() {
-  cygprofile::RecordAddress<false>(
+  base::android::orderfile::RecordAddress<false>(
       reinterpret_cast<size_t>(__builtin_return_address(0)));
 }
 

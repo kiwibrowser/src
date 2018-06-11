@@ -2,13 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef TOOLS_CYGPROFILE_LIGHTWEIGHT_CYGPROFILE_H_
-#define TOOLS_CYGPROFILE_LIGHTWEIGHT_CYGPROFILE_H_
+#ifndef BASE_ANDROID_ORDERFILE_ORDERFILE_INSTRUMENTATION_H_
+#define BASE_ANDROID_ORDERFILE_ORDERFILE_INSTRUMENTATION_H_
 
 #include <cstdint>
 #include <vector>
 
-namespace cygprofile {
+namespace base {
+namespace android {
+namespace orderfile {
 constexpr int kPhases = 1;
 constexpr size_t kStartOfTextForTesting = 1000;
 constexpr size_t kEndOfTextForTesting = kStartOfTextForTesting + 1000 * 1000;
@@ -24,6 +26,9 @@ void SanityChecks();
 // |start_ns_since_epoch| the process start timestamp.
 bool SwitchToNextPhaseOrDump(int pid, uint64_t start_ns_since_epoch);
 
+// Starts a thread to dump instrumentation after a delay.
+void StartDelayedDump();
+
 // Record an |address|, if recording is enabled. Only for testing.
 void RecordAddressForTesting(size_t address);
 
@@ -32,6 +37,8 @@ void ResetForTesting();
 
 // Returns an ordered list of reached offsets. Only for testing.
 std::vector<size_t> GetOrderedOffsetsForTesting();
-}  // namespace cygprofile
+}  // namespace orderfile
+}  // namespace android
+}  // namespace base
 
-#endif  // TOOLS_CYGPROFILE_LIGHTWEIGHT_CYGPROFILE_H_
+#endif  // BASE_ANDROID_ORDERFILE_ORDERFILE_INSTRUMENTATION_H_

@@ -1201,6 +1201,7 @@ jumbo_component("base") {
     ":build_date",
     ":cfi_buildflags",
     ":debugging_buildflags",
+    ":orderfile_buildflags",
     ":partition_alloc_buildflags",
     ":protected_memory_buildflags",
     ":synchronization_buildflags",
@@ -1827,6 +1828,13 @@ buildflag_header("debugging_buildflags") {
     "UNSAFE_DEVELOPER_BUILD=$is_unsafe_developer_build",
     "CAN_UNWIND_WITH_CFI_TABLE=$can_unwind_with_cfi_table",
   ]
+}
+
+buildflag_header("orderfile_buildflags") {
+  header = "orderfile_buildflags.h"
+  header_dir = "base/android/orderfile"
+  _using_order_profiling = is_android && use_order_profiling
+  flags = [ "ORDERFILE_INSTRUMENTATION=$_using_order_profiling" ]
 }
 
 # Build flags for ProtectedMemory, temporary workaround for crbug.com/792777

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "tools/cygprofile/lightweight_cygprofile.h"
+#include "base/android/orderfile/orderfile_instrumentation.h"
 
 #include <thread>
 
@@ -12,13 +12,16 @@
 #include "testing/gtest/include/gtest/gtest.h"
 #include "testing/perf/perf_test.h"
 
-namespace cygprofile {
+namespace base {
+namespace android {
+namespace orderfile {
 
 namespace {
 
 // Records |addresses_count| distinct addresses |iterations| times, in
 // |threads|.
 void RunBenchmark(int iterations, int addresses_count, int threads) {
+  ResetForTesting();
   auto iterate = [iterations, addresses_count]() {
     for (int i = 0; i < iterations; i++) {
       for (size_t addr = kStartOfTextForTesting;
@@ -45,12 +48,17 @@ void RunBenchmark(int iterations, int addresses_count, int threads) {
 
 }  // namespace
 
-class LightweightCygprofileTest : public ::testing::Test {
- protected:
-  void SetUp() override { ResetForTesting(); }
+class OrderfileInstrumentationTest : public ::testing::Test {
+  // Any tests need to run ResetForTesting() when they start. Because this
+  // perftest is built with instrumentation enabled, all code including
+  // ::testing::Test is instrumented. If ResetForTesting() is called earlier,
+  // for example in setUp(), any test harness code between setUp() and the
+  // actual test will change the instrumentation offset record in unpredictable
+  // ways and make these tests unreliable.
 };
 
-TEST_F(LightweightCygprofileTest, RecordOffset) {
+TEST_F(OrderfileInstrumentationTest, RecordOffset) {
+  ResetForTesting();
   size_t first = 1234, second = 1456;
   RecordAddressForTesting(first);
   RecordAddressForTesting(second);
@@ -64,7 +72,8 @@ TEST_F(LightweightCygprofileTest, RecordOffset) {
   EXPECT_EQ(second - kStartOfTextForTesting, reached[1]);
 }
 
-TEST_F(LightweightCygprofileTest, RecordingStops) {
+TEST_F(OrderfileInstrumentationTest, RecordingStops) {
+  ResetForTesting();
   size_t first = 1234, second = 1456, third = 1789;
   RecordAddressForTesting(first);
   RecordAddressForTesting(second);
@@ -77,44 +86,47 @@ TEST_F(LightweightCygprofileTest, RecordingStops) {
   ASSERT_EQ(second - kStartOfTextForTesting, reached[1]);
 }
 
-TEST_F(LightweightCygprofileTest, OutOfBounds) {
+TEST_F(OrderfileInstrumentationTest, OutOfBounds) {
+  ResetForTesting();
   EXPECT_DEATH(RecordAddressForTesting(kEndOfTextForTesting + 100), "");
   EXPECT_DEATH(RecordAddressForTesting(kStartOfTextForTesting - 100), "");
 }
 
-TEST(LightweightCygprofilePerfTest, RecordAddress_10_10000) {
+TEST(OrderfileInstrumentationPerfTest, RecordAddress_10_10000) {
   RunBenchmark(10, 10000, 1);
 }
 
-TEST(LightweightCygprofilePerfTest, RecordAddress_100_10000) {
+TEST(OrderfileInstrumentationPerfTest, RecordAddress_100_10000) {
   RunBenchmark(100, 10000, 1);
 }
 
-TEST(LightweightCygprofilePerfTest, RecordAddress_10_100000) {
+TEST(OrderfileInstrumentationPerfTest, RecordAddress_10_100000) {
   RunBenchmark(10, 100000, 1);
 }
 
-TEST(LightweightCygprofilePerfTest, RecordAddress_100_100000) {
+TEST(OrderfileInstrumentationPerfTest, RecordAddress_100_100000) {
   RunBenchmark(100, 100000, 1);
 }
 
-TEST(LightweightCygprofilePerfTest, RecordAddress_1000_100000_2) {
+TEST(OrderfileInstrumentationPerfTest, RecordAddress_1000_100000_2) {
   RunBenchmark(1000, 100000, 2);
 }
 
-TEST(LightweightCygprofilePerfTest, RecordAddress_1000_100000_3) {
+TEST(OrderfileInstrumentationPerfTest, RecordAddress_1000_100000_3) {
   RunBenchmark(1000, 100000, 3);
 }
 
-TEST(LightweightCygprofilePerfTest, RecordAddress_1000_100000_4) {
+TEST(OrderfileInstrumentationPerfTest, RecordAddress_1000_100000_4) {
   RunBenchmark(1000, 100000, 4);
 }
 
-TEST(LightweightCygprofilePerfTest, RecordAddress_1000_100000_6) {
+TEST(OrderfileInstrumentationPerfTest, RecordAddress_1000_100000_6) {
   RunBenchmark(1000, 100000, 6);
 }
 
-}  // namespace cygprofile
+}  // namespace orderfile
+}  // namespace android
+}  // namespace base
 
 // Custom runner implementation since base's one requires JNI on Android.
 int main(int argc, char** argv) {
