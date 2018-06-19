@@ -25,6 +25,22 @@ EMPTY_ANDROID_MANIFEST_PATH = os.path.join(
     _SOURCE_ROOT, 'build', 'android', 'AndroidManifest.xml')
 
 
+# A variation of this lists also exists in:
+# //base/android/java/src/org/chromium/base/LocaleUtils.java
+CHROME_TO_ANDROID_LOCALE_MAP = {
+    'en-GB': 'en-rGB',
+    'en-US': 'en-rUS',
+    'es-419': 'es-rUS',
+    'fil': 'tl',
+    'he': 'iw',
+    'id': 'in',
+    'pt-PT': 'pt-rPT',
+    'pt-BR': 'pt-rBR',
+    'yi': 'ji',
+    'zh-CN': 'zh-rCN',
+    'zh-TW': 'zh-rTW',
+}
+
 # Represents a line from a R.txt file.
 _TextSymbolEntry = collections.namedtuple('RTextEntry',
     ('java_type', 'resource_type', 'name', 'value'))
