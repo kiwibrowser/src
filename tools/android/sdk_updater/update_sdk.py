@@ -179,7 +179,7 @@ def _ReplaceVersionInFile(file_path, pattern, version, dry_run=False):
   with tempfile.NamedTemporaryFile() as temp_file:
     with open(file_path) as f:
       for line in f:
-        new_line = re.sub(pattern, r'\g<1>"%s"\n' % version, line)
+        new_line = re.sub(pattern, r'\g<1>\g<2>%s\g<3>\n' % version, line)
         if new_line != line:
           print ('    Note: file "%s" argument ' % file_path  +
                 '"%s" would be updated to "%s".' % (line.strip(), version))
@@ -299,8 +299,12 @@ def ChangeVersionInGNI(package, arg_version, gn_args_dict, gni_file_path,
     gn_arg_pattern = re.compile(
         # Match the argument with '=' and whitespaces. Capture a group for it.
         r'(^\s*%s\s*=\s*)' % version_config_name +
-        # version number with double quote. E.g. "27", "27.0.3", "-26.0.0-dev"
-        r'([-\w\s."]+)'
+        # Optional quote.
+        r'("?)' +
+        # Version number. E.g. 27, 27.0.3, -26.0.0-dev
+        r'(?:[-\w\s.]+)' +
+        # Optional quote.
+        r'("?)' +
         # End of string
         r'$'
     )
