@@ -8,6 +8,7 @@ import("//build/config/android/config.gni")
 import("//build/config/android/internal_rules.gni")
 import("//build/config/clang/clang.gni")
 import("//build/config/compiler/compiler.gni")
+import("//build/config/compute_inputs_for_analyze.gni")
 import("//build/config/dcheck_always_on.gni")
 import("//build/toolchain/toolchain.gni")
 
@@ -601,10 +602,24 @@ if (enable_java_templates) {
     }
   }
 
+  if (compute_inputs_for_analyze) {
+    _jinja_template_pydeps =
+        exec_script("//build/print_python_deps.py",
+                    [
+                      rebase_path("//build/android/gyp/jinja_template.py"),
+                      "--no-header",
+                      "--gn-paths",
+                      "--root",
+                      rebase_path("//", root_build_dir),
+                    ],
+                    "list lines")
+  }
+
   # Declare a target for processing a Jinja template.
   #
   # Variables
   #   input: The template file to be processed.
+  #   includes: List of files {% include %}'ed by input.
   #   output: Where to save the result.
   #   variables: (Optional) A list of variables to make available to the template
   #     processing environment, e.g. ["name=foo", "color=red"].
@@ -627,6 +642,12 @@ if (enable_java_templates) {
       inputs = [
         invoker.input,
       ]
+      if (defined(invoker.includes)) {
+        inputs += invoker.includes
+      }
+      if (compute_inputs_for_analyze) {
+        inputs += _jinja_template_pydeps
+      }
       script = "//build/android/gyp/jinja_template.py"
       depfile = "$target_gen_dir/$target_name.d"
 
@@ -644,6 +665,10 @@ if (enable_java_templates) {
         "--depfile",
         rebase_path(depfile, root_build_dir),
       ]
+      if (defined(invoker.includes)) {
+        _rebased_includes = rebase_path(invoker.includes, root_build_dir)
+        args += [ "--includes=$_rebased_includes" ]
+      }
       if (defined(invoker.variables)) {
         args += [ "--variables=${invoker.variables}" ]
       }
