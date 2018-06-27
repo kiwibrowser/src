@@ -13,7 +13,7 @@
 #   source_is_generated (optional, defaults to false)
 #       Declares that the input (or one of its dependencies) is generated so
 #       that grit_info is not run on the file when
-#       compute_grit_inputs_for_analyze is set (because the file will not
+#       compute_inputs_for_analyze is set (because the file will not
 #       exist at analyze time). For "analyze" to be correct in this case, the
 #       inputs to the grit file must either be listed in the inputs variable
 #       or are listed as inputs to dependencies of this target.
@@ -86,6 +86,7 @@
 #   }
 import("//build/config/android/config.gni")
 import("//build/config/chrome_build.gni")
+import("//build/config/compute_inputs_for_analyze.gni")
 import("//build/config/crypto.gni")
 import("//build/config/features.gni")
 import("//build/config/ui.gni")
@@ -93,18 +94,6 @@ import("//third_party/closure_compiler/closure_args.gni")
 
 assert(!enable_resource_whitelist_generation || is_android,
        "resource whitelist generation only works on android")
-
-declare_args() {
-  # When set, this will fork out to grit at GN-time to get all inputs
-  # referenced by the .grd file.
-  #
-  # Normal builds don't need this since proper incremental builds are handled
-  # by grit writing out the inputs in .d files at build-time. But for analyze
-  # to work on the bots, it needs to know about all input files at GN-time so
-  # it knows which tests to trigger when something changes. This option will
-  # slow down the GN run.
-  compute_grit_inputs_for_analyze = false
-}
 
 grit_defines = []
 
@@ -415,7 +404,7 @@ template("grit") {
     # Must be after the args are computed since they are re-used.
     # See the comments for the two variables used in this condition for
     # why this works this way.
-    if (compute_grit_inputs_for_analyze && !source_is_generated) {
+    if (compute_inputs_for_analyze && !source_is_generated) {
       grit_info_script = "//tools/grit/grit_info.py"
       grit_info_args = [
                          "--inputs",
