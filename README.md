@@ -54,7 +54,7 @@ To build Kiwi Browser you can directly clone the repository, as we have packed a
 
 In ~/chromium/ you will have the .cipd folder, and a folder with the Kiwi Browser source-code.
 
-4. In the Kiwi Browser source-code directory, run install-build-deps.sh using: sh install-build-deps.sh
+4. In the Kiwi Browser source-code directory, run install-build-deps.sh using: bash install-build-deps.sh
 
 5. In the Kiwi Browser source-code directory, create a android_arm folder and create a folder called android_arm/args.gn with this content:
 
