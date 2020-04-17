@@ -25,6 +25,7 @@
 #include "base/task_scheduler/task_scheduler.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "net/base/cache_type.h"
+#include "net/base/completion_callback.h"
 #include "net/base/net_errors.h"
 #include "net/disk_cache/disk_cache.h"
 #include "net/disk_cache/simple/simple_backend_impl.h"

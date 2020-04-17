@@ -5,6 +5,7 @@
 package org.chromium.chrome.browser.ntp;
 
 import android.app.Activity;
+import android.graphics.Color;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -24,6 +25,7 @@ import android.widget.TextView;
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.base.metrics.RecordHistogram;
 import org.chromium.chrome.R;
+import org.chromium.base.ContextUtils;
 import org.chromium.chrome.browser.favicon.FaviconHelper.FaviconImageCallback;
 import org.chromium.chrome.browser.ntp.ForeignSessionHelper.ForeignSession;
 import org.chromium.chrome.browser.ntp.ForeignSessionHelper.ForeignSessionTab;
@@ -274,6 +276,10 @@ public class RecentTabsRowAdapter extends BaseExpandableListAdapter {
                 viewHolder.domainView.setText("");
                 viewHolder.domainView.setVisibility(View.GONE);
             }
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                viewHolder.textView.setTextColor(Color.WHITE);
+                viewHolder.domainView.setTextColor(Color.WHITE);
+            }
             loadSyncedFavicon(viewHolder, sessionTab.url);
         }
 
@@ -477,6 +483,10 @@ public class RecentTabsRowAdapter extends BaseExpandableListAdapter {
             // lead to wrong pairings of domain & title texts.
             viewHolder.domainView.setText("");
             viewHolder.domainView.setVisibility(View.GONE);
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                viewHolder.textView.setTextColor(Color.WHITE);
+                viewHolder.domainView.setTextColor(Color.WHITE);
+            }
             if (isHistoryLink(childPosition)) {
                 viewHolder.textView.setText(R.string.show_full_history);
                 Bitmap historyIcon = BitmapFactory.decodeResource(

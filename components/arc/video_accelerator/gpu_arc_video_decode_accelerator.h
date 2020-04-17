@@ -14,7 +14,7 @@
 #include "base/files/scoped_file.h"
 #include "base/threading/thread_checker.h"
 #include "components/arc/common/video_decode_accelerator.mojom.h"
-#include "gpu/command_buffer/service/gpu_preferences.h"
+#include "gpu/config/gpu_preferences.h"
 #include "media/video/video_decode_accelerator.h"
 
 namespace arc {

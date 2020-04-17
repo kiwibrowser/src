@@ -73,23 +73,41 @@ BrowserList* BrowserList::GetInstance() {
 
 // static
 void BrowserList::AddBrowser(Browser* browser) {
+  LOG(INFO) << "[EXTENSIONS] BrowserList::AddBrowser - Step 1";
   DCHECK(browser);
+  LOG(INFO) << "[EXTENSIONS] BrowserList::AddBrowser - Step 2";
   DCHECK(browser->window()) << "Browser should not be added to BrowserList "
                                "until it is fully constructed.";
+  LOG(INFO) << "[EXTENSIONS] BrowserList::AddBrowser - Step 3";
   GetInstance()->browsers_.push_back(browser);
+  LOG(INFO) << "[EXTENSIONS] BrowserList::AddBrowser - Step 4";
 
   browser->RegisterKeepAlive();
+
+  LOG(INFO) << "[EXTENSIONS] BrowserList::AddBrowser - Step 5";
 
   content::NotificationService::current()->Notify(
       chrome::NOTIFICATION_BROWSER_OPENED,
       content::Source<Browser>(browser),
       content::NotificationService::NoDetails());
 
-  for (BrowserListObserver& observer : observers_.Get())
-    observer.OnBrowserAdded(browser);
+  LOG(INFO) << "[EXTENSIONS] BrowserList::AddBrowser - Step 6";
 
-  if (browser->window()->IsActive())
+  for (BrowserListObserver& observer : observers_.Get()) {
+    LOG(INFO) << "[EXTENSIONS] BrowserList::AddBrowser - Step 7";
+    observer.OnBrowserAdded(browser);
+    LOG(INFO) << "[EXTENSIONS] BrowserList::AddBrowser - Step 8";
+  }
+
+  LOG(INFO) << "[EXTENSIONS] BrowserList::AddBrowser - Step 9: " << browser->window();
+/*
+  if (browser->window()->IsActive()) {
+    LOG(INFO) << "[EXTENSIONS] BrowserList::AddBrowser - Step 10";
     SetLastActive(browser);
+    LOG(INFO) << "[EXTENSIONS] BrowserList::AddBrowser - Step 11";
+  }
+*/
+  LOG(INFO) << "[EXTENSIONS] BrowserList::AddBrowser - Step 12";
 }
 
 // static
@@ -122,7 +140,6 @@ void BrowserList::RemoveBrowser(Browser* browser) {
     // shutdown, because Browser::WindowClosing() already makes sure that the
     // SessionService is created and notified.
     browser_shutdown::NotifyAppTerminating();
-    chrome::OnAppExiting();
   }
 }
 

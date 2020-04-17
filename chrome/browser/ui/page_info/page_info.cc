@@ -151,7 +151,7 @@ bool ShouldShowPermission(
   // value when it has been activated on the current origin.
   if (info.type == CONTENT_SETTINGS_TYPE_ADS) {
     if (!base::FeatureList::IsEnabled(
-            subresource_filter::kSafeBrowsingSubresourceFilterExperimentalUI)) {
+            subresource_filter::kSafeBrowsingSubresourceFilter)) {
       return false;
     }
 

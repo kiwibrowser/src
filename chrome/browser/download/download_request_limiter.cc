@@ -99,7 +99,7 @@ DownloadRequestLimiter::TabDownloadState::TabDownloadState(
     : content::WebContentsObserver(contents),
       web_contents_(contents),
       host_(host),
-      status_(DownloadRequestLimiter::ALLOW_ONE_DOWNLOAD),
+      status_(DownloadRequestLimiter::ALLOW_ALL_DOWNLOADS),
       ui_status_(DownloadRequestLimiter::DOWNLOAD_UI_DEFAULT),
       download_count_(0),
       download_seen_(false),

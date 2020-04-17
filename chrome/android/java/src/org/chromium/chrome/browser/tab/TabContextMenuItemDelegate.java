@@ -11,6 +11,7 @@ import android.net.Uri;
 import android.provider.Browser;
 import android.provider.ContactsContract;
 import android.support.customtabs.CustomTabsIntent;
+import android.text.TextUtils;
 
 import org.chromium.base.ContextUtils;
 import org.chromium.base.metrics.RecordUserAction;
@@ -225,9 +226,24 @@ public class TabContextMenuItemDelegate implements ContextMenuItemDelegate {
 
     @Override
     public void onOpenInChrome(String linkUrl, String pageUrl) {
+        RecordUserAction.record("OpenInExternalApp");
+        if (TextUtils.isEmpty(linkUrl))
+             return ;
+        try {
+             Uri parsedUri = Uri.parse(linkUrl);
+             if (TextUtils.isEmpty(parsedUri.getHost()))
+                 return ;
+             if (parsedUri.getHost().contains("google"))
+             {
+                 String queryParameter = parsedUri.getQueryParameter("url");
+                 if (!TextUtils.isEmpty(queryParameter)) {
+                     linkUrl = queryParameter;
+                 }
+             }
+        } catch (Exception e) {
+        }
         Context applicationContext = ContextUtils.getApplicationContext();
         Intent chromeIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(linkUrl));
-        chromeIntent.setPackage(applicationContext.getPackageName());
         chromeIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         if (applicationContext.getPackageManager()
                         .queryIntentActivities(chromeIntent, 0)
@@ -241,19 +257,6 @@ public class TabContextMenuItemDelegate implements ContextMenuItemDelegate {
         chromeIntent.putExtra(LaunchIntentDispatcher.EXTRA_IS_ALLOWED_TO_RETURN_TO_PARENT, false);
 
         boolean activityStarted = false;
-        if (pageUrl != null) {
-            try {
-                URI pageUri = URI.create(pageUrl);
-                if (UrlUtilities.isInternalScheme(pageUri)) {
-                    IntentHandler.startChromeLauncherActivityForTrustedIntent(chromeIntent);
-                    activityStarted = true;
-                }
-            } catch (IllegalArgumentException ex) {
-                // Ignore the exception for creating the URI and launch the intent
-                // without the trusted intent extras.
-            }
-        }
-
         if (!activityStarted) {
             Context context = mTab.getActivity();
             if (context == null) context = applicationContext;

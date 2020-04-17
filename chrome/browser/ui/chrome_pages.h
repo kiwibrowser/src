@@ -13,7 +13,7 @@
 #include "components/content_settings/core/common/content_settings_types.h"
 #include "url/gurl.h"
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 #include "chrome/browser/signin/signin_promo.h"
 #endif
 
@@ -109,7 +109,7 @@ void ShowImportDialog(Browser* browser);
 void ShowAboutChrome(Browser* browser);
 void ShowSearchEngineSettings(Browser* browser);
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 // Initiates signin in a new browser tab.
 void ShowBrowserSignin(Browser* browser,
                        signin_metrics::AccessPoint access_point);

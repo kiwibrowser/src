@@ -123,7 +123,7 @@ class ChromiumDepGraph {
                 licenseUrl: licenseUrl,
                 fileName: artifact.file.name,
                 description: description,
-                url: pomContent.url?.text() ?: FALLBACK_PROPERTIES.get(id)?.url,
+                url: "",
                 displayName: pomContent.name?.text()
         )
     }
@@ -140,7 +140,7 @@ class ChromiumDepGraph {
           error = "More than one license found on ${id}"
       }
 
-      if (error.isEmpty()) return [licenses[0].name.text(), licenses[0].url.text()]
+//      if (error.isEmpty()) return [licenses[0].name.text(), licenses[0].url.text()]
 
       project.logger.warn(error)
       return ['', '']

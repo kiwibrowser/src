@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "base/process/memory.h"
 #include <memory>
 
 #include "gpu/command_buffer/service/buffer_manager.h"
@@ -19,6 +20,12 @@
 using ::testing::_;
 using ::testing::Return;
 using ::testing::StrictMock;
+
+#if defined(USE_TCMALLOC)
+extern "C" {
+int tc_set_new_mode(int mode);
+}
+#endif  // defined(USE_TCMALLOC)
 
 namespace gpu {
 namespace gles2 {
@@ -36,6 +43,13 @@ class BufferManagerTestBase : public GpuServiceTest {
     }
     error_state_.reset(new MockErrorState());
     manager_.reset(new BufferManager(memory_tracker, feature_info));
+
+    // Do the usual initialization we do for chrome/chrome-shell/content-shell
+    // to make allocation failures fatal by default.
+#if defined(USE_TCMALLOC)
+    tc_set_new_mode(1);
+#endif
+    base::EnableTerminationOnOutOfMemory();
   }
 
   void TearDown() override {
@@ -44,6 +58,9 @@ class BufferManagerTestBase : public GpuServiceTest {
     manager_.reset();
     error_state_.reset();
     GpuServiceTest::TearDown();
+#if defined(USE_TCMALLOC)
+    tc_set_new_mode(0);
+#endif
   }
 
   GLenum GetInitialTarget(const Buffer* buffer) const {
@@ -56,6 +73,13 @@ class BufferManagerTestBase : public GpuServiceTest {
     TestHelper::DoBufferData(
         gl_.get(), error_state_.get(), manager_.get(),
         buffer, target, size, usage, data, error);
+  }
+
+  void DoBufferDataDirectly(
+      Buffer *buffer, GLenum target, GLsizeiptr size, GLenum usage,
+      const GLvoid *data) {
+    manager_.get()->DoBufferData(error_state_.get(), buffer, target,
+                                 size, usage, data);
   }
 
   bool DoBufferSubData(
@@ -566,6 +590,27 @@ TEST_F(BufferManagerTest, BindBufferConflicts) {
       }
     }
   }
+}
+
+TEST_F(BufferManagerTest, DoBufferDataOOM)
+{
+  const GLenum kTarget = GL_ELEMENT_ARRAY_BUFFER;
+  const GLuint kClientBufferId = 1;
+  const GLuint kServiceBufferId = 11;
+  manager_->CreateBuffer(kClientBufferId, kServiceBufferId);
+  Buffer* buffer = manager_->GetBuffer(kClientBufferId);
+  ASSERT_TRUE(buffer != NULL);
+  manager_->SetTarget(buffer, GL_ARRAY_BUFFER);
+
+  // Make test size as large as possible minus a few pages so
+  // that alignment or other rounding doesn't make it wrap.
+  const size_t size = std::numeric_limits<std::size_t>::max() - 12 * 1024;
+
+  EXPECT_CALL(*error_state_.get(),
+      SetGLError(_, _, GL_OUT_OF_MEMORY, _, _))
+          .Times(1)
+          .RetiresOnSaturation();
+  DoBufferDataDirectly(buffer, kTarget, size, GL_STATIC_DRAW, NULL);
 }
 
 TEST_F(BufferManagerTest, DeleteBufferAfterContextLost) {

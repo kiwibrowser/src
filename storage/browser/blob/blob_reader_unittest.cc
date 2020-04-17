@@ -81,10 +81,10 @@ class DelayedReadEntry : public disk_cache::Entry {
   bool HasPendingReadCallbacks() { return !pending_read_callbacks_.empty(); }
 
   void RunPendingReadCallbacks() {
-    std::vector<base::Callback<void(void)>> callbacks;
+    std::vector<base::OnceCallback<void(void)>> callbacks;
     pending_read_callbacks_.swap(callbacks);
-    for (const auto& callback : callbacks)
-      callback.Run();
+    for (auto& callback : callbacks)
+      std::move(callback).Run();
   }
 
   // From disk_cache::Entry:
@@ -108,12 +108,13 @@ class DelayedReadEntry : public disk_cache::Entry {
                int offset,
                IOBuffer* buf,
                int buf_len,
-               const CompletionCallback& original_callback) override {
+               CompletionOnceCallback original_callback) override {
     net::TestCompletionCallback callback;
     int rv = entry_->ReadData(index, offset, buf, buf_len, callback.callback());
     DCHECK_NE(rv, net::ERR_IO_PENDING)
         << "Test expects to use a MEMORY_CACHE instance, which is synchronous.";
-    pending_read_callbacks_.push_back(base::Bind(original_callback, rv));
+    pending_read_callbacks_.push_back(
+        base::BindOnce(std::move(original_callback), rv));
     return net::ERR_IO_PENDING;
   }
 
@@ -121,44 +122,45 @@ class DelayedReadEntry : public disk_cache::Entry {
                 int offset,
                 IOBuffer* buf,
                 int buf_len,
-                const CompletionCallback& callback,
+                CompletionOnceCallback callback,
                 bool truncate) override {
-    return entry_->WriteData(index, offset, buf, buf_len, callback, truncate);
+    return entry_->WriteData(index, offset, buf, buf_len, std::move(callback),
+                             truncate);
   }
 
   int ReadSparseData(int64_t offset,
                      IOBuffer* buf,
                      int buf_len,
-                     const CompletionCallback& callback) override {
-    return entry_->ReadSparseData(offset, buf, buf_len, callback);
+                     CompletionOnceCallback callback) override {
+    return entry_->ReadSparseData(offset, buf, buf_len, std::move(callback));
   }
 
   int WriteSparseData(int64_t offset,
                       IOBuffer* buf,
                       int buf_len,
-                      const CompletionCallback& callback) override {
-    return entry_->WriteSparseData(offset, buf, buf_len, callback);
+                      CompletionOnceCallback callback) override {
+    return entry_->WriteSparseData(offset, buf, buf_len, std::move(callback));
   }
 
   int GetAvailableRange(int64_t offset,
                         int len,
                         int64_t* start,
-                        const CompletionCallback& callback) override {
-    return entry_->GetAvailableRange(offset, len, start, callback);
+                        CompletionOnceCallback callback) override {
+    return entry_->GetAvailableRange(offset, len, start, std::move(callback));
   }
 
   bool CouldBeSparse() const override { return entry_->CouldBeSparse(); }
 
   void CancelSparseIO() override { entry_->CancelSparseIO(); }
 
-  int ReadyForSparseIO(const CompletionCallback& callback) override {
-    return entry_->ReadyForSparseIO(callback);
+  int ReadyForSparseIO(CompletionOnceCallback callback) override {
+    return entry_->ReadyForSparseIO(std::move(callback));
   }
   void SetLastUsedTimeForTest(base::Time time) override { NOTREACHED(); }
 
  private:
   disk_cache::ScopedEntryPtr entry_;
-  std::vector<base::Callback<void(void)>> pending_read_callbacks_;
+  std::vector<base::OnceCallback<void(void)>> pending_read_callbacks_;
 };
 
 std::unique_ptr<disk_cache::Backend> CreateInMemoryDiskCache() {
@@ -177,7 +179,8 @@ disk_cache::ScopedEntryPtr CreateDiskCacheEntry(disk_cache::Backend* cache,
                                                 const std::string& data) {
   disk_cache::Entry* temp_entry = nullptr;
   net::TestCompletionCallback callback;
-  int rv = cache->CreateEntry(key, &temp_entry, callback.callback());
+  int rv =
+      cache->CreateEntry(key, net::HIGHEST, &temp_entry, callback.callback());
   if (callback.GetResult(rv) != net::OK)
     return nullptr;
   disk_cache::ScopedEntryPtr entry(temp_entry);

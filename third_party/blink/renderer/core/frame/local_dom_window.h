@@ -243,6 +243,11 @@ class CORE_EXPORT LocalDOMWindow final : public DOMWindow,
 
   bool isSecureContext() const;
 
+  bool adblock() const;
+  bool adblock2() const;
+  bool smrtAdSySPop() const;
+  bool sadbl() const;
+
   DEFINE_ATTRIBUTE_EVENT_LISTENER(animationend);
   DEFINE_ATTRIBUTE_EVENT_LISTENER(animationiteration);
   DEFINE_ATTRIBUTE_EVENT_LISTENER(animationstart);

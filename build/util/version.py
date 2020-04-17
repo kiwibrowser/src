@@ -22,9 +22,14 @@ def fetch_values_from_file(values_dict, file_name):
 
   The file must exist, otherwise you get the Python exception from open().
   """
+  file_name = os.path.realpath(file_name)
   for line in open(file_name, 'r').readlines():
-    key, val = line.rstrip('\r\n').split('=', 1)
-    values_dict[key] = val
+    if "args.gn" in file_name:
+      line = line.replace(' ', '')
+      line = line.replace('"', '')
+    if line.startswith('#') != True and "=" in line:
+      key, val = line.rstrip('\r\n').split('=', 1)
+      values_dict[key] = val
 
 
 def fetch_values(file_list, is_official_build=None):

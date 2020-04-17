@@ -102,9 +102,7 @@ void MouseWheelPhaseHandler::DispatchPendingWheelEndEvent() {
 
   TRACE_EVENT_INSTANT0("input", "MouseWheelPhaseHandler Dispatched",
                        TRACE_EVENT_SCOPE_THREAD);
-  base::Closure task = mouse_wheel_end_dispatch_timer_.user_task();
-  mouse_wheel_end_dispatch_timer_.Stop();
-  std::move(task).Run();
+  mouse_wheel_end_dispatch_timer_.FireNow();
 }
 
 void MouseWheelPhaseHandler::IgnorePendingWheelEndEvent() {

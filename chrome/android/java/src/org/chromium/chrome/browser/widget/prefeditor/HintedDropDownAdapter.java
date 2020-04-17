@@ -4,12 +4,14 @@
 
 package org.chromium.chrome.browser.widget.prefeditor;
 
+import android.graphics.Color;
 import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import org.chromium.base.ApiCompatibilityUtils;
+import org.chromium.base.ContextUtils;
 import org.chromium.chrome.R;
 
 import java.util.List;
@@ -56,6 +58,18 @@ public class HintedDropDownAdapter<T> extends DropdownFieldAdapter<T> {
     }
 
     @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
+        View view = super.getView(position, convertView, parent);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+           TextView text1 = (TextView) view.findViewById(android.R.id.text1);
+           if (text1 != null)
+              text1.setTextColor(Color.WHITE);
+        }
+
+        return view;
+    };
+
+    @Override
     public View getDropDownView(int position, View convertView, ViewGroup parent) {
         mTextView = convertView == null ? null
                                         : (TextView) convertView.findViewById(mTextViewResourceId);
@@ -67,6 +81,9 @@ public class HintedDropDownAdapter<T> extends DropdownFieldAdapter<T> {
             mTextView.setCompoundDrawablesWithIntrinsicBounds(null, null, null, null);
             ApiCompatibilityUtils.setTextAppearance(
                     mTextView, android.R.style.TextAppearance_Widget_DropDownItem);
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                mTextView.setTextColor(Color.WHITE);
+            }
         }
         convertView = super.getDropDownView(position, convertView, parent);
 

@@ -46,7 +46,7 @@ namespace bookmark_html_reader {
 void ImportBookmarksFile(
     const base::Callback<bool(void)>& cancellation_callback,
     const base::Callback<bool(const GURL&)>& valid_url_callback,
-    const base::FilePath& file_path,
+    const std::string& content,
     std::vector<ImportedBookmarkEntry>* bookmarks,
     std::vector<importer::SearchEngineInfo>* search_engines,
     favicon_base::FaviconUsageDataList* favicons);

@@ -463,6 +463,7 @@ class PLATFORM_EXPORT GraphicsContext {
   bool ShouldApplyHighContrastFilterToImage(Image&);
   Color ApplyHighContrastFilter(const Color& input) const;
   PaintFlags ApplyHighContrastFilter(const PaintFlags* input) const;
+  PaintFlags ApplyHighContrastFilterText(const PaintFlags* input) const;
 
   // null indicates painting is contextDisabled. Never delete this object.
   PaintCanvas* canvas_;
@@ -496,6 +497,7 @@ class PLATFORM_EXPORT GraphicsContext {
 
   HighContrastSettings high_contrast_settings_;
   sk_sp<SkColorFilter> high_contrast_filter_;
+  sk_sp<SkColorFilter> text_contrast_filter_;
   HighContrastImageClassifier high_contrast_image_classifier_;
 
   unsigned printing_ : 1;

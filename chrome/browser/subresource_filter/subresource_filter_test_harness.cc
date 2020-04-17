@@ -23,7 +23,6 @@
 #include "chrome/test/base/testing_profile.h"
 #include "components/safe_browsing/db/v4_protocol_manager_util.h"
 #include "components/subresource_filter/content/browser/content_ruleset_service.h"
-#include "components/subresource_filter/content/browser/content_subresource_filter_driver_factory.h"
 #include "components/subresource_filter/content/browser/subresource_filter_observer_test_utils.h"
 #include "components/subresource_filter/core/browser/ruleset_service.h"
 #include "components/subresource_filter/core/common/activation_decision.h"
@@ -46,9 +45,6 @@ void SubresourceFilterTestHarness::SetUp() {
   ChromeRenderViewHostTestHarness::SetUp();
 
   // Ensure correct features.
-  scoped_feature_toggle_.ResetSubresourceFilterState(
-      base::FeatureList::OVERRIDE_ENABLE_FEATURE,
-      "SafeBrowsingV4OnlyEnabled,SubresourceFilterExperimentalUI");
   scoped_configuration_.ResetConfiguration(subresource_filter::Configuration(
       subresource_filter::ActivationLevel::ENABLED,
       subresource_filter::ActivationScope::ACTIVATION_LIST,
@@ -90,7 +86,7 @@ void SubresourceFilterTestHarness::SetUp() {
   auto ruleset_service = std::make_unique<subresource_filter::RulesetService>(
       &pref_service_, base::ThreadTaskRunnerHandle::Get(),
       content_service.get(), ruleset_service_dir_.GetPath());
-  content_service->set_ruleset_service(std::move(ruleset_service));
+  content_service->SetAndInitializeRulesetService(std::move(ruleset_service));
   TestingBrowserProcess::GetGlobal()->SetRulesetService(
       std::move(content_service));
 

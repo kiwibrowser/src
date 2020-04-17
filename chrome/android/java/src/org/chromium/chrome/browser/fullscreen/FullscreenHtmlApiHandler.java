@@ -386,12 +386,14 @@ public class FullscreenHtmlApiHandler {
         boolean showNavigationBar =
                 mFullscreenOptions != null ? mFullscreenOptions.showNavigationBar() : false;
         int flags = SYSTEM_UI_FLAG_FULLSCREEN;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            flags |= View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+        }
         if (!showNavigationBar) {
             flags |= SYSTEM_UI_FLAG_LOW_PROFILE;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 flags |= View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
                 flags |= View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
-                flags |= View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
             }
         }
         return flags | systemUiVisibility;

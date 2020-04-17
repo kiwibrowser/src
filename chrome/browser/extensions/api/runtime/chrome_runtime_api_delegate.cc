@@ -247,16 +247,27 @@ bool ChromeRuntimeAPIDelegate::CheckForUpdates(
 }
 
 void ChromeRuntimeAPIDelegate::OpenURL(const GURL& uninstall_url) {
+  LOG(INFO) << "[EXTENSIONS] ChromeRuntimeAPIDelegate::OpenURL - " << uninstall_url << " - Step 1";
   Profile* profile = Profile::FromBrowserContext(browser_context_);
+  LOG(INFO) << "[EXTENSIONS] ChromeRuntimeAPIDelegate::OpenURL - " << uninstall_url << " - Step 2";
   Browser* browser = chrome::FindLastActiveWithProfile(profile);
-  if (!browser)
+  LOG(INFO) << "[EXTENSIONS] ChromeRuntimeAPIDelegate::OpenURL - " << uninstall_url << " - Step 3";
+  if (!browser) {
+    LOG(INFO) << "[EXTENSIONS] ChromeRuntimeAPIDelegate::OpenURL - " << uninstall_url << " - Step 3a";
     browser = new Browser(Browser::CreateParams(profile, false));
+    LOG(INFO) << "[EXTENSIONS] ChromeRuntimeAPIDelegate::OpenURL - " << uninstall_url << " - Step 3b";
+  }
+  LOG(INFO) << "[EXTENSIONS] ChromeRuntimeAPIDelegate::OpenURL - " << uninstall_url << " - Step 4";
 
   NavigateParams params(browser, uninstall_url,
                         ui::PAGE_TRANSITION_CLIENT_REDIRECT);
+  LOG(INFO) << "[EXTENSIONS] ChromeRuntimeAPIDelegate::OpenURL - " << uninstall_url << " - Step 5";
   params.disposition = WindowOpenDisposition::NEW_FOREGROUND_TAB;
+  LOG(INFO) << "[EXTENSIONS] ChromeRuntimeAPIDelegate::OpenURL - " << uninstall_url << " - Step 6";
   params.user_gesture = false;
+  LOG(INFO) << "[EXTENSIONS] ChromeRuntimeAPIDelegate::OpenURL - " << uninstall_url << " - Step 7";
   Navigate(&params);
+  LOG(INFO) << "[EXTENSIONS] ChromeRuntimeAPIDelegate::OpenURL - " << uninstall_url << " - Step 8";
 }
 
 bool ChromeRuntimeAPIDelegate::GetPlatformInfo(PlatformInfo* info) {
@@ -272,8 +283,7 @@ bool ChromeRuntimeAPIDelegate::GetPlatformInfo(PlatformInfo* info) {
   } else if (strcmp(os, "openbsd") == 0) {
     info->os = extensions::api::runtime::PLATFORM_OS_OPENBSD;
   } else {
-    NOTREACHED();
-    return false;
+    info->os = extensions::api::runtime::PLATFORM_OS_ANDROID;
   }
 
   const char* arch = update_client::UpdateQueryParams::GetArch();

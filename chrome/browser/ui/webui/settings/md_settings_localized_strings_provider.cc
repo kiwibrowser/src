@@ -2365,7 +2365,7 @@ void AddSiteSettingsStrings(content::WebUIDataSource* html_source,
   html_source->AddBoolean(
       "enableSafeBrowsingSubresourceFilter",
       base::FeatureList::IsEnabled(
-          subresource_filter::kSafeBrowsingSubresourceFilterExperimentalUI));
+          subresource_filter::kSafeBrowsingSubresourceFilter));
 
   html_source->AddBoolean(
       "enableSoundContentSetting",

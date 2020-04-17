@@ -38,6 +38,7 @@ import android.widget.TextView;
 
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.base.VisibleForTesting;
+import org.chromium.base.ContextUtils;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.help.HelpAndFeedback;
 import org.chromium.chrome.browser.preferences.autofill.CreditCardNumberFormattingTextWatcher;
@@ -448,6 +449,9 @@ public class EditorDialog
             final CheckBox checkbox = new CheckBox(mLayout.getContext());
             checkbox.setId(R.id.payments_edit_checkbox);
             checkbox.setText(fieldModel.getLabel());
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                checkbox.setTextColor(Color.WHITE);
+            }
             checkbox.setChecked(fieldModel.isChecked());
             checkbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
@@ -505,6 +509,9 @@ public class EditorDialog
         setOnDismissListener(this);
         mEditorModel = editorModel;
         mLayout = LayoutInflater.from(mContext).inflate(R.layout.payment_request_editor, null);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mLayout.setBackgroundColor(Color.BLACK);
+        }
         setContentView(mLayout);
 
         mFooter = LayoutInflater.from(mContext).inflate(

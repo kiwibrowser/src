@@ -57,8 +57,6 @@ ExtensionInstallPromptShowParams::ExtensionInstallPromptShowParams(
     web_contents_destruction_observer_.reset(
         new WebContentsDestructionObserver(this));
   }
-  if (parent_window_)
-    native_window_tracker_ = NativeWindowTracker::Create(parent_window_);
 }
 
 ExtensionInstallPromptShowParams::ExtensionInstallPromptShowParams(
@@ -68,8 +66,6 @@ ExtensionInstallPromptShowParams::ExtensionInstallPromptShowParams(
     parent_web_contents_(nullptr),
     parent_web_contents_destroyed_(false),
     parent_window_(parent_window) {
-  if (parent_window_)
-    native_window_tracker_ = NativeWindowTracker::Create(parent_window_);
 }
 
 ExtensionInstallPromptShowParams::~ExtensionInstallPromptShowParams() {

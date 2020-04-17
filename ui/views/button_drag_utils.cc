@@ -25,8 +25,6 @@
 namespace button_drag_utils {
 
 // Maximum width of the link drag image in pixels.
-static const int kLinkDragImageMaxWidth = 150;
-
 void SetURLAndDragImage(const GURL& url,
                         const base::string16& title,
                         const gfx::ImageSkia& icon,
@@ -45,52 +43,6 @@ void SetDragImage(const GURL& url,
                   const gfx::Point* press_pt,
                   const views::Widget& widget,
                   ui::OSExchangeData* data) {
-  // Create a button to render the drag image for us.
-  views::LabelButton button(NULL,
-                            title.empty() ? base::UTF8ToUTF16(url.spec())
-                                          : title);
-  button.SetTextSubpixelRenderingEnabled(false);
-  const ui::NativeTheme* theme = widget.GetNativeTheme();
-  button.SetTextColor(views::Button::STATE_NORMAL,
-      theme->GetSystemColor(ui::NativeTheme::kColorId_TextfieldDefaultColor));
-
-  SkColor bg_color = theme->GetSystemColor(
-      ui::NativeTheme::kColorId_TextfieldDefaultBackground);
-  if (widget.IsTranslucentWindowOpacitySupported()) {
-    button.SetTextShadows(gfx::ShadowValues(
-        10, gfx::ShadowValue(gfx::Vector2d(0, 0), 2.0f, bg_color)));
-  } else {
-    button.SetBackground(views::CreateSolidBackground(bg_color));
-    button.SetBorder(button.CreateDefaultBorder());
-  }
-  button.SetMaxSize(gfx::Size(kLinkDragImageMaxWidth, 0));
-  if (icon.isNull()) {
-    button.SetImage(views::Button::STATE_NORMAL,
-                    *ui::ResourceBundle::GetSharedInstance().GetImageNamed(
-                        IDR_DEFAULT_FAVICON).ToImageSkia());
-  } else {
-    button.SetImage(views::Button::STATE_NORMAL, icon);
-  }
-
-  gfx::Size size(button.GetPreferredSize());
-  button.SetBoundsRect(gfx::Rect(size));
-
-  gfx::Vector2d press_point;
-  if (press_pt)
-    press_point = press_pt->OffsetFromOrigin();
-  else
-    press_point = gfx::Vector2d(size.width() / 2, size.height() / 2);
-
-  SkBitmap bitmap;
-  float raster_scale = ScaleFactorForDragFromWidget(&widget);
-  SkColor color = SK_ColorTRANSPARENT;
-  button.Paint(views::PaintInfo::CreateRootPaintInfo(
-      ui::CanvasPainter(&bitmap, size, raster_scale, color,
-                        widget.GetCompositor()->is_pixel_canvas())
-          .context(),
-      size));
-  gfx::ImageSkia image(gfx::ImageSkiaRep(bitmap, raster_scale));
-  data->provider().SetDragImage(image, press_point);
 }
 
 }  // namespace button_drag_utils

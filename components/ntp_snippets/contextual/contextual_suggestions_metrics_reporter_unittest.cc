@@ -3,8 +3,9 @@
 // found in the LICENSE file.
 
 #include "components/ntp_snippets/contextual/contextual_suggestions_metrics_reporter.h"
+
 #include "base/macros.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/test/scoped_task_environment.h"
 #include "components/ntp_snippets/contextual/contextual_suggestions_ukm_entry.h"
 #include "components/ukm/test_ukm_recorder.h"

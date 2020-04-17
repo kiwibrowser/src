@@ -20,6 +20,7 @@ import org.chromium.base.ActivityState;
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.base.ApplicationStatus;
 import org.chromium.base.metrics.RecordHistogram;
+import org.chromium.base.ContextUtils;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.ChromeActivity;
 import org.chromium.chrome.browser.NativePage;
@@ -96,12 +97,17 @@ public class RecentTabsPage
         mListView.setOnGroupCollapseListener(this);
         mListView.setOnGroupExpandListener(this);
         mListView.setOnCreateContextMenuListener(this);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mView.setBackgroundColor(Color.BLACK);
+            mListView.setBackgroundColor(Color.BLACK);
+        }
 
         mView.addOnAttachStateChangeListener(this);
         ApplicationStatus.registerStateListenerForActivity(this, activity);
         // {@link #mInForeground} will be updated once the view is attached to the window.
 
         View recentTabsRoot = mView.findViewById(R.id.recent_tabs_root);
+        recentTabsRoot.setBackgroundColor(Color.BLACK);
         if (activity.getFullscreenManager().getBottomControlsHeight() != 0) {
             ApiCompatibilityUtils.setPaddingRelative(recentTabsRoot,
                     ApiCompatibilityUtils.getPaddingStart(recentTabsRoot), 0,

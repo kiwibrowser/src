@@ -6,7 +6,6 @@ package org.chromium.chrome.browser;
 
 import android.app.Notification;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.Nullable;
@@ -273,16 +272,6 @@ public abstract class AppHooks {
      */
     public void startForegroundService(Intent intent) {
         ContextCompat.startForegroundService(ContextUtils.getApplicationContext(), intent);
-    }
-
-    /**
-     * @return Whether the renderer should detect whether video elements are in fullscreen. The
-     * detection results can be retrieved through
-     * {@link WebContents.hasActiveEffectivelyFullscreenVideo()}.
-     */
-    @CalledByNative
-    public boolean shouldDetectVideoFullscreen() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O;
     }
 
     /**

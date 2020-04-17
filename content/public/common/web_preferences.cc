@@ -190,6 +190,9 @@ WebPreferences::WebPreferences()
 #if defined(OS_ANDROID)
       text_autosizing_enabled(true),
       font_scale_factor(1.0f),
+      night_mode_factor(0.0f),
+      night_mode_enabled(false),
+      night_mode_grayscale_enabled(false),
       device_scale_adjustment(1.0f),
       force_enable_zoom(false),
       fullscreen_supported(true),

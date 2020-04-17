@@ -273,7 +273,10 @@ void ViewBlobInternalsJob::GenerateHTMLForBlobData(
         break;
       case BlobDataItem::Type::kDiskCacheEntry:
         AddHTMLListItem(kType, "disk cache entry", out);
-        AddHTMLListItem(kURL, item.disk_cache_entry()->GetKey(), out);
+        if (item.disk_cache_entry())
+          AddHTMLListItem(kURL, item.disk_cache_entry()->GetKey(), out);
+        else
+          AddHTMLListItem(kURL, "Broken", out);
         break;
       case BlobDataItem::Type::kBytesDescription:
         AddHTMLListItem(kType, "pending data", out);

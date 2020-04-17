@@ -16,7 +16,7 @@ namespace ntp_snippets {
 // variations config, this feature should exist on the client. This ensures that
 // the experiment ID is visible in chrome://snippets-internals.
 const base::Feature kRemoteSuggestionsBackendFeature{
-    "NTPRemoteSuggestionsBackend", base::FEATURE_DISABLED_BY_DEFAULT};
+    "NTPRemoteSuggestionsBackend", base::FEATURE_ENABLED_BY_DEFAULT};
 
 // Keep sorted, and keep nullptr at the end.
 const base::Feature* const kAllFeatures[] = {
@@ -41,7 +41,7 @@ const base::Feature kArticleSuggestionsFeature{
     "NTPArticleSuggestions", base::FEATURE_ENABLED_BY_DEFAULT};
 
 const base::Feature kBookmarkSuggestionsFeature{
-    "NTPBookmarkSuggestions", base::FEATURE_ENABLED_BY_DEFAULT};
+    "NTPBookmarkSuggestions", base::FEATURE_DISABLED_BY_DEFAULT};
 
 const base::Feature kIncreasedVisibility{"NTPSnippetsIncreasedVisibility",
                                          base::FEATURE_ENABLED_BY_DEFAULT};
@@ -117,7 +117,7 @@ const char kCategoryOrderEmergingMarketsOriented[] =
 
 CategoryOrderChoice GetSelectedCategoryOrder() {
   if (!base::FeatureList::IsEnabled(kCategoryOrder)) {
-    return CategoryOrderChoice::GENERAL;
+    return CategoryOrderChoice::EMERGING_MARKETS_ORIENTED;
   }
 
   std::string category_order_value =
@@ -141,7 +141,7 @@ CategoryOrderChoice GetSelectedCategoryOrder() {
 }
 
 const base::Feature kNotificationsFeature = {"ContentSuggestionsNotifications",
-                                             base::FEATURE_DISABLED_BY_DEFAULT};
+                                             base::FEATURE_ENABLED_BY_DEFAULT};
 
 const char kNotificationsPriorityParam[] = "priority";
 const char kNotificationsTextParam[] = "text";
@@ -158,7 +158,7 @@ const base::Feature kKeepPrefetchedContentSuggestions{
     "KeepPrefetchedContentSuggestions", base::FEATURE_DISABLED_BY_DEFAULT};
 
 const base::Feature kContentSuggestionsDebugLog{
-    "ContentSuggestionsDebugLog", base::FEATURE_DISABLED_BY_DEFAULT};
+    "ContentSuggestionsDebugLog", base::FEATURE_ENABLED_BY_DEFAULT};
 
 std::vector<const base::Feature*> GetAllFeatures() {
   // Skip the last feature as it's a nullptr.

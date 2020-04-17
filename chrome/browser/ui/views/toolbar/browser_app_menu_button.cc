@@ -63,13 +63,6 @@ BrowserAppMenuButton::BrowserAppMenuButton(ToolbarView* toolbar_view)
   SetFocusPainter(nullptr);
   SetHorizontalAlignment(gfx::ALIGN_CENTER);
 
-  if (base::FeatureList::IsEnabled(features::kAnimatedAppMenuIcon)) {
-    toolbar_view_->browser()->tab_strip_model()->AddObserver(this);
-    should_use_new_icon_ = true;
-    should_delay_animation_ = base::GetFieldTrialParamByFeatureAsBool(
-        features::kAnimatedAppMenuIcon, "HasDelay", false);
-  }
-
   if (ui::MaterialDesignController::IsTouchOptimizedUiEnabled())
     set_ink_drop_visible_opacity(kTouchToolbarInkDropVisibleOpacity);
 
@@ -164,7 +157,9 @@ void BrowserAppMenuButton::TabInsertedAt(TabStripModel* tab_strip_model,
                                          content::WebContents* contents,
                                          int index,
                                          bool foreground) {
+  LOG(INFO) << "[EXTENSIONS] BrowserAppMenuButton::TabInsertedAt - Step 1";
   AnimateIconIfPossible(true);
+  LOG(INFO) << "[EXTENSIONS] BrowserAppMenuButton::TabInsertedAt - Step 2";
 }
 
 void BrowserAppMenuButton::UpdateIcon(bool should_animate) {

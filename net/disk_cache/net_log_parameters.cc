@@ -17,7 +17,7 @@
 
 namespace {
 
-std::unique_ptr<base::Value> NetLogEntryCreationCallback(
+std::unique_ptr<base::Value> NetLogParametersEntryCreationCallback(
     const disk_cache::Entry* entry,
     bool created,
     net::NetLogCaptureMode /* capture_mode */) {
@@ -95,11 +95,11 @@ std::unique_ptr<base::Value> NetLogGetAvailableRangeResultCallback(
 
 namespace disk_cache {
 
-net::NetLogParametersCallback CreateNetLogEntryCreationCallback(
+net::NetLogParametersCallback CreateNetLogParametersEntryCreationCallback(
     const Entry* entry,
     bool created) {
   DCHECK(entry);
-  return base::Bind(&NetLogEntryCreationCallback, entry, created);
+  return base::Bind(&NetLogParametersEntryCreationCallback, entry, created);
 }
 
 net::NetLogParametersCallback CreateNetLogReadWriteDataCallback(int index,

@@ -17,6 +17,12 @@ import org.chromium.chrome.browser.autofill.PersonalDataManager.AutofillProfile;
 import org.chromium.chrome.browser.customtabs.CustomTabActivity;
 import org.chromium.chrome.browser.preferences.PreferenceUtils;
 
+import android.view.View;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.ListView;
+import org.chromium.base.ContextUtils;
+
 /**
  * Fragment for settings page that allows user to view and edit a single server-provided address.
  */
@@ -62,5 +68,17 @@ public class AutofillServerProfilePreferences
         CustomTabActivity.showInfoPage(
                 context, ChromeStringConstants.AUTOFILL_MANAGE_WALLET_ADDRESSES_URL);
         return true;
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            view.setBackgroundColor(Color.BLACK);
+            ListView list = (ListView) view.findViewById(android.R.id.list);
+            if (list != null)
+                list.setDivider(new ColorDrawable(Color.GRAY));
+                list.setDividerHeight((int) getResources().getDisplayMetrics().density);
+        }
     }
 }

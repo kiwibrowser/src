@@ -142,7 +142,7 @@ gfx::Size ToolbarActionsBar::GetIconAreaSize() {
   if (!base::FeatureList::IsEnabled(features::kViewsBrowserWindows))
     return gfx::Size(24, 24);
 #endif
-  return gfx::Size(28, 28);
+  return gfx::Size(48, 48);
 }
 
 gfx::Size ToolbarActionsBar::GetViewSize() const {
@@ -758,6 +758,7 @@ void ToolbarActionsBar::TabInsertedAt(TabStripModel* tab_strip_model,
                                       content::WebContents* contents,
                                       int index,
                                       bool foreground) {
+  LOG(INFO) << "[EXTENSIONS] ToolbarActionsBar::TabInsertedAt";
   if (foreground)
     extensions::MaybeShowExtensionControlledNewTabPage(browser_, contents);
 }

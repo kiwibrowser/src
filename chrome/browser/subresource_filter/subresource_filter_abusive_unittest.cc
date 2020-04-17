@@ -12,7 +12,6 @@
 #include "chrome/browser/ui/blocked_content/popup_blocker_tab_helper.h"
 #include "chrome/browser/ui/blocked_content/safe_browsing_triggered_popup_blocker.h"
 #include "components/safe_browsing/db/util.h"
-#include "components/subresource_filter/content/browser/content_subresource_filter_driver_factory.h"
 #include "components/subresource_filter/content/browser/fake_safe_browsing_database_manager.h"
 #include "components/subresource_filter/core/browser/subresource_filter_constants.h"
 #include "components/subresource_filter/core/browser/subresource_filter_features.h"
@@ -51,8 +50,8 @@ safe_browsing::SubresourceFilterMatch GetMatch(MetadataLevel abusive_level,
 
 }  // namespace
 
-// (Abusive level, BAS level)
-using MetadataInfo = std::tuple<MetadataLevel, MetadataLevel>;
+// (Abusive level, BAS level, Enable AdBlock on abusive sites)
+using MetadataInfo = std::tuple<MetadataLevel, MetadataLevel, bool>;
 
 // This class tests the interaction between subresource_filter enforcement and
 // abusive enforcement.
@@ -61,21 +60,24 @@ class SubresourceFilterAbusiveTest
       public ::testing::WithParamInterface<MetadataInfo> {
  public:
   SubresourceFilterAbusiveTest() {
-    std::tie(abusive_level_, bas_level_) = GetParam();
+    std::tie(abusive_level_, bas_level_, enable_adblock_on_abusive_sites_) =
+        GetParam();
+    std::vector<base::Feature> enabled_features{kAbusiveExperienceEnforce};
+    std::vector<base::Feature> disabled_features;
+    (enable_adblock_on_abusive_sites_ ? enabled_features : disabled_features)
+        .push_back(subresource_filter::kFilterAdsOnAbusiveSites);
+    scoped_features_.InitWithFeatures(enabled_features, disabled_features);
   }
   ~SubresourceFilterAbusiveTest() override {}
 
   // SubresourceFilterTestHarness:
   void SetUp() override {
     SubresourceFilterTestHarness::SetUp();
-    scoped_features_.InitAndEnableFeature(kAbusiveExperienceEnforce);
     std::vector<subresource_filter::Configuration> configs{
         subresource_filter::Configuration::
             MakePresetForLiveRunOnPhishingSites(),
         subresource_filter::Configuration::MakePresetForLiveRunForBetterAds()};
-    scoped_configuration().ResetConfiguration(
-        base::MakeRefCounted<subresource_filter::ConfigurationList>(configs));
-    EXPECT_TRUE(base::FeatureList::IsEnabled(kAbusiveExperienceEnforce));
+    scoped_configuration().ResetConfiguration(configs);
 
     popup_blocker_ =
         SafeBrowsingTriggeredPopupBlocker::MaybeCreate(web_contents());
@@ -99,6 +101,7 @@ class SubresourceFilterAbusiveTest
  protected:
   MetadataLevel abusive_level_ = METADATA_NONE;
   MetadataLevel bas_level_ = METADATA_NONE;
+  bool enable_adblock_on_abusive_sites_ = false;
 
   std::unique_ptr<SafeBrowsingTriggeredPopupBlocker> popup_blocker_;
 
@@ -109,7 +112,9 @@ class SubresourceFilterAbusiveTest
 
 TEST_P(SubresourceFilterAbusiveTest, ConfigCombination) {
   SCOPED_TRACE(testing::Message() << "Abusive Level: " << abusive_level_
-                                  << " BAS Level: " << bas_level_);
+                                  << ", BAS Level: " << bas_level_
+                                  << ", Enable AdBlock on Abusive Sites: "
+                                  << enable_adblock_on_abusive_sites_);
   const GURL url("https://example.test/");
   ConfigureUrl(url);
   SimulateNavigateAndCommit(url, main_rfh());
@@ -117,21 +122,28 @@ TEST_P(SubresourceFilterAbusiveTest, ConfigCombination) {
   bool disallow_requests = !CreateAndNavigateDisallowedSubframe(main_rfh());
   bool disallow_popups = popup_blocker_->ShouldApplyStrongPopupBlocker(nullptr);
 
+  bool any_activation_enforce =
+      bas_level_ == METADATA_ENFORCE ||
+      (enable_adblock_on_abusive_sites_ && abusive_level_ == METADATA_ENFORCE);
+  bool any_activation_warn =
+      bas_level_ == METADATA_WARN ||
+      (enable_adblock_on_abusive_sites_ && abusive_level_ == METADATA_WARN);
+
   // Enforcement.
-  EXPECT_EQ(bas_level_ == METADATA_ENFORCE, disallow_requests);
-  EXPECT_EQ(bas_level_ == METADATA_ENFORCE,
+  EXPECT_EQ(any_activation_enforce, disallow_requests);
+  EXPECT_EQ(any_activation_enforce,
             !!GetSettingsManager()->GetSiteMetadata(url));
   EXPECT_EQ(abusive_level_ == METADATA_ENFORCE, disallow_popups);
 
   // Activation / enforce messages.
   EXPECT_EQ(
-      bas_level_ == METADATA_ENFORCE,
+      any_activation_enforce,
       DidSendConsoleMessage(subresource_filter::kActivationConsoleMessage));
   EXPECT_EQ(abusive_level_ == METADATA_ENFORCE,
             DidSendConsoleMessage(kAbusiveEnforceMessage));
 
   // Warn messages.
-  EXPECT_EQ(bas_level_ == METADATA_WARN,
+  EXPECT_EQ(!any_activation_enforce && any_activation_warn,
             DidSendConsoleMessage(
                 subresource_filter::kActivationWarningConsoleMessage));
   EXPECT_EQ(abusive_level_ == METADATA_WARN,
@@ -143,4 +155,5 @@ INSTANTIATE_TEST_CASE_P(
     SubresourceFilterAbusiveTest,
     ::testing::Combine(
         ::testing::Values(METADATA_WARN, METADATA_ENFORCE, METADATA_NONE),
-        ::testing::Values(METADATA_WARN, METADATA_ENFORCE, METADATA_NONE)));
+        ::testing::Values(METADATA_WARN, METADATA_ENFORCE, METADATA_NONE),
+        ::testing::Values(false, true)));

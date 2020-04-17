@@ -276,6 +276,11 @@ static jboolean JNI_PrefServiceBridge_GetBlockThirdPartyCookiesEnabled(
   return GetPrefService()->GetBoolean(prefs::kBlockThirdPartyCookies);
 }
 
+static jboolean JNI_PrefServiceBridge_GetDesktopModeEnabled(JNIEnv* env,
+                                         const JavaParamRef<jobject>& obj) {
+  return GetBooleanForContentSetting(CONTENT_SETTINGS_TYPE_DESKTOP_MODE);
+}
+
 static jboolean JNI_PrefServiceBridge_GetBlockThirdPartyCookiesManaged(
     JNIEnv* env,
     const JavaParamRef<jobject>& obj) {
@@ -364,6 +369,12 @@ static jboolean JNI_PrefServiceBridge_GetSearchSuggestEnabled(
     JNIEnv* env,
     const JavaParamRef<jobject>& obj) {
   return GetPrefService()->GetBoolean(prefs::kSearchSuggestEnabled);
+}
+
+static jboolean JNI_PrefServiceBridge_GetHomepageNewsEnabled(
+    JNIEnv* env,
+    const JavaParamRef<jobject>& obj) {
+  return GetPrefService()->GetBoolean(prefs::kHomepageNewsEnabled);
 }
 
 static jboolean JNI_PrefServiceBridge_GetSearchSuggestManaged(
@@ -724,6 +735,16 @@ static void JNI_PrefServiceBridge_SetBlockThirdPartyCookiesEnabled(
   GetPrefService()->SetBoolean(prefs::kBlockThirdPartyCookies, enabled);
 }
 
+static void JNI_PrefServiceBridge_SetDesktopModeEnabled(JNIEnv* env,
+                                     const JavaParamRef<jobject>& obj,
+                                     jboolean allow) {
+  HostContentSettingsMap* host_content_settings_map =
+      HostContentSettingsMapFactory::GetForProfile(GetOriginalProfile());
+  host_content_settings_map->SetDefaultContentSetting(
+      CONTENT_SETTINGS_TYPE_DESKTOP_MODE,
+      allow ? CONTENT_SETTING_ALLOW : CONTENT_SETTING_BLOCK);
+}
+
 static void JNI_PrefServiceBridge_SetRememberPasswordsEnabled(
     JNIEnv* env,
     const JavaParamRef<jobject>& obj,
@@ -916,6 +937,13 @@ static void JNI_PrefServiceBridge_SetSearchSuggestEnabled(
     const JavaParamRef<jobject>& obj,
     jboolean enabled) {
   GetPrefService()->SetBoolean(prefs::kSearchSuggestEnabled, enabled);
+}
+
+static void JNI_PrefServiceBridge_SetHomepageNewsEnabled(
+    JNIEnv* env,
+    const JavaParamRef<jobject>& obj,
+    jboolean enabled) {
+  GetPrefService()->SetBoolean(prefs::kHomepageNewsEnabled, enabled);
 }
 
 static ScopedJavaLocalRef<jstring>

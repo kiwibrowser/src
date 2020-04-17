@@ -174,6 +174,9 @@ class CORE_EXPORT WebSettingsImpl final : public WebSettings {
   void SetTextAreasAreResizable(bool) override;
   void SetTextAutosizingEnabled(bool) override;
   void SetAccessibilityFontScaleFactor(float) override;
+  void SetAccessibilityNightModeFactor(float) override;
+  void SetAccessibilityNightModeEnabled(bool) override;
+  void SetAccessibilityNightModeGrayscaleEnabled(bool) override;
   void SetTextTrackKindUserPreference(TextTrackKindUserPreference) override;
   void SetTextTrackBackgroundColor(const WebString&) override;
   void SetTextTrackFontFamily(const WebString&) override;

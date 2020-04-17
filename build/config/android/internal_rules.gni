@@ -761,6 +761,7 @@ if (enable_java_templates) {
 
   android_sdk_jar = "$android_sdk/android.jar"
   android_default_aapt_path = "$android_sdk_build_tools/aapt"
+  android_default_aapt2_path = "$android_sdk_build_tools/aapt2"
 
   template("android_lint") {
     action(target_name) {
@@ -1756,10 +1757,12 @@ if (enable_java_templates) {
       if (defined(invoker.proto_format) && invoker.proto_format) {
         _android_aapt_path = "$android_sdk_app_bundle_build_tools/aapt"
       }
+      _android_aapt2_path = android_default_aapt2_path
 
       inputs = [
         invoker.build_config,
         _android_aapt_path,
+        _android_aapt2_path,
       ]
 
       _rebased_build_config = rebase_path(invoker.build_config, root_build_dir)
@@ -1770,6 +1773,8 @@ if (enable_java_templates) {
         "--android-sdk-jars=@FileArg($_rebased_build_config:android:sdk_jars)",
         "--aapt-path",
         rebase_path(_android_aapt_path, root_build_dir),
+        "--aapt2-path",
+        rebase_path(_android_aapt2_path, root_build_dir),
         "--dependencies-res-zips=@FileArg($_rebased_build_config:resources:dependency_zips)",
         "--extra-res-packages=@FileArg($_rebased_build_config:resources:extra_package_names)",
         "--extra-r-text-files=@FileArg($_rebased_build_config:resources:extra_r_text_files)",
@@ -2224,14 +2229,7 @@ if (enable_java_templates) {
     set_sources_assignment_filter([])
     forward_variables_from(invoker, [ "testonly" ])
 
-    _android_manifest = invoker.android_manifest
-    _base_path = invoker.base_path
     _final_apk_path = invoker.apk_path
-    _incremental_final_apk_path_helper =
-        process_file_template(
-            [ _final_apk_path ],
-            "{{source_dir}}/{{source_name_part}}_incremental.apk")
-    _incremental_final_apk_path = _incremental_final_apk_path_helper[0]
 
     if (defined(invoker.dex_path)) {
       _dex_path = invoker.dex_path
@@ -2257,7 +2255,6 @@ if (enable_java_templates) {
           invoker.native_libs_even_when_incremental
     }
 
-    _incremental_compiled_resources_path = "${_base_path}_incremental.ap_"
     _shared_resources =
         defined(invoker.shared_resources) && invoker.shared_resources
     assert(_shared_resources || true)  # Mark as used.
@@ -2265,48 +2262,6 @@ if (enable_java_templates) {
     _keystore_path = invoker.keystore_path
     _keystore_name = invoker.keystore_name
     _keystore_password = invoker.keystore_password
-
-    _incremental_compile_resources_target_name =
-        "${target_name}_incremental__compile_resources"
-    _incremental_android_manifest =
-        get_label_info(_incremental_compile_resources_target_name,
-                       "target_gen_dir") + "/AndroidManifest.xml"
-    _rebased_build_config =
-        rebase_path(invoker.assets_build_config, root_build_dir)
-    action(_incremental_compile_resources_target_name) {
-      deps = _incremental_deps
-      script =
-          "//build/android/incremental_install/generate_android_manifest.py"
-      inputs = [
-        # Save on a depfile by listing only .py dep here.
-        "//build/android/gyp/util/build_utils.py",
-        _android_manifest,
-        invoker.packaged_resources_path,
-      ]
-      outputs = [
-        # Output the non-compiled manifest for easy debugging (as opposed to
-        # generating to a temp file).
-        _incremental_android_manifest,
-        _incremental_compiled_resources_path,
-      ]
-
-      args = [
-        "--src-manifest",
-        rebase_path(_android_manifest, root_build_dir),
-        "--out-manifest",
-        rebase_path(_incremental_android_manifest, root_build_dir),
-        "--in-apk",
-        rebase_path(invoker.packaged_resources_path, root_build_dir),
-        "--out-apk",
-        rebase_path(_incremental_compiled_resources_path, root_build_dir),
-        "--aapt-path",
-        rebase_path(android_default_aapt_path, root_build_dir),
-        "--android-sdk-jars=@FileArg($_rebased_build_config:android:sdk_jars)",
-      ]
-      if (disable_incremental_isolated_processes) {
-        args += [ "--disable-isolated-processes" ]
-      }
-    }
 
     package_apk(target_name) {
       forward_variables_from(invoker,
@@ -2338,41 +2293,99 @@ if (enable_java_templates) {
       output_apk_path = _final_apk_path
     }
 
-    package_apk("${target_name}_incremental") {
-      forward_variables_from(invoker,
-                             [
-                               "assets_build_config",
-                               "secondary_native_libs",
-                               "uncompress_shared_libraries",
-                             ])
-      if (!defined(uncompress_shared_libraries)) {
-        uncompress_shared_libraries = _load_library_from_apk
+    _incremental_allowed =
+        defined(invoker.incremental_allowed) && invoker.incremental_allowed
+    if (_incremental_allowed) {
+      _android_manifest = invoker.android_manifest
+      _base_path = invoker.base_path
+
+      _incremental_final_apk_path_helper =
+          process_file_template(
+              [ _final_apk_path ],
+              "{{source_dir}}/{{source_name_part}}_incremental.apk")
+      _incremental_final_apk_path = _incremental_final_apk_path_helper[0]
+
+      _incremental_compiled_resources_path = "${_base_path}_incremental.ap_"
+      _incremental_compile_resources_target_name =
+          "${target_name}_incremental__compile_resources"
+      _incremental_android_manifest =
+          get_label_info(_incremental_compile_resources_target_name,
+                         "target_gen_dir") + "/AndroidManifest.xml"
+
+      _rebased_build_config =
+          rebase_path(invoker.assets_build_config, root_build_dir)
+
+      action(_incremental_compile_resources_target_name) {
+        deps = _incremental_deps
+        script =
+            "//build/android/incremental_install/generate_android_manifest.py"
+        inputs = [
+          # Save on a depfile by listing only .py dep here.
+          "//build/android/gyp/util/build_utils.py",
+          _android_manifest,
+          invoker.packaged_resources_path,
+        ]
+        outputs = [
+          # Output the non-compiled manifest for easy debugging (as opposed to
+          # generating to a temp file).
+          _incremental_android_manifest,
+          _incremental_compiled_resources_path,
+        ]
+
+        args = [
+          "--src-manifest",
+          rebase_path(_android_manifest, root_build_dir),
+          "--out-manifest",
+          rebase_path(_incremental_android_manifest, root_build_dir),
+          "--in-apk",
+          rebase_path(invoker.packaged_resources_path, root_build_dir),
+          "--out-apk",
+          rebase_path(_incremental_compiled_resources_path, root_build_dir),
+          "--aapt-path",
+          rebase_path(android_default_aapt_path, root_build_dir),
+          "--android-sdk-jars=@FileArg($_rebased_build_config:android:sdk_jars)",
+        ]
+        if (disable_incremental_isolated_processes) {
+          args += [ "--disable-isolated-processes" ]
+        }
       }
-      _dex_target = "//build/android/incremental_install:bootstrap_java__dex"
-      deps = _incremental_deps + [
-               ":${_incremental_compile_resources_target_name}",
-               _dex_target,
-             ]
 
-      if (defined(_dex_path)) {
-        dex_path =
-            get_label_info(_dex_target, "target_gen_dir") + "/bootstrap.dex"
+      package_apk("${target_name}_incremental") {
+        forward_variables_from(invoker,
+                               [
+                                 "assets_build_config",
+                                 "secondary_native_libs",
+                                 "uncompress_shared_libraries",
+                               ])
+        if (!defined(uncompress_shared_libraries)) {
+          uncompress_shared_libraries = _load_library_from_apk
+        }
+        _dex_target = "//build/android/incremental_install:bootstrap_java__dex"
+        deps = _incremental_deps + [
+                 ":${_incremental_compile_resources_target_name}",
+                 _dex_target,
+               ]
+
+        if (defined(_dex_path)) {
+          dex_path =
+              get_label_info(_dex_target, "target_gen_dir") + "/bootstrap.dex"
+        }
+
+        native_libs = _native_libs_even_when_incremental
+        keystore_path = _keystore_path
+        keystore_name = _keystore_name
+        keystore_password = _keystore_password
+
+        # http://crbug.com/384638
+        _has_native_libs =
+            defined(invoker.native_libs_filearg) || _native_libs != []
+        if (_has_native_libs && _native_libs_even_when_incremental == []) {
+          native_lib_placeholders = [ "libfix.crbug.384638.so" ]
+        }
+
+        output_apk_path = _incremental_final_apk_path
+        packaged_resources_path = _incremental_compiled_resources_path
       }
-
-      native_libs = _native_libs_even_when_incremental
-      keystore_path = _keystore_path
-      keystore_name = _keystore_name
-      keystore_password = _keystore_password
-
-      # http://crbug.com/384638
-      _has_native_libs =
-          defined(invoker.native_libs_filearg) || _native_libs != []
-      if (_has_native_libs && _native_libs_even_when_incremental == []) {
-        native_lib_placeholders = [ "libfix.crbug.384638.so" ]
-      }
-
-      output_apk_path = _incremental_final_apk_path
-      packaged_resources_path = _incremental_compiled_resources_path
     }
   }
 
@@ -2778,7 +2791,6 @@ if (enable_java_templates) {
     if (defined(invoker.deps)) {
       _accumulated_deps = invoker.deps
     }
-    _accumulated_deps += [ "//build/config:exe_and_shlib_deps" ]
 
     _enable_build_hooks =
         _supports_android &&
@@ -2846,7 +2858,7 @@ if (enable_java_templates) {
       if (defined(invoker.alternative_android_sdk_dep)) {
         _accumulated_deps += [ invoker.alternative_android_sdk_dep ]
       } else {
-        _accumulated_deps += [ "//build/android:android_sdk_java" ]
+        _accumulated_deps += [ "//third_party/android_tools:android_sdk_java" ]
       }
     }
 

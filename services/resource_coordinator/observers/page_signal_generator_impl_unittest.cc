@@ -4,6 +4,7 @@
 
 #include "services/resource_coordinator/observers/page_signal_generator_impl.h"
 
+#include "base/run_loop.h"
 #include "base/test/scoped_feature_list.h"
 #include "base/test/simple_test_tick_clock.h"
 #include "services/resource_coordinator/coordination_unit/coordination_unit_test_harness.h"
@@ -14,6 +15,7 @@
 #include "services/resource_coordinator/public/cpp/resource_coordinator_features.h"
 #include "services/resource_coordinator/resource_coordinator_clock.h"
 
+#include "testing/gmock/include/gmock/gmock.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace resource_coordinator {
@@ -32,6 +34,27 @@ class MockPageSignalGeneratorImpl : public PageSignalGeneratorImpl {
 
  private:
   size_t eqt_change_count_ = 0;
+};
+
+class MockPageSignalReceiver : public mojom::PageSignalReceiver {
+ public:
+  MockPageSignalReceiver(mojom::PageSignalReceiverRequest request)
+      : binding_(this, std::move(request)) {}
+  ~MockPageSignalReceiver() override = default;
+
+  // mojom::PageSignalReceiver implementation.
+  void NotifyPageAlmostIdle(const CoordinationUnitID& page_cu_id) override {}
+  void SetExpectedTaskQueueingDuration(const CoordinationUnitID& page_cu_id,
+                                       base::TimeDelta duration) override {}
+  void SetLifecycleState(const CoordinationUnitID& page_cu_id,
+                         mojom::LifecycleState) override {}
+  MOCK_METHOD1(NotifyNonPersistentNotificationCreated,
+               void(const CoordinationUnitID& page_cu_id));
+
+ private:
+  mojo::Binding<mojom::PageSignalReceiver> binding_;
+
+  DISALLOW_COPY_AND_ASSIGN(MockPageSignalReceiver);
 };
 
 class PageSignalGeneratorImplTest : public CoordinationUnitTestHarness {
@@ -251,6 +274,29 @@ TEST_F(PageSignalGeneratorImplTest, PageAlmostIdleTransitionsNoTimeout) {
 
 TEST_F(PageSignalGeneratorImplTest, PageAlmostIdleTransitionsWithTimeout) {
   TestPageAlmostIdleTransitions(true);
+}
+
+TEST_F(PageSignalGeneratorImplTest, NonPersistentNotificationCreatedEvent) {
+  MockSinglePageInSingleProcessCoordinationUnitGraph cu_graph;
+  auto* frame_cu = cu_graph.frame.get();
+
+  // Create a mock receiver and register it against the psg.
+  mojom::PageSignalReceiverPtr mock_receiver_ptr;
+  MockPageSignalReceiver mock_receiver(mojo::MakeRequest(&mock_receiver_ptr));
+  page_signal_generator()->AddReceiver(std::move(mock_receiver_ptr));
+
+  base::RunLoop run_loop;
+  EXPECT_CALL(mock_receiver,
+              NotifyNonPersistentNotificationCreated(cu_graph.page->id()))
+      .WillOnce(::testing::InvokeWithoutArgs(&run_loop, &base::RunLoop::Quit));
+
+  // Send a mojom::Event::kNonPersistentNotificationCreated event and wait for
+  // the receiver to get it.
+  page_signal_generator()->OnFrameEventReceived(
+      frame_cu, mojom::Event::kNonPersistentNotificationCreated);
+  run_loop.Run();
+
+  ::testing::Mock::VerifyAndClear(&mock_receiver);
 }
 
 }  // namespace resource_coordinator

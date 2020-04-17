@@ -49,6 +49,10 @@ class WebContentSettingsClient {
   virtual bool AllowIndexedDB(const WebString& name, const WebSecurityOrigin&) {
     return true;
   }
+  // Controls whether ads are allowed to execute for this frame.
+  virtual bool AllowAds(bool enabled_per_settings) {
+    return enabled_per_settings;
+  }
 
   // Controls whether scripts are allowed to execute for this frame.
   virtual bool AllowScript(bool enabled_per_settings) {

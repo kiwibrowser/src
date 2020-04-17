@@ -22,6 +22,9 @@ import org.chromium.chrome.browser.favicon.FaviconHelper.FaviconImageCallback;
 import org.chromium.chrome.browser.profiles.Profile;
 import org.chromium.chrome.browser.widget.RoundedIconGenerator;
 
+import android.graphics.Color;
+import org.chromium.base.ContextUtils;
+
 /**
  * A preference that displays a website's favicon and URL and, optionally, the amount of local
  * storage used by the site.
@@ -139,6 +142,12 @@ class WebsitePreference extends Preference implements FaviconImageCallback {
     protected void onBindView(View view) {
         super.onBindView(view);
 
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            if (((TextView) view.findViewById(android.R.id.title)) != null)
+               ((TextView) view.findViewById(android.R.id.title)).setTextColor(Color.WHITE);
+            if (((TextView) view.findViewById(android.R.id.summary)) != null)
+               ((TextView) view.findViewById(android.R.id.summary)).setTextColor(Color.GRAY);
+        }
         TextView usageText = (TextView) view.findViewById(R.id.usage_text);
         usageText.setVisibility(View.GONE);
         if (mCategory.showStorageSites()) {
@@ -147,6 +156,9 @@ class WebsitePreference extends Preference implements FaviconImageCallback {
                 usageText.setText(Formatter.formatShortFileSize(getContext(), totalUsage));
                 usageText.setTextSize(TEXT_SIZE_SP);
                 usageText.setVisibility(View.VISIBLE);
+                if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                    usageText.setTextColor(Color.GRAY);
+                }
             }
         }
 

@@ -38,6 +38,10 @@ class CONTENT_EXPORT ImageTransportFactory {
   // Gets the factory instance.
   static ImageTransportFactory* GetInstance();
 
+  // Disable GPU compositing. Will do nothing if GPU compositing is already
+  // disabled.
+  virtual void DisableGpuCompositing() = 0;
+
   // Whether gpu compositing is being used or is disabled for software
   // compositing. Clients of the compositor should give resources that match
   // the appropriate mode.

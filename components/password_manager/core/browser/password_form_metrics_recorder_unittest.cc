@@ -6,7 +6,7 @@
 
 #include "base/logging.h"
 #include "base/metrics/metrics_hashes.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/test/scoped_task_environment.h"
 #include "base/test/user_action_tester.h"
 #include "components/password_manager/core/browser/password_manager_metrics_util.h"

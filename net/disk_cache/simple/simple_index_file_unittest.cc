@@ -365,6 +365,38 @@ TEST_F(SimpleIndexFileTest, LoadCorruptIndex) {
   EXPECT_TRUE(load_index_result.flush_required);
 }
 
+TEST_F(SimpleIndexFileTest, LoadCorruptIndex2) {
+  // Variant where the index looks like a pickle, but not one with right
+  // header size --- that used to hit a DCHECK on debug builds.
+  base::ScopedTempDir cache_dir;
+  ASSERT_TRUE(cache_dir.CreateUniqueTempDir());
+
+  WrappedSimpleIndexFile simple_index_file(cache_dir.GetPath());
+  ASSERT_TRUE(simple_index_file.CreateIndexFileDirectory());
+  const base::FilePath& index_path = simple_index_file.GetIndexFilePath();
+  base::Pickle bad_payload;
+  bad_payload.WriteString("nothing to be seen here");
+
+  EXPECT_EQ(
+      static_cast<int>(bad_payload.size()),
+      base::WriteFile(index_path, static_cast<const char*>(bad_payload.data()),
+                      bad_payload.size()));
+  base::Time fake_cache_mtime;
+  ASSERT_TRUE(simple_util::GetMTime(simple_index_file.GetIndexFilePath(),
+                                    &fake_cache_mtime));
+  EXPECT_FALSE(WrappedSimpleIndexFile::LegacyIsIndexFileStale(fake_cache_mtime,
+                                                              index_path));
+  SimpleIndexLoadResult load_index_result;
+  net::TestClosure closure;
+  simple_index_file.LoadIndexEntries(fake_cache_mtime, closure.closure(),
+                                     &load_index_result);
+  closure.WaitForResult();
+
+  EXPECT_FALSE(base::PathExists(index_path));
+  EXPECT_TRUE(load_index_result.did_load);
+  EXPECT_TRUE(load_index_result.flush_required);
+}
+
 // Tests that after an upgrade the backend has the index file put in place.
 TEST_F(SimpleIndexFileTest, SimpleCacheUpgrade) {
   base::ScopedTempDir cache_dir;
@@ -393,8 +425,7 @@ TEST_F(SimpleIndexFileTest, SimpleCacheUpgrade) {
                             index_file_contents.size()));
 
   // Upgrade the cache.
-  ASSERT_TRUE(
-      disk_cache::UpgradeSimpleCacheOnDisk(cache_path, SimpleExperiment()));
+  ASSERT_TRUE(disk_cache::UpgradeSimpleCacheOnDisk(cache_path));
 
   // Create the backend and initiate index flush by destroying the backend.
   scoped_refptr<disk_cache::BackendCleanupTracker> cleanup_tracker =

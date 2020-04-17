@@ -28,6 +28,7 @@
 #include "gpu/command_buffer/common/constants.h"
 #include "gpu/config/gpu_feature_info.h"
 #include "gpu/config/gpu_info.h"
+#include "gpu/config/gpu_mode.h"
 #include "gpu/ipc/common/surface_handle.h"
 #include "ipc/ipc_sender.h"
 #include "mojo/public/cpp/bindings/binding.h"
@@ -182,9 +183,10 @@ class GpuProcessHost : public BrowserChildProcessHostDelegate,
 
   static bool ValidateHost(GpuProcessHost* host);
 
-  // Increments the given crash count. Also, for each hour passed since the
-  // previous crash, removes an old crash from the count.
-  static void IncrementCrashCount(int* crash_count);
+  // Increments |crash_count| by one. Before incrementing |crash_count|, for
+  // each |forgive_minutes| that has passed since the previous crash remove one
+  // old crash.
+  static void IncrementCrashCount(int forgive_minutes, int* crash_count);
 
   GpuProcessHost(int host_id, GpuProcessKind kind);
   ~GpuProcessHost() override;
@@ -217,6 +219,7 @@ class GpuProcessHost : public BrowserChildProcessHostDelegate,
   void DidLoseContext(bool offscreen,
                       gpu::error::ContextLostReason reason,
                       const GURL& active_url) override;
+  void DisableGpuCompositing() override;
   void SetChildSurface(gpu::SurfaceHandle parent,
                        gpu::SurfaceHandle child) override;
   void StoreShaderToDisk(int32_t client_id,
@@ -279,6 +282,8 @@ class GpuProcessHost : public BrowserChildProcessHostDelegate,
 
   GpuProcessKind kind_;
 
+  gpu::GpuMode mode_ = gpu::GpuMode::UNKNOWN;
+
   // Whether we actually launched a GPU process.
   bool process_launched_;
 
@@ -287,12 +292,11 @@ class GpuProcessHost : public BrowserChildProcessHostDelegate,
   // Time Init started.  Used to log total GPU process startup time to UMA.
   base::TimeTicks init_start_time_;
 
+  // The total number of GPU process crashes.
   static base::subtle::Atomic32 gpu_crash_count_;
-  static int gpu_recent_crash_count_;
   static bool crashed_before_;
-  static int swiftshader_crash_count_;
+  static int hardware_accelerated_recent_crash_count_;
   static int swiftshader_recent_crash_count_;
-  static int display_compositor_crash_count_;
   static int display_compositor_recent_crash_count_;
 
   // Here the bottom-up destruction order matters:

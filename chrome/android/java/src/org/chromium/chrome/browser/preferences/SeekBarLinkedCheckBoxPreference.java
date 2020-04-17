@@ -10,6 +10,16 @@ import android.util.AttributeSet;
 import android.view.View;
 import android.widget.Checkable;
 
+import android.view.View;
+import android.widget.CheckBox;
+import android.widget.TextView;
+import android.support.v4.widget.CompoundButtonCompat;
+import android.content.res.ColorStateList;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.ListView;
+
 /**
  * A CheckBoxPreference which can be checked via a SeekBarPreference. A normal CheckBoxPreference
  * cannot be used in this way as calling setChecked(...) calls notifyChanged() which causes the
@@ -28,6 +38,24 @@ public class SeekBarLinkedCheckBoxPreference extends CheckBoxPreference {
         super.onBindView(view);
         mCheckable = (Checkable) view.findViewById(android.R.id.checkbox);
         mCheckable.setChecked(isChecked());
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            ((TextView) view.findViewById(android.R.id.title)).setTextColor(Color.WHITE);
+            if (((TextView) view.findViewById(android.R.id.summary)) != null)
+              ((TextView) view.findViewById(android.R.id.summary)).setTextColor(Color.GRAY);
+            if (((CheckBox) view.findViewById(android.R.id.checkbox)) != null) {
+              ColorStateList colorStateList = new ColorStateList(
+                      new int[][]{
+                              new int[]{-android.R.attr.state_checked}, // unchecked
+                              new int[]{android.R.attr.state_checked} , // checked
+                      },
+                      new int[]{
+                              Color.parseColor("#555555"),  //unchecked color
+                              Color.parseColor("#FFFFFF"),  //checked color
+                      }
+              );
+              CompoundButtonCompat.setButtonTintList((CheckBox) view.findViewById(android.R.id.checkbox), colorStateList);
+            }
+        }
     }
 
     @Override

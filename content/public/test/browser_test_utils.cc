@@ -827,15 +827,21 @@ void SimulateGesturePinchSequence(WebContents* web_contents,
                                      ui::EventTimeForNow(), source_device);
   pinch_begin.SetPositionInWidget(gfx::PointF(point));
   pinch_begin.SetPositionInScreen(gfx::PointF(point));
+  pinch_begin.SetNeedsWheelEvent(source_device ==
+                                 blink::kWebGestureDeviceTouchpad);
   widget_host->ForwardGestureEvent(pinch_begin);
 
   blink::WebGestureEvent pinch_update(pinch_begin);
   pinch_update.SetType(blink::WebInputEvent::kGesturePinchUpdate);
   pinch_update.data.pinch_update.scale = scale;
+  pinch_update.SetNeedsWheelEvent(source_device ==
+                                  blink::kWebGestureDeviceTouchpad);
   widget_host->ForwardGestureEvent(pinch_update);
 
   blink::WebGestureEvent pinch_end(pinch_begin);
-  pinch_update.SetType(blink::WebInputEvent::kGesturePinchEnd);
+  pinch_end.SetType(blink::WebInputEvent::kGesturePinchEnd);
+  pinch_end.SetNeedsWheelEvent(source_device ==
+                               blink::kWebGestureDeviceTouchpad);
   widget_host->ForwardGestureEvent(pinch_end);
 }
 

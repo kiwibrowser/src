@@ -7,76 +7,88 @@
 
 #include <stdint.h>
 
+#include <memory>
 #include <string>
 
+#include "base/memory/weak_ptr.h"
+#include "base/sequenced_task_runner.h"
 #include "extensions/browser/api/socket/socket.h"
+#include "extensions/browser/api/socket/tcp_socket.h"
+#include "extensions/common/api/socket.h"
+#include "net/base/completion_once_callback.h"
+#include "services/network/public/mojom/network_service.mojom.h"
+#include "services/network/public/mojom/tcp_socket.mojom.h"
+#include "services/network/public/mojom/tls_socket.mojom.h"
 
-// This looks like it should be forward-declarable, but it does some tricky
-// moves that make it easier to just include it.
-#include "net/socket/tcp_client_socket.h"
-#include "net/socket/tcp_server_socket.h"
-
-namespace net {
-class Socket;
+namespace content {
+class BrowserContext;
+class StoragePartition;
 }
 
 namespace extensions {
 
+class MojoDataPump;
+
 class TCPSocket : public Socket {
  public:
-  explicit TCPSocket(const std::string& owner_extension_id);
-  TCPSocket(std::unique_ptr<net::TCPClientSocket> tcp_client_socket,
-            const std::string& owner_extension_id,
-            bool is_connected = false);
+  using UpgradeToTLSCallback =
+      base::OnceCallback<void(int,
+                              network::mojom::TLSClientSocketPtr,
+                              const net::IPEndPoint&,
+                              const net::IPEndPoint&,
+                              mojo::ScopedDataPipeConsumerHandle,
+                              mojo::ScopedDataPipeProducerHandle)>;
+
+  // Constuctor for when |socket_mode_| is unknown. The |socket_mode_| will be
+  // filled in when the consumer calls Listen/Connect.
+  TCPSocket(content::BrowserContext* browser_context,
+            const std::string& owner_extension_id);
+
+  // Created using TCPServerSocket::Accept().
+  TCPSocket(network::mojom::TCPConnectedSocketPtr socket,
+            mojo::ScopedDataPipeConsumerHandle receive_stream,
+            mojo::ScopedDataPipeProducerHandle send_stream,
+            const base::Optional<net::IPEndPoint>& remote_addr,
+            const std::string& owner_extension_id);
 
   ~TCPSocket() override;
 
   void Connect(const net::AddressList& address,
-               const CompletionCallback& callback) override;
+               net::CompletionOnceCallback callback) override;
   void Disconnect(bool socket_destroying) override;
   void Bind(const std::string& address,
             uint16_t port,
             const CompletionCallback& callback) override;
-  void Read(int count, const ReadCompletionCallback& callback) override;
+  void Read(int count, ReadCompletionCallback callback) override;
   void RecvFrom(int count, const RecvFromCompletionCallback& callback) override;
   void SendTo(scoped_refptr<net::IOBuffer> io_buffer,
               int byte_count,
               const net::IPEndPoint& address,
               const CompletionCallback& callback) override;
-  bool SetKeepAlive(bool enable, int delay) override;
-  bool SetNoDelay(bool no_delay) override;
-  int Listen(const std::string& address,
-             uint16_t port,
-             int backlog,
-             std::string* error_msg) override;
-  void Accept(const AcceptCompletionCallback& callback) override;
+  void SetKeepAlive(bool enable,
+                    int delay,
+                    SetKeepAliveCallback callback) override;
+  void SetNoDelay(bool no_delay, SetNoDelayCallback callback) override;
+  void Listen(const std::string& address,
+              uint16_t port,
+              int backlog,
+              ListenCallback callback) override;
+  void Accept(AcceptCompletionCallback callback) override;
 
   bool IsConnected() override;
 
   bool GetPeerAddress(net::IPEndPoint* address) override;
   bool GetLocalAddress(net::IPEndPoint* address) override;
 
-  // Like Disconnect(), only Release() doesn't delete the underlying stream
-  // or attempt to close it. Useful when giving away ownership with
-  // ClientStream().
-  virtual void Release();
-
   Socket::SocketType GetSocketType() const override;
 
-  static TCPSocket* CreateSocketForTesting(
-      std::unique_ptr<net::TCPClientSocket> tcp_client_socket,
-      const std::string& owner_extension_id,
-      bool is_connected = false);
-  static TCPSocket* CreateServerSocketForTesting(
-      std::unique_ptr<net::TCPServerSocket> tcp_server_socket,
-      const std::string& owner_extension_id);
+  void UpgradeToTLS(api::socket::SecureOptions* options,
+                    UpgradeToTLSCallback callback);
 
-  // Returns NULL if GetSocketType() isn't TYPE_TCP or if the connection
-  // wasn't set up via Connect() (vs Listen()/Accept()).
-  net::TCPClientSocket* ClientStream();
-
-  // Whether a Read() has been issued, that hasn't come back yet.
-  bool HasPendingRead() const;
+  void SetStoragePartitionForTest(
+      content::StoragePartition* storage_partition) {
+    storage_partition_ = storage_partition;
+  }
 
  protected:
   int WriteImpl(net::IOBuffer* io_buffer,
@@ -84,26 +96,99 @@ class TCPSocket : public Socket {
                 const net::CompletionCallback& callback) override;
 
  private:
-  void RefreshConnectionStatus();
-  void OnConnectComplete(int result);
-  void OnReadComplete(scoped_refptr<net::IOBuffer> io_buffer, int result);
-  void OnAccept(int result);
+  // Connects a client TCP socket. This is done on the UI thread because
+  // StoragePartition::GetNetworkContext() needs to happen on the UI thread.
+  // The completion callback is posted back to the thread on which |this| lives.
+  static void ConnectOnUIThread(
+      content::StoragePartition* storage_partition,
+      content::BrowserContext* browser_context,
+      const net::AddressList& remote_address_list,
+      network::mojom::TCPConnectedSocketRequest request,
+      network::mojom::NetworkContext::CreateTCPConnectedSocketCallback
+          callback);
+  static void OnConnectCompleteOnUIThread(
+      scoped_refptr<base::SequencedTaskRunner> original_task_runner,
+      network::mojom::NetworkContext::CreateTCPConnectedSocketCallback callback,
+      int result,
+      const base::Optional<net::IPEndPoint>& local_addr,
+      const base::Optional<net::IPEndPoint>& peer_addr,
+      mojo::ScopedDataPipeConsumerHandle receive_stream,
+      mojo::ScopedDataPipeProducerHandle send_stream);
+  void OnConnectComplete(int result,
+                         const base::Optional<net::IPEndPoint>& local_addr,
+                         const base::Optional<net::IPEndPoint>& peer_addr,
+                         mojo::ScopedDataPipeConsumerHandle receive_stream,
+                         mojo::ScopedDataPipeProducerHandle send_stream);
 
-  TCPSocket(std::unique_ptr<net::TCPServerSocket> tcp_server_socket,
-            const std::string& owner_extension_id);
+  // Connects a server TCP socket. This is done on the UI thread because
+  // StoragePartition::GetNetworkContext() needs to happen on the UI thread.
+  // The completion callback is posted back to the thread on which |this| lives.
+  static void ListenOnUIThread(
+      content::StoragePartition* storage_partition,
+      content::BrowserContext* browser_context,
+      const net::IPEndPoint& local_addr,
+      int backlog,
+      network::mojom::TCPServerSocketRequest request,
+      network::mojom::NetworkContext::CreateTCPServerSocketCallback callback);
+  static void OnListenCompleteOnUIThread(
+      const scoped_refptr<base::SequencedTaskRunner>& original_task_runner,
+      network::mojom::NetworkContext::CreateTCPServerSocketCallback callback,
+      int result,
+      const base::Optional<net::IPEndPoint>& local_addr);
+  void OnListenComplete(int result,
+                        const base::Optional<net::IPEndPoint>& local_addr);
+  void OnAccept(int result,
+                const base::Optional<net::IPEndPoint>& remote_addr,
+                network::mojom::TCPConnectedSocketPtr connected_socket,
+                mojo::ScopedDataPipeConsumerHandle receive_stream,
+                mojo::ScopedDataPipeProducerHandle send_stream);
+  void OnWriteComplete(const net::CompletionCallback& callback, int result);
+  void OnReadComplete(int result, scoped_refptr<net::IOBuffer> io_buffer);
+  void OnUpgradeToTLSComplete(UpgradeToTLSCallback callback,
+                              network::mojom::TLSClientSocketPtr tls_socket,
+                              const net::IPEndPoint& local_addr,
+                              const net::IPEndPoint& peer_addr,
+                              int result,
+                              mojo::ScopedDataPipeConsumerHandle receive_stream,
+                              mojo::ScopedDataPipeProducerHandle send_stream);
 
-  std::unique_ptr<net::TCPClientSocket> socket_;
-  std::unique_ptr<net::TCPServerSocket> server_socket_;
+  content::StoragePartition* GetStoragePartitionHelper();
 
-  enum SocketMode { UNKNOWN = 0, CLIENT, SERVER, };
-  SocketMode socket_mode_;
+  enum SocketMode {
+    UNKNOWN = 0,
+    CLIENT,
+    SERVER,
+  };
 
-  CompletionCallback connect_callback_;
+  // |this| doesn't outlive |browser_context_| because |this| is owned by
+  // ApiResourceManager which is a BrowserContextKeyedAPI.
+  content::BrowserContext* browser_context_;
 
+  // CLIENT mode.
+  network::mojom::TCPConnectedSocketPtr client_socket_;
+  // SERVER mode.
+  network::mojom::TCPServerSocketPtr server_socket_;
+
+  net::CompletionOnceCallback connect_callback_;
+  ListenCallback listen_callback_;
+  AcceptCompletionCallback accept_callback_;
   ReadCompletionCallback read_callback_;
 
-  std::unique_ptr<net::StreamSocket> accept_socket_;
-  AcceptCompletionCallback accept_callback_;
+  std::unique_ptr<MojoDataPump> mojo_data_pump_;
+
+  scoped_refptr<base::SequencedTaskRunner> task_runner_;
+
+  base::Optional<net::IPEndPoint> local_addr_;
+  base::Optional<net::IPEndPoint> peer_addr_;
+
+  // Only used in tests.
+  content::StoragePartition* storage_partition_ = nullptr;
+
+  // WeakPtr is used when posting tasks to |task_runner_| which might outlive
+  // |this|.
+  base::WeakPtrFactory<TCPSocket> weak_factory_;
+
+  DISALLOW_COPY_AND_ASSIGN(TCPSocket);
 };
 
 // TCP Socket instances from the "sockets.tcp" namespace. These are regular
@@ -111,11 +196,14 @@ class TCPSocket : public Socket {
 // the "sockets.tcp" namespace.
 class ResumableTCPSocket : public TCPSocket {
  public:
-  explicit ResumableTCPSocket(const std::string& owner_extension_id);
-  explicit ResumableTCPSocket(
-      std::unique_ptr<net::TCPClientSocket> tcp_client_socket,
-      const std::string& owner_extension_id,
-      bool is_connected);
+  ResumableTCPSocket(content::BrowserContext* browser_context,
+                     const std::string& owner_extension_id);
+  // Created using TCPServerSocket::Accept().
+  ResumableTCPSocket(network::mojom::TCPConnectedSocketPtr socket,
+                     mojo::ScopedDataPipeConsumerHandle receive_stream,
+                     mojo::ScopedDataPipeProducerHandle send_stream,
+                     const base::Optional<net::IPEndPoint>& remote_addr,
+                     const std::string& owner_extension_id);
 
   ~ResumableTCPSocket() override;
 
@@ -155,7 +243,8 @@ class ResumableTCPSocket : public TCPSocket {
 // defined in the "sockets.tcpServer" namespace.
 class ResumableTCPServerSocket : public TCPSocket {
  public:
-  explicit ResumableTCPServerSocket(const std::string& owner_extension_id);
+  ResumableTCPServerSocket(content::BrowserContext* browser_context,
+                           const std::string& owner_extension_id);
 
   // Overriden from ApiResource
   bool IsPersistent() const override;

@@ -19,6 +19,7 @@ void DevToolsAutoOpener::TabInsertedAt(TabStripModel* tab_strip_model,
                                        content::WebContents* contents,
                                        int index,
                                        bool foreground) {
+  LOG(INFO) << "[EXTENSIONS] DevToolsAutoOpener::TabInsertedAt";
   if (!DevToolsWindow::IsDevToolsWindow(contents))
     DevToolsWindow::OpenDevToolsWindow(contents);
 }

@@ -102,6 +102,7 @@ class GpuProcessTransportFactory : public ui::ContextFactory,
   void SetOutputIsSecure(ui::Compositor* compositor, bool secure) override;
 
   // ImageTransportFactory implementation.
+  void DisableGpuCompositing() override;
   bool IsGpuCompositingDisabled() override;
   ui::ContextFactory* GetContextFactory() override;
   ui::ContextFactoryPrivate* GetContextFactoryPrivate() override;

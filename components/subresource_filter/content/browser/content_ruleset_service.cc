@@ -12,7 +12,6 @@
 #include "base/sequenced_task_runner.h"
 #include "base/task_scheduler/post_task.h"
 #include "components/subresource_filter/content/common/subresource_filter_messages.h"
-#include "components/subresource_filter/core/browser/ruleset_service.h"
 #include "components/subresource_filter/core/common/common_features.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/notification_service.h"
@@ -79,8 +78,10 @@ void ContentRulesetService::PostAfterStartupTask(base::Closure task) {
 
 void ContentRulesetService::TryOpenAndSetRulesetFile(
     const base::FilePath& file_path,
+    int expected_checksum,
     base::OnceCallback<void(base::File)> callback) {
-  ruleset_dealer_->TryOpenAndSetRulesetFile(file_path, std::move(callback));
+  ruleset_dealer_->TryOpenAndSetRulesetFile(file_path, expected_checksum,
+                                            std::move(callback));
 }
 
 void ContentRulesetService::PublishNewRulesetVersion(base::File ruleset_data) {
@@ -105,9 +106,10 @@ void ContentRulesetService::PublishNewRulesetVersion(base::File ruleset_data) {
     ruleset_published_callback_.Run();
 }
 
-void ContentRulesetService::set_ruleset_service(
+void ContentRulesetService::SetAndInitializeRulesetService(
     std::unique_ptr<RulesetService> ruleset_service) {
   ruleset_service_ = std::move(ruleset_service);
+  ruleset_service_->Initialize();
 }
 
 void ContentRulesetService::IndexAndStoreAndPublishRulesetIfNeeded(

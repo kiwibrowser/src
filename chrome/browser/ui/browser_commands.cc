@@ -95,6 +95,10 @@
 #include "ui/events/keycodes/keyboard_codes.h"
 #include "url/gurl.h"
 
+#include "chrome/browser/ui/android/tab_model/tab_model.h"
+#include "chrome/browser/ui/android/tab_model/tab_model_list.h"
+#include "content/public/browser/web_contents.h"
+
 #if BUILDFLAG(ENABLE_EXTENSIONS)
 #include "chrome/browser/extensions/api/commands/command_service.h"
 #include "chrome/browser/extensions/api/extension_action/extension_action_api.h"
@@ -260,11 +264,6 @@ void ReloadInternal(Browser* browser,
   new_tab->NavigatedByUser();
   if (!new_tab->FocusLocationBarByDefault())
     new_tab->Focus();
-
-  DevToolsWindow* devtools =
-      DevToolsWindow::GetInstanceForInspectedWebContents(new_tab);
-  if (devtools && devtools->ReloadInspectedWebContents(bypass_cache))
-    return;
 
   new_tab->GetController().Reload(bypass_cache
                                       ? content::ReloadType::BYPASSING_CACHE
@@ -576,19 +575,9 @@ void NewTab(Browser* browser) {
   UMA_HISTOGRAM_ENUMERATION("Tab.NewTab", TabStripModel::NEW_TAB_COMMAND,
                             TabStripModel::NEW_TAB_ENUM_COUNT);
 
-  if (browser->is_type_tabbed()) {
-    AddTabAt(browser, GURL(), -1, true);
-    browser->tab_strip_model()->GetActiveWebContents()->RestoreFocus();
-  } else {
-    ScopedTabbedBrowserDisplayer displayer(browser->profile());
-    Browser* b = displayer.browser();
-    AddTabAt(b, GURL(), -1, true);
-    b->window()->Show();
-    // The call to AddBlankTabAt above did not set the focus to the tab as its
-    // window was not active, so we have to do it explicitly.
-    // See http://crbug.com/6380.
-    b->tab_strip_model()->GetActiveWebContents()->RestoreFocus();
-  }
+  TabModel* tab_model = TabModelList::get(0);
+
+  tab_model->CreateNewTabForDevTools(GURL(), false);
 }
 
 void CloseTab(Browser* browser) {
@@ -1070,7 +1059,6 @@ void ToggleDevToolsWindow(Browser* browser, DevToolsToggleAction action) {
     base::RecordAction(UserMetricsAction("DevTools_ToggleConsole"));
   else
     base::RecordAction(UserMetricsAction("DevTools_ToggleWindow"));
-  DevToolsWindow::ToggleDevToolsWindow(browser, action);
 }
 
 bool CanOpenTaskManager() {

@@ -143,6 +143,15 @@ appWindow.registerCustomHook(function(bindingsAPI) {
     let view = appWindowNatives.GetFrame(windowParams.frameId,
                                          true /* notifyBrowser */);
 
+    console.log('[EXTENSIONS] appWindow.registerCustomHook, dumping view');
+    console.log(view);
+    console.log(windowParams.frameId);
+    console.log(view.chrome.app);
+    console.log('[EXTENSIONS] appWindow.registerCustomHook, dumping window');
+    console.log(view.chrome.app.window);
+    console.log('[EXTENSIONS] appWindow.registerCustomHook, dumping current window');
+    console.log(view.chrome.app.window.current());
+
     if (windowParams.existingWindow) {
       // Not creating a new window, but activating an existing one, so trigger
       // callback with existing window and don't do anything else.
@@ -232,6 +241,9 @@ appWindow.registerCustomHook(function(bindingsAPI) {
       if (key !== kSetBoundsFunction && key !== kSetSizeConstraintsFunction)
         AppWindow.prototype[key] = value;
     });
+    console.log("[EXTENSIONS] Initializing initializeAppWindow");
+    console.log(window);
+    console.log("[EXTENSIONS] Initializing initializeAppWindow - contentWindow dumped");
     AppWindow.prototype.moveTo = $Function.bind(window.moveTo, window);
     AppWindow.prototype.resizeTo = $Function.bind(window.resizeTo, window);
     AppWindow.prototype.contentWindow = window;

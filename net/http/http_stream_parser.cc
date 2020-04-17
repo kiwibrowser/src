@@ -969,8 +969,10 @@ int HttpStreamParser::ParseResponseHeaders(int end_offset) {
 
   if (response_header_start_offset_ >= 0) {
     received_bytes_ += end_offset;
-    headers = new HttpResponseHeaders(
-        HttpUtil::AssembleRawHeaders(read_buf_->StartOfBuffer(), end_offset));
+    headers = HttpResponseHeaders::TryToCreate(
+        base::StringPiece(read_buf_->StartOfBuffer(), end_offset));
+    if (!headers)
+      return net::ERR_INVALID_HTTP_RESPONSE;
   } else {
     // Enough data was read -- there is no status line, so this is HTTP/0.9, or
     // the server is broken / doesn't speak HTTP.

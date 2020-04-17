@@ -8,7 +8,7 @@
 
 #include "base/files/file_path.h"
 #include "base/optional.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "components/feature_engagement/internal/proto/event.pb.h"
 #include "components/feature_engagement/internal/stats.h"
 #include "components/feature_engagement/internal/test/event_util.h"

@@ -73,6 +73,12 @@ bool ContentSettingsClient::AllowImage(bool enabled_per_settings,
   return enabled_per_settings;
 }
 
+bool ContentSettingsClient::AllowAds(bool default_value) {
+  if (client_)
+    return client_->AllowAds(default_value);
+  return default_value;
+}
+
 bool ContentSettingsClient::AllowReadFromClipboard(bool default_value) {
   if (client_)
     return client_->AllowReadFromClipboard(default_value);

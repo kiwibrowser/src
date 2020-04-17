@@ -8,7 +8,7 @@
 
 #include "base/win/windows_version.h"
 #include "components/viz/common/features.h"
-#include "gpu/command_buffer/service/gpu_preferences.h"
+#include "gpu/config/gpu_preferences.h"
 #include "gpu/ipc/service/direct_composition_surface_win.h"
 #include "gpu/ipc/service/gpu_vsync_provider_win.h"
 #include "gpu/ipc/service/pass_through_image_transport_surface.h"

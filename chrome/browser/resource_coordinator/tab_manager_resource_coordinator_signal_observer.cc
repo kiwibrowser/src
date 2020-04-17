@@ -48,4 +48,10 @@ void TabManager::ResourceCoordinatorSignalObserver::
       ->RecordExpectedTaskQueueingDuration(web_contents, duration);
 }
 
+void TabManager::ResourceCoordinatorSignalObserver::
+    OnNonPersistentNotificationCreated(content::WebContents* web_contents) {
+  // TODO(sebmarchand): Add the wiring to forward this signal where it should be
+  // used.
+}
+
 }  // namespace resource_coordinator

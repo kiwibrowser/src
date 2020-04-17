@@ -49,7 +49,6 @@ class FakeSafeBrowsingDatabaseManager
   bool ChecksAreAlwaysAsync() const override;
   bool CanCheckResourceType(
       content::ResourceType /* resource_type */) const override;
-  bool CanCheckSubresourceFilter() const override;
   safe_browsing::ThreatSource GetThreatSource() const override;
   bool CheckExtensionIDs(const std::set<std::string>& extension_ids,
                          Client* client) override;

@@ -49,9 +49,9 @@ class FilterTool {
   void MatchBatch(std::istream* request_stream);
 
   // Like Match, but instead of writing the result of each request, it writes
-  // the set of matched rules to |output_|. Use |min_match_count| to filter the
-  // list of written rules to those that were matched at least |min_match_count|
-  // times.
+  // the set of matched rules and their match counts (in descending order) to
+  // |output_|. Use |min_match_count| to filter the list of written rules to
+  // those that were matched at least |min_match_count| times.
   void MatchRules(std::istream* request_stream, int min_match_count);
 
  private:

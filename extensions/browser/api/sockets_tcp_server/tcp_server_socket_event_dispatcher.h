@@ -5,10 +5,14 @@
 #ifndef EXTENSIONS_BROWSER_API_SOCKETS_TCP_SERVER_TCP_SERVER_SOCKET_EVENT_DISPATCHER_H_
 #define EXTENSIONS_BROWSER_API_SOCKETS_TCP_SERVER_TCP_SERVER_SOCKET_EVENT_DISPATCHER_H_
 
+#include <memory>
+#include <string>
+
 #include "content/public/browser/browser_thread.h"
 #include "extensions/browser/api/api_resource_manager.h"
 #include "extensions/browser/api/sockets_tcp/sockets_tcp_api.h"
 #include "extensions/browser/api/sockets_tcp_server/sockets_tcp_server_api.h"
+#include "services/network/public/mojom/tcp_socket.mojom.h"
 
 namespace content {
 class BrowserContext;
@@ -77,9 +81,13 @@ class TCPServerSocketEventDispatcher
   static void StartAccept(const AcceptParams& params);
 
   // Called when socket accepts a new connection.
-  static void AcceptCallback(const AcceptParams& params,
-                             int result_code,
-                             std::unique_ptr<net::TCPClientSocket> socket);
+  static void AcceptCallback(
+      const AcceptParams& params,
+      int result,
+      network::mojom::TCPConnectedSocketPtr socket,
+      const base::Optional<net::IPEndPoint>& remote_addr,
+      mojo::ScopedDataPipeConsumerHandle receive_pipe_handle,
+      mojo::ScopedDataPipeProducerHandle send_pipe_handle);
 
   // Post an extension event from |thread_id| to UI thread
   static void PostEvent(const AcceptParams& params,

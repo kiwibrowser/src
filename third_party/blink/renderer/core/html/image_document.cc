@@ -373,7 +373,15 @@ void ImageDocument::UpdateImageStyle() {
 
   if (ShouldShrinkToFit()) {
     if (shrink_to_fit_mode_ == kViewport)
+    {
       image_style.Append("max-width: 100%;");
+      image_style.Append(
+          "background-image:"
+          "linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, "
+          "#eee 75%, #eee 100%),"
+          "linear-gradient(45deg, #eee 25%, white 25%, white 75%, "
+          "#eee 75%, #eee 100%);");
+    }
 
     if (image_is_loaded_) {
       MouseCursorMode new_cursor_mode = kDefault;

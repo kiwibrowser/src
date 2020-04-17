@@ -121,6 +121,8 @@ bool BlobReader::has_side_data() const {
   const int disk_cache_side_stream_index = item.disk_cache_side_stream_index();
   if (disk_cache_side_stream_index < 0)
     return false;
+  if (!item.disk_cache_entry())
+    return false;
   return item.disk_cache_entry()->GetDataSize(disk_cache_side_stream_index) > 0;
 }
 
@@ -560,6 +562,8 @@ BlobReader::Status BlobReader::ReadDiskCacheEntryItem(const BlobDataItem& item,
                            "uuid", blob_data_->uuid());
   DCHECK_GE(read_buf_->BytesRemaining(), bytes_to_read);
 
+  if (!item.disk_cache_entry())
+    return ReportError(net::ERR_CACHE_READ_FAILURE);
   const int result = item.disk_cache_entry()->ReadData(
       item.disk_cache_stream_index(), item.offset() + current_item_offset_,
       read_buf_.get(), bytes_to_read,

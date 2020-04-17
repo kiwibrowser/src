@@ -723,6 +723,8 @@ const FeatureEntry::Choice kTLS13VariantChoices[] = {
      switches::kTLS13VariantDraft23},
     {flag_descriptions::kTLS13VariantDraft28, switches::kTLS13Variant,
      switches::kTLS13VariantDraft28},
+    {flag_descriptions::kTLS13VariantFinal, switches::kTLS13Variant,
+     switches::kTLS13VariantFinal},
 };
 
 #if !defined(OS_ANDROID)
@@ -3241,7 +3243,6 @@ const FeatureEntry kFeatureEntries[] = {
      FEATURE_VALUE_TYPE(features::kD3DVsync)},
 #endif  // defined(OS_WIN)
 
-#if !defined(OS_ANDROID)
     {"use-google-local-ntp", flag_descriptions::kUseGoogleLocalNtpName,
      flag_descriptions::kUseGoogleLocalNtpDescription, kOsDesktop,
      FEATURE_VALUE_TYPE(features::kUseGoogleLocalNtp)},
@@ -3250,7 +3251,6 @@ const FeatureEntry kFeatureEntries[] = {
      flag_descriptions::kOneGoogleBarOnLocalNtpName,
      flag_descriptions::kOneGoogleBarOnLocalNtpDescription, kOsDesktop,
      FEATURE_VALUE_TYPE(features::kOneGoogleBarOnLocalNtp)},
-#endif  // !defined(OS_ANDROID)
 
 #if defined(OS_MACOSX)
     {"mac-rtl", flag_descriptions::kMacRTLName,
@@ -3277,12 +3277,10 @@ const FeatureEntry kFeatureEntries[] = {
      SINGLE_DISABLE_VALUE_TYPE(chromeos::switches::kDisablePerUserTimezone)},
 #endif  // OS_CHROMEOS
 
-#if !defined(OS_ANDROID)
     {"enable-picture-in-picture",
      flag_descriptions::kEnablePictureInPictureName,
      flag_descriptions::kEnablePictureInPictureDescription, kOsDesktop,
      FEATURE_VALUE_TYPE(media::kPictureInPicture)},
-#endif  // !defined(OS_ANDROID)
 
 #if defined(OS_MACOSX)
     {"mac-touchbar", flag_descriptions::kMacTouchBarName,
@@ -3378,11 +3376,9 @@ const FeatureEntry kFeatureEntries[] = {
      kOsDesktop | kOsAndroid,
      FEATURE_VALUE_TYPE(password_manager::features::kManualFallbacksFilling)},
 
-#if !defined(OS_ANDROID)
     {"voice-search-on-local-ntp", flag_descriptions::kVoiceSearchOnLocalNtpName,
      flag_descriptions::kVoiceSearchOnLocalNtpDescription, kOsDesktop,
      FEATURE_VALUE_TYPE(features::kVoiceSearchOnLocalNtp)},
-#endif  // !defined(OS_ANDROID)
 
     {"click-to-open-pdf", flag_descriptions::kClickToOpenPDFName,
      flag_descriptions::kClickToOpenPDFDescription, kOsAll,
@@ -3395,7 +3391,7 @@ const FeatureEntry kFeatureEntries[] = {
      FEATURE_VALUE_TYPE(features::kDirectManipulationStylus)},
 #endif  // defined(OS_WIN)
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
     {"remove-deprecared-gaia-signin-endpoint",
      flag_descriptions::kRemoveUsageOfDeprecatedGaiaSigninEndpointName,
      flag_descriptions::kRemoveUsageOfDeprecatedGaiaSigninEndpointDescription,
@@ -3409,11 +3405,9 @@ const FeatureEntry kFeatureEntries[] = {
      MULTI_VALUE_TYPE(kThirdPartyDoodlesChoices)},
 #endif  // defined(OS_ANDROID)
 
-#if !defined(OS_ANDROID)
     {"doodles-on-local-ntp", flag_descriptions::kDoodlesOnLocalNtpName,
      flag_descriptions::kDoodlesOnLocalNtpDescription, kOsDesktop,
      FEATURE_VALUE_TYPE(features::kDoodlesOnLocalNtp)},
-#endif  // !defined(OS_ANDROID)
 
     {"sound-content-setting", flag_descriptions::kSoundContentSettingName,
      flag_descriptions::kSoundContentSettingDescription, kOsAll,
@@ -3763,12 +3757,6 @@ const FeatureEntry kFeatureEntries[] = {
      FEATURE_VALUE_TYPE(
          autofill::features::kAutofillRestrictUnownedFieldsToFormlessCheckout)},
 
-#if defined(TOOLKIT_VIEWS)
-    {"views-cast-dialog", flag_descriptions::kViewsCastDialogName,
-     flag_descriptions::kViewsCastDialogDescription, kOsDesktop,
-     FEATURE_VALUE_TYPE(features::kViewsCastDialog)},
-#endif  // defined(TOOLKIT_VIEWS)
-
 #if defined(OS_MACOSX) || defined(OS_WIN) || defined(OS_CHROMEOS)
     {"enable-emoji-context-menu",
      flag_descriptions::kEnableEmojiContextMenuName,
@@ -3902,24 +3890,12 @@ const FeatureEntry kFeatureEntries[] = {
      FEATURE_VALUE_TYPE(ash::features::kTapVisualizerApp)},
 #endif
 
-    {"unsafely-treat-insecure-origin-as-secure",
-     flag_descriptions::kTreatInsecureOriginAsSecureName,
-     flag_descriptions::kTreatInsecureOriginAsSecureDescription, kOsAll,
-     ORIGIN_LIST_VALUE_TYPE(switches::kUnsafelyTreatInsecureOriginAsSecure,
-                            "")},
-
-#if defined(OS_CHROMEOS)
-    {"enable-app-shortcut-search",
-     flag_descriptions::kEnableAppShortcutSearchName,
-     flag_descriptions::kEnableAppShortcutSearchDescription, kOsCrOS,
-     FEATURE_VALUE_TYPE(app_list::features::kEnableAppShortcutSearch)},
-
-    {"enable-drag-tabs-in-tablet-mode",
-     flag_descriptions::kEnableDragTabsInTabletModeName,
-     flag_descriptions::kEnableDragTabsInTabletModeDescription, kOsCrOS,
-     FEATURE_VALUE_TYPE(ash::features::kDragTabsInTabletMode)},
-#endif  // OS_CHROMEOS
-
+#if defined(OS_ANDROID)
+    {"long-press-back-for-history",
+     flag_descriptions::kLongPressBackForHistoryName,
+     flag_descriptions::kLongPressBackForHistoryDescription, kOsAndroid,
+     FEATURE_VALUE_TYPE(chrome::android::kLongPressBackForHistory)},
+#endif
     // NOTE: Adding a new flag requires adding a corresponding entry to enum
     // "LoginCustomFlags" in tools/metrics/histograms/enums.xml. See "Flag
     // Histograms" in tools/metrics/histograms/README.md (run the

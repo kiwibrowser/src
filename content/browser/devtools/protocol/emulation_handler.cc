@@ -133,7 +133,7 @@ Response EmulationHandler::SetEmitTouchEventsForMouse(
 
 Response EmulationHandler::CanEmulate(bool* result) {
 #if defined(OS_ANDROID)
-  *result = false;
+  *result = true;
 #else
   *result = true;
   if (WebContentsImpl* web_contents = GetWebContents())

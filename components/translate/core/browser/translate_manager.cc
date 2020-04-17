@@ -131,7 +131,7 @@ void TranslateManager::InitiateTranslation(const std::string& page_lang) {
   if (net::NetworkChangeNotifier::IsOffline())
     return;
 
-  if (!ignore_missing_key_for_testing_ && !::google_apis::HasKeysConfigured()) {
+  if (true) {
     // Without an API key, translate won't work, so don't offer to translate in
     // the first place. Leave prefs::kOfferTranslateEnabled on, though, because
     // that settings syncs and we don't want to turn off translate everywhere

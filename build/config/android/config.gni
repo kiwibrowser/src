@@ -84,6 +84,14 @@ if (is_android || is_chromeos) {
     public_android_sdk = true
   }
 
+  if (android_sdk_release == "p") {
+    default_android_sdk_root = "//third_party/android_tools/sdk"
+    default_android_sdk_version = 28
+    default_android_sdk_build_tools_version = "27.0.3"
+    default_android_sdk_tools_version_suffix = "-26.0.0-dev"
+    public_android_sdk = true
+  }
+
   if (!defined(default_lint_android_sdk_root)) {
     # Purposefully repeated so that downstream can change
     # default_android_sdk_root without changing lint version.
@@ -122,11 +130,6 @@ if (is_android || is_chromeos) {
       "//third_party/android_system_sdk:public_framework_system_java"
   if (!defined(webview_framework_dep)) {
     webview_framework_dep = webview_public_framework_dep
-  }
-
-  # TODO(crbug.com/807768): Remove this extra dependency.
-  if (!defined(android_extra_test_deps)) {
-    android_extra_test_deps = []
   }
 
   assert(defined(default_android_sdk_root),

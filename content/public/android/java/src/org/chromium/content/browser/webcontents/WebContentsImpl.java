@@ -197,7 +197,6 @@ public class WebContentsImpl implements WebContents, RenderFrameHostDelegate, Wi
 
         mInternalsHolder = new DefaultInternalsHolder();
         mInternalsHolder.set(internals);
-        WindowEventObserverManager.from(this).addObserver(this);
         mIsAlive = true;
     }
 
@@ -679,6 +678,12 @@ public class WebContentsImpl implements WebContents, RenderFrameHostDelegate, Wi
     }
 
     @Override
+    public void getContentBitmapAsyncFull(
+            int width, int height, String path, Callback<String> callback) {
+        nativeGetContentBitmapFull(mNativeWebContentsAndroid, width, height, path, callback);
+    }
+
+    @Override
     public void reloadLoFiImages() {
         nativeReloadLoFiImages(mNativeWebContentsAndroid);
     }
@@ -852,6 +857,11 @@ public class WebContentsImpl implements WebContents, RenderFrameHostDelegate, Wi
         nativeOnScaleFactorChanged(mNativeWebContentsAndroid);
     }
 
+    public void setFocus(boolean hasFocus) {
+        if (mNativeWebContentsAndroid == 0) return;
+        nativeSetFocus(mNativeWebContentsAndroid, hasFocus);
+    }
+
     // This is static to avoid exposing a public destroy method on the native side of this class.
     private static native void nativeDestroyWebContents(long webContentsAndroidPtr);
 
@@ -910,6 +920,8 @@ public class WebContentsImpl implements WebContents, RenderFrameHostDelegate, Wi
             long nativeWebContentsAndroid, OverscrollRefreshHandler nativeOverscrollRefreshHandler);
     private native void nativeGetContentBitmap(long nativeWebContentsAndroid, int width, int height,
             String path, Callback<String> callback);
+    private native void nativeGetContentBitmapFull(long nativeWebContentsAndroid, int width, int height,
+            String path, Callback<String> callback);
     private native void nativeReloadLoFiImages(long nativeWebContentsAndroid);
     private native int nativeDownloadImage(long nativeWebContentsAndroid,
             String url, boolean isFavicon, int maxBitmapSize,
@@ -933,4 +945,5 @@ public class WebContentsImpl implements WebContents, RenderFrameHostDelegate, Wi
     private native void nativeSendOrientationChangeEvent(
             long nativeWebContentsAndroid, int orientation);
     private native void nativeOnScaleFactorChanged(long nativeWebContentsAndroid);
+    private native void nativeSetFocus(long nativeWebContentsAndroid, boolean focused);
 }

@@ -51,7 +51,7 @@ public class ThreadUtils {
         }
     }
 
-    private static Handler getUiThreadHandler() {
+    public static Handler getUiThreadHandler() {
         synchronized (sLock) {
             if (sUiThreadHandler == null) {
                 if (sWillOverride) {

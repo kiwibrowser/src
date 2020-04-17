@@ -413,6 +413,21 @@ NET_ERROR(NO_BUFFER_SPACE, -176)
 // private key and the server's preferences.
 NET_ERROR(SSL_CLIENT_AUTH_NO_COMMON_ALGORITHMS, -177)
 
+// TLS 1.3 early data was rejected by the server. This will be received before
+// any data is returned from the socket. The request should be retried with
+// early data disabled.
+NET_ERROR(EARLY_DATA_REJECTED, -178)
+
+// TLS 1.3 early data was offered, but the server responded with TLS 1.2 or
+// earlier. This is an internal error code to account for a
+// backwards-compatibility issue with early data and TLS 1.2. It will be
+// received before any data is returned from the socket. The request should be
+// retried with early data disabled.
+//
+// See https://tools.ietf.org/html/draft-ietf-tls-tls13-28#appendix-D.3 for
+// details.
+NET_ERROR(WRONG_VERSION_ON_EARLY_DATA, -179)
+
 // Certificate error codes
 //
 // The values of certificate error codes must be consecutive.

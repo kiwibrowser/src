@@ -12,6 +12,7 @@
 #include "base/macros.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/strings/utf_string_conversions.h"
+#include "chrome/common/url_constants.h"
 #include "components/app_modal/app_modal_dialog_queue.h"
 #include "components/app_modal/javascript_dialog_extensions_client.h"
 #include "components/app_modal/javascript_native_dialog_factory.h"
@@ -136,6 +137,8 @@ base::string16 JavaScriptDialogManager::GetTitleImpl(
   GURL unwrapped_parent_frame_url = UnwrapURL(parent_frame_url);
   GURL unwrapped_alerting_frame_url = UnwrapURL(alerting_frame_url);
 
+  if (parent_frame_url.SchemeIs(chrome::kChromeSearchScheme))
+      return base::UTF8ToUTF16("");
   bool is_same_origin_as_main_frame =
       (unwrapped_parent_frame_url.GetOrigin() ==
        unwrapped_alerting_frame_url.GetOrigin());
@@ -172,6 +175,24 @@ void JavaScriptDialogManager::RunJavaScriptDialog(
 
   ChromeJavaScriptDialogExtraData* extra_data =
       &javascript_dialog_extra_data_[web_contents];
+
+  GURL unwrapped_parent_frame_url = UnwrapURL(web_contents->GetURL());
+  GURL unwrapped_alerting_frame_url = UnwrapURL(render_frame_host->GetLastCommittedURL());
+
+  if (unwrapped_parent_frame_url.SchemeIs("chrome-extension") || unwrapped_alerting_frame_url.SchemeIs("chrome-extension")) {
+    extra_data->suppressed_dialog_count_++;
+
+    *did_suppress_message = true;
+    return;
+  }
+
+  if (unwrapped_parent_frame_url.GetOrigin() != unwrapped_alerting_frame_url.GetOrigin())
+  {
+    extra_data->suppressed_dialog_count_++;
+
+    *did_suppress_message = true;
+    return;
+  }
 
   if (extra_data->suppress_javascript_messages_) {
     // If a page tries to open dialogs in a tight loop, the number of

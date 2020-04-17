@@ -295,7 +295,9 @@ void HostedAppBrowserController::TabInsertedAt(TabStripModel* tab_strip_model,
                                                content::WebContents* contents,
                                                int index,
                                                bool foreground) {
+  LOG(INFO) << "[EXTENSIONS] HostedAppBrowserController::TabInsertedAt - Step 1";
   HostedAppBrowserController::SetAppPrefsForWebContents(this, contents);
+  LOG(INFO) << "[EXTENSIONS] HostedAppBrowserController::TabInsertedAt - Step 2";
 }
 
 void HostedAppBrowserController::TabDetachedAt(content::WebContents* contents,

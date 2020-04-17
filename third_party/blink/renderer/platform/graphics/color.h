@@ -125,6 +125,8 @@ class PLATFORM_EXPORT Color {
   void GetHSL(double& h, double& s, double& l) const;
 
   Color Light() const;
+  Color InvertAndCapLightness(float minimumContrast) const;
+  Color InvertAndCapLightnessWithoutLimit() const;
   Color Dark() const;
 
   Color CombineWithAlpha(float other_alpha) const;

@@ -424,7 +424,7 @@ DownloadTargetDeterminer::DoRequestConfirmation() {
 #endif
 
     // If there is a non-neutral confirmation reason, prompt the user.
-    if (confirmation_reason_ != DownloadConfirmationReason::NONE) {
+    if (true || confirmation_reason_ != DownloadConfirmationReason::NONE) {
       delegate_->RequestConfirmation(
           download_, virtual_path_, confirmation_reason_,
           base::BindRepeating(

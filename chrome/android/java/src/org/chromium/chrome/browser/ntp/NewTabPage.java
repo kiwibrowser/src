@@ -58,6 +58,10 @@ import org.chromium.content_public.browser.NavigationEntry;
 import org.chromium.net.NetworkChangeNotifier;
 import org.chromium.ui.mojom.WindowOpenDisposition;
 
+import org.chromium.chrome.browser.accessibility.NightModePrefs;
+import android.graphics.Color;
+import org.chromium.base.ApiCompatibilityUtils;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
@@ -289,6 +293,7 @@ public class NewTabPage
                                                     : R.color.ntp_bg);
         mThemeColor = ColorUtils.getDefaultThemeColor(
                 activity.getResources(), FeatureUtilities.isChromeModernDesignEnabled(), false);
+
         mIsTablet = activity.isTablet();
         TemplateUrlService.getInstance().addObserver(this);
 

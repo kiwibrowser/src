@@ -16,6 +16,7 @@ cr.define('extensions', function() {
       return x < y ? -1 : (x > y ? 1 : 0);
     }
     function compareLocation(x, y) {
+      console.log("Tracing, calling chrome.developerPrivate.Location.UNPACKED");
       if (x.location == y.location)
         return 0;
       if (x.location == chrome.developerPrivate.Location.UNPACKED)
@@ -219,6 +220,7 @@ cr.define('extensions', function() {
      * @private
      */
     onItemStateChanged_: function(eventData) {
+      console.log("Tracing, called chrome.developerPrivate.EventType");
       const EventType = chrome.developerPrivate.EventType;
       switch (eventData.event_type) {
         case EventType.VIEW_REGISTERED:
@@ -285,6 +287,7 @@ cr.define('extensions', function() {
      * @private
      */
     getListId_: function(item) {
+      console.log("Tracing, calling chrome.developerPrivate.ExtensionType");
       const ExtensionType = chrome.developerPrivate.ExtensionType;
       switch (item.type) {
         case ExtensionType.HOSTED_APP:
@@ -319,6 +322,7 @@ cr.define('extensions', function() {
      * @private
      */
     getData_: function(id) {
+      console.log("Tracing, calling getData");
       return this.extensions_[this.getIndexInList_('extensions_', id)] ||
           this.apps_[this.getIndexInList_('apps_', id)];
     },

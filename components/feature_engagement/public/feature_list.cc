@@ -34,6 +34,7 @@ const base::Feature* const kAllFeatures[] = {
     &kIPHDownloadInfoBarDownloadsAreFasterFeature,
     &kIPHHomePageButtonFeature,
     &kIPHNewTabPageButtonFeature,
+    &kIPHAdblockMenuButtonFeature,
 #endif  // defined(OS_ANDROID)
 #if BUILDFLAG(ENABLE_DESKTOP_IN_PRODUCT_HELP)
     &kIPHBookmarkFeature,

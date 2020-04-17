@@ -536,8 +536,12 @@ blink::WebGestureEvent WebGestureEventBuilder::Build(NSEvent* event,
 
   switch ([event type]) {
     case NSEventTypeMagnify:
+      // We don't need to set the type based on |[event phase]| as the caller
+      // must set the begin and end types in order to support older Mac
+      // versions.
       result.SetType(blink::WebInputEvent::kGesturePinchUpdate);
       result.data.pinch_update.scale = [event magnification] + 1.0;
+      result.SetNeedsWheelEvent(true);
       break;
     case NSEventTypeSmartMagnify:
       // Map the Cocoa "double-tap with two fingers" zoom gesture to regular

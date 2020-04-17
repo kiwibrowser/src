@@ -43,6 +43,11 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.ListView;
+
 /**
  * Preference screen that allows the user to clear browsing data.
  * The user can choose which types of data to clear (history, cookies, etc), and the time range
@@ -589,6 +594,18 @@ public abstract class ClearBrowsingDataPreferences extends PreferenceFragment
         ListView view = (ListView) getView().findViewById(android.R.id.list);
         view.setDivider(null);
         view.setItemsCanFocus(true);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            view.setBackgroundColor(Color.BLACK);
+            ListView list = (ListView) view.findViewById(android.R.id.list);
+            if (list != null)
+                list.setDivider(new ColorDrawable(Color.GRAY));
+                list.setDividerHeight((int) getResources().getDisplayMetrics().density);
+        }
     }
 
     @Override

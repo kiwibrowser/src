@@ -59,6 +59,8 @@ Browser* FindOrCreateVisibleBrowser(Profile* profile) {
 void ShowExtensionInstalledBubble(const extensions::Extension* extension,
                                   Profile* profile,
                                   const SkBitmap& icon) {
+  if (true)
+    return;
   Browser* browser = FindOrCreateVisibleBrowser(profile);
   if (browser)
     ExtensionInstalledBubble::ShowBubble(extension, browser, icon);

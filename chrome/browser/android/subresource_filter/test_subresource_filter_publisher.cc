@@ -75,7 +75,7 @@ void JNI_TestSubresourceFilterPublisher_CreateAndPublishRulesetDisallowingSuffix
   // Create the ruleset contents.
   std::string ruleset_contents_str;
   google::protobuf::io::StringOutputStream output(&ruleset_contents_str);
-  url_pattern_index::UnindexedRulesetWriter ruleset_writer(&output);
+  subresource_filter::UnindexedRulesetWriter ruleset_writer(&output);
   ruleset_writer.AddUrlRule(
       CreateSuffixRule(base::android::ConvertJavaStringToUTF8(env, suffix)));
   ruleset_writer.Finish();

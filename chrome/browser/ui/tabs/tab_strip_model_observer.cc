@@ -12,8 +12,7 @@ TabStripModelObserver::TabStripModelObserver() {
 void TabStripModelObserver::TabInsertedAt(TabStripModel* tab_strip_model,
                                           WebContents* contents,
                                           int index,
-                                          bool foreground) {
-}
+                                          bool foreground) {}
 
 void TabStripModelObserver::TabClosingAt(TabStripModel* tab_strip_model,
                                          WebContents* contents,

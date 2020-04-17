@@ -749,14 +749,6 @@ void Tab::ShowContextMenuForView(views::View* source,
 // Tab, views::MaskedTargeterDelegate overrides:
 
 bool Tab::GetHitTestMask(gfx::Path* mask) const {
-  // When the window is maximized we don't want to shave off the edges or top
-  // shadow of the tab, such that the user can click anywhere along the top
-  // edge of the screen to select a tab. Ditto for immersive fullscreen.
-  const views::Widget* widget = GetWidget();
-  *mask =
-      GetBorderPath(GetWidget()->GetCompositor()->device_scale_factor(), true,
-                    widget && (widget->IsMaximized() || widget->IsFullscreen()),
-                    GetTabEndcapWidth(), bounds());
   return true;
 }
 

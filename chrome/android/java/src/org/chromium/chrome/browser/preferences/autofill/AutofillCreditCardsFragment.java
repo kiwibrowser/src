@@ -13,9 +13,16 @@ import android.support.v7.content.res.AppCompatResources;
 
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.chrome.R;
+import org.chromium.chrome.browser.preferences.ChromePreference;
 import org.chromium.chrome.browser.autofill.PersonalDataManager;
 import org.chromium.chrome.browser.autofill.PersonalDataManager.CreditCard;
 import org.chromium.chrome.browser.preferences.PreferenceUtils;
+
+import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.ListView;
 
 /**
  * Autofill credit cards fragment, which allows the user to edit credit cards.
@@ -45,7 +52,7 @@ public class AutofillCreditCardsFragment
 
         for (CreditCard card : PersonalDataManager.getInstance().getCreditCardsForSettings()) {
             // Add a preference for the credit card.
-            Preference pref = new Preference(getActivity());
+            ChromePreference pref = new ChromePreference(getActivity());
             pref.setTitle(card.getObfuscatedNumber());
             pref.setSummary(card.getFormattedExpirationDate(getActivity()));
             pref.setIcon(
@@ -65,7 +72,7 @@ public class AutofillCreditCardsFragment
 
         // Add 'Add credit card' button. Tap of it brings up card editor which allows users type in
         // new credit cards.
-        Preference pref = new Preference(getActivity());
+        ChromePreference pref = new ChromePreference(getActivity());
         Drawable plusIcon = ApiCompatibilityUtils.getDrawable(getResources(), R.drawable.plus);
         plusIcon.mutate();
         plusIcon.setColorFilter(
@@ -86,6 +93,18 @@ public class AutofillCreditCardsFragment
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         PersonalDataManager.getInstance().registerDataObserver(this);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            view.setBackgroundColor(Color.BLACK);
+            ListView list = (ListView) view.findViewById(android.R.id.list);
+            if (list != null)
+                list.setDivider(new ColorDrawable(Color.GRAY));
+                list.setDividerHeight((int) getResources().getDisplayMetrics().density);
+        }
     }
 
     @Override

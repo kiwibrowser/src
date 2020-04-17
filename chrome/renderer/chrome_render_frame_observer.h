@@ -101,10 +101,8 @@ class ChromeRenderFrameObserver : public content::RenderFrameObserver,
   safe_browsing::PhishingClassifierDelegate* phishing_classifier_;
 
 
-#if !defined(OS_ANDROID)
   // Save the JavaScript to preload if ExecuteWebUIJavaScript is invoked.
   std::vector<base::string16> webui_javascript_;
-#endif
 
   mojo::AssociatedBindingSet<chrome::mojom::ChromeRenderFrame> bindings_;
 

@@ -212,8 +212,8 @@ bool FrameTree::AddFrame(
     new_node->set_was_discarded();
 
   // Add the new node to the FrameTree, creating the RenderFrameHost.
-  FrameTreeNode* added_node =
-      parent->AddChild(std::move(new_node), process_id, new_routing_id);
+  FrameTreeNode* added_node = parent->current_frame_host()->AddChild(
+      std::move(new_node), process_id, new_routing_id);
 
   DCHECK(interface_provider_request.is_pending());
   added_node->current_frame_host()->BindInterfaceProviderRequest(
@@ -244,7 +244,7 @@ void FrameTree::RemoveFrame(FrameTreeNode* child) {
     return;
   }
 
-  parent->RemoveChild(child);
+  parent->current_frame_host()->RemoveChild(child);
 }
 
 void FrameTree::CreateProxiesForSiteInstance(

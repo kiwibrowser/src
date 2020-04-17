@@ -28,19 +28,6 @@ using content::NavigationThrottle;
 
 namespace {
 
-// Regexes matching
-const char kGetFlashURLCanonicalRegex[] = "(?i)get2?\\.adobe\\.com/.*flash.*";
-const char kGetFlashURLSecondaryGoRegex[] =
-    "(?i)(www\\.)?(adobe|macromedia)\\.com/go/"
-    "((?i).*get[-_]?flash|getfp10android|.*fl(ash)player|.*flashpl|"
-    ".*flash_player|flash_completion|flashpm|.*flashdownload|d65_flplayer|"
-    "fp_jp|runtimes_fp|[a-z_-]{3,6}h-m-a-?2|chrome|download_player|"
-    "gnav_fl|pdcredirect).*";
-const char kGetFlashURLSecondaryDownloadRegex[] =
-    "(?i)(www\\.)?(adobe|macromedia)\\.com/shockwave/download/download.cgi";
-const char kGetFlashURLSecondaryDownloadQuery[] =
-    "P1_Prod_Version=ShockwaveFlash";
-
 bool InterceptNavigation(
     const GURL& source_url,
     content::WebContents* source,
@@ -88,49 +75,6 @@ bool FlashDownloadInterception::ShouldStopFlashDownloadAction(
     const GURL& source_url,
     const GURL& target_url,
     bool has_user_gesture) {
-  if (!PluginUtils::ShouldPreferHtmlOverPlugins(host_content_settings_map))
-    return false;
-
-  if (!has_user_gesture)
-    return false;
-
-  url::Replacements<char> replacements;
-  replacements.ClearQuery();
-  replacements.ClearRef();
-  replacements.ClearUsername();
-  replacements.ClearPassword();
-
-  // If the navigation source is already the Flash download page, don't
-  // intercept the download. The user may be trying to download Flash.
-  std::string source_url_str =
-      source_url.ReplaceComponents(replacements).GetContent();
-
-  std::string target_url_str =
-      target_url.ReplaceComponents(replacements).GetContent();
-
-  // Early optimization since RE2 is expensive. http://crbug.com/809775
-  if (target_url_str.find("adobe.com") == std::string::npos &&
-      target_url_str.find("macromedia.com") == std::string::npos)
-    return false;
-
-  if (RE2::PartialMatch(source_url_str, kGetFlashURLCanonicalRegex))
-    return false;
-
-  if (RE2::FullMatch(target_url_str, kGetFlashURLCanonicalRegex) ||
-      RE2::FullMatch(target_url_str, kGetFlashURLSecondaryGoRegex) ||
-      (RE2::FullMatch(target_url_str, kGetFlashURLSecondaryDownloadRegex) &&
-       target_url.query() == kGetFlashURLSecondaryDownloadQuery)) {
-    ContentSetting flash_setting = PluginUtils::GetFlashPluginContentSetting(
-        host_content_settings_map, url::Origin::Create(source_url), source_url,
-        nullptr);
-    flash_setting = PluginsFieldTrial::EffectiveContentSetting(
-        host_content_settings_map, CONTENT_SETTINGS_TYPE_PLUGINS,
-        flash_setting);
-
-    return flash_setting == CONTENT_SETTING_DETECT_IMPORTANT_CONTENT ||
-           flash_setting == CONTENT_SETTING_BLOCK;
-  }
-
   return false;
 }
 

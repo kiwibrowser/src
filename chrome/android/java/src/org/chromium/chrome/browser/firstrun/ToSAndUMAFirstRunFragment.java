@@ -75,6 +75,7 @@ public class ToSAndUMAFirstRunFragment extends Fragment implements FirstRunFragm
         });
 
         if (ChromeVersionInfo.isOfficialBuild()) {
+/*
             int paddingStart = getResources().getDimensionPixelSize(
                     R.dimen.fre_tos_checkbox_padding);
             ApiCompatibilityUtils.setPaddingRelative(mSendReportCheckBox,
@@ -84,6 +85,9 @@ public class ToSAndUMAFirstRunFragment extends Fragment implements FirstRunFragm
                     mSendReportCheckBox.getPaddingBottom());
 
             mSendReportCheckBox.setChecked(FirstRunActivity.DEFAULT_METRICS_AND_CRASH_REPORTING);
+*/
+            mSendReportCheckBox.setChecked(FirstRunActivity.DEFAULT_METRICS_AND_CRASH_REPORTING);
+            mSendReportCheckBox.setVisibility(View.GONE);
         } else {
             mSendReportCheckBox.setVisibility(View.GONE);
         }

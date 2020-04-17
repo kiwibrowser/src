@@ -31,6 +31,27 @@ source_set("cpu_features") {
 }
 
 if (enable_java_templates) {
+  android_system_java_prebuilt("android_sdk_java") {
+    jar_path = android_sdk_jar
+  }
+
+  # The android test libraries below are part of the main SDK jar
+  # and are linked by default on O and below. Starting in P, they
+  # exist in their own libraries that are present on device and are
+  # available to be linked against but aren't linked by default.
+
+  android_system_java_prebuilt("android_test_base_java") {
+    jar_path = "${android_sdk}/optional/android.test.base.jar"
+  }
+
+  android_system_java_prebuilt("android_test_mock_java") {
+    jar_path = "${android_sdk}/optional/android.test.mock.jar"
+  }
+
+  android_system_java_prebuilt("android_test_runner_java") {
+    jar_path = "${android_sdk}/optional/android.test.runner.jar"
+  }
+
   template("support_lib_alias") {
     java_group(target_name) {
       forward_variables_from(invoker, [ "testonly" ])

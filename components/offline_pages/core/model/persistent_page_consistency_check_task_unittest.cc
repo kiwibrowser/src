@@ -5,7 +5,7 @@
 #include "components/offline_pages/core/model/persistent_page_consistency_check_task.h"
 
 #include "base/bind.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/test/mock_callback.h"
 #include "base/time/time.h"
 #include "build/build_config.h"

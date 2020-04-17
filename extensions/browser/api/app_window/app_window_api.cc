@@ -145,7 +145,9 @@ ExtensionFunction::ResponseAction AppWindowCreateFunction::Run() {
   std::unique_ptr<Create::Params> params(Create::Params::Create(*args_));
   EXTENSION_FUNCTION_VALIDATE(params.get());
 
+  LOG(INFO) << "[EXTENSIONS] AppWindowCreateFunction::Run received URL: " << params->url;
   GURL url = extension()->GetResourceURL(params->url);
+  LOG(INFO) << "[EXTENSIONS] AppWindowCreateFunction::Run received URL: " << params->url << " - " << url.spec();
   // Allow absolute URLs for component apps, otherwise prepend the extension
   // path.
   // TODO(devlin): Investigate if this is still used. If not, kill it dead!
@@ -180,6 +182,7 @@ ExtensionFunction::ResponseAction AppWindowCreateFunction::Run() {
           " Change your code to no longer rely on this.");
       }
 
+      if (false)
       if (!options->singleton || *options->singleton) {
         AppWindow* existing_window =
             AppWindowRegistry::Get(browser_context())
@@ -385,14 +388,11 @@ ExtensionFunction::ResponseAction AppWindowCreateFunction::Run() {
   create_params.creator_process_id =
       render_frame_host()->GetProcess()->GetID();
 
+  LOG(INFO) << "[EXTENSIONS] AppWindowCreateFunction::Run received URL: " << url.spec() << " - creating App Window";
   AppWindow* app_window = nullptr;
-  if (action_type == api::app_runtime::ACTION_TYPE_NONE) {
-    app_window =
-        AppWindowClient::Get()->CreateAppWindow(browser_context(), extension());
-  } else {
-    app_window = AppWindowClient::Get()->CreateAppWindowForLockScreenAction(
-        browser_context(), extension(), action_type);
-  }
+  app_window =
+      AppWindowClient::Get()->CreateAppWindow(browser_context(), extension());
+  LOG(INFO) << "[EXTENSIONS] AppWindowCreateFunction::Run received URL: " << url.spec() << " - created App Window: " << app_window;
 
   // App window client might refuse to create an app window, e.g. when the app
   // attempts to create a lock screen action handler window when the action was
@@ -400,35 +400,36 @@ ExtensionFunction::ResponseAction AppWindowCreateFunction::Run() {
   if (!app_window)
     return RespondNow(Error(app_window_constants::kAppWindowCreationFailed));
 
+  LOG(INFO) << "[EXTENSIONS] AppWindowCreateFunction::Run: Step 1";
+
   app_window->Init(url, new AppWindowContentsImpl(app_window),
                    render_frame_host(), create_params);
 
+  LOG(INFO) << "[EXTENSIONS] AppWindowCreateFunction::Run: Step 2";
   if (ExtensionsBrowserClient::Get()->IsRunningInForcedAppMode() &&
       !app_window->is_ime_window()) {
+    LOG(INFO) << "[EXTENSIONS] AppWindowCreateFunction::Run: Step 2a";
     app_window->ForcedFullscreen();
+    LOG(INFO) << "[EXTENSIONS] AppWindowCreateFunction::Run: Step 2b";
   }
+
+  LOG(INFO) << "[EXTENSIONS] AppWindowCreateFunction::Run: Step 3";
 
   content::RenderFrameHost* created_frame =
       app_window->web_contents()->GetMainFrame();
   int frame_id = MSG_ROUTING_NONE;
-  if (create_params.creator_process_id == created_frame->GetProcess()->GetID())
-    frame_id = created_frame->GetRoutingID();
+  LOG(INFO) << "[EXTENSIONS] AppWindowCreateFunction::Run: Step 4";
+  frame_id = created_frame->GetRoutingID();
+
+  LOG(INFO) << "[EXTENSIONS] AppWindowCreateFunction::Run: Step 5 - Frame_id: " << frame_id;
 
   std::unique_ptr<base::DictionaryValue> result(new base::DictionaryValue);
   result->SetInteger("frameId", frame_id);
   result->SetString("id", app_window->window_key());
+  LOG(INFO) << "[EXTENSIONS] AppWindowCreateFunction::Run: Step 6 - Window Key: " << app_window->window_key();
   app_window->GetSerializedState(result.get());
   ResponseValue result_arg = OneArgument(std::move(result));
-
-  if (AppWindowRegistry::Get(browser_context())
-          ->HadDevToolsAttached(app_window->web_contents())) {
-    AppWindowClient::Get()->OpenDevToolsWindow(
-        app_window->web_contents(),
-        base::Bind(&AppWindowCreateFunction::Respond, this,
-                   base::Passed(&result_arg)));
-    // OpenDevToolsWindow might have already responded.
-    return did_respond() ? AlreadyResponded() : RespondLater();
-  }
+  LOG(INFO) << "[EXTENSIONS] AppWindowCreateFunction::Run: Step 7";
 
   // Delay sending the response until the newly created window has been told to
   // navigate, and blink has been correctly initialized in the renderer.
@@ -436,6 +437,7 @@ ExtensionFunction::ResponseAction AppWindowCreateFunction::Run() {
   app_window->SetOnFirstCommitOrWindowClosedCallback(base::Bind(
       &AppWindowCreateFunction::OnAppWindowReadyToCommitFirstNavigationOrClosed,
       this, base::Passed(&result_arg)));
+  LOG(INFO) << "[EXTENSIONS] AppWindowCreateFunction::Run: Step 9";
   return RespondLater();
 }
 

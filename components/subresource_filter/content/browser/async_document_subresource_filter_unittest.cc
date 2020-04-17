@@ -136,7 +136,8 @@ class LoadPolicyCallbackReceiver {
 }  // namespace
 
 TEST_F(AsyncDocumentSubresourceFilterTest, ActivationStateIsReported) {
-  dealer_handle()->TryOpenAndSetRulesetFile(ruleset().path, base::DoNothing());
+  dealer_handle()->TryOpenAndSetRulesetFile(
+      ruleset().path, /*expected_checksum=*/0, base::DoNothing());
   auto ruleset_handle = CreateRulesetHandle();
 
   AsyncDocumentSubresourceFilter::InitializationParams params(
@@ -152,7 +153,8 @@ TEST_F(AsyncDocumentSubresourceFilterTest, ActivationStateIsReported) {
 }
 
 TEST_F(AsyncDocumentSubresourceFilterTest, DeleteFilter_NoActivationCallback) {
-  dealer_handle()->TryOpenAndSetRulesetFile(ruleset().path, base::DoNothing());
+  dealer_handle()->TryOpenAndSetRulesetFile(
+      ruleset().path, /*expected_checksum=*/0, base::DoNothing());
   auto ruleset_handle = CreateRulesetHandle();
 
   AsyncDocumentSubresourceFilter::InitializationParams params(
@@ -169,7 +171,8 @@ TEST_F(AsyncDocumentSubresourceFilterTest, DeleteFilter_NoActivationCallback) {
 }
 
 TEST_F(AsyncDocumentSubresourceFilterTest, ActivationStateIsComputedCorrectly) {
-  dealer_handle()->TryOpenAndSetRulesetFile(ruleset().path, base::DoNothing());
+  dealer_handle()->TryOpenAndSetRulesetFile(
+      ruleset().path, /*expected_checksum=*/0, base::DoNothing());
   auto ruleset_handle = CreateRulesetHandle();
 
   AsyncDocumentSubresourceFilter::InitializationParams params(
@@ -190,7 +193,8 @@ TEST_F(AsyncDocumentSubresourceFilterTest, ActivationStateIsComputedCorrectly) {
 
 TEST_F(AsyncDocumentSubresourceFilterTest, DisabledForCorruptRuleset) {
   testing::TestRuleset::CorruptByFilling(ruleset(), 0, 100, 0xFF);
-  dealer_handle()->TryOpenAndSetRulesetFile(ruleset().path, base::DoNothing());
+  dealer_handle()->TryOpenAndSetRulesetFile(
+      ruleset().path, /*expected_checksum=*/0, base::DoNothing());
 
   auto ruleset_handle = CreateRulesetHandle();
 
@@ -207,7 +211,8 @@ TEST_F(AsyncDocumentSubresourceFilterTest, DisabledForCorruptRuleset) {
 }
 
 TEST_F(AsyncDocumentSubresourceFilterTest, GetLoadPolicyForSubdocument) {
-  dealer_handle()->TryOpenAndSetRulesetFile(ruleset().path, base::DoNothing());
+  dealer_handle()->TryOpenAndSetRulesetFile(
+      ruleset().path, /*expected_checksum=*/0, base::DoNothing());
   auto ruleset_handle = CreateRulesetHandle();
 
   AsyncDocumentSubresourceFilter::InitializationParams params(
@@ -230,7 +235,8 @@ TEST_F(AsyncDocumentSubresourceFilterTest, GetLoadPolicyForSubdocument) {
 }
 
 TEST_F(AsyncDocumentSubresourceFilterTest, FirstDisallowedLoadIsReported) {
-  dealer_handle()->TryOpenAndSetRulesetFile(ruleset().path, base::DoNothing());
+  dealer_handle()->TryOpenAndSetRulesetFile(
+      ruleset().path, /*expected_checksum=*/0, base::DoNothing());
   auto ruleset_handle = CreateRulesetHandle();
 
   TestCallbackReceiver first_disallowed_load_receiver;
@@ -264,7 +270,8 @@ TEST_F(AsyncDocumentSubresourceFilterTest, FirstDisallowedLoadIsReported) {
 
 TEST_F(AsyncDocumentSubresourceFilterTest, UpdateActivationState) {
   // Properly initilize the ruleset and handle to use for computations.
-  dealer_handle()->TryOpenAndSetRulesetFile(ruleset().path, base::DoNothing());
+  dealer_handle()->TryOpenAndSetRulesetFile(
+      ruleset().path, /*expected_checksum=*/0, base::DoNothing());
   auto ruleset_handle = CreateRulesetHandle();
 
   // Initialize |filter| with a starting ActivationLevel of DRYRUN. This value
@@ -319,7 +326,7 @@ class SubresourceFilterComputeActivationStateTest : public ::testing::Test {
     testing::TestRulesetPair test_ruleset_pair;
     ASSERT_NO_FATAL_FAILURE(test_ruleset_creator_.CreateRulesetWithRules(
         rules, &test_ruleset_pair));
-    ruleset_ = new MemoryMappedRuleset(
+    ruleset_ = MemoryMappedRuleset::CreateAndInitialize(
         testing::TestRuleset::Open(test_ruleset_pair.indexed));
   }
 

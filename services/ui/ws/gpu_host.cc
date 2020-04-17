@@ -178,6 +178,8 @@ void DefaultGpuHost::DidLoseContext(bool offscreen,
                                     gpu::error::ContextLostReason reason,
                                     const GURL& active_url) {}
 
+void DefaultGpuHost::DisableGpuCompositing() {}
+
 void DefaultGpuHost::SetChildSurface(gpu::SurfaceHandle parent,
                                      gpu::SurfaceHandle child) {
 #if defined(OS_WIN)

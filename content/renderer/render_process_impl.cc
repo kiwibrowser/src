@@ -178,6 +178,12 @@ RenderProcessImpl::RenderProcessImpl(
   const base::CommandLine& command_line =
       *base::CommandLine::ForCurrentProcess();
 
+  if (true || command_line.HasSwitch(switches::kNoV8UntrustedCodeMitigations)) {
+    const char* disable_mitigations = "--no-untrusted-code-mitigations";
+    v8::V8::SetFlagsFromString(disable_mitigations,
+                               strlen(disable_mitigations));
+  }
+
   if (command_line.HasSwitch(switches::kJavaScriptFlags)) {
     std::string flags(
         command_line.GetSwitchValueASCII(switches::kJavaScriptFlags));

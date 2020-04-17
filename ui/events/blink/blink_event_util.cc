@@ -775,13 +775,19 @@ WebGestureEvent CreateWebGestureEvent(const GestureEventDetails& details,
       break;
     case ET_GESTURE_PINCH_BEGIN:
       gesture.SetType(WebInputEvent::kGesturePinchBegin);
+      gesture.SetNeedsWheelEvent(source_device ==
+                                 blink::kWebGestureDeviceTouchpad);
       break;
     case ET_GESTURE_PINCH_UPDATE:
       gesture.SetType(WebInputEvent::kGesturePinchUpdate);
       gesture.data.pinch_update.scale = details.scale();
+      gesture.SetNeedsWheelEvent(source_device ==
+                                 blink::kWebGestureDeviceTouchpad);
       break;
     case ET_GESTURE_PINCH_END:
       gesture.SetType(WebInputEvent::kGesturePinchEnd);
+      gesture.SetNeedsWheelEvent(source_device ==
+                                 blink::kWebGestureDeviceTouchpad);
       break;
     case ET_GESTURE_TAP_CANCEL:
       gesture.SetType(WebInputEvent::kGestureTapCancel);
@@ -1230,7 +1236,7 @@ std::unique_ptr<WebGestureEvent> CreateWebGestureEventFromGestureEventAndroid(
     web_event->data.fling_start.velocity_y = event.velocity_y();
     web_event->data.fling_start.target_viewport = event.target_viewport();
   } else if (event_type == WebInputEvent::kGestureFlingCancel) {
-    web_event->data.fling_cancel.prevent_boosting = true;
+    web_event->data.fling_cancel.prevent_boosting = event.prevent_boosting();
     if (event.synthetic_scroll())
       web_event->data.fling_cancel.target_viewport = true;
   } else if (event_type == WebInputEvent::kGestureDoubleTap) {

@@ -295,7 +295,8 @@ content::SSLHostStateDelegate* AwBrowserContext::GetSSLHostStateDelegate() {
   return ssl_host_state_delegate_.get();
 }
 
-content::PermissionManager* AwBrowserContext::GetPermissionManager() {
+content::PermissionControllerDelegate*
+AwBrowserContext::GetPermissionControllerDelegate() {
   if (!permission_manager_.get())
     permission_manager_.reset(new AwPermissionManager());
   return permission_manager_.get();

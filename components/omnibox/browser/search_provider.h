@@ -138,6 +138,7 @@ class SearchProvider : public BaseSearchProvider,
 
     // NOTE: These may return NULL even if the provider members are nonempty!
     const TemplateURL* GetDefaultProviderURL() const;
+    const TemplateURL* GetBangsProviderURL() const;
     const TemplateURL* GetKeywordProviderURL() const;
 
     // Returns true if there is a valid keyword provider.

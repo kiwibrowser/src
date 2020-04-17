@@ -91,7 +91,11 @@ using VideoEncodeAcceleratorSupportedProfiles =
 struct GPU_EXPORT GPUInfo {
   struct GPU_EXPORT GPUDevice {
     GPUDevice();
-    ~GPUDevice();
+    GPUDevice(const GPUDevice& other);
+    GPUDevice(GPUDevice&& other) noexcept;
+    ~GPUDevice() noexcept;
+    GPUDevice& operator=(const GPUDevice& other);
+    GPUDevice& operator=(GPUDevice&& other) noexcept;
 
     // The DWORD (uint32_t) representing the graphics card vendor id.
     uint32_t vendor_id;
@@ -110,6 +114,10 @@ struct GPU_EXPORT GPUInfo {
     // In Android, these are respectively GL_VENDOR and GL_RENDERER.
     std::string vendor_string;
     std::string device_string;
+
+    std::string driver_vendor;
+    std::string driver_version;
+    std::string driver_date;
   };
 
   GPUInfo();
@@ -117,6 +125,7 @@ struct GPU_EXPORT GPUInfo {
   ~GPUInfo();
 
   // The currently active gpu.
+  GPUDevice& active_gpu();
   const GPUDevice& active_gpu() const;
 
   bool IsInitialized() const;
@@ -136,15 +145,6 @@ struct GPU_EXPORT GPUInfo {
 
   // Secondary GPUs, for example, the integrated GPU in a dual GPU machine.
   std::vector<GPUDevice> secondary_gpus;
-
-  // The vendor of the graphics driver currently installed.
-  std::string driver_vendor;
-
-  // The version of the graphics driver currently installed.
-  std::string driver_version;
-
-  // The date of the graphics driver currently installed.
-  std::string driver_date;
 
   // The version of the pixel/fragment shader used by the gpu.
   std::string pixel_shader_version;

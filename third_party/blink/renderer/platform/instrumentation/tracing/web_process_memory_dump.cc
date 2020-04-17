@@ -10,7 +10,6 @@
 #include "base/memory/discardable_memory.h"
 #include "base/memory/ptr_util.h"
 #include "base/strings/stringprintf.h"
-#include "base/trace_event/heap_profiler_heap_dump_writer.h"
 #include "base/trace_event/process_memory_dump.h"
 #include "base/trace_event/trace_event_argument.h"
 #include "base/trace_event/trace_event_memory_overhead.h"
@@ -22,7 +21,6 @@ namespace blink {
 
 WebProcessMemoryDump::WebProcessMemoryDump()
     : owned_process_memory_dump_(new base::trace_event::ProcessMemoryDump(
-          nullptr,
           {base::trace_event::MemoryDumpLevelOfDetail::DETAILED})),
       process_memory_dump_(owned_process_memory_dump_.get()),
       level_of_detail_(base::trace_event::MemoryDumpLevelOfDetail::DETAILED) {}

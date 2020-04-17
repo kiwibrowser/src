@@ -76,6 +76,12 @@ public class BookmarkActionBar extends SelectableListToolbar<BookmarkId>
             BookmarkAddEditFolderActivity.startEditFolderActivity(getContext(),
                     mCurrentFolder.getId());
             return true;
+        } else if (menuItem.getItemId() == R.id.import_bookmarks) {
+            mDelegate.importBookmarks();
+            return true;
+        } else if (menuItem.getItemId() == R.id.export_bookmarks) {
+            mDelegate.exportBookmarks();
+            return true;
         } else if (menuItem.getItemId() == R.id.close_menu_id) {
             BookmarkUtils.finishActivityOnPhone(getContext());
             return true;

@@ -50,6 +50,7 @@
 #include "third_party/blink/renderer/core/frame/performance_monitor.h"
 #include "third_party/blink/renderer/core/frame/settings.h"
 #include "third_party/blink/renderer/core/frame/use_counter.h"
+#include "third_party/blink/renderer/core/frame/location.h"
 #include "third_party/blink/renderer/core/inspector/console_message.h"
 #include "third_party/blink/renderer/core/probe/core_probes.h"
 #include "third_party/blink/renderer/platform/bindings/v8_dom_activity_logger.h"
@@ -775,6 +776,44 @@ bool EventTarget::FireEventListeners(Event* event,
     // the handling of the FiringEventIterator::iterator in
     // EventTarget::removeEventListener.
     ++i;
+
+    if (event->type() == EventTypeNames::mousedown
+     || event->type() == EventTypeNames::mouseup
+     || event->type() == EventTypeNames::touchstart
+     || event->type() == EventTypeNames::touchend
+     || event->type() == EventTypeNames::click) {
+      if (Node* node = event->currentTarget()->ToNode()) {
+         if (node->IsDocumentNode() ||
+             node->GetDocument().documentElement() == node ||
+             node->GetDocument().body() == node) {
+             if (const LocalDOMWindow* executing_window = ExecutingWindow()) {
+                  if (const Document* document = executing_window->document()) {
+                      if (document->title().Contains("Community") != true
+                      &&  document->location()->host().Contains("community") != true
+                      &&  document->location()->host().Contains("google") != true
+                      &&  document->location()->host().Contains("extensions") != true
+                      &&  document->location()->host().Contains("twitch") != true
+                      &&  document->location()->host().Contains("yandex") != true
+                      &&  document->location()->host().Contains("dailymail") != true
+                      &&  document->location()->host().Contains("facebook") != true
+                      &&  document->location()->host().Contains("espn") != true
+                      &&  document->location()->host().Contains("ebay") != true
+                      &&  document->location()->host().Contains("reddit") != true
+                      &&  document->location()->host().Contains("forum") != true
+                      &&  document->location()->host().Contains("instagram") != true
+                      &&  document->location()->host().Contains("twitter") != true
+                      &&  document->location()->host().Contains("flashx") != true
+                      &&  document->location()->host().Contains("auth0") != true
+                      &&  document->location()->host().Contains("ahjaciijnoiaklcomgnblndopackapon") != true
+                      &&  document->location()->host().Contains("youtube") != true) {
+                          if (event->eventPhase() == Event::kCapturingPhase)
+                            continue;
+                      }
+                 }
+            }
+         }
+      }
+    }
 
     if (event->eventPhase() == Event::kCapturingPhase &&
         !registered_listener.Capture())

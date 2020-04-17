@@ -15,11 +15,19 @@ import "mojo/public/mojom/base/time.mojom";
 // pass the interface pointer of mojo channel to PageSignalGenerator through
 // PageSignalGenerator::AddReceiver.
 interface PageSignalReceiver {
-  NotifyPageAlmostIdle(CoordinationUnitID cu_id);
-  SetExpectedTaskQueueingDuration(CoordinationUnitID cu_id,
+  NotifyPageAlmostIdle(CoordinationUnitID page_cu_id);
+  SetExpectedTaskQueueingDuration(CoordinationUnitID page_cu_id,
                                   mojo_base.mojom.TimeDelta duration);
-  SetLifecycleState(CoordinationUnitID cu_id,
+  SetLifecycleState(CoordinationUnitID page_cu_id,
                     LifecycleState state);
+
+  // Indicates that the page has created a non-persistent web notification, i.e.
+  // a notification created by a particular page (in opposition to persistent
+  // web notifications, who require a service worker).
+  //
+  // |page_cu_id| is the coordination ID of the page that created this
+  // notification.
+  NotifyNonPersistentNotificationCreated(CoordinationUnitID page_cu_id);
 };
 
 // A PageSignalGenerator implementation will be implemented inside GRC to receive

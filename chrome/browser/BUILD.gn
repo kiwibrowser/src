@@ -135,6 +135,8 @@ jumbo_split_static_library("browser") {
     "bitmap_fetcher/bitmap_fetcher_service.h",
     "bitmap_fetcher/bitmap_fetcher_service_factory.cc",
     "bitmap_fetcher/bitmap_fetcher_service_factory.h",
+    "bookmarks/bookmark_html_writer.cc",
+    "bookmarks/bookmark_html_writer.h",
     "bookmarks/bookmark_model_factory.cc",
     "bookmarks/bookmark_model_factory.h",
     "bookmarks/bookmark_stats.cc",
@@ -511,6 +513,7 @@ jumbo_split_static_library("browser") {
     "font_pref_change_notifier.h",
     "font_pref_change_notifier_factory.cc",
     "font_pref_change_notifier_factory.h",
+    "fullscreen_android.cc",
     "fullscreen_mac.mm",
     "fullscreen_win.cc",
     "gcm/gcm_product_util.cc",
@@ -531,6 +534,8 @@ jumbo_split_static_library("browser") {
     "global_keyboard_shortcuts_mac.mm",
     "google/chrome_google_url_tracker_client.cc",
     "google/chrome_google_url_tracker_client.h",
+    "google/chrome_search_url_tracker_client.cc",
+    "google/chrome_search_url_tracker_client.h",
     "google/did_run_updater_win.cc",
     "google/did_run_updater_win.h",
     "google/google_brand.cc",
@@ -543,6 +548,8 @@ jumbo_split_static_library("browser") {
     "google/google_search_domain_mixing_metrics_emitter_factory.h",
     "google/google_url_tracker_factory.cc",
     "google/google_url_tracker_factory.h",
+    "google/search_url_tracker_factory.cc",
+    "google/search_url_tracker_factory.h",
     "gpu/gpu_mode_manager.cc",
     "gpu/gpu_mode_manager.h",
     "hang_monitor/hang_crash_dump.h",
@@ -1283,6 +1290,8 @@ jumbo_split_static_library("browser") {
     "resources_util.h",
     "safe_search_api/safe_search_url_checker.cc",
     "safe_search_api/safe_search_url_checker.h",
+    "restart_worker.cc",
+    "restart_worker.h",
     "search/instant_io_context.cc",
     "search/instant_io_context.h",
     "search/search.cc",
@@ -1883,11 +1892,14 @@ jumbo_split_static_library("browser") {
       "after_startup_task_utils_android.cc",
       "android/accessibility/font_size_prefs_android.cc",
       "android/accessibility/font_size_prefs_android.h",
+      "android/accessibility/night_mode_prefs_android.cc",
+      "android/accessibility/night_mode_prefs_android.h",
       "android/android_theme_resources.h",
       "android/app_hooks.cc",
       "android/app_hooks.h",
       "android/appmenu/app_menu_drag_helper.cc",
       "android/appmenu/app_menu_drag_helper.h",
+      "android/appmenu/app_menu.cc",
       "android/background_sync_launcher_android.cc",
       "android/background_sync_launcher_android.h",
       "android/background_tab_manager.cc",
@@ -2374,6 +2386,7 @@ jumbo_split_static_library("browser") {
       ":delta_file_proto",
       ":jni_headers",
       "//chrome/browser/android/webapk:proto",
+      "//chrome/browser/search:generated",
       "//chrome/services/media_gallery_util:manifest",  # TODO(xingliu): Tries to remove this.
       "//chrome/services/media_gallery_util/public/cpp",
       "//components/cdm/browser",
@@ -2412,7 +2425,8 @@ jumbo_split_static_library("browser") {
         "supervised_user/child_accounts/child_account_service_android.h",
       ]
     }
-  } else {  # !is_android
+  }
+  if (true) {  # !is_android
     sources += [
       "accessibility/invert_bubble_prefs.cc",
       "accessibility/invert_bubble_prefs.h",
@@ -2420,15 +2434,13 @@ jumbo_split_static_library("browser") {
       "background/background_contents.h",
       "banners/app_banner_infobar_delegate_desktop.cc",
       "banners/app_banner_infobar_delegate_desktop.h",
-      "banners/app_banner_manager_desktop.cc",
-      "banners/app_banner_manager_desktop.h",
-      "bookmarks/bookmark_html_writer.cc",
-      "bookmarks/bookmark_html_writer.h",
+#      "banners/app_banner_manager_desktop.cc",
+#      "banners/app_banner_manager_desktop.h",
       "certificate_viewer.h",
       "chrome_browser_field_trials_desktop.cc",
       "chrome_browser_field_trials_desktop.h",
-      "chrome_process_singleton.cc",
-      "chrome_process_singleton.h",
+#      "chrome_process_singleton.cc",
+#      "chrome_process_singleton.h",
       "custom_handlers/register_protocol_handler_permission_request.cc",
       "custom_handlers/register_protocol_handler_permission_request.h",
       "diagnostics/diagnostics_controller.cc",
@@ -2449,7 +2461,7 @@ jumbo_split_static_library("browser") {
       "download/default_download_dir_policy_handler.h",
       "download/download_commands.cc",
       "download/download_commands.h",
-      "download/download_crx_util.cc",
+#      "download/download_crx_util.cc",
       "download/download_crx_util.h",
       "download/download_danger_prompt.cc",
       "download/download_danger_prompt.h",
@@ -2486,6 +2498,7 @@ jumbo_split_static_library("browser") {
       "first_run/first_run.h",
       "first_run/first_run_dialog.h",
       "first_run/first_run_internal.h",
+      "first_run/first_run_internal_android.cc",
       "first_run/first_run_internal_linux.cc",
       "first_run/first_run_internal_mac.mm",
       "first_run/first_run_internal_win.cc",
@@ -2607,6 +2620,7 @@ jumbo_split_static_library("browser") {
       "notifications/profile_notification.h",
       "obsolete_system/obsolete_system.h",
       "obsolete_system/obsolete_system_linux.cc",
+      "obsolete_system/obsolete_system_android.cc",
       "obsolete_system/obsolete_system_mac.cc",
       "obsolete_system/obsolete_system_win.cc",
       "page_load_metrics/observers/session_restore_page_load_metrics_observer.cc",
@@ -2875,7 +2889,7 @@ jumbo_split_static_library("browser") {
         "chrome_browser_main_posix.h",
         "first_run/first_run_internal_posix.cc",
         "importer/firefox_profile_lock_posix.cc",
-        "process_singleton_posix.cc",
+#        "process_singleton_posix.cc",
         "task_manager/sampling/shared_sampler_posix.cc",
       ]
     }
@@ -3115,6 +3129,10 @@ jumbo_split_static_library("browser") {
     deps += [ "//services/service_manager/zygote" ]
   }
 
+  sources += [
+    "web_applications/web_app_android.cc",
+  ]
+
   if (is_desktop_linux) {
     # Desktop linux, doesn't count ChromeOS.
     sources += [
@@ -3194,7 +3212,7 @@ jumbo_split_static_library("browser") {
     sources += [ "hang_monitor/hang_crash_dump.cc" ]
   }
 
-  if (is_win || is_linux) {
+  if (is_win || is_linux || true) {
     sources += [
       "renderer_context_menu/spelling_options_submenu_observer.cc",
       "renderer_context_menu/spelling_options_submenu_observer.h",
@@ -3207,7 +3225,7 @@ jumbo_split_static_library("browser") {
     defines += [ "USE_CRAS" ]
   }
 
-  if (!is_android && !is_chromeos) {
+  if (true || (!is_android && !is_chromeos)) {
     sources += [
       "lifetime/switch_utils.cc",
       "lifetime/switch_utils.h",
@@ -3231,11 +3249,11 @@ jumbo_split_static_library("browser") {
       "notifications/fullscreen_notification_blocker.h",
       "notifications/screen_lock_notification_blocker.cc",
       "notifications/screen_lock_notification_blocker.h",
-      "platform_util.cc",
+#      "platform_util.cc",
       "policy/cloud/machine_level_user_cloud_policy_helper.cc",
       "policy/cloud/machine_level_user_cloud_policy_helper.h",
-      "policy/cloud/user_policy_signin_service.cc",
-      "policy/cloud/user_policy_signin_service.h",
+#      "policy/cloud/user_policy_signin_service.cc",
+#      "policy/cloud/user_policy_signin_service.h",
       "profiles/avatar_menu.cc",
       "profiles/avatar_menu.h",
       "profiles/avatar_menu_actions_desktop.cc",
@@ -3262,7 +3280,8 @@ jumbo_split_static_library("browser") {
       "upgrade_detector_impl.cc",
       "upgrade_detector_impl.h",
     ]
-  } else {
+  }
+  if (true) {
     sources += [
       "media/protected_media_identifier_permission_context.cc",
       "media/protected_media_identifier_permission_context.h",
@@ -3323,11 +3342,15 @@ jumbo_split_static_library("browser") {
     deps += [ "//ui/views" ]
   }
 
+
+  sources += [
+      "download/drag_download_item_views.cc",
+  ]
+
   if (use_aura) {
     # Cross-platform Aura files.
     sources += [
       # This file is called _views but has Aura calls in it.
-      "download/drag_download_item_views.cc",
       "lifetime/application_lifetime_aura.cc",
       "platform_util_aura.cc",
       "ui/views/frame/browser_frame_mus.cc",
@@ -3370,6 +3393,7 @@ jumbo_split_static_library("browser") {
       "background/background_mode_manager.cc",
       "background/background_mode_manager.h",
       "background/background_mode_manager_aura.cc",
+      "background/background_mode_manager_android.cc",
       "background/background_mode_manager_chromeos.cc",
       "background/background_mode_manager_mac.mm",
       "background/background_mode_manager_win.cc",
@@ -3566,8 +3590,6 @@ jumbo_split_static_library("browser") {
       "media/extension_media_access_handler.h",
       "media/webrtc/desktop_capture_access_handler.cc",
       "media/webrtc/desktop_capture_access_handler.h",
-      "media/webrtc/tab_capture_access_handler.cc",
-      "media/webrtc/tab_capture_access_handler.h",
       "metrics/extensions_metrics_provider.cc",
       "metrics/extensions_metrics_provider.h",
       "renderer_context_menu/context_menu_content_type_app_mode.cc",
@@ -3982,6 +4004,21 @@ jumbo_split_static_library("browser") {
     deps += [ ":rlz" ]
   }
 
+  sources += [
+    "local_discovery/endpoint_resolver.cc",
+    "local_discovery/endpoint_resolver.h",
+    "local_discovery/service_discovery_client.cc",
+    "local_discovery/service_discovery_client.h",
+    "local_discovery/service_discovery_client_mac.h",
+    "local_discovery/service_discovery_client_mac.mm",
+    "local_discovery/service_discovery_client_mac_factory.h",
+    "local_discovery/service_discovery_client_mac_factory.mm",
+    "local_discovery/service_discovery_device_lister.cc",
+    "local_discovery/service_discovery_device_lister.h",
+    "local_discovery/service_discovery_shared_client.cc",
+    "local_discovery/service_discovery_shared_client.h",
+  ]
+
   if (enable_service_discovery) {
     sources += [
       "local_discovery/endpoint_resolver.cc",
@@ -4033,7 +4070,7 @@ jumbo_split_static_library("browser") {
     ]
   }
 
-  if (enable_session_service) {
+  if (true || enable_session_service) {
     sources += [
       "sessions/session_restore.cc",
       "sessions/session_restore.h",
@@ -4147,7 +4184,7 @@ jumbo_split_static_library("browser") {
     ]
     deps += [ "//chrome/common:supervised_user_commands_mojom" ]
   }
-  if (enable_supervised_users && !is_android) {
+  if (enable_supervised_users) {
     sources += [
       # TODO(bauerb): The legacy code should be removed (on desktop) once child
       # account support has launched (https://crbug.com/505443).
@@ -4159,7 +4196,7 @@ jumbo_split_static_library("browser") {
       "supervised_user/supervised_user_theme.h",
     ]
   }
-  if (enable_supervised_users && !is_android && !is_chromeos) {
+  if (enable_supervised_users && !is_chromeos) {
     sources += [
       "supervised_user/supervised_user_creation_policy_handler.cc",
       "supervised_user/supervised_user_creation_policy_handler.h",
@@ -4191,7 +4228,7 @@ jumbo_split_static_library("browser") {
     ]
   }
 
-  if (!is_chrome_branded && !is_android) {
+  if ((!is_chrome_branded && !is_android) || true) {
     sources += [
       "search/local_files_ntp_source.cc",
       "search/local_files_ntp_source.h",
@@ -4267,6 +4304,7 @@ if (is_android) {
       "../android/java/src/org/chromium/chrome/browser/JavascriptAppModalDialog.java",
       "../android/java/src/org/chromium/chrome/browser/NearOomMonitor.java",
       "../android/java/src/org/chromium/chrome/browser/SSLClientCertificateRequest.java",
+      "../android/java/src/org/chromium/chrome/browser/RestartWorker.java",
       "../android/java/src/org/chromium/chrome/browser/SearchGeolocationDisclosureTabHelper.java",
       "../android/java/src/org/chromium/chrome/browser/ServiceTabLauncher.java",
       "../android/java/src/org/chromium/chrome/browser/ShortcutHelper.java",
@@ -4276,6 +4314,8 @@ if (is_android) {
       "../android/java/src/org/chromium/chrome/browser/WarmupManager.java",
       "../android/java/src/org/chromium/chrome/browser/WebContentsFactory.java",
       "../android/java/src/org/chromium/chrome/browser/accessibility/FontSizePrefs.java",
+      "../android/java/src/org/chromium/chrome/browser/accessibility/NightModePrefs.java",
+      "../android/java/src/org/chromium/chrome/browser/appmenu/AppMenu.java",
       "../android/java/src/org/chromium/chrome/browser/appmenu/AppMenuDragHelper.java",
       "../android/java/src/org/chromium/chrome/browser/autofill/AutofillKeyboardAccessoryBridge.java",
       "../android/java/src/org/chromium/chrome/browser/autofill/AutofillLogger.java",
@@ -4989,7 +5029,7 @@ static_library("test_support_ui") {
 
   configs += [ "//build/config:precompiled_headers" ]
 
-  if (!is_android) {
+  if (true) {
     sources += [
       "password_manager/password_manager_test_base.cc",
       "password_manager/password_manager_test_base.h",

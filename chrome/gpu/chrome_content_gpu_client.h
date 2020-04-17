@@ -19,7 +19,7 @@
 #include "components/arc/common/video_decode_accelerator.mojom.h"
 #include "components/arc/common/video_encode_accelerator.mojom.h"
 #include "components/arc/common/video_protected_buffer_allocator.mojom.h"
-#include "gpu/command_buffer/service/gpu_preferences.h"
+#include "gpu/config/gpu_preferences.h"
 
 namespace arc {
 class ProtectedBufferManager;

@@ -1,4 +1,13 @@
+#if defined(__has_feature)
+#if __has_feature(memory_sanitizer) && !defined(OPENSSL_NO_ASM)
+#define OPENSSL_NO_ASM
+#endif
+#endif
+
 #if defined(__x86_64__) && !defined(OPENSSL_NO_ASM)
+#if defined(BORINGSSL_PREFIX)
+#include <boringssl_prefix_symbols_asm.h>
+#endif
 .text	
 
 
@@ -7,6 +16,7 @@
 
 .p2align	4
 _sha1_block_data_order:
+
 	leaq	_OPENSSL_ia32cap_P(%rip),%r10
 	movl	0(%r10),%r9d
 	movl	4(%r10),%r8d
@@ -23,17 +33,24 @@ _sha1_block_data_order:
 .p2align	4
 L$ialu:
 	movq	%rsp,%rax
+
 	pushq	%rbx
+
 	pushq	%rbp
+
 	pushq	%r12
+
 	pushq	%r13
+
 	pushq	%r14
+
 	movq	%rdi,%r8
 	subq	$72,%rsp
 	movq	%rsi,%r9
 	andq	$-64,%rsp
 	movq	%rdx,%r10
 	movq	%rax,64(%rsp)
+
 L$prologue:
 
 	movl	0(%r8),%esi
@@ -1228,25 +1245,40 @@ L$loop:
 	jnz	L$loop
 
 	movq	64(%rsp),%rsi
+
 	movq	-40(%rsi),%r14
+
 	movq	-32(%rsi),%r13
+
 	movq	-24(%rsi),%r12
+
 	movq	-16(%rsi),%rbp
+
 	movq	-8(%rsi),%rbx
+
 	leaq	(%rsi),%rsp
+
 L$epilogue:
 	.byte	0xf3,0xc3
+
 
 
 .p2align	4
 sha1_block_data_order_ssse3:
 _ssse3_shortcut:
+
 	movq	%rsp,%r11
+
 	pushq	%rbx
+
 	pushq	%rbp
+
 	pushq	%r12
+
 	pushq	%r13
+
 	pushq	%r14
+
 	leaq	-64(%rsp),%rsp
 	andq	$-64,%rsp
 	movq	%rdi,%r8
@@ -2403,24 +2435,38 @@ L$done_ssse3:
 	movl	%edx,12(%r8)
 	movl	%ebp,16(%r8)
 	movq	-40(%r11),%r14
+
 	movq	-32(%r11),%r13
+
 	movq	-24(%r11),%r12
+
 	movq	-16(%r11),%rbp
+
 	movq	-8(%r11),%rbx
+
 	leaq	(%r11),%rsp
+
 L$epilogue_ssse3:
 	.byte	0xf3,0xc3
+
 
 
 .p2align	4
 sha1_block_data_order_avx:
 _avx_shortcut:
+
 	movq	%rsp,%r11
+
 	pushq	%rbx
+
 	pushq	%rbp
+
 	pushq	%r12
+
 	pushq	%r13
+
 	pushq	%r14
+
 	leaq	-64(%rsp),%rsp
 	vzeroupper
 	andq	$-64,%rsp
@@ -3517,13 +3563,20 @@ L$done_avx:
 	movl	%edx,12(%r8)
 	movl	%ebp,16(%r8)
 	movq	-40(%r11),%r14
+
 	movq	-32(%r11),%r13
+
 	movq	-24(%r11),%r12
+
 	movq	-16(%r11),%rbp
+
 	movq	-8(%r11),%rbx
+
 	leaq	(%r11),%rsp
+
 L$epilogue_avx:
 	.byte	0xf3,0xc3
+
 
 .p2align	6
 K_XX_XX:

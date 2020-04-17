@@ -154,6 +154,25 @@ class InitialRefCountIsOne : public base::RefCounted<InitialRefCountIsOne> {
   ~InitialRefCountIsOne() = default;
 };
 
+// Checks that the scoped_refptr is null before the reference counted object is
+// destroyed.
+class CheckRefptrNull : public base::RefCounted<CheckRefptrNull> {
+ public:
+  // Set the last scoped_refptr that will have a reference to this object.
+  void set_scoped_refptr(scoped_refptr<CheckRefptrNull>* ptr) { ptr_ = ptr; }
+
+ protected:
+  virtual ~CheckRefptrNull() {
+    EXPECT_NE(ptr_, nullptr);
+    EXPECT_EQ(ptr_->get(), nullptr);
+  }
+
+ private:
+  friend class base::RefCounted<CheckRefptrNull>;
+
+  scoped_refptr<CheckRefptrNull>* ptr_ = nullptr;
+};
+
 }  // end namespace
 
 TEST(RefCountedUnitTest, TestSelfAssignment) {
@@ -559,27 +578,80 @@ TEST(RefCountedUnitTest, TestOverloadResolutionMove) {
 TEST(RefCountedUnitTest, TestMakeRefCounted) {
   scoped_refptr<Derived> derived = new Derived;
   EXPECT_TRUE(derived->HasOneRef());
-  derived = nullptr;
+  derived.reset();
 
   scoped_refptr<Derived> derived2 = base::MakeRefCounted<Derived>();
   EXPECT_TRUE(derived2->HasOneRef());
-  derived2 = nullptr;
+  derived2.reset();
 }
 
 TEST(RefCountedUnitTest, TestInitialRefCountIsOne) {
   scoped_refptr<InitialRefCountIsOne> obj =
       base::MakeRefCounted<InitialRefCountIsOne>();
   EXPECT_TRUE(obj->HasOneRef());
-  obj = nullptr;
+  obj.reset();
 
   scoped_refptr<InitialRefCountIsOne> obj2 =
       base::AdoptRef(new InitialRefCountIsOne);
   EXPECT_TRUE(obj2->HasOneRef());
-  obj2 = nullptr;
+  obj2.reset();
 
   scoped_refptr<Other> obj3 = base::MakeRefCounted<Other>();
   EXPECT_TRUE(obj3->HasOneRef());
-  obj3 = nullptr;
+  obj3.reset();
+}
+
+TEST(RefCountedUnitTest, TestPrivateDestructorWithDeleter) {
+  // Ensure that RefCounted doesn't need the access to the pointee dtor when
+  // a custom deleter is given.
+  scoped_refptr<HasPrivateDestructorWithDeleter> obj =
+      base::MakeRefCounted<HasPrivateDestructorWithDeleter>();
+}
+
+TEST(RefCountedUnitTest, TestReset) {
+  ScopedRefPtrCountBase::reset_count();
+
+  // Create ScopedRefPtrCountBase that is referenced by |obj1| and |obj2|.
+  scoped_refptr<ScopedRefPtrCountBase> obj1 =
+      base::MakeRefCounted<ScopedRefPtrCountBase>();
+  scoped_refptr<ScopedRefPtrCountBase> obj2 = obj1;
+  EXPECT_NE(obj1.get(), nullptr);
+  EXPECT_NE(obj2.get(), nullptr);
+  EXPECT_EQ(ScopedRefPtrCountBase::constructor_count(), 1);
+  EXPECT_EQ(ScopedRefPtrCountBase::destructor_count(), 0);
+
+  // Check that calling reset() on |obj1| resets it. |obj2| still has a
+  // reference to the ScopedRefPtrCountBase so it shouldn't be reset.
+  obj1.reset();
+  EXPECT_EQ(obj1.get(), nullptr);
+  EXPECT_EQ(ScopedRefPtrCountBase::constructor_count(), 1);
+  EXPECT_EQ(ScopedRefPtrCountBase::destructor_count(), 0);
+
+  // Check that calling reset() on |obj2| resets it and causes the deletion of
+  // the ScopedRefPtrCountBase.
+  obj2.reset();
+  EXPECT_EQ(obj2.get(), nullptr);
+  EXPECT_EQ(ScopedRefPtrCountBase::constructor_count(), 1);
+  EXPECT_EQ(ScopedRefPtrCountBase::destructor_count(), 1);
+}
+
+TEST(RefCountedUnitTest, TestResetAlreadyNull) {
+  // Check that calling reset() on a null scoped_refptr does nothing.
+  scoped_refptr<ScopedRefPtrCountBase> obj;
+  obj.reset();
+  // |obj| should still be null after calling reset().
+  EXPECT_EQ(obj.get(), nullptr);
+}
+
+TEST(RefCountedUnitTest, CheckScopedRefptrNullBeforeObjectDestruction) {
+  scoped_refptr<CheckRefptrNull> obj = base::MakeRefCounted<CheckRefptrNull>();
+  obj->set_scoped_refptr(&obj);
+
+  // Check that when reset() is called the scoped_refptr internal pointer is set
+  // to null before the reference counted object is destroyed. This check is
+  // done by the CheckRefptrNull destructor.
+  obj.reset();
+  EXPECT_EQ(obj.get(), nullptr);
 }
 
 TEST(RefCountedDeathTest, TestAdoptRef) {
@@ -596,11 +668,4 @@ TEST(RefCountedDeathTest, TestAdoptRef) {
   scoped_refptr<InitialRefCountIsOne> obj =
       base::MakeRefCounted<InitialRefCountIsOne>();
   EXPECT_DCHECK_DEATH(base::AdoptRef(obj.get()));
-}
-
-TEST(RefCountedUnitTest, TestPrivateDestructorWithDeleter) {
-  // Ensure that RefCounted doesn't need the access to the pointee dtor when
-  // a custom deleter is given.
-  scoped_refptr<HasPrivateDestructorWithDeleter> obj =
-      base::MakeRefCounted<HasPrivateDestructorWithDeleter>();
 }

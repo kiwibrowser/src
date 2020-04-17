@@ -194,7 +194,6 @@ bool CSSDefaultStyleSheets::EnsureDefaultStyleSheetsForElement(
     changed_default_style = true;
   }
 
-  DCHECK(!default_style_->Features().HasIdsInSelectors());
   return changed_default_style;
 }
 

@@ -208,8 +208,7 @@ class ImmersiveFullscreenControllerTest : public AshTestBase {
     // top-of-window views synchronously if the mouse is hovered at the top of
     // the screen.
     if (controller()->top_edge_hover_timer_.IsRunning()) {
-      controller()->top_edge_hover_timer_.user_task().Run();
-      controller()->top_edge_hover_timer_.Stop();
+      controller()->top_edge_hover_timer_.FireNow();
     }
   }
 

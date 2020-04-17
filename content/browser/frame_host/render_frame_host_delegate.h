@@ -375,6 +375,13 @@ class CONTENT_EXPORT RenderFrameHostDelegate {
   // Returns the visibility of the delegate.
   virtual Visibility GetVisibility() const;
 
+  // Notify observers if WebAudio AudioContext has started (or stopped) playing
+  // audible sounds.
+  virtual void AudioContextPlaybackStarted(RenderFrameHost* host,
+                                           int context_id) {}
+  virtual void AudioContextPlaybackStopped(RenderFrameHost* host,
+                                           int context_id) {}
+
  protected:
   virtual ~RenderFrameHostDelegate() {}
 };

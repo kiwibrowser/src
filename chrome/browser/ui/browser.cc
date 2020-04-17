@@ -35,7 +35,6 @@
 #include "chrome/browser/background/background_contents.h"
 #include "chrome/browser/background/background_contents_service.h"
 #include "chrome/browser/background/background_contents_service_factory.h"
-#include "chrome/browser/banners/app_banner_manager_desktop.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/chrome_notification_types.h"
 #include "chrome/browser/content_settings/host_content_settings_map_factory.h"
@@ -264,12 +263,13 @@ namespace {
 const int kUIUpdateCoalescingTimeMS = 200;
 
 BrowserWindow* CreateBrowserWindow(Browser* browser, bool user_gesture) {
-  return BrowserWindow::CreateBrowserWindow(browser, user_gesture);
+  LOG(INFO) << "[EXTENSIONS] Calling BrowserWindow::CreateBrowserWindow from CreateBrowserWindow";
+  return BrowserWindow::CreateBrowserWindow(std::move(browser), user_gesture);
 }
 
 // Is the fast tab unload experiment enabled?
 bool IsFastTabUnloadEnabled() {
-  return base::CommandLine::ForCurrentProcess()->HasSwitch(
+  return true || base::CommandLine::ForCurrentProcess()->HasSwitch(
       switches::kEnableFastUnload);
 }
 
@@ -326,7 +326,6 @@ Browser::CreateParams Browser::CreateParams::CreateForApp(
 Browser::CreateParams Browser::CreateParams::CreateForDevTools(
     Profile* profile) {
   CreateParams params(TYPE_POPUP, profile, true);
-  params.app_name = DevToolsWindow::kDevToolsApp;
   params.trusted_source = true;
   return params;
 }
@@ -388,27 +387,36 @@ Browser::Browser(const CreateParams& params)
   // If this causes a crash then a window is being opened using a profile type
   // that is disallowed by policy. The crash prevents the disabled window type
   // from opening at all, but the path that triggered it should be fixed.
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 1";
   CHECK(IncognitoModePrefs::CanOpenBrowser(profile_));
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 2";
   CHECK(!profile_->IsGuestSession() || profile_->IsOffTheRecord())
       << "Only off the record browser may be opened in guest mode";
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 3";
   DCHECK(!profile_->IsSystemProfile())
       << "The system profile should never have a real browser.";
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 4";
   // TODO(mlerman): After this hits stable channel, see if there are counts
   // for this metric. If not, change the DCHECK above to a CHECK.
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 5";
   if (profile_->IsSystemProfile())
     base::RecordAction(base::UserMetricsAction("BrowserForSystemProfile"));
 
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 6";
   // TODO(jeremy): Move to initializer list once flag is removed.
   if (IsFastTabUnloadEnabled())
     fast_unload_controller_.reset(new FastUnloadController(this));
   else
     unload_controller_.reset(new UnloadController(this));
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 7";
 
   tab_strip_model_->AddObserver(this);
 
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 8";
   toolbar_model_.reset(new ToolbarModelImpl(toolbar_model_delegate_.get(),
                                             content::kMaxURLDisplayChars));
 
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 9";
   extension_registry_observer_.Add(
       extensions::ExtensionRegistry::Get(profile_));
 #if !defined(OS_ANDROID)
@@ -417,50 +425,65 @@ Browser::Browser(const CreateParams& params)
       content::Source<ThemeService>(
           ThemeServiceFactory::GetForProfile(profile_)));
 #endif
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 10";
   registrar_.Add(this, chrome::NOTIFICATION_WEB_CONTENT_SETTINGS_CHANGED,
                  content::NotificationService::AllSources());
 
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 11";
   profile_pref_registrar_.Init(profile_->GetPrefs());
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 12";
   profile_pref_registrar_.Add(
       prefs::kDevToolsAvailability,
       base::BindRepeating(&Browser::OnDevToolsAvailabilityChanged,
                           base::Unretained(this)));
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 13";
   profile_pref_registrar_.Add(
       bookmarks::prefs::kShowBookmarkBar,
       base::BindRepeating(&Browser::UpdateBookmarkBarState,
                           base::Unretained(this),
                           BOOKMARK_BAR_STATE_CHANGE_PREF_CHANGE));
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 14";
 
   if (search::IsInstantExtendedAPIEnabled() && is_type_tabbed())
     instant_controller_.reset(new BrowserInstantController(this));
 
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 15";
   if (extensions::HostedAppBrowserController::IsForHostedApp(this)) {
     hosted_app_controller_.reset(
         new extensions::HostedAppBrowserController(this));
   }
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 16";
 
   UpdateBookmarkBarState(BOOKMARK_BAR_STATE_CHANGE_INIT);
 
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 17";
   ProfileMetrics::LogProfileLaunch(profile_);
 
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 18";
   if (params.skip_window_init_for_testing)
     return;
 
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 19: " << params.window;
   window_ = params.window ? params.window
                           : CreateBrowserWindow(this, params.user_gesture);
 
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 20";
   if (hosted_app_controller_)
     hosted_app_controller_->UpdateLocationBarVisibility(false);
 
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 21";
   // Create the extension window controller before sending notifications.
   extension_window_controller_.reset(
       new extensions::BrowserExtensionWindowController(this));
 
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 22";
   SessionService* session_service =
       SessionServiceFactory::GetForProfileForSessionRestore(profile_);
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 23";
   if (session_service)
     session_service->WindowOpened(this);
 
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 24";
   // TODO(beng): move to ChromeBrowserMain:
   if (first_run::ShouldDoPersonalDataManagerFirstRun()) {
 #if defined(OS_WIN)
@@ -470,10 +493,13 @@ Browser::Browser(const CreateParams& params)
 #endif  // defined(OS_WIN)
   }
 
-  exclusive_access_manager_.reset(
-      new ExclusiveAccessManager(window_->GetExclusiveAccessContext()));
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 25";
+//  exclusive_access_manager_.reset(
+//      new ExclusiveAccessManager(window_->GetExclusiveAccessContext()));
 
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 26";
   BrowserList::AddBrowser(this);
+  LOG(INFO) << "[EXTENSIONS] Creating new Browser() window - Step 27";
 }
 
 Browser::~Browser() {
@@ -602,7 +628,7 @@ bool Browser::is_app() const {
 }
 
 bool Browser::is_devtools() const {
-  return app_name_ == DevToolsWindow::kDevToolsApp;
+  return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -860,13 +886,9 @@ Browser::DownloadClosePreventionType Browser::OkToCloseWithInProgressDownloads(
 // Browser, Tab adding/showing functions:
 
 void Browser::WindowFullscreenStateWillChange() {
-  exclusive_access_manager_->fullscreen_controller()
-      ->WindowFullscreenStateWillChange();
 }
 
 void Browser::WindowFullscreenStateChanged() {
-  exclusive_access_manager_->fullscreen_controller()
-      ->WindowFullscreenStateChanged();
   command_controller_->FullscreenStateChanged();
   UpdateBookmarkBarState(BOOKMARK_BAR_STATE_CHANGE_TOGGLE_FULLSCREEN);
 }
@@ -875,8 +897,6 @@ void Browser::WindowFullscreenStateChanged() {
 // Browser, Assorted browser commands:
 
 void Browser::ToggleFullscreenModeWithExtension(const GURL& extension_url) {
-  exclusive_access_manager_->fullscreen_controller()
-      ->ToggleBrowserFullscreenModeWithExtension(extension_url);
 }
 
 bool Browser::SupportsWindowFeature(WindowFeature feature) const {
@@ -924,12 +944,6 @@ void Browser::UpdateUIForNavigationInTab(WebContents* contents,
 
   bool contents_is_selected =
       contents == tab_strip_model_->GetActiveWebContents();
-  if (user_initiated && contents_is_selected && window()->GetLocationBar()) {
-    // Forcibly reset the location bar if the url is going to change in the
-    // current tab, since otherwise it won't discard any ongoing user edits,
-    // since it doesn't realize this is a user-initiated action.
-    window()->GetLocationBar()->Revert();
-  }
 
   if (GetStatusBubble())
     GetStatusBubble()->Hide();
@@ -970,27 +984,35 @@ void Browser::TabInsertedAt(TabStripModel* tab_strip_model,
                             WebContents* contents,
                             int index,
                             bool foreground) {
+  LOG(INFO) << "[EXTENSIONS] Browser::TabInsertedAt - Step 1";
   SetAsDelegate(contents, true);
 
+  LOG(INFO) << "[EXTENSIONS] Browser::TabInsertedAt - Step 2";
   SessionTabHelper::FromWebContents(contents)->SetWindowID(session_id());
 
+  LOG(INFO) << "[EXTENSIONS] Browser::TabInsertedAt - Step 3";
   content::NotificationService::current()->Notify(
       chrome::NOTIFICATION_TAB_PARENTED,
       content::Source<content::WebContents>(contents),
       content::NotificationService::NoDetails());
 
+  LOG(INFO) << "[EXTENSIONS] Browser::TabInsertedAt - Step 4";
   SyncHistoryWithTabs(index);
 
+  LOG(INFO) << "[EXTENSIONS] Browser::TabInsertedAt - Step 5";
   // Make sure the loading state is updated correctly, otherwise the throbber
   // won't start if the page is loading. Note that we don't want to
   // ScheduleUIUpdate() because the tab may not have been inserted in the UI
   // yet if this function is called before TabStripModel::TabInsertedAt().
   UpdateWindowForLoadingStateChanged(contents, true);
 
+  LOG(INFO) << "[EXTENSIONS] Browser::TabInsertedAt - Step 6";
   interstitial_observers_.push_back(new InterstitialObserver(this, contents));
 
+  LOG(INFO) << "[EXTENSIONS] Browser::TabInsertedAt - Step 7";
   SessionService* session_service =
       SessionServiceFactory::GetForProfile(profile_);
+  LOG(INFO) << "[EXTENSIONS] Browser::TabInsertedAt - Step 8";
   if (session_service) {
     session_service->TabInserted(contents);
     int new_active_index = tab_strip_model_->active_index();
@@ -998,6 +1020,7 @@ void Browser::TabInsertedAt(TabStripModel* tab_strip_model,
       session_service->SetSelectedTabInWindow(session_id(),
                                               new_active_index);
   }
+  LOG(INFO) << "[EXTENSIONS] Browser::TabInsertedAt - Step 9";
 }
 
 void Browser::TabClosingAt(TabStripModel* tab_strip_model,
@@ -1015,7 +1038,6 @@ void Browser::TabClosingAt(TabStripModel* tab_strip_model,
       page_load_metrics::MetricsWebContentsObserver::FromWebContents(contents);
   metrics_observer->WebContentsWillSoonBeDestroyed();
 
-  exclusive_access_manager_->OnTabClosing(contents);
   SessionService* session_service =
       SessionServiceFactory::GetForProfile(profile_);
   if (session_service)
@@ -1040,18 +1062,16 @@ void Browser::TabDetachedAt(WebContents* contents, int index, bool was_active) {
 }
 
 void Browser::TabDeactivated(WebContents* contents) {
-  exclusive_access_manager_->OnTabDeactivated(contents);
   SearchTabHelper::FromWebContents(contents)->OnTabDeactivated();
-
-  // Save what the user's currently typing, so it can be restored when we
-  // switch back to this tab.
-  window_->GetLocationBar()->SaveStateToContents(contents);
 }
 
 void Browser::ActiveTabChanged(WebContents* old_contents,
                                WebContents* new_contents,
                                int index,
                                int reason) {
+  LOG(INFO) << "[EXTENSIONS] Browser::ActiveTabChanged - Active tab has changed and we skipped the element";
+  if (true)
+      return;
 // Mac correctly sets the initial background color of new tabs to the theme
 // background color, so it does not need this block of code. Aura should
 // implement this as well.
@@ -1085,8 +1105,6 @@ void Browser::ActiveTabChanged(WebContents* old_contents,
   // since the omnibox expects the correct element to already be focused when it
   // is updated.
   window_->OnActiveTabChanged(old_contents, new_contents, index, reason);
-
-  exclusive_access_manager_->OnTabDetachedFromView(old_contents);
 
   // If we have any update pending, do it now.
   if (chrome_updater_factory_.HasWeakPtrs() && old_contents)
@@ -1148,7 +1166,6 @@ void Browser::TabReplacedAt(TabStripModel* tab_strip_model,
                             int index) {
   bool was_active = index == tab_strip_model_->active_index();
   TabDetachedAtImpl(old_contents, was_active, DETACH_TYPE_REPLACE);
-  exclusive_access_manager_->OnTabClosing(old_contents);
   SessionService* session_service =
       SessionServiceFactory::GetForProfile(profile_);
   if (session_service)
@@ -1252,19 +1269,12 @@ content::KeyboardEventProcessingResult Browser::PreHandleKeyboardEvent(
   // Forward keyboard events to the manager for fullscreen / mouse lock. This
   // may consume the event (e.g., Esc exits fullscreen mode).
   // TODO(koz): Write a test for this http://crbug.com/100441.
-  if (exclusive_access_manager_->HandleUserKeyEvent(event))
-    return content::KeyboardEventProcessingResult::HANDLED;
-
   return window()->PreHandleKeyboardEvent(event);
 }
 
 void Browser::HandleKeyboardEvent(content::WebContents* source,
                                   const NativeWebKeyboardEvent& event) {
-  DevToolsWindow* devtools_window =
-      DevToolsWindow::GetInstanceForInspectedWebContents(source);
   bool handled = false;
-  if (devtools_window)
-    handled = devtools_window->ForwardKeyboardEvent(event);
 
   if (!handled)
     window()->HandleKeyboardEvent(event);
@@ -1302,8 +1312,6 @@ bool Browser::PreHandleGestureEvent(content::WebContents* source,
 #endif  // defined(OS_MACOSX)
 
   // Disable pinch zooming in undocked dev tools window due to poor UX.
-  if (app_name() == DevToolsWindow::kDevToolsApp)
-    return blink::WebInputEvent::IsPinchGestureEventType(event.GetType());
   return false;
 }
 
@@ -1355,10 +1363,6 @@ std::unique_ptr<content::BluetoothChooser> Browser::RunBluetoothChooser(
 }
 
 void Browser::RequestAppBannerFromDevTools(content::WebContents* web_contents) {
-  banners::AppBannerManagerDesktop::CreateForWebContents(web_contents);
-  banners::AppBannerManagerDesktop* manager =
-      banners::AppBannerManagerDesktop::FromWebContents(web_contents);
-  manager->RequestAppBanner(web_contents->GetLastCommittedURL(), true);
 }
 
 void Browser::PassiveInsecureContentFound(const GURL& resource_url) {
@@ -1434,7 +1438,7 @@ void Browser::ExitPictureInPicture() {
 }
 
 bool Browser::IsMouseLocked() const {
-  return exclusive_access_manager_->mouse_lock_controller()->IsMouseLocked();
+  return false;
 }
 
 void Browser::OnWindowDidShow() {
@@ -1461,12 +1465,6 @@ void Browser::OnWindowDidShow() {
 
 WebContents* Browser::OpenURLFromTab(WebContents* source,
                                      const OpenURLParams& params) {
-  if (is_devtools()) {
-    DevToolsWindow* window = DevToolsWindow::AsDevToolsWindow(source);
-    DCHECK(window);
-    return window->OpenURLFromTab(source, params);
-  }
-
   NavigateParams nav_params(this, params.url, params.transition);
   nav_params.FillNavigateParamsFromOpenURLParams(params);
   nav_params.source_contents = source;
@@ -1494,6 +1492,8 @@ WebContents* Browser::OpenURLFromTab(WebContents* source,
 
 void Browser::NavigationStateChanged(WebContents* source,
                                      content::InvalidateTypes changed_flags) {
+  if (true)
+    return;
   // Only update the UI when something visible has changed.
   if (changed_flags)
     ScheduleUIUpdate(source, changed_flags);
@@ -1583,8 +1583,6 @@ void Browser::UpdateTargetURL(WebContents* source, const GURL& url) {
 void Browser::ContentsMouseEvent(WebContents* source,
                                  bool motion,
                                  bool exited) {
-  exclusive_access_manager_->OnUserInput();
-
   // Mouse motion events update the status bubble, if it exists.
   if (!GetStatusBubble() || (!motion && !exited))
     return;
@@ -1612,18 +1610,8 @@ bool Browser::TakeFocus(content::WebContents* source,
 void Browser::BeforeUnloadFired(WebContents* web_contents,
                                 bool proceed,
                                 bool* proceed_to_fire_unload) {
-  if (is_devtools() && DevToolsWindow::HandleBeforeUnload(web_contents,
-        proceed, proceed_to_fire_unload))
-    return;
-
-  if (IsFastTabUnloadEnabled()) {
-    *proceed_to_fire_unload =
-        fast_unload_controller_->BeforeUnloadFiredForContents(web_contents,
-                                                              proceed);
-  } else {
     *proceed_to_fire_unload =
         unload_controller_->BeforeUnloadFired(web_contents, proceed);
-  }
 }
 
 bool Browser::ShouldFocusLocationBarByDefault(WebContents* source) {
@@ -1750,19 +1738,14 @@ void Browser::EnterFullscreenModeForTab(
     WebContents* web_contents,
     const GURL& origin,
     const blink::WebFullscreenOptions& options) {
-  exclusive_access_manager_->fullscreen_controller()->EnterFullscreenModeForTab(
-      web_contents, origin);
 }
 
 void Browser::ExitFullscreenModeForTab(WebContents* web_contents) {
-  exclusive_access_manager_->fullscreen_controller()->ExitFullscreenModeForTab(
-      web_contents);
 }
 
 bool Browser::IsFullscreenForTabOrPending(
     const WebContents* web_contents) const {
-  return exclusive_access_manager_->fullscreen_controller()
-      ->IsFullscreenForTabOrPending(web_contents);
+  return false;
 }
 
 blink::WebDisplayMode Browser::GetDisplayMode(
@@ -1803,7 +1786,6 @@ void Browser::RegisterProtocolHandler(WebContents* web_contents,
     tab_content_settings->set_pending_protocol_handler(handler);
     tab_content_settings->set_previous_protocol_handler(
         registry->GetHandlerFor(handler.protocol()));
-    window_->GetLocationBar()->UpdateContentSettingsIcons();
     return;
   }
 
@@ -1811,7 +1793,6 @@ void Browser::RegisterProtocolHandler(WebContents* web_contents,
   // ungestured and gestured RPH calls.
   if (window_) {
     tab_content_settings->ClearPendingProtocolHandler();
-    window_->GetLocationBar()->UpdateContentSettingsIcons();
   }
 
   PermissionRequestManager* permission_request_manager =
@@ -1861,23 +1842,16 @@ void Browser::FindReply(WebContents* web_contents,
 void Browser::RequestToLockMouse(WebContents* web_contents,
                                  bool user_gesture,
                                  bool last_unlocked_by_target) {
-  exclusive_access_manager_->mouse_lock_controller()->RequestToLockMouse(
-      web_contents, user_gesture, last_unlocked_by_target);
 }
 
 void Browser::LostMouseLock() {
-  exclusive_access_manager_->mouse_lock_controller()->LostMouseLock();
 }
 
 void Browser::RequestKeyboardLock(WebContents* web_contents,
                                   bool esc_key_locked) {
-  exclusive_access_manager_->keyboard_lock_controller()->RequestKeyboardLock(
-      web_contents, esc_key_locked);
 }
 
 void Browser::CancelKeyboardLockRequest(WebContents* web_contents) {
-  exclusive_access_manager_->keyboard_lock_controller()
-      ->CancelKeyboardLockRequest(web_contents);
 }
 
 void Browser::RequestMediaAccessPermission(
@@ -2118,9 +2092,6 @@ void Browser::Observe(int type,
     case chrome::NOTIFICATION_WEB_CONTENT_SETTINGS_CHANGED: {
       WebContents* web_contents = content::Source<WebContents>(source).ptr();
       if (web_contents == tab_strip_model_->GetActiveWebContents()) {
-        LocationBar* location_bar = window()->GetLocationBar();
-        if (location_bar)
-          location_bar->UpdateContentSettingsIcons();
       }
       break;
     }
@@ -2400,18 +2371,27 @@ bool Browser::CanCloseWithInProgressDownloads() {
 // Browser, Assorted utility functions (private):
 
 void Browser::SetAsDelegate(WebContents* web_contents, bool set_delegate) {
+  LOG(INFO) << "[EXTENSIONS] Browser::SetAsDelegate - Step 1";
   Browser* delegate = set_delegate ? this : nullptr;
 
+  LOG(INFO) << "[EXTENSIONS] Browser::SetAsDelegate - Step 2 - and delegate is " << delegate;
   // WebContents...
   web_contents->SetDelegate(delegate);
 
+  LOG(INFO) << "[EXTENSIONS] Browser::SetAsDelegate - Step 3";
   // ...and all the helpers.
   BookmarkTabHelper::FromWebContents(web_contents)->set_delegate(delegate);
+  LOG(INFO) << "[EXTENSIONS] Browser::SetAsDelegate - Step 4";
+  LOG(INFO) << "[EXTENSIONS] Browser::SetAsDelegate - Step 4a: " << web_contents;
+  LOG(INFO) << "[EXTENSIONS] Browser::SetAsDelegate - Step 4b: " << WebContentsModalDialogManager::FromWebContents(web_contents);
   WebContentsModalDialogManager::FromWebContents(web_contents)->
       SetDelegate(delegate);
+  LOG(INFO) << "[EXTENSIONS] Browser::SetAsDelegate - Step 5";
   CoreTabHelper::FromWebContents(web_contents)->set_delegate(delegate);
+  LOG(INFO) << "[EXTENSIONS] Browser::SetAsDelegate - Step 6";
   translate::ContentTranslateDriver& content_translate_driver =
       ChromeTranslateClient::FromWebContents(web_contents)->translate_driver();
+  LOG(INFO) << "[EXTENSIONS] Browser::SetAsDelegate - Step 7";
   if (delegate) {
     zoom::ZoomController::FromWebContents(web_contents)->AddObserver(this);
     content_translate_driver.AddObserver(this);
@@ -2419,6 +2399,7 @@ void Browser::SetAsDelegate(WebContents* web_contents, bool set_delegate) {
     zoom::ZoomController::FromWebContents(web_contents)->RemoveObserver(this);
     content_translate_driver.RemoveObserver(this);
   }
+  LOG(INFO) << "[EXTENSIONS] Browser::SetAsDelegate - Step 8";
 }
 
 void Browser::CloseFrame() {
@@ -2434,9 +2415,6 @@ void Browser::TabDetachedAtImpl(content::WebContents* contents,
     // location bar, saving the current tab's location bar state to a
     // non-selected tab can corrupt both tabs.
     if (was_active) {
-      LocationBar* location_bar = window()->GetLocationBar();
-      if (location_bar)
-        location_bar->SaveStateToContents(contents);
     }
 
     if (!tab_strip_model_->closing_all())

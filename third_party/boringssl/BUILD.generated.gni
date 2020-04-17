@@ -59,6 +59,7 @@ crypto_sources = [
   "src/crypto/bytestring/internal.h",
   "src/crypto/bytestring/unicode.c",
   "src/crypto/chacha/chacha.c",
+  "src/crypto/chacha/internal.h",
   "src/crypto/cipher_extra/cipher_extra.c",
   "src/crypto/cipher_extra/derive_key.c",
   "src/crypto/cipher_extra/e_aesccm.c",
@@ -68,7 +69,6 @@ crypto_sources = [
   "src/crypto/cipher_extra/e_null.c",
   "src/crypto/cipher_extra/e_rc2.c",
   "src/crypto/cipher_extra/e_rc4.c",
-  "src/crypto/cipher_extra/e_ssl3.c",
   "src/crypto/cipher_extra/e_tls.c",
   "src/crypto/cipher_extra/internal.h",
   "src/crypto/cipher_extra/tls_cbc.c",
@@ -79,6 +79,7 @@ crypto_sources = [
   "src/crypto/cpu-aarch64-fuchsia.c",
   "src/crypto/cpu-aarch64-linux.c",
   "src/crypto/cpu-arm-linux.c",
+  "src/crypto/cpu-arm-linux.h",
   "src/crypto/cpu-arm.c",
   "src/crypto/cpu-intel.c",
   "src/crypto/cpu-ppc64le.c",
@@ -92,7 +93,7 @@ crypto_sources = [
   "src/crypto/dsa/dsa.c",
   "src/crypto/dsa/dsa_asn1.c",
   "src/crypto/ec_extra/ec_asn1.c",
-  "src/crypto/ecdh/ecdh.c",
+  "src/crypto/ecdh_extra/ecdh_extra.c",
   "src/crypto/ecdsa_extra/ecdsa_asn1.c",
   "src/crypto/engine/engine.c",
   "src/crypto/err/err.c",
@@ -306,7 +307,6 @@ crypto_headers = [
   "src/include/openssl/hmac.h",
   "src/include/openssl/is_boringssl.h",
   "src/include/openssl/lhash.h",
-  "src/include/openssl/lhash_macros.h",
   "src/include/openssl/md4.h",
   "src/include/openssl/md5.h",
   "src/include/openssl/mem.h",
@@ -330,7 +330,6 @@ crypto_headers = [
   "src/include/openssl/safestack.h",
   "src/include/openssl/sha.h",
   "src/include/openssl/span.h",
-  "src/include/openssl/srtp.h",
   "src/include/openssl/stack.h",
   "src/include/openssl/thread.h",
   "src/include/openssl/type_check.h",
@@ -341,7 +340,6 @@ crypto_headers = [
 
 ssl_sources = [
   "src/ssl/bio_ssl.cc",
-  "src/ssl/custom_extensions.cc",
   "src/ssl/d1_both.cc",
   "src/ssl/d1_lib.cc",
   "src/ssl/d1_pkt.cc",
@@ -382,6 +380,7 @@ ssl_sources = [
 
 ssl_headers = [
   "src/include/openssl/dtls1.h",
+  "src/include/openssl/srtp.h",
   "src/include/openssl/ssl.h",
   "src/include/openssl/ssl3.h",
   "src/include/openssl/tls1.h",
@@ -466,6 +465,7 @@ crypto_sources_linux_x86_64 = [
   "linux-x86_64/crypto/fipsmodule/ghash-x86_64.S",
   "linux-x86_64/crypto/fipsmodule/md5-x86_64.S",
   "linux-x86_64/crypto/fipsmodule/p256-x86_64-asm.S",
+  "linux-x86_64/crypto/fipsmodule/p256_beeu-x86_64-asm.S",
   "linux-x86_64/crypto/fipsmodule/rdrand-x86_64.S",
   "linux-x86_64/crypto/fipsmodule/rsaz-avx2.S",
   "linux-x86_64/crypto/fipsmodule/sha1-x86_64.S",
@@ -502,6 +502,7 @@ crypto_sources_mac_x86_64 = [
   "mac-x86_64/crypto/fipsmodule/ghash-x86_64.S",
   "mac-x86_64/crypto/fipsmodule/md5-x86_64.S",
   "mac-x86_64/crypto/fipsmodule/p256-x86_64-asm.S",
+  "mac-x86_64/crypto/fipsmodule/p256_beeu-x86_64-asm.S",
   "mac-x86_64/crypto/fipsmodule/rdrand-x86_64.S",
   "mac-x86_64/crypto/fipsmodule/rsaz-avx2.S",
   "mac-x86_64/crypto/fipsmodule/sha1-x86_64.S",
@@ -538,6 +539,7 @@ crypto_sources_win_x86_64 = [
   "win-x86_64/crypto/fipsmodule/ghash-x86_64.asm",
   "win-x86_64/crypto/fipsmodule/md5-x86_64.asm",
   "win-x86_64/crypto/fipsmodule/p256-x86_64-asm.asm",
+  "win-x86_64/crypto/fipsmodule/p256_beeu-x86_64-asm.asm",
   "win-x86_64/crypto/fipsmodule/rdrand-x86_64.asm",
   "win-x86_64/crypto/fipsmodule/rsaz-avx2.asm",
   "win-x86_64/crypto/fipsmodule/sha1-x86_64.asm",
@@ -549,6 +551,7 @@ crypto_sources_win_x86_64 = [
 ]
 
 fuzzers = [
+  "arm_cpuinfo",
   "bn_div",
   "bn_mod_exp",
   "cert",

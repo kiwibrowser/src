@@ -11,6 +11,7 @@ import android.preference.Preference;
 import android.preference.PreferenceFragment;
 import android.support.annotation.VisibleForTesting;
 
+import org.chromium.chrome.browser.preferences.ChromePreference;
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.base.StrictModeContext;
 import org.chromium.chrome.R;
@@ -18,6 +19,12 @@ import org.chromium.chrome.browser.autofill.PersonalDataManager;
 import org.chromium.chrome.browser.autofill.PersonalDataManager.AutofillProfile;
 import org.chromium.chrome.browser.preferences.PreferenceUtils;
 import org.chromium.chrome.browser.widget.prefeditor.EditorObserverForTest;
+
+import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.ListView;
 
 /**
  * Autofill profiles fragment, which allows the user to edit autofill profiles.
@@ -110,5 +117,17 @@ public class AutofillProfilesFragment
     @VisibleForTesting
     public static void setObserverForTest(EditorObserverForTest observerForTest) {
         sObserverForTest = observerForTest;
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            view.setBackgroundColor(Color.BLACK);
+            ListView list = (ListView) view.findViewById(android.R.id.list);
+            if (list != null)
+                list.setDivider(new ColorDrawable(Color.GRAY));
+                list.setDividerHeight((int) getResources().getDisplayMetrics().density);
+        }
     }
 }

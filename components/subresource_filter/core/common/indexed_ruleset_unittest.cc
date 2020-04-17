@@ -9,6 +9,7 @@
 #include "base/logging.h"
 #include "base/macros.h"
 #include "base/strings/string_piece.h"
+#include "base/strings/utf_string_conversions.h"
 #include "components/subresource_filter/core/common/first_party_origin.h"
 #include "components/url_pattern_index/proto/rules.pb.h"
 #include "components/url_pattern_index/url_pattern.h"
@@ -130,6 +131,85 @@ TEST_F(SubresourceFilterIndexedRulesetTest, SimpleWhitelist) {
   Finish();
 
   EXPECT_TRUE(ShouldAllow("https://example.com?filter_out=true"));
+}
+
+// Ensure patterns containing non-ascii characters are disallowed.
+TEST_F(SubresourceFilterIndexedRulesetTest, NonAsciiPatterns) {
+  // non-ascii character é.
+  std::string non_ascii = base::WideToUTF8(L"\u00E9");
+  ASSERT_FALSE(AddSimpleRule(non_ascii));
+  Finish();
+
+  EXPECT_TRUE(ShouldAllow("https://example.com/q=" + non_ascii));
+}
+
+// Ensure that specifying non-ascii characters in percent encoded form in
+// patterns works.
+TEST_F(SubresourceFilterIndexedRulesetTest, PercentEncodedPatterns) {
+  // Percent encoded form of é.
+  ASSERT_TRUE(AddSimpleRule("%C3%A9"));
+  Finish();
+
+  EXPECT_FALSE(
+      ShouldAllow("https://example.com/q=" + base::WideToUTF8(L"\u00E9")));
+}
+
+// Ensures that specifying patterns in punycode works for matching IDN domains.
+TEST_F(SubresourceFilterIndexedRulesetTest, IDNHosts) {
+  // ҏӊԟҭв.com
+  const std::string punycode = "xn--b1a9p8c1e8r.com";
+  ASSERT_TRUE(AddSimpleRule(punycode));
+  Finish();
+
+  EXPECT_FALSE(ShouldAllow("https://" + punycode));
+  EXPECT_FALSE(ShouldAllow(
+      base::WideToUTF8(L"https://\x048f\x04ca\x051f\x04ad\x0432.com")));
+}
+
+// Ensure patterns containing non-ascii domains are disallowed.
+TEST_F(SubresourceFilterIndexedRulesetTest, NonAsciiDomain) {
+  const char* kUrl = "http://example.com";
+
+  // ґғ.com
+  std::string non_ascii_domain = base::WideToUTF8(L"\x0491\x0493.com");
+
+  auto rule = MakeUrlRule(UrlPattern(kUrl, testing::kSubstring));
+  testing::AddDomains({non_ascii_domain}, &rule);
+  ASSERT_FALSE(AddUrlRule(rule));
+
+  rule = MakeUrlRule(UrlPattern(kUrl, testing::kSubstring));
+  std::string non_ascii_excluded_domain = "~" + non_ascii_domain;
+  testing::AddDomains({non_ascii_excluded_domain}, &rule);
+  ASSERT_FALSE(AddUrlRule(rule));
+
+  Finish();
+}
+
+// Ensure patterns with percent encoded hosts match correctly.
+TEST_F(SubresourceFilterIndexedRulesetTest, PercentEncodedHostPattern) {
+  const char* kPercentEncodedHost = "http://%2C.com/";
+  ASSERT_TRUE(AddSimpleRule(kPercentEncodedHost));
+  Finish();
+
+  EXPECT_FALSE(ShouldAllow("http://,.com/"));
+  EXPECT_FALSE(ShouldAllow(kPercentEncodedHost));
+}
+
+// Verifies the behavior for rules having percent encoded domains.
+TEST_F(SubresourceFilterIndexedRulesetTest, PercentEncodedDomain) {
+  const char* kUrl = "http://example.com";
+  std::string percent_encoded_host = "%2C.com";
+
+  auto rule = MakeUrlRule(UrlPattern(kUrl, testing::kSubstring));
+  testing::AddDomains({percent_encoded_host}, &rule);
+  ASSERT_TRUE(AddUrlRule(rule));
+  Finish();
+
+  // Note: This should actually fail. However url_pattern_index lower cases all
+  // domains. Hence it doesn't correctly deal with domains having escape
+  // characters which are percent-encoded in upper case by Chrome's url parser.
+  EXPECT_TRUE(ShouldAllow(kUrl, "http://" + percent_encoded_host));
+  EXPECT_TRUE(ShouldAllow(kUrl, "http://,.com"));
 }
 
 TEST_F(SubresourceFilterIndexedRulesetTest, SimpleBlacklistAndWhitelist) {

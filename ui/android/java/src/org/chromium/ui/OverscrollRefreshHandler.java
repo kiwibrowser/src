@@ -12,17 +12,22 @@ import org.chromium.base.annotations.CalledByNative;
 public interface OverscrollRefreshHandler {
     /**
      * Signals the start of an overscrolling pull.
+     * @param xDelta The change in horizontal pull distance (positive if pulling down, negative if
+     *         up).
+     * @param yDelta The change in vertical pull distance.
      * @return Whether the handler will consume the overscroll sequence.
      */
     @CalledByNative
-    public boolean start();
+    public boolean start(float xDelta, float yDelta);
 
     /**
      * Signals a pull update.
-     * @param delta The change in pull distance (positive if pulling down, negative if up).
+     * @param xDelta The change in horizontal pull distance (positive if pulling down, negative if
+     *         up).
+     * @param yDelta The change in vertical pull distance.
      */
     @CalledByNative
-    public void pull(float delta);
+    public void pull(float xDelta, float yDelta);
 
     /**
      * Signals the release of the pull.

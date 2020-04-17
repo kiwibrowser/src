@@ -19,6 +19,7 @@
 #include "base/strings/string16.h"
 #include "base/threading/thread_checker.h"
 #include "build/build_config.h"
+#include "components/app_modal/javascript_app_modal_dialog.h"
 #include "extensions/common/permissions/permission_message.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/gfx/image/image.h"
@@ -124,6 +125,7 @@ class ExtensionInstallPrompt {
     void AppendRatingStars(StarAppender appender, void* data) const;
     base::string16 GetRatingCount() const;
     base::string16 GetUserCount() const;
+    base::string16 GetPermissionsAsString() const;
     size_t GetPermissionCount() const;
     size_t GetPermissionsDetailsCount() const;
     base::string16 GetPermission(size_t index) const;
@@ -290,6 +292,7 @@ class ExtensionInstallPrompt {
                   const SkBitmap* icon,
                   std::unique_ptr<Prompt> prompt,
                   const ShowDialogCallback& show_dialog_callback);
+
   // Declared virtual for testing purposes.
   // Note: if all you want to do is automatically confirm or cancel, prefer
   // ScopedTestDialogAutoConfirm from extension_dialog_auto_confirm.h
@@ -342,6 +345,8 @@ class ExtensionInstallPrompt {
 
   // The object responsible for doing the UI specific actions.
   std::unique_ptr<extensions::ExtensionInstallUI> install_ui_;
+
+  content::WebContents* contents_;
 
   // Parameters to show the confirmation UI.
   std::unique_ptr<ExtensionInstallPromptShowParams> show_params_;

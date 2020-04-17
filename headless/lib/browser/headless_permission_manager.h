@@ -7,7 +7,7 @@
 
 #include "base/callback_forward.h"
 #include "base/macros.h"
-#include "content/public/browser/permission_manager.h"
+#include "content/public/browser/permission_controller_delegate.h"
 
 namespace content {
 class BrowserContext;
@@ -15,7 +15,7 @@ class BrowserContext;
 
 namespace headless {
 
-class HeadlessPermissionManager : public content::PermissionManager {
+class HeadlessPermissionManager : public content::PermissionControllerDelegate {
  public:
   explicit HeadlessPermissionManager(content::BrowserContext* browser_context);
   ~HeadlessPermissionManager() override;
@@ -49,8 +49,8 @@ class HeadlessPermissionManager : public content::PermissionManager {
       const GURL& requesting_origin) override;
   int SubscribePermissionStatusChange(
       content::PermissionType permission,
+      content::RenderFrameHost* render_frame_host,
       const GURL& requesting_origin,
-      const GURL& embedding_origin,
       const base::Callback<void(blink::mojom::PermissionStatus)>& callback)
       override;
   void UnsubscribePermissionStatusChange(int subscription_id) override;

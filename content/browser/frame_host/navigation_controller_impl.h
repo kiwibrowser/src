@@ -16,6 +16,7 @@
 #include "base/macros.h"
 #include "base/time/time.h"
 #include "build/build_config.h"
+#include "content/browser/frame_host/back_forward_cache.h"
 #include "content/browser/frame_host/navigation_controller_delegate.h"
 #include "content/browser/frame_host/navigation_entry_impl.h"
 #include "content/browser/ssl/ssl_manager.h"
@@ -231,6 +232,15 @@ class CONTENT_EXPORT NavigationControllerImpl : public NavigationController {
   // navigation failed due to an SSL error.
   void SetPendingNavigationSSLError(bool error);
 
+  BackForwardCache& back_forward_cache() { return back_forward_cache_; }
+
+// Returns true if the string corresponds to a valid data URL, false
+// otherwise.
+#if defined(OS_ANDROID)
+  static bool ValidateDataURLAsString(
+      const scoped_refptr<const base::RefCountedString>& data_url_as_string);
+#endif
+
  private:
   friend class RestoreHelper;
 
@@ -381,6 +391,11 @@ class CONTENT_EXPORT NavigationControllerImpl : public NavigationController {
   // specified |offset|.  The index returned is not guaranteed to be valid.
   int GetIndexForOffset(int offset) const;
 
+  // BackForwardCache:
+  // Notify observers a document was restored from the bfcache.
+  // This updates the URL bar and the history buttons.
+  void CommitRestoreFromBackForwardCache();
+
   // ---------------------------------------------------------------------------
 
   // The user browser context associated with this controller.
@@ -473,6 +488,12 @@ class CONTENT_EXPORT NavigationControllerImpl : public NavigationController {
   // these are ReloadType::NONE and a null timestamp, respectively.
   ReloadType last_committed_reload_type_;
   base::Time last_committed_reload_time_;
+
+  // BackForwardCache:
+  //
+  // Stores frozen RenderFrameHost. Restores them on history navigation.
+  // See BackForwardCache class documentation.
+  BackForwardCache back_forward_cache_;
 
   DISALLOW_COPY_AND_ASSIGN(NavigationControllerImpl);
 };

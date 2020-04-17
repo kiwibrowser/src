@@ -12,6 +12,7 @@
 #include <limits>
 #include <set>
 
+#include "base/sys_info.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/time/time.h"
 #include "base/trace_event/trace_event_argument.h"
@@ -688,6 +689,23 @@ void PictureLayerImpl::UpdateViewportRectForTilePriorityInContentSpace() {
           SafeIntersectRects(visible_rect_in_content_space, padded_bounds);
     }
   }
+
+  if (layer_tree_impl()->TotalMaxScrollOffset().x() == 0) {
+    if (visible_layer_rect().IsEmpty()) {
+      gfx::Rect visible_rect_in_content =
+          gfx::Rect(visible_rect_in_content_space);
+      // Checking an intersection area on only horizontal level.
+      // Set the y position to 0 for comparison.
+      visible_rect_in_content.set_y(0);
+      gfx::Rect layer_rect = gfx::Rect(bounds());
+      layer_rect.set_x((int) (position().x()));
+      visible_rect_in_content.Intersect(layer_rect);
+      if (visible_rect_in_content.IsEmpty()) {
+        visible_rect_in_content_space.Intersect(visible_layer_rect());
+      }
+    }
+  }
+
   viewport_rect_for_tile_priority_in_content_space_ =
       visible_rect_in_content_space;
 #if defined(OS_ANDROID)
@@ -1157,14 +1175,27 @@ bool PictureLayerImpl::ShouldAdjustRasterScale() const {
     return true;
 
   bool is_pinching = layer_tree_impl()->PinchGestureActive();
-  if (is_pinching && raster_page_scale_) {
+  bool is_scaling  = layer_tree_impl()->PageScaleAnimationActive();
+  if ((is_pinching || is_scaling) && raster_page_scale_) {
+#if defined(S_TERRACE_SUPPORT)
+    // Don't adjust raster scale during pinch-in for zoom performance(FPS).
+    // This is same concept with SBrowser5.x. However,
+    // as default return value of this function is changed to true from false
+    // on opensource, we should return false in here.
+    if (ideal_page_scale_ > raster_page_scale_)
+      return false;
+#endif
     // We change our raster scale when it is:
     // - Higher than ideal (need a lower-res tiling available)
     // - Too far from ideal (need a higher-res tiling available)
-    float ratio = ideal_page_scale_ / raster_page_scale_;
-    if (raster_page_scale_ > ideal_page_scale_ ||
-        ratio > kMaxScaleRatioDuringPinch)
+    if (raster_page_scale_ > ideal_page_scale_)
       return true;
+
+#if !defined(OS_ANDROID)
+    float ratio = ideal_page_scale_ / raster_page_scale_;
+    if (ratio > kMaxScaleRatioDuringPinch)
+      return true;
+#endif
   }
 
   if (!is_pinching) {
@@ -1222,7 +1253,8 @@ void PictureLayerImpl::AddLowResolutionTilingIfNeeded() {
   // res tiling during a pinch or a CSS animation.
   bool is_pinching = layer_tree_impl()->PinchGestureActive();
   bool is_animating = draw_properties().screen_space_transform_is_animating;
-  if (!is_pinching && !is_animating) {
+  bool is_scaling  = layer_tree_impl()->PageScaleAnimationActive();
+  if (!is_pinching && !is_animating && !is_scaling) {
     if (!low_res)
       low_res = AddTiling(gfx::AxisTransform2d(low_res_raster_contents_scale_,
                                                gfx::Vector2dF()));
@@ -1266,7 +1298,8 @@ void PictureLayerImpl::RecalculateRasterScales() {
   // During pinch we completely ignore the current ideal scale, and just use
   // a multiple of the previous scale.
   bool is_pinching = layer_tree_impl()->PinchGestureActive();
-  if (is_pinching && old_raster_contents_scale) {
+  bool is_scaling  = layer_tree_impl()->PageScaleAnimationActive();
+  if ((is_pinching || is_scaling) && old_raster_contents_scale) {
     // See ShouldAdjustRasterScale:
     // - When zooming out, preemptively create new tiling at lower resolution.
     // - When zooming in, approximate ideal using multiple of kMaxScaleRatio.

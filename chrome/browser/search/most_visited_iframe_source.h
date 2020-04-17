@@ -9,10 +9,6 @@
 #include "build/build_config.h"
 #include "chrome/browser/search/iframe_source.h"
 
-#if defined(OS_ANDROID)
-#error "Instant is only used on desktop";
-#endif
-
 // Serves HTML for displaying suggestions using iframes, e.g.
 // chrome-search://most-visited/single.html
 class MostVisitedIframeSource : public IframeSource {

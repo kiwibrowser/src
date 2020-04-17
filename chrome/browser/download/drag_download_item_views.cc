@@ -32,44 +32,4 @@
 void DragDownloadItem(const download::DownloadItem* download,
                       gfx::Image* icon,
                       gfx::NativeView view) {
-  DCHECK(download);
-  DCHECK_EQ(download::DownloadItem::COMPLETE, download->GetState());
-
-  aura::Window* root_window = view->GetRootWindow();
-  if (!root_window || !aura::client::GetDragDropClient(root_window))
-    return;
-
-  // Set up our OLE machinery
-  ui::OSExchangeData data;
-
-  button_drag_utils::SetDragImage(
-      GURL(), download->GetFileNameToReportUser().BaseName().LossyDisplayName(),
-      icon ? icon->AsImageSkia() : gfx::ImageSkia(), nullptr,
-      *views::Widget::GetTopLevelWidgetForNativeView(view), &data);
-
-  base::FilePath full_path = download->GetTargetFilePath();
-#if defined(OS_CHROMEOS)
-  // Overwrite |full_path| with drive cache file path when appropriate.
-  Profile* profile = Profile::FromBrowserContext(
-      content::DownloadItemUtils::GetBrowserContext(download));
-  drive::DownloadHandler* drive_download_handler =
-      drive::DownloadHandler::GetForProfile(profile);
-  if (drive_download_handler &&
-      drive_download_handler->IsDriveDownload(download))
-    full_path = drive_download_handler->GetCacheFilePath(download);
-#endif
-  std::vector<ui::FileInfo> file_infos;
-  file_infos.push_back(
-      ui::FileInfo(full_path, download->GetFileNameToReportUser()));
-  data.SetFilenames(file_infos);
-
-  gfx::Point location = display::Screen::GetScreen()->GetCursorScreenPoint();
-  // TODO(varunjain): Properly determine and send DRAG_EVENT_SOURCE below.
-  aura::client::GetDragDropClient(root_window)->StartDragAndDrop(
-      data,
-      root_window,
-      view,
-      location,
-      ui::DragDropTypes::DRAG_COPY | ui::DragDropTypes::DRAG_LINK,
-      ui::DragDropTypes::DRAG_EVENT_SOURCE_MOUSE);
 }

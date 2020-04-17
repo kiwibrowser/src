@@ -9,6 +9,7 @@ import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.provider.Browser;
 import android.support.annotation.VisibleForTesting;
@@ -144,6 +145,9 @@ public class HistoryManager implements OnMenuItemClickListener, SignInStateObser
         // 7. Initialize the adapter to load items.
         mHistoryAdapter.generateHeaderItems();
         mHistoryAdapter.initialize();
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mRecyclerView.setBackgroundColor(Color.BLACK);
+        }
 
         // 8. Add scroll listener to show/hide info button on scroll and page in more items
         // when necessary.

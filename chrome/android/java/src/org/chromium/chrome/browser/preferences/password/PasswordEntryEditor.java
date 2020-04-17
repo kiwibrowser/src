@@ -32,6 +32,11 @@ import android.widget.TextView;
 
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.base.metrics.RecordHistogram;
+import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.TextView;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.sync.ProfileSyncService;
 import org.chromium.chrome.browser.widget.TintedImageButton;
@@ -122,6 +127,9 @@ public class PasswordEntryEditor extends Fragment {
         View urlRowsView = mView.findViewById(R.id.url_row);
         TextView dataView = urlRowsView.findViewById(R.id.password_entry_editor_row_data);
         dataView.setText(url);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            dataView.setTextColor(Color.WHITE);
+        }
 
         hookupCopySiteButton(urlRowsView);
         if (!mException) {
@@ -129,6 +137,9 @@ public class PasswordEntryEditor extends Fragment {
             TextView usernameDataView =
                     usernameView.findViewById(R.id.password_entry_editor_row_data);
             usernameDataView.setText(name);
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                usernameDataView.setTextColor(Color.WHITE);
+            }
             hookupCopyUsernameButton(usernameView);
             if (ReauthenticationManager.isReauthenticationApiAvailable()) {
                 hidePassword();
@@ -178,6 +189,9 @@ public class PasswordEntryEditor extends Fragment {
             RecordHistogram.recordEnumeratedHistogram(
                     "PasswordManager.Android.PasswordExceptionEntry", PASSWORD_ENTRY_ACTION_VIEWED,
                     PASSWORD_ENTRY_ACTION_BOUNDARY);
+        }
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mView.setBackgroundColor(Color.BLACK);
         }
         return mView;
     }
@@ -315,6 +329,9 @@ public class PasswordEntryEditor extends Fragment {
         ImageButton viewPasswordButton =
                 mView.findViewById(R.id.password_entry_editor_view_password);
         passwordView.setText(mExtras.getString(SavePasswordsPreferences.PASSWORD_LIST_PASSWORD));
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+           passwordView.setTextColor(Color.WHITE);
+        }
         passwordView.setInputType(inputType);
         viewPasswordButton.setImageResource(visibilityIcon);
         viewPasswordButton.setContentDescription(getActivity().getString(annotation));

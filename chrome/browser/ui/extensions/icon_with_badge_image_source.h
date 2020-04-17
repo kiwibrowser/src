@@ -58,10 +58,10 @@ class IconWithBadgeImageSource : public gfx::CanvasImageSource {
   }
   ToolbarActionButtonState state() const { return state_; }
 
- private:
   // gfx::CanvasImageSource:
   void Draw(gfx::Canvas* canvas) override;
 
+ private:
   // Paints |badge_|, if any, on |canvas|.
   void PaintBadge(gfx::Canvas* canvas);
 

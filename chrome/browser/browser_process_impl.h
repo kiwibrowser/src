@@ -363,13 +363,11 @@ class BrowserProcessImpl : public BrowserProcess,
 
   std::unique_ptr<ChromeDeviceClient> device_client_;
 
-#if defined(OS_WIN) || defined(OS_MACOSX) || defined(OS_LINUX)
   // Any change to this #ifdef must be reflected as well in
   // chrome/browser/resource_coordinator/tab_manager_browsertest.cc
   std::unique_ptr<resource_coordinator::TabManager> tab_manager_;
   std::unique_ptr<resource_coordinator::TabLifecycleUnitSource>
       tab_lifecycle_unit_source_;
-#endif
 
   shell_integration::DefaultWebClientState cached_default_web_client_state_ =
       shell_integration::UNKNOWN_DEFAULT;

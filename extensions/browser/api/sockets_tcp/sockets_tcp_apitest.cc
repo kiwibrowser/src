@@ -4,8 +4,14 @@
 
 #include <utility>
 
+#include "base/command_line.h"
 #include "base/memory/ref_counted.h"
 #include "base/strings/stringprintf.h"
+#include "content/public/common/content_features.h"
+#include "content/public/common/content_switches.h"
+#include "content/public/common/service_manager_connection.h"
+#include "content/public/common/service_names.mojom.h"
+#include "content/public/test/network_service_test_helper.h"
 #include "extensions/browser/api/dns/host_resolver_wrapper.h"
 #include "extensions/browser/api/dns/mock_host_resolver_creator.h"
 #include "extensions/browser/api/sockets_tcp/sockets_tcp_api.h"
@@ -16,8 +22,11 @@
 #include "extensions/shell/test/shell_test.h"
 #include "extensions/test/extension_test_message_listener.h"
 #include "extensions/test/result_catcher.h"
+#include "mojo/public/cpp/bindings/sync_call_restrictions.h"
 #include "net/dns/mock_host_resolver.h"
 #include "net/test/spawned_test_server/spawned_test_server.h"
+#include "services/network/public/cpp/features.h"
+#include "services/service_manager/public/cpp/connector.h"
 
 namespace extensions {
 
@@ -25,14 +34,18 @@ const std::string kHostname = "127.0.0.1";
 
 class SocketsTcpApiTest : public ShellApiTest {
  public:
-  SocketsTcpApiTest()
-      : resolver_event_(base::WaitableEvent::ResetPolicy::MANUAL,
-                        base::WaitableEvent::InitialState::NOT_SIGNALED),
-        resolver_creator_(new MockHostResolverCreator()) {}
+  SocketsTcpApiTest() : resolver_creator_(new MockHostResolverCreator()) {
+    if (base::FeatureList::IsEnabled(network::features::kNetworkService)) {
+      base::CommandLine::ForCurrentProcess()->AppendSwitch(
+          switches::kUseMockCertVerifierForTesting);
+    }
+  }
 
   void SetUpOnMainThread() override {
     ShellApiTest::SetUpOnMainThread();
 
+    // TODO(xunjieli): Figure out what to do with this in-process host resolver
+    // which doesn't work with the out-of-process network service.
     HostResolverWrapper::GetInstance()->SetHostResolverForTesting(
         resolver_creator_->CreateMockHostResolver());
   }
@@ -45,8 +58,6 @@ class SocketsTcpApiTest : public ShellApiTest {
   }
 
  private:
-  base::WaitableEvent resolver_event_;
-
   // The MockHostResolver asserts that it's used on the same thread on which
   // it's created, which is actually a stronger rule than its real counterpart.
   // But that's fine; it's good practice.
@@ -101,6 +112,19 @@ IN_PROC_BROWSER_TEST_F(SocketsTcpApiTest, SocketTcpExtension) {
 }
 
 IN_PROC_BROWSER_TEST_F(SocketsTcpApiTest, SocketTcpExtensionTLS) {
+  network::mojom::NetworkServiceTestPtr network_service_test;
+  // If network service is running in a utility process, the cert of the
+  // SpawnedTestServer won't be recognized, so inject mock cert verifier through
+  // the test helper interface.
+  if (base::FeatureList::IsEnabled(network::features::kNetworkService)) {
+    content::ServiceManagerConnection::GetForProcess()
+        ->GetConnector()
+        ->BindInterface(content::mojom::kNetworkServiceName,
+                        &network_service_test);
+    mojo::ScopedAllowSyncCallForTesting allow_sync_call;
+    network_service_test->MockCertVerifierSetDefaultResult(net::OK);
+  }
+
   std::unique_ptr<net::SpawnedTestServer> test_https_server(
       new net::SpawnedTestServer(
           net::SpawnedTestServer::TYPE_HTTPS, net::BaseTestServer::SSLOptions(),

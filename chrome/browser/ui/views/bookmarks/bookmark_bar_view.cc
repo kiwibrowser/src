@@ -306,25 +306,12 @@ class BookmarkButton : public BookmarkButtonBase {
   BookmarkButton(views::ButtonListener* listener,
                  const GURL& url,
                  const base::string16& title)
-      : BookmarkButtonBase(listener, title), url_(url) {}
+      : BookmarkButtonBase(listener, title) {}
 
   // views::View:
   bool GetTooltipText(const gfx::Point& p,
                       base::string16* tooltip_text) const override {
-    const views::TooltipManager* tooltip_manager =
-        GetWidget()->GetTooltipManager();
-    gfx::Point location(p);
-    ConvertPointToScreen(this, &location);
-    // Also update when the maximum width for tooltip has changed because the
-    // it may be elided differently.
-    int max_tooltip_width = tooltip_manager->GetMaxWidth(location);
-    if (tooltip_text_.empty() || max_tooltip_width != max_tooltip_width_) {
-      max_tooltip_width_ = max_tooltip_width;
-      tooltip_text_ = BookmarkBarView::CreateToolTipForURLAndTitle(
-          max_tooltip_width_, tooltip_manager->GetFontList(), url_, GetText());
-    }
-    *tooltip_text = tooltip_text_;
-    return !tooltip_text->empty();
+    return false;
   }
 
   void SetText(const base::string16& text) override {
@@ -337,9 +324,7 @@ class BookmarkButton : public BookmarkButtonBase {
  private:
   // A cached value of maximum width for tooltip to skip generating
   // new tooltip text.
-  mutable int max_tooltip_width_ = 0;
   mutable base::string16 tooltip_text_;
-  const GURL& url_;
 
   DISALLOW_COPY_AND_ASSIGN(BookmarkButton);
 };

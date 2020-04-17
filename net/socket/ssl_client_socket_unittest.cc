@@ -17,7 +17,7 @@
 #include "base/memory/ref_counted.h"
 #include "base/run_loop.h"
 #include "base/single_thread_task_runner.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/test/scoped_feature_list.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/time/time.h"
@@ -65,6 +65,9 @@
 #include "net/ssl/ssl_server_config.h"
 #include "net/ssl/test_ssl_private_key.h"
 #include "net/test/cert_test_util.h"
+#include "net/test/embedded_test_server/embedded_test_server.h"
+#include "net/test/embedded_test_server/http_request.h"
+#include "net/test/embedded_test_server/http_response.h"
 #include "net/test/gtest_util.h"
 #include "net/test/spawned_test_server/spawned_test_server.h"
 #include "net/test/test_data_directory.h"
@@ -1181,6 +1184,152 @@ class SSLClientSocketChannelIDTest : public SSLClientSocketTest {
 
  private:
   std::unique_ptr<ChannelIDService> channel_id_service_;
+};
+
+// Provides a response to the 0RTT request indicating whether it was received
+// as early data.
+class ZeroRTTResponse : public test_server::HttpResponse {
+ public:
+  ZeroRTTResponse(bool zero_rtt) : zero_rtt_(zero_rtt) {}
+  ~ZeroRTTResponse() override {}
+
+  void SendResponse(const test_server::SendBytesCallback& send,
+                    const test_server::SendCompleteCallback& done) override {
+    std::string response;
+    if (zero_rtt_) {
+      response = "1";
+    } else {
+      response = "0";
+    }
+
+    // Since the EmbeddedTestServer doesn't keep the socket open by default, it
+    // is explicitly kept alive to allow the remaining leg of the 0RTT handshake
+    // to be received after the early data.
+    send.Run(response, base::BindRepeating([]() {}));
+  }
+
+ private:
+  bool zero_rtt_;
+
+  DISALLOW_COPY_AND_ASSIGN(ZeroRTTResponse);
+};
+
+std::unique_ptr<test_server::HttpResponse> HandleZeroRTTRequest(
+    const test_server::HttpRequest& request) {
+  if (request.GetURL().path() != "/zerortt")
+    return nullptr;
+  bool zero_rtt = false;
+  if (request.headers.find("Early-Data") != request.headers.end()) {
+    if (request.headers.at("Early-Data") == "1") {
+      zero_rtt = true;
+    }
+  }
+
+  return std::unique_ptr<ZeroRTTResponse>(new ZeroRTTResponse(zero_rtt));
+}
+
+class SSLClientSocketZeroRTTTest : public SSLClientSocketTest {
+ protected:
+  SSLClientSocketZeroRTTTest() : SSLClientSocketTest() {}
+
+  bool StartServer() {
+    test_server_.reset(
+        new EmbeddedTestServer(net::EmbeddedTestServer::TYPE_HTTPS));
+    SSLServerConfig server_config;
+    server_config.early_data_enabled = true;
+    server_config.version_max = SSL_PROTOCOL_VERSION_TLS1_3;
+    test_server_->AddDefaultHandlers(base::FilePath());
+    test_server_->RegisterRequestHandler(
+        base::BindRepeating(&HandleZeroRTTRequest));
+    test_server_->SetSSLConfig(net::EmbeddedTestServer::CERT_OK, server_config);
+    if (!test_server_->Start()) {
+      LOG(ERROR) << "Could not start EmbeddedTestServer";
+      return false;
+    }
+
+    if (!test_server_->GetAddressList(&address_)) {
+      LOG(ERROR) << "Could not get EmbeddedTestServer address list";
+      return false;
+    }
+    return true;
+  }
+
+  void SetServerConfig(SSLServerConfig server_config) {
+    test_server_->ResetSSLConfig(net::EmbeddedTestServer::CERT_OK,
+                                 server_config);
+  }
+
+  FakeBlockingStreamSocket* MakeClient(bool early_data_enabled) {
+    SSLConfig ssl_config;
+    ssl_config.version_max = SSL_PROTOCOL_VERSION_TLS1_3;
+    ssl_config.early_data_enabled = early_data_enabled;
+
+    real_transport_.reset(
+        new TCPClientSocket(address_, NULL, NULL, NetLogSource()));
+    std::unique_ptr<FakeBlockingStreamSocket> transport(
+        new FakeBlockingStreamSocket(std::move(real_transport_)));
+    FakeBlockingStreamSocket* raw_transport = transport.get();
+
+    int rv = callback_.GetResult(transport->Connect(callback_.callback()));
+    EXPECT_THAT(rv, IsOk());
+
+    ssl_socket_ = CreateSSLClientSocket(
+        std::move(transport), test_server_->host_port_pair(), ssl_config);
+    EXPECT_FALSE(ssl_socket_->IsConnected());
+
+    return raw_transport;
+  }
+
+  int Connect() {
+    return callback_.GetResult(ssl_socket_->Connect(callback_.callback()));
+  }
+
+  int WriteAndWait(base::StringPiece request) {
+    scoped_refptr<IOBuffer> request_buffer(new IOBuffer(request.size()));
+    memcpy(request_buffer->data(), request.data(), request.size());
+    return callback_.GetResult(
+        ssl_socket_->Write(request_buffer.get(), request.size(),
+                           callback_.callback(), TRAFFIC_ANNOTATION_FOR_TESTS));
+  }
+
+  int ReadAndWait(IOBuffer* buf, size_t len) {
+    return callback_.GetResult(
+        ssl_socket_->Read(buf, len, callback_.callback()));
+  }
+
+  bool GetSSLInfo(SSLInfo* ssl_info) {
+    return ssl_socket_->GetSSLInfo(ssl_info);
+  }
+
+  bool RunInitialConnection() {
+    if (MakeClient(true) == nullptr)
+      return false;
+
+    EXPECT_THAT(Connect(), IsOk());
+
+    // Use the socket for an HTTP request to ensure we've processed the
+    // post-handshake TLS 1.3 ticket.
+    constexpr base::StringPiece kRequest = "GET / HTTP/1.0\r\n\r\n";
+    if (kRequest.size() != WriteAndWait(kRequest))
+      return false;
+
+    scoped_refptr<IOBuffer> buf(new IOBuffer(4096));
+    if (ReadAndWait(buf.get(), 4096) <= 0)
+      return false;
+
+    SSLInfo ssl_info;
+    EXPECT_TRUE(GetSSLInfo(&ssl_info));
+    return SSLInfo::HANDSHAKE_FULL == ssl_info.handshake_type;
+  }
+
+  SSLClientSocket* ssl_socket() { return ssl_socket_.get(); }
+
+ private:
+  std::unique_ptr<EmbeddedTestServer> test_server_;
+  AddressList address_;
+  TestCompletionCallback callback_;
+  std::unique_ptr<StreamSocket> real_transport_;
+  std::unique_ptr<SSLClientSocket> ssl_socket_;
 };
 
 // Returns a serialized unencrypted TLS 1.2 alert record for the given alert
@@ -4235,6 +4384,226 @@ TEST_F(SSLClientSocketTest, AccessDeniedClientCerts) {
 
   rv = callback.GetResult(rv);
   EXPECT_THAT(rv, IsError(ERR_BAD_SSL_CLIENT_AUTH_CERT));
+}
+
+TEST_F(SSLClientSocketZeroRTTTest, ZeroRTT) {
+  ASSERT_TRUE(StartServer());
+  ASSERT_TRUE(RunInitialConnection());
+
+  // 0-RTT Connection
+  MakeClient(true);
+  ASSERT_THAT(Connect(), IsOk());
+  constexpr base::StringPiece kRequest = "GET /zerortt HTTP/1.0\r\n\r\n";
+  EXPECT_EQ(static_cast<int>(kRequest.size()), WriteAndWait(kRequest));
+
+  scoped_refptr<IOBuffer> buf(new IOBuffer(4096));
+  int size = ReadAndWait(buf.get(), 4096);
+  EXPECT_GT(size, 0);
+  EXPECT_EQ('1', buf->data()[size - 1]);
+
+  SSLInfo ssl_info;
+  ASSERT_TRUE(GetSSLInfo(&ssl_info));
+  EXPECT_EQ(SSLInfo::HANDSHAKE_RESUME, ssl_info.handshake_type);
+}
+
+// Check that 0RTT is confirmed after a Write and Read.
+TEST_F(SSLClientSocketZeroRTTTest, ZeroRTTConfirmedAfterRead) {
+  ASSERT_TRUE(StartServer());
+  ASSERT_TRUE(RunInitialConnection());
+
+  // 0-RTT Connection
+  MakeClient(true);
+  ASSERT_THAT(Connect(), IsOk());
+  constexpr base::StringPiece kRequest = "GET /zerortt HTTP/1.0\r\n\r\n";
+  EXPECT_EQ(static_cast<int>(kRequest.size()), WriteAndWait(kRequest));
+
+  scoped_refptr<IOBuffer> buf(new IOBuffer(4096));
+  int size = ReadAndWait(buf.get(), 4096);
+  EXPECT_GT(size, 0);
+  EXPECT_EQ('1', buf->data()[size - 1]);
+
+  // After the handshake is confirmed, ConfirmHandshake should return
+  // synchronously.
+  TestCompletionCallback callback;
+  ASSERT_THAT(ssl_socket()->ConfirmHandshake(callback.callback()), IsOk());
+
+  SSLInfo ssl_info;
+  ASSERT_TRUE(GetSSLInfo(&ssl_info));
+  EXPECT_EQ(SSLInfo::HANDSHAKE_RESUME, ssl_info.handshake_type);
+}
+
+// Wait to read ServerHello until after the client writes application data.
+TEST_F(SSLClientSocketZeroRTTTest, ZeroRTTWaitForEarlyDataSend) {
+  ASSERT_TRUE(StartServer());
+  ASSERT_TRUE(RunInitialConnection());
+
+  // 0-RTT Connection
+  FakeBlockingStreamSocket* socket = MakeClient(true);
+  socket->BlockReadResult();
+  ASSERT_THAT(Connect(), IsOk());
+  constexpr base::StringPiece kRequest = "GET /zerortt HTTP/1.0\r\n\r\n";
+  EXPECT_EQ(static_cast<int>(kRequest.size()), WriteAndWait(kRequest));
+  socket->UnblockReadResult();
+
+  scoped_refptr<IOBuffer> buf(new IOBuffer(4096));
+  int size = ReadAndWait(buf.get(), 4096);
+  EXPECT_GT(size, 0);
+  EXPECT_EQ('1', buf->data()[size - 1]);
+
+  SSLInfo ssl_info;
+  ASSERT_TRUE(GetSSLInfo(&ssl_info));
+  EXPECT_EQ(SSLInfo::HANDSHAKE_RESUME, ssl_info.handshake_type);
+}
+
+TEST_F(SSLClientSocketZeroRTTTest, ZeroRTTNoZeroRTTOnResume) {
+  ASSERT_TRUE(StartServer());
+  ASSERT_TRUE(RunInitialConnection());
+
+  SSLServerConfig server_config;
+  server_config.early_data_enabled = false;
+  server_config.version_max = SSL_PROTOCOL_VERSION_TLS1_3;
+
+  SetServerConfig(server_config);
+
+  // 0-RTT Connection
+  FakeBlockingStreamSocket* socket = MakeClient(true);
+  socket->BlockReadResult();
+  ASSERT_THAT(Connect(), IsOk());
+  constexpr base::StringPiece kRequest = "GET /zerortt HTTP/1.0\r\n\r\n";
+  EXPECT_EQ(static_cast<int>(kRequest.size()), WriteAndWait(kRequest));
+  socket->UnblockReadResult();
+
+  // Expect early data to be rejected.
+  scoped_refptr<IOBuffer> buf(new IOBuffer(4096));
+  int rv = ReadAndWait(buf.get(), 4096);
+  EXPECT_EQ(ERR_EARLY_DATA_REJECTED, rv);
+  rv = WriteAndWait(kRequest);
+  EXPECT_EQ(ERR_EARLY_DATA_REJECTED, rv);
+}
+
+// Test that the ConfirmHandshake successfully completes the handshake and that
+// it blocks until the server's leg has been received.
+TEST_F(SSLClientSocketZeroRTTTest, ZeroRTTConfirmHandshake) {
+  ASSERT_TRUE(StartServer());
+  ASSERT_TRUE(RunInitialConnection());
+
+  // 0-RTT Connection
+  FakeBlockingStreamSocket* socket = MakeClient(true);
+  socket->BlockReadResult();
+  ASSERT_THAT(Connect(), IsOk());
+
+  // The ServerHello is blocked, so ConfirmHandshake should not complete.
+  TestCompletionCallback callback;
+  ASSERT_EQ(ERR_IO_PENDING,
+            ssl_socket()->ConfirmHandshake(callback.callback()));
+  base::RunLoop().RunUntilIdle();
+  EXPECT_FALSE(callback.have_result());
+
+  // Release the ServerHello. ConfirmHandshake now completes.
+  socket->UnblockReadResult();
+  ASSERT_THAT(callback.GetResult(ERR_IO_PENDING), IsOk());
+
+  constexpr base::StringPiece kRequest = "GET /zerortt HTTP/1.0\r\n\r\n";
+  EXPECT_EQ(static_cast<int>(kRequest.size()), WriteAndWait(kRequest));
+
+  scoped_refptr<IOBuffer> buf(new IOBuffer(4096));
+  int size = ReadAndWait(buf.get(), 4096);
+  EXPECT_GT(size, 0);
+  EXPECT_EQ('0', buf->data()[size - 1]);
+
+  SSLInfo ssl_info;
+  ASSERT_TRUE(GetSSLInfo(&ssl_info));
+  EXPECT_EQ(SSLInfo::HANDSHAKE_RESUME, ssl_info.handshake_type);
+}
+
+// Test that an early read does not break during zero RTT.
+TEST_F(SSLClientSocketZeroRTTTest, ZeroRTTReadBeforeWrite) {
+  ASSERT_TRUE(StartServer());
+  ASSERT_TRUE(RunInitialConnection());
+
+  // 0-RTT Connection
+  MakeClient(true);
+  scoped_refptr<IOBuffer> buf(new IOBuffer(4096));
+  TestCompletionCallback read_callback;
+  ASSERT_THAT(Connect(), IsOk());
+  ASSERT_EQ(ERR_IO_PENDING,
+            ssl_socket()->Read(buf.get(), 4096, read_callback.callback()));
+  constexpr base::StringPiece kRequest = "GET /zerortt HTTP/1.0\r\n\r\n";
+  EXPECT_EQ(static_cast<int>(kRequest.size()), WriteAndWait(kRequest));
+
+  int size = read_callback.GetResult(ERR_IO_PENDING);
+  EXPECT_GT(size, 0);
+  EXPECT_EQ('1', buf->data()[size - 1]);
+
+  SSLInfo ssl_info;
+  ASSERT_TRUE(GetSSLInfo(&ssl_info));
+  EXPECT_EQ(SSLInfo::HANDSHAKE_RESUME, ssl_info.handshake_type);
+}
+
+TEST_F(SSLClientSocketZeroRTTTest, ZeroRTTDoubleConfirmHandshake) {
+  ASSERT_TRUE(StartServer());
+  ASSERT_TRUE(RunInitialConnection());
+
+  // 0-RTT Connection
+  MakeClient(true);
+  ASSERT_THAT(Connect(), IsOk());
+  TestCompletionCallback callback;
+  ASSERT_THAT(
+      callback.GetResult(ssl_socket()->ConfirmHandshake(callback.callback())),
+      IsOk());
+  // After the handshake is confirmed, ConfirmHandshake should return
+  // synchronously.
+  ASSERT_THAT(ssl_socket()->ConfirmHandshake(callback.callback()), IsOk());
+  constexpr base::StringPiece kRequest = "GET /zerortt HTTP/1.0\r\n\r\n";
+  EXPECT_EQ(static_cast<int>(kRequest.size()), WriteAndWait(kRequest));
+
+  scoped_refptr<IOBuffer> buf(new IOBuffer(4096));
+  int size = ReadAndWait(buf.get(), 4096);
+  EXPECT_GT(size, 0);
+  EXPECT_EQ('0', buf->data()[size - 1]);
+
+  SSLInfo ssl_info;
+  ASSERT_TRUE(GetSSLInfo(&ssl_info));
+  EXPECT_EQ(SSLInfo::HANDSHAKE_RESUME, ssl_info.handshake_type);
+}
+
+TEST_F(SSLClientSocketZeroRTTTest, ZeroRTTParallelReadConfirm) {
+  ASSERT_TRUE(StartServer());
+  ASSERT_TRUE(RunInitialConnection());
+
+  // 0-RTT Connection
+  FakeBlockingStreamSocket* socket = MakeClient(true);
+  socket->BlockReadResult();
+  ASSERT_THAT(Connect(), IsOk());
+
+  constexpr base::StringPiece kRequest = "GET /zerortt HTTP/1.0\r\n\r\n";
+  EXPECT_EQ(static_cast<int>(kRequest.size()), WriteAndWait(kRequest));
+
+  // The ServerHello is blocked, so ConfirmHandshake should not complete.
+  TestCompletionCallback callback;
+  ASSERT_EQ(ERR_IO_PENDING,
+            ssl_socket()->ConfirmHandshake(callback.callback()));
+  base::RunLoop().RunUntilIdle();
+  EXPECT_FALSE(callback.have_result());
+
+  scoped_refptr<IOBuffer> buf(new IOBuffer(4096));
+  TestCompletionCallback read_callback;
+  ASSERT_EQ(ERR_IO_PENDING,
+            ssl_socket()->Read(buf.get(), 4096, read_callback.callback()));
+  base::RunLoop().RunUntilIdle();
+  EXPECT_FALSE(read_callback.have_result());
+
+  // Release the ServerHello. ConfirmHandshake now completes.
+  socket->UnblockReadResult();
+  ASSERT_THAT(callback.WaitForResult(), IsOk());
+
+  int result = read_callback.WaitForResult();
+  EXPECT_GT(result, 0);
+  EXPECT_EQ('1', buf->data()[result - 1]);
+
+  SSLInfo ssl_info;
+  ASSERT_TRUE(GetSSLInfo(&ssl_info));
+  EXPECT_EQ(SSLInfo::HANDSHAKE_RESUME, ssl_info.handshake_type);
 }
 
 // Basic test for dumping memory stats.

@@ -511,13 +511,17 @@ void RenderWidgetHostViewChildFrame::UpdateRenderThrottlingStatus() {
 void RenderWidgetHostViewChildFrame::GestureEventAck(
     const blink::WebGestureEvent& event,
     InputEventAckState ack_result) {
-  bool should_bubble =
+  if (!frame_connector_)
+    return;
+
+  if (blink::WebInputEvent::IsPinchGestureEventType(event.GetType()))
+    ProcessTouchpadPinchAckInRoot(event, ack_result);
+
+  const bool should_bubble =
       ack_result == INPUT_EVENT_ACK_STATE_NOT_CONSUMED ||
       ack_result == INPUT_EVENT_ACK_STATE_NO_CONSUMER_EXISTS ||
       ack_result == INPUT_EVENT_ACK_STATE_CONSUMED_SHOULD_BUBBLE;
 
-  if (!frame_connector_)
-    return;
   if (wheel_scroll_latching_enabled()) {
     if ((event.GetType() == blink::WebInputEvent::kGestureScrollBegin) &&
         should_bubble) {
@@ -572,6 +576,22 @@ void RenderWidgetHostViewChildFrame::GestureEventAck(
       frame_connector_->BubbleScrollEvent(event);
     }
   }
+}
+
+void RenderWidgetHostViewChildFrame::ProcessTouchpadPinchAckInRoot(
+    const blink::WebGestureEvent& event,
+    InputEventAckState ack_result) {
+  DCHECK(blink::WebInputEvent::IsPinchGestureEventType(event.GetType()));
+
+  frame_connector_->ForwardAckedTouchpadPinchGestureEvent(event, ack_result);
+}
+
+void RenderWidgetHostViewChildFrame::ForwardTouchpadPinchIfNecessary(
+    const blink::WebGestureEvent& event,
+    InputEventAckState ack_result) {
+  // ACKs of synthetic wheel events for touchpad pinch are processed in the
+  // root RWHV.
+  NOTREACHED();
 }
 
 void RenderWidgetHostViewChildFrame::DidReceiveCompositorFrameAck(
@@ -986,17 +1006,20 @@ void RenderWidgetHostViewChildFrame::TakeFallbackContentFrom(
 
 InputEventAckState RenderWidgetHostViewChildFrame::FilterInputEvent(
     const blink::WebInputEvent& input_event) {
-  // A child renderer should not receive touchscreen pinch events. Ideally, we
-  // would DCHECK this, but since touchscreen pinch events may be targeted to
-  // a child in order to have the child's TouchActionFilter filter them, we
-  // may encounter https://crbug.com/771330 which would let the pinch events
-  // through.
+  // A child renderer should never receive a GesturePinch event. Pinch events
+  // can still be targeted to a child, but they must be processed without
+  // sending the pinch event to the child (e.g. touchpad pinch synthesizes
+  // wheel events to send to the child renderer).
   if (blink::WebInputEvent::IsPinchGestureEventType(input_event.GetType())) {
     const blink::WebGestureEvent& gesture_event =
         static_cast<const blink::WebGestureEvent&>(input_event);
+    // Touchscreen pinch events may be targeted to a child in order to have the
+    // child's TouchActionFilter filter them, but we may encounter
+    // https://crbug.com/771330 which would let the pinch events through.
     if (gesture_event.SourceDevice() == blink::kWebGestureDeviceTouchscreen) {
       return INPUT_EVENT_ACK_STATE_CONSUMED;
     }
+    NOTREACHED();
   }
 
   if (input_event.GetType() == blink::WebInputEvent::kGestureFlingStart) {

@@ -47,7 +47,7 @@ public final class SuggestionsConfig {
     @TileView.Style
     public static int getTileStyle(UiConfig uiConfig) {
         boolean small = uiConfig.getCurrentDisplayStyle().isSmall();
-        if (useModernLayout()) {
+        if (false && useModernLayout()) {
             return small ? TileView.Style.MODERN_CONDENSED : TileView.Style.MODERN;
         }
         if (useCondensedTileLayout(small)) return TileView.Style.CLASSIC_CONDENSED;

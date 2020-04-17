@@ -18,6 +18,9 @@ import org.chromium.chrome.browser.util.MathUtils;
 import org.chromium.chrome.browser.widget.displaystyle.MarginResizer;
 import org.chromium.chrome.browser.widget.displaystyle.UiConfig;
 
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+
 /**
  * View holder for the header of a section of cards.
  */
@@ -49,6 +52,8 @@ public class SectionHeaderViewHolder extends NewTabPageViewHolder implements Vie
 
         mTitleView = itemView.findViewById(R.id.header_title);
         mIconView = itemView.findViewById(R.id.header_icon);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+            mTitleView.setTextColor(Color.WHITE);
     }
 
     public void onBindViewHolder(SectionHeader header) {

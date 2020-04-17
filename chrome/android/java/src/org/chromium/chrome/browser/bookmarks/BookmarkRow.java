@@ -6,9 +6,11 @@ package org.chromium.chrome.browser.bookmarks;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.widget.ImageView;
 
 import org.chromium.base.metrics.RecordUserAction;
 import org.chromium.chrome.R;
+import org.chromium.chrome.browser.ChromeFeatureList;
 import org.chromium.chrome.browser.bookmarks.BookmarkBridge.BookmarkItem;
 import org.chromium.chrome.browser.widget.ListMenuButton;
 import org.chromium.chrome.browser.widget.ListMenuButton.Item;
@@ -23,16 +25,18 @@ import java.util.List;
 abstract class BookmarkRow extends SelectableItemView<BookmarkId>
         implements BookmarkUIObserver, ListMenuButton.Delegate {
     protected ListMenuButton mMoreIcon;
-
+    protected ImageView mDragHandle;
     protected BookmarkDelegate mDelegate;
     protected BookmarkId mBookmarkId;
     private boolean mIsAttachedToWindow;
+    private final boolean mReorderBookmarksEnabled;
 
     /**
      * Constructor for inflating from XML.
      */
     public BookmarkRow(Context context, AttributeSet attrs) {
         super(context, attrs);
+        mReorderBookmarksEnabled = true;
     }
 
     /**
@@ -43,20 +47,39 @@ abstract class BookmarkRow extends SelectableItemView<BookmarkId>
         mBookmarkId = bookmarkId;
         BookmarkItem bookmarkItem = mDelegate.getModel().getBookmarkById(bookmarkId);
         mMoreIcon.dismiss();
-
         mMoreIcon.setContentDescriptionContext(bookmarkItem.getTitle());
-        mMoreIcon.setVisibility(bookmarkItem.isEditable() ? VISIBLE : GONE);
-        setChecked(mDelegate.getSelectionDelegate().isItemSelected(bookmarkId));
+        setChecked(isItemSelected());
+        updateVisualState();
 
         super.setItem(bookmarkId);
         return bookmarkItem;
+    }
+
+    private void updateVisualState() {
+        BookmarkItem bookmarkItem = mDelegate.getModel().getBookmarkById(mBookmarkId);
+        // If the visibility of the drag handle or more icon is not set later, it will be gone.
+        mDragHandle.setVisibility(GONE);
+        mMoreIcon.setVisibility(GONE);
+
+        if (mReorderBookmarksEnabled) {
+            if (mDelegate.getDragStateDelegate().getDragActive()) {
+                mDragHandle.setVisibility(bookmarkItem.isEditable() ? VISIBLE : GONE);
+                mDragHandle.setEnabled(isItemSelected());
+            } else {
+                mMoreIcon.setVisibility(bookmarkItem.isEditable() ? VISIBLE : GONE);
+                mMoreIcon.setEnabled(isSelectionModeActive());
+            }
+        } else {
+            // Bookmark reordering is off
+            mMoreIcon.setVisibility(bookmarkItem.isEditable() ? VISIBLE : GONE);
+        }
     }
 
     /**
      * Sets the delegate to use to handle UI actions related to this view.
      * @param delegate A {@link BookmarkDelegate} instance to handle all backend interaction.
      */
-    public void onBookmarkDelegateInitialized(BookmarkDelegate delegate) {
+    public void onDelegateInitialized(BookmarkDelegate delegate) {
         super.setSelectionDelegate(delegate.getSelectionDelegate());
         mDelegate = delegate;
         if (mIsAttachedToWindow) initialize();
@@ -73,12 +96,13 @@ abstract class BookmarkRow extends SelectableItemView<BookmarkId>
     }
 
     private void updateSelectionState() {
-        mMoreIcon.setClickable(!mDelegate.getSelectionDelegate().isSelectionEnabled());
+        mMoreIcon.setEnabled(!mDelegate.getSelectionDelegate().isSelectionEnabled());
     }
 
     // PopupMenuItem.Delegate implementation.
     @Override
     public Item[] getItems() {
+        // TODO(crbug.com/981909): add menu items for moving up / down if accessbility is on?
         boolean canMove = false;
         if (mDelegate != null && mDelegate.getModel() != null) {
             BookmarkItem bookmarkItem = mDelegate.getModel().getBookmarkById(mBookmarkId);
@@ -119,6 +143,7 @@ abstract class BookmarkRow extends SelectableItemView<BookmarkId>
         super.onFinishInflate();
         mMoreIcon = (ListMenuButton) findViewById(R.id.more);
         mMoreIcon.setDelegate(this);
+        mDragHandle = findViewById(R.id.drag_handle);
     }
 
     @Override
@@ -155,4 +180,12 @@ abstract class BookmarkRow extends SelectableItemView<BookmarkId>
 
     @Override
     public void onSearchStateSet() {}
+
+    boolean isItemSelected() {
+        return mDelegate.getSelectionDelegate().isItemSelected(mBookmarkId);
+    }
+
+    void setDragHandleOnTouchListener(OnTouchListener l) {
+        mDragHandle.setOnTouchListener(l);
+    }
 }

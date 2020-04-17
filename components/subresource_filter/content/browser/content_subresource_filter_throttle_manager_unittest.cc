@@ -14,10 +14,11 @@
 #include "base/message_loop/message_loop_current.h"
 #include "base/run_loop.h"
 #include "base/strings/stringprintf.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/test/test_simple_task_runner.h"
 #include "base/time/time.h"
 #include "components/subresource_filter/content/browser/async_document_subresource_filter.h"
+#include "components/subresource_filter/content/browser/subresource_filter_client.h"
 #include "components/subresource_filter/content/browser/subresource_filter_observer_manager.h"
 #include "components/subresource_filter/content/common/subresource_filter_messages.h"
 #include "components/subresource_filter/core/common/activation_level.h"
@@ -97,8 +98,7 @@ class MockPageStateActivationThrottle : public content::NavigationThrottle {
         // The throttle manager does not use the activation decision.
         SubresourceFilterObserverManager::FromWebContents(
             navigation_handle()->GetWebContents())
-            ->NotifyPageActivationComputed(
-                navigation_handle(), ActivationDecision::UNKNOWN, it->second);
+            ->NotifyPageActivationComputed(navigation_handle(), it->second);
       }
     }
     return content::NavigationThrottle::PROCEED;
@@ -113,7 +113,7 @@ class MockPageStateActivationThrottle : public content::NavigationThrottle {
 class ContentSubresourceFilterThrottleManagerTest
     : public content::RenderViewHostTestHarness,
       public content::WebContentsObserver,
-      public ContentSubresourceFilterThrottleManager::Delegate,
+      public SubresourceFilterClient,
       public ::testing::WithParamInterface<PageActivationNotificationTiming> {
  public:
   ContentSubresourceFilterThrottleManagerTest() {}
@@ -140,6 +140,7 @@ class ContentSubresourceFilterThrottleManagerTest
     dealer_handle_ = std::make_unique<VerifiedRulesetDealer::Handle>(
         base::MessageLoopCurrent::Get()->task_runner());
     dealer_handle_->TryOpenAndSetRulesetFile(test_ruleset_pair_.indexed.path,
+                                             /*expected_checksum=*/0,
                                              base::DoNothing());
 
     throttle_manager_ =
@@ -279,9 +280,13 @@ class ContentSubresourceFilterThrottleManagerTest
     }
   }
 
-  // ContentSubresourceFilterThrottleManager::Delegate:
-  void OnFirstSubresourceLoadDisallowed() override {
-    ++disallowed_notification_count_;
+  // SubresourceFilterClient:
+  void ShowNotification() override { ++disallowed_notification_count_; }
+  ActivationLevel OnPageActivationComputed(
+      content::NavigationHandle* navigation_handle,
+      ActivationLevel effective_activation_level,
+      ActivationDecision* decision) override {
+    return effective_activation_level;
   }
 
   ContentSubresourceFilterThrottleManager* throttle_manager() {

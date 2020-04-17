@@ -147,22 +147,6 @@ HostedAppButtonContainer::ContentSettingsContainer::ContentSettingsContainer(
     layer()->SetFillsBoundsOpaquely(false);
     layer()->SetOpacity(0);
   }
-
-  std::vector<std::unique_ptr<ContentSettingImageModel>> models =
-      ContentSettingImageModel::GenerateContentSettingImageModels();
-  for (auto& model : models) {
-    auto image_view = std::make_unique<ContentSettingImageView>(
-        std::move(model), this,
-        views::NativeWidgetAura::GetWindowTitleFontList());
-    image_view->SetIconColor(icon_color);
-    // Padding around content setting icons.
-    constexpr int kContentSettingIconInteriorPadding = 4;
-    image_view->SetBorder(views::CreateEmptyBorder(
-        gfx::Insets(kContentSettingIconInteriorPadding)));
-    image_view->disable_animation();
-    content_setting_views_.push_back(image_view.get());
-    AddChildView(image_view.release());
-  }
 }
 
 HostedAppButtonContainer::HostedAppButtonContainer(BrowserView* browser_view,

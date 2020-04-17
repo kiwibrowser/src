@@ -21,6 +21,7 @@ import android.view.inputmethod.InputConnection;
 import org.junit.Assert;
 
 import org.chromium.base.ThreadUtils;
+import org.chromium.content.browser.ViewEventSinkImpl;
 import org.chromium.content.browser.selection.SelectionPopupControllerImpl;
 import org.chromium.content.browser.test.util.Criteria;
 import org.chromium.content.browser.test.util.CriteriaHelper;
@@ -574,7 +575,7 @@ class ImeActivityTestRule extends ContentShellActivityTestRule {
         ThreadUtils.runOnUiThreadBlocking(new Runnable() {
             @Override
             public void run() {
-                getContentViewCore().onConfigurationChanged(config);
+                ViewEventSinkImpl.from(getWebContents()).onConfigurationChanged(config);
             }
         });
     }

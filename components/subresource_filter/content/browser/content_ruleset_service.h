@@ -12,6 +12,7 @@
 #include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "components/subresource_filter/content/browser/verified_ruleset_dealer.h"
+#include "components/subresource_filter/core/browser/ruleset_service.h"
 #include "components/subresource_filter/core/browser/ruleset_service_delegate.h"
 #include "content/public/browser/notification_observer.h"
 #include "content/public/browser/notification_registrar.h"
@@ -67,15 +68,23 @@ class ContentRulesetService : public RulesetServiceDelegate,
   void PostAfterStartupTask(base::Closure task) override;
   void TryOpenAndSetRulesetFile(
       const base::FilePath& file_path,
+      int expected_checksum,
       base::OnceCallback<void(base::File)> callback) override;
 
   void PublishNewRulesetVersion(base::File ruleset_data) override;
 
-  void set_ruleset_service(std::unique_ptr<RulesetService> ruleset_service);
+  // Sets the ruleset_service_ member and calls its Initialize function.
+  void SetAndInitializeRulesetService(
+      std::unique_ptr<RulesetService> ruleset_service);
 
   // Forwards calls to the underlying ruleset_service_.
   void IndexAndStoreAndPublishRulesetIfNeeded(
       const UnindexedRulesetInfo& unindex_ruleset_info);
+
+  // The most recently indexed version associated with the ruleset_service_.
+  IndexedRulesetVersion GetMostRecentlyIndexedVersion() {
+    return ruleset_service_->GetMostRecentlyIndexedVersion();
+  }
 
   VerifiedRulesetDealer::Handle* ruleset_dealer() {
     return ruleset_dealer_.get();

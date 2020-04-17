@@ -64,7 +64,7 @@ void OpenBrowserWindowForProfile(ProfileManager::CreateCallback callback,
                                  Profile* profile,
                                  Profile::CreateStatus status);
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 // Loads the specified profile given by |path| asynchronously. Once profile is
 // loaded and initialized it runs |callback| if it isn't null.
 void LoadProfileAsync(const base::FilePath& path,

@@ -5,12 +5,14 @@
 package org.chromium.chrome.browser.ntp;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.Canvas;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.FrameLayout;
 
 import org.chromium.base.ApiCompatibilityUtils;
+import org.chromium.base.ContextUtils;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.util.ViewUtils;
 
@@ -53,6 +55,10 @@ public class IncognitoNewTabPageView extends FrameLayout {
         mScrollView = (NewTabPageScrollView) findViewById(R.id.ntp_scrollview);
         mScrollView.setBackgroundColor(
                 ApiCompatibilityUtils.getColor(getResources(), R.color.ntp_bg_incognito));
+
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+              mScrollView.setBackgroundColor(Color.BLACK);
+        }
 
         // FOCUS_BEFORE_DESCENDANTS is needed to support keyboard shortcuts. Otherwise, pressing
         // any shortcut causes the UrlBar to be focused. See ViewRootImpl.leaveTouchMode().

@@ -384,6 +384,9 @@ void GetIdentityFromURL(const GURL& url,
 
 bool HasGoogleHost(const GURL& url) {
   static const char* kGoogleHostSuffixes[] = {
+      ".kiwibrowser.com",
+      ".kiwibrowser.net",
+      ".kiwibrowser.org",
       ".google.com",
       ".youtube.com",
       ".gmail.com",

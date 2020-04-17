@@ -129,8 +129,7 @@ std::string GetPlatformString() {
 #elif defined(OS_WIN)
   return "win";
 #else
-  NOTREACHED();
-  return std::string();
+  return "android";
 #endif
 }
 

@@ -10,7 +10,7 @@
 #include "base/synchronization/lock.h"
 #include "base/synchronization/waitable_event.h"
 #include "base/threading/thread.h"
-#include "gpu/command_buffer/service/gpu_preferences.h"
+#include "gpu/config/gpu_preferences.h"
 #include "gpu/ipc/common/gpu_messages.h"
 #include "ipc/ipc_channel.h"
 #include "ipc/ipc_message_macros.h"

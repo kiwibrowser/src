@@ -49,9 +49,9 @@ class GpuControlListTest : public testing::Test {
   void SetUp() override {
     gpu_info_.gpu.vendor_id = kNvidiaVendorId;
     gpu_info_.gpu.device_id = 0x0640;
-    gpu_info_.driver_vendor = "NVIDIA";
-    gpu_info_.driver_version = "1.6.18";
-    gpu_info_.driver_date = "7-14-2009";
+    gpu_info_.gpu.driver_vendor = "NVIDIA";
+    gpu_info_.gpu.driver_version = "1.6.18";
+    gpu_info_.gpu.driver_date = "7-14-2009";
     gpu_info_.machine_model_name = "MacBookPro";
     gpu_info_.machine_model_version = "7.1";
     gpu_info_.gl_vendor = "NVIDIA Corporation";
@@ -79,7 +79,7 @@ TEST_F(GpuControlListTest, NeedsMoreInfo) {
   std::vector<uint32_t> decision_entries = control_list->GetActiveEntries();
   EXPECT_EQ(0u, decision_entries.size());
 
-  gpu_info.driver_version = "11";
+  gpu_info.gpu.driver_version = "11";
   features = control_list->MakeDecision(
       GpuControlList::kOsWin, kOsVersion, gpu_info);
   EXPECT_SINGLE_FEATURE(features, TEST_FEATURE_0);

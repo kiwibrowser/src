@@ -10,6 +10,7 @@ import android.graphics.RectF;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.Interpolator;
 
+import org.chromium.base.ContextUtils;
 import org.chromium.base.metrics.RecordUserAction;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.compositor.LayerTitleCache;
@@ -189,6 +190,10 @@ public class ToolbarSwipeLayout extends Layout {
         assert layoutTab != null;
         if (layoutTab.shouldStall()) layoutTab.setSaturation(0.0f);
         float heightDp = layoutTab.getOriginalContentHeight();
+        // Clip the layout tab so it doesn't leak into the toolbar if it's at the bottom
+        if (getFullscreenManager() != null && ContextUtils.getAppSharedPreferences().getBoolean("enable_bottom_toolbar", false)) {
+            heightDp = heightDp - getFullscreenManager().getBottomControlsHeight() / mDpToPx;
+        }
         layoutTab.setClipSize(layoutTab.getOriginalContentWidth(), heightDp);
         layoutTab.setScale(1.f);
         layoutTab.setBorderScale(1.f);

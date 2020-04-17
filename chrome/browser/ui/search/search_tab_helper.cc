@@ -163,9 +163,15 @@ void SearchTabHelper::OnTabDeactivated() {
 
 void SearchTabHelper::DidStartNavigation(
     content::NavigationHandle* navigation_handle) {
-  if (!navigation_handle->IsInMainFrame() ||
-      navigation_handle->IsSameDocument()) {
-    return;
+  if (search::IsInstantNTP(web_contents_)) {
+    if (instant_service_)
+      instant_service_->OnNewTabPageOpened();
+
+    // Force creation of NTPUserDataLogger, if we loaded an NTP. The
+    // NTPUserDataLogger tries to detect whether the NTP is being created at
+    // startup or from the user opening a new tab, and if we wait until later,
+   // it won't correctly detect this case.
+    NTPUserDataLogger::GetOrCreateFromWebContents(web_contents_);
   }
 
   if (search::IsNTPURL(navigation_handle->GetURL(), profile())) {
@@ -245,6 +251,7 @@ void SearchTabHelper::MostVisitedItemsChanged(
 }
 
 void SearchTabHelper::FocusOmnibox(OmniboxFocusState state) {
+  instant_service_->FocusOmnibox();
   OmniboxView* omnibox_view = GetOmniboxView();
   if (!omnibox_view)
     return;
@@ -358,11 +365,7 @@ void SearchTabHelper::OnSetCustomBackgroundURL(const GURL& url) {
 }
 
 const OmniboxView* SearchTabHelper::GetOmniboxView() const {
-  Browser* browser = chrome::FindBrowserWithWebContents(web_contents_);
-  if (!browser)
-    return nullptr;
-
-  return browser->window()->GetLocationBar()->GetOmniboxView();
+  return nullptr;
 }
 
 OmniboxView* SearchTabHelper::GetOmniboxView() {

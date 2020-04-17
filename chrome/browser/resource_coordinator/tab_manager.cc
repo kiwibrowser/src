@@ -289,15 +289,6 @@ void TabManager::DiscardTab(DiscardReason reason) {
 }
 
 WebContents* TabManager::DiscardTabByExtension(content::WebContents* contents) {
-  if (contents) {
-    TabLifecycleUnitExternal* tab_lifecycle_unit_external =
-        TabLifecycleUnitExternal::FromWebContents(contents);
-    DCHECK(tab_lifecycle_unit_external);
-    if (tab_lifecycle_unit_external->DiscardTab())
-      return tab_lifecycle_unit_external->GetWebContents();
-    return nullptr;
-  }
-
   return DiscardTabImpl(DiscardReason::kExternal);
 }
 
@@ -313,30 +304,12 @@ void TabManager::LogMemory(const std::string& title,
 }
 
 void TabManager::AddObserver(TabLifecycleObserver* observer) {
-  TabLifecycleUnitExternal::AddTabLifecycleObserver(observer);
 }
 
 void TabManager::RemoveObserver(TabLifecycleObserver* observer) {
-  TabLifecycleUnitExternal::RemoveTabLifecycleObserver(observer);
 }
 
 bool TabManager::CanPurgeBackgroundedRenderer(int render_process_id) const {
-  for (LifecycleUnit* lifecycle_unit : lifecycle_units_) {
-    TabLifecycleUnitExternal* tab_lifecycle_unit_external =
-        lifecycle_unit->AsTabLifecycleUnitExternal();
-    // For now, all LifecycleUnits are TabLifecycleUnitExternals.
-    DCHECK(tab_lifecycle_unit_external);
-    content::WebContents* content =
-        tab_lifecycle_unit_external->GetWebContents();
-    DCHECK(content);
-
-    if (content->IsCrashed())
-      continue;
-    if (content->GetMainFrame()->GetProcess()->GetID() != render_process_id)
-      continue;
-    if (!lifecycle_unit->CanPurge())
-      return false;
-  }
   return true;
 }
 
@@ -444,8 +417,6 @@ base::TimeDelta TabManager::GetTimeToPurge(
 bool TabManager::ShouldPurgeNow(content::WebContents* content) const {
   if (GetWebContentsData(content)->is_purged())
     return false;
-  if (TabLifecycleUnitExternal::FromWebContents(content)->IsDiscarded())
-    return false;
 
   base::TimeDelta time_passed =
       NowTicks() - GetWebContentsData(content)->LastInactiveTime();
@@ -453,38 +424,6 @@ bool TabManager::ShouldPurgeNow(content::WebContents* content) const {
 }
 
 void TabManager::PurgeBackgroundedTabsIfNeeded() {
-  for (LifecycleUnit* lifecycle_unit : lifecycle_units_) {
-    TabLifecycleUnitExternal* tab_lifecycle_unit_external =
-        lifecycle_unit->AsTabLifecycleUnitExternal();
-    // For now, all LifecycleUnits are TabLifecycleUnitExternals.
-    DCHECK(tab_lifecycle_unit_external);
-    content::WebContents* content =
-        tab_lifecycle_unit_external->GetWebContents();
-    DCHECK(content);
-
-    if (content->IsCrashed())
-      continue;
-
-    content::RenderProcessHost* render_process_host =
-        content->GetMainFrame()->GetProcess();
-    int render_process_id = render_process_host->GetID();
-
-    if (!render_process_host->IsProcessBackgrounded())
-      continue;
-    if (!CanPurgeBackgroundedRenderer(render_process_id))
-      continue;
-
-    bool purge_now = ShouldPurgeNow(content);
-    if (!purge_now)
-      continue;
-
-    // Since |content|'s tab is kept inactive and background for more than
-    // time-to-purge time, its purged state changes: false => true.
-    GetWebContentsData(content)->set_is_purged(true);
-    // TODO(tasak): rename PurgeAndSuspend with a better name, e.g.
-    // RequestPurgeCache, because we don't suspend any renderers.
-    render_process_host->PurgeAndSuspend();
-  }
 }
 
 void TabManager::PauseBackgroundTabOpeningIfNeeded() {
@@ -520,10 +459,13 @@ void TabManager::OnMemoryPressure(
   // memory pressure signal after it becomes more reliable.
   switch (memory_pressure_level) {
     case base::MemoryPressureListener::MEMORY_PRESSURE_LEVEL_NONE:
+      LOG(INFO) << "[EXTENSIONS] TabManager::OnMemoryPressure - MemoryPressureListener::MEMORY_PRESSURE_LEVEL_NONE";
       break;
     case base::MemoryPressureListener::MEMORY_PRESSURE_LEVEL_MODERATE:
+      LOG(INFO) << "[EXTENSIONS] TabManager::OnMemoryPressure - MemoryPressureListener::MEMORY_PRESSURE_LEVEL_MODERATE";
       break;
     case base::MemoryPressureListener::MEMORY_PRESSURE_LEVEL_CRITICAL:
+      LOG(INFO) << "[EXTENSIONS] TabManager::OnMemoryPressure - MemoryPressureListener::MEMORY_PRESSURE_LEVEL_CRITICAL";
       LogMemoryAndDiscardTab(DiscardReason::kUrgent);
       break;
     default:
@@ -537,6 +479,7 @@ void TabManager::ActiveTabChanged(content::WebContents* old_contents,
                                   content::WebContents* new_contents,
                                   int index,
                                   int reason) {
+  LOG(INFO) << "[EXTENSIONS] TabManager::ActiveTabChanged - Active tab has changed - Step 1";
   // An active tab is not purged.
   // Calling GetWebContentsData() early ensures that the WebContentsData is
   // created for |new_contents|, which |stats_collector_| expects.
@@ -623,18 +566,6 @@ TabManager::WebContentsData* TabManager::GetWebContentsData(
 // discarding the entire set together, or use that in the priority computation.
 content::WebContents* TabManager::DiscardTabImpl(DiscardReason reason) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-
-  for (LifecycleUnit* lifecycle_unit : GetSortedLifecycleUnits()) {
-    if (lifecycle_unit->CanDiscard(reason) && lifecycle_unit->Discard(reason)) {
-      TabLifecycleUnitExternal* tab_lifecycle_unit_external =
-          lifecycle_unit->AsTabLifecycleUnitExternal();
-      // For now, all LifecycleUnits are TabLifecycleUnitExternals.
-      DCHECK(tab_lifecycle_unit_external);
-
-      return tab_lifecycle_unit_external->GetWebContents();
-    }
-  }
-
   return nullptr;
 }
 
@@ -854,18 +785,6 @@ bool TabManager::ComparePendingNavigations(
 
 int TabManager::GetNumAliveTabs() const {
   int tab_count = 0;
-  for (auto* browser : *BrowserList::GetInstance()) {
-    TabStripModel* tab_strip_model = browser->tab_strip_model();
-    for (int index = 0; index < tab_strip_model->count(); ++index) {
-      content::WebContents* contents = tab_strip_model->GetWebContentsAt(index);
-      if (!TabLifecycleUnitExternal::FromWebContents(contents)->IsDiscarded())
-        ++tab_count;
-    }
-  }
-
-  tab_count -= pending_navigations_.size();
-  DCHECK_GE(tab_count, 0);
-
   return tab_count;
 }
 

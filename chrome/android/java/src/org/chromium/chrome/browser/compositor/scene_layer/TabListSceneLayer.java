@@ -8,15 +8,19 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.RectF;
+import android.graphics.Color;
 
+import org.chromium.base.ContextUtils;
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.base.annotations.JNINamespace;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.ChromeFeatureList;
+import org.chromium.chrome.browser.ChromeActivity;
 import org.chromium.chrome.browser.compositor.LayerTitleCache;
 import org.chromium.chrome.browser.compositor.layouts.Layout;
 import org.chromium.chrome.browser.compositor.layouts.components.LayoutTab;
 import org.chromium.chrome.browser.compositor.layouts.content.TabContentManager;
+import org.chromium.chrome.browser.accessibility.NightModePrefs;
 import org.chromium.chrome.browser.fullscreen.ChromeFullscreenManager;
 import org.chromium.chrome.browser.tabmodel.TabModelSelector;
 import org.chromium.chrome.browser.util.ColorUtils;
@@ -81,8 +85,11 @@ public class TabListSceneLayer extends SceneLayer {
                 shadowAlpha /= 2;
             }
 
-            int defaultThemeColor =
-                    ColorUtils.getDefaultThemeColor(res, useModernDesign, t.isIncognito());
+            int defaultThemeColor = 0;
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+                defaultThemeColor = Color.BLACK;
+            else
+                defaultThemeColor = ColorUtils.getDefaultThemeColor(res, useModernDesign, t.isIncognito());
 
             int toolbarBackgroundColor = getTabThemeColor(context, t);
 
@@ -118,7 +125,8 @@ public class TabListSceneLayer extends SceneLayer {
                     t.anonymizeToolbar(), t.isTitleNeeded(), urlBarBackgroundId,
                     t.getTextBoxBackgroundColor(), textBoxAlpha, t.getToolbarAlpha(),
                     t.getToolbarYOffset() * dpToPx, t.getSideBorderScale(),
-                    t.insetBorderVertical());
+                    t.insetBorderVertical(),
+                    ContextUtils.getAppSharedPreferences().getBoolean("enable_bottom_toolbar", false));
         }
         nativeFinishBuildingFrame(mNativePtr);
     }
@@ -156,6 +164,7 @@ public class TabListSceneLayer extends SceneLayer {
      */
     protected int getTabListBackgroundColor(Context context) {
         int colorId = R.color.tab_switcher_background;
+
         if (FeatureUtilities.isChromeModernDesignEnabled()) colorId = R.color.modern_primary_color;
 
         if (ChromeFeatureList.isEnabled(ChromeFeatureList.HORIZONTAL_TAB_SWITCHER_ANDROID)) {
@@ -165,6 +174,8 @@ public class TabListSceneLayer extends SceneLayer {
                 colorId = R.color.modern_primary_color;
             }
         }
+
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) colorId = R.color.tab_switcher_background;
 
         return ApiCompatibilityUtils.getColor(context.getResources(), colorId);
     }
@@ -212,5 +223,6 @@ public class TabListSceneLayer extends SceneLayer {
             int toolbarBackgroundColor, int closeButtonColor, boolean anonymizeToolbar,
             boolean showTabTitle, int toolbarTextBoxResource, int toolbarTextBoxBackgroundColor,
             float toolbarTextBoxAlpha, float toolbarAlpha, float toolbarYOffset,
-            float sideBorderScale, boolean insetVerticalBorder);
+            float sideBorderScale, boolean insetVerticalBorder,
+            boolean bottomBarEnabled);
 }

@@ -24,11 +24,13 @@ cr.define('extensions', function() {
 
     getProfileConfiguration() {
       return new Promise(function(resolve, reject) {
+        console.log("Tracing, calling chrome.developerPrivate.getProfileConfiguration");
         chrome.developerPrivate.getProfileConfiguration(resolve);
       });
     }
 
     getItemStateChangedTarget() {
+      console.log("Tracing, calling chrome.developerPrivate.onItemStateChanged");
       return chrome.developerPrivate.onItemStateChanged;
     }
 
@@ -50,11 +52,13 @@ cr.define('extensions', function() {
     }
 
     getProfileStateChangedTarget() {
+      console.log("Tracing, calling chrome.developerPrivate.onProfileStateChanged");
       return chrome.developerPrivate.onProfileStateChanged;
     }
 
     getExtensionsInfo() {
       return new Promise(function(resolve, reject) {
+      console.log("Tracing, calling chrome.developerPrivate.getExtensionsInfo");
         chrome.developerPrivate.getExtensionsInfo(
             {includeDisabled: true, includeTerminated: true}, resolve);
       });
@@ -63,6 +67,7 @@ cr.define('extensions', function() {
     /** @override */
     getExtensionSize(id) {
       return new Promise(function(resolve, reject) {
+        console.log("Tracing, calling chrome.developerPrivate.getExtensionSize");
         chrome.developerPrivate.getExtensionSize(id, resolve);
       });
     }
@@ -76,6 +81,7 @@ cr.define('extensions', function() {
      */
     chooseFilePath_(selectType, fileType) {
       return new Promise(function(resolve, reject) {
+        console.log("Tracing, calling chrome.developerPrivate.choosePath");
         chrome.developerPrivate.choosePath(
             selectType, fileType, function(path) {
               if (chrome.runtime.lastError &&
@@ -90,6 +96,7 @@ cr.define('extensions', function() {
 
     /** @override */
     updateExtensionCommandKeybinding(extensionId, commandName, keybinding) {
+      console.log("Tracing, calling chrome.developerPrivate.updateExtensionCommand");
       chrome.developerPrivate.updateExtensionCommand({
         extensionId: extensionId,
         commandName: commandName,
@@ -102,8 +109,10 @@ cr.define('extensions', function() {
       // The COMMAND_REMOVED event needs to be ignored since it is sent before
       // the command is added back with the updated scope but can be handled
       // after the COMMAND_ADDED event.
+      console.log("Tracing, calling chrome.developerPrivate.EventType.COMMAND_REMOVED");
       this.ignoreNextEvent(
           extensionId, chrome.developerPrivate.EventType.COMMAND_REMOVED);
+      console.log("Tracing, calling chrome.developerPrivate.updateExtensionCommand");
       chrome.developerPrivate.updateExtensionCommand({
         extensionId: extensionId,
         commandName: commandName,
@@ -114,6 +123,7 @@ cr.define('extensions', function() {
 
     /** @override */
     setShortcutHandlingSuspended(isCapturing) {
+      console.log("Tracing, calling chrome.developerPrivate.setShortcutHandlingSuspended");
       chrome.developerPrivate.setShortcutHandlingSuspended(isCapturing);
     }
 
@@ -127,6 +137,7 @@ cr.define('extensions', function() {
      */
     loadUnpackedHelper_(opt_retryGuid) {
       return new Promise(function(resolve, reject) {
+        console.log("Tracing, calling chrome.developerPrivate.loadUnpacked");
         chrome.developerPrivate.loadUnpacked(
             {failQuietly: true, populateError: true, retryGuid: opt_retryGuid},
             (loadError) => {
@@ -148,22 +159,27 @@ cr.define('extensions', function() {
       if (this.isDeleting_)
         return;
       this.isDeleting_ = true;
-      chrome.management.uninstall(id, {showConfirmDialog: true}, () => {
-        // The "last error" was almost certainly the user canceling the dialog.
-        // Do nothing. We only check it so we don't get noisy logs.
-        /** @suppress {suspiciousCode} */
-        chrome.runtime.lastError;
-        this.isDeleting_ = false;
-      });
+      console.log("Tracing, calling chrome.management.uninstall");
+      if (window.confirm("Really uninstall extension " + id + " ?")) {
+        chrome.management.uninstall(id, {showConfirmDialog: true}, () => {
+          // The "last error" was almost certainly the user canceling the dialog.
+          // Do nothing. We only check it so we don't get noisy logs.
+          /** @suppress {suspiciousCode} */
+          chrome.runtime.lastError;
+          this.isDeleting_ = false;
+        });
+      }
     }
 
     /** @override */
     setItemEnabled(id, isEnabled) {
+      console.log("Tracing, calling chrome.management.setEnabled");
       chrome.management.setEnabled(id, isEnabled);
     }
 
     /** @override */
     setItemAllowedIncognito(id, isAllowedIncognito) {
+      console.log("Tracing, calling chrome.developerPrivate.updateExtensionConfiguration");
       chrome.developerPrivate.updateExtensionConfiguration({
         extensionId: id,
         incognitoAccess: isAllowedIncognito,
@@ -172,6 +188,7 @@ cr.define('extensions', function() {
 
     /** @override */
     setItemAllowedOnFileUrls(id, isAllowedOnFileUrls) {
+      console.log("Tracing, calling chrome.developerPrivate.updateExtensionConfiguration");
       chrome.developerPrivate.updateExtensionConfiguration({
         extensionId: id,
         fileAccess: isAllowedOnFileUrls,
@@ -180,6 +197,7 @@ cr.define('extensions', function() {
 
     /** @override */
     setItemAllowedOnAllSites(id, isAllowedOnAllSites) {
+      console.log("Tracing, calling chrome.developerPrivate.updateExtensionConfiguration");
       chrome.developerPrivate.updateExtensionConfiguration({
         extensionId: id,
         runOnAllUrls: isAllowedOnAllSites,
@@ -188,6 +206,7 @@ cr.define('extensions', function() {
 
     /** @override */
     setItemCollectsErrors(id, collectsErrors) {
+      console.log("Tracing, calling chrome.developerPrivate.updateExtensionConfiguration");
       chrome.developerPrivate.updateExtensionConfiguration({
         extensionId: id,
         errorCollection: collectsErrors,
@@ -196,6 +215,7 @@ cr.define('extensions', function() {
 
     /** @override */
     inspectItemView(id, view) {
+      console.log("Tracing, calling chrome.developerPrivate.openDevTools");
       chrome.developerPrivate.openDevTools({
         extensionId: id,
         renderProcessId: view.renderProcessId,
@@ -215,6 +235,7 @@ cr.define('extensions', function() {
     /** @override */
     reloadItem(id) {
       return new Promise(function(resolve, reject) {
+      console.log("Tracing, calling chrome.developerPrivate.reload");
         chrome.developerPrivate.reload(
             id, {failQuietly: true, populateErrorForUnpacked: true},
             (loadError) => {
@@ -230,6 +251,7 @@ cr.define('extensions', function() {
 
     /** @override */
     repairItem(id) {
+      console.log("Tracing, calling chrome.developerPrivate.repairExtension");
       chrome.developerPrivate.repairExtension(id);
     }
 
@@ -237,6 +259,7 @@ cr.define('extensions', function() {
     showItemOptionsPage(extension) {
       assert(extension && extension.optionsPage);
       if (extension.optionsPage.openInTab) {
+        console.log("Tracing, calling chrome.developerPrivate.showOptions");
         chrome.developerPrivate.showOptions(extension.id);
       } else {
         extensions.navigation.navigateTo({
@@ -249,6 +272,7 @@ cr.define('extensions', function() {
 
     /** @override */
     setProfileInDevMode(inDevMode) {
+      console.log("Tracing, calling chrome.developerPrivate.updateProfileConfiguration");
       chrome.developerPrivate.updateProfileConfiguration(
           {inDeveloperMode: inDevMode});
     }
@@ -265,6 +289,7 @@ cr.define('extensions', function() {
 
     /** @override */
     choosePackRootDirectory() {
+      console.log("Tracing, calling chrome.developerPrivate.SelectType");
       return this.chooseFilePath_(
           chrome.developerPrivate.SelectType.FOLDER,
           chrome.developerPrivate.FileType.LOAD);
@@ -272,6 +297,7 @@ cr.define('extensions', function() {
 
     /** @override */
     choosePrivateKeyPath() {
+      console.log("Tracing, calling chrome.developerPrivate.SelectType");
       return this.chooseFilePath_(
           chrome.developerPrivate.SelectType.FILE,
           chrome.developerPrivate.FileType.PEM);
@@ -279,19 +305,23 @@ cr.define('extensions', function() {
 
     /** @override */
     packExtension(rootPath, keyPath, flag, callback) {
+      console.log("Tracing, calling chrome.developerPrivate.packDirectory");
       chrome.developerPrivate.packDirectory(rootPath, keyPath, flag, callback);
     }
 
     /** @override */
     updateAllExtensions() {
       return new Promise((resolve) => {
+        console.log("Tracing, calling chrome.developerPrivate.autoUpdate");
         chrome.developerPrivate.autoUpdate(resolve);
+        console.log("Tracing, calling chrome.metricsPrivate.recordUserAction");
         chrome.metricsPrivate.recordUserAction('Options_UpdateExtensions');
       });
     }
 
     /** @override */
     deleteErrors(extensionId, errorIds, type) {
+        console.log("Tracing, calling chrome.developerPrivate.deleteExtensionErrors");
       chrome.developerPrivate.deleteExtensionErrors({
         extensionId: extensionId,
         errorIds: errorIds,
@@ -302,6 +332,7 @@ cr.define('extensions', function() {
     /** @override */
     requestFileSource(args) {
       return new Promise(function(resolve, reject) {
+        console.log("Tracing, calling chrome.developerPrivate.requestFileSource");
         chrome.developerPrivate.requestFileSource(args, function(code) {
           resolve(code);
         });
@@ -310,6 +341,7 @@ cr.define('extensions', function() {
 
     /** @override */
     showInFolder(id) {
+      console.log("Tracing, calling chrome.developerPrivate.showPath");
       chrome.developerPrivate.showPath(id);
     }
   }

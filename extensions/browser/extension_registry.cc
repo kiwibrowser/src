@@ -93,18 +93,32 @@ void ExtensionRegistry::TriggerOnWillBeInstalled(const Extension* extension,
 
 void ExtensionRegistry::TriggerOnInstalled(const Extension* extension,
                                            bool is_update) {
+  LOG(INFO) << "[EXTENSIONS] TriggerOnInstalled - Step 1";
   CHECK(extension);
+  LOG(INFO) << "[EXTENSIONS] TriggerOnInstalled - Step 2";
   DCHECK(GenerateInstalledExtensionsSet()->Contains(extension->id()));
-  for (auto& observer : observers_)
+  LOG(INFO) << "[EXTENSIONS] TriggerOnInstalled - Step 3";
+  for (auto& observer : observers_) {
+    LOG(INFO) << "[EXTENSIONS] TriggerOnInstalled - Step 4";
     observer.OnExtensionInstalled(browser_context_, extension, is_update);
+    LOG(INFO) << "[EXTENSIONS] TriggerOnInstalled - Step 5";
+  }
+  LOG(INFO) << "[EXTENSIONS] TriggerOnInstalled - Step 6";
 }
 
 void ExtensionRegistry::TriggerOnUninstalled(const Extension* extension,
                                              UninstallReason reason) {
+  LOG(INFO) << "[EXTENSIONS] TriggerOnUninstalled - Step 1";
   CHECK(extension);
+  LOG(INFO) << "[EXTENSIONS] TriggerOnUninstalled - Step 2";
   DCHECK(!GenerateInstalledExtensionsSet()->Contains(extension->id()));
-  for (auto& observer : observers_)
+  LOG(INFO) << "[EXTENSIONS] TriggerOnUninstalled - Step 3";
+  for (auto& observer : observers_) {
+    LOG(INFO) << "[EXTENSIONS] TriggerOnUninstalled - Step 4";
     observer.OnExtensionUninstalled(browser_context_, extension, reason);
+    LOG(INFO) << "[EXTENSIONS] TriggerOnUninstalled - Step 5";
+  }
+  LOG(INFO) << "[EXTENSIONS] TriggerOnUninstalled - Step 6";
 }
 
 const Extension* ExtensionRegistry::GetExtensionById(const std::string& id,

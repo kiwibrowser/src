@@ -341,13 +341,6 @@ void NewTabButton::OnBoundsChanged(const gfx::Rect& previous_bounds) {
 }
 
 bool NewTabButton::GetHitTestMask(gfx::Path* mask) const {
-  DCHECK(mask);
-
-  SkPath border;
-  const float scale = GetWidget()->GetCompositor()->device_scale_factor();
-  GetBorderPath(GetTopOffset() * scale, scale,
-                tab_strip_->SizeTabButtonToTopOfTabStrip(), &border);
-  mask->addPath(border, SkMatrix::MakeScale(1 / scale));
   return true;
 }
 

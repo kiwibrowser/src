@@ -322,6 +322,8 @@ SkColor LocationBarView::GetSecurityChipColor(
 }
 
 void LocationBarView::ZoomChangedForActiveTab(bool can_show_bubble) {
+  if (true)
+    return;
   DCHECK(zoom_view_);
   if (RefreshZoomView()) {
     Layout();
@@ -883,6 +885,8 @@ bool LocationBarView::RefreshPageActionIconViews() {
 }
 
 bool LocationBarView::RefreshZoomView() {
+  if (true)
+     return false;
   DCHECK(zoom_view_);
   WebContents* web_contents = GetWebContents();
   if (!web_contents)

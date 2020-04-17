@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "content/browser/devtools/protocol/emulation_handler.h"
 #include "base/android/callback_android.h"
 #include "base/android/jni_android.h"
 #include "base/android/jni_array.h"
@@ -163,6 +164,7 @@ std::string CompressAndSaveBitmap(const std::string& dir,
       base::CreateAndOpenTemporaryFileInDir(screenshot_dir, &screenshot_path));
   if (!out_file) {
     LOG(ERROR) << "Failed to create temporary screenshot file";
+    LOG(ERROR) << "path was: " << screenshot_path;
     return std::string();
   }
   unsigned int bytes_written =
@@ -173,6 +175,89 @@ std::string CompressAndSaveBitmap(const std::string& dir,
   if (bytes_written != data.size()) {
     base::DeleteFile(screenshot_path, false);
     LOG(ERROR) << "Error writing screenshot file to disk";
+    return std::string();
+  }
+  return screenshot_path.value();
+}
+
+std::string CompressAndSaveBitmapFull(const std::string& dir,
+                                  const SkBitmap& bitmap, bool paramisfile) {
+  base::AssertBlockingAllowed();
+
+  std::vector<unsigned char> data;
+
+  base::FilePath screenshot_dir(dir);
+  if (!paramisfile) {
+    if (!base::DirectoryExists(screenshot_dir)) {
+      if (!base::CreateDirectory(screenshot_dir)) {
+        LOG(ERROR) << "Failed to create screenshot directory";
+        return std::string();
+      }
+    }
+  }
+
+  base::FilePath screenshot_path;
+  if (paramisfile)
+    screenshot_path = base::FilePath(dir);
+
+  std::string encoded_file_content;
+  if (paramisfile && !base::ReadFileToString(screenshot_path, &encoded_file_content)) {
+    LOG(ERROR) << "Error reading screenshot file (jpg) to disk";
+    return std::string();
+  }
+
+  base::ScopedFILE out_file;
+  if (paramisfile)
+    out_file = base::ScopedFILE(base::OpenFile(base::FilePath(dir), "w+"));
+  else
+    out_file = base::ScopedFILE(base::CreateAndOpenTemporaryFileInDirJPG(screenshot_dir, &screenshot_path));
+  if (!out_file) {
+    LOG(ERROR) << "Failed to create temporary screenshot file (jpg)";
+    LOG(ERROR) << "path was: " << screenshot_path;
+    return std::string();
+  }
+  std::unique_ptr<SkBitmap> in_image;
+  in_image = gfx::JPEGCodec::Decode(
+        reinterpret_cast<const unsigned char*>(encoded_file_content.data()),
+        encoded_file_content.size());
+  LOG(INFO) << "[Kiwi] We have been reading from disk: " << encoded_file_content.size() << " bytes";
+  LOG(INFO) << "[Kiwi] We have been reading from disk: " << encoded_file_content.size() << " bytes and in_image: " << in_image.get();
+  SkBitmap result_to_write;
+  result_to_write = bitmap;
+  if (in_image) {
+    LOG(INFO) << "[Kiwi] - Preparing to merge pixels: " << in_image->width() << " - " << bitmap.width() << " - " << in_image->height() << " - " << bitmap.height();
+    result_to_write.allocN32Pixels(in_image->width(), in_image->height() + bitmap.height());
+    for (int y = 0; y < in_image->height(); ++y) {
+      uint32_t* source_row = in_image->getAddr32(0, y);
+      uint32_t* dst_row = result_to_write.getAddr32(0, y);
+
+      for (int x = 0; x < in_image->width(); ++x) {
+        dst_row[x] = source_row[x];
+      }
+    }
+    for (int y = 0; y < bitmap.height(); ++y) {
+      uint32_t* source_row = bitmap.getAddr32(0, y);
+      uint32_t* dst_row = result_to_write.getAddr32(0, in_image->height() + y);
+
+      for (int x = 0; x < bitmap.width(); ++x) {
+        dst_row[x] = source_row[x];
+      }
+    }
+    LOG(INFO) << "[Kiwi] - Pixels merged: " << result_to_write.width() << "x" << result_to_write.height();
+  }
+  if (!bitmap.drawsNothing() && !gfx::JPEGCodec::Encode(result_to_write, 99, &data)) {
+    LOG(ERROR) << "Failed to encode bitmap to JPEG";
+    return std::string();
+  }
+  rewind(out_file.get());
+  unsigned int bytes_written =
+      fwrite(reinterpret_cast<const char*>(data.data()), 1, data.size(),
+             out_file.get());
+
+  // If there were errors, don't leave a partial file around.
+  if (bytes_written != data.size()) {
+    base::DeleteFile(screenshot_path, false);
+    LOG(ERROR) << "Error writing screenshot file (jpg) to disk";
     return std::string();
   }
   return screenshot_path.value();
@@ -665,6 +750,39 @@ void WebContentsAndroid::GetContentBitmap(
                         std::move(result_callback));
 }
 
+void WebContentsAndroid::GetContentBitmapFull(
+    JNIEnv* env,
+    const JavaParamRef<jobject>& obj,
+    jint width,
+    jint height,
+    const JavaParamRef<jstring>& jpath,
+    const JavaParamRef<jobject>& jcallback) {
+  std::string file_to_use = CompressAndSaveBitmapFull(ConvertJavaStringToUTF8(env, jpath), SkBitmap(), false);
+  base::Callback<void(const gfx::Image&)> result_callback = base::Bind(
+      &WebContentsAndroid::OnFinishGetContentBitmapFull, weak_factory_.GetWeakPtr(),
+      ScopedJavaGlobalRef<jobject>(env, obj),
+      ScopedJavaGlobalRef<jobject>(env, jcallback),
+      file_to_use, 0, height);
+  content::RenderWidgetHostImpl* rwhi = RenderWidgetHostImpl::From(GetRenderWidgetHostViewAndroid()->GetRenderWidgetHost());
+
+  auto emulation_handler = std::make_unique<protocol::EmulationHandler>();
+  protocol::EmulationHandler* emulation_handler_ptr = emulation_handler.get();
+  emulation_handler_ptr->SetRenderer(getpid(), web_contents_->GetMainFrame());
+
+  blink::WebDeviceEmulationParams original_params =
+      emulation_handler_ptr->GetDeviceEmulationParams();
+  blink::WebDeviceEmulationParams modified_params = original_params;
+
+  modified_params.viewport_offset.x = 0;
+  modified_params.viewport_offset.y = 0;
+  modified_params.viewport_scale = 1;
+
+  emulation_handler_ptr->SetDeviceEmulationParams(modified_params);
+
+  rwhi->GetSnapshotFromBrowser(result_callback,
+      true);
+}
+
 void WebContentsAndroid::ReloadLoFiImages(JNIEnv* env,
                                           const JavaParamRef<jobject>& obj) {
   static_cast<WebContentsImpl*>(web_contents_)->ReloadLoFiImages();
@@ -784,6 +902,58 @@ void WebContentsAndroid::OnFinishGetContentBitmap(
   base::android::RunStringCallbackAndroid(callback, std::string());
 }
 
+void WebContentsAndroid::OnFinishGetContentBitmapFull(
+    const JavaRef<jobject>& obj,
+    const JavaRef<jobject>& jcallback,
+    const std::string& file_path,
+    int screenshotnumber, int maxnumberofscreenshots,
+    const gfx::Image& image) {
+  const SkBitmap* bitmap = image.ToSkBitmap();
+  JNIEnv* env = base::android::AttachCurrentThread();
+  ScopedJavaLocalRef<jobject> java_bitmap;
+  if (!bitmap->drawsNothing()) {
+    CompressAndSaveBitmapFull(file_path, *bitmap, true);
+    if (screenshotnumber < 25 && screenshotnumber < (maxnumberofscreenshots - 1)) { // we glue up to 25 screenshots
+      base::Callback<void(const gfx::Image&)> result_callback = base::Bind(
+          &WebContentsAndroid::OnFinishGetContentBitmapFull, weak_factory_.GetWeakPtr(),
+          ScopedJavaGlobalRef<jobject>(env, obj.obj()),
+          ScopedJavaGlobalRef<jobject>(env, jcallback.obj()),
+          file_path, screenshotnumber + 1, maxnumberofscreenshots);
+      content::RenderWidgetHostImpl* rwhi = RenderWidgetHostImpl::From(GetRenderWidgetHostViewAndroid()->GetRenderWidgetHost());
+
+      auto emulation_handler = std::make_unique<protocol::EmulationHandler>();
+      protocol::EmulationHandler* emulation_handler_ptr = emulation_handler.get();
+      emulation_handler_ptr->SetRenderer(getpid(), web_contents_->GetMainFrame());
+
+      blink::WebDeviceEmulationParams original_params =
+          emulation_handler_ptr->GetDeviceEmulationParams();
+      blink::WebDeviceEmulationParams modified_params = original_params;
+
+      RenderWidgetHostViewAndroid* view = GetRenderWidgetHostViewAndroid();
+      gfx::Size original_view_size = view->GetVisibleViewportSize();
+
+      modified_params.viewport_offset.x = 0;
+      modified_params.viewport_offset.y = original_view_size.height() * (screenshotnumber + 1);
+      modified_params.viewport_scale = 1;
+
+      emulation_handler_ptr->SetDeviceEmulationParams(modified_params);
+
+      rwhi->GetSnapshotFromBrowser(result_callback,
+          true);
+      return;
+    }
+    base::android::RunStringCallbackAndroid(jcallback, file_path);
+    auto emulation_handler = std::make_unique<protocol::EmulationHandler>();
+    protocol::EmulationHandler* emulation_handler_ptr = emulation_handler.get();
+    emulation_handler_ptr->SetRenderer(getpid(), web_contents_->GetMainFrame());
+
+    emulation_handler_ptr->SetDeviceEmulationParams(blink::WebDeviceEmulationParams());
+    return;
+  }
+  // If readback failed, call empty callback
+  base::android::RunStringCallbackAndroid(jcallback, std::string());
+}
+
 void WebContentsAndroid::OnFinishDownloadImage(
     const JavaRef<jobject>& obj,
     const JavaRef<jobject>& callback,
@@ -845,6 +1015,18 @@ void WebContentsAndroid::OnScaleFactorChanged(
     web_contents_->SendScreenRects();
     rwhva->SynchronizeVisualProperties();
   }
+}
+
+void WebContentsAndroid::SetFocus(JNIEnv* env,
+                                  const JavaParamRef<jobject>& obj,
+                                  jboolean focused) {
+  RenderWidgetHostViewAndroid* rwhva = GetRenderWidgetHostViewAndroid();
+  if (!rwhva)
+    return;
+  if (focused)
+    rwhva->GotFocus();
+  else
+    rwhva->LostFocus();
 }
 
 int WebContentsAndroid::GetTopControlsShrinkBlinkHeightPixForTesting(

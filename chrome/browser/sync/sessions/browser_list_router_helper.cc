@@ -52,10 +52,12 @@ void BrowserListRouterHelper::TabInsertedAt(TabStripModel* model,
                                             content::WebContents* web_contents,
                                             int index,
                                             bool foreground) {
+  LOG(INFO) << "[EXTENSIONS] BrowserListRouterHelper::TabInsertedAt - Step 1";
   if (web_contents && Profile::FromBrowserContext(
                           web_contents->GetBrowserContext()) == profile_) {
     router_->NotifyTabModified(web_contents, false);
   }
+  LOG(INFO) << "[EXTENSIONS] BrowserListRouterHelper::TabInsertedAt - Step 2";
 }
 
 void BrowserListRouterHelper::TabReplacedAt(TabStripModel* tab_strip_model,

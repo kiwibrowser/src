@@ -10,7 +10,6 @@
 namespace memory_instrumentation {
 
 using base::ProcessId;
-using base::trace_event::HeapProfilerSerializationState;
 using base::trace_event::MemoryAllocatorDump;
 using base::trace_event::MemoryAllocatorDumpGuid;
 using base::trace_event::MemoryDumpArgs;
@@ -96,7 +95,7 @@ TEST_F(GraphProcessorTest, SmokeComputeMemoryGraph) {
   std::map<ProcessId, const ProcessMemoryDump*> process_dumps;
 
   MemoryDumpArgs dump_args = {MemoryDumpLevelOfDetail::DETAILED};
-  ProcessMemoryDump pmd(new HeapProfilerSerializationState, dump_args);
+  ProcessMemoryDump pmd(dump_args);
 
   auto* source = pmd.CreateAllocatorDump("test1/test2/test3");
   source->AddScalar(MemoryAllocatorDump::kNameSize,
@@ -149,8 +148,8 @@ TEST_F(GraphProcessorTest, SmokeComputeSharedFootprint) {
   std::map<ProcessId, const ProcessMemoryDump*> process_dumps;
 
   MemoryDumpArgs dump_args = {MemoryDumpLevelOfDetail::DETAILED};
-  ProcessMemoryDump pmd1(new HeapProfilerSerializationState, dump_args);
-  ProcessMemoryDump pmd2(new HeapProfilerSerializationState, dump_args);
+  ProcessMemoryDump pmd1(dump_args);
+  ProcessMemoryDump pmd2(dump_args);
 
   auto* p1_d1 = pmd1.CreateAllocatorDump("process1/dump1");
   auto* p1_d2 = pmd1.CreateAllocatorDump("process1/dump2");

@@ -184,6 +184,25 @@ public class DocumentTabModelImpl extends TabModelJniBridge implements DocumentT
     }
 
     @Override
+    public int getLastNonExtensionActiveIndex() {
+        if (getCount() == 0) return TabList.INVALID_TAB_INDEX;
+        int indexOfLastId = indexOf(mLastShownTabId);
+        if (indexOfLastId != -1) return indexOfLastId;
+
+        // The previous Tab is gone; select a Tab based on MRU ordering.
+        List<Entry> tasks = mActivityDelegate.getTasksFromRecents(isIncognito());
+        if (tasks.size() == 0) return TabList.INVALID_TAB_INDEX;
+
+        for (int i = 0; i < tasks.size(); i++) {
+            int lastKnownId = tasks.get(i).tabId;
+            int indexOfMostRecentlyUsedId = indexOf(lastKnownId);
+            if (indexOfMostRecentlyUsedId != -1) return indexOfMostRecentlyUsedId;
+        }
+
+        return TabList.INVALID_TAB_INDEX;
+    }
+
+    @Override
     public int indexOf(Tab tab) {
         if (tab == null) return Tab.INVALID_TAB_ID;
         return indexOf(tab.getId());

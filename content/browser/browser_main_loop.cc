@@ -1049,7 +1049,7 @@ void BrowserMainLoop::ShutdownThreadsAndCleanUp() {
   }
 #endif
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
   host_frame_sink_manager_.reset();
   frame_sink_manager_impl_.reset();
   compositing_mode_reporter_impl_.reset();
@@ -1144,7 +1144,7 @@ base::SequencedTaskRunner* BrowserMainLoop::audio_service_runner() {
   return audio_service_runner_.get();
 }
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 viz::FrameSinkManagerImpl* BrowserMainLoop::GetFrameSinkManager() const {
   return frame_sink_manager_impl_.get();
 }

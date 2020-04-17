@@ -17,6 +17,7 @@ import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
 import org.chromium.base.ApiCompatibilityUtils;
+import org.chromium.base.ContextUtils;
 import org.chromium.base.Log;
 import org.chromium.base.VisibleForTesting;
 import org.chromium.chrome.R;
@@ -81,6 +82,8 @@ public class TileRenderer {
 
         int iconColor = ApiCompatibilityUtils.getColor(
                 mResources, R.color.default_favicon_background_color);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+            iconColor = Color.BLACK;
         mIconGenerator = new RoundedIconGenerator(mResources, desiredIconSizeDp, desiredIconSizeDp,
                 cornerRadiusDp, iconColor, ICON_TEXT_SIZE_DP);
     }

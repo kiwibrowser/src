@@ -13,8 +13,7 @@
 #include "base/bind.h"
 #include "base/strings/string16.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/test/histogram_tester.h"
-#include "base/test/scoped_feature_list.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "build/build_config.h"
 #include "chrome/browser/content_settings/host_content_settings_map_factory.h"
 #include "chrome/browser/infobars/mock_infobar_service.h"
@@ -29,7 +28,6 @@
 #include "components/content_settings/core/common/content_settings_types.h"
 #include "components/infobars/core/infobar.h"
 #include "components/strings/grit/components_strings.h"
-#include "components/subresource_filter/core/browser/subresource_filter_features.h"
 #include "content/public/browser/ssl_host_state_delegate.h"
 #include "content/public/browser/ssl_status.h"
 #include "content/public/common/content_switches.h"
@@ -974,9 +972,6 @@ TEST_F(PageInfoTest, SecurityLevelMetrics) {
 
 // Tests that the SubresourceFilter setting is omitted correctly.
 TEST_F(PageInfoTest, SubresourceFilterSetting_MatchesActivation) {
-  base::test::ScopedFeatureList feature_list;
-  feature_list.InitAndEnableFeature(
-      subresource_filter::kSafeBrowsingSubresourceFilterExperimentalUI);
   auto showing_setting = [](const PermissionInfoList& permissions) {
     return PermissionInfoListContainsPermission(permissions,
                                                 CONTENT_SETTINGS_TYPE_ADS);

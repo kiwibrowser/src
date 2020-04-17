@@ -481,7 +481,7 @@ class ContentSettingSingleRadioGroup : public ContentSettingSimpleBubbleModel {
   DISALLOW_COPY_AND_ASSIGN(ContentSettingSingleRadioGroup);
 };
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 // The model for the blocked Framebust bubble.
 class ContentSettingFramebustBlockBubbleModel
     : public ContentSettingSingleRadioGroup,

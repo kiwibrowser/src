@@ -17,7 +17,6 @@ if (enable_me2me_host) {
 
     deps = [
       "//base",
-      "//build/config:exe_and_shlib_deps",
     ]
 
     libs = [ "pam" ]
@@ -59,7 +58,6 @@ if (enable_me2me_host) {
     ]
     deps = [
       ":remoting_user_session",
-      "//build/config:exe_and_shlib_deps",
     ]
     if (is_component_build) {
       sources += [ "$root_build_dir/libbase.so" ]
@@ -67,6 +65,7 @@ if (enable_me2me_host) {
     }
     if (!libcpp_is_static && use_custom_libcxx) {
       sources += [ "$root_build_dir/libc++.so" ]
+      deps += [ "//buildtools/third_party/libc++" ]
     }
   }
 
@@ -133,7 +132,6 @@ executable("remoting_native_messaging_host") {
 
   deps = [
     "//base",
-    "//build/config:exe_and_shlib_deps",
     "//net",
     "//remoting/base:breakpad",
     "//remoting/host",

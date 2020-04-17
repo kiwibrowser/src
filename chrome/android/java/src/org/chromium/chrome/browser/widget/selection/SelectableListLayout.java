@@ -7,6 +7,7 @@ package org.chromium.chrome.browser.widget.selection;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.VisibleForTesting;
 import android.support.v4.widget.DrawerLayout;
@@ -26,6 +27,7 @@ import android.widget.TextView;
 
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.chrome.R;
+import org.chromium.base.ContextUtils;
 import org.chromium.chrome.browser.util.FeatureUtilities;
 import org.chromium.chrome.browser.widget.FadingShadow;
 import org.chromium.chrome.browser.widget.FadingShadowView;
@@ -59,6 +61,7 @@ public class SelectableListLayout<E>
     private TextView mEmptyView;
     private LoadingView mLoadingView;
     private RecyclerView mRecyclerView;
+    private FrameLayout mListContent;
     private ItemAnimator mItemAnimator;
     SelectableListToolbar<E> mToolbar;
     private FadingShadowView mToolbarShadow;
@@ -79,6 +82,10 @@ public class SelectableListLayout<E>
             } else {
                 mEmptyView.setVisibility(View.GONE);
                 mRecyclerView.setVisibility(View.VISIBLE);
+            }
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                mEmptyView.setBackgroundColor(Color.BLACK);
+                mRecyclerView.setBackgroundColor(Color.BLACK);
             }
             // At inflation, the RecyclerView is set to gone, and the loading view is visible. As
             // long as the adapter data changes, we show the recycler view, and hide loading view.
@@ -112,6 +119,11 @@ public class SelectableListLayout<E>
 
         mEmptyView = (TextView) findViewById(R.id.empty_view);
         mLoadingView = (LoadingView) findViewById(R.id.loading_view);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mEmptyView.setBackgroundColor(Color.BLACK);
+            mEmptyView.setTextColor(Color.WHITE);
+            mLoadingView.setBackgroundColor(Color.BLACK);
+        }
         mLoadingView.showLoadingUI();
 
         mToolbarStub = (ViewStub) findViewById(R.id.action_bar_stub);
@@ -149,6 +161,13 @@ public class SelectableListLayout<E>
                 setToolbarShadowVisibility();
             }
         });
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mRecyclerView.setBackgroundColor(Color.BLACK);
+        }
+        mListContent = (FrameLayout) findViewById(R.id.list_content);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mListContent.setBackgroundColor(Color.BLACK);
+        }
 
         mItemAnimator = mRecyclerView.getItemAnimator();
 

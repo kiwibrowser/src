@@ -133,6 +133,10 @@ public class NewTabButton extends Button implements Drawable.Callback {
         mIncognitoDrawable = null;
     }
 
+    public void setTintList(ColorStateList tint) {
+        mModernDrawable.setTintList(tint);
+    }
+
     /**
      * Updates the visual state based on whether incognito or normal tabs are being created.
      * @param incognito Whether the button is now used for creating incognito tabs.

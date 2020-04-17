@@ -110,7 +110,7 @@ void ContentViewRenderView::SetOverlayVideoMode(
     bool enabled) {
   compositor_->SetRequiresAlphaChannel(enabled);
   compositor_->SetBackgroundColor(enabled ? SK_ColorTRANSPARENT
-                                          : SK_ColorWHITE);
+                                          : SK_ColorBLACK);
   compositor_->SetNeedsComposite();
 }
 

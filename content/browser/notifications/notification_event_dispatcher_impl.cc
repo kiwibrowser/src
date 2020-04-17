@@ -414,7 +414,7 @@ void NotificationEventDispatcherImpl::DispatchNotificationCloseEvent(
 
 void NotificationEventDispatcherImpl::RegisterNonPersistentNotificationListener(
     const std::string& notification_id,
-    blink::mojom::NonPersistentNotificationListenerPtrInfo listener_ptr_info) {
+    blink::mojom::NonPersistentNotificationListenerPtr event_listener_ptr) {
   if (non_persistent_notification_listeners_.count(notification_id)) {
     // Dispatch the close event for any previously displayed notification with
     // the same notification id. This happens whenever a non-persistent
@@ -425,19 +425,16 @@ void NotificationEventDispatcherImpl::RegisterNonPersistentNotificationListener(
     DispatchNonPersistentCloseEvent(notification_id, base::DoNothing());
   }
 
-  blink::mojom::NonPersistentNotificationListenerPtr listener_ptr(
-      std::move(listener_ptr_info));
-
   // Observe connection errors, which occur when the JavaScript object or the
   // renderer hosting them goes away. (For example through navigation.) The
   // listener gets freed together with |this|, thus the Unretained is safe.
-  listener_ptr.set_connection_error_handler(base::BindOnce(
+  event_listener_ptr.set_connection_error_handler(base::BindOnce(
       &NotificationEventDispatcherImpl::
           HandleConnectionErrorForNonPersistentNotificationListener,
       base::Unretained(this), notification_id));
 
   non_persistent_notification_listeners_.emplace(notification_id,
-                                                 std::move(listener_ptr));
+                                                 std::move(event_listener_ptr));
 }
 
 void NotificationEventDispatcherImpl::DispatchNonPersistentShowEvent(

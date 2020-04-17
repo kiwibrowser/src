@@ -11,7 +11,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_restrictions.h"
 #include "build/build_config.h"
-#include "content/public/browser/permission_manager.h"
+#include "content/public/browser/permission_controller_delegate.h"
 #include "content/public/browser/permission_type.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/content_switches.h"
@@ -772,13 +772,13 @@ IN_PROC_BROWSER_TEST_F(HeadlessBrowserTest, PermissionManagerAlwaysASK) {
   HeadlessWebContentsImpl* web_contents =
       HeadlessWebContentsImpl::From(headless_web_contents);
 
-  content::PermissionManager* permission_manager =
-      web_contents->browser_context()->GetPermissionManager();
-  EXPECT_NE(nullptr, permission_manager);
+  content::PermissionControllerDelegate* permission_controller_delegate =
+      web_contents->browser_context()->GetPermissionControllerDelegate();
+  EXPECT_NE(nullptr, permission_controller_delegate);
 
   // Check that the permission manager returns ASK for a given permission type.
   EXPECT_EQ(blink::mojom::PermissionStatus::ASK,
-            permission_manager->GetPermissionStatus(
+            permission_controller_delegate->GetPermissionStatus(
                 content::PermissionType::NOTIFICATIONS, url, url));
 }
 

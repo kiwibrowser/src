@@ -52,6 +52,8 @@ struct MEDIA_GPU_EXPORT AVDASurfaceBundle
 
   void ScheduleLayout(gfx::Rect rect);
 
+  // The last updated layout rect position for the |overlay|.
+  gfx::Rect layout_rect_;
   base::WeakPtrFactory<AVDASurfaceBundle> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(AVDASurfaceBundle);

@@ -133,6 +133,12 @@ class CC_EXPORT SingleThreadProxy : public Proxy,
   // Rasterization of tiles is only performed when |raster| is true.
   void CompositeImmediately(base::TimeTicks frame_begin_time, bool raster);
 
+  void NeedToSyncWithCompositorFrame(bool required, bool frame_updated);
+  void SendBeginMainFrameImmediately();
+  void PrepareToScroll() {
+    ready_to_scroll_ = true;
+  }
+
  protected:
   SingleThreadProxy(LayerTreeHost* layer_tree_host,
                     LayerTreeHostSingleThreadClient* client,
@@ -178,6 +184,13 @@ class CC_EXPORT SingleThreadProxy : public Proxy,
   bool animate_requested_;
   bool commit_requested_;
   bool inside_synchronous_composite_;
+
+  base::Closure begin_main_frame_closure_;
+  base::CancelableClosure begin_main_frame_task_;
+  std::deque<viz::BeginFrameArgs> begin_main_frame_args_;
+  bool sync_with_compositor_frame_;
+  bool composited_frame_updated_;
+  bool ready_to_scroll_;
 
   // True if a request to the LayerTreeHostClient to create an output surface
   // is still outstanding.

@@ -27,6 +27,7 @@ class RulesetServiceDelegate {
   // ruleset file will be used (if any).
   virtual void TryOpenAndSetRulesetFile(
       const base::FilePath& file_path,
+      int expected_checksum,
       base::OnceCallback<void(base::File)> callback) = 0;
 
   // Redistributes the new version of the |ruleset| to all existing consumers,

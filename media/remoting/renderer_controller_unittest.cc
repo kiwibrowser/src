@@ -138,10 +138,7 @@ class RendererControllerTest : public ::testing::Test,
     decoded_frames_ = frame_rate * kDelayedStartDuration.InSeconds();
     clock_.Advance(kDelayedStartDuration);
     RunUntilIdle();
-    const base::Closure callback =
-        controller_->delayed_start_stability_timer_.user_task();
-    callback.Run();
-    controller_->delayed_start_stability_timer_.Stop();
+    controller_->delayed_start_stability_timer_.FireNow();
   }
 
   void ExpectInDelayedStart() const {

@@ -82,41 +82,46 @@ class DelayableBackend : public disk_cache::Backend {
   }
   int32_t GetEntryCount() const override { return backend_->GetEntryCount(); }
   int OpenEntry(const std::string& key,
+                net::RequestPriority request_priority,
                 disk_cache::Entry** entry,
-                const CompletionCallback& callback) override {
+                CompletionOnceCallback callback) override {
     if (delay_open_entry_ && open_entry_callback_.is_null()) {
       open_entry_callback_ = base::BindOnce(
           &DelayableBackend::OpenEntryDelayedImpl, base::Unretained(this), key,
-          base::Unretained(entry), callback);
+          base::Unretained(entry), std::move(callback));
       return net::ERR_IO_PENDING;
     }
-    return backend_->OpenEntry(key, entry, callback);
+    return backend_->OpenEntry(key, request_priority, entry,
+                               std::move(callback));
   }
 
   int CreateEntry(const std::string& key,
+                  net::RequestPriority request_priority,
                   disk_cache::Entry** entry,
-                  const CompletionCallback& callback) override {
-    return backend_->CreateEntry(key, entry, callback);
+                  CompletionOnceCallback callback) override {
+    return backend_->CreateEntry(key, request_priority, entry,
+                                 std::move(callback));
   }
   int DoomEntry(const std::string& key,
-                const CompletionCallback& callback) override {
-    return backend_->DoomEntry(key, callback);
+                net::RequestPriority request_priority,
+                CompletionOnceCallback callback) override {
+    return backend_->DoomEntry(key, request_priority, std::move(callback));
   }
-  int DoomAllEntries(const CompletionCallback& callback) override {
-    return backend_->DoomAllEntries(callback);
+  int DoomAllEntries(CompletionOnceCallback callback) override {
+    return backend_->DoomAllEntries(std::move(callback));
   }
   int DoomEntriesBetween(base::Time initial_time,
                          base::Time end_time,
-                         const CompletionCallback& callback) override {
-    return backend_->DoomEntriesBetween(initial_time, end_time, callback);
+                         CompletionOnceCallback callback) override {
+    return backend_->DoomEntriesBetween(initial_time, end_time,
+                                        std::move(callback));
   }
   int DoomEntriesSince(base::Time initial_time,
-                       const CompletionCallback& callback) override {
-    return backend_->DoomEntriesSince(initial_time, callback);
+                       CompletionOnceCallback callback) override {
+    return backend_->DoomEntriesSince(initial_time, std::move(callback));
   }
-  int CalculateSizeOfAllEntries(
-      const CompletionCallback& callback) override {
-    return backend_->CalculateSizeOfAllEntries(callback);
+  int CalculateSizeOfAllEntries(CompletionOnceCallback callback) override {
+    return backend_->CalculateSizeOfAllEntries(std::move(callback));
   }
   std::unique_ptr<Iterator> CreateIterator() override {
     return backend_->CreateIterator();
@@ -135,6 +140,8 @@ class DelayableBackend : public disk_cache::Backend {
     return 0u;
   }
 
+  int64_t MaxFileSize() const override { return backend_->MaxFileSize(); }
+
   // Call to continue a delayed call to OpenEntry.
   bool OpenEntryContinue() {
     if (open_entry_callback_.is_null())
@@ -148,10 +155,12 @@ class DelayableBackend : public disk_cache::Backend {
  private:
   void OpenEntryDelayedImpl(const std::string& key,
                             disk_cache::Entry** entry,
-                            const CompletionCallback& callback) {
-    int rv = backend_->OpenEntry(key, entry, callback);
+                            CompletionOnceCallback callback) {
+    auto copyable_callback =
+        base::AdaptCallbackForRepeating(std::move(callback));
+    int rv = backend_->OpenEntry(key, net::HIGHEST, entry, copyable_callback);
     if (rv != net::ERR_IO_PENDING)
-      callback.Run(rv);
+      copyable_callback.Run(rv);
   }
 
   std::unique_ptr<disk_cache::Backend> backend_;
@@ -746,6 +755,7 @@ class CacheStorageCacheTest : public testing::Test {
 
 class CacheStorageCacheTestP : public CacheStorageCacheTest,
                                public testing::WithParamInterface<bool> {
+ public:
   bool MemoryOnly() override { return !GetParam(); }
 };
 
@@ -1824,10 +1834,19 @@ TEST_F(CacheStorageCacheTest, TestDoubleOpaquePut) {
 }
 
 TEST_P(CacheStorageCacheTestP, GetSizeThenClose) {
+  // Create the backend and put something in it.
   EXPECT_TRUE(Put(body_request_, body_response_));
+  // Get a reference to the response in the cache.
+  EXPECT_TRUE(Match(body_request_));
+  blink::mojom::BlobPtr blob = callback_response_->blob->TakeBlobPtr();
+  callback_response_ = nullptr;
+
   int64_t cache_size = Size();
   EXPECT_EQ(cache_size, GetSizeThenClose());
   VerifyAllOpsFail();
+
+  // Reading blob should fail.
+  EXPECT_TRUE(ResponseBodiesEqual("", blob.get()));
 }
 
 TEST_P(CacheStorageCacheTestP, OpsFailOnClosedBackend) {
@@ -1835,6 +1854,30 @@ TEST_P(CacheStorageCacheTestP, OpsFailOnClosedBackend) {
   EXPECT_TRUE(Put(body_request_, body_response_));
   EXPECT_TRUE(Close());
   VerifyAllOpsFail();
+}
+
+TEST_P(CacheStorageCacheTestP, BlobReferenceDelaysClose) {
+  // Create the backend and put something in it.
+  EXPECT_TRUE(Put(body_request_, body_response_));
+  // Get a reference to the response in the cache.
+  EXPECT_TRUE(Match(body_request_));
+  blink::mojom::BlobPtr blob = callback_response_->blob->TakeBlobPtr();
+  callback_response_ = nullptr;
+
+  base::RunLoop loop;
+  cache_->Close(base::BindOnce(&CacheStorageCacheTest::CloseCallback,
+                               base::Unretained(this),
+                               base::Unretained(&loop)));
+  browser_thread_bundle_.RunUntilIdle();
+  // If MemoryOnly closing does succeed right away.
+  EXPECT_EQ(MemoryOnly(), callback_closed_);
+
+  // Reading blob should succeed.
+  EXPECT_TRUE(ResponseBodiesEqual(expected_blob_data_, blob.get()));
+  blob.reset();
+
+  loop.Run();
+  EXPECT_TRUE(callback_closed_);
 }
 
 TEST_P(CacheStorageCacheTestP, VerifySerialScheduling) {

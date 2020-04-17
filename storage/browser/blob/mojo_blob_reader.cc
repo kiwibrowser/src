@@ -180,35 +180,39 @@ void MojoBlobReader::ReadMore() {
       base::BindOnce(&MojoBlobReader::DidRead, base::Unretained(this), false));
   switch (read_status) {
     case BlobReader::Status::NET_ERROR:
-      TRACE_EVENT_ASYNC_END1("Blob", "BlobReader::ReadMore", this, "result",
-                             "error");
-      NotifyCompletedAndDeleteIfNeeded(blob_reader_->net_error());
+      DidRead(true, blob_reader_->net_error());
       return;
     case BlobReader::Status::IO_PENDING:
       // Wait for DidRead.
       return;
     case BlobReader::Status::DONE:
-      if (bytes_read > 0) {
-        DidRead(true, bytes_read);
-      } else {
-        TRACE_EVENT_ASYNC_END1("Blob", "BlobReader::ReadMore", this, "result",
-                               "success");
-        writable_handle_watcher_.Cancel();
-        pending_write_->Complete(0);
-        pending_write_ = nullptr;  // This closes the data pipe.
-        NotifyCompletedAndDeleteIfNeeded(net::OK);
-        return;
-      }
+      DidRead(true, bytes_read);
+      return;
   }
 }
 
 void MojoBlobReader::DidRead(bool completed_synchronously, int num_bytes) {
-  delegate_->DidRead(num_bytes);
+  if (num_bytes < 0) {
+    TRACE_EVENT_ASYNC_END2("Blob", "BlobReader::ReadMore", this, "result",
+                           "error", "net_error", num_bytes);
+    writable_handle_watcher_.Cancel();
+    pending_write_->Complete(0);
+    pending_write_ = nullptr;  // This closes the data pipe.
+    NotifyCompletedAndDeleteIfNeeded(num_bytes);
+    return;
+  }
+  if (num_bytes > 0)
+    delegate_->DidRead(num_bytes);
   TRACE_EVENT_ASYNC_END2("Blob", "BlobReader::ReadMore", this, "result",
                          "success", "num_bytes", num_bytes);
   response_body_stream_ = pending_write_->Complete(num_bytes);
   total_written_bytes_ += num_bytes;
   pending_write_ = nullptr;
+  if (num_bytes == 0) {
+    response_body_stream_.reset();  // This closes the data pipe.
+    NotifyCompletedAndDeleteIfNeeded(net::OK);
+    return;
+  }
   if (completed_synchronously) {
     base::SequencedTaskRunnerHandle::Get()->PostTask(
         FROM_HERE,

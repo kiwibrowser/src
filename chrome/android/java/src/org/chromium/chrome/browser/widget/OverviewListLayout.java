@@ -104,15 +104,20 @@ public class OverviewListLayout extends Layout implements AccessibilityTabModelA
     @Override
     public void onTabCreating(int sourceTabId) {
         super.onTabCreating(sourceTabId);
+        forceAnimationToFinish();
         startHiding(sourceTabId, false);
+        forceAnimationToFinish();
     }
 
     @Override
     public void onTabCreated(long time, int tabId, int tabIndex, int sourceTabId,
             boolean newIsIncognito, boolean background, float originX, float originY) {
+        forceAnimationToFinish();
         super.onTabCreated(
                 time, tabId, tabIndex, sourceTabId, newIsIncognito, background, originX, originY);
+        forceAnimationToFinish();
         startHiding(tabId, false);
+        forceAnimationToFinish();
     }
 
     @Override

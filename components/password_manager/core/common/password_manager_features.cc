@@ -63,7 +63,7 @@ const base::Feature kPasswordExport = {"PasswordExport",
 
 // Controls the ability to import passwords from Chrome's settings page.
 const base::Feature kPasswordImport = {"PasswordImport",
-                                       base::FEATURE_DISABLED_BY_DEFAULT};
+                                       base::FEATURE_ENABLED_BY_DEFAULT};
 
 // Allows searching for saved passwords in the settings page on mobile devices.
 const base::Feature kPasswordSearchMobile = {"PasswordSearchMobile",

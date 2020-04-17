@@ -4,6 +4,7 @@
 
 package org.chromium.chrome.browser.preferences.autofill;
 
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -12,8 +13,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
+import android.widget.TextView;
 
 import org.chromium.chrome.R;
+import org.chromium.base.ContextUtils;
 import org.chromium.chrome.browser.autofill.PersonalDataManager;
 import org.chromium.chrome.browser.autofill.PersonalDataManager.AutofillProfile;
 import org.chromium.chrome.browser.autofill.PersonalDataManager.CreditCard;
@@ -41,7 +44,33 @@ abstract class AutofillCreditCardEditor extends AutofillEditorBase {
 
         // Populate the billing address dropdown.
         ArrayAdapter<AutofillProfile> profilesAdapter = new ArrayAdapter<AutofillProfile>(
-                getActivity(), android.R.layout.simple_spinner_item);
+                getActivity(), android.R.layout.simple_spinner_item) {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                View view = super.getView(position, convertView, parent);
+                if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                    TextView text1 = (TextView) view.findViewById(android.R.id.text1);
+                    if (text1 != null)
+                        text1.setTextColor(Color.WHITE);
+                }
+
+                return view;
+            };
+
+            @Override
+            public View getDropDownView(int position, View convertView,
+                                        ViewGroup parent) {
+                View view = super.getDropDownView(position, convertView, parent);
+                if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                    view.setBackgroundColor(Color.BLACK);
+                    TextView tv = (TextView) view;
+                    tv.setBackgroundColor(Color.BLACK);
+                    tv.setTextColor(Color.WHITE);
+                }
+
+                return view;
+            }
+        };
         profilesAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
         AutofillProfile noSelection = new AutofillProfile();

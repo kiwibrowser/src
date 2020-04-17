@@ -329,6 +329,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
   RenderFrameHostDelegate* delegate() { return delegate_; }
   FrameTreeNode* frame_tree_node() { return frame_tree_node_; }
 
+  // Methods to add/remove/reset/query child FrameTreeNodes of this frame.
+  // See class-level comment for FrameTreeNode for how the frame tree is
+  // represented.
+  size_t child_count() { return children_.size(); }
+  FrameTreeNode* child_at(size_t index) const { return children_[index].get(); }
+  FrameTreeNode* AddChild(std::unique_ptr<FrameTreeNode> child,
+                          int process_id,
+                          int frame_routing_id);
+  void RemoveChild(FrameTreeNode* child);
+  void ResetChildren();
+
   // Allows FrameTreeNode::SetCurrentURL to update this frame's last committed
   // URL.  Do not call this directly, since we rely on SetCurrentURL to track
   // whether a real load has committed or not.
@@ -432,8 +443,12 @@ class CONTENT_EXPORT RenderFrameHostImpl
   void OnSwappedOut();
 
   // This method returns true from the time this RenderFrameHost is created
-  // until SwapOut is called, at which point it is pending deletion.
-  bool is_active() { return !is_waiting_for_swapout_ack_; }
+  // until it is pending deletion. Pending deletion starts when SwapOut is
+  // called on the frame or one of its ancestors.
+  // BackForwardCache: Returns false when the frame is in the BackForwardCache.
+  bool is_active() {
+    return unload_state_ == UnloadState::NotRun && !is_in_back_forward_cache_;
+  }
 
   // Navigates to an interstitial page represented by the provided data URL.
   void NavigateToInterstitialURL(const GURL& data_url);
@@ -731,6 +746,32 @@ class CONTENT_EXPORT RenderFrameHostImpl
   // Allow tests to override the timeout used to keep subframe processes alive
   // for unload handler processing.
   void SetSubframeUnloadTimeoutForTesting(const base::TimeDelta& timeout);
+
+  // Returns the list of NavigationEntry ids corresponding to NavigationRequests
+  // waiting to commit in this RenderFrameHost.
+  std::set<int> GetNavigationEntryIdsPendingCommit();
+
+  void DidCommitProvisionalLoadForTesting(
+      std::unique_ptr<FrameHostMsg_DidCommitProvisionalLoad_Params> params,
+      service_manager::mojom::InterfaceProviderRequest
+          interface_provider_request);
+
+  service_manager::BinderRegistry& BinderRegistryForTesting() {
+    return *registry_;
+  }
+
+  // Called when the WebAudio AudioContext given by |audio_context_id| has
+  // started (or stopped) playing audible audio.
+  void AudioContextPlaybackStarted(int audio_context_id);
+  void AudioContextPlaybackStopped(int audio_context_id);
+
+  // BackForwardCache:
+  //
+  // When a RenderFrameHostImpl enters the BackForwardCache, the document enters
+  // in a "Frozen" state where no Javascript can run.
+  void EnterBackForwardCache();  // The document enters the BackForwardCache.
+  void LeaveBackForwardCache();  // The document leaves the BackForwardCache.
+  bool is_in_back_forward_cache() { return is_in_back_forward_cache_; }
 
  protected:
   friend class RenderFrameHostFactory;
@@ -1184,6 +1225,9 @@ class CONTENT_EXPORT RenderFrameHostImpl
   // The FrameTreeNode which this RenderFrameHostImpl is hosted in.
   FrameTreeNode* const frame_tree_node_;
 
+  // The immediate children of this specific frame.
+  std::vector<std::unique_ptr<FrameTreeNode>> children_;
+
   // The active parent RenderFrameHost for this frame, if it is a subframe.
   // Null for the main frame.  This is cached because the parent FrameTreeNode
   // may change its current RenderFrameHost while this child is pending
@@ -1537,6 +1581,49 @@ class CONTENT_EXPORT RenderFrameHostImpl
   // |RenderFrame|.
   network::mojom::URLLoaderFactoryPtr
       network_service_connection_error_handler_holder_;
+
+  // Whether UpdateSubresourceLoaderFactories should recreate the default
+  // URLLoaderFactory when handling a NetworkService crash.  In case the frame
+  // is covered by AppCache, only initiator-specific factories need to be
+  // refreshed, but the main, AppCache-specific factory shouldn't be refreshed.
+  bool recreate_default_url_loader_factory_after_network_service_crash_ = false;
+
+  // Set of request-initiator-origins that require a separate URLLoaderFactory
+  // (e.g. for handling requests initiated by extension content scripts that
+  // require relaxed CORS/CORB rules).
+  base::flat_set<url::Origin> initiators_requiring_separate_url_loader_factory_;
+
+  // Holds the renderer generated ID and global request ID for the main frame
+  // request.
+  std::pair<int, GlobalRequestID> main_frame_request_ids_;
+
+  // If |ResourceLoadComplete()| is called for the main resource before
+  // |DidCommitProvisionalLoad()|, the load info is saved here to call
+  // |ResourceLoadComplete()| when |DidCommitProvisionalLoad()| is called. This
+  // is necessary so the renderer ID can be mapped to the global ID in
+  // |DidCommitProvisionalLoad()|. This situation should only happen when an
+  // empty document is loaded.
+  mojom::ResourceLoadInfoPtr deferred_main_frame_load_info_;
+
+  enum class UnloadState {
+    // The initial state. The frame is alive.
+    NotRun,
+
+    // An event such as a navigation happened causing the frame to start its
+    // deletion. IPC are sent to execute the unload handlers and delete the
+    // RenderFrame. The RenderFrameHost is waiting for an ACK. Either
+    // FrameHostMsg_Swapout_ACK for the navigating frame, or FrameHostMsg_Detach
+    // for its subframe.
+    InProgress,
+
+    // The unload handlers have run. Once all the descendant frames in other
+    // processes are gone, this RenderFrameHost can delete itself too.
+    Completed,
+  };
+  UnloadState unload_state_ = UnloadState::NotRun;
+
+  // BackForwardCache:
+  bool is_in_back_forward_cache_ = false;
 
   // NOTE: This must be the last member.
   base::WeakPtrFactory<RenderFrameHostImpl> weak_ptr_factory_;

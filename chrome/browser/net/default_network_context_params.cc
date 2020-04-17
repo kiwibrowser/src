@@ -45,7 +45,8 @@ network::mojom::NetworkContextParamsPtr CreateDefaultNetworkContextParams() {
   quic_user_agent_id.append(
       version_info::GetProductNameAndVersionForUserAgent());
   quic_user_agent_id.push_back(' ');
-  quic_user_agent_id.append(content::BuildOSCpuInfo());
+  quic_user_agent_id.append(
+      content::BuildOSCpuInfo(false /* include_android_build_number */));
   network_context_params->quic_user_agent_id = quic_user_agent_id;
 
   const base::CommandLine& command_line =

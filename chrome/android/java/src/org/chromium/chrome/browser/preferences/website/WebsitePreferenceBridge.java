@@ -252,6 +252,14 @@ public abstract class WebsitePreferenceBridge {
         return nativeGetAdBlockingActivated(origin);
     }
 
+    public static boolean getRealAdBlockingActivated(String origin) {
+        return nativeGetRealAdBlockingActivated(origin);
+    }
+
+    public static void setRealAdBlockingActivated(String origin, int contentSettingsType, boolean isIncognito) {
+        nativeSetRealAdBlockingActivated(origin, contentSettingsType, isIncognito);
+    }
+
     private static native void nativeGetClipboardOrigins(Object list);
     static native int nativeGetClipboardSettingForOrigin(
             String origin, boolean isIncognito);
@@ -302,5 +310,7 @@ public abstract class WebsitePreferenceBridge {
     private static native boolean nativeIsPermissionControlledByDSE(
             @ContentSettingsType int contentSettingsType, String origin, boolean isIncognito);
     private static native boolean nativeGetAdBlockingActivated(String origin);
+    private static native boolean nativeGetRealAdBlockingActivated(String origin);
+    private static native void nativeSetRealAdBlockingActivated(String origin, int contentSettingsType, boolean isIncognito);
     static native void nativeResetNotificationsSettingsForTest();
 }

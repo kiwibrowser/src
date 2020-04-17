@@ -25,10 +25,6 @@
 #include "content/public/browser/notification_registrar.h"
 #include "url/gurl.h"
 
-#if defined(OS_ANDROID)
-#error "Instant is only used on desktop";
-#endif
-
 class InstantIOContext;
 class InstantServiceObserver;
 class Profile;
@@ -71,6 +67,7 @@ class InstantService : public KeyedService,
   // Invoked whenever an NTP is opened. Causes an async refresh of Most Visited
   // items.
   void OnNewTabPageOpened();
+  void FocusOmnibox();
 
   // Most visited item APIs.
   //

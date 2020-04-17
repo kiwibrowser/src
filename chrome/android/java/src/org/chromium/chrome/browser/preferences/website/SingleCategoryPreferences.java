@@ -30,6 +30,11 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 
+
+import org.chromium.base.ContextUtils;
+import android.content.SharedPreferences;
+
+
 import org.chromium.base.metrics.RecordUserAction;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.help.HelpAndFeedback;
@@ -56,6 +61,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.ListView;
 
 /**
  * Shows a list of sites in a particular Site Settings category. For example, this could show all
@@ -121,6 +132,9 @@ public class SingleCategoryPreferences extends PreferenceFragment
     private void displayEmptyScreenMessage() {
         if (mEmptyView != null) {
             mEmptyView.setText(R.string.no_saved_website_settings);
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                mEmptyView.setTextColor(Color.GRAY);
+            }
         }
     }
 
@@ -251,6 +265,18 @@ public class SingleCategoryPreferences extends PreferenceFragment
         }
     }
 
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            view.setBackgroundColor(Color.BLACK);
+            ListView list = (ListView) view.findViewById(android.R.id.list);
+            if (list != null)
+                list.setDivider(new ColorDrawable(Color.GRAY));
+                list.setDividerHeight((int) getResources().getDisplayMetrics().density);
+        }
+    }
+
     /**
      * Returns the category being displayed. For testing.
      */
@@ -348,10 +374,6 @@ public class SingleCategoryPreferences extends PreferenceFragment
                 }
             });
         }
-
-        MenuItem help = menu.add(
-                Menu.NONE, R.id.menu_id_targeted_help, Menu.NONE, R.string.menu_help);
-        help.setIcon(R.drawable.ic_help_and_feedback);
     }
 
     @Override
@@ -447,6 +469,7 @@ public class SingleCategoryPreferences extends PreferenceFragment
             } else if (mCategory.showCookiesSites()) {
                 PrefServiceBridge.getInstance().setAllowCookiesEnabled((boolean) newValue);
                 updateThirdPartyCookiesCheckBox();
+                updateCookieConsentCheckBox();
             } else if (mCategory.showGeolocationSites()) {
                 PrefServiceBridge.getInstance().setAllowLocationEnabled((boolean) newValue);
             } else if (mCategory.showJavaScriptSites()) {
@@ -465,12 +488,14 @@ public class SingleCategoryPreferences extends PreferenceFragment
                 PrefServiceBridge.getInstance().setSoundEnabled((boolean) newValue);
             } else if (mCategory.showUsbDevices()) {
                 PrefServiceBridge.getInstance().setUsbEnabled((boolean) newValue);
+            } else if (mCategory.showDesktopModeSites()) {
+                PrefServiceBridge.getInstance().setDesktopModeEnabled((boolean) newValue);
             }
 
             // Categories that support adding exceptions also manage the 'Add site' preference.
             // This should only be used for settings that have host-pattern based exceptions.
             if (mCategory.showAutoplaySites() || mCategory.showBackgroundSyncSites()
-                    || mCategory.showJavaScriptSites() || mCategory.showSoundSites()) {
+                    || mCategory.showJavaScriptSites() || mCategory.showAdsSites() || mCategory.showSoundSites() || (mCategory.showDesktopModeSites() && PrefServiceBridge.getInstance().desktopModeEnabled())) {
                 if ((boolean) newValue) {
                     Preference addException = getPreferenceScreen().findPreference(
                             ADD_EXCEPTION_KEY);
@@ -491,6 +516,10 @@ public class SingleCategoryPreferences extends PreferenceFragment
             getInfoForOrigins();
         } else if (THIRD_PARTY_COOKIES_TOGGLE_KEY.equals(preference.getKey())) {
             PrefServiceBridge.getInstance().setBlockThirdPartyCookiesEnabled(!((boolean) newValue));
+        } else if ("accept_cookie_consent".equals(preference.getKey())) {
+            SharedPreferences.Editor sharedPreferencesEditor = ContextUtils.getAppSharedPreferences().edit();
+            sharedPreferencesEditor.putBoolean("accept_cookie_consent", (boolean)newValue);
+            sharedPreferencesEditor.apply();
         } else if (NOTIFICATIONS_VIBRATE_TOGGLE_KEY.equals(preference.getKey())) {
             PrefServiceBridge.getInstance().setNotificationsVibrateEnabled((boolean) newValue);
         }
@@ -505,6 +534,8 @@ public class SingleCategoryPreferences extends PreferenceFragment
             resource = R.string.website_settings_add_site_description_background_sync;
         } else if (mCategory.showJavaScriptSites()) {
             resource = R.string.website_settings_add_site_description_javascript;
+        } else if (mCategory.showAdsSites()) {
+            resource = R.string.website_settings_add_site_description_ads;
         } else if (mCategory.showSoundSites()) {
             resource = PrefServiceBridge.getInstance().isSoundEnabled()
                     ? R.string.website_settings_add_site_description_sound_block
@@ -576,6 +607,8 @@ public class SingleCategoryPreferences extends PreferenceFragment
         if ((mCategory.showAutoplaySites() && !PrefServiceBridge.getInstance().isAutoplayEnabled())
                 || (mCategory.showJavaScriptSites()
                            && !PrefServiceBridge.getInstance().javaScriptEnabled())
+                || (mCategory.showAdsSites()
+                           && !PrefServiceBridge.getInstance().adsEnabled())
                 || mCategory.showSoundSites()
                 || (mCategory.showBackgroundSyncSites()
                            && !PrefServiceBridge.getInstance().isBackgroundSyncAllowed())) {
@@ -719,11 +752,15 @@ public class SingleCategoryPreferences extends PreferenceFragment
         // Configure/hide the third-party cookie toggle, as needed.
         Preference thirdPartyCookies = getPreferenceScreen().findPreference(
                 THIRD_PARTY_COOKIES_TOGGLE_KEY);
+        Preference acceptCookieConsent = getPreferenceScreen().findPreference("accept_cookie_consent");
         if (mCategory.showCookiesSites()) {
             thirdPartyCookies.setOnPreferenceChangeListener(this);
+            acceptCookieConsent.setOnPreferenceChangeListener(this);
             updateThirdPartyCookiesCheckBox();
+            updateCookieConsentCheckBox();
         } else {
             getPreferenceScreen().removePreference(thirdPartyCookies);
+            getPreferenceScreen().removePreference(acceptCookieConsent);
         }
 
         // Configure/hide the notifications vibrate toggle, as needed.
@@ -828,6 +865,8 @@ public class SingleCategoryPreferences extends PreferenceFragment
                 } else if (mCategory.showGeolocationSites()) {
                     globalToggle.setChecked(
                             LocationSettings.getInstance().isChromeLocationSettingEnabled());
+                } else if (mCategory.showDesktopModeSites()) {
+                    globalToggle.setChecked(PrefServiceBridge.getInstance().desktopModeEnabled());
                 } else if (mCategory.showJavaScriptSites()) {
                     globalToggle.setChecked(PrefServiceBridge.getInstance().javaScriptEnabled());
                 } else if (mCategory.showMicrophoneSites()) {
@@ -857,6 +896,13 @@ public class SingleCategoryPreferences extends PreferenceFragment
         thirdPartyCookiesPref.setEnabled(PrefServiceBridge.getInstance().isAcceptCookiesEnabled());
         thirdPartyCookiesPref.setManagedPreferenceDelegate(
                 preference -> PrefServiceBridge.getInstance().isBlockThirdPartyCookiesManaged());
+    }
+
+    private void updateCookieConsentCheckBox() {
+        ChromeBaseCheckBoxPreference cookieConsentPref = (ChromeBaseCheckBoxPreference)
+                getPreferenceScreen().findPreference("accept_cookie_consent");
+        cookieConsentPref.setChecked(ContextUtils.getAppSharedPreferences().getBoolean("accept_cookie_consent", true));
+        cookieConsentPref.setEnabled(PrefServiceBridge.getInstance().isAcceptCookiesEnabled());
     }
 
     private void updateNotificationsVibrateCheckBox() {

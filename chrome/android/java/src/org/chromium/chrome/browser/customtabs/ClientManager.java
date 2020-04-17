@@ -410,7 +410,7 @@ class ClientManager {
                 Bundle extras = null;
                 if (verified && online != null) {
                     extras = new Bundle();
-                    extras.putBoolean(CustomTabsCallback.ONLINE_EXTRAS_KEY, online);
+                    extras.putBoolean("online", online);
                 }
                 callback.onRelationshipValidationResult(relation, origin.uri(), verified, extras);
             }

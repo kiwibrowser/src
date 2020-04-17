@@ -59,7 +59,7 @@ class ServiceWorkerContext;
 class SharedWorkerService;
 class WebPackageContext;
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 class HostZoomLevelContext;
 class HostZoomMap;
 class ZoomLevelDelegate;
@@ -106,7 +106,7 @@ class CONTENT_EXPORT StoragePartition {
   virtual ServiceWorkerContext* GetServiceWorkerContext() = 0;
   virtual SharedWorkerService* GetSharedWorkerService() = 0;
   virtual CacheStorageContext* GetCacheStorageContext() = 0;
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
   virtual HostZoomMap* GetHostZoomMap() = 0;
   virtual HostZoomLevelContext* GetHostZoomLevelContext() = 0;
   virtual ZoomLevelDelegate* GetZoomLevelDelegate() = 0;

@@ -25,6 +25,7 @@ import org.chromium.content_public.browser.ContentViewCore;
 import org.chromium.content_public.browser.ImeAdapter;
 import org.chromium.content_public.browser.RenderCoordinates;
 import org.chromium.content_public.browser.SmartClipProvider;
+import org.chromium.content_public.browser.ViewEventSink;
 import org.chromium.content_public.browser.WebContents;
 import org.chromium.content_public.browser.WebContentsAccessibility;
 import org.chromium.ui.base.EventForwarder;
@@ -34,7 +35,7 @@ import org.chromium.ui.base.EventForwarder;
  * the various {@link View} functionality to it.
  */
 public class ContentView
-        extends FrameLayout implements ContentViewCore.InternalAccessDelegate, SmartClipProvider {
+        extends FrameLayout implements ViewEventSink.InternalAccessDelegate, SmartClipProvider {
     private static final String TAG = "cr.ContentView";
 
     // Default value to signal that the ContentView's size need not be overridden.
@@ -42,6 +43,7 @@ public class ContentView
             MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
 
     private final WebContents mWebContents;
+    private ViewEventSink mViewEventSink;
     private EventForwarder mEventForwarder;
 
     /**
@@ -151,11 +153,8 @@ public class ContentView
         try {
             TraceEvent.begin("ContentView.onFocusChanged");
             super.onFocusChanged(gainFocus, direction, previouslyFocusedRect);
-            ContentViewCore cvc = getContentViewCore();
-            if (cvc != null) {
-                cvc.setHideKeyboardOnBlur(true);
-                cvc.onViewFocusChanged(gainFocus);
-            }
+            getViewEventSink().setHideKeyboardOnBlur(true);
+            getViewEventSink().onViewFocusChanged(gainFocus);
         } finally {
             TraceEvent.end("ContentView.onFocusChanged");
         }
@@ -164,8 +163,7 @@ public class ContentView
     @Override
     public void onWindowFocusChanged(boolean hasWindowFocus) {
         super.onWindowFocusChanged(hasWindowFocus);
-        ContentViewCore cvc = getContentViewCore();
-        if (cvc != null) cvc.onWindowFocusChanged(hasWindowFocus);
+        getViewEventSink().onWindowFocusChanged(hasWindowFocus);
     }
 
     @Override
@@ -219,6 +217,11 @@ public class ContentView
         return mEventForwarder;
     }
 
+    private ViewEventSink getViewEventSink() {
+        if (mViewEventSink == null) mViewEventSink = ViewEventSink.from(mWebContents);
+        return mViewEventSink;
+    }
+
     @Override
     public boolean performLongClick() {
         return false;
@@ -226,8 +229,7 @@ public class ContentView
 
     @Override
     protected void onConfigurationChanged(Configuration newConfig) {
-        ContentViewCore cvc = getContentViewCore();
-        if (cvc != null) cvc.onConfigurationChanged(newConfig);
+        getViewEventSink().onConfigurationChanged(newConfig);
         super.onConfigurationChanged(newConfig);
     }
 
@@ -297,15 +299,13 @@ public class ContentView
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        ContentViewCore cvc = getContentViewCore();
-        if (cvc != null) cvc.onAttachedToWindow();
+        getViewEventSink().onAttachedToWindow();
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        ContentViewCore cvc = getContentViewCore();
-        if (cvc != null) cvc.onDetachedFromWindow();
+        getViewEventSink().onDetachedFromWindow();
     }
 
     // Implements SmartClipProvider
@@ -321,7 +321,7 @@ public class ContentView
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    //              Start Implementation of ContentViewCore.InternalAccessDelegate               //
+    //              Start Implementation of ViewEventSink.InternalAccessDelegate                 //
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     @Override
@@ -340,7 +340,7 @@ public class ContentView
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    //                End Implementation of ContentViewCore.InternalAccessDelegate               //
+    //                End Implementation of ViewEventSink.InternalAccessDelegate                 //
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     private static class ContentViewApi23 extends ContentView {

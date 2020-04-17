@@ -35,16 +35,6 @@ struct COMPONENT_EXPORT(RESOURCE_COORDINATOR_PUBLIC_MOJOM)
 
 template <>
 struct COMPONENT_EXPORT(RESOURCE_COORDINATOR_PUBLIC_MOJOM)
-    EnumTraits<memory_instrumentation::mojom::HeapProfilingMode,
-               base::trace_event::HeapProfilingMode> {
-  static memory_instrumentation::mojom::HeapProfilingMode ToMojom(
-      base::trace_event::HeapProfilingMode mode);
-  static bool FromMojom(memory_instrumentation::mojom::HeapProfilingMode input,
-                        base::trace_event::HeapProfilingMode* out);
-};
-
-template <>
-struct COMPONENT_EXPORT(RESOURCE_COORDINATOR_PUBLIC_MOJOM)
     StructTraits<memory_instrumentation::mojom::RequestArgsDataView,
                  base::trace_event::MemoryDumpRequestArgs> {
   static uint64_t dump_guid(

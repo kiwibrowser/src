@@ -13,6 +13,8 @@ import org.chromium.chrome.browser.profiles.Profile;
 import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.toolbar.ToolbarDataProvider;
 import org.chromium.components.security_state.ConnectionSecurityLevel;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
 
 class SearchBoxDataProvider implements ToolbarDataProvider {
     private Tab mTab;
@@ -65,6 +67,8 @@ class SearchBoxDataProvider implements ToolbarDataProvider {
 
     @Override
     public int getPrimaryColor() {
+        if (ContextUtils.getAppSharedPreferences() != null && (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")))
+          return Color.BLACK;
         return 0;
     }
 

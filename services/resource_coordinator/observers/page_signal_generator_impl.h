@@ -60,6 +60,8 @@ class PageSignalGeneratorImpl : public CoordinationUnitGraphObserver,
   void OnProcessPropertyChanged(const ProcessCoordinationUnitImpl* process_cu,
                                 const mojom::PropertyType property_type,
                                 int64_t value) override;
+  void OnFrameEventReceived(const FrameCoordinationUnitImpl* frame_cu,
+                            const mojom::Event event) override;
   void OnPageEventReceived(const PageCoordinationUnitImpl* page_cu,
                            const mojom::Event event) override;
 
@@ -71,6 +73,8 @@ class PageSignalGeneratorImpl : public CoordinationUnitGraphObserver,
   friend class PageSignalGeneratorImplTest;
   FRIEND_TEST_ALL_PREFIXES(PageSignalGeneratorImplTest, IsLoading);
   FRIEND_TEST_ALL_PREFIXES(PageSignalGeneratorImplTest, IsIdling);
+  FRIEND_TEST_ALL_PREFIXES(PageSignalGeneratorImplTest,
+                           NonPersistentNotificationCreatedEvent);
   FRIEND_TEST_ALL_PREFIXES(PageSignalGeneratorImplTest,
                            PageDataCorrectlyManaged);
   FRIEND_TEST_ALL_PREFIXES(PageSignalGeneratorImplTest,

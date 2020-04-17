@@ -12,10 +12,11 @@
 #include "content/public/browser/manifest_icon_downloader.h"
 #include "content/public/browser/manifest_icon_selector.h"
 #include "content/public/browser/payment_app_provider.h"
-#include "content/public/browser/permission_manager.h"
+#include "content/public/browser/permission_controller.h"
 #include "content/public/browser/permission_type.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/console_message_level.h"
+#include "net/base/registry_controlled_domains/registry_controlled_domain.h"
 #include "third_party/blink/public/common/manifest/manifest.h"
 #include "ui/gfx/geometry/size.h"
 #include "url/gurl.h"
@@ -106,10 +107,10 @@ void InstallablePaymentAppCrawler::OnPaymentMethodManifestParsed(
 
   if (web_contents() == nullptr)
     return;
-  content::PermissionManager* permission_manager =
-      web_contents()->GetBrowserContext()->GetPermissionManager();
-  if (permission_manager == nullptr)
-    return;
+  content::PermissionController* permission_controller =
+      content::BrowserContext::GetPermissionController(
+          web_contents()->GetBrowserContext());
+  DCHECK(permission_controller);
 
   for (const auto& url : default_applications) {
     if (downloaded_web_app_manifests_.find(url) !=
@@ -119,7 +120,16 @@ void InstallablePaymentAppCrawler::OnPaymentMethodManifestParsed(
       continue;
     }
 
-    if (permission_manager->GetPermissionStatus(
+    if (!net::registry_controlled_domains::SameDomainOrHost(
+            method_manifest_url, url,
+            net::registry_controlled_domains::INCLUDE_PRIVATE_REGISTRIES)) {
+      WarnIfPossible("Installable payment app from " + url.spec() +
+                     " is not allowed for the method " +
+                     method_manifest_url.spec());
+      continue;
+    }
+
+    if (permission_controller->GetPermissionStatus(
             content::PermissionType::PAYMENT_HANDLER, url.GetOrigin(),
             url.GetOrigin()) != blink::mojom::PermissionStatus::GRANTED) {
       // Do not download the web app manifest if it is blocked.
@@ -196,6 +206,14 @@ bool InstallablePaymentAppCrawler::CompleteAndStorePaymentWebAppInfoIfValid(
           app_info->sw_js_url + ").");
       return false;
     }
+    if (!net::registry_controlled_domains::SameDomainOrHost(
+            method_manifest_url, absolute_url,
+            net::registry_controlled_domains::INCLUDE_PRIVATE_REGISTRIES)) {
+      WarnIfPossible("Installable payment app's js url " + absolute_url.spec() +
+                     " is not allowed for the method " +
+                     method_manifest_url.spec());
+      return false;
+    }
     app_info->sw_js_url = absolute_url.spec();
   }
 
@@ -207,6 +225,14 @@ bool InstallablePaymentAppCrawler::CompleteAndStorePaymentWebAppInfoIfValid(
           "Failed to resolve the installable payment app's registration "
           "scope (" +
           app_info->sw_scope + ").");
+      return false;
+    }
+    if (!net::registry_controlled_domains::SameDomainOrHost(
+            method_manifest_url, absolute_scope,
+            net::registry_controlled_domains::INCLUDE_PRIVATE_REGISTRIES)) {
+      WarnIfPossible("Installable payment app's registration scope " +
+                     absolute_scope.spec() + " is not allowed for the method " +
+                     method_manifest_url.spec());
       return false;
     }
     app_info->sw_scope = absolute_scope.spec();

@@ -176,6 +176,8 @@ RenderWidgetHostViewAndroid::RenderWidgetHostViewAndroid(
       gesture_provider_(ui::GetGestureProviderConfig(
                             ui::GestureProviderConfigType::CURRENT_PLATFORM),
                         this),
+      is_scroll_in_progress_(false),
+      moved_beyond_slop_region_(false),
       stylus_text_selector_(this),
       using_browser_compositor_(CompositorImpl::IsInitialized()),
       synchronous_compositor_client_(nullptr),
@@ -284,6 +286,14 @@ void RenderWidgetHostViewAndroid::SetSize(const gfx::Size& size) {
 
 void RenderWidgetHostViewAndroid::SetBounds(const gfx::Rect& rect) {
   default_bounds_ = rect;
+}
+
+void RenderWidgetHostViewAndroid::NeedToSyncWithCompositorFrame(
+    bool required, bool updated) {
+  if (!view_.GetLayer())
+    return;
+
+  view_.GetLayer()->NeedToSyncWithCompositorFrame(required, updated);
 }
 
 bool RenderWidgetHostViewAndroid::HasValidFrame() const {
@@ -611,7 +621,9 @@ bool RenderWidgetHostViewAndroid::OnGestureEvent(
     web_event = ui::CreateWebGestureEventFromGestureEventAndroid(
         ui::GestureEventAndroid(event.type(), event.location(),
                                 event.screen_location(), event.time(), delta, 0,
-                                0, 0, 0, false, false));
+                                0, 0, 0, /*target_viewport*/ false,
+                                /*synthetic_scroll*/ false,
+                                /*prevent_boosting*/ false));
   } else {
     web_event = ui::CreateWebGestureEventFromGestureEventAndroid(event);
   }
@@ -671,6 +683,19 @@ bool RenderWidgetHostViewAndroid::OnTouchEvent(
 
   ui::LatencyInfo latency_info(ui::SourceEventType::TOUCH);
   latency_info.AddLatencyNumber(ui::INPUT_EVENT_LATENCY_UI_COMPONENT, 0);
+
+  if (view_.GetLayer() && web_event.GetType() == blink::WebInputEvent::kTouchMove &&
+      result.moved_beyond_slop_region && !moved_beyond_slop_region_) {
+    if (view_.GetWindowAndroid()) {
+      ui::WindowAndroidCompositor* compositor =
+          view_.GetWindowAndroid()->GetCompositor();
+      if (compositor) {
+        compositor->PrepareToScroll();
+      }
+    }
+  }
+  moved_beyond_slop_region_ = result.moved_beyond_slop_region;
+
   if (ShouldRouteEvents()) {
     host()->delegate()->GetInputEventRouter()->RouteTouchEvent(this, &web_event,
                                                                latency_info);
@@ -726,6 +751,8 @@ void RenderWidgetHostViewAndroid::ResetGestureDetection() {
       host()->ForwardTouchEventWithLatencyInfo(web_event, latency_info);
     }
   }
+
+  NeedToSyncWithCompositorFrame(is_scroll_in_progress_, false);
 }
 
 void RenderWidgetHostViewAndroid::OnDidNavigateMainFrameToNewPage() {
@@ -979,6 +1006,8 @@ void RenderWidgetHostViewAndroid::SubmitCompositorFrame(
   // As the metadata update may trigger view invalidation, always call it after
   // any potential compositor scheduling.
   OnFrameMetadataUpdated(std::move(metadata), is_transparent);
+
+  NeedToSyncWithCompositorFrame(is_scroll_in_progress_, true);
 }
 
 void RenderWidgetHostViewAndroid::DestroyDelegatedContent() {
@@ -1369,6 +1398,8 @@ void RenderWidgetHostViewAndroid::HideInternal() {
   // notifications to eventually clear the frontbuffer.
   bool stop_observing_root_window = !is_showing_ && hide_frontbuffer;
 
+  if (view_.GetLayer()) NeedToSyncWithCompositorFrame(false, false);
+
   if (hide_frontbuffer) {
     view_.GetLayer()->SetHideLayerAndSubtree(true);
     frame_evictor_->SetVisible(false);
@@ -1482,6 +1513,12 @@ void RenderWidgetHostViewAndroid::SendBeginFrame(viz::BeginFrameArgs args) {
   // switches to Surfaces and the Browser's commit isn't in the critical path.
   args.deadline = sync_compositor_ ? base::TimeTicks()
   : args.frame_time + (args.interval * 0.6);
+  if (!is_scroll_in_progress_ && moved_beyond_slop_region_)
+    args.deadline = args.frame_time + args.interval;
+  else if (is_scroll_in_progress_)
+    args.deadline = args.frame_time +
+        viz::BeginFrameArgs::DefaultEstimatedParentDrawTime();
+
   if (sync_compositor_) {
     sync_compositor_->BeginFrame(view_.GetWindowAndroid(), args);
   } else if (renderer_compositor_frame_sink_) {
@@ -1544,6 +1581,8 @@ void RenderWidgetHostViewAndroid::GestureEventAck(
   if (overscroll_controller_)
     overscroll_controller_->OnGestureEventAck(event, ack_result);
   mouse_wheel_phase_handler_.GestureEventAck(event, ack_result);
+
+  ForwardTouchpadPinchIfNecessary(event, ack_result);
 
   if (!gesture_listener_manager_)
     return;
@@ -1891,6 +1930,8 @@ void RenderWidgetHostViewAndroid::DidOverscroll(
 }
 
 void RenderWidgetHostViewAndroid::DidStopFlinging() {
+  is_scroll_in_progress_ = false;
+  NeedToSyncWithCompositorFrame(is_scroll_in_progress_, false);
   if (!gesture_listener_manager_)
     return;
   gesture_listener_manager_->DidStopFlinging();

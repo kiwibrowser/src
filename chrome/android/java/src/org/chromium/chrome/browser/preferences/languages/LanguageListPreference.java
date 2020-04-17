@@ -25,6 +25,12 @@ import org.chromium.chrome.browser.widget.TintedDrawable;
 
 import java.util.ArrayList;
 
+import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.ListView;
+
 /**
  * A preference that displays the current accept language list.
  */

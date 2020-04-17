@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include "base/containers/span.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/memory/ptr_util.h"
@@ -47,8 +48,10 @@ RulesetMatcher::LoadRulesetResult RulesetMatcher::CreateVerifiedMatcher(
     return kLoadErrorFileRead;
 
   // This guarantees that no memory access will end up outside the buffer.
-  if (!IsValidRulesetData(reinterpret_cast<const uint8_t*>(ruleset_data.data()),
-                          ruleset_data.size(), expected_ruleset_checksum)) {
+  if (!IsValidRulesetData(
+          base::make_span(reinterpret_cast<const uint8_t*>(ruleset_data.data()),
+                          ruleset_data.size()),
+          expected_ruleset_checksum)) {
     return kLoadErrorRulesetVerification;
   }
 

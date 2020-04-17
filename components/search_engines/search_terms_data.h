@@ -21,6 +21,7 @@ class SearchTermsData {
   // Returns the value to use for replacements of type GOOGLE_BASE_URL.  This
   // implementation simply returns the default value.
   virtual std::string GoogleBaseURLValue() const;
+  virtual std::string SearchBaseURLValue() const;
 
   // Returns the value for the GOOGLE_BASE_SUGGEST_URL term.  This
   // implementation simply returns the default value.

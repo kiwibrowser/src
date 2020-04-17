@@ -55,9 +55,9 @@ import org.chromium.chrome.browser.util.FeatureUtilities;
 import org.chromium.chrome.browser.vr_shell.keyboard.VrInputMethodManagerWrapper;
 import org.chromium.chrome.browser.widget.bottomsheet.BottomSheet;
 import org.chromium.chrome.browser.widget.newtab.NewTabButton;
-import org.chromium.content_public.browser.ContentViewCore;
 import org.chromium.content_public.browser.ImeAdapter;
 import org.chromium.content_public.browser.LoadUrlParams;
+import org.chromium.content_public.browser.ViewEventSink;
 import org.chromium.content_public.browser.WebContents;
 import org.chromium.content_public.common.BrowserControlsState;
 import org.chromium.ui.base.PermissionCallback;
@@ -93,9 +93,9 @@ public class VrShellImpl
 
     private View mPresentationView;
 
-    // The tab that holds the main ContentViewCore.
+    // The tab that holds the main WebContents.
     private Tab mTab;
-    private ContentViewCore mContentViewCore;
+    private ViewEventSink mViewEventSink;
     private Boolean mCanGoBack;
     private Boolean mCanGoForward;
 
@@ -196,19 +196,19 @@ public class VrShellImpl
         mTabObserver = new EmptyTabObserver() {
             @Override
             public void onContentChanged(Tab tab) {
-                // Restore proper focus on the old CVC.
-                if (mContentViewCore != null) mContentViewCore.onWindowFocusChanged(false);
-                mContentViewCore = null;
+                // Restore proper focus on the old content.
+                if (mViewEventSink != null) mViewEventSink.onWindowFocusChanged(true);
+                mViewEventSink = null;
                 if (mNativeVrShell == 0) return;
                 if (mLastContentWidth != 0) {
                     setContentCssSize(mLastContentWidth, mLastContentHeight, mLastContentDpr);
                 }
-                if (tab != null && tab.getContentViewCore() != null) {
-                    mContentViewCore = tab.getContentViewCore();
+                if (tab != null && tab.getContentView() != null && tab.getWebContents() != null) {
                     tab.getContentView().requestFocus();
-                    // We need the CVC to think it has Window Focus so it doesn't blur the page,
-                    // even though we're drawing VR layouts over top of it.
-                    mContentViewCore.onWindowFocusChanged(true);
+                    // We need the content layer to think it has Window Focus so it doesn't blur
+                    // the page, even though we're drawing VR layouts over top of it.
+                    mViewEventSink = ViewEventSink.from(tab.getWebContents());
+                    if (mViewEventSink != null) mViewEventSink.onWindowFocusChanged(true);
                 }
                 nativeSwapContents(mNativeVrShell, tab);
                 updateHistoryButtonsVisibility();
@@ -738,7 +738,7 @@ public class VrShellImpl
             mTab.removeObserver(mTabObserver);
             restoreTabFromVR();
             restoreWebContentsImeFromVr(mTab.getWebContents());
-            if (mTab.getContentViewCore() != null) {
+            if (mTab.getWebContents() != null && mTab.getContentView() != null) {
                 View parent = mTab.getContentView();
                 mTab.getWebContents().setSize(parent.getWidth(), parent.getHeight());
             }

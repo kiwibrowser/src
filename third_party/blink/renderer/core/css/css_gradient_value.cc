@@ -34,6 +34,8 @@
 #include "third_party/blink/renderer/core/css/css_to_length_conversion_data.h"
 #include "third_party/blink/renderer/core/css/css_value_pair.h"
 #include "third_party/blink/renderer/core/css_value_keywords.h"
+#include "third_party/blink/renderer/core/frame/local_frame.h"
+#include "third_party/blink/renderer/core/frame/settings.h"
 #include "third_party/blink/renderer/core/dom/node_computed_style.h"
 #include "third_party/blink/renderer/core/dom/text_link_colors.h"
 #include "third_party/blink/renderer/platform/geometry/int_size.h"
@@ -108,6 +110,10 @@ scoped_refptr<Image> CSSGradientValue::GetImage(
     const ComputedStyle& style,
     const FloatSize& size) const {
   if (size.IsEmpty())
+    return nullptr;
+
+  Settings* settings = document.GetFrame()->GetSettings();
+  if (settings && settings->GetAccessibilityNightModeEnabled())
     return nullptr;
 
   if (is_cacheable_) {

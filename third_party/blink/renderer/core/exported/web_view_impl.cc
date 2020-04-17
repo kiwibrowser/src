@@ -192,10 +192,6 @@ static const float doubleTapZoomAlreadyLegibleRatio = 1.2f;
 static const double multipleTargetsZoomAnimationDurationInSeconds = 0.25;
 static const double findInPageAnimationDurationInSeconds = 0;
 
-// Constants for snapping to minimum zoom.
-static const double maximumZoomForSnapToMinimum = 1.05;
-static const double snapToMiminimumZoomAnimationDurationInSeconds = 0.2;
-
 // Constants for viewport anchoring on resize.
 static const float viewportAnchorCoordX = 0.5f;
 static const float viewportAnchorCoordY = 0;
@@ -808,43 +804,6 @@ void WebViewImpl::ResolveTapDisambiguation(base::TimeTicks timestamp,
   }
 
   HandleGestureEvent(event);
-}
-
-WebInputEventResult WebViewImpl::HandleSyntheticWheelFromTouchpadPinchEvent(
-    const WebGestureEvent& pinch_event) {
-  DCHECK_EQ(pinch_event.GetType(), WebInputEvent::kGesturePinchUpdate);
-
-  // For pinch gesture events, match typical trackpad behavior on Windows by
-  // sending fake wheel events with the ctrl modifier set when we see trackpad
-  // pinch gestures.  Ideally we'd someday get a platform 'pinch' event and
-  // send that instead.
-  WebMouseWheelEvent wheel_event(
-      WebInputEvent::kMouseWheel,
-      pinch_event.GetModifiers() | WebInputEvent::kControlKey,
-      pinch_event.TimeStamp());
-  wheel_event.SetPositionInWidget(pinch_event.PositionInWidget().x,
-                                  pinch_event.PositionInWidget().y);
-  wheel_event.SetPositionInScreen(pinch_event.PositionInScreen().x,
-                                  pinch_event.PositionInScreen().y);
-  wheel_event.delta_x = 0;
-
-  // The function to convert scales to deltaY values is designed to be
-  // compatible with websites existing use of wheel events, and with existing
-  // Windows trackpad behavior.  In particular, we want:
-  //  - deltas should accumulate via addition: f(s1*s2)==f(s1)+f(s2)
-  //  - deltas should invert via negation: f(1/s) == -f(s)
-  //  - zoom in should be positive: f(s) > 0 iff s > 1
-  //  - magnitude roughly matches wheels: f(2) > 25 && f(2) < 100
-  //  - a formula that's relatively easy to use from JavaScript
-  // Note that 'wheel' event deltaY values have their sign inverted.  So to
-  // convert a wheel deltaY back to a scale use Math.exp(-deltaY/100).
-  DCHECK_GT(pinch_event.data.pinch_update.scale, 0);
-  wheel_event.delta_y = 100.0f * log(pinch_event.data.pinch_update.scale);
-  wheel_event.has_precise_scrolling_deltas = true;
-  wheel_event.wheel_ticks_x = 0;
-  wheel_event.wheel_ticks_y = pinch_event.data.pinch_update.scale > 1 ? 1 : -1;
-
-  return HandleInputEvent(blink::WebCoalescedInputEvent(wheel_event));
 }
 
 bool WebViewImpl::StartPageScaleAnimation(const IntPoint& target_position,
@@ -2062,50 +2021,8 @@ WebInputEventResult WebViewImpl::HandleInputEvent(
   }
 
   // FIXME: This should take in the intended frame, not the local frame root.
-  WebInputEventResult result = PageWidgetDelegate::HandleInputEvent(
-      *this, coalesced_event, MainFrameImpl()->GetFrame());
-  if (result != WebInputEventResult::kNotHandled)
-    return result;
-
-  // Unhandled pinch events should adjust the scale.
-  if (input_event.GetType() == WebInputEvent::kGesturePinchUpdate) {
-    const WebGestureEvent& pinch_event =
-        static_cast<const WebGestureEvent&>(input_event);
-
-    // For touchpad gestures synthesize a Windows-like wheel event
-    // to send to any handlers that may exist. Not necessary for touchscreen
-    // as touch events would have already been sent for the gesture.
-    if (pinch_event.SourceDevice() == kWebGestureDeviceTouchpad) {
-      result = HandleSyntheticWheelFromTouchpadPinchEvent(pinch_event);
-      if (result != WebInputEventResult::kNotHandled)
-        return result;
-    }
-
-    if (pinch_event.data.pinch_update.zoom_disabled)
-      return WebInputEventResult::kNotHandled;
-
-    if (GetPage()->GetVisualViewport().MagnifyScaleAroundAnchor(
-            pinch_event.data.pinch_update.scale,
-            pinch_event.PositionInWidget()))
-      return WebInputEventResult::kHandledSystem;
-  }
-
-  // If the page is close to minimum scale at pinch end, snap to minimum.
-  if (input_event.GetType() == WebInputEvent::kGesturePinchEnd) {
-    const WebGestureEvent& pinch_event =
-        static_cast<const WebGestureEvent&>(input_event);
-    float min_scale = MinimumPageScaleFactor();
-    if (pinch_event.SourceDevice() == kWebGestureDeviceTouchpad &&
-        PageScaleFactor() <= min_scale * maximumZoomForSnapToMinimum) {
-      IntPoint target_position =
-          MainFrameImpl()->GetFrameView()->ViewportToContents(
-              FlooredIntPoint(pinch_event.PositionInWidget()));
-      StartPageScaleAnimation(target_position, true, min_scale,
-                              snapToMiminimumZoomAnimationDurationInSeconds);
-    }
-  }
-
-  return WebInputEventResult::kNotHandled;
+  return PageWidgetDelegate::HandleInputEvent(*this, coalesced_event,
+                                              MainFrameImpl()->GetFrame());
 }
 
 void WebViewImpl::SetCursorVisibilityState(bool is_visible) {

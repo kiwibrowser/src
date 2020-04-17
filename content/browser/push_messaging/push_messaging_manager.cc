@@ -14,13 +14,13 @@
 #include "base/macros.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/strings/string_number_conversions.h"
+#include "content/browser/permissions/permission_controller_impl.h"
 #include "content/browser/renderer_host/render_process_host_impl.h"
 #include "content/browser/service_worker/service_worker_context_core.h"
 #include "content/browser/service_worker/service_worker_context_wrapper.h"
 #include "content/browser/service_worker/service_worker_storage.h"
 #include "content/common/push_messaging.mojom.h"
 #include "content/public/browser/browser_context.h"
-#include "content/public/browser/permission_manager.h"
 #include "content/public/browser/permission_type.h"
 #include "content/public/browser/push_messaging_service.h"
 #include "content/public/browser/render_frame_host.h"
@@ -444,29 +444,17 @@ void PushMessagingManager::Core::RegisterOnUI(
 
           BrowserContext* browser_context = web_contents->GetBrowserContext();
 
-          // It's valid for embedders to return a null permission manager.
-          // Immediately reject the permission request when this happens.
-          if (!browser_context->GetPermissionManager()) {
-            BrowserThread::PostTask(
-                BrowserThread::IO, FROM_HERE,
-                base::BindOnce(&PushMessagingManager::SendSubscriptionError,
-                               io_parent_, std::move(data),
-                               mojom::PushRegistrationStatus::
-                                   INCOGNITO_PERMISSION_DENIED));
-
-            return;
-          }
-
           // Request notifications permission (which will fail, since
           // notifications aren't supported in incognito), so the website can't
           // detect whether incognito is active.
-          GURL requesting_origin = data.requesting_origin;
-          browser_context->GetPermissionManager()->RequestPermission(
-              PermissionType::NOTIFICATIONS, render_frame_host,
-              requesting_origin, data.user_gesture,
-              base::Bind(
-                  &PushMessagingManager::Core::DidRequestPermissionInIncognito,
-                  weak_factory_ui_to_ui_.GetWeakPtr(), base::Passed(&data)));
+          PermissionControllerImpl::FromBrowserContext(browser_context)
+              ->RequestPermission(
+                  PermissionType::NOTIFICATIONS, render_frame_host,
+                  data.requesting_origin, data.user_gesture,
+                  base::Bind(&PushMessagingManager::Core::
+                                 DidRequestPermissionInIncognito,
+                             weak_factory_ui_to_ui_.GetWeakPtr(),
+                             base::Passed(&data)));
         }
       }
     }

@@ -9,7 +9,7 @@
 #include "base/macros.h"
 #include "third_party/protobuf/src/google/protobuf/io/zero_copy_stream_impl_lite.h"
 
-namespace url_pattern_index {
+namespace subresource_filter {
 
 // Implements a CopyingInputStream that reads from a base::File. Can be used in
 // combination with CopyingInputStreamAdaptor for reading from that file through
@@ -46,6 +46,6 @@ class CopyingFileOutputStream
   DISALLOW_COPY_AND_ASSIGN(CopyingFileOutputStream);
 };
 
-}  // namespace url_pattern_index
+}  // namespace subresource_filter
 
 #endif  // COMPONENTS_SUBRESOURCE_FILTER_CORE_BROWSER_COPYING_FILE_STREAM_H_

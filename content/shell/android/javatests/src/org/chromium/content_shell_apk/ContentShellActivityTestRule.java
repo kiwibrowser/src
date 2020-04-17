@@ -33,6 +33,7 @@ import org.chromium.content.browser.webcontents.WebContentsImpl;
 import org.chromium.content_public.browser.JavascriptInjector;
 import org.chromium.content_public.browser.LoadUrlParams;
 import org.chromium.content_public.browser.NavigationController;
+import org.chromium.content_public.browser.ViewEventSink;
 import org.chromium.content_public.browser.WebContents;
 import org.chromium.content_shell.Shell;
 import org.chromium.content_shell.ShellViewAndroidDelegate.OnCursorUpdateHelper;
@@ -137,6 +138,19 @@ public class ContentShellActivityTestRule extends ActivityTestRule<ContentShellA
         try {
             return ThreadUtils.runOnUiThreadBlocking(() -> {
                 return (ContentViewCoreImpl) getActivity().getActiveShell().getContentViewCore();
+            });
+        } catch (ExecutionException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Returns the current {@link ViewEventSink} or null if there is none;
+     */
+    public ViewEventSink getViewEventSink() {
+        try {
+            return ThreadUtils.runOnUiThreadBlocking(() -> {
+                return ViewEventSink.from(getActivity().getActiveShell().getWebContents());
             });
         } catch (ExecutionException e) {
             return null;

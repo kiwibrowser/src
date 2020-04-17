@@ -16,12 +16,12 @@ class OverscrollRefreshTest : public OverscrollRefreshHandler,
   OverscrollRefreshTest() : OverscrollRefreshHandler(nullptr) {}
 
   // OverscrollRefreshHandler implementation.
-  bool PullStart() override {
+  bool PullStart(float, float) override {
     started_ = true;
     return true;
   }
 
-  void PullUpdate(float delta) override { delta_ += delta; }
+  void PullUpdate(float x_delta, float y_delta) override { delta_ += y_delta; }
 
   void PullRelease(bool allow_refresh) override {
     released_ = true;

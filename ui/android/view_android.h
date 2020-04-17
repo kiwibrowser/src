@@ -176,6 +176,9 @@ class UI_ANDROID_EXPORT ViewAndroid {
     event_handler_ = handler;
   }
 
+  void OnSizeChangedInternal(const gfx::Size& size);
+  void DispatchOnSizeChanged();
+
   ViewAndroid* parent() const { return parent_; }
 
  protected:
@@ -241,9 +244,6 @@ class UI_ANDROID_EXPORT ViewAndroid {
   // Checks if there is any event forwarder in the node paths down to
   // each leaf of subtree.
   static bool SubtreeHasEventForwarder(ViewAndroid* view);
-
-  void OnSizeChangedInternal(const gfx::Size& size);
-  void DispatchOnSizeChanged();
 
   // Returns the Java delegate for this view. This is used to delegate work
   // up to the embedding view (or the embedder that can deal with the

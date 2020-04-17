@@ -13,6 +13,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.chromium.chrome.R;
+import android.graphics.Color;
+import org.chromium.base.ContextUtils;
 import org.chromium.chrome.browser.ntp.TitleUtil;
 
 import java.lang.annotation.Retention;
@@ -66,6 +68,10 @@ public class TileView extends FrameLayout {
         mTitleView.setLines(titleLines);
         mSiteData = tile.getData();
         mTitleView.setText(TitleUtil.getTitleForDisplay(tile.getTitle(), tile.getUrl()));
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mTitleView.setTextColor(Color.WHITE);
+            mIconView.setBackgroundColor(Color.BLACK);
+        }
         renderOfflineBadge(tile);
         renderIcon(tile);
     }
@@ -89,7 +95,7 @@ public class TileView extends FrameLayout {
      */
     public void renderIcon(Tile tile) {
         mIconView.setImageDrawable(tile.getIcon());
-        if (!SuggestionsConfig.useModernLayout()) return;
+        if (true || !SuggestionsConfig.useModernLayout()) return;
 
         // Slightly enlarge the monogram in the modern layout.
         MarginLayoutParams params = (MarginLayoutParams) mIconView.getLayoutParams();

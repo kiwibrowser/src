@@ -126,7 +126,7 @@ class BackgroundSyncServiceImplTest : public testing::Test {
             GetPermissionStatus(PermissionType::BACKGROUND_SYNC, _, _))
         .WillByDefault(
             testing::Return(blink::mojom::PermissionStatus::GRANTED));
-    embedded_worker_helper_->browser_context()->SetPermissionManager(
+    embedded_worker_helper_->browser_context()->SetPermissionControllerDelegate(
         std::move(mock_permission_manager));
   }
 

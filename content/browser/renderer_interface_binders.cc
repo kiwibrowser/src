@@ -174,7 +174,7 @@ void RendererInterfaceBinders::InitializeParameterizedBinderRegistry() {
                     RenderProcessHost* host, const url::Origin& origin) {
         static_cast<StoragePartitionImpl*>(host->GetStoragePartition())
             ->GetPlatformNotificationContext()
-            ->CreateService(host->GetID(), origin, std::move(request));
+            ->CreateService(origin, std::move(request));
       }));
   parameterized_binder_registry_.AddInterface(
       base::BindRepeating(&BackgroundFetchServiceImpl::Create));

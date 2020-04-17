@@ -40,7 +40,7 @@ class MediaRoutesObserver;
 class MediaSinksObserver;
 class PresentationConnectionStateObserver;
 class RouteRequestResult;
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 class MediaRouteController;
 #endif  // !defined(OS_ANDROID)
 
@@ -192,14 +192,16 @@ class MediaRouter : public KeyedService {
 
   // Returns a controller that directly sends commands to media within a route.
   // Returns a nullptr if no controller can be be found from |route_id|.
+  virtual scoped_refptr<MediaRouteController> GetRouteController(
+      const MediaRoute::Id& route_id) = 0;
   virtual std::unique_ptr<content::MediaController> GetMediaController(
       const MediaRoute::Id& route_id) = 0;
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
   // Returns a controller for sending media commands to a route. Returns a
   // nullptr if no MediaRoute exists for the given |route_id|.
-  virtual scoped_refptr<MediaRouteController> GetRouteController(
-      const MediaRoute::Id& route_id) = 0;
+//  virtual scoped_refptr<MediaRouteController> GetRouteController(
+//      const MediaRoute::Id& route_id) = 0;
 #endif  // !defined(OS_ANDROID)
 
   // Registers/Unregisters a CastRemotingConnector with the |tab_id|. For a
@@ -220,7 +222,7 @@ class MediaRouter : public KeyedService {
   friend class MediaRoutesObserver;
   friend class PresentationConnectionStateObserver;
   friend class RouteMessageObserver;
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
   friend class MediaRouteController;
 #endif  // !defined(OS_ANDROID)
 
@@ -268,7 +270,7 @@ class MediaRouter : public KeyedService {
   virtual void UnregisterRouteMessageObserver(
       RouteMessageObserver* observer) = 0;
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
   // Removes the MediaRouteController for |route_id| from the list of
   // controllers held by |this|. Called by MediaRouteController when it is
   // invalidated.

@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "content/public/test/mock_permission_manager.h"
+#include "content/public/browser/permission_controller.h"
 
 #include "third_party/blink/public/platform/modules/permissions/permission_status.mojom.h"
 
@@ -18,7 +19,7 @@ int MockPermissionManager::RequestPermission(
     const GURL& requesting_origin,
     bool user_gesture,
     const base::Callback<void(blink::mojom::PermissionStatus)>& callback) {
-  return kNoPendingOperation;
+  return PermissionController::kNoPendingOperation;
 }
 
 int MockPermissionManager::RequestPermissions(
@@ -28,13 +29,13 @@ int MockPermissionManager::RequestPermissions(
     bool user_gesture,
     const base::Callback<
         void(const std::vector<blink::mojom::PermissionStatus>&)>& callback) {
-  return kNoPendingOperation;
+  return PermissionController::kNoPendingOperation;
 }
 
 int MockPermissionManager::SubscribePermissionStatusChange(
     PermissionType permission,
+    RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
-    const GURL& embedding_origin,
     const base::Callback<void(blink::mojom::PermissionStatus)>& callback) {
   // Return a fake subscription_id.
   return 0;

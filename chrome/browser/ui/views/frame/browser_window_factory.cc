@@ -18,17 +18,22 @@
 // static
 BrowserWindow* BrowserWindow::CreateBrowserWindow(Browser* browser,
                                                   bool user_gesture) {
-#if defined(OS_MACOSX)
-  if (views_mode_controller::IsViewsBrowserCocoa())
-    return BrowserWindow::CreateBrowserWindowCocoa(browser, user_gesture);
-#endif
+  LOG(INFO) << "[EXTENSIONS] BrowserWindow::CreateBrowserWindow - Step 1";
   // Create the view and the frame. The frame will attach itself via the view
   // so we don't need to do anything with the pointer.
   BrowserView* view = new BrowserView();
+  LOG(INFO) << "[EXTENSIONS] BrowserWindow::CreateBrowserWindow - Step 2";
   view->Init(browser);
+  LOG(INFO) << "[EXTENSIONS] BrowserWindow::CreateBrowserWindow - Step 3";
   (new BrowserFrame(view))->InitBrowserFrame();
+  LOG(INFO) << "[EXTENSIONS] BrowserWindow::CreateBrowserWindow - Step 4: " << view;
+  LOG(INFO) << "[EXTENSIONS] BrowserWindow::CreateBrowserWindow - Step 4a: " << view->GetWidget();
+/*
+  LOG(INFO) << "[EXTENSIONS] BrowserWindow::CreateBrowserWindow - Step 4b: " << view->GetWidget()->non_client_view();
   view->GetWidget()->non_client_view()->SetAccessibleName(
       l10n_util::GetStringUTF16(IDS_PRODUCT_NAME));
+*/
+  LOG(INFO) << "[EXTENSIONS] BrowserWindow::CreateBrowserWindow - Step 5";
 
 #if defined(USE_AURA)
   // For now, all browser windows are true. This only works when USE_AURA
@@ -36,5 +41,6 @@ BrowserWindow* BrowserWindow::CreateBrowserWindow(Browser* browser,
   view->GetWidget()->GetNativeWindow()->SetProperty(
       aura::client::kCreatedByUserGesture, user_gesture);
 #endif
+  LOG(INFO) << "[EXTENSIONS] BrowserWindow::CreateBrowserWindow - Step 6: " << view;
   return view;
 }

@@ -390,6 +390,16 @@ bool ContentSettingsObserver::AllowStorage(bool local) {
   return result;
 }
 
+bool ContentSettingsObserver::AllowAds(bool default_value) {
+  if (!content_setting_rules_)
+    return default_value;
+  blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
+  return GetContentSettingFromRules(
+             content_setting_rules_->ads_rules, frame,
+             url::Origin(frame->Top()->GetSecurityOrigin()).GetURL()) ==
+         CONTENT_SETTING_ALLOW;
+}
+
 bool ContentSettingsObserver::AllowReadFromClipboard(bool default_value) {
   bool allowed = default_value;
 #if BUILDFLAG(ENABLE_EXTENSIONS)

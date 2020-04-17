@@ -143,7 +143,8 @@ void TabLayer::SetProperties(int id,
                              float toolbar_alpha,
                              float toolbar_y_offset,
                              float side_border_scale,
-                             bool inset_border) {
+                             bool inset_border,
+                             bool bottombar_enabled) {
   if (alpha <= 0) {
     layer_->SetHideLayerAndSubtree(true);
     return;
@@ -237,11 +238,13 @@ void TabLayer::SetProperties(int id,
                                0,
                                false,
                                false,
-                               modern_design_enabled);
+                               modern_design_enabled,
+                               // Bottombar enabled
+                               bottombar_enabled);
   toolbar_layer_->UpdateProgressBar(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
   float toolbar_impact_height = 0;
-  if (show_toolbar && !back_visible)
+  if (show_toolbar && !back_visible && !bottombar_enabled)
     toolbar_impact_height = toolbar_layer_->layer()->bounds().height();
 
   //----------------------------------------------------------------------------

@@ -10,12 +10,19 @@ import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.PreferenceFragment;
 
 import org.chromium.chrome.R;
+import org.chromium.chrome.browser.preferences.ChromePreference;
 import org.chromium.chrome.browser.ChromeFeatureList;
 import org.chromium.chrome.browser.autofill.PersonalDataManager;
 import org.chromium.chrome.browser.payments.AndroidPaymentAppFactory;
 import org.chromium.chrome.browser.payments.ServiceWorkerPaymentAppBridge;
 import org.chromium.chrome.browser.preferences.ChromeSwitchPreference;
 import org.chromium.chrome.browser.preferences.PreferenceUtils;
+
+import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.ListView;
 
 /**
  * Autofill and payments settings fragment, which allows the user to edit autofill and credit card
@@ -48,7 +55,7 @@ public class AutofillAndPaymentsPreferences extends PreferenceFragment {
 
         if (ChromeFeatureList.isEnabled(ChromeFeatureList.ANDROID_PAYMENT_APPS)
                 || ChromeFeatureList.isEnabled(ChromeFeatureList.SERVICE_WORKER_PAYMENT_APPS)) {
-            Preference pref = new Preference(getActivity());
+            Preference pref = new ChromePreference(getActivity());
             pref.setTitle(getActivity().getString(R.string.payment_apps_title));
             pref.setFragment(AndroidPaymentAppsFragment.class.getCanonicalName());
             pref.setShouldDisableView(true);
@@ -94,6 +101,18 @@ public class AutofillAndPaymentsPreferences extends PreferenceFragment {
         } else {
             pref.setSummary(getActivity().getString(R.string.payment_no_apps_summary));
             pref.setEnabled(false);
+        }
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            view.setBackgroundColor(Color.BLACK);
+            ListView list = (ListView) view.findViewById(android.R.id.list);
+            if (list != null)
+                list.setDivider(new ColorDrawable(Color.GRAY));
+                list.setDividerHeight((int) getResources().getDisplayMetrics().density);
         }
     }
 }

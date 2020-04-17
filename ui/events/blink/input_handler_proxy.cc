@@ -186,7 +186,6 @@ InputHandlerProxy::InputHandlerProxy(
       expect_scroll_update_end_(false),
 #endif
       gesture_scroll_on_impl_thread_(false),
-      gesture_pinch_on_impl_thread_(false),
       scroll_sequence_ignored_(false),
       fling_may_be_active_on_main_thread_(false),
       disallow_horizontal_fling_scroll_(false),
@@ -439,47 +438,31 @@ InputHandlerProxy::EventDisposition InputHandlerProxy::HandleInputEvent(
       return HandleGestureScrollEnd(static_cast<const WebGestureEvent&>(event));
 
     case WebInputEvent::kGesturePinchBegin: {
-      DCHECK(!gesture_pinch_on_impl_thread_);
-      const WebGestureEvent& gesture_event =
-          static_cast<const WebGestureEvent&>(event);
-      if (gesture_event.SourceDevice() == blink::kWebGestureDeviceTouchpad &&
-          input_handler_->GetEventListenerProperties(
-              cc::EventListenerClass::kMouseWheel) !=
-              cc::EventListenerProperties::kNone) {
-        return DID_NOT_HANDLE;
-      } else {
-        input_handler_->PinchGestureBegin();
-        gesture_pinch_on_impl_thread_ = true;
-        return DID_HANDLE;
-      }
+      DCHECK(!gesture_pinch_in_progress_);
+      input_handler_->PinchGestureBegin();
+      gesture_pinch_in_progress_ = true;
+      return DID_HANDLE;
     }
 
-    case WebInputEvent::kGesturePinchEnd:
-      if (gesture_pinch_on_impl_thread_) {
-        gesture_pinch_on_impl_thread_ = false;
-        const WebGestureEvent& gesture_event =
-            static_cast<const WebGestureEvent&>(event);
-        input_handler_->PinchGestureEnd(
-            gfx::ToFlooredPoint(gesture_event.PositionInWidget()),
-            gesture_event.SourceDevice() == blink::kWebGestureDeviceTouchpad);
-        return DID_HANDLE;
-      } else {
-        return DID_NOT_HANDLE;
-      }
+    case WebInputEvent::kGesturePinchEnd: {
+      DCHECK(gesture_pinch_in_progress_);
+      gesture_pinch_in_progress_ = false;
+      const WebGestureEvent& gesture_event =
+          static_cast<const WebGestureEvent&>(event);
+      input_handler_->PinchGestureEnd(
+          gfx::ToFlooredPoint(gesture_event.PositionInWidget()),
+          gesture_event.SourceDevice() == blink::kWebGestureDeviceTouchpad);
+      return DID_HANDLE;
+    }
 
     case WebInputEvent::kGesturePinchUpdate: {
-      if (gesture_pinch_on_impl_thread_) {
-        const WebGestureEvent& gesture_event =
-            static_cast<const WebGestureEvent&>(event);
-        if (gesture_event.data.pinch_update.zoom_disabled)
-          return DROP_EVENT;
-        input_handler_->PinchGestureUpdate(
-            gesture_event.data.pinch_update.scale,
-            gfx::ToFlooredPoint(gesture_event.PositionInWidget()));
-        return DID_HANDLE;
-      } else {
-        return DID_NOT_HANDLE;
-      }
+      DCHECK(gesture_pinch_in_progress_);
+      const WebGestureEvent& gesture_event =
+          static_cast<const WebGestureEvent&>(event);
+      input_handler_->PinchGestureUpdate(
+          gesture_event.data.pinch_update.scale,
+          gfx::ToFlooredPoint(gesture_event.PositionInWidget()));
+      return DID_HANDLE;
     }
 
     case WebInputEvent::kGestureFlingStart:
@@ -801,7 +784,7 @@ InputHandlerProxy::HandleGestureScrollUpdate(
     return DROP_EVENT;
   }
 
-  if (!gesture_scroll_on_impl_thread_ && !gesture_pinch_on_impl_thread_)
+  if (!gesture_scroll_on_impl_thread_ && !gesture_pinch_in_progress_)
     return DID_NOT_HANDLE;
 
   cc::ScrollState scroll_state = CreateScrollStateForGesture(gesture_event);
@@ -855,7 +838,7 @@ InputHandlerProxy::HandleGestureScrollUpdate(
     gesture_scroll_on_impl_thread_ = false;
     client_->GenerateScrollBeginAndSendToMainThread(gesture_event);
 
-    if (!gesture_pinch_on_impl_thread_)
+    if (!gesture_pinch_in_progress_)
       return DID_NOT_HANDLE;
   }
 

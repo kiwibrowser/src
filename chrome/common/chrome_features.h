@@ -37,8 +37,9 @@ extern const base::Feature kViewsTaskManager;
 
 #if !defined(OS_ANDROID)
 extern const base::Feature kAnimatedAppMenuIcon;
-extern const base::Feature kAppBanners;
 #endif  // !defined(OS_ANDROID)
+
+extern const base::Feature kAppBanners;
 
 #if defined(OS_CHROMEOS)
 extern const base::Feature kArcMemoryManagement;
@@ -110,9 +111,7 @@ extern const base::Feature kDesktopPWAsLinkCapturing;
 extern const base::Feature kDisallowUnsafeHttpDownloads;
 extern const char kDisallowUnsafeHttpDownloadsParamName[];
 
-#if !defined(OS_ANDROID)
 extern const base::Feature kDoodlesOnLocalNtp;
-#endif
 
 #if defined(OS_ANDROID)
 extern const base::Feature kDownloadsForeground;
@@ -183,7 +182,7 @@ extern const base::Feature kImprovedRecoveryComponent;
 extern const base::Feature kIncompatibleApplicationsWarning;
 #endif
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 extern const base::Feature kLocalScreenCasting;
 #endif
 
@@ -243,9 +242,7 @@ extern const base::Feature kOfflinePageDownloadSuggestionsFeature;
 extern const base::Feature kOomIntervention;
 #endif
 
-#if !defined(OS_ANDROID)
 extern const base::Feature kOneGoogleBarOnLocalNtp;
-#endif
 
 extern const base::Feature kUseNewAcceptLanguageHeader;
 
@@ -255,7 +252,7 @@ extern const base::Feature kPermissionDelegation;
 extern const base::Feature kDisablePostScriptPrinting;
 #endif
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 extern const base::Feature kPolicyTool;
 #endif
 
@@ -274,7 +271,7 @@ extern const base::Feature kNupPrinting;
 
 extern const base::Feature kPushMessagingBackgroundMode;
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 extern const base::Feature kRemoveUsageOfDeprecatedGaiaSigninEndpoint;
 #endif
 
@@ -329,9 +326,7 @@ extern const base::Feature kUserActivityEventLogging;
 
 extern const base::Feature kUseSameCacheForMedia;
 
-#if !defined(OS_ANDROID)
 extern const base::Feature kVoiceSearchOnLocalNtp;
-#endif
 
 #if defined(OS_CHROMEOS)
 extern const base::Feature kOptInImeMenu;

@@ -70,14 +70,6 @@ const int32_t kInvalidSharedMemoryId = -1;
 // Common Command Buffer shared memory transfer buffer ID.
 const int32_t kCommandBufferSharedMemoryId = 4;
 
-// The size to set for the program cache for default and low-end device cases.
-#if !defined(OS_ANDROID)
-const size_t kDefaultMaxProgramCacheMemoryBytes = 6 * 1024 * 1024;
-#else
-const size_t kDefaultMaxProgramCacheMemoryBytes = 2 * 1024 * 1024;
-const size_t kLowEndMaxProgramCacheMemoryBytes = 128 * 1024;
-#endif
-
 // Namespace used to separate various command buffer types.
 enum CommandBufferNamespace : int8_t {
   INVALID = -1,

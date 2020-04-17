@@ -35,4 +35,8 @@ StreamSocket::SocketMemoryStats::SocketMemoryStats()
 
 StreamSocket::SocketMemoryStats::~SocketMemoryStats() = default;
 
+int StreamSocket::ConfirmHandshake(CompletionOnceCallback callback) {
+  return OK;
+}
+
 }  // namespace net

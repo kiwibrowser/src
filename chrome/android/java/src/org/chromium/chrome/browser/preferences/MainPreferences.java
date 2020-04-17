@@ -11,11 +11,18 @@ import android.os.Handler;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
 import android.provider.Settings;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.view.View;
+import android.widget.ListView;
 
 import org.chromium.base.ContextUtils;
 import org.chromium.base.VisibleForTesting;
 import org.chromium.chrome.R;
+import org.chromium.chrome.browser.ContentSettingsType;
 import org.chromium.chrome.browser.ChromeFeatureList;
+import org.chromium.chrome.browser.preferences.website.ContentSettingsResources;
+import org.chromium.chrome.browser.preferences.website.SingleCategoryPreferences;
 import org.chromium.chrome.browser.autofill.PersonalDataManager;
 import org.chromium.chrome.browser.contextual_suggestions.EnabledStateMonitor;
 import org.chromium.chrome.browser.net.spdyproxy.DataReductionProxySettings;
@@ -41,10 +48,11 @@ public class MainPreferences extends PreferenceFragment
     public static final String PREF_SAVED_PASSWORDS = "saved_passwords";
     public static final String PREF_CONTEXTUAL_SUGGESTIONS = "contextual_suggestions";
     public static final String PREF_HOMEPAGE = "homepage";
-    public static final String PREF_DATA_REDUCTION = "data_reduction";
+//    public static final String PREF_DATA_REDUCTION = "data_reduction";
     public static final String PREF_NOTIFICATIONS = "notifications";
     public static final String PREF_LANGUAGES = "languages";
     public static final String PREF_DOWNLOADS = "downloads";
+    public static final String PREF_ADS = "ads";
 
     private final ManagedPreferenceDelegate mManagedPreferenceDelegate;
     private final Map<String, Preference> mAllPreferences = new HashMap<>();
@@ -86,6 +94,18 @@ public class MainPreferences extends PreferenceFragment
     }
 
     @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            view.setBackgroundColor(Color.BLACK);
+            ListView list = (ListView) view.findViewById(android.R.id.list);
+            if (list != null)
+                list.setDivider(new ColorDrawable(Color.GRAY));
+                list.setDividerHeight((int) getResources().getDisplayMetrics().density);
+        }
+    }
+
+    @Override
     public void onResume() {
         super.onResume();
         updatePreferences();
@@ -98,7 +118,30 @@ public class MainPreferences extends PreferenceFragment
         setManagedPreferenceDelegateForPreference(PREF_SEARCH_ENGINE);
         setManagedPreferenceDelegateForPreference(PREF_AUTOFILL_SETTINGS);
         setManagedPreferenceDelegateForPreference(PREF_SAVED_PASSWORDS);
-        setManagedPreferenceDelegateForPreference(PREF_DATA_REDUCTION);
+//        setManagedPreferenceDelegateForPreference(PREF_DATA_REDUCTION);
+
+        Preference ads = findPreference(PREF_ADS);
+        boolean checked = PrefServiceBridge.getInstance().adsEnabled();
+        int contentType = ContentSettingsType.CONTENT_SETTINGS_TYPE_ADS;
+        ads.setTitle(ContentSettingsResources.getTitle(contentType));
+        if (!checked)
+            ads.setSummary(ContentSettingsResources.getAdsBlockedListSummary());
+        else
+            ads.setSummary(ContentSettingsResources.getCategorySummary(contentType, checked));
+/*
+        if (ads.isEnabled()) {
+            ads.setIcon(ContentSettingsResources.getTintedIcon(contentType, getResources()));
+        } else {
+            ads.setIcon(ContentSettingsResources.getDisabledIcon(contentType, getResources()));
+        }
+*/
+        ads.setOnPreferenceClickListener(preference -> {
+            preference.getExtras().putString(
+                    SingleCategoryPreferences.EXTRA_CATEGORY, preference.getKey());
+            preference.getExtras().putString(SingleCategoryPreferences.EXTRA_TITLE,
+                    preference.getTitle().toString());
+            return false;
+        });
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             // If we are on Android O+ the Notifications preference should lead to the Android
@@ -169,6 +212,15 @@ public class MainPreferences extends PreferenceFragment
             removePreferenceIfPresent(PREF_SIGN_IN);
         }
 
+        Preference ads = findPreference(PREF_ADS);
+        boolean checked = PrefServiceBridge.getInstance().adsEnabled();
+        int contentType = ContentSettingsType.CONTENT_SETTINGS_TYPE_ADS;
+        ads.setTitle(ContentSettingsResources.getTitle(contentType));
+        if (!checked)
+            ads.setSummary(ContentSettingsResources.getAdsBlockedListSummary());
+        else
+            ads.setSummary(ContentSettingsResources.getCategorySummary(contentType, checked));
+
         updateSearchEnginePreference();
 
         if (HomepageManager.shouldShowHomepageSetting()) {
@@ -189,10 +241,6 @@ public class MainPreferences extends PreferenceFragment
         } else {
             removePreferenceIfPresent(PREF_CONTEXTUAL_SUGGESTIONS);
         }
-
-        ChromeBasePreference dataReduction =
-                (ChromeBasePreference) findPreference(PREF_DATA_REDUCTION);
-        dataReduction.setSummary(DataReductionPreferences.generateSummary(getResources()));
     }
 
     private Preference addPreferenceIfAbsent(String key) {
@@ -263,9 +311,11 @@ public class MainPreferences extends PreferenceFragment
                 if (PREF_SAVED_PASSWORDS.equals(preference.getKey())) {
                     return PrefServiceBridge.getInstance().isRememberPasswordsManaged();
                 }
+/*
                 if (PREF_DATA_REDUCTION.equals(preference.getKey())) {
                     return DataReductionProxySettings.getInstance().isDataReductionProxyManaged();
                 }
+*/
                 if (PREF_SEARCH_ENGINE.equals(preference.getKey())) {
                     return TemplateUrlService.getInstance().isDefaultSearchManaged();
                 }
@@ -283,11 +333,13 @@ public class MainPreferences extends PreferenceFragment
                     return prefs.isRememberPasswordsManaged()
                             && !prefs.isRememberPasswordsEnabled();
                 }
+/*
                 if (PREF_DATA_REDUCTION.equals(preference.getKey())) {
                     DataReductionProxySettings settings = DataReductionProxySettings.getInstance();
                     return settings.isDataReductionProxyManaged()
                             && !settings.isDataReductionProxyEnabled();
                 }
+*/
                 if (PREF_SEARCH_ENGINE.equals(preference.getKey())) {
                     return TemplateUrlService.getInstance().isDefaultSearchManaged();
                 }

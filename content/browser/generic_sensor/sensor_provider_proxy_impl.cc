@@ -8,8 +8,8 @@
 #include <utility>
 #include <vector>
 
+#include "content/browser/permissions/permission_controller_impl.h"
 #include "content/public/browser/browser_context.h"
-#include "content/public/browser/permission_manager.h"
 #include "content/public/browser/permission_type.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
@@ -26,11 +26,12 @@ using device::mojom::SensorCreationResult;
 namespace content {
 
 SensorProviderProxyImpl::SensorProviderProxyImpl(
-    PermissionManager* permission_manager,
+    PermissionControllerImpl* permission_controller,
     RenderFrameHost* render_frame_host)
-    : permission_manager_(permission_manager),
-      render_frame_host_(render_frame_host) {
-  DCHECK(permission_manager);
+    : permission_controller_(permission_controller),
+      render_frame_host_(render_frame_host),
+      weak_factory_(this) {
+  DCHECK(permission_controller);
   DCHECK(render_frame_host);
 }
 
@@ -43,36 +44,46 @@ void SensorProviderProxyImpl::Bind(
 
 void SensorProviderProxyImpl::GetSensor(SensorType type,
                                         GetSensorCallback callback) {
-  ServiceManagerConnection* connection =
-      ServiceManagerConnection::GetForProcess();
-
-  if (!connection) {
-    std::move(callback).Run(SensorCreationResult::ERROR_NOT_AVAILABLE, nullptr);
-    return;
-  }
-
-  if (!CheckFeaturePolicies(type) || !CheckPermission()) {
+  if (!CheckFeaturePolicies(type)) {
     std::move(callback).Run(SensorCreationResult::ERROR_NOT_ALLOWED, nullptr);
     return;
   }
 
   if (!sensor_provider_) {
+    auto* connection = ServiceManagerConnection::GetForProcess();
+
+    if (!connection) {
+      std::move(callback).Run(SensorCreationResult::ERROR_NOT_AVAILABLE,
+                              nullptr);
+      return;
+    }
+
     connection->GetConnector()->BindInterface(
         device::mojom::kServiceName, mojo::MakeRequest(&sensor_provider_));
     sensor_provider_.set_connection_error_handler(base::BindOnce(
         &SensorProviderProxyImpl::OnConnectionError, base::Unretained(this)));
   }
-  sensor_provider_->GetSensor(type, std::move(callback));
+
+  // TODO(shalamov): base::BindOnce should be used (https://crbug.com/714018),
+  // however, PermissionController::RequestPermission enforces use of repeating
+  // callback.
+  permission_controller_->RequestPermission(
+      PermissionType::SENSORS, render_frame_host_,
+      render_frame_host_->GetLastCommittedURL().GetOrigin(), false,
+      base::BindRepeating(
+          &SensorProviderProxyImpl::OnPermissionRequestCompleted,
+          weak_factory_.GetWeakPtr(), type, base::Passed(std::move(callback))));
 }
 
-bool SensorProviderProxyImpl::CheckPermission() const {
-  const GURL& requesting_origin =
-      render_frame_host_->GetLastCommittedURL().GetOrigin();
-
-  blink::mojom::PermissionStatus permission_status =
-      permission_manager_->GetPermissionStatusForFrame(
-          PermissionType::SENSORS, render_frame_host_, requesting_origin);
-  return permission_status == blink::mojom::PermissionStatus::GRANTED;
+void SensorProviderProxyImpl::OnPermissionRequestCompleted(
+    device::mojom::SensorType type,
+    GetSensorCallback callback,
+    blink::mojom::PermissionStatus status) {
+  if (status != blink::mojom::PermissionStatus::GRANTED || !sensor_provider_) {
+    std::move(callback).Run(SensorCreationResult::ERROR_NOT_ALLOWED, nullptr);
+    return;
+  }
+  sensor_provider_->GetSensor(type, std::move(callback));
 }
 
 namespace {

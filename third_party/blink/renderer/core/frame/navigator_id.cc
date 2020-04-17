@@ -49,6 +49,14 @@ String NavigatorID::appName() {
   return "Netscape";
 }
 
+String NavigatorID::CookiesOK() {
+  return "yes";
+}
+
+String NavigatorID::cookiesOK() {
+  return "yes";
+}
+
 String NavigatorID::appVersion() {
   // Version is everything in the user agent string past the "Mozilla/" prefix.
   const String& agent = userAgent();

@@ -161,27 +161,6 @@ static bool BlockIsRowOfLinks(const LayoutBlock* block) {
 }
 
 static bool BlockHeightConstrained(const LayoutBlock* block) {
-  // FIXME: Propagate constrainedness down the tree, to avoid inefficiently
-  // walking back up from each box.
-  // FIXME: This code needs to take into account vertical writing modes.
-  // FIXME: Consider additional heuristics, such as ignoring fixed heights if
-  // the content is already overflowing before autosizing kicks in.
-  for (; block; block = block->ContainingBlock()) {
-    const ComputedStyle& style = block->StyleRef();
-    if (style.OverflowY() != EOverflow::kVisible
-        && style.OverflowY() != EOverflow::kHidden)
-      return false;
-    if (style.Height().IsSpecified() || style.MaxHeight().IsSpecified() ||
-        block->IsOutOfFlowPositioned()) {
-      // Some sites (e.g. wikipedia) set their html and/or body elements to
-      // height:100%, without intending to constrain the height of the content
-      // within them.
-      return !block->IsDocumentElement() && !block->IsBody() &&
-             !block->IsLayoutView();
-    }
-    if (block->IsFloating())
-      return false;
-  }
   return false;
 }
 

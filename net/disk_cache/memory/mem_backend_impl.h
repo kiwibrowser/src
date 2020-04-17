@@ -16,6 +16,7 @@
 #include "base/compiler_specific.h"
 #include "base/containers/linked_list.h"
 #include "base/macros.h"
+#include "base/memory/memory_pressure_listener.h"
 #include "base/memory/weak_ptr.h"
 #include "base/strings/string_split.h"
 #include "base/time/time.h"
@@ -51,7 +52,7 @@ class NET_EXPORT_PRIVATE MemBackendImpl final : public Backend {
   bool SetMaxSize(int max_bytes);
 
   // Returns the maximum size for a file to reside on the cache.
-  int MaxFileSize() const;
+  int64_t MaxFileSize() const override;
 
   // These next methods (before the implementation of the Backend interface) are
   // called by MemEntryImpl to update the state of the backend during the entry
@@ -86,24 +87,26 @@ class NET_EXPORT_PRIVATE MemBackendImpl final : public Backend {
   net::CacheType GetCacheType() const override;
   int32_t GetEntryCount() const override;
   int OpenEntry(const std::string& key,
+                net::RequestPriority request_priority,
                 Entry** entry,
-                const CompletionCallback& callback) override;
+                CompletionOnceCallback callback) override;
   int CreateEntry(const std::string& key,
+                  net::RequestPriority request_priority,
                   Entry** entry,
-                  const CompletionCallback& callback) override;
+                  CompletionOnceCallback callback) override;
   int DoomEntry(const std::string& key,
-                const CompletionCallback& callback) override;
-  int DoomAllEntries(const CompletionCallback& callback) override;
+                net::RequestPriority priority,
+                CompletionOnceCallback callback) override;
+  int DoomAllEntries(CompletionOnceCallback callback) override;
   int DoomEntriesBetween(base::Time initial_time,
                          base::Time end_time,
-                         const CompletionCallback& callback) override;
+                         CompletionOnceCallback callback) override;
   int DoomEntriesSince(base::Time initial_time,
-                       const CompletionCallback& callback) override;
-  int CalculateSizeOfAllEntries(const CompletionCallback& callback) override;
-  int CalculateSizeOfEntriesBetween(
-      base::Time initial_time,
-      base::Time end_time,
-      const CompletionCallback& callback) override;
+                       CompletionOnceCallback callback) override;
+  int CalculateSizeOfAllEntries(CompletionOnceCallback callback) override;
+  int CalculateSizeOfEntriesBetween(base::Time initial_time,
+                                    base::Time end_time,
+                                    CompletionOnceCallback callback) override;
   std::unique_ptr<Iterator> CreateIterator() override;
   void GetStats(base::StringPairs* stats) override {}
   void OnExternalCacheHit(const std::string& key) override;
@@ -120,6 +123,13 @@ class NET_EXPORT_PRIVATE MemBackendImpl final : public Backend {
   // Deletes entries from the cache until the current size is below the limit.
   void EvictIfNeeded();
 
+  // Deletes entries until the current size is below |goal|.
+  void EvictTill(int target_size);
+
+  // Called when we get low on memory.
+  void OnMemoryPressure(
+      base::MemoryPressureListener::MemoryPressureLevel memory_pressure_level);
+
   EntryMap entries_;
 
   // Stored in increasing order of last use time, from least recently used to
@@ -131,6 +141,8 @@ class NET_EXPORT_PRIVATE MemBackendImpl final : public Backend {
 
   net::NetLog* net_log_;
   base::OnceClosure post_cleanup_callback_;
+
+  base::MemoryPressureListener memory_pressure_listener_;
 
   base::WeakPtrFactory<MemBackendImpl> weak_factory_;
 

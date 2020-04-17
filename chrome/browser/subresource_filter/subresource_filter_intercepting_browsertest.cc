@@ -23,7 +23,6 @@
 #include "net/test/embedded_test_server/embedded_test_server.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "url/gurl.h"
-
 namespace subresource_filter {
 
 // This test harness intercepts URLRequests going to the SafeBrowsing V4 server.
@@ -59,6 +58,35 @@ class SubresourceFilterInterceptingBrowserTest
     return threat_match;
   }
 
+  // Creates a redirect chain to the final redirect_url from the initial host
+  // where the SafeBrowsing result from the intial host is delayed. Returns
+  // the initial url.
+  GURL InitializeSafeBrowsingForOutOfOrderResponses(
+      const std::string& initial_host,
+      const GURL& redirect_url,
+      base::TimeDelta initial_delay) {
+    GURL url(embedded_test_server()->GetURL(
+        initial_host, "/server-redirect?" + redirect_url.spec()));
+
+    // Mark the prefixes as bad so that safe browsing will request full hashes
+    // from the v4 server.
+    database_helper()->LocallyMarkPrefixAsBad(
+        url, safe_browsing::GetUrlSubresourceFilterId());
+    database_helper()->LocallyMarkPrefixAsBad(
+        redirect_url, safe_browsing::GetUrlSubresourceFilterId());
+
+    // Map URLs to policies, enforce on the initial, and warn on the redirect.
+    std::map<GURL, safe_browsing::ThreatMatch> response_map{
+        {url, GetBetterAdsMatch(url, "enforce")},
+        {redirect_url, safe_browsing::ThreatMatch()}};
+    std::map<GURL, base::TimeDelta> delay_map{{url, initial_delay}};
+    // Delay the initial response , so it arrives after the final.
+    safe_browsing::StartRedirectingV4RequestsForTesting(
+        response_map, safe_browsing_test_server(), delay_map);
+    safe_browsing_test_server()->StartAcceptingConnections();
+    return url;
+  }
+
  private:
   // SubresourceFilterBrowserTest:
   std::unique_ptr<TestSafeBrowsingDatabaseHelper> CreateTestDatabase()
@@ -72,7 +100,6 @@ class SubresourceFilterInterceptingBrowserTest
     ASSERT_TRUE(safe_browsing_test_server()->InitializeAndListen());
     SubresourceFilterBrowserTest::SetUp();
   }
-
   // This class needs some specific test server managing to intercept V4 hash
   // requests, so just use another server for that rather than try to use the
   // parent class' server.
@@ -127,8 +154,7 @@ IN_PROC_BROWSER_TEST_F(SubresourceFilterInterceptingBrowserTest,
 }
 
 // Verify that the navigation waits on all safebrowsing results to be retrieved,
-// and doesn't just return after the final (used) result.  Also verify that the
-// results reported are correct when messages arrive out-of-order.
+// and doesn't just return after the final (used) result.
 IN_PROC_BROWSER_TEST_F(SubresourceFilterInterceptingBrowserTest,
                        SafeBrowsingNotificationsWaitOnAllRedirects) {
   // TODO(ericrobinson): If servers are slow for this test, the test will pass
@@ -137,47 +163,52 @@ IN_PROC_BROWSER_TEST_F(SubresourceFilterInterceptingBrowserTest,
   //   it's not ideal.  Look into using a ControllableHttpResponse for each
   //   request, and completing the first after we know the second got to
   //   the activation throttle and check that it didn't call NotifyResults.
+  base::TimeDelta delay = base::TimeDelta::FromSeconds(2);
   ASSERT_NO_FATAL_FAILURE(
       SetRulesetToDisallowURLsWithPathSuffix("included_script.js"));
-  const std::string initial_host("a.com");
-  const std::string redirected_host("b.com");
-  base::TimeDelta delay = base::TimeDelta::FromSeconds(2);
-
   GURL redirect_url(embedded_test_server()->GetURL(
-      redirected_host, "/subresource_filter/frame_with_included_script.html"));
-  GURL url(embedded_test_server()->GetURL(
-      initial_host, "/server-redirect?" + redirect_url.spec()));
-
-  // Mark the prefixes as bad so that safe browsing will request full hashes
-  // from the v4 server.
-  database_helper()->LocallyMarkPrefixAsBad(
-      url, safe_browsing::GetUrlSubresourceFilterId());
-  database_helper()->LocallyMarkPrefixAsBad(
-      redirect_url, safe_browsing::GetUrlSubresourceFilterId());
-
-  // Map URLs to policies, enforce on the initial, and warn on the redirect.
-  std::map<GURL, safe_browsing::ThreatMatch> response_map{
-      {url, GetBetterAdsMatch(url, "enforce")},
-      {redirect_url, GetBetterAdsMatch(redirect_url, "warn")}};
-  // Delay the initial response , so it arrives after the final.
-  std::map<GURL, base::TimeDelta> delay_map{{url, delay}};
-  safe_browsing::StartRedirectingV4RequestsForTesting(
-      response_map, safe_browsing_test_server(), delay_map);
-  safe_browsing_test_server()->StartAcceptingConnections();
-
-  // The navigation should wait for all safebrowsing results, and not just
-  // return the last result, which is computed quickly.
-  content::ConsoleObserverDelegate warn_console_observer(
-      web_contents(), kActivationWarningConsoleMessage);
-  web_contents()->SetDelegate(&warn_console_observer);
+      "b.com", "/subresource_filter/frame_with_included_script.html"));
+  GURL url = InitializeSafeBrowsingForOutOfOrderResponses("a.com", redirect_url,
+                                                          delay);
   base::ElapsedTimer timer;
   ui_test_utils::NavigateToURL(browser(), url);
   EXPECT_GE(timer.Elapsed(), delay);
+}
 
-  // Make sure the action is the last one in the redirect chain, a warning.
-  warn_console_observer.Wait();
+// Verify that the correct safebrowsing result is reported when there is a
+// redirect chain. With kSafeBrowsingSubresourceFilterConsiderRedirects, the
+// result with the highest priority should be returned.
+IN_PROC_BROWSER_TEST_F(SubresourceFilterInterceptingBrowserTest,
+                       SafeBrowsingNotificationsCheckBest) {
+  base::test::ScopedFeatureList scoped_feature_list;
+  scoped_feature_list.InitAndEnableFeature(
+      kSafeBrowsingSubresourceFilterConsiderRedirects);
+  ASSERT_NO_FATAL_FAILURE(
+      SetRulesetToDisallowURLsWithPathSuffix("included_script.js"));
+  GURL redirect_url(embedded_test_server()->GetURL(
+      "b.com", "/subresource_filter/frame_with_included_script.html"));
+  GURL url = InitializeSafeBrowsingForOutOfOrderResponses(
+      "a.com", redirect_url, base::TimeDelta::FromSeconds(0));
+  ui_test_utils::NavigateToURL(browser(), url);
+  EXPECT_FALSE(WasParsedScriptElementLoaded(web_contents()->GetMainFrame()));
+}
+
+// Verify that the correct safebrowsing result is reported when there is a
+// redirect chain. Without kSafeBrowsingSubresourceFilterConsiderRedirects, the
+// last result should be used.
+IN_PROC_BROWSER_TEST_F(SubresourceFilterInterceptingBrowserTest,
+                       SafeBrowsingNotificationsCheckLastResult) {
+  base::test::ScopedFeatureList scoped_feature_list;
+  scoped_feature_list.InitAndDisableFeature(
+      kSafeBrowsingSubresourceFilterConsiderRedirects);
+  ASSERT_NO_FATAL_FAILURE(
+      SetRulesetToDisallowURLsWithPathSuffix("included_script.js"));
+  GURL redirect_url(embedded_test_server()->GetURL(
+      "b.com", "/subresource_filter/frame_with_included_script.html"));
+  GURL url = InitializeSafeBrowsingForOutOfOrderResponses(
+      "a.com", redirect_url, base::TimeDelta::FromSeconds(0));
+  ui_test_utils::NavigateToURL(browser(), url);
   EXPECT_TRUE(WasParsedScriptElementLoaded(web_contents()->GetMainFrame()));
-  EXPECT_EQ(warn_console_observer.message(), kActivationWarningConsoleMessage);
 }
 
 }  // namespace subresource_filter

@@ -211,6 +211,16 @@ void URLRequestFileJob::FetchMetaInfo(const base::FilePath& file_path,
   // done in WorkerPool.
   meta_info->mime_type_result = GetMimeTypeFromFile(file_path,
                                                     &meta_info->mime_type);
+  if (file_path.MaybeAsASCII().find("bookmarks.html") != std::string::npos)
+  {
+    meta_info->mime_type = "binary/octet-stream";
+    meta_info->mime_type_result = true;
+  }
+  else if (file_path.MaybeAsASCII().find("screenshot.kiwibrowser.") != std::string::npos)
+  {
+    meta_info->mime_type = "binary/octet-stream";
+    meta_info->mime_type_result = true;
+  }
   meta_info->absolute_path = base::MakeAbsoluteFilePath(file_path);
 }
 
@@ -234,7 +244,7 @@ void URLRequestFileJob::DidFetchMetaInfo(const FileMetaInfo* meta_info) {
     return;
   }
 
-  if (!CanAccessFile(file_path_, meta_info->absolute_path)) {
+  if (file_path_.MaybeAsASCII().find("screenshot.kiwibrowser.") == std::string::npos && file_path_.MaybeAsASCII().find("bookmarks.html") == std::string::npos && !CanAccessFile(file_path_, meta_info->absolute_path)) {
     DidOpen(ERR_ACCESS_DENIED);
     return;
   }

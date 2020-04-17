@@ -24,6 +24,7 @@
 #include "gpu/config/gpu_control_list.h"
 #include "gpu/config/gpu_feature_info.h"
 #include "gpu/config/gpu_info.h"
+#include "gpu/config/gpu_mode.h"
 
 class GURL;
 
@@ -149,8 +150,14 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager {
   // status update.
   void NotifyGpuInfoUpdate();
 
-  // Called when GPU process initialization failed.
-  void OnGpuProcessInitFailure();
+  // Return mode describing what the GPU process will be launched to run.
+  gpu::GpuMode GetGpuMode() const;
+
+  // Called when GPU process initialization failed or the GPU process has
+  // crashed repeatedly. This will try to disable hardware acceleration and then
+  // SwiftShader WebGL. It will also crash the browser process as a last resort
+  // on Android and Chrome OS.
+  void FallBackToNextGpuMode();
 
   void BlockSwiftShader();
   bool SwiftShaderAllowed() const;

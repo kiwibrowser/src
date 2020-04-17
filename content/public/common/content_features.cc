@@ -40,6 +40,39 @@ const base::Feature kAudioServiceAudioStreams{
 const base::Feature kAudioServiceOutOfProcess{
     "AudioServiceOutOfProcess", base::FEATURE_DISABLED_BY_DEFAULT};
 
+// Enables await taking 1 tick on the microtask queue.
+const base::Feature kAwaitOptimization{"AwaitOptimization",
+                                       base::FEATURE_ENABLED_BY_DEFAULT};
+
+// Kill switch for Background Fetch.
+const base::Feature kBackgroundFetch{"BackgroundFetch",
+                                     base::FEATURE_ENABLED_BY_DEFAULT};
+
+// Enables access to active background fetches.
+const base::Feature kBackgroundFetchAccessActiveFetches{
+    "BackgroundFetchAccessActiveFetches", base::FEATURE_DISABLED_BY_DEFAULT};
+
+// Enables using uploads in a Background Fetch.
+const base::Feature kBackgroundFetchUploads{"BackgroundFetchUploads",
+                                            base::FEATURE_DISABLED_BY_DEFAULT};
+
+// Enable using the BackForwardCache.
+const base::Feature kBackForwardCache{"BackForwardCache",
+                                      base::FEATURE_DISABLED_BY_DEFAULT};
+
+// Enable incremental marking for Blink's heap managed by the Oilpan garbage
+// collector.
+const base::Feature kBlinkHeapIncrementalMarking{
+    "BlinkHeapIncrementalMarking", base::FEATURE_ENABLED_BY_DEFAULT};
+
+// Enable unified garbage collection in Blink.
+const base::Feature kBlinkHeapUnifiedGarbageCollection{
+    "BlinkHeapUnifiedGarbageCollection", base::FEATURE_DISABLED_BY_DEFAULT};
+
+// Enable bloated renderer detection.
+const base::Feature kBloatedRendererDetection{
+    "BloatedRendererDetection", base::FEATURE_DISABLED_BY_DEFAULT};
+
 // Allows swipe left/right from touchpad change browser navigation. Currently
 // only enabled by default on CrOS.
 const base::Feature kTouchpadOverscrollHistoryNavigation {
@@ -445,7 +478,7 @@ const base::Feature kWebAssembly{"WebAssembly",
 
 // Enable WebAssembly streamed compilation.
 const base::Feature kWebAssemblyStreaming{"WebAssemblyStreaming",
-                                          base::FEATURE_ENABLED_BY_DEFAULT};
+                                          base::FEATURE_DISABLED_BY_DEFAULT};
 
 // Enable WebAssembly baseline compilation and tier up.
 const base::Feature kWebAssemblyBaseline{"WebAssemblyBaseline",

@@ -40,6 +40,10 @@ def Unpack(pak_path, out_path):
       res = re.match('#define ([^ ]+) (\d+)', line)
       if res:
         resource_ids[int(res.group(2))] = res.group(1)
+      else:
+        res = re.match('#define ([^ ]+) ([^ ]+) (\d+)', line)
+        if res:
+          resource_ids[int(res.group(3))] = res.group(1)
   assert resource_ids
 
   # Associate numerical string IDs to files.

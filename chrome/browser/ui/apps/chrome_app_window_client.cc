@@ -21,7 +21,7 @@
 
 // TODO(jamescook): We probably shouldn't compile this class at all on Android.
 // See http://crbug.com/343612
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 #include "chrome/browser/ui/apps/chrome_app_delegate.h"
 #endif
 
@@ -41,12 +41,8 @@ ChromeAppWindowClient* ChromeAppWindowClient::GetInstance() {
 extensions::AppWindow* ChromeAppWindowClient::CreateAppWindow(
     content::BrowserContext* context,
     const extensions::Extension* extension) {
-#if defined(OS_ANDROID)
-  return NULL;
-#else
   return new extensions::AppWindow(context, new ChromeAppDelegate(true),
                                    extension);
-#endif
 }
 
 extensions::AppWindow*

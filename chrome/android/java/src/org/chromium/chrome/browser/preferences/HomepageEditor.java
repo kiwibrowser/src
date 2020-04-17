@@ -14,6 +14,10 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 
+import org.chromium.base.ContextUtils;
+import android.content.SharedPreferences;
+import android.graphics.Color;
+
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.partnercustomizations.HomepageManager;
 import org.chromium.chrome.browser.util.FeatureUtilities;
@@ -45,6 +49,11 @@ public class HomepageEditor extends Fragment implements TextWatcher {
         mHomepageUrlEdit.addTextChangedListener(this);
         mHomepageUrlEdit.requestFocus();
 
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            v.setBackgroundColor(Color.BLACK);
+            mHomepageUrlEdit.setBackgroundColor(Color.BLACK);
+        }
+
         initializeSaveCancelResetButtons(v);
         return v;
     }
@@ -57,6 +66,10 @@ public class HomepageEditor extends Fragment implements TextWatcher {
     public void onTextChanged(CharSequence s, int start, int before, int count) {
         mSaveButton.setEnabled(true);
         mResetButton.setEnabled(true);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mSaveButton.setTextColor(Color.WHITE);
+            mResetButton.setTextColor(Color.WHITE);
+        }
     }
 
     @Override
@@ -75,9 +88,15 @@ public class HomepageEditor extends Fragment implements TextWatcher {
         if (mHomepageManager.getPrefHomepageUseDefaultUri()) {
             mResetButton.setEnabled(false);
         }
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mResetButton.setTextColor(Color.GRAY);
+        }
 
         mSaveButton = (Button) v.findViewById(R.id.homepage_save);
         mSaveButton.setEnabled(false);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mSaveButton.setTextColor(Color.GRAY);
+        }
         mSaveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -89,6 +108,9 @@ public class HomepageEditor extends Fragment implements TextWatcher {
         });
 
         Button button = (Button) v.findViewById(R.id.homepage_cancel);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            button.setTextColor(Color.WHITE);
+        }
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

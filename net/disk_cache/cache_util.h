@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 
+#include "base/feature_list.h"
 #include "net/base/net_export.h"
 #include "net/disk_cache/disk_cache.h"
 
@@ -15,6 +16,8 @@ class FilePath;
 }
 
 namespace disk_cache {
+
+NET_EXPORT_PRIVATE extern const base::Feature kChangeDiskCacheSizeExperiment;
 
 // Moves the cache files from the given path to another location.
 // Fails if the destination exists already, or if it doesn't have

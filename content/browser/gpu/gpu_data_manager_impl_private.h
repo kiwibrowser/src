@@ -99,7 +99,8 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
 
   bool UpdateActiveGpu(uint32_t vendor_id, uint32_t device_id);
 
-  void OnGpuProcessInitFailure();
+  gpu::GpuMode GetGpuMode() const;
+  void FallBackToNextGpuMode();
 
   // Notify all observers whenever there is a GPU info update.
   void NotifyGpuInfoUpdate();

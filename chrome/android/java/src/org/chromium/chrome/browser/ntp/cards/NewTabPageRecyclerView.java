@@ -10,6 +10,7 @@ import android.graphics.Region;
 import android.view.LayoutInflater;
 import android.view.View;
 
+import org.chromium.base.ContextUtils;
 import org.chromium.base.VisibleForTesting;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.ntp.NewTabPage.FakeboxDelegate;
@@ -46,6 +47,9 @@ public class NewTabPageRecyclerView extends SuggestionsRecyclerView {
 
         mAboveTheFoldView = (NewTabPageLayout) LayoutInflater.from(getContext())
                                     .inflate(R.layout.new_tab_page_layout, this, false);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("enable_bottom_toolbar", false)) {
+             mAboveTheFoldView.setPadding(0, 0, 0, 0);
+        }
     }
 
     public NewTabPageLayout getAboveTheFoldView() {

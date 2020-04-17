@@ -17,9 +17,12 @@
 #include "third_party/protobuf/src/google/protobuf/io/zero_copy_stream.h"
 #include "third_party/protobuf/src/google/protobuf/io/zero_copy_stream_impl_lite.h"
 
-namespace url_pattern_index {
+namespace subresource_filter {
 
 namespace {
+namespace proto = url_pattern_index::proto;
+namespace testing = url_pattern_index::testing;
+using url_pattern_index::UrlPattern;
 
 bool IsEqual(const proto::UrlRule& lhs, const proto::UrlRule& rhs) {
   return lhs.SerializeAsString() == rhs.SerializeAsString();
@@ -178,4 +181,4 @@ TEST(UnindexedRulesetTest, ReadCorruptedInput) {
   }
 }
 
-}  // namespace url_pattern_index
+}  // namespace subresource_filter

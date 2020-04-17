@@ -272,7 +272,8 @@ bool TabSpecificContentSettings::IsContentBlocked(
       content_type == CONTENT_SETTINGS_TYPE_MIDI_SYSEX ||
       content_type == CONTENT_SETTINGS_TYPE_ADS ||
       content_type == CONTENT_SETTINGS_TYPE_SOUND ||
-      content_type == CONTENT_SETTINGS_TYPE_CLIPBOARD_READ) {
+      content_type == CONTENT_SETTINGS_TYPE_CLIPBOARD_READ ||
+      content_type == CONTENT_SETTINGS_TYPE_SENSORS) {
     const auto& it = content_settings_status_.find(content_type);
     if (it != content_settings_status_.end())
       return it->second.blocked;
@@ -300,13 +301,15 @@ bool TabSpecificContentSettings::IsContentAllowed(
       << "Automatic downloads handled by DownloadRequestLimiter";
 
   // This method currently only returns meaningful values for the content type
-  // cookies, media, PPAPI broker, downloads, MIDI sysex, and clipboard.
+  // cookies, media, PPAPI broker, downloads, MIDI sysex, clipboard, and
+  // sensors.
   if (content_type != CONTENT_SETTINGS_TYPE_COOKIES &&
       content_type != CONTENT_SETTINGS_TYPE_MEDIASTREAM_MIC &&
       content_type != CONTENT_SETTINGS_TYPE_MEDIASTREAM_CAMERA &&
       content_type != CONTENT_SETTINGS_TYPE_PPAPI_BROKER &&
       content_type != CONTENT_SETTINGS_TYPE_MIDI_SYSEX &&
-      content_type != CONTENT_SETTINGS_TYPE_CLIPBOARD_READ) {
+      content_type != CONTENT_SETTINGS_TYPE_CLIPBOARD_READ &&
+      content_type != CONTENT_SETTINGS_TYPE_SENSORS) {
     return false;
   }
 

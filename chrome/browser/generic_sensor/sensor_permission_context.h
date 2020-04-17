@@ -16,6 +16,9 @@ class SensorPermissionContext : public PermissionContextBase {
 
  private:
   // PermissionContextBase:
+  void UpdateTabContext(const PermissionRequestID& id,
+                        const GURL& requesting_frame,
+                        bool allowed) override;
   ContentSetting GetPermissionStatusInternal(
       content::RenderFrameHost* render_frame_host,
       const GURL& requesting_origin,

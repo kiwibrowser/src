@@ -14,6 +14,9 @@ class BASE_EXPORT SysUtils {
  public:
   // Returns true iff this is a low-end device.
   static bool IsLowEndDeviceFromJni();
+  static bool IsBottomToolbarEnabledFromJni();
+  static long FirstInstallDateFromJni();
+  static std::string ReferrerStringFromJni();
   // Returns true if system has low available memory.
   static bool IsCurrentlyLowMemory();
 };

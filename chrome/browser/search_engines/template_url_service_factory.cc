@@ -10,6 +10,7 @@
 #include "build/build_config.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/google/google_url_tracker_factory.h"
+#include "chrome/browser/google/search_url_tracker_factory.h"
 #include "chrome/browser/history/history_service_factory.h"
 #include "chrome/browser/profiles/incognito_helpers.h"
 #include "chrome/browser/profiles/profile.h"
@@ -59,6 +60,7 @@ std::unique_ptr<KeyedService> TemplateURLServiceFactory::BuildInstanceFor(
               HistoryServiceFactory::GetForProfile(
                   profile, ServiceAccessType::EXPLICIT_ACCESS))),
       GoogleURLTrackerFactory::GetForProfile(profile),
+      SearchURLTrackerFactory::GetForProfile(profile),
       g_browser_process->rappor_service(), dsp_change_callback);
 }
 
@@ -67,6 +69,7 @@ TemplateURLServiceFactory::TemplateURLServiceFactory()
         "TemplateURLServiceFactory",
         BrowserContextDependencyManager::GetInstance()) {
   DependsOn(GoogleURLTrackerFactory::GetInstance());
+  DependsOn(SearchURLTrackerFactory::GetInstance());
   DependsOn(HistoryServiceFactory::GetInstance());
   DependsOn(WebDataServiceFactory::GetInstance());
 }

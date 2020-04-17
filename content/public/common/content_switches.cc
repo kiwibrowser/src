@@ -612,6 +612,9 @@ const char kMojoLocalStorage[]              = "mojo-local-storage";
 // zygote to work.
 const char kNoZygote[] = "no-zygote";
 
+// Disables V8 mitigations for executing untrusted code.
+const char kNoV8UntrustedCodeMitigations[] = "no-v8-untrusted-code-mitigations";
+
 // Number of worker threads used to rasterize content.
 const char kNumRasterThreads[]              = "num-raster-threads";
 

@@ -126,9 +126,6 @@ public class FirstRunActivity extends FirstRunActivityBase implements FirstRunPa
             mPages.add(new ToSAndUMAFirstRunFragment.Page());
             mFreProgressStates.add(FRE_PROGRESS_WELCOME_SHOWN);
         }
-
-        // Other pages will be created by createPostNativePageSequence() after
-        // native has been initialized.
     }
 
     private void createPostNativePageSequence() {

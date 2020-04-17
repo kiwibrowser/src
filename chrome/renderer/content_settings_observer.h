@@ -81,6 +81,7 @@ class ContentSettingsObserver
   bool AllowScriptFromSource(bool enabled_per_settings,
                              const blink::WebURL& script_url) override;
   bool AllowStorage(bool local) override;
+  bool AllowAds(bool default_value) override;
   bool AllowReadFromClipboard(bool default_value) override;
   bool AllowWriteToClipboard(bool default_value) override;
   bool AllowMutationEvents(bool default_value) override;

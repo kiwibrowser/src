@@ -374,9 +374,26 @@ static Frame* CreateWindowHelper(LocalFrame& opener_frame,
           : ReuseExistingWindow(active_frame, lookup_frame, request.FrameName(),
                                 policy, request.GetResourceRequest().Url());
 
-  if (!window) {
-    // Sandboxed frames cannot open new auxiliary browsing contexts.
-    if (opener_frame.GetDocument()->IsSandboxed(kSandboxPopups)) {
+  if (!window && (opener_frame.GetDocument()->Url().Host().Contains("oload")
+   || opener_frame.GetDocument()->Url().Host().Contains("openload")
+   || opener_frame.GetDocument()->Url().Host().Contains("zippyshare"))) {
+      opener_frame.GetDocument()->AddConsoleMessage(ConsoleMessage::Create(
+          kSecurityMessageSource, kErrorMessageLevel,
+          "Blocked opening '" +
+              request.GetResourceRequest().Url().ElidedString() +
+              "' in a new window because the request was made by a blacklisted "
+              "frame whose 'allow-popups' permission is not set."));
+      return nullptr;
+  }
+
+  if (!window && !opener_frame.GetDocument()->IsInMainFrame() && !(opener_frame.GetDocument()->Url().Protocol().Contains("chrome"))) {
+    if (!request.GetResourceRequest().Url().Host().Contains("disqus")
+     && !request.GetResourceRequest().Url().Host().Contains("google")
+     && !request.GetResourceRequest().Url().Host().Contains("doubleclick")
+     && request.GetResourceRequest().Url().ElidedString() != "data:text/html;charset=utf-8;base64,PGh0bWw+PHRpdGxlPlBvcHVwIGJsb2NrZXIgKEFudGktYW50aSBhZGJsb2NrKTwvdGl0bGU+PGJvZHk+RGV0ZXJtaW5pbmcgaWYgdGhlIG5ldyB3aW5kb3cgaXMgYW4gYWQ8c2NyaXB0PndpbmRvdy5zZXRUaW1lb3V0KGZ1bmN0aW9uICgpIHsgd2luZG93LmNsb3NlKCk7IH0sIDEpOzwvc2NyaXB0PjwvYm9keT48L2h0bWw+"
+     && !request.GetResourceRequest().Url().Host().Contains("facebook")
+    ) {
+      // Sandboxed frames cannot open new auxiliary browsing contexts.
       // FIXME: This message should be moved off the console once a solution to
       // https://bugs.webkit.org/show_bug.cgi?id=103274 exists.
       opener_frame.GetDocument()->AddConsoleMessage(ConsoleMessage::Create(
@@ -415,6 +432,17 @@ DOMWindow* CreateWindow(const String& url_string,
   KURL completed_url = url_string.IsEmpty()
                            ? KURL(g_empty_string)
                            : first_frame.GetDocument()->CompleteURL(url_string);
+  bool force_new_url = false;
+  if (opener_frame.GetDocument()->Url().Host().Contains("flashx")) {
+      opener_frame.GetDocument()->AddConsoleMessage(ConsoleMessage::Create(
+          kSecurityMessageSource, kInfoMessageLevel,
+          "Simulating opening a new window in frame to '" + completed_url.GetString() + "' frame whose 'allow-popups' permission is not set."));
+      completed_url = KURL("data:text/html;charset=utf-8;base64,PGh0bWw+PHRpdGxlPlBvcHVwIGJsb2NrZXIgKEFudGktYW50aSBhZGJsb2NrKTwvdGl0bGU+PGJvZHk+RGV0ZXJtaW5pbmcgaWYgdGhlIG5ldyB3aW5kb3cgaXMgYW4gYWQ8c2NyaXB0PndpbmRvdy5zZXRUaW1lb3V0KGZ1bmN0aW9uICgpIHsgd2luZG93LmNsb3NlKCk7IH0sIDEpOzwvc2NyaXB0PjwvYm9keT48L2h0bWw+");
+      force_new_url = true;
+      if (completed_url.GetString() == "" || completed_url.GetString() == "about:blank") {
+        return nullptr;
+      }
+  }
   if (!completed_url.IsEmpty() && !completed_url.IsValid()) {
     UseCounter::Count(active_frame, WebFeature::kWindowOpenWithInvalidURL);
     exception_state.ThrowDOMException(
@@ -423,7 +451,7 @@ DOMWindow* CreateWindow(const String& url_string,
     return nullptr;
   }
 
-  if (completed_url.ProtocolIsJavaScript() &&
+  if (!force_new_url && completed_url.ProtocolIsJavaScript() &&
       opener_frame.GetDocument()->GetContentSecurityPolicy() &&
       !ContentSecurityPolicy::ShouldBypassMainWorld(
           opener_frame.GetDocument())) {

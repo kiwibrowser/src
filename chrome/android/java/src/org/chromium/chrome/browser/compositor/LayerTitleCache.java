@@ -10,6 +10,7 @@ import android.graphics.Bitmap;
 import android.text.TextUtils;
 import android.util.SparseArray;
 
+import org.chromium.base.ContextUtils;
 import org.chromium.base.annotations.CalledByNative;
 import org.chromium.base.annotations.JNINamespace;
 import org.chromium.chrome.R;
@@ -124,10 +125,14 @@ public class LayerTitleCache implements TitleCache {
         Bitmap originalFavicon = tab.getFavicon();
 
         boolean isDarkTheme = tab.isIncognito();
+
         // The theme might require lighter text.
         if (!DeviceFormFactor.isNonMultiDisplayContextOnTablet(mContext)) {
             isDarkTheme |= ColorUtils.shouldUseLightForegroundOnBackground(tab.getThemeColor());
         }
+
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+            isDarkTheme = true;
 
         boolean isRtl = tab.isTitleDirectionRtl();
         TitleBitmapFactory titleBitmapFactory =

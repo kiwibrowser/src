@@ -30,6 +30,19 @@ namespace subresource_filter {
 
 class FirstPartyOrigin;
 
+// Detailed result of IndexedRulesetMatcher::Verify.
+// Note: Logged to UMA, keep in sync with SubresourceFilterVerifyStatus in
+// enums.xml.  Add new entries to the end and do not renumber.
+enum class VerifyStatus {
+  kPassValidChecksum = 0,
+  kChecksumFailVerifierPass = 1,
+  kChecksumFailVerifierFail = 2,
+  kVerifierFailChecksumPass = 3,
+  kVerifierFailChecksumZero = 4,
+  kPassChecksumZero = 5,
+  kMaxValue = kPassChecksumZero
+};
+
 // The class used to construct flat data structures representing the set of URL
 // filtering rules, as well as the index of those. Internally owns a
 // FlatBufferBuilder storing the structures.
@@ -55,6 +68,9 @@ class RulesetIndexer {
   // Finalizes construction of the data structures.
   void Finish();
 
+  // Returns the checksum for the data buffer.
+  int GetChecksum() const;
+
   // Returns a pointer to the buffer containing the serialized flat data
   // structures. Should only be called after Finish().
   const uint8_t* data() const { return builder_.GetBufferPointer(); }
@@ -77,7 +93,7 @@ class IndexedRulesetMatcher {
  public:
   // Returns whether the |buffer| of the given |size| contains a valid
   // flat::IndexedRuleset FlatBuffer.
-  static bool Verify(const uint8_t* buffer, size_t size);
+  static bool Verify(const uint8_t* buffer, size_t size, int expected_checksum);
 
   // Creates an instance that matches URLs against the flat::IndexedRuleset
   // provided as the root object of serialized data in the |buffer| of the given

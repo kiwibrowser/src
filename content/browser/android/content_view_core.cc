@@ -122,12 +122,6 @@ ui::ViewAndroid* ContentViewCore::GetViewAndroid() const {
 // Methods called from Java via JNI
 // ----------------------------------------------------------------------------
 
-void ContentViewCore::SetFocus(JNIEnv* env,
-                               const JavaParamRef<jobject>& obj,
-                               jboolean focused) {
-  SetFocusInternal(focused);
-}
-
 void ContentViewCore::SetFocusInternal(bool focused) {
   if (!GetRenderWidgetHostViewAndroid())
     return;

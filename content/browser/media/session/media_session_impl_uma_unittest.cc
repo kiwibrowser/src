@@ -8,7 +8,7 @@
 #include <memory>
 
 #include "base/metrics/histogram_samples.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "content/browser/media/session/media_session_player_observer.h"
 #include "content/test/test_render_view_host.h"
 #include "content/test/test_web_contents.h"

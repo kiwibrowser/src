@@ -3,8 +3,9 @@
 // found in the LICENSE file.
 
 #include "content/browser/renderer_host/input/render_widget_host_latency_tracker.h"
+
 #include "base/metrics/metrics_hashes.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "components/rappor/public/rappor_utils.h"
 #include "components/rappor/test_rappor_service.h"
 #include "components/ukm/test_ukm_recorder.h"

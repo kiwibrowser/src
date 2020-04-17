@@ -272,15 +272,14 @@ template("generate_mini_installer") {
     # In general, mini_installer tries to avoid depending on the C++ standard
     # library for size reasons. This is achieved by setting a custom entry point
     # (which avoids pulling in the standard library via a link dependency) as
-    # well as by not depending on exe_and_shlib_deps (which depends on
-    # libc++ in use_custom_libcxx=true builds).
+    # well as by not depending on //buildtools/third_party/libc++.
     #
     # But in asan builds we need to link against the asan runtime library, which
     # in turn depends on the standard library and relies on it to run
-    # initializers. So in asan builds we depend on exe_and_shlib_deps for the
-    # asan runtime and use the standard entry point.
+    # initializers. So in asan builds we depend on libc++ for the asan runtime
+    # and use the standard entry point.
     if (is_asan) {
-      deps += [ "//build/config:exe_and_shlib_deps" ]
+      deps += [ "//buildtools/third_party/libc++" ]
     } else {
       ldflags += [ "/ENTRY:MainEntryPoint" ]
     }

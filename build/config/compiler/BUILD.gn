@@ -1419,6 +1419,18 @@ config("default_warnings") {
         # Ignore warnings about MSVC optimization pragmas.
         # TODO(thakis): Only for no_chromium_code? http://crbug.com/505314
         "-Wno-ignored-pragma-optimize",
+
+        # TODO(hans): https://crbug.com/890307
+        "-Wno-defaulted-function-deleted",
+
+        # From return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1 in ffmpeg
+        "-Wno-string-plus-int",
+
+        # components/error_page/common/localized_error.cc:974:49: error: use of logical '&&' with constant operand [-Werror,-Wconstant-logical-operand]
+        "-Wno-constant-logical-operand",
+
+        # error: declaration shadows a variable in namespace 'blink' 
+        "-Wno-shadow",
       ]
     } else if (use_xcode_clang) {
       cflags += [
@@ -1548,9 +1560,9 @@ config("no_chromium_code") {
 config("noshadowing") {
   # This flag has to be disabled for nacl because the nacl compiler is too
   # strict about shadowing.
-  if (is_clang && !is_nacl) {
-    cflags = [ "-Wshadow" ]
-  }
+#  if (is_clang && !is_nacl) {
+#    cflags = [ "-Wshadow" ]
+#  }
 }
 
 # rtti ------------------------------------------------------------------------

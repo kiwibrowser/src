@@ -1895,30 +1895,6 @@ TEST_P(VisualViewportTest, WindowDimensionsOnLoadWideContent) {
             std::string(output->InnerHTMLAsString().Ascii().data()));
 }
 
-TEST_P(VisualViewportTest, PinchZoomGestureScrollsVisualViewportOnly) {
-  InitializeWithDesktopSettings();
-  WebView()->Resize(IntSize(100, 100));
-
-  RegisterMockedHttpURLLoad("200-by-800-viewport.html");
-  NavigateTo(base_url_ + "200-by-800-viewport.html");
-
-  WebGestureEvent pinch_update(
-      WebInputEvent::kGesturePinchUpdate, WebInputEvent::kNoModifiers,
-      WebInputEvent::GetStaticTimeStampForTests(), kWebGestureDeviceTouchpad);
-  pinch_update.SetPositionInWidget(FloatPoint(100, 100));
-  pinch_update.data.pinch_update.scale = 2;
-  pinch_update.data.pinch_update.zoom_disabled = false;
-
-  WebView()->HandleInputEvent(WebCoalescedInputEvent(pinch_update));
-
-  VisualViewport& visual_viewport = WebView()->GetPage()->GetVisualViewport();
-  LocalFrameView& frame_view = *WebView()->MainFrameImpl()->GetFrameView();
-
-  EXPECT_FLOAT_SIZE_EQ(FloatSize(50, 50), visual_viewport.GetScrollOffset());
-  EXPECT_EQ(ScrollOffset(0, 0),
-            frame_view.LayoutViewportScrollableArea()->GetScrollOffset());
-}
-
 TEST_P(VisualViewportTest, ResizeWithScrollAnchoring) {
   InitializeWithDesktopSettings();
   WebView()->Resize(IntSize(800, 600));

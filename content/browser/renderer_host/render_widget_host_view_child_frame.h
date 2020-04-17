@@ -306,6 +306,11 @@ class CONTENT_EXPORT RenderWidgetHostViewChildFrame
   void OnDidUpdateVisualPropertiesComplete(
       const cc::RenderFrameMetadata& metadata);
 
+  void ProcessTouchpadPinchAckInRoot(const blink::WebGestureEvent& event,
+                                     InputEventAckState ack_result);
+  void ForwardTouchpadPinchIfNecessary(const blink::WebGestureEvent& event,
+                                       InputEventAckState ack_result) override;
+
   std::vector<base::OnceClosure> frame_swapped_callbacks_;
 
   // The surface client ID of the parent RenderWidgetHostView.  0 if none.

@@ -183,10 +183,6 @@ class NET_EXPORT_PRIVATE SimpleIndexFile {
   static bool LegacyIsIndexFileStale(base::Time cache_last_modified,
                                      const base::FilePath& index_file_path);
 
-  struct PickleHeader : public base::Pickle::Header {
-    uint32_t crc;
-  };
-
   const scoped_refptr<base::SequencedTaskRunner> cache_runner_;
   const scoped_refptr<base::TaskRunner> worker_pool_;
   const net::CacheType cache_type_;

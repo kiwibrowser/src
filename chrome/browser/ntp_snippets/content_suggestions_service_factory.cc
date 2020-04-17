@@ -309,11 +309,11 @@ void RegisterArticleProviderIfEnabled(ContentSuggestionsService* service,
   // TODO(https://crbug.com/710636): Cleanup this clunky dependency once the
   // preference design is stable.
   std::string additional_toggle_pref;
-  if (!base::FeatureList::IsEnabled(
+  if (true || (!base::FeatureList::IsEnabled(
           ntp_snippets::kArticleSuggestionsExpandableHeader) &&
       base::FeatureList::IsEnabled(
-          chrome::android::kContentSuggestionsSettings)) {
-    additional_toggle_pref = prefs::kSearchSuggestEnabled;
+          chrome::android::kContentSuggestionsSettings))) {
+    additional_toggle_pref = prefs::kHomepageNewsEnabled;
   }
   std::unique_ptr<PrefetchedPagesTracker> prefetched_pages_tracker;
 #if BUILDFLAG(ENABLE_OFFLINE_PAGES)

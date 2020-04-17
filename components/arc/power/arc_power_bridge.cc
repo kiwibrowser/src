@@ -139,7 +139,7 @@ ArcPowerBridge::~ArcPowerBridge() {
 bool ArcPowerBridge::TriggerNotifyBrightnessTimerForTesting() {
   if (!notify_brightness_timer_.IsRunning())
     return false;
-  notify_brightness_timer_.user_task().Run();
+  notify_brightness_timer_.FireNow();
   return true;
 }
 

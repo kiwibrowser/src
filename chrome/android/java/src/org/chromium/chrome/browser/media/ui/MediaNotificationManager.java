@@ -340,7 +340,13 @@ public class MediaNotificationManager {
 
         @Override
         public int onStartCommand(Intent intent, int flags, int startId) {
-            if (!processIntent(intent)) stopListenerService();
+            if (!processIntent(intent)) {
+                // The service has been started with startForegroundService() but the
+                // notification hasn't been shown. On O it will lead to the app crash.
+                // So show an empty notification before stopping the service.
+                finishStartingForegroundService(this);
+                stopListenerService();
+            }
 
             return START_NOT_STICKY;
         }
@@ -362,15 +368,8 @@ public class MediaNotificationManager {
             if (intent == null) return false;
 
             MediaNotificationManager manager = getManager();
-            if (manager == null || manager.mMediaNotificationInfo == null) {
-                if (intent.getAction() == null) {
-                    // The service has been started with startForegroundService() but the
-                    // notification hasn't been shown. On O it will lead to the app crash.
-                    // So show an empty notification before stopping the service.
-                    finishStartingForegroundService(this);
-                }
-                return false;
-            }
+
+            if (manager == null || manager.mMediaNotificationInfo == null) return false;
 
             if (intent.getAction() == null) {
                 // The intent comes from  {@link AppHooks#startForegroundService}.

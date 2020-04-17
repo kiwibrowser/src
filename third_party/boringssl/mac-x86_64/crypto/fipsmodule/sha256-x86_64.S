@@ -1,4 +1,13 @@
+#if defined(__has_feature)
+#if __has_feature(memory_sanitizer) && !defined(OPENSSL_NO_ASM)
+#define OPENSSL_NO_ASM
+#endif
+#endif
+
 #if defined(__x86_64__) && !defined(OPENSSL_NO_ASM)
+#if defined(BORINGSSL_PREFIX)
+#include <boringssl_prefix_symbols_asm.h>
+#endif
 .text	
 
 
@@ -7,6 +16,7 @@
 
 .p2align	4
 _sha256_block_data_order:
+
 	leaq	_OPENSSL_ia32cap_P(%rip),%r11
 	movl	0(%r11),%r9d
 	movl	4(%r11),%r10d
@@ -19,12 +29,19 @@ _sha256_block_data_order:
 	testl	$512,%r10d
 	jnz	L$ssse3_shortcut
 	movq	%rsp,%rax
+
 	pushq	%rbx
+
 	pushq	%rbp
+
 	pushq	%r12
+
 	pushq	%r13
+
 	pushq	%r14
+
 	pushq	%r15
+
 	shlq	$4,%rdx
 	subq	$64+32,%rsp
 	leaq	(%rsi,%rdx,4),%rdx
@@ -32,7 +49,8 @@ _sha256_block_data_order:
 	movq	%rdi,64+0(%rsp)
 	movq	%rsi,64+8(%rsp)
 	movq	%rdx,64+16(%rsp)
-	movq	%rax,64+24(%rsp)
+	movq	%rax,88(%rsp)
+
 L$prologue:
 
 	movl	0(%rdi),%eax
@@ -1696,16 +1714,25 @@ L$rounds_16_xx:
 	movl	%r11d,28(%rdi)
 	jb	L$loop
 
-	movq	64+24(%rsp),%rsi
+	movq	88(%rsp),%rsi
+
 	movq	-48(%rsi),%r15
+
 	movq	-40(%rsi),%r14
+
 	movq	-32(%rsi),%r13
+
 	movq	-24(%rsi),%r12
+
 	movq	-16(%rsi),%rbp
+
 	movq	-8(%rsi),%rbx
+
 	leaq	(%rsi),%rsp
+
 L$epilogue:
 	.byte	0xf3,0xc3
+
 
 .p2align	6
 
@@ -1753,14 +1780,22 @@ K256:
 
 .p2align	6
 sha256_block_data_order_ssse3:
+
 L$ssse3_shortcut:
 	movq	%rsp,%rax
+
 	pushq	%rbx
+
 	pushq	%rbp
+
 	pushq	%r12
+
 	pushq	%r13
+
 	pushq	%r14
+
 	pushq	%r15
+
 	shlq	$4,%rdx
 	subq	$96,%rsp
 	leaq	(%rsi,%rdx,4),%rdx
@@ -1768,7 +1803,8 @@ L$ssse3_shortcut:
 	movq	%rdi,64+0(%rsp)
 	movq	%rsi,64+8(%rsp)
 	movq	%rdx,64+16(%rsp)
-	movq	%rax,64+24(%rsp)
+	movq	%rax,88(%rsp)
+
 L$prologue_ssse3:
 
 	movl	0(%rdi),%eax
@@ -2834,28 +2870,45 @@ L$ssse3_00_47:
 	movl	%r11d,28(%rdi)
 	jb	L$loop_ssse3
 
-	movq	64+24(%rsp),%rsi
+	movq	88(%rsp),%rsi
+
 	movq	-48(%rsi),%r15
+
 	movq	-40(%rsi),%r14
+
 	movq	-32(%rsi),%r13
+
 	movq	-24(%rsi),%r12
+
 	movq	-16(%rsi),%rbp
+
 	movq	-8(%rsi),%rbx
+
 	leaq	(%rsi),%rsp
+
 L$epilogue_ssse3:
 	.byte	0xf3,0xc3
 
 
+
 .p2align	6
 sha256_block_data_order_avx:
+
 L$avx_shortcut:
 	movq	%rsp,%rax
+
 	pushq	%rbx
+
 	pushq	%rbp
+
 	pushq	%r12
+
 	pushq	%r13
+
 	pushq	%r14
+
 	pushq	%r15
+
 	shlq	$4,%rdx
 	subq	$96,%rsp
 	leaq	(%rsi,%rdx,4),%rdx
@@ -2863,7 +2916,8 @@ L$avx_shortcut:
 	movq	%rdi,64+0(%rsp)
 	movq	%rsi,64+8(%rsp)
 	movq	%rdx,64+16(%rsp)
-	movq	%rax,64+24(%rsp)
+	movq	%rax,88(%rsp)
+
 L$prologue_avx:
 
 	vzeroupper
@@ -3890,16 +3944,25 @@ L$avx_00_47:
 	movl	%r11d,28(%rdi)
 	jb	L$loop_avx
 
-	movq	64+24(%rsp),%rsi
+	movq	88(%rsp),%rsi
+
 	vzeroupper
 	movq	-48(%rsi),%r15
+
 	movq	-40(%rsi),%r14
+
 	movq	-32(%rsi),%r13
+
 	movq	-24(%rsi),%r12
+
 	movq	-16(%rsi),%rbp
+
 	movq	-8(%rsi),%rbx
+
 	leaq	(%rsi),%rsp
+
 L$epilogue_avx:
 	.byte	0xf3,0xc3
+
 
 #endif

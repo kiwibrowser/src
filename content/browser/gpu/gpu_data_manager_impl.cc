@@ -207,9 +207,14 @@ void GpuDataManagerImpl::NotifyGpuInfoUpdate() {
   private_->NotifyGpuInfoUpdate();
 }
 
-void GpuDataManagerImpl::OnGpuProcessInitFailure() {
+gpu::GpuMode GpuDataManagerImpl::GetGpuMode() const {
   base::AutoLock auto_lock(lock_);
-  private_->OnGpuProcessInitFailure();
+  return private_->GetGpuMode();
+}
+
+void GpuDataManagerImpl::FallBackToNextGpuMode() {
+  base::AutoLock auto_lock(lock_);
+  private_->FallBackToNextGpuMode();
 }
 
 bool GpuDataManagerImpl::IsGpuProcessUsingHardwareGpu() const {

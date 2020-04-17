@@ -23,10 +23,6 @@ bool TestSafeBrowsingDatabaseManager::CanCheckResourceType(
   return false;
 }
 
-bool TestSafeBrowsingDatabaseManager::CanCheckSubresourceFilter() const {
-  return false;
-}
-
 bool TestSafeBrowsingDatabaseManager::CanCheckUrl(const GURL& url) const {
   NOTIMPLEMENTED();
   return false;

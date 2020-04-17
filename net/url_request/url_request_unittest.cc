@@ -17,8 +17,8 @@
 #include <stdint.h>
 
 #include <algorithm>
-#include <memory>
 #include <limits>
+#include <memory>
 
 #include "base/base64url.h"
 #include "base/bind.h"
@@ -43,7 +43,7 @@
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/test/scoped_feature_list.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/values.h"

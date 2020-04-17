@@ -306,7 +306,7 @@ def _CreateLinkApkArgs(options):
     the command, matching the arguments from |options|.
   """
   link_command = [
-    options.aapt_path + '2',
+    options.aapt2_path,
     'link',
     '--version-code', options.version_code,
     '--version-name', options.version_name,
@@ -468,11 +468,11 @@ def _ConvertToWebP(webp_binary, png_files):
   return renamed_paths
 
 
-def _CompileDeps(aapt_path, dep_subdirs, temp_dir):
+def _CompileDeps(aapt2_path, dep_subdirs, temp_dir):
   partials_dir = os.path.join(temp_dir, 'partials')
   build_utils.MakeDirectory(partials_dir)
   partial_compile_command = [
-      aapt_path + '2',
+      aapt2_path,
       'compile',
       # TODO(wnwen): Turn this on once aapt2 forces 9-patch to be crunched.
       # '--no-crunch',
@@ -550,7 +550,7 @@ def _PackageApk(options, dep_subdirs, temp_dir, gen_dir, r_txt_path):
   fixed_manifest = _FixManifest(options, temp_dir)
   link_command += ['--manifest', fixed_manifest]
 
-  partials = _CompileDeps(options.aapt_path, dep_subdirs, temp_dir)
+  partials = _CompileDeps(options.aapt2_path, dep_subdirs, temp_dir)
   for partial in partials:
     link_command += ['-R', partial]
 

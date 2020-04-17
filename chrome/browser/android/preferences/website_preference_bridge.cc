@@ -40,6 +40,7 @@
 #include "chrome/browser/usb/usb_chooser_context_factory.h"
 #include "components/content_settings/core/browser/cookie_settings.h"
 #include "components/content_settings/core/browser/host_content_settings_map.h"
+#include "components/content_settings/core/common/content_settings_utils.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
 #include "jni/WebsitePreferenceBridge_jni.h"
@@ -901,6 +902,30 @@ static jboolean JNI_WebsitePreferenceBridge_GetAdBlockingActivated(
   GURL url(ConvertJavaStringToUTF8(env, jorigin));
   return !!GetHostContentSettingsMap(false)->GetWebsiteSetting(
       url, GURL(), CONTENT_SETTINGS_TYPE_ADS_DATA, std::string(), nullptr);
+}
+
+static jboolean JNI_WebsitePreferenceBridge_GetRealAdBlockingActivated(
+    JNIEnv* env,
+    const JavaParamRef<jclass>& clazz,
+    const JavaParamRef<jstring>& jorigin) {
+  GURL url(ConvertJavaStringToUTF8(env, jorigin));
+  std::unique_ptr<base::Value> value = GetHostContentSettingsMap(false)->GetWebsiteSetting(
+      url, GURL(), CONTENT_SETTINGS_TYPE_ADS, std::string(), nullptr);
+  if (content_settings::ValueToContentSetting(value.get()) == CONTENT_SETTING_ALLOW)
+      return false;
+  else
+      return true;
+}
+
+static void JNI_WebsitePreferenceBridge_SetRealAdBlockingActivated(
+    JNIEnv* env,
+    const JavaParamRef<jclass>& clazz,
+    const JavaParamRef<jstring>& jorigin,
+    jint value,
+    jboolean is_incognito) {
+  JNI_WebsitePreferenceBridge_SetSettingForOrigin(
+      env, CONTENT_SETTINGS_TYPE_ADS, jorigin, nullptr,
+      static_cast<ContentSetting>(value), is_incognito);
 }
 
 // On Android O+ notification channels are not stored in the Chrome profile and

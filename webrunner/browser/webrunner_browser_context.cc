@@ -113,7 +113,8 @@ WebRunnerBrowserContext::GetSSLHostStateDelegate() {
   return nullptr;
 }
 
-content::PermissionManager* WebRunnerBrowserContext::GetPermissionManager() {
+content::PermissionControllerDelegate*
+WebRunnerBrowserContext::GetPermissionControllerDelegate() {
   return nullptr;
 }
 

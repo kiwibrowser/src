@@ -77,6 +77,9 @@ class UI_ANDROID_EXPORT OverscrollRefresh {
   void Release(bool allow_refresh);
 
   bool scrolled_to_top_;
+  // True if the content y offset was zero before scroll began. Overscroll
+  // should not be triggered for the scroll that started from non-zero offset.
+  bool top_at_scroll_start_;
   bool overflow_y_hidden_;
 
   enum ScrollConsumptionState {
@@ -85,6 +88,7 @@ class UI_ANDROID_EXPORT OverscrollRefresh {
     ENABLED,
   } scroll_consumption_state_;
 
+  gfx::Vector2dF cumulative_scroll_;
   OverscrollRefreshHandler* const handler_;
 
   DISALLOW_COPY_AND_ASSIGN(OverscrollRefresh);

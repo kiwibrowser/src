@@ -39,7 +39,6 @@ class BlinkNotificationServiceImpl;
 class BrowserContext;
 class NotificationDatabase;
 struct NotificationDatabaseData;
-class ResourceContext;
 class ServiceWorkerContextWrapper;
 
 // Implementation of the Web Notification storage context. The public methods
@@ -65,14 +64,12 @@ class CONTENT_EXPORT PlatformNotificationContextImpl
   void Shutdown();
 
   // Creates a BlinkNotificationServiceImpl that is owned by this context. Must
-  // be called on the UI thread, although the service will be created on and
-  // bound to the IO thread.
-  void CreateService(int render_process_id,
-                     const url::Origin& origin,
+  // be called on the UI thread.
+  void CreateService(const url::Origin& origin,
                      blink::mojom::NotificationServiceRequest request);
 
   // Removes |service| from the list of owned services, for example because the
-  // Mojo pipe disconnected. Must be called on the IO thread.
+  // Mojo pipe disconnected. Must be called on the UI thread.
   void RemoveService(BlinkNotificationServiceImpl* service);
 
   // Returns the notification Id generator owned by the context.
@@ -112,11 +109,6 @@ class CONTENT_EXPORT PlatformNotificationContextImpl
       std::unique_ptr<std::set<std::string>> displayed_notifications,
       bool supports_synchronization);
   void ShutdownOnIO();
-  void CreateServiceOnIO(
-      int render_process_id,
-      const url::Origin& origin,
-      ResourceContext* resource_context,
-      mojo::InterfaceRequest<blink::mojom::NotificationService> request);
 
   // Initializes the database if neccesary. Must be called on the IO thread.
   // |success_closure| will be invoked on a the |task_runner_| thread when

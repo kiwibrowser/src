@@ -77,6 +77,11 @@ public class SingleTabModel implements TabModel {
     }
 
     @Override
+    public int getLastNonExtensionActiveIndex() {
+        return mTab != null ? 0 : INVALID_TAB_INDEX;
+    }
+
+    @Override
     public boolean closeTab(Tab tab) {
         return closeTab(tab, false, false, false);
     }

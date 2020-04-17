@@ -2169,10 +2169,7 @@ class WebViewChromium implements WebViewProvider, WebViewProvider.ScrollDelegate
         mAwContents.onFinishTemporaryDetach();
     }
 
-    // TODO(changwan): override WebViewProvider.ViewDelegate method once the framework change has
-    // rolled in.
-    // (not called in O-MR1 and below)
-    // @Override
+    @Override
     public boolean onCheckIsTextEditor() {
         mFactory.startYourEngines(false);
         if (checkNeedsPost()) {

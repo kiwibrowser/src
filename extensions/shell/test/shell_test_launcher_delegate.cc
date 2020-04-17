@@ -7,7 +7,7 @@
 #include "base/command_line.h"
 #include "base/test/test_suite.h"
 #include "content/shell/common/shell_switches.h"
-#include "extensions/shell/app/shell_main_delegate.h"
+#include "extensions/shell/test/test_shell_main_delegate.h"
 
 namespace extensions {
 
@@ -25,7 +25,7 @@ bool AppShellTestLauncherDelegate::AdjustChildProcessCommandLine(
 
 content::ContentMainDelegate*
 AppShellTestLauncherDelegate::CreateContentMainDelegate() {
-  return new ShellMainDelegate();
+  return new TestShellMainDelegate();
 }
 
 }  // namespace extensions

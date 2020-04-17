@@ -482,11 +482,6 @@ void ComponentLoader::AddDefaultComponentExtensions(
   AddKeyboardApp();
 
   AddDefaultComponentExtensionsWithBackgroundPages(skip_session_components);
-
-#if BUILDFLAG(ENABLE_PLUGINS)
-  Add(pdf_extension_util::GetManifest(),
-      base::FilePath(FILE_PATH_LITERAL("pdf")));
-#endif
 }
 
 void ComponentLoader::AddDefaultComponentExtensionsForKioskMode(
@@ -505,11 +500,6 @@ void ComponentLoader::AddDefaultComponentExtensionsForKioskMode(
   AddKeyboardApp();
 
   AddDefaultComponentExtensionsWithBackgroundPagesForKioskMode();
-
-#if BUILDFLAG(ENABLE_PLUGINS)
-  Add(pdf_extension_util::GetManifest(),
-      base::FilePath(FILE_PATH_LITERAL("pdf")));
-#endif
 }
 
 void ComponentLoader::AddDefaultComponentExtensionsWithBackgroundPages(

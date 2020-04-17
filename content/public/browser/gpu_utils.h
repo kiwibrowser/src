@@ -7,7 +7,7 @@
 
 #include "base/callback_forward.h"
 #include "content/common/content_export.h"
-#include "gpu/command_buffer/service/gpu_preferences.h"
+#include "gpu/config/gpu_preferences.h"
 
 namespace content {
 

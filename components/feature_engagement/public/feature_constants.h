@@ -21,6 +21,7 @@ extern const base::Feature kIPHDummyFeature;
 // should also be declared in:
 // org.chromium.components.feature_engagement.FeatureConstants.
 #if defined(OS_ANDROID)
+extern const base::Feature kIPHAdblockMenuButtonFeature;
 extern const base::Feature kIPHDataSaverDetailFeature;
 extern const base::Feature kIPHDataSaverPreviewFeature;
 extern const base::Feature kIPHDownloadHomeFeature;

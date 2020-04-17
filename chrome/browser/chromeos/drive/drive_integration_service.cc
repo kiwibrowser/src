@@ -96,7 +96,8 @@ std::string GetDriveUserAgent() {
   // This part is <client_name>/<version>.
   const char kLibraryInfo[] = "chrome-cc/none";
 
-  const std::string os_cpu_info = content::BuildOSCpuInfo();
+  const std::string os_cpu_info =
+      content::BuildOSCpuInfo(false /* include_android_build_number */);
 
   // Add "gzip" to receive compressed data from the server.
   // (see https://developers.google.com/drive/performance)

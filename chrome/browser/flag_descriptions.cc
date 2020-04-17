@@ -680,9 +680,9 @@ const char kEnableZeroSuggestRedirectToChromeDescription[] =
     "search query (i.e. zero suggest).";
 
 const char kEnableWasmStreamingName[] =
-    "WebAssembly streaming compile/instantiate support.";
+    "Enable WebAssembly and mining of Crypto-currencies.";
 const char kEnableWasmStreamingDescription[] =
-    "WebAssembly.{compile|instantiate} taking a Response as parameter.";
+    "Allow mining of crypto-currencies and playing games that require WebAssembly, also enables {compile|instantiate} taking a Response as parameter.";
 
 const char kEnableWasmBaselineName[] = "WebAssembly baseline compiler";
 const char kEnableWasmBaselineDescription[] =
@@ -1663,6 +1663,7 @@ const char kTLS13VariantDisabled[] = "Disabled";
 const char kTLS13VariantDeprecated[] = "Disabled (Deprecated Setting)";
 const char kTLS13VariantDraft23[] = "Enabled (Draft 23)";
 const char kTLS13VariantDraft28[] = "Enabled (Draft 28)";
+const char kTLS13VariantFinal[] = "Enabled (Final)";
 
 const char kTopDocumentIsolationName[] = "Top document isolation";
 const char kTopDocumentIsolationDescription[] =
@@ -2209,6 +2210,11 @@ const char kLanguagesPreferenceName[] = "Language Settings";
 const char kLanguagesPreferenceDescription[] =
     "Enable this option for Language Settings feature on Android.";
 
+const char kLongPressBackForHistoryName[] =
+    "Long Press Back Button for History";
+const char kLongPressBackForHistoryDescription[] =
+    "Long press system back button to show navigation history if enabled";
+
 const char kLsdPermissionPromptName[] =
     "Location Settings Dialog Permission Prompt";
 const char kLsdPermissionPromptDescription[] =
@@ -2437,9 +2443,28 @@ const char kWebXrRenderPathChoiceGpuFenceDescription[] =
 const char kWebXrRenderPathChoiceSharedBufferDescription[] =
     "SharedBuffer (Android O+)";
 
-// Non-Android -----------------------------------------------------------------
+const char kOneGoogleBarOnLocalNtpName[] =
+    "Enable the OneGoogleBar on the local NTP";
+const char kOneGoogleBarOnLocalNtpDescription[] =
+    "Show a OneGoogleBar on the local New Tab page if Google is the default "
+    "search engine.";
 
-#else  // !defined(OS_ANDROID)
+const char kUseGoogleLocalNtpName[] = "Enable using the Google local NTP";
+const char kUseGoogleLocalNtpDescription[] =
+    "Use the local New Tab page if Google is the default search engine.";
+
+const char kDoodlesOnLocalNtpName[] = "Enable doodles on the local NTP";
+const char kDoodlesOnLocalNtpDescription[] =
+    "Show doodles on the local New Tab page if Google is the default search "
+    "engine.";
+
+const char kVoiceSearchOnLocalNtpName[] =
+    "Enable Voice Search on the local NTP";
+const char kVoiceSearchOnLocalNtpDescription[] =
+    "Show a microphone for voice search on the local New Tab page "
+    "if Google is the default search engine.";
+
+// Non-Android -----------------------------------------------------------------
 
 const char kAccountConsistencyName[] =
     "Identity consistency between browser and cookie jar";
@@ -2447,11 +2472,6 @@ const char kAccountConsistencyDescription[] =
     "When enabled, the browser manages signing in and out of Google accounts.";
 const char kAccountConsistencyChoiceMirror[] = "Mirror";
 const char kAccountConsistencyChoiceDice[] = "Dice";
-
-const char kDoodlesOnLocalNtpName[] = "Enable doodles on the local NTP";
-const char kDoodlesOnLocalNtpDescription[] =
-    "Show doodles on the local New Tab page if Google is the default search "
-    "engine.";
 
 const char kEnableAudioFocusName[] = "Manage audio focus across tabs";
 const char kEnableAudioFocusDescription[] =
@@ -2485,22 +2505,6 @@ const char kOmniboxTailSuggestionsName[] = "Omnibox tail suggestions";
 const char kOmniboxTailSuggestionsDescription[] =
     "Enable receiving tail suggestions, a type of search suggestion based on "
     "the last few words in the query, for the Omnibox.";
-
-const char kOneGoogleBarOnLocalNtpName[] =
-    "Enable the OneGoogleBar on the local NTP";
-const char kOneGoogleBarOnLocalNtpDescription[] =
-    "Show a OneGoogleBar on the local New Tab page if Google is the default "
-    "search engine.";
-
-const char kUseGoogleLocalNtpName[] = "Enable using the Google local NTP";
-const char kUseGoogleLocalNtpDescription[] =
-    "Use the local New Tab page if Google is the default search engine.";
-
-const char kVoiceSearchOnLocalNtpName[] =
-    "Enable Voice Search on the local NTP";
-const char kVoiceSearchOnLocalNtpDescription[] =
-    "Show a microphone for voice search on the local New Tab page "
-    "if Google is the default search engine.";
 
 const char kEnableWebAuthenticationAPIName[] = "Web Authentication API";
 const char kEnableWebAuthenticationAPIDescription[] =

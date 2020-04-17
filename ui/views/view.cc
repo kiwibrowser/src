@@ -171,11 +171,11 @@ View::~View() {
 
 const Widget* View::GetWidget() const {
   // The root view holds a reference to this view hierarchy's Widget.
-  return parent_ ? parent_->GetWidget() : nullptr;
+  return nullptr;
 }
 
 Widget* View::GetWidget() {
-  return const_cast<Widget*>(const_cast<const View*>(this)->GetWidget());
+  return nullptr;
 }
 
 void View::AddChildView(View* view) {
@@ -980,24 +980,6 @@ bool View::CanProcessEventsWithinSubtree() const {
 }
 
 View* View::GetTooltipHandlerForPoint(const gfx::Point& point) {
-  // TODO(tdanderson): Move this implementation into ViewTargetDelegate.
-  if (!HitTestPoint(point) || !CanProcessEventsWithinSubtree())
-    return nullptr;
-
-  // Walk the child Views recursively looking for the View that most
-  // tightly encloses the specified point.
-  View::Views children = GetChildrenInZOrder();
-  DCHECK_EQ(child_count(), static_cast<int>(children.size()));
-  for (auto* child : base::Reversed(children)) {
-    if (!child->visible())
-      continue;
-
-    gfx::Point point_in_child_coords(point);
-    ConvertPointToTarget(this, child, &point_in_child_coords);
-    View* handler = child->GetTooltipHandlerForPoint(point_in_child_coords);
-    if (handler)
-      return handler;
-  }
   return this;
 }
 
@@ -1705,51 +1687,9 @@ void View::OnPaintLayer(const ui::PaintContext& context) {
 
 void View::OnDeviceScaleFactorChanged(float old_device_scale_factor,
                                       float new_device_scale_factor) {
-  snap_layer_to_pixel_boundary_ =
-      (new_device_scale_factor - std::floor(new_device_scale_factor)) != 0.0f;
-
-  if (!layer())
-    return;
-
-  // There can be no subpixel offset if the layer has no parent.
-  if (!parent() || !layer()->parent())
-    return;
-
-  if (layer()->parent() && layer()->GetCompositor() &&
-      layer()->GetCompositor()->is_pixel_canvas()) {
-    LayerOffsetData offset_data(
-        parent()->CalculateOffsetToAncestorWithLayer(nullptr));
-    offset_data += GetMirroredPosition().OffsetFromOrigin();
-    SnapLayerToPixelBoundary(offset_data);
-  } else {
-    SnapLayerToPixelBoundary(LayerOffsetData());
-  }
 }
 
 void View::ReorderLayers() {
-  View* v = this;
-  while (v && !v->layer())
-    v = v->parent();
-
-  Widget* widget = GetWidget();
-  if (!v) {
-    if (widget) {
-      ui::Layer* layer = widget->GetLayer();
-      if (layer)
-        widget->GetRootView()->ReorderChildLayers(layer);
-    }
-  } else {
-    v->ReorderChildLayers(v->layer());
-  }
-
-  if (widget) {
-    // Reorder the widget's child NativeViews in case a child NativeView is
-    // associated with a view (e.g. via a NativeViewHost). Always do the
-    // reordering because the associated NativeView's layer (if it has one)
-    // is parented to the widget's layer regardless of whether the host view has
-    // an ancestor with a layer.
-    widget->ReorderNativeViews();
-  }
 }
 
 void View::ReorderChildLayers(ui::Layer* parent_layer) {
@@ -1816,10 +1756,6 @@ void View::Blur() {
 // Tooltips --------------------------------------------------------------------
 
 void View::TooltipTextChanged() {
-  Widget* widget = GetWidget();
-  // TooltipManager may be null if there is a problem creating it.
-  if (widget && widget->GetTooltipManager())
-    widget->GetTooltipManager()->TooltipTextChanged(this);
 }
 
 // Drag and drop ---------------------------------------------------------------
@@ -2621,12 +2557,6 @@ void View::PropagateDeviceScaleFactorChanged(float old_device_scale_factor,
 // Tooltips --------------------------------------------------------------------
 
 void View::UpdateTooltip() {
-  Widget* widget = GetWidget();
-  // TODO(beng): The TooltipManager nullptr check can be removed when we
-  //             consolidate Init() methods and make views_unittests Init() all
-  //             Widgets that it uses.
-  if (widget && widget->GetTooltipManager())
-    widget->GetTooltipManager()->UpdateTooltip();
 }
 
 // Drag and drop ---------------------------------------------------------------

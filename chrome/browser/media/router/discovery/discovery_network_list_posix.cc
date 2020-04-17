@@ -41,69 +41,11 @@ using sll = struct sockaddr_dl;
 #define SOCKET_ADDRESS(s) (LLADDR(s))
 #endif
 
-void GetDiscoveryNetworkInfoListImpl(
-    const struct ifaddrs* if_list,
-    std::vector<DiscoveryNetworkInfo>* network_info_list) {
-  std::string ssid;
-  for (; if_list != NULL; if_list = if_list->ifa_next) {
-    if ((if_list->ifa_flags & IFF_RUNNING) == 0 ||
-        (if_list->ifa_flags & IFF_UP) == 0) {
-      continue;
-    }
-
-    const struct sockaddr* addr = if_list->ifa_addr;
-    if (addr == nullptr) {
-      continue;
-    }
-    if (addr->sa_family != AF_PACKET) {
-      continue;
-    }
-    std::string name(if_list->ifa_name);
-    if (name.empty()) {
-      continue;
-    }
-
-    // |addr| will always be sockaddr_ll/sockaddr_dl when |sa_family| ==
-    // AF_PACKET.
-    const auto* ll_addr = reinterpret_cast<const sll*>(addr);
-    // ARPHRD_ETHER is used to test for Ethernet, as in IEEE 802.3 MAC protocol.
-    // This spec is used by both wired Ethernet and wireless (e.g. 802.11).
-    // ARPHRD_IEEE802 is used to test for the 802.2 LLC protocol of Ethernet.
-    if (SOCKET_ARP_TYPE(ll_addr) != ARPHRD_ETHER &&
-        SOCKET_ARP_TYPE(ll_addr) != ARPHRD_IEEE802) {
-      continue;
-    }
-
-    if (MaybeGetWifiSSID(name, &ssid)) {
-      network_info_list->push_back({name, ssid});
-      continue;
-    }
-
-    if (SOCKET_ADDRESS_LEN(ll_addr) == 0) {
-      continue;
-    }
-
-    network_info_list->push_back(
-        {name, base::HexEncode(reinterpret_cast<const unsigned char*>(
-                                   SOCKET_ADDRESS(ll_addr)),
-                               SOCKET_ADDRESS_LEN(ll_addr))});
-  }
-}
-
 }  // namespace
 
 std::vector<DiscoveryNetworkInfo> GetDiscoveryNetworkInfoList() {
   std::vector<DiscoveryNetworkInfo> network_ids;
 
-  struct ifaddrs* if_list;
-  if (getifaddrs(&if_list)) {
-    DVLOG(2) << "getifaddrs() error: " << net::ErrorToString(errno);
-    return network_ids;
-  }
-
-  GetDiscoveryNetworkInfoListImpl(if_list, &network_ids);
-  StableSortDiscoveryNetworkInfo(network_ids.begin(), network_ids.end());
-  freeifaddrs(if_list);
   return network_ids;
 }
 

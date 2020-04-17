@@ -383,8 +383,7 @@ bool IsZeroCopyUploadEnabled() {
 }
 
 bool IsPartialRasterEnabled() {
-  const auto& command_line = *base::CommandLine::ForCurrentProcess();
-  return !command_line.HasSwitch(switches::kDisablePartialRaster);
+  return true;
 }
 
 bool IsGpuMemoryBufferCompositorResourcesEnabled() {

@@ -134,8 +134,13 @@ const char kSizingMediumCSSClass[] = "sizing-medium";
 const char kSizingLargeCSSClass[] = "sizing-large";
 
 // The minimum width in pixels to reach a given size.
-constexpr int kSizingMediumThreshold = 641;
+constexpr int kSizingMediumThreshold = 741;
 constexpr int kSizingLargeThreshold = 1441;
+
+// The ratio of video width/height to use for play button size.
+constexpr float kSizingSmallOverlayPlayButtonSizeRatio = 0.25;
+constexpr float kSizingMediumOverlayPlayButtonSizeRatio = 0.15;
+constexpr float kSizingLargeOverlayPlayButtonSizeRatio = 0.11;
 
 // Used for setting overlay play button width CSS variable.
 constexpr double kMinOverlayPlayButtonWidth = 48;
@@ -1331,9 +1336,19 @@ void MediaControlsImpl::UpdateOverlayPlayButtonWidthCSSVar() {
   // set here and used inside the controls CSS.
   int width = size_.Width();
   int height = size_.Height();
+  double minDimension = std::min(width, height);
+
+  double sizingRatio;
+  if (width >= kSizingLargeThreshold) {
+    sizingRatio = kSizingLargeOverlayPlayButtonSizeRatio;
+  } else if (width >= kSizingMediumThreshold) {
+    sizingRatio = kSizingMediumOverlayPlayButtonSizeRatio;
+  } else {
+    sizingRatio = kSizingSmallOverlayPlayButtonSizeRatio;
+  }
 
   double play_button_width =
-      std::max(kMinOverlayPlayButtonWidth, std::min(width * 0.3, height * 0.3));
+      std::max(kMinOverlayPlayButtonWidth, minDimension * sizingRatio);
 
   WTF::String play_button_css_value = WTF::String::Number(play_button_width);
   play_button_css_value.append("px");

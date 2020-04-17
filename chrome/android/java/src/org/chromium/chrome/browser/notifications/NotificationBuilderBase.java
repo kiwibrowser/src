@@ -464,7 +464,7 @@ public abstract class NotificationBuilderBase {
             // The Icon class was only added in Android M.
             return false;
         }
-        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.M
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
                 && (Build.MANUFACTURER.equalsIgnoreCase("samsung")
                            || Build.MANUFACTURER.equalsIgnoreCase("yulong"))) {
             // Updating a notification with a bitmap status bar icon leads to a crash on Samsung

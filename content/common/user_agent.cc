@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 
+#include "base/feature_list.h"
 #include "base/logging.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
@@ -21,6 +22,11 @@
 
 namespace content {
 
+#if defined(OS_ANDROID)
+const base::Feature kAndroidUserAgentStringContainsBuildId{
+    "AndroidUserAgentStringContainsBuildId", base::FEATURE_DISABLED_BY_DEFAULT};
+#endif  // defined(OS_ANDROID)
+
 std::string GetWebKitVersion() {
   return base::StringPrintf("%d.%d (%s)",
                             WEBKIT_VERSION_MAJOR,
@@ -32,7 +38,7 @@ std::string GetWebKitRevision() {
   return WEBKIT_SVN_REVISION;
 }
 
-std::string BuildOSCpuInfo() {
+std::string BuildOSCpuInfo(bool include_android_build_number) {
   std::string os_cpu;
 
 #if defined(OS_WIN) || defined(OS_MACOSX) || defined(OS_CHROMEOS) ||\
@@ -73,13 +79,17 @@ std::string BuildOSCpuInfo() {
   }
 
   // Append the build ID.
-  std::string android_build_id = base::SysInfo::GetAndroidBuildID();
-  if (android_build_id.size() > 0) {
-    if (!semicolon_inserted) {
-      android_info_str += ";";
+  if (base::FeatureList::IsEnabled(kAndroidUserAgentStringContainsBuildId) ||
+      include_android_build_number) {
+    std::string android_build_id = base::SysInfo::GetAndroidBuildID();
+    if (android_build_id.size() > 0) {
+      if (!semicolon_inserted) {
+        android_info_str += ";";
+      }
+      android_info_str += " Build/" + android_build_id;
     }
-    android_info_str += " Build/" + android_build_id;
   }
+
 #elif (defined(OS_POSIX) && !defined(OS_MACOSX)) || defined(OS_FUCHSIA)
   // Should work on any Posix system.
   struct utsname unixinfo;
@@ -145,26 +155,23 @@ std::string getUserAgentPlatform() {
 
 std::string BuildUserAgentFromProduct(const std::string& product) {
   std::string os_info;
-  base::StringAppendF(
-      &os_info,
-      "%s%s",
-      getUserAgentPlatform().c_str(),
-      BuildOSCpuInfo().c_str());
+  base::StringAppendF(&os_info, "%s%s", getUserAgentPlatform().c_str(),
+                      BuildOSCpuInfo(false).c_str());
   return BuildUserAgentFromOSAndProduct(os_info, product);
 }
 
+#if defined(OS_ANDROID)
 std::string BuildUserAgentFromProductAndExtraOSInfo(
     const std::string& product,
-    const std::string& extra_os_info) {
+    const std::string& extra_os_info,
+    const bool include_android_build_number) {
   std::string os_info;
-  base::StringAppendF(
-      &os_info,
-      "%s%s%s",
-      getUserAgentPlatform().c_str(),
-      BuildOSCpuInfo().c_str(),
-      extra_os_info.c_str());
+  base::StringAppendF(&os_info, "%s%s%s", getUserAgentPlatform().c_str(),
+                      BuildOSCpuInfo(include_android_build_number).c_str(),
+                      extra_os_info.c_str());
   return BuildUserAgentFromOSAndProduct(os_info, product);
 }
+#endif
 
 std::string BuildUserAgentFromOSAndProduct(const std::string& os_info,
                                            const std::string& product) {

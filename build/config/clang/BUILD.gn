@@ -8,46 +8,13 @@ config("find_bad_constructs") {
   if (clang_use_chrome_plugins) {
     cflags = []
 
-    # On Windows, the plugin is built directly into clang, so there's
-    # no need to load it dynamically.
-    if (host_os == "mac") {
-      cflags += [
-        "-Xclang",
-        "-load",
-        "-Xclang",
-        rebase_path("${clang_base_path}/lib/libFindBadConstructs.dylib",
-                    root_build_dir),
-      ]
-    } else if (host_os == "linux") {
-      cflags += [
-        "-Xclang",
-        "-load",
-        "-Xclang",
-        rebase_path("${clang_base_path}/lib/libFindBadConstructs.so",
-                    root_build_dir),
-      ]
-    }
-
+    # The plugin is built directly into clang, so there's no need to load it
+    # dynamically.
     cflags += [
       "-Xclang",
       "-add-plugin",
       "-Xclang",
       "find-bad-constructs",
-    ]
-
-    cflags += [
-      "-Xclang",
-      "-plugin-arg-find-bad-constructs",
-      "-Xclang",
-      "enforce-in-thirdparty-webkit",
-    ]
-
-    # TODO(dcheng): remove this once the plugin is updated and rolled again.
-    cflags += [
-      "-Xclang",
-      "-plugin-arg-find-bad-constructs",
-      "-Xclang",
-      "check-enum-max-value",
     ]
 
     if (is_linux || is_android || is_fuchsia) {

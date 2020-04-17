@@ -43,6 +43,8 @@ import org.chromium.chrome.browser.vr_shell.OnExitVrRequestListener;
 import org.chromium.chrome.browser.vr_shell.VrIntentUtils;
 import org.chromium.chrome.browser.vr_shell.VrShellDelegate;
 
+import org.chromium.chrome.browser.BackgroundExtensions;
+
 /**
  * Basic application functionality that should be shared among all browser applications that use
  * chrome layer.
@@ -53,6 +55,8 @@ public class ChromeApplication extends Application {
 
     private static DocumentTabModelSelector sDocumentTabModelSelector;
     private DiscardableReferencePool mReferencePool;
+
+    public BackgroundExtensions mBackgroundExtensions;
 
     // Called by the framework for ALL processes. Runs before ContentProviders are created.
     // Quirk: context.getApplicationContext() returns null during this method.

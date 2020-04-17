@@ -11,7 +11,7 @@
 #include "content/gpu/gpu_process.h"
 #include "content/public/common/content_client.h"
 #include "content/public/common/content_switches.h"
-#include "gpu/command_buffer/service/gpu_preferences.h"
+#include "gpu/config/gpu_preferences.h"
 #include "gpu/ipc/service/gpu_init.h"
 
 #if defined(OS_ANDROID)

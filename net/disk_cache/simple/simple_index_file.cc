@@ -25,8 +25,6 @@
 #include "net/disk_cache/simple/simple_synchronous_entry.h"
 #include "net/disk_cache/simple/simple_util.h"
 
-using base::File;
-
 namespace disk_cache {
 namespace {
 
@@ -106,10 +104,23 @@ void UmaRecordStaleIndexQuality(int missed_entry_count,
                    STALE_INDEX_MAX);
 }
 
+struct PickleHeader : public base::Pickle::Header {
+  uint32_t crc;
+};
+
+class SimpleIndexPickle : public base::Pickle {
+ public:
+  SimpleIndexPickle() : base::Pickle(sizeof(PickleHeader)) {}
+  SimpleIndexPickle(const char* data, int data_len)
+      : base::Pickle(data, data_len) {}
+
+  bool HeaderValid() const { return header_size() == sizeof(PickleHeader); }
+};
+
 bool WritePickleFile(base::Pickle* pickle, const base::FilePath& file_name) {
-  File file(
-      file_name,
-      File::FLAG_CREATE_ALWAYS | File::FLAG_WRITE | File::FLAG_SHARE_DELETE);
+  base::File file(file_name, base::File::FLAG_CREATE_ALWAYS |
+                                 base::File::FLAG_WRITE |
+                                 base::File::FLAG_SHARE_DELETE);
   if (!file.IsValid())
     return false;
 
@@ -264,7 +275,7 @@ void SimpleIndexFile::IndexMetadata::Serialize(base::Pickle* pickle) const {
 void SimpleIndexFile::SerializeFinalData(base::Time cache_modified,
                                          base::Pickle* pickle) {
   pickle->WriteInt64(cache_modified.ToInternalValue());
-  SimpleIndexFile::PickleHeader* header_p = pickle->headerT<PickleHeader>();
+  PickleHeader* header_p = pickle->headerT<PickleHeader>();
   header_p->crc = CalculatePickleCRC(*pickle);
 }
 
@@ -468,9 +479,10 @@ void SimpleIndexFile::SyncLoadFromDisk(const base::FilePath& index_filename,
                                        SimpleIndexLoadResult* out_result) {
   out_result->Reset();
 
-  File file(index_filename, File::FLAG_OPEN | File::FLAG_READ |
-                                File::FLAG_SHARE_DELETE |
-                                File::FLAG_SEQUENTIAL_SCAN);
+  base::File file(index_filename, base::File::FLAG_OPEN |
+                                      base::File::FLAG_READ |
+                                      base::File::FLAG_SHARE_DELETE |
+                                      base::File::FLAG_SEQUENTIAL_SCAN);
   if (!file.IsValid())
     return;
 
@@ -503,8 +515,7 @@ void SimpleIndexFile::SyncLoadFromDisk(const base::FilePath& index_filename,
 std::unique_ptr<base::Pickle> SimpleIndexFile::Serialize(
     const SimpleIndexFile::IndexMetadata& index_metadata,
     const SimpleIndex::EntrySet& entries) {
-  std::unique_ptr<base::Pickle> pickle(
-      new base::Pickle(sizeof(SimpleIndexFile::PickleHeader)));
+  std::unique_ptr<base::Pickle> pickle = std::make_unique<SimpleIndexPickle>();
 
   index_metadata.Serialize(pickle.get());
   for (SimpleIndex::EntrySet::const_iterator it = entries.begin();
@@ -524,15 +535,14 @@ void SimpleIndexFile::Deserialize(const char* data, int data_len,
   out_result->Reset();
   SimpleIndex::EntrySet* entries = &out_result->entries;
 
-  base::Pickle pickle(data, data_len);
-  if (!pickle.data()) {
+  SimpleIndexPickle pickle(data, data_len);
+  if (!pickle.data() || !pickle.HeaderValid()) {
     LOG(WARNING) << "Corrupt Simple Index File.";
     return;
   }
 
   base::PickleIterator pickle_it(pickle);
-  SimpleIndexFile::PickleHeader* header_p =
-      pickle.headerT<SimpleIndexFile::PickleHeader>();
+  PickleHeader* header_p = pickle.headerT<PickleHeader>();
   const uint32_t crc_read = header_p->crc;
   const uint32_t crc_calculated = CalculatePickleCRC(pickle);
 

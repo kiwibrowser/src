@@ -7,7 +7,7 @@
 
 #include <vector>
 
-#include "gpu/command_buffer/service/gpu_preferences.h"
+#include "gpu/config/gpu_preferences.h"
 #include "gpu/ipc/common/gpu_preferences.mojom.h"
 #include "ui/gfx/mojo/buffer_types_struct_traits.h"
 

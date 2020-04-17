@@ -30,6 +30,7 @@
 #include "net/socket/ssl_server_socket.h"
 #include "net/socket/stream_socket.h"
 #include "net/socket/tcp_server_socket.h"
+#include "net/ssl/ssl_info.h"
 #include "net/ssl/ssl_server_config.h"
 #include "net/test/cert_test_util.h"
 #include "net/test/embedded_test_server/default_handlers.h"
@@ -206,6 +207,12 @@ void EmbeddedTestServer::HandleRequest(HttpConnection* connection,
   DCHECK(io_thread_->task_runner()->BelongsToCurrentThread());
   request->base_url = base_url_;
 
+  SSLInfo ssl_info;
+  if (connection->socket_->GetSSLInfo(&ssl_info) &&
+      ssl_info.early_data_received) {
+    request->headers["Early-Data"] = "1";
+  }
+
   for (const auto& monitor : request_monitors_)
     monitor.Run(*request);
 
@@ -256,16 +263,32 @@ GURL EmbeddedTestServer::GetURL(
   return local_url.ReplaceComponents(replace_host);
 }
 
-bool EmbeddedTestServer::GetAddressList(AddressList* address_list) const {
-  *address_list = AddressList(local_endpoint_);
-  return true;
-}
-
 void EmbeddedTestServer::SetSSLConfig(ServerCertificate cert,
                                       const SSLServerConfig& ssl_config) {
   DCHECK(!Started());
   cert_ = cert;
   ssl_config_ = ssl_config;
+}
+
+bool EmbeddedTestServer::GetAddressList(AddressList* address_list) const {
+  *address_list = AddressList(local_endpoint_);
+  return true;
+}
+
+void EmbeddedTestServer::ResetSSLConfigOnIOThread(
+    ServerCertificate cert,
+    const SSLServerConfig& ssl_config) {
+  cert_ = cert;
+  ssl_config_ = ssl_config;
+  connections_.clear();
+  InitializeSSLServerContext();
+}
+
+bool EmbeddedTestServer::ResetSSLConfig(ServerCertificate cert,
+                                        const SSLServerConfig& ssl_config) {
+  return PostTaskToIOThreadAndWait(
+      base::BindRepeating(&EmbeddedTestServer::ResetSSLConfigOnIOThread,
+                          base::Unretained(this), cert, ssl_config));
 }
 
 void EmbeddedTestServer::SetSSLConfig(ServerCertificate cert) {

@@ -11,6 +11,8 @@ import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.ColorStateList;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
 import android.graphics.Bitmap;
 import android.os.Handler;
 import android.text.TextUtils;
@@ -344,6 +346,13 @@ public class AccessibilityTabModelListItem extends FrameLayout implements OnClic
                 mDescriptionView.setText(url);
                 mDescriptionView.setVisibility(View.VISIBLE);
             }
+        }
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+          setBackgroundResource(R.color.incognito_modern_primary_color);
+          mFaviconView.getBackground().setLevel(mIncognitoLevel);
+          ApiCompatibilityUtils.setTextAppearance(mTitleView, R.style.WhiteTitle1);
+          ApiCompatibilityUtils.setTextAppearance(mDescriptionView, R.style.WhiteBody);
+          mCloseButton.setTint(mLightCloseIconColor);
         }
     }
 

@@ -4,6 +4,9 @@
 
 namespace url_pattern_index.flat;
 
+// NOTE: Increment url_pattern_index::kUrlPatternIndexFormatVersion whenever
+// making a breaking change to this schema.
+
 // Corresponds to url_pattern_index::proto::UrlPatternType.
 enum UrlPatternType : ubyte {
   SUBSTRING,
@@ -84,19 +87,23 @@ table UrlRule {
   // The list of domains to be included/excluded from the filter's affected set.
   // Should either be null or have at least a single element. The domains
   // should be in lower-case and kept sorted as defined by
-  // url_pattern_index::CompareDomains.
+  // url_pattern_index::CompareDomains. The entries must consist of only ascii
+  // characters. Use punycode encoding for internationalized domains.
   domains_included : [string];
   domains_excluded : [string];
 
-  // A URL pattern in the format defined by |url_pattern_type|.
+  // A URL pattern in the format defined by |url_pattern_type|.  This should
+  // only consist of ascii characters, since it's matched against a url where
+  // the host is encoded in the punycode format (in case of internationalized
+  // domains) and any other non-ascii characters are percent-escaped in utf-8.
   url_pattern : string;
 
   // An id which uniquely identifies the rule. Clients must ensure uniqueness if
   // they use this field.
-  id : uint;
+  id : uint32;
 
   // Priority of the rule. Larger the value, greater the priority.
-  priority : uint;
+  priority : uint32;
 }
 
 // Contains an N-gram (acting as a key in a hash table) and a list of URL rules
@@ -115,7 +122,7 @@ table NGramToRules {
 // need to be matched against a certain resource URL.
 table UrlPatternIndex {
   // The N of an N-gram index. Note: |n| should be between 1 and 8.
-  n : uint;
+  n : uint32;
 
   // A hash table with open addressing. The keys of the table are N-grams.
   ngram_index : [NGramToRules];

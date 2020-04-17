@@ -15,7 +15,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_piece.h"
 #include "base/strings/stringprintf.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "net/base/chunked_upload_data_stream.h"
 #include "net/base/mock_network_change_notifier.h"
 #include "net/base/test_completion_callback.h"

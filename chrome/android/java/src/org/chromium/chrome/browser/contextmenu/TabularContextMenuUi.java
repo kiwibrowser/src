@@ -7,10 +7,12 @@ package org.chromium.chrome.browser.contextmenu;
 import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.support.design.widget.TabLayout;
 import android.support.v7.app.AlertDialog;
@@ -26,6 +28,7 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import org.chromium.base.ContextUtils;
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.base.Callback;
 import org.chromium.base.VisibleForTesting;
@@ -131,11 +134,20 @@ public class TabularContextMenuUi implements ContextMenuUi, AdapterView.OnItemCl
         }
 
         viewPager.setAdapter(new TabularContextMenuPagerAdapter(viewGroups));
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            viewPager.setBackgroundColor(Color.parseColor("#111111"));
+        }
         TabLayout tabLayout = (TabLayout) viewPager.findViewById(R.id.tab_layout);
         if (itemGroups.size() <= 1) {
             tabLayout.setVisibility(View.GONE);
         } else {
-            tabLayout.setBackgroundResource(R.drawable.grey_with_top_rounded_corners);
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                tabLayout.setBackgroundResource(R.color.ntp_bg_incognito);
+                tabLayout.setSelectedTabIndicatorColor(Color.parseColor("#ffffff"));
+                tabLayout.setTabTextColors(Color.parseColor("#999999"), Color.parseColor("#ffffff"));
+            } else {
+                tabLayout.setBackgroundResource(R.drawable.grey_with_top_rounded_corners);
+            }
             tabLayout.setupWithViewPager(viewPager);
         }
 
@@ -203,6 +215,9 @@ public class TabularContextMenuUi implements ContextMenuUi, AdapterView.OnItemCl
         }
         headerTextView.setVisibility(View.VISIBLE);
         headerTextView.setText(headerText);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            headerTextView.setTextColor(Color.WHITE);
+        }
         headerTextView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -225,6 +240,9 @@ public class TabularContextMenuUi implements ContextMenuUi, AdapterView.OnItemCl
         String headerText = params.getTitleText();
         if (!TextUtils.isEmpty(headerText)) {
             headerTextView.setText(headerText);
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                headerTextView.setTextColor(Color.WHITE);
+            }
         }
         setBackgroundForImageView(mHeaderImageView, resources);
     }

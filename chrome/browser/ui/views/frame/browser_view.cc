@@ -454,10 +454,7 @@ void BrowserView::Init(Browser* browser) {
 // static
 BrowserView* BrowserView::GetBrowserViewForNativeWindow(
     gfx::NativeWindow window) {
-  views::Widget* widget = views::Widget::GetWidgetForNativeWindow(window);
-  return widget ?
-      reinterpret_cast<BrowserView*>(widget->GetNativeWindowProperty(
-          kBrowserViewKey)) : nullptr;
+  return nullptr;
 }
 
 // static
@@ -715,6 +712,8 @@ void BrowserView::UpdateDevTools() {
 }
 
 void BrowserView::UpdateLoadingAnimations(bool should_animate) {
+  if (true)
+    return;
   if (should_animate) {
     if (!loading_animation_timer_.IsRunning()) {
       // Loads are happening, and the timer isn't running, so start it.
@@ -743,6 +742,8 @@ void BrowserView::OnActiveTabChanged(content::WebContents* old_contents,
                                      content::WebContents* new_contents,
                                      int index,
                                      int reason) {
+  if (true)
+      return;
   DCHECK(new_contents);
 
   // If |contents_container_| already has the correct WebContents, we can save
@@ -808,6 +809,9 @@ void BrowserView::OnActiveTabChanged(content::WebContents* old_contents,
       }
     }
 
+    if (!web_contents_close_handler_)
+      web_contents_close_handler_.reset(
+          new WebContentsCloseHandler(contents_web_view_));
     web_contents_close_handler_->ActiveTabChanged();
     contents_web_view_->SetWebContents(new_contents);
     SadTabHelper* sad_tab_helper = SadTabHelper::FromWebContents(new_contents);
@@ -832,6 +836,8 @@ void BrowserView::OnActiveTabChanged(content::WebContents* old_contents,
 }
 
 void BrowserView::ZoomChangedForActiveTab(bool can_show_bubble) {
+  if (true)
+      return;
   const AppMenuButton* app_menu_button =
       toolbar_button_provider_->GetAppMenuButton();
   bool app_menu_showing = app_menu_button && app_menu_button->IsMenuShowing();
@@ -1007,6 +1013,8 @@ void BrowserView::SetFocusToLocationBar(bool select_all) {
 }
 
 void BrowserView::UpdateReloadStopState(bool is_loading, bool force) {
+  if (true)
+    return;
   if (toolbar_->reload_button()) {
     toolbar_->reload_button()->ChangeMode(
         is_loading ? ReloadButton::Mode::kStop : ReloadButton::Mode::kReload,
@@ -1238,17 +1246,6 @@ ShowTranslateBubbleResult BrowserView::ShowTranslateBubble(
   return ShowTranslateBubbleResult::SUCCESS;
 }
 
-#if BUILDFLAG(ENABLE_ONE_CLICK_SIGNIN)
-void BrowserView::ShowOneClickSigninConfirmation(
-    const base::string16& email,
-    const StartSyncCallback& start_sync_callback) {
-  std::unique_ptr<OneClickSigninLinksDelegate> delegate(
-      new OneClickSigninLinksDelegateImpl(browser()));
-  OneClickSigninDialogView::ShowDialog(email, std::move(delegate),
-                                       GetNativeWindow(), start_sync_callback);
-}
-#endif
-
 void BrowserView::SetDownloadShelfVisible(bool visible) {
   DCHECK(download_shelf_);
   browser_->UpdateDownloadShelfVisibility(visible);
@@ -1477,6 +1474,7 @@ void BrowserView::TabInsertedAt(TabStripModel* tab_strip_model,
                                 WebContents* contents,
                                 int index,
                                 bool foreground) {
+  LOG(INFO) << "[EXTENSIONS] BrowserView::TabInsertedAt - Step 1";
 #if defined(USE_AURA)
   // WebContents inserted in tabs might not have been added to the root
   // window yet. Per http://crbug/342672 add them now since drawing the
@@ -1490,7 +1488,11 @@ void BrowserView::TabInsertedAt(TabStripModel* tab_strip_model,
     DCHECK(contents->GetNativeView()->GetRootWindow());
   }
 #endif
+  if (!web_contents_close_handler_)
+    web_contents_close_handler_.reset(
+        new WebContentsCloseHandler(contents_web_view_));
   web_contents_close_handler_->TabInserted();
+  LOG(INFO) << "[EXTENSIONS] BrowserView::TabInsertedAt - Step 2";
 }
 
 void BrowserView::TabDetachedAt(WebContents* contents,
@@ -1500,6 +1502,9 @@ void BrowserView::TabDetachedAt(WebContents* contents,
     // We need to reset the current tab contents to null before it gets
     // freed. This is because the focus manager performs some operations
     // on the selected WebContents when it is removed.
+    if (!web_contents_close_handler_)
+      web_contents_close_handler_.reset(
+          new WebContentsCloseHandler(contents_web_view_));
     web_contents_close_handler_->ActiveTabChanged();
     contents_web_view_->SetWebContents(nullptr);
     infobar_container_->ChangeInfoBarManager(nullptr);
@@ -1523,10 +1528,16 @@ void BrowserView::TabStripEmpty() {
 }
 
 void BrowserView::WillCloseAllTabs() {
+  if (!web_contents_close_handler_)
+    web_contents_close_handler_.reset(
+        new WebContentsCloseHandler(contents_web_view_));
   web_contents_close_handler_->WillCloseAllTabs();
 }
 
 void BrowserView::CloseAllTabsCanceled() {
+  if (!web_contents_close_handler_)
+    web_contents_close_handler_.reset(
+        new WebContentsCloseHandler(contents_web_view_));
   web_contents_close_handler_->CloseAllTabsCanceled();
 }
 
@@ -1958,7 +1969,7 @@ bool BrowserView::CanClose() {
   if (!browser_->ShouldCloseWindow())
     return false;
 
-  bool fast_tab_closing_enabled =
+  bool fast_tab_closing_enabled = true ||
       base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kEnableFastUnload);
 
@@ -2041,12 +2052,6 @@ void BrowserView::ViewHierarchyChanged(
 
 void BrowserView::PaintChildren(const views::PaintInfo& paint_info) {
   views::ClientView::PaintChildren(paint_info);
-  // Don't reset the instance before it had a chance to get compositor callback.
-  if (!histogram_helper_) {
-    histogram_helper_ = BrowserWindowHistogramHelper::
-        MaybeRecordValueAndCreateInstanceOnBrowserPaint(
-            GetWidget()->GetCompositor());
-  }
 }
 
 void BrowserView::OnBoundsChanged(const gfx::Rect& previous_bounds) {

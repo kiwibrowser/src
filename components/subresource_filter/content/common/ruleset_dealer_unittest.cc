@@ -262,4 +262,26 @@ TEST_F(SubresourceFilterRulesetDealerTest,
   ref_to_ruleset = nullptr;
 }
 
+TEST_F(SubresourceFilterRulesetDealerTest, MmapFailure) {
+  ruleset_dealer()->SetRulesetFile(
+      testing::TestRuleset::Open(test_indexed_ruleset_1()));
+  {
+    scoped_refptr<const MemoryMappedRuleset> ref_to_ruleset =
+        ruleset_dealer()->GetRuleset();
+    EXPECT_TRUE(!!ref_to_ruleset);
+
+    // Simulate subsequent mmap failures
+    MemoryMappedRuleset::SetMemoryMapFailuresForTesting(true);
+
+    // Calls to GetRuleset should succeed as long as the strong ref
+    // is still around.
+    EXPECT_TRUE(ruleset_dealer()->has_cached_ruleset());
+    EXPECT_TRUE(!!ruleset_dealer()->GetRuleset());
+  }
+  EXPECT_FALSE(ruleset_dealer()->has_cached_ruleset());
+  EXPECT_FALSE(!!ruleset_dealer()->GetRuleset());
+  MemoryMappedRuleset::SetMemoryMapFailuresForTesting(false);
+  EXPECT_TRUE(!!ruleset_dealer()->GetRuleset());
+}
+
 }  // namespace subresource_filter

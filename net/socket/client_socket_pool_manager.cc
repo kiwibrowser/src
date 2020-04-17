@@ -43,7 +43,7 @@ static_assert(arraysize(g_max_sockets_per_pool) ==
 // be the same as the limit for ws. Also note that Firefox uses a limit of 200.
 // See http://crbug.com/486800
 int g_max_sockets_per_group[] = {
-    6,   // NORMAL_SOCKET_POOL
+    19,   // NORMAL_SOCKET_POOL
     255  // WEBSOCKET_SOCKET_POOL
 };
 

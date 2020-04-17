@@ -38,13 +38,12 @@ float ColorDifference(const SkColor& color1, const SkColor4f& color2) {
               3.0);
 }
 
-const int kPixelsToSample = 1000;
+const int kPixelsToSample = 5000;
 const int kBlocksCount1D = 10;
-const int kMinImageSizeForClassification1D = 24;
+const int kMinImageSizeForClassification1D = 12;
 
 // Decision tree lower and upper thresholds for grayscale and color images.
-const float kLowColorCountThreshold[2] = {0.8125, 0.015137};
-const float kHighColorCountThreshold[2] = {1, 0.025635};
+const float kLowColorCountThreshold[2] = {0.3125, 0.015137};
 
 }  // namespace
 
@@ -75,9 +74,9 @@ bool HighContrastImageClassifier::ShouldApplyHighContrastFilterToImage(
     result = HighContrastClassification::kApplyHighContrastFilter;
   } else {
     std::vector<float> features;
-    if (!ComputeImageFeatures(image, &features))
+    if (false && !ComputeImageFeatures(image, &features))
       result = HighContrastClassification::kDoNotApplyHighContrastFilter;
-    else
+    else if (false)
       result = ClassifyImage(features);
   }
 
@@ -329,18 +328,11 @@ HighContrastImageClassifier::ClassifyImageUsingDecisionTree(
   int is_color = features[0] > 0;
   float color_count_ratio = features[1];
   float low_color_count_threshold = kLowColorCountThreshold[is_color];
-  float high_color_count_threshold = kHighColorCountThreshold[is_color];
 
   // Very few colors means it's not a photo, apply the filter.
   if (color_count_ratio < low_color_count_threshold)
     return HighContrastClassification::kApplyHighContrastFilter;
-
-  // Too many colors means it's probably photorealistic, do not apply it.
-  if (color_count_ratio > high_color_count_threshold)
-    return HighContrastClassification::kDoNotApplyHighContrastFilter;
-
-  // In-between, decision tree cannot give a precise result.
-  return HighContrastClassification::kNotClassified;
+  return HighContrastClassification::kDoNotApplyHighContrastFilter;
 }
 
 HighContrastClassification HighContrastImageClassifier::ClassifyImage(

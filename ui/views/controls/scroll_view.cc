@@ -584,16 +584,6 @@ void ScrollView::OnScrollEvent(ui::ScrollEvent* event) {
   if (!contents_)
     return;
 
-  ui::ScrollInputHandler* compositor_scroller =
-      GetWidget()->GetCompositor()->scroll_input_handler();
-  if (compositor_scroller) {
-    DCHECK(scroll_with_layers_enabled_);
-    if (compositor_scroller->OnScrollEvent(*event, contents_->layer())) {
-      event->SetHandled();
-      event->StopPropagation();
-    }
-  }
-
   // A direction might not be known when the event stream starts, notify both
   // scrollbars that they may be about scroll, or that they may need to cancel
   // UI feedback once the scrolling direction is known.
@@ -890,10 +880,9 @@ void ScrollView::UpdateBorder() {
 
   SetBorder(CreateSolidBorder(
       1,
-      GetNativeTheme()->GetSystemColor(
           draw_focus_indicator_
               ? ui::NativeTheme::kColorId_FocusedBorderColor
-              : ui::NativeTheme::kColorId_UnfocusedBorderColor)));
+              : ui::NativeTheme::kColorId_UnfocusedBorderColor));
 }
 
 void ScrollView::UpdateBackground() {
@@ -915,7 +904,7 @@ void ScrollView::UpdateBackground() {
 
 SkColor ScrollView::GetBackgroundColor() const {
   return use_color_id_
-             ? GetNativeTheme()->GetSystemColor(background_color_data_.color_id)
+             ? background_color_data_.color_id
              : background_color_data_.color;
 }
 

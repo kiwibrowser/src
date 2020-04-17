@@ -13,6 +13,7 @@ var webview;
  *     window.
  */
 function loadAuthUrlAndShowWindow(url, win) {
+  console.log("[EXTENSIONS] ScopeApprovalDialog - Showing: " + url);
   // Send popups from the webview to a normal browser window.
   webview.addEventListener('newwindow', function(e) {
     e.window.discard();
@@ -43,6 +44,7 @@ function loadAuthUrlAndShowWindow(url, win) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+  console.log("[EXTENSIONS] ScopeApprovalDialog - DOMContentLoaded");
   webview = document.querySelector('webview');
 
   document.querySelector('.titlebar-close-button').onclick = function() {
@@ -53,3 +55,5 @@ document.addEventListener('DOMContentLoaded', function() {
     document.title = strings['window-title'];
   });
 });
+
+console.log("[EXTENSIONS] ScopeApprovalDialog - Loaded");

@@ -128,7 +128,6 @@ void EnsureBrowserContextKeyedServiceFactoriesBuilt() {
   extensions::SpellcheckAPI::GetFactoryInstance();
 #endif
   extensions::StreamsPrivateAPI::GetFactoryInstance();
-  extensions::TabCaptureRegistry::GetFactoryInstance();
   extensions::TabsWindowsAPI::GetFactoryInstance();
   extensions::TtsAPI::GetFactoryInstance();
   extensions::WarningBadgeServiceFactory::GetInstance();

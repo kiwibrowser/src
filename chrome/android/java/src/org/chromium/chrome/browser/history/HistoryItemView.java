@@ -5,6 +5,7 @@
 package org.chromium.chrome.browser.history;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.support.annotation.VisibleForTesting;
@@ -14,6 +15,7 @@ import android.view.View;
 
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.chrome.R;
+import org.chromium.base.ContextUtils;
 import org.chromium.chrome.browser.favicon.IconType;
 import org.chromium.chrome.browser.favicon.LargeIconBridge.LargeIconCallback;
 import org.chromium.chrome.browser.preferences.Pref;
@@ -98,6 +100,10 @@ public class HistoryItemView extends SelectableItemView<HistoryItem> implements 
 
             mTitleView.setTextColor(
                     ApiCompatibilityUtils.getColor(getResources(), R.color.default_text_color));
+        }
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mTitleView.setTextColor(Color.WHITE);
+            mDescriptionView.setTextColor(Color.GRAY);
         }
     }
 

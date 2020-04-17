@@ -102,7 +102,7 @@ class ASH_EXPORT NightLightController
   AnimationDuration last_animation_duration() const {
     return last_animation_duration_;
   }
-  const base::OneShotTimer& timer() const { return timer_; }
+  base::OneShotTimer* timer() { return &timer_; }
 
   void BindRequest(mojom::NightLightControllerRequest request);
 

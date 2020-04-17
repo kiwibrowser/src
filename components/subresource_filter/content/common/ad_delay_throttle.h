@@ -56,9 +56,9 @@ class AdDelayThrottle : public content::URLLoaderThrottle {
     bool delay_enabled() const { return delay_enabled_; }
 
    private:
+    const bool delay_enabled_ = false;
     const base::TimeDelta insecure_delay_;
     const base::TimeDelta non_isolated_delay_;
-    const bool delay_enabled_ = false;
 
     DISALLOW_COPY_AND_ASSIGN(Factory);
   };

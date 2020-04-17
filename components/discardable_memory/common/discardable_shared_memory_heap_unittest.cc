@@ -319,7 +319,7 @@ TEST(DiscardableSharedMemoryHeapTest, CreateMemoryAllocatorDumpTest) {
   // Check if allocator dump is created when span exists.
   std::unique_ptr<base::trace_event::ProcessMemoryDump> pmd(
       new base::trace_event::ProcessMemoryDump(
-          nullptr, {base::trace_event::MemoryDumpLevelOfDetail::DETAILED}));
+          {base::trace_event::MemoryDumpLevelOfDetail::DETAILED}));
   EXPECT_TRUE(heap.CreateMemoryAllocatorDump(span.get(), "discardable/test1",
                                              pmd.get()));
 

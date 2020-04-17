@@ -14,8 +14,8 @@
 #include "base/memory/ptr_util.h"
 #include "build/build_config.h"
 #include "content/browser/bad_message.h"
+#include "content/browser/permissions/permission_controller_impl.h"
 #include "content/public/browser/browser_context.h"
-#include "content/public/browser/permission_manager.h"
 #include "content/public/browser/permission_type.h"
 #include "content/public/browser/render_frame_host.h"
 
@@ -121,7 +121,7 @@ class PermissionServiceImpl::PendingRequest {
   }
 
  private:
-  // Request ID received from the PermissionManager.
+  // Request ID received from the PermissionController.
   int id_;
   RequestPermissionsCallback callback_;
   size_t request_size_;
@@ -159,8 +159,7 @@ void PermissionServiceImpl::RequestPermissions(
   if (!browser_context)
     return;
 
-  if (!context_->render_frame_host() ||
-      !browser_context->GetPermissionManager()) {
+  if (!context_->render_frame_host()) {
     std::vector<PermissionStatus> result(permissions.size());
     for (size_t i = 0; i < permissions.size(); ++i)
       result[i] = GetPermissionStatus(permissions[i]);
@@ -187,10 +186,13 @@ void PermissionServiceImpl::RequestPermissions(
       std::make_unique<PendingRequest>(types, std::move(callback));
 
   int pending_request_id = pending_requests_.Add(std::move(pending_request));
-  int id = browser_context->GetPermissionManager()->RequestPermissions(
-      types, context_->render_frame_host(), origin_.GetURL(), user_gesture,
-      base::Bind(&PermissionServiceImpl::OnRequestPermissionsResponse,
-                 weak_factory_.GetWeakPtr(), pending_request_id));
+  int id =
+      PermissionControllerImpl::FromBrowserContext(browser_context)
+          ->RequestPermissions(
+              types, context_->render_frame_host(), origin_.GetURL(),
+              user_gesture,
+              base::Bind(&PermissionServiceImpl::OnRequestPermissionsResponse,
+                         weak_factory_.GetWeakPtr(), pending_request_id));
 
   // Check if the request still exists. It may have been removed by the
   // the response callback.
@@ -271,18 +273,16 @@ PermissionStatus PermissionServiceImpl::GetPermissionStatusFromType(
   if (!browser_context)
     return PermissionStatus::DENIED;
 
-  if (!browser_context->GetPermissionManager())
-    return PermissionStatus::DENIED;
-
   GURL requesting_origin(origin_.GetURL());
   if (context_->render_frame_host()) {
-    return browser_context->GetPermissionManager()->GetPermissionStatusForFrame(
-        type, context_->render_frame_host(), requesting_origin);
+    return BrowserContext::GetPermissionController(browser_context)
+        ->GetPermissionStatusForFrame(type, context_->render_frame_host(),
+                                      requesting_origin);
   }
 
   DCHECK(context_->GetEmbeddingOrigin().is_empty());
-  return browser_context->GetPermissionManager()->GetPermissionStatus(
-      type, requesting_origin, requesting_origin);
+  return BrowserContext::GetPermissionController(browser_context)
+      ->GetPermissionStatus(type, requesting_origin, requesting_origin);
 }
 
 void PermissionServiceImpl::ResetPermissionStatus(PermissionType type) {
@@ -290,15 +290,13 @@ void PermissionServiceImpl::ResetPermissionStatus(PermissionType type) {
   if (!browser_context)
     return;
 
-  if (!browser_context->GetPermissionManager())
-    return;
-
   GURL requesting_origin(origin_.GetURL());
   // If the embedding_origin is empty we'll use |origin_| instead.
   GURL embedding_origin = context_->GetEmbeddingOrigin();
-  browser_context->GetPermissionManager()->ResetPermission(
-      type, requesting_origin,
-      embedding_origin.is_empty() ? requesting_origin : embedding_origin);
+  PermissionControllerImpl::FromBrowserContext(browser_context)
+      ->ResetPermission(
+          type, requesting_origin,
+          embedding_origin.is_empty() ? requesting_origin : embedding_origin);
 }
 
 void PermissionServiceImpl::ReceivedBadMessage() {

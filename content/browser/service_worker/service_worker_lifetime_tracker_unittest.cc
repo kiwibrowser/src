@@ -4,7 +4,7 @@
 
 #include "content/browser/service_worker/service_worker_lifetime_tracker.h"
 
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/test/simple_test_tick_clock.h"
 #include "base/time/tick_clock.h"
 #include "content/public/test/test_utils.h"

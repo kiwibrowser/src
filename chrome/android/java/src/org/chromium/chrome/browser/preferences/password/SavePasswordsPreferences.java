@@ -26,6 +26,9 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
 
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.base.VisibleForTesting;
@@ -42,6 +45,11 @@ import org.chromium.chrome.browser.preferences.TextMessagePreference;
 import org.chromium.ui.text.SpanApplier;
 
 import java.util.Locale;
+
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.ListView;
+import org.chromium.base.ContextUtils;
 
 /**
  * The "Save passwords" screen in Settings, which allows the user to enable or disable password
@@ -312,9 +320,18 @@ public class SavePasswordsPreferences
                 continue; // The current password won't show with the active filter, try the next.
             }
             PreferenceScreen screen = getPreferenceManager().createPreferenceScreen(getActivity());
-            screen.setTitle(url);
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                Spannable title = new SpannableString(url);
+                title.setSpan(new ForegroundColorSpan(Color.WHITE), 0, title.length(), 0);
+                screen.setTitle(title);
+                Spannable new_name = new SpannableString(name);
+                new_name.setSpan(new ForegroundColorSpan(Color.GRAY), 0, new_name.length(), 0);
+                screen.setSummary(new_name);
+            } else {
+                screen.setTitle(url);
+                screen.setSummary(name);
+            }
             screen.setOnPreferenceClickListener(this);
-            screen.setSummary(name);
             Bundle args = screen.getExtras();
             args.putString(PASSWORD_LIST_NAME, name);
             args.putString(PASSWORD_LIST_URL, url);
@@ -428,6 +445,18 @@ public class SavePasswordsPreferences
             startActivity(intent);
         }
         return true;
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            view.setBackgroundColor(Color.BLACK);
+            ListView list = (ListView) view.findViewById(android.R.id.list);
+            if (list != null)
+                list.setDivider(new ColorDrawable(Color.GRAY));
+                list.setDividerHeight((int) getResources().getDisplayMetrics().density);
+        }
     }
 
     /**

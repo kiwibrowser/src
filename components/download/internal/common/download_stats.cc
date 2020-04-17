@@ -58,6 +58,8 @@ enum ContentDispositionCountTypes {
 
   CONTENT_DISPOSITION_HAS_NAME_ONLY,  // Obsolete; kept for UMA compatiblity.
 
+  CONTENT_DISPOSITION_HAS_SINGLE_QUOTED_FILENAME,
+
   CONTENT_DISPOSITION_LAST_ENTRY
 };
 
@@ -799,6 +801,9 @@ void RecordDownloadContentDisposition(
   RecordContentDispositionCountFlag(
       CONTENT_DISPOSITION_HAS_RFC2047_ENCODED_STRINGS, result,
       net::HttpContentDisposition::HAS_RFC2047_ENCODED_STRINGS);
+  RecordContentDispositionCountFlag(
+      CONTENT_DISPOSITION_HAS_SINGLE_QUOTED_FILENAME, result,
+      net::HttpContentDisposition::HAS_SINGLE_QUOTED_FILENAME);
 }
 
 void RecordFileThreadReceiveBuffers(size_t num_buffers) {

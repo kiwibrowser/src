@@ -4,6 +4,7 @@
 
 package org.chromium.chrome.browser.widget.prefeditor;
 
+import android.graphics.Color;
 import android.content.Context;
 import android.support.v7.content.res.AppCompatResources;
 import android.text.Editable;
@@ -25,6 +26,7 @@ import android.widget.TextView.OnEditorActionListener;
 
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.base.VisibleForTesting;
+import org.chromium.base.ContextUtils;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.widget.CompatibilityTextInputLayout;
 import org.chromium.chrome.browser.widget.TintedDrawable;
@@ -65,6 +67,9 @@ public class EditorTextField extends FrameLayout implements EditorFieldView, Vie
 
         mInput = (AutoCompleteTextView) mInputLayout.findViewById(R.id.text_view);
         mInput.setText(fieldModel.getValue());
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mInput.setTextColor(Color.GRAY);
+        }
         mInput.setContentDescription(label);
         mInput.setOnEditorActionListener(mEditorActionListener);
         // AutoCompleteTextView requires and explicit onKeyListener to show the OSK upon receiving

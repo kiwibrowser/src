@@ -13,7 +13,7 @@
 #include "base/macros.h"
 #include "components/arc/common/video_encode_accelerator.mojom.h"
 #include "components/arc/video_accelerator/video_frame_plane.h"
-#include "gpu/command_buffer/service/gpu_preferences.h"
+#include "gpu/config/gpu_preferences.h"
 #include "media/video/video_encode_accelerator.h"
 
 namespace arc {

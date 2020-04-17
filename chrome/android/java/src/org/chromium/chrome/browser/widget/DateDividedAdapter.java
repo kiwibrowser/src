@@ -5,6 +5,8 @@
 package org.chromium.chrome.browser.widget;
 
 import android.os.AsyncTask;
+import android.graphics.Color;
+import org.chromium.base.ContextUtils;
 import android.support.annotation.IntDef;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
@@ -201,6 +203,9 @@ public abstract class DateDividedAdapter extends Adapter<RecyclerView.ViewHolder
                     DateUtils.FORMAT_ABBREV_WEEKDAY | DateUtils.FORMAT_ABBREV_MONTH
                             | DateUtils.FORMAT_SHOW_YEAR));
             mTextView.setText(builder);
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                mTextView.setTextColor(Color.GRAY);
+            }
         }
     }
 

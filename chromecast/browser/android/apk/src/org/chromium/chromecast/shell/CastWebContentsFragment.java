@@ -90,11 +90,10 @@ public class CastWebContentsFragment extends Fragment {
         }
 
         mSurfaceHelper = new CastWebContentsSurfaceHelper(getActivity(), /* hostActivity */
-                CastWebContentsView.onLayout(getContext(),
+                CastWebContentsView.onLayout(getActivity(),
                         (FrameLayout) getView().findViewById(R.id.web_contents_container),
                         CastSwitches.getSwitchValueColor(
-                                CastSwitches.CAST_APP_BACKGROUND_COLOR, Color.BLACK),
-                        mResumedState),
+                                CastSwitches.CAST_APP_BACKGROUND_COLOR, Color.BLACK)),
                 (Uri uri) -> sendIntentSync(CastWebContentsIntentUtils.onWebContentStopped(uri)));
 
         Bundle bundle = getArguments();

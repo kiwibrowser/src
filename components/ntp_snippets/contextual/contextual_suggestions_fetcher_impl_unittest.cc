@@ -12,7 +12,7 @@
 #include "base/run_loop.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/test/bind_test_util.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/test/scoped_task_environment.h"
 #include "components/ntp_snippets/contextual/contextual_suggestions_result.h"
 #include "components/ntp_snippets/contextual/contextual_suggestions_test_utils.h"

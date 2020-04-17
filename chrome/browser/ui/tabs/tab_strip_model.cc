@@ -246,12 +246,16 @@ void TabStripModel::AppendWebContents(std::unique_ptr<WebContents> contents,
 void TabStripModel::InsertWebContentsAt(int index,
                                         std::unique_ptr<WebContents> contents,
                                         int add_types) {
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 1";
   delegate()->WillAddWebContents(contents.get());
 
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 2";
   bool active = (add_types & ADD_ACTIVE) != 0;
   bool pin = (add_types & ADD_PINNED) != 0;
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 3";
   index = ConstrainInsertionIndex(index, pin);
 
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 4";
   // In tab dragging situations, if the last tab in the window was detached
   // then the user aborted the drag, we will have the |closing_all_| member
   // set (see DetachWebContentsAt) which will mess with our mojo here. We need
@@ -261,49 +265,75 @@ void TabStripModel::InsertWebContentsAt(int index,
   // Have to get the active contents before we monkey with the contents
   // otherwise we run into problems when we try to change the active contents
   // since the old contents and the new contents will be the same...
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 5";
   WebContents* active_contents = GetActiveWebContents();
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 6";
   WebContents* raw_contents = contents.get();
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 7";
   std::unique_ptr<WebContentsData> data =
       std::make_unique<WebContentsData>(std::move(contents));
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 8";
   data->set_pinned(pin);
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 9";
   if ((add_types & ADD_INHERIT_GROUP) && active_contents) {
+    LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 9a";
     if (active) {
+      LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 9b";
       // Forget any existing relationships, we don't want to make things too
       // confusing by having multiple groups active at the same time.
       ForgetAllOpeners();
+      LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 9c";
     }
+    LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 10";
     // Anything opened by a link we deem to have an opener.
     data->set_group(active_contents);
+    LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 11";
     data->set_opener(active_contents);
+    LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 12";
   } else if ((add_types & ADD_INHERIT_OPENER) && active_contents) {
+    LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 13";
     if (active) {
+      LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 14";
       // Forget any existing relationships, we don't want to make things too
       // confusing by having multiple groups active at the same time.
       ForgetAllOpeners();
+      LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 15";
     }
+    LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 16";
     data->set_opener(active_contents);
+    LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 17";
   }
 
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 18";
   // TODO(gbillock): Ask the modal dialog manager whether the WebContents should
   // be blocked, or just let the modal dialog manager make the blocking call
   // directly and not use this at all.
   const web_modal::WebContentsModalDialogManager* manager =
       web_modal::WebContentsModalDialogManager::FromWebContents(raw_contents);
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 19";
   if (manager)
     data->set_blocked(manager->IsDialogActive());
 
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 20";
   contents_data_.insert(contents_data_.begin() + index, std::move(data));
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 21";
 
   selection_model_.IncrementFrom(index);
 
-  for (auto& observer : observers_)
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 22";
+  for (auto& observer : observers_) {
+    LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 22a";
     observer.TabInsertedAt(this, raw_contents, index, active);
+    LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 22b";
+  }
 
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 23";
   if (active) {
     ui::ListSelectionModel new_model = selection_model_;
     new_model.SetSelectedIndex(index);
     SetSelection(std::move(new_model), Notify::kDefault);
   }
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::InsertWebContentsAt - Step 24";
 }
 
 std::unique_ptr<content::WebContents> TabStripModel::ReplaceWebContentsAt(
@@ -600,7 +630,7 @@ bool TabStripModel::TabsAreLoading() const {
 
 WebContents* TabStripModel::GetOpenerOfWebContentsAt(int index) {
   DCHECK(ContainsIndex(index));
-  return contents_data_[index]->opener();
+  return nullptr;
 }
 
 void TabStripModel::SetOpenerOfWebContentsAt(int index, WebContents* opener) {
@@ -692,11 +722,11 @@ void TabStripModel::SetTabPinned(int index, bool pinned) {
 
 bool TabStripModel::IsTabPinned(int index) const {
   DCHECK(ContainsIndex(index));
-  return contents_data_[index]->pinned();
+  return false;
 }
 
 bool TabStripModel::IsTabBlocked(int index) const {
-  return contents_data_[index]->blocked();
+  return false;
 }
 
 int TabStripModel::IndexOfFirstNonPinnedTab() const {
@@ -761,14 +791,17 @@ void TabStripModel::AddWebContents(std::unique_ptr<WebContents> contents,
                                    int index,
                                    ui::PageTransition transition,
                                    int add_types) {
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::AddWebContents - Step 1";
   // If the newly-opened tab is part of the same task as the parent tab, we want
   // to inherit the parent's "group" attribute, so that if this tab is then
   // closed we'll jump back to the parent tab.
   bool inherit_group = (add_types & ADD_INHERIT_GROUP) == ADD_INHERIT_GROUP;
 
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::AddWebContents - Step 2";
   if (ui::PageTransitionTypeIncludingQualifiersIs(transition,
                                                   ui::PAGE_TRANSITION_LINK) &&
       (add_types & ADD_FORCE_INDEX) == 0) {
+    LOG(INFO) << "[EXTENSIONS] TabStripModel::AddWebContents - Step 2a";
     // We assume tabs opened via link clicks are part of the same task as their
     // parent.  Note that when |force_index| is true (e.g. when the user
     // drag-and-drops a link to the tab strip), callers aren't really handling
@@ -777,16 +810,21 @@ void TabStripModel::AddWebContents(std::unique_ptr<WebContents> contents,
     index = order_controller_->DetermineInsertionIndex(transition,
                                                        add_types & ADD_ACTIVE);
     inherit_group = true;
+    LOG(INFO) << "[EXTENSIONS] TabStripModel::AddWebContents - Step 2b";
   } else {
+    LOG(INFO) << "[EXTENSIONS] TabStripModel::AddWebContents - Step 2c";
     // For all other types, respect what was passed to us, normalizing -1s and
     // values that are too large.
     if (index < 0 || index > count())
       index = count();
+    LOG(INFO) << "[EXTENSIONS] TabStripModel::AddWebContents - Step 2d";
   }
 
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::AddWebContents - Step 3";
   if (ui::PageTransitionTypeIncludingQualifiersIs(transition,
                                                   ui::PAGE_TRANSITION_TYPED) &&
       index == count()) {
+    LOG(INFO) << "[EXTENSIONS] TabStripModel::AddWebContents - Step 3a";
     // Also, any tab opened at the end of the TabStrip with a "TYPED"
     // transition inherit group as well. This covers the cases where the user
     // creates a New Tab (e.g. Ctrl+T, or clicks the New Tab button), or types
@@ -794,16 +832,23 @@ void TabStripModel::AddWebContents(std::unique_ptr<WebContents> contents,
     // Tab to quickly look up something. When this Tab is closed, the old one
     // is re-selected, not the next-adjacent.
     inherit_group = true;
+    LOG(INFO) << "[EXTENSIONS] TabStripModel::AddWebContents - Step 3b";
   }
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::AddWebContents - Step 4";
   WebContents* raw_contents = contents.get();
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::AddWebContents - Step 5";
   InsertWebContentsAt(index, std::move(contents),
                       add_types | (inherit_group ? ADD_INHERIT_GROUP : 0));
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::AddWebContents - Step 6";
   // Reset the index, just in case insert ended up moving it on us.
   index = GetIndexOfWebContents(raw_contents);
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::AddWebContents - Step 7";
 
   if (inherit_group && ui::PageTransitionTypeIncludingQualifiersIs(
                            transition, ui::PAGE_TRANSITION_TYPED))
     contents_data_[index]->set_reset_group_on_select(true);
+
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::AddWebContents - Step 8";
 
   // TODO(sky): figure out why this is here and not in InsertWebContentsAt. When
   // here we seem to get failures in startup perf tests.
@@ -816,11 +861,15 @@ void TabStripModel::AddWebContents(std::unique_ptr<WebContents> contents,
   // layout is performed with sane view dimensions even when we're opening a
   // new background tab.
   if (WebContents* old_contents = GetActiveWebContents()) {
+    LOG(INFO) << "[EXTENSIONS] TabStripModel::AddWebContents - Step 9";
     if ((add_types & ADD_ACTIVE) == 0) {
+      LOG(INFO) << "[EXTENSIONS] TabStripModel::AddWebContents - Step 10";
       ResizeWebContents(raw_contents,
                         gfx::Rect(old_contents->GetContainerBounds().size()));
+      LOG(INFO) << "[EXTENSIONS] TabStripModel::AddWebContents - Step 11";
     }
   }
+  LOG(INFO) << "[EXTENSIONS] TabStripModel::AddWebContents - Step 12";
 }
 
 void TabStripModel::CloseSelectedTabs() {

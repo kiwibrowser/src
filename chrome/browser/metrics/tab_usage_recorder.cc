@@ -108,7 +108,9 @@ void TabUsageRecorder::TabInsertedAt(TabStripModel* tab_strip_model,
                                      int index,
                                      bool foreground) {
   // Set the initial pin state.
+  LOG(INFO) << "[EXTENSIONS] TabUsageRecorder::TabInsertedAt - Step 1";
   TabPinnedStateChanged(tab_strip_model, contents, index);
+  LOG(INFO) << "[EXTENSIONS] TabUsageRecorder::TabInsertedAt - Step 2";
 }
 
 void TabUsageRecorder::TabPinnedStateChanged(TabStripModel* tab_strip_model,

@@ -229,8 +229,25 @@ void CrossProcessFrameConnector::ForwardProcessAckedTouchEvent(
     const TouchEventWithLatencyInfo& touch,
     InputEventAckState ack_result) {
   auto* main_view = GetRootRenderWidgetHostView();
+  // Note that the event's coordinates are in |view_|'s coordinate space, but
+  // since |ProcessAckedTouchEvent| doesn't use the coordinates, we don't
+  // bother to transform them back to the root coordinate space.
   if (main_view)
     main_view->ProcessAckedTouchEvent(touch, ack_result);
+}
+
+void CrossProcessFrameConnector::ForwardAckedTouchpadPinchGestureEvent(
+    const blink::WebGestureEvent& event,
+    InputEventAckState ack_result) {
+  auto* root_view = GetRootRenderWidgetHostView();
+  if (!root_view)
+    return;
+
+  blink::WebGestureEvent pinch_event(event);
+  const gfx::PointF root_point =
+      view_->TransformPointToRootCoordSpaceF(event.PositionInWidget());
+  pinch_event.SetPositionInWidget(root_point);
+  root_view->GestureEventAck(pinch_event, ack_result);
 }
 
 void CrossProcessFrameConnector::BubbleScrollEvent(

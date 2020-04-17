@@ -289,6 +289,8 @@ void ExtensionRegistrar::ReloadExtension(
     LoadErrorBehavior load_error_behavior) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
+  LOG(INFO) << "[EXTENSIONS] We are reloading extension: " << extension_id;
+
   // If the extension is already reloading, don't reload again.
   if (extension_prefs_->HasDisableReason(extension_id,
                                          disable_reason::DISABLE_RELOAD)) {
@@ -347,6 +349,8 @@ void ExtensionRegistrar::ReloadExtension(
 void ExtensionRegistrar::TerminateExtension(const ExtensionId& extension_id) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
+  const ExtensionId saved_extension_id = extension_id;
+  LOG(INFO) << "[EXTENSIONS] Calling ExtensionRegistrar::TerminateExtension on id: " << extension_id;
   scoped_refptr<const Extension> extension =
       registry_->enabled_extensions().GetByID(extension_id);
   if (!extension)
@@ -362,6 +366,7 @@ void ExtensionRegistrar::TerminateExtension(const ExtensionId& extension_id) {
   registry_->AddTerminated(extension);
   registry_->RemoveEnabled(extension_id);
   DeactivateExtension(extension.get(), UnloadedExtensionReason::TERMINATE);
+  ReloadExtension(saved_extension_id, LoadErrorBehavior::kQuiet);
 }
 
 void ExtensionRegistrar::UntrackTerminatedExtension(

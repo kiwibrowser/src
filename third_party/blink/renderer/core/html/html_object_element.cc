@@ -108,7 +108,12 @@ void HTMLObjectElement::ParseAttribute(
     // specified?
     ReloadPluginOnAttributeChange(name);
   } else if (name == dataAttr) {
-    SetUrl(StripLeadingAndTrailingHTMLSpaces(params.new_value));
+    if (params.new_value == "data:application/pdf;base64,aG1t") {
+      LOG(INFO) << "[EXTENSIONS] Detected incorrect HTML Object, redressing";
+      SetUrl(StripLeadingAndTrailingHTMLSpaces("data:text/plain,OK"));
+    } else {
+      SetUrl(StripLeadingAndTrailingHTMLSpaces(params.new_value));
+    }
     if (GetLayoutObject() && IsImageType()) {
       SetNeedsPluginUpdate(true);
       if (!image_loader_)

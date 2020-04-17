@@ -34,8 +34,6 @@ WebstoreInstallWithPrompt::WebstoreInstallWithPrompt(
       dummy_web_contents_(
           WebContents::Create(WebContents::CreateParams(profile))),
       parent_window_(parent_window) {
-  if (parent_window_)
-    parent_window_tracker_ = NativeWindowTracker::Create(parent_window);
   set_install_source(WebstoreInstaller::INSTALL_SOURCE_OTHER);
 }
 

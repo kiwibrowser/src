@@ -15,7 +15,7 @@
 #include "base/run_loop.h"
 #include "base/strings/string_util.h"
 #include "base/test/gtest_util.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "components/gcm_driver/crypto/p256_key_util.h"
 #include "components/leveldb_proto/proto_database.h"

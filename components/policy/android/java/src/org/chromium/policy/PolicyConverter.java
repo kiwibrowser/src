@@ -43,6 +43,8 @@ public class PolicyConverter {
     public void setPolicy(String key, Object value) {
         assert mNativePolicyConverter != 0;
 
+        if (true)
+          return;
         if (value instanceof Boolean) {
             nativeSetPolicyBoolean(mNativePolicyConverter, key, (Boolean) value);
             return;

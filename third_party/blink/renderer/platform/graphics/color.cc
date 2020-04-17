@@ -310,6 +310,60 @@ Color Color::Light() const {
                static_cast<int>(multiplier * b * scale_factor), Alpha());
 }
 
+Color Color::InvertAndCapLightness(float minimumContrast) const {
+  float r, g, b, a;
+  GetRGBA(r, g, b, a);
+
+  double h, s, l;
+  GetHSL(h, s, l);
+
+  // Hue is in the range of 0..6 in GetHSL and we expect it to be between 0..1
+  // all other values are already in 0..1
+  h = h * 6.0f;
+  if (l >= 0.40f)
+    l = 1.0f - l;
+  // In the UI, -0.97 corresponds in reality to -0.03 in minimumContrast
+  if (minimumContrast < 0) {
+      minimumContrast = minimumContrast * -1.0f;
+    if (l <= minimumContrast)
+      l = 0.11f + minimumContrast * 4.0f;
+    if (l >= 1.0f)
+      l = 1.0f;
+  }
+  if (l >= 0.35f)
+    l = 0.35f;
+  RGBA32 newColor = MakeRGBAFromHSLA(h, s, l, a);
+
+  return Color(static_cast<int>(RedChannel(newColor)),
+               static_cast<int>(GreenChannel(newColor)),
+               static_cast<int>(BlueChannel(newColor)), Alpha());
+}
+
+Color Color::InvertAndCapLightnessWithoutLimit() const {
+  float r, g, b, a;
+  GetRGBA(r, g, b, a);
+
+  double h, s, l;
+  GetHSL(h, s, l);
+
+  // Hue is in the range of 0..6 in GetHSL and we expect it to be between 0..1
+  // all other values are already in 0..1
+  h = h * 6.0f;
+  if (l >= 0.40f)
+    l = 1.0f - l;
+  if (l >= 1.0f)
+    l = 1.0f;
+  if (l <= 0.87f)
+    l = 0.87f;
+  if (s <= 0.20f)
+    l = 1.0f;
+  RGBA32 newColor = MakeRGBAFromHSLA(h, s, l, a);
+
+  return Color(static_cast<int>(RedChannel(newColor)),
+               static_cast<int>(GreenChannel(newColor)),
+               static_cast<int>(BlueChannel(newColor)), Alpha());
+}
+
 Color Color::Dark() const {
   // Hardcode this common case for speed.
   if (color_ == kWhite)

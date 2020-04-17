@@ -254,6 +254,11 @@ void GpuServiceImpl::Bind(mojom::GpuServiceRequest request) {
   bindings_->AddBinding(this, std::move(request));
 }
 
+void GpuServiceImpl::DisableGpuCompositing() {
+  // Can be called from any thread.
+  (*gpu_host_)->DisableGpuCompositing();
+}
+
 bool GpuServiceImpl::CreateGrContextIfNecessary(gl::GLSurface* surface) {
   DCHECK(main_runner_->BelongsToCurrentThread());
   DCHECK(surface);

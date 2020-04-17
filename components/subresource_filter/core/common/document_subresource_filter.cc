@@ -34,7 +34,8 @@ DocumentSubresourceFilter::~DocumentSubresourceFilter() = default;
 LoadPolicy DocumentSubresourceFilter::GetLoadPolicy(
     const GURL& subresource_url,
     url_pattern_index::proto::ElementType subresource_type) {
-  TRACE_EVENT1("loader", "DocumentSubresourceFilter::GetLoadPolicy", "url",
+  TRACE_EVENT1(TRACE_DISABLED_BY_DEFAULT("loading"),
+               "DocumentSubresourceFilter::GetLoadPolicy", "url",
                subresource_url.spec());
 
   ++statistics_.num_loads_total;

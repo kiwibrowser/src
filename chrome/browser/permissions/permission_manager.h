@@ -14,7 +14,7 @@
 #include "components/content_settings/core/browser/content_settings_observer.h"
 #include "components/content_settings/core/common/content_settings.h"
 #include "components/keyed_service/core/keyed_service.h"
-#include "content/public/browser/permission_manager.h"
+#include "content/public/browser/permission_controller_delegate.h"
 
 class PermissionContextBase;
 struct PermissionResult;
@@ -25,7 +25,7 @@ enum class PermissionType;
 };  // namespace content
 
 class PermissionManager : public KeyedService,
-                          public content::PermissionManager,
+                          public content::PermissionControllerDelegate,
                           public content_settings::Observer {
  public:
   static PermissionManager* Get(Profile* profile);
@@ -49,8 +49,8 @@ class PermissionManager : public KeyedService,
 
   // Callers from within chrome/ should use the methods which take the
   // ContentSettingsType enum. The methods which take PermissionType values
-  // are for the content::PermissionManager overrides and shouldn't be used
-  // from chrome/.
+  // are for the content::PermissionControllerDelegate overrides and shouldn't
+  // be used from chrome/.
 
   int RequestPermission(ContentSettingsType permission,
                         content::RenderFrameHost* render_frame_host,
@@ -79,7 +79,7 @@ class PermissionManager : public KeyedService,
       content::RenderFrameHost* render_frame_host,
       const GURL& requesting_origin);
 
-  // content::PermissionManager implementation.
+  // content::PermissionControllerDelegate implementation.
   int RequestPermission(
       content::PermissionType permission,
       content::RenderFrameHost* render_frame_host,
@@ -108,8 +108,8 @@ class PermissionManager : public KeyedService,
       const GURL& requesting_origin) override;
   int SubscribePermissionStatusChange(
       content::PermissionType permission,
+      content::RenderFrameHost* render_frame_host,
       const GURL& requesting_origin,
-      const GURL& embedding_origin,
       const base::Callback<void(blink::mojom::PermissionStatus)>& callback)
       override;
   void UnsubscribePermissionStatusChange(int subscription_id) override;

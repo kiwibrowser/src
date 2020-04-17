@@ -6,6 +6,7 @@ package org.chromium.chrome.browser.widget.selection;
 
 import android.app.Activity;
 import android.content.Context;
+import org.chromium.base.ContextUtils;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -120,7 +121,6 @@ public class SelectableListToolbar<E>
 
     private UiConfig mUiConfig;
     private int mWideDisplayStartOffsetPx;
-    private int mModernSearchViewStartOffsetPx;
     private int mModernNavButtonStartOffsetPx;
     private int mModernToolbarActionMenuEndOffsetPx;
     private int mModernToolbarSearchIconOffsetPx;
@@ -177,8 +177,6 @@ public class SelectableListToolbar<E>
         mSelectionDelegate = delegate;
         mSelectionDelegate.addObserver(this);
 
-        mModernSearchViewStartOffsetPx = getResources().getDimensionPixelSize(
-                R.dimen.toolbar_modern_search_view_start_offset);
         mModernNavButtonStartOffsetPx = getResources().getDimensionPixelSize(
                 R.dimen.selectable_list_toolbar_nav_button_start_offset);
         mModernToolbarActionMenuEndOffsetPx = getResources().getDimensionPixelSize(
@@ -194,10 +192,16 @@ public class SelectableListToolbar<E>
                                                                  : R.color.default_primary_color;
         mNormalBackgroundColor =
                 ApiCompatibilityUtils.getColor(getResources(), normalBackgroundColorResId);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mNormalBackgroundColor = Color.BLACK;
+        }
         setBackgroundColor(mNormalBackgroundColor);
 
         mSelectionBackgroundColor = ApiCompatibilityUtils.getColor(
                 getResources(), R.color.light_active_color);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mSelectionBackgroundColor = Color.BLACK;
+        }
 
         mDarkIconColorList =
                 ApiCompatibilityUtils.getColorStateList(getResources(), R.color.dark_mode_tint);
@@ -217,6 +221,9 @@ public class SelectableListToolbar<E>
 
         if (!FeatureUtilities.isChromeModernDesignEnabled()) {
             setTitleTextAppearance(getContext(), R.style.BlackHeadline2);
+        }
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            setTitleTextAppearance(getContext(), R.style.WhiteHeadline2);
         }
 
         VrShellDelegate.registerVrModeObserver(this);
@@ -273,6 +280,13 @@ public class SelectableListToolbar<E>
         mSearchText = (EditText) mSearchView.findViewById(R.id.search_text);
 
         mSearchEditText = (EditText) findViewById(R.id.search_text);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mSearchView.setBackgroundColor(Color.BLACK);
+            mSearchEditText.setTextColor(Color.GRAY);
+            mSearchText.setTextColor(Color.WHITE);
+            mSearchEditText.setHintTextColor(Color.GRAY);
+            mSearchText.setHintTextColor(Color.WHITE);
+        }
         mSearchEditText.setHint(hintStringResId);
         mSearchEditText.setOnEditorActionListener(this);
         mSearchEditText.addTextChangedListener(new TextWatcher() {
@@ -408,6 +422,9 @@ public class SelectableListToolbar<E>
                 break;
             case NAVIGATION_BUTTON_BACK:
                 mNavigationIconDrawable.setTint(mDarkIconColorList);
+                if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                    mNavigationIconDrawable.setTint(mLightIconColorList);
+                }
                 contentDescriptionId = R.string.accessibility_toolbar_btn_back;
                 break;
             case NAVIGATION_BUTTON_SELECTION_BACK:
@@ -538,9 +555,9 @@ public class SelectableListToolbar<E>
             params.setMargins(0, params.topMargin, 0, params.bottomMargin);
         }
         setLayoutParams(params);
-        // Navigation button should have more padding start in the modern search view.
-        if (isModernSearchViewEnabled) paddingStartOffset += mModernSearchViewStartOffsetPx;
 
+        // Navigation button should have more start padding in order to keep the navigation icon
+        // and the list item icon aligned.
         int navigationButtonStartOffsetPx =
                 mNavigationButton != NAVIGATION_BUTTON_NONE ? mModernNavButtonStartOffsetPx : 0;
 
@@ -625,6 +642,9 @@ public class SelectableListToolbar<E>
             setBackgroundResource(R.drawable.search_toolbar_modern_bg);
         } else {
             setBackgroundColor(mSearchBackgroundColor);
+        }
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            setBackgroundColor(Color.BLACK);
         }
 
         updateDisplayStyleIfNecessary();

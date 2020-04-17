@@ -36,10 +36,6 @@ class ContentViewCore : public WebContentsObserver {
       JNIEnv* env,
       const base::android::JavaParamRef<jobject>& obj);
 
-  void SetFocus(JNIEnv* env,
-                const base::android::JavaParamRef<jobject>& obj,
-                jboolean focused);
-
  private:
 
   // WebContentsObserver implementation.

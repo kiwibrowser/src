@@ -174,6 +174,7 @@ public class LocationBarPhone extends LocationBarLayout {
             mUrlActionContainer.setVisibility(GONE);
         } else {
             // If Chrome Home is enabled, it will handle its own mode changes.
+            if (false)
             if (mBottomSheet == null) {
                 setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN, false);
             }

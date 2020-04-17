@@ -7,7 +7,7 @@
 #include <map>
 #include <string>
 
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "components/certificate_transparency/sth_observer.h"
 #include "crypto/sha2.h"
 #include "net/cert/signed_tree_head.h"

@@ -9,7 +9,7 @@
 
 #include "base/guid.h"
 #include "base/numerics/safe_conversions.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/test/scoped_feature_list.h"
 #include "components/offline_pages/core/offline_page_feature.h"
 #include "components/offline_pages/core/prefetch/prefetch_task_test_base.h"

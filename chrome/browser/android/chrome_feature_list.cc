@@ -98,6 +98,7 @@ const base::Feature* kFeaturesExposedToJava[] = {
     &kHorizontalTabSwitcherAndroid,
     &kImprovedA2HS,
     &kLanguagesPreference,
+    &kLongPressBackForHistory,
     &kModalPermissionDialogView,
     &kNewPhotoPicker,
     &kNoCreditCardAbort,
@@ -149,7 +150,7 @@ const base::Feature* kFeaturesExposedToJava[] = {
     &password_manager::features::kPasswordSearchMobile,
     &password_manager::features::kPasswordsKeyboardAccessory,
     &signin::kUnifiedConsent,
-    &subresource_filter::kSafeBrowsingSubresourceFilterExperimentalUI,
+    &subresource_filter::kSafeBrowsingSubresourceFilter,
 };
 
 const base::Feature* FindFeatureExposedToJava(const std::string& feature_name) {
@@ -211,7 +212,7 @@ const base::Feature kChromeModernAlternateCardLayout{
     "ChromeModernAlternateCardLayout", base::FEATURE_DISABLED_BY_DEFAULT};
 
 const base::Feature kChromeModernDesign{"ChromeModernDesign",
-                                        base::FEATURE_DISABLED_BY_DEFAULT};
+                                        base::FEATURE_ENABLED_BY_DEFAULT};
 
 const base::Feature kChromeSmartSelection{"ChromeSmartSelection",
                                           base::FEATURE_ENABLED_BY_DEFAULT};
@@ -239,7 +240,7 @@ const base::Feature kContextualSearchTapDisableOverride{
     "ContextualSearchTapDisableOverride", base::FEATURE_DISABLED_BY_DEFAULT};
 
 const base::Feature kCustomContextMenu{"CustomContextMenu",
-                                       base::FEATURE_DISABLED_BY_DEFAULT};
+                                       base::FEATURE_ENABLED_BY_DEFAULT};
 
 const base::Feature kCustomFeedbackUi{"CustomFeedbackUi",
                                       base::FEATURE_DISABLED_BY_DEFAULT};
@@ -260,7 +261,7 @@ const base::Feature kFullscreenActivity{"FullscreenActivity",
                                         base::FEATURE_DISABLED_BY_DEFAULT};
 
 const base::Feature kHomePageButtonForceEnabled{
-    "HomePageButtonForceEnabled", base::FEATURE_DISABLED_BY_DEFAULT};
+    "HomePageButtonForceEnabled", base::FEATURE_ENABLED_BY_DEFAULT};
 
 const base::Feature kHorizontalTabSwitcherAndroid{
     "HorizontalTabSwitcherAndroid", base::FEATURE_DISABLED_BY_DEFAULT};
@@ -274,6 +275,9 @@ const base::Feature kImprovedA2HS{"ImprovedA2HS",
 
 const base::Feature kLanguagesPreference{"LanguagesPreference",
                                          base::FEATURE_ENABLED_BY_DEFAULT};
+
+const base::Feature kLongPressBackForHistory{"LongPressBackForHistory",
+                                             base::FEATURE_ENABLED_BY_DEFAULT};
 
 const base::Feature kModalPermissionDialogView{
     "ModalPermissionDialogView", base::FEATURE_DISABLED_BY_DEFAULT};
@@ -293,16 +297,16 @@ const base::Feature kNoCreditCardAbort{"NoCreditCardAbort",
 const base::Feature kNTPButton{"NTPButton", base::FEATURE_DISABLED_BY_DEFAULT};
 
 const base::Feature kNTPModernLayoutFeature{"NTPModernLayout",
-                                            base::FEATURE_DISABLED_BY_DEFAULT};
+                                            base::FEATURE_ENABLED_BY_DEFAULT};
 
 const base::Feature kNTPLaunchAfterInactivity{
-    "NTPLaunchAfterInactivity", base::FEATURE_DISABLED_BY_DEFAULT};
+    "NTPLaunchAfterInactivity", base::FEATURE_ENABLED_BY_DEFAULT};
 
 const base::Feature kNTPShowGoogleGInOmniboxFeature{
     "NTPShowGoogleGInOmnibox", base::FEATURE_DISABLED_BY_DEFAULT};
 
 const base::Feature kOmniboxSpareRenderer{"OmniboxSpareRenderer",
-                                          base::FEATURE_DISABLED_BY_DEFAULT};
+                                          base::FEATURE_ENABLED_BY_DEFAULT};
 
 const base::Feature kOmniboxVoiceSearchAlwaysVisible{
     "OmniboxVoiceSearchAlwaysVisible", base::FEATURE_DISABLED_BY_DEFAULT};
@@ -311,7 +315,7 @@ const base::Feature kPayWithGoogleV1{"PayWithGoogleV1",
                                      base::FEATURE_ENABLED_BY_DEFAULT};
 
 const base::Feature kProgressBarThrottleFeature{
-    "ProgressBarThrottle", base::FEATURE_DISABLED_BY_DEFAULT};
+    "ProgressBarThrottle", base::FEATURE_ENABLED_BY_DEFAULT};
 
 const base::Feature kPwaImprovedSplashScreen{"PwaImprovedSplashScreen",
                                              base::FEATURE_DISABLED_BY_DEFAULT};
@@ -320,7 +324,7 @@ const base::Feature kPwaPersistentNotification{
     "PwaPersistentNotification", base::FEATURE_ENABLED_BY_DEFAULT};
 
 const base::Feature kQueryInOmnibox{"QueryInOmnibox",
-                                    base::FEATURE_DISABLED_BY_DEFAULT};
+                                    base::FEATURE_ENABLED_BY_DEFAULT};
 
 const base::Feature kReaderModeInCCT{"ReaderModeInCCT",
                                      base::FEATURE_DISABLED_BY_DEFAULT};

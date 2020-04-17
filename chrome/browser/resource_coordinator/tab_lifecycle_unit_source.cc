@@ -139,6 +139,7 @@ void TabLifecycleUnitSource::TabInsertedAt(TabStripModel* tab_strip_model,
                                            content::WebContents* contents,
                                            int index,
                                            bool foreground) {
+  LOG(INFO) << "[EXTENSIONS] TabLifecycleUnitSource::TabInsertedAt - Step 1";
   TabLifecycleUnit* lifecycle_unit = GetTabLifecycleUnit(contents);
   if (lifecycle_unit) {
     // An existing tab was moved to a new window.
@@ -160,6 +161,7 @@ void TabLifecycleUnitSource::TabInsertedAt(TabStripModel* tab_strip_model,
 
     NotifyLifecycleUnitCreated(lifecycle_unit);
   }
+  LOG(INFO) << "[EXTENSIONS] TabLifecycleUnitSource::TabInsertedAt - Step 2";
 }
 
 void TabLifecycleUnitSource::TabDetachedAt(content::WebContents* contents,
@@ -204,6 +206,11 @@ void TabLifecycleUnitSource::TabChangedAt(content::WebContents* contents,
   if (change_type != TabChangeType::kAll)
     return;
   TabLifecycleUnit* lifecycle_unit = GetTabLifecycleUnit(contents);
+  // This can be called before OnTabStripModelChanged() and |lifecycle_unit|
+  // will be null in that case. http://crbug.com/877940
+  if (!lifecycle_unit)
+    return;
+
   DCHECK(lifecycle_unit);
   lifecycle_unit->SetRecentlyAudible(contents->WasRecentlyAudible());
 }

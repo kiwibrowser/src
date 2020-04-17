@@ -191,11 +191,14 @@ void SubresourceFilterAgent::DidCommitProvisionalLoad(
   if (is_same_document_navigation)
     return;
 
-  filter_for_last_committed_load_.reset();
-
   // TODO(csharrison): Use WebURL and WebSecurityOrigin for efficiency here,
   // which require changes to the unit tests.
   const GURL& url = GetDocumentURL();
+
+  if (url.is_empty() || !url.is_valid() || !url.SchemeIsHTTPOrHTTPS())
+    return;
+
+  filter_for_last_committed_load_.reset();
 
   bool use_parent_activation = !IsMainFrame() && ShouldUseParentActivation(url);
 
@@ -216,10 +219,7 @@ void SubresourceFilterAgent::DidCommitProvisionalLoad(
 
   scoped_refptr<const MemoryMappedRuleset> ruleset =
       ruleset_dealer_->GetRuleset();
-  DCHECK(ruleset);
-  // Data can be null even if the original file is valid, if there is a
-  // memory mapping issue.
-  if (!ruleset->data())
+  if (!ruleset)
     return;
 
   base::OnceClosure first_disallowed_load_callback(base::BindOnce(

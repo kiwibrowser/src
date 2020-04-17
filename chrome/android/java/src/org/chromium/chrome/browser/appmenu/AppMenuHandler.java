@@ -166,7 +166,7 @@ public class AppMenuHandler {
         if (mDelegate.shouldShowHeader(appRect.height())) {
             headerView = mDelegate.getHeaderView();
         }
-        mAppMenu.show(wrapper, anchorView, isByPermanentButton, rotation, appRect, pt.y,
+        mAppMenu.show(mActivity, wrapper, anchorView, isByPermanentButton, rotation, appRect, pt.y,
                 footerResourceId, headerView, mHighlightMenuId);
         mAppMenuDragHelper.onShow(startDragging);
         setMenuHighlight(null);
@@ -231,5 +231,13 @@ public class AppMenuHandler {
         for (int i = 0; i < mObservers.size(); ++i) {
             mObservers.get(i).onMenuVisibilityChanged(isVisible);
         }
+    }
+
+    /**
+     * A notification that the footer view has been inflated.
+     * @param view The inflated view.
+     */
+    void onFooterInflated(View view) {
+        if (mDelegate != null) mDelegate.onFooterViewInflated(mAppMenu, view);
     }
 }

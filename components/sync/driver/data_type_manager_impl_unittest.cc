@@ -1433,10 +1433,7 @@ TEST_F(SyncDataTypeManagerImplTest, AssociationNeverCompletes) {
   EXPECT_EQ(DataTypeManager::CONFIGURING, dtm_->state());
 
   // Simulate timeout by firing the timer.
-  dtm_->GetModelAssociationManagerForTesting()
-      ->GetTimerForTesting()
-      ->user_task()
-      .Run();
+  dtm_->GetModelAssociationManagerForTesting()->GetTimerForTesting()->FireNow();
   EXPECT_EQ(DataTypeManager::CONFIGURING, dtm_->state());
   EXPECT_EQ(DataTypeController::NOT_RUNNING, GetController(BOOKMARKS)->state());
 

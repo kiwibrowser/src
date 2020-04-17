@@ -51,562 +51,13 @@ namespace {
 
 // Default (for countries with no better engine set)
 const PrepopulatedEngine* const engines_default[] = {
-    &google, &bing, &yahoo,
-};
-
-// United Arab Emirates
-const PrepopulatedEngine* const engines_AE[] = {
-    &google, &yahoo_maktoob, &bing,
-};
-
-// Albania
-const PrepopulatedEngine* const engines_AL[] = {
-    &google, &yahoo, &bing,
-};
-
-// Argentina
-const PrepopulatedEngine* const engines_AR[] = {
-    &google, &bing, &yahoo_ar,
-};
-
-// Austria
-const PrepopulatedEngine* const engines_AT[] = {
-    &google, &bing, &yahoo_at,
-};
-
-// Australia
-const PrepopulatedEngine* const engines_AU[] = {
-    &google, &bing, &yahoo_au,
-};
-
-// Bosnia and Herzegovina
-const PrepopulatedEngine* const engines_BA[] = {
-    &google, &yahoo, &bing,
-};
-
-// Belgium
-const PrepopulatedEngine* const engines_BE[] = {
-    &google, &bing, &yahoo, &yahoo_fr,
-};
-
-// Bulgaria
-const PrepopulatedEngine* const engines_BG[] = {
-    &google, &bing, &ask,
-};
-
-// Bahrain
-const PrepopulatedEngine* const engines_BH[] = {
-    &google, &yahoo_maktoob, &bing,
-};
-
-// Burundi
-const PrepopulatedEngine* const engines_BI[] = {
-    &google, &yahoo, &bing,
-};
-
-// Brunei
-const PrepopulatedEngine* const engines_BN[] = {
-    &google, &yahoo_my, &bing,
-};
-
-// Bolivia
-const PrepopulatedEngine* const engines_BO[] = {
-    &google, &bing, &yahoo,
-};
-
-// Brazil
-const PrepopulatedEngine* const engines_BR[] = {
-    &google, &ask_br, &bing, &yahoo_br,
-};
-
-// Belarus
-const PrepopulatedEngine* const engines_BY[] = {
-    &google, &yandex_by, &mail_ru,
-};
-
-// Belize
-const PrepopulatedEngine* const engines_BZ[] = {
-    &google, &yahoo, &bing,
-};
-
-// Canada
-const PrepopulatedEngine* const engines_CA[] = {
-    &google, &bing, &ask, &yahoo_ca, &yahoo_qc,
-};
-
-// Switzerland
-const PrepopulatedEngine* const engines_CH[] = {
-    &google, &bing, &yahoo_ch,
-};
-
-// Chile
-const PrepopulatedEngine* const engines_CL[] = {
-    &google, &bing, &yahoo_cl,
-};
-
-// China
-const PrepopulatedEngine* const engines_CN[] = {
-    &google, &baidu, &sogou, &so_360,
-};
-
-// Colombia
-const PrepopulatedEngine* const engines_CO[] = {
-    &google, &bing, &yahoo_co,
-};
-
-// Costa Rica
-const PrepopulatedEngine* const engines_CR[] = {
-    &google, &yahoo, &bing,
-};
-
-// Czech Republic
-const PrepopulatedEngine* const engines_CZ[] = {
-    &google, &seznam, &bing,
-};
-
-// Germany
-const PrepopulatedEngine* const engines_DE[] = {
-    &google, &bing, &yahoo_de,
-};
-
-// Denmark
-const PrepopulatedEngine* const engines_DK[] = {
-    &google, &bing, &yahoo_dk,
-};
-
-// Dominican Republic
-const PrepopulatedEngine* const engines_DO[] = {
-    &google, &yahoo, &bing,
-};
-
-// Algeria
-const PrepopulatedEngine* const engines_DZ[] = {
-    &google, &bing, &yahoo_maktoob,
-};
-
-// Ecuador
-const PrepopulatedEngine* const engines_EC[] = {
-    &google, &bing, &yahoo,
-};
-
-// Estonia
-const PrepopulatedEngine* const engines_EE[] = {
-    &google, &bing, &yahoo,
-};
-
-// Egypt
-const PrepopulatedEngine* const engines_EG[] = {
-    &google, &yahoo_maktoob, &bing,
-};
-
-// Spain
-const PrepopulatedEngine* const engines_ES[] = {
-    &google, &bing, &yahoo_es,
-};
-
-// Faroe Islands
-const PrepopulatedEngine* const engines_FO[] = {
-    &google, &bing, &ask,
-};
-
-// Finland
-const PrepopulatedEngine* const engines_FI[] = {
-    &google, &bing, &yahoo_fi,
-};
-
-// France
-const PrepopulatedEngine* const engines_FR[] = {
-    &google, &bing, &yahoo_fr,
-};
-
-// United Kingdom
-const PrepopulatedEngine* const engines_GB[] = {
-    &google, &bing, &yahoo_uk, &ask_uk,
-};
-
-// Greece
-const PrepopulatedEngine* const engines_GR[] = {
-    &google, &bing, &yahoo_gr,
-};
-
-// Guatemala
-const PrepopulatedEngine* const engines_GT[] = {
-    &google, &yahoo, &bing,
-};
-
-// Hong Kong
-const PrepopulatedEngine* const engines_HK[] = {
-    &google, &yahoo_hk, &baidu, &bing,
-};
-
-// Honduras
-const PrepopulatedEngine* const engines_HN[] = {
-    &google, &yahoo, &bing,
-};
-
-// Croatia
-const PrepopulatedEngine* const engines_HR[] = {
-    &google, &bing, &yahoo,
-};
-
-// Hungary
-const PrepopulatedEngine* const engines_HU[] = {
-    &google, &bing, &yahoo,
-};
-
-// Indonesia
-const PrepopulatedEngine* const engines_ID[] = {
-    &google, &yahoo_id, &bing,
-};
-
-// Ireland
-const PrepopulatedEngine* const engines_IE[] = {
-    &google, &bing, &yahoo_uk,
-};
-
-// Israel
-const PrepopulatedEngine* const engines_IL[] = {
-    &google, &yahoo, &bing,
-};
-
-// India
-const PrepopulatedEngine* const engines_IN[] = {
-    &google, &bing, &yahoo_in,
-};
-
-// Iraq
-const PrepopulatedEngine* const engines_IQ[] = {
-    &google, &yahoo_maktoob, &bing,
-};
-
-// Iran
-const PrepopulatedEngine* const engines_IR[] = {
-    &google, &yahoo, &bing,
-};
-
-// Iceland
-const PrepopulatedEngine* const engines_IS[] = {
-    &google, &bing, &yahoo,
-};
-
-// Italy
-const PrepopulatedEngine* const engines_IT[] = {
-    &google, &virgilio, &bing,
-};
-
-// Jamaica
-const PrepopulatedEngine* const engines_JM[] = {
-    &google, &yahoo, &bing,
-};
-
-// Jordan
-const PrepopulatedEngine* const engines_JO[] = {
-    &google, &yahoo_maktoob, &bing,
-};
-
-// Japan
-const PrepopulatedEngine* const engines_JP[] = {
-    &google, &yahoo_jp, &bing,
-};
-
-// Kenya
-const PrepopulatedEngine* const engines_KE[] = {
-    &google, &yahoo, &bing,
-};
-
-// Kuwait
-const PrepopulatedEngine* const engines_KW[] = {
-    &google, &yahoo_maktoob, &bing,
-};
-
-// South Korea
-const PrepopulatedEngine* const engines_KR[] = {
-    &google, &naver, &daum,
-};
-
-// Kazakhstan
-const PrepopulatedEngine* const engines_KZ[] = {
-    &google, &mail_ru, &yandex_kz,
-};
-
-// Lebanon
-const PrepopulatedEngine* const engines_LB[] = {
-    &google, &yahoo_maktoob, &bing,
-};
-
-// Liechtenstein
-const PrepopulatedEngine* const engines_LI[] = {
-    &google, &bing, &yahoo_de,
-};
-
-// Lithuania
-const PrepopulatedEngine* const engines_LT[] = {
-    &google, &bing, &yandex_ru,
-};
-
-// Luxembourg
-const PrepopulatedEngine* const engines_LU[] = {
-    &google, &bing, &yahoo_fr,
-};
-
-// Latvia
-const PrepopulatedEngine* const engines_LV[] = {
-    &google, &yandex_ru, &bing,
-};
-
-// Libya
-const PrepopulatedEngine* const engines_LY[] = {
-    &google, &yahoo_maktoob, &bing,
-};
-
-// Morocco
-const PrepopulatedEngine* const engines_MA[] = {
-    &google, &bing, &yahoo_maktoob,
-};
-
-// Monaco
-const PrepopulatedEngine* const engines_MC[] = {
-    &google, &yahoo_fr, &bing,
-};
-
-// Moldova
-const PrepopulatedEngine* const engines_MD[] = {
-    &google, &bing, &yahoo,
-};
-
-// Montenegro
-const PrepopulatedEngine* const engines_ME[] = {
-    &google, &bing, &yahoo,
-};
-
-// Macedonia
-const PrepopulatedEngine* const engines_MK[] = {
-    &google, &yahoo, &bing,
-};
-
-// Mexico
-const PrepopulatedEngine* const engines_MX[] = {
-    &google, &bing, &yahoo_mx,
-};
-
-// Malaysia
-const PrepopulatedEngine* const engines_MY[] = {
-    &google, &yahoo_my, &bing,
-};
-
-// Nicaragua
-const PrepopulatedEngine* const engines_NI[] = {
-    &google, &yahoo, &bing,
-};
-
-// Netherlands
-const PrepopulatedEngine* const engines_NL[] = {
-    &google, &yahoo_nl, &vinden,
-};
-
-// Norway
-const PrepopulatedEngine* const engines_NO[] = {
-    &google, &bing, &kvasir,
-};
-
-// New Zealand
-const PrepopulatedEngine* const engines_NZ[] = {
-    &google, &bing, &yahoo_nz,
-};
-
-// Oman
-const PrepopulatedEngine* const engines_OM[] = {
-    &google, &bing, &yahoo_maktoob,
-};
-
-// Panama
-const PrepopulatedEngine* const engines_PA[] = {
-    &google, &yahoo, &bing,
-};
-
-// Peru
-const PrepopulatedEngine* const engines_PE[] = {
-    &google, &bing, &yahoo_pe,
-};
-
-// Philippines
-const PrepopulatedEngine* const engines_PH[] = {
-    &google, &yahoo_ph, &bing,
-};
-
-// Pakistan
-const PrepopulatedEngine* const engines_PK[] = {
-    &google, &yahoo, &bing,
-};
-
-// Puerto Rico
-const PrepopulatedEngine* const engines_PR[] = {
-    &google, &yahoo, &bing,
-};
-
-// Poland
-const PrepopulatedEngine* const engines_PL[] = {
-    &google, &onet, &bing,
-};
-
-// Portugal
-const PrepopulatedEngine* const engines_PT[] = {
-    &google, &bing, &yahoo,
-};
-
-// Paraguay
-const PrepopulatedEngine* const engines_PY[] = {
-    &google, &bing, &yahoo,
-};
-
-// Qatar
-const PrepopulatedEngine* const engines_QA[] = {
-    &google, &yahoo_maktoob, &bing,
-};
-
-// Romania
-const PrepopulatedEngine* const engines_RO[] = {
-    &google, &yahoo_ro, &bing,
-};
-
-// Serbia
-const PrepopulatedEngine* const engines_RS[] = {
-    &google, &bing, &yahoo,
-};
-
-// Russia
-const PrepopulatedEngine* const engines_RU[] = {
-    &google, &yandex_ru, &mail_ru,
-};
-
-// Rwanda
-const PrepopulatedEngine* const engines_RW[] = {
-    &google, &bing, &yahoo,
-};
-
-// Saudi Arabia
-const PrepopulatedEngine* const engines_SA[] = {
-    &google, &yahoo_maktoob, &bing,
-};
-
-// Sweden
-const PrepopulatedEngine* const engines_SE[] = {
-    &google, &bing, &yahoo_se,
-};
-
-// Singapore
-const PrepopulatedEngine* const engines_SG[] = {
-    &google, &yahoo_sg, &bing,
-};
-
-// Slovenia
-const PrepopulatedEngine* const engines_SI[] = {
-    &google, &najdi, &ask,
-};
-
-// Slovakia
-const PrepopulatedEngine* const engines_SK[] = {
-    &google, &bing, &yahoo,
-};
-
-// El Salvador
-const PrepopulatedEngine* const engines_SV[] = {
-    &google, &yahoo, &bing,
-};
-
-// Syria
-const PrepopulatedEngine* const engines_SY[] = {
-    &google, &bing, &yahoo_maktoob,
-};
-
-// Thailand
-const PrepopulatedEngine* const engines_TH[] = {
-    &google, &yahoo_th, &bing,
-};
-
-// Tunisia
-const PrepopulatedEngine* const engines_TN[] = {
-    &google, &bing, &yahoo_maktoob,
-};
-
-// Turkey
-const PrepopulatedEngine* const engines_TR[] = {
-    &google, &bing, &yahoo_tr, &yandex_tr,
-};
-
-// Trinidad and Tobago
-const PrepopulatedEngine* const engines_TT[] = {
-    &google, &bing, &yahoo,
-};
-
-// Taiwan
-const PrepopulatedEngine* const engines_TW[] = {
-    &google, &yahoo_tw, &bing,
-};
-
-// Tanzania
-const PrepopulatedEngine* const engines_TZ[] = {
-    &google, &yahoo, &bing,
-};
-
-// Ukraine
-const PrepopulatedEngine* const engines_UA[] = {
-    &google, &yandex_ua, &bing,
-};
-
-// United States
-const PrepopulatedEngine* const engines_US[] = {
-    &google, &bing, &yahoo, &aol, &ask,
-};
-
-// Uruguay
-const PrepopulatedEngine* const engines_UY[] = {
-    &google, &bing, &yahoo,
-};
-
-// Venezuela
-const PrepopulatedEngine* const engines_VE[] = {
-    &google, &bing, &yahoo_ve,
-};
-
-// Vietnam
-const PrepopulatedEngine* const engines_VN[] = {
-    &google, &yahoo_vn, &bing,
-};
-
-// Yemen
-const PrepopulatedEngine* const engines_YE[] = {
-    &google, &bing, &yahoo_maktoob,
-};
-
-// South Africa
-const PrepopulatedEngine* const engines_ZA[] = {
-    &google, &bing, &yahoo,
-};
-
-// Zimbabwe
-const PrepopulatedEngine* const engines_ZW[] = {
-    &google, &bing, &yahoo, &ask,
+    &kiwi, &google, &google_en, &bing, &yahoo, &duckduckgo, &qwant, &liteqwant, &startpage, &yandex_ru
 };
 
 // A list of all the engines that we know about.
 const PrepopulatedEngine* const kAllEngines[] = {
     // Prepopulated engines:
-    &aol, &ask, &ask_br, &ask_uk, &baidu, &bing, &daum, &google, &kvasir,
-    &mail_ru, &najdi, &naver, &onet, &seznam, &sogou, &vinden, &virgilio,
-    &yahoo, &yahoo_ar, &yahoo_at, &yahoo_au, &yahoo_br, &yahoo_ca, &yahoo_ch,
-    &yahoo_cl, &yahoo_co, &yahoo_de, &yahoo_dk, &yahoo_es, &yahoo_fi, &yahoo_fr,
-    &yahoo_gr, &yahoo_hk, &yahoo_id, &yahoo_in, &yahoo_jp, &yahoo_maktoob,
-    &yahoo_mx, &yahoo_my, &yahoo_nl, &yahoo_nz, &yahoo_pe, &yahoo_ph, &yahoo_qc,
-    &yahoo_ro, &yahoo_se, &yahoo_sg, &yahoo_th, &yahoo_tr, &yahoo_tw, &yahoo_uk,
-    &yahoo_ve, &yahoo_vn, &yandex_by, &yandex_kz, &yandex_ru, &yandex_tr,
-    &yandex_ua,
-
-    // UMA-only engines:
-    &atlas_cz, &atlas_sk, &avg, &babylon, &conduit, &delfi_lt, &delfi_lv,
-    &delta, &funmoods, &goo, &imesh, &iminent, &in, &incredibar, &libero, &neti,
-    &nigma, &ok, &rambler, &sapo, &search_results, &searchnu, &snapdo,
-    &softonic, &sweetim, &terra_ar, &terra_es, &tut, &walla, &wp, &zoznam,
+    &kiwi, &google, &google_en, &bing, &yahoo, &duckduckgo, &qwant, &liteqwant, &startpage, &yandex_ru
 };
 
 // Please refer to ISO 3166-1 for information about the two-character country
@@ -770,136 +221,131 @@ std::vector<std::unique_ptr<TemplateURLData>> GetPrepopulationSetFromCountryID(
     END_UNHANDLED_COUNTRIES(code1, code2)
 
     // Countries with their own, dedicated engine set.
-    DECLARE_COUNTRY(A, E)  // United Arab Emirates
-    DECLARE_COUNTRY(A, L)  // Albania
-    DECLARE_COUNTRY(A, R)  // Argentina
-    DECLARE_COUNTRY(A, T)  // Austria
-    DECLARE_COUNTRY(A, U)  // Australia
-    DECLARE_COUNTRY(B, A)  // Bosnia and Herzegovina
-    DECLARE_COUNTRY(B, E)  // Belgium
-    DECLARE_COUNTRY(B, G)  // Bulgaria
-    DECLARE_COUNTRY(B, H)  // Bahrain
-    DECLARE_COUNTRY(B, I)  // Burundi
-    DECLARE_COUNTRY(B, N)  // Brunei
-    DECLARE_COUNTRY(B, O)  // Bolivia
-    DECLARE_COUNTRY(B, R)  // Brazil
-    DECLARE_COUNTRY(B, Y)  // Belarus
-    DECLARE_COUNTRY(B, Z)  // Belize
-    DECLARE_COUNTRY(C, A)  // Canada
-    DECLARE_COUNTRY(C, H)  // Switzerland
-    DECLARE_COUNTRY(C, L)  // Chile
-    DECLARE_COUNTRY(C, N)  // China
-    DECLARE_COUNTRY(C, O)  // Colombia
-    DECLARE_COUNTRY(C, R)  // Costa Rica
-    DECLARE_COUNTRY(C, Z)  // Czech Republic
-    DECLARE_COUNTRY(D, E)  // Germany
-    DECLARE_COUNTRY(D, K)  // Denmark
-    DECLARE_COUNTRY(D, O)  // Dominican Republic
-    DECLARE_COUNTRY(D, Z)  // Algeria
-    DECLARE_COUNTRY(E, C)  // Ecuador
-    DECLARE_COUNTRY(E, E)  // Estonia
-    DECLARE_COUNTRY(E, G)  // Egypt
-    DECLARE_COUNTRY(E, S)  // Spain
-    DECLARE_COUNTRY(F, I)  // Finland
-    DECLARE_COUNTRY(F, O)  // Faroe Islands
-    DECLARE_COUNTRY(F, R)  // France
-    DECLARE_COUNTRY(G, B)  // United Kingdom
-    DECLARE_COUNTRY(G, R)  // Greece
-    DECLARE_COUNTRY(G, T)  // Guatemala
-    DECLARE_COUNTRY(H, K)  // Hong Kong
-    DECLARE_COUNTRY(H, N)  // Honduras
-    DECLARE_COUNTRY(H, R)  // Croatia
-    DECLARE_COUNTRY(H, U)  // Hungary
-    DECLARE_COUNTRY(I, D)  // Indonesia
-    DECLARE_COUNTRY(I, E)  // Ireland
-    DECLARE_COUNTRY(I, L)  // Israel
-    DECLARE_COUNTRY(I, N)  // India
-    DECLARE_COUNTRY(I, Q)  // Iraq
-    DECLARE_COUNTRY(I, R)  // Iran
-    DECLARE_COUNTRY(I, S)  // Iceland
-    DECLARE_COUNTRY(I, T)  // Italy
-    DECLARE_COUNTRY(J, M)  // Jamaica
-    DECLARE_COUNTRY(J, O)  // Jordan
-    DECLARE_COUNTRY(J, P)  // Japan
-    DECLARE_COUNTRY(K, E)  // Kenya
-    DECLARE_COUNTRY(K, R)  // South Korea
-    DECLARE_COUNTRY(K, W)  // Kuwait
-    DECLARE_COUNTRY(K, Z)  // Kazakhstan
-    DECLARE_COUNTRY(L, B)  // Lebanon
-    DECLARE_COUNTRY(L, I)  // Liechtenstein
-    DECLARE_COUNTRY(L, T)  // Lithuania
-    DECLARE_COUNTRY(L, U)  // Luxembourg
-    DECLARE_COUNTRY(L, V)  // Latvia
-    DECLARE_COUNTRY(L, Y)  // Libya
-    DECLARE_COUNTRY(M, A)  // Morocco
-    DECLARE_COUNTRY(M, C)  // Monaco
-    DECLARE_COUNTRY(M, D)  // Moldova
-    DECLARE_COUNTRY(M, E)  // Montenegro
-    DECLARE_COUNTRY(M, K)  // Macedonia
-    DECLARE_COUNTRY(M, X)  // Mexico
-    DECLARE_COUNTRY(M, Y)  // Malaysia
-    DECLARE_COUNTRY(N, I)  // Nicaragua
-    DECLARE_COUNTRY(N, L)  // Netherlands
-    DECLARE_COUNTRY(N, O)  // Norway
-    DECLARE_COUNTRY(N, Z)  // New Zealand
-    DECLARE_COUNTRY(O, M)  // Oman
-    DECLARE_COUNTRY(P, A)  // Panama
-    DECLARE_COUNTRY(P, E)  // Peru
-    DECLARE_COUNTRY(P, H)  // Philippines
-    DECLARE_COUNTRY(P, K)  // Pakistan
-    DECLARE_COUNTRY(P, L)  // Poland
-    DECLARE_COUNTRY(P, R)  // Puerto Rico
-    DECLARE_COUNTRY(P, T)  // Portugal
-    DECLARE_COUNTRY(P, Y)  // Paraguay
-    DECLARE_COUNTRY(Q, A)  // Qatar
-    DECLARE_COUNTRY(R, O)  // Romania
-    DECLARE_COUNTRY(R, S)  // Serbia
-    DECLARE_COUNTRY(R, U)  // Russia
-    DECLARE_COUNTRY(R, W)  // Rwanda
-    DECLARE_COUNTRY(S, A)  // Saudi Arabia
-    DECLARE_COUNTRY(S, E)  // Sweden
-    DECLARE_COUNTRY(S, G)  // Singapore
-    DECLARE_COUNTRY(S, I)  // Slovenia
-    DECLARE_COUNTRY(S, K)  // Slovakia
-    DECLARE_COUNTRY(S, V)  // El Salvador
-    DECLARE_COUNTRY(S, Y)  // Syria
-    DECLARE_COUNTRY(T, H)  // Thailand
-    DECLARE_COUNTRY(T, N)  // Tunisia
-    DECLARE_COUNTRY(T, R)  // Turkey
-    DECLARE_COUNTRY(T, T)  // Trinidad and Tobago
-    DECLARE_COUNTRY(T, W)  // Taiwan
-    DECLARE_COUNTRY(T, Z)  // Tanzania
-    DECLARE_COUNTRY(U, A)  // Ukraine
-    DECLARE_COUNTRY(U, S)  // United States
-    DECLARE_COUNTRY(U, Y)  // Uruguay
-    DECLARE_COUNTRY(V, E)  // Venezuela
-    DECLARE_COUNTRY(V, N)  // Vietnam
-    DECLARE_COUNTRY(Y, E)  // Yemen
-    DECLARE_COUNTRY(Z, A)  // South Africa
-    DECLARE_COUNTRY(Z, W)  // Zimbabwe
+    UNHANDLED_COUNTRY(A, E)  // United Arab Emirates
+    UNHANDLED_COUNTRY(A, L)  // Albania
+    UNHANDLED_COUNTRY(A, R)  // Argentina
+    UNHANDLED_COUNTRY(A, T)  // Austria
+    UNHANDLED_COUNTRY(A, U)  // Australia
+    UNHANDLED_COUNTRY(B, A)  // Bosnia and Herzegovina
+    UNHANDLED_COUNTRY(B, E)  // Belgium
+    UNHANDLED_COUNTRY(B, G)  // Bulgaria
+    UNHANDLED_COUNTRY(B, H)  // Bahrain
+    UNHANDLED_COUNTRY(B, I)  // Burundi
+    UNHANDLED_COUNTRY(B, N)  // Brunei
+    UNHANDLED_COUNTRY(B, O)  // Bolivia
+    UNHANDLED_COUNTRY(B, R)  // Brazil
+    UNHANDLED_COUNTRY(B, Y)  // Belarus
+    UNHANDLED_COUNTRY(B, Z)  // Belize
+    UNHANDLED_COUNTRY(C, A)  // Canada
+    UNHANDLED_COUNTRY(C, H)  // Switzerland
+    UNHANDLED_COUNTRY(C, L)  // Chile
+    UNHANDLED_COUNTRY(C, N)  // China
+    UNHANDLED_COUNTRY(C, O)  // Colombia
+    UNHANDLED_COUNTRY(C, R)  // Costa Rica
+    UNHANDLED_COUNTRY(C, Z)  // Czech Republic
+    UNHANDLED_COUNTRY(D, E)  // Germany
+    UNHANDLED_COUNTRY(D, K)  // Denmark
+    UNHANDLED_COUNTRY(D, O)  // Dominican Republic
+    UNHANDLED_COUNTRY(D, Z)  // Algeria
+    UNHANDLED_COUNTRY(E, C)  // Ecuador
+    UNHANDLED_COUNTRY(E, E)  // Estonia
+    UNHANDLED_COUNTRY(E, G)  // Egypt
+    UNHANDLED_COUNTRY(E, S)  // Spain
+    UNHANDLED_COUNTRY(F, I)  // Finland
+    UNHANDLED_COUNTRY(F, O)  // Faroe Islands
+    UNHANDLED_COUNTRY(F, R)  // France
+    UNHANDLED_COUNTRY(G, B)  // United Kingdom
+    UNHANDLED_COUNTRY(G, R)  // Greece
+    UNHANDLED_COUNTRY(G, T)  // Guatemala
+    UNHANDLED_COUNTRY(H, K)  // Hong Kong
+    UNHANDLED_COUNTRY(H, N)  // Honduras
+    UNHANDLED_COUNTRY(H, R)  // Croatia
+    UNHANDLED_COUNTRY(H, U)  // Hungary
+    UNHANDLED_COUNTRY(I, D)  // Indonesia
+    UNHANDLED_COUNTRY(I, E)  // Ireland
+    UNHANDLED_COUNTRY(I, L)  // Israel
+    UNHANDLED_COUNTRY(I, N)  // India
+    UNHANDLED_COUNTRY(I, Q)  // Iraq
+    UNHANDLED_COUNTRY(I, R)  // Iran
+    UNHANDLED_COUNTRY(I, S)  // Iceland
+    UNHANDLED_COUNTRY(I, T)  // Italy
+    UNHANDLED_COUNTRY(J, M)  // Jamaica
+    UNHANDLED_COUNTRY(J, O)  // Jordan
+    UNHANDLED_COUNTRY(J, P)  // Japan
+    UNHANDLED_COUNTRY(K, E)  // Kenya
+    UNHANDLED_COUNTRY(K, R)  // South Korea
+    UNHANDLED_COUNTRY(K, W)  // Kuwait
+    UNHANDLED_COUNTRY(K, Z)  // Kazakhstan
+    UNHANDLED_COUNTRY(L, B)  // Lebanon
+    UNHANDLED_COUNTRY(L, I)  // Liechtenstein
+    UNHANDLED_COUNTRY(L, T)  // Lithuania
+    UNHANDLED_COUNTRY(L, U)  // Luxembourg
+    UNHANDLED_COUNTRY(L, V)  // Latvia
+    UNHANDLED_COUNTRY(L, Y)  // Libya
+    UNHANDLED_COUNTRY(M, A)  // Morocco
+    UNHANDLED_COUNTRY(M, C)  // Monaco
+    UNHANDLED_COUNTRY(M, D)  // Moldova
+    UNHANDLED_COUNTRY(M, E)  // Montenegro
+    UNHANDLED_COUNTRY(M, K)  // Macedonia
+    UNHANDLED_COUNTRY(M, X)  // Mexico
+    UNHANDLED_COUNTRY(M, Y)  // Malaysia
+    UNHANDLED_COUNTRY(N, I)  // Nicaragua
+    UNHANDLED_COUNTRY(N, L)  // Netherlands
+    UNHANDLED_COUNTRY(N, O)  // Norway
+    UNHANDLED_COUNTRY(N, Z)  // New Zealand
+    UNHANDLED_COUNTRY(O, M)  // Oman
+    UNHANDLED_COUNTRY(P, A)  // Panama
+    UNHANDLED_COUNTRY(P, E)  // Peru
+    UNHANDLED_COUNTRY(P, H)  // Philippines
+    UNHANDLED_COUNTRY(P, K)  // Pakistan
+    UNHANDLED_COUNTRY(P, L)  // Poland
+    UNHANDLED_COUNTRY(P, R)  // Puerto Rico
+    UNHANDLED_COUNTRY(P, T)  // Portugal
+    UNHANDLED_COUNTRY(P, Y)  // Paraguay
+    UNHANDLED_COUNTRY(Q, A)  // Qatar
+    UNHANDLED_COUNTRY(R, O)  // Romania
+    UNHANDLED_COUNTRY(R, S)  // Serbia
+    UNHANDLED_COUNTRY(R, U)  // Russia
+    UNHANDLED_COUNTRY(R, W)  // Rwanda
+    UNHANDLED_COUNTRY(S, A)  // Saudi Arabia
+    UNHANDLED_COUNTRY(S, E)  // Sweden
+    UNHANDLED_COUNTRY(S, G)  // Singapore
+    UNHANDLED_COUNTRY(S, I)  // Slovenia
+    UNHANDLED_COUNTRY(S, K)  // Slovakia
+    UNHANDLED_COUNTRY(S, V)  // El Salvador
+    UNHANDLED_COUNTRY(S, Y)  // Syria
+    UNHANDLED_COUNTRY(T, H)  // Thailand
+    UNHANDLED_COUNTRY(T, N)  // Tunisia
+    UNHANDLED_COUNTRY(T, R)  // Turkey
+    UNHANDLED_COUNTRY(T, T)  // Trinidad and Tobago
+    UNHANDLED_COUNTRY(T, W)  // Taiwan
+    UNHANDLED_COUNTRY(T, Z)  // Tanzania
+    UNHANDLED_COUNTRY(U, A)  // Ukraine
+    UNHANDLED_COUNTRY(U, S)  // United States
+    UNHANDLED_COUNTRY(U, Y)  // Uruguay
+    UNHANDLED_COUNTRY(V, E)  // Venezuela
+    UNHANDLED_COUNTRY(V, N)  // Vietnam
+    UNHANDLED_COUNTRY(Y, E)  // Yemen
+    UNHANDLED_COUNTRY(Z, A)  // South Africa
+    UNHANDLED_COUNTRY(Z, W)  // Zimbabwe
 
     // Countries using the "Australia" engine set.
     UNHANDLED_COUNTRY(C, C)  // Cocos Islands
     UNHANDLED_COUNTRY(C, X)  // Christmas Island
     UNHANDLED_COUNTRY(H, M)  // Heard Island and McDonald Islands
     UNHANDLED_COUNTRY(N, F)  // Norfolk Island
-    END_UNHANDLED_COUNTRIES(A, U)
 
     // Countries using the "China" engine set.
     UNHANDLED_COUNTRY(M, O)  // Macao
-    END_UNHANDLED_COUNTRIES(C, N)
 
     // Countries using the "Denmark" engine set.
     UNHANDLED_COUNTRY(G, L)  // Greenland
-    END_UNHANDLED_COUNTRIES(D, K)
 
     // Countries using the "Spain" engine set.
     UNHANDLED_COUNTRY(A, D)  // Andorra
-    END_UNHANDLED_COUNTRIES(E, S)
 
     // Countries using the "Finland" engine set.
     UNHANDLED_COUNTRY(A, X)  // Aland Islands
-    END_UNHANDLED_COUNTRIES(F, I)
 
     // Countries using the "France" engine set.
     UNHANDLED_COUNTRY(B, F)  // Burkina Faso
@@ -932,36 +378,29 @@ std::vector<std::unique_ptr<TemplateURLData>> GetPrepopulationSetFromCountryID(
     UNHANDLED_COUNTRY(T, G)  // Togo
     UNHANDLED_COUNTRY(W, F)  // Wallis and Futuna
     UNHANDLED_COUNTRY(Y, T)  // Mayotte
-    END_UNHANDLED_COUNTRIES(F, R)
 
     // Countries using the "Greece" engine set.
     UNHANDLED_COUNTRY(C, Y)  // Cyprus
-    END_UNHANDLED_COUNTRIES(G, R)
 
     // Countries using the "Italy" engine set.
     UNHANDLED_COUNTRY(S, M)  // San Marino
     UNHANDLED_COUNTRY(V, A)  // Vatican
-    END_UNHANDLED_COUNTRIES(I, T)
 
     // Countries using the "Morocco" engine set.
     UNHANDLED_COUNTRY(E, H)  // Western Sahara
-    END_UNHANDLED_COUNTRIES(M, A)
 
     // Countries using the "Netherlands" engine set.
     UNHANDLED_COUNTRY(A, N)  // Netherlands Antilles
     UNHANDLED_COUNTRY(A, W)  // Aruba
-    END_UNHANDLED_COUNTRIES(N, L)
 
     // Countries using the "Norway" engine set.
     UNHANDLED_COUNTRY(B, V)  // Bouvet Island
     UNHANDLED_COUNTRY(S, J)  // Svalbard and Jan Mayen
-    END_UNHANDLED_COUNTRIES(N, O)
 
     // Countries using the "New Zealand" engine set.
     UNHANDLED_COUNTRY(C, K)  // Cook Islands
     UNHANDLED_COUNTRY(N, U)  // Niue
     UNHANDLED_COUNTRY(T, K)  // Tokelau
-    END_UNHANDLED_COUNTRIES(N, Z)
 
     // Countries using the "Portugal" engine set.
     UNHANDLED_COUNTRY(C, V)  // Cape Verde
@@ -969,7 +408,6 @@ std::vector<std::unique_ptr<TemplateURLData>> GetPrepopulationSetFromCountryID(
     UNHANDLED_COUNTRY(M, Z)  // Mozambique
     UNHANDLED_COUNTRY(S, T)  // Sao Tome and Principe
     UNHANDLED_COUNTRY(T, L)  // Timor-Leste
-    END_UNHANDLED_COUNTRIES(P, T)
 
     // Countries using the "Russia" engine set.
     UNHANDLED_COUNTRY(A, M)  // Armenia
@@ -978,13 +416,11 @@ std::vector<std::unique_ptr<TemplateURLData>> GetPrepopulationSetFromCountryID(
     UNHANDLED_COUNTRY(T, J)  // Tajikistan
     UNHANDLED_COUNTRY(T, M)  // Turkmenistan
     UNHANDLED_COUNTRY(U, Z)  // Uzbekistan
-    END_UNHANDLED_COUNTRIES(R, U)
 
     // Countries using the "Saudi Arabia" engine set.
     UNHANDLED_COUNTRY(M, R)  // Mauritania
     UNHANDLED_COUNTRY(P, S)  // Palestinian Territory
     UNHANDLED_COUNTRY(S, D)  // Sudan
-    END_UNHANDLED_COUNTRIES(S, A)
 
     // Countries using the "United Kingdom" engine set.
     UNHANDLED_COUNTRY(B, M)  // Bermuda
@@ -1004,7 +440,6 @@ std::vector<std::unique_ptr<TemplateURLData>> GetPrepopulationSetFromCountryID(
                              //   Cunha
     UNHANDLED_COUNTRY(T, C)  // Turks and Caicos Islands
     UNHANDLED_COUNTRY(V, G)  // British Virgin Islands
-    END_UNHANDLED_COUNTRIES(G, B)
 
     // Countries using the "United States" engine set.
     UNHANDLED_COUNTRY(A, S)  // American Samoa
@@ -1012,7 +447,6 @@ std::vector<std::unique_ptr<TemplateURLData>> GetPrepopulationSetFromCountryID(
     UNHANDLED_COUNTRY(M, P)  // Northern Mariana Islands
     UNHANDLED_COUNTRY(U, M)  // U.S. Minor Outlying Islands
     UNHANDLED_COUNTRY(V, I)  // U.S. Virgin Islands
-    END_UNHANDLED_COUNTRIES(U, S)
 
     // Countries using the "default" engine set.
     UNHANDLED_COUNTRY(A, F)  // Afghanistan
@@ -1099,8 +533,9 @@ std::vector<std::unique_ptr<TemplateURLData>> GetPrepopulatedTemplateURLData(
     const base::DictionaryValue* engine;
     if (list->GetDictionary(i, &engine)) {
       auto t_url = TemplateURLDataFromOverrideDictionary(*engine);
-      if (t_url)
+      if (t_url) {
         t_urls.push_back(std::move(t_url));
+      }
     }
   }
   return t_urls;

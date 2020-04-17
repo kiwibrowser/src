@@ -6,6 +6,7 @@ package org.chromium.chrome.browser.ntp;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -27,8 +28,10 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.chromium.base.ApiCompatibilityUtils;
+import org.chromium.base.ContextUtils;
 import org.chromium.base.TraceEvent;
 import org.chromium.base.VisibleForTesting;
+import org.chromium.chrome.browser.widget.TextViewWithCompoundDrawables;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.ChromeFeatureList;
 import org.chromium.chrome.browser.locale.LocaleManager;
@@ -57,6 +60,10 @@ import org.chromium.chrome.browser.util.ViewUtils;
 import org.chromium.chrome.browser.vr_shell.VrShellDelegate;
 import org.chromium.chrome.browser.widget.displaystyle.UiConfig;
 import org.chromium.ui.base.DeviceFormFactor;
+
+import org.chromium.chrome.browser.accessibility.NightModePrefs;
+import android.graphics.Color;
+import org.chromium.base.ApiCompatibilityUtils;
 
 /**
  * The native new tab page, represented by some basic data such as title and url, and an Android
@@ -206,6 +213,10 @@ public class NewTabPageView
         // Don't attach now, the recyclerView itself will determine when to do it.
         mNewTabPageLayout = mRecyclerView.getAboveTheFoldView();
 
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+              mNewTabPageLayout.setBackgroundColor(Color.BLACK);
+        }
+
         mRecyclerView.setItemAnimator(new DefaultItemAnimator() {
             @Override
             public boolean animateMove(ViewHolder holder, int fromX, int fromY, int toX, int toY) {
@@ -297,8 +308,13 @@ public class NewTabPageView
                 new NewTabPageAdapter(mManager, mNewTabPageLayout, /* logoView = */ null, mUiConfig,
                         offlinePageBridge, mContextMenuManager, /* tileGroupDelegate = */ null);
         newTabPageAdapter.refreshSuggestions();
+
         mRecyclerView.setAdapter(newTabPageAdapter);
         mRecyclerView.getLinearLayoutManager().scrollToPosition(scrollPosition);
+
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+              mRecyclerView.setBackgroundColor(Color.BLACK);
+        }
 
         setupScrollHandling();
 
@@ -1113,5 +1129,10 @@ public class NewTabPageView
         mShortcutsView.findViewById(R.id.downloads_button)
                 .setOnClickListener(
                         view -> mManager.getNavigationDelegate().navigateToDownloadManager());
+
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            ((TextViewWithCompoundDrawables)mShortcutsView.findViewById(R.id.bookmarks_button_text)).setTextColor(Color.WHITE);
+            ((TextViewWithCompoundDrawables)mShortcutsView.findViewById(R.id.downloads_button_text)).setTextColor(Color.WHITE);
+        }
     }
 }

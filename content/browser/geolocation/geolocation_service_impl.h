@@ -20,11 +20,12 @@ enum class PermissionStatus;
 
 namespace content {
 class RenderFrameHost;
-class PermissionManager;
+class PermissionControllerImpl;
 
 class GeolocationServiceImplContext {
  public:
-  GeolocationServiceImplContext(PermissionManager* permission_manager_);
+  explicit GeolocationServiceImplContext(
+      PermissionControllerImpl* permission_controller);
   ~GeolocationServiceImplContext();
   void RequestPermission(
       RenderFrameHost* render_frame_host,
@@ -32,7 +33,7 @@ class GeolocationServiceImplContext {
       const base::Callback<void(blink::mojom::PermissionStatus)>& callback);
 
  private:
-  PermissionManager* permission_manager_;
+  PermissionControllerImpl* permission_controller_;
   int request_id_;
 
   void HandlePermissionStatus(
@@ -48,7 +49,7 @@ class CONTENT_EXPORT GeolocationServiceImpl
     : public blink::mojom::GeolocationService {
  public:
   GeolocationServiceImpl(device::mojom::GeolocationContext* geolocation_context,
-                         PermissionManager* permission_manager,
+                         PermissionControllerImpl* permission_controller,
                          RenderFrameHost* render_frame_host);
   ~GeolocationServiceImpl() override;
 
@@ -68,7 +69,7 @@ class CONTENT_EXPORT GeolocationServiceImpl
       blink::mojom::PermissionStatus permission_status);
 
   device::mojom::GeolocationContext* geolocation_context_;
-  PermissionManager* permission_manager_;
+  PermissionControllerImpl* permission_controller_;
   RenderFrameHost* render_frame_host_;
 
   // Along with each GeolocationService, we store a

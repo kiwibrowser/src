@@ -171,6 +171,10 @@ NavigationThrottle::ThrottleCheckResult AncestorThrottle::ProcessResponseImpl(
       url::Origin current_origin =
           url::Origin::Create(navigation_handle()->GetURL());
       while (parent) {
+        if (parent->current_origin().scheme() == "chrome-search") {
+          RecordXFrameOptionsUsage(SAMEORIGIN);
+          return NavigationThrottle::PROCEED;
+        }
         if (!parent->current_origin().IsSameOriginWith(current_origin)) {
           RecordXFrameOptionsUsage(SAMEORIGIN_BLOCKED);
           if (logging == LoggingDisposition::LOG_TO_CONSOLE)

@@ -16,7 +16,7 @@
 #include "components/domain_reliability/context.h"
 #include "components/domain_reliability/monitor.h"
 #include "content/public/browser/browser_context.h"
-#include "content/public/browser/permission_manager.h"
+#include "content/public/browser/permission_controller.h"
 #include "content/public/browser/permission_type.h"
 #include "net/url_request/url_request_context_getter.h"
 #include "third_party/blink/public/platform/modules/permissions/permission_status.mojom.h"
@@ -152,17 +152,12 @@ class DomainReliabilityServiceImpl : public DomainReliabilityService {
       base::SingleThreadTaskRunner* network_task_runner,
       const GURL& origin,
       base::OnceCallback<void(bool)> callback) {
-    bool allowed = false;
-
-    content::PermissionManager* permission_manager =
-        browser_context_->GetPermissionManager();
-
-    if (permission_manager) {
-      allowed = permission_manager->GetPermissionStatus(
-                    content::PermissionType::BACKGROUND_SYNC, origin, origin) ==
-                blink::mojom::PermissionStatus::GRANTED;
-    }
-
+    content::PermissionController* permission_controller =
+        content::BrowserContext::GetPermissionController(browser_context_);
+    DCHECK(permission_controller);
+    bool allowed = permission_controller->GetPermissionStatus(
+                       content::PermissionType::BACKGROUND_SYNC, origin,
+                       origin) == blink::mojom::PermissionStatus::GRANTED;
     network_task_runner->PostTask(FROM_HERE,
                                   base::BindOnce(std::move(callback), allowed));
   }

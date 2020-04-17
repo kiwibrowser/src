@@ -37,11 +37,7 @@ import java.util.List;
  * End to end tests of SubresourceFilter ad filtering on Android.
  */
 @RunWith(ChromeJUnit4ClassRunner.class)
-@CommandLineFlags.Add({ChromeSwitches.DISABLE_FIRST_RUN_EXPERIENCE,
-        "enable-features=SubresourceFilter<SB,SubresourceFilterExperimentalUI",
-        "force-fieldtrials=SB/Enabled",
-        "force-fieldtrial-params=SB.Enabled:enable_presets/liverun_on_better_ads_violating_sites"})
-
+@CommandLineFlags.Add({ChromeSwitches.DISABLE_FIRST_RUN_EXPERIENCE})
 public final class SubresourceFilterTest {
     @Rule
     public ChromeActivityTestRule<ChromeActivity> mActivityTestRule =

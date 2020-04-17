@@ -21,6 +21,12 @@ import org.chromium.chrome.browser.preferences.PrefServiceBridge.AboutVersionStr
 
 import java.util.Calendar;
 
+import android.view.View;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.ListView;
+import org.chromium.base.ContextUtils;
+
 /**
  * Settings fragment that displays information about Chrome.
  */
@@ -64,7 +70,7 @@ public class AboutChromePreferences extends PreferenceFragment {
      * versions are more useful.
      */
     public static String getApplicationVersion(Context context, String version) {
-        if (ChromeVersionInfo.isOfficialBuild()) {
+        if (false && ChromeVersionInfo.isOfficialBuild()) {
             return version;
         }
 
@@ -80,5 +86,17 @@ public class AboutChromePreferences extends PreferenceFragment {
                 info.lastUpdateTime, System.currentTimeMillis(), 0);
         return context.getString(R.string.version_with_update_time, version,
                 updateTimeString);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            view.setBackgroundColor(Color.BLACK);
+            ListView list = (ListView) view.findViewById(android.R.id.list);
+            if (list != null)
+                list.setDivider(new ColorDrawable(Color.GRAY));
+                list.setDividerHeight((int) getResources().getDisplayMetrics().density);
+        }
     }
 }

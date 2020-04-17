@@ -8,7 +8,7 @@
 #include <string>
 #include <utility>
 
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/test/simple_test_clock.h"
 #include "base/time/time.h"
 #include "components/ntp_snippets/features.h"

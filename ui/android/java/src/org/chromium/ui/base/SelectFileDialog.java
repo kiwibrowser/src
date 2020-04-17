@@ -131,7 +131,7 @@ public class SelectFileDialog
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     @CalledByNative
     private void selectFile(
-            String[] fileTypes, boolean capture, boolean multiple, WindowAndroid window) {
+            String[] fileTypes, boolean capture, boolean multiple, WindowAndroid window, boolean askForCamera) {
         mFileTypes = new ArrayList<String>(Arrays.asList(fileTypes));
         mCapture = capture;
         mAllowMultiple = multiple;
@@ -146,12 +146,12 @@ public class SelectFileDialog
                         new Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION));
 
         List<String> missingPermissions = new ArrayList<>();
-        if (((mSupportsImageCapture && shouldShowImageTypes())
+        if (askForCamera && ((mSupportsImageCapture && shouldShowImageTypes())
                 || (mSupportsVideoCapture && shouldShowVideoTypes()))
                         && !window.hasPermission(Manifest.permission.CAMERA)) {
             missingPermissions.add(Manifest.permission.CAMERA);
         }
-        if (mSupportsAudioCapture && shouldShowAudioTypes()
+        if (askForCamera && mSupportsAudioCapture && shouldShowAudioTypes()
                 && !window.hasPermission(Manifest.permission.RECORD_AUDIO)) {
             missingPermissions.add(Manifest.permission.RECORD_AUDIO);
         }

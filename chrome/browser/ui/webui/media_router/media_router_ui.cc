@@ -391,6 +391,7 @@ MediaRouteController* MediaRouterUI::GetMediaRouteController() const {
 
 void MediaRouterUI::OnMediaControllerUIAvailable(
     const MediaRoute::Id& route_id) {
+#if 0
   scoped_refptr<MediaRouteController> controller =
       GetMediaRouter()->GetRouteController(route_id);
   if (!controller) {
@@ -401,6 +402,7 @@ void MediaRouterUI::OnMediaControllerUIAvailable(
       << "Route controller observer unexpectedly exists.";
   route_controller_observer_ =
       std::make_unique<UIMediaRouteControllerObserver>(this, controller);
+#endif
 }
 
 void MediaRouterUI::OnMediaControllerUIClosed() {

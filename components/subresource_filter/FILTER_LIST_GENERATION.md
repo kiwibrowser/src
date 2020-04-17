@@ -4,7 +4,7 @@ memory constrained devices. The following steps demonstrate how to generate a
 smaller filter list by filtering out the least-frequently-used rules on the top
 N websites (according to Alexa rankings).
 
-## 1. Gather the URL requests from the landing pages of the top N sites
+## 1. Gather the URL requests from the landing pages measured by HttpArchive
 This data is made available by the [HttpArchive](https://httparchive.org/)
 project and is queryable via [BigQuery](https://bigquery.cloud.google.com/). A
 short introduction to querying HttpArchive data is available
@@ -15,32 +15,45 @@ the resulting table to.
 
 The query to run is:
 ```sql
+#standardSQL
+
 SELECT
   pages.url AS origin,
   requests.url AS request_url,
   requests.type AS request_type
 FROM
-    [httparchive:summary_requests.$ARCHIVE_DATE_AND_TYPE] AS requests
+    `httparchive.summary_requests.2018_07_15_desktop` AS requests
 INNER JOIN (
   SELECT
     pageid,
     url
   FROM
-    [httparchive:summary_pages.$ARCHIVE_DATE_AND_TYPE]
-  WHERE
-    rank IS NOT NULL
-    AND rank <= $MAX_RANK) AS pages
+    `httparchive.summary_pages.2018_07_15_desktop`) AS pages
+ON
+  requests.pageid = pages.pageid
+  
+UNION ALL
+
+SELECT
+  pages.url AS origin,
+  requests.url AS request_url,
+  requests.type AS request_type
+FROM
+    `httparchive.summary_requests.2018_07_15_mobile` AS requests
+INNER JOIN (
+  SELECT
+    pageid,
+    url
+  FROM
+    `httparchive.summary_pages.2018_07_15_mobile`) AS pages
 ON
   requests.pageid = pages.pageid;
 ```
 
-You'll need to replace `$ARCHIVE_DATE_AND_TYPE` with the table you're
-interested, such as `2018.04_15_mobile`. Replace `$MAX_RANK` with the highest
-ranked Alexa page you want to process (e.g., `100000`).
+You'll need to replace the tables with those of the dates that you're interested in.
 
-In the above query, the URLs from the top 100,000 sites are output. Change
-100,000 to whichever value you wish. Since the output is too large to display
-on the page,  the results will need to be written to a table in your Google
+Since the output is too large (>32GB) to display
+on the page, the results will need to be written to a table in your Google
 Cloud Project. To do this, press the 'show options' button below your query, and press the
 'select table' button to create a table to write to in your project. You'll
 also want to check the 'allow large results' checkbox.
@@ -76,10 +89,9 @@ An example using [EasyList](https://easylist.to/easylist/easylist.txt) follows:
 ## 3. Generate the smaller filter list
 ```sh
 1. ninja -C out/Release subresource_filter_tools
-2. out/Release/subresource_filter_tool --ruleset=easylist_indexed match_rules --input_file=site_urls --min_matches=1 > smaller_list.txt
+2. out/Release/subresource_filter_tool --ruleset=easylist_indexed match_rules --input_file=site_urls > ordered_list.txt
+3. head -n 1000 ordered_list.txt | cut -d' ' -f2 > smaller_list.txt
 ```
-
-With `min_matches=1`, the rule will be included if it's used at least once while testing each URL from site_urls.
 
 ## 4. Turn the smaller list into a form usable by Chromium tools
 The smaller filterlist has been generated. If you'd like to convert it to Chromium's binary indexed format, proceed with the following steps:

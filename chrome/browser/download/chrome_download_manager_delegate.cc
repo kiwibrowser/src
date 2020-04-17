@@ -328,10 +328,23 @@ void ChromeDownloadManagerDelegate::ChooseDownloadLocation(
     int64_t total_bytes,
     DownloadLocationDialogType dialog_type,
     const base::FilePath& suggested_path,
+    download::DownloadItem* download,
     DownloadLocationDialogBridge::LocationCallback callback) {
   DCHECK(location_dialog_bridge_);
   location_dialog_bridge_->ShowDialog(native_window, total_bytes, dialog_type,
-                                      suggested_path, std::move(callback));
+                                      suggested_path, download, std::move(callback));
+}
+
+bool ChromeDownloadManagerDelegate::DownloadWithAdm(
+    gfx::NativeWindow native_window,
+    int64_t total_bytes,
+    DownloadLocationDialogType dialog_type,
+    const base::FilePath& suggested_path,
+    download::DownloadItem* download,
+    DownloadLocationDialogBridge::LocationCallback callback) {
+  DCHECK(location_dialog_bridge_);
+  return location_dialog_bridge_->downloadWithAdm(native_window, total_bytes, dialog_type,
+                                        suggested_path, download, std::move(callback));
 }
 
 void ChromeDownloadManagerDelegate::SetDownloadLocationDialogBridgeForTesting(
@@ -815,31 +828,61 @@ void ChromeDownloadManagerDelegate::RequestConfirmation(
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   DCHECK(!download->IsTransient());
 
-#if defined(OS_ANDROID)
+  LOG(INFO) << "[Kiwi] ChromeDownloadManagerDelegate::RequestConfirmation";
   content::WebContents* web_contents =
       content::DownloadItemUtils::GetWebContents(download);
+  if (web_contents == nullptr) {
+     LOG(INFO) << "[Kiwi] web_contents - Continuing without confirmation";
+     callback.Run(DownloadConfirmationResult::CONTINUE_WITHOUT_CONFIRMATION,
+                  suggested_path);
+     return;
+  }
+  bool shownWithAdm = false;
+  if (location_dialog_bridge_) {
+      gfx::NativeWindow native_window = web_contents->GetTopLevelNativeWindow();
+          shownWithAdm = DownloadWithAdm(
+          native_window, download->GetTotalBytes(), DownloadLocationDialogType::DEFAULT, suggested_path, download,
+          base::BindOnce(&OnDownloadLocationDetermined, callback));
+      if (shownWithAdm) {
+          callback.Run(DownloadConfirmationResult::CANCELED, base::FilePath());
+          return;
+      }
+  }
+  if (reason == DownloadConfirmationReason::NONE) {
+     LOG(INFO) << "[Kiwi] DownloadConfirmationReason::NONE - Continuing without confirmation";
+     callback.Run(DownloadConfirmationResult::CONTINUE_WITHOUT_CONFIRMATION,
+                  suggested_path);
+     return;
+  }
+
+#if defined(OS_ANDROID)
   if (base::FeatureList::IsEnabled(features::kDownloadsLocationChange)) {
     if (reason == DownloadConfirmationReason::SAVE_AS) {
+      LOG(INFO) << "[Kiwi] DownloadConfirmationReason::SAVE_AS";
       // If this is a 'Save As' download, just run without confirmation.
       callback.Run(DownloadConfirmationResult::CONTINUE_WITHOUT_CONFIRMATION,
                    suggested_path);
     } else if (!web_contents ||
                reason == DownloadConfirmationReason::UNEXPECTED) {
+      LOG(INFO) << "[Kiwi] DownloadConfirmationReason::UNEXPECTED";
       // If there are no web_contents and there are no errors (ie. location
       // dialog is only being requested because of a user preference), continue.
       if (reason == DownloadConfirmationReason::PREFERENCE) {
+        LOG(INFO) << "[Kiwi] DownloadConfirmationReason::PREFERENCE";
         callback.Run(DownloadConfirmationResult::CONTINUE_WITHOUT_CONFIRMATION,
                      suggested_path);
         return;
       }
 
       if (reason == DownloadConfirmationReason::TARGET_PATH_NOT_WRITEABLE) {
+        LOG(INFO) << "[Kiwi] DownloadConfirmationReason::TARGET_PATH_NOT_WRITEABLE";
         OnDownloadCanceled(
             download, DownloadController::CANCEL_REASON_NO_EXTERNAL_STORAGE);
         callback.Run(DownloadConfirmationResult::CANCELED, base::FilePath());
         return;
       }
 
+      LOG(INFO) << "[Kiwi] DownloadConfirmationReason::CANCEL_REASON_CANNOT_DETERMINE_DOWNLOAD_TARGET";
       // If we cannot reserve the path and the WebContent is already gone, there
       // is no way to prompt user for a dialog. This could happen after chrome
       // gets killed, and user tries to resume a download while another app has
@@ -849,6 +892,7 @@ void ChromeDownloadManagerDelegate::RequestConfirmation(
           DownloadController::CANCEL_REASON_CANNOT_DETERMINE_DOWNLOAD_TARGET);
       callback.Run(DownloadConfirmationResult::CANCELED, base::FilePath());
     } else if (reason == DownloadConfirmationReason::TARGET_CONFLICT) {
+      LOG(INFO) << "[Kiwi] DownloadConfirmationReason::TARGET_CONFLICT";
       // If there is a file that already has the same name, try to generate a
       // unique name for the new download (ie. "image (1).png" vs "image.png").
       base::FilePath download_dir;
@@ -857,7 +901,7 @@ void ChromeDownloadManagerDelegate::RequestConfirmation(
         return;
       }
 
-      if (!download_prefs_->PromptForDownload() && web_contents) {
+      if (!download_prefs_->PromptForDownload() && web_contents && InfoBarService::FromWebContents(web_contents)) {
         android::ChromeDuplicateDownloadInfoBarDelegate::Create(
             InfoBarService::FromWebContents(web_contents), download,
             suggested_path, callback);
@@ -870,36 +914,42 @@ void ChromeDownloadManagerDelegate::RequestConfirmation(
           DownloadPathReservationTracker::UNIQUIFY,
           base::BindRepeating(
               &ChromeDownloadManagerDelegate::GenerateUniqueFileNameDone,
-              weak_ptr_factory_.GetWeakPtr(), native_window, callback));
+              weak_ptr_factory_.GetWeakPtr(), native_window, callback, download));
       return;
     } else {
+      LOG(INFO) << "[Kiwi] DownloadConfirmationReason::OTHER";
       // Figure out type of dialog and display.
       DownloadLocationDialogType dialog_type =
           DownloadLocationDialogType::DEFAULT;
       switch (reason) {
         case DownloadConfirmationReason::TARGET_NO_SPACE:
+          LOG(INFO) << "[Kiwi] DownloadConfirmationReason::TARGET_NO_SPACE";
           dialog_type = DownloadLocationDialogType::LOCATION_FULL;
           break;
 
         case DownloadConfirmationReason::TARGET_PATH_NOT_WRITEABLE:
+          LOG(INFO) << "[Kiwi] DownloadConfirmationReason::TARGET_PATH_NOT_WRITEABLE";
           dialog_type = DownloadLocationDialogType::LOCATION_NOT_FOUND;
           break;
 
         case DownloadConfirmationReason::NAME_TOO_LONG:
+          LOG(INFO) << "[Kiwi] DownloadConfirmationReason::NAME_TOO_LONG";
           dialog_type = DownloadLocationDialogType::NAME_TOO_LONG;
           break;
 
         case DownloadConfirmationReason::PREFERENCE:
         default:
+          LOG(INFO) << "[Kiwi] DownloadConfirmationReason::DEFAULT";
           break;
       }
 
       gfx::NativeWindow native_window = web_contents->GetTopLevelNativeWindow();
       ChooseDownloadLocation(
-          native_window, download->GetTotalBytes(), dialog_type, suggested_path,
+          native_window, download->GetTotalBytes(), dialog_type, suggested_path, download,
           base::BindOnce(&OnDownloadLocationDetermined, callback));
     }
   } else {
+    LOG(INFO) << "[Kiwi] DownloadConfirmationReason::OTHER - features::kDownloadsLocationChange is off";
     switch (reason) {
       case DownloadConfirmationReason::NONE:
         NOTREACHED();
@@ -928,7 +978,7 @@ void ChromeDownloadManagerDelegate::RequestConfirmation(
         return;
 
       case DownloadConfirmationReason::TARGET_CONFLICT:
-        if (web_contents) {
+        if (web_contents && InfoBarService::FromWebContents(web_contents)) {
           android::ChromeDuplicateDownloadInfoBarDelegate::Create(
               InfoBarService::FromWebContents(web_contents), download,
               suggested_path, callback);
@@ -960,6 +1010,7 @@ void ChromeDownloadManagerDelegate::RequestConfirmation(
 void ChromeDownloadManagerDelegate::GenerateUniqueFileNameDone(
     gfx::NativeWindow native_window,
     const DownloadTargetDeterminerDelegate::ConfirmationCallback& callback,
+    download::DownloadItem *download,
     PathValidationResult result,
     const base::FilePath& target_path) {
   // After a new, unique filename has been generated, display the error dialog
@@ -969,7 +1020,7 @@ void ChromeDownloadManagerDelegate::GenerateUniqueFileNameDone(
     if (download_prefs_->PromptForDownload()) {
       ChooseDownloadLocation(
           native_window, 0 /* total_bytes */,
-          DownloadLocationDialogType::NAME_CONFLICT, target_path,
+          DownloadLocationDialogType::NAME_CONFLICT, target_path, download,
           base::BindOnce(&OnDownloadLocationDetermined, callback));
       return;
     }

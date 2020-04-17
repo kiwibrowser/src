@@ -25,7 +25,7 @@ class Entry;
 // Entry.  Contains the Entry's key and whether it was created or opened.
 // |entry| can't be NULL, must support GetKey(), and must outlive the returned
 // callback.
-net::NetLogParametersCallback CreateNetLogEntryCreationCallback(
+net::NetLogParametersCallback CreateNetLogParametersEntryCreationCallback(
     const Entry* entry,
     bool created);
 

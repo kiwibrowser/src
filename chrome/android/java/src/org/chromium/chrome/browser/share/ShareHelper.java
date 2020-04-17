@@ -423,6 +423,19 @@ public class ShareHelper {
         }
     }
 
+    public static void captureScreenshotForContentsFull(
+            WebContents contents, int width, int height, Callback<Uri> callback) {
+        try {
+            String path = UiUtils.getDirectoryForImageCapture(ContextUtils.getApplicationContext())
+                    + File.separator + SHARE_IMAGES_DIRECTORY_NAME;
+            contents.getContentBitmapAsyncFull(
+                    width, height, path, new ExternallyVisibleUriCallback(callback));
+        } catch (IOException e) {
+            Log.e(TAG, "Error getting content bitmap: ", e);
+            callback.onResult(null);
+        }
+    }
+
     /**
      * Creates and shows a share intent picker dialog.
      *

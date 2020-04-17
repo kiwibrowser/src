@@ -40,7 +40,7 @@ using std::string;
 
 namespace {
 
-const char kUploadURL[] = "https://clients2.google.com/cr/report";
+const char kUploadURL[] = "https://crash2.kiwibrowser.com/cr/report";
 const char kCrashUploadContentType[] = "multipart/form-data";
 const char kCrashMultipartBoundary[] =
     "----**--yradnuoBgoLtrapitluMklaTelgooG--**----";

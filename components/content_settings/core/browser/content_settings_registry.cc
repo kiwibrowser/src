@@ -361,6 +361,15 @@ void ContentSettingsRegistry::Init() {
            WebsiteSettingsRegistry::DESKTOP |
                WebsiteSettingsRegistry::PLATFORM_ANDROID,
            ContentSettingsInfo::INHERIT_IF_LESS_PERMISSIVE);
+
+  Register(CONTENT_SETTINGS_TYPE_DESKTOP_MODE, "desktop-mode",
+           CONTENT_SETTING_BLOCK, //default is a mobile mode for pages
+           WebsiteSettingsInfo::UNSYNCABLE,
+           WhitelistedSchemes("chrome", "chrome-search"),
+           ValidSettings(CONTENT_SETTING_BLOCK, CONTENT_SETTING_ALLOW),
+           WebsiteSettingsInfo::REQUESTING_ORIGIN_AND_TOP_LEVEL_ORIGIN_SCOPE,
+           WebsiteSettingsRegistry::PLATFORM_ANDROID,
+           ContentSettingsInfo::INHERIT_IF_LESS_PERMISSIVE);
 }
 
 void ContentSettingsRegistry::Register(

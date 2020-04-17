@@ -152,6 +152,10 @@ viz::FrameSinkManagerImpl* TestImageTransportFactory::GetFrameSinkManager() {
   return frame_sink_manager_impl_.get();
 }
 
+void TestImageTransportFactory::DisableGpuCompositing() {
+  NOTIMPLEMENTED();
+}
+
 bool TestImageTransportFactory::IsGpuCompositingDisabled() {
   return false;
 }

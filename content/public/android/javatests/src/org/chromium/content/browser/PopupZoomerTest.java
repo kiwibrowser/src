@@ -24,6 +24,7 @@ import org.junit.runner.RunWith;
 import org.chromium.base.ThreadUtils;
 import org.chromium.base.test.util.Feature;
 import org.chromium.content.browser.test.ContentJUnit4ClassRunner;
+import org.chromium.content_public.browser.ViewEventSink;
 import org.chromium.content_public.browser.WebContents;
 import org.chromium.content_shell_apk.ContentShellActivityTestRule;
 
@@ -36,7 +37,7 @@ public class PopupZoomerTest {
     public ContentShellActivityTestRule mActivityTestRule = new ContentShellActivityTestRule();
 
     private CustomCanvasPopupZoomer mPopupZoomer;
-    private ContentViewCoreImpl mContentViewCore;
+    private ViewEventSink mViewEventSink;
 
     private static class CustomCanvasPopupZoomer extends PopupZoomer {
         Canvas mCanvas;
@@ -95,7 +96,7 @@ public class PopupZoomerTest {
             public void run() {
                 Context context = mActivityTestRule.getActivity();
                 WebContents webContents = mActivityTestRule.getWebContents();
-                mContentViewCore = new ContentViewCoreImpl(webContents);
+                mViewEventSink = new ViewEventSinkImpl(webContents);
                 mPopupZoomer = createPopupZoomerForTest(InstrumentationRegistry.getTargetContext(),
                         mActivityTestRule.getContainerView());
                 TapDisambiguator.fromWebContents(webContents).setPopupZoomerForTest(mPopupZoomer);
@@ -234,7 +235,7 @@ public class PopupZoomerTest {
                 Assert.assertTrue(mPopupZoomer.isShowing());
 
                 // Simulate losing the focus.
-                mContentViewCore.onViewFocusChanged(false);
+                mViewEventSink.onViewFocusChanged(false);
 
                 // Wait for the hide animation to finish.
                 mPopupZoomer.finishPendingDraws();

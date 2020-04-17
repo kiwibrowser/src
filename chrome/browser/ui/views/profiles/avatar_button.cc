@@ -47,7 +47,9 @@
 
 namespace {
 
+#if 0
 constexpr int kGenericAvatarIconSize = 16;
+#endif
 
 // TODO(emx): Calculate width based on caption button [http://crbug.com/716365]
 constexpr int kCondensibleButtonMinWidth = 46;

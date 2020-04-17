@@ -37,7 +37,7 @@ class MediaRouterBase : public MediaRouter {
   std::vector<MediaRoute> GetCurrentRoutes() const override;
   std::unique_ptr<content::MediaController> GetMediaController(
       const MediaRoute::Id& route_id) override;
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
   scoped_refptr<MediaRouteController> GetRouteController(
       const MediaRoute::Id& route_id) override;
 #endif  // !defined(OS_ANDROID)
@@ -107,7 +107,7 @@ class MediaRouterBase : public MediaRouter {
   // KeyedService
   void Shutdown() override;
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
   // MediaRouter
   void DetachRouteController(const MediaRoute::Id& route_id,
                              MediaRouteController* controller) override;

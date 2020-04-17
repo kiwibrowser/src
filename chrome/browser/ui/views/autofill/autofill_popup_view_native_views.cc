@@ -134,18 +134,6 @@ class AutofillPopupItemView : public AutofillPopupRowView {
 
       AddChildView(subtext_label_);
     }
-
-    const gfx::ImageSkia icon =
-        controller_->layout_model().GetIconImage(line_number_);
-    if (!icon.isNull()) {
-      AddSpacerWithSize(views::MenuConfig::instance().icon_to_label_padding,
-                        /*resize=*/false, layout);
-
-      auto* image_view = new views::ImageView();
-      image_view->SetImage(icon);
-
-      AddChildView(image_view);
-    }
   }
 
   void RefreshStyle() override {

@@ -54,7 +54,7 @@ public enum ChromeContextMenuItem implements ContextMenuItem {
     SAVE_VIDEO(R.string.contextmenu_save_video, R.id.contextmenu_save_video),
 
     // Other
-    OPEN_IN_CHROME(R.string.menu_open_in_chrome, R.id.contextmenu_open_in_chrome),
+    OPEN_IN_CHROME(R.string.contextual_menu_open_in_external_application, R.id.contextmenu_open_in_chrome),
 
     // Browser Action Items
     BROWSER_ACTIONS_OPEN_IN_BACKGROUND(

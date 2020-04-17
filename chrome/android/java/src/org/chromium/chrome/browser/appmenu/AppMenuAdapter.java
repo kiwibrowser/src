@@ -8,6 +8,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -20,6 +21,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import org.chromium.base.ApiCompatibilityUtils;
+import org.chromium.base.ContextUtils;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.omaha.UpdateMenuItemHelper;
 import org.chromium.chrome.browser.widget.TintedImageButton;
@@ -163,6 +165,9 @@ class AppMenuAdapter extends BaseAdapter {
                     holder = new StandardMenuItemViewHolder();
                     convertView = mInflater.inflate(R.layout.menu_item, parent, false);
                     holder.text = (TextView) convertView.findViewById(R.id.menu_item_text);
+                    if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                        holder.text.setTextColor(Color.GRAY);
+                    }
                     holder.image = (AppMenuItemIcon) convertView.findViewById(R.id.menu_item_icon);
                     convertView.setTag(holder);
                     convertView.setTag(R.id.menu_item_enter_anim_id,
@@ -183,6 +188,9 @@ class AppMenuAdapter extends BaseAdapter {
                     holder = new CustomMenuItemViewHolder();
                     convertView = mInflater.inflate(R.layout.update_menu_item, parent, false);
                     holder.text = (TextView) convertView.findViewById(R.id.menu_item_text);
+                    if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                        holder.text.setTextColor(Color.GRAY);
+                    }
                     holder.image = (AppMenuItemIcon) convertView.findViewById(R.id.menu_item_icon);
                     holder.summary = (TextView) convertView.findViewById(R.id.menu_item_summary);
                     convertView.setTag(holder);
@@ -244,6 +252,9 @@ class AppMenuAdapter extends BaseAdapter {
                 }
 
                 holder.title.setText(titleItem.getTitle());
+                if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                    holder.title.setTextColor(Color.GRAY);
+                }
                 holder.title.setEnabled(titleItem.isEnabled());
                 holder.title.setFocusable(titleItem.isEnabled());
                 holder.title.setOnClickListener(v -> mAppMenu.onItemClick(titleItem));
@@ -338,6 +349,9 @@ class AppMenuAdapter extends BaseAdapter {
         holder.image.setImageDrawable(icon);
         holder.image.setVisibility(icon == null ? View.GONE : View.VISIBLE);
         holder.image.setChecked(item.isChecked());
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            holder.text.setTextColor(Color.GRAY);
+        }
         holder.text.setText(item.getTitle());
         holder.text.setContentDescription(item.getTitleCondensed());
 

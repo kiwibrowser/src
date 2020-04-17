@@ -44,6 +44,8 @@ class CORE_EXPORT NavigatorID {
   virtual String platform() const;
   String product();
   virtual String userAgent() const = 0;
+  String cookiesOK();
+  String CookiesOK();
 };
 
 }  // namespace blink

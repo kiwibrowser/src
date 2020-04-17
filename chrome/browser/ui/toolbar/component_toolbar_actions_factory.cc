@@ -22,10 +22,6 @@ const char ComponentToolbarActionsFactory::kMediaRouterActionId[] =
 
 ComponentToolbarActionsFactory::ComponentToolbarActionsFactory(
     Profile* profile) {
-  if (media_router::MediaRouterEnabled(profile) &&
-      MediaRouterActionController::IsActionShownByPolicy(profile)) {
-    initial_ids_.insert(kMediaRouterActionId);
-  }
 }
 
 ComponentToolbarActionsFactory::~ComponentToolbarActionsFactory() {}
@@ -57,9 +53,6 @@ ComponentToolbarActionsFactory::GetComponentToolbarActionForId(
   // (since each will have an action in the toolbar or overflow menu), this
   // should be okay. If this changes, we should rethink this design to have,
   // e.g., RegisterChromeAction().
-  if (action_id == kMediaRouterActionId)
-    return std::unique_ptr<ToolbarActionViewController>(
-        new MediaRouterAction(browser, bar));
 
   NOTREACHED();
   return std::unique_ptr<ToolbarActionViewController>();

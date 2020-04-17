@@ -235,11 +235,13 @@ void TabStatsTracker::TabInsertedAt(TabStripModel* model,
                                     content::WebContents* web_contents,
                                     int index,
                                     bool foreground) {
+  LOG(INFO) << "[EXTENSIONS] TabStatsTracker::TabInsertedAt - Step 1";
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   OnInitialOrInsertedTab(web_contents);
 
   tab_stats_data_store_->UpdateMaxTabsPerWindowIfNeeded(
       static_cast<size_t>(model->count()));
+  LOG(INFO) << "[EXTENSIONS] TabStatsTracker::TabInsertedAt - Step 2";
 }
 
 void TabStatsTracker::TabChangedAt(content::WebContents* web_contents,

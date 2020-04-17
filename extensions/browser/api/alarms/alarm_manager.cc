@@ -450,7 +450,9 @@ void AlarmManager::OnExtensionUninstalled(
     content::BrowserContext* browser_context,
     const Extension* extension,
     extensions::UninstallReason reason) {
+  LOG(INFO) << "[EXTENSIONS] AlarmManager::OnExtensionUninstall - Step 1";
   RemoveAllAlarms(extension->id(), base::Bind(RemoveAllOnUninstallCallback));
+  LOG(INFO) << "[EXTENSIONS] AlarmManager::OnExtensionUninstall - Step 2";
 }
 
 // AlarmManager::Alarm

@@ -75,13 +75,15 @@ const int kLocalResource = -1;
 const char kConfigDataFilename[] = "config.js";
 const char kThemeCSSFilename[] = "theme.css";
 const char kMainHtmlFilename[] = "local-ntp.html";
+const char kExtensionsHtmlFilename[] = "extensions.html";
+const char kNewHtmlFilename[] = "new-ntp.html";
 const char kNtpBackgroundCollectionScriptFilename[] =
     "ntp-background-collections.js";
 const char kNtpBackgroundImageScriptFilename[] = "ntp-background-images.js";
 const char kOneGoogleBarScriptFilename[] = "one-google.js";
 const char kDoodleScriptFilename[] = "doodle.js";
 
-const char kIntegrityFormat[] = "integrity=\"sha256-%s\"";
+const char kIntegrityFormat[] = "ignore-integrity=\"sha256-%s\"";
 
 const struct Resource{
   const char* filename;
@@ -89,6 +91,8 @@ const struct Resource{
   const char* mime_type;
 } kResources[] = {
     {kMainHtmlFilename, kLocalResource, "text/html"},
+    {kExtensionsHtmlFilename, IDR_LOCAL_NTP_EXTENSIONS_HTML, "text/html"},
+    {kNewHtmlFilename, IDR_LOCAL_NTP_NEW_HTML, "text/html"},
     {"local-ntp.js", IDR_LOCAL_NTP_JS, "application/javascript"},
     {"voice.js", IDR_LOCAL_NTP_VOICE_JS, "application/javascript"},
     {"custom-backgrounds.js", IDR_LOCAL_NTP_CUSTOM_BACKGROUNDS_JS,
@@ -232,9 +236,7 @@ std::string GetConfigData(bool is_google, const GURL& google_base_url) {
 }
 
 std::string GetThemeCSS(Profile* profile) {
-  SkColor background_color =
-      ThemeService::GetThemeProviderForProfile(profile)
-          .GetColor(ThemeProperties::COLOR_NTP_BACKGROUND);
+  SkColor background_color = SK_ColorWHITE;
 
   return base::StringPrintf("html { background-color: #%02X%02X%02X; }",
                             SkColorGetR(background_color),
@@ -377,29 +379,6 @@ bool ShouldServiceRequestIOThread(const GURL& url,
     }
   }
   return false;
-}
-
-std::string GetContentSecurityPolicyScriptSrcIOThread() {
-#if !defined(GOOGLE_CHROME_BUILD)
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kLocalNtpReload)) {
-    // While live-editing the local NTP files, turn off CSP.
-    return "script-src * 'unsafe-inline';";
-  }
-#endif  // !defined(GOOGLE_CHROME_BUILD)
-
-  return base::StringPrintf(
-      "script-src 'strict-dynamic' 'sha256-%s' 'sha256-%s' 'sha256-%s';",
-      LOCAL_NTP_JS_INTEGRITY, VOICE_JS_INTEGRITY,
-      CUSTOM_BACKGROUNDS_JS_INTEGRITY);
-}
-
-std::string GetContentSecurityPolicyChildSrcIOThread() {
-  // Allow embedding of the most visited iframe, as well as the account
-  // switcher and the notifications dropdown from the One Google Bar, and/or
-  // the iframe for interactive Doodles.
-  return base::StringPrintf("child-src %s https://*.google.com/;",
-                            chrome::kChromeSearchMostVisitedUrl);
 }
 
 }  // namespace
@@ -757,13 +736,13 @@ bool LocalNtpSource::ShouldServiceRequest(
 std::string LocalNtpSource::GetContentSecurityPolicyScriptSrc() const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
-  return GetContentSecurityPolicyScriptSrcIOThread();
+  return std::string("");
 }
 
 std::string LocalNtpSource::GetContentSecurityPolicyChildSrc() const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
-  return GetContentSecurityPolicyChildSrcIOThread();
+  return std::string("");
 }
 
 void LocalNtpSource::OnCollectionInfoAvailable() {

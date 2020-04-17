@@ -230,22 +230,6 @@ void NotificationDisplayServiceImpl::Display(
 void NotificationDisplayServiceImpl::Close(
     NotificationHandler::Type notification_type,
     const std::string& notification_id) {
-  if (!bridge_initialized_) {
-    actions_.push(base::BindOnce(&NotificationDisplayServiceImpl::Close,
-                                 weak_factory_.GetWeakPtr(), notification_type,
-                                 notification_id));
-    return;
-  }
-
-#if BUILDFLAG(ENABLE_NATIVE_NOTIFICATIONS)
-  NotificationPlatformBridge* bridge =
-      NotificationPlatformBridge::CanHandleType(notification_type)
-          ? bridge_
-          : message_center_bridge_.get();
-  DCHECK(bridge);
-
-  bridge->Close(profile_, notification_id);
-#endif
 }
 
 void NotificationDisplayServiceImpl::GetDisplayed(

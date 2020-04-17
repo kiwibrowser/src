@@ -787,31 +787,6 @@ void SessionRestore::OpenStartupPagesAfterCrash(Browser* browser) {
 }
 
 // static
-std::vector<Browser*> SessionRestore::RestoreForeignSessionWindows(
-    Profile* profile,
-    std::vector<const sessions::SessionWindow*>::const_iterator begin,
-    std::vector<const sessions::SessionWindow*>::const_iterator end) {
-  std::vector<GURL> gurls;
-  SessionRestoreImpl restorer(profile, static_cast<Browser*>(nullptr), true,
-                              false, true, gurls,
-                              on_session_restored_callbacks());
-  return restorer.RestoreForeignSession(begin, end);
-}
-
-// static
-WebContents* SessionRestore::RestoreForeignSessionTab(
-    content::WebContents* source_web_contents,
-    const sessions::SessionTab& tab,
-    WindowOpenDisposition disposition) {
-  Browser* browser = chrome::FindBrowserWithWebContents(source_web_contents);
-  Profile* profile = browser->profile();
-  std::vector<GURL> gurls;
-  SessionRestoreImpl restorer(profile, browser, true, false, false, gurls,
-                              on_session_restored_callbacks());
-  return restorer.RestoreForeignTab(tab, disposition);
-}
-
-// static
 bool SessionRestore::IsRestoring(const Profile* profile) {
   if (active_session_restorers == nullptr)
     return false;

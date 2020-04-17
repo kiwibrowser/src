@@ -28,12 +28,12 @@ class UDPSocket : public Socket, public network::mojom::UDPSocketReceiver {
 
   // Socket implementation.
   void Connect(const net::AddressList& address,
-               const CompletionCallback& callback) override;
+               net::CompletionOnceCallback callback) override;
   void Disconnect(bool socket_destroying) override;
   void Bind(const std::string& address,
             uint16_t port,
             const CompletionCallback& callback) override;
-  void Read(int count, const ReadCompletionCallback& callback) override;
+  void Read(int count, ReadCompletionCallback callback) override;
   void RecvFrom(int count, const RecvFromCompletionCallback& callback) override;
   void SendTo(scoped_refptr<net::IOBuffer> io_buffer,
               int byte_count,
@@ -76,7 +76,7 @@ class UDPSocket : public Socket, public network::mojom::UDPSocketReceiver {
                   const base::Optional<net::IPEndPoint>& src_addr,
                   base::Optional<base::span<const uint8_t>> data) override;
 
-  void OnConnectCompleted(const net::CompletionCallback& user_callback,
+  void OnConnectCompleted(net::CompletionOnceCallback user_callback,
                           const net::IPEndPoint& remote_addr,
                           int result,
                           const base::Optional<net::IPEndPoint>& local_addr);

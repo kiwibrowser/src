@@ -8,6 +8,20 @@ import org.chromium.base.CommandLine;
 import org.chromium.base.ContextUtils;
 import org.chromium.chrome.browser.ChromeSwitches;
 
+import android.content.Context;
+import android.content.ContextWrapper;
+
+import android.app.Activity;
+import android.support.v7.app.AppCompatActivity;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.annotation.CallSuper;
+import android.support.annotation.StringRes;
+import android.support.v4.app.Fragment;
+import android.text.TextUtils;
+import android.view.View;
+
 /**
  * Gets and sets preferences related to the status of the first run experience.
  */
@@ -36,11 +50,11 @@ public class FirstRunStatus {
      * includes ToS and Sign In pages if necessary.
      */
     public static boolean getFirstRunFlowComplete() {
-        if (ContextUtils.getAppSharedPreferences().getBoolean(FIRST_RUN_FLOW_COMPLETE, false)) {
-            return true;
-        }
-        return CommandLine.getInstance().hasSwitch(
-                ChromeSwitches.FORCE_FIRST_RUN_FLOW_COMPLETE_FOR_TESTING);
+        boolean complete = ContextUtils.getAppSharedPreferences().getBoolean(FIRST_RUN_FLOW_COMPLETE, false);
+        if (!complete) {
+             setFirstRunFlowComplete(true);
+         }
+         return true;
     }
 
     /**

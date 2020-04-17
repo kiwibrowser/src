@@ -4,6 +4,10 @@
 
 package org.chromium.chrome.browser.widget;
 
+import android.graphics.Color;
+import org.chromium.base.ContextUtils;
+import java.lang.reflect.Field;
+import android.content.res.ColorStateList;
 import android.content.Context;
 import android.support.design.widget.TextInputLayout;
 import android.text.TextUtils;
@@ -13,6 +17,7 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 
 import org.chromium.base.ApiCompatibilityUtils;
+import org.chromium.ui.R;
 
 import java.util.ArrayList;
 
@@ -43,11 +48,30 @@ public class CompatibilityTextInputLayout extends TextInputLayout {
     public void onFinishInflate() {
         super.onFinishInflate();
 
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            setHintTextAppearance(R.style.WhiteBody);
+            try {
+                Field fDefaultTextColor = TextInputLayout.class.getDeclaredField("mDefaultTextColor");
+                fDefaultTextColor.setAccessible(true);
+                fDefaultTextColor.set(this, new ColorStateList(new int[][]{{0}}, new int[]{ Color.WHITE }));
+
+                Field fFocusedTextColor = TextInputLayout.class.getDeclaredField("mFocusedTextColor");
+                fFocusedTextColor.setAccessible(true);
+                fFocusedTextColor.set(this, new ColorStateList(new int[][]{{0}}, new int[]{ Color.WHITE }));
+             } catch (Exception e) {
+                e.printStackTrace();
+             }
+        }
+
         // If there is an EditText descendant, make this serve as the label for it.
         ArrayList<EditText> views = new ArrayList<>();
         findEditTextChildren(this, views);
         if (views.size() == 1) {
             ApiCompatibilityUtils.setLabelFor(this, views.get(0).getId());
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                views.get(0).setTextColor(Color.WHITE);
+                views.get(0).setHintTextColor(Color.WHITE);
+            }
         }
     }
 

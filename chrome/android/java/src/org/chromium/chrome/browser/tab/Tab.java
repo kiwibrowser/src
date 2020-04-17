@@ -37,6 +37,7 @@ import org.chromium.base.ObserverList;
 import org.chromium.base.ObserverList.RewindableIterator;
 import org.chromium.base.ThreadUtils;
 import org.chromium.base.TraceEvent;
+import org.chromium.base.UserDataHost;
 import org.chromium.base.VisibleForTesting;
 import org.chromium.base.annotations.CalledByNative;
 import org.chromium.chrome.R;
@@ -123,6 +124,11 @@ import org.chromium.ui.base.WindowAndroid;
 import org.chromium.ui.mojom.WindowOpenDisposition;
 import org.chromium.ui.widget.AnchoredPopupWindow;
 import org.chromium.ui.widget.ViewRectProvider;
+
+import org.chromium.chrome.browser.accessibility.NightModePrefs;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import org.chromium.base.ApiCompatibilityUtils;
 
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
@@ -354,6 +360,8 @@ public class Tab
      */
     private boolean mIsNativePageCommitPending;
 
+    private boolean mDesktopModeOverridenByTab;
+
     private TabRedirectHandler mTabRedirectHandler;
 
     private FullscreenManager mFullscreenManager;
@@ -559,6 +567,20 @@ public class Tab
     /** Whether or not the tab's active view is attached to the window. */
     private boolean mIsViewAttachedToWindow;
 
+    private final UserDataHost mUserDataHost = new UserDataHost();
+
+    /**
+     * @return {@link UserDataHost} that manages {@link UserData} objects attached to
+     *         this Tab instance.
+     */
+    public UserDataHost getUserDataHost() {
+        return mUserDataHost;
+    }
+
+    public Context getThemedApplicationContext() {
+        return mThemedApplicationContext;
+    }
+
     /**
      * Creates an instance of a {@link Tab}.
      *
@@ -742,6 +764,10 @@ public class Tab
             //                the android view has entirely rendered.
             if (!mIsNativePageCommitPending) {
                 mIsNativePageCommitPending = maybeShowNativePage(params.getUrl(), false);
+            }
+
+            for (TabObserver observer : mObservers) {
+                observer.onPreLoadUrl(this, params);
             }
 
             removeSadTabIfPresent();
@@ -985,6 +1011,7 @@ public class Tab
         } else {
             if (getWebContents() != null) getWebContents().getNavigationController().reload(true);
         }
+        updateThemeColorIfNeeded(true);
     }
 
     /**
@@ -1031,6 +1058,9 @@ public class Tab
      */
     public int getBackgroundColor() {
         if (mNativePage != null) return mNativePage.getBackgroundColor();
+        Activity activity = getActivity();
+        Resources resources = mThemedApplicationContext.getResources();
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) return Color.BLACK;
         if (getWebContents() != null) return getWebContents().getBackgroundColor();
         return Color.WHITE;
     }
@@ -1050,6 +1080,11 @@ public class Tab
      * @return The theme color that should be used for this tab.
      */
     private int calculateThemeColor(boolean didWebContentsThemeColorChange) {
+        Activity activity = getActivity();
+        Resources resources = mThemedApplicationContext.getResources();
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) return Color.BLACK;
+        if (ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Ultra White") && !isIncognito()) return Color.WHITE;
+
         if (isNativePage()) return mNativePage.getThemeColor();
 
         // Start by assuming the current theme color is that one that should be used. This will
@@ -1060,7 +1095,10 @@ public class Tab
 
         // Only use the web contents for the theme color if it is known to have changed, This
         // corresponds to the didChangeThemeColor in WebContentsObserver.
-        if (getWebContents() != null && didWebContentsThemeColorChange) {
+        if (getUrl() != null && getUrl().contains(".facebook.com/")) {
+          themeColor = 0x3B5998;
+        }
+        else if (getWebContents() != null && didWebContentsThemeColorChange) {
             themeColor = getWebContents().getThemeColor();
             if (themeColor != 0 && !ColorUtils.isValidThemeColor(themeColor)) themeColor = 0;
         }
@@ -1126,6 +1164,14 @@ public class Tab
 
     public boolean isIncognito() {
         return mIncognito;
+    }
+
+    public boolean isDesktopModeOverridenByTab() {
+        return mDesktopModeOverridenByTab;
+    }
+
+    public void setDesktopModeOverridenByTab(boolean overridenByTab) {
+        mDesktopModeOverridenByTab = overridenByTab;
     }
 
     /**
@@ -1863,7 +1909,7 @@ public class Tab
             }
             mInfoBarContainer.setWebContents(getWebContents());
 
-            mSwipeRefreshHandler = new SwipeRefreshHandler(mThemedApplicationContext, this);
+            SwipeRefreshHandler.from(this);
 
             updateThemeColorIfNeeded(false);
             notifyContentChanged();
@@ -2293,7 +2339,7 @@ public class Tab
             initContentViewCore(webContents);
 
             if (mFailedToRestore) {
-                String url = TextUtils.isEmpty(mUrl) ? UrlConstants.NTP_URL : mUrl;
+                String url = TextUtils.isEmpty(mUrl) ? UrlConstants.LOCAL_NTP_URL : mUrl;
                 loadUrl(new LoadUrlParams(url, PageTransition.GENERATED));
             }
             return !mFailedToRestore;
@@ -2825,7 +2871,7 @@ public class Tab
      * @param animate Whether the controls should animate to the specified ending condition or
      *                should jump immediately.
      */
-    protected void updateBrowserControlsState(@BrowserControlsState int constraints,
+    public void updateBrowserControlsState(@BrowserControlsState int constraints,
             @BrowserControlsState int current, boolean animate) {
         if (mNativeTabAndroid == 0) return;
         nativeUpdateBrowserControlsState(mNativeTabAndroid, constraints, current, animate);
@@ -3002,7 +3048,7 @@ public class Tab
     }
 
     @CalledByNative
-    protected void openNewTab(String url, String extraHeaders, ResourceRequestBody postData,
+    public void openNewTab(String url, String extraHeaders, ResourceRequestBody postData,
             int disposition, boolean hasParent, boolean isRendererInitiated) {
         if (isClosing()) return;
 
@@ -3241,7 +3287,7 @@ public class Tab
      * @return Whether the theme color for this tab is the default color.
      */
     public boolean isDefaultThemeColor() {
-        return isNativePage() || mDefaultThemeColor == getThemeColor();
+        return mDefaultThemeColor == getThemeColor();
     }
 
     /**

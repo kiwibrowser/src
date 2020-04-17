@@ -14,6 +14,7 @@
 #include "base/observer_list.h"
 #include "base/time/default_clock.h"
 #include "components/google/core/browser/google_url_tracker.h"
+#include "components/google/core/browser/search_url_tracker.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "components/prefs/pref_change_registrar.h"
 #include "components/search_engines/default_search_manager.h"
@@ -100,6 +101,7 @@ class TemplateURLService : public WebDataServiceConsumer,
       const scoped_refptr<KeywordWebDataService>& web_data_service,
       std::unique_ptr<TemplateURLServiceClient> client,
       GoogleURLTracker* google_url_tracker,
+      SearchURLTracker* search_url_tracker,
       rappor::RapporServiceImpl* rappor_service,
       const base::RepeatingClosure& dsp_change_callback);
   // The following is for testing.
@@ -398,6 +400,10 @@ class TemplateURLService : public WebDataServiceConsumer,
   static SyncDataMap CreateGUIDToSyncDataMap(
       const syncer::SyncDataList& sync_data);
 
+  // Returns the TemplateURL corresponding to |prepopulated_id|, if any.
+  TemplateURL* FindPrepopulatedTemplateURL(int prepopulated_id);
+  TemplateURL* FindPrepopulatedTemplateURLByKeyword(base::string16 keyword);
+
 #if defined(UNIT_TEST)
   void set_clock(std::unique_ptr<base::Clock> clock) {
     clock_ = std::move(clock);
@@ -586,11 +592,14 @@ class TemplateURLService : public WebDataServiceConsumer,
 
   // Requests the Google URL tracker to check the server if necessary.
   void RequestGoogleURLTrackerServerCheckIfNecessary();
+  void RequestSearchURLTrackerServerCheckIfNecessary();
 
   // Invoked when the Google base URL has changed. Updates the mapping for all
   // TemplateURLs that have a replacement term of {google:baseURL} or
   // {google:baseSuggestURL}.
   void GoogleBaseURLChanged();
+
+  void SearchEnginesChanged();
 
   // Adds a new TemplateURL to this model.
   //
@@ -692,9 +701,6 @@ class TemplateURLService : public WebDataServiceConsumer,
       bool supports_replacement_only,
       TURLsAndMeaningfulLengths* matches);
 
-  // Returns the TemplateURL corresponding to |prepopulated_id|, if any.
-  TemplateURL* FindPrepopulatedTemplateURL(int prepopulated_id);
-
   // Returns the TemplateURL associated with |extension_id|, if any.
   TemplateURL* FindTemplateURLForExtension(const std::string& extension_id,
                                            TemplateURL::Type type);
@@ -722,6 +728,7 @@ class TemplateURLService : public WebDataServiceConsumer,
   std::unique_ptr<TemplateURLServiceClient> client_;
 
   GoogleURLTracker* google_url_tracker_ = nullptr;
+  SearchURLTracker* search_url_tracker_ = nullptr;
 
   // ---------- Metrics related members ---------------------------------------
   rappor::RapporServiceImpl* rappor_service_ = nullptr;
@@ -828,6 +835,9 @@ class TemplateURLService : public WebDataServiceConsumer,
 
   std::unique_ptr<GoogleURLTracker::Subscription>
       google_url_updated_subscription_;
+
+  std::unique_ptr<SearchURLTracker::Subscription>
+      search_url_updated_subscription_;
 
   // This tracks how many Scoper handles exist. When the number of handles drops
   // to zero, a notification is made to observers if

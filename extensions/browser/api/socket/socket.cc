@@ -85,20 +85,27 @@ void Socket::OnWriteComplete(int result) {
     WriteData();
 }
 
-bool Socket::SetKeepAlive(bool enable, int delay) { return false; }
-
-bool Socket::SetNoDelay(bool no_delay) { return false; }
-
-int Socket::Listen(const std::string& address,
-                   uint16_t port,
-                   int backlog,
-                   std::string* error_msg) {
-  *error_msg = kSocketTypeNotSupported;
-  return net::ERR_FAILED;
+void Socket::SetKeepAlive(bool enable,
+                          int delay,
+                          SetKeepAliveCallback callback) {
+  std::move(callback).Run(false);
 }
 
-void Socket::Accept(const AcceptCompletionCallback& callback) {
-  callback.Run(net::ERR_FAILED, NULL);
+void Socket::SetNoDelay(bool no_delay, SetNoDelayCallback callback) {
+  std::move(callback).Run(false);
+}
+
+void Socket::Listen(const std::string& address,
+                    uint16_t port,
+                    int backlog,
+                    ListenCallback callback) {
+  std::move(callback).Run(net::ERR_FAILED, kSocketTypeNotSupported);
+}
+
+void Socket::Accept(AcceptCompletionCallback callback) {
+  std::move(callback).Run(net::ERR_FAILED, nullptr /* socket */, base::nullopt,
+                          mojo::ScopedDataPipeConsumerHandle(),
+                          mojo::ScopedDataPipeProducerHandle());
 }
 
 // static

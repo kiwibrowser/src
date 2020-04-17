@@ -45,6 +45,7 @@ import org.chromium.content.browser.ContentClassFactory;
 import org.chromium.content.browser.GestureListenerManagerImpl;
 import org.chromium.content.browser.PopupController;
 import org.chromium.content.browser.PopupController.HideablePopup;
+import org.chromium.content.browser.ViewEventSinkImpl;
 import org.chromium.content.browser.WindowEventObserver;
 import org.chromium.content.browser.WindowEventObserverManager;
 import org.chromium.content.browser.input.ImeAdapterImpl;
@@ -229,6 +230,10 @@ public class SelectionPopupControllerImpl extends ActionModeCallbackHelper
     public static SelectionPopupControllerImpl createForTesting(Context context,
             WindowAndroid window, WebContents webContents, PopupController popupController) {
         SelectionPopupControllerImpl controller = new SelectionPopupControllerImpl(webContents);
+
+        // Tests that do not fully initialize contents (therefore passing nulled-out window)
+        // still need to instantiate ViewEventSinkImpl to get the test flow working.
+        if (window == null) ViewEventSinkImpl.create(context, webContents);
         controller.setPopupControllerForTesting(popupController);
         controller.init(context, window, false);
         return controller;
@@ -615,6 +620,29 @@ public class SelectionPopupControllerImpl extends ActionModeCallbackHelper
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && isActionModeValid()) {
             hidePopupsAndPreserveSelection();
             showActionModeOrClearOnFailure();
+        }
+    }
+
+    @Override
+    public void onViewFocusChanged(boolean gainFocus, boolean hideKeyboardOnBlur) {
+        if (gainFocus) {
+            restoreSelectionPopupsIfNecessary();
+        } else {
+            ImeAdapterImpl.fromWebContents(mWebContents)
+                    .cancelRequestToScrollFocusedEditableNodeIntoView();
+            if (getPreserveSelectionOnNextLossOfFocus()) {
+                setPreserveSelectionOnNextLossOfFocus(false);
+                hidePopupsAndPreserveSelection();
+            } else {
+                // Hide popups and clear selection.
+                destroyActionModeAndUnselect();
+                mWebContents.dismissTextHandles();
+                PopupController.hideAll(mWebContents);
+                // Clear the selection. The selection is cleared on destroying IME
+                // and also here since we may receive destroy first, for example
+                // when focus is lost in webview.
+                clearSelection();
+            }
         }
     }
 

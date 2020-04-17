@@ -81,7 +81,6 @@
 #include "components/history/core/browser/top_sites.h"
 #include "components/offline_pages/buildflags/buildflags.h"
 #include "components/password_manager/core/browser/password_manager.h"
-#include "components/subresource_filter/content/browser/content_subresource_filter_driver_factory.h"
 #include "components/subresource_filter/core/browser/subresource_filter_features.h"
 #include "components/tracing/common/tracing_switches.h"
 #include "components/ukm/content/source_url_recorder.h"
@@ -98,7 +97,8 @@
 #include "chrome/browser/banners/app_banner_manager_android.h"
 #include "chrome/browser/ui/android/context_menu_helper.h"
 #include "chrome/browser/ui/android/view_android_helper.h"
-#else
+#include "chrome/browser/ui/search/search_tab_helper.h"
+
 #include "chrome/browser/banners/app_banner_manager_desktop.h"
 #include "chrome/browser/plugins/plugin_observer.h"
 #include "chrome/browser/safe_browsing/safe_browsing_navigation_observer.h"
@@ -107,7 +107,6 @@
 #include "chrome/browser/ui/bookmarks/bookmark_tab_helper.h"
 #include "chrome/browser/ui/hung_plugin_tab_helper.h"
 #include "chrome/browser/ui/sad_tab_helper.h"
-#include "chrome/browser/ui/search/search_tab_helper.h"
 #include "chrome/browser/ui/sync/tab_contents_synced_tab_delegate.h"
 #include "components/pdf/browser/pdf_web_contents_helper.h"
 #include "components/web_modal/web_contents_modal_dialog_manager.h"
@@ -174,11 +173,9 @@ void TabHelpers::AttachTabHelpers(WebContents* web_contents) {
   // helpers may rely on that.
   SessionTabHelper::CreateForWebContents(web_contents);
 
-#if !defined(OS_ANDROID)
   // ZoomController comes before common tab helpers since ChromeAutofillClient
   // may want to register as a ZoomObserver with it.
   zoom::ZoomController::CreateForWebContents(web_contents);
-#endif
 
   // --- Common tab helpers ---
   autofill::ChromeAutofillClient::CreateForWebContents(web_contents);
@@ -273,7 +270,8 @@ void TabHelpers::AttachTabHelpers(WebContents* web_contents) {
   SearchGeolocationDisclosureTabHelper::CreateForWebContents(web_contents);
   SingleTabModeTabHelper::CreateForWebContents(web_contents);
   ViewAndroidHelper::CreateForWebContents(web_contents);
-#else
+  SearchTabHelper::CreateForWebContents(web_contents);
+
   BookmarkTabHelper::CreateForWebContents(web_contents);
   extensions::ChromeExtensionWebContentsObserver::CreateForWebContents(
       web_contents);
@@ -290,14 +288,13 @@ void TabHelpers::AttachTabHelpers(WebContents* web_contents) {
   safe_browsing::SafeBrowsingTabObserver::CreateForWebContents(web_contents);
   safe_browsing::SafeBrowsingNavigationObserver::MaybeCreateForWebContents(
       web_contents);
-  SearchTabHelper::CreateForWebContents(web_contents);
   TabContentsSyncedTabDelegate::CreateForWebContents(web_contents);
   TabDialogs::CreateForWebContents(web_contents);
   ThumbnailTabHelper::CreateForWebContents(web_contents);
   web_modal::WebContentsModalDialogManager::CreateForWebContents(web_contents);
 
-  if (banners::AppBannerManagerDesktop::IsEnabled())
-    banners::AppBannerManagerDesktop::CreateForWebContents(web_contents);
+//  if (banners::AppBannerManagerDesktop::IsEnabled())
+//    banners::AppBannerManagerDesktop::CreateForWebContents(web_contents);
 #endif
 
 #if defined(OS_WIN) || defined(OS_MACOSX) || \

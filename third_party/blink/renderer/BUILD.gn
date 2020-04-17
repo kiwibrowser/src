@@ -14,7 +14,7 @@ visibility = [ "//third_party/blink/*" ]
 declare_args() {
   # Set to true to enable the clang plugin that checks the usage of the  Blink
   # garbage-collection infrastructure during compilation.
-  blink_gc_plugin = true
+  blink_gc_plugin = false
 
   # Set to true to have the clang Blink GC plugin emit class graph (in JSON)
   # with typed pointer edges; for debugging or other (internal) uses.
@@ -96,23 +96,11 @@ config("config") {
     }
   }
 
+  cflags += [ "-Wno-shadow" ]
+
   if (is_clang && blink_gc_plugin && clang_use_chrome_plugins) {
-    # On Windows, the plugin is built directly into clang, so there's
-    # no need to load it dynamically.
-    if (host_os != "win") {
-      _blink_gc_plugin_dll_extension = "so"
-      if (host_os == "mac") {
-        _blink_gc_plugin_dll_extension = "dylib"
-      }
-      cflags += [
-        "-Xclang",
-        "-load",
-        "-Xclang",
-        rebase_path(
-            "${clang_base_path}/lib/libBlinkGCPlugin.${_blink_gc_plugin_dll_extension}",
-            root_build_dir),
-      ]
-    }
+    # The plugin is built directly into clang, so there's no need to load it
+    # dynamically.
     cflags += [
       "-Xclang",
       "-add-plugin",

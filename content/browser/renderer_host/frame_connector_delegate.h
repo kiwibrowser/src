@@ -149,6 +149,11 @@ class CONTENT_EXPORT FrameConnectorDelegate {
       const TouchEventWithLatencyInfo& touch,
       InputEventAckState ack_result) {}
 
+  // Pass acked touchpad pinch gesture events to the root view for processing.
+  virtual void ForwardAckedTouchpadPinchGestureEvent(
+      const blink::WebGestureEvent& event,
+      InputEventAckState ack_result) {}
+
   // Gesture events with unused scroll deltas must be bubbled to ancestors
   // who may consume the delta.
   virtual void BubbleScrollEvent(const blink::WebGestureEvent& event) {}

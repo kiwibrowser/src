@@ -412,6 +412,13 @@ bool Layer::SubtreeHasCopyRequest() const {
   return layer_tree_host_->has_copy_request() && subtree_has_copy_request_;
 }
 
+void Layer::NeedToSyncWithCompositorFrame(
+    bool required, bool frame_updated) {
+  if (layer_tree_host_) {
+    layer_tree_host_->NeedToSyncWithCompositorFrame(required, frame_updated);
+  }
+}
+
 void Layer::SetBackgroundColor(SkColor background_color) {
   DCHECK(IsPropertyChangeAllowed());
   if (inputs_.background_color == background_color)

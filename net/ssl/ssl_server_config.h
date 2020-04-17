@@ -36,6 +36,10 @@ struct NET_EXPORT SSLServerConfig {
   uint16_t version_min;
   uint16_t version_max;
 
+  // Whether early data is enabled on this connection. The caller is obligated
+  // to reject early data that is non-safe to be replayed.
+  bool early_data_enabled;
+
   // Presorted list of cipher suites which should be explicitly prevented from
   // being used in addition to those disabled by the net built-in policy.
   //

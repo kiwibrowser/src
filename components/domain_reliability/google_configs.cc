@@ -528,14 +528,14 @@ const GoogleConfigParams kGoogleConfigs[] = {
 };
 
 const char* const kGoogleStandardCollectors[] = {
-    "https://beacons.gcp.gvt2.com/domainreliability/upload",
-    "https://beacons.gvt2.com/domainreliability/upload",
-    "https://beacons2.gvt2.com/domainreliability/upload",
-    "https://beacons3.gvt2.com/domainreliability/upload",
-    "https://beacons4.gvt2.com/domainreliability/upload",
-    "https://beacons5.gvt2.com/domainreliability/upload",
-    "https://beacons5.gvt3.com/domainreliability/upload",
-    "https://clients2.google.com/domainreliability/upload",
+    "https://beacons_gcp_gvt2.kiwibrowser.com/domainreliability/upload",
+    "https://beacons_gvt2.kiwibrowser.com/domainreliability/upload",
+    "https://beacons2_gvt2.kiwibrowser.com/domainreliability/upload",
+    "https://beacons3_gvt2.kiwibrowser.com/domainreliability/upload",
+    "https://beacons4_gvt2.kiwibrowser.com/domainreliability/upload",
+    "https://beacons5_gvt2.kiwibrowser.com/domainreliability/upload",
+    "https://beacons5_gvt3.kiwibrowser.com/domainreliability/upload",
+    "https://clients2.kiwibrowser.com/domainreliability/upload",
 };
 
 const char* const kGoogleOriginSpecificCollectorPathString =

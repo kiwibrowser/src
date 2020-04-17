@@ -33,6 +33,8 @@ public interface ToolbarTabController {
      */
     void openHomepage();
 
+    void openOverscroll();
+
     /**
      * Opens the Memex UI in the current tab.
      */

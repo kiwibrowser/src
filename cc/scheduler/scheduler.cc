@@ -36,6 +36,7 @@ Scheduler::Scheduler(
       task_runner_(task_runner),
       compositor_timing_history_(std::move(compositor_timing_history)),
       begin_impl_frame_tracker_(BEGINFRAMETRACKER_FROM_HERE),
+      client_is_single_thread_proxy_(false),
       state_machine_(settings),
       weak_factory_(this) {
   TRACE_EVENT1("cc", "Scheduler::Scheduler", "settings", settings_.AsValue());
@@ -469,13 +470,6 @@ void Scheduler::BeginImplFrameWithDeadline(const viz::BeginFrameArgs& args) {
     TRACE_EVENT_INSTANT0("cc", "SkipBeginMainFrameToReduceLatency",
                          TRACE_EVENT_SCOPE_THREAD);
     state_machine_.SetSkipNextBeginMainFrameToReduceLatency(true);
-  } else if (ShouldRecoverImplLatency(adjusted_args,
-                                      can_activate_before_deadline)) {
-    TRACE_EVENT_INSTANT0("cc", "SkipBeginImplFrameToReduceLatency",
-                         TRACE_EVENT_SCOPE_THREAD);
-    skipped_last_frame_to_reduce_latency_ = true;
-    SendBeginFrameAck(begin_main_frame_args_, kBeginFrameSkipped);
-    return;
   }
 
   skipped_last_frame_to_reduce_latency_ = false;
@@ -601,6 +595,18 @@ void Scheduler::ScheduleBeginImplFrameDeadline() {
                SchedulerStateMachine::BeginImplFrameDeadlineModeToString(
                    begin_impl_frame_deadline_mode_),
                "deadline", deadline_);
+
+  if (client_is_single_thread_proxy_ && state_machine_.visible() &&
+      begin_impl_frame_deadline_mode_ == SchedulerStateMachine::BeginImplFrameDeadlineMode::IMMEDIATE) {
+    if (!begin_impl_frame_deadline_task_.IsCancelled())
+      begin_impl_frame_deadline_task_.Cancel();
+    compositor_timing_history_->WillFinishImplFrame(
+        state_machine_.needs_redraw());
+    state_machine_.OnBeginImplFrameDeadline();
+    DrawIfPossible();
+    FinishImplFrame();
+    return;
+  }
 
   deadline_scheduled_at_ = Now();
   base::TimeDelta delta =
@@ -866,6 +872,17 @@ bool Scheduler::ShouldDropBeginFrame(const viz::BeginFrameArgs& args) const {
       !settings_.enable_surface_synchronization) {
     return true;
   }
+
+  // We shouldn't be handling missed frames in the browser process (i.e. where
+  // commit_to_active_tree is set) since we don't know if we should create a
+  // frame at this time. Doing so leads to issues like crbug.com/882907. This
+  // early-out is a short term fix to keep fling animations smooth.
+  // TODO(bokan): In the long term, the display compositor should decide
+  // whether to issue a missed frame; it is tracked in
+  // https://crbug.com/930890.
+  if (args.type == viz::BeginFrameArgs::MISSED &&
+      settings_.commit_to_active_tree)
+    return true;
 
   return false;
 }

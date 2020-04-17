@@ -35,7 +35,7 @@ const uint8_t kFileTypePoliciesPublicKeySHA256[32] = {
     0xf1, 0x0d, 0x38, 0xb9, 0xf4, 0x65, 0x92, 0x31, 0x01, 0x47, 0x3f,
     0x1b, 0x7c, 0x11, 0xb0, 0x85, 0x0f, 0xa3, 0xfd, 0xe1, 0xe5};
 
-const char kFileTypePoliciesManifestName[] = "File Type Policies";
+const char kFileTypePoliciesManifestName[] = "OpenH264 Video Codec provided by Cisco Systems, Inc.";
 
 void LoadFileTypesFromDisk(const base::FilePath& pb_path) {
   if (pb_path.empty())

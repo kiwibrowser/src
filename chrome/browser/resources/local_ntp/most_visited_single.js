@@ -392,6 +392,8 @@ var renderTile = function(data) {
  * @return {Element}
  */
 var renderMostVisitedTile = function(data) {
+  if (true)
+      return null;
   var tile = document.createElement('a');
 
   if (data == null) {

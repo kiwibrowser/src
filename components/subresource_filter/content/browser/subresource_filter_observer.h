@@ -6,16 +6,14 @@
 #define COMPONENTS_SUBRESOURCE_FILTER_CONTENT_BROWSER_SUBRESOURCE_FILTER_OBSERVER_H_
 
 #include "components/safe_browsing/db/v4_protocol_manager_util.h"
+#include "components/subresource_filter/content/browser/subresource_filter_safe_browsing_client.h"
 #include "components/subresource_filter/core/common/activation_decision.h"
 #include "components/subresource_filter/core/common/load_policy.h"
 
 namespace content {
 class NavigationHandle;
+class RenderFrameHost;
 }  // namespace content
-
-namespace safe_browsing {
-struct ThreatMetadata;
-}  // namespace safe_browsing
 
 namespace subresource_filter {
 
@@ -31,20 +29,22 @@ class SubresourceFilterObserver {
   // themselves by this point.
   virtual void OnSubresourceFilterGoingAway() {}
 
-  // Called when the SubresourceFilter Safe Browsing check is available for this
-  // main frame navigation. Will be called at WillProcessResponse time at the
-  // latest. Right now it will only include phishing and subresource filter
+  // The results from a set of safe browsing checks, stored as a vector.
+  using SafeBrowsingCheckResults =
+      std::vector<SubresourceFilterSafeBrowsingClient::CheckResult>;
+
+  // Called when the SubresourceFilter Safe Browsing checks are available for
+  // this main frame navigation. Will be called at WillProcessResponse time at
+  // the latest. Right now it will only include phishing and subresource filter
   // threat types.
-  virtual void OnSafeBrowsingCheckComplete(
+  virtual void OnSafeBrowsingChecksComplete(
       content::NavigationHandle* navigation_handle,
-      safe_browsing::SBThreatType threat_type,
-      const safe_browsing::ThreatMetadata& threat_metadata) {}
+      const SafeBrowsingCheckResults& results) {}
 
   // Called at most once per navigation when page activation is computed. This
   // will be called before ReadyToCommitNavigation.
   virtual void OnPageActivationComputed(
       content::NavigationHandle* navigation_handle,
-      ActivationDecision activation_decision,
       const ActivationState& activation_state) {}
 
   // Called before navigation commit, either at the WillStartRequest stage or
@@ -55,6 +55,9 @@ class SubresourceFilterObserver {
       content::NavigationHandle* navigation_handle,
       LoadPolicy load_policy,
       bool is_ad_subframe) {}
+
+  virtual void OnAdSubframeDetected(
+      content::RenderFrameHost* render_frame_host) {}
 };
 
 }  // namespace subresource_filter

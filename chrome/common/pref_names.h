@@ -160,6 +160,9 @@ extern const char kWebkitTabsToLinks[];
 extern const char kWebKitAllowRunningInsecureContent[];
 #if defined(OS_ANDROID)
 extern const char kWebKitFontScaleFactor[];
+extern const char kWebKitNightModeFactor[];
+extern const char kWebKitNightModeEnabled[];
+extern const char kWebKitNightModeGrayscaleEnabled[];
 extern const char kWebKitForceEnableZoom[];
 extern const char kWebKitPasswordEchoEnabled[];
 #endif
@@ -167,6 +170,7 @@ extern const char kDataSaverEnabled[];
 extern const char kSSLErrorOverrideAllowed[];
 extern const char kIncognitoModeAvailability[];
 extern const char kSearchSuggestEnabled[];
+extern const char kHomepageNewsEnabled[];
 #if defined(OS_ANDROID)
 extern const char kContextualSearchEnabled[];
 #endif  // defined(OS_ANDROID)
@@ -287,7 +291,7 @@ extern const char kShowHomeButton[];
 extern const char kSpeechRecognitionFilterProfanities[];
 extern const char kSavingBrowserHistoryDisabled[];
 extern const char kAllowDeletingBrowserHistory[];
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 extern const char kMdHistoryMenuPromoShown[];
 #endif
 extern const char kForceGoogleSafeSearch[];
@@ -333,7 +337,7 @@ extern const char kUseCustomChromeFrame[];
 #if BUILDFLAG(ENABLE_PLUGINS)
 extern const char kContentSettingsPluginWhitelist[];
 #endif
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 extern const char kPartitionDefaultZoomLevel[];
 extern const char kPartitionPerHostZoomLevels[];
 
@@ -427,7 +431,7 @@ extern const char kWebRTCNonProxiedUdpEnabled[];
 extern const char kWebRTCIPHandlingPolicy[];
 extern const char kWebRTCUDPPortRange[];
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 extern const char kHasSeenWelcomePage[];
 #endif
 
@@ -500,7 +504,7 @@ extern const char kShutdownNumProcesses[];
 extern const char kShutdownNumProcessesSlow[];
 
 extern const char kRestartLastSessionOnShutdown[];
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 extern const char kSuppressUnsupportedOSWarning[];
 extern const char kWasRestarted[];
 #endif
@@ -537,7 +541,7 @@ extern const char kDevToolsRemoteEnabled[];
 
 extern const char kGoogleServicesPasswordHash[];
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 extern const char kDiceSigninUserMenuPromoCount[];
 extern const char kSignInPromoStartupCount[];
 extern const char kSignInPromoUserSkipped[];
@@ -713,18 +717,18 @@ extern const char kSystemTimezoneAutomaticDetectionPolicy[];
 #endif  // defined(OS_CHROMEOS)
 
 extern const char kEnableMediaRouter[];
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 extern const char kShowCastIconInToolbar[];
 #endif  // !defined(OS_ANDROID)
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 #if !defined(OS_CHROMEOS)
 extern const char kRelaunchNotification[];
 #endif  // !defined(OS_CHROMEOS)
 extern const char kRelaunchNotificationPeriod[];
 #endif  // !defined(OS_ANDROID)
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 extern const char kAttemptedToEnableAutoupdate[];
 
 extern const char kMediaGalleriesUniqueId[];
@@ -906,8 +910,8 @@ extern const char kWebDriverOverridesIncompatiblePolicies[];
 #if !defined(OS_ANDROID)
 extern const char kAutoplayAllowed[];
 extern const char kAutoplayWhitelist[];
-extern const char kNTPCustomBackgroundURL[];
 #endif
+extern const char kNTPCustomBackgroundURL[];
 
 }  // namespace prefs
 

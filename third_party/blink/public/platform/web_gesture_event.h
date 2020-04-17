@@ -150,10 +150,33 @@ class WebGestureEvent : public WebInputEvent {
       bool prevent_boosting;
     } fling_cancel;
 
+    // Note that for the pinch event types, |needs_wheel_event| and
+    // |zoom_disabled| are browser side implementation details for touchpad
+    // pinch zoom. From the renderer's perspective, both are always false.
+    // TODO(mcnee): Remove these implementation details once the browser has its
+    // own representation of a touchpad pinch event. See
+    // https://crbug.com/563730
     struct {
+      // |needs_wheel_event| is used to indicate the phase of handling a
+      // touchpad pinch. When the event is created it is set to true, so that
+      // the InputRouter knows to offer the event to the renderer as a wheel
+      // event. Once the wheel event is acknowledged, |needs_wheel_event| is set
+      // to false and the event is resent. When the InputRouter receives it the
+      // second time, it knows to send the real gesture event to the renderer.
+      bool needs_wheel_event;
+      // If true, this event will not cause a change in page scale, but will
+      // still be offered as a wheel event to any handlers.
       bool zoom_disabled;
       float scale;
     } pinch_update;
+
+    struct {
+      bool needs_wheel_event;
+    } pinch_begin;
+
+    struct {
+      bool needs_wheel_event;
+    } pinch_end;
   } data;
 
  private:
@@ -254,6 +277,38 @@ class WebGestureEvent : public WebInputEvent {
         return data.fling_cancel.target_viewport;
       default:
         return false;
+    }
+  }
+
+  bool NeedsWheelEvent() const {
+    switch (type_) {
+      case kGesturePinchBegin:
+        return data.pinch_begin.needs_wheel_event;
+      case kGesturePinchUpdate:
+        return data.pinch_update.needs_wheel_event;
+      case kGesturePinchEnd:
+        return data.pinch_end.needs_wheel_event;
+      default:
+        NOTREACHED();
+        return false;
+    }
+  }
+
+  void SetNeedsWheelEvent(bool needs_wheel_event) {
+    DCHECK(!needs_wheel_event ||
+           source_device_ == WebGestureDevice::kWebGestureDeviceTouchpad);
+    switch (type_) {
+      case kGesturePinchBegin:
+        data.pinch_begin.needs_wheel_event = needs_wheel_event;
+        break;
+      case kGesturePinchUpdate:
+        data.pinch_update.needs_wheel_event = needs_wheel_event;
+        break;
+      case kGesturePinchEnd:
+        data.pinch_end.needs_wheel_event = needs_wheel_event;
+        break;
+      default:
+        NOTREACHED();
     }
   }
 };

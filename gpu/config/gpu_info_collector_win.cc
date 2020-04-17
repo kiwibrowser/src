@@ -139,18 +139,12 @@ bool CollectDriverInfoD3D(const std::wstring& device_id, GPUInfo* gpu_info) {
     return false;
   }
 
-  struct GPUDriver {
-    GPUInfo::GPUDevice device;
-    std::string driver_vendor;
-    std::string driver_version;
-    std::string driver_date;
-  };
-
-  std::vector<GPUDriver> drivers;
+  std::vector<GPUInfo::GPUDevice> devices;
 
   size_t primary_device = std::numeric_limits<size_t>::max();
   bool found_amd = false;
   bool found_intel = false;
+  bool amd_is_primary = false;
 
   DWORD index = 0;
   SP_DEVINFO_DATA device_info_data;
@@ -166,52 +160,43 @@ bool CollectDriverInfoD3D(const std::wstring& device_id, GPUInfo* gpu_info) {
       LONG result = RegOpenKeyExW(HKEY_LOCAL_MACHINE, driver_key.c_str(), 0,
                                   KEY_QUERY_VALUE, &key);
       if (result == ERROR_SUCCESS) {
+        GPUInfo::GPUDevice device;
         DWORD dwcb_data = sizeof(value);
-        std::string driver_version;
         result = RegQueryValueExW(key, L"DriverVersion", NULL, NULL,
                                   reinterpret_cast<LPBYTE>(value), &dwcb_data);
         if (result == ERROR_SUCCESS)
-          driver_version = base::UTF16ToASCII(std::wstring(value));
+          device.driver_version = base::UTF16ToASCII(std::wstring(value));
 
-        std::string driver_date;
         dwcb_data = sizeof(value);
         result = RegQueryValueExW(key, L"DriverDate", NULL, NULL,
                                   reinterpret_cast<LPBYTE>(value), &dwcb_data);
         if (result == ERROR_SUCCESS)
-          driver_date = base::UTF16ToASCII(std::wstring(value));
+          device.driver_date = base::UTF16ToASCII(std::wstring(value));
 
-        std::string driver_vendor;
         dwcb_data = sizeof(value);
         result = RegQueryValueExW(key, L"ProviderName", NULL, NULL,
                                   reinterpret_cast<LPBYTE>(value), &dwcb_data);
         if (result == ERROR_SUCCESS)
-          driver_vendor = base::UTF16ToASCII(std::wstring(value));
+          device.driver_vendor = base::UTF16ToASCII(std::wstring(value));
 
         wchar_t new_device_id[MAX_DEVICE_ID_LEN];
         CONFIGRET status = CM_Get_Device_ID(
             device_info_data.DevInst, new_device_id, MAX_DEVICE_ID_LEN, 0);
 
         if (status == CR_SUCCESS) {
-          GPUDriver driver;
-
-          driver.driver_vendor = driver_vendor;
-          driver.driver_version = driver_version;
-          driver.driver_date = driver_date;
           std::wstring id = new_device_id;
-
-          if (id.compare(0, device_id.size(), device_id) == 0)
-            primary_device = drivers.size();
-
-          uint32_t vendor_id = 0, device_id = 0;
-          DeviceIDToVendorAndDevice(id, &vendor_id, &device_id);
-          driver.device.vendor_id = vendor_id;
-          driver.device.device_id = device_id;
-          drivers.push_back(driver);
-
-          if (vendor_id == 0x8086)
+          DeviceIDToVendorAndDevice(id, &(device.vendor_id),
+                                    &(device.device_id));
+          if (id.compare(0, device_id.size(), device_id) == 0) {
+            primary_device = devices.size();
+            if (device.vendor_id == 0x1002)
+              amd_is_primary = true;
+          }
+          if (device.vendor_id == 0x8086)
             found_intel = true;
-          if (vendor_id == 0x1002)
+          if (device.vendor_id == 0x1002)
             found_amd = true;
+          devices.push_back(device);
         }
 
         RegCloseKey(key);
@@ -219,56 +204,39 @@ bool CollectDriverInfoD3D(const std::wstring& device_id, GPUInfo* gpu_info) {
     }
   }
   SetupDiDestroyDeviceInfoList(device_info);
-  bool found = false;
   if (found_amd && found_intel) {
     // Potential AMD Switchable system found.
-    for (const auto& driver : drivers) {
-      if (driver.device.vendor_id == 0x8086) {
-        gpu_info->gpu = driver.device;
-      }
-
-      if (driver.device.vendor_id == 0x1002) {
-        gpu_info->driver_vendor = driver.driver_vendor;
-        gpu_info->driver_version = driver.driver_version;
-        gpu_info->driver_date = driver.driver_date;
-      }
-    }
-    GetAMDVideocardInfo(gpu_info);
-
-    if (!gpu_info->amd_switchable) {
-      bool amd_is_primary = false;
-      for (size_t i = 0; i < drivers.size(); ++i) {
-        const GPUDriver& driver = drivers[i];
-        if (driver.device.vendor_id == 0x1002) {
-          if (i == primary_device)
-            amd_is_primary = true;
-          gpu_info->gpu = driver.device;
-        } else {
-          gpu_info->secondary_gpus.push_back(driver.device);
+    {
+      // TODO(zmo): for GetAMDVideocardInfo, now we only care about
+      // |amd_switchable| bit. Simplify the logic of that function and then the
+      // logic here.
+      GPUInfo amd_gpu_info;
+      for (const auto& device : devices) {
+        if (device.vendor_id == 0x8086) {
+          amd_gpu_info.gpu = device;
         }
       }
-      // Some machines aren't properly detected as AMD switchable, but count
-      // them anyway. This may erroneously count machines where there are
-      // independent AMD and Intel cards and the AMD isn't hooked up to
-      // anything, but that should be rare.
-      gpu_info->amd_switchable = !amd_is_primary;
-    }
-    found = true;
-  } else {
-    for (size_t i = 0; i < drivers.size(); ++i) {
-      const GPUDriver& driver = drivers[i];
-      if (i == primary_device) {
-        found = true;
-        gpu_info->gpu = driver.device;
-        gpu_info->driver_vendor = driver.driver_vendor;
-        gpu_info->driver_version = driver.driver_version;
-        gpu_info->driver_date = driver.driver_date;
-      } else {
-        gpu_info->secondary_gpus.push_back(driver.device);
+      GetAMDVideocardInfo(&amd_gpu_info);
+      gpu_info->amd_switchable = amd_gpu_info.amd_switchable;
+      if (!gpu_info->amd_switchable && !amd_is_primary) {
+        // Some machines aren't properly detected as AMD switchable, but count
+        // them anyway. This may erroneously count machines where there are
+        // independent AMD and Intel cards and the AMD isn't hooked up to
+        // anything, but that should be rare.
+        gpu_info->amd_switchable = true;
       }
     }
   }
-
+  bool found = false;
+  for (size_t i = 0; i < devices.size(); ++i) {
+    const GPUInfo::GPUDevice& device = devices[i];
+    if (i == primary_device) {
+      found = true;
+      gpu_info->gpu = device;
+    } else {
+      gpu_info->secondary_gpus.push_back(device);
+    }
+  }
   return found;
 }
 

@@ -863,7 +863,7 @@ TEST_F(NetworkContextTest, ClearHttpCache) {
     disk_cache::Entry* entry = nullptr;
     base::RunLoop run_loop;
     if (backend->CreateEntry(
-            url, &entry,
+            url, net::HIGHEST, &entry,
             base::Bind([](base::OnceClosure quit_loop,
                           int rv) { std::move(quit_loop).Run(); },
                        run_loop.QuitClosure())) == net::ERR_IO_PENDING) {

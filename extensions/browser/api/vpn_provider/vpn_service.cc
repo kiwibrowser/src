@@ -538,12 +538,15 @@ void VpnService::OnExtensionUninstalled(
     content::BrowserContext* browser_context,
     const extensions::Extension* extension,
     extensions::UninstallReason reason) {
+  LOG(INFO) << "[EXTENSIONS] VpnService::OnExtensionUninstall - Step 1";
   if (browser_context != browser_context_) {
     NOTREACHED();
     return;
   }
+  LOG(INFO) << "[EXTENSIONS] VpnService::OnExtensionUninstall - Step 2";
 
   DestroyConfigurationsForExtension(extension);
+  LOG(INFO) << "[EXTENSIONS] VpnService::OnExtensionUninstall - Step 3";
 }
 
 void VpnService::OnExtensionUnloaded(

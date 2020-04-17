@@ -76,9 +76,6 @@ const int kNoPendingResult = 1;
 // Default size of the internal BoringSSL buffers.
 const int kDefaultOpenSSLBufferSize = 17 * 1024;
 
-const base::Feature kPostQuantumPadding{"PostQuantumPadding",
-                                        base::FEATURE_DISABLED_BY_DEFAULT};
-
 std::unique_ptr<base::Value> NetLogPrivateKeyOperationCallback(
     uint16_t algorithm,
     NetLogCaptureMode mode) {
@@ -428,6 +425,7 @@ SSLClientSocketImpl::SSLClientSocketImpl(
       ssl_config_(ssl_config),
       ssl_session_cache_shard_(context.ssl_session_cache_shard),
       next_handshake_state_(STATE_NONE),
+      in_confirm_handshake_(false),
       disconnected_(false),
       negotiated_protocol_(kProtoUnknown),
       channel_id_sent_(false),
@@ -531,6 +529,30 @@ void SSLClientSocketImpl::Disconnect() {
   transport_->socket()->Disconnect();
 }
 
+// ConfirmHandshake may only be called on a connected socket and, like other
+// socket methods, there may only be one ConfirmHandshake operation in progress
+// at once.
+int SSLClientSocketImpl::ConfirmHandshake(CompletionOnceCallback callback) {
+  CHECK(completed_connect_);
+  CHECK(!in_confirm_handshake_);
+  if (!SSL_in_early_data(ssl_.get())) {
+    return OK;
+  }
+
+  net_log_.BeginEvent(NetLogEventType::SSL_CONFIRM_HANDSHAKE);
+  next_handshake_state_ = STATE_HANDSHAKE;
+  in_confirm_handshake_ = true;
+  int rv = DoHandshakeLoop(OK);
+  if (rv == ERR_IO_PENDING) {
+    user_connect_callback_ = std::move(callback);
+  } else {
+    net_log_.EndEvent(NetLogEventType::SSL_CONFIRM_HANDSHAKE);
+    in_confirm_handshake_ = false;
+  }
+
+  return rv > OK ? OK : rv;
+}
+
 bool SSLClientSocketImpl::IsConnected() const {
   // If the handshake has not yet completed or the socket has been explicitly
   // disconnected.
@@ -608,7 +630,6 @@ bool SSLClientSocketImpl::GetSSLInfo(SSLInfo* ssl_info) {
       SSL_is_token_binding_negotiated(ssl_.get());
   ssl_info->token_binding_key_param = static_cast<net::TokenBindingParam>(
       SSL_get_negotiated_token_binding_param(ssl_.get()));
-  ssl_info->dummy_pq_padding_received = SSL_dummy_pq_padding_used(ssl_.get());
   ssl_info->pinning_failure_log = pinning_failure_log_;
   ssl_info->ocsp_result = server_cert_verify_result_.ocsp_result;
   ssl_info->is_fatal_cert_error = is_fatal_cert_error_;
@@ -847,6 +868,8 @@ int SSLClientSocketImpl::Init() {
     return ERR_UNEXPECTED;
   }
 
+  SSL_set_early_data_enabled(ssl_.get(), ssl_config_.early_data_enabled);
+
   switch (ssl_config_.tls13_variant) {
     case kTLS13VariantDraft23:
       SSL_set_tls13_variant(ssl_.get(), tls13_draft23);
@@ -854,12 +877,9 @@ int SSLClientSocketImpl::Init() {
     case kTLS13VariantDraft28:
       SSL_set_tls13_variant(ssl_.get(), tls13_draft28);
       break;
-  }
-
-  const int dummy_pq_padding_len = base::GetFieldTrialParamByFeatureAsInt(
-      kPostQuantumPadding, "length", 0 /* default value */);
-  if (dummy_pq_padding_len > 0 && dummy_pq_padding_len < 15000) {
-    SSL_set_dummy_pq_padding_size(ssl_.get(), dummy_pq_padding_len);
+    case kTLS13VariantFinal:
+      SSL_set_tls13_variant(ssl_.get(), tls13_rfc);
+      break;
   }
 
   // OpenSSL defaults some options to on, others to off. To avoid ambiguity,
@@ -1008,6 +1028,11 @@ int SSLClientSocketImpl::DoHandshakeComplete(int result) {
   if (result < 0)
     return result;
 
+  if (in_confirm_handshake_) {
+    next_handshake_state_ = STATE_NONE;
+    return OK;
+  }
+
   if (ssl_config_.version_interference_probe) {
     DCHECK_LT(ssl_config_.version_max, TLS1_3_VERSION);
     return ERR_SSL_VERSION_INTERFERENCE;
@@ -1046,16 +1071,6 @@ int SSLClientSocketImpl::DoHandshakeComplete(int result) {
   uint16_t signature_algorithm = SSL_get_peer_signature_algorithm(ssl_.get());
   if (signature_algorithm != 0) {
     base::UmaHistogramSparse("Net.SSLSignatureAlgorithm", signature_algorithm);
-  }
-
-  if (IsTLS13ExperimentHost(host_and_port_.host())) {
-    // To measure the effects of TLS 1.3's anti-downgrade mechanism, record
-    // whether the codepath would have been blocked against servers known to
-    // implement draft TLS 1.3. This should be a safe security measure to
-    // enable, but some middleboxes have non-compliant behavior here. See
-    // https://crbug.com/boringssl/226.
-    UMA_HISTOGRAM_BOOLEAN("Net.SSLDraftDowngradeTLS13Experiment",
-                          !!SSL_is_draft_downgrade(ssl_.get()));
   }
 
   // Verify the certificate.
@@ -1240,7 +1255,12 @@ void SSLClientSocketImpl::DoConnectCallback(int rv) {
 void SSLClientSocketImpl::OnHandshakeIOComplete(int result) {
   int rv = DoHandshakeLoop(result);
   if (rv != ERR_IO_PENDING) {
-    LogConnectEndEvent(rv);
+    if (in_confirm_handshake_) {
+      in_confirm_handshake_ = false;
+      net_log_.EndEvent(NetLogEventType::SSL_CONFIRM_HANDSHAKE);
+    } else {
+      LogConnectEndEvent(rv);
+    }
     DoConnectCallback(rv);
   }
 }
@@ -1327,14 +1347,6 @@ int SSLClientSocketImpl::DoPayloadRead(IOBuffer* buf, int buf_len) {
   // processed immediately, while the information still available in OpenSSL's
   // error queue.
   if (ssl_ret <= 0) {
-    // A zero return from SSL_read may mean any of:
-    // - The underlying BIO_read returned 0.
-    // - The peer sent a close_notify.
-    // - Any arbitrary error. https://crbug.com/466303
-    //
-    // TransportReadComplete converts the first to an ERR_CONNECTION_CLOSED
-    // error, so it does not occur. The second and third are distinguished by
-    // SSL_ERROR_ZERO_RETURN.
     pending_read_ssl_error_ = SSL_get_error(ssl_.get(), ssl_ret);
     if (pending_read_ssl_error_ == SSL_ERROR_ZERO_RETURN) {
       pending_read_error_ = 0;
@@ -1419,11 +1431,17 @@ void SSLClientSocketImpl::RetryAllOperations() {
   // so retry all operations for simplicity. (Otherwise, SSL_get_error for each
   // operation may be remembered to retry only the blocked ones.)
 
+  // Performing these callbacks may cause |this| to be deleted. If this
+  // happens, the other callbacks should not be invoked. Guard against this by
+  // holding a WeakPtr to |this| and ensuring it's still valid.
+  base::WeakPtr<SSLClientSocketImpl> guard(weak_factory_.GetWeakPtr());
   if (next_handshake_state_ == STATE_HANDSHAKE) {
     // In handshake phase. The parameter to OnHandshakeIOComplete is unused.
     OnHandshakeIOComplete(OK);
-    return;
   }
+
+  if (!guard.get())
+    return;
 
   int rv_read = ERR_IO_PENDING;
   int rv_write = ERR_IO_PENDING;
@@ -1438,10 +1456,6 @@ void SSLClientSocketImpl::RetryAllOperations() {
   if (user_write_buf_)
     rv_write = DoPayloadWrite();
 
-  // Performing the Read callback may cause |this| to be deleted. If this
-  // happens, the Write callback should not be invoked. Guard against this by
-  // holding a WeakPtr to |this| and ensuring it's still valid.
-  base::WeakPtr<SSLClientSocketImpl> guard(weak_factory_.GetWeakPtr());
   if (rv_read != ERR_IO_PENDING)
     DoReadCallback(rv_read);
 

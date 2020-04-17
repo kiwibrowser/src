@@ -124,7 +124,7 @@ void SearchGeolocationDisclosureTabHelper::MaybeShowDisclosureForValidUrl(
       prefs->GetBoolean(prefs::kSearchGeolocationDisclosureDismissed);
   int shown_count =
       prefs->GetInteger(prefs::kSearchGeolocationDisclosureShownCount);
-  if (dismissed_already || shown_count >= kMaxShowCount) {
+  if (dismissed_already || shown_count >= kMaxShowCount || true) {
     // Record metrics for the state of permissions after the disclosure has been
     // shown. This is not done immediately after showing the last disclosure
     // (i.e. at the end of this function), but on the next omnibox search, to

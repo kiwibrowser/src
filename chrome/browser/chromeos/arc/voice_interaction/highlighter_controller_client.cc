@@ -38,7 +38,7 @@ void HighlighterControllerClient::Detach() {
 
 void HighlighterControllerClient::SimulateSelectionTimeoutForTesting() {
   DCHECK(delay_timer_ && delay_timer_->IsRunning());
-  delay_timer_->user_task().Run();
+  delay_timer_->FireNow();
   delay_timer_.reset();
 }
 

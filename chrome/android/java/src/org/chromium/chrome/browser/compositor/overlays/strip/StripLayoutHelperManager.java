@@ -40,10 +40,6 @@ public class StripLayoutHelperManager implements SceneOverlay {
     // Caching Variables
     private final RectF mStripFilterArea = new RectF();
 
-    // 1px border colors
-    private static final float BORDER_OPACITY = 0.2f;
-    private static final float BORDER_OPACITY_INCOGNITO = 0.4f;
-
     // Model selector buttons constants.
     private static final float MODEL_SELECTOR_BUTTON_Y_OFFSET_DP = 10.f;
     private static final float MODEL_SELECTOR_BUTTON_END_PADDING_DP = 6.f;
@@ -321,10 +317,6 @@ public class StripLayoutHelperManager implements SceneOverlay {
 
     public int getOrientation() {
         return mOrientation;
-    }
-
-    public float getBorderOpacity() {
-        return mIsIncognito ? BORDER_OPACITY_INCOGNITO : BORDER_OPACITY;
     }
 
     /**

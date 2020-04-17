@@ -29,6 +29,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/sys_info.h"
 #include "base/threading/thread_task_runner_handle.h"
+#include "base/android/sys_utils.h"
 #include "build/build_config.h"
 #include "chrome/browser/after_startup_task_utils.h"
 #include "chrome/browser/browser_about_handler.h"
@@ -341,11 +342,11 @@
 #include "chrome/browser/devtools/chrome_devtools_manager_delegate.h"
 #include "chrome/browser/devtools/devtools_window.h"
 #include "chrome/browser/payments/payment_request_factory.h"
+#include "chrome/common/importer/profile_import.mojom.h"
+#endif
 #include "chrome/browser/search/instant_service.h"
 #include "chrome/browser/search/instant_service_factory.h"
 #include "chrome/browser/ui/search/new_tab_page_navigation_throttle.h"
-#include "chrome/common/importer/profile_import.mojom.h"
-#endif
 
 #if defined(OS_LINUX) || defined(OS_WIN)
 #include "chrome/browser/webshare/share_service_impl.h"
@@ -1269,7 +1270,7 @@ void ChromeContentBrowserClient::RenderProcessWillLaunch(
 
   chrome::mojom::RendererConfigurationAssociatedPtr rc_interface;
   host->GetChannel()->GetRemoteAssociatedInterface(&rc_interface);
-  rc_interface->SetInitialConfiguration(is_incognito_process);
+  rc_interface->SetInitialConfiguration(is_incognito_process, base::android::SysUtils::IsBottomToolbarEnabledFromJni());
 
   for (size_t i = 0; i < extra_parts_.size(); ++i)
     extra_parts_[i]->RenderProcessWillLaunch(host);
@@ -1305,14 +1306,12 @@ GURL ChromeContentBrowserClient::GetEffectiveURL(
   if (!profile)
     return url;
 
-#if !defined(OS_ANDROID)
   // If the input |url| should be assigned to the Instant renderer, make its
   // effective URL distinct from other URLs on the search provider's domain.
   // This needs to happen even if |url| corresponds to an isolated origin; see
   // https://crbug.com/755595.
   if (search::ShouldAssignURLToInstantRenderer(url, profile))
     return search::GetEffectiveURLForInstant(url, profile);
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
   return ChromeContentBrowserClientExtensionsPart::GetEffectiveURL(profile,
@@ -1333,10 +1332,8 @@ bool ChromeContentBrowserClient::ShouldUseProcessPerSite(
   if (!profile)
     return false;
 
-#if !defined(OS_ANDROID)
   if (search::ShouldUseProcessPerSiteForInstantURL(effective_url, profile))
     return true;
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
   return ChromeContentBrowserClientExtensionsPart::ShouldUseProcessPerSite(
@@ -1353,14 +1350,12 @@ bool ChromeContentBrowserClient::ShouldUseSpareRenderProcessHost(
   if (!profile)
     return false;
 
-#if !defined(OS_ANDROID)
   // Instant renderers should not use a spare process, because they require
   // passing switches::kInstantProcess to the renderer process when it
   // launches.  A spare process is launched earlier, before it is known which
   // navigation will use it, so it lacks this flag.
   if (search::ShouldAssignURLToInstantRenderer(site_url, profile))
     return false;
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
   return ChromeContentBrowserClientExtensionsPart::
@@ -1558,7 +1553,6 @@ bool ChromeContentBrowserClient::IsSuitableHost(
   if (!profile)
     return true;
 
-#if !defined(OS_ANDROID)
   // Instant URLs should only be in the instant process and instant process
   // should only have Instant URLs.
   InstantService* instant_service =
@@ -1571,7 +1565,6 @@ bool ChromeContentBrowserClient::IsSuitableHost(
     if (is_instant_process || should_be_in_instant_process)
       return is_instant_process && should_be_in_instant_process;
   }
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
   return ChromeContentBrowserClientExtensionsPart::IsSuitableHost(
@@ -1622,7 +1615,6 @@ void ChromeContentBrowserClient::SiteInstanceGotProcess(
   if (!profile)
     return;
 
-#if !defined(OS_ANDROID)
   // Remember the ID of the Instant process to signal the renderer process
   // on startup in |AppendExtraCommandLineSwitches| below.
   if (search::ShouldAssignURLToInstantRenderer(site_instance->GetSiteURL(),
@@ -1632,7 +1624,6 @@ void ChromeContentBrowserClient::SiteInstanceGotProcess(
     if (instant_service)
       instant_service->AddInstantProcess(site_instance->GetProcess()->GetID());
   }
-#endif
 
   for (size_t i = 0; i < extra_parts_.size(); ++i)
     extra_parts_[i]->SiteInstanceGotProcess(site_instance);
@@ -1924,14 +1915,12 @@ void ChromeContentBrowserClient::AppendExtraCommandLineSwitches(
       if (prefs->GetBoolean(prefs::kPrintPreviewDisabled))
         command_line->AppendSwitch(switches::kDisablePrintPreview);
 
-#if !defined(OS_ANDROID)
       InstantService* instant_service =
           InstantServiceFactory::GetForProfile(profile);
       if (instant_service &&
           instant_service->IsInstantProcess(process->GetID())) {
         command_line->AppendSwitch(switches::kInstantProcess);
       }
-#endif
 
       if (prefs->HasPrefPath(prefs::kAllowDinosaurEasterEgg) &&
           !prefs->GetBoolean(prefs::kAllowDinosaurEasterEgg)) {
@@ -2588,6 +2577,14 @@ void ChromeContentBrowserClient::SelectClientCertificate(
         prerender::FINAL_STATUS_SSL_CLIENT_CERTIFICATE_REQUESTED);
     return;
   }
+  if (true) {
+    LOG(WARNING) << "No client cert matched by policy and user selection is "
+                    "not allowed.";
+    // Continue without client certificate. We do this to mimic the case of no
+    // client certificate being present in the profile's certificate store.
+    delegate->ContinueWithCertificate(nullptr, nullptr);
+    return;
+  }
 
   GURL requesting_url("https://" + cert_request_info->host_and_port.ToString());
   DCHECK(requesting_url.is_valid())
@@ -2884,6 +2881,12 @@ void ChromeContentBrowserClient::OverrideWebkitPrefs(
 #if defined(OS_ANDROID)
   web_prefs->font_scale_factor =
       static_cast<float>(prefs->GetDouble(prefs::kWebKitFontScaleFactor));
+  web_prefs->night_mode_factor =
+      static_cast<float>(prefs->GetDouble(prefs::kWebKitNightModeFactor));
+  web_prefs->night_mode_enabled =
+      prefs->GetBoolean(prefs::kWebKitNightModeEnabled);
+  web_prefs->night_mode_grayscale_enabled =
+      prefs->GetBoolean(prefs::kWebKitNightModeGrayscaleEnabled);
   web_prefs->device_scale_adjustment = GetDeviceScaleAdjustment();
   web_prefs->force_enable_zoom =
       prefs->GetBoolean(prefs::kWebKitForceEnableZoom);
@@ -2972,8 +2975,7 @@ void ChromeContentBrowserClient::OverrideWebkitPrefs(
   }
 
 #if defined(OS_ANDROID)
-  web_prefs->video_fullscreen_detection_enabled =
-      chrome::android::AppHooks::ShouldDetectVideoFullscreen();
+  web_prefs->video_fullscreen_detection_enabled = true;
 
   web_prefs->enable_media_download_in_product_help =
       base::FeatureList::IsEnabled(
@@ -3030,7 +3032,7 @@ void ChromeContentBrowserClient::BrowserURLHandlerCreated(
   // Handler to rewrite chrome://newtab on Android.
   handler->AddHandlerPair(&chrome::android::HandleAndroidNativePageURL,
                           BrowserURLHandler::null_handler());
-#else
+
   // Handler to rewrite chrome://newtab for InstantExtended.
   handler->AddHandlerPair(&search::HandleNewTabURLRewrite,
                           &search::HandleNewTabURLReverseRewrite);
@@ -3781,12 +3783,12 @@ ChromeContentBrowserClient::CreateThrottlesForNavigation(
       DevToolsWindow::MaybeCreateNavigationThrottle(handle);
   if (devtools_throttle)
     throttles.push_back(std::move(devtools_throttle));
+#endif
 
   std::unique_ptr<content::NavigationThrottle> new_tab_page_throttle =
       NewTabPageNavigationThrottle::MaybeCreateThrottleFor(handle);
   if (new_tab_page_throttle)
     throttles.push_back(std::move(new_tab_page_throttle));
-#endif
 
   return throttles;
 }
@@ -4033,12 +4035,6 @@ void ChromeContentBrowserClient::
         int render_process_id,
         int render_frame_id,
         NonNetworkURLLoaderFactoryMap* factories) {
-#if BUILDFLAG(ENABLE_EXTENSIONS)
-  auto factory = extensions::CreateExtensionURLLoaderFactory(render_process_id,
-                                                             render_frame_id);
-  if (factory)
-    factories->emplace(extensions::kExtensionScheme, std::move(factory));
-
   content::RenderFrameHost* frame_host =
       RenderFrameHost::FromID(render_process_id, render_frame_id);
 
@@ -4047,20 +4043,11 @@ void ChromeContentBrowserClient::
   WebContents* web_contents = WebContents::FromRenderFrameHost(frame_host);
   if (!web_contents)
     return;
-
-  Profile* profile =
-      Profile::FromBrowserContext(web_contents->GetBrowserContext());
-  InstantService* instant_service =
-      InstantServiceFactory::GetForProfile(profile);
-  // The test below matches what's done by ShouldServiceRequestIOThread in
-  // local_ntp_source.cc.
-  if (instant_service->IsInstantProcess(render_process_id)) {
-    factories->emplace(
-        chrome::kChromeSearchScheme,
-        content::CreateWebUIURLLoader(
-            frame_host, chrome::kChromeSearchScheme,
-            /*allowed_webui_hosts=*/base::flat_set<std::string>()));
-  }
+#if BUILDFLAG(ENABLE_EXTENSIONS)
+  auto factory = extensions::CreateExtensionURLLoaderFactory(render_process_id,
+                                                             render_frame_id);
+  if (factory)
+    factories->emplace(extensions::kExtensionScheme, std::move(factory));
 
   extensions::ChromeExtensionWebContentsObserver* web_observer =
       extensions::ChromeExtensionWebContentsObserver::FromWebContents(
@@ -4102,6 +4089,19 @@ void ChromeContentBrowserClient::
                                       std::move(allowed_webui_hosts)));
   }
 #endif  // BUILDFLAG(ENABLE_EXTENSIONS)
+  Profile* profile =
+      Profile::FromBrowserContext(web_contents->GetBrowserContext());
+  InstantService* instant_service =
+      InstantServiceFactory::GetForProfile(profile);
+  // The test below matches what's done by ShouldServiceRequestIOThread in
+  // local_ntp_source.cc.
+  if (instant_service->IsInstantProcess(render_process_id)) {
+    factories->emplace(
+        chrome::kChromeSearchScheme,
+        content::CreateWebUIURLLoader(
+            frame_host, chrome::kChromeSearchScheme,
+            /*allowed_webui_hosts=*/base::flat_set<std::string>()));
+  }
 }
 
 bool ChromeContentBrowserClient::WillCreateURLLoaderFactory(

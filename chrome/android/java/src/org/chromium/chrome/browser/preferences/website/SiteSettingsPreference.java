@@ -13,6 +13,13 @@ import android.widget.ImageView;
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.chrome.R;
 
+import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.TextView;
+import android.widget.ListView;
+
 /**
  * A custom preference for drawing Site Settings entries.
  */
@@ -32,5 +39,11 @@ public class SiteSettingsPreference extends Preference {
         ImageView icon = (ImageView) view.findViewById(android.R.id.icon);
         ApiCompatibilityUtils.setPaddingRelative(
                 icon, padding, icon.getPaddingTop(), 0, icon.getPaddingBottom());
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            if (((TextView) view.findViewById(android.R.id.title)) != null)
+              ((TextView) view.findViewById(android.R.id.title)).setTextColor(Color.WHITE);
+            if (((TextView) view.findViewById(android.R.id.summary)) != null)
+              ((TextView) view.findViewById(android.R.id.summary)).setTextColor(Color.GRAY);
+        }
     }
 }

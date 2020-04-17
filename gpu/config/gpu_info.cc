@@ -16,6 +16,9 @@ void EnumerateGPUDevice(const gpu::GPUInfo::GPUDevice& device,
   enumerator->AddBool("active", device.active);
   enumerator->AddString("vendorString", device.vendor_string);
   enumerator->AddString("deviceString", device.device_string);
+  enumerator->AddString("driverVendor", device.driver_vendor);
+  enumerator->AddString("driverVersion", device.driver_version);
+  enumerator->AddString("driverDate", device.driver_date);
   enumerator->EndGPUDevice();
 }
 
@@ -64,7 +67,17 @@ GPUInfo::GPUDevice::GPUDevice()
       active(false) {
 }
 
-GPUInfo::GPUDevice::~GPUDevice() = default;
+GPUInfo::GPUDevice::GPUDevice(const GPUInfo::GPUDevice& other) = default;
+
+GPUInfo::GPUDevice::GPUDevice(GPUInfo::GPUDevice&& other) noexcept = default;
+
+GPUInfo::GPUDevice::~GPUDevice() noexcept = default;
+
+GPUInfo::GPUDevice& GPUInfo::GPUDevice::operator=(
+    const GPUInfo::GPUDevice& other) = default;
+
+GPUInfo::GPUDevice& GPUInfo::GPUDevice::operator=(
+    GPUInfo::GPUDevice&& other) noexcept = default;
 
 GPUInfo::GPUInfo()
     : optimus(false),
@@ -88,14 +101,19 @@ GPUInfo::GPUInfo(const GPUInfo& other) = default;
 
 GPUInfo::~GPUInfo() = default;
 
+GPUInfo::GPUDevice& GPUInfo::active_gpu() {
+  return const_cast<GPUInfo::GPUDevice&>(
+      const_cast<const GPUInfo&>(*this).active_gpu());
+}
+
 const GPUInfo::GPUDevice& GPUInfo::active_gpu() const {
   if (gpu.active || secondary_gpus.empty())
     return gpu;
-  for (const GPUDevice& secondary_gpu : secondary_gpus) {
+  for (const auto& secondary_gpu : secondary_gpus) {
     if (secondary_gpu.active)
       return secondary_gpu;
   }
-  DLOG(WARNING) << "No active GPU found, returning primary GPU.";
+  DVLOG(2) << "No active GPU found, returning primary GPU.";
   return gpu;
 }
 
@@ -110,9 +128,6 @@ void GPUInfo::EnumerateFields(Enumerator* enumerator) const {
     bool amd_switchable;
     GPUDevice gpu;
     std::vector<GPUDevice> secondary_gpus;
-    std::string driver_vendor;
-    std::string driver_version;
-    std::string driver_date;
     std::string pixel_shader_version;
     std::string vertex_shader_version;
     std::string max_msaa_samples;
@@ -171,9 +186,6 @@ void GPUInfo::EnumerateFields(Enumerator* enumerator) const {
                                      initialization_time);
   enumerator->AddBool("optimus", optimus);
   enumerator->AddBool("amdSwitchable", amd_switchable);
-  enumerator->AddString("driverVendor", driver_vendor);
-  enumerator->AddString("driverVersion", driver_version);
-  enumerator->AddString("driverDate", driver_date);
   enumerator->AddString("pixelShaderVersion", pixel_shader_version);
   enumerator->AddString("vertexShaderVersion", vertex_shader_version);
   enumerator->AddString("maxMsaaSamples", max_msaa_samples);

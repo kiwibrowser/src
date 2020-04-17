@@ -77,7 +77,7 @@ void PageSignalGeneratorImpl::OnCoordinationUnitCreated(
 
   // Create page data exists for this Page CU.
   auto* page_cu = PageCoordinationUnitImpl::FromCoordinationUnitBase(cu);
-  DCHECK(!base::ContainsKey(page_data_, page_cu)); // No data should exist yet.
+  DCHECK(!base::ContainsKey(page_data_, page_cu));  // No data should exist yet.
   page_data_[page_cu].load_idle_state = kLoadingNotStarted;
 }
 
@@ -141,6 +141,20 @@ void PageSignalGeneratorImpl::OnProcessPropertyChanged(
       UpdateLoadIdleStateProcess(process_cu);
     }
   }
+}
+
+void PageSignalGeneratorImpl::OnFrameEventReceived(
+    const FrameCoordinationUnitImpl* frame_cu,
+    const mojom::Event event) {
+  if (event != mojom::Event::kNonPersistentNotificationCreated)
+    return;
+
+  auto* page_cu = frame_cu->GetPageCoordinationUnit();
+  if (!page_cu)
+    return;
+
+  DISPATCH_PAGE_SIGNAL(receivers_, NotifyNonPersistentNotificationCreated,
+                       page_cu->id());
 }
 
 void PageSignalGeneratorImpl::OnPageEventReceived(
@@ -334,11 +348,10 @@ bool PageSignalGeneratorImpl::IsIdling(
   // associated with this page's main frame actually being low. In the case
   // of session restore this is mitigated by having a timeout while waiting for
   // this signal.
-  return
-      main_frame_cu->GetPropertyOrDefault(
-          mojom::PropertyType::kNetworkAlmostIdle, 0u) &&
-      process_cu->GetPropertyOrDefault(
-          mojom::PropertyType::kMainThreadTaskLoadIsLow, 0u);
+  return main_frame_cu->GetPropertyOrDefault(
+             mojom::PropertyType::kNetworkAlmostIdle, 0u) &&
+         process_cu->GetPropertyOrDefault(
+             mojom::PropertyType::kMainThreadTaskLoadIsLow, 0u);
 }
 
 }  // namespace resource_coordinator

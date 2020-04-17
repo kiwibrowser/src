@@ -62,6 +62,12 @@
 #include "extensions/common/extension_set.h"
 #endif
 
+#include "chrome/browser/android/tab_android.h"
+#include "chrome/browser/ui/android/tab_model/tab_model.h"
+#include "chrome/browser/ui/android/tab_model/tab_model_list.h"
+#include "url/gurl.h"
+#include "chrome/browser/android/devtools_manager_delegate_android.h"
+
 using content::GlobalRequestID;
 using content::NavigationController;
 using content::WebContents;
@@ -446,62 +452,120 @@ bool SwapInPrerender(const GURL& url,
 }  // namespace
 
 void Navigate(NavigateParams* params) {
+  if (true) {
+    if (TabModelList::empty())
+      return ;
+
+    TabModel* tab_model = TabModelList::get(0);
+    if (!tab_model)
+      return ;
+
+    GURL url = GURL("about:blank");
+    if (params->url.is_valid() && !(params->url.is_empty())) {
+      url = params->url;
+    }
+    WebContents* web_contents = tab_model->CreateNewTabForDevTools(url, false);
+    if (!web_contents)
+      return ;
+
+    TabAndroid* tab = TabAndroid::FromWebContents(web_contents);
+    if (tab) {
+      tab++;
+    }
+    return ;
+  }
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 1";
   Browser* source_browser = params->browser;
-  if (source_browser)
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 2";
+  if (source_browser) {
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 2a";
     params->initiating_profile = source_browser->profile();
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 2b";
+  }
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 3";
   DCHECK(params->initiating_profile);
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 4";
 
   if (!AdjustNavigateParamsForURL(params))
     return;
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 5";
+
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 6";
   const extensions::Extension* extension =
     extensions::ExtensionRegistry::Get(params->initiating_profile)->
         enabled_extensions().GetExtensionOrAppByURL(params->url);
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 7";
   // Platform apps cannot navigate. Block the request.
-  if (extension && extension->is_platform_app())
+  if (extension && extension->is_platform_app()) {
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 7a";
     params->url = GURL(chrome::kExtensionInvalidRequestURL);
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 7b";
+  }
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 8";
+
 #endif
 
   // The browser window may want to adjust the disposition.
   if (params->disposition == WindowOpenDisposition::NEW_POPUP &&
       source_browser && source_browser->window()) {
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 8a";
     params->disposition =
         source_browser->window()->GetDispositionForPopupBounds(
             params->window_bounds);
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 8b";
   }
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 9";
+
   // Trying to open a background tab when in an app browser results in
   // focusing a regular browser window an opening a tab in the background
   // of that window. Change the disposition to NEW_FOREGROUND_TAB so that
   // the new tab is focused.
   if (source_browser && source_browser->is_app() &&
       params->disposition == WindowOpenDisposition::NEW_BACKGROUND_TAB) {
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 9a";
     params->disposition = WindowOpenDisposition::NEW_FOREGROUND_TAB;
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 9b";
   }
 
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 10";
   // If no source WebContents was specified, we use the selected one from
   // the target browser. This must happen first, before
   // GetBrowserForDisposition() has a chance to replace |params->browser| with
   // another one.
   if (!params->source_contents && params->browser) {
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 10a";
     params->source_contents =
         params->browser->tab_strip_model()->GetActiveWebContents();
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 10b";
   }
 
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 11";
   WebContents* contents_to_navigate_or_insert =
       params->contents_to_insert.get();
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 12: " << contents_to_navigate_or_insert;
   if (params->switch_to_singleton_tab) {
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 12a - switch_to_singleton_tab";
     DCHECK_EQ(params->disposition, WindowOpenDisposition::SINGLETON_TAB);
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 12b";
     contents_to_navigate_or_insert = params->switch_to_singleton_tab;
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 12c";
   }
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 13";
   int singleton_index;
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 14";
   std::tie(params->browser, singleton_index) =
       GetBrowserAndTabForDisposition(*params);
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 15";
   if (!params->browser)
     return;
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 16";
   if (singleton_index != -1) {
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 16a";
     contents_to_navigate_or_insert =
         params->browser->tab_strip_model()->GetWebContentsAt(singleton_index);
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 16b - Singleton: " <<contents_to_navigate_or_insert;
   }
 #if defined(OS_CHROMEOS)
   if (source_browser && source_browser != params->browser) {
@@ -528,39 +592,59 @@ void Navigate(NavigateParams* params) {
 
   // Navigate() must not return early after this point.
 
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 17";
+
   if (GetSourceProfile(params) != params->browser->profile()) {
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 17a";
+
     // A tab is being opened from a link from a different profile, we must reset
     // source information that may cause state to be shared.
     params->opener = nullptr;
     params->source_contents = nullptr;
     params->source_site_instance = nullptr;
     params->referrer = content::Referrer();
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 17b";
   }
+
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 18";
 
   // Make sure the Browser is shown if params call for it.
   ScopedBrowserShower shower(params, &contents_to_navigate_or_insert);
+
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 19";
 
   // Makes sure any WebContents created by this function is destroyed if
   // not properly added to a tab strip.
   std::unique_ptr<WebContents> contents_to_insert =
       std::move(params->contents_to_insert);
 
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 20";
   // Some dispositions need coercion to base types.
   NormalizeDisposition(params);
+
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 21";
 
   // If a new window has been created, it needs to be shown.
   if (params->window_action == NavigateParams::NO_ACTION &&
       source_browser != params->browser &&
       params->browser->tab_strip_model()->empty()) {
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 21a";
     params->window_action = NavigateParams::SHOW_WINDOW;
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 21b";
   }
+
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 22";
 
   // If we create a popup window from a non user-gesture, don't activate it.
   if (params->window_action == NavigateParams::SHOW_WINDOW &&
       params->disposition == WindowOpenDisposition::NEW_POPUP &&
       params->user_gesture == false) {
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 22a";
     params->window_action = NavigateParams::SHOW_WINDOW_INACTIVE;
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 22b";
   }
+
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 23";
 
   // Determine if the navigation was user initiated. If it was, we need to
   // inform the target WebContents, and we may need to update the UI.
@@ -579,44 +663,71 @@ void Navigate(NavigateParams* params) {
       ui::PageTransitionCoreTypeIs(params->transition,
                                    ui::PAGE_TRANSITION_KEYWORD);
 
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 24";
   // Did we use a prerender?
   bool swapped_in_prerender = false;
 
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 25: " << contents_to_navigate_or_insert;
   // If no target WebContents was specified (and we didn't seek and find a
   // singleton), we need to construct one if we are supposed to target a new
   // tab.
   if (!contents_to_navigate_or_insert) {
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 25a - no contents_to_navigate_or_insert";
+
     DCHECK(!params->url.is_empty());
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 25b";
     if (params->disposition != WindowOpenDisposition::CURRENT_TAB) {
+      LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 26a";
       contents_to_insert = CreateTargetContents(*params, params->url);
+      LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 26b";
       contents_to_navigate_or_insert = contents_to_insert.get();
+      LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 26c: " << contents_to_navigate_or_insert;
     } else {
       // ... otherwise if we're loading in the current tab, the target is the
       // same as the source.
+      LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 27a";
       DCHECK(params->source_contents);
+      LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 27b";
       contents_to_navigate_or_insert = params->source_contents;
+      LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 27c: " << params->source_contents;
 
       prerender::PrerenderManager::Params prerender_params(
           params, params->source_contents);
+      LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 27d";
 
       // Prerender can only swap in CURRENT_TAB navigations; others have
       // different sessionStorage namespaces.
       swapped_in_prerender = SwapInPrerender(params->url, &prerender_params);
-      if (swapped_in_prerender)
+      LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 27e";
+      if (swapped_in_prerender) {
+        LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 27f";
         contents_to_navigate_or_insert = prerender_params.replaced_contents;
+        LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 27g: " << contents_to_navigate_or_insert;
+      }
     }
 
-    if (user_initiated)
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 28";
+
+    if (user_initiated) {
+      LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 28a";
       contents_to_navigate_or_insert->NavigatedByUser();
+      LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 28b";
+    }
+
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 29";
 
     if (!swapped_in_prerender) {
+      LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 29a";
+
       // Try to handle non-navigational URLs that popup dialogs and such, these
       // should not actually navigate.
       if (!HandleNonNavigationAboutURL(params->url)) {
+        LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 30a";
         // Perform the actual navigation, tracking whether it came from the
         // renderer.
 
         LoadURLInContents(contents_to_navigate_or_insert, params->url, params);
+        LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 30b: " << contents_to_navigate_or_insert << " - URL: " << params->url;
       }
     }
   } else {
@@ -628,53 +739,97 @@ void Navigate(NavigateParams* params) {
   // If the user navigated from the omnibox, and the selected tab is going to
   // lose focus, then make sure the focus for the source tab goes away from the
   // omnibox.
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 31";
+
   if (params->source_contents &&
       (params->disposition == WindowOpenDisposition::NEW_FOREGROUND_TAB ||
        params->disposition == WindowOpenDisposition::NEW_WINDOW) &&
-      (params->tabstrip_add_types & TabStripModel::ADD_INHERIT_OPENER))
+      (params->tabstrip_add_types & TabStripModel::ADD_INHERIT_OPENER)) {
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 31a";
+
     params->source_contents->Focus();
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 31b";
+  }
+
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 32";
 
   if (params->source_contents == contents_to_navigate_or_insert ||
       (swapped_in_prerender &&
        params->disposition == WindowOpenDisposition::CURRENT_TAB)) {
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 32a";
+
     // The navigation occurred in the source tab.
     params->browser->UpdateUIForNavigationInTab(
         contents_to_navigate_or_insert, params->transition,
         params->window_action, user_initiated);
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 32b";
+
   } else if (singleton_index == -1) {
     // If some non-default value is set for the index, we should tell the
     // TabStripModel to respect it.
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 33a";
+
     if (params->tabstrip_index != -1)
       params->tabstrip_add_types |= TabStripModel::ADD_FORCE_INDEX;
 
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 33b";
+
     DCHECK(contents_to_insert);
+
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 33c";
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 33c-1 - " << params;
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 33c-2 - " << params->browser;
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 33c-3 - " << params->browser->tab_strip_model();
     // The navigation should insert a new tab into the target Browser.
+
     params->browser->tab_strip_model()->AddWebContents(
         std::move(contents_to_insert), params->tabstrip_index,
         params->transition, params->tabstrip_add_types);
+
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 33d";
   }
 
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 34";
+
   if (singleton_index >= 0) {
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 34a";
+
     // If switching browsers, make sure it is shown.
     if (params->disposition == WindowOpenDisposition::SWITCH_TO_TAB &&
         params->browser != source_browser)
       params->window_action = NavigateParams::SHOW_WINDOW;
 
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 34b";
+
     if (contents_to_navigate_or_insert->IsCrashed()) {
+      LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 35a";
+
       contents_to_navigate_or_insert->GetController().Reload(
           content::ReloadType::NORMAL, true);
+      LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 35b";
+
     } else if (params->path_behavior == NavigateParams::IGNORE_AND_NAVIGATE &&
                contents_to_navigate_or_insert->GetURL() != params->url) {
+      LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 36a";
       LoadURLInContents(contents_to_navigate_or_insert, params->url, params);
+      LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 36b";
     }
+
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 37";
 
     // If the singleton tab isn't already selected, select it.
     if (params->source_contents != contents_to_navigate_or_insert) {
+      LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 37a";
+
       // Use the index before the potential close below, because it could
       // make the index refer to a different tab.
       params->browser->tab_strip_model()->ActivateTabAt(singleton_index,
                                                         user_initiated);
+      LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 37b";
+
       if (params->disposition == WindowOpenDisposition::SWITCH_TO_TAB) {
+        LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 38a";
+
         // Close orphaned NTP (and the like) with no history when the user
         // switches away from them.
         if (params->source_contents->GetController().CanGoBack() ||
@@ -683,22 +838,34 @@ void Navigate(NavigateParams* params) {
              params->source_contents->GetLastCommittedURL().spec() !=
                  chrome::kChromeSearchLocalNtpUrl &&
              params->source_contents->GetLastCommittedURL().spec() !=
-                 url::kAboutBlankURL))
+                 url::kAboutBlankURL)) {
+          LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 39a";
           params->source_contents->Focus();
-        else
+          LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 39a";
+
+        } else {
+          LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 40a";
           params->source_contents->Close();
+          LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 40b";
+        }
       }
     }
   }
 
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 41";
+
   if (params->disposition != WindowOpenDisposition::CURRENT_TAB) {
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 41a";
     content::NotificationService::current()->Notify(
         chrome::NOTIFICATION_TAB_ADDED,
         content::Source<content::WebContentsDelegate>(params->browser),
         content::Details<WebContents>(contents_to_navigate_or_insert));
+    LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 41b";
   }
 
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 42";
   params->navigated_or_inserted_contents = contents_to_navigate_or_insert;
+  LOG(INFO) << "[EXTENSIONS] BrowserNavigator::Navigate - Step 43: " << params->navigated_or_inserted_contents;
 }
 
 bool IsURLAllowedInIncognito(const GURL& url,

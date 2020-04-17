@@ -7,7 +7,7 @@
 #include "base/bind.h"
 #include "chrome/browser/profiles/profile.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/permission_manager.h"
+#include "content/public/browser/permission_controller.h"
 #include "content/public/browser/permission_type.h"
 #include "url/gurl.h"
 #include "url/origin.h"
@@ -55,18 +55,13 @@ ReportingPermissionsCheckerFactory::DoFilterReportingOrigins(
     return std::set<url::Origin>();
   }
 
-  content::PermissionManager* permission_manager =
-      weak_profile->GetPermissionManager();
-
-  if (!permission_manager) {
-    // Default to prohibiting all Reporting uploads if we don't have a
-    // PermissionManager.
-    return std::set<url::Origin>();
-  }
+  content::PermissionController* permission_controller =
+      content::BrowserContext::GetPermissionController(weak_profile.get());
+  DCHECK(permission_controller);
 
   for (auto it = origins.begin(); it != origins.end();) {
     GURL origin = it->GetURL();
-    bool allowed = permission_manager->GetPermissionStatus(
+    bool allowed = permission_controller->GetPermissionStatus(
                        content::PermissionType::BACKGROUND_SYNC, origin,
                        origin) == blink::mojom::PermissionStatus::GRANTED;
     if (!allowed) {

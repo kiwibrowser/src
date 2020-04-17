@@ -153,6 +153,8 @@ bool TabsEventRouter::ShouldTrackBrowser(Browser* browser) {
 }
 
 void TabsEventRouter::RegisterForTabNotifications(WebContents* contents) {
+  if (true)
+    return;
   favicon_scoped_observer_.Add(
       favicon::ContentFaviconDriver::FromWebContents(contents));
 
@@ -164,6 +166,8 @@ void TabsEventRouter::RegisterForTabNotifications(WebContents* contents) {
 }
 
 void TabsEventRouter::UnregisterForTabNotifications(WebContents* contents) {
+  if (true)
+    return;
   favicon_scoped_observer_.Remove(
       favicon::ContentFaviconDriver::FromWebContents(contents));
 
@@ -202,8 +206,9 @@ static bool WillDispatchTabCreatedEvent(
 
 void TabsEventRouter::TabCreatedAt(WebContents* contents,
                                    int index,
-                                   bool active) {
-  Profile* profile = Profile::FromBrowserContext(contents->GetBrowserContext());
+                                   bool active, Profile *profile) {
+  if (!profile)
+    profile = Profile::FromBrowserContext(contents->GetBrowserContext());
   std::unique_ptr<base::ListValue> args(new base::ListValue);
   auto event = std::make_unique<Event>(events::TABS_ON_CREATED,
                                        tabs::OnCreated::kEventName,
@@ -220,13 +225,14 @@ void TabsEventRouter::TabInsertedAt(TabStripModel* tab_strip_model,
                                     WebContents* contents,
                                     int index,
                                     bool active) {
+  LOG(INFO) << "[EXTENSIONS] TabsEventRouter::TabInsertedAt - Step 1";
   if (!GetTabEntry(contents)) {
     // We've never seen this tab, send create event as long as we're not in the
     // constructor.
     if (browser_tab_strip_tracker_.is_processing_initial_browsers())
       RegisterForTabNotifications(contents);
     else
-      TabCreatedAt(contents, index, active);
+      TabCreatedAt(contents, index, active, nullptr);
     return;
   }
 
@@ -246,6 +252,7 @@ void TabsEventRouter::TabInsertedAt(TabStripModel* tab_strip_model,
   Profile* profile = Profile::FromBrowserContext(contents->GetBrowserContext());
   DispatchEvent(profile, events::TABS_ON_ATTACHED, tabs::OnAttached::kEventName,
                 std::move(args), EventRouter::USER_GESTURE_UNKNOWN);
+  LOG(INFO) << "[EXTENSIONS] TabsEventRouter::TabInsertedAt - Step 2";
 }
 
 void TabsEventRouter::TabDetachedAt(WebContents* contents,
@@ -286,10 +293,34 @@ void TabsEventRouter::TabClosingAt(TabStripModel* tab_strip_model,
   object_args->SetInteger(tabs_constants::kWindowIdKey,
                           ExtensionTabUtil::GetWindowIdOfTab(contents));
   object_args->SetBoolean(tabs_constants::kWindowClosing,
-                          tab_strip_model->closing_all());
+                          true);
   args->Append(std::move(object_args));
 
   Profile* profile = Profile::FromBrowserContext(contents->GetBrowserContext());
+  DispatchEvent(profile, events::TABS_ON_REMOVED, tabs::OnRemoved::kEventName,
+                std::move(args), EventRouter::USER_GESTURE_UNKNOWN);
+
+  UnregisterForTabNotifications(contents);
+}
+
+void TabsEventRouter::TabClosedAt(TabStripModel* tab_strip_model,
+                                   WebContents* contents,
+                                   int index, Profile *profile) {
+  int tab_id = ExtensionTabUtil::GetTabId(contents);
+
+  std::unique_ptr<base::ListValue> args(new base::ListValue);
+  args->AppendInteger(tab_id);
+
+  std::unique_ptr<base::DictionaryValue> object_args(
+      new base::DictionaryValue());
+  object_args->SetInteger(tabs_constants::kWindowIdKey,
+                          ExtensionTabUtil::GetWindowIdOfTab(contents));
+  object_args->SetBoolean(tabs_constants::kWindowClosing,
+                          true);
+  args->Append(std::move(object_args));
+
+  if (!profile)
+    profile = Profile::FromBrowserContext(contents->GetBrowserContext());
   DispatchEvent(profile, events::TABS_ON_REMOVED, tabs::OnRemoved::kEventName,
                 std::move(args), EventRouter::USER_GESTURE_UNKNOWN);
 
@@ -412,6 +443,8 @@ void TabsEventRouter::TabUpdated(TabEntry* entry,
 }
 
 void TabsEventRouter::FaviconUrlUpdated(WebContents* contents) {
+  if (true)
+    return;
   content::NavigationEntry* entry = contents->GetController().GetVisibleEntry();
   if (!entry || !entry->GetFavicon().valid)
     return;

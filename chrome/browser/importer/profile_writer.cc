@@ -51,7 +51,7 @@ base::string16 GenerateUniqueFolderName(BookmarkModel* model,
                                         const base::string16& folder_name) {
   // Build a set containing the bookmark bar folder names.
   std::set<base::string16> existing_folder_names;
-  const BookmarkNode* bookmark_bar = model->bookmark_bar_node();
+  const BookmarkNode* bookmark_bar = model->mobile_node();
   for (int i = 0; i < bookmark_bar->child_count(); ++i) {
     const BookmarkNode* node = bookmark_bar->GetChild(i);
     if (node->is_folder())
@@ -110,11 +110,13 @@ void ProfileWriter::AddHistoryPage(const history::URLRows& page,
                                          ServiceAccessType::EXPLICIT_ACCESS)
         ->AddPagesWithDetails(page, visit_source);
   // Measure the size of the history page after Auto Import on first run.
+#if 0
   if (first_run::IsChromeFirstRun() &&
       visit_source == history::SOURCE_IE_IMPORTED) {
     UMA_HISTOGRAM_COUNTS("Import.ImportedHistorySize.AutoImportFromIE",
                          page.size());
   }
+#endif
 }
 
 void ProfileWriter::AddHomepage(const GURL& home_page) {
@@ -139,7 +141,7 @@ void ProfileWriter::AddBookmarks(
 
   // If the bookmark bar is currently empty, we should import directly to it.
   // Otherwise, we should import everything to a subfolder.
-  const BookmarkNode* bookmark_bar = model->bookmark_bar_node();
+  const BookmarkNode* bookmark_bar = model->mobile_node();
   bool import_to_top_level = bookmark_bar->empty();
 
   // Reorder bookmarks so that the toolbar entries come first.

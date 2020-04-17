@@ -35,7 +35,6 @@ void SystemHandler::RegisterMessages() {
 
 void SystemHandler::HandleShowProxySettings(const base::ListValue* /*args*/) {
   base::RecordAction(base::UserMetricsAction("Options_ShowProxySettings"));
-  settings_utils::ShowNetworkProxySettings(web_ui()->GetWebContents());
 }
 
 }  // namespace settings

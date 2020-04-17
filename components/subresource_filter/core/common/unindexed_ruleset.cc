@@ -7,7 +7,9 @@
 #include "base/logging.h"
 #include "base/numerics/safe_conversions.h"
 
-namespace url_pattern_index {
+namespace subresource_filter {
+
+namespace proto = url_pattern_index::proto;
 
 // UnindexedRulesetReader ------------------------------------------------------
 
@@ -68,4 +70,4 @@ bool UnindexedRulesetWriter::WritePendingChunk() {
   return !had_error() && chunk.SerializeToCodedStream(&coded_stream_);
 }
 
-}  // namespace url_pattern_index
+}  // namespace subresource_filter

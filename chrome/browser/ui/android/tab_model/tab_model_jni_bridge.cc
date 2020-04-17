@@ -51,6 +51,7 @@ TabModelJniBridge::TabModelJniBridge(JNIEnv* env,
     : TabModel(FindProfile(is_incognito), is_tabbed_activity),
       java_object_(env, env->NewWeakGlobalRef(jobj)) {
   TabModelList::AddTabModel(this);
+  profile_ = FindProfile(is_incognito);
 }
 
 void TabModelJniBridge::Destroy(JNIEnv* env, const JavaParamRef<jobject>& obj) {
@@ -74,6 +75,13 @@ void TabModelJniBridge::TabAddedToModel(JNIEnv* env,
   TabAndroid* tab = TabAndroid::GetNativeTab(env, jtab);
   if (tab)
     tab->SetWindowSessionID(GetSessionId());
+  LOG(INFO) << "[EXTENSIONS] TabModelJniBridge::CreateTab called";
+  // If a first observer is being added then instantiate an observer bridge.
+  if (!observer_bridge_) {
+    JNIEnv* env = AttachCurrentThread();
+    observer_bridge_ =
+        std::make_unique<TabModelObserverJniBridge>(env, java_object_.get(env), profile_);
+  }
 }
 
 int TabModelJniBridge::GetTabCount() const {
@@ -86,9 +94,21 @@ int TabModelJniBridge::GetActiveIndex() const {
   return Java_TabModelJniBridge_index(env, java_object_.get(env));
 }
 
+int TabModelJniBridge::GetLastNonExtensionActiveIndex() const {
+  JNIEnv* env = AttachCurrentThread();
+  return Java_TabModelJniBridge_getLastNonExtensionActiveIndex(env, java_object_.get(env));
+}
+
 void TabModelJniBridge::CreateTab(TabAndroid* parent,
                                   WebContents* web_contents,
                                   int parent_tab_id) {
+  LOG(INFO) << "[EXTENSIONS] TabModelJniBridge::CreateTab called";
+  // If a first observer is being added then instantiate an observer bridge.
+  if (!observer_bridge_) {
+    JNIEnv* env = AttachCurrentThread();
+    observer_bridge_ =
+        std::make_unique<TabModelObserverJniBridge>(env, java_object_.get(env), profile_);
+  }
   JNIEnv* env = AttachCurrentThread();
   Java_TabModelJniBridge_createTabWithWebContents(
       env, java_object_.get(env), (parent ? parent->GetJavaObject() : nullptr),
@@ -120,14 +140,14 @@ void TabModelJniBridge::CloseTabAt(int index) {
 }
 
 WebContents* TabModelJniBridge::CreateNewTabForDevTools(
-    const GURL& url) {
+    const GURL& url, bool incognito) {
   // TODO(dfalcantara): Change the Java side so that it creates and returns the
   //                    WebContents, which we can load the URL on and return.
   JNIEnv* env = AttachCurrentThread();
   ScopedJavaLocalRef<jstring> jurl = ConvertUTF8ToJavaString(env, url.spec());
   ScopedJavaLocalRef<jobject> obj =
       Java_TabModelJniBridge_createNewTabForDevTools(env, java_object_.get(env),
-                                                     jurl);
+                                                     jurl, incognito);
   if (obj.is_null()) {
     VLOG(0) << "Failed to create java tab";
     return NULL;
@@ -156,7 +176,7 @@ void TabModelJniBridge::AddObserver(TabModelObserver* observer) {
   if (!observer_bridge_) {
     JNIEnv* env = AttachCurrentThread();
     observer_bridge_ =
-        std::make_unique<TabModelObserverJniBridge>(env, java_object_.get(env));
+        std::make_unique<TabModelObserverJniBridge>(env, java_object_.get(env), profile_);
   }
   observer_bridge_->AddObserver(observer);
 }

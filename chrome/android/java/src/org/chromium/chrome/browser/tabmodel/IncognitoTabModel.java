@@ -160,6 +160,11 @@ public class IncognitoTabModel implements TabModel {
     }
 
     @Override
+    public int getLastNonExtensionActiveIndex() {
+        return mDelegateModel.index();
+    }
+
+    @Override
     public void setIndex(int i, TabSelectionType type) {
         mDelegateModel.setIndex(i, type);
     }

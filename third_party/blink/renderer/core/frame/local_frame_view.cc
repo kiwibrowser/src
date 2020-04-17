@@ -2891,6 +2891,9 @@ Color LocalFrameView::DocumentBackgroundColor() const {
   // Document::inheritHtmlAndBodyElementStyles.  Blend this with the base
   // background color of the LocalFrameView. This should match the color drawn
   // by ViewPainter::paintBoxDecorationBackground.
+  Settings* settings = GetFrame().GetSettings();
+  if (settings && settings->GetAccessibilityNightModeEnabled())
+    return Color::kBlack;
   Color result = BaseBackgroundColor();
   auto* layout_view = GetLayoutView();
   if (layout_view) {

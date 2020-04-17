@@ -19,6 +19,8 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task_scheduler/post_task.h"
+#include "base/android/jni_android.h"
+#include "base/android/jni_string.h"
 #include "chrome/browser/devtools/devtools_window.h"
 #include "chrome/browser/extensions/api/developer_private/developer_private_mangle.h"
 #include "chrome/browser/extensions/api/developer_private/entry_picker.h"
@@ -46,6 +48,7 @@
 #include "chrome/browser/ui/extensions/app_launch_params.h"
 #include "chrome/browser/ui/extensions/application_launch.h"
 #include "chrome/browser/ui/tabs/tab_strip_model.h"
+#include "chrome/common/chrome_paths_internal.h"
 #include "chrome/common/extensions/api/developer_private.h"
 #include "chrome/common/extensions/manifest_handlers/app_launch_info.h"
 #include "chrome/common/pref_names.h"
@@ -359,6 +362,7 @@ void DeveloperPrivateEventRouter::RemoveExtensionId(
 void DeveloperPrivateEventRouter::OnExtensionLoaded(
     content::BrowserContext* browser_context,
     const Extension* extension) {
+  LOG(INFO) << "[EXTENSIONS] DeveloperPrivateEventRouter::OnExtensionLoaded";
   DCHECK(profile_->IsSameProfile(Profile::FromBrowserContext(browser_context)));
   BroadcastItemStateChanged(developer::EVENT_TYPE_LOADED, extension->id());
 }
@@ -367,6 +371,27 @@ void DeveloperPrivateEventRouter::OnExtensionUnloaded(
     content::BrowserContext* browser_context,
     const Extension* extension,
     UnloadedExtensionReason reason) {
+  LOG(INFO) << "[EXTENSIONS] DeveloperPrivateEventRouter::OnExtensionUnloaded";
+  if (reason == UnloadedExtensionReason::UNDEFINED)
+    LOG(INFO) << "[EXTENSIONS] DeveloperPrivateEventRouter::OnExtensionUnloaded - Step 1 - Reason: UNDEFINED";
+  else if (reason == UnloadedExtensionReason::DISABLE)
+    LOG(INFO) << "[EXTENSIONS] DeveloperPrivateEventRouter::OnExtensionUnloaded - Step 1 - Reason: DISABLE";
+  else if (reason == UnloadedExtensionReason::UPDATE)
+    LOG(INFO) << "[EXTENSIONS] DeveloperPrivateEventRouter::OnExtensionUnloaded - Step 1 - Reason: UPDATE";
+  else if (reason == UnloadedExtensionReason::UNINSTALL)
+    LOG(INFO) << "[EXTENSIONS] DeveloperPrivateEventRouter::OnExtensionUnloaded - Step 1 - Reason: UNINSTALL";
+  else if (reason == UnloadedExtensionReason::TERMINATE)
+    LOG(INFO) << "[EXTENSIONS] DeveloperPrivateEventRouter::OnExtensionUnloaded - Step 1 - Reason: TERMINATE";
+  else if (reason == UnloadedExtensionReason::BLACKLIST)
+    LOG(INFO) << "[EXTENSIONS] DeveloperPrivateEventRouter::OnExtensionUnloaded - Step 1 - Reason: BLACKLIST";
+  else if (reason == UnloadedExtensionReason::PROFILE_SHUTDOWN)
+    LOG(INFO) << "[EXTENSIONS] DeveloperPrivateEventRouter::OnExtensionUnloaded - Step 1 - Reason: PROFILE_SHUTDOWN";
+  else if (reason == UnloadedExtensionReason::LOCK_ALL)
+    LOG(INFO) << "[EXTENSIONS] DeveloperPrivateEventRouter::OnExtensionUnloaded - Step 1 - Reason: LOCK_ALL";
+  else if (reason == UnloadedExtensionReason::MIGRATED_TO_COMPONENT)
+    LOG(INFO) << "[EXTENSIONS] DeveloperPrivateEventRouter::OnExtensionUnloaded - Step 1 - Reason: MIGRATED_TO_COMPONENT";
+  else
+    LOG(INFO) << "[EXTENSIONS] DeveloperPrivateEventRouter::OnExtensionUnloaded - Step 1 - Reason: OTHER";
   DCHECK(profile_->IsSameProfile(Profile::FromBrowserContext(browser_context)));
   BroadcastItemStateChanged(developer::EVENT_TYPE_UNLOADED, extension->id());
 }
@@ -375,6 +400,7 @@ void DeveloperPrivateEventRouter::OnExtensionInstalled(
     content::BrowserContext* browser_context,
     const Extension* extension,
     bool is_update) {
+  LOG(INFO) << "[EXTENSIONS] DeveloperPrivateEventRouter::OnExtensionInstalled";
   DCHECK(profile_->IsSameProfile(Profile::FromBrowserContext(browser_context)));
   BroadcastItemStateChanged(developer::EVENT_TYPE_INSTALLED, extension->id());
 }
@@ -383,6 +409,7 @@ void DeveloperPrivateEventRouter::OnExtensionUninstalled(
     content::BrowserContext* browser_context,
     const Extension* extension,
     extensions::UninstallReason reason) {
+  LOG(INFO) << "[EXTENSIONS] DeveloperPrivateEventRouter::OnExtensionUninstalled";
   DCHECK(profile_->IsSameProfile(Profile::FromBrowserContext(browser_context)));
   BroadcastItemStateChanged(developer::EVENT_TYPE_UNINSTALLED, extension->id());
 }
@@ -1077,15 +1104,93 @@ ExtensionFunction::ResponseAction DeveloperPrivateLoadUnpackedFunction::Run() {
 
 void DeveloperPrivateLoadUnpackedFunction::FileSelected(
     const base::FilePath& path) {
+  base::FilePath new_path = path;
+  LOG(INFO) << "[EXTENSIONS] Selected file: " << new_path << " with extension: " << path.Extension();
+  if (new_path.IsContentUri()) {
+    LOG(INFO) << "[EXTENSIONS] The file is a content URI, we have to get file info";
+    base::FilePath file_path_tmp;
+//    if (!chrome::GetDefaultUserDataDirectory(&file_path_tmp)) {
+    if (!GetTempDir(&file_path_tmp)) {
+      LOG(ERROR) << "[EXTENSIONS] Getting Default User Data Directory for Import";
+      return;
+    }
+    file_path_tmp = file_path_tmp.Append(FILE_PATH_LITERAL("extensions.file.tmp"));
+
+    LOG(INFO) << "[EXTENSIONS] Copying file from " << new_path << " to " << file_path_tmp;
+    if (!base::CopyFile(new_path, file_path_tmp)) {
+      LOG(INFO) << "[EXTENSIONS] base::CopyFile failed with error";
+      return ;
+    }
+
+    LOG(INFO) << "[EXTENSIONS] Reading " << file_path_tmp;
+    std::string content;
+    base::ReadFileToStringWithMaxSize(file_path_tmp, &content, 2);
+    LOG(INFO) << "[EXTENSIONS] Received file content: " << content;
+    if (!GetTempDir(&new_path)) {
+      LOG(ERROR) << "[EXTENSIONS] Getting Default User Data Directory for Import";
+      return;
+    }
+    if (content == "Cr")
+      new_path = new_path.Append(FILE_PATH_LITERAL("extensions.file.crx"));
+    else if (content == "PK")
+      new_path = new_path.Append(FILE_PATH_LITERAL("extensions.file.zip"));
+    else if (content == "//")
+      new_path = new_path.Append(FILE_PATH_LITERAL("extensions.file.user.js"));
+    else
+      return ;
+    LOG(INFO) << "[EXTENSIONS] Copying file from " << file_path_tmp << " to " << new_path;
+    if (!base::CopyFile(file_path_tmp, new_path)) {
+      LOG(INFO) << "[EXTENSIONS] base::CopyFile failed with error";
+      return ;
+    }
+    base::DeleteFile(file_path_tmp, false);
+  }
+
+  LOG(INFO) << "[EXTENSIONS] Now processing: " << new_path;
+
+  if (new_path.MatchesExtension(FILE_PATH_LITERAL(".zip"))
+   || new_path.MatchesExtension(FILE_PATH_LITERAL(".user.js"))
+   || new_path.MatchesExtension(FILE_PATH_LITERAL(".crx"))) {
+    ExtensionService* service = GetExtensionService(browser_context());
+    if (new_path.MatchesExtension(FILE_PATH_LITERAL(".zip"))) {
+      ZipFileInstaller::Create(
+          content::ServiceManagerConnection::GetForProcess()->GetConnector(),
+          MakeRegisterInExtensionServiceCallback(service))
+          ->LoadFromZipFile(new_path);
+    } else {
+      scoped_refptr<CrxInstaller> crx_installer =
+          CrxInstaller::CreateSilent(service);
+      crx_installer->set_error_on_unsupported_requirements(true);
+      crx_installer->set_off_store_install_allow_reason(
+          CrxInstaller::OffStoreInstallAllowedFromSettingsPage);
+      crx_installer->set_install_immediately(true);
+
+      if (new_path.MatchesExtension(FILE_PATH_LITERAL(".user.js"))) {
+        crx_installer->InstallUserScript(new_path, net::FilePathToFileURL(new_path));
+      } else if (new_path.MatchesExtension(FILE_PATH_LITERAL(".crx"))) {
+        crx_installer->InstallCrx(new_path);
+      }
+    }
+
+    return ;
+  }
+  new_path = path.DirName();
+  LOG(INFO) << "[EXTENSIONS] Loading path with: " << new_path;
   scoped_refptr<UnpackedInstaller> installer(
       UnpackedInstaller::Create(GetExtensionService(browser_context())));
+  LOG(INFO) << "[EXTENSIONS] Loading: " << new_path << " - Step 1";
   installer->set_be_noisy_on_failure(!fail_quietly_);
+  LOG(INFO) << "[EXTENSIONS] Loading: " << new_path << " - Step 2";
   installer->set_completion_callback(
       base::Bind(&DeveloperPrivateLoadUnpackedFunction::OnLoadComplete, this));
-  installer->Load(path);
+  LOG(INFO) << "[EXTENSIONS] Loading: " << new_path << " - Step 3";
+  installer->Load(new_path);
+  LOG(INFO) << "[EXTENSIONS] Loading: " << new_path << " - Step 4";
 
   retry_guid_ = DeveloperPrivateAPI::Get(browser_context())
-                  ->AddUnpackedPath(GetSenderWebContents(), path);
+                  ->AddUnpackedPath(GetSenderWebContents(), new_path);
+
+  LOG(INFO) << "[EXTENSIONS] Loading: " << new_path << " - Step 5";
 
   Release();  // Balanced in Run().
 }
@@ -1845,9 +1950,17 @@ ExtensionFunction::ResponseAction DeveloperPrivateShowOptionsFunction::Run() {
   if (!web_contents)
     return RespondNow(Error(kCouldNotFindWebContentsError));
 
+  Browser* browser = chrome::FindBrowserWithWebContents(web_contents);
+
+  // ... but some pages (popups and apps) don't have tabs, and some (background
+  // pages) don't have an associated browser. For these, the inspector opens in
+  // a new window, and our work is done.
+  if (!browser || !browser->is_type_tabbed())
+    browser = new Browser(Browser::CreateParams(Profile::FromBrowserContext(browser_context()), true));
+
   ExtensionTabUtil::OpenOptionsPage(
       extension,
-      chrome::FindBrowserWithWebContents(web_contents));
+      browser);
   return RespondNow(NoArguments());
 }
 

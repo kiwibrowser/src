@@ -8,7 +8,7 @@
 
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_split.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/test/test_mock_time_task_runner.h"
 #include "net/http/http_response_headers.h"
 #include "net/http/http_status_code.h"

@@ -101,6 +101,7 @@ class VizProcessTransportFactory : public ui::ContextFactory,
   viz::FrameSinkManagerImpl* GetFrameSinkManager() override;
 
   // ImageTransportFactory implementation.
+  void DisableGpuCompositing() override;
   bool IsGpuCompositingDisabled() override;
   ui::ContextFactory* GetContextFactory() override;
   ui::ContextFactoryPrivate* GetContextFactoryPrivate() override;

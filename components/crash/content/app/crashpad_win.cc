@@ -81,7 +81,7 @@ base::FilePath PlatformCrashpadInitialization(bool initial_client,
     GetPlatformCrashpadAnnotations(&process_annotations);
 
 #if defined(GOOGLE_CHROME_BUILD)
-    std::string url = "https://clients2.google.com/cr/report";
+    std::string url = "https://clients2.kiwibrowser.com/cr/report";
 #else
     std::string url;
 #endif

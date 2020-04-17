@@ -65,6 +65,7 @@ void DataURLToFaviconUsage(const GURL& link_url,
       !favicon_data.SchemeIs(url::kDataScheme))
     return;
 
+#if 0
   // Parse the data URL.
   std::string mime_type, char_set, data;
   if (!net::DataURL::Parse(favicon_data, &mime_type, &char_set, &data) ||
@@ -85,6 +86,7 @@ void DataURLToFaviconUsage(const GURL& link_url,
   usage.urls.insert(link_url);
 
   favicons->push_back(usage);
+#endif
 }
 
 }  // namespace
@@ -108,12 +110,10 @@ static std::string stripDt(const std::string& lineDt) {
 void ImportBookmarksFile(
     const base::Callback<bool(void)>& cancellation_callback,
     const base::Callback<bool(const GURL&)>& valid_url_callback,
-    const base::FilePath& file_path,
+    const std::string& content,
     std::vector<ImportedBookmarkEntry>* bookmarks,
     std::vector<importer::SearchEngineInfo>* search_engines,
     favicon_base::FaviconUsageDataList* favicons) {
-  std::string content;
-  base::ReadFileToString(file_path, &content);
   std::vector<std::string> lines = base::SplitString(
       content, "\n", base::TRIM_WHITESPACE, base::SPLIT_WANT_ALL);
 

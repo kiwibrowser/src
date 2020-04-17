@@ -12,7 +12,7 @@
 #include "content/public/browser/web_contents_delegate.h"
 
 JavaScriptDialog::JavaScriptDialog(content::WebContents* parent_web_contents) {
-  popunder_preventer_.reset(new PopunderPreventer(parent_web_contents));
+//  popunder_preventer_.reset(new PopunderPreventer(parent_web_contents));
   parent_web_contents->GetDelegate()->ActivateContents(parent_web_contents);
 }
 

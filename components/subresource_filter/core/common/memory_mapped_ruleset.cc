@@ -6,12 +6,33 @@
 
 #include <utility>
 
+#include "base/logging.h"
+
 namespace subresource_filter {
 
-MemoryMappedRuleset::MemoryMappedRuleset(base::File ruleset_file) {
-  ruleset_.Initialize(std::move(ruleset_file));
+// Used for tests which want to simulate mmap failures.
+static bool g_fail_memory_map_initialization_for_testing = false;
+
+// static
+scoped_refptr<MemoryMappedRuleset> MemoryMappedRuleset::CreateAndInitialize(
+    base::File ruleset_file) {
+  if (g_fail_memory_map_initialization_for_testing)
+    return nullptr;
+
+  auto ruleset = base::AdoptRef(new MemoryMappedRuleset());
+  if (g_fail_memory_map_initialization_for_testing ||
+      !ruleset->ruleset_.Initialize(std::move(ruleset_file)))
+    return nullptr;
+  DCHECK(ruleset->ruleset_.IsValid());
+  return ruleset;
 }
 
-MemoryMappedRuleset::~MemoryMappedRuleset() {}
+// static
+void MemoryMappedRuleset::SetMemoryMapFailuresForTesting(bool fail) {
+  g_fail_memory_map_initialization_for_testing = fail;
+}
+
+MemoryMappedRuleset::MemoryMappedRuleset() = default;
+MemoryMappedRuleset::~MemoryMappedRuleset() = default;
 
 }  // namespace subresource_filter

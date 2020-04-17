@@ -67,8 +67,6 @@ ExtensionUninstallDialog::ExtensionUninstallDialog(
     gfx::NativeWindow parent,
     ExtensionUninstallDialog::Delegate* delegate)
     : profile_(profile), parent_(parent), delegate_(delegate), observer_(this) {
-  if (parent)
-    parent_window_tracker_ = NativeWindowTracker::Create(parent);
 }
 
 ExtensionUninstallDialog::~ExtensionUninstallDialog() = default;

@@ -423,8 +423,11 @@ void TabActivityWatcher::TabInsertedAt(TabStripModel* tab_strip_model,
                                        bool foreground) {
   // Ensure the WebContentsData is created to observe this WebContents since it
   // may represent a newly created tab.
+  LOG(INFO) << "[EXTENSIONS] TabActivityWatcher::TabInsertedAt - Step 1";
   WebContentsData::CreateForWebContents(contents);
+  LOG(INFO) << "[EXTENSIONS] TabActivityWatcher::TabInsertedAt - Step 2";
   WebContentsData::FromWebContents(contents)->TabInserted(foreground);
+  LOG(INFO) << "[EXTENSIONS] TabActivityWatcher::TabInsertedAt - Step 3";
 }
 
 void TabActivityWatcher::TabDetachedAt(content::WebContents* contents,

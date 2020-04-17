@@ -37,7 +37,8 @@ std::string GetUserAgent() {
         switches::kUseMobileUserAgent)) {
     product += " Mobile";
   }
-  return content::BuildUserAgentFromProductAndExtraOSInfo(product, "; wv");
+  return content::BuildUserAgentFromProductAndExtraOSInfo(
+      product, "; wv", true /* include_android_build_number */);
 }
 
 void AwContentClient::AddAdditionalSchemes(Schemes* schemes) {

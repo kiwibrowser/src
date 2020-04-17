@@ -47,6 +47,21 @@ GURL GetDefaultSearchURLForSearchTerms(TemplateURLService* service,
                                             service->search_terms_data()));
 }
 
+
+GURL GetDefaultSearchURLForContextualSearchTerms(TemplateURLService* service,
+                                       const base::string16& terms) {
+  DCHECK(service);
+  const TemplateURL* default_provider = service->GetDefaultSearchProvider();
+  if (!default_provider)
+    return GURL();
+  const TemplateURLRef& search_url = default_provider->contextual_search_url_ref();
+  DCHECK(search_url.SupportsReplacement(service->search_terms_data()));
+  TemplateURLRef::SearchTermsArgs search_terms_args(terms);
+  search_terms_args.append_extra_query_params = true;
+  return GURL(search_url.ReplaceSearchTerms(search_terms_args,
+                                            service->search_terms_data()));
+}
+
 void RemoveDuplicatePrepopulateIDs(
     KeywordWebDataService* service,
     const std::vector<std::unique_ptr<TemplateURLData>>& prepopulated_urls,

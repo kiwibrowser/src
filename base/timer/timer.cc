@@ -265,4 +265,15 @@ void Timer::RunScheduledTask() {
   // No more member accesses here: |this| could be deleted at this point.
 }
 
+void OneShotTimer::FireNow() {
+  DCHECK(origin_sequence_checker_.CalledOnValidSequence());
+  DCHECK(!task_runner_) << "FireNow() is incompatible with SetTaskRunner()";
+  DCHECK(IsRunning());
+
+  OnceClosure task = user_task();
+  Stop();
+  DCHECK(!user_task());
+  std::move(task).Run();
+}
+
 }  // namespace base

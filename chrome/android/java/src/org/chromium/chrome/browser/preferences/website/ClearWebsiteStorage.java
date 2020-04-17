@@ -9,6 +9,12 @@ import android.content.DialogInterface;
 import android.preference.DialogPreference;
 import android.util.AttributeSet;
 
+import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.TextView;
+
 /**
  * Dialog that prompts the user to clear website storage on the device.
  */
@@ -32,6 +38,17 @@ public class ClearWebsiteStorage extends DialogPreference {
     protected void onDialogClosed(boolean positiveResult) {
         if (positiveResult && mConfirmationListener != null) {
             mConfirmationListener.onClick(null, 0);
+        }
+    }
+
+    @Override
+    protected void onBindView(View view) {
+        super.onBindView(view);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            if (((TextView) view.findViewById(android.R.id.title)) != null)
+               ((TextView) view.findViewById(android.R.id.title)).setTextColor(Color.WHITE);
+            if (((TextView) view.findViewById(android.R.id.summary)) != null)
+               ((TextView) view.findViewById(android.R.id.summary)).setTextColor(Color.GRAY);
         }
     }
 }

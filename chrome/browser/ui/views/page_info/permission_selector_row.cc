@@ -295,8 +295,6 @@ PermissionSelectorRow::PermissionSelectorRow(
   label_ =
       new views::Label(PageInfoUI::PermissionTypeToUIString(permission.type),
                        CONTEXT_BODY_TEXT_LARGE);
-  icon_->SetImage(
-      PageInfoUI::GetPermissionIcon(permission, label_->enabled_color()));
   layout->AddView(label_);
   // Create the menu model.
   menu_model_.reset(new PermissionMenuModel(
@@ -420,8 +418,6 @@ void PermissionSelectorRow::InitializeComboboxView(
 void PermissionSelectorRow::PermissionChanged(
     const PageInfoUI::PermissionInfo& permission) {
   // Change the permission icon to reflect the selected setting.
-  icon_->SetImage(
-      PageInfoUI::GetPermissionIcon(permission, label_->enabled_color()));
 
   // Update the menu button text to reflect the new setting.
   if (menu_button_) {

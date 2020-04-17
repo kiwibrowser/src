@@ -188,10 +188,6 @@ component("protobuf_lite") {
     "//build/config/compiler:no_size_t_to_int_warning",
   ]
 
-  deps = [
-    "//build/config:exe_and_shlib_deps",
-  ]
-
   if (is_android) {
     libs = [ "log" ]  # Used by src/google/protobuf/stubs/common.cc
   }
@@ -199,7 +195,9 @@ component("protobuf_lite") {
   cflags = protobuf_lite_cflags
 
   if (is_component_build && is_desktop_linux) {
-    deps += [ ":mirclient" ]
+    deps = [
+      ":mirclient",
+    ]
   }
 
   # Required for component builds. See http://crbug.com/172800.
@@ -358,7 +356,6 @@ static_library("protobuf_full") {
             ]
 
   deps = [
-    "//build/config:exe_and_shlib_deps",
     "//third_party/zlib",
   ]
 
@@ -635,9 +632,6 @@ if (current_toolchain == host_toolchain) {
   }
 
   executable("js_embed") {
-    deps = [
-      "//build/config:exe_and_shlib_deps",
-    ]
     sources = [
       "src/google/protobuf/compiler/js/embed.cc",
     ]

@@ -180,9 +180,8 @@ public class StripLayoutHelper implements StripLayoutTab.StripLayoutTabDelegate 
         mNewTabButton = new CompositorButton(
                 context, NEW_TAB_BUTTON_WIDTH_DP, NEW_TAB_BUTTON_HEIGHT_DP, newTabClickHandler);
         mNewTabButton.setResources(R.drawable.btn_tabstrip_new_tab_normal,
-                R.drawable.btn_tabstrip_new_tab_pressed,
-                R.drawable.btn_tabstrip_new_incognito_tab_normal,
-                R.drawable.btn_tabstrip_new_incognito_tab_pressed);
+                R.drawable.btn_tabstrip_new_tab_pressed, R.drawable.btn_tabstrip_new_tab_normal,
+                R.drawable.btn_tabstrip_new_tab_pressed);
         mNewTabButton.setIncognito(incognito);
         mNewTabButton.setY(NEW_TAB_BUTTON_Y_OFFSET_DP);
         mNewTabButton.setClickSlop(NEW_TAB_BUTTON_CLICK_SLOP_DP);

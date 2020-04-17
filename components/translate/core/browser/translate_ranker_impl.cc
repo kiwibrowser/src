@@ -77,22 +77,22 @@ RankerModelStatus ValidateModel(const RankerModel& model) {
 
 #if defined(OS_ANDROID)
 const char kDefaultTranslateRankerModelURL[] =
-    "https://www.gstatic.com/chrome/intelligence/assist/ranker/models/"
+    "https://gstatic.kiwibrowser.com/chrome/intelligence/assist/ranker/models/"
     "translate/android/translate_ranker_model_android_20170918.pb.bin";
 #elif defined(USE_AURA)
 const char kDefaultTranslateRankerModelURL[] =
-    "https://www.gstatic.com/chrome/intelligence/assist/ranker/models/"
+    "https://gstatic.kiwibrowser.com/chrome/intelligence/assist/ranker/models/"
     "translate/translate_ranker_20180123.model";
 #else
 const char kDefaultTranslateRankerModelURL[] =
-    "https://www.gstatic.com/chrome/intelligence/assist/ranker/models/"
+    "https://gstatic.kiwibrowser.com/chrome/intelligence/assist/ranker/models/"
     "translate/2017/03/translate_ranker_model_20170329.pb.bin";
 #endif
 
 const base::Feature kTranslateRankerQuery{"TranslateRankerQuery",
-                                          base::FEATURE_ENABLED_BY_DEFAULT};
+                                          base::FEATURE_DISABLED_BY_DEFAULT};
 const base::Feature kTranslateRankerEnforcement{
-    "TranslateRankerEnforcement", base::FEATURE_ENABLED_BY_DEFAULT};
+    "TranslateRankerEnforcement", base::FEATURE_DISABLED_BY_DEFAULT};
 
 const base::Feature kTranslateRankerAutoBlacklistOverride{
     "TranslateRankerAutoBlacklistOverride", base::FEATURE_ENABLED_BY_DEFAULT};
@@ -189,8 +189,8 @@ base::FilePath TranslateRankerImpl::GetModelPath(
 
 // static
 GURL TranslateRankerImpl::GetModelURL() {
-  if (!base::FeatureList::IsEnabled(kTranslateRankerQuery) &&
-      !base::FeatureList::IsEnabled(kTranslateRankerEnforcement)) {
+  if (true || (!base::FeatureList::IsEnabled(kTranslateRankerQuery) &&
+      !base::FeatureList::IsEnabled(kTranslateRankerEnforcement))) {
     return GURL();
   }
   // Allow override of the ranker model URL from the command line.

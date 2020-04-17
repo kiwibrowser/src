@@ -5,6 +5,7 @@
 package org.chromium.chrome.browser.bookmarks;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
@@ -14,6 +15,7 @@ import android.widget.TextView;
 
 import org.chromium.base.Log;
 import org.chromium.chrome.R;
+import org.chromium.base.ContextUtils;
 import org.chromium.chrome.browser.SynchronousInitializationActivity;
 import org.chromium.chrome.browser.bookmarks.BookmarkBridge.BookmarkItem;
 import org.chromium.chrome.browser.bookmarks.BookmarkBridge.BookmarkModelObserver;
@@ -37,6 +39,7 @@ public class BookmarkEditActivity extends SynchronousInitializationActivity {
     private EmptyAlertEditText mTitleEditText;
     private EmptyAlertEditText mUrlEditText;
     private TextView mFolderTextView;
+    private TextView mFolderTextDescriptionView;
 
     private MenuItem mDeleteButton;
 
@@ -70,6 +73,7 @@ public class BookmarkEditActivity extends SynchronousInitializationActivity {
         setContentView(R.layout.bookmark_edit);
         mTitleEditText = (EmptyAlertEditText) findViewById(R.id.title_text);
         mFolderTextView = (TextView) findViewById(R.id.folder_text);
+        mFolderTextDescriptionView = (TextView) findViewById(R.id.folder_text_description);
         mUrlEditText = (EmptyAlertEditText) findViewById(R.id.url_text);
 
         mFolderTextView.setOnClickListener(new View.OnClickListener() {
@@ -96,6 +100,12 @@ public class BookmarkEditActivity extends SynchronousInitializationActivity {
                 shadow.setVisibility(scrollView.getScrollY() > 0 ? View.VISIBLE : View.GONE);
             });
         }
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            View scrollView = findViewById(R.id.scroll_view);
+            scrollView.setBackgroundColor(Color.BLACK);
+            toolbar.setBackgroundColor(Color.BLACK);
+            toolbar.setTitleTextAppearance(toolbar.getContext(), R.style.WhiteHeadline2);
+        }
     }
 
     /**
@@ -112,6 +122,22 @@ public class BookmarkEditActivity extends SynchronousInitializationActivity {
         mTitleEditText.setEnabled(bookmarkItem.isEditable());
         mUrlEditText.setEnabled(bookmarkItem.isUrlEditable());
         mFolderTextView.setEnabled(bookmarkItem.isMovable());
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mTitleEditText.setTextColor(Color.WHITE);
+            mUrlEditText.setTextColor(Color.WHITE);
+            mFolderTextView.setTextColor(Color.WHITE);
+            mFolderTextDescriptionView.setTextColor(Color.WHITE);
+
+            mTitleEditText.setHintTextColor(Color.WHITE);
+            mUrlEditText.setHintTextColor(Color.WHITE);
+            mFolderTextView.setHintTextColor(Color.WHITE);
+            mFolderTextDescriptionView.setHintTextColor(Color.WHITE);
+
+            mTitleEditText.setBackgroundColor(Color.BLACK);
+            mUrlEditText.setBackgroundColor(Color.BLACK);
+            mFolderTextView.setBackgroundColor(Color.BLACK);
+            mFolderTextDescriptionView.setBackgroundColor(Color.BLACK);
+        }
     }
 
     @Override

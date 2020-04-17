@@ -14,7 +14,6 @@ namespace android {
 
 class AppHooks {
  public:
-  static bool ShouldDetectVideoFullscreen();
   static base::android::ScopedJavaLocalRef<jobject>
   GetOfflinePagesCCTRequestDoneCallback();
 

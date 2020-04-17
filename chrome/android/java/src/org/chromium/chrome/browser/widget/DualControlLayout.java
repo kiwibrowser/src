@@ -7,6 +7,7 @@ package org.chromium.chrome.browser.widget;
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
+import android.os.Bundle;
 import android.graphics.Color;
 import android.support.annotation.IntDef;
 import android.text.TextUtils;
@@ -16,6 +17,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 
 import org.chromium.base.ApiCompatibilityUtils;
+import org.chromium.base.ContextUtils;
 import org.chromium.chrome.R;
 import org.chromium.ui.widget.ButtonCompat;
 

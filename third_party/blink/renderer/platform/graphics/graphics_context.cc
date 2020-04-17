@@ -150,6 +150,7 @@ void GraphicsContext::SetHighContrast(const HighContrastSettings& settings) {
   switch (high_contrast_settings_.mode) {
     case HighContrastMode::kOff:
       high_contrast_filter_.reset(nullptr);
+      text_contrast_filter_.reset(nullptr);
       return;
     case HighContrastMode::kSimpleInvertForTesting: {
       uint8_t identity[256], invert[256];
@@ -173,6 +174,15 @@ void GraphicsContext::SetHighContrast(const HighContrastSettings& settings) {
   config.fGrayscale = high_contrast_settings_.grayscale;
   config.fContrast = high_contrast_settings_.contrast;
   high_contrast_filter_ = SkHighContrastFilter::Make(config);
+
+  SkHighContrastConfig text_filter_config;
+  text_filter_config.fContrast = -0.25f;
+  if (high_contrast_settings_.contrast > 0.0f) {
+    text_contrast_filter_.reset(nullptr);
+  } else {
+    text_filter_config.fGrayscale = high_contrast_settings_.grayscale;
+    text_contrast_filter_ = SkHighContrastFilter::Make(text_filter_config);
+  }
 }
 
 void GraphicsContext::SaveLayer(const SkRect* bounds, const PaintFlags* flags) {
@@ -744,7 +754,7 @@ void GraphicsContext::DrawTextInternal(const Font& font,
     return;
 
   font.DrawText(canvas_, text_info, point, device_scale_factor_,
-                ApplyHighContrastFilter(&flags));
+                ApplyHighContrastFilterText(&flags));
 }
 
 void GraphicsContext::DrawText(const Font& font,
@@ -789,7 +799,7 @@ void GraphicsContext::DrawTextInternal(const Font& font,
 
   DrawTextPasses([&font, &text_info, &point, this](const PaintFlags& flags) {
     font.DrawText(canvas_, text_info, point, device_scale_factor_,
-                  ApplyHighContrastFilter(&flags));
+                  ApplyHighContrastFilterText(&flags));
   });
 }
 
@@ -884,6 +894,7 @@ void GraphicsContext::DrawImage(
   image_flags.setColor(SK_ColorBLACK);
   image_flags.setFilterQuality(ComputeFilterQuality(image, dest, src));
   image_flags.setAntiAlias(ShouldAntialias());
+
   if (ShouldApplyHighContrastFilterToImage(*image))
     image_flags.setColorFilter(high_contrast_filter_);
   image->Draw(canvas_, image_flags, dest, src, should_respect_image_orientation,
@@ -1060,8 +1071,15 @@ void GraphicsContext::FillRect(const FloatRect& rect,
   PaintFlags flags = ImmutableState()->FillFlags();
   flags.setColor(color.Rgb());
   flags.setBlendMode(xfer_mode);
+  if (high_contrast_filter_) {
+    flags.setColor(color.InvertAndCapLightness(high_contrast_settings_.contrast).Rgb());
+    flags.setColorFilter(nullptr);
+  }
 
+  sk_sp<SkColorFilter> saved_high_contrast_filter_ = high_contrast_filter_;
+  high_contrast_filter_ = nullptr;
   DrawRect(rect, flags);
+  high_contrast_filter_ = saved_high_contrast_filter_;
 }
 
 void GraphicsContext::FillRoundedRect(const FloatRoundedRect& rrect,
@@ -1081,8 +1099,18 @@ void GraphicsContext::FillRoundedRect(const FloatRoundedRect& rrect,
 
   PaintFlags flags = ImmutableState()->FillFlags();
   flags.setColor(color.Rgb());
+  if (high_contrast_filter_) {
+    float contrast = high_contrast_settings_.contrast;
+    if (contrast < 0)
+      contrast = contrast + 0.005;
+    flags.setColor(color.InvertAndCapLightness(contrast).Rgb());
+    flags.setColorFilter(nullptr);
+  }
 
+  sk_sp<SkColorFilter> saved_high_contrast_filter_ = high_contrast_filter_;
+  high_contrast_filter_ = nullptr;
   DrawRRect(rrect, flags);
+  high_contrast_filter_ = saved_high_contrast_filter_;
 }
 
 namespace {
@@ -1447,6 +1475,31 @@ PaintFlags GraphicsContext::ApplyHighContrastFilter(
   } else {
     output.setColor(high_contrast_filter_->filterColor(output.getColor()));
   }
+  return output;
+}
+
+PaintFlags GraphicsContext::ApplyHighContrastFilterText(
+    const PaintFlags* input) const {
+  PaintFlags output;
+  if (input && text_contrast_filter_)
+  {
+      if (input)
+         output = *input;
+      if (output.HasShader()) {
+        output.setColorFilter(text_contrast_filter_);
+      } else {
+        output.setColor(text_contrast_filter_->filterColor(output.getColor()));
+      }
+      return output;
+  }
+  if (!high_contrast_filter_)
+    return *input;
+
+  if (input)
+    output = *input;
+  Color color = output.getColor();
+  output.setColor(color.InvertAndCapLightnessWithoutLimit().Rgb());
+  output.setColorFilter(nullptr);
   return output;
 }
 

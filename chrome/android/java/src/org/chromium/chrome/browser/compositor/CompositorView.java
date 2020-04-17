@@ -18,6 +18,7 @@ import android.widget.FrameLayout;
 import org.chromium.base.TraceEvent;
 import org.chromium.base.annotations.CalledByNative;
 import org.chromium.base.annotations.JNINamespace;
+import org.chromium.base.ContextUtils;
 import org.chromium.chrome.browser.compositor.layouts.Layout;
 import org.chromium.chrome.browser.compositor.layouts.LayoutProvider;
 import org.chromium.chrome.browser.compositor.layouts.LayoutRenderHost;
@@ -371,7 +372,7 @@ public class CompositorView
                 provider.getUpdatedActiveSceneLayer(mLayerTitleCache, mTabContentManager,
                 mResourceManager, provider.getFullscreenManager());
 
-        nativeSetSceneLayer(mNativeCompositorView, sceneLayer);
+        nativeSetSceneLayer(mNativeCompositorView, sceneLayer, (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")));
 
         TabModelImpl.flushActualTabSwitchLatencyMetric();
         nativeFinalizeLayers(mNativeCompositorView);
@@ -461,6 +462,6 @@ public class CompositorView
     private native void nativeSetNeedsComposite(long nativeCompositorView);
     private native void nativeSetLayoutBounds(long nativeCompositorView);
     private native void nativeSetOverlayVideoMode(long nativeCompositorView, boolean enabled);
-    private native void nativeSetSceneLayer(long nativeCompositorView, SceneLayer sceneLayer);
+    private native void nativeSetSceneLayer(long nativeCompositorView, SceneLayer sceneLayer, boolean nightModeEnabled);
     private native void nativeSetCompositorWindow(long nativeCompositorView, WindowAndroid window);
 }

@@ -18,7 +18,9 @@ import android.view.View.OnAttachStateChangeListener;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.view.animation.Interpolator;
+import android.graphics.Color;
 
+import org.chromium.base.ContextUtils;
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.ntp.ContextMenuManager;
@@ -101,6 +103,11 @@ public abstract class CardViewHolder
         mMaxPeekPadding = resources.getDimensionPixelSize(R.dimen.snippets_padding);
 
         mRecyclerView = recyclerView;
+
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+             itemView.setBackgroundColor(Color.BLACK);
+             mRecyclerView.setBackgroundColor(Color.BLACK);
+        }
 
         itemView.setOnClickListener(new OnClickListener() {
             @Override

@@ -8,7 +8,7 @@
 #include "base/metrics/dummy_histogram.h"
 #include "base/run_loop.h"
 #include "base/test/gtest_util.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/threading/thread.h"
 #include "components/metrics/single_sample_metrics.h"
 #include "testing/gtest/include/gtest/gtest.h"

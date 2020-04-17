@@ -7,21 +7,21 @@ package org.chromium.chromecast.shell;
 import android.content.Context;
 import android.widget.FrameLayout;
 
-import org.chromium.chromecast.base.Observable;
 import org.chromium.chromecast.base.ScopeFactory;
 import org.chromium.components.content_view.ContentView;
 import org.chromium.content.browser.ContentViewRenderView;
 import org.chromium.content_public.browser.ContentViewCore;
 import org.chromium.content_public.browser.WebContents;
+import org.chromium.ui.base.ActivityWindowAndroid;
 import org.chromium.ui.base.ViewAndroidDelegate;
 import org.chromium.ui.base.WindowAndroid;
 
 class CastWebContentsView {
     public static ScopeFactory<WebContents> onLayout(
-            Context context, FrameLayout layout, int backgroundColor, Observable<?> resumedState) {
+            Context context, FrameLayout layout, int backgroundColor) {
         layout.setBackgroundColor(backgroundColor);
         return (WebContents webContents) -> {
-            WindowAndroid window = new WindowAndroid(context);
+            WindowAndroid window = new ActivityWindowAndroid(context);
             ContentViewRenderView contentViewRenderView = new ContentViewRenderView(context) {
                 @Override
                 protected void onReadyToRender() {
@@ -45,10 +45,6 @@ class CastWebContentsView {
             contentView.setFocusable(true);
             contentView.requestFocus();
             contentViewRenderView.setCurrentWebContents(webContents);
-            resumedState.watch(() -> {
-                contentViewCore.onResume();
-                return contentViewCore::onPause;
-            });
             return () -> {
                 layout.removeView(contentView);
                 layout.removeView(contentViewRenderView);

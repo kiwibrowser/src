@@ -645,6 +645,18 @@ const GpuControlList::GpuSeriesType kGpuSeriesForEntry66Exception0[1] = {
     GpuControlList::GpuSeriesType::kIntelKabyLake,
 };
 
+const int kFeatureListForEntry67[1] = {
+    TEST_FEATURE_0,
+};
+
+const GpuControlList::DriverInfo kDriverInfoForEntry67 = {
+    nullptr,  // driver_vendor
+    {GpuControlList::kLE, GpuControlList::kVersionStyleNumerical,
+     "8.15.10.2702", nullptr},  // driver_version
+    {GpuControlList::kUnknown, GpuControlList::kVersionStyleNumerical, nullptr,
+     nullptr},  // driver_date
+};
+
 }  // namespace gpu
 
 #endif  // GPU_CONFIG_GPU_CONTROL_LIST_TESTING_ARRAYS_AND_STRUCTS_AUTOGEN_H_

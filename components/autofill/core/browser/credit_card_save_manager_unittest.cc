@@ -16,7 +16,7 @@
 
 #include "base/guid.h"
 #include "base/metrics/metrics_hashes.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/test/scoped_feature_list.h"
 #include "base/test/scoped_task_environment.h"
 #include "base/threading/thread_task_runner_handle.h"

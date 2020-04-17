@@ -415,21 +415,6 @@ bool DownloadCommands::IsDownloadPdf() const {
 }
 #endif
 
-bool DownloadCommands::CanOpenPdfInSystemViewer() const {
-#if defined(OS_WIN)
-  bool is_adobe_pdf_reader_up_to_date = false;
-  if (IsDownloadPdf() && IsAdobeReaderDefaultPDFViewer()) {
-    is_adobe_pdf_reader_up_to_date =
-        DownloadTargetDeterminer::IsAdobeReaderUpToDate();
-  }
-  return IsDownloadPdf() &&
-         (IsAdobeReaderDefaultPDFViewer() ? is_adobe_pdf_reader_up_to_date
-                                          : true);
-#elif defined(OS_MACOSX) || defined(OS_LINUX)
-  return IsDownloadPdf();
-#endif
-}
-
 void DownloadCommands::CopyFileAsImageToClipboard() {
   if (download_item_->GetState() != download::DownloadItem::COMPLETE ||
       download_item_->GetReceivedBytes() > kMaxImageClipboardSize) {

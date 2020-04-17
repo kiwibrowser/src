@@ -63,7 +63,7 @@ public class JoystickHandler implements ImeEventObserver {
         float velocityX = getVelocityFromJoystickAxis(event, MotionEvent.AXIS_X);
         float velocityY = getVelocityFromJoystickAxis(event, MotionEvent.AXIS_Y);
         if (velocityX == 0.f && velocityY == 0.f) return false;
-        mEventForwarder.startFling(event.getEventTime(), velocityX, velocityY, true);
+        mEventForwarder.startFling(event.getEventTime(), velocityX, velocityY, true, true);
         return true;
     }
 

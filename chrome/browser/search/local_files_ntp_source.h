@@ -10,10 +10,6 @@
 #include "build/build_config.h"
 #include "content/public/browser/url_data_source.h"
 
-#if defined(OS_ANDROID)
-#error "Instant is only used on desktop";
-#endif
-
 #if !defined(GOOGLE_CHROME_BUILD)
 
 namespace local_ntp {

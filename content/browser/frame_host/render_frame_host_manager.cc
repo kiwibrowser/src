@@ -262,7 +262,7 @@ void RenderFrameHostManager::CommitPendingIfNecessary(
     // same-process navigation is also ongoing, it will be canceled when the
     // speculative RenderFrameHost replaces the current one in the commit call
     // below.
-    CommitPending();
+    CommitPending(std::move(speculative_render_frame_host_));
     frame_tree_node_->ResetNavigationRequest(false, true);
   } else if (render_frame_host == render_frame_host_.get()) {
     // A same-process navigation committed while a simultaneous cross-process
@@ -368,6 +368,8 @@ void RenderFrameHostManager::SwapOutOldFrame(
   // Tell the renderer to suppress any further modal dialogs so that we can swap
   // it out.  This must be done before canceling any current dialog, in case
   // there is a loop creating additional dialogs.
+  // TODO(arthursonzogni): Undo this for documents restored from the
+  // BackForwardCache.
   old_render_frame_host->SuppressFurtherDialogs();
 
   // Now close any modal dialogs that would prevent us from swapping out.  This
@@ -380,6 +382,22 @@ void RenderFrameHostManager::SwapOutOldFrame(
   if (!old_render_frame_host->IsRenderFrameLive())
     return;
 
+  // Reset any NavigationRequest in the RenderFrameHost. A swapped out
+  // RenderFrameHost should not be trying to commit a navigation.
+  old_render_frame_host->ResetNavigationRequests();
+
+  // BackForwardCache:
+  //
+  // If the old RenderFrameHost can be stored in the BackForwardCache, return
+  // early without swapping out and running unload handlers, as the document may
+  // be restored later.
+  BackForwardCache& back_forward_cache =
+      delegate_->GetControllerForRenderManager().back_forward_cache();
+  if (back_forward_cache.CanStoreDocument(old_render_frame_host.get())) {
+    back_forward_cache.StoreDocument(std::move(old_render_frame_host));
+    return;
+  }
+
   // Create a replacement proxy for the old RenderFrameHost. (There should not
   // be one yet.)  This is done even if there are no active frames besides this
   // one to simplify cleanup logic on the renderer side (see
@@ -387,10 +405,6 @@ void RenderFrameHostManager::SwapOutOldFrame(
   RenderFrameProxyHost* proxy =
       CreateRenderFrameProxyHost(old_render_frame_host->GetSiteInstance(),
                                  old_render_frame_host->render_view_host());
-
-  // Reset any NavigationRequest in the RenderFrameHost. A swapped out
-  // RenderFrameHost should not be trying to commit a navigation.
-  old_render_frame_host->ResetNavigationRequests();
 
   // Tell the old RenderFrameHost to swap out and be replaced by the proxy.
   old_render_frame_host->SwapOut(proxy, true);
@@ -458,6 +472,12 @@ bool RenderFrameHostManager::DeleteFromPendingList(
     }
   }
   return false;
+}
+
+void RenderFrameHostManager::RestoreFromBackForwardCache(
+    std::unique_ptr<RenderFrameHostImpl> rfh) {
+  rfh->GetProcess()->AddPendingView();  // Matched in CommitPending().
+  CommitPending(std::move(rfh));
 }
 
 void RenderFrameHostManager::ResetProxyHosts() {
@@ -610,7 +630,7 @@ RenderFrameHostImpl* RenderFrameHostManager::GetFrameHostForNavigation(
         navigation_rfh->Send(
             new FrameMsg_SwapIn(navigation_rfh->GetRoutingID()));
       }
-      CommitPending();
+      CommitPending(std::move(speculative_render_frame_host_));
 
       // Notify the WebUI about the new RenderFrame if needed (the newly
       // created WebUI has just been committed by CommitPending, so
@@ -2082,10 +2102,11 @@ void RenderFrameHostManager::CommitPendingWebUI() {
     delegate_->SetFocusToLocationBar(false);
 }
 
-void RenderFrameHostManager::CommitPending() {
+void RenderFrameHostManager::CommitPending(
+    std::unique_ptr<RenderFrameHostImpl> pending_rfh) {
   TRACE_EVENT1("navigation", "RenderFrameHostManager::CommitPending",
                "FrameTreeNode id", frame_tree_node_->frame_tree_node_id());
-  DCHECK(speculative_render_frame_host_);
+  DCHECK(pending_rfh);
 
 #if defined(OS_MACOSX)
   // The old RenderWidgetHostView will be hidden before the new
@@ -2118,12 +2139,11 @@ void RenderFrameHostManager::CommitPending() {
   // While the old frame is still current, remove its children from the tree.
   frame_tree_node_->ResetForNewProcess();
 
-  // Swap in the pending or speculative frame and make it active. Also ensure
-  // the FrameTree stays in sync.
+  // Swap in the pending frame and make it active. Also ensure the FrameTree
+  // stays in sync.
+  DCHECK(pending_rfh);
   std::unique_ptr<RenderFrameHostImpl> old_render_frame_host;
-  DCHECK(speculative_render_frame_host_);
-  old_render_frame_host =
-      SetRenderFrameHost(std::move(speculative_render_frame_host_));
+  old_render_frame_host = SetRenderFrameHost(std::move(pending_rfh));
 
   // For top-level frames, also hide the old RenderViewHost's view.
   // TODO(creis): As long as show/hide are on RVH, we don't want to hide on

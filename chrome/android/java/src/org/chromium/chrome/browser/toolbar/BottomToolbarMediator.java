@@ -6,10 +6,14 @@ package org.chromium.chrome.browser.toolbar;
 
 import android.content.res.Resources;
 import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnTouchListener;
 
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.fullscreen.ChromeFullscreenManager;
 import org.chromium.chrome.browser.fullscreen.ChromeFullscreenManager.FullscreenListener;
+import org.chromium.chrome.browser.compositor.layouts.eventfilter.EdgeSwipeHandler;
+import org.chromium.chrome.browser.toolbar.BottomToolbarModel.PropertyKey;
 
 /**
  * This class is responsible for reacting to events from the outside world, interacting with other
@@ -38,7 +42,7 @@ class BottomToolbarMediator implements FullscreenListener {
 
         // Notify the fullscreen manager that the bottom controls now have a height.
         fullscreenManager.setBottomControlsHeight(
-                resources.getDimensionPixelOffset(R.dimen.control_container_height));
+                resources.getDimensionPixelOffset(R.dimen.bottom_toolbar_height));
         fullscreenManager.updateViewportSize();
     }
 
@@ -67,4 +71,18 @@ class BottomToolbarMediator implements FullscreenListener {
 
     @Override
     public void onBottomControlsHeightChanged(int bottomControlsHeight) {}
+
+     /**
+     * @param swipeHandler The handler that controls the toolbar swipe behavior.
+     */
+    void setToolbarSwipeHandler(EdgeSwipeHandler swipeHandler) {
+        mModel.setValue(PropertyKey.TOOLBAR_SWIPE_HANDLER, swipeHandler);
+    }
+
+    public void setButtonListeners(
+            OnClickListener searchAcceleratorListener, OnClickListener homeButtonListener, OnTouchListener menuButtonListener) {
+        mModel.setSearchAcceleratorListener(searchAcceleratorListener);
+        mModel.setHomeButtonListener(homeButtonListener);
+        mModel.setMenuButtonListener(menuButtonListener);
+    }
 }

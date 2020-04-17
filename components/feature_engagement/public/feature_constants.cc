@@ -15,6 +15,8 @@ const base::Feature kIPHDummyFeature{"IPH_Dummy",
                                      base::FEATURE_DISABLED_BY_DEFAULT};
 
 #if defined(OS_ANDROID)
+const base::Feature kIPHAdblockMenuButtonFeature{
+    "IPH_AdblockMenuButton", base::FEATURE_ENABLED_BY_DEFAULT};
 const base::Feature kIPHDataSaverDetailFeature{
     "IPH_DataSaverDetail", base::FEATURE_DISABLED_BY_DEFAULT};
 const base::Feature kIPHDataSaverPreviewFeature{

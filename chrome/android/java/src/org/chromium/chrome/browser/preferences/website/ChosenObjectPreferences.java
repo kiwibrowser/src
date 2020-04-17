@@ -26,6 +26,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Locale;
 
+import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.ListView;
+
 /**
  * Shows a particular chosen object (e.g. a USB device) and the list of sites that have been
  * granted access to it by the user.
@@ -113,10 +119,6 @@ public class ChosenObjectPreferences
             }
         };
         mSearchView.setOnQueryTextListener(queryTextListener);
-
-        MenuItem help =
-                menu.add(Menu.NONE, R.id.menu_id_targeted_help, Menu.NONE, R.string.menu_help);
-        help.setIcon(R.drawable.ic_help_and_feedback);
     }
 
     @Override
@@ -138,6 +140,18 @@ public class ChosenObjectPreferences
             getInfo();
         } else {
             resetList();
+        }
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            view.setBackgroundColor(Color.BLACK);
+            ListView list = (ListView) view.findViewById(android.R.id.list);
+            if (list != null)
+                list.setDivider(new ColorDrawable(Color.GRAY));
+                list.setDividerHeight((int) getResources().getDisplayMetrics().density);
         }
     }
 

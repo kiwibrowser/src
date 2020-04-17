@@ -172,15 +172,21 @@ void ContentUiEventHandler::SendScrollEvent(JNIEnv* env,
   float dip_scale = web_contents_->GetNativeView()->GetDipScale();
   float delta_xdip = delta_x / dip_scale;
   float delta_ydip = delta_y / dip_scale;
+  constexpr bool target_viewport = true;
+  constexpr bool synthetic_scroll = false;
+  constexpr bool prevent_boosting = false;
   event_handler->OnGestureEvent(ui::GestureEventAndroid(
       ui::GESTURE_EVENT_TYPE_SCROLL_START, gfx::PointF(), gfx::PointF(),
-      time_ms, 0, -delta_xdip, -delta_ydip, 0, 0, true, false));
+      time_ms, 0, -delta_xdip, -delta_ydip, 0, 0, target_viewport,
+      synthetic_scroll, prevent_boosting));
   event_handler->OnGestureEvent(ui::GestureEventAndroid(
       ui::GESTURE_EVENT_TYPE_SCROLL_BY, gfx::PointF(), gfx::PointF(), time_ms,
-      0, -delta_xdip, -delta_ydip, 0, 0, true, false));
+      0, -delta_xdip, -delta_ydip, 0, 0, target_viewport, synthetic_scroll,
+      prevent_boosting));
   event_handler->OnGestureEvent(ui::GestureEventAndroid(
       ui::GESTURE_EVENT_TYPE_SCROLL_END, gfx::PointF(), gfx::PointF(), time_ms,
-      0, -delta_xdip, -delta_ydip, 0, 0, true, false));
+      0, -delta_xdip, -delta_ydip, 0, 0, target_viewport, synthetic_scroll,
+      prevent_boosting));
 }
 
 void ContentUiEventHandler::CancelFling(JNIEnv* env,
@@ -190,8 +196,9 @@ void ContentUiEventHandler::CancelFling(JNIEnv* env,
   if (!event_handler)
     return;
   event_handler->OnGestureEvent(ui::GestureEventAndroid(
-      ui::GESTURE_EVENT_TYPE_FLING_CANCEL, gfx::PointF(), gfx::PointF(),
-      time_ms, 0, 0, 0, 0, 0, false, false));
+       ui::GESTURE_EVENT_TYPE_FLING_CANCEL, gfx::PointF(), gfx::PointF(),
+      time_ms, 0, 0, 0, 0, 0, /*target_viewport*/ false,
+      /*synthetic_scroll*/ false, true));
 }
 
 jlong JNI_ContentUiEventHandler_Init(

@@ -58,6 +58,10 @@ class AdsPageLoadMetricsObserver
                         bool started_in_foreground) override;
   ObservePolicy OnCommit(content::NavigationHandle* navigation_handle,
                          ukm::SourceId source_id) override;
+  void RecordAdFrameData(FrameTreeNodeId ad_id,
+                         AdTypes ad_types,
+                         content::RenderFrameHost* ad_host,
+                         bool frame_navigated);
   void OnDidFinishSubFrameNavigation(
       content::NavigationHandle* navigation_handle) override;
   ObservePolicy FlushMetricsOnAppEnterBackground(
@@ -72,12 +76,14 @@ class AdsPageLoadMetricsObserver
   struct AdFrameData {
     AdFrameData(FrameTreeNodeId frame_tree_node_id,
                 AdTypes ad_types,
-                AdOriginStatus origin_status);
+                AdOriginStatus origin_status,
+                bool frame_navigated);
     size_t frame_bytes;
     size_t frame_bytes_uncached;
     const FrameTreeNodeId frame_tree_node_id;
     AdTypes ad_types;
     AdOriginStatus origin_status;
+    bool frame_navigated;
   };
 
   // subresource_filter::SubresourceFilterObserver:
@@ -85,6 +91,8 @@ class AdsPageLoadMetricsObserver
       content::NavigationHandle* navigation_handle,
       subresource_filter::LoadPolicy load_policy,
       bool is_ad_subframe) override;
+  void OnAdSubframeDetected(
+      content::RenderFrameHost* render_frame_host) override;
   void OnSubresourceFilterGoingAway() override;
 
   // Determines if the URL of a frame matches the SubresourceFilter block

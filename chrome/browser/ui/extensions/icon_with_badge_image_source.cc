@@ -61,6 +61,10 @@ void IconWithBadgeImageSource::Draw(gfx::Canvas* canvas) {
   // TODO(https://crbug.com/842856): There should be a cleaner delineation
   // between what is drawn here and what is handled by the button itself.
 
+  if (icon_.IsEmpty()) {
+    LOG(INFO) << "[EXTENSIONS] IconWithBadgeImageSource::Draw icon_ is empty";
+  }
+
   if (icon_.IsEmpty())
     return;
 

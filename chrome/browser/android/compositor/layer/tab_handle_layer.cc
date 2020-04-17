@@ -37,8 +37,7 @@ void TabHandleLayer::SetProperties(int id,
                                    float close_button_alpha,
                                    bool is_loading,
                                    float spinner_rotation,
-                                   float brightness,
-                                   float border_opacity) {
+                                   float brightness) {
   if (brightness != brightness_ || foreground != foreground_) {
     brightness_ = brightness;
     foreground_ = foreground;
@@ -51,19 +50,8 @@ void TabHandleLayer::SetProperties(int id,
   float original_x = x;
   float original_y = y;
   if (foreground_) {
-    if (!border_->parent()) {
-      layer_->InsertChild(border_, 0);
-      border_->SetIsDrawable(true);
-    }
-    border_->SetBackgroundColor(SK_ColorBLACK);
-    border_->SetPosition(gfx::PointF(0, height - 1));
-    border_->SetBounds(gfx::Size(toolbar_width, 1));
-    border_->SetOpacity(border_opacity);
-
     x = 0;
     y = 0;
-  } else if (border_->parent()) {
-    border_->RemoveFromParent();
   }
 
   bool is_rtl = l10n_util::IsLayoutRtl();
@@ -97,8 +85,6 @@ void TabHandleLayer::SetProperties(int id,
   if (title_layer) {
     title_layer->setOpacity(1.0f);
     unsigned expected_children = 3;
-    if (foreground_)
-      expected_children += 1;
     title_layer_ = title_layer->layer();
     if (layer_->children().size() < expected_children) {
       layer_->AddChild(title_layer_);
@@ -180,7 +166,6 @@ TabHandleLayer::TabHandleLayer(LayerTitleCache* layer_title_cache)
       layer_(cc::Layer::Create()),
       close_button_(cc::UIResourceLayer::Create()),
       decoration_tab_(cc::NinePatchLayer::Create()),
-      border_(cc::SolidColorLayer::Create()),
       brightness_(1.0f),
       foreground_(false) {
   decoration_tab_->SetIsDrawable(true);

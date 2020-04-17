@@ -33,7 +33,7 @@ public class AppModalPresenter extends ModalDialogManager.Presenter {
         FrameLayout.LayoutParams params =
                 new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
-        dialogView.setBackgroundResource(R.drawable.menu_bg);
+        dialogView.setBackgroundResource(R.drawable.popup_bg);
         container.addView(dialogView, params);
         if (getModalDialog().getCancelOnTouchOutside()) {
             mDialog.setCanceledOnTouchOutside(true);

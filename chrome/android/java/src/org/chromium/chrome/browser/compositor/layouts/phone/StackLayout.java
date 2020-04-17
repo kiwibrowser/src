@@ -122,7 +122,7 @@ public class StackLayout extends StackLayoutBase {
             oldStack.runSwitchAwayAnimation(toIncognitoTabModel
                             ? NonOverlappingStack.SWITCH_DIRECTION_LEFT
                             : NonOverlappingStack.SWITCH_DIRECTION_RIGHT);
-        } else {
+        } else if (false) {
             flingStacks(toIncognitoTabModel ? INCOGNITO_STACK_INDEX : NORMAL_STACK_INDEX);
             mFlingFromModelChange = true;
         }

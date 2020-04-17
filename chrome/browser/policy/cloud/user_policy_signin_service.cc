@@ -90,15 +90,6 @@ void UserPolicySigninService::RegisterForPolicyWithLoginToken(
   // request context because the user is not signed in to this profile yet
   // (we are just doing a test registration to see if policy is supported for
   // this user).
-  registration_helper_ = std::make_unique<CloudPolicyClientRegistrationHelper>(
-      policy_client.get(),
-      enterprise_management::DeviceRegisterRequest::BROWSER);
-  registration_helper_->StartRegistrationWithLoginToken(
-      oauth2_refresh_token,
-      base::Bind(&UserPolicySigninService::CallPolicyRegistrationCallback,
-                 base::Unretained(this),
-                 base::Passed(&policy_client),
-                 callback));
 }
 
 void UserPolicySigninService::RegisterForPolicyWithAccountId(

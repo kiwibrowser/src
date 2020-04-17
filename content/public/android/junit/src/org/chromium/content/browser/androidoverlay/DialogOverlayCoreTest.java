@@ -5,6 +5,7 @@
 package org.chromium.content.browser.androidoverlay;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -73,6 +74,7 @@ public class DialogOverlayCoreTest {
 
         private SurfaceHolder.Callback2 mCallback;
         private WindowManager.LayoutParams mLayoutParams;
+        public boolean mDidUpdateParams;
 
         @Implementation
         public void takeSurface(SurfaceHolder.Callback2 callback) {
@@ -82,6 +84,7 @@ public class DialogOverlayCoreTest {
         @Implementation
         public void setAttributes(WindowManager.LayoutParams layoutParams) {
             mLayoutParams = layoutParams;
+            mDidUpdateParams = true;
         }
     }
 
@@ -143,6 +146,10 @@ public class DialogOverlayCoreTest {
     // Return the LayoutPararms that was most recently provided to the dialog.
     WindowManager.LayoutParams layoutParams() {
         return ((MyPhoneWindowShadow) Shadows.shadowOf(mDialog.getWindow())).mLayoutParams;
+    }
+
+    MyPhoneWindowShadow getShadowWindow() {
+        return ((MyPhoneWindowShadow) Shadows.shadowOf(mDialog.getWindow()));
     }
 
     /**
@@ -336,5 +343,18 @@ public class DialogOverlayCoreTest {
         createOverlay();
         mCore.onWindowToken(mWindowToken);
         assertEquals(layoutParams().type, WindowManager.LayoutParams.TYPE_APPLICATION_PANEL);
+    }
+
+    @Test
+    @Config(shadows = {MyPhoneWindowShadow.class})
+    public void testNoParamsUpdateForSamePositionRect() {
+        createOverlay();
+        mCore.onWindowToken(mWindowToken);
+        assertTrue(getShadowWindow().mDidUpdateParams);
+
+        // Update with the same rect, it should not update the window params.
+        getShadowWindow().mDidUpdateParams = false;
+        mCore.layoutSurface(mConfig.rect);
+        assertFalse(getShadowWindow().mDidUpdateParams);
     }
 }

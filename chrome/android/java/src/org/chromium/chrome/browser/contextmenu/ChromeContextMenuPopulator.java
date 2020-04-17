@@ -93,7 +93,9 @@ public class ChromeContextMenuPopulator implements ContextMenuPopulator {
             Collections.unmodifiableSet(CollectionUtil.newHashSet(
                     ChromeContextMenuItem.OPEN_IN_NEW_TAB,
                     ChromeContextMenuItem.OPEN_IN_OTHER_WINDOW,
-                    ChromeContextMenuItem.OPEN_IN_INCOGNITO_TAB, ChromeContextMenuItem.SAVE_LINK_AS,
+                    ChromeContextMenuItem.OPEN_IN_INCOGNITO_TAB,
+                    ChromeContextMenuItem.OPEN_IN_CHROME,
+                    ChromeContextMenuItem.SAVE_LINK_AS,
                     ChromeContextMenuItem.OPEN_IMAGE_IN_NEW_TAB,
                     ChromeContextMenuItem.SEARCH_BY_IMAGE));
 
@@ -121,6 +123,7 @@ public class ChromeContextMenuPopulator implements ContextMenuPopulator {
             CollectionUtil.newArrayList(ChromeContextMenuItem.OPEN_IN_OTHER_WINDOW,
                     ChromeContextMenuItem.OPEN_IN_NEW_TAB,
                     ChromeContextMenuItem.OPEN_IN_INCOGNITO_TAB,
+                    ChromeContextMenuItem.OPEN_IN_CHROME,
                     ChromeContextMenuItem.COPY_LINK_ADDRESS, ChromeContextMenuItem.COPY_LINK_TEXT,
                     ChromeContextMenuItem.SAVE_LINK_AS, SHARE_LINK));
 
@@ -138,8 +141,7 @@ public class ChromeContextMenuPopulator implements ContextMenuPopulator {
     private static final List<? extends ContextMenuItem> VIDEO_GROUP = Collections.unmodifiableList(
             CollectionUtil.newArrayList(ChromeContextMenuItem.SAVE_VIDEO));
 
-    private static final List<? extends ContextMenuItem> OTHER_GROUP = Collections.unmodifiableList(
-            CollectionUtil.newArrayList(ChromeContextMenuItem.OPEN_IN_CHROME));
+    private static final List<? extends ContextMenuItem> OTHER_GROUP = Collections.unmodifiableList(CollectionUtil.newArrayList());
 
     private final ContextMenuItemDelegate mDelegate;
     private final int mMode;
@@ -471,6 +473,7 @@ public class ChromeContextMenuPopulator implements ContextMenuPopulator {
             disabledOptions.add(ChromeContextMenuItem.OPEN_IN_OTHER_WINDOW);
             disabledOptions.add(ChromeContextMenuItem.OPEN_IN_NEW_TAB);
             disabledOptions.add(ChromeContextMenuItem.OPEN_IN_INCOGNITO_TAB);
+            disabledOptions.add(ChromeContextMenuItem.OPEN_IN_CHROME);
         }
 
         if (MailTo.isMailTo(params.getLinkUrl())) {
@@ -562,6 +565,7 @@ public class ChromeContextMenuPopulator implements ContextMenuPopulator {
             }
         }
 
+        if (false)
         if (ChromeFeatureList.isEnabled(ChromeFeatureList.CUSTOM_CONTEXT_MENU)) {
             disabledOptions.add(ChromeContextMenuItem.COPY_LINK_TEXT);
         }

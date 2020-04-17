@@ -17,23 +17,19 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
 
+#include "chrome/browser/ui/android/tab_model/tab_model.h"
+#include "chrome/browser/ui/android/tab_model/tab_model_list.h"
+#include "content/public/browser/web_contents.h"
+
 namespace chrome {
 
 void AddTabAt(Browser* browser, const GURL& url, int idx, bool foreground) {
   // Time new tab page creation time.  We keep track of the timing data in
   // WebContents, but we want to include the time it takes to create the
   // WebContents object too.
-  base::TimeTicks new_tab_start_time = base::TimeTicks::Now();
-  NavigateParams params(browser,
-                        url.is_empty() ? GURL(chrome::kChromeUINewTabURL) : url,
-                        ui::PAGE_TRANSITION_TYPED);
-  params.disposition = foreground ? WindowOpenDisposition::NEW_FOREGROUND_TAB
-                                  : WindowOpenDisposition::NEW_BACKGROUND_TAB;
-  params.tabstrip_index = idx;
-  Navigate(&params);
-  CoreTabHelper* core_tab_helper =
-      CoreTabHelper::FromWebContents(params.navigated_or_inserted_contents);
-  core_tab_helper->set_new_tab_start_time(new_tab_start_time);
+  TabModel* tab_model = TabModelList::get(0);
+
+  tab_model->CreateNewTabForDevTools(url.is_empty() ? GURL(chrome::kChromeUINewTabURL) : url, false);
 }
 
 content::WebContents* AddSelectedTabWithURL(

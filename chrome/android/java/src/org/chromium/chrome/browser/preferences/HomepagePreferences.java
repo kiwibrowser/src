@@ -9,9 +9,19 @@ import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.PreferenceFragment;
 
+import org.chromium.chrome.browser.preferences.PrefServiceBridge;
+import org.chromium.chrome.browser.preferences.ChromeBaseCheckBoxPreference;
+import android.preference.CheckBoxPreference;
+
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.partnercustomizations.HomepageManager;
 import org.chromium.chrome.browser.util.FeatureUtilities;
+
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.view.View;
+import android.widget.ListView;
 
 /**
  * Fragment that allows the user to configure homepage related preferences.
@@ -49,6 +59,7 @@ public class HomepagePreferences extends PreferenceFragment {
 
         mHomepageEdit = findPreference(PREF_HOMEPAGE_EDIT);
         updateCurrentHomepageUrl();
+
     }
     private void updateCurrentHomepageUrl() {
         mHomepageEdit.setSummary(mHomepageManager.getPrefHomepageUseDefaultUri()
@@ -61,4 +72,15 @@ public class HomepagePreferences extends PreferenceFragment {
         updateCurrentHomepageUrl();
     }
 
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            view.setBackgroundColor(Color.BLACK);
+            ListView list = (ListView) view.findViewById(android.R.id.list);
+            if (list != null)
+                list.setDivider(new ColorDrawable(Color.GRAY));
+                list.setDividerHeight((int) getResources().getDisplayMetrics().density);
+        }
+    }
 }

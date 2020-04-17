@@ -44,6 +44,7 @@ class UIThreadSearchTermsData : public SearchTermsData {
 
  private:
   static std::string* google_base_url_;
+  static std::string* search_base_url_;
   Profile* profile_;
 
   DISALLOW_COPY_AND_ASSIGN(UIThreadSearchTermsData);

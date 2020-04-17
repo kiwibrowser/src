@@ -210,7 +210,7 @@ class WebViewDelegateFactory {
 
         @Override
         public String getDataDirectorySuffix() {
-            return null;
+            return mDelegate.getDataDirectorySuffix();
         }
     }
 

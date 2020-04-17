@@ -16,6 +16,12 @@ import org.chromium.chrome.browser.payments.SettingsAutofillAndPaymentsObserver;
 import org.chromium.chrome.browser.widget.prefeditor.EditorDialog;
 import org.chromium.chrome.browser.widget.prefeditor.EditorObserverForTest;
 
+import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.TextView;
+
 /**
  * Launches the UI to edit, create or delete an Autofill profile entry.
  */
@@ -97,5 +103,16 @@ public class AutofillProfileEditorPreference extends Preference {
             };
         }
         mEditorDialog = new EditorDialog(mActivity, mObserverForTest, runnable);
+    }
+
+    @Override
+    protected void onBindView(View view) {
+        super.onBindView(view);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            if (((TextView) view.findViewById(android.R.id.title)) != null)
+               ((TextView) view.findViewById(android.R.id.title)).setTextColor(Color.WHITE);
+            if (((TextView) view.findViewById(android.R.id.summary)) != null)
+               ((TextView) view.findViewById(android.R.id.summary)).setTextColor(Color.GRAY);
+        }
     }
 }

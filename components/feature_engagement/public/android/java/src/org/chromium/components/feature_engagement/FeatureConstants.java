@@ -14,6 +14,7 @@ public final class FeatureConstants {
     public static final String DOWNLOAD_HOME_FEATURE = "IPH_DownloadHome";
     public static final String CHROME_HOME_EXPAND_FEATURE = "IPH_ChromeHomeExpand";
     public static final String CHROME_HOME_PULL_TO_REFRESH_FEATURE = "IPH_ChromeHomePullToRefresh";
+    public static final String ADBLOCK_MENU_BUTTON_FEATURE = "IPH_AdblockMenuButton";
     public static final String CONTEXTUAL_SUGGESTIONS_FEATURE = "IPH_ContextualSuggestions";
     public static final String DATA_SAVER_PREVIEW_FEATURE = "IPH_DataSaverPreview";
     public static final String DATA_SAVER_DETAIL_FEATURE = "IPH_DataSaverDetail";

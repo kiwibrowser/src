@@ -139,7 +139,7 @@ void ShellBrowserContext::InitWhileIOAllowed() {
   BrowserContext::Initialize(this, path_);
 }
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 std::unique_ptr<ZoomLevelDelegate> ShellBrowserContext::CreateZoomLevelDelegate(
     const base::FilePath&) {
   return std::unique_ptr<ZoomLevelDelegate>();
@@ -232,7 +232,8 @@ SSLHostStateDelegate* ShellBrowserContext::GetSSLHostStateDelegate() {
   return nullptr;
 }
 
-PermissionManager* ShellBrowserContext::GetPermissionManager() {
+PermissionControllerDelegate*
+ShellBrowserContext::GetPermissionControllerDelegate() {
   if (!permission_manager_.get())
     permission_manager_.reset(new ShellPermissionManager());
   return permission_manager_.get();

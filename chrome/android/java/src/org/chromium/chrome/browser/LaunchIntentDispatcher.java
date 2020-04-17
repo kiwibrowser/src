@@ -173,12 +173,6 @@ public class LaunchIntentDispatcher implements IntentHandler.IntentHandlerDelega
      * you add _absolutely has_ to be here.
      */
     private @Action int dispatch() {
-        // Read partner browser customizations information asynchronously.
-        // We want to initialize early because when there are no tabs to restore, we should possibly
-        // show homepage, which might require reading PartnerBrowserCustomizations provider.
-        PartnerBrowserCustomizations.initializeAsync(
-                mActivity.getApplicationContext(), PARTNER_BROWSER_CUSTOMIZATIONS_TIMEOUT_MS);
-
         int tabId = IntentUtils.safeGetIntExtra(
                 mIntent, IntentHandler.TabOpenType.BRING_TAB_TO_FRONT.name(), Tab.INVALID_TAB_ID);
         boolean incognito =

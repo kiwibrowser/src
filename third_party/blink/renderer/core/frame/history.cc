@@ -148,7 +148,12 @@ bool History::ShouldThrottleStateObjectChanges() {
   if (!GetFrame()->GetSettings()->GetShouldThrottlePushState())
     return false;
 
-  const int kStateUpdateLimit = 50;
+  // The aim is to enable 8 'frames' (history updates) per second, but we
+  // express it as 80 frames per 10 seconds because some use cases (including
+  // tests) do more than 8 updates in 1 second. But over time, applications
+  // shooting for 8 FPS should work. If necessary to support legitimate
+  // applications, we can increase this threshold somewhat.
+  const int kStateUpdateLimit = 80;
 
   if (state_flood_guard.count > kStateUpdateLimit) {
     static constexpr auto kStateUpdateLimitResetInterval =

@@ -82,6 +82,7 @@ InputRouterImpl::InputRouterImpl(
           features::kTouchpadAndWheelScrollLatching)),
       wheel_event_queue_(this, wheel_scroll_latching_enabled_),
       touch_event_queue_(this, config.touch_config),
+      touchpad_pinch_event_queue_(this),
       gesture_event_queue_(this,
                            this,
                            fling_scheduler_client,
@@ -136,6 +137,13 @@ void InputRouterImpl::SendGestureEvent(
 
   GestureEventWithLatencyInfo gesture_event(original_gesture_event);
 
+  if (gesture_event_queue_.FlingControllerFilterEvent(gesture_event)) {
+    disposition_handler_->OnGestureEventAck(gesture_event,
+                                            InputEventAckSource::BROWSER,
+                                            INPUT_EVENT_ACK_STATE_CONSUMED);
+    return;
+  }
+
   if (touch_action_filter_.FilterGestureEvent(&gesture_event.event) ==
       FilterGestureEventResult::kFilterGestureEventFiltered) {
     disposition_handler_->OnGestureEventAck(gesture_event,
@@ -164,7 +172,14 @@ void InputRouterImpl::SendGestureEvent(
     touch_event_queue_.OnGestureScrollEvent(gesture_event);
   }
 
-  if (!gesture_event_queue_.QueueEvent(gesture_event)) {
+  if (blink::WebInputEvent::IsPinchGestureEventType(
+          gesture_event.event.GetType()) &&
+      gesture_event.event.NeedsWheelEvent()) {
+    touchpad_pinch_event_queue_.QueueEvent(gesture_event);
+    return;
+  }
+
+  if (!gesture_event_queue_.DebounceOrQueueEvent(gesture_event)) {
     disposition_handler_->OnGestureEventAck(gesture_event,
                                             InputEventAckSource::BROWSER,
                                             INPUT_EVENT_ACK_STATE_CONSUMED);
@@ -185,7 +200,9 @@ void InputRouterImpl::NotifySiteIsMobileOptimized(bool is_mobile_optimized) {
 
 bool InputRouterImpl::HasPendingEvents() const {
   return !touch_event_queue_.Empty() || !gesture_event_queue_.empty() ||
-         wheel_event_queue_.has_pending() || active_renderer_fling_count_ > 0;
+         wheel_event_queue_.has_pending() ||
+         touchpad_pinch_event_queue_.has_pending() ||
+         active_renderer_fling_count_ > 0;
 }
 
 void InputRouterImpl::SetDeviceScaleFactor(float device_scale_factor) {
@@ -409,6 +426,18 @@ void InputRouterImpl::ForwardGestureEventWithLatencyInfo(
   client_->ForwardGestureEventWithLatencyInfo(event, latency_info);
 }
 
+void InputRouterImpl::SendMouseWheelEventForPinchImmediately(
+    const MouseWheelEventWithLatencyInfo& event) {
+  SendMouseWheelEventImmediately(event);
+}
+
+void InputRouterImpl::OnGestureEventForPinchAck(
+    const GestureEventWithLatencyInfo& event,
+    InputEventAckSource ack_source,
+    InputEventAckState ack_result) {
+  OnGestureEventAck(event, ack_source, ack_result);
+}
+
 bool InputRouterImpl::IsWheelScrollInProgress() {
   return client_->IsWheelScrollInProgress();
 }
@@ -569,6 +598,8 @@ void InputRouterImpl::MouseWheelEventHandled(
     DidOverscroll(overscroll.value());
 
   wheel_event_queue_.ProcessMouseWheelAck(source, state, event.latency);
+  touchpad_pinch_event_queue_.ProcessMouseWheelAck(source, state,
+                                                   event.latency);
 }
 
 void InputRouterImpl::OnHasTouchEventHandlers(bool has_handlers) {

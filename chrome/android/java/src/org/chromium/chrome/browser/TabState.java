@@ -18,6 +18,7 @@ import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.util.ColorUtils;
 import org.chromium.components.sync.SyncConstants;
 import org.chromium.content_public.browser.WebContents;
+import org.chromium.base.ContextUtils;
 
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -407,6 +408,10 @@ public class TabState {
 
     /** @return The theme color of the tab or Color.WHITE if not set. */
     public int getThemeColor() {
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+          return Color.BLACK;
+        if (ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Ultra White") && !isIncognito())
+          return Color.WHITE;
         return themeColor;
     }
 

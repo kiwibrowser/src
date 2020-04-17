@@ -41,7 +41,7 @@ std::vector<uint8_t> SerializeUnindexedRulesetWithMultipleRules(
     const std::vector<proto::UrlRule>& rules) {
   std::string ruleset_contents;
   google::protobuf::io::StringOutputStream output(&ruleset_contents);
-  url_pattern_index::UnindexedRulesetWriter ruleset_writer(&output);
+  UnindexedRulesetWriter ruleset_writer(&output);
   for (const auto& rule : rules)
     ruleset_writer.AddUrlRule(rule);
   ruleset_writer.Finish();

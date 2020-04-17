@@ -193,6 +193,7 @@ extern const char kTLS13Variant[];
 extern const char kTLS13VariantDisabled[];
 extern const char kTLS13VariantDraft23[];
 extern const char kTLS13VariantDraft28[];
+extern const char kTLS13VariantFinal[];
 extern const char kTrustedDownloadSources[];
 extern const char kTryChromeAgain[];
 extern const char kUnlimitedStorage[];

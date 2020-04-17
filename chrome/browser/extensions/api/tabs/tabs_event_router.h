@@ -101,9 +101,12 @@ class TabsEventRouter : public TabStripModelObserver,
   void OnAutoDiscardableStateChange(content::WebContents* contents,
                                     bool is_auto_discardable) override;
 
- private:
   // "Synthetic" event. Called from TabInsertedAt if new tab is detected.
-  void TabCreatedAt(content::WebContents* contents, int index, bool active);
+  void TabCreatedAt(content::WebContents* contents, int index, bool active, Profile *profile);
+
+  void TabClosedAt(TabStripModel* tab_strip_model,
+                    content::WebContents* contents,
+                    int index, Profile* profile);
 
   // Internal processing of tab updated events. Intended to be called when
   // there's any changed property.

@@ -25,7 +25,7 @@
 
 namespace {
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 const base::char16 kDot = '.';
 
 // Build a path from the first |num_components| elements in |path_elements|.
@@ -146,7 +146,7 @@ base::string16 HostForDisplay(base::StringPiece host_in_puny) {
 
 namespace url_formatter {
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 
 // TODO(pkasting): http://crbug.com/77883 This whole function gets
 // kerning/ligatures/etc. issues potentially wrong by assuming that the width of

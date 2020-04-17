@@ -111,28 +111,28 @@ class NET_EXPORT_PRIVATE MemEntryImpl final
                int offset,
                IOBuffer* buf,
                int buf_len,
-               const CompletionCallback& callback) override;
+               CompletionOnceCallback callback) override;
   int WriteData(int index,
                 int offset,
                 IOBuffer* buf,
                 int buf_len,
-                const CompletionCallback& callback,
+                CompletionOnceCallback callback,
                 bool truncate) override;
   int ReadSparseData(int64_t offset,
                      IOBuffer* buf,
                      int buf_len,
-                     const CompletionCallback& callback) override;
+                     CompletionOnceCallback callback) override;
   int WriteSparseData(int64_t offset,
                       IOBuffer* buf,
                       int buf_len,
-                      const CompletionCallback& callback) override;
+                      CompletionOnceCallback callback) override;
   int GetAvailableRange(int64_t offset,
                         int len,
                         int64_t* start,
-                        const CompletionCallback& callback) override;
+                        CompletionOnceCallback callback) override;
   bool CouldBeSparse() const override;
   void CancelSparseIO() override {}
-  int ReadyForSparseIO(const CompletionCallback& callback) override;
+  int ReadyForSparseIO(CompletionOnceCallback callback) override;
   void SetLastUsedTimeForTest(base::Time time) override;
   size_t EstimateMemoryUsage() const;
 
@@ -173,6 +173,9 @@ class NET_EXPORT_PRIVATE MemEntryImpl final
   // Precondition: i != children_.end();
   net::Interval<int64_t> ChildInterval(
       MemEntryImpl::EntryMap::const_iterator i);
+
+  // Compact vectors to try to avoid over-allocation due to exponential growth.
+  void Compact();
 
   std::string key_;
   std::vector<char> data_[kNumStreams];  // User data.

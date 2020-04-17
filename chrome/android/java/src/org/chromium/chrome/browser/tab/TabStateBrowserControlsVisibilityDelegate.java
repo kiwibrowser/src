@@ -15,6 +15,7 @@ import org.chromium.components.dom_distiller.core.DomDistillerUrlUtils;
 import org.chromium.components.security_state.ConnectionSecurityLevel;
 import org.chromium.content_public.browser.SelectionPopupController;
 import org.chromium.content_public.browser.WebContents;
+import org.chromium.base.ContextUtils;
 
 /**
  * Determines the desired visibility of the browser controls based on the current state of a given
@@ -154,6 +155,18 @@ public class TabStateBrowserControlsVisibilityDelegate
         enableHidingBrowserControls &= DeviceClassManager.enableFullscreen();
         enableHidingBrowserControls &= !mIsFullscreenWaitingForLoad;
         enableHidingBrowserControls &= !mTab.isShowingTabModalDialog();
+
+        String KeepToolbarSetting = ContextUtils.getAppSharedPreferences().getString("keep_toolbar_visible_configuration", "unknown");
+        if (KeepToolbarSetting.equals("unknown")) {
+          if (AccessibilityUtil.isAccessibilityEnabled())
+            enableHidingBrowserControls &= false;
+          else
+            enableHidingBrowserControls &= true;
+        } else if (KeepToolbarSetting.equals("on")) {
+            enableHidingBrowserControls &= false;
+        } else {
+            enableHidingBrowserControls &= true;
+        }
 
         return enableHidingBrowserControls;
     }

@@ -636,7 +636,8 @@ int HttpCache::AsyncDoomEntry(const std::string& key, Transaction* trans) {
   pending_op->callback = base::Bind(&HttpCache::OnPendingOpComplete,
                                     GetWeakPtr(), pending_op);
 
-  int rv = disk_cache_->DoomEntry(key, pending_op->callback);
+  net::RequestPriority priority = trans ? trans->priority() : net::LOWEST;
+  int rv = disk_cache_->DoomEntry(key, priority, pending_op->callback);
   if (rv != ERR_IO_PENDING) {
     pending_op->writer->ClearTransaction();
     pending_op->callback.Run(rv);
@@ -762,8 +763,8 @@ int HttpCache::OpenEntry(const std::string& key, ActiveEntry** entry,
   pending_op->callback = base::Bind(&HttpCache::OnPendingOpComplete,
                                     GetWeakPtr(), pending_op);
 
-  int rv = disk_cache_->OpenEntry(key, &(pending_op->disk_entry),
-                                  pending_op->callback);
+  int rv = disk_cache_->OpenEntry(
+      key, trans->priority(), &(pending_op->disk_entry), pending_op->callback);
   if (rv != ERR_IO_PENDING) {
     pending_op->writer->ClearTransaction();
     pending_op->callback.Run(rv);
@@ -792,8 +793,8 @@ int HttpCache::CreateEntry(const std::string& key, ActiveEntry** entry,
   pending_op->callback = base::Bind(&HttpCache::OnPendingOpComplete,
                                     GetWeakPtr(), pending_op);
 
-  int rv = disk_cache_->CreateEntry(key, &(pending_op->disk_entry),
-                                    pending_op->callback);
+  int rv = disk_cache_->CreateEntry(
+      key, trans->priority(), &(pending_op->disk_entry), pending_op->callback);
   if (rv != ERR_IO_PENDING) {
     pending_op->writer->ClearTransaction();
     pending_op->callback.Run(rv);
@@ -1068,6 +1069,10 @@ HttpCache::ParallelWritingPattern HttpCache::CanTransactionJoinExistingWriters(
     return PARALLEL_WRITING_NOT_JOIN_RANGE;
   if (transaction->mode() == Transaction::READ)
     return PARALLEL_WRITING_NOT_JOIN_READ_ONLY;
+  if (transaction->GetResponseInfo()->headers &&
+      transaction->GetResponseInfo()->headers->GetContentLength() >
+          disk_cache_->MaxFileSize())
+    return PARALLEL_WRITING_NOT_JOIN_TOO_BIG_FOR_CACHE;
   return PARALLEL_WRITING_JOIN;
 }
 

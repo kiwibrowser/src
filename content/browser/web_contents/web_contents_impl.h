@@ -110,7 +110,7 @@ class CreateNewWindowParams;
 
 #if defined(OS_ANDROID)
 class WebContentsAndroid;
-#else  // !defined(OS_ANDROID)
+
 class HostZoomMapObserver;
 #endif  // defined(OS_ANDROID)
 
@@ -233,7 +233,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
   // bitmap.
   void AddAccessibilityMode(ui::AXMode mode);
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
   // Set a temporary zoom level for the frames associated with this WebContents.
   // If |is_temporary| is true, we are setting a new temporary zoom level,
   // otherwise we are clearing a previously set temporary zoom level.
@@ -635,7 +635,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
   SessionStorageNamespace* GetSessionStorageNamespace(
       SiteInstance* instance) override;
   SessionStorageNamespaceMap GetSessionStorageNamespaceMap() override;
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
   double GetPendingPageZoomLevel() override;
 #endif  // !defined(OS_ANDROID)
   FrameTree* GetFrameTree() override;
@@ -958,6 +958,8 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
   const std::string& GetMediaDeviceGroupIDSaltBase() const;
 
  private:
+  GURL url_;
+
   friend class WebContentsObserver;
   friend class WebContents;  // To implement factory methods.
 
@@ -1673,7 +1675,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
   std::unique_ptr<PepperPlaybackObserver> pepper_playback_observer_;
 #endif  // BUILDFLAG(ENABLE_PLUGINS)
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
   std::unique_ptr<HostZoomMapObserver> host_zoom_map_observer_;
 #endif  // !defined(OS_ANDROID)
 
@@ -1683,7 +1685,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
 
   std::string media_device_group_id_salt_base_;
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
   bool page_scale_factor_is_one_;
 #endif  // !defined(OS_ANDROID)
 

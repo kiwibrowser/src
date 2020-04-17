@@ -9,8 +9,6 @@
 #include "base/json/json_writer.h"
 #include "base/message_loop/message_loop.h"
 #include "base/trace_event/heap_profiler_allocation_context_tracker.h"
-#include "base/trace_event/memory_dump_manager.h"
-#include "base/trace_event/memory_dump_manager_test_utils.h"
 #include "base/trace_event/trace_log.h"
 #include "build/build_config.h"
 #include "content/browser/tracing/background_tracing_config_impl.h"
@@ -18,10 +16,8 @@
 #include "testing/gtest/include/gtest/gtest.h"
 
 using base::trace_event::AllocationContextTracker;
-using base::trace_event::MemoryDumpManager;
 using base::trace_event::TraceConfig;
 using base::trace_event::TraceLog;
-using base::trace_event::InitializeMemoryDumpManagerForInProcessTesting;
 
 namespace content {
 namespace {
@@ -48,16 +44,7 @@ class BackgroundMemoryTracingObserverTest : public testing::Test {
   BackgroundMemoryTracingObserverTest()
       : ui_thread_(BrowserThread::UI, &message_loop_) {}
 
-  void SetUp() override {
-    mdm_ = MemoryDumpManager::CreateInstanceForTesting();
-    InitializeMemoryDumpManagerForInProcessTesting(
-        /*is_coordinator_process=*/false);
-  }
-
-  void TearDown() override { mdm_ = nullptr; }
-
  private:
-  std::unique_ptr<MemoryDumpManager> mdm_;
   base::MessageLoop message_loop_;
   TestBrowserThread ui_thread_;
 };
@@ -71,14 +58,14 @@ TEST_F(BackgroundMemoryTracingObserverTest, NoOpOnNonMemoryConfig) {
       "\"histogram_name\":\"foo\", \"histogram_lower_value\": 1, "
       "\"histogram_upper_value\": 2}]}");
   observer->OnScenarioActivated(config.get());
-  EXPECT_FALSE(observer->heap_profiling_enabled_for_testing());
+  EXPECT_FALSE(observer->enabled_for_testing());
   observer->OnTracingEnabled(BackgroundTracingConfigImpl::BENCHMARK);
   EXPECT_EQ(0u, TraceLog::GetInstance()->enabled_modes());
   EXPECT_EQ(AllocationContextTracker::CaptureMode::DISABLED,
             AllocationContextTracker::capture_mode());
 
   observer->OnScenarioAborted();
-  EXPECT_FALSE(observer->heap_profiling_enabled_for_testing());
+  EXPECT_FALSE(observer->enabled_for_testing());
   EXPECT_EQ(0u, TraceLog::GetInstance()->enabled_modes());
   EXPECT_EQ(AllocationContextTracker::CaptureMode::DISABLED,
             AllocationContextTracker::capture_mode());
@@ -93,14 +80,14 @@ TEST_F(BackgroundMemoryTracingObserverTest, OnlyBackgroundDumpConfig) {
       "\"histogram_name\":\"foo\", \"histogram_lower_value\": 1, "
       "\"histogram_upper_value\": 2}]}");
   observer->OnScenarioActivated(config.get());
-  EXPECT_FALSE(observer->heap_profiling_enabled_for_testing());
+  EXPECT_FALSE(observer->enabled_for_testing());
   observer->OnTracingEnabled(BackgroundTracingConfigImpl::BENCHMARK);
   EXPECT_EQ(0u, TraceLog::GetInstance()->enabled_modes());
   EXPECT_EQ(AllocationContextTracker::CaptureMode::DISABLED,
             AllocationContextTracker::capture_mode());
 
   observer->OnScenarioAborted();
-  EXPECT_FALSE(observer->heap_profiling_enabled_for_testing());
+  EXPECT_FALSE(observer->enabled_for_testing());
   EXPECT_EQ(0u, TraceLog::GetInstance()->enabled_modes());
   EXPECT_EQ(AllocationContextTracker::CaptureMode::DISABLED,
             AllocationContextTracker::capture_mode());
@@ -116,7 +103,7 @@ TEST_F(BackgroundMemoryTracingObserverTest, DISABLED_HeapProfilingConfig) {
       "\"histogram_upper_value\": 2, \"args\": {\"enable_heap_profiler_mode\": "
       "\"background\"}}]}");
   observer->OnScenarioActivated(config.get());
-  EXPECT_TRUE(observer->heap_profiling_enabled_for_testing());
+  EXPECT_TRUE(observer->enabled_for_testing());
   observer->OnTracingEnabled(BackgroundTracingConfigImpl::BENCHMARK);
   EXPECT_EQ(0u, TraceLog::GetInstance()->enabled_modes());
 #if BUILDFLAG(USE_ALLOCATOR_SHIM) && !defined(OS_NACL)
@@ -128,7 +115,7 @@ TEST_F(BackgroundMemoryTracingObserverTest, DISABLED_HeapProfilingConfig) {
 #endif
 
   observer->OnScenarioAborted();
-  EXPECT_FALSE(observer->heap_profiling_enabled_for_testing());
+  EXPECT_FALSE(observer->enabled_for_testing());
   EXPECT_EQ(0u, TraceLog::GetInstance()->enabled_modes());
   EXPECT_EQ(AllocationContextTracker::CaptureMode::DISABLED,
             AllocationContextTracker::capture_mode());
@@ -144,7 +131,7 @@ TEST_F(BackgroundMemoryTracingObserverTest, DISABLED_HeapProfilingWithFilters) {
       "\"histogram_upper_value\": 2, \"args\": {\"enable_heap_profiler_mode\": "
       "\"background\", \"heap_profiler_category_filter\": \"cat,dog\"}}]}");
   observer->OnScenarioActivated(config.get());
-  EXPECT_TRUE(observer->heap_profiling_enabled_for_testing());
+  EXPECT_TRUE(observer->enabled_for_testing());
   observer->OnTracingEnabled(BackgroundTracingConfigImpl::BENCHMARK);
 #if BUILDFLAG(USE_ALLOCATOR_SHIM) && !defined(OS_NACL)
   EXPECT_EQ(AllocationContextTracker::CaptureMode::PSEUDO_STACK,
@@ -167,7 +154,7 @@ TEST_F(BackgroundMemoryTracingObserverTest, DISABLED_HeapProfilingWithFilters) {
 #endif  // BUILDFLAG(USE_ALLOCATOR_SHIM) && !defined(OS_NACL)
 
   observer->OnScenarioAborted();
-  EXPECT_FALSE(observer->heap_profiling_enabled_for_testing());
+  EXPECT_FALSE(observer->enabled_for_testing());
   EXPECT_EQ(0u, TraceLog::GetInstance()->enabled_modes());
   EXPECT_EQ(AllocationContextTracker::CaptureMode::DISABLED,
             AllocationContextTracker::capture_mode());

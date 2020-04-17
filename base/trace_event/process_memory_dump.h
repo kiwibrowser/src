@@ -14,7 +14,7 @@
 #include "base/base_export.h"
 #include "base/macros.h"
 #include "base/memory/ref_counted.h"
-#include "base/trace_event/heap_profiler_serialization_state.h"
+#include "base/trace_event/heap_profiler_allocation_context.h"
 #include "base/trace_event/memory_allocator_dump.h"
 #include "base/trace_event/memory_allocator_dump_guid.h"
 #include "base/trace_event/memory_dump_request_args.h"
@@ -33,7 +33,6 @@ class UnguessableToken;
 
 namespace trace_event {
 
-class HeapProfilerSerializationState;
 class TracedValue;
 
 // ProcessMemoryDump is as a strongly typed container which holds the dumps
@@ -54,8 +53,6 @@ class BASE_EXPORT ProcessMemoryDump {
   // MemoryAllocatorDump instances.
   using AllocatorDumpsMap =
       std::map<std::string, std::unique_ptr<MemoryAllocatorDump>>;
-
-  using HeapDumpsMap = std::map<std::string, std::unique_ptr<TracedValue>>;
 
   // Stores allocator dump edges indexed by source allocator dump GUID.
   using AllocatorDumpEdgesMap =
@@ -81,9 +78,7 @@ class BASE_EXPORT ProcessMemoryDump {
       size_t mapped_size);
 #endif
 
-  ProcessMemoryDump(scoped_refptr<HeapProfilerSerializationState>
-                        heap_profiler_serialization_state,
-                    const MemoryDumpArgs& dump_args);
+  explicit ProcessMemoryDump(const MemoryDumpArgs& dump_args);
   ProcessMemoryDump(ProcessMemoryDump&&);
   ~ProcessMemoryDump();
 
@@ -215,11 +210,6 @@ class BASE_EXPORT ProcessMemoryDump {
   void AddSuballocation(const MemoryAllocatorDumpGuid& source,
                         const std::string& target_node_name);
 
-  const scoped_refptr<HeapProfilerSerializationState>&
-  heap_profiler_serialization_state() const {
-    return heap_profiler_serialization_state_;
-  }
-
   // Removes all the MemoryAllocatorDump(s) contained in this instance. This
   // ProcessMemoryDump can be safely reused as if it was new once this returns.
   void Clear();
@@ -235,11 +225,6 @@ class BASE_EXPORT ProcessMemoryDump {
   // Populate the traced value with information about the memory allocator
   // dumps.
   void SerializeAllocatorDumpsInto(TracedValue* value) const;
-
-  // Populate the traced value with information about the heap profiler.
-  void SerializeHeapProfilerDumpsInto(TracedValue* value) const;
-
-  const HeapDumpsMap& heap_dumps() const { return heap_dumps_; }
 
   const MemoryDumpArgs& dump_args() const { return dump_args_; }
 
@@ -274,11 +259,6 @@ class BASE_EXPORT ProcessMemoryDump {
 
   UnguessableToken process_token_;
   AllocatorDumpsMap allocator_dumps_;
-  HeapDumpsMap heap_dumps_;
-
-  // State shared among all PMDs instances created in a given trace session.
-  scoped_refptr<HeapProfilerSerializationState>
-      heap_profiler_serialization_state_;
 
   // Keeps track of relationships between MemoryAllocatorDump(s).
   AllocatorDumpEdgesMap allocator_dumps_edges_;

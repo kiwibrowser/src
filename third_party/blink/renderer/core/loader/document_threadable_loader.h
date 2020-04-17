@@ -251,6 +251,8 @@ class CORE_EXPORT DocumentThreadableLoader final : public ThreadableLoader,
   bool override_referrer_;
   Referrer referrer_after_redirect_;
 
+  bool detached_ = false;
+
   RawResourceClientStateChecker checker_;
 };
 

@@ -51,10 +51,6 @@ const int kCaptionButtonHeightWithPadding = 19;
 const int kTitlebarTopAndBottomEdgeThickness = 2;
 // The icon is inset 2 px from the left frame border.
 const int kIconLeftSpacing = 2;
-// The space between the window icon and the title text.
-const int kTitleIconOffsetX = 4;
-// The space between the title text and the caption buttons.
-const int kTitleCaptionSpacing = 5;
 
 #if defined(OS_CHROMEOS)
 // Chrome OS uses a dark gray.
@@ -65,12 +61,6 @@ const SkColor kDefaultColorFrameInactive = SkColorSetRGB(176, 176, 176);
 const SkColor kDefaultColorFrame = SkColorSetRGB(66, 116, 201);
 const SkColor kDefaultColorFrameInactive = SkColorSetRGB(161, 182, 228);
 #endif
-
-const gfx::FontList& GetTitleFontList() {
-  static const gfx::FontList title_font_list =
-      internal::NativeWidgetPrivate::GetWindowTitleFontList();
-  return title_font_list;
-}
 
 void LayoutButton(ImageButton* button, const gfx::Rect& bounds) {
   button->SetVisible(true);
@@ -179,9 +169,6 @@ void CustomFrameView::GetWindowMask(const gfx::Size& size,
   DCHECK(window_mask);
   if (frame_->IsMaximized() || !ShouldShowTitleBarAndBorder())
     return;
-
-  GetDefaultWindowMask(size, frame_->GetCompositor()->device_scale_factor(),
-                       window_mask);
 }
 
 void CustomFrameView::ResetWindowControls() {
@@ -320,8 +307,7 @@ int CustomFrameView::IconSize() const {
   return display::win::ScreenWin::GetSystemMetricsInDIP(SM_CYSMICON);
 #else
   // The icon never shrinks below 16 px on a side.
-  const int kIconMinimumSize = 16;
-  return std::max(GetTitleFontList().GetHeight(), kIconMinimumSize);
+  return 16;
 #endif
 }
 
@@ -409,8 +395,6 @@ void CustomFrameView::PaintTitleBar(gfx::Canvas* canvas) {
 
   gfx::Rect rect = title_bounds_;
   rect.set_x(GetMirroredXForRect(title_bounds_));
-  canvas->DrawStringRect(delegate->GetWindowTitle(), GetTitleFontList(),
-                         SK_ColorWHITE, rect);
 }
 
 void CustomFrameView::PaintRestoredClientEdge(gfx::Canvas* canvas) {
@@ -551,30 +535,6 @@ void CustomFrameView::LayoutWindowControls() {
 }
 
 void CustomFrameView::LayoutTitleBar() {
-  DCHECK_GE(maximum_title_bar_x_, 0);
-  // The window title position is calculated based on the icon position, even
-  // when there is no icon.
-  gfx::Rect icon_bounds(IconBounds());
-  bool show_window_icon = window_icon_ != NULL;
-  if (show_window_icon)
-    window_icon_->SetBoundsRect(icon_bounds);
-
-  if (!frame_->widget_delegate()->ShouldShowWindowTitle())
-    return;
-
-  // The offset between the window left edge and the title text.
-  int title_x = show_window_icon ? icon_bounds.right() + kTitleIconOffsetX
-                                 : icon_bounds.x();
-  int title_height = GetTitleFontList().GetHeight();
-  // We bias the title position so that when the difference between the icon and
-  // title heights is odd, the extra pixel of the title is above the vertical
-  // midline rather than below.  This compensates for how the icon is already
-  // biased downwards (see IconBounds()) and helps prevent descenders on the
-  // title from overlapping the 3D edge at the bottom of the titlebar.
-  title_bounds_.SetRect(title_x,
-      icon_bounds.y() + ((icon_bounds.height() - title_height - 1) / 2),
-      std::max(0, maximum_title_bar_x_ - kTitleCaptionSpacing -
-      title_x), title_height);
 }
 
 void CustomFrameView::LayoutClientView() {

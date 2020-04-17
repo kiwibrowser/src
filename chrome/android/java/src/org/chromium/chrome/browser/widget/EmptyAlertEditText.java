@@ -4,6 +4,8 @@
 
 package org.chromium.chrome.browser.widget;
 
+import android.graphics.Color;
+import org.chromium.base.ContextUtils;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.support.v7.widget.AppCompatEditText;
@@ -35,6 +37,9 @@ public class EmptyAlertEditText extends AppCompatEditText {
     @Override
     protected void onFinishInflate() {
         super.onFinishInflate();
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            setHintTextColor(Color.WHITE);
+        }
         addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}

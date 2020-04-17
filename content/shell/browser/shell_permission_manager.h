@@ -7,11 +7,11 @@
 
 #include "base/callback_forward.h"
 #include "base/macros.h"
-#include "content/public/browser/permission_manager.h"
+#include "content/public/browser/permission_controller_delegate.h"
 
 namespace content {
 
-class ShellPermissionManager : public PermissionManager {
+class ShellPermissionManager : public PermissionControllerDelegate {
  public:
   ShellPermissionManager();
   ~ShellPermissionManager() override;
@@ -45,8 +45,8 @@ class ShellPermissionManager : public PermissionManager {
       const GURL& requesting_origin) override;
   int SubscribePermissionStatusChange(
       PermissionType permission,
+      RenderFrameHost* render_frame_host,
       const GURL& requesting_origin,
-      const GURL& embedding_origin,
       const base::Callback<void(blink::mojom::PermissionStatus)>& callback)
       override;
   void UnsubscribePermissionStatusChange(int subscription_id) override;

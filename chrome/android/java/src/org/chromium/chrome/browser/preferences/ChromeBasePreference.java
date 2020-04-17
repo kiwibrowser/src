@@ -7,8 +7,11 @@ package org.chromium.chrome.browser.preferences;
 import android.content.Context;
 import android.preference.Preference;
 import android.util.AttributeSet;
-import android.view.View;
 import android.widget.TextView;
+import android.graphics.Color;
+import android.view.View;
+
+import org.chromium.base.ContextUtils;
 
 /**
  * A preference that supports some Chrome-specific customizations:
@@ -49,6 +52,11 @@ public class ChromeBasePreference extends Preference {
         super.onBindView(view);
         ((TextView) view.findViewById(android.R.id.title)).setSingleLine(false);
         ManagedPreferencesUtils.onBindViewToPreference(mManagedPrefDelegate, this, view);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            ((TextView) view.findViewById(android.R.id.title)).setTextColor(Color.WHITE);
+            if (((TextView) view.findViewById(android.R.id.summary)) != null)
+              ((TextView) view.findViewById(android.R.id.summary)).setTextColor(Color.GRAY);
+        }
     }
 
     @Override

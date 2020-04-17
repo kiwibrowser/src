@@ -73,7 +73,7 @@ bool HasValue(const std::map<int, T>& map, int tab_id) {
 
 // static
 extension_misc::ExtensionIcons ExtensionAction::ActionIconSize() {
-  return extension_misc::EXTENSION_ICON_BITTY;
+  return extension_misc::EXTENSION_ICON_MEDIUM;
 }
 
 // static
@@ -227,25 +227,31 @@ void ExtensionAction::ClearAllValuesForTab(int tab_id) {
 
 void ExtensionAction::SetDefaultIconImage(
     std::unique_ptr<extensions::IconImage> icon_image) {
+  LOG(INFO) << "[EXTENSIONS] ExtensionAction::SetDefaultIconImage";
   default_icon_image_ = std::move(icon_image);
 }
 
 gfx::Image ExtensionAction::GetDefaultIconImage() const {
+  LOG(INFO) << "[EXTENSIONS] ExtensionAction::GetDefaultIconImage";
   // If we have a default icon, it should be loaded before trying to use it.
   DCHECK(!default_icon_image_ == !default_icon_);
-  if (default_icon_image_)
+  if (default_icon_image_) {
+    LOG(INFO) << "[EXTENSIONS] ExtensionAction::GetDefaultIconImage - Returning default_icon_image_->image";
     return default_icon_image_->image();
+  }
 
   if (placeholder_icon_image_.IsEmpty()) {
     // For extension actions, we use a special placeholder icon (with the first
     // letter of the extension name) rather than the default (puzzle piece).
     // Note that this is only if we can't find any better image (e.g. a product
     // icon).
+    LOG(INFO) << "[EXTENSIONS] ExtensionAction::GetDefaultIconImage - Generating placeholder icon";
     placeholder_icon_image_ =
         extensions::ExtensionIconPlaceholder::CreateImage(ActionIconSize(),
                                                           extension_name_);
   }
 
+  LOG(INFO) << "[EXTENSIONS] ExtensionAction::GetDefaultIconImage - Returning placeholder icon";
   return placeholder_icon_image_;
 }
 

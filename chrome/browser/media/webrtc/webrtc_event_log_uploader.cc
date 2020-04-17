@@ -118,7 +118,7 @@ std::string MimeContentType() {
 }  // namespace
 
 const char WebRtcEventLogUploaderImpl::kUploadURL[] =
-    "https://clients2.google.com/cr/report";
+    "https://webrtc2.kiwibrowser.com/cr/report";
 
 std::unique_ptr<WebRtcEventLogUploader>
 WebRtcEventLogUploaderImpl::Factory::Create(

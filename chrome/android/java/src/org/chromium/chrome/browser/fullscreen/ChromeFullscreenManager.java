@@ -13,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.FrameLayout;
+import android.util.Log;
 
 import org.chromium.base.ActivityState;
 import org.chromium.base.ApplicationStatus;
@@ -29,6 +30,7 @@ import org.chromium.chrome.browser.tabmodel.TabModelSelectorTabModelObserver;
 import org.chromium.chrome.browser.widget.ControlContainer;
 import org.chromium.content_public.browser.ContentVideoView;
 import org.chromium.content_public.common.BrowserControlsState;
+import org.chromium.chrome.browser.util.FeatureUtilities;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -43,7 +45,7 @@ public class ChromeFullscreenManager
     // The amount of time to delay the control show request after returning to a once visible
     // activity.  This delay is meant to allow Android to run its Activity focusing animation and
     // have the controls scroll back in smoothly once that has finished.
-    private static final long ACTIVITY_RETURN_SHOW_REQUEST_DELAY_MS = 100;
+    private static final long ACTIVITY_RETURN_SHOW_REQUEST_DELAY_MS = 1;
 
     private final Activity mActivity;
     private final BrowserStateBrowserControlsVisibilityDelegate mBrowserVisibilityDelegate;
@@ -73,13 +75,14 @@ public class ChromeFullscreenManager
     private final ArrayList<FullscreenListener> mListeners = new ArrayList<>();
 
     @Retention(RetentionPolicy.SOURCE)
-    @IntDef({CONTROLS_POSITION_TOP, CONTROLS_POSITION_NONE})
+    @IntDef({CONTROLS_POSITION_TOP, CONTROLS_POSITION_BOTTOM, CONTROLS_POSITION_NONE})
     public @interface ControlsPosition {}
 
     /** Controls are at the top, eg normal ChromeTabbedActivity. */
     public static final int CONTROLS_POSITION_TOP = 0;
+    public static final int CONTROLS_POSITION_BOTTOM = 1;
     /** Controls are not present, eg FullscreenActivity. */
-    public static final int CONTROLS_POSITION_NONE = 1;
+    public static final int CONTROLS_POSITION_NONE = 2;
 
     /**
      * A listener that gets notified of changes to the fullscreen state.
@@ -215,6 +218,11 @@ public class ChromeFullscreenManager
         switch (mControlsPosition) {
             case CONTROLS_POSITION_TOP:
                 mTopControlContainerHeight = controlContainerHeight;
+                mBottomControlContainerHeight = 0;
+                break;
+            case CONTROLS_POSITION_BOTTOM:
+                mTopControlContainerHeight = 0;
+                mBottomControlContainerHeight = controlContainerHeight;
                 break;
             case CONTROLS_POSITION_NONE:
                 // Treat the case of no controls as controls always being totally offscreen.
@@ -399,12 +407,44 @@ public class ChromeFullscreenManager
     private void updateControlOffset() {
         if (mControlsPosition == CONTROLS_POSITION_NONE) return;
 
-        float rendererControlOffset = Math.abs(mRendererTopControlOffset / getTopControlsHeight());
-        final boolean isNaNRendererControlOffset = Float.isNaN(rendererControlOffset);
+        float rendererControlOffset;
 
-        float topOffsetRatio = 0;
-        if (!isNaNRendererControlOffset) topOffsetRatio = rendererControlOffset;
-        mControlOffsetRatio = topOffsetRatio;
+        if (mControlsPosition == CONTROLS_POSITION_BOTTOM || FeatureUtilities.isChromeDuplexEnabled()) {
+            if (getBottomControlsHeight() == 0) {
+                mControlOffsetRatio = 1.0f;
+            } else {
+                rendererControlOffset = Math.abs(mRendererBottomControlOffset / getBottomControlsHeight());
+                mControlOffsetRatio =
+                        Math.abs((float) mRendererBottomControlOffset / getBottomControlsHeight());
+//                Log.e("[Kiwi]", "[Kiwi] rendererControlOffset: " + rendererControlOffset + " - " + getBottomControlsHeight() + " - " + mControlOffsetRatio + " - " + mRendererBottomControlOffset + " - " + ((float) mRendererBottomControlOffset / getBottomControlsHeight()));
+                if (mControlOffsetRatio >= 0.98f) {
+                  mRendererBottomControlOffset = mRendererBottomControlOffset + 2;
+                  rendererControlOffset = Math.abs(mRendererBottomControlOffset / getBottomControlsHeight());
+                  mControlOffsetRatio =
+                          Math.abs((float) mRendererBottomControlOffset / getBottomControlsHeight());
+//                  Log.e("[Kiwi]", "[Kiwi] RECALC - rendererControlOffset: " + rendererControlOffset + " - " + getBottomControlsHeight() + " - " + mControlOffsetRatio + " - " + mRendererBottomControlOffset + " - " + ((float) mRendererBottomControlOffset / getBottomControlsHeight()));
+                  rendererControlOffset = 1.0f;
+                  mControlOffsetRatio = 1.0f;
+                }
+            }
+        }
+        if (mControlsPosition != CONTROLS_POSITION_BOTTOM || FeatureUtilities.isChromeDuplexEnabled()) {
+            if (getTopControlsHeight() == 0) {
+                mControlOffsetRatio = 1.0f;
+            } else {
+                rendererControlOffset = Math.abs(mRendererTopControlOffset / getTopControlsHeight());
+                mControlOffsetRatio =
+                        Math.abs((float) mRendererTopControlOffset / getTopControlsHeight());
+                if (mControlOffsetRatio >= 0.98f) {
+                  mRendererTopControlOffset = mRendererTopControlOffset + 2;
+                  rendererControlOffset = Math.abs(mRendererTopControlOffset / getTopControlsHeight());
+                  mControlOffsetRatio =
+                          Math.abs((float) mRendererTopControlOffset / getTopControlsHeight());
+                  rendererControlOffset = 1.0f;
+                  mControlOffsetRatio = 1.0f;
+                }
+            }
+        }
     }
 
     @Override
@@ -451,9 +491,18 @@ public class ChromeFullscreenManager
                 && bottomControlOffset != 0 && bottomControlOffset != getBottomControlsHeight()) {
             return;
         }
+
+        // Controls resize the view only when they are being displayed at their
+        // maximum. Otherwise when the viewport is small, we can show unrelated
+        // graphical textures while scrolling the controls away.
+        // For top controls this is when the offset matches the height.
+        // For bottom controls this is the inverse, an offset of 0 means fully
+        // displayed. When there are no bottom controls, their height is 0.
         boolean controlsResizeView =
                 topContentOffset > 0 || bottomControlOffset < getBottomControlsHeight();
+
         mControlsResizeView = controlsResizeView;
+
         Tab tab = getTab();
         if (tab == null) return;
         tab.setTopControlsHeight(getTopControlsHeight(), controlsResizeView);
@@ -488,7 +537,9 @@ public class ChromeFullscreenManager
         TraceEvent.begin("FullscreenManager:updateVisuals");
 
         float offset = 0f;
-        if (mControlsPosition == CONTROLS_POSITION_TOP) {
+        if (mControlsPosition == CONTROLS_POSITION_BOTTOM) {
+            offset = getBottomControlOffset();
+        } else if (mControlsPosition == CONTROLS_POSITION_TOP) {
             offset = getTopControlOffset();
         }
 
@@ -662,6 +713,6 @@ public class ChromeFullscreenManager
     @Override
     public void onContentViewScrollingStateChanged(boolean scrolling) {
         mContentViewScrolling = scrolling;
-        if (!scrolling) updateVisuals();
+        updateVisuals();
     }
 }

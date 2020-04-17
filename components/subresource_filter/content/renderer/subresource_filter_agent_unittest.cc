@@ -10,11 +10,12 @@
 #include "base/files/file.h"
 #include "base/macros.h"
 #include "base/strings/string_piece.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/time/time.h"
 #include "components/subresource_filter/content/common/subresource_filter_messages.h"
 #include "components/subresource_filter/content/renderer/unverified_ruleset_dealer.h"
 #include "components/subresource_filter/core/common/document_load_statistics.h"
+#include "components/subresource_filter/core/common/memory_mapped_ruleset.h"
 #include "components/subresource_filter/core/common/scoped_timers.h"
 #include "components/subresource_filter/core/common/test_ruleset_creator.h"
 #include "testing/gmock/include/gmock/gmock.h"
@@ -239,6 +240,21 @@ TEST_F(SubresourceFilterAgentTest, DisabledByDefault_NoFilterIsInjected) {
 
   histogram_tester.ExpectTotalCount(kEvaluationTotalWallDuration, 0);
   histogram_tester.ExpectTotalCount(kEvaluationTotalCPUDuration, 0);
+}
+
+TEST_F(SubresourceFilterAgentTest, MmapFailure_FailsToInjectSubresourceFilter) {
+  ASSERT_NO_FATAL_FAILURE(
+      SetTestRulesetToDisallowURLsWithPathSuffix(kTestFirstURLPathSuffix));
+  MemoryMappedRuleset::SetMemoryMapFailuresForTesting(true);
+  ExpectNoSubresourceFilterGetsInjected();
+  StartLoadAndSetActivationState(ActivationState(ActivationLevel::ENABLED),
+                                 false /* is_associated_with_ad_subframe */);
+  ASSERT_TRUE(::testing::Mock::VerifyAndClearExpectations(agent()));
+
+  MemoryMappedRuleset::SetMemoryMapFailuresForTesting(false);
+  ExpectSubresourceFilterGetsInjected();
+  StartLoadAndSetActivationState(ActivationState(ActivationLevel::ENABLED),
+                                 false /* is_associated_with_ad_subframe */);
 }
 
 TEST_F(SubresourceFilterAgentTest, Disabled_NoFilterIsInjected) {

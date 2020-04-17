@@ -30,6 +30,7 @@ import org.chromium.chrome.browser.tabmodel.TabModelUtils;
 import org.chromium.chrome.browser.util.AccessibilityUtil;
 import org.chromium.chrome.browser.widget.OverviewListLayout;
 import org.chromium.ui.resources.dynamics.DynamicResourceLoader;
+import org.chromium.base.ContextUtils;
 
 import java.util.List;
 
@@ -414,9 +415,10 @@ public class LayoutManagerChrome extends LayoutManager implements OverviewModeBe
             mScrollDirection = computeScrollDirection(dx, dy);
             if (mScrollDirection == ScrollDirection.UNKNOWN) return;
 
-            if (mOverviewLayout != null && mScrollDirection == ScrollDirection.DOWN) {
+            if (mOverviewLayout != null && (mScrollDirection == ScrollDirection.DOWN || mScrollDirection == ScrollDirection.UP)) {
                 RecordUserAction.record("MobileToolbarSwipeOpenStackView");
-                startShowing(mOverviewLayout, true);
+                if (mScrollDirection == ScrollDirection.DOWN || (mScrollDirection == ScrollDirection.UP && ContextUtils.getAppSharedPreferences().getBoolean("up_swipe_mode_enabled", false)))
+                    startShowing(mOverviewLayout, true);
             } else if (mToolbarSwipeLayout != null
                     && (mScrollDirection == ScrollDirection.LEFT
                                || mScrollDirection == ScrollDirection.RIGHT)) {
@@ -444,6 +446,8 @@ public class LayoutManagerChrome extends LayoutManager implements OverviewModeBe
                 direction = ScrollDirection.RIGHT;
             } else if (swipeAngle < 270 + SWIPE_RANGE_DEG && swipeAngle > 270 - SWIPE_RANGE_DEG) {
                 direction = ScrollDirection.DOWN;
+            } else if (swipeAngle < 90 + SWIPE_RANGE_DEG && swipeAngle > 90 - SWIPE_RANGE_DEG) {
+                direction = ScrollDirection.UP;
             }
 
             return direction;
@@ -458,7 +462,7 @@ public class LayoutManagerChrome extends LayoutManager implements OverviewModeBe
                 return false;
             }
 
-            if (direction == ScrollDirection.DOWN) {
+            if (direction == ScrollDirection.DOWN || direction == ScrollDirection.UP) {
                 boolean isAccessibility = AccessibilityUtil.isAccessibilityEnabled();
                 return mOverviewLayout != null && !isAccessibility;
             }

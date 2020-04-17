@@ -43,7 +43,13 @@ class WebContentsUserData : public base::SupportsUserData::Data {
   // WebContents (via CreateForWebContents above) and returns it. If no instance
   // of the type was attached, returns nullptr.
   static T* FromWebContents(WebContents* contents) {
+//    LOG(INFO) << "[EXTENSIONS] WebContentsUserData::FromWebContents - Step 1";
     DCHECK(contents);
+//    LOG(INFO) << "[EXTENSIONS] WebContentsUserData::FromWebContents - Step 2";
+//    LOG(INFO) << "[EXTENSIONS] WebContentsUserData::FromWebContents - Step 3 - " << contents;
+//    LOG(INFO) << "[EXTENSIONS] WebContentsUserData::FromWebContents - Step 3a - " << UserDataKey();
+//    T* ptr = static_cast<T*>(contents->GetUserData(UserDataKey()));
+//    LOG(INFO) << "[EXTENSIONS] WebContentsUserData::FromWebContents - Return is " << ptr;
     return static_cast<T*>(contents->GetUserData(UserDataKey()));
   }
   static const T* FromWebContents(const WebContents* contents) {
@@ -52,26 +58,15 @@ class WebContentsUserData : public base::SupportsUserData::Data {
   }
 
  protected:
-  static inline void* UserDataKey() {
-    return &kLocatorKey;
+  static inline const void* UserDataKey() {
+    static const int kId = 0;
+    return &kId;
   }
-
- private:
-  // The user data key.
-  static int kLocatorKey;
 };
 
-// The macro to define the locator key. This key must be defined in the .cc file
-// of the tab helper otherwise different instances for different template types
-// will be collapsed by the Visual Studio linker.
-//
-// The "= 0" is surprising, but is required to effect a definition rather than
-// a declaration. Without it, this would be merely a declaration of a template
-// specialization. (C++98: 14.7.3.15; C++11: 14.7.3.13)
-//
-#define DEFINE_WEB_CONTENTS_USER_DATA_KEY(TYPE) \
-template<>                                      \
-int content::WebContentsUserData<TYPE>::kLocatorKey = 0
+// Macro previously used to define the UserDataKey().
+// TODO(fdoray): Remove this. https://crbug.com/589840
+#define DEFINE_WEB_CONTENTS_USER_DATA_KEY(TYPE)
 
 }  // namespace content
 

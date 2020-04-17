@@ -33,7 +33,6 @@ InstantServiceFactory::InstantServiceFactory()
         BrowserContextDependencyManager::GetInstance()) {
   DependsOn(suggestions::SuggestionsServiceFactory::GetInstance());
   DependsOn(TemplateURLServiceFactory::GetInstance());
-  DependsOn(ThemeServiceFactory::GetInstance());
   DependsOn(TopSitesFactory::GetInstance());
 }
 

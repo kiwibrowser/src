@@ -17,6 +17,11 @@ import org.chromium.chrome.R;
 import org.chromium.chrome.browser.customtabs.CustomTabActivity;
 import org.chromium.ui.base.LocalizationUtils;
 
+import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+
 /**
  * A preference that navigates to an URL.
  */
@@ -50,6 +55,11 @@ public class HyperlinkPreference extends Preference {
         TextView titleView = (TextView) view.findViewById(android.R.id.title);
         titleView.setSingleLine(false);
 
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            ((TextView) view.findViewById(android.R.id.title)).setTextColor(Color.WHITE);
+            if (((TextView) view.findViewById(android.R.id.summary)) != null)
+              ((TextView) view.findViewById(android.R.id.summary)).setTextColor(Color.GRAY);
+        }
         if (mImitateWebLink) {
             setSelectable(false);
 

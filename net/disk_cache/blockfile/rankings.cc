@@ -9,6 +9,7 @@
 #include <limits>
 
 #include "base/macros.h"
+#include "base/process/process.h"
 #include "build/build_config.h"
 #include "net/base/net_export.h"
 #include "net/disk_cache/blockfile/backend_impl.h"
@@ -82,28 +83,11 @@ enum CrashLocation {
   ON_REMOVE_3, ON_REMOVE_4, ON_REMOVE_5, ON_REMOVE_6, ON_REMOVE_7, ON_REMOVE_8
 };
 
-#ifndef NDEBUG
-[[noreturn]] void TerminateSelf() {
-#if defined(OS_WIN)
-  // Windows does more work on _exit() than we would like, so we force exit.
-  TerminateProcess(GetCurrentProcess(), 0);
-#if defined(__clang__)
-  // Let clang know that TerminateProcess(GetCurrentProcess()) can't return,
-  // so that it doesn't warn about TerminateSelf() returning.
-  __builtin_unreachable();
-#endif
-#elif defined(OS_POSIX) || defined(OS_FUCHSIA)
-  // On POSIX and Fuchsia, _exit() will terminate the process with minimal
-  // cleanup, and it is cleaner than killing.
-  _exit(0);
-#endif
-}
-#endif  // NDEBUG
-
-// Generates a crash on debug builds, acording to the value of g_rankings_crash.
-// This used by crash_cache.exe to generate unit-test files.
+// Simulates a crash (by exiting the process without graceful shutdown) on debug
+// builds, according to the value of g_rankings_crash. This used by
+// crash_cache.exe to generate unit-test files.
 void GenerateCrash(CrashLocation location) {
-#ifndef NDEBUG
+#if !defined(NDEBUG) && !defined(OS_IOS)
   if (disk_cache::NO_CRASH == disk_cache::g_rankings_crash)
     return;
   switch (location) {
@@ -111,21 +95,21 @@ void GenerateCrash(CrashLocation location) {
       switch (disk_cache::g_rankings_crash) {
         case disk_cache::INSERT_ONE_1:
         case disk_cache::INSERT_LOAD_1:
-          TerminateSelf();
+          base::Process::TerminateCurrentProcessImmediately(0);
         default:
           break;
       }
       break;
     case ON_INSERT_2:
       if (disk_cache::INSERT_EMPTY_1 == disk_cache::g_rankings_crash)
-        TerminateSelf();
+        base::Process::TerminateCurrentProcessImmediately(0);
       break;
     case ON_INSERT_3:
       switch (disk_cache::g_rankings_crash) {
         case disk_cache::INSERT_EMPTY_2:
         case disk_cache::INSERT_ONE_2:
         case disk_cache::INSERT_LOAD_2:
-          TerminateSelf();
+          base::Process::TerminateCurrentProcessImmediately(0);
         default:
           break;
       }
@@ -134,7 +118,7 @@ void GenerateCrash(CrashLocation location) {
       switch (disk_cache::g_rankings_crash) {
         case disk_cache::INSERT_EMPTY_3:
         case disk_cache::INSERT_ONE_3:
-          TerminateSelf();
+          base::Process::TerminateCurrentProcessImmediately(0);
         default:
           break;
       }
@@ -145,37 +129,37 @@ void GenerateCrash(CrashLocation location) {
         case disk_cache::REMOVE_HEAD_1:
         case disk_cache::REMOVE_TAIL_1:
         case disk_cache::REMOVE_LOAD_1:
-          TerminateSelf();
+          base::Process::TerminateCurrentProcessImmediately(0);
         default:
           break;
       }
       break;
     case ON_REMOVE_2:
       if (disk_cache::REMOVE_ONE_2 == disk_cache::g_rankings_crash)
-        TerminateSelf();
+        base::Process::TerminateCurrentProcessImmediately(0);
       break;
     case ON_REMOVE_3:
       if (disk_cache::REMOVE_ONE_3 == disk_cache::g_rankings_crash)
-        TerminateSelf();
+        base::Process::TerminateCurrentProcessImmediately(0);
       break;
     case ON_REMOVE_4:
       if (disk_cache::REMOVE_HEAD_2 == disk_cache::g_rankings_crash)
-        TerminateSelf();
+        base::Process::TerminateCurrentProcessImmediately(0);
       break;
     case ON_REMOVE_5:
       if (disk_cache::REMOVE_TAIL_2 == disk_cache::g_rankings_crash)
-        TerminateSelf();
+        base::Process::TerminateCurrentProcessImmediately(0);
       break;
     case ON_REMOVE_6:
       if (disk_cache::REMOVE_TAIL_3 == disk_cache::g_rankings_crash)
-        TerminateSelf();
+        base::Process::TerminateCurrentProcessImmediately(0);
       break;
     case ON_REMOVE_7:
       switch (disk_cache::g_rankings_crash) {
         case disk_cache::REMOVE_ONE_4:
         case disk_cache::REMOVE_LOAD_2:
         case disk_cache::REMOVE_HEAD_3:
-          TerminateSelf();
+          base::Process::TerminateCurrentProcessImmediately(0);
         default:
           break;
       }
@@ -184,7 +168,7 @@ void GenerateCrash(CrashLocation location) {
       switch (disk_cache::g_rankings_crash) {
         case disk_cache::REMOVE_HEAD_4:
         case disk_cache::REMOVE_LOAD_3:
-          TerminateSelf();
+          base::Process::TerminateCurrentProcessImmediately(0);
         default:
           break;
       }

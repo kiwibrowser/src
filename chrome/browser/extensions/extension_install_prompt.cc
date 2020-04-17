@@ -20,6 +20,9 @@
 #include "chrome/browser/ui/extensions/extension_install_ui_factory.h"
 #include "chrome/grit/generated_resources.h"
 #include "chrome/grit/theme_resources.h"
+#include "components/app_modal/javascript_app_modal_dialog.h"
+#include "components/app_modal/javascript_dialog_manager.h"
+#include "components/app_modal/native_app_modal_dialog.h"
 #include "components/strings/grit/components_strings.h"
 #include "content/public/browser/web_contents.h"
 #include "extensions/browser/disable_reason.h"
@@ -419,6 +422,17 @@ base::string16 ExtensionInstallPrompt::Prompt::GetUserCount() const {
   return base::string16();
 }
 
+base::string16 ExtensionInstallPrompt::Prompt::GetPermissionsAsString() const {
+  base::string16 result = base::string16();
+  result = result + GetDialogTitle() + base::ASCIIToUTF16("\n") + base::ASCIIToUTF16("\n");
+  result = result + GetPermissionsHeading() + base::ASCIIToUTF16("\n") + base::ASCIIToUTF16("\n");
+  result = result + base::JoinString(prompt_permissions_.permissions,
+                                     base::ASCIIToUTF16("\n")) + base::ASCIIToUTF16("\n");
+  result = result + base::JoinString(prompt_permissions_.details,
+                                     base::ASCIIToUTF16("\n"));
+  return result;
+}
+
 size_t ExtensionInstallPrompt::Prompt::GetPermissionCount() const {
   return prompt_permissions_.permissions.size();
 }
@@ -527,6 +541,7 @@ ExtensionInstallPrompt::ExtensionInstallPrompt(content::WebContents* contents)
       extension_(NULL),
       install_ui_(extensions::CreateExtensionInstallUI(
           ProfileForWebContents(contents))),
+      contents_(contents),
       show_params_(new ExtensionInstallPromptShowParams(contents)),
       did_call_show_dialog_(false),
       weak_factory_(this) {
@@ -654,7 +669,41 @@ void ExtensionInstallPrompt::LoadImageIfNeeded() {
                  weak_factory_.GetWeakPtr()));
 }
 
+// Ensures that OnDialogClosed is only called once.
+class CloseDialogCallbackWrapper
+    : public base::RefCountedThreadSafe<CloseDialogCallbackWrapper> {
+ public:
+
+  explicit CloseDialogCallbackWrapper(ExtensionInstallPrompt::DoneCallback* callback)
+      : callback_(std::move(callback)) {}
+
+  void Run(bool dialog_was_suppressed,
+           bool success,
+           const base::string16& user_input) {
+  if (success) {
+    LOG(INFO) << "[EXTENSIONS] We received result from extension dialog (ACCEPTED)";
+    base::ThreadTaskRunnerHandle::Get()->PostTask(
+         FROM_HERE, base::BindOnce(base::ResetAndReturn(callback_),
+                                  ExtensionInstallPrompt::Result::ACCEPTED));
+  } else {
+    LOG(INFO) << "[EXTENSIONS] We received result from extension dialog (REJECTED)";
+    base::ThreadTaskRunnerHandle::Get()->PostTask(
+         FROM_HERE,
+         base::BindOnce(base::ResetAndReturn(callback_),
+                        ExtensionInstallPrompt::Result::USER_CANCELED));
+  }
+  }
+
+ private:
+  friend class base::RefCountedThreadSafe<CloseDialogCallbackWrapper>;
+  ~CloseDialogCallbackWrapper() {}
+
+  ExtensionInstallPrompt::DoneCallback* callback_;
+};
+
 void ExtensionInstallPrompt::ShowConfirmation() {
+  LOG(INFO) << "[EXTENSIONS] ShowConfirmation - Step 1";
+
   std::unique_ptr<const PermissionSet> permissions_wrapper;
   const PermissionSet* permissions_to_display = nullptr;
   if (custom_permissions_.get()) {
@@ -678,6 +727,8 @@ void ExtensionInstallPrompt::ShowConfirmation() {
     }
   }
 
+  LOG(INFO) << "[EXTENSIONS] ShowConfirmation - Step 2";
+
   if (permissions_to_display) {
     Manifest::Type type =
         extension_ ? extension_->GetType() : Manifest::TYPE_UNKNOWN;
@@ -691,6 +742,8 @@ void ExtensionInstallPrompt::ShowConfirmation() {
   prompt_->set_extension(extension_);
   prompt_->set_icon(gfx::Image::CreateFrom1xBitmap(icon_));
 
+  LOG(INFO) << "[EXTENSIONS] ShowConfirmation - Step 3";
+
   if (show_params_->WasParentDestroyed()) {
     base::ResetAndReturn(&done_callback_).Run(Result::ABORTED);
     return;
@@ -699,12 +752,38 @@ void ExtensionInstallPrompt::ShowConfirmation() {
   g_last_prompt_type_for_tests = prompt_->type();
   did_call_show_dialog_ = true;
 
+  LOG(INFO) << "[EXTENSIONS] Checking if AutoConfirmPrompt";
+
   if (AutoConfirmPrompt(&done_callback_))
     return;
 
+  if (contents_) {
+    LOG(INFO) << "[EXTENSIONS] contents_ is not empty, displaying prompt";
+    scoped_refptr<CloseDialogCallbackWrapper> wrapper = new CloseDialogCallbackWrapper(std::move(&done_callback_));
+
+    if (permissions_to_display) {
+      bool ignored;
+      app_modal::JavaScriptDialogManager::GetInstance()->RunJavaScriptDialog(
+          contents_, contents_->GetMainFrame(), content::JAVASCRIPT_DIALOG_TYPE_CONFIRM,
+          prompt_->GetPermissionsAsString(), base::string16(),
+                   base::BindOnce(&CloseDialogCallbackWrapper::Run, wrapper, false),
+                   &ignored);
+    } else {
+/*
+      bool ignored;
+      app_modal::JavaScriptDialogManager::GetInstance()->RunJavaScriptDialog(
+          contents_, contents_->GetMainFrame(), content::JAVASCRIPT_DIALOG_TYPE_CONFIRM,
+          prompt_->GetDialogTitle() + base::ASCIIToUTF16("\n") + prompt_->GetPermissionsHeading(), base::string16(), &ExtensionInstallPrompt::ConfirmCallback, &ignored);
+*/
+    }
+  } else {
+    LOG(INFO) << "[EXTENSIONS] contents_ is empty, skipping prompt";
+  }
+/*
   if (show_dialog_callback_.is_null())
     show_dialog_callback_ = GetDefaultShowDialogCallback();
   base::ResetAndReturn(&show_dialog_callback_)
       .Run(show_params_.get(), base::ResetAndReturn(&done_callback_),
            std::move(prompt_));
+*/
 }

@@ -24,6 +24,8 @@ ChromeExtensionOptionsGuestDelegate::~ChromeExtensionOptionsGuestDelegate() {
 
 bool ChromeExtensionOptionsGuestDelegate::HandleContextMenu(
     const content::ContextMenuParams& params) {
+  if (true)
+    return false;
   ContextMenuDelegate* menu_delegate = ContextMenuDelegate::FromWebContents(
       extension_options_guest()->web_contents());
   DCHECK(menu_delegate);

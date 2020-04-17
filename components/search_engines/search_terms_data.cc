@@ -18,6 +18,10 @@ std::string SearchTermsData::GoogleBaseURLValue() const {
   return GoogleURLTracker::kDefaultGoogleHomepage;
 }
 
+std::string SearchTermsData::SearchBaseURLValue() const {
+  return std::string();
+}
+
 std::string SearchTermsData::GoogleBaseSuggestURLValue() const {
   // Start with the Google base URL.
   const GURL base_url(GoogleBaseURLValue());

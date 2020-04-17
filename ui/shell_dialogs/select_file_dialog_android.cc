@@ -125,9 +125,17 @@ void SelectFileDialogImpl::SelectFileImpl(
 
   bool accept_multiple_files = SelectFileDialog::SELECT_OPEN_MULTI_FILE == type;
 
+  bool askForCamera = true;
+  if (type == ui::SelectFileDialog::SELECT_OPEN_FILE_BUT_NO_CAMERA) {
+    type = ui::SelectFileDialog::SELECT_OPEN_FILE;
+    askForCamera = false;
+  }
+  if (type == ui::SelectFileDialog::SELECT_SAVEAS_FILE)
+    askForCamera = false;
+
   Java_SelectFileDialog_selectFile(env, java_object_, accept_types_java,
                                    accept_types.second, accept_multiple_files,
-                                   owning_window->GetJavaObject());
+                                   owning_window->GetJavaObject(), askForCamera);
 }
 
 SelectFileDialogImpl::~SelectFileDialogImpl() {

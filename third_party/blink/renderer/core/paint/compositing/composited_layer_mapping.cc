@@ -2681,6 +2681,10 @@ Color CompositedLayerMapping::LayoutObjectBackgroundColor() const {
 
 void CompositedLayerMapping::UpdateBackgroundColor() {
   auto color = LayoutObjectBackgroundColor();
+  Settings* settings = GetLayoutObject().GetFrame()->GetSettings();
+  if (settings && settings->GetAccessibilityNightModeEnabled())
+    color = Color::kBlack;
+
   graphics_layer_->SetBackgroundColor(color);
   if (scrolling_contents_layer_)
     scrolling_contents_layer_->SetBackgroundColor(color);
@@ -3156,6 +3160,24 @@ void CompositedLayerMapping::DoPaintTask(
   high_contrast_settings.grayscale = settings->GetHighContrastGrayscale();
   high_contrast_settings.contrast = settings->GetHighContrastContrast();
   high_contrast_settings.image_policy = settings->GetHighContrastImagePolicy();
+
+  /*
+   * Night Scale is working the following:
+   * 0 = Night Scale off
+   * 1 = Night Scale on with contrast of 0
+  */
+  if (settings && settings->GetAccessibilityNightModeEnabled()) {
+      double nightFactor = settings->GetAccessibilityNightModeFactor();
+      high_contrast_settings.mode = HighContrastMode::kInvertLightness;
+      high_contrast_settings.grayscale = settings->GetAccessibilityNightModeGrayscaleEnabled();
+      if (nightFactor == 0.0f)
+           nightFactor = -0.03;
+      else
+           nightFactor = (1 - nightFactor) * -1;
+      high_contrast_settings.contrast = nightFactor;
+      high_contrast_settings.image_policy = HighContrastImagePolicy::kFilterSmart;
+  }
+
   context.SetHighContrast(high_contrast_settings);
 
   if (paint_info.paint_layer->GetCompositingState() !=

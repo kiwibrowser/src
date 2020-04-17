@@ -846,9 +846,6 @@ int HttpNetworkTransaction::DoCreateStream() {
 }
 
 int HttpNetworkTransaction::DoCreateStreamComplete(int result) {
-  // Version interference probes should not result in success.
-  DCHECK(!server_ssl_config_.version_interference_probe || result != OK);
-
   // If |result| is ERR_HTTPS_PROXY_TUNNEL_RESPONSE, then
   // DoCreateStreamComplete is being called from OnHttpsProxyTunnelResponse,
   // which resets the stream request first. Therefore, we have to grab the
@@ -1673,6 +1670,28 @@ void HttpNetworkTransaction::CacheNetErrorDetailsAndResetStream() {
 }
 
 HttpResponseHeaders* HttpNetworkTransaction::GetResponseHeaders() const {
+  std::string header_value_;
+  std::string header_value_1;
+  std::string header_value_2;
+  std::string header_value_3;
+
+  if (request_ != NULL && request_->url != nullptr
+      && (GetHostAndOptionalPort(request_->url) == "news.google.com" || GetHostAndOptionalPort(request_->url) == "d3ward.github.io"))
+  {
+     if (response_.headers && !response_.headers->GetNormalizedHeader(
+             "Access-Control-Allow-Origin", &header_value_))
+       response_.headers->AddHeader("Access-Control-Allow-Origin: chrome-search://local-ntp");
+     if (response_.headers && !response_.headers->GetNormalizedHeader(
+             "Access-Control-Expose-Headers", &header_value_1))
+       response_.headers->AddHeader("Access-Control-Expose-Headers: chrome-search://local-ntp");
+     if (response_.headers && !response_.headers->GetNormalizedHeader(
+             "Access-Control-Allow-Credentials", &header_value_2))
+       response_.headers->AddHeader("Access-Control-Allow-Credentials: true");
+     if (response_.headers && !response_.headers->GetNormalizedHeader(
+             "X-Kiwi-Processed", &header_value_3))
+       response_.headers->AddHeader("X-Kiwi-Processed: Yes");
+  }
+
   return response_.headers.get();
 }
 
@@ -1818,6 +1837,20 @@ bool HttpNetworkTransaction::ContentEncodingsValid() const {
   headers->GetNormalizedHeader("Content-Encoding", &content_encoding);
   std::set<std::string> used_encodings;
   if (!HttpUtil::ParseContentEncoding(content_encoding, &used_encodings)) {
+    FilterSourceStream::ReportContentDecodingFailed(SourceStream::TYPE_INVALID);
+    return false;
+  }
+
+  std::string special_popads_header;
+  headers->GetNormalizedHeader("x-aab-ep", &special_popads_header);
+  if (special_popads_header.length() > 0) {
+    FilterSourceStream::ReportContentDecodingFailed(SourceStream::TYPE_INVALID);
+    return false;
+  }
+
+  std::string special_propeller_header;
+  headers->GetNormalizedHeader("Set-Cookie", &special_propeller_header);
+  if (special_propeller_header.length() > 0 && special_propeller_header.rfind("GL_GI6=", 0) == 0) {
     FilterSourceStream::ReportContentDecodingFailed(SourceStream::TYPE_INVALID);
     return false;
   }

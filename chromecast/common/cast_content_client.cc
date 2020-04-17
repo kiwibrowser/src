@@ -74,7 +74,7 @@ std::string GetUserAgent() {
       BuildAndroidOsInfo().c_str()
 #else
       "X11; ",
-      content::BuildOSCpuInfo().c_str()
+      content::BuildOSCpuInfo(false /* include_android_build_number */).c_str()
 #endif
       );
   return content::BuildUserAgentFromOSAndProduct(os_info, product) +

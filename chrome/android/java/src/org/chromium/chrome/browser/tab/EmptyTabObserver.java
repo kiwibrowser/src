@@ -33,6 +33,9 @@ public class EmptyTabObserver implements TabObserver {
     public void onContentChanged(Tab tab) { }
 
     @Override
+    public void onPreLoadUrl(Tab tab, LoadUrlParams params) { }
+
+    @Override
     public void onLoadUrl(Tab tab, LoadUrlParams params, int loadType) { }
 
     @Override

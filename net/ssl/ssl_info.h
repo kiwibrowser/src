@@ -108,10 +108,9 @@ class NET_EXPORT SSLInfo {
   // extension.
   TokenBindingParam token_binding_key_param = TB_PARAM_ECDSAP256;
 
-  // True if the server echoed a dummy post-quantum padding extension. See
-  // https://crbug.com/801302.
-  // TODO(agl): remove by 2018-05-31.
-  bool dummy_pq_padding_received = false;
+  // True if data was received over early data on the server. This field is only
+  // set for server sockets.
+  bool early_data_received = false;
 
   HandshakeType handshake_type = HANDSHAKE_UNKNOWN;
 

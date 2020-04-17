@@ -81,6 +81,9 @@ const char* const kWebPrefsToObserve[] = {
   prefs::kWebKitDomPasteEnabled,
 #if defined(OS_ANDROID)
   prefs::kWebKitFontScaleFactor,
+  prefs::kWebKitNightModeFactor,
+  prefs::kWebKitNightModeEnabled,
+  prefs::kWebKitNightModeGrayscaleEnabled,
   prefs::kWebKitForceEnableZoom,
   prefs::kWebKitPasswordEchoEnabled,
 #endif
@@ -494,6 +497,9 @@ void PrefsTabHelper::RegisterProfilePrefs(
   registry->RegisterBooleanPref(prefs::kEnableEncryptedMedia, true);
 #if defined(OS_ANDROID)
   registry->RegisterDoublePref(prefs::kWebKitFontScaleFactor, 1.0);
+  registry->RegisterDoublePref(prefs::kWebKitNightModeFactor, 0.0);
+  registry->RegisterBooleanPref(prefs::kWebKitNightModeEnabled, false);
+  registry->RegisterBooleanPref(prefs::kWebKitNightModeGrayscaleEnabled, false);
   registry->RegisterBooleanPref(prefs::kWebKitForceEnableZoom,
                                 pref_defaults.force_enable_zoom);
   registry->RegisterBooleanPref(prefs::kWebKitPasswordEchoEnabled,

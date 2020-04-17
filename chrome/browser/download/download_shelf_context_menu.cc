@@ -121,23 +121,6 @@ base::string16 DownloadShelfContextMenu::GetLabelForCommandId(
       id = IDS_DOWNLOAD_MENU_KEEP;
       break;
     case DownloadCommands::ALWAYS_OPEN_TYPE: {
-      if (download_commands_) {
-        bool can_open_pdf_in_system_viewer =
-            download_commands_->CanOpenPdfInSystemViewer();
-#if defined(OS_WIN)
-        if (can_open_pdf_in_system_viewer) {
-          id = IsAdobeReaderDefaultPDFViewer()
-                   ? IDS_DOWNLOAD_MENU_ALWAYS_OPEN_PDF_IN_READER
-                   : IDS_DOWNLOAD_MENU_PLATFORM_OPEN_ALWAYS;
-          break;
-        }
-#elif defined(OS_MACOSX) || defined(OS_LINUX)
-        if (can_open_pdf_in_system_viewer) {
-          id = IDS_DOWNLOAD_MENU_PLATFORM_OPEN_ALWAYS;
-          break;
-        }
-#endif
-      }
       id = IDS_DOWNLOAD_MENU_ALWAYS_OPEN_TYPE;
       break;
     }

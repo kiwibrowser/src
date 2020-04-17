@@ -197,12 +197,12 @@ std::unique_ptr<TemplateURLData> TemplateURLDataFromOverrideDictionary(
   std::string favicon_url;
   std::string encoding;
   int id = -1;
+
   // The following fields are required for each search engine configuration.
   if (engine.GetString("name", &name) && !name.empty() &&
       engine.GetString("keyword", &keyword) && !keyword.empty() &&
       engine.GetString("search_url", &search_url) && !search_url.empty() &&
       engine.GetString("favicon_url", &favicon_url) && !favicon_url.empty() &&
-      engine.GetString("encoding", &encoding) && !encoding.empty() &&
       engine.GetInteger("id", &id)) {
     // These fields are optional.
     std::string suggest_url;
@@ -225,6 +225,7 @@ std::unique_ptr<TemplateURLData> TemplateURLDataFromOverrideDictionary(
     engine.GetString("search_url_post_params", &search_url_post_params);
     engine.GetString("suggest_url_post_params", &suggest_url_post_params);
     engine.GetString("image_url_post_params", &image_url_post_params);
+    engine.GetString("encoding", &encoding);
     engine.GetList("alternate_urls", &alternate_urls);
     return std::make_unique<TemplateURLData>(
         name, keyword, search_url, suggest_url, image_url, new_tab_url,

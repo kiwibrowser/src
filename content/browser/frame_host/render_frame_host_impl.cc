@@ -63,6 +63,7 @@
 #include "content/browser/media/media_interface_proxy.h"
 #include "content/browser/media/session/media_session_service_impl.h"
 #include "content/browser/payments/payment_app_context_impl.h"
+#include "content/browser/permissions/permission_controller_impl.h"
 #include "content/browser/permissions/permission_service_context.h"
 #include "content/browser/permissions/permission_service_impl.h"
 #include "content/browser/presentation/presentation_service_impl.h"
@@ -99,6 +100,7 @@
 #include "content/common/associated_interface_registry_impl.h"
 #include "content/common/associated_interfaces.mojom.h"
 #include "content/common/content_security_policy/content_security_policy.h"
+#include "content/public/common/navigation_policy.h"
 #include "content/common/frame_messages.h"
 #include "content/common/frame_owner_properties.h"
 #include "content/common/input/input_handler.mojom.h"
@@ -115,7 +117,6 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_plugin_guest_manager.h"
 #include "content/public/browser/content_browser_client.h"
-#include "content/public/browser/permission_manager.h"
 #include "content/public/browser/permission_type.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_widget_host_view.h"
@@ -200,7 +201,7 @@ int g_next_javascript_callback_id = 1;
 #if defined(OS_ANDROID)
 // Whether to allow injecting javascript into any kind of frame (for Android
 // WebView).
-bool g_allow_injecting_javascript = false;
+bool g_allow_injecting_javascript = true;
 #endif
 
 // The (process id, routing id) pair that identifies one RenderFrame.
@@ -709,6 +710,40 @@ const base::UnguessableToken& RenderFrameHostImpl::GetOverlayRoutingToken() {
   }
 
   return *overlay_routing_token_;
+}
+
+void RenderFrameHostImpl::DidCommitProvisionalLoadForTesting(
+    std::unique_ptr<FrameHostMsg_DidCommitProvisionalLoad_Params> params,
+    service_manager::mojom::InterfaceProviderRequest
+        interface_provider_request) {
+  DidCommitProvisionalLoad(std::move(params),
+                           std::move(interface_provider_request));
+}
+
+void RenderFrameHostImpl::AudioContextPlaybackStarted(int audio_context_id) {
+  delegate_->AudioContextPlaybackStarted(this, audio_context_id);
+}
+
+void RenderFrameHostImpl::AudioContextPlaybackStopped(int audio_context_id) {
+  delegate_->AudioContextPlaybackStopped(this, audio_context_id);
+}
+
+// The current frame went into the BackForwardCache.
+void RenderFrameHostImpl::EnterBackForwardCache() {
+  DCHECK(IsBackForwardCacheEnabled());
+  DCHECK(!is_in_back_forward_cache_);
+  is_in_back_forward_cache_ = true;
+  for (auto& child : children_)
+    child->current_frame_host()->EnterBackForwardCache();
+}
+
+// The frame as been restored from the BackForwardCache.
+void RenderFrameHostImpl::LeaveBackForwardCache() {
+  DCHECK(IsBackForwardCacheEnabled());
+  DCHECK(is_in_back_forward_cache_);
+  is_in_back_forward_cache_ = false;
+  for (auto& child : children_)
+    child->current_frame_host()->LeaveBackForwardCache();
 }
 
 SiteInstanceImpl* RenderFrameHostImpl::GetSiteInstance() {
@@ -1464,6 +1499,51 @@ void RenderFrameHostImpl::SetLastCommittedOriginForTesting(
   SetLastCommittedOrigin(origin);
 }
 
+FrameTreeNode* RenderFrameHostImpl::AddChild(
+    std::unique_ptr<FrameTreeNode> child,
+    int process_id,
+    int frame_routing_id) {
+  // Child frame must always be created in the same process as the parent.
+  CHECK_EQ(process_id, GetProcess()->GetID());
+
+  // Initialize the RenderFrameHost for the new node.  We always create child
+  // frames in the same SiteInstance as the current frame, and they can swap to
+  // a different one if they navigate away.
+  child->render_manager()->Init(render_view_host()->GetSiteInstance(),
+                                render_view_host()->GetRoutingID(),
+                                frame_routing_id, MSG_ROUTING_NONE, false);
+
+  // Other renderer processes in this BrowsingInstance may need to find out
+  // about the new frame.  Create a proxy for the child frame in all
+  // SiteInstances that have a proxy for the frame's parent, since all frames
+  // in a frame tree should have the same set of proxies.
+  frame_tree_node_->render_manager()->CreateProxiesForChildFrame(child.get());
+
+  children_.push_back(std::move(child));
+
+  return children_.back().get();
+}
+
+void RenderFrameHostImpl::RemoveChild(FrameTreeNode* child) {
+  for (auto iter = children_.begin(); iter != children_.end(); ++iter) {
+    if (iter->get() == child) {
+      // Subtle: we need to make sure the node is gone from the tree before
+      // observers are notified of its deletion.
+      std::unique_ptr<FrameTreeNode> node_to_delete(std::move(*iter));
+      children_.erase(iter);
+      node_to_delete.reset();
+      return;
+    }
+  }
+}
+
+void RenderFrameHostImpl::ResetChildren() {
+  // Remove child nodes from the tree, then delete them. This destruction
+  // operation will notify observers. See https://crbug.com/612450 for
+  // explanation why we don't just call the std::vector::clear method.
+  std::vector<std::unique_ptr<FrameTreeNode>>().swap(children_);
+}
+
 void RenderFrameHostImpl::SetLastCommittedUrl(const GURL& url) {
   last_committed_url_ = url;
 }
@@ -1810,7 +1890,7 @@ void RenderFrameHostImpl::SwapOut(
 
   // If this RenderFrameHost is already pending deletion, it must have already
   // gone through this, therefore just return.
-  if (!is_active()) {
+  if (unload_state_ != UnloadState::NotRun) {
     NOTREACHED() << "RFH should be in default state when calling SwapOut.";
     return;
   }
@@ -1977,15 +2057,14 @@ void RenderFrameHostImpl::OnRenderProcessGone(int status, int exit_code) {
   // be sent again.
   sudden_termination_disabler_types_enabled_ = 0;
 
-  if (!is_active()) {
-    // If the process has died, we don't need to wait for the swap out ack from
-    // this RenderFrame if it is pending deletion.  Complete the swap out to
-    // destroy it.
-    OnSwappedOut();
-  } else {
-    // If this was the current pending or speculative RFH dying, cancel and
-    // destroy it.
-    frame_tree_node_->render_manager()->CancelPendingIfNecessary(this);
+  if (unload_state_ != UnloadState::NotRun) {
+    // If the process has died, we don't need to wait for the ACK. Complete the
+    // deletion immediately.
+    unload_state_ = UnloadState::Completed;
+    DCHECK(children_.empty());
+//    PendingDeletionCheckCompleted();
+    // |this| is deleted. Don't add any more code at this point in the function.
+    return;
   }
 
   // Note: don't add any more code at this point in the function because
@@ -3178,14 +3257,14 @@ void RenderFrameHostImpl::RegisterMojoInterfaces() {
   registry_->AddInterface(base::Bind(&InstalledAppProviderImplDefault::Create));
 #endif  // !defined(OS_ANDROID)
 
-  PermissionManager* permission_manager =
-      GetProcess()->GetBrowserContext()->GetPermissionManager();
-
+  PermissionControllerImpl* permission_controller =
+      PermissionControllerImpl::FromBrowserContext(
+          GetProcess()->GetBrowserContext());
   if (delegate_) {
     auto* geolocation_context = delegate_->GetGeolocationContext();
-    if (geolocation_context && permission_manager) {
+    if (geolocation_context) {
       geolocation_service_.reset(new GeolocationServiceImpl(
-          geolocation_context, permission_manager, this));
+          geolocation_context, permission_controller, this));
       // NOTE: Both the |interface_registry_| and |geolocation_service_| are
       // owned by |this|, so their destruction will be triggered together.
       // |interface_registry_| is declared after |geolocation_service_|, so it
@@ -3307,13 +3386,11 @@ void RenderFrameHostImpl::RegisterMojoInterfaces() {
   }
 #endif  // !defined(OS_ANDROID)
 
-  if (permission_manager) {
-    sensor_provider_proxy_.reset(
-        new SensorProviderProxyImpl(permission_manager, this));
-    registry_->AddInterface(
-        base::Bind(&SensorProviderProxyImpl::Bind,
-                   base::Unretained(sensor_provider_proxy_.get())));
-  }
+  sensor_provider_proxy_.reset(
+      new SensorProviderProxyImpl(permission_controller, this));
+  registry_->AddInterface(
+      base::Bind(&SensorProviderProxyImpl::Bind,
+                 base::Unretained(sensor_provider_proxy_.get())));
 
   registry_->AddInterface(base::BindRepeating(
       &media::MediaMetricsProvider::Create,
@@ -4357,6 +4434,8 @@ bool RenderFrameHostImpl::CanExecuteJavaScript() {
          // It's possible to load about:blank in a Web UI renderer.
          // See http://crbug.com/42547
          (frame_tree_node_->current_url().spec() == url::kAboutBlankURL) ||
+         (frame_tree_node_->current_url().spec() == "chrome-search://local-ntp/local-ntp.html") ||
+         (frame_tree_node_->current_url().spec() == "chrome-search://local-ntp/new-ntp.html") ||
          // InterstitialPageImpl should be the only case matching this.
          (delegate_->GetAsWebContents() == nullptr);
 }

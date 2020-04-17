@@ -59,7 +59,7 @@ class AppWindowContents {
   // Called to initialize the WebContents, before the app window is created.
   virtual void Initialize(content::BrowserContext* context,
                           content::RenderFrameHost* creator_frame,
-                          const GURL& url) = 0;
+                          const GURL& url, content::WebContents* web_contents) = 0;
 
   // Called to load the contents, after the app window is created.
   virtual void LoadContents(int32_t creator_process_id) = 0;
@@ -545,6 +545,8 @@ class AppWindow : public content::WebContentsDelegate,
 
   // The initial url this AppWindow was navigated to.
   GURL initial_url_;
+
+  content::WebContents* web_contents_;
 
   // Bit field of FullscreenType.
   int fullscreen_types_ = FULLSCREEN_TYPE_NONE;

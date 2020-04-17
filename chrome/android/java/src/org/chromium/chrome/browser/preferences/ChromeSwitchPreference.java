@@ -16,6 +16,11 @@ import android.widget.TextView;
 import org.chromium.chrome.R;
 import org.chromium.ui.HorizontalListDividerDrawable;
 
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.ListView;
+
 /**
  * A super-powered SwitchPreference designed especially for Chrome. Special features:
  *  - Supports managed preferences
@@ -91,6 +96,11 @@ public class ChromeSwitchPreference extends SwitchPreference {
         }
 
         ManagedPreferencesUtils.onBindViewToPreference(mManagedPrefDelegate, this, view);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            ((TextView) view.findViewById(android.R.id.title)).setTextColor(Color.WHITE);
+            if (((TextView) view.findViewById(android.R.id.summary)) != null)
+              ((TextView) view.findViewById(android.R.id.summary)).setTextColor(Color.GRAY);
+        }
     }
 
     @Override

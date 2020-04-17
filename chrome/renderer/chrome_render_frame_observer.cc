@@ -54,9 +54,7 @@
 #include "ui/gfx/geometry/size_f.h"
 #include "url/gurl.h"
 
-#if !defined(OS_ANDROID)
 #include "chrome/renderer/searchbox/searchbox_extension.h"
-#endif  // !defined(OS_ANDROID)
 
 #if defined(FULL_SAFE_BROWSING)
 #include "chrome/renderer/safe_browsing/phishing_classifier_delegate.h"
@@ -322,9 +320,7 @@ void ChromeRenderFrameObserver::SetClientSidePhishingDetection(
 
 void ChromeRenderFrameObserver::ExecuteWebUIJavaScript(
     const base::string16& javascript) {
-#if !defined(OS_ANDROID)
   webui_javascript_.push_back(javascript);
-#endif
 }
 
 void ChromeRenderFrameObserver::DidFinishLoad() {
@@ -392,23 +388,19 @@ void ChromeRenderFrameObserver::DidCommitProvisionalLoad(
   view_count_key.Set(
       base::NumberToString(content::RenderView::GetRenderViewCount()));
 
-#if !defined(OS_ANDROID)
   if ((render_frame()->GetEnabledBindings() &
        content::BINDINGS_POLICY_WEB_UI)) {
     for (const auto& script : webui_javascript_)
       render_frame()->ExecuteJavaScript(script);
     webui_javascript_.clear();
   }
-#endif
 }
 
 void ChromeRenderFrameObserver::DidClearWindowObject() {
-#if !defined(OS_ANDROID)
   const base::CommandLine& command_line =
       *base::CommandLine::ForCurrentProcess();
   if (command_line.HasSwitch(switches::kInstantProcess))
     SearchBoxExtension::Install(render_frame()->GetWebFrame());
-#endif  // !defined(OS_ANDROID)
 }
 
 void ChromeRenderFrameObserver::CapturePageText(TextCaptureType capture_type) {

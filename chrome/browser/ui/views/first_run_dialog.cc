@@ -39,8 +39,6 @@ using views::GridLayout;
 namespace {
 
 void InitCrashReporterIfEnabled(bool enabled) {
-  if (enabled)
-    breakpad::InitCrashReporter(std::string());
 }
 
 }  // namespace

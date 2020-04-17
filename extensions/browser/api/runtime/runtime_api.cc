@@ -234,8 +234,10 @@ void RuntimeAPI::OnExtensionUninstalled(
     content::BrowserContext* browser_context,
     const Extension* extension,
     UninstallReason reason) {
+  LOG(INFO) << "[EXTENSIONS] RuntimeAPI::OnExtensionUninstall - Step 1";
   RuntimeEventRouter::OnExtensionUninstalled(browser_context_, extension->id(),
                                              reason);
+  LOG(INFO) << "[EXTENSIONS] RuntimeAPI::OnExtensionUninstall - Step 2";
 }
 
 void RuntimeAPI::Shutdown() {
@@ -269,7 +271,9 @@ bool RuntimeAPI::CheckForUpdates(
 }
 
 void RuntimeAPI::OpenURL(const GURL& update_url) {
+  LOG(INFO) << "[EXTENSIONS] Running RuntimeAPI::OpenURL on " << update_url << " - Step 1";
   delegate_->OpenURL(update_url);
+  LOG(INFO) << "[EXTENSIONS] Running RuntimeAPI::OpenURL on " << update_url << " - Step 2";
 }
 
 bool RuntimeAPI::GetPlatformInfo(runtime::PlatformInfo* info) {
@@ -557,27 +561,37 @@ void RuntimeEventRouter::OnExtensionUninstalled(
     content::BrowserContext* context,
     const std::string& extension_id,
     UninstallReason reason) {
+  LOG(INFO) << "[EXTENSIONS] RuntimeEventRouter::OnExtensionUninstalled - Step 1: " << extension_id;
   if (!(reason == UNINSTALL_REASON_USER_INITIATED ||
         reason == UNINSTALL_REASON_MANAGEMENT_API)) {
     return;
   }
 
+  LOG(INFO) << "[EXTENSIONS] RuntimeEventRouter::OnExtensionUninstalled - Step 2: " << extension_id;
   GURL uninstall_url(
       GetUninstallURL(ExtensionPrefs::Get(context), extension_id));
 
+  LOG(INFO) << "[EXTENSIONS] RuntimeEventRouter::OnExtensionUninstalled - Step 3: " << uninstall_url;
   if (!uninstall_url.SchemeIsHTTPOrHTTPS()) {
     // Previous versions of Chrome allowed non-http(s) URLs to be stored in the
     // prefs. Now they're disallowed, but the old data may still exist.
     return;
   }
 
+  LOG(INFO) << "[EXTENSIONS] RuntimeEventRouter::OnExtensionUninstalled - Step 4: " << extension_id;
+
   // Blacklisted extensions should not open uninstall_url.
   if (extensions::ExtensionPrefs::Get(context)->IsExtensionBlacklisted(
           extension_id)) {
+    LOG(INFO) << "[EXTENSIONS] RuntimeEventRouter::OnExtensionUninstalled - Step 4a: " << extension_id;
     return;
   }
 
+  LOG(INFO) << "[EXTENSIONS] RuntimeEventRouter::OnExtensionUninstalled - Step 5: " << extension_id;
+
   RuntimeAPI::GetFactoryInstance()->Get(context)->OpenURL(uninstall_url);
+
+  LOG(INFO) << "[EXTENSIONS] RuntimeEventRouter::OnExtensionUninstalled - Step 6: " << extension_id;
 }
 
 void RuntimeAPI::OnExtensionInstalledAndLoaded(

@@ -955,14 +955,6 @@ jumbo_component("base") {
     "trace_event/heap_profiler_allocation_context_tracker.h",
     "trace_event/heap_profiler_event_filter.cc",
     "trace_event/heap_profiler_event_filter.h",
-    "trace_event/heap_profiler_heap_dump_writer.cc",
-    "trace_event/heap_profiler_heap_dump_writer.h",
-    "trace_event/heap_profiler_serialization_state.cc",
-    "trace_event/heap_profiler_serialization_state.h",
-    "trace_event/heap_profiler_stack_frame_deduplicator.cc",
-    "trace_event/heap_profiler_stack_frame_deduplicator.h",
-    "trace_event/heap_profiler_type_name_deduplicator.cc",
-    "trace_event/heap_profiler_type_name_deduplicator.h",
     "trace_event/java_heap_dump_provider_android.cc",
     "trace_event/java_heap_dump_provider_android.h",
     "trace_event/malloc_dump_provider.cc",
@@ -1187,6 +1179,7 @@ jumbo_component("base") {
   defines = []
   data = []
   data_deps = []
+  libs = []
 
   configs += [
     ":base_flags",
@@ -1219,7 +1212,7 @@ jumbo_component("base") {
   # more robust check for this.
   if (!use_sysroot && (is_android || (is_linux && !is_chromecast)) &&
       host_toolchain != "//build/toolchain/cros:host") {
-    libs = [ "atomic" ]
+    libs += [ "atomic" ]
   }
 
   if (use_allocator_shim) {
@@ -1321,7 +1314,7 @@ jumbo_component("base") {
 
     # This is actually a linker script, but it can be added to the link in the
     # same way as a library.
-    libs = [ "android/library_loader/anchor_functions.lds" ]
+    libs += [ "android/library_loader/anchor_functions.lds" ]
   }
 
   # Chromeos.
@@ -1577,7 +1570,7 @@ jumbo_component("base") {
     # TODO(jschuh): crbug.com/167187 fix size_t to int truncations.
     configs += [ "//build/config/compiler:no_size_t_to_int_warning" ]
 
-    libs = [
+    libs += [
       "cfgmgr32.lib",
       "powrprof.lib",
       "propsys.lib",
@@ -1605,7 +1598,7 @@ jumbo_component("base") {
       "time/time_mac.cc",
     ]
 
-    libs = [
+    libs += [
       "ApplicationServices.framework",
       "AppKit.framework",
       "bsm",
@@ -2015,7 +2008,6 @@ if (!is_ios) {
     ]
     deps = [
       ":base",
-      "//build/config:exe_and_shlib_deps",
       "//build/win:default_exe_manifest",
       "//third_party/icu:icuuc",
     ]
@@ -2027,7 +2019,6 @@ if (!is_ios) {
     ]
     deps = [
       ":base",
-      "//build/config:exe_and_shlib_deps",
       "//build/win:default_exe_manifest",
     ]
   }
@@ -2049,9 +2040,6 @@ if (is_win) {
       "cfgmgr32.lib",
       "shell32.lib",
     ]
-    deps = [
-      "//build/config:exe_and_shlib_deps",
-    ]
   }
 
   loadable_module("scoped_handle_test_dll") {
@@ -2071,9 +2059,6 @@ if (is_win || is_mac) {
     shared_library("base_profiler_test_support_library") {
       sources = [
         "profiler/test_support_library.cc",
-      ]
-      deps = [
-        "//build/config:exe_and_shlib_deps",
       ]
     }
   }
@@ -2410,9 +2395,6 @@ test("base_unittests") {
     "trace_event/blame_context_unittest.cc",
     "trace_event/event_name_filter_unittest.cc",
     "trace_event/heap_profiler_allocation_context_tracker_unittest.cc",
-    "trace_event/heap_profiler_heap_dump_writer_unittest.cc",
-    "trace_event/heap_profiler_stack_frame_deduplicator_unittest.cc",
-    "trace_event/heap_profiler_type_name_deduplicator_unittest.cc",
     "trace_event/java_heap_dump_provider_android_unittest.cc",
     "trace_event/memory_allocator_dump_unittest.cc",
     "trace_event/memory_dump_manager_unittest.cc",
@@ -2837,6 +2819,8 @@ if (is_android) {
       "android/java/src/org/chromium/base/TimezoneUtils.java",
       "android/java/src/org/chromium/base/TraceEvent.java",
       "android/java/src/org/chromium/base/UnguessableToken.java",
+      "android/java/src/org/chromium/base/UserData.java",
+      "android/java/src/org/chromium/base/UserDataHost.java",
       "android/java/src/org/chromium/base/VisibleForTesting.java",
       "android/java/src/org/chromium/base/annotations/AccessedByNative.java",
       "android/java/src/org/chromium/base/annotations/CalledByNative.java",
@@ -2922,12 +2906,11 @@ if (is_android) {
       "//third_party/android_tools:android_support_annotations_java",
       "//third_party/android_tools:android_support_chromium_java",
       "//third_party/android_tools:android_support_compat_java",
+      "//third_party/android_tools:android_test_mock_java",
       "//third_party/hamcrest:hamcrest_core_java",
       "//third_party/junit",
       "//third_party/ub-uiautomator:ub_uiautomator_java",
     ]
-
-    deps += android_extra_test_deps
 
     java_files = [
       "test/android/javatests/src/org/chromium/base/test/BaseJUnit4ClassRunner.java",

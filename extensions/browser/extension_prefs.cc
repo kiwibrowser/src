@@ -1072,22 +1072,33 @@ void ExtensionPrefs::OnExtensionInstalled(
 void ExtensionPrefs::OnExtensionUninstalled(const std::string& extension_id,
                                             const Manifest::Location& location,
                                             bool external_uninstall) {
+  LOG(INFO) << "[EXTENSIONS] ExtensionPrefs::OnExtensionUninstall - Step 1";
   app_sorting()->ClearOrdinals(extension_id);
 
   // For external extensions, we save a preference reminding ourself not to try
   // and install the extension anymore (except when |external_uninstall| is
   // true, which signifies that the registry key was deleted or the pref file
   // no longer lists the extension).
+  LOG(INFO) << "[EXTENSIONS] ExtensionPrefs::OnExtensionUninstall - Step 2";
   if (!external_uninstall && Manifest::IsExternalLocation(location)) {
+  LOG(INFO) << "[EXTENSIONS] ExtensionPrefs::OnExtensionUninstall - Step 3";
     UpdateExtensionPref(extension_id, kPrefState,
                         std::make_unique<base::Value>(
                             Extension::EXTERNAL_EXTENSION_UNINSTALLED));
     extension_pref_value_map_->SetExtensionState(extension_id, false);
-    for (auto& observer : observer_list_)
+  LOG(INFO) << "[EXTENSIONS] ExtensionPrefs::OnExtensionUninstall - Step 4";
+    for (auto& observer : observer_list_) {
+      LOG(INFO) << "[EXTENSIONS] ExtensionPrefs::OnExtensionUninstall - Step 4a";
       observer.OnExtensionStateChanged(extension_id, false);
+      LOG(INFO) << "[EXTENSIONS] ExtensionPrefs::OnExtensionUninstall - Step 4b";
+    }
+  LOG(INFO) << "[EXTENSIONS] ExtensionPrefs::OnExtensionUninstall - Step 5";
   } else {
+  LOG(INFO) << "[EXTENSIONS] ExtensionPrefs::OnExtensionUninstall - Step 6";
     DeleteExtensionPrefs(extension_id);
+  LOG(INFO) << "[EXTENSIONS] ExtensionPrefs::OnExtensionUninstall - Step 7";
   }
+  LOG(INFO) << "[EXTENSIONS] ExtensionPrefs::OnExtensionUninstall - Step 8";
 }
 
 void ExtensionPrefs::SetExtensionEnabled(const std::string& extension_id) {

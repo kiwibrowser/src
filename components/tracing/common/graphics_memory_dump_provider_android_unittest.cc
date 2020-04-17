@@ -20,7 +20,7 @@ TEST(GraphicsMemoryDumpProviderTest, ParseResponse) {
   const char* kDumpBaseName = GraphicsMemoryDumpProvider::kDumpBaseName;
 
   base::trace_event::ProcessMemoryDump pmd(
-      nullptr, {base::trace_event::MemoryDumpLevelOfDetail::DETAILED});
+      {base::trace_event::MemoryDumpLevelOfDetail::DETAILED});
   auto* instance = GraphicsMemoryDumpProvider::GetInstance();
   char buf[] = "graphics_total 12\ngraphics_pss 34\ngl_total 56\ngl_pss 78";
   instance->ParseResponseAndAddToDump(buf, strlen(buf), &pmd);

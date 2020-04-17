@@ -139,9 +139,7 @@ class LockScreenNoteDisplayStateHandlerTest : public AshTestBase {
     if (!timer->IsRunning())
       return false;
 
-    base::Closure task = timer->user_task();
-    timer->Stop();
-    task.Run();
+    timer->FireNow();
     return true;
   }
 

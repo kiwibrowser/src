@@ -25,13 +25,16 @@
 #include "net/base/net_export.h"
 #include "net/disk_cache/disk_cache.h"
 #include "net/disk_cache/simple/simple_entry_impl.h"
-#include "net/disk_cache/simple/simple_experiment.h"
 #include "net/disk_cache/simple/simple_index_delegate.h"
 
 namespace base {
 class SequencedTaskRunner;
 class TaskRunner;
-}
+}  // namespace base
+
+namespace net {
+class PrioritizedTaskRunner;
+}  // namespace net
 
 namespace disk_cache {
 
@@ -56,6 +59,8 @@ class NET_EXPORT_PRIVATE SimpleBackendImpl : public Backend,
     public SimpleIndexDelegate,
     public base::SupportsWeakPtr<SimpleBackendImpl> {
  public:
+  static const base::Feature kPrioritizedSimpleCacheTasks;
+
   // Note: only pass non-nullptr for |file_tracker| if you don't want the global
   // one (which things other than tests would want). |file_tracker| must outlive
   // the backend and all the entries, including their asynchronous close.
@@ -72,15 +77,15 @@ class NET_EXPORT_PRIVATE SimpleBackendImpl : public Backend,
   net::CacheType cache_type() const { return cache_type_; }
   SimpleIndex* index() { return index_.get(); }
 
-  base::TaskRunner* worker_pool() { return worker_pool_.get(); }
+  void SetWorkerPoolForTesting(scoped_refptr<base::TaskRunner> task_runner);
 
-  int Init(const CompletionCallback& completion_callback);
+  int Init(CompletionOnceCallback completion_callback);
 
   // Sets the maximum size for the total amount of data stored by this instance.
   bool SetMaxSize(int max_bytes);
 
   // Returns the maximum file size permitted in this backend.
-  int GetMaxFileSize() const;
+  int64_t MaxFileSize() const override;
 
   // Flush our SequencedWorkerPool.
   static void FlushWorkerPoolForTesting();
@@ -96,30 +101,32 @@ class NET_EXPORT_PRIVATE SimpleBackendImpl : public Backend,
 
   // SimpleIndexDelegate:
   void DoomEntries(std::vector<uint64_t>* entry_hashes,
-                   const CompletionCallback& callback) override;
+                   CompletionOnceCallback callback) override;
 
   // Backend:
   net::CacheType GetCacheType() const override;
   int32_t GetEntryCount() const override;
   int OpenEntry(const std::string& key,
+                net::RequestPriority request_priority,
                 Entry** entry,
-                const CompletionCallback& callback) override;
+                CompletionOnceCallback callback) override;
   int CreateEntry(const std::string& key,
+                  net::RequestPriority request_priority,
                   Entry** entry,
-                  const CompletionCallback& callback) override;
+                  CompletionOnceCallback callback) override;
   int DoomEntry(const std::string& key,
-                const CompletionCallback& callback) override;
-  int DoomAllEntries(const CompletionCallback& callback) override;
+                net::RequestPriority priority,
+                CompletionOnceCallback callback) override;
+  int DoomAllEntries(CompletionOnceCallback callback) override;
   int DoomEntriesBetween(base::Time initial_time,
                          base::Time end_time,
-                         const CompletionCallback& callback) override;
+                         CompletionOnceCallback callback) override;
   int DoomEntriesSince(base::Time initial_time,
-                       const CompletionCallback& callback) override;
-  int CalculateSizeOfAllEntries(const CompletionCallback& callback) override;
-  int CalculateSizeOfEntriesBetween(
-      base::Time initial_time,
-      base::Time end_time,
-      const CompletionCallback& callback) override;
+                       CompletionOnceCallback callback) override;
+  int CalculateSizeOfAllEntries(CompletionOnceCallback callback) override;
+  int CalculateSizeOfEntriesBetween(base::Time initial_time,
+                                    base::Time end_time,
+                                    CompletionOnceCallback callback) override;
   std::unique_ptr<Iterator> CreateIterator() override;
   void GetStats(base::StringPairs* stats) override;
   void OnExternalCacheHit(const std::string& key) override;
@@ -128,6 +135,10 @@ class NET_EXPORT_PRIVATE SimpleBackendImpl : public Backend,
       const std::string& parent_absolute_name) const override;
   uint8_t GetEntryInMemoryData(const std::string& key) override;
   void SetEntryInMemoryData(const std::string& key, uint8_t data) override;
+
+  net::PrioritizedTaskRunner* prioritized_task_runner() const {
+    return prioritized_task_runner_.get();
+  }
 
  private:
   class SimpleIterator;
@@ -152,41 +163,40 @@ class NET_EXPORT_PRIVATE SimpleBackendImpl : public Backend,
   struct PostDoomWaiter {
     PostDoomWaiter();
     // Also initializes |time_queued|.
-    explicit PostDoomWaiter(const base::Closure& to_run_post_doom);
-    explicit PostDoomWaiter(const PostDoomWaiter& other);
+    explicit PostDoomWaiter(base::OnceClosure to_run_post_doom);
+    explicit PostDoomWaiter(PostDoomWaiter&& other);
     ~PostDoomWaiter();
+    PostDoomWaiter& operator=(PostDoomWaiter&& other);
 
     base::TimeTicks time_queued;
-    base::Closure run_post_doom;
+    base::OnceClosure run_post_doom;
   };
 
-  void InitializeIndex(const CompletionCallback& callback,
+  void InitializeIndex(CompletionOnceCallback callback,
                        const DiskStatResult& result);
 
   // Dooms all entries previously accessed between |initial_time| and
   // |end_time|. Invoked when the index is ready.
   void IndexReadyForDoom(base::Time initial_time,
                          base::Time end_time,
-                         const CompletionCallback& callback,
+                         CompletionOnceCallback callback,
                          int result);
 
   // Calculates the size of the entire cache. Invoked when the index is ready.
-  void IndexReadyForSizeCalculation(const CompletionCallback& callback,
+  void IndexReadyForSizeCalculation(CompletionOnceCallback callback,
                                     int result);
 
   // Calculates the size all cache entries between |initial_time| and
   // |end_time|. Invoked when the index is ready.
   void IndexReadyForSizeBetweenCalculation(base::Time initial_time,
                                            base::Time end_time,
-                                           const CompletionCallback& callback,
+                                           CompletionOnceCallback callback,
                                            int result);
 
   // Try to create the directory if it doesn't exist. This must run on the IO
   // thread.
-  static DiskStatResult InitCacheStructureOnDisk(
-      const base::FilePath& path,
-      uint64_t suggested_max_size,
-      const SimpleExperiment& experiment);
+  static DiskStatResult InitCacheStructureOnDisk(const base::FilePath& path,
+                                                 uint64_t suggested_max_size);
 
   // Looks at current state of |entries_pending_doom_| and |active_entries_|
   // relevant to |entry_hash|, and, as appropriate, either returns a valid entry
@@ -197,6 +207,7 @@ class NET_EXPORT_PRIVATE SimpleBackendImpl : public Backend,
   scoped_refptr<SimpleEntryImpl> CreateOrFindActiveOrDoomedEntry(
       uint64_t entry_hash,
       const std::string& key,
+      net::RequestPriority request_priority,
       std::vector<PostDoomWaiter>** post_doom);
 
   // Given a hash, will try to open the corresponding Entry. If we have an Entry
@@ -205,13 +216,12 @@ class NET_EXPORT_PRIVATE SimpleBackendImpl : public Backend,
   // the disk.
   int OpenEntryFromHash(uint64_t entry_hash,
                         Entry** entry,
-                        const CompletionCallback& callback);
+                        CompletionOnceCallback callback);
 
   // Doom the entry corresponding to |entry_hash|, if it's active or currently
   // pending doom. This function does not block if there is an active entry,
   // which is very important to prevent races in DoomEntries() above.
-  int DoomEntryFromHash(uint64_t entry_hash,
-                        const CompletionCallback& callback);
+  int DoomEntryFromHash(uint64_t entry_hash, CompletionOnceCallback callback);
 
   // Called when we tried to open an entry with hash alone. When a blank entry
   // has been created and filled in with information from the disk - based on a
@@ -220,7 +230,7 @@ class NET_EXPORT_PRIVATE SimpleBackendImpl : public Backend,
   void OnEntryOpenedFromHash(uint64_t hash,
                              Entry** entry,
                              const scoped_refptr<SimpleEntryImpl>& simple_entry,
-                             const CompletionCallback& callback,
+                             CompletionOnceCallback callback,
                              int error_code);
 
   // Called when we tried to open an entry from key. When the entry has been
@@ -228,14 +238,17 @@ class NET_EXPORT_PRIVATE SimpleBackendImpl : public Backend,
   void OnEntryOpenedFromKey(const std::string key,
                             Entry** entry,
                             const scoped_refptr<SimpleEntryImpl>& simple_entry,
-                            const CompletionCallback& callback,
+                            CompletionOnceCallback callback,
                             int error_code);
 
   // A callback thunk used by DoomEntries to clear the |entries_pending_doom_|
   // after a mass doom.
   void DoomEntriesComplete(std::unique_ptr<std::vector<uint64_t>> entry_hashes,
-                           const CompletionCallback& callback,
+                           CompletionOnceCallback callback,
                            int result);
+
+  // Calculates and returns a new entry's worker pool priority.
+  uint32_t GetNewEntryPriority(net::RequestPriority request_priority);
 
   // We want this destroyed after every other field.
   scoped_refptr<BackendCleanupTracker> cleanup_tracker_;
@@ -251,7 +264,7 @@ class NET_EXPORT_PRIVATE SimpleBackendImpl : public Backend,
   const scoped_refptr<base::SequencedTaskRunner> cache_runner_;
 
   // This is used for all the entry I/O.
-  scoped_refptr<base::TaskRunner> worker_pool_;
+  scoped_refptr<net::PrioritizedTaskRunner> prioritized_task_runner_;
 
   int orig_max_size_;
   const SimpleEntryImpl::OperationsMode entry_operations_mode_;
@@ -266,6 +279,8 @@ class NET_EXPORT_PRIVATE SimpleBackendImpl : public Backend,
       entries_pending_doom_;
 
   net::NetLog* const net_log_;
+
+  uint32_t entry_count_ = 0;
 };
 
 }  // namespace disk_cache

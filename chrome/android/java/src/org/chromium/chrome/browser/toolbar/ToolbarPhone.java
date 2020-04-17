@@ -4,6 +4,7 @@
 
 package org.chromium.chrome.browser.toolbar;
 
+import android.app.Activity;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -49,10 +50,12 @@ import android.widget.ImageView;
 import android.widget.PopupWindow.OnDismissListener;
 import android.widget.TextView;
 
+import org.chromium.base.ContextUtils;
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.base.VisibleForTesting;
 import org.chromium.base.metrics.RecordUserAction;
 import org.chromium.chrome.R;
+import org.chromium.chrome.browser.ChromeActivity;
 import org.chromium.chrome.browser.ChromeFeatureList;
 import org.chromium.chrome.browser.compositor.Invalidator;
 import org.chromium.chrome.browser.compositor.layouts.LayoutUpdateHost;
@@ -79,9 +82,15 @@ import org.chromium.chrome.browser.widget.incognitotoggle.IncognitoToggleButton;
 import org.chromium.chrome.browser.widget.newtab.NewTabButton;
 import org.chromium.chrome.browser.widget.textbubble.TextBubble;
 import org.chromium.components.feature_engagement.EventConstants;
+import org.chromium.chrome.browser.accessibility.NightModePrefs;
+import org.chromium.ui.UiUtils;
 import org.chromium.ui.base.LocalizationUtils;
 import org.chromium.ui.interpolators.BakedBezierInterpolator;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
+import org.chromium.base.ContextUtils;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -137,6 +146,7 @@ public class ToolbarPhone extends ToolbarLayout
     protected ImageView mToggleTabStackButton;
     protected NewTabButton mNewTabButton;
     protected @Nullable TintedImageButton mHomeButton;
+    protected @Nullable TintedImageButton mOverscrollButton;
     private TextView mUrlBar;
     protected View mUrlActionContainer;
     protected ImageView mToolbarShadow;
@@ -209,6 +219,8 @@ public class ToolbarPhone extends ToolbarLayout
     private CharSequence mUrlTextPreFocus;
     private int mUrlScrollXPositionPreFocus;
 
+    private boolean mNativeReady;
+
     protected boolean mDisableLocationBarRelayout;
     protected boolean mLayoutLocationBarInFocusedMode;
     protected int mUnfocusedLocationBarLayoutWidth;
@@ -262,6 +274,7 @@ public class ToolbarPhone extends ToolbarLayout
     private boolean mBrandColorTransitionActive;
 
     private boolean mIsHomeButtonEnabled;
+    private boolean mIsOverscrollButtonEnabled;
 
     private LayoutUpdateHost mLayoutUpdateHost;
 
@@ -356,6 +369,7 @@ public class ToolbarPhone extends ToolbarLayout
                 ApiCompatibilityUtils.getColor(getResources(), R.color.dark_mode_tint);
         mModernLocationBarLateralInset = getResources().getDimensionPixelOffset(
                 R.dimen.modern_toolbar_background_lateral_inset);
+        mNativeReady = false;
     }
 
     @Override
@@ -367,6 +381,8 @@ public class ToolbarPhone extends ToolbarLayout
 
         mHomeButton = (TintedImageButton) findViewById(R.id.home_button);
         if (FeatureUtilities.isNewTabPageButtonEnabled()) changeIconToNTPIcon(mHomeButton);
+
+        mOverscrollButton = (TintedImageButton) findViewById(R.id.overscroll_button);
 
         mUrlBar = (TextView) findViewById(R.id.url_bar);
 
@@ -450,6 +466,9 @@ public class ToolbarPhone extends ToolbarLayout
      * @return The location bar color.
      */
     private int getLocationBarColorForToolbarColor(int toolbarColor) {
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+          return ColorUtils.getTextBoxColorForToolbarBackground(
+                 getResources(), false, Color.BLACK, mLocationBar.useModernDesign());
         return ColorUtils.getTextBoxColorForToolbarBackground(
                 getResources(), false, toolbarColor, mLocationBar.useModernDesign());
     }
@@ -518,11 +537,15 @@ public class ToolbarPhone extends ToolbarLayout
     public void onNativeLibraryReady() {
         super.onNativeLibraryReady();
 
+        mNativeReady = true;
+
         getLocationBar().onNativeLibraryReady();
 
         enableTabSwitchingResources();
 
         if (mHomeButton != null) mHomeButton.setOnClickListener(this);
+
+        if (mOverscrollButton != null) mOverscrollButton.setOnClickListener(this);
 
         mMenuButton.setOnKeyListener(new KeyboardNavigationListener() {
             @Override
@@ -541,6 +564,10 @@ public class ToolbarPhone extends ToolbarLayout
             }
         });
         onHomeButtonUpdate(HomepageManager.isHomepageEnabled());
+        if (ContextUtils.getAppSharedPreferences().getBoolean("enable_bottom_toolbar", false) && ContextUtils.getAppSharedPreferences().getBoolean("enable_overscroll_button", true))
+            onOverscrollButtonUpdate(true);
+        else
+            onOverscrollButtonUpdate(false);
 
         if (mLocationBar.useModernDesign()) mNewTabButton.setIsModern();
 
@@ -549,29 +576,11 @@ public class ToolbarPhone extends ToolbarLayout
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
-        // If the NTP is partially scrolled, prevent all touch events to the child views.  This
-        // is to not allow a secondary touch event to trigger entering the tab switcher, which
-        // can lead to really odd snapshots and transitions to the switcher.
-        if (mNtpSearchBoxScrollPercent != 0f
-                && mNtpSearchBoxScrollPercent != 1f
-                && mNtpSearchBoxScrollPercent != UNINITIALIZED_PERCENT) {
-            return true;
-        }
-
         return super.onInterceptTouchEvent(ev);
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
-        // Forward touch events to the NTP if the toolbar is moved away but the search box hasn't
-        // reached the top of the page yet.
-        if (mNtpSearchBoxTranslation.y < 0 && mLocationBar.getTranslationY() > 0) {
-            NewTabPage newTabPage = getToolbarDataProvider().getNewTabPageForCurrentTab();
-
-            // No null check -- the toolbar should not be moved if we are not on an NTP.
-            return newTabPage.getView().dispatchTouchEvent(ev);
-        }
-
         return super.onTouchEvent(ev);
     }
 
@@ -605,6 +614,8 @@ public class ToolbarPhone extends ToolbarLayout
                 TrackerFactory.getTrackerForProfile(Profile.getLastUsedProfile())
                         .notifyEvent(EventConstants.PARTNER_HOME_PAGE_BUTTON_PRESSED);
             }
+        } else if (mOverscrollButton != null && mOverscrollButton == v) {
+            openOverscroll();
         }
     }
 
@@ -621,6 +632,17 @@ public class ToolbarPhone extends ToolbarLayout
 
     @Override
     public boolean onLongClick(View v) {
+        if (v == mToggleTabStackButton) {
+            v.setEnabled(false);
+
+            if (mNewTabListener != null) {
+                mNewTabListener.onClick(v);
+                RecordUserAction.record("MobileToolbarLongPress");
+                RecordUserAction.record("MobileNewTabOpened");
+                // TODO(kkimlabs): Record UMA action for homepage button.
+            }
+            return true;
+        }
         if (v == mToggleTabStackButton && ChromeFeatureList.isInitialized()
                 && ChromeFeatureList.isEnabled(ChromeFeatureList.CHROME_MEMEX)) {
             handleToggleTabStack();
@@ -868,8 +890,11 @@ public class ToolbarPhone extends ToolbarLayout
 
     protected int getToolbarColorForVisualState(final VisualState visualState) {
         Resources res = getResources();
+        Activity activity = (Activity)getContext();
         switch (visualState) {
             case NEW_TAB_NORMAL:
+                if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+                    return Color.BLACK;
                 if (mLocationBar.useModernDesign() && mUrlExpansionPercent == 1.f) {
                     // When the location bar reaches the top of the screen, the background needs
                     // to change back to the default, solid color so that the NTP content is
@@ -879,15 +904,25 @@ public class ToolbarPhone extends ToolbarLayout
                 }
                 return Color.TRANSPARENT;
             case NORMAL:
+                if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+                    return Color.BLACK;
                 return ColorUtils.getDefaultThemeColor(
                         getResources(), mLocationBar.useModernDesign(), false);
             case INCOGNITO:
+                if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+                    return Color.BLACK;
                 return ColorUtils.getDefaultThemeColor(
                         getResources(), mLocationBar.useModernDesign(), true);
             case BRAND_COLOR:
+                if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+                    return Color.BLACK;
                 return getToolbarDataProvider().getPrimaryColor();
             case TAB_SWITCHER_NORMAL:
             case TAB_SWITCHER_INCOGNITO:
+                if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+                    return ApiCompatibilityUtils.getColor(res, R.color.tab_switcher_background);
+                if (ContextUtils.getAppSharedPreferences().getBoolean("enable_bottom_toolbar", false))
+                    return Color.WHITE;
                 if (usingHorizontalTabSwitcher()) return Color.TRANSPARENT;
 
                 if (mLocationBar.useModernDesign()) {
@@ -906,6 +941,12 @@ public class ToolbarPhone extends ToolbarLayout
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
+        try {
+            ValueAnimator.class.getMethod("setDurationScale", float.class).invoke(null, 0.0f);
+        } catch (Throwable t) {
+
+        }
+
         if (!mTextureCaptureMode && mToolbarBackground.getColor() != Color.TRANSPARENT) {
             // Update to compensate for orientation changes.
             mToolbarBackground.setBounds(0, 0, getWidth(), getHeight());
@@ -944,6 +985,12 @@ public class ToolbarPhone extends ToolbarLayout
                 // Clear the animation.
                 if (tabSwitcherAnimationFinished) mTabSwitcherModeAnimation = null;
             }
+        }
+
+        try {
+            ValueAnimator.class.getMethod("setDurationScale", float.class).invoke(null, 0.60f);
+        } catch (Throwable t) {
+
         }
     }
 
@@ -1081,6 +1128,9 @@ public class ToolbarPhone extends ToolbarLayout
         if (mHomeButton != null && mHomeButton.getVisibility() != GONE) {
             mHomeButton.setVisibility(toolbarButtonVisibility);
         }
+        if (mOverscrollButton != null && mOverscrollButton.getVisibility() != GONE) {
+            mOverscrollButton.setVisibility(toolbarButtonVisibility);
+        }
 
         updateLocationBarLayoutForExpansionAnimation();
     }
@@ -1109,26 +1159,6 @@ public class ToolbarPhone extends ToolbarLayout
 
         locationBarBaseTranslationX *= 1f - mUrlExpansionPercent;
 
-        mLocationBarBackgroundNtpOffset.setEmpty();
-        mLocationBarNtpOffsetLeft = 0;
-        mLocationBarNtpOffsetRight = 0;
-
-        Tab currentTab = getToolbarDataProvider().getTab();
-        if (currentTab != null) {
-            NewTabPage ntp = getToolbarDataProvider().getNewTabPageForCurrentTab();
-            if (ntp != null) {
-                ntp.setUrlFocusChangeAnimationPercent(mUrlFocusChangePercent);
-            }
-
-            if (isLocationBarShownInNTP()) {
-                updateNtpTransitionAnimation();
-            } else {
-                // Reset these values in case we transitioned to a different page during the
-                // transition.
-                resetNtpAnimationValues();
-            }
-        }
-
         float locationBarTranslationX;
         // Get the padding straight from the location bar instead of
         // |mLocationBarBackgroundPadding|, because it might be different in incognito mode.
@@ -1154,8 +1184,12 @@ public class ToolbarPhone extends ToolbarLayout
             int primaryColor = getToolbarDataProvider().getPrimaryColor();
             int themedLocationBarColor = getLocationBarColorForToolbarColor(primaryColor);
 
-            updateToolbarBackground(ColorUtils.getColorWithOverlay(
-                    primaryColor, defaultColor, mUrlFocusChangePercent));
+            Activity activity = (Activity)getContext();
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+                updateToolbarBackground(Color.BLACK);
+            else
+                updateToolbarBackground(ColorUtils.getColorWithOverlay(
+                      primaryColor, defaultColor, mUrlFocusChangePercent));
 
             updateModernLocationBarColor(ColorUtils.getColorWithOverlay(
                     themedLocationBarColor, defaultLocationBarColor, mUrlFocusChangePercent));
@@ -1195,123 +1229,6 @@ public class ToolbarPhone extends ToolbarLayout
         return urlActionsTranslationX;
     }
 
-    /**
-     * Reset the parameters for the New Tab Page transition animation (expanding the location bar as
-     * a result of scrolling the New Tab Page) to their default values.
-     */
-    protected void resetNtpAnimationValues() {
-        mLocationBarBackgroundNtpOffset.setEmpty();
-        mActiveLocationBarBackground = mLocationBarBackground;
-        mNtpSearchBoxTranslation.set(0, 0);
-        mLocationBar.setTranslationY(0);
-        if (!mUrlFocusChangeInProgress) {
-            mToolbarButtonsContainer.setTranslationY(0);
-            if (mHomeButton != null) mHomeButton.setTranslationY(0);
-        }
-
-        if (!mToolbarShadowPermanentlyHidden
-                && !(mLocationBar.useModernDesign() && mUrlFocusChangeInProgress)) {
-            mToolbarShadow.setAlpha(
-                    mLocationBar.useModernDesign() && mUrlBar.hasFocus() ? 0.f : 1.f);
-        }
-
-        mLocationBar.setAlpha(1);
-        mForceDrawLocationBarBackground = false;
-        mLocationBarBackgroundAlpha = 255;
-        if (isIncognito()
-                || (mUnfocusedLocationBarUsesTransparentBg && !mUrlFocusChangeInProgress
-                        && !mLocationBar.hasFocus())) {
-            mLocationBarBackgroundAlpha = LOCATION_BAR_TRANSPARENT_BACKGROUND_ALPHA;
-        }
-
-        setAncestorsShouldClipChildren(true);
-        mNtpSearchBoxScrollPercent = UNINITIALIZED_PERCENT;
-        updateUrlExpansionPercent();
-    }
-
-    /**
-     * Updates the parameters of the New Tab Page transition animation (expanding the location bar
-     * as a result of scrolling the New Tab Page).
-     */
-    private void updateNtpTransitionAnimation() {
-        // Skip if in or entering tab switcher mode.
-        if (mTabSwitcherState == TAB_SWITCHER || mTabSwitcherState == ENTERING_TAB_SWITCHER) return;
-
-        boolean isExpanded = mUrlExpansionPercent > 0f;
-        boolean useModern = mLocationBar.useModernDesign();
-        setAncestorsShouldClipChildren(!isExpanded);
-        if (!mToolbarShadowPermanentlyHidden && !(useModern && mUrlFocusChangeInProgress)) {
-            float alpha = 0.f;
-            if (useModern && !mUrlBar.hasFocus() && mNtpSearchBoxScrollPercent == 1.f) {
-                alpha = 1.f;
-            }
-            mToolbarShadow.setAlpha(alpha);
-        }
-
-        NewTabPage ntp = getToolbarDataProvider().getNewTabPageForCurrentTab();
-        ntp.getSearchBoxBounds(mNtpSearchBoxBounds, mNtpSearchBoxTranslation);
-        int locationBarTranslationY =
-                Math.max(0, (mNtpSearchBoxBounds.top - mLocationBar.getTop()));
-        mLocationBar.setTranslationY(locationBarTranslationY);
-
-        updateButtonsTranslationY();
-
-        // Linearly interpolate between the bounds of the search box on the NTP and the omnibox
-        // background bounds. |shrinkage| is the scaling factor for the offset -- if it's 1, we are
-        // shrinking the omnibox down to the size of the search box.
-        float shrinkage =
-                1f - NTP_SEARCH_BOX_EXPANSION_INTERPOLATOR.getInterpolation(mUrlExpansionPercent);
-
-        int leftBoundDifference = mNtpSearchBoxBounds.left - mLocationBarBackgroundBounds.left;
-        int rightBoundDifference = mNtpSearchBoxBounds.right - mLocationBarBackgroundBounds.right;
-        int verticalInset = 0;
-        if (useModern) {
-            verticalInset = (int) (getResources().getDimensionPixelSize(
-                                           R.dimen.ntp_search_box_bounds_vertical_inset_modern)
-                    * (1.f - mUrlExpansionPercent));
-        }
-        mLocationBarBackgroundNtpOffset.set(
-                Math.round(leftBoundDifference * shrinkage),
-                locationBarTranslationY,
-                Math.round(rightBoundDifference * shrinkage),
-                locationBarTranslationY);
-        mLocationBarBackgroundNtpOffset.inset(0, verticalInset);
-
-        // The omnibox background bounds are outset by |mLocationBarBackgroundCornerRadius| in the
-        // fully expanded state (and only there!) to hide the rounded corners, so undo that before
-        // applying the shrinkage factor.
-        mLocationBarNtpOffsetLeft =
-                (leftBoundDifference - mLocationBarBackgroundCornerRadius) * shrinkage;
-        mLocationBarNtpOffsetRight =
-                (rightBoundDifference + mLocationBarBackgroundCornerRadius) * shrinkage;
-
-        mLocationBarBackgroundAlpha = isExpanded ? 255 : 0;
-        mForceDrawLocationBarBackground = mLocationBarBackgroundAlpha > 0;
-        float relativeAlpha = mLocationBarBackgroundAlpha / 255f;
-        mLocationBar.setAlpha(relativeAlpha);
-
-        // The search box on the NTP is visible if our omnibox is invisible, and vice-versa.
-        ntp.setSearchBoxAlpha(1f - relativeAlpha);
-        if (!mForceDrawLocationBarBackground) {
-            if (mActiveLocationBarBackground instanceof NtpSearchBoxDrawable) {
-                ((NtpSearchBoxDrawable) mActiveLocationBarBackground).resetBoundsToLastNonToolbar();
-            }
-        }
-
-        updateToolbarBackground(mVisualState);
-    }
-
-    /**
-     * Update the y translation of the buttons to make it appear as if they were scrolling with
-     * the new tab page.
-     */
-    private void updateButtonsTranslationY() {
-        int transY = mTabSwitcherState == STATIC_TAB ? Math.min(mNtpSearchBoxTranslation.y, 0) : 0;
-
-        mToolbarButtonsContainer.setTranslationY(transY);
-        if (mHomeButton != null) mHomeButton.setTranslationY(transY);
-    }
-
     private void setAncestorsShouldClipChildren(boolean clip) {
         if (!isLocationBarShownInNTP()) return;
 
@@ -1325,7 +1242,7 @@ public class ToolbarPhone extends ToolbarLayout
         } else if (mClipRect == null) {
             mClipRect = new Rect();
         }
-        if (mClipRect != null) mClipRect.set(0, 0, getWidth(), (int) (getHeight() * progress));
+        if (mClipRect != null) mClipRect.set(0, 0, getWidth(), (int) (getHeight() * 1.0f));
     }
 
     /**
@@ -1339,7 +1256,7 @@ public class ToolbarPhone extends ToolbarLayout
         float floatAlpha = 1 - animationProgress;
         int rgbAlpha = (int) (255 * floatAlpha);
         canvas.save();
-        canvas.translate(0, -animationProgress * mBackgroundOverlayBounds.height());
+//        canvas.translate(0, -animationProgress * mBackgroundOverlayBounds.height());
         canvas.clipRect(mBackgroundOverlayBounds);
 
         float previousAlpha = 0.f;
@@ -1362,6 +1279,33 @@ public class ToolbarPhone extends ToolbarLayout
 
         // Draw the tab stack button and associated text.
         translateCanvasToView(this, mToolbarButtonsContainer, canvas);
+
+        // Draw the menu button if necessary.
+        if (mOverscrollButton != null && mOverscrollButton.getVisibility() != View.GONE) {
+            canvas.save();
+            Drawable oversButton = mOverscrollButton.getDrawable();
+
+            translateCanvasToView(mToolbarButtonsContainer, mOverscrollButton, canvas);
+
+            int backgroundWidth = mOverscrollButton.getDrawable().getIntrinsicWidth();
+            int backgroundHeight = mOverscrollButton.getDrawable().getIntrinsicHeight();
+            int backgroundLeft =
+                    (mOverscrollButton.getWidth() - mOverscrollButton.getPaddingLeft()
+                            - mOverscrollButton.getPaddingRight() - backgroundWidth)
+                    / 2;
+            backgroundLeft += mOverscrollButton.getPaddingLeft();
+            int backgroundTop =
+                    (mOverscrollButton.getHeight() - mOverscrollButton.getPaddingTop()
+                            - mOverscrollButton.getPaddingBottom() - backgroundHeight)
+                    / 2;
+            backgroundTop += mOverscrollButton.getPaddingTop();
+            canvas.translate(backgroundLeft, backgroundTop);
+
+            oversButton.setAlpha(rgbAlpha);
+            oversButton.draw(canvas);
+
+            canvas.restore();
+        }
 
         if (mTabSwitcherAnimationTabStackDrawable != null && mToggleTabStackButton != null
                 && mUrlExpansionPercent != 1f) {
@@ -1539,10 +1483,6 @@ public class ToolbarPhone extends ToolbarLayout
             mLocationBarBackground.setAlpha(backgroundAlpha);
 
             if (shouldDrawLocationBarBackground()) {
-                if (mActiveLocationBarBackground instanceof NtpSearchBoxDrawable) {
-                    ((NtpSearchBoxDrawable) mActiveLocationBarBackground)
-                            .markPendingBoundsUpdateFromToolbar();
-                }
                 mActiveLocationBarBackground.setBounds(
                         mLocationBarBackgroundBounds.left + mLocationBarBackgroundNtpOffset.left
                                 - mLocationBarBackgroundPadding.left,
@@ -1622,8 +1562,7 @@ public class ToolbarPhone extends ToolbarLayout
             mToolbarShadow.setImageDrawable(getToolbarShadowDrawable());
         }
         if (mLocationBar.useModernDesign()) {
-            mToolbarShadow.getLayoutParams().height =
-                    getResources().getDimensionPixelSize(R.dimen.toolbar_shadow_height);
+            mToolbarShadow.getLayoutParams().height = 0;
             mToolbarShadow.setScaleType(ImageView.ScaleType.FIT_XY);
         }
     }
@@ -1735,9 +1674,16 @@ public class ToolbarPhone extends ToolbarLayout
     }
 
     @Override
+    protected void onOverscrollButtonUpdate(boolean overscrollButtonEnabled) {
+        mIsOverscrollButtonEnabled = overscrollButtonEnabled;
+        updateOverscrollButtonVisibility();
+    }
+
+    @Override
     public void onWindowVisibilityChanged(int visibility) {
         super.onWindowVisibilityChanged(visibility);
         updateButtonVisibility();
+        updateOverscrollButtonVisibility();
     }
 
     @Override
@@ -1755,6 +1701,18 @@ public class ToolbarPhone extends ToolbarLayout
         }
     }
 
+    @Override
+    public void updateOverscrollButtonVisibility() {
+        if (mOverscrollButton == null) return;
+
+        boolean hideOverscrollButton = !mIsOverscrollButtonEnabled;
+        if (hideOverscrollButton) {
+            removeOverscrollButton();
+        } else {
+            addOverscrollButton();
+        }
+    }
+
     private void removeHomeButton() {
         mHomeButton.setVisibility(GONE);
         mBrowsingModeViews.remove(mHomeButton);
@@ -1765,6 +1723,18 @@ public class ToolbarPhone extends ToolbarLayout
                 urlHasFocus() || isTabSwitcherAnimationRunning() ? INVISIBLE : VISIBLE);
         mHomeButton.setTint(mUseLightToolbarDrawables ? mLightModeTint : mDarkModeTint);
         mBrowsingModeViews.add(mHomeButton);
+    }
+
+    private void removeOverscrollButton() {
+        mOverscrollButton.setVisibility(GONE);
+        mBrowsingModeViews.remove(mOverscrollButton);
+    }
+
+    private void addOverscrollButton() {
+        mOverscrollButton.setVisibility(
+                urlHasFocus() || isTabSwitcherAnimationRunning() ? INVISIBLE : VISIBLE);
+        mOverscrollButton.setTint(mUseLightToolbarDrawables ? mLightModeTint : mDarkModeTint);
+        mBrowsingModeViews.add(mOverscrollButton);
     }
 
     private ObjectAnimator createEnterTabSwitcherModeAnimation() {
@@ -1938,6 +1908,11 @@ public class ToolbarPhone extends ToolbarLayout
                 updateUrlExpansionAnimation();
             }
             mNewTabButton.setEnabled(true);
+            Activity activity = (Activity)getContext();
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+                mNewTabButton.setTintList(mLightModeTint);
+            else
+                mNewTabButton.setTintList(mDarkModeTint);
             updateViewsForTabSwitcherMode();
             mTabSwitcherModeAnimation = createEnterTabSwitcherModeAnimation();
         } else {
@@ -1947,11 +1922,10 @@ public class ToolbarPhone extends ToolbarLayout
             }
         }
 
-        updateButtonsTranslationY();
         mAnimateNormalToolbar = showToolbar;
         if (mTabSwitcherModeAnimation != null) mTabSwitcherModeAnimation.start();
 
-        if (DeviceClassManager.enableAccessibilityLayout() || !animate) finishAnimations();
+        if (DeviceClassManager.enableAccessibilityLayout() || !animate || showToolbar) finishAnimations();
 
         postInvalidateOnAnimation();
     }
@@ -2297,6 +2271,7 @@ public class ToolbarPhone extends ToolbarLayout
     @Override
     protected void updateTabCountVisuals(int numberOfTabs) {
         if (mHomeButton != null) mHomeButton.setEnabled(true);
+        if (mOverscrollButton != null) mOverscrollButton.setEnabled(true);
 
         if (mToggleTabStackButton == null) return;
 
@@ -2334,6 +2309,9 @@ public class ToolbarPhone extends ToolbarLayout
      * @return The current tab's theme color.
      */
     protected int getTabThemeColor() {
+        Activity activity = (Activity)getContext();
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) return Color.BLACK;
+        if (ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Ultra White") && !isIncognito()) return Color.WHITE;
         if (getToolbarDataProvider() != null) return getToolbarDataProvider().getPrimaryColor();
         return getToolbarColorForVisualState(
                 isIncognito() ? VisualState.INCOGNITO : VisualState.NORMAL);
@@ -2342,14 +2320,12 @@ public class ToolbarPhone extends ToolbarLayout
     @Override
     protected void onTabContentViewChanged() {
         super.onTabContentViewChanged();
-        updateNtpAnimationState();
         updateVisualsForToolbarState();
     }
 
     @Override
     protected void onTabOrModelChanged() {
         super.onTabOrModelChanged();
-        updateNtpAnimationState();
         updateVisualsForToolbarState();
 
         if (mHasCheckedIfTabSwitcherCalloutIsNecessary) {
@@ -2418,38 +2394,6 @@ public class ToolbarPhone extends ToolbarLayout
         mBrandColorTransitionActive = true;
     }
 
-    private void updateNtpAnimationState() {
-        // Store previous NTP scroll before calling reset as that clears this value.
-        boolean wasShowingNtp = mVisibleNewTabPage != null;
-        float previousNtpScrollPercent = mNtpSearchBoxScrollPercent;
-
-        resetNtpAnimationValues();
-        if (mVisibleNewTabPage != null) {
-            mVisibleNewTabPage.setSearchBoxScrollListener(null);
-            mVisibleNewTabPage = null;
-        }
-        mVisibleNewTabPage = getToolbarDataProvider().getNewTabPageForCurrentTab();
-        if (mVisibleNewTabPage != null && mVisibleNewTabPage.isLocationBarShownInNTP()) {
-            mVisibleNewTabPage.setSearchBoxScrollListener(this);
-            if (mLocationBar.useModernDesign()) {
-                NtpSearchBoxDrawable ntpSearchBox = new NtpSearchBoxDrawable(getContext(), this);
-                mVisibleNewTabPage.setSearchBoxBackground(ntpSearchBox);
-                mActiveLocationBarBackground = ntpSearchBox;
-            }
-            requestLayout();
-        } else if (wasShowingNtp) {
-            // Convert the previous NTP scroll percentage to URL focus percentage because that
-            // will give a nicer transition animation from the expanded NTP omnibox to the
-            // collapsed normal omnibox on other non-NTP pages.
-            if (mTabSwitcherState == STATIC_TAB && previousNtpScrollPercent > 0f) {
-                mUrlFocusChangePercent =
-                        Math.max(previousNtpScrollPercent, mUrlFocusChangePercent);
-                triggerUrlFocusAnimation(false);
-            }
-            requestLayout();
-        }
-    }
-
     @Override
     protected void onDefaultSearchEngineChanged() {
         super.onDefaultSearchEngineChanged();
@@ -2463,7 +2407,6 @@ public class ToolbarPhone extends ToolbarLayout
             @Override
             public void run() {
                 updateVisualsForToolbarState();
-                updateNtpAnimationState();
             }
         });
     }
@@ -2602,11 +2545,6 @@ public class ToolbarPhone extends ToolbarLayout
         if (mTabSwitcherState != EXITING_TAB_SWITCHER) updateToolbarBackground(mVisualState);
 
         if (!visualStateChanged) {
-            if (mVisualState == VisualState.NEW_TAB_NORMAL) {
-                updateNtpTransitionAnimation();
-            } else {
-                resetNtpAnimationValues();
-            }
             return;
         }
 
@@ -2660,6 +2598,7 @@ public class ToolbarPhone extends ToolbarLayout
         }
         ColorStateList tint = mUseLightToolbarDrawables ? mLightModeTint : mDarkModeTint;
         if (mIsHomeButtonEnabled && mHomeButton != null) mHomeButton.setTint(tint);
+        if (mIsOverscrollButtonEnabled && mOverscrollButton != null) mOverscrollButton.setTint(tint);
 
         mLocationBar.updateVisualsForState();
         // Remove the side padding for incognito to ensure the badge icon aligns correctly with the
@@ -2671,12 +2610,6 @@ public class ToolbarPhone extends ToolbarLayout
             mLocationBar.setPadding(
                     mLocationBarBackgroundPadding.left, mLocationBarBackgroundPadding.top,
                     mLocationBarBackgroundPadding.right, mLocationBarBackgroundPadding.bottom);
-        }
-
-        // We update the alpha before comparing the visual state as we need to change
-        // its value when entering and exiting TabSwitcher mode.
-        if (isLocationBarShownInNTP() && inOrEnteringStaticTab) {
-            updateNtpTransitionAnimation();
         }
 
         mNewTabButton.setIsIncognito(isIncognito);
@@ -2818,75 +2751,6 @@ public class ToolbarPhone extends ToolbarLayout
             mFullscreenCalloutToken =
                     mControlsVisibilityDelegate.showControlsPersistentAndClearOldToken(
                             mFullscreenCalloutToken);
-        }
-    }
-
-    /**
-     * Custom drawable that allows sharing the NTP search box drawable between the toolbar and the
-     * NTP.  This allows animations to continue as the drawable is switched between the two owning
-     * views.
-     */
-    private static class NtpSearchBoxDrawable extends DrawableWrapper {
-        private final Drawable.Callback mCallback;
-
-        private int mBoundsLeft, mBoundsTop, mBoundsRight, mBoundsBottom;
-        private boolean mPendingBoundsUpdateFromToolbar;
-        private boolean mDrawnByNtp;
-
-        /**
-         * Constructs the NTP search box drawable.
-         *
-         * @param context The context used to inflate the drawable.
-         * @param callback The callback to be notified on changes ot the drawable.
-         */
-        public NtpSearchBoxDrawable(Context context, Drawable.Callback callback) {
-            super(ApiCompatibilityUtils.getDrawable(
-                    context.getResources(), R.drawable.ntp_search_box));
-            mCallback = callback;
-            setCallback(mCallback);
-        }
-
-        /**
-         * Mark that the pending bounds update is coming from the toolbar.
-         */
-        void markPendingBoundsUpdateFromToolbar() {
-            mPendingBoundsUpdateFromToolbar = true;
-        }
-
-        /**
-         * Reset the bounds of the drawable to the last bounds received that was not marked from
-         * the toolbar.
-         */
-        void resetBoundsToLastNonToolbar() {
-            setBounds(mBoundsLeft, mBoundsTop, mBoundsRight, mBoundsBottom);
-        }
-
-        @Override
-        public void setBounds(int left, int top, int right, int bottom) {
-            super.setBounds(left, top, right, bottom);
-            if (!mPendingBoundsUpdateFromToolbar) {
-                mBoundsLeft = left;
-                mBoundsTop = top;
-                mBoundsRight = right;
-                mBoundsBottom = bottom;
-                mDrawnByNtp = true;
-            } else {
-                mDrawnByNtp = false;
-            }
-            mPendingBoundsUpdateFromToolbar = false;
-        }
-
-        @Override
-        public boolean setVisible(boolean visible, boolean restart) {
-            // Ignore visibility changes.  The NTP can toggle the visibility based on the scroll
-            // position of the page, so we simply ignore all of this as we expect the drawable to
-            // be visible at all times of the NTP.
-            return false;
-        }
-
-        @Override
-        public Callback getCallback() {
-            return mDrawnByNtp ? super.getCallback() : mCallback;
         }
     }
 }

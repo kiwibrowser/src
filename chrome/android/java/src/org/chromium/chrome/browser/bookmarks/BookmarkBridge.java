@@ -7,17 +7,34 @@ package org.chromium.chrome.browser.bookmarks;
 import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Pair;
+import android.content.Intent;
+import android.net.Uri;
+import android.widget.Toast;
 
+import android.content.Context;
+import org.chromium.content_public.browser.LoadUrlParams;
+import org.chromium.chrome.browser.ChromeActivity;
+import android.provider.Browser;
+import org.chromium.chrome.browser.IntentHandler;
 import org.chromium.base.ContextUtils;
 import org.chromium.base.ObserverList;
 import org.chromium.base.VisibleForTesting;
 import org.chromium.base.annotations.CalledByNative;
+import org.chromium.chrome.browser.ChromeTabbedActivity;
+import org.chromium.chrome.browser.document.ChromeLauncherActivity;
 import org.chromium.base.metrics.RecordHistogram;
 import org.chromium.chrome.browser.partnerbookmarks.PartnerBookmarksShim;
 import org.chromium.chrome.browser.profiles.Profile;
 import org.chromium.components.bookmarks.BookmarkId;
 import org.chromium.components.bookmarks.BookmarkType;
+import org.chromium.chrome.browser.tabmodel.TabModel;
+import org.chromium.ui.base.PageTransition;
 import org.chromium.components.url_formatter.UrlFormatter;
+
+import org.chromium.chrome.browser.tab.Tab;
+import org.chromium.chrome.browser.tabmodel.TabCreatorManager.TabCreator;
+
+import org.chromium.ui.base.WindowAndroid;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -168,7 +185,6 @@ public class BookmarkBridge {
      * Contains data about a bookmark or bookmark folder.
      */
     public static class BookmarkItem {
-
         private final String mTitle;
         private final String mUrl;
         private final BookmarkId mId;
@@ -203,11 +219,6 @@ public class BookmarkBridge {
             return UrlFormatter.formatUrlForSecurityDisplay(getUrl(), false);
         }
 
-        /** @return Id of the bookmark item. */
-        public BookmarkId getId() {
-            return mId;
-        }
-
         /** @return Whether item is a folder or a bookmark. */
         public boolean isFolder() {
             return mIsFolder;
@@ -236,6 +247,10 @@ public class BookmarkBridge {
         /** @return Whether this is a managed bookmark. */
         public boolean isManaged() {
             return mIsManaged;
+        }
+
+        public BookmarkId getId() {
+            return mId;
         }
     }
 
@@ -292,6 +307,47 @@ public class BookmarkBridge {
      */
     public boolean isBookmarkModelLoaded() {
         return mIsNativeBookmarkModelLoaded;
+    }
+
+    public void importBookmarks(WindowAndroid window) {
+        assert mIsNativeBookmarkModelLoaded;
+
+        nativeImportBookmarks(mNativeBookmarkBridge, window);
+    }
+
+    public void exportBookmarks(WindowAndroid window) {
+        assert mIsNativeBookmarkModelLoaded;
+
+        nativeExportBookmarks(mNativeBookmarkBridge, window);
+    }
+
+    @CalledByNative
+    public void bookmarksImported(String message) {
+        Context context = ContextUtils.getApplicationContext();
+
+        Toast.makeText(ContextUtils.getApplicationContext(), message, Toast.LENGTH_LONG).show();
+    }
+
+    @CalledByNative
+    public void bookmarksExported(String bookmarksPath) {
+        String url = bookmarksPath;
+
+        Context context = ContextUtils.getApplicationContext();
+
+        url = "file://" + url;
+
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+        intent.putExtra(Browser.EXTRA_APPLICATION_ID,
+                        context.getPackageName());
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.putExtra(IntentHandler.EXTRA_PAGE_TRANSITION_TYPE, PageTransition.AUTO_BOOKMARK);
+
+        // If the bookmark manager is shown in a tab on a phone (rather than in a separate
+        // activity) the component name may be null. Send the intent through
+        // ChromeLauncherActivity instead to avoid crashing. See crbug.com/615012.
+        intent.setClass(context, ChromeLauncherActivity.class);
+
+        IntentHandler.startActivityForTrustedIntent(intent);
     }
 
     /**
@@ -487,7 +543,7 @@ public class BookmarkBridge {
     /**
      * Gets the child of a folder at the specific position.
      * @param folderId Id of the parent folder
-     * @param index Posision of child among all children in folder
+     * @param index Position of child among all children in folder
      * @return BookmarkId of the child, which will be null if folderId does not point to a folder or
      *         index is invalid.
      */
@@ -548,7 +604,7 @@ public class BookmarkBridge {
 
     /**
      * Fetches the bookmarks of the given folder. This is an always-synchronous version of another
-     * getBookmarksForForder function.
+     * getBookmarksForFolder function.
      *
      * @param folderId The parent folder id.
      * @return Bookmarks of the given folder.
@@ -715,6 +771,16 @@ public class BookmarkBridge {
                 observer.bookmarkModelLoaded();
             }
         }
+    }
+
+    /**
+     * Reorders the bookmarks of the folder "parent" to be as specified by newOrder.
+     *
+     * @param parent The parent folder for the reordered bookmarks.
+     * @param newOrder A list of bookmark IDs that represents the new order for these bookmarks.
+     */
+    public void reorderBookmarks(BookmarkId parent, long[] newOrder) {
+        nativeReorderChildren(mNativeBookmarkBridge, parent, newOrder);
     }
 
     @CalledByNative
@@ -906,6 +972,8 @@ public class BookmarkBridge {
             boolean getFolders, boolean getBookmarks, List<BookmarkId> bookmarksList);
     private native BookmarkId nativeGetChildAt(long nativeBookmarkBridge, long id, int type,
             int index);
+    private native void nativeImportBookmarks(long nativeBookmarkBridge, WindowAndroid window);
+    private native void nativeExportBookmarks(long nativeBookmarkBridge, WindowAndroid window);
     private native int nativeGetTotalBookmarkCount(long nativeBookmarkBridge, long id, int type);
     private native void nativeSetBookmarkTitle(long nativeBookmarkBridge, long id, int type,
             String title);
@@ -937,4 +1005,6 @@ public class BookmarkBridge {
     private native boolean nativeIsDoingExtensiveChanges(long nativeBookmarkBridge);
     private native void nativeDestroy(long nativeBookmarkBridge);
     private static native boolean nativeIsEditBookmarksEnabled(long nativeBookmarkBridge);
+    private native void nativeReorderChildren(
+            long nativeBookmarkBridge, BookmarkId parent, long[] orderedNodes);
 }

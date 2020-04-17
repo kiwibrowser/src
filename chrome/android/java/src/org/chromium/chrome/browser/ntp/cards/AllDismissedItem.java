@@ -9,8 +9,10 @@ import android.support.annotation.StringRes;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.graphics.Color;
 
 import org.chromium.base.metrics.RecordUserAction;
+import org.chromium.base.ContextUtils;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.metrics.ImpressionTracker.Listener;
 import org.chromium.chrome.browser.metrics.OneShotImpressionListener;
@@ -59,10 +61,12 @@ public class AllDismissedItem extends OptionalLeaf {
      */
     public static class ViewHolder extends NewTabPageViewHolder {
         private final TextView mBodyTextView;
+        private final TextView mTitleTextView;
 
         public ViewHolder(ViewGroup root, final SectionList sections) {
             super(LayoutInflater.from(root.getContext()).inflate(getLayout(), root, false));
             mBodyTextView = itemView.findViewById(R.id.body_text);
+            mTitleTextView = itemView.findViewById(R.id.title_text);
 
             itemView.findViewById(R.id.action_button).setOnClickListener(v -> {
                 NewTabPageUma.recordAction(NewTabPageUma.ACTION_CLICKED_ALL_DISMISSED_REFRESH);
@@ -81,7 +85,12 @@ public class AllDismissedItem extends OptionalLeaf {
                 messageId = R.string.ntp_all_dismissed_body_text_evening;
             }
             mBodyTextView.setText(messageId);
+
             setImpressionListener(listener);
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                mTitleTextView.setTextColor(Color.WHITE);
+                mBodyTextView.setTextColor(Color.WHITE);
+            }
         }
 
         @LayoutRes

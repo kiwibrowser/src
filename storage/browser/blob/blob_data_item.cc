@@ -19,6 +19,9 @@ const base::FilePath::CharType kFutureFileName[] =
 
 constexpr uint64_t BlobDataItem::kUnknownSize;
 
+bool BlobDataItem::DataHandle::IsValid() {
+  return true;
+}
 BlobDataItem::DataHandle::~DataHandle() = default;
 
 // static

@@ -28,7 +28,6 @@
 #include "chrome/test/base/in_process_browser_test.h"
 #include "components/strings/grit/components_strings.h"
 #include "components/subresource_filter/core/browser/subresource_filter_constants.h"
-#include "components/subresource_filter/core/browser/subresource_filter_features.h"
 #include "content/public/common/media_stream_request.h"
 #include "content/public/test/test_navigation_observer.h"
 #include "testing/gtest_mac.h"
@@ -153,9 +152,6 @@ IN_PROC_BROWSER_TEST_F(ContentSettingBubbleControllerTest, MediaStreamBubble) {
 
 IN_PROC_BROWSER_TEST_F(ContentSettingBubbleControllerTest,
                        InitSubresourceFilter) {
-  base::test::ScopedFeatureList feature_list;
-  feature_list.InitAndEnableFeature(
-      subresource_filter::kSafeBrowsingSubresourceFilterExperimentalUI);
   ContentSettingBubbleController* controller =
       CreateBubbleController(new ContentSettingSubresourceFilterBubbleModel(
           nullptr, web_contents(), profile()));

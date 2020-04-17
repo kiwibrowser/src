@@ -36,7 +36,7 @@
 #include "chromeos/chromeos_switches.h"
 #endif
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 #include "content/public/browser/host_zoom_map.h"
 #endif
 
@@ -117,7 +117,7 @@ TestingProfile* Profile::AsTestingProfile() {
   return nullptr;
 }
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 ChromeZoomLevelPrefs* Profile::GetZoomLevelPrefs() {
   return nullptr;
 }
@@ -139,10 +139,14 @@ void Profile::RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry) {
       prefs::kSearchSuggestEnabled,
       true,
       user_prefs::PrefRegistrySyncable::SYNCABLE_PREF);
+  registry->RegisterBooleanPref(
+      prefs::kHomepageNewsEnabled,
+      true,
+      user_prefs::PrefRegistrySyncable::SYNCABLE_PREF);
 #if defined(OS_ANDROID)
   registry->RegisterStringPref(
       prefs::kContextualSearchEnabled,
-      std::string(),
+      "false",
       user_prefs::PrefRegistrySyncable::SYNCABLE_PREF);
 #endif  // defined(OS_ANDROID)
   registry->RegisterBooleanPref(prefs::kSessionExitedCleanly, true);

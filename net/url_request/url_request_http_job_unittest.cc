@@ -18,7 +18,7 @@
 #include "base/run_loop.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_split.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "net/base/auth.h"
 #include "net/base/request_priority.h"
 #include "net/cert/ct_policy_status.h"

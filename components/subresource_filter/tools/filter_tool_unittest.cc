@@ -23,23 +23,6 @@ namespace proto = url_pattern_index::proto;
 
 namespace {
 
-// See if two strings contain the same lines (regardless of line ordering).
-bool StringsHaveSameLines(const std::string& a, const std::string& b) {
-  std::istringstream stream_a(a), stream_b(b);
-  std::vector<std::string> lines_a, lines_b;
-  std::string line;
-
-  while (std::getline(stream_a, line))
-    lines_a.push_back(line);
-
-  while (std::getline(stream_b, line))
-    lines_b.push_back(line);
-
-  std::sort(lines_a.begin(), lines_a.end());
-  std::sort(lines_b.begin(), lines_b.end());
-  return lines_a == lines_b;
-}
-
 std::string CreateJsonLine(const std::string& origin,
                            const std::string& request_url,
                            const std::string& request_type) {
@@ -76,7 +59,7 @@ class FilterToolTest : public ::testing::Test {
     ASSERT_NO_FATAL_FAILURE(test_ruleset_creator_.CreateRulesetWithRules(
         rules, &test_ruleset_pair_));
 
-    ruleset_ = new MemoryMappedRuleset(
+    ruleset_ = MemoryMappedRuleset::CreateAndInitialize(
         testing::TestRuleset::Open(test_ruleset_pair_.indexed));
   }
 
@@ -152,6 +135,11 @@ TEST_F(FilterToolTest, MatchRules) {
                                   "http://example.com/disallowed2.png", "image")
                 << CreateJsonLine(
                        "http://example.com",
+                       "http://example.com/whitelist/disallowed2.png", "image")
+                << CreateJsonLine("http://example.com",
+                                  "http://example.com/disallowed1.png", "image")
+                << CreateJsonLine(
+                       "http://example.com",
                        "http://example.com/whitelist/disallowed2.png", "image");
 
   filter_tool_->MatchRules(&batch_queries, 1);
@@ -159,11 +147,11 @@ TEST_F(FilterToolTest, MatchRules) {
   std::string result = out_stream_.str();
 
   std::string expected =
-      "disallowed1.png|\n"
-      "disallowed2.png|\n"
-      "@@whitelist/disallowed2.png|\n";
+      "3 disallowed1.png|\n"
+      "2 @@whitelist/disallowed2.png|\n"
+      "1 disallowed2.png|\n";
 
-  EXPECT_TRUE(StringsHaveSameLines(expected, out_stream_.str()));
+  EXPECT_EQ(expected, out_stream_.str());
 }
 
 TEST_F(FilterToolTest, MatchRulesMinCount) {
@@ -187,10 +175,10 @@ TEST_F(FilterToolTest, MatchRulesMinCount) {
   filter_tool_->MatchRules(&batch_queries, 2);
 
   std::string expected =
-      "disallowed1.png|\n"
-      "@@whitelist/disallowed2.png|\n";
+      "3 @@whitelist/disallowed2.png|\n"
+      "2 disallowed1.png|\n";
 
-  EXPECT_TRUE(StringsHaveSameLines(expected, out_stream_.str()));
+  EXPECT_EQ(expected, out_stream_.str());
 }
 
 }  // namespace

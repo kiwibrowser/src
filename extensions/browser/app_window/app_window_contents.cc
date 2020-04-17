@@ -27,16 +27,13 @@ AppWindowContentsImpl::~AppWindowContentsImpl() {}
 
 void AppWindowContentsImpl::Initialize(content::BrowserContext* context,
                                        content::RenderFrameHost* creator_frame,
-                                       const GURL& url) {
+                                       const GURL& url,
+                                       content::WebContents* web_contents) {
   url_ = url;
 
-  content::WebContents::CreateParams create_params(
-      context, creator_frame->GetSiteInstance());
-  create_params.opener_render_process_id = creator_frame->GetProcess()->GetID();
-  create_params.opener_render_frame_id = creator_frame->GetRoutingID();
-  web_contents_ = content::WebContents::Create(create_params);
+  web_contents_ = web_contents;
 
-  Observe(web_contents_.get());
+  Observe(web_contents_);
   web_contents_->GetMutableRendererPrefs()->
       browser_handles_all_top_level_requests = true;
   web_contents_->GetRenderViewHost()->SyncRendererPrefs();
@@ -77,7 +74,7 @@ void AppWindowContentsImpl::NativeWindowClosed(bool send_onclosed) {
 }
 
 content::WebContents* AppWindowContentsImpl::GetWebContents() const {
-  return web_contents_.get();
+  return web_contents_;
 }
 
 WindowController* AppWindowContentsImpl::GetWindowController() const {
@@ -96,7 +93,7 @@ bool AppWindowContentsImpl::OnMessageReceived(
   return handled;
 }
 
-void AppWindowContentsImpl::ReadyToCommitNavigation(
+void AppWindowContentsImpl::DidFinishNavigation(
     content::NavigationHandle* handle) {
   host_->OnReadyToCommitFirstNavigation();
 }

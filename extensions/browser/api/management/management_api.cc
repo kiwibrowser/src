@@ -45,6 +45,47 @@
 #include "extensions/common/permissions/permission_message.h"
 #include "extensions/common/permissions/permissions_data.h"
 #include "extensions/common/url_pattern.h"
+#include "components/prefs/pref_service.h"
+#include "components/prefs/scoped_user_pref_update.h"
+#include "chrome/browser/extensions/tab_helper.h"
+#include "content/public/browser/navigation_controller.h"
+#include "content/public/browser/web_contents.h"
+#include "content/public/browser/web_ui.h"
+#include "content/public/common/bindings_policy.h"
+#include "extensions/browser/extension_icon_placeholder.h"
+#include "extensions/browser/extension_registry.h"
+#include "extensions/browser/extension_util.h"
+#include "extensions/browser/image_loader.h"
+#include "extensions/common/extension.h"
+#include "extensions/common/extension_icon_set.h"
+#include "extensions/common/extension_resource.h"
+#include "extensions/common/manifest_handlers/icons_handler.h"
+#include "extensions/common/manifest_handlers/incognito_info.h"
+#include "net/base/file_stream.h"
+#include "third_party/skia/include/core/SkBitmap.h"
+#include "ui/base/page_transition_types.h"
+#include "chrome/browser/sessions/session_tab_helper.h"
+#include "ui/gfx/codec/png_codec.h"
+#include "ui/gfx/favicon_size.h"
+#include "ui/gfx/image/image_skia.h"
+#include "chrome/browser/profiles/profile.h"
+#include "chrome/browser/extensions/extension_action_runner.h"
+#include "chrome/browser/ui/extensions/icon_with_badge_image_source.h"
+#include "chrome/browser/ui/extensions/extension_action_view_controller.h"
+#include "ui/gfx/font_list.h"
+#include "ui/gfx/geometry/rect.h"
+#include "ui/gfx/geometry/rect_f.h"
+#include "ui/gfx/geometry/size.h"
+#include "ui/gfx/canvas.h"
+#include "ui/gfx/geometry/insets.h"
+#include "ui/gfx/image/canvas_image_source.h"
+#include "ui/gfx/skia_util.h"
+#include "ui/base/webui/web_ui_util.h"
+#include "chrome/browser/extensions/api/extension_action/extension_action_api.h"
+#include "chrome/browser/extensions/extension_action_manager.h"
+#include "chrome/browser/extensions/extension_action_runner.h"
+#include "chrome/browser/extensions/extension_action_icon_factory.h"
+#include "chrome/browser/extensions/extension_context_menu_model.h"
 
 using base::IntToString;
 using content::BrowserThread;
@@ -521,52 +562,70 @@ ManagementUninstallFunctionBase::~ManagementUninstallFunctionBase() {
 ExtensionFunction::ResponseAction ManagementUninstallFunctionBase::Uninstall(
     const std::string& target_extension_id,
     bool show_confirm_dialog) {
+  LOG(INFO) << "[EXTENSIONS] Uninstall - Step 1";
   if (ExtensionsBrowserClient::Get()->IsRunningInForcedAppMode())
     return RespondNow(Error(keys::kNotAllowedInKioskError));
 
+  LOG(INFO) << "[EXTENSIONS] Uninstall - Step 2";
   const ManagementAPIDelegate* delegate = ManagementAPI::GetFactoryInstance()
                                               ->Get(browser_context())
                                               ->GetDelegate();
+  LOG(INFO) << "[EXTENSIONS] Uninstall - Step 3";
   target_extension_id_ = target_extension_id;
   const Extension* target_extension =
       extensions::ExtensionRegistry::Get(browser_context())
           ->GetExtensionById(target_extension_id_,
                              ExtensionRegistry::EVERYTHING);
+  LOG(INFO) << "[EXTENSIONS] Uninstall - Step 4";
   if (!target_extension || !target_extension->ShouldExposeViaManagementAPI()) {
     return RespondNow(Error(keys::kNoExtensionError, target_extension_id_));
   }
 
+  LOG(INFO) << "[EXTENSIONS] Uninstall - Step 5";
   ManagementPolicy* policy =
       ExtensionSystem::Get(browser_context())->management_policy();
+  LOG(INFO) << "[EXTENSIONS] Uninstall - Step 6";
   if (!policy->UserMayModifySettings(target_extension, nullptr) ||
       policy->MustRemainInstalled(target_extension, nullptr)) {
+    LOG(INFO) << "[EXTENSIONS] Uninstall - Step 6a";
     return RespondNow(Error(keys::kUserCantModifyError, target_extension_id_));
   }
 
+  LOG(INFO) << "[EXTENSIONS] Uninstall - Step 7";
   // Note: null extension() means it's WebUI.
   bool self_uninstall = extension() && extension_id() == target_extension_id_;
   // We need to show a dialog for any extension uninstalling another extension.
   show_confirm_dialog |= !self_uninstall;
+  LOG(INFO) << "[EXTENSIONS] Uninstall - Step 8";
 
   if (show_confirm_dialog && !user_gesture())
     return RespondNow(Error(keys::kGestureNeededForUninstallError));
+  LOG(INFO) << "[EXTENSIONS] Uninstall - Step 9";
 
-  if (show_confirm_dialog) {
+  if (false && show_confirm_dialog) {
     // We show the programmatic uninstall ui for extensions uninstalling
     // other extensions.
+    LOG(INFO) << "[EXTENSIONS] Uninstall - Step 9a";
     bool show_programmatic_uninstall_ui =
         !self_uninstall && extension() &&
         extension()->id() != extensions::kWebStoreAppId;
+    LOG(INFO) << "[EXTENSIONS] Uninstall - Step 9aa";
     AddRef();  // Balanced in OnExtensionUninstallDialogClosed.
+    LOG(INFO) << "[EXTENSIONS] Uninstall - Step 9ab";
     // TODO(devlin): A method called "UninstallFunctionDelegate" does not in
     // any way imply that this actually creates a dialog and runs it.
+    LOG(INFO) << "[EXTENSIONS] Uninstall - Step 9ac delegate: " << delegate;
     uninstall_dialog_ = delegate->UninstallFunctionDelegate(
         this, target_extension, show_programmatic_uninstall_ui);
+    LOG(INFO) << "[EXTENSIONS] Uninstall - Step 9b";
   } else {  // No confirm dialog.
+    LOG(INFO) << "[EXTENSIONS] Uninstall - Step 9c";
     base::ThreadTaskRunnerHandle::Get()->PostTask(
         FROM_HERE,
         base::Bind(&ManagementUninstallFunctionBase::UninstallExtension, this));
+    LOG(INFO) << "[EXTENSIONS] Uninstall - Step 9d";
   }
+  LOG(INFO) << "[EXTENSIONS] Uninstall - Step 10";
 
   return RespondLater();
 }
@@ -588,26 +647,36 @@ void ManagementUninstallFunctionBase::OnExtensionUninstallDialogClosed(
 void ManagementUninstallFunctionBase::UninstallExtension() {
   // The extension can be uninstalled in another window while the UI was
   // showing. Do nothing in that case.
+  LOG(INFO) << "[EXTENSIONS] UninstallExtension - Step 1";
   const Extension* target_extension =
       extensions::ExtensionRegistry::Get(browser_context())
           ->GetExtensionById(target_extension_id_,
                              ExtensionRegistry::EVERYTHING);
+  LOG(INFO) << "[EXTENSIONS] UninstallExtension - Step 2";
   std::string error;
   bool success = false;
+  LOG(INFO) << "[EXTENSIONS] UninstallExtension - Step 3";
   if (target_extension) {
+    LOG(INFO) << "[EXTENSIONS] UninstallExtension - Step 4";
     const ManagementAPIDelegate* delegate = ManagementAPI::GetFactoryInstance()
                                                 ->Get(browser_context())
                                                 ->GetDelegate();
     base::string16 utf16_error;
+    LOG(INFO) << "[EXTENSIONS] UninstallExtension - Step 5";
     success = delegate->UninstallExtension(
         browser_context(), target_extension_id_,
         extensions::UNINSTALL_REASON_MANAGEMENT_API, &utf16_error);
+    LOG(INFO) << "[EXTENSIONS] UninstallExtension - Step 6";
     error = base::UTF16ToUTF8(utf16_error);
   } else {
+    LOG(INFO) << "[EXTENSIONS] UninstallExtension - Step 7";
     error = ErrorUtils::FormatErrorMessage(keys::kNoExtensionError,
                                            target_extension_id_);
+    LOG(INFO) << "[EXTENSIONS] UninstallExtension - Step 8";
   }
+  LOG(INFO) << "[EXTENSIONS] UninstallExtension - Step 9";
   Finish(success, error);
+  LOG(INFO) << "[EXTENSIONS] UninstallExtension - Step 10";
 }
 
 ManagementUninstallFunction::ManagementUninstallFunction() {
@@ -621,10 +690,14 @@ ExtensionFunction::ResponseAction ManagementUninstallFunction::Run() {
       management::Uninstall::Params::Create(*args_));
   EXTENSION_FUNCTION_VALIDATE(params.get());
 
+  LOG(INFO) << "[EXTENSIONS] UninstallFunctionRun - Step 1";
   bool show_confirm_dialog = params->options.get() &&
                              params->options->show_confirm_dialog.get() &&
                              *params->options->show_confirm_dialog;
-  return Uninstall(params->id, show_confirm_dialog);
+  LOG(INFO) << "[EXTENSIONS] UninstallFunctionRun - Step 2";
+  ExtensionFunction::ResponseAction result = Uninstall(params->id, show_confirm_dialog);
+  LOG(INFO) << "[EXTENSIONS] UninstallFunctionRun - Step 3";
+  return result;
 }
 
 ManagementUninstallSelfFunction::ManagementUninstallSelfFunction() {
@@ -639,10 +712,14 @@ ExtensionFunction::ResponseAction ManagementUninstallSelfFunction::Run() {
   EXTENSION_FUNCTION_VALIDATE(params.get());
   EXTENSION_FUNCTION_VALIDATE(extension_.get());
 
+  LOG(INFO) << "[EXTENSIONS] UninstallFunctionSelfFunction - Step 1";
   bool show_confirm_dialog = params->options.get() &&
                              params->options->show_confirm_dialog.get() &&
                              *params->options->show_confirm_dialog;
-  return Uninstall(extension_->id(), show_confirm_dialog);
+  LOG(INFO) << "[EXTENSIONS] UninstallFunctionSelfFunction - Step 2";
+  ExtensionFunction::ResponseAction result = Uninstall(extension_->id(), show_confirm_dialog);
+  LOG(INFO) << "[EXTENSIONS] UninstallFunctionSelfFunction - Step 3";
+  return result;
 }
 
 ManagementCreateAppShortcutFunction::ManagementCreateAppShortcutFunction() {
@@ -826,35 +903,154 @@ ManagementEventRouter::ManagementEventRouter(content::BrowserContext* context)
 ManagementEventRouter::~ManagementEventRouter() {
 }
 
+bool PageActionWantsToRun(
+    content::WebContents* web_contents, ExtensionAction* extension_action_) {
+  return extension_action_->action_type() ==
+             extensions::ActionInfo::TYPE_PAGE &&
+         extension_action_->GetIsVisible(
+             SessionTabHelper::IdForTab(web_contents).id());
+}
+
+bool HasBeenBlocked(
+    content::WebContents* web_contents, const extensions::Extension* extension) {
+  extensions::ExtensionActionRunner* action_runner =
+    extensions::ExtensionActionRunner::GetForWebContents(web_contents);
+  return action_runner && action_runner->WantsToRun(extension);
+}
+
+bool IsEnabled(
+    content::WebContents* web_contents, const extensions::Extension* extension, ExtensionAction* extension_action_) {
+  return extension_action_->GetIsVisible(
+             SessionTabHelper::IdForTab(web_contents).id()) ||
+         HasBeenBlocked(web_contents, extension);
+}
+
+gfx::Image GetIcon(int tab_id, ExtensionAction* extension_action_) {
+  gfx::Image icon = extension_action_->GetExplicitlySetIcon(tab_id);
+  if (!icon.IsEmpty())
+    return icon;
+
+  icon = extension_action_->GetDeclarativeIcon(tab_id);
+
+  if (!icon.IsEmpty())
+    return icon;
+  return extension_action_->GetDefaultIconImage();
+}
+
+std::unique_ptr<IconWithBadgeImageSource> GetIconImageSource(
+    const extensions::Extension* extension,
+    ExtensionAction* extension_action_,
+    content::WebContents* web_contents,
+    const gfx::Size& size) {
+  int tab_id = SessionTabHelper::IdForTab(web_contents).id();
+  std::unique_ptr<IconWithBadgeImageSource> image_source(
+      new IconWithBadgeImageSource(size));
+
+  GetIcon(tab_id, extension_action_);
+  image_source->SetIcon(GetIcon(tab_id, extension_action_));
+
+  std::unique_ptr<IconWithBadgeImageSource::Badge> badge;
+  std::string badge_text = extension_action_->GetBadgeText(tab_id);
+  if (!badge_text.empty()) {
+    badge.reset(new IconWithBadgeImageSource::Badge(
+            badge_text,
+            extension_action_->GetBadgeTextColor(tab_id),
+            extension_action_->GetBadgeBackgroundColor(tab_id)));
+  }
+  image_source->SetBadge(std::move(badge));
+
+  // If the extension doesn't want to run on the active web contents, we
+  // grayscale it to indicate that.
+  image_source->set_grayscale(!IsEnabled(web_contents, extension, extension_action_));
+
+  // If the action *does* want to run on the active web contents and is also
+  // overflowed, we add a decoration so that the user can see which overflowed
+  // action wants to run (since they wouldn't be able to see the change from
+  // grayscale to color).
+  bool is_overflow = false;
+
+  bool has_blocked_actions = HasBeenBlocked(web_contents, extension);
+//  image_source->set_state(state);
+  image_source->set_paint_blocked_actions_decoration(has_blocked_actions);
+  image_source->set_paint_page_action_decoration(
+      !has_blocked_actions && is_overflow &&
+      PageActionWantsToRun(web_contents, extension_action_));
+
+  return image_source;
+}
+
 void ManagementEventRouter::OnExtensionLoaded(
     content::BrowserContext* browser_context,
     const Extension* extension) {
+  LOG(INFO) << "[EXTENSIONS] OnExtensionLoaded - Step 1";
   BroadcastEvent(extension, events::MANAGEMENT_ON_ENABLED,
                  management::OnEnabled::kEventName);
+  LOG(INFO) << "[EXTENSIONS] OnExtensionLoaded - Step 2";
 }
 
 void ManagementEventRouter::OnExtensionUnloaded(
     content::BrowserContext* browser_context,
     const Extension* extension,
     UnloadedExtensionReason reason) {
+  LOG(INFO) << "[EXTENSIONS] OnExtensionUnloaded - Step 1";
+  if (reason == UnloadedExtensionReason::UNDEFINED)
+    LOG(INFO) << "[EXTENSIONS] OnExtensionUnloaded - Step 1a - Reason: UNDEFINED";
+  else if (reason == UnloadedExtensionReason::DISABLE)
+    LOG(INFO) << "[EXTENSIONS] OnExtensionUnloaded - Step 1a - Reason: DISABLE";
+  else if (reason == UnloadedExtensionReason::UPDATE)
+    LOG(INFO) << "[EXTENSIONS] OnExtensionUnloaded - Step 1a - Reason: UPDATE";
+  else if (reason == UnloadedExtensionReason::UNINSTALL)
+    LOG(INFO) << "[EXTENSIONS] OnExtensionUnloaded - Step 1a - Reason: UNINSTALL";
+  else if (reason == UnloadedExtensionReason::TERMINATE)
+    LOG(INFO) << "[EXTENSIONS] OnExtensionUnloaded - Step 1a - Reason: TERMINATE";
+  else if (reason == UnloadedExtensionReason::BLACKLIST)
+    LOG(INFO) << "[EXTENSIONS] OnExtensionUnloaded - Step 1a - Reason: BLACKLIST";
+  else if (reason == UnloadedExtensionReason::PROFILE_SHUTDOWN)
+    LOG(INFO) << "[EXTENSIONS] OnExtensionUnloaded - Step 1a - Reason: PROFILE_SHUTDOWN";
+  else if (reason == UnloadedExtensionReason::LOCK_ALL)
+    LOG(INFO) << "[EXTENSIONS] OnExtensionUnloaded - Step 1a - Reason: LOCK_ALL";
+  else if (reason == UnloadedExtensionReason::MIGRATED_TO_COMPONENT)
+    LOG(INFO) << "[EXTENSIONS] OnExtensionUnloaded - Step 1a - Reason: MIGRATED_TO_COMPONENT";
+  else
+    LOG(INFO) << "[EXTENSIONS] OnExtensionUnloaded - Step 1a - Reason: OTHER";
   BroadcastEvent(extension, events::MANAGEMENT_ON_DISABLED,
                  management::OnDisabled::kEventName);
+  LOG(INFO) << "[EXTENSIONS] OnExtensionUnloaded - Step 2";
 }
 
 void ManagementEventRouter::OnExtensionInstalled(
     content::BrowserContext* browser_context,
     const Extension* extension,
     bool is_update) {
+  LOG(INFO) << "[EXTENSIONS] OnExtensionInstalled - Step 1";
   BroadcastEvent(extension, events::MANAGEMENT_ON_INSTALLED,
                  management::OnInstalled::kEventName);
+  ExtensionAction* extension_action_;
+  extensions::ExtensionActionManager* manager =
+       extensions::ExtensionActionManager::Get(Profile::FromBrowserContext(browser_context));
+  if (extension) {
+    extension_action_ = manager->GetBrowserAction(*extension);
+    if (!extension_action_) {
+      extension_action_ = manager->GetPageAction(*extension);
+    }
+    if (extension_action_) {
+      LOG(INFO) << "[EXTENSIONS] ManagementEventRouter::OnExtensionInstalled - Preloading icon";
+      std::unique_ptr<IconWithBadgeImageSource> icon_badge = GetIconImageSource(extension, extension_action_, nullptr, gfx::Size(48, 48));
+      gfx::Canvas canvas(gfx::Size(48, 48), 1.0f, false);
+      icon_badge->Draw(&canvas);
+    }
+  }
+  LOG(INFO) << "[EXTENSIONS] OnExtensionInstalled - Step 2";
 }
 
 void ManagementEventRouter::OnExtensionUninstalled(
     content::BrowserContext* browser_context,
     const Extension* extension,
     extensions::UninstallReason reason) {
+  LOG(INFO) << "[EXTENSIONS] OnExtensionUninstalled - Step 1";
   BroadcastEvent(extension, events::MANAGEMENT_ON_UNINSTALLED,
                  management::OnUninstalled::kEventName);
+  LOG(INFO) << "[EXTENSIONS] OnExtensionUninstalled - Step 2";
 }
 
 void ManagementEventRouter::BroadcastEvent(

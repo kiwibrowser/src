@@ -16,11 +16,13 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.net.Uri;
 
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.base.CommandLine;
 import org.chromium.base.ContextUtils;
 import org.chromium.base.metrics.RecordHistogram;
+import org.chromium.chrome.browser.util.FeatureUtilities;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.ChromeActivity;
 import org.chromium.chrome.browser.ChromeSwitches;
@@ -33,11 +35,15 @@ import org.chromium.chrome.browser.multiwindow.MultiWindowUtils;
 import org.chromium.chrome.browser.omaha.UpdateMenuItemHelper;
 import org.chromium.chrome.browser.preferences.ManagedPreferencesUtils;
 import org.chromium.chrome.browser.preferences.PrefServiceBridge;
+import org.chromium.chrome.browser.accessibility.NightModePrefs;
 import org.chromium.chrome.browser.share.ShareHelper;
 import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.components.dom_distiller.core.DomDistillerUrlUtils;
 import org.chromium.ui.base.DeviceFormFactor;
 import org.chromium.webapk.lib.client.WebApkValidator;
+
+import org.chromium.chrome.browser.preferences.website.SiteSettingsCategory;
+import org.chromium.chrome.browser.preferences.website.WebsitePreferenceBridge;
 
 import java.util.concurrent.TimeUnit;
 
@@ -120,6 +126,9 @@ public class AppMenuPropertiesDelegate {
                             < DeviceFormFactor.getMinimumTabletWidthPx(
                                       mActivity.getWindowAndroid().getDisplay());
 
+            boolean bottomToolbarEnabled = FeatureUtilities.isChromeHomeEnabled() || ContextUtils.getAppSharedPreferences().getBoolean("enable_bottom_toolbar", false);
+            shouldShowIconRow &= !bottomToolbarEnabled;
+
             // Update the icon row items (shown in narrow form factors).
             menu.findItem(R.id.icon_row_menu_id).setVisible(shouldShowIconRow);
             if (shouldShowIconRow) {
@@ -191,6 +200,61 @@ public class AppMenuPropertiesDelegate {
             prepareAddToHomescreenMenuItem(menu, currentTab, canShowHomeScreenMenuItem);
 
             updateRequestDesktopSiteMenuItem(menu, currentTab, true /* can show */);
+            updateAdblockMenuItem(menu, currentTab, true /* can show */);
+            MenuItem night_mode_menu = menu.findItem(R.id.night_mode_switcher_id);
+            if (night_mode_menu != null) {
+                   if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false)) {
+                       night_mode_menu.setTitle(R.string.main_menu_turn_off_night_mode);
+                   } else {
+                       night_mode_menu.setTitle(R.string.main_menu_turn_on_night_mode);
+                   }
+            }
+            MenuItem translate_menu = menu.findItem(R.id.translate_menu_id);
+            if (translate_menu != null) {
+                   try {
+                       if (url != null
+                        &&
+                          (
+                            url.contains("www.microsofttranslator.com/bv.aspx")
+                        ||  url.contains("translatetheweb.com")
+                        ||  url.contains("translatetheweb.net")
+                        ||  url.contains("translatetheweb-int.net")
+                        ||  url.contains("translatoruser.com")
+                        ||  url.contains("translatoruser.net")
+                          )
+                        ) {
+                           translate_menu.setTitle(R.string.main_menu_translate_undo);
+                       } else {
+                           translate_menu.setTitle(R.string.main_menu_translate);
+                       }
+                       if (url != null
+                        &&
+                          (
+                            url.startsWith("https://translate.google.com/")
+                        ||  url.startsWith("https://translate.googleusercontent.com/")
+                        ||  url.startsWith("http://translate.google.com/")
+                        ||  url.startsWith("http://translate.googleusercontent.com/")
+                          )
+                        ) {
+                           translate_menu.setTitle(R.string.main_menu_translate_undo);
+                       }
+                       if (url != null
+                        &&
+                          (
+                            url.startsWith("https://fanyi.baidu.com/")
+                        ||  url.startsWith("http://fanyi.baidu.com/")
+                          )
+                        ) {
+                           translate_menu.setTitle(R.string.main_menu_translate_undo);
+                       }
+                   } catch (Exception e) {
+                       translate_menu.setTitle(R.string.main_menu_translate);
+                   }
+            }
+            MenuItem helpMenuItem = menu.findItem(R.id.help_id);
+            if (helpMenuItem != null) {
+                helpMenuItem.setVisible(false);
+            }
 
             // Only display reader mode settings menu option if the current page is in reader mode.
             menu.findItem(R.id.reader_mode_prefs_id)
@@ -403,13 +467,56 @@ public class AppMenuPropertiesDelegate {
         requestMenuRow.setVisible(itemVisible);
         if (!itemVisible) return;
 
-        // Mark the checkbox if RDS is activated on this page.
-        requestMenuCheck.setChecked(currentTab.getUseDesktopUserAgent());
+        if (PrefServiceBridge.getInstance().desktopModeEnabled()) {
+          // Mark the checkbox if RDS is activated on this page.
+          requestMenuCheck.setChecked(!currentTab.getUseDesktopUserAgent());
 
-        // This title doesn't seem to be displayed by Android, but it is used to set up
-        // accessibility text in {@link AppMenuAdapter#setupMenuButton}.
-        requestMenuLabel.setTitleCondensed(requestMenuLabel.isChecked()
-                        ? mActivity.getString(R.string.menu_request_desktop_site_on)
-                        : mActivity.getString(R.string.menu_request_desktop_site_off));
+          // This title doesn't seem to be displayed by Android, but it is used to set up
+          // accessibility text in {@link AppMenuAdapter#setupMenuButton}.
+          requestMenuLabel.setTitleCondensed(mActivity.getString(R.string.main_menu_mobile_site));
+          requestMenuLabel.setTitle(mActivity.getString(R.string.main_menu_mobile_site));
+        } else {
+          // Mark the checkbox if RDS is activated on this page.
+          requestMenuCheck.setChecked(currentTab.getUseDesktopUserAgent());
+
+          // This title doesn't seem to be displayed by Android, but it is used to set up
+          // accessibility text in {@link AppMenuAdapter#setupMenuButton}.
+          requestMenuLabel.setTitle(R.string.menu_request_desktop_site);
+          requestMenuLabel.setTitleCondensed(requestMenuLabel.isChecked()
+                          ? mActivity.getString(R.string.menu_request_desktop_site_on)
+                          : mActivity.getString(R.string.menu_request_desktop_site_off));
+        }
     }
+
+    protected void updateAdblockMenuItem(
+            Menu menu, Tab currentTab, boolean canShowAdblockMenu) {
+        MenuItem adblockMenuRow = menu.findItem(R.id.adblock_row_menu_id);
+        MenuItem adblockMenuLabel = menu.findItem(R.id.adblock_id);
+        MenuItem adblockMenuCheck = menu.findItem(R.id.adblock_check_id);
+
+        String url = currentTab.getUrl();
+        boolean isChromeScheme = url.startsWith(UrlConstants.CHROME_URL_PREFIX)
+                || url.startsWith(UrlConstants.CHROME_NATIVE_URL_PREFIX);
+        // Also hide adblock desktop site on Reader Mode.
+        boolean isDistilledPage = DomDistillerUrlUtils.isDistilledPage(url);
+
+        // adsEnabled means "adBlockingEnabled"
+        boolean itemVisible = canShowAdblockMenu
+                && !isChromeScheme && !currentTab.isNativePage() && !isDistilledPage;
+        adblockMenuRow.setVisible(itemVisible);
+        if (!itemVisible) return;
+
+        boolean adBlockingActivated = SiteSettingsCategory.adsCategoryEnabled()
+                && WebsitePreferenceBridge.getRealAdBlockingActivated(currentTab.getUrl());
+
+        // Mark the checkbox if RDS is activated on this page.
+        adblockMenuCheck.setChecked(adBlockingActivated);
+    }
+
+    /**
+     * A notification that the footer view has finished inflating.
+     * @param view The view that was inflated.
+     * @param appMenu The menu the view is inside of.
+     */
+    public void onFooterViewInflated(AppMenu appMenu, View view) {}
 }

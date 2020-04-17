@@ -101,13 +101,23 @@ class DialogOverlayCore {
         mHost = null;
     }
 
-    private void copyRectToLayoutParams(final Rect rect) {
+    /**
+     * Updates the most recent position/size for the dialog window. Returns false if |rect| already
+     * matches the current params.
+     */
+    private boolean copyRectToLayoutParams(final Rect rect) {
+        if (mLayoutParams.x == rect.x && mLayoutParams.y == rect.y
+                && mLayoutParams.width == rect.width && mLayoutParams.height == rect.height) {
+            return false;
+        }
+
         // TODO(liberato): adjust for CompositorView screen location here if we want to support
         // non-full screen use cases.
         mLayoutParams.x = rect.x;
         mLayoutParams.y = rect.y;
         mLayoutParams.width = rect.width;
         mLayoutParams.height = rect.height;
+        return true;
     }
 
     /**
@@ -117,7 +127,10 @@ class DialogOverlayCore {
     public void layoutSurface(final Rect rect) {
         if (mDialog == null || mLayoutParams.token == null) return;
 
-        copyRectToLayoutParams(rect);
+        // Note that it is important to not update the attributes if updating the layout params was
+        // a no-op because it results in unnecessary re-layouts for the window.
+        if (!copyRectToLayoutParams(rect)) return;
+
         mDialog.getWindow().setAttributes(mLayoutParams);
     }
 

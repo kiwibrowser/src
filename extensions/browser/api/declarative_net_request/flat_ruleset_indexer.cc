@@ -109,10 +109,9 @@ void FlatRulesetIndexer::Finish() {
   flat::FinishExtensionIndexedRulesetBuffer(builder_, root_offset);
 }
 
-FlatRulesetIndexer::SerializedData FlatRulesetIndexer::GetData() {
+base::span<const uint8_t> FlatRulesetIndexer::GetData() {
   DCHECK(finished_);
-  return SerializedData(builder_.GetBufferPointer(),
-                        base::strict_cast<size_t>(builder_.GetSize()));
+  return base::make_span(builder_.GetBufferPointer(), builder_.GetSize());
 }
 
 FlatRulesetIndexer::UrlPatternIndexBuilder* FlatRulesetIndexer::GetBuilder(

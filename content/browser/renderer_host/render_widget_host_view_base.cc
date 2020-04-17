@@ -288,6 +288,30 @@ void RenderWidgetHostViewBase::GestureEventAck(
     InputEventAckState ack_result) {
 }
 
+void RenderWidgetHostViewBase::ForwardTouchpadPinchIfNecessary(
+    const blink::WebGestureEvent& event,
+    InputEventAckState ack_result) {
+  if (!blink::WebInputEvent::IsPinchGestureEventType(event.GetType()))
+    return;
+  if (event.SourceDevice() !=
+      blink::WebGestureDevice::kWebGestureDeviceTouchpad)
+    return;
+  if (!event.NeedsWheelEvent())
+    return;
+
+  if (event.GetType() == blink::WebInputEvent::kGesturePinchUpdate &&
+      (ack_result == INPUT_EVENT_ACK_STATE_CONSUMED ||
+       event.data.pinch_update.zoom_disabled))
+    return;
+
+  // Now that the synthetic wheel event has gone unconsumed, we have the pinch
+  // event actually change the page scale.
+  blink::WebGestureEvent pinch_event(event);
+  pinch_event.SetNeedsWheelEvent(false);
+
+  host()->ForwardGestureEvent(pinch_event);
+}
+
 void RenderWidgetHostViewBase::SetPopupType(blink::WebPopupType popup_type) {
   popup_type_ = popup_type;
 }

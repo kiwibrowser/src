@@ -4,6 +4,7 @@
 
 package org.chromium.chrome.browser.tabmodel;
 
+import android.text.TextUtils;
 import android.support.annotation.Nullable;
 
 import org.chromium.base.TraceEvent;
@@ -13,6 +14,9 @@ import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.tabmodel.TabModel.TabLaunchType;
 import org.chromium.content_public.browser.LoadUrlParams;
 import org.chromium.content_public.browser.WebContents;
+
+import org.chromium.chrome.browser.partnercustomizations.HomepageManager;
+
 
 /**
  * An interface to return a {@link TabCreator} either for regular or incognito tabs.
@@ -94,7 +98,12 @@ public interface TabCreatorManager {
         public final void launchNTP() {
             try {
                 TraceEvent.begin("TabCreator.launchNTP");
-                launchUrl(UrlConstants.NTP_URL, TabModel.TabLaunchType.FROM_CHROME_UI);
+
+                String homePageUrl = HomepageManager.getHomepageUri();
+                if (TextUtils.isEmpty(homePageUrl)) {
+                   homePageUrl = UrlConstants.LOCAL_NTP_URL;
+                }
+                launchUrl(homePageUrl, TabModel.TabLaunchType.FROM_CHROME_UI);
             } finally {
                 TraceEvent.end("TabCreator.launchNTP");
             }

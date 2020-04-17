@@ -51,6 +51,8 @@ FilterGestureEventResult TouchActionFilter::FilterGestureEvent(
   switch (gesture_event->GetType()) {
     case WebInputEvent::kGestureScrollBegin:
       DCHECK(!suppress_manipulation_events_);
+      DCHECK(!touchscreen_scroll_in_progress_);
+      touchscreen_scroll_in_progress_ = true;
       suppress_manipulation_events_ =
           ShouldSuppressManipulation(*gesture_event);
       return suppress_manipulation_events_
@@ -79,29 +81,14 @@ FilterGestureEventResult TouchActionFilter::FilterGestureEvent(
       break;
 
     case WebInputEvent::kGestureFlingStart:
-      ReportGestureEventFiltered(suppress_manipulation_events_);
-      // Touchscreen flings should always have non-zero velocity.
-      DCHECK(gesture_event->data.fling_start.velocity_x ||
-             gesture_event->data.fling_start.velocity_y);
-      if (!suppress_manipulation_events_) {
-        // Flings restricted to a specific axis shouldn't permit velocity
-        // in the perpendicular axis.
-        if (IsYAxisActionDisallowed(allowed_touch_action_))
-          gesture_event->data.fling_start.velocity_y = 0;
-        else if (IsXAxisActionDisallowed(allowed_touch_action_))
-          gesture_event->data.fling_start.velocity_x = 0;
-        // As the renderer expects a scroll-ending event, but does not expect a
-        // zero-velocity fling, convert the now zero-velocity fling accordingly.
-        if (!gesture_event->data.fling_start.velocity_x &&
-            !gesture_event->data.fling_start.velocity_y) {
-          gesture_event->SetType(WebInputEvent::kGestureScrollEnd);
-        }
-      }
-      return FilterManipulationEventAndResetState()
-                 ? FilterGestureEventResult::kFilterGestureEventFiltered
-                 : FilterGestureEventResult::kFilterGestureEventAllowed;
+      // Fling controller processes FlingStart event, and we should never get
+      // it here.
+      NOTREACHED();
+      break;
 
     case WebInputEvent::kGestureScrollEnd:
+      DCHECK(touchscreen_scroll_in_progress_);
+      touchscreen_scroll_in_progress_ = false;
       ReportGestureEventFiltered(suppress_manipulation_events_);
       return FilterManipulationEventAndResetState()
                  ? FilterGestureEventResult::kFilterGestureEventFiltered

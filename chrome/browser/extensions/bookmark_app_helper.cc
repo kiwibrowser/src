@@ -781,12 +781,6 @@ void BookmarkAppHelper::FinishInstallation(const Extension* extension) {
     return;
   }
 
-  if (banners::AppBannerManagerDesktop::IsEnabled() &&
-      web_app_info_.open_as_window) {
-    banners::AppBannerManagerDesktop::FromWebContents(contents_)->OnInstall(
-        false /* is_native app */, blink::kWebDisplayModeStandalone);
-  }
-
 #if !defined(OS_CHROMEOS)
   // Pin the app to the relevant launcher depending on the OS.
   Profile* current_profile = profile_->GetOriginalProfile();

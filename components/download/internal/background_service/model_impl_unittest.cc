@@ -10,7 +10,7 @@
 #include "base/bind.h"
 #include "base/guid.h"
 #include "base/macros.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "components/download/internal/background_service/entry.h"
 #include "components/download/internal/background_service/stats.h"
 #include "components/download/internal/background_service/test/entry_utils.h"

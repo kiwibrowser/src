@@ -4,10 +4,14 @@
 
 package org.chromium.base.metrics;
 
+import android.content.Context;
+
 import org.chromium.base.ThreadUtils;
 import org.chromium.base.VisibleForTesting;
 import org.chromium.base.annotations.CalledByNative;
 import org.chromium.base.annotations.JNINamespace;
+
+import org.chromium.base.ContextUtils;
 
 /**
  * Java API for recording UMA actions.

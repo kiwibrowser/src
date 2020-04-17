@@ -14,7 +14,7 @@
 #include "base/run_loop.h"
 #include "base/sequenced_task_runner.h"
 #include "base/single_thread_task_runner.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/test/user_action_tester.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "components/feature_engagement/internal/availability_model_impl.h"

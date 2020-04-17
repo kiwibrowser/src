@@ -535,9 +535,6 @@ class CORE_EXPORT WebViewImpl final : public WebView,
   WebInputEventResult HandleKeyEvent(const WebKeyboardEvent&) override;
   WebInputEventResult HandleCharEvent(const WebKeyboardEvent&) override;
 
-  WebInputEventResult HandleSyntheticWheelFromTouchpadPinchEvent(
-      const WebGestureEvent&);
-
   void EnablePopupMouseWheelEventListener(WebLocalFrameImpl* local_root);
   void DisablePopupMouseWheelEventListener();
 

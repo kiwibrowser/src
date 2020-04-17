@@ -16,9 +16,9 @@
 #include "components/viz/service/viz_service_export.h"
 #include "gpu/command_buffer/client/gpu_memory_buffer_manager.h"
 #include "gpu/command_buffer/common/activity_flags.h"
-#include "gpu/command_buffer/service/gpu_preferences.h"
 #include "gpu/command_buffer/service/sequence_id.h"
 #include "gpu/config/gpu_info.h"
+#include "gpu/config/gpu_preferences.h"
 #include "gpu/ipc/common/surface_handle.h"
 #include "gpu/ipc/service/gpu_channel.h"
 #include "gpu/ipc/service/gpu_channel_manager.h"
@@ -78,6 +78,12 @@ class VIZ_SERVICE_EXPORT GpuServiceImpl : public gpu::GpuChannelManagerDelegate,
   void Bind(mojom::GpuServiceRequest request);
 
   bool CreateGrContextIfNecessary(gl::GLSurface* surface);
+
+  // Notifies the GpuHost to stop using GPU compositing. This should be called
+  // in response to an error in the GPU process that occurred after
+  // InitializeWithHost() was called, otherwise GpuFeatureInfo should be set
+  // accordingly. This can safely be called from any thread.
+  void DisableGpuCompositing();
 
   bool is_initialized() const { return !!gpu_host_; }
 

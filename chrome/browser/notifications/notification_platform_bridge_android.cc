@@ -227,24 +227,45 @@ void NotificationPlatformBridgeAndroid::Display(
     std::unique_ptr<NotificationCommon::Metadata> metadata) {
   JNIEnv* env = AttachCurrentThread();
 
-  GURL origin_url(notification.origin_url().GetOrigin());
+  LOG(INFO) << "[EXTENSIONS] NotificationPlatformBridgeAndroid::Display - Step 1";
+  GURL origin_url = GURL("chrome-extension://unknown/");
+  LOG(INFO) << "[EXTENSIONS] NotificationPlatformBridgeAndroid::Display - Step 2";
+  if (notification.origin_url().is_valid() && !(notification.origin_url().is_empty()) && notification.origin_url().GetOrigin().is_valid() && !(notification.origin_url().GetOrigin().is_empty()))
+    origin_url = notification.origin_url().GetOrigin();
+  LOG(INFO) << "[EXTENSIONS] NotificationPlatformBridgeAndroid::Display - Step 3";
 
   // TODO(miguelg): Store the notification type in java instead of assuming it's
   // persistent once/if non persistent notifications are ever implemented on
   // Android.
-  DCHECK_EQ(notification_type, NotificationHandler::Type::WEB_PERSISTENT);
-  GURL scope_url(PersistentNotificationMetadata::From(metadata.get())
-                     ->service_worker_scope);
+  if (notification_type != NotificationHandler::Type::WEB_PERSISTENT)
+      notification_type = NotificationHandler::Type::WEB_PERSISTENT;
+  //  DCHECK_EQ(notification_type, NotificationHandler::Type::WEB_PERSISTENT);
+  LOG(INFO) << "[EXTENSIONS] NotificationPlatformBridgeAndroid::Display - Step 4";
+  GURL scope_url = origin_url;
+  LOG(INFO) << "[EXTENSIONS] NotificationPlatformBridgeAndroid::Display - Step 5";
+  if (PersistentNotificationMetadata::From(metadata.get())
+   && PersistentNotificationMetadata::From(metadata.get())
+                     ->service_worker_scope.is_valid() && !(PersistentNotificationMetadata::From(metadata.get())
+                     ->service_worker_scope.is_empty())) {
+    LOG(INFO) << "[EXTENSIONS] NotificationPlatformBridgeAndroid::Display - Step 5a";
+    scope_url = PersistentNotificationMetadata::From(metadata.get())
+                       ->service_worker_scope;
+    LOG(INFO) << "[EXTENSIONS] NotificationPlatformBridgeAndroid::Display - Step 5b";
+  }
+  LOG(INFO) << "[EXTENSIONS] NotificationPlatformBridgeAndroid::Display - Step 6";
   if (!scope_url.is_valid())
     scope_url = origin_url;
+  LOG(INFO) << "[EXTENSIONS] NotificationPlatformBridgeAndroid::Display - Step 7";
 
   ScopedJavaLocalRef<jstring> j_scope_url =
         ConvertUTF8ToJavaString(env, scope_url.spec());
+  LOG(INFO) << "[EXTENSIONS] NotificationPlatformBridgeAndroid::Display - Step 8";
 
   ScopedJavaLocalRef<jstring> j_notification_id =
       ConvertUTF8ToJavaString(env, notification.id());
   ScopedJavaLocalRef<jstring> j_origin =
       ConvertUTF8ToJavaString(env, origin_url.spec());
+  LOG(INFO) << "[EXTENSIONS] NotificationPlatformBridgeAndroid::Display - Step 9";
   ScopedJavaLocalRef<jstring> title =
       ConvertUTF16ToJavaString(env, notification.title());
   ScopedJavaLocalRef<jstring> body =
@@ -273,6 +294,7 @@ void NotificationPlatformBridgeAndroid::Display(
 
   ScopedJavaLocalRef<jstring> j_profile_id =
       ConvertUTF8ToJavaString(env, GetProfileId(profile));
+  LOG(INFO) << "[EXTENSIONS] NotificationPlatformBridgeAndroid::Display - Step 10";
 
   Java_NotificationPlatformBridge_displayNotification(
       env, java_object_, j_notification_id, j_origin, j_scope_url, j_profile_id,
@@ -280,8 +302,10 @@ void NotificationPlatformBridgeAndroid::Display(
       vibration_pattern, notification.timestamp().ToJavaTime(),
       notification.renotify(), notification.silent(), actions);
 
+  LOG(INFO) << "[EXTENSIONS] NotificationPlatformBridgeAndroid::Display - Step 11";
   regenerated_notification_infos_[notification.id()] =
       RegeneratedNotificationInfo(scope_url, base::nullopt);
+  LOG(INFO) << "[EXTENSIONS] NotificationPlatformBridgeAndroid::Display - Step 12";
 }
 
 void NotificationPlatformBridgeAndroid::Close(

@@ -688,6 +688,21 @@ bool LayerTreeHost::UpdateLayers() {
   return result;
 }
 
+void LayerTreeHost::NeedToSyncWithCompositorFrame(
+    bool required, bool frame_updated) {
+  DCHECK(IsSingleThreaded());
+  SingleThreadProxy* proxy = static_cast<SingleThreadProxy*>(proxy_.get());
+
+  proxy->NeedToSyncWithCompositorFrame(required, frame_updated);
+}
+
+void LayerTreeHost::PrepareToScroll() {
+  DCHECK(IsSingleThreaded());
+  SingleThreadProxy* proxy = static_cast<SingleThreadProxy*>(proxy_.get());
+
+  proxy->PrepareToScroll();
+}
+
 void LayerTreeHost::DidPresentCompositorFrame(
     const std::vector<int>& source_frames,
     base::TimeTicks time,

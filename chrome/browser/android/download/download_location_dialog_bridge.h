@@ -7,6 +7,9 @@
 
 #include "base/android/jni_android.h"
 #include "base/android/scoped_java_ref.h"
+#include "chrome/browser/download/download_item_model.h"
+#include "components/download/public/common/download_interrupt_reasons.h"
+#include "components/download/public/common/download_item.h"
 #include "chrome/browser/download/download_location_dialog_result.h"
 #include "chrome/browser/download/download_location_dialog_type.h"
 #include "ui/gfx/native_widget_types.h"
@@ -28,6 +31,14 @@ class DownloadLocationDialogBridge {
                           int64_t total_bytes,
                           DownloadLocationDialogType dialog_type,
                           const base::FilePath& suggested_path,
+                          download::DownloadItem* download,
+                          LocationCallback location_callback) = 0;
+
+  virtual bool downloadWithAdm(gfx::NativeWindow native_window,
+                          int64_t total_bytes,
+                          DownloadLocationDialogType dialog_type,
+                          const base::FilePath& suggested_path,
+                          download::DownloadItem* download,
                           LocationCallback location_callback) = 0;
 
   virtual void OnComplete(

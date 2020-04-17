@@ -94,8 +94,7 @@ public class HomepageManager {
      * @return Whether to close the app when the user has zero tabs.
      */
     public static boolean shouldCloseAppWithZeroTabs() {
-        return HomepageManager.isHomepageEnabled()
-                && !NewTabPage.isNTPUrl(HomepageManager.getHomepageUri());
+        return ContextUtils.getAppSharedPreferences().getBoolean("close_browser_after_last_tab", false);
     }
 
     /**
@@ -110,8 +109,6 @@ public class HomepageManager {
      * @return Homepage URI string, if it's enabled. Null otherwise or uninitialized.
      */
     public static String getHomepageUri() {
-        if (!isHomepageEnabled()) return null;
-
         HomepageManager manager = getInstance();
         String homepageUri = manager.getPrefHomepageUseDefaultUri()
                 ? getDefaultHomepageUri()
@@ -126,7 +123,7 @@ public class HomepageManager {
     public static String getDefaultHomepageUri() {
         return PartnerBrowserCustomizations.isHomepageProviderAvailableAndEnabled()
                 ? PartnerBrowserCustomizations.getHomePageUrl()
-                : UrlConstants.NTP_NON_NATIVE_URL;
+                : UrlConstants.LOCAL_NTP_URL;
     }
 
     /**

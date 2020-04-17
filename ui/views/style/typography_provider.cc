@@ -90,9 +90,7 @@ SkColor DefaultTypographyProvider::GetColor(const views::View& view,
     color_id = ui::NativeTheme::kColorId_LabelDisabledColor;
   }
 
-  const ui::NativeTheme* native_theme = view.GetNativeTheme();
-  DCHECK(native_theme);
-  return native_theme->GetSystemColor(color_id);
+  return color_id;
 }
 
 int DefaultTypographyProvider::GetLineHeight(int context, int style) const {

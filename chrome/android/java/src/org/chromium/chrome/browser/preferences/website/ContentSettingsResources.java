@@ -173,6 +173,14 @@ public class ContentSettingsResources {
                             R.string.website_settings_usb, ContentSetting.ASK, ContentSetting.BLOCK,
                             R.string.website_settings_category_usb_ask,
                             R.string.website_settings_category_usb_blocked));
+            localMap.put(ContentSettingsType.CONTENT_SETTINGS_TYPE_DESKTOP_MODE,
+                    new ResourceItem(R.drawable.web_asset,
+                                 R.string.website_settings_desktop_mode,
+                                 R.string.website_settings_desktop_mode,
+                                 ContentSetting.ALLOW,
+                                 ContentSetting.BLOCK,
+                                 R.string.website_settings_desktop_mode_enabled,
+                                 R.string.website_settings_desktop_mode_disabled));
             sResourceInfo = localMap;
         }
         return sResourceInfo;
@@ -317,6 +325,20 @@ public class ContentSettingsResources {
      */
     public static int getCookieAllowedExceptThirdPartySummary() {
         return R.string.website_settings_category_allowed_except_third_party;
+    }
+
+    /**
+     * Returns the summary for Desktop Mode settings when it is enabled.
+     */
+    public static int getDesktopModeEnabledSummary() {
+        return R.string.website_settings_desktop_mode_enabled;
+    }
+
+    /**
+     * Returns the summary for Desktop Mode settings when it is not enabled.
+     */
+    public static int getDesktopModeDisabledSummary() {
+        return R.string.website_settings_desktop_mode_disabled;
     }
 
     /**

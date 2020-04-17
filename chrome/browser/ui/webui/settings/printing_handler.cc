@@ -27,7 +27,6 @@ void PrintingHandler::OnJavascriptAllowed() {}
 void PrintingHandler::OnJavascriptDisallowed() {}
 
 void PrintingHandler::HandleOpenSystemPrintDialog(const base::ListValue* args) {
-  printing::PrinterManagerDialog::ShowPrinterManagerDialog();
 }
 
 }  // namespace settings

@@ -23,6 +23,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
 
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.base.Callback;
@@ -90,6 +92,10 @@ public class SuggestionsBinder {
         mTextLayout = mCardContainerView.findViewById(R.id.text_layout);
         mThumbnailView = mCardContainerView.findViewById(R.id.article_thumbnail);
         mHeadlineTextView = mCardContainerView.findViewById(R.id.article_headline);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+             mThumbnailView.setBackgroundColor(Color.BLACK);
+             mHeadlineTextView.setTextColor(Color.WHITE);
+        }
         mSnippetTextView = mCardContainerView.findViewById(R.id.article_snippet);
         mPublisherTextView = mCardContainerView.findViewById(R.id.article_publisher);
         mAgeTextView = mCardContainerView.findViewById(R.id.article_age);
@@ -223,18 +229,25 @@ public class SuggestionsBinder {
         }
 
         // Temporarily set placeholder and then fetch the thumbnail from a provider.
-        mThumbnailView.setBackground(null);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+            mThumbnailView.setBackgroundColor(Color.BLACK);
+        else
+            mThumbnailView.setBackground(null);
         if (mIsContextual) {
             mThumbnailView.setImageResource(
                     R.drawable.contextual_suggestions_placeholder_thumbnail_background);
         } else if (SuggestionsConfig.useModernLayout()
                 && ChromeFeatureList.isEnabled(
                            ChromeFeatureList.CONTENT_SUGGESTIONS_THUMBNAIL_DOMINANT_COLOR)) {
-            ColorDrawable colorDrawable =
-                    new ColorDrawable(mSuggestion.getThumbnailDominantColor() != null
-                                    ? mSuggestion.getThumbnailDominantColor()
-                                    : ApiCompatibilityUtils.getColor(mThumbnailView.getResources(),
-                                              R.color.modern_light_grey));
+            ColorDrawable colorDrawable = null;
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+                colorDrawable = new ColorDrawable(Color.BLACK);
+            else
+                colorDrawable =
+                        new ColorDrawable(mSuggestion.getThumbnailDominantColor() != null
+                                        ? mSuggestion.getThumbnailDominantColor()
+                                        : ApiCompatibilityUtils.getColor(mThumbnailView.getResources(),
+                                                  R.color.modern_light_grey));
             mThumbnailView.setImageDrawable(colorDrawable);
         } else {
             mThumbnailView.setImageResource(R.drawable.ic_snippet_thumbnail_placeholder);

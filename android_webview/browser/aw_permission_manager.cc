@@ -12,6 +12,7 @@
 #include "base/callback.h"
 #include "base/containers/hash_tables.h"
 #include "base/logging.h"
+#include "content/public/browser/permission_controller.h"
 #include "content/public/browser/permission_type.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -220,10 +221,7 @@ class AwPermissionManager::PendingRequest {
 };
 
 AwPermissionManager::AwPermissionManager()
-  : content::PermissionManager(),
-    result_cache_(new LastRequestResultCache),
-    weak_ptr_factory_(this) {
-}
+    : result_cache_(new LastRequestResultCache), weak_ptr_factory_(this) {}
 
 AwPermissionManager::~AwPermissionManager() {
   CancelPermissionRequests();
@@ -250,7 +248,7 @@ int AwPermissionManager::RequestPermissions(
         callback) {
   if (permissions.empty()) {
     callback.Run(std::vector<PermissionStatus>());
-    return kNoPendingOperation;
+    return content::PermissionController::kNoPendingOperation;
   }
 
   const GURL& embedding_origin = LastCommittedOrigin(render_frame_host);
@@ -348,7 +346,7 @@ int AwPermissionManager::RequestPermissions(
   // If delegate resolve the permission synchronously, all requests could be
   // already resolved here.
   if (!pending_requests_.Lookup(request_id))
-    return kNoPendingOperation;
+    return content::PermissionController::kNoPendingOperation;
 
   // If requests are resolved without calling delegate functions, e.g.
   // PermissionType::MIDI is permitted within the previous for-loop, all
@@ -358,7 +356,7 @@ int AwPermissionManager::RequestPermissions(
     std::vector<PermissionStatus> results = pending_request_raw->results;
     pending_requests_.Remove(request_id);
     callback.Run(results);
-    return kNoPendingOperation;
+    return content::PermissionController::kNoPendingOperation;
   }
 
   return request_id;
@@ -446,10 +444,10 @@ PermissionStatus AwPermissionManager::GetPermissionStatusForFrame(
 
 int AwPermissionManager::SubscribePermissionStatusChange(
     PermissionType permission,
+    content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
-    const GURL& embedding_origin,
     const base::Callback<void(PermissionStatus)>& callback) {
-  return kNoPendingOperation;
+  return content::PermissionController::kNoPendingOperation;
 }
 
 void AwPermissionManager::UnsubscribePermissionStatusChange(

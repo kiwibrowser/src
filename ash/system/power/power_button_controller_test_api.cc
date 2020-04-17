@@ -28,9 +28,7 @@ bool PowerButtonControllerTestApi::TriggerPreShutdownTimeout() {
   if (!controller_->pre_shutdown_timer_.IsRunning())
     return false;
 
-  base::Closure task = controller_->pre_shutdown_timer_.user_task();
-  controller_->pre_shutdown_timer_.Stop();
-  task.Run();
+  controller_->pre_shutdown_timer_.FireNow();
   return true;
 }
 
@@ -42,9 +40,7 @@ bool PowerButtonControllerTestApi::TriggerPowerButtonMenuTimeout() {
   if (!controller_->power_button_menu_timer_.IsRunning())
     return false;
 
-  base::Closure task = controller_->power_button_menu_timer_.user_task();
-  controller_->power_button_menu_timer_.Stop();
-  task.Run();
+  controller_->power_button_menu_timer_.FireNow();
   return true;
 }
 

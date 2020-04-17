@@ -8,8 +8,10 @@
 #include <stddef.h>
 
 #include <memory>
+#include <utility>
 #include <vector>
 
+#include "base/feature_list.h"
 #include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
@@ -25,6 +27,14 @@
 namespace subresource_filter {
 
 class SubresourceFilterClient;
+
+enum class ActivationPosition {
+  kOnly = 0,
+  kFirst = 1,
+  kMiddle = 2,
+  kLast = 3,
+  kMaxValue = kLast,
+};
 
 // Navigation throttle responsible for activating subresource filtering on page
 // loads that match the SUBRESOURCE_FILTER Safe Browsing list.
@@ -53,6 +63,21 @@ class SubresourceFilterSafeBrowsingActivationThrottle
       const SubresourceFilterSafeBrowsingClient::CheckResult& result);
 
  private:
+  // Highest priority config for a check result.
+  struct ConfigResult {
+    Configuration config;
+    bool warning;
+    bool matched_valid_configuration;
+    ActivationList matched_list;
+
+    ConfigResult(Configuration config,
+                 bool warning,
+                 bool matched_valid_configuration,
+                 ActivationList matched_list);
+    ~ConfigResult();
+    ConfigResult();
+    ConfigResult(const ConfigResult& result);
+  };
   void CheckCurrentUrl();
   void NotifyResult();
 
@@ -62,12 +87,13 @@ class SubresourceFilterSafeBrowsingActivationThrottle
   bool HasFinishedAllSafeBrowsingChecks() const;
   // Gets the configuration with the highest priority among those activated.
   // Returns it, or none if no valid activated configurations.
-  base::Optional<Configuration> GetHighestPriorityConfiguration(
-      ActivationList matched_list);
+  ConfigResult GetHighestPriorityConfiguration(
+      const SubresourceFilterSafeBrowsingClient::CheckResult& result);
   // Gets the ActivationDecision for the given Configuration.
   // Returns it, or ACTIVATION_CONDITIONS_NOT_MET if no Configuration.
   ActivationDecision GetActivationDecision(
-      const base::Optional<Configuration>& config);
+      const std::vector<ConfigResult>& configs,
+      ConfigResult* selected_config);
 
   // Returns whether a main-frame navigation satisfies the activation
   // |conditions| of a given configuration, except for |priority|.

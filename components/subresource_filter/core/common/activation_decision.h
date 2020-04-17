@@ -27,8 +27,11 @@ enum class ActivationDecision : int {
   // activation conditions of any of enabled configurations.
   ACTIVATION_CONDITIONS_NOT_MET = 5,
 
+  // Activation was forced on the client (e.g. via devtools).
+  FORCED_ACTIVATION = 6,
+
   // Max value for enum.
-  ACTIVATION_DECISION_MAX = 6
+  ACTIVATION_DECISION_MAX = 7
 };
 
 }  // namespace subresource_filter

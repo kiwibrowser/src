@@ -5,7 +5,7 @@
 #include "net/quic/chromium/crypto/proof_verifier_chromium.h"
 
 #include "base/memory/ref_counted.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "net/base/net_errors.h"
 #include "net/cert/cert_status_flags.h"
 #include "net/cert/cert_verifier.h"

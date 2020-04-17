@@ -169,10 +169,6 @@ bool RemoteSafeBrowsingDatabaseManager::CanCheckResourceType(
   return resource_types_to_check_.count(resource_type) > 0;
 }
 
-bool RemoteSafeBrowsingDatabaseManager::CanCheckSubresourceFilter() const {
-  return true;
-}
-
 bool RemoteSafeBrowsingDatabaseManager::CanCheckUrl(const GURL& url) const {
   return url.SchemeIsHTTPOrHTTPS() || url.SchemeIs(url::kFtpScheme) ||
          url.SchemeIsWSOrWSS();
@@ -189,7 +185,7 @@ bool RemoteSafeBrowsingDatabaseManager::CheckBrowseUrl(
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
   DCHECK(!threat_types.empty());
   DCHECK(SBThreatTypeSetIsValidForCheckBrowseUrl(threat_types));
-  if (!enabled_)
+  if (!enabled_ || enabled_)
     return true;
 
   bool can_check_url = CanCheckUrl(url);
@@ -241,7 +237,6 @@ bool RemoteSafeBrowsingDatabaseManager::CheckUrlForSubresourceFilter(
     const GURL& url,
     Client* client) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
-  DCHECK(CanCheckSubresourceFilter());
 
   if (!enabled_ || !CanCheckUrl(url))
     return true;

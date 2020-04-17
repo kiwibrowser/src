@@ -12,7 +12,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_piece.h"
 #include "base/strings/string_util.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "net/base/cache_type.h"
 #include "net/disk_cache/disk_cache_test_base.h"
 #include "net/disk_cache/simple/simple_file_tracker.h"

@@ -5,39 +5,38 @@
 package org.chromium.chrome.browser.compositor.layouts.phone.stack;
 
 import android.animation.Animator;
+import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.PropertyValuesHolder;
+import android.content.res.Resources;
+import android.support.v4.view.animation.FastOutSlowInInterpolator;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.FrameLayout;
 
+import org.chromium.chrome.R;
 import org.chromium.chrome.browser.compositor.layouts.phone.stack.StackAnimation.OverviewAnimationType;
 import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.tabmodel.TabList;
-import org.chromium.ui.base.LocalizationUtils;
-import org.chromium.ui.interpolators.BakedBezierInterpolator;
 
 /**
  * A factory that builds Android view animations for the tab stack.
  */
 public class StackViewAnimation {
-    private static final int TAB_OPENED_ANIMATION_DURATION = 300;
-    private static final float TAB_OPENED_PIVOT_INSET_DP = 24.f;
+    private static final int TAB_OPENED_BG_ANIMATION_DURATION = 150;
+    private static final int TAB_OPENED_VIEW_ANIMATION_DURATION = 350;
 
-    private final float mDpToPx;
-    private final float mWidthDp;
+    private final int mTranslationYStart;
 
     /**
      * Constructor.
-     * NOTE: Pass in height and heightMinusBrowserControls if they're ever needed.
      *
-     * @param dpToPx                   The density of the device.
-     * @param widthDp                  The width of the layout in dp.
+     * @param resources Android {@link Resources} used to retrieve dimensions.
      */
-    public StackViewAnimation(float dpToPx, float widthDp) {
-        mDpToPx = dpToPx;
-        mWidthDp = widthDp;
+    public StackViewAnimation(Resources resources) {
+        mTranslationYStart =
+                resources.getDimensionPixelSize(R.dimen.open_new_tab_animation_y_translation);
     }
 
     /**
@@ -58,7 +57,7 @@ public class StackViewAnimation {
         if (list != null) {
             switch (type) {
                 case NEW_TAB_OPENED:
-                    animator = createNewTabOpenedAnimator(tabs, container, list, focusIndex);
+//                    animator = createNewTabOpenedAnimator(tabs, container, list, focusIndex);
                     break;
                 default:
                     break;
@@ -90,19 +89,26 @@ public class StackViewAnimation {
         }
 
         // Build the view animations
-        PropertyValuesHolder xScale = PropertyValuesHolder.ofFloat(View.SCALE_X, 0.f, 1.f);
-        PropertyValuesHolder yScale = PropertyValuesHolder.ofFloat(View.SCALE_Y, 0.f, 1.f);
-        PropertyValuesHolder alpha = PropertyValuesHolder.ofFloat(View.ALPHA, 0.f, 1.f);
-        ObjectAnimator animator = ObjectAnimator.ofPropertyValuesHolder(
-                bgView, xScale, yScale, alpha);
+        PropertyValuesHolder viewAlpha = PropertyValuesHolder.ofFloat(View.ALPHA, 0.f, 1.f);
+        ObjectAnimator viewAlphaAnimator = ObjectAnimator.ofPropertyValuesHolder(view, viewAlpha);
+        viewAlphaAnimator.setDuration(TAB_OPENED_VIEW_ANIMATION_DURATION);
+        viewAlphaAnimator.setInterpolator(new FastOutSlowInInterpolator());
 
-        animator.setDuration(TAB_OPENED_ANIMATION_DURATION);
-        animator.setInterpolator(BakedBezierInterpolator.TRANSFORM_FOLLOW_THROUGH_CURVE);
+        PropertyValuesHolder yTranslation =
+                PropertyValuesHolder.ofFloat(View.TRANSLATION_Y, mTranslationYStart, 0.f);
+        ObjectAnimator viewYTranslationAnimator =
+                ObjectAnimator.ofPropertyValuesHolder(view, yTranslation);
+        viewYTranslationAnimator.setDuration(TAB_OPENED_VIEW_ANIMATION_DURATION);
+        viewYTranslationAnimator.setInterpolator(new FastOutSlowInInterpolator());
 
-        float insetPx = TAB_OPENED_PIVOT_INSET_DP * mDpToPx;
+        PropertyValuesHolder bgAlpha = PropertyValuesHolder.ofFloat(View.ALPHA, 0.f, 1.f);
+        ObjectAnimator bgAlphaAnimator = ObjectAnimator.ofPropertyValuesHolder(bgView, bgAlpha);
+        bgAlphaAnimator.setDuration(TAB_OPENED_BG_ANIMATION_DURATION);
+        bgAlphaAnimator.setInterpolator(new FastOutSlowInInterpolator());
 
-        bgView.setPivotY(TAB_OPENED_PIVOT_INSET_DP);
-        bgView.setPivotX(LocalizationUtils.isLayoutRtl() ? mWidthDp * mDpToPx - insetPx : insetPx);
-        return animator;
+        AnimatorSet set = new AnimatorSet();
+        set.playTogether(viewAlphaAnimator, viewYTranslationAnimator, bgAlphaAnimator);
+
+        return set;
     }
 }

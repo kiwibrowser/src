@@ -5,9 +5,9 @@
 #include "gpu/command_buffer/service/mailbox_manager_factory.h"
 
 #include "base/command_line.h"
-#include "gpu/command_buffer/service/gpu_preferences.h"
 #include "gpu/command_buffer/service/mailbox_manager_impl.h"
 #include "gpu/command_buffer/service/mailbox_manager_sync.h"
+#include "gpu/config/gpu_preferences.h"
 
 namespace gpu {
 namespace gles2 {

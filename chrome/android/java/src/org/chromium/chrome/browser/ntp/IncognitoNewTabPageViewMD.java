@@ -25,6 +25,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.chromium.base.ApiCompatibilityUtils;
+import org.chromium.base.ContextUtils;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.util.FeatureUtilities;
 import org.chromium.ui.text.NoUnderlineClickableSpan;
@@ -180,7 +181,7 @@ public class IncognitoNewTabPageViewMD extends IncognitoNewTabPageView {
 
         boolean bulletpointsArrangedHorizontally;
 
-        boolean usingChromeHome = FeatureUtilities.isChromeHomeEnabled();
+        boolean usingChromeHome = FeatureUtilities.isChromeHomeEnabled() || ContextUtils.getAppSharedPreferences().getBoolean("enable_bottom_toolbar", false);
         if (mWidthDp <= WIDE_LAYOUT_THRESHOLD_DP || usingChromeHome) {
             // Small padding.
             // Set the padding to a default for Chrome Home, since we want less padding in this
@@ -301,10 +302,10 @@ public class IncognitoNewTabPageViewMD extends IncognitoNewTabPageView {
                 mContext.getResources().getString(R.string.new_tab_otr_subtitle);
         boolean learnMoreInSubtitle = mWidthDp > WIDE_LAYOUT_THRESHOLD_DP;
 
-        mSubtitle.setClickable(learnMoreInSubtitle);
-        mLearnMore.setVisibility(learnMoreInSubtitle ? View.GONE : View.VISIBLE);
+        mSubtitle.setClickable(false);
+        mLearnMore.setVisibility(View.GONE);
 
-        if (FeatureUtilities.isChromeHomeEnabled()) {
+        if (FeatureUtilities.isChromeHomeEnabled() || ContextUtils.getAppSharedPreferences().getBoolean("enable_bottom_toolbar", false)) {
             // Additional padding below "Learn More" helps keep distance from the bottom navigation
             // menu making it easier to tap.
             mLearnMore.setPadding(mLearnMore.getPaddingLeft(), mLearnMore.getPaddingTop(),

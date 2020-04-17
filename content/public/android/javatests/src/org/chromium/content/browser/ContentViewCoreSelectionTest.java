@@ -878,25 +878,27 @@ public class ContentViewCoreSelectionTest {
     }
 
     private void setAttachedOnUiThread(final boolean attached) {
-        final ContentViewCoreImpl contentViewCore = mContentViewCore;
         ThreadUtils.runOnUiThreadBlocking(new Runnable() {
             @Override
             public void run() {
+                ViewEventSinkImpl viewEventSink =
+                        ViewEventSinkImpl.from(mActivityTestRule.getWebContents());
                 if (attached) {
-                    contentViewCore.onAttachedToWindow();
+                    viewEventSink.onAttachedToWindow();
                 } else {
-                    contentViewCore.onDetachedFromWindow();
+                    viewEventSink.onDetachedFromWindow();
                 }
             }
         });
     }
 
     private void requestFocusOnUiThread(final boolean gainFocus) {
-        final ContentViewCoreImpl contentViewCore = mContentViewCore;
         ThreadUtils.runOnUiThreadBlocking(new Runnable() {
             @Override
             public void run() {
-                contentViewCore.onViewFocusChanged(gainFocus);
+                ViewEventSinkImpl viewEventSink =
+                        ViewEventSinkImpl.from(mActivityTestRule.getWebContents());
+                viewEventSink.onViewFocusChanged(gainFocus);
             }
         });
     }

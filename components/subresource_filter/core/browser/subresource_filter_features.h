@@ -64,11 +64,6 @@ struct Configuration {
     // otherwise satisfied. A greater value indicates higher priority.
     int priority = 0;
 
-    // This boolean is set to true for a navigation which has forced activation,
-    // despite other conditions not matching. It should never be possible to set
-    // this via variation params.
-    bool forced_activation = false;
-
     std::unique_ptr<base::trace_event::TracedValue> ToTracedValue() const;
   };
 
@@ -129,10 +124,6 @@ struct Configuration {
   static Configuration MakePresetForPerformanceTestingDryRunOnAllSites();
   static Configuration MakePresetForLiveRunForBetterAds();
 
-  // Not really a preset, but used as the configuration for forcing activation
-  // (e.g. via devtools).
-  static Configuration MakeForForcedActivation();
-
   ActivationConditions activation_conditions;
   ActivationOptions activation_options;
   GeneralSettings general_settings;
@@ -191,8 +182,11 @@ scoped_refptr<ConfigurationList> GetAndSetActivateConfigurations(
 // The master toggle to enable/disable the Safe Browsing Subresource Filter.
 extern const base::Feature kSafeBrowsingSubresourceFilter;
 
-// Enables the new experimental UI for the Subresource Filter.
-extern const base::Feature kSafeBrowsingSubresourceFilterExperimentalUI;
+// Safe Browsing Activation Throttle considers all checks in a redirect chain.
+extern const base::Feature kSafeBrowsingSubresourceFilterConsiderRedirects;
+
+// Enables the blocking of ads on sites that are abusive.
+extern const base::Feature kFilterAdsOnAbusiveSites;
 
 // Name/values of the variation parameter controlling maximum activation level.
 extern const char kActivationLevelParameterName[];

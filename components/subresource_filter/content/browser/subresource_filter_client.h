@@ -6,6 +6,8 @@
 #define COMPONENTS_SUBRESOURCE_FILTER_CONTENT_BROWSER_SUBRESOURCE_FILTER_CLIENT_H_
 
 #include "components/subresource_filter/content/browser/verified_ruleset_dealer.h"
+#include "components/subresource_filter/core/common/activation_decision.h"
+#include "components/subresource_filter/core/common/activation_level.h"
 #include "content/public/browser/web_contents.h"
 
 namespace content {
@@ -22,24 +24,19 @@ class SubresourceFilterClient {
   // blocked.
   virtual void ShowNotification() = 0;
 
-  // Called when the component is starting to observe a new navigation.
-  virtual void OnNewNavigationStarted() = 0;
-
   // Called when the activation decision is otherwise completely computed by the
   // subresource filter. At this point, the embedder still has a chance to
-  // return false to suppress the activation. Returns whether the activation
-  // should be whitelisted for this navigation.
+  // alter the effective activation. Returns the effective activation for this
+  // navigation.
+  //
+  // Note: |decision| is guaranteed to be non-nullptr, and can be modified by
+  // the embedder if any decision changes.
   //
   // Precondition: The navigation must be a main frame navigation.
-  virtual bool OnPageActivationComputed(
+  virtual ActivationLevel OnPageActivationComputed(
       content::NavigationHandle* navigation_handle,
-      bool activated) = 0;
-
-  virtual VerifiedRulesetDealer::Handle* GetRulesetDealer() = 0;
-
-  // Returns whether this navigation should be forced to be activated. This is
-  // currently only used for devtools.
-  virtual bool ForceActivationInCurrentWebContents() = 0;
+      ActivationLevel initial_activation_level,
+      subresource_filter::ActivationDecision* decision) = 0;
 };
 
 }  // namespace subresource_filter

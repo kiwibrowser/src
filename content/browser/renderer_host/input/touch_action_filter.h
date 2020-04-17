@@ -83,6 +83,10 @@ class CONTENT_EXPORT TouchActionFilter {
   // Force enable zoom for Accessibility.
   bool force_enable_zoom_;
 
+  // True if an active touch scroll gesture is in progress. i.e. after GSB and
+  // before GSE.
+  bool touchscreen_scroll_in_progress_ = false;
+
   // What touch actions are currently permitted.
   cc::TouchAction allowed_touch_action_;
 

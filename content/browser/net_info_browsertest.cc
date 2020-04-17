@@ -9,7 +9,7 @@
 #include "base/command_line.h"
 #include "base/run_loop.h"
 #include "base/strings/string_number_conversions.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "build/build_config.h"
 #include "content/browser/net/network_quality_observer_impl.h"
 #include "content/public/common/content_switches.h"

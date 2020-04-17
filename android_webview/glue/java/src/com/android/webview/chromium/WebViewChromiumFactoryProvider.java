@@ -21,6 +21,7 @@ import android.webkit.CookieManager;
 import android.webkit.GeolocationPermissions;
 import android.webkit.ServiceWorkerController;
 import android.webkit.TokenBindingService;
+import android.webkit.TracingController;
 import android.webkit.ValueCallback;
 import android.webkit.WebStorage;
 import android.webkit.WebView;
@@ -66,6 +67,9 @@ public class WebViewChromiumFactoryProvider implements WebViewFactoryProvider {
     private static final String CHROMIUM_PREFS_NAME = "WebViewChromiumPrefs";
     private static final String VERSION_CODE_PREF = "lastVersionCodeUsed";
 
+    private static final String SUPPORT_LIB_GLUE_AND_BOUNDARY_INTERFACE_PREFIX =
+            "org.chromium.support_lib_";
+
     private final static Object sSingletonLock = new Object();
     private static WebViewChromiumFactoryProvider sSingleton;
 
@@ -99,6 +103,7 @@ public class WebViewChromiumFactoryProvider implements WebViewFactoryProvider {
 
     private SharedPreferences mWebViewPrefs;
     private WebViewDelegate mWebViewDelegate;
+    private TracingController mTracingController;
 
     boolean mShouldDisableThreadChecking;
 
@@ -521,5 +526,51 @@ public class WebViewChromiumFactoryProvider implements WebViewFactoryProvider {
 
     WebViewChromiumAwInit getAwInit() {
         return mAwInit;
+    }
+
+    @Override
+    public TracingController getTracingController() {
+        synchronized (mAwInit.getLock()) {
+            mAwInit.ensureChromiumStartedLocked(true);
+            // ensureChromiumStartedLocked() can release the lock on first call while
+            // waiting for startup. Hence check the mTracingControler here to ensure
+            // the singleton property.
+            if (mTracingController == null) {
+                mTracingController =
+                        new TracingControllerAdapter(this, mAwInit.getAwTracingController());
+            }
+        }
+        return mTracingController;
+    }
+
+    private static class FilteredClassLoader extends ClassLoader {
+        FilteredClassLoader(ClassLoader delegate) {
+            super(delegate);
+        }
+
+        @Override
+        protected Class<?> findClass(String name) throws ClassNotFoundException {
+            final String message =
+                    "This ClassLoader should only be used for the androidx.webkit support library";
+
+            if (name == null) {
+                throw new ClassNotFoundException(message);
+            }
+
+            // We only permit this ClassLoader to load classes required for support library
+            // reflection, as applications should not use this for any other purpose. So, we permit
+            // anything in the support_lib_glue and support_lib_boundary packages (and their
+            // subpackages).
+            if (name.startsWith(SUPPORT_LIB_GLUE_AND_BOUNDARY_INTERFACE_PREFIX)) {
+                return super.findClass(name);
+            }
+
+            throw new ClassNotFoundException(message);
+        }
+    }
+
+    @Override
+    public ClassLoader getWebViewClassLoader() {
+        return new FilteredClassLoader(WebViewChromiumFactoryProvider.class.getClassLoader());
     }
 }

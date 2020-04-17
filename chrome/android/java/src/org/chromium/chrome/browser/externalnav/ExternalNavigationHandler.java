@@ -63,6 +63,7 @@ public class ExternalNavigationHandler {
     private static final String PLAY_REFERRER_PARAM = "referrer";
     private static final String PLAY_APP_PATH = "/store/apps/details";
     private static final String PLAY_HOSTNAME = "play.google.com";
+    private static final String YT_PACKAGE_NAME = "com.google.android.youtube";
 
     @VisibleForTesting
     static final String EXTRA_BROWSER_FALLBACK_URL = "browser_fallback_url";
@@ -426,6 +427,14 @@ public class ExternalNavigationHandler {
             IntentHandler.setPendingReferrer(intent, params.getReferrerUrl());
         }
 
+        // If the user allowed opening external apps
+        final boolean canOpenInExternalApp = ContextUtils.getAppSharedPreferences().getBoolean("open_in_external_app", false);
+        if (!isExternalProtocol && !canOpenInExternalApp && params.getUrl() != null && !params.getUrl().matches("play.google.com")) {
+            return OverrideUrlLoadingResult.NO_OVERRIDE;
+        }
+
+        // In incognito mode, links that can be handled within the browser should just do so,
+        // without asking the user.
         if (params.isIncognito()) {
             // In incognito mode, links that can be handled within the browser should just do so,
             // without asking the user.

@@ -110,8 +110,6 @@ cast_locales = locales
 
 enable_chromecast_extensions = enable_extensions
 
-# These templates are a temporary fix fo link libc++ into shared libraries and
-# executables. These should be removed as soon as crbug.com/746091 is resolved.
 foreach(target_type,
         [
           "executable",
@@ -124,14 +122,6 @@ foreach(target_type,
       forward_variables_from(invoker, "*")
 
       configs += [ "//chromecast:cast_config" ]
-
-      if (!defined(deps)) {
-        deps = []
-      }
-
-      if (target_type != "source_set") {
-        deps += [ "//build/config:exe_and_shlib_deps" ]
-      }
     }
   }
 }

@@ -4,7 +4,9 @@
 
 #include "components/subresource_filter/core/browser/subresource_filter_features_test_support.h"
 
+#include <memory>
 #include <ostream>
+#include <string>
 #include <utility>
 
 #include "base/json/json_writer.h"
@@ -50,51 +52,6 @@ void ScopedSubresourceFilterConfigurator::ResetConfiguration(
     std::vector<Configuration> config) {
   ResetConfiguration(
       base::MakeRefCounted<ConfigurationList>(std::move(config)));
-}
-
-// ScopedSubresourceFilterFeatureToggle ---------------------------------------
-
-ScopedSubresourceFilterFeatureToggle::ScopedSubresourceFilterFeatureToggle() {}
-ScopedSubresourceFilterFeatureToggle::ScopedSubresourceFilterFeatureToggle(
-    base::FeatureList::OverrideState feature_state,
-    const std::string& additional_features_to_enable) {
-  ResetSubresourceFilterState(feature_state, additional_features_to_enable);
-}
-
-void ScopedSubresourceFilterFeatureToggle::ResetSubresourceFilterState(
-    base::FeatureList::OverrideState feature_state,
-    const std::string& additional_features_to_enable) {
-  std::string enabled_features;
-  std::string disabled_features;
-
-  if (feature_state == base::FeatureList::OVERRIDE_ENABLE_FEATURE) {
-    enabled_features = kSafeBrowsingSubresourceFilter.name;
-  } else if (feature_state == base::FeatureList::OVERRIDE_DISABLE_FEATURE) {
-    disabled_features = kSafeBrowsingSubresourceFilter.name;
-  }
-
-  if (!additional_features_to_enable.empty()) {
-    if (!enabled_features.empty())
-      enabled_features += ',';
-    enabled_features += additional_features_to_enable;
-  }
-
-  scoped_configuration_.ResetConfiguration();
-  scoped_feature_list_ = std::make_unique<base::test::ScopedFeatureList>();
-  scoped_feature_list_->InitFromCommandLine(enabled_features,
-                                            disabled_features);
-}
-
-ScopedSubresourceFilterFeatureToggle::~ScopedSubresourceFilterFeatureToggle() {}
-
-std::ostream& operator<<(std::ostream& os, const Configuration& config) {
-  std::unique_ptr<base::Value> value = config.ToTracedValue()->ToBaseValue();
-  base::DictionaryValue* dict;
-  value->GetAsDictionary(&dict);
-  std::string json;
-  base::JSONWriter::WriteWithOptions(
-      *dict, base::JSONWriter::OPTIONS_PRETTY_PRINT, &json);
-  return os << json;
 }
 
 }  // namespace testing

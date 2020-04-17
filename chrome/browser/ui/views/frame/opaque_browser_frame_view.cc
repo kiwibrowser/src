@@ -258,9 +258,6 @@ void OpaqueBrowserFrameView::GetWindowMask(const gfx::Size& size,
 
   if (layout_->IsTitleBarCondensed() || frame()->IsFullscreen())
     return;
-
-  views::GetDefaultWindowMask(
-      size, frame()->GetCompositor()->device_scale_factor(), window_mask);
 }
 
 void OpaqueBrowserFrameView::ResetWindowControls() {

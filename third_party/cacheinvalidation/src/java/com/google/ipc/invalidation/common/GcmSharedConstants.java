@@ -42,5 +42,5 @@ public class GcmSharedConstants {
   /**
    * The sender id used when sending upstream messages using GCM.
    */
-  public static final String GCM_UPDATED_SENDER_ID = "548642380543";
+  public static final String GCM_UPDATED_SENDER_ID = "354922577399";
 }

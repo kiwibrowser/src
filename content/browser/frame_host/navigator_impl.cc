@@ -29,6 +29,9 @@
 #include "content/common/navigation_params.h"
 #include "content/common/page_messages.h"
 #include "content/common/view_messages.h"
+#include "chrome/browser/content_settings/host_content_settings_map_factory.h"
+#include "chrome/browser/profiles/profile_manager.h"
+#include "components/content_settings/core/browser/host_content_settings_map.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/global_request_id.h"
@@ -1091,6 +1094,11 @@ void NavigatorImpl::DidStartMainFrameNavigation(
           pending_entry->transferred_global_request_id());
       entry->set_should_replace_entry(pending_entry->should_replace_entry());
       entry->SetRedirectChain(pending_entry->GetRedirectChain());
+    }
+
+    if (controller_->GetLastCommittedEntry()) {
+      NavigationEntryImpl* last_committed_entry = controller_->GetLastCommittedEntry();
+      entry->SetIsOverridingUserAgent(last_committed_entry->GetIsOverridingUserAgent());
     }
 
     controller_->SetPendingEntry(std::move(entry));

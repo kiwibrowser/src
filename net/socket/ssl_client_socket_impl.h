@@ -92,6 +92,7 @@ class SSLClientSocketImpl : public SSLClientSocket,
   // StreamSocket implementation.
   int Connect(CompletionOnceCallback callback) override;
   void Disconnect() override;
+  int ConfirmHandshake(CompletionOnceCallback callback) override;
   bool IsConnected() const override;
   bool IsConnectedAndIdle() const override;
   int GetPeerAddress(IPEndPoint* address) const override;
@@ -309,6 +310,9 @@ class SSLClientSocketImpl : public SSLClientSocket,
     STATE_VERIFY_CERT_COMPLETE,
   };
   State next_handshake_state_;
+
+  // True if we are currently confirming the handshake.
+  bool in_confirm_handshake_;
 
   // True if the socket has been disconnected.
   bool disconnected_;

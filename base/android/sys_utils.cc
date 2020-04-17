@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "base/android/build_info.h"
+#include "base/android/jni_string.h"
 #include "base/process/process_metrics.h"
 #include "base/sys_info.h"
 #include "base/trace_event/trace_event.h"
@@ -18,6 +19,27 @@ namespace android {
 bool SysUtils::IsLowEndDeviceFromJni() {
   JNIEnv* env = AttachCurrentThread();
   return Java_SysUtils_isLowEndDevice(env);
+}
+
+bool SysUtils::IsBottomToolbarEnabledFromJni() {
+  static bool was_result_loaded = false;
+  static bool cached_result = false;
+  if (!was_result_loaded) {
+    JNIEnv* env = AttachCurrentThread();
+    cached_result = Java_SysUtils_isBottomToolbarEnabled(env);
+    was_result_loaded = true;
+  }
+  return cached_result;
+}
+
+long SysUtils::FirstInstallDateFromJni() {
+  JNIEnv* env = AttachCurrentThread();
+  return Java_SysUtils_firstInstallDate(env);
+}
+
+std::string SysUtils::ReferrerStringFromJni() {
+  JNIEnv* env = AttachCurrentThread();
+  return ConvertJavaStringToUTF8(env, Java_SysUtils_referrerString(env));
 }
 
 bool SysUtils::IsCurrentlyLowMemory() {

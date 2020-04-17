@@ -12,6 +12,8 @@
 #include "third_party/blink/renderer/core/paint/selection_painting_utils.h"
 #include "third_party/blink/renderer/core/style/computed_style.h"
 #include "third_party/blink/renderer/core/style/shadow_list.h"
+#include "third_party/blink/renderer/core/frame/local_frame.h"
+#include "third_party/blink/renderer/core/frame/settings.h"
 #include "third_party/blink/renderer/platform/fonts/font.h"
 #include "third_party/blink/renderer/platform/graphics/graphics_context.h"
 #include "third_party/blink/renderer/platform/graphics/graphics_context_state_saver.h"
@@ -128,7 +130,11 @@ TextPaintStyle TextPainterBase::TextPaintingStyle(const Document& document,
     text_style.emphasis_mark_color =
         style.VisitedDependentColor(GetCSSPropertyWebkitTextEmphasisColor());
     text_style.stroke_width = style.TextStrokeWidth();
-    text_style.shadow = style.TextShadow();
+    Settings* settings = document.GetFrame()->GetSettings();
+    if (settings && settings->GetAccessibilityNightModeEnabled())
+      text_style.shadow = nullptr;
+    else
+      text_style.shadow = style.TextShadow();
 
     // Adjust text color when printing with a white background.
     DCHECK(document.Printing() == is_printing ||

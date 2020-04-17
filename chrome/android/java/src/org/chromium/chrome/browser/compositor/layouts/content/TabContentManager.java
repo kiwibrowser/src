@@ -166,7 +166,7 @@ public class TabContentManager {
             return bitmap;
         }
 
-        if (page instanceof InvalidationAwareThumbnailProvider) {
+        if (false && page instanceof InvalidationAwareThumbnailProvider) {
             if (!((InvalidationAwareThumbnailProvider) page).shouldCaptureThumbnail()) {
                 return null;
             }
@@ -195,7 +195,7 @@ public class TabContentManager {
         Canvas c = new Canvas(bitmap);
         c.scale(scale, scale);
         c.translate(leftMargin, -overlayTranslateY + topMargin);
-        if (page instanceof InvalidationAwareThumbnailProvider) {
+        if (false && page instanceof InvalidationAwareThumbnailProvider) {
             ((InvalidationAwareThumbnailProvider) page).captureThumbnail(c);
         } else {
             viewToDraw.draw(c);

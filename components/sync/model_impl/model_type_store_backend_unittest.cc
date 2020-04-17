@@ -6,7 +6,7 @@
 
 #include <utility>
 
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "components/sync/protocol/model_type_store_schema_descriptor.pb.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "third_party/leveldatabase/env_chromium.h"

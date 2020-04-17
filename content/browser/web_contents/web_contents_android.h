@@ -17,6 +17,7 @@
 #include "content/browser/frame_host/navigation_controller_android.h"
 #include "content/browser/renderer_host/render_widget_host_view_android.h"
 #include "content/common/content_export.h"
+#include "ui/gfx/image/image.h"
 
 class GURL;
 
@@ -185,6 +186,13 @@ class CONTENT_EXPORT WebContentsAndroid
                         const base::android::JavaParamRef<jstring>& jpath,
                         const base::android::JavaParamRef<jobject>& jcallback);
 
+  void GetContentBitmapFull(JNIEnv* env,
+                        const base::android::JavaParamRef<jobject>& obj,
+                        jint width,
+                        jint height,
+                        const base::android::JavaParamRef<jstring>& jpath,
+                        const base::android::JavaParamRef<jobject>& jcallback);
+
   void ReloadLoFiImages(JNIEnv* env,
                         const base::android::JavaParamRef<jobject>& obj);
 
@@ -236,6 +244,9 @@ class CONTENT_EXPORT WebContentsAndroid
 
   void OnScaleFactorChanged(JNIEnv* env,
                             const base::android::JavaParamRef<jobject>& obj);
+  void SetFocus(JNIEnv* env,
+                const base::android::JavaParamRef<jobject>& obj,
+                jboolean focused);
 
   // Returns the amount of the top controls height if controls are in the state
   // of shrinking Blink's view size, otherwise 0.
@@ -250,6 +261,12 @@ class CONTENT_EXPORT WebContentsAndroid
                                 const base::android::JavaRef<jobject>& callback,
                                 const std::string& path,
                                 const SkBitmap& bitmap);
+
+  void OnFinishGetContentBitmapFull(const base::android::JavaRef<jobject>& obj,
+                                const base::android::JavaRef<jobject>& callback,
+                                const std::string& path,
+                                int screenshotnumber, int maxnumberofscreenshots,
+                                const gfx::Image& bitmap);
 
   void OnFinishDownloadImage(const base::android::JavaRef<jobject>& obj,
                              const base::android::JavaRef<jobject>& callback,

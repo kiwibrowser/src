@@ -75,7 +75,8 @@ PushMessagingService* LayoutTestBrowserContext::GetPushMessagingService() {
   return push_messaging_service_.get();
 }
 
-PermissionManager* LayoutTestBrowserContext::GetPermissionManager() {
+PermissionControllerDelegate*
+LayoutTestBrowserContext::GetPermissionControllerDelegate() {
   if (!permission_manager_.get())
     permission_manager_.reset(new LayoutTestPermissionManager());
   return permission_manager_.get();
@@ -90,7 +91,8 @@ LayoutTestBrowserContext::GetBackgroundSyncController() {
 
 LayoutTestPermissionManager*
 LayoutTestBrowserContext::GetLayoutTestPermissionManager() {
-  return static_cast<LayoutTestPermissionManager*>(GetPermissionManager());
+  return static_cast<LayoutTestPermissionManager*>(
+      GetPermissionControllerDelegate());
 }
 
 }  // namespace content

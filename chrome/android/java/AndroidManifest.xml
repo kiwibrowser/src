@@ -40,6 +40,9 @@ by a child template that "extends" this file.
 
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
+    {% if target_sdk_version|int > 27 or target_sdk_version == "P" %}
+        <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    {% endif %}
     <uses-permission android:name="android.permission.GET_ACCOUNTS"/>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.MANAGE_ACCOUNTS"/>
@@ -94,6 +97,8 @@ by a child template that "extends" this file.
 
     <uses-permission android:name="com.google.android.apps.now.CURRENT_ACCOUNT_ACCESS" />
 
+    <uses-permission android:name="com.samsung.android.providers.context.permission.WRITE_USE_APP_FEATURE_SURVEY"/>
+
     {% block extra_uses_permissions %}
     {% endblock %}
 
@@ -118,8 +123,7 @@ by a child template that "extends" this file.
     <!-- Set android:largeHeap to "true" to allow more than the default
          Java heap limit (32Mb on Nexus S, 48Mb on Xoom). -->
     <application android:name="{% block application_name %}org.chromium.chrome.browser.ChromeApplication{% endblock %}"
-        android:icon="@drawable/ic_launcher"
-        android:roundIcon="@drawable/ic_launcher_round"
+        android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:largeHeap="false"
         android:manageSpaceActivity="@string/manage_space_activity"
@@ -134,6 +138,19 @@ by a child template that "extends" this file.
         {% endif %}
         android:networkSecurityConfig="@xml/network_security_config"
         {% block extra_application_attributes %}{% endblock %}>
+
+       <meta-data android:name="android.allow_multiple_resumed_activities" android:value="true" />
+
+        <!-- For Google Play Store Campaign Measurement-->
+        <receiver android:name="org.chromium.chrome.browser.init.ChromeBrowserReferrer"
+           android:enabled="true"
+           android:exported="true"
+           android:permission="android.permission.INSTALL_PACKAGES"
+           >
+           <intent-filter>
+               <action android:name="com.android.vending.INSTALL_REFERRER" />
+           </intent-filter>
+         </receiver>
 
         <!-- Samsung MultiWindow Support -->
         <meta-data android:name="com.samsung.android.sdk.multiwindow.enable"
@@ -352,7 +369,7 @@ by a child template that "extends" this file.
             {{ self.supports_vr() }}
             {{ self.extra_web_rendering_activity_definitions() }}
         </activity>
-        {% for i in range(10) %}
+        {% for i in range(40) %}
         <activity android:name="org.chromium.chrome.browser.customtabs.SeparateTaskCustomTabActivity{{ i }}"
             android:theme="@style/MainTheme"
             android:icon="@mipmap/app_single_page_icon"
@@ -831,6 +848,7 @@ by a child template that "extends" this file.
         </provider>
 
         <!-- Sync adapter for browser invalidation. -->
+        <!--
         <service android:name="org.chromium.chrome.browser.invalidation.ChromeBrowserSyncAdapterService"
             android:exported="false">
             <intent-filter>
@@ -839,6 +857,7 @@ by a child template that "extends" this file.
             <meta-data android:name="android.content.SyncAdapter"
                        android:resource="@xml/syncadapter" />
         </service>
+        -->
 
         <!-- Broadcast receiver that will be notified of account changes -->
         <receiver android:name="org.chromium.chrome.browser.services.AccountsChangedReceiver">
@@ -1026,8 +1045,10 @@ by a child template that "extends" this file.
         <service android:name="org.chromium.chrome.browser.crash.MinidumpUploadService"
             android:exported="false"/>
 
+<!--
         <service android:name="org.chromium.chrome.browser.omaha.OmahaClient"
             android:exported="false"/>
+-->
         <service android:name="org.chromium.chrome.browser.incognito.IncognitoNotificationService"
             android:exported="false"/>
         <service android:name="org.chromium.chrome.browser.webapps.WebApkDisclosureNotificationService"
@@ -1039,7 +1060,7 @@ by a child template that "extends" this file.
 
         <!-- NOTE: If you change the value of "android:process" for the below services,
              you also need to update kHelperProcessExecutableName in chrome_constants.cc. -->
-        {% set num_sandboxed_services = 20 %}
+        {% set num_sandboxed_services = 150 %}
         <meta-data android:name="org.chromium.content.browser.NUM_SANDBOXED_SERVICES"
             android:value="{{ num_sandboxed_services }}"/>
 
@@ -1056,7 +1077,7 @@ by a child template that "extends" this file.
             {% endif %} />
         {% endfor %}
 
-        {% set num_privileged_services = 3 %}
+        {% set num_privileged_services = 10 %}
         <meta-data android:name="org.chromium.content.browser.NUM_PRIVILEGED_SERVICES"
             android:value="{{ num_privileged_services }}"/>
 

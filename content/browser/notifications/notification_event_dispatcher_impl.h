@@ -50,7 +50,7 @@ class CONTENT_EXPORT NotificationEventDispatcherImpl
   // non-persistent notification identified by |notification_id|.
   void RegisterNonPersistentNotificationListener(
       const std::string& notification_id,
-      blink::mojom::NonPersistentNotificationListenerPtrInfo listener_ptr_info);
+      blink::mojom::NonPersistentNotificationListenerPtr event_listener_ptr);
 
  private:
   friend class NotificationEventDispatcherImplTest;

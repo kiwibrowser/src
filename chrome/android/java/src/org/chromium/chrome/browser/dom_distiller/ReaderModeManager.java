@@ -519,7 +519,8 @@ public class ReaderModeManager extends TabModelSelectorTabObserver {
 
                     boolean excludedMobileFriendly =
                             DomDistillerTabUtils.shouldExcludeMobileFriendly() && isMobileOptimized;
-                    if (isDistillable && !excludedMobileFriendly) {
+                    if (isDistillable && !excludedMobileFriendly
+                        && DomDistillerTabUtils.isReaderForAccessibilityEnabled()) {
                         tabInfo.setStatus(POSSIBLE);
                         // The user may have changed tabs.
                         if (tabId == mTabModelSelector.getCurrentTabId()) {

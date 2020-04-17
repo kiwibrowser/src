@@ -871,9 +871,6 @@ TEST_P(InputHandlerProxyTest, GesturePinch) {
   VERIFY_AND_RESET_MOCKS();
 
   gesture_.SetType(WebInputEvent::kGesturePinchBegin);
-  EXPECT_CALL(mock_input_handler_,
-              GetEventListenerProperties(cc::EventListenerClass::kMouseWheel))
-      .WillOnce(testing::Return(cc::EventListenerProperties::kNone));
   EXPECT_CALL(mock_input_handler_, PinchGestureBegin());
   EXPECT_EQ(expected_disposition_, input_handler_->HandleInputEvent(gesture_));
 
@@ -884,16 +881,6 @@ TEST_P(InputHandlerProxyTest, GesturePinch) {
   gesture_.SetPositionInWidget(gfx::PointF(7, 13));
   EXPECT_CALL(mock_input_handler_, PinchGestureUpdate(1.5, gfx::Point(7, 13)));
   EXPECT_EQ(expected_disposition_, input_handler_->HandleInputEvent(gesture_));
-
-  VERIFY_AND_RESET_MOCKS();
-
-  gesture_.SetType(WebInputEvent::kGesturePinchUpdate);
-  gesture_.data.pinch_update.scale = 0.5;
-  gesture_.data.pinch_update.zoom_disabled = true;
-  gesture_.SetPositionInWidget(gfx::PointF(9, 6));
-  EXPECT_EQ(InputHandlerProxy::DROP_EVENT,
-            input_handler_->HandleInputEvent(gesture_));
-  gesture_.data.pinch_update.zoom_disabled = false;
 
   VERIFY_AND_RESET_MOCKS();
 
@@ -910,37 +897,6 @@ TEST_P(InputHandlerProxyTest, GesturePinch) {
   EXPECT_EQ(expected_disposition_, input_handler_->HandleInputEvent(gesture_));
 
   VERIFY_AND_RESET_MOCKS();
-}
-
-TEST_P(InputHandlerProxyTest, GesturePinchWithWheelHandler) {
-  // We will send the synthetic wheel event to the widget.
-  expected_disposition_ = InputHandlerProxy::DID_NOT_HANDLE;
-  VERIFY_AND_RESET_MOCKS();
-
-  gesture_.SetType(WebInputEvent::kGesturePinchBegin);
-  EXPECT_CALL(mock_input_handler_,
-              GetEventListenerProperties(cc::EventListenerClass::kMouseWheel))
-      .WillOnce(testing::Return(cc::EventListenerProperties::kBlocking));
-  EXPECT_EQ(expected_disposition_, input_handler_->HandleInputEvent(gesture_));
-
-  VERIFY_AND_RESET_MOCKS();
-
-  gesture_.SetType(WebInputEvent::kGesturePinchUpdate);
-  gesture_.data.pinch_update.scale = 1.5;
-  gesture_.SetPositionInWidget(gfx::PointF(7, 13));
-  EXPECT_EQ(expected_disposition_, input_handler_->HandleInputEvent(gesture_));
-
-  VERIFY_AND_RESET_MOCKS();
-
-  gesture_.SetType(WebInputEvent::kGesturePinchUpdate);
-  gesture_.data.pinch_update.scale = 0.5;
-  gesture_.SetPositionInWidget(gfx::PointF(9, 6));
-  EXPECT_EQ(expected_disposition_, input_handler_->HandleInputEvent(gesture_));
-
-  VERIFY_AND_RESET_MOCKS();
-
-  gesture_.SetType(WebInputEvent::kGesturePinchEnd);
-  EXPECT_EQ(expected_disposition_, input_handler_->HandleInputEvent(gesture_));
 }
 
 TEST_P(InputHandlerProxyTest, GesturePinchAfterScrollOnMainThread) {
@@ -966,10 +922,6 @@ TEST_P(InputHandlerProxyTest, GesturePinchAfterScrollOnMainThread) {
   VERIFY_AND_RESET_MOCKS();
 
   gesture_.SetType(WebInputEvent::kGesturePinchBegin);
-  ;
-  EXPECT_CALL(mock_input_handler_,
-              GetEventListenerProperties(cc::EventListenerClass::kMouseWheel))
-      .WillOnce(testing::Return(cc::EventListenerProperties::kNone));
   EXPECT_CALL(mock_input_handler_, PinchGestureBegin());
   EXPECT_EQ(expected_disposition_, input_handler_->HandleInputEvent(gesture_));
 

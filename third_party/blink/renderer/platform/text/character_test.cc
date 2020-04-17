@@ -279,6 +279,13 @@ TEST(CharacterTest, TestEmojiEmojiDefault) {
   EXPECT_FALSE(Character::IsEmojiEmojiDefault(0x1F202));
 }
 
+TEST(CharacterTest, EmojificationV11) {
+  // Infinity and Chess pawn were given the emoji class, but have default text
+  // presentation in Unicode 11.
+  EXPECT_TRUE(Character::IsEmojiTextDefault(0x265F));
+  EXPECT_TRUE(Character::IsEmojiTextDefault(0x267E));
+}
+
 TEST(CharacterTest, TestEmojiModifierBase) {
   EXPECT_TRUE(Character::IsEmojiModifierBase(0x261D));
   EXPECT_TRUE(Character::IsEmojiModifierBase(0x1F470));

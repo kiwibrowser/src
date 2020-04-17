@@ -75,7 +75,7 @@ void LayoutTestPushMessagingService::SubscribeFromWorker(
   blink::mojom::PermissionStatus permission_status =
       LayoutTestContentBrowserClient::Get()
           ->browser_context()
-          ->GetPermissionManager()
+          ->GetPermissionControllerDelegate()
           ->GetPermissionStatus(PermissionType::NOTIFICATIONS,
                                 requesting_origin, requesting_origin);
 

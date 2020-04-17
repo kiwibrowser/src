@@ -67,6 +67,24 @@ class NET_EXPORT StreamSocket : public Socket {
   //
   virtual int Connect(CompletionOnceCallback callback) = 0;
 
+  // Called to confirm the TLS handshake, if any, indicating that replay
+  // protection is ready. Returns OK if the handshake could complete
+  // synchronously or had already been confirmed. Otherwise, ERR_IO_PENDING is
+  // returned and the given callback will run asynchronously when the connection
+  // is established or when an error occurs.  The result is some other error
+  // code if the connection could not be completed.
+  //
+  // This operation is only needed if TLS early data is enabled, in which case
+  // Connect returns early and Write initially sends early data, which does not
+  // have TLS's usual security properties. The caller must call this function
+  // and wait for handshake confirmation before sending data that is not
+  // replay-safe.
+  //
+  // ConfirmHandshake may run concurrently with Read or Write, but, as with Read
+  // and Write, at most one pending ConfirmHandshake operation may be in
+  // progress at a time.
+  virtual int ConfirmHandshake(CompletionOnceCallback callback);
+
   // Called to disconnect a socket.  Does nothing if the socket is already
   // disconnected.  After calling Disconnect it is possible to call Connect
   // again to establish a new connection.

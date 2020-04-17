@@ -29,6 +29,11 @@ base::string16 GetDefaultSearchEngineName(TemplateURLService* service);
 GURL GetDefaultSearchURLForSearchTerms(TemplateURLService* service,
                                        const base::string16& terms);
 
+// Returns a GURL that searches for |terms| using the default contextual search engine of
+// |service|.
+GURL GetDefaultSearchURLForContextualSearchTerms(TemplateURLService* service,
+                                       const base::string16& terms);
+
 // Returns matching URL from |template_urls| or NULL.
 TemplateURL* FindURLByPrepopulateID(
     const TemplateURLService::TemplateURLVector& template_urls,

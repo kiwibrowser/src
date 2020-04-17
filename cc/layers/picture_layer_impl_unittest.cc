@@ -797,9 +797,15 @@ TEST_F(PictureLayerImplTest, PinchGestureTilings) {
   // Zoom in a lot now. Since we increase by increments of
   // kMaxScaleRatioDuringPinch, this will create a new tiling at 4.0.
   SetContentsScaleOnBothLayers(3.8f, 1.0f, 3.8f, 1.f, 0.f, false);
-  EXPECT_EQ(4u, active_layer()->tilings()->num_tilings());
-  EXPECT_FLOAT_EQ(
-      4.0f, active_layer()->tilings()->tiling_at(0)->contents_scale_key());
+#if defined(OS_ANDROID)
+  EXPECT_EQ(3u, active_layer()->tilings()->num_tilings());
+  EXPECT_FLOAT_EQ(2.0f,
+                  active_layer()->tilings()->tiling_at(0)->contents_scale_key());
+#else
+  EXPECT_EQ(3u, active_layer()->tilings()->num_tilings());
+  EXPECT_FLOAT_EQ(4.0f,
+                  active_layer()->tilings()->tiling_at(0)->contents_scale_key());
+#endif
   // Although one of the tilings matches the low resolution scale, it still
   // shouldn't be marked as low resolution since we're pinching.
   auto* low_res_tiling =
@@ -875,9 +881,12 @@ TEST_F(PictureLayerImplTest, SnappedTilingDuringZoom) {
   // Zoom in a lot. Since we move in factors of two, we should get a scale that
   // is a power of 2 times 0.24.
   SetContentsScaleOnBothLayers(1.f, 1.0f, 1.f, 1.0f, 0.f, false);
+#if defined(OS_ANDROID)
+  EXPECT_EQ(3u, active_layer()->tilings()->num_tilings());
   EXPECT_EQ(4u, active_layer()->tilings()->num_tilings());
-  EXPECT_FLOAT_EQ(
-      1.92f, active_layer()->tilings()->tiling_at(0)->contents_scale_key());
+  EXPECT_FLOAT_EQ(1.92f,
+                  active_layer()->tilings()->tiling_at(0)->contents_scale_key());
+#endif
 }
 
 TEST_F(PictureLayerImplTest, CleanUpTilings) {

@@ -37,6 +37,14 @@ struct ContentSecurityPolicyHeader;
 // of those frames. We are mirroring this tree in the browser process. This
 // class represents a node in this tree and is a wrapper for all objects that
 // are frame-specific (as opposed to page-specific).
+//
+// Each FrameTreeNode has a current RenderFrameHost, which can change over
+// time as the frame is navigated. Any immediate subframes of the current
+// document are tracked using FrameTreeNodes owned by the current
+// RenderFrameHost, rather than as children of FrameTreeNode itself. This
+// allows subframe FrameTreeNodes to stay alive while a RenderFrameHost is
+// still alive - for example while pending deletion, after a new current
+// RenderFrameHost has replaced it.
 class CONTENT_EXPORT FrameTreeNode {
  public:
   class Observer {
@@ -78,11 +86,6 @@ class CONTENT_EXPORT FrameTreeNode {
 
   bool IsMainFrame() const;
 
-  FrameTreeNode* AddChild(std::unique_ptr<FrameTreeNode> child,
-                          int process_id,
-                          int frame_routing_id);
-  void RemoveChild(FrameTreeNode* child);
-
   // Clears process specific-state in this node to prepare for a new process.
   void ResetForNewProcess();
 
@@ -122,9 +125,7 @@ class CONTENT_EXPORT FrameTreeNode {
     return devtools_frame_token_;
   }
 
-  size_t child_count() const {
-    return children_.size();
-  }
+  size_t child_count() const { return current_frame_host()->child_count(); }
 
   unsigned int depth() const { return depth_; }
 
@@ -147,7 +148,7 @@ class CONTENT_EXPORT FrameTreeNode {
   void SetOriginalOpener(FrameTreeNode* opener);
 
   FrameTreeNode* child_at(size_t index) const {
-    return children_[index].get();
+    return current_frame_host()->child_at(index);
   }
 
   // Returns the URL of the last committed page in the current frame.
@@ -435,9 +436,6 @@ class CONTENT_EXPORT FrameTreeNode {
   // An observer that clears this node's |original_opener_| if the opener is
   // destroyed.
   std::unique_ptr<OpenerDestroyedObserver> original_opener_observer_;
-
-  // The immediate children of this specific frame.
-  std::vector<std::unique_ptr<FrameTreeNode>> children_;
 
   // Whether this frame has committed any real load, replacing its initial
   // about:blank page.

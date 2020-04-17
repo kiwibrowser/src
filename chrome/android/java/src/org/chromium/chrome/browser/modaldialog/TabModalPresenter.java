@@ -286,7 +286,7 @@ public class TabModalPresenter
         FrameLayout.LayoutParams params =
                 new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
-        dialogView.setBackgroundResource(R.drawable.menu_bg);
+        dialogView.setBackgroundResource(R.drawable.popup_bg);
         mDialogContainer.addView(dialogView, params);
         mDialogContainer.setAlpha(0f);
         mDialogContainer.setVisibility(View.VISIBLE);

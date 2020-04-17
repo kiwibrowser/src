@@ -147,6 +147,7 @@ std::string GPUDeviceToString(const gpu::GPUInfo::GPUDevice& gpu) {
 std::unique_ptr<base::ListValue> BasicGpuInfoAsListValue(
     const gpu::GPUInfo& gpu_info,
     const gpu::GpuFeatureInfo& gpu_feature_info) {
+  const gpu::GPUInfo::GPUDevice& active_gpu = gpu_info.active_gpu();
   auto basic_info = std::make_unique<base::ListValue>();
   basic_info->Append(NewDescriptionValuePair(
       "Initialization time",
@@ -208,11 +209,11 @@ std::unique_ptr<base::ListValue> BasicGpuInfoAsListValue(
 #endif
 
   basic_info->Append(
-      NewDescriptionValuePair("Driver vendor", gpu_info.driver_vendor));
-  basic_info->Append(NewDescriptionValuePair("Driver version",
-                                             gpu_info.driver_version));
-  basic_info->Append(NewDescriptionValuePair("Driver date",
-                                             gpu_info.driver_date));
+      NewDescriptionValuePair("Driver vendor", active_gpu.driver_vendor));
+  basic_info->Append(
+      NewDescriptionValuePair("Driver version", active_gpu.driver_version));
+  basic_info->Append(
+      NewDescriptionValuePair("Driver date", active_gpu.driver_date));
   basic_info->Append(NewDescriptionValuePair("Pixel shader version",
                                              gpu_info.pixel_shader_version));
   basic_info->Append(NewDescriptionValuePair("Vertex shader version",

@@ -8,6 +8,8 @@
 #include <string>
 
 #include "base/bind.h"
+#include "base/command_line.h"
+#include "base/memory/scoped_refptr.h"
 #include "base/test/scoped_mock_time_message_loop_task_runner.h"
 #include "base/time/time.h"
 #include "build/build_config.h"
@@ -20,11 +22,12 @@
 #include "chrome/test/base/chrome_render_view_host_test_harness.h"
 #include "chrome/test/base/testing_profile.h"
 #include "components/content_settings/core/browser/host_content_settings_map.h"
-#include "content/public/browser/permission_manager.h"
+#include "content/public/browser/permission_controller_delegate.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/test/test_browser_thread_bundle.h"
+#include "extensions/buildflags/buildflags.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "third_party/blink/public/platform/modules/permissions/permission_status.mojom.h"
 #include "url/gurl.h"
@@ -32,6 +35,18 @@
 #if defined(OS_ANDROID)
 #include "base/android/build_info.h"
 #endif  // defined(OS_ANDROID)
+
+#if BUILDFLAG(ENABLE_EXTENSIONS)
+#include "chrome/browser/extensions/extension_service.h"
+#include "chrome/browser/extensions/test_extension_system.h"
+#include "chrome/browser/notifications/notifier_state_tracker.h"
+#include "chrome/browser/notifications/notifier_state_tracker_factory.h"
+#include "extensions/browser/extension_registry.h"
+#include "extensions/browser/extension_system.h"
+#include "extensions/common/extension.h"
+#include "extensions/common/extension_builder.h"
+#include "ui/message_center/public/cpp/notifier_id.h"
+#endif  // BUILDFLAG(ENABLE_EXTENSIONS)
 
 namespace {
 
@@ -109,6 +124,39 @@ class NotificationPermissionContextTest
                             ContentSetting setting) {
     context->UpdateContentSetting(requesting_origin, embedding_origin, setting);
   }
+
+#if BUILDFLAG(ENABLE_EXTENSIONS)
+  // Registers the given |extension| with the extension service and returns the
+  // extension if it could be registered appropriately.
+  scoped_refptr<const extensions::Extension> RegisterExtension(
+      scoped_refptr<extensions::Extension> extension) {
+    base::CommandLine command_line(base::CommandLine::NO_PROGRAM);
+    extensions::TestExtensionSystem* test_extension_system =
+        static_cast<extensions::TestExtensionSystem*>(
+            extensions::ExtensionSystem::Get(profile()));
+
+    extensions::ExtensionService* extension_service =
+        test_extension_system->CreateExtensionService(
+            &command_line, base::FilePath() /* install_directory */,
+            false /* autoupdate_enabled */);
+
+    extension_service->AddExtension(extension.get());
+
+    extensions::ExtensionRegistry* registry =
+        extensions::ExtensionRegistry::Get(profile());
+
+    return base::WrapRefCounted(registry->GetExtensionById(
+        extension->id(), extensions::ExtensionRegistry::ENABLED));
+  }
+
+  // Proxy to NotificationPermissionContext::GetPermissionStatusForExtension()
+  // to avoid needing lots of FRIEND_TEST_ALL_PREFIXES declarations.
+  ContentSetting GetPermissionStatusForExtension(
+      const NotificationPermissionContext& context,
+      const GURL& origin) const {
+    return context.GetPermissionStatusForExtension(origin);
+  }
+#endif
 
  private:
   std::unique_ptr<base::ScopedMockTimeMessageLoopTaskRunner>
@@ -400,3 +448,78 @@ TEST_F(NotificationPermissionContextTest, TestParallelDenyInIncognito) {
   EXPECT_EQ(CONTENT_SETTING_BLOCK,
             permission_context.GetContentSettingFromMap(url, url));
 }
+
+#if BUILDFLAG(ENABLE_EXTENSIONS)
+TEST_F(NotificationPermissionContextTest, ExtensionPermissionAskByDefault) {
+  // Verifies that notification permission is not granted to extensions by
+  // default. They need to explicitly declare this in their manifest.
+  NotificationPermissionContext context(profile());
+
+  scoped_refptr<const extensions::Extension> extension = RegisterExtension(
+      extensions::ExtensionBuilder("Notification Permission Test").Build());
+
+  ASSERT_TRUE(extension);
+
+  ASSERT_EQ(CONTENT_SETTING_ASK,
+            GetPermissionStatusForExtension(context, extension->url()));
+
+  EXPECT_EQ(CONTENT_SETTING_ASK,
+            context
+                .GetPermissionStatus(nullptr /* render_frame_host */,
+                                     extension->url(), extension->url())
+                .content_setting);
+}
+
+TEST_F(NotificationPermissionContextTest, ExtensionPermissionGranted) {
+  // Verifies that extensions that declare the "notifications" permission in
+  // their manifest get notification permission granted.
+  NotificationPermissionContext context(profile());
+
+  scoped_refptr<const extensions::Extension> extension = RegisterExtension(
+      extensions::ExtensionBuilder("Notification Permission Test")
+          .AddPermission("notifications")
+          .Build());
+
+  ASSERT_TRUE(extension);
+
+  ASSERT_EQ(CONTENT_SETTING_ALLOW,
+            GetPermissionStatusForExtension(context, extension->url()));
+
+  EXPECT_EQ(CONTENT_SETTING_ALLOW,
+            context
+                .GetPermissionStatus(nullptr /* render_frame_host */,
+                                     extension->url(), extension->url())
+                .content_setting);
+}
+
+TEST_F(NotificationPermissionContextTest, ExtensionPermissionOverrideDenied) {
+  // Verifies that extensions that declare the "notifications" permission in
+  // their manifest can still have permission disabled by the user.
+  NotificationPermissionContext context(profile());
+
+  scoped_refptr<const extensions::Extension> extension = RegisterExtension(
+      extensions::ExtensionBuilder("Notification Permission Test")
+          .AddPermission("notifications")
+          .Build());
+
+  ASSERT_TRUE(extension);
+
+  NotifierStateTracker* notifier_state_tracker =
+      NotifierStateTrackerFactory::GetForProfile(profile());
+  DCHECK(notifier_state_tracker);
+
+  // Disable the |extension|'s notification ability through the state tracker.
+  message_center::NotifierId notifier_id(
+      message_center::NotifierId::APPLICATION, extension->id());
+  notifier_state_tracker->SetNotifierEnabled(notifier_id, /* enabled= */ false);
+
+  ASSERT_EQ(CONTENT_SETTING_BLOCK,
+            GetPermissionStatusForExtension(context, extension->url()));
+
+  EXPECT_EQ(CONTENT_SETTING_BLOCK,
+            context
+                .GetPermissionStatus(nullptr /* render_frame_host */,
+                                     extension->url(), extension->url())
+                .content_setting);
+}
+#endif

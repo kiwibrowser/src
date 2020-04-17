@@ -101,7 +101,8 @@ bool StructTraits<content_settings::mojom::RendererContentSettingRulesDataView,
          data.ReadScriptRules(&out->script_rules) &&
          data.ReadAutoplayRules(&out->autoplay_rules) &&
          data.ReadClientHintsRules(&out->client_hints_rules) &&
-         data.ReadPopupRedirectRules(&out->popup_redirect_rules);
+         data.ReadPopupRedirectRules(&out->popup_redirect_rules) &&
+         data.ReadAdsRules(&out->ads_rules);
 }
 
 }  // namespace mojo

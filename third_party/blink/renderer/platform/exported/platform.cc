@@ -126,7 +126,6 @@ void Platform::Initialize(Platform* platform) {
   MemoryCoordinator::Initialize();
   if (base::ThreadTaskRunnerHandle::IsSet()) {
     base::trace_event::MemoryDumpProvider::Options options;
-    options.supports_heap_profiling = true;
     base::trace_event::MemoryDumpManager::GetInstance()->RegisterDumpProvider(
         BlinkGCMemoryDumpProvider::Instance(), "BlinkGC",
         base::ThreadTaskRunnerHandle::Get(), options);
@@ -144,11 +143,9 @@ void Platform::Initialize(Platform* platform) {
   if (g_platform->main_thread_) {
     DCHECK(!g_gc_task_runner);
     g_gc_task_runner = new GCTaskRunner(g_platform->main_thread_);
-    base::trace_event::MemoryDumpProvider::Options heap_profiling_options;
-    heap_profiling_options.supports_heap_profiling = true;
     base::trace_event::MemoryDumpManager::GetInstance()->RegisterDumpProvider(
         PartitionAllocMemoryDumpProvider::Instance(), "PartitionAlloc",
-        base::ThreadTaskRunnerHandle::Get(), heap_profiling_options);
+        base::ThreadTaskRunnerHandle::Get());
     base::trace_event::MemoryDumpManager::GetInstance()->RegisterDumpProvider(
         FontCacheMemoryDumpProvider::Instance(), "FontCaches",
         base::ThreadTaskRunnerHandle::Get());

@@ -5,7 +5,7 @@
 #include "content/browser/net/network_quality_observer_impl.h"
 
 #include "base/run_loop.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/time/time.h"
 #include "content/public/test/test_browser_thread_bundle.h"
 #include "net/nqe/effective_connection_type.h"

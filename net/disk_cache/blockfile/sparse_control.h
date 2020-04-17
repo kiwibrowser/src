@@ -12,7 +12,7 @@
 
 #include "base/compiler_specific.h"
 #include "base/macros.h"
-#include "net/base/completion_callback.h"
+#include "net/base/completion_once_callback.h"
 #include "net/disk_cache/blockfile/bitmap.h"
 #include "net/disk_cache/blockfile/disk_format.h"
 
@@ -33,7 +33,7 @@ class EntryImpl;
 // used directly for sparse operations (the entry passed in to the constructor).
 class SparseControl {
  public:
-  typedef net::CompletionCallback CompletionCallback;
+  typedef net::CompletionOnceCallback CompletionOnceCallback;
 
   // The operation to perform.
   enum SparseOperation {
@@ -65,7 +65,7 @@ class SparseControl {
               int64_t offset,
               net::IOBuffer* buf,
               int buf_len,
-              const CompletionCallback& callback);
+              CompletionOnceCallback callback);
 
   // Implements Entry::GetAvailableRange().
   int GetAvailableRange(int64_t offset, int len, int64_t* start);
@@ -76,7 +76,7 @@ class SparseControl {
   // Returns OK if the entry can be used for new IO or ERR_IO_PENDING if we are
   // busy. If the entry is busy, we'll invoke the callback when we are ready
   // again. See disk_cache::Entry::ReadyToUse() for more info.
-  int ReadyToUse(const CompletionCallback& completion_callback);
+  int ReadyToUse(CompletionOnceCallback completion_callback);
 
   // Deletes the children entries of |entry|.
   static void DeleteChildren(EntryImpl* entry);
@@ -165,8 +165,8 @@ class SparseControl {
   SparseData child_data_;  // Parent and allocation map of child_.
   Bitmap child_map_;  // The allocation map as a bitmap.
 
-  CompletionCallback user_callback_;
-  std::vector<CompletionCallback> abort_callbacks_;
+  CompletionOnceCallback user_callback_;
+  std::vector<CompletionOnceCallback> abort_callbacks_;
   int64_t offset_;  // Current sparse offset.
   scoped_refptr<net::DrainableIOBuffer> user_buf_;
   int buf_len_;  // Bytes to read or write.

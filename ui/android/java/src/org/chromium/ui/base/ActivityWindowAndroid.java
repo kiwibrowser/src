@@ -187,6 +187,10 @@ public class ActivityWindowAndroid
             onActivityStopped();
         } else if (newState == ActivityState.STARTED) {
             onActivityStarted();
+        } else if (newState == ActivityState.PAUSED) {
+            onActivityPaused();
+        } else if (newState == ActivityState.RESUMED) {
+            onActivityResumed();
         }
     }
 

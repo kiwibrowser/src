@@ -55,6 +55,10 @@ void ActivateWindow(gfx::NativeWindow window) {
   NOTIMPLEMENTED();
 }
 
+gfx::NativeView GetViewForWindow(gfx::NativeWindow window) {
+  return nullptr;
+}
+
 bool IsVisible(gfx::NativeView view) {
   NOTIMPLEMENTED();
   return true;

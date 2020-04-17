@@ -26,7 +26,12 @@ class AttestationPermissionRequest : public PermissionRequest {
       : origin_(origin), callback_(std::move(callback)) {}
 
   PermissionRequest::IconId GetIconId() const override {
-    return kUsbSecurityKeyIcon;
+    return 0;
+  }
+
+  base::string16 GetMessageText() const override {
+    return l10n_util::GetStringUTF16(
+        IDS_SECURITY_KEY_ATTESTATION_PERMISSION_FRAGMENT);
   }
 
   base::string16 GetMessageTextFragment() const override {

@@ -4,7 +4,7 @@
 
 #include "components/autofill/core/common/autofill_l10n_util.h"
 
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "third_party/icu/source/common/unicode/locid.h"
 

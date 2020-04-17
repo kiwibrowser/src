@@ -33,7 +33,7 @@ TEST_F(CommandLinePrefStoreSSLManagerTest, CommandLinePrefs) {
   base::CommandLine command_line(base::CommandLine::NO_PROGRAM);
   command_line.AppendSwitchASCII(switches::kSSLVersionMin, "tls1.1");
   command_line.AppendSwitchASCII(switches::kSSLVersionMax, "tls1.2");
-  command_line.AppendSwitchASCII(switches::kTLS13Variant, "draft23");
+  command_line.AppendSwitchASCII(switches::kTLS13Variant, "final");
 
   sync_preferences::PrefServiceMockFactory factory;
   factory.set_user_prefs(local_state_store);
@@ -53,7 +53,7 @@ TEST_F(CommandLinePrefStoreSSLManagerTest, CommandLinePrefs) {
             context_params->initial_ssl_config->version_min);
   EXPECT_EQ(network::mojom::SSLVersion::kTLS13,
             context_params->initial_ssl_config->version_max);
-  EXPECT_EQ(network::mojom::TLS13Variant::kDraft23,
+  EXPECT_EQ(network::mojom::TLS13Variant::kFinal,
             context_params->initial_ssl_config->tls13_variant);
 
   // Explicitly double-check the settings are not in the preference store.
@@ -86,7 +86,7 @@ TEST_F(CommandLinePrefStoreSSLManagerTest, TLS13VariantEnabled) {
       base::MakeRefCounted<TestingPrefStore>();
 
   base::CommandLine command_line(base::CommandLine::NO_PROGRAM);
-  command_line.AppendSwitchASCII(switches::kTLS13Variant, "draft23");
+  command_line.AppendSwitchASCII(switches::kTLS13Variant, "final");
 
   sync_preferences::PrefServiceMockFactory factory;
   factory.set_user_prefs(local_state_store);
@@ -105,7 +105,7 @@ TEST_F(CommandLinePrefStoreSSLManagerTest, TLS13VariantEnabled) {
   // Command-line flags should be respected.
   EXPECT_EQ(network::mojom::SSLVersion::kTLS13,
             context_params->initial_ssl_config->version_max);
-  EXPECT_EQ(network::mojom::TLS13Variant::kDraft23,
+  EXPECT_EQ(network::mojom::TLS13Variant::kFinal,
             context_params->initial_ssl_config->tls13_variant);
 }
 

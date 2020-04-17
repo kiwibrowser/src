@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//testing/libfuzzer/fuzzer_test.gni")
+
 static_library("common") {
   sources = [
     "activation_decision.h",
@@ -79,6 +81,18 @@ source_set("unit_tests") {
     "//components/url_pattern_index:test_support",
     "//testing/gtest",
     "//third_party/protobuf:protobuf_lite",
+    "//url",
+  ]
+}
+
+fuzzer_test("indexed_ruleset_fuzzer") {
+  sources = [
+    "indexed_ruleset_fuzzer.cc",
+  ]
+  deps = [
+    ":common",
+    "//base",
+    "//base/test:test_support",
     "//url",
   ]
 }

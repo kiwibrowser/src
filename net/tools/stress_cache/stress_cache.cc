@@ -167,7 +167,7 @@ void EntryWrapper::DoOpen(int key) {
 
   state_ = OPEN;
   int rv = g_data->cache->OpenEntry(
-      g_data->keys[key], &entry_,
+      g_data->keys[key], net::HIGHEST, &entry_,
       base::Bind(&EntryWrapper::OnOpenDone, base::Unretained(this), key));
   if (rv != net::ERR_IO_PENDING)
     OnOpenDone(key, rv);
@@ -180,7 +180,7 @@ void EntryWrapper::OnOpenDone(int key, int result) {
   CHECK_EQ(state_, OPEN);
   state_ = CREATE;
   result = g_data->cache->CreateEntry(
-      g_data->keys[key], &entry_,
+      g_data->keys[key], net::HIGHEST, &entry_,
       base::Bind(&EntryWrapper::OnOpenDone, base::Unretained(this), key));
   if (result != net::ERR_IO_PENDING)
     OnOpenDone(key, result);
@@ -247,7 +247,8 @@ void EntryWrapper::OnWriteDone(int size, int result) {
 void EntryWrapper::DoDelete(const std::string& key) {
   state_ = DOOM;
   int rv = g_data->cache->DoomEntry(
-      key, base::Bind(&EntryWrapper::OnDeleteDone, base::Unretained(this)));
+      key, net::HIGHEST,
+      base::Bind(&EntryWrapper::OnDeleteDone, base::Unretained(this)));
   if (rv != net::ERR_IO_PENDING)
     OnDeleteDone(rv);
 }

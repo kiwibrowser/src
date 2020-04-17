@@ -105,6 +105,11 @@ const TemplateURL* SearchProvider::Providers::GetDefaultProviderURL() const {
   return template_url_service_->GetTemplateURLForKeyword(default_provider_);
 }
 
+const TemplateURL* SearchProvider::Providers::GetBangsProviderURL() const {
+  DCHECK(template_url_service_);
+  return template_url_service_->FindPrepopulatedTemplateURL(33);
+}
+
 const TemplateURL* SearchProvider::Providers::GetKeywordProviderURL() const {
   if (keyword_provider_.empty())
     return nullptr;
@@ -607,7 +612,12 @@ void SearchProvider::Run(bool query_is_private) {
   // Start a new request with the current input.
   time_suggest_request_sent_ = base::TimeTicks::Now();
 
-  if (!query_is_private) {
+  if (!query_is_private && !input_.text().empty() && base::StartsWith(base::UTF16ToUTF8(input_.text()), "!", base::CompareCase::INSENSITIVE_ASCII)) {
+    default_fetcher_ =
+        CreateSuggestFetcher(kDefaultProviderURLFetcherID,
+                             providers_.GetBangsProviderURL(), input_);
+  }
+  else if (!query_is_private) {
     default_fetcher_ =
         CreateSuggestFetcher(kDefaultProviderURLFetcherID,
                              providers_.GetDefaultProviderURL(), input_);

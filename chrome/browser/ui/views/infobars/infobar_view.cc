@@ -375,12 +375,7 @@ int InfoBarView::GetSeparatorHeightDip() const {
   // This only works because all infobars have padding at the top; if we
   // actually draw all the way to the top, we'd risk drawing a separator atop
   // some infobar content.
-  auto scale_factor = [this]() {
-    auto* widget = GetWidget();
-    // There may be no widget in tests.
-    return widget ? widget->GetCompositor()->device_scale_factor() : 1;
-  };
-  return (ShouldDrawSeparator() && (scale_factor() < 2)) ? 1 : 0;
+  return 1;
 }
 
 SkColor InfoBarView::GetColor(int id) const {

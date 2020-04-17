@@ -10,7 +10,7 @@
 #include "base/atomic_sequence_num.h"
 #include "base/command_line.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "components/security_state/core/security_state.h"
 #include "components/strings/grit/components_strings.h"
 #include "content/public/browser/security_style_explanation.h"

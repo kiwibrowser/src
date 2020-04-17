@@ -45,6 +45,7 @@ class HistoryReportJniBridge {
       JNIEnv* env,
       const base::android::JavaParamRef<jobject>& obj,
       jint batch_size);
+  static void FocusOmnibox(JNIEnv* env);
   // Removes a batch of usage reports from a usage reports buffer.
   void RemoveUsageReports(
       JNIEnv* env,

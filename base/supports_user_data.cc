@@ -13,12 +13,18 @@ SupportsUserData::SupportsUserData() {
 }
 
 SupportsUserData::Data* SupportsUserData::GetUserData(const void* key) const {
+//  LOG(INFO) << "[EXTENSIONS] SupportsUserData::GetUserData - Step 1";
   DCHECK(sequence_checker_.CalledOnValidSequence());
+//  LOG(INFO) << "[EXTENSIONS] SupportsUserData::GetUserData - Step 2";
+//  LOG(INFO) << "[EXTENSIONS] SupportsUserData::GetUserData - Step 2a - " << key;
   // Avoid null keys; they are too vulnerable to collision.
   DCHECK(key);
+//  LOG(INFO) << "[EXTENSIONS] SupportsUserData::GetUserData - Step 3";
   DataMap::const_iterator found = user_data_.find(key);
+//  LOG(INFO) << "[EXTENSIONS] SupportsUserData::GetUserData - Step 4";
   if (found != user_data_.end())
     return found->second.get();
+//  LOG(INFO) << "[EXTENSIONS] SupportsUserData::GetUserData - Step 5";
   return nullptr;
 }
 

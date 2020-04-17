@@ -204,7 +204,8 @@ void CompositorView::SetOverlayVideoMode(JNIEnv* env,
 
 void CompositorView::SetSceneLayer(JNIEnv* env,
                                    const JavaParamRef<jobject>& object,
-                                   const JavaParamRef<jobject>& jscene_layer) {
+                                   const JavaParamRef<jobject>& jscene_layer,
+                                   bool night_mode_enabled) {
   SceneLayer* scene_layer = SceneLayer::FromJavaObject(env, jscene_layer);
 
   if (scene_layer_ != scene_layer) {
@@ -226,7 +227,9 @@ void CompositorView::SetSceneLayer(JNIEnv* env,
     root_layer_->InsertChild(scene_layer->layer(), 0);
   }
 
-  if (scene_layer) {
+  if (night_mode_enabled) {
+    SetBackground(true, SK_ColorBLACK);
+  } else if (scene_layer) {
     SetBackground(scene_layer->ShouldShowBackground(),
                   scene_layer->GetBackgroundColor());
   } else {

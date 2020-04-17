@@ -13,6 +13,7 @@
 #include "components/bookmarks/browser/base_bookmark_model_observer.h"
 #include "components/bookmarks/common/android/bookmark_id.h"
 #include "components/prefs/pref_change_registrar.h"
+#include "ui/shell_dialogs/select_file_dialog.h"
 
 namespace bookmarks {
 class BookmarkModel;
@@ -26,7 +27,8 @@ class Profile;
 // bookmark page. This fetches the bookmarks, title, urls, folder
 // hierarchy.
 class BookmarkBridge : public bookmarks::BaseBookmarkModelObserver,
-                        public PartnerBookmarksShim::Observer {
+                        public PartnerBookmarksShim::Observer,
+                        public ui::SelectFileDialog::Listener {
  public:
   BookmarkBridge(JNIEnv* env,
                  const base::android::JavaRef<jobject>& obj,
@@ -35,6 +37,11 @@ class BookmarkBridge : public bookmarks::BaseBookmarkModelObserver,
 
   bool IsDoingExtensiveChanges(JNIEnv* env,
                                const base::android::JavaParamRef<jobject>& obj);
+
+  void FileSelected(const base::FilePath& path,
+                    int index,
+                    void* params) override;
+  void FileSelectionCanceled(void* params) override;
 
   jboolean IsEditBookmarksEnabled(
       JNIEnv* env,
@@ -109,12 +116,26 @@ class BookmarkBridge : public bookmarks::BaseBookmarkModelObserver,
       jint type,
       jint index);
 
+  void ReorderChildren(
+      JNIEnv* env,
+      const base::android::JavaParamRef<jobject>& obj,
+      const base::android::JavaParamRef<jobject>& j_bookmark_id_obj,
+      jlongArray arr);
+
   // Get the number of bookmarks in the sub tree of the specified bookmark node.
   // The specified node must be of folder type.
   jint GetTotalBookmarkCount(JNIEnv* env,
                              const base::android::JavaParamRef<jobject>& obj,
                              jlong id,
                              jint type);
+
+  void ImportBookmarks(JNIEnv* env,
+                        const base::android::JavaParamRef<jobject>& obj,
+                        const base::android::JavaParamRef<jobject>& java_window);
+
+  void ExportBookmarks(JNIEnv* env,
+                        const base::android::JavaParamRef<jobject>& obj,
+                        const base::android::JavaParamRef<jobject>& java_window);
 
   void SetBookmarkTitle(JNIEnv* env,
                         const base::android::JavaParamRef<jobject>& obj,
@@ -267,6 +288,7 @@ class BookmarkBridge : public bookmarks::BaseBookmarkModelObserver,
   std::unique_ptr<bookmarks::ScopedGroupBookmarkActions>
       grouped_bookmark_actions_;
   PrefChangeRegistrar pref_change_registrar_;
+  scoped_refptr<ui::SelectFileDialog> select_file_dialog_;
 
   // Information about the Partner bookmarks (must check for IsLoaded()).
   // This is owned by profile.

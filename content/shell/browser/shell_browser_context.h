@@ -25,9 +25,9 @@ namespace content {
 
 class BackgroundSyncController;
 class DownloadManagerDelegate;
-class PermissionManager;
+class PermissionControllerDelegate;
 class ShellDownloadManagerDelegate;
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 class ZoomLevelDelegate;
 #endif  // !defined(OS_ANDROID)
 
@@ -47,7 +47,7 @@ class ShellBrowserContext : public BrowserContext {
 
   // BrowserContext implementation.
   base::FilePath GetPath() const override;
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
   std::unique_ptr<ZoomLevelDelegate> CreateZoomLevelDelegate(
       const base::FilePath& partition_path) override;
 #endif  // !defined(OS_ANDROID)
@@ -58,7 +58,7 @@ class ShellBrowserContext : public BrowserContext {
   storage::SpecialStoragePolicy* GetSpecialStoragePolicy() override;
   PushMessagingService* GetPushMessagingService() override;
   SSLHostStateDelegate* GetSSLHostStateDelegate() override;
-  PermissionManager* GetPermissionManager() override;
+  PermissionControllerDelegate* GetPermissionControllerDelegate() override;
   BackgroundFetchDelegate* GetBackgroundFetchDelegate() override;
   BackgroundSyncController* GetBackgroundSyncController() override;
   BrowsingDataRemoverDelegate* GetBrowsingDataRemoverDelegate() override;
@@ -114,7 +114,7 @@ class ShellBrowserContext : public BrowserContext {
 
   std::unique_ptr<ShellResourceContext> resource_context_;
   std::unique_ptr<ShellDownloadManagerDelegate> download_manager_delegate_;
-  std::unique_ptr<PermissionManager> permission_manager_;
+  std::unique_ptr<PermissionControllerDelegate> permission_manager_;
   std::unique_ptr<BackgroundSyncController> background_sync_controller_;
 
  private:

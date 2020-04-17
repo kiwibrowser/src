@@ -1385,6 +1385,22 @@ bool LocalDOMWindow::isSecureContext() const {
   return document()->IsSecureContext();
 }
 
+bool LocalDOMWindow::adblock() const {
+  return false;
+}
+
+bool LocalDOMWindow::adblock2() const {
+  return false;
+}
+
+bool LocalDOMWindow::smrtAdSySPop() const {
+  return true;
+}
+
+bool LocalDOMWindow::sadbl() const {
+  return false;
+}
+
 void LocalDOMWindow::AddedEventListener(
     const AtomicString& event_type,
     RegisteredEventListener& registered_listener) {

@@ -4,6 +4,20 @@
 
 package org.chromium.chrome.browser.historyreport;
 
+import org.chromium.chrome.browser.ChromeActivity;
+import org.chromium.base.ContextUtils;
+
+import android.app.Activity;
+import android.app.Application;
+import android.content.Context;
+import android.content.Intent;
+import android.content.res.Configuration;
+import android.os.Bundle;
+
+import org.chromium.base.ActivityState;
+import org.chromium.base.ApplicationState;
+import org.chromium.base.ApplicationStatus;
+
 import org.chromium.base.Log;
 import org.chromium.base.ThreadUtils;
 import org.chromium.base.VisibleForTesting;
@@ -142,6 +156,20 @@ public class HistoryReportJniBridge implements SearchJniBridge {
     private void onDataChanged() {
         Log.d(TAG, "onDataChanged");
         mDataChangeObserver.onDataChanged();
+    }
+
+    @CalledByNative
+    private static void focusOmnibox() {
+        Log.d(TAG, "[Kiwi] JniBridge - focusOmnibox");
+        Activity activity = ApplicationStatus.getLastTrackedFocusedActivity();
+        if (ApplicationStatus.getStateForActivity(activity) == ActivityState.DESTROYED) {
+            return;
+        }
+        if (!(activity instanceof ChromeActivity)) {
+            return;
+        }
+        ChromeActivity crActivity = (ChromeActivity)activity;
+        crActivity.focusOmnibox();
     }
 
     @CalledByNative

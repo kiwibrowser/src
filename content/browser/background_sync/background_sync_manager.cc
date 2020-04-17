@@ -28,7 +28,7 @@
 #include "content/public/browser/background_sync_controller.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/permission_manager.h"
+#include "content/public/browser/permission_controller.h"
 #include "content/public/browser/permission_type.h"
 #include "third_party/blink/public/mojom/service_worker/service_worker_event_status.mojom.h"
 
@@ -80,8 +80,6 @@ BackgroundSyncController* GetBackgroundSyncControllerOnUIThread(
   return browser_context->GetBackgroundSyncController();
 }
 
-// Returns PermissionStatus::DENIED if the permission manager cannot be
-// accessed for any reason.
 blink::mojom::PermissionStatus GetBackgroundSyncPermissionOnUIThread(
     scoped_refptr<ServiceWorkerContextWrapper> service_worker_context,
     const GURL& origin) {
@@ -92,13 +90,12 @@ blink::mojom::PermissionStatus GetBackgroundSyncPermissionOnUIThread(
   if (!browser_context)
     return blink::mojom::PermissionStatus::DENIED;
 
-  PermissionManager* permission_manager =
-      browser_context->GetPermissionManager();
-  if (!permission_manager)
-    return blink::mojom::PermissionStatus::DENIED;
+  PermissionController* permission_controller =
+      BrowserContext::GetPermissionController(browser_context);
+  DCHECK(permission_controller);
 
   // The requesting origin always matches the embedding origin.
-  return permission_manager->GetPermissionStatus(
+  return permission_controller->GetPermissionStatus(
       PermissionType::BACKGROUND_SYNC, origin, origin);
 }
 

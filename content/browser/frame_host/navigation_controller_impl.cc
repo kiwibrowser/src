@@ -76,9 +76,13 @@
 #include "content/public/common/content_client.h"
 #include "content/public/common/content_constants.h"
 #include "content/public/common/content_features.h"
+#include "chrome/browser/content_settings/host_content_settings_map_factory.h"
+#include "chrome/browser/profiles/profile_manager.h"
+#include "components/content_settings/core/browser/host_content_settings_map.h"
 #include "content/public/common/url_utils.h"
 #include "media/base/mime_util.h"
 #include "net/base/escape.h"
+#include "net/http/http_status_code.h"
 #include "skia/ext/platform_canvas.h"
 #include "third_party/blink/public/common/mime_util/mime_util.h"
 #include "url/url_constants.h"
@@ -125,9 +129,19 @@ void ConfigureEntriesForRestore(
   }
 }
 
+bool IsGlobalDesktopSettingsOn() {
+  bool is_desktop_settings_on = HostContentSettingsMapFactory::GetForProfile(
+    ProfileManager::GetActiveUserProfile()->GetOriginalProfile())->
+    GetDefaultContentSetting(CONTENT_SETTINGS_TYPE_DESKTOP_MODE, NULL) == CONTENT_SETTING_ALLOW;
+  return is_desktop_settings_on;
+}
+
 // Determines whether or not we should be carrying over a user agent override
 // between two NavigationEntries.
 bool ShouldKeepOverride(const NavigationEntry* last_entry) {
+  if (!last_entry) {
+    return IsGlobalDesktopSettingsOn();
+  }
   return last_entry && last_entry->GetIsOverridingUserAgent();
 }
 
@@ -277,6 +291,8 @@ std::unique_ptr<NavigationEntry> NavigationController::CreateNavigationEntry(
   entry->set_user_typed_url(dest_url);
   entry->set_update_virtual_url_with_url(reverse_on_redirect);
   entry->set_extra_headers(extra_headers);
+
+  entry->SetIsOverridingUserAgent(IsGlobalDesktopSettingsOn());
   return base::WrapUnique(entry);
 }
 
@@ -2194,6 +2210,16 @@ void NavigationControllerImpl::NavigateToPendingEntry(
     std::unique_ptr<NavigationUIData> navigation_ui_data) {
   DCHECK(pending_entry_);
   needs_reload_ = false;
+  FrameTreeNode* root = delegate_->GetFrameTree()->root();
+  int nav_entry_id = pending_entry_->GetUniqueID();
+
+  // BackForwardCache:
+  // Try to restore a document from the BackForwardCache.
+  if (auto rfh = back_forward_cache_.RestoreDocument(nav_entry_id)) {
+    root->render_manager()->RestoreFromBackForwardCache(std::move(rfh));
+    CommitRestoreFromBackForwardCache();
+    return;
+  }
 
   // If we were navigating to a slow-to-commit page, and the user performs
   // a session history navigation to the last committed page, RenderViewHost
@@ -2516,6 +2542,27 @@ void NavigationControllerImpl::InsertEntriesFrom(
 void NavigationControllerImpl::SetGetTimestampCallbackForTest(
     const base::Callback<base::Time()>& get_timestamp_callback) {
   get_timestamp_callback_ = get_timestamp_callback;
+}
+
+// BackForwardCache:
+void NavigationControllerImpl::CommitRestoreFromBackForwardCache() {
+  // TODO(arthursonzogni): Extract the missing parts from RendererDidNavigate()
+  // and reuse them.
+  LoadCommittedDetails details;
+  details.previous_entry_index = GetCurrentEntryIndex();
+  details.entry = pending_entry_;
+  details.type = NAVIGATION_TYPE_EXISTING_PAGE;
+  details.is_main_frame = true;
+  details.http_status_code = net::HTTP_OK;
+  details.did_replace_entry = false;
+  details.is_same_document = false;
+
+  last_committed_entry_index_ = pending_entry_index_;
+  DiscardPendingEntry(false);
+
+  // Notify content/ embedder of the history update.
+  delegate_->NotifyNavigationStateChanged(INVALIDATE_TYPE_ALL);
+  delegate_->NotifyNavigationEntryCommitted(details);
 }
 
 }  // namespace content

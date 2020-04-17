@@ -17,7 +17,7 @@
 #include "base/threading/thread_checker.h"
 #include "base/timer/timer.h"
 #include "gpu/command_buffer/service/gles2_cmd_decoder.h"
-#include "gpu/command_buffer/service/gpu_preferences.h"
+#include "gpu/config/gpu_preferences.h"
 #include "media/base/android/media_codec_bridge_impl.h"
 #include "media/base/android/media_crypto_context.h"
 #include "media/base/android_overlay_mojo_factory.h"

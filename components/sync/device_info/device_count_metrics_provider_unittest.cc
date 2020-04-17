@@ -7,7 +7,7 @@
 #include <string>
 
 #include "base/bind.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "components/sync/device_info/device_info.h"
 #include "components/sync/device_info/device_info_tracker.h"
 #include "testing/gtest/include/gtest/gtest.h"

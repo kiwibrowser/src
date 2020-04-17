@@ -16,7 +16,7 @@ TEST(SkiaMemoryDumpProviderTest, OnMemoryDump) {
   base::trace_event::MemoryDumpArgs dump_args = {
       base::trace_event::MemoryDumpLevelOfDetail::DETAILED};
   std::unique_ptr<base::trace_event::ProcessMemoryDump> process_memory_dump(
-      new base::trace_event::ProcessMemoryDump(nullptr, dump_args));
+      new base::trace_event::ProcessMemoryDump(dump_args));
   SkiaMemoryDumpProvider::GetInstance()->OnMemoryDump(
       dump_args, process_memory_dump.get());
 

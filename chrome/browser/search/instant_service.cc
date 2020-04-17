@@ -8,6 +8,11 @@
 
 #include "base/bind.h"
 #include "build/build_config.h"
+#include "base/android/jni_android.h"
+#include "base/android/jni_array.h"
+#include "base/android/jni_string.h"
+#include "chrome/browser/android/history_report/history_report_jni_bridge.h"
+
 #include "chrome/browser/chrome_notification_types.h"
 #include "chrome/browser/ntp_tiles/chrome_most_visited_sites_factory.h"
 #include "chrome/browser/profiles/profile.h"
@@ -64,13 +69,7 @@ InstantService::InstantService(Profile* profile) : profile_(profile) {
                        profile->GetResourceContext(), instant_io_context_));
   }
 
-  // Listen for theme installation.
-  registrar_.Add(this, chrome::NOTIFICATION_BROWSER_THEME_CHANGED,
-                 content::Source<ThemeService>(
-                     ThemeServiceFactory::GetForProfile(profile_)));
-
   // Set up the data sources that Instant uses on the NTP.
-  content::URLDataSource::Add(profile_, new ThemeSource(profile_));
   content::URLDataSource::Add(profile_, new LocalNtpSource(profile_));
   content::URLDataSource::Add(profile_, new ThumbnailSource(profile_, false));
   content::URLDataSource::Add(profile_, new ThumbnailSource(profile_, true));
@@ -108,6 +107,12 @@ void InstantService::OnNewTabPageOpened() {
   if (most_visited_sites_) {
     most_visited_sites_->Refresh();
   }
+  NotifyAboutMostVisitedItems();
+}
+
+void InstantService::FocusOmnibox() {
+  JNIEnv* env = base::android::AttachCurrentThread();
+  history_report::HistoryReportJniBridge::FocusOmnibox(env);
 }
 
 void InstantService::DeleteMostVisitedItem(const GURL& url) {
@@ -264,21 +269,14 @@ void InstantService::BuildThemeInfo() {
   // Get theme information from theme service.
   theme_info_.reset(new ThemeBackgroundInfo());
 
-  // Get if the current theme is the default theme.
-  ThemeService* theme_service = ThemeServiceFactory::GetForProfile(profile_);
-  theme_info_->using_default_theme = theme_service->UsingDefaultTheme();
+  theme_info_->using_default_theme = true;
 
   // Get theme colors.
-  const ui::ThemeProvider& theme_provider =
-      ThemeService::GetThemeProviderForProfile(profile_);
-  SkColor background_color =
-      theme_provider.GetColor(ThemeProperties::COLOR_NTP_BACKGROUND);
-  SkColor text_color = theme_provider.GetColor(ThemeProperties::COLOR_NTP_TEXT);
-  SkColor link_color = theme_provider.GetColor(ThemeProperties::COLOR_NTP_LINK);
-  SkColor text_color_light =
-      theme_provider.GetColor(ThemeProperties::COLOR_NTP_TEXT_LIGHT);
-  SkColor header_color =
-      theme_provider.GetColor(ThemeProperties::COLOR_NTP_HEADER);
+  SkColor background_color = SK_ColorWHITE;
+  SkColor text_color = SK_ColorBLACK;
+  SkColor link_color = SK_ColorBLACK;
+  SkColor text_color_light = SK_ColorWHITE;
+  SkColor header_color = SK_ColorLTGRAY;
   // Generate section border color from the header color.
   SkColor section_border_color =
       SkColorSetARGB(kSectionBorderAlphaTransparency,
@@ -304,53 +302,8 @@ void InstantService::BuildThemeInfo() {
   theme_info_->header_color = SkColorToRGBAColor(header_color);
   theme_info_->section_border_color = SkColorToRGBAColor(section_border_color);
 
-  int logo_alternate =
-      theme_provider.GetDisplayProperty(ThemeProperties::NTP_LOGO_ALTERNATE);
+  int logo_alternate = 0;
   theme_info_->logo_alternate = logo_alternate == 1;
-
-  if (theme_provider.HasCustomImage(IDR_THEME_NTP_BACKGROUND)) {
-    // Set theme id for theme background image url.
-    theme_info_->theme_id = theme_service->GetThemeID();
-
-    // Set theme background image horizontal alignment.
-    int alignment = theme_provider.GetDisplayProperty(
-        ThemeProperties::NTP_BACKGROUND_ALIGNMENT);
-    if (alignment & ThemeProperties::ALIGN_LEFT)
-      theme_info_->image_horizontal_alignment = THEME_BKGRND_IMAGE_ALIGN_LEFT;
-    else if (alignment & ThemeProperties::ALIGN_RIGHT)
-      theme_info_->image_horizontal_alignment = THEME_BKGRND_IMAGE_ALIGN_RIGHT;
-    else
-      theme_info_->image_horizontal_alignment = THEME_BKGRND_IMAGE_ALIGN_CENTER;
-
-    // Set theme background image vertical alignment.
-    if (alignment & ThemeProperties::ALIGN_TOP)
-      theme_info_->image_vertical_alignment = THEME_BKGRND_IMAGE_ALIGN_TOP;
-    else if (alignment & ThemeProperties::ALIGN_BOTTOM)
-      theme_info_->image_vertical_alignment = THEME_BKGRND_IMAGE_ALIGN_BOTTOM;
-    else
-      theme_info_->image_vertical_alignment = THEME_BKGRND_IMAGE_ALIGN_CENTER;
-
-    // Set theme background image tiling.
-    int tiling = theme_provider.GetDisplayProperty(
-        ThemeProperties::NTP_BACKGROUND_TILING);
-    switch (tiling) {
-      case ThemeProperties::NO_REPEAT:
-        theme_info_->image_tiling = THEME_BKGRND_IMAGE_NO_REPEAT;
-        break;
-      case ThemeProperties::REPEAT_X:
-        theme_info_->image_tiling = THEME_BKGRND_IMAGE_REPEAT_X;
-        break;
-      case ThemeProperties::REPEAT_Y:
-        theme_info_->image_tiling = THEME_BKGRND_IMAGE_REPEAT_Y;
-        break;
-      case ThemeProperties::REPEAT:
-        theme_info_->image_tiling = THEME_BKGRND_IMAGE_REPEAT;
-        break;
-    }
-
-    theme_info_->has_attribution =
-        theme_provider.HasCustomImage(IDR_THEME_NTP_ATTRIBUTION);
-  }
 
   // User has set a custom background image.
   GURL custom_background_url(

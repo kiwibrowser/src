@@ -86,12 +86,14 @@ void RecordParentExistsForSubFrame(
 AdsPageLoadMetricsObserver::AdFrameData::AdFrameData(
     FrameTreeNodeId frame_tree_node_id,
     AdTypes ad_types,
-    AdOriginStatus origin_status)
+    AdOriginStatus origin_status,
+    bool frame_navigated)
     : frame_bytes(0u),
       frame_bytes_uncached(0u),
       frame_tree_node_id(frame_tree_node_id),
       ad_types(ad_types),
-      origin_status(origin_status) {}
+      origin_status(origin_status),
+      frame_navigated(frame_navigated) {}
 
 // static
 std::unique_ptr<AdsPageLoadMetricsObserver>
@@ -135,72 +137,87 @@ AdsPageLoadMetricsObserver::OnCommit(
   return CONTINUE_OBSERVING;
 }
 
-void AdsPageLoadMetricsObserver::OnDidFinishSubFrameNavigation(
-    content::NavigationHandle* navigation_handle) {
-  // Determine if the frame is part of an existing ad, the root of a new ad,
-  // or a non-ad frame. Once a frame is labled as an ad, it is always
-  // considered an ad, even if it navigates to a non-ad page. This function
-  // labels all of a page's frames, even those that fail to commit.
-  FrameTreeNodeId frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
-  content::RenderFrameHost* parent_frame_host =
-      navigation_handle->GetParentFrame();
-
-  AdTypes ad_types = DetectAds(navigation_handle);
-
-  const auto& id_and_data = ad_frames_data_.find(frame_tree_node_id);
-  if (id_and_data != ad_frames_data_.end()) {
-    // An existing subframe is navigating again.
-    if (id_and_data->second) {
-      // The subframe was an ad to begin with, keep tracking it as an ad.
-      ProcessOngoingNavigationResource(frame_tree_node_id);
-
-      if (frame_tree_node_id == id_and_data->second->frame_tree_node_id) {
-        // This is the top-most frame in the ad.
-        ADS_HISTOGRAM("Navigations.AdFrameRenavigatedToAd",
-                      UMA_HISTOGRAM_BOOLEAN, AD_TYPE_ALL, ad_types.any());
-      }
+// Given an ad being triggered for a frame or navigation, get its AdFrameData
+// and record it into the appropriate data structures.
+void AdsPageLoadMetricsObserver::RecordAdFrameData(
+    FrameTreeNodeId ad_id,
+    AdTypes ad_types,
+    content::RenderFrameHost* ad_host,
+    bool frame_navigated) {
+  // If an existing subframe is navigating and it was an ad previously that
+  // hasn't navigated yet, then we need to update it.
+  const auto& id_and_data = ad_frames_data_.find(ad_id);
+  AdFrameData* previous_data = nullptr;
+  if (id_and_data != ad_frames_data_.end() && id_and_data->second) {
+    DCHECK(frame_navigated);
+    if (id_and_data->second->frame_navigated) {
+      // We need to update the types with any new types that triggered it.
+      id_and_data->second->ad_types |= ad_types;
+      ProcessOngoingNavigationResource(ad_id);
       return;
     }
-    // This frame was previously not an ad, process it as usual. If it had
-    // any child frames that were ads, those will still be recorded.
-    ADS_HISTOGRAM("Navigations.NonAdFrameRenavigatedToAd",
-                  UMA_HISTOGRAM_BOOLEAN, AD_TYPE_ALL, ad_types.any());
+    previous_data = id_and_data->second;
   }
 
-  // Determine who the parent frame's ad ancestor is.
+  // Determine who the parent frame's ad ancestor is.  If we don't know who it
+  // is, return, such as with a frame from a previous navigation.
+  content::RenderFrameHost* parent_frame_host =
+      ad_host ? ad_host->GetParent() : nullptr;
   const auto& parent_id_and_data =
-      ad_frames_data_.find(parent_frame_host->GetFrameTreeNodeId());
-  if (parent_id_and_data == ad_frames_data_.end()) {
-    // We don't know who the parent for this frame is. One possibility is that
-    // it's a frame from a previous navigation.
-    RecordParentExistsForSubFrame(false /* parent_exists */, ad_types);
+      parent_frame_host
+          ? ad_frames_data_.find(parent_frame_host->GetFrameTreeNodeId())
+          : ad_frames_data_.end();
+  bool parent_exists = parent_id_and_data != ad_frames_data_.end();
+  RecordParentExistsForSubFrame(parent_exists, ad_types);
+  if (!parent_exists)
     return;
-  }
-  RecordParentExistsForSubFrame(true /* parent_exists */, ad_types);
-
-  AdFrameData* ad_data = parent_id_and_data->second;
 
   // This frame is not nested within an ad frame but is itself an ad.
+  AdFrameData* ad_data = parent_id_and_data->second;
   if (!ad_data && ad_types.any()) {
     AdOriginStatus origin_status = AdOriginStatus::kUnknown;
-    // NOTE: frame look-up only used for determining cross-origin status, not
-    // granting security permissions.
-    content::RenderFrameHost* ad_host = FindFrameMaybeUnsafe(navigation_handle);
     if (ad_host) {
       content::RenderFrameHost* main_host =
-          navigation_handle->GetWebContents()->GetMainFrame();
+          content::WebContents::FromRenderFrameHost(ad_host)->GetMainFrame();
+      // For ads triggered on render, their origin is their parent's origin.
+      if (!frame_navigated)
+        ad_host = ad_host->GetParent();
       origin_status = main_host->GetLastCommittedOrigin().IsSameOriginWith(
                           ad_host->GetLastCommittedOrigin())
                           ? AdOriginStatus::kSame
                           : AdOriginStatus::kCross;
     }
-    ad_frames_data_storage_.emplace_back(frame_tree_node_id, ad_types,
-                                         origin_status);
+    // If data existed already, update it and exit, otherwise, add it.
+    if (previous_data) {
+      previous_data->ad_types |= ad_types;
+      previous_data->origin_status = origin_status;
+      previous_data->frame_navigated = frame_navigated;
+      return;
+    }
+    ad_frames_data_storage_.emplace_back(ad_id, ad_types, origin_status,
+                                         frame_navigated);
     ad_data = &ad_frames_data_storage_.back();
   }
 
-  ad_frames_data_[frame_tree_node_id] = ad_data;
+  // If there was previous data, then we don't want to overwrite this frame.
+  if (!previous_data)
+    ad_frames_data_[ad_id] = ad_data;
+}
 
+// Determine if the frame is part of an existing ad, the root of a new ad, or a
+// non-ad frame. Once a frame is labeled as an ad, it is always considered an
+// ad, even if it navigates to a non-ad page. This function labels all of a
+// page's frames, even those that fail to commit.
+void AdsPageLoadMetricsObserver::OnDidFinishSubFrameNavigation(
+    content::NavigationHandle* navigation_handle) {
+  FrameTreeNodeId frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
+  AdTypes ad_types = DetectAds(navigation_handle);
+  // NOTE: Frame look-up only used for determining cross-origin status, not
+  // granting security permissions.
+  content::RenderFrameHost* ad_host = FindFrameMaybeUnsafe(navigation_handle);
+
+  RecordAdFrameData(frame_tree_node_id, ad_types, ad_host,
+                    /*frame_navigated=*/true);
   ProcessOngoingNavigationResource(frame_tree_node_id);
 }
 
@@ -239,6 +256,15 @@ void AdsPageLoadMetricsObserver::OnSubframeNavigationEvaluated(
     unfinished_subresource_ad_frames_.insert(
         navigation_handle->GetFrameTreeNodeId());
   }
+}
+
+void AdsPageLoadMetricsObserver::OnAdSubframeDetected(
+    content::RenderFrameHost* render_frame_host) {
+  AdTypes ad_types;
+  ad_types.set(AD_TYPE_SUBRESOURCE_FILTER);
+  FrameTreeNodeId frame_tree_node_id = render_frame_host->GetFrameTreeNodeId();
+  RecordAdFrameData(frame_tree_node_id, ad_types, render_frame_host,
+                    /*frame_navigated=*/false);
 }
 
 void AdsPageLoadMetricsObserver::OnSubresourceFilterGoingAway() {

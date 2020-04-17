@@ -11,6 +11,12 @@ import android.util.AttributeSet;
 import android.view.View;
 import android.widget.TextView;
 
+import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.ListView;
+
 /**
  * A preference that displays informational text.
  */
@@ -32,5 +38,10 @@ public class TextMessagePreference extends Preference {
         textView.setSingleLine(false);
         textView.setMaxLines(Integer.MAX_VALUE);
         textView.setMovementMethod(LinkMovementMethod.getInstance());
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            ((TextView) view.findViewById(android.R.id.title)).setTextColor(Color.WHITE);
+            if (((TextView) view.findViewById(android.R.id.summary)) != null)
+              ((TextView) view.findViewById(android.R.id.summary)).setTextColor(Color.GRAY);
+        }
     }
 }

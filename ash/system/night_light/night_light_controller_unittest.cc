@@ -390,17 +390,16 @@ TEST_F(NightLightTest, TestScheduleNoneToCustomTransition) {
   TestCompositorsTemperature(controller->GetColorTemperature());
   EXPECT_EQ(NightLightController::AnimationDuration::kShort,
             controller->last_animation_duration());
-  EXPECT_TRUE(controller->timer().IsRunning());
+  EXPECT_TRUE(controller->timer()->IsRunning());
   EXPECT_EQ(base::TimeDelta::FromHours(2),
-            controller->timer().GetCurrentDelay());
-  EXPECT_TRUE(controller->timer().user_task());
+            controller->timer()->GetCurrentDelay());
 
   // If the user changes the schedule type to "none", the NightLight status
   // should not change, but the timer should not be running.
   controller->SetScheduleType(NightLightController::ScheduleType::kNone);
   EXPECT_TRUE(controller->GetEnabled());
   TestCompositorsTemperature(controller->GetColorTemperature());
-  EXPECT_FALSE(controller->timer().IsRunning());
+  EXPECT_FALSE(controller->timer()->IsRunning());
 }
 
 // Tests what happens when the time now reaches the end of the NightLight
@@ -424,16 +423,16 @@ TEST_F(NightLightTest, TestCustomScheduleReachingEndTime) {
   //
   // Now is 8:00 PM.
   delegate()->SetFakeNow(TimeOfDay(20 * 60));
-  controller->timer().user_task().Run();
+  controller->timer()->FireNow();
   EXPECT_FALSE(controller->GetEnabled());
   TestCompositorsTemperature(0.0f);
   EXPECT_EQ(NightLightController::AnimationDuration::kLong,
             controller->last_animation_duration());
   // The timer should still be running, but now scheduling the start at 3:00 PM
   // tomorrow which is 19 hours from "now" (8:00 PM).
-  EXPECT_TRUE(controller->timer().IsRunning());
+  EXPECT_TRUE(controller->timer()->IsRunning());
   EXPECT_EQ(base::TimeDelta::FromHours(19),
-            controller->timer().GetCurrentDelay());
+            controller->timer()->GetCurrentDelay());
 }
 
 // Tests that user toggles from the system menu or system settings override any
@@ -466,9 +465,9 @@ TEST_F(NightLightTest, TestExplicitUserTogglesWhileScheduleIsActive) {
             controller->last_animation_duration());
   // The timer should still be running, but NightLight should automatically
   // turn off at 8:00 PM tomorrow, which is 21 hours from now (11:00 PM).
-  EXPECT_TRUE(controller->timer().IsRunning());
+  EXPECT_TRUE(controller->timer()->IsRunning());
   EXPECT_EQ(base::TimeDelta::FromHours(21),
-            controller->timer().GetCurrentDelay());
+            controller->timer()->GetCurrentDelay());
 
   // Manually turning it back off should also be respected, and this time the
   // start is scheduled at 3:00 PM tomorrow after 19 hours from "now" (8:00 PM).
@@ -477,9 +476,9 @@ TEST_F(NightLightTest, TestExplicitUserTogglesWhileScheduleIsActive) {
   TestCompositorsTemperature(0.0f);
   EXPECT_EQ(NightLightController::AnimationDuration::kShort,
             controller->last_animation_duration());
-  EXPECT_TRUE(controller->timer().IsRunning());
+  EXPECT_TRUE(controller->timer()->IsRunning());
   EXPECT_EQ(base::TimeDelta::FromHours(16),
-            controller->timer().GetCurrentDelay());
+            controller->timer()->GetCurrentDelay());
 }
 
 // Tests that changing the custom start and end times, in such a way that
@@ -504,27 +503,27 @@ TEST_F(NightLightTest, TestChangingStartTimesThatDontChangeTheStatus) {
   controller->SetScheduleType(NightLightController::ScheduleType::kCustom);
   EXPECT_FALSE(controller->GetEnabled());
   TestCompositorsTemperature(0.0f);
-  EXPECT_TRUE(controller->timer().IsRunning());
+  EXPECT_TRUE(controller->timer()->IsRunning());
   EXPECT_EQ(base::TimeDelta::FromHours(2),
-            controller->timer().GetCurrentDelay());
+            controller->timer()->GetCurrentDelay());
 
   // Change the start time in such a way that doesn't change the status, but
   // despite that, confirm that schedule has been updated.
   controller->SetCustomStartTime(TimeOfDay(19 * 60));  // 7:00 PM.
   EXPECT_FALSE(controller->GetEnabled());
   TestCompositorsTemperature(0.0f);
-  EXPECT_TRUE(controller->timer().IsRunning());
+  EXPECT_TRUE(controller->timer()->IsRunning());
   EXPECT_EQ(base::TimeDelta::FromHours(3),
-            controller->timer().GetCurrentDelay());
+            controller->timer()->GetCurrentDelay());
 
   // Changing the end time in a similar fashion to the above and expect no
   // change.
   controller->SetCustomEndTime(TimeOfDay(23 * 60));  // 11:00 PM.
   EXPECT_FALSE(controller->GetEnabled());
   TestCompositorsTemperature(0.0f);
-  EXPECT_TRUE(controller->timer().IsRunning());
+  EXPECT_TRUE(controller->timer()->IsRunning());
   EXPECT_EQ(base::TimeDelta::FromHours(3),
-            controller->timer().GetCurrentDelay());
+            controller->timer()->GetCurrentDelay());
 }
 
 // Tests the behavior of the sunset to sunrise automatic schedule type.
@@ -549,33 +548,33 @@ TEST_F(NightLightTest, TestSunsetSunrise) {
       NightLightController::ScheduleType::kSunsetToSunrise);
   EXPECT_FALSE(controller->GetEnabled());
   TestCompositorsTemperature(0.0f);
-  EXPECT_TRUE(controller->timer().IsRunning());
+  EXPECT_TRUE(controller->timer()->IsRunning());
   EXPECT_EQ(base::TimeDelta::FromHours(4),
-            controller->timer().GetCurrentDelay());
+            controller->timer()->GetCurrentDelay());
 
   // Simulate reaching sunset.
   delegate()->SetFakeNow(TimeOfDay(20 * 60));  // Now is 8:00 PM.
-  controller->timer().user_task().Run();
+  controller->timer()->FireNow();
   EXPECT_TRUE(controller->GetEnabled());
   TestCompositorsTemperature(controller->GetColorTemperature());
   EXPECT_EQ(NightLightController::AnimationDuration::kLong,
             controller->last_animation_duration());
   // Timer is running scheduling the end at sunrise.
-  EXPECT_TRUE(controller->timer().IsRunning());
+  EXPECT_TRUE(controller->timer()->IsRunning());
   EXPECT_EQ(base::TimeDelta::FromHours(9),
-            controller->timer().GetCurrentDelay());
+            controller->timer()->GetCurrentDelay());
 
   // Simulate reaching sunrise.
   delegate()->SetFakeNow(TimeOfDay(5 * 60));  // Now is 5:00 AM.
-  controller->timer().user_task().Run();
+  controller->timer()->FireNow();
   EXPECT_FALSE(controller->GetEnabled());
   TestCompositorsTemperature(0.0f);
   EXPECT_EQ(NightLightController::AnimationDuration::kLong,
             controller->last_animation_duration());
   // Timer is running scheduling the start at the next sunset.
-  EXPECT_TRUE(controller->timer().IsRunning());
+  EXPECT_TRUE(controller->timer()->IsRunning());
   EXPECT_EQ(base::TimeDelta::FromHours(15),
-            controller->timer().GetCurrentDelay());
+            controller->timer()->GetCurrentDelay());
 }
 
 // Tests the behavior of the sunset to sunrise automatic schedule type when the
@@ -598,21 +597,21 @@ TEST_F(NightLightTest, TestSunsetSunriseGeoposition) {
       NightLightController::ScheduleType::kSunsetToSunrise);
   EXPECT_FALSE(controller->GetEnabled());
   TestCompositorsTemperature(0.0f);
-  EXPECT_TRUE(controller->timer().IsRunning());
+  EXPECT_TRUE(controller->timer()->IsRunning());
   EXPECT_EQ(base::TimeDelta::FromHours(4),
-            controller->timer().GetCurrentDelay());
+            controller->timer()->GetCurrentDelay());
 
   // Simulate reaching sunset.
   delegate()->SetFakeNow(TimeOfDay(20 * 60));  // Now is 8:00 PM.
-  controller->timer().user_task().Run();
+  controller->timer()->FireNow();
   EXPECT_TRUE(controller->GetEnabled());
   TestCompositorsTemperature(controller->GetColorTemperature());
   EXPECT_EQ(NightLightController::AnimationDuration::kLong,
             controller->last_animation_duration());
   // Timer is running scheduling the end at sunrise.
-  EXPECT_TRUE(controller->timer().IsRunning());
+  EXPECT_TRUE(controller->timer()->IsRunning());
   EXPECT_EQ(base::TimeDelta::FromHours(8),
-            controller->timer().GetCurrentDelay());
+            controller->timer()->GetCurrentDelay());
 
   // Now simulate user changing position.
   // Position 2 sunset and sunrise times.
@@ -629,21 +628,21 @@ TEST_F(NightLightTest, TestSunsetSunriseGeoposition) {
   // changed.
   EXPECT_TRUE(controller->GetEnabled());
   TestCompositorsTemperature(controller->GetColorTemperature());
-  EXPECT_TRUE(controller->timer().IsRunning());
+  EXPECT_TRUE(controller->timer()->IsRunning());
   EXPECT_EQ(base::TimeDelta::FromHours(7),
-            controller->timer().GetCurrentDelay());
+            controller->timer()->GetCurrentDelay());
 
   // Simulate reaching sunrise.
   delegate()->SetFakeNow(TimeOfDay(3 * 60));  // Now is 5:00 AM.
-  controller->timer().user_task().Run();
+  controller->timer()->FireNow();
   EXPECT_FALSE(controller->GetEnabled());
   TestCompositorsTemperature(0.0f);
   EXPECT_EQ(NightLightController::AnimationDuration::kLong,
             controller->last_animation_duration());
   // Timer is running scheduling the start at the next sunset.
-  EXPECT_TRUE(controller->timer().IsRunning());
+  EXPECT_TRUE(controller->timer()->IsRunning());
   EXPECT_EQ(base::TimeDelta::FromHours(14),
-            controller->timer().GetCurrentDelay());
+            controller->timer()->GetCurrentDelay());
 }
 
 // Tests that on device resume from sleep, the NightLight status is updated
@@ -667,10 +666,10 @@ TEST_F(NightLightTest, TestCustomScheduleOnResume) {
 
   EXPECT_FALSE(controller->GetEnabled());
   TestCompositorsTemperature(0.0f);
-  EXPECT_TRUE(controller->timer().IsRunning());
+  EXPECT_TRUE(controller->timer()->IsRunning());
   // NightLight should start in 2 hours.
   EXPECT_EQ(base::TimeDelta::FromHours(2),
-            controller->timer().GetCurrentDelay());
+            controller->timer()->GetCurrentDelay());
 
   // Now simulate that the device was suspended for 3 hours, and the time now
   // is 7:00 PM when the devices was resumed. Expect that NightLight turns on.
@@ -679,10 +678,10 @@ TEST_F(NightLightTest, TestCustomScheduleOnResume) {
 
   EXPECT_TRUE(controller->GetEnabled());
   TestCompositorsTemperature(0.4f);
-  EXPECT_TRUE(controller->timer().IsRunning());
+  EXPECT_TRUE(controller->timer()->IsRunning());
   // NightLight should end in 3 hours.
   EXPECT_EQ(base::TimeDelta::FromHours(3),
-            controller->timer().GetCurrentDelay());
+            controller->timer()->GetCurrentDelay());
 }
 
 // The following tests ensure that the NightLight schedule is correctly
@@ -710,10 +709,10 @@ TEST_F(NightLightTest, TestCustomScheduleInvertedStartAndEndTimesCase1) {
 
   EXPECT_TRUE(controller->GetEnabled());
   TestCompositorsTemperature(0.4f);
-  EXPECT_TRUE(controller->timer().IsRunning());
+  EXPECT_TRUE(controller->timer()->IsRunning());
   // NightLight should end in two hours.
   EXPECT_EQ(base::TimeDelta::FromHours(2),
-            controller->timer().GetCurrentDelay());
+            controller->timer()->GetCurrentDelay());
 }
 
 // Case 2: "Now" is between "end" and "start".
@@ -736,10 +735,10 @@ TEST_F(NightLightTest, TestCustomScheduleInvertedStartAndEndTimesCase2) {
 
   EXPECT_FALSE(controller->GetEnabled());
   TestCompositorsTemperature(0.0f);
-  EXPECT_TRUE(controller->timer().IsRunning());
+  EXPECT_TRUE(controller->timer()->IsRunning());
   // NightLight should start in 15 hours.
   EXPECT_EQ(base::TimeDelta::FromHours(15),
-            controller->timer().GetCurrentDelay());
+            controller->timer()->GetCurrentDelay());
 }
 
 // Case 3: "Now" is greater than both "start" and "end".
@@ -762,10 +761,10 @@ TEST_F(NightLightTest, TestCustomScheduleInvertedStartAndEndTimesCase3) {
 
   EXPECT_TRUE(controller->GetEnabled());
   TestCompositorsTemperature(0.4f);
-  EXPECT_TRUE(controller->timer().IsRunning());
+  EXPECT_TRUE(controller->timer()->IsRunning());
   // NightLight should end in 5 hours.
   EXPECT_EQ(base::TimeDelta::FromHours(5),
-            controller->timer().GetCurrentDelay());
+            controller->timer()->GetCurrentDelay());
 }
 
 // Fixture for testing behavior of Night Light when displays support hardware

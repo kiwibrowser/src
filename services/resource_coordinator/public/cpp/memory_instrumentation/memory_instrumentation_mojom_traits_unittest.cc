@@ -4,7 +4,6 @@
 
 #include <utility>
 
-#include "base/trace_event/heap_profiler_serialization_state.h"
 #include "base/trace_event/memory_allocator_dump.h"
 #include "base/trace_event/memory_dump_request_args.h"
 #include "base/trace_event/process_memory_dump.h"
@@ -128,7 +127,7 @@ TEST_F(StructTraitsTest, MemoryAllocatorDump) {
 
 TEST_F(StructTraitsTest, ProcessMemoryDump) {
   auto input = std::make_unique<ProcessMemoryDump>(
-      nullptr, MemoryDumpArgs{MemoryDumpLevelOfDetail::DETAILED});
+      MemoryDumpArgs{MemoryDumpLevelOfDetail::DETAILED});
   std::unique_ptr<ProcessMemoryDump> output;
   MemoryAllocatorDump* mad1 = input->CreateAllocatorDump("mad/1");
   MemoryAllocatorDumpGuid mad1_id = mad1->guid();

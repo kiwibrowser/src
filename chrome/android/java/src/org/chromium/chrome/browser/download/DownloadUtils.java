@@ -9,6 +9,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.ColorStateList;
+import org.chromium.base.StrictModeContext;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.StrictMode;
@@ -643,7 +644,9 @@ public class DownloadUtils {
             if (TextUtils.equals(intent.getPackage(), context.getPackageName())) {
                 IntentHandler.startActivityForTrustedIntent(intent);
             } else {
-                context.startActivity(intent);
+                try (StrictModeContext unused = StrictModeContext.allowAllVmPolicies()) {
+                    context.startActivity(intent);
+                }
             }
             return true;
         } catch (ActivityNotFoundException ex) {

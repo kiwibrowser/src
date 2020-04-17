@@ -25,12 +25,8 @@ static void PanTest(cc::TouchAction action,
                     float scroll_y,
                     float dx,
                     float dy,
-                    float fling_x,
-                    float fling_y,
                     float expected_dx,
-                    float expected_dy,
-                    float expected_fling_x,
-                    float expected_fling_y) {
+                    float expected_dy) {
   TouchActionFilter filter;
   WebGestureEvent scroll_end = SyntheticWebGestureEventBuilder::Build(
       WebInputEvent::kGestureScrollEnd, kSourceDevice);
@@ -87,12 +83,8 @@ static void PanTest(cc::TouchAction action,
     EXPECT_EQ(-expected_dx, scroll_update2.data.scroll_update.delta_x);
     EXPECT_EQ(-expected_dy, scroll_update2.data.scroll_update.delta_y);
 
-    WebGestureEvent fling_start = SyntheticWebGestureEventBuilder::BuildFling(
-        fling_x, fling_y, kSourceDevice);
-    EXPECT_EQ(filter.FilterGestureEvent(&fling_start),
+    EXPECT_EQ(filter.FilterGestureEvent(&scroll_end),
               FilterGestureEventResult::kFilterGestureEventAllowed);
-    EXPECT_EQ(expected_fling_x, fling_start.data.fling_start.velocity_x);
-    EXPECT_EQ(expected_fling_y, fling_start.data.fling_start.velocity_y);
   }
 
   {
@@ -285,56 +277,13 @@ TEST(TouchActionFilterTest, SimpleFilter) {
             FilterGestureEventResult::kFilterGestureEventFiltered);
 }
 
-TEST(TouchActionFilterTest, Fling) {
-  TouchActionFilter filter;
-
-  WebGestureEvent scroll_begin =
-      SyntheticWebGestureEventBuilder::BuildScrollBegin(2, 3, kSourceDevice);
-  WebGestureEvent scroll_update =
-      SyntheticWebGestureEventBuilder::BuildScrollUpdate(5, 10, 0,
-                                                         kSourceDevice);
-  const float kFlingX = 7;
-  const float kFlingY = -4;
-  WebGestureEvent fling_start = SyntheticWebGestureEventBuilder::BuildFling(
-      kFlingX, kFlingY, kSourceDevice);
-  WebGestureEvent pad_fling = SyntheticWebGestureEventBuilder::BuildFling(
-      kFlingX, kFlingY, blink::kWebGestureDeviceTouchpad);
-
-  // cc::kTouchActionNone filters out fling events.
-  filter.ResetTouchAction();
-  filter.OnSetTouchAction(cc::kTouchActionNone);
-  EXPECT_EQ(filter.FilterGestureEvent(&scroll_begin),
-            FilterGestureEventResult::kFilterGestureEventFiltered);
-  EXPECT_EQ(filter.FilterGestureEvent(&scroll_update),
-            FilterGestureEventResult::kFilterGestureEventFiltered);
-  EXPECT_EQ(filter.FilterGestureEvent(&fling_start),
-            FilterGestureEventResult::kFilterGestureEventFiltered);
-  EXPECT_EQ(kFlingX, fling_start.data.fling_start.velocity_x);
-  EXPECT_EQ(kFlingY, fling_start.data.fling_start.velocity_y);
-
-  // touchpad flings aren't filtered.
-  filter.ResetTouchAction();
-  filter.OnSetTouchAction(cc::kTouchActionNone);
-  EXPECT_EQ(filter.FilterGestureEvent(&scroll_begin),
-            FilterGestureEventResult::kFilterGestureEventFiltered);
-  EXPECT_EQ(filter.FilterGestureEvent(&scroll_update),
-            FilterGestureEventResult::kFilterGestureEventFiltered);
-  EXPECT_EQ(filter.FilterGestureEvent(&pad_fling),
-            FilterGestureEventResult::kFilterGestureEventAllowed);
-  EXPECT_EQ(filter.FilterGestureEvent(&fling_start),
-            FilterGestureEventResult::kFilterGestureEventFiltered);
-}
-
 TEST(TouchActionFilterTest, PanLeft) {
   const float kDX = 5;
   const float kDY = 10;
   const float kScrollX = 7;
   const float kScrollY = 6;
-  const float kFlingX = 7;
-  const float kFlingY = -4;
 
-  PanTest(cc::kTouchActionPanLeft, kScrollX, kScrollY, kDX, kDY, kFlingX,
-          kFlingY, kDX, 0, kFlingX, 0);
+  PanTest(cc::kTouchActionPanLeft, kScrollX, kScrollY, kDX, kDY, kDX, 0);
   PanTestForUnidirectionalTouchAction(cc::kTouchActionPanLeft, kScrollX, 0);
 }
 
@@ -343,11 +292,8 @@ TEST(TouchActionFilterTest, PanRight) {
   const float kDY = 10;
   const float kScrollX = -7;
   const float kScrollY = 6;
-  const float kFlingX = 7;
-  const float kFlingY = -4;
 
-  PanTest(cc::kTouchActionPanRight, kScrollX, kScrollY, kDX, kDY, kFlingX,
-          kFlingY, kDX, 0, kFlingX, 0);
+  PanTest(cc::kTouchActionPanRight, kScrollX, kScrollY, kDX, kDY, kDX, 0);
   PanTestForUnidirectionalTouchAction(cc::kTouchActionPanRight, kScrollX, 0);
 }
 
@@ -356,11 +302,8 @@ TEST(TouchActionFilterTest, PanX) {
   const float kDY = 10;
   const float kScrollX = 7;
   const float kScrollY = 6;
-  const float kFlingX = 7;
-  const float kFlingY = -4;
 
-  PanTest(cc::kTouchActionPanX, kScrollX, kScrollY, kDX, kDY, kFlingX, kFlingY,
-          kDX, 0, kFlingX, 0);
+  PanTest(cc::kTouchActionPanX, kScrollX, kScrollY, kDX, kDY, kDX, 0);
 }
 
 TEST(TouchActionFilterTest, PanUp) {
@@ -368,11 +311,8 @@ TEST(TouchActionFilterTest, PanUp) {
   const float kDY = 10;
   const float kScrollX = 6;
   const float kScrollY = 7;
-  const float kFlingX = 7;
-  const float kFlingY = -4;
 
-  PanTest(cc::kTouchActionPanUp, kScrollX, kScrollY, kDX, kDY, kFlingX, kFlingY,
-          0, kDY, 0, kFlingY);
+  PanTest(cc::kTouchActionPanUp, kScrollX, kScrollY, kDX, kDY, 0, kDY);
   PanTestForUnidirectionalTouchAction(cc::kTouchActionPanUp, 0, kScrollY);
 }
 
@@ -381,11 +321,8 @@ TEST(TouchActionFilterTest, PanDown) {
   const float kDY = 10;
   const float kScrollX = 6;
   const float kScrollY = -7;
-  const float kFlingX = 7;
-  const float kFlingY = -4;
 
-  PanTest(cc::kTouchActionPanDown, kScrollX, kScrollY, kDX, kDY, kFlingX,
-          kFlingY, 0, kDY, 0, kFlingY);
+  PanTest(cc::kTouchActionPanDown, kScrollX, kScrollY, kDX, kDY, 0, kDY);
   PanTestForUnidirectionalTouchAction(cc::kTouchActionPanDown, 0, kScrollY);
 }
 
@@ -394,19 +331,16 @@ TEST(TouchActionFilterTest, PanY) {
   const float kDY = 10;
   const float kScrollX = 6;
   const float kScrollY = 7;
-  const float kFlingX = 7;
-  const float kFlingY = -4;
 
-  PanTest(cc::kTouchActionPanY, kScrollX, kScrollY, kDX, kDY, kFlingX, kFlingY,
-          0, kDY, 0, kFlingY);
+  PanTest(cc::kTouchActionPanY, kScrollX, kScrollY, kDX, kDY, 0, kDY);
 }
 
 TEST(TouchActionFilterTest, PanXY) {
   TouchActionFilter filter;
   const float kDX = 5;
   const float kDY = 10;
-  const float kFlingX = 7;
-  const float kFlingY = -4;
+  WebGestureEvent scroll_end = SyntheticWebGestureEventBuilder::Build(
+      WebInputEvent::kGestureScrollEnd, kSourceDevice);
 
   {
     // Scrolls hinted in the X axis are permitted and unmodified.
@@ -425,12 +359,8 @@ TEST(TouchActionFilterTest, PanXY) {
     EXPECT_EQ(kDX, scroll_update.data.scroll_update.delta_x);
     EXPECT_EQ(kDY, scroll_update.data.scroll_update.delta_y);
 
-    WebGestureEvent fling_start = SyntheticWebGestureEventBuilder::BuildFling(
-        kFlingX, kFlingY, kSourceDevice);
-    EXPECT_EQ(filter.FilterGestureEvent(&fling_start),
+    EXPECT_EQ(filter.FilterGestureEvent(&scroll_end),
               FilterGestureEventResult::kFilterGestureEventAllowed);
-    EXPECT_EQ(kFlingX, fling_start.data.fling_start.velocity_x);
-    EXPECT_EQ(kFlingY, fling_start.data.fling_start.velocity_y);
   }
 
   {
@@ -450,12 +380,8 @@ TEST(TouchActionFilterTest, PanXY) {
     EXPECT_EQ(kDX, scroll_update.data.scroll_update.delta_x);
     EXPECT_EQ(kDY, scroll_update.data.scroll_update.delta_y);
 
-    WebGestureEvent fling_start = SyntheticWebGestureEventBuilder::BuildFling(
-        kFlingX, kFlingY, kSourceDevice);
-    EXPECT_EQ(filter.FilterGestureEvent(&fling_start),
+    EXPECT_EQ(filter.FilterGestureEvent(&scroll_end),
               FilterGestureEventResult::kFilterGestureEventAllowed);
-    EXPECT_EQ(kFlingX, fling_start.data.fling_start.velocity_x);
-    EXPECT_EQ(kFlingY, fling_start.data.fling_start.velocity_y);
   }
 
   {
@@ -474,9 +400,7 @@ TEST(TouchActionFilterTest, PanXY) {
     EXPECT_EQ(filter.FilterGestureEvent(&scroll_update),
               FilterGestureEventResult::kFilterGestureEventFiltered);
 
-    WebGestureEvent fling_start = SyntheticWebGestureEventBuilder::BuildFling(
-        kFlingX, kFlingY, kSourceDevice);
-    EXPECT_EQ(filter.FilterGestureEvent(&fling_start),
+    EXPECT_EQ(filter.FilterGestureEvent(&scroll_end),
               FilterGestureEventResult::kFilterGestureEventFiltered);
   }
 }
@@ -917,48 +841,6 @@ TEST(TouchActionFilterTest, TouchActionResetMidSequence) {
             FilterGestureEventResult::kFilterGestureEventAllowed);
   EXPECT_EQ(filter.FilterGestureEvent(&scroll_end),
             FilterGestureEventResult::kFilterGestureEventAllowed);
-}
-
-TEST(TouchActionFilterTest, ZeroVelocityFlingsConvertedToScrollEnd) {
-  TouchActionFilter filter;
-  const float kFlingX = 7;
-  const float kFlingY = -4;
-
-  {
-    // Scrolls hinted mostly in the Y axis will suppress flings with a
-    // component solely on the X axis, converting them to a GestureScrollEnd.
-    filter.ResetTouchAction();
-    filter.OnSetTouchAction(cc::kTouchActionPanY);
-    WebGestureEvent scroll_begin =
-        SyntheticWebGestureEventBuilder::BuildScrollBegin(-6, 7, kSourceDevice);
-    EXPECT_EQ(filter.FilterGestureEvent(&scroll_begin),
-              FilterGestureEventResult::kFilterGestureEventAllowed);
-
-    WebGestureEvent fling_start = SyntheticWebGestureEventBuilder::BuildFling(
-        kFlingX, 0, kSourceDevice);
-    EXPECT_EQ(filter.FilterGestureEvent(&fling_start),
-              FilterGestureEventResult::kFilterGestureEventAllowed);
-    EXPECT_EQ(WebInputEvent::kGestureScrollEnd, fling_start.GetType());
-  }
-
-  filter.ResetTouchAction();
-
-  {
-    // Scrolls hinted mostly in the X axis will suppress flings with a
-    // component solely on the Y axis, converting them to a GestureScrollEnd.
-    filter.ResetTouchAction();
-    filter.OnSetTouchAction(cc::kTouchActionPanX);
-    WebGestureEvent scroll_begin =
-        SyntheticWebGestureEventBuilder::BuildScrollBegin(-7, 6, kSourceDevice);
-    EXPECT_EQ(filter.FilterGestureEvent(&scroll_begin),
-              FilterGestureEventResult::kFilterGestureEventAllowed);
-
-    WebGestureEvent fling_start = SyntheticWebGestureEventBuilder::BuildFling(
-        0, kFlingY, kSourceDevice);
-    EXPECT_EQ(filter.FilterGestureEvent(&fling_start),
-              FilterGestureEventResult::kFilterGestureEventAllowed);
-    EXPECT_EQ(WebInputEvent::kGestureScrollEnd, fling_start.GetType());
-  }
 }
 
 TEST(TouchActionFilterTest, TouchpadScroll) {

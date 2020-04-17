@@ -26,7 +26,10 @@ ScopedGpuRaster::~ScopedGpuRaster() {
 }
 
 void ScopedGpuRaster::BeginGpuRaster() {
+  LOG(INFO) << "[Kiwi - Perf] ScopedGpuRaster::BeginGpuRaster";
   GLES2Interface* gl = context_provider_->ContextGL();
+
+  LOG(INFO) << "[Kiwi - Perf] ScopedGpuRaster::BeginGpuRaster, gl: " << gl;
 
   // TODO(alokp): Use a trace macro to push/pop markers.
   // Using push/pop functions directly incurs cost to evaluate function
@@ -36,6 +39,7 @@ void ScopedGpuRaster::BeginGpuRaster() {
 #if defined(OS_ANDROID)
   // TODO(crbug.com/832810): The following reset should not be necessary.
   GrContext* gr_context = context_provider_->GrContext();
+  LOG(INFO) << "[Kiwi - Perf] ScopedGpuRaster::BeginGpuRaster, gr_context: " << gr_context;
   gr_context->resetContext();
 #endif
 }

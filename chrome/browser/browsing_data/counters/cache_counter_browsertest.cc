@@ -67,7 +67,8 @@ class CacheCounterTest : public InProcessBrowserTest {
 
       case CREATE_ENTRY: {
         next_step_ = WRITE_DATA;
-        return_value = backend_->CreateEntry("entry_key", &entry_, callback);
+        return_value =
+            backend_->CreateEntry("entry_key", net::HIGHEST, &entry_, callback);
         break;
       }
 

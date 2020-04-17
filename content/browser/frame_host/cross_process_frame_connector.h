@@ -98,6 +98,9 @@ class CONTENT_EXPORT CrossProcessFrameConnector
       viz::EventSource source = viz::EventSource::ANY) override;
   void ForwardProcessAckedTouchEvent(const TouchEventWithLatencyInfo& touch,
                                      InputEventAckState ack_result) override;
+  void ForwardAckedTouchpadPinchGestureEvent(
+      const blink::WebGestureEvent& event,
+      InputEventAckState ack_result) override;
   void BubbleScrollEvent(const blink::WebGestureEvent& event) override;
   bool HasFocus() override;
   void FocusRootView() override;

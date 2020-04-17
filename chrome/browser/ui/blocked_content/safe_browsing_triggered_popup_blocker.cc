@@ -32,6 +32,15 @@ void LogAction(SafeBrowsingTriggeredPopupBlocker::Action action) {
                             SafeBrowsingTriggeredPopupBlocker::Action::kCount);
 }
 
+safe_browsing::SubresourceFilterLevel PickMostSevereLevel(
+    const base::Optional<safe_browsing::SubresourceFilterLevel>& previous,
+    const safe_browsing::SubresourceFilterLevel& current) {
+  if (!previous.has_value()) {
+    return current;
+  }
+  return std::max(current, previous.value());
+}
+
 }  // namespace
 
 using safe_browsing::SubresourceFilterLevel;
@@ -144,25 +153,29 @@ void SafeBrowsingTriggeredPopupBlocker::DidFinishNavigation(
 
 // This method will always be called before the DidFinishNavigation associated
 // with this handle.
-void SafeBrowsingTriggeredPopupBlocker::OnSafeBrowsingCheckComplete(
+void SafeBrowsingTriggeredPopupBlocker::OnSafeBrowsingChecksComplete(
     content::NavigationHandle* navigation_handle,
-    safe_browsing::SBThreatType threat_type,
-    const safe_browsing::ThreatMetadata& threat_metadata) {
+    const SafeBrowsingCheckResults& results) {
   DCHECK(navigation_handle->IsInMainFrame());
-  if (threat_type !=
-      safe_browsing::SBThreatType::SB_THREAT_TYPE_SUBRESOURCE_FILTER)
-    return;
-  if (ignore_sublists_) {
-    // No warning for ignore_sublists mode.
-    level_for_next_committed_navigation_ = SubresourceFilterLevel::ENFORCE;
-    return;
+  base::Optional<safe_browsing::SubresourceFilterLevel> current_level;
+  for (const auto& result : results) {
+    if (result.threat_type ==
+        safe_browsing::SBThreatType::SB_THREAT_TYPE_SUBRESOURCE_FILTER) {
+      if (ignore_sublists_) {
+        // No warning for ignore_sublists mode.
+        level_for_next_committed_navigation_ = SubresourceFilterLevel::ENFORCE;
+        return;
+      }
+      auto abusive = result.threat_metadata.subresource_filter_match.find(
+          safe_browsing::SubresourceFilterType::ABUSIVE);
+      if (abusive != result.threat_metadata.subresource_filter_match.end()) {
+        current_level = PickMostSevereLevel(current_level, abusive->second);
+      }
+    }
   }
-
-  auto abusive = threat_metadata.subresource_filter_match.find(
-      safe_browsing::SubresourceFilterType::ABUSIVE);
-  if (abusive == threat_metadata.subresource_filter_match.end())
-    return;
-  level_for_next_committed_navigation_ = abusive->second;
+  if (current_level.has_value()) {
+    level_for_next_committed_navigation_ = current_level;
+  }
 }
 
 void SafeBrowsingTriggeredPopupBlocker::OnSubresourceFilterGoingAway() {

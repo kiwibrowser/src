@@ -408,6 +408,7 @@ uploading your change for review.  These are checked by presubmit scripts.
   <int value="2" label="Phishing Interstitial"/>
   <int value="3" label="Subresource Filter"/>
   <int value="4" label="Better Ads Standard"/>
+  <int value="5" label="Abusive"/>
 </enum>
 
 <enum name="ActiveWindowShowType">
@@ -6458,6 +6459,8 @@ Called by update_net_error_codes.py.-->
   <int value="-202" label="CERT_AUTHORITY_INVALID"/>
   <int value="-201" label="CERT_DATE_INVALID"/>
   <int value="-200" label="CERT_COMMON_NAME_INVALID"/>
+  <int value="-179" label="WRONG_VERSION_ON_EARLY_DATA"/>
+  <int value="-178" label="EARLY_DATA_REJECTED"/>
   <int value="-177" label="SSL_CLIENT_AUTH_NO_COMMON_ALGORITHMS"/>
   <int value="-176" label="NO_BUFFER_SPACE"/>
   <int value="-175" label="SSL_VERSION_INTERFERENCE"/>
@@ -6952,6 +6955,7 @@ Called by update_net_error_codes.py.-->
   <int value="12" label="MIDI_SYSEX"/>
   <int value="13" label="SOUND"/>
   <int value="14" label="FRAMEBUST"/>
+  <int value="16" label="SENSORS"/>
 </enum>
 
 <enum name="ContentSettingMixedScriptAction">
@@ -10448,6 +10452,7 @@ Called by update_net_error_codes.py.-->
   <int value="8" label="Has percent encoded strings"/>
   <int value="9" label="Has RFC 2047 encoded strings"/>
   <int value="10" label="Has 'name' attribute only (Obsolete 04/2015)"/>
+  <int value="11" label="Filename is a single quoted string"/>
 </enum>
 
 <enum name="DownloadContentType">
@@ -22646,15 +22651,15 @@ Called by update_gpu_driver_bug_workaround_entries.py.-->
 <enum name="GPUProcessLifetimeEvent">
   <summary>
     Lifetime events of the GPU Process, as defined in
-    chrome/browser/gpu_process_host.cc. DiedFourth should never happen as it is
-    beyond the threshold number of launches enforced in
-    chrome/browser/gpu_process_host.cc.
+    content/browser/gpu/gpu_process_host.cc.
   </summary>
   <int value="0" label="Launched"/>
-  <int value="1" label="DiedFirst"/>
-  <int value="2" label="DiedSecond"/>
-  <int value="3" label="DiedThird"/>
-  <int value="4" label="DiedFourth"/>
+  <int value="1" label="Died first time"/>
+  <int value="2" label="Died second time"/>
+  <int value="3" label="Died third time"/>
+  <int value="4" label="Died fourth time"/>
+  <int value="5" label="Died fifth time"/>
+  <int value="6" label="Died sixth time"/>
 </enum>
 
 <enum name="GPUProcessType">
@@ -23220,6 +23225,7 @@ Called by update_gpu_driver_bug_workaround_entries.py.-->
   <int value="4" label="Not joined, not GET"/>
   <int value="5" label="Not joined, read-only"/>
   <int value="6" label="Cache read, no Writers"/>
+  <int value="7" label="Not joined, too big for cache"/>
 </enum>
 
 <enum name="HttpCachePattern">
@@ -26863,6 +26869,7 @@ from previous Chrome versions.
   <int value="-1779753607" label="VizDisplayCompositor:disabled"/>
   <int value="-1778993296" label="ContextualSearchMlTapSuppression:disabled"/>
   <int value="-1774818943" label="VrWebInputEditing:enabled"/>
+  <int value="-1772942854" label="LongPressBackForHistory:enabled"/>
   <int value="-1772172557" label="enable-osk-overscroll"/>
   <int value="-1768672408" label="ChromeDuplex:disabled"/>
   <int value="-1767470652" label="out-of-process-pdf"/>
@@ -28124,6 +28131,7 @@ from previous Chrome versions.
   <int value="1081546525" label="ash-enable-docked-windows"/>
   <int value="1082054180" label="PersistentWindowBounds:disabled"/>
   <int value="1083201516" label="PersistentWindowBounds:enabled"/>
+  <int value="1085130793" label="LongPressBackForHistory:disabled"/>
   <int value="1087235172" label="file-manager-enable-new-audio-player"/>
   <int value="1088915385" label="new-password-form-parsing:enabled"/>
   <int value="1090377940" label="enable-quic-https"/>
@@ -31279,6 +31287,8 @@ Called by update_net_error_codes.py.-->
   <int value="175" label="SSL_VERSION_INTERFERENCE"/>
   <int value="176" label="NO_BUFFER_SPACE"/>
   <int value="177" label="SSL_CLIENT_AUTH_NO_COMMON_ALGORITHMS"/>
+  <int value="178" label="EARLY_DATA_REJECTED"/>
+  <int value="179" label="WRONG_VERSION_ON_EARLY_DATA"/>
   <int value="200" label="CERT_COMMON_NAME_INVALID"/>
   <int value="201" label="CERT_DATE_INVALID"/>
   <int value="202" label="CERT_AUTHORITY_INVALID"/>
@@ -39892,6 +39902,13 @@ Called by update_net_trust_anchors.py.-->
   <int value="7" label="Error parsing certificate"/>
 </enum>
 
+<enum name="RulesetVerificationStatus">
+  <int value="0" label="Not verified"/>
+  <int value="1" label="Intact"/>
+  <int value="2" label="Corrupt"/>
+  <int value="3" label="Invalid File"/>
+</enum>
+
 <enum name="RunningMode">
   <obsolete>
     Removed 9/2016.
@@ -39909,6 +39926,13 @@ Called by update_net_trust_anchors.py.-->
 <enum name="SadTabKind">
   <int value="0" label="Crash (Aw, Snap!)"/>
   <int value="1" label="Kill (He's dead, Jim!)"/>
+</enum>
+
+<enum name="SafeBrowsingActivationPosition">
+  <int value="0" label="Only URL in redirect chain"/>
+  <int value="1" label="First URL in redirect chain"/>
+  <int value="2" label="Any middle URL in redirect chain"/>
+  <int value="3" label="Last redirect in URL chain"/>
 </enum>
 
 <enum name="SafeBrowsingAppOptIn">
@@ -42091,6 +42115,9 @@ Called by update_net_trust_anchors.py.-->
 </enum>
 
 <enum name="SimpleCacheHeaderSizeChange">
+  <obsolete>
+    Removed 2018-06-05
+  </obsolete>
   <int value="0" label="Written for the first time"/>
   <int value="1" label="Rewritten with same size"/>
   <int value="2" label="Rewritten with larger size"/>
@@ -43801,6 +43828,7 @@ Called by update_net_trust_anchors.py.-->
   <int value="3" label="Unsupported scheme (deprecated)"/>
   <int value="4" label="URL whitelisted"/>
   <int value="5" label="Activation conditions not met"/>
+  <int value="6" label="Forced activation (e.g. devtools toggle)"/>
 </enum>
 
 <enum name="SubresourceFilterActivationState">
@@ -43819,6 +43847,15 @@ Called by update_net_trust_anchors.py.-->
   <int value="6" label="First_Middle"/>
   <int value="7" label="AllHits"/>
   <int value="8" label="NoRedirectsHit"/>
+</enum>
+
+<enum name="SubresourceFilterVerifyStatus">
+  <int value="0" label="Pass, Checksum Valid"/>
+  <int value="1" label="Checksum Failed, Verifier Passed"/>
+  <int value="2" label="Checksum Failed, Verifier Failed"/>
+  <int value="3" label="Checksum Passed, Verifier Failed"/>
+  <int value="4" label="Checksum Zero, Verifier Failed"/>
+  <int value="5" label="Pass, Checksum Zero"/>
 </enum>
 
 <enum name="SubresourceFilterWriteRulesetResult">

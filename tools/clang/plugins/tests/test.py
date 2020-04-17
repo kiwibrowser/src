@@ -35,15 +35,11 @@ def main():
       action='store_true',
       help='If specified, overwrites the expected results in place.')
   parser.add_argument('clang_path', help='The path to the clang binary.')
-  parser.add_argument('plugin_path',
-                      nargs='?',
-                      help='The path to the plugin library, if any.')
   args = parser.parse_args()
 
   return ChromeStylePluginTest(
       os.path.dirname(os.path.realpath(__file__)),
       args.clang_path,
-      args.plugin_path,
       'find-bad-constructs',
       args.reset_results).Run()
 

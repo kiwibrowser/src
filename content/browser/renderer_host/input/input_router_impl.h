@@ -22,6 +22,7 @@
 #include "content/browser/renderer_host/input/mouse_wheel_event_queue.h"
 #include "content/browser/renderer_host/input/passthrough_touch_event_queue.h"
 #include "content/browser/renderer_host/input/touch_action_filter.h"
+#include "content/browser/renderer_host/input/touchpad_pinch_event_queue.h"
 #include "content/common/input/input_event_stream_validator.h"
 #include "content/common/input/input_handler.mojom.h"
 #include "content/common/widget.mojom.h"
@@ -55,6 +56,7 @@ class CONTENT_EXPORT InputRouterImpl : public InputRouter,
                                        public FlingControllerEventSenderClient,
                                        public MouseWheelEventQueueClient,
                                        public PassthroughTouchEventQueueClient,
+                                       public TouchpadPinchEventQueueClient,
                                        public mojom::WidgetInputHandlerHost {
  public:
   InputRouterImpl(InputRouterImplClient* client,
@@ -141,6 +143,13 @@ class CONTENT_EXPORT InputRouterImpl : public InputRouter,
       const ui::LatencyInfo& latency_info) override;
   bool IsWheelScrollInProgress() override;
 
+  // TouchpadPinchEventQueueClient
+  void SendMouseWheelEventForPinchImmediately(
+      const MouseWheelEventWithLatencyInfo& event) override;
+  void OnGestureEventForPinchAck(const GestureEventWithLatencyInfo& event,
+                                 InputEventAckSource ack_source,
+                                 InputEventAckState ack_result) override;
+
   void FilterAndSendWebInputEvent(
       const blink::WebInputEvent& input_event,
       const ui::LatencyInfo& latency_info,
@@ -209,6 +218,7 @@ class CONTENT_EXPORT InputRouterImpl : public InputRouter,
   bool wheel_scroll_latching_enabled_;
   MouseWheelEventQueue wheel_event_queue_;
   PassthroughTouchEventQueue touch_event_queue_;
+  TouchpadPinchEventQueue touchpad_pinch_event_queue_;
   GestureEventQueue gesture_event_queue_;
   TouchActionFilter touch_action_filter_;
   InputEventStreamValidator input_stream_validator_;

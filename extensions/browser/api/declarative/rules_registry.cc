@@ -256,10 +256,14 @@ void RulesRegistry::OnExtensionUnloaded(const Extension* extension) {
 }
 
 void RulesRegistry::OnExtensionUninstalled(const Extension* extension) {
+  LOG(INFO) << "[EXTENSIONS] RulesRegistry::OnExtensionUninstall - Step 1";
   DCHECK_CURRENTLY_ON(owner_thread());
+  LOG(INFO) << "[EXTENSIONS] RulesRegistry::OnExtensionUninstall - Step 2";
   std::string error = RemoveAllRulesNoStoreUpdate(extension->id(), true);
+  LOG(INFO) << "[EXTENSIONS] RulesRegistry::OnExtensionUninstall - Step 3";
   if (!error.empty())
     ReportInternalError(extension->id(), error);
+  LOG(INFO) << "[EXTENSIONS] RulesRegistry::OnExtensionUninstall - Step 4";
 }
 
 void RulesRegistry::OnExtensionLoaded(const Extension* extension) {

@@ -474,7 +474,7 @@ TEST_F(ChromiumEnvDBTrackerTest, MemoryDumpCreation) {
   ASSERT_EQ(browser_cache->TotalCharge() * 2, web_cache->TotalCharge());
 
   MemoryDumpArgs dump_args = {MemoryDumpLevelOfDetail::BACKGROUND};
-  base::trace_event::ProcessMemoryDump pmd(nullptr, dump_args);
+  base::trace_event::ProcessMemoryDump pmd(dump_args);
   auto* mad1 = DBTracker::GetOrCreateAllocatorDump(&pmd, db1.get());
   auto* mad2 = DBTracker::GetOrCreateAllocatorDump(&pmd, db2.get());
   auto* mad3 = DBTracker::GetOrCreateAllocatorDump(&pmd, db3.get());
@@ -499,7 +499,7 @@ TEST_F(ChromiumEnvDBTrackerTest, MemEnvMemoryDumpCreation) {
   delete writable_file;
 
   const MemoryDumpArgs dump_args = {MemoryDumpLevelOfDetail::BACKGROUND};
-  base::trace_event::ProcessMemoryDump dump1(nullptr, dump_args);
+  base::trace_event::ProcessMemoryDump dump1(dump_args);
   auto* mad = DBTracker::GetOrCreateAllocatorDump(&dump1, memenv.get());
 
   uint64_t size_with_file = mad->GetSizeInternal();
@@ -508,7 +508,7 @@ TEST_F(ChromiumEnvDBTrackerTest, MemEnvMemoryDumpCreation) {
   // Now rename and size should be unchanged.
   s = memenv->RenameFile("first_file.txt", "xxxxx_file.txt");  // same length.
   EXPECT_TRUE(s.ok()) << s.ToString();
-  base::trace_event::ProcessMemoryDump dump2(nullptr, dump_args);
+  base::trace_event::ProcessMemoryDump dump2(dump_args);
   mad = DBTracker::GetOrCreateAllocatorDump(&dump2, memenv.get());
   EXPECT_EQ(size_with_file, mad->GetSizeInternal());
 
@@ -516,7 +516,7 @@ TEST_F(ChromiumEnvDBTrackerTest, MemEnvMemoryDumpCreation) {
   s = memenv->DeleteFile("xxxxx_file.txt");
   EXPECT_TRUE(s.ok()) << s.ToString();
 
-  base::trace_event::ProcessMemoryDump dump3(nullptr, dump_args);
+  base::trace_event::ProcessMemoryDump dump3(dump_args);
   mad = DBTracker::GetOrCreateAllocatorDump(&dump3, memenv.get());
   EXPECT_EQ(mad->GetSizeInternal(), 0ul);
 }

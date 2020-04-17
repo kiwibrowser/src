@@ -4,11 +4,20 @@
 
 package org.chromium.chrome.browser.download;
 
+import java.util.Locale;
 import org.chromium.base.annotations.CalledByNative;
+import android.content.Context;
+import org.chromium.base.ContextUtils;
+import android.content.Intent;
 import org.chromium.chrome.browser.ChromeActivity;
 import org.chromium.chrome.browser.modaldialog.ModalDialogManager;
 import org.chromium.chrome.browser.modaldialog.ModalDialogView;
 import org.chromium.chrome.browser.preferences.PrefServiceBridge;
+import android.text.TextUtils;
+import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.ActivityNotFoundException;
+import android.net.Uri;
+import org.chromium.base.Log;
 import org.chromium.ui.base.WindowAndroid;
 
 import java.io.File;
@@ -37,8 +46,50 @@ public class DownloadLocationDialogBridge implements ModalDialogView.Controller 
     }
 
     @CalledByNative
+    private boolean downloadWithAdm(WindowAndroid windowAndroid, long totalBytes,
+            @DownloadLocationDialogType int dialogType, String suggestedPath, String urlToDownload) {
+        ChromeActivity activity = (ChromeActivity) windowAndroid.getActivity().get();
+        // If the activity has gone away, just clean up the native pointer.
+        if (activity == null) {
+            return false;
+        }
+
+        boolean useAdmIfPossible = ContextUtils.getAppSharedPreferences().getBoolean("enable_external_download_manager", false);
+        String activeDownloadManagerActivityName = ContextUtils.getAppSharedPreferences().getString("selected_external_download_manager_activity_name", "");
+        String activeDownloadManagerPackageName = ContextUtils.getAppSharedPreferences().getString("selected_external_download_manager_package_name", "");
+
+        if (useAdmIfPossible && !TextUtils.isEmpty(activeDownloadManagerPackageName) && !TextUtils.isEmpty(activeDownloadManagerActivityName) && activeDownloadManagerPackageName.equals("com.kiwibrowser.browser") != true
+         && !TextUtils.isEmpty(urlToDownload) && (urlToDownload.toLowerCase(Locale.ROOT).startsWith("http:") || urlToDownload.toLowerCase(Locale.ROOT).startsWith("https:") || urlToDownload.toLowerCase(Locale.ROOT).startsWith("magnet:") || urlToDownload.toLowerCase(Locale.ROOT).startsWith("ftp:"))) {
+            if (urlToDownload.toLowerCase(Locale.ROOT).contains(".googleusercontent.com/crx"))
+                return false;
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(urlToDownload));
+//            intent.addCategory("android.intent.category.BROWSABLE");
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.setClassName(activeDownloadManagerPackageName, activeDownloadManagerActivityName);
+
+            intent.putExtra("android.intent.extra.TEXT", urlToDownload);
+
+            // ADM
+            intent.putExtra("com.android.extra.filename", new File(suggestedPath).getName());
+
+            // MXPlayer
+            intent.putExtra("title", new File(suggestedPath).getName());
+            intent.putExtra("filename", new File(suggestedPath).getName());
+
+            try {
+                Log.i("Kiwi", "[Download] Starting activity intent [" + activeDownloadManagerPackageName + "/" + activeDownloadManagerActivityName + "]");
+                activity.startActivity(intent);
+                return true;
+            } catch (ActivityNotFoundException exception) {
+                Log.i("Kiwi", "[Download] Starting activity intent: ActivityNotFoundException");
+            }
+        }
+        return false;
+    }
+
+    @CalledByNative
     public void showDialog(WindowAndroid windowAndroid, long totalBytes,
-            @DownloadLocationDialogType int dialogType, String suggestedPath) {
+            @DownloadLocationDialogType int dialogType, String suggestedPath, String urlToDownload) {
         ChromeActivity activity = (ChromeActivity) windowAndroid.getActivity().get();
         // If the activity has gone away, just clean up the native pointer.
         if (activity == null) {

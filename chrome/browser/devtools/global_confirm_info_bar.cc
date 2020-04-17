@@ -181,7 +181,9 @@ void GlobalConfirmInfoBar::TabInsertedAt(TabStripModel* tab_strip_model,
                                          content::WebContents* web_contents,
                                          int index,
                                          bool foreground) {
+  LOG(INFO) << "[EXTENSIONS] GlobalConfirmInfoBar::TabInsertedAt - Step 1";
   MaybeAddInfoBar(web_contents);
+  LOG(INFO) << "[EXTENSIONS] GlobalConfirmInfoBar::TabInsertedAt - Step 2";
 }
 
 void GlobalConfirmInfoBar::TabChangedAt(content::WebContents* web_contents,

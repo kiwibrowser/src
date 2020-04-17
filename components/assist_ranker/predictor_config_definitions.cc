@@ -17,7 +17,7 @@ const char kContextualSearchLoggingName[] = "ContextualSearch";
 const char kContextualSearchUmaPrefixName[] = "Search.ContextualSearch.Ranker";
 
 const char kContextualSearchDefaultModelUrl[] =
-    "https://www.gstatic.com/chrome/intelligence/assist/ranker/models/"
+    "https://gstatic.kiwibrowser.com/chrome/intelligence/assist/ranker/models/"
     "contextual_search/test_ranker_model_20171109_short_words_v2.pb.bin";
 
 const base::FeatureParam<std::string>*

@@ -150,6 +150,25 @@ def AddDiffFiles(diff_files, tmp_dir_32, out_zip, expected_files,
                                  compress=compress)
 
 
+def SignAndAlignApk(tmp_apk, signed_tmp_apk, new_apk, zipalign_path,
+                    keystore_path, key_name, key_password):
+  try:
+    finalize_apk.JarSigner(
+        keystore_path,
+        key_name,
+        key_password,
+        tmp_apk,
+        signed_tmp_apk)
+  except build_utils.CalledProcessError as e:
+    raise ApkMergeFailure('Failed to sign APK: ' + e.output)
+
+  try:
+    finalize_apk.AlignApk(zipalign_path,
+                          signed_tmp_apk,
+                          new_apk)
+  except build_utils.CalledProcessError as e:
+    raise ApkMergeFailure('Failed to align APK: ' + e.output)
+
 def GetSecondaryAbi(apk_zipfile, shared_library):
   ret = ''
   for name in apk_zipfile.namelist():
@@ -271,16 +290,16 @@ def main():
   tmp_dir_64 = os.path.join(tmp_dir, '64_bit')
   tmp_dir_32 = os.path.join(tmp_dir, '32_bit')
   tmp_apk = os.path.join(tmp_dir, 'tmp.apk')
+  signed_tmp_apk = os.path.join(tmp_dir, 'signed.apk')
   new_apk = args.out_apk
 
   try:
     MergeApk(args, tmp_apk, tmp_dir_32, tmp_dir_64)
 
-    apksigner_path = os.path.join(
-        os.path.dirname(args.zipalign_path), 'apksigner')
-    finalize_apk.FinalizeApk(apksigner_path, args.zipalign_path,
-                             tmp_apk, new_apk, args.keystore_path,
-                             args.key_password, args.key_name)
+    SignAndAlignApk(tmp_apk, signed_tmp_apk, new_apk, args.zipalign_path,
+                    args.keystore_path, args.key_name, args.key_password)
+  except ApkMergeFailure as exc:
+    return 'ERROR: %s' % exc
   finally:
     shutil.rmtree(tmp_dir)
   return 0

@@ -227,6 +227,9 @@ struct CONTENT_EXPORT WebPreferences {
 #if defined(OS_ANDROID)
   bool text_autosizing_enabled;
   float font_scale_factor;
+  float night_mode_factor;
+  bool night_mode_enabled;
+  bool night_mode_grayscale_enabled;
   float device_scale_adjustment;
   bool force_enable_zoom;
   bool fullscreen_supported;

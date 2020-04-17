@@ -912,7 +912,8 @@ content::SSLHostStateDelegate* TestingProfile::GetSSLHostStateDelegate() {
   return NULL;
 }
 
-content::PermissionManager* TestingProfile::GetPermissionManager() {
+content::PermissionControllerDelegate*
+TestingProfile::GetPermissionControllerDelegate() {
   return NULL;
 }
 

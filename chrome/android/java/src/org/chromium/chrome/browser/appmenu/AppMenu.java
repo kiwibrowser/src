@@ -7,10 +7,18 @@ package org.chromium.chrome.browser.appmenu;
 import android.animation.Animator;
 import android.animation.Animator.AnimatorListener;
 import android.animation.AnimatorSet;
+import android.app.Activity;
+import org.chromium.chrome.browser.ChromeActivity;
 import android.content.Context;
 import android.content.res.Resources;
+import android.util.Log;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.graphics.ColorMatrixColorFilter;
 import android.os.Build;
 import android.support.annotation.IdRes;
 import android.support.annotation.Nullable;
@@ -19,6 +27,7 @@ import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MenuItem.OnMenuItemClickListener;
 import android.view.Surface;
 import android.view.View;
 import android.view.View.MeasureSpec;
@@ -27,22 +36,41 @@ import android.view.ViewGroup;
 import android.view.ViewStub;
 import android.view.WindowManager;
 import android.widget.AdapterView;
+import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.PopupWindow;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.View.OnTouchListener;
+import android.util.Base64;
+import android.util.Base64InputStream;
+import android.support.v7.view.menu.MenuBuilder;
+import android.widget.AdapterView;
 
+import org.chromium.ui.mojom.WindowOpenDisposition;
+import org.chromium.base.ContextUtils;
 import org.chromium.base.AnimationFrameTimeHistogram;
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.base.ContextUtils;
 import org.chromium.base.SysUtils;
+import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.omaha.UpdateMenuItemHelper;
 import org.chromium.chrome.browser.util.AccessibilityUtil;
 import org.chromium.chrome.browser.widget.ViewHighlighter;
+import org.chromium.chrome.browser.profiles.Profile;
+import org.chromium.content_public.browser.WebContents;
+
+import org.chromium.base.ThreadUtils;
+import org.chromium.base.VisibleForTesting;
+import org.chromium.base.annotations.CalledByNative;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Hashtable;
 
 /**
  * Shows a popup of menuitems anchored to a host view. When a item is selected we call
@@ -61,6 +89,9 @@ public class AppMenu implements OnItemClickListener, OnKeyListener {
     private final int mNegativeSoftwareVerticalOffset;
     private final int[] mTempLocation;
 
+    private Hashtable<Integer, String> extensionsIds;
+    private Hashtable<Integer, String> extensionsPopups;
+    private Activity mActivity;
     private PopupWindow mPopup;
     private ListView mListView;
     private AppMenuAdapter mAdapter;
@@ -159,7 +190,7 @@ public class AppMenu implements OnItemClickListener, OnKeyListener {
      *                              {@code 0} is dedicated to custom menu items and can be declared
      *                              by external apps.
      */
-    void show(Context context, final View anchorView, boolean isByPermanentButton,
+    void show(Activity activity, Context context, final View anchorView, boolean isByPermanentButton,
             int screenRotation, Rect visibleDisplayFrame, int screenHeight,
             @IdRes int footerResourceId, View headerView, Integer highlightedItemId) {
         mPopup = new PopupWindow(context);
@@ -197,12 +228,29 @@ public class AppMenu implements OnItemClickListener, OnKeyListener {
         // an incorrectly drawn background.
         if (isByPermanentButton) {
             mPopup.setBackgroundDrawable(
-                    ApiCompatibilityUtils.getDrawable(context.getResources(), R.drawable.menu_bg));
+                    ApiCompatibilityUtils.getDrawable(context.getResources(), R.drawable.popup_bg));
         } else {
             mPopup.setBackgroundDrawable(ApiCompatibilityUtils.getDrawable(
-                    context.getResources(), R.drawable.edge_menu_bg));
-            mPopup.setAnimationStyle(R.style.OverflowMenuAnim);
+                    context.getResources(), R.drawable.popup_bg));
+            if (ContextUtils.getAppSharedPreferences().getBoolean("enable_bottom_toolbar", false))
+                mPopup.setAnimationStyle(R.style.OverflowMenuAnimBottom);
+            else
+                mPopup.setAnimationStyle(R.style.OverflowMenuAnim);
         }
+
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            float[] NEGATIVE = {
+                -1.0f,     0,     0,    0, 255, // red
+                    0, -1.0f,     0,    0, 255, // green
+                    0,     0, -1.0f,    0, 255, // blue
+                    0,     0,     0, 1.0f,   0  // alpha
+            };
+
+            Drawable background = mPopup.getBackground();
+            background.setColorFilter(new ColorMatrixColorFilter(NEGATIVE));
+            mPopup.setBackgroundDrawable(background);
+        }
+
 
         // Turn off window animations for low end devices.
         if (SysUtils.isLowEndDevice()) mPopup.setAnimationStyle(0);
@@ -220,12 +268,71 @@ public class AppMenu implements OnItemClickListener, OnKeyListener {
 
         // Extract visible items from the Menu.
         int numItems = mMenu.size();
+        int numItemsBase = mMenu.size();
         List<MenuItem> menuItems = new ArrayList<MenuItem>();
-        for (int i = 0; i < numItems; ++i) {
-            MenuItem item = mMenu.getItem(i);
-            if (item.isVisible()) {
+        // Show all menuitems first, then extensions
+        if (!ContextUtils.getAppSharedPreferences().getBoolean("show_extensions_first", false)) {
+          for (int i = 0; i < numItems; ++i) {
+              MenuItem item = mMenu.getItem(i);
+              if (item.isVisible()) {
+                  menuItems.add(item);
+              }
+          }
+        } else { // Show one menuitem, then extensions, then all other menuitems
+          for (int i = 0; i < numItems && i < 1; ++i) {
+              MenuItem item = mMenu.getItem(i);
+              if (item.isVisible()) {
+                  menuItems.add(item);
+              }
+          }
+        }
+        WebContents webContents = null;
+        mActivity = activity;
+        boolean canShowExtensions = false;
+        if (activity instanceof ChromeActivity) {
+          Tab currentTab = ((ChromeActivity)activity).getActivityTab();
+          if (currentTab != null)
+            canShowExtensions = true;
+          webContents = currentTab != null ? currentTab.getWebContents() : null;
+        }
+
+        extensionsIds = new Hashtable<Integer, String>();
+        extensionsPopups = new Hashtable<Integer, String>();
+
+        if (canShowExtensions) {
+          int itemIndex = numItems++;
+          String extensions = nativeGetRunningExtensions(getProfile(), webContents);
+          if (!extensions.isEmpty()) {
+            String[] extensionsArray = extensions.split("\u001f");
+            for (String extension: extensionsArray) {
+                String[] extensionsInfo = extension.split("\u001e");
+                Menu fakeMenu = new MenuBuilder(activity);
+                MenuItem item = fakeMenu.add(999999, itemIndex, 0, extensionsInfo[0]);
+                if (extensionsInfo.length > 1) {
+                  extensionsIds.put(itemIndex, extensionsInfo[1]);
+                }
+                if (extensionsInfo.length > 2 && !extensionsInfo[2].equals("")) {
+                  extensionsPopups.put(itemIndex, extensionsInfo[2]);
+                }
+                if (extensionsInfo.length > 3) {
+                  String cleanImage = extensionsInfo[3].replace("data:image/png;base64,", "").replace("data:image/jpeg;base64,","").replace("data:image/gif;base64,", "");
+                  byte[] decodedString = Base64.decode(cleanImage, Base64.DEFAULT);
+                  Bitmap decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+                  item.setIcon(new BitmapDrawable(context.getResources(), decodedByte));
+                }
                 menuItems.add(item);
+                itemIndex++;
             }
+          }
+        }
+
+        if (ContextUtils.getAppSharedPreferences().getBoolean("show_extensions_first", false)) {
+          for (int i = 1; i < numItemsBase; ++i) {
+              MenuItem item = mMenu.getItem(i);
+              if (item.isVisible()) {
+                  menuItems.add(item);
+              }
+          }
         }
 
         Rect sizingPadding = new Rect(bgPadding);
@@ -333,6 +440,11 @@ public class AppMenu implements OnItemClickListener, OnKeyListener {
 
         int xPos = anchorViewX + offsets[0];
         int yPos = anchorViewY + offsets[1];
+        if (ContextUtils.getAppSharedPreferences().getBoolean("enable_bottom_toolbar", false)) {
+           yPos = appRect.height() - popupHeight;
+           if (yPos <= 0)
+               yPos = 0;
+        }
         int[] position = {xPos, yPos};
         return position;
     }
@@ -342,6 +454,36 @@ public class AppMenu implements OnItemClickListener, OnKeyListener {
      * @param menuItem The menu item in the popup that was clicked.
      */
     void onItemClick(MenuItem menuItem) {
+        Log.i("Kiwi", "[EXTENSIONS] Item was clicked in the main menu: " + menuItem.getGroupId());
+        if (menuItem.getGroupId() == 999999 && extensionsPopups.containsKey(menuItem.getItemId())) {
+          Log.e("EXTENSIONS", "[EXTENSIONS] MenuItem clicked (popup)");
+          if (mActivity != null && mActivity instanceof ChromeActivity) {
+            Log.e("EXTENSIONS", "[EXTENSIONS] MenuItem clicked - Activity is not empty, opening tab - Step 1: " + extensionsPopups.get(menuItem.getItemId()));
+            WebContents webContents = null;
+            Tab currentTab = ((ChromeActivity)mActivity).getActivityTab();
+            if (currentTab != null) {
+              webContents = currentTab != null ? currentTab.getWebContents() : null;
+              nativeGrantExtensionActiveTab(getProfile(), webContents, extensionsIds.get(menuItem.getItemId()));
+              currentTab.openNewTab(extensionsPopups.get(menuItem.getItemId()), "", null, WindowOpenDisposition.NEW_WINDOW, true, true);
+            }
+            Log.e("EXTENSIONS", "[EXTENSIONS] MenuItem clicked - Activity is not empty, opening tab - Step 2: " + extensionsPopups.get(menuItem.getItemId()));
+          } else {
+            Log.e("EXTENSIONS", "[EXTENSIONS] MenuItem clicked but no activity");
+          }
+        }
+        else if (menuItem.getGroupId() == 999999 && extensionsIds.containsKey(menuItem.getItemId())) {
+          Log.e("EXTENSIONS", "[EXTENSIONS] MenuItem clicked");
+          if (mActivity != null && mActivity instanceof ChromeActivity) {
+            Log.e("EXTENSIONS", "[EXTENSIONS] MenuItem clicked - Activity is not empty, opening tab - Step 1: " + extensionsIds.get(menuItem.getItemId()));
+            WebContents webContents = null;
+            Tab currentTab = ((ChromeActivity)mActivity).getActivityTab();
+            webContents = currentTab != null ? currentTab.getWebContents() : null;
+            nativeCallExtension(getProfile(), webContents, extensionsIds.get(menuItem.getItemId()));
+            Log.e("EXTENSIONS", "[EXTENSIONS] MenuItem clicked - Activity is not empty, opening tab - Step 2: " + extensionsIds.get(menuItem.getItemId()));
+          } else {
+            Log.e("EXTENSIONS", "[EXTENSIONS] MenuItem clicked but no activity");
+          }
+        }
         if (menuItem.isEnabled()) {
             if (menuItem.getItemId() == R.id.update_menu_id) {
                 UpdateMenuItemHelper.getInstance().setMenuItemClicked();
@@ -495,6 +637,10 @@ public class AppMenu implements OnItemClickListener, OnKeyListener {
         ViewGroup list = mListView;
         for (int i = 0; i < list.getChildCount(); i++) {
             View view = list.getChildAt(i);
+            MenuItem item = mAdapter.getItem(i);
+            int viewCount = item.hasSubMenu() ? item.getSubMenu().size() : 1;
+            if (viewCount != 5)
+              continue;
             Object animatorObject = view.getTag(R.id.menu_item_enter_anim_id);
             if (animatorObject != null) {
                 if (builder == null) {
@@ -529,6 +675,8 @@ public class AppMenu implements OnItemClickListener, OnKeyListener {
             ViewHighlighter.turnOnHighlight(viewToHighlight, viewToHighlight != mFooterView);
         }
 
+        if (mHandler != null) mHandler.onFooterInflated(mFooterView);
+
         return mFooterView.getMeasuredHeight();
     }
 
@@ -543,4 +691,16 @@ public class AppMenu implements OnItemClickListener, OnKeyListener {
 
         return headerView.getMeasuredHeight();
     }
+
+    /**
+     * @returns The profile on which all UI-based browsing data operations should be performed,
+     *         which is the currently active regular profile.
+     */
+    private static Profile getProfile() {
+        return Profile.getLastUsedProfile().getOriginalProfile();
+    }
+
+    public static native String nativeGetRunningExtensions(Profile profile, WebContents webContents);
+    private static native void nativeCallExtension(Profile profile, WebContents webContents, String extensionId);
+    private static native void nativeGrantExtensionActiveTab(Profile profile, WebContents webContents, String extensionId);
 }

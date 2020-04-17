@@ -39,7 +39,7 @@
 #include "services/network/public/mojom/network_service.mojom.h"
 #include "storage/browser/quota/special_storage_policy.h"
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 #include "content/browser/host_zoom_level_context.h"
 #endif
 
@@ -101,7 +101,7 @@ class CONTENT_EXPORT StoragePartitionImpl
   CacheStorageContextImpl* GetCacheStorageContext() override;
   ServiceWorkerContextWrapper* GetServiceWorkerContext() override;
   SharedWorkerServiceImpl* GetSharedWorkerService() override;
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
   HostZoomMap* GetHostZoomMap() override;
   HostZoomLevelContext* GetHostZoomLevelContext() override;
   ZoomLevelDelegate* GetZoomLevelDelegate() override;
@@ -299,7 +299,7 @@ class CONTENT_EXPORT StoragePartitionImpl
   std::unique_ptr<SharedWorkerServiceImpl> shared_worker_service_;
   scoped_refptr<PushMessagingContext> push_messaging_context_;
   scoped_refptr<storage::SpecialStoragePolicy> special_storage_policy_;
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
   scoped_refptr<HostZoomLevelContext> host_zoom_level_context_;
 #endif  // !defined(OS_ANDROID)
   scoped_refptr<PlatformNotificationContextImpl> platform_notification_context_;

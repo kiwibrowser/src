@@ -434,7 +434,7 @@ TEST_P(SSLClientSessionCacheMemoryDumpTest, TestDumpMemoryStats) {
 
   base::trace_event::MemoryDumpArgs dump_args = {GetParam()};
   std::unique_ptr<base::trace_event::ProcessMemoryDump> process_memory_dump(
-      new base::trace_event::ProcessMemoryDump(nullptr, dump_args));
+      new base::trace_event::ProcessMemoryDump(dump_args));
   cache.DumpMemoryStats(process_memory_dump.get());
 
   using Entry = base::trace_event::MemoryAllocatorDump::Entry;

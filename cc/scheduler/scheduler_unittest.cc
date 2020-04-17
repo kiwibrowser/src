@@ -570,6 +570,26 @@ TEST_F(SchedulerTest, VideoNeedsBeginFrames) {
   EXPECT_FALSE(scheduler_->begin_frames_expected());
 }
 
+// As a short term fix for https://crbug.com/882907, we should skip MISSED
+// frames from the browser compositor.
+// TODO(bokan): In the long term, the display compositor should decide
+// whether to issue a missed frame; it is tracked in
+// https://crbug.com/930890.
+TEST_F(SchedulerTest, BrowserCompositorSkipsMissedBeginFrames) {
+  scheduler_settings_.commit_to_active_tree = true;
+  SetUpScheduler(EXTERNAL_BFS);
+  scheduler_->SetNeedsBeginMainFrame();
+
+  task_runner_->AdvanceMockTickClock(viz::BeginFrameArgs::DefaultInterval());
+  viz::BeginFrameArgs args =
+      fake_external_begin_frame_source_->CreateBeginFrameArgs(
+          BEGINFRAME_FROM_HERE, task_runner_->GetMockTickClock());
+  args.type = viz::BeginFrameArgs::MISSED;
+
+  fake_external_begin_frame_source_->TestOnBeginFrame(args);
+  EXPECT_FALSE(client_->IsInsideBeginImplFrame());
+}
+
 TEST_F(SchedulerTest, RequestCommit) {
   SetUpScheduler(EXTERNAL_BFS);
 

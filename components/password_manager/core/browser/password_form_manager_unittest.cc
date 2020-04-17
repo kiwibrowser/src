@@ -17,7 +17,7 @@
 #include "base/rand_util.h"
 #include "base/strings/string_piece.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/test/scoped_feature_list.h"
 #include "base/test/user_action_tester.h"
 #include "components/autofill/core/browser/autofill_experiments.h"

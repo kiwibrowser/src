@@ -37,13 +37,15 @@ void ToolbarLayer::PushResource(
     float y_offset,
     bool show_debug,
     bool clip_shadow,
-    bool modern_design_enabled) {
+    bool modern_design_enabled,
+    bool bottombar_enabled) {
   ToolbarResource* resource =
       ToolbarResource::From(resource_manager_->GetResource(
           ui::ANDROID_RESOURCE_TYPE_DYNAMIC, toolbar_resource_id));
 
   // Ensure the toolbar resource is available before making the layer visible.
   layer_->SetHideLayerAndSubtree(!resource);
+  layer_->SetBackgroundColor(toolbar_background_color);
   if (!resource)
     return;
 
@@ -94,6 +96,7 @@ void ToolbarLayer::PushResource(
 
   bitmap_layer_->SetUIResourceId(resource->ui_resource()->id());
   bitmap_layer_->SetBounds(resource->size());
+  bitmap_layer_->SetBackgroundColor(toolbar_background_color);
 
   layer_->SetMasksToBounds(clip_shadow);
 
@@ -133,7 +136,13 @@ void ToolbarLayer::PushResource(
   else if (!show_debug && debug_layer_->parent())
     debug_layer_->RemoveFromParent();
 
-  layer_->SetPosition(gfx::PointF(0, y_offset));
+  gfx::PointF root_layer_position(0, y_offset);
+  if (bottombar_enabled) {
+    // The toolbar's position as if it were completely shown.
+    float base_toolbar_y = window_height - toolbar_bounds.height();
+    root_layer_position.set_y(base_toolbar_y + y_offset);
+  }
+  layer_->SetPosition(root_layer_position);
 }
 
 int ToolbarLayer::GetIndexOfLayer(scoped_refptr<cc::Layer> layer) {
@@ -182,6 +191,7 @@ void ToolbarLayer::UpdateProgressBar(int progress_bar_x,
 ToolbarLayer::ToolbarLayer(ui::ResourceManager* resource_manager)
     : resource_manager_(resource_manager),
       layer_(cc::Layer::Create()),
+      toolbar_root_(cc::Layer::Create()),
       toolbar_background_layer_(cc::SolidColorLayer::Create()),
       url_bar_background_layer_(cc::NinePatchLayer::Create()),
       bitmap_layer_(cc::UIResourceLayer::Create()),
@@ -208,7 +218,7 @@ ToolbarLayer::ToolbarLayer(ui::ResourceManager* resource_manager)
   layer_->AddChild(progress_bar_layer_);
 
   anonymize_layer_->SetIsDrawable(true);
-  anonymize_layer_->SetBackgroundColor(SK_ColorWHITE);
+  anonymize_layer_->SetBackgroundColor(SK_ColorBLACK);
   layer_->AddChild(anonymize_layer_);
 
   debug_layer_->SetIsDrawable(true);

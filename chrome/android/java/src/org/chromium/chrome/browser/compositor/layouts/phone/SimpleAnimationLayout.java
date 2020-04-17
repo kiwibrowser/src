@@ -136,6 +136,7 @@ public class SimpleAnimationLayout extends Layout {
         forceAnimationToFinish();
 
         ensureSourceTabCreated(sourceTabId);
+        forceAnimationToFinish();
     }
 
     private void ensureSourceTabCreated(int sourceTabId) {
@@ -208,6 +209,7 @@ public class SimpleAnimationLayout extends Layout {
 
         mTabModelSelector.selectModel(newIsIncognito);
         startHiding(id, false);
+        forceAnimationToFinish();
     }
 
     /**
@@ -327,6 +329,8 @@ public class SimpleAnimationLayout extends Layout {
         mTabCreatedBackgroundAnimation.start();
 
         mTabModelSelector.selectModel(newIsIncognito);
+        startHiding(sourceId, false);
+        forceAnimationToFinish();
     }
 
     /**

@@ -565,19 +565,15 @@ bool BrowserCommandController::ExecuteCommandWithDisposition(
       CreateBookmarkAppFromCurrentWebContents(browser_);
       break;
     case IDC_DEV_TOOLS:
-      ToggleDevToolsWindow(browser_, DevToolsToggleAction::Show());
       break;
     case IDC_DEV_TOOLS_CONSOLE:
-      ToggleDevToolsWindow(browser_, DevToolsToggleAction::ShowConsolePanel());
       break;
     case IDC_DEV_TOOLS_DEVICES:
       InspectUI::InspectDevices(browser_);
       break;
     case IDC_DEV_TOOLS_INSPECT:
-      ToggleDevToolsWindow(browser_, DevToolsToggleAction::Inspect());
       break;
     case IDC_DEV_TOOLS_TOGGLE:
-      ToggleDevToolsWindow(browser_, DevToolsToggleAction::Toggle());
       break;
     case IDC_TASK_MANAGER:
       OpenTaskManager(browser_);
@@ -734,7 +730,9 @@ void BrowserCommandController::TabInsertedAt(TabStripModel* tab_strip_model,
                                              WebContents* contents,
                                              int index,
                                              bool foreground) {
+  LOG(INFO) << "[EXTENSIONS] BrowserCommandController::TabInsertedAt - Step 1";
   AddInterstitialObservers(contents);
+  LOG(INFO) << "[EXTENSIONS] BrowserCommandController::TabInsertedAt - Step 2";
 }
 
 void BrowserCommandController::TabDetachedAt(WebContents* contents,

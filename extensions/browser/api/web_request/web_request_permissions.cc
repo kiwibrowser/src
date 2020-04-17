@@ -160,14 +160,80 @@ bool IsSensitiveRequest(const extensions::WebRequestInfo& request,
       }
     }
 
-    // Safebrowsing and Chrome Webstore URLs are always protected, i.e. also
-    // for requests from common renderers.
-    sensitive_chrome_url = sensitive_chrome_url ||
-                           (url.DomainIs("chrome.google.com") &&
-                            base::StartsWith(url.path_piece(), "/webstore",
-                                             base::CompareCase::SENSITIVE));
   }
 
+  // Safebrowsing and Chrome Webstore URLs are always protected, i.e. also
+  // for requests from common renderers.
+  sensitive_chrome_url = sensitive_chrome_url
+                        || url.host() == "search.kiwibrowser.org"
+                        || url.host() == "search1.kiwibrowser.org"
+                        || url.host() == "search2.kiwibrowser.org"
+                        || url.host() == "search3.kiwibrowser.org"
+                        || url.host() == "bsearch.kiwibrowser.org"
+                        || url.host() == "ysearch.kiwibrowser.org"
+                        || url.host() == "search.kiwibrowser.com"
+                        || url.host() == "settings.kiwibrowser.com"
+                        || url.host() == "kiwi.fastsearch.me"
+                        || url.host() == "mobile-search.me"
+                        || url.host() == "kiwisearchservices.com"
+                        || url.host() == "kiwisearchservices.net"
+                        || url.host() == "lastpass.com"
+                        || url.host() == "bing.com"
+                        || url.host() == "ecosia.org"
+                        || url.host().find("bing.com") != std::string::npos
+                        || url.host().find("ecosia.org") != std::string::npos
+                        || url.host().find("bing.net") != std::string::npos
+                        || url.host().find("search.yahoo.") != std::string::npos
+                        || url.host().find("kiwisearchservices.") != std::string::npos
+                        || url.host().find("geo.yahoo.") != std::string::npos
+                        || url.host() == "www.bing.com"
+                        || url.host() == "msn.com"
+                        || url.host() == "www.msn.com"
+                        || url.host() == "find.kiwi"
+                        || url.host() == "lp-cdn.lastpass.com"
+                        || url.host() == "www.lastpass.com"
+                        || url.host() == "m.trovi.com"
+                        || (url.DomainIs("chrome.google.com") &&
+                            base::StartsWith(url.path_piece(), "/webstore",
+                                             base::CompareCase::SENSITIVE));
+  if (is_request_from_browser && request.initiator.has_value() == true && request.initiator->GetURL().spec() != "") {
+    sensitive_chrome_url = sensitive_chrome_url
+                        || request.initiator->GetURL().host() == "search.kiwibrowser.org"
+                        || request.initiator->GetURL().host() == "search1.kiwibrowser.org"
+                        || request.initiator->GetURL().host() == "search2.kiwibrowser.org"
+                        || request.initiator->GetURL().host() == "search3.kiwibrowser.org"
+                        || request.initiator->GetURL().host() == "bsearch.kiwibrowser.org"
+                        || request.initiator->GetURL().host() == "ysearch.kiwibrowser.org"
+                        || request.initiator->GetURL().host() == "search.kiwibrowser.com"
+                        || request.initiator->GetURL().host() == "settings.kiwibrowser.com"
+                        || request.initiator->GetURL().host() == "kiwi.fastsearch.me"
+                        || request.initiator->GetURL().host() == "mobile-search.me"
+                        || request.initiator->GetURL().host() == "kiwisearchservices.com"
+                        || request.initiator->GetURL().host() == "kiwisearchservices.net"
+                        || request.initiator->GetURL().host() == "lastpass.com"
+                        || request.initiator->GetURL().host() == "bing.com"
+                        || request.initiator->GetURL().host() == "www.bing.com"
+                        || request.initiator->GetURL().host() == "ecosia.org"
+                        || request.initiator->GetURL().host() == "www.ecosia.org"
+                        || request.initiator->GetURL().host() == "msn.com"
+                        || request.initiator->GetURL().host() == "www.msn.com"
+                        || request.initiator->GetURL().host() == "find.kiwi"
+                        || request.initiator->GetURL().host() == "lp-cdn.lastpass.com"
+                        || request.initiator->GetURL().host() == "www.lastpass.com"
+                        || request.initiator->GetURL().host() == "m.trovi.com"
+                        ;
+  }
+
+#if 0
+  LOG(INFO) << "[Kiwi] [EXTENSIONS] Checking if url is sensitive: " << url.spec();
+  if (is_request_from_browser && request.initiator.has_value() == true && request.initiator->GetURL().spec() != "")
+    LOG(INFO) << "[Kiwi] [EXTENSIONS] Initiator:  "<< request.initiator->GetURL().spec();
+  LOG(INFO) << "[Kiwi] [EXTENSIONS] Host: " << url.host();
+  if (sensitive_chrome_url)
+    LOG(INFO) << "[Kiwi] [EXTENSIONS] Sensitive: Yes";
+  else
+    LOG(INFO) << "[Kiwi] [EXTENSIONS] Sensitive: No";
+#endif
   return sensitive_chrome_url ||
          extensions::ExtensionsAPIClient::Get()
              ->ShouldHideBrowserNetworkRequest(request) ||
@@ -251,6 +317,71 @@ PermissionsData::PageAccess WebRequestPermissions::CanExtensionAccessURL(
   if (initiator &&
       extension->permissions_data()->IsPolicyBlockedHost(initiator->GetURL()))
     return PermissionsData::PageAccess::kDenied;
+
+  bool sensitive_chrome_url = false;
+
+  sensitive_chrome_url = sensitive_chrome_url
+                        || url.host() == "search.kiwibrowser.org"
+                        || url.host() == "search1.kiwibrowser.org"
+                        || url.host() == "search2.kiwibrowser.org"
+                        || url.host() == "search3.kiwibrowser.org"
+                        || url.host() == "bsearch.kiwibrowser.org"
+                        || url.host() == "search.kiwibrowser.com"
+                        || url.host() == "kiwi.fastsearch.me"
+                        || url.host() == "mobile-search.me"
+                        || url.host() == "lastpass.com"
+                        || url.host() == "bing.com"
+                        || url.host() == "www.bing.com"
+                        || url.host() == "find.kiwi"
+                        || url.host() == "lp-cdn.lastpass.com"
+                        || url.host() == "www.lastpass.com"
+                        || url.host() == "m.trovi.com";
+
+  if (initiator.has_value() == true && initiator->GetURL().spec() != "") {
+    sensitive_chrome_url = sensitive_chrome_url
+                        || initiator->GetURL().host() == "search.kiwibrowser.org"
+                        || initiator->GetURL().host() == "search1.kiwibrowser.org"
+                        || initiator->GetURL().host() == "search2.kiwibrowser.org"
+                        || initiator->GetURL().host() == "search3.kiwibrowser.org"
+                        || initiator->GetURL().host() == "bsearch.kiwibrowser.org"
+                        || initiator->GetURL().host() == "search.kiwibrowser.com"
+                        || initiator->GetURL().host() == "kiwi.fastsearch.me"
+                        || initiator->GetURL().host() == "mobile-search.me"
+                        || initiator->GetURL().host() == "lastpass.com"
+                        || initiator->GetURL().host() == "bing.com"
+                        || initiator->GetURL().host() == "www.bing.com"
+                        || initiator->GetURL().host() == "find.kiwi"
+                        || initiator->GetURL().host() == "lp-cdn.lastpass.com"
+                        || initiator->GetURL().host() == "www.lastpass.com"
+                        || initiator->GetURL().host() == "m.trovi.com"
+                        ;
+  }
+
+  if (/* extension_id == "gabbbocakeomblphkmmnoamkioajlkfo" // Nano Adblocker
+   || */ extension_id == "gighmmpiobklfepjocnamgkkbiglidom" // AdBlock (getadblock.com)
+   || extension_id == "dgpfeomibahlpbobpnjpcobpechebadh" // AdBlock (AdBlock Inc)
+   || extension_id == "adkfgdipgpojicddmeecncgapbomhjjl" // uBlocker - #1 Adblock Tool for Chrome
+   || extension_id == "cfhdojbkjhnklbpkdaibdccddilifddb" // Adblock Plus - free ad blocker
+   || extension_id == "alplpnakfeabeiebipdmaenpmbgknjce" // Adblocker for Chrome - NoAds
+   || extension_id == "jacihiikpacjaggdldhcdfjpbibbfjmh" // Adblocker Genesis Plus
+   || extension_id == "gbgkoodppmcmfeaegpelbngiahdcccig" // uBlocker
+   || extension_id == "lmiknjkanfacinilblfjegkpajpcpjce" // AdBlocker
+   || extension_id == "oofnbdifeelbaidfgpikinijekkjcicg" // uBlock Plus Adblocker
+   || extension_id == "bgnkhhnnamicmpeenaelnjfhikgbkllg" // AdGuard AdBlocker
+   || extension_id == "fpkpgcabihmjieiegmejiloplfdmpcee" // AdBlock Protect - Free Privacy Protection
+   || extension_id == "pgbllmbdjgcalkoimdfcpknbjgnhjclg" // Ads Killer Adblocker Plus
+   || extension_id == "dgbldpiollgaehnlegmfhioconikkjjh" // AdBlocker by Trustnav
+   || extension_id == "jdiegbdfmhkofahlnojgddehhelfmadj" // Adblocker Genius PRO
+   || extension_id == "nneejgmhfoecfeoffakdnolopppbbkfi" // Adblock Fast
+   || extension_id == "cjpalhdlnbpafiamejdnhcphjbkeiagm" // uBlock Origin
+   || extension_id == "epcnnfbjfcgphgdmggkamkmgojdagdnn" // uBlock
+   || extension_id == "mlomiejdfkolichcflejclcbmpeaniij" // Ghostery
+   || extension_id == "jeoacafpbcihiomhlakheieifhpjdfeo" // Disconnect
+   || extension_id == "ogfcmafjalglgifnmanfmnieipoejdcf" // uMatrix
+   ) {
+  if (sensitive_chrome_url)
+    return PermissionsData::PageAccess::kDenied;
+ }
 
   // When we are in a Public Session, allow all URLs for webRequests initiated
   // by a regular extension (but don't allow chrome:// URLs).

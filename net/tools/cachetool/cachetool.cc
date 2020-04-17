@@ -474,8 +474,8 @@ scoped_refptr<net::GrowableIOBuffer> GetStreamForKeyBuffer(
   DCHECK(!command_marshal->has_failed());
   Entry* cache_entry;
   net::TestCompletionCallback cb;
-  int rv = command_marshal->cache_backend()->OpenEntry(key, &cache_entry,
-                                                       cb.callback());
+  int rv = command_marshal->cache_backend()->OpenEntry(
+      key, net::HIGHEST, &cache_entry, cb.callback());
   if (cb.GetResult(rv) != net::OK) {
     command_marshal->ReturnFailure("Couldn't find key's entry.");
     return nullptr;
@@ -560,8 +560,8 @@ void UpdateRawResponseHeaders(CommandMarshal* command_marshal) {
   data->Done();
   Entry* cache_entry;
   net::TestCompletionCallback cb;
-  int rv = command_marshal->cache_backend()->OpenEntry(key, &cache_entry,
-                                                       cb.callback());
+  int rv = command_marshal->cache_backend()->OpenEntry(
+      key, net::HIGHEST, &cache_entry, cb.callback());
   CHECK(cb.GetResult(rv) == net::OK);
   int data_len = data->pickle()->size();
   rv = cache_entry->WriteData(kResponseInfoIndex, 0, data.get(), data_len,
@@ -580,8 +580,8 @@ void DeleteStreamForKey(CommandMarshal* command_marshal) {
     return;
   Entry* cache_entry;
   net::TestCompletionCallback cb;
-  int rv = command_marshal->cache_backend()->OpenEntry(key, &cache_entry,
-                                                       cb.callback());
+  int rv = command_marshal->cache_backend()->OpenEntry(
+      key, net::HIGHEST, &cache_entry, cb.callback());
   if (cb.GetResult(rv) != net::OK)
     return command_marshal->ReturnFailure("Couldn't find key's entry.");
 
@@ -599,7 +599,8 @@ void DeleteKey(CommandMarshal* command_marshal) {
   if (command_marshal->has_failed())
     return;
   net::TestCompletionCallback cb;
-  int rv = command_marshal->cache_backend()->DoomEntry(key, cb.callback());
+  int rv = command_marshal->cache_backend()->DoomEntry(key, net::HIGHEST,
+                                                       cb.callback());
   if (cb.GetResult(rv) != net::OK)
     command_marshal->ReturnFailure("Couldn't delete key.");
   else

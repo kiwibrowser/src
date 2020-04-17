@@ -11,6 +11,7 @@
 #include "base/bind.h"
 #include "base/callback.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/permission_controller.h"
 #include "content/public/browser/permission_type.h"
 #include "content/public/browser/web_contents.h"
 #include "content/shell/browser/layout_test/layout_test_content_browser_client.h"
@@ -56,8 +57,7 @@ size_t LayoutTestPermissionManager::PermissionDescription::Hash::operator()(
 }
 
 LayoutTestPermissionManager::LayoutTestPermissionManager()
-    : PermissionManager() {
-}
+    : PermissionControllerDelegate() {}
 
 LayoutTestPermissionManager::~LayoutTestPermissionManager() {
 }
@@ -74,7 +74,7 @@ int LayoutTestPermissionManager::RequestPermission(
       permission, requesting_origin,
       WebContents::FromRenderFrameHost(render_frame_host)
           ->GetLastCommittedURL().GetOrigin()));
-  return kNoPendingOperation;
+  return PermissionController::kNoPendingOperation;
 }
 
 int LayoutTestPermissionManager::RequestPermissions(
@@ -97,7 +97,7 @@ int LayoutTestPermissionManager::RequestPermissions(
   }
 
   callback.Run(result);
-  return kNoPendingOperation;
+  return PermissionController::kNoPendingOperation;
 }
 
 void LayoutTestPermissionManager::ResetPermission(
@@ -156,10 +156,18 @@ LayoutTestPermissionManager::GetPermissionStatusForFrame(
 
 int LayoutTestPermissionManager::SubscribePermissionStatusChange(
     PermissionType permission,
+    RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
-    const GURL& embedding_origin,
     const base::Callback<void(blink::mojom::PermissionStatus)>& callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+
+  // If the request is from a worker, it won't have a RFH.
+  GURL embedding_origin = requesting_origin;
+  if (render_frame_host) {
+    WebContents* web_contents =
+        WebContents::FromRenderFrameHost(render_frame_host);
+    embedding_origin = web_contents->GetLastCommittedURL().GetOrigin();
+  }
 
   auto subscription = std::make_unique<Subscription>();
   subscription->permission =

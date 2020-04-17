@@ -49,6 +49,8 @@ ConfiguratorImpl::ConfiguratorImpl(
 ConfiguratorImpl::~ConfiguratorImpl() {}
 
 int ConfiguratorImpl::InitialDelay() const {
+  if (true)
+    return 5;
   return fast_update_ ? 10 : (6 * kDelayOneMinute);
 }
 
@@ -109,7 +111,7 @@ bool ConfiguratorImpl::EnabledBackgroundDownloader() const {
 }
 
 bool ConfiguratorImpl::EnabledCupSigning() const {
-  return true;
+  return false;
 }
 
 std::vector<uint8_t> ConfiguratorImpl::GetRunActionKeyHash() const {

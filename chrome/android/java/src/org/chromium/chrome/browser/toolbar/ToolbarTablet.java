@@ -15,9 +15,10 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ImageButton;
 
-import org.chromium.base.ApiCompatibilityUtils;
+import org.chromium.base.StrictModeContext;
 import org.chromium.base.metrics.RecordUserAction;
 import org.chromium.chrome.R;
+import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.chrome.browser.ChromeFeatureList;
 import org.chromium.chrome.browser.NavigationPopup;
 import org.chromium.chrome.browser.download.DownloadUtils;
@@ -25,10 +26,13 @@ import org.chromium.chrome.browser.ntp.NewTabPage;
 import org.chromium.chrome.browser.omnibox.LocationBar;
 import org.chromium.chrome.browser.omnibox.LocationBarTablet;
 import org.chromium.chrome.browser.partnercustomizations.HomepageManager;
+import org.chromium.chrome.browser.preferences.ChromePreferenceManager;
 import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.util.AccessibilityUtil;
+import org.chromium.chrome.browser.util.ColorUtils;
 import org.chromium.chrome.browser.util.FeatureUtilities;
 import org.chromium.chrome.browser.widget.TintedImageButton;
+import org.chromium.base.ContextUtils;
 import org.chromium.ui.base.DeviceFormFactor;
 
 import java.util.ArrayList;
@@ -38,7 +42,6 @@ import java.util.Collection;
  * The Toolbar object for Tablet screens.
  */
 @SuppressLint("Instantiatable")
-
 public class ToolbarTablet
         extends ToolbarLayout implements OnClickListener, View.OnLongClickListener {
     // The number of toolbar buttons that can be hidden at small widths (reload, back, forward).
@@ -100,7 +103,8 @@ public class ToolbarTablet
         mForwardButton = (TintedImageButton) findViewById(R.id.forward_button);
         mReloadButton = (TintedImageButton) findViewById(R.id.refresh_button);
         mSecurityButton = (TintedImageButton) findViewById(R.id.security_button);
-        mShowTabStack = AccessibilityUtil.isAccessibilityEnabled();
+        mShowTabStack = AccessibilityUtil.isAccessibilityEnabled()
+                && isAccessibilityTabSwitcherPreferenceEnabled();
 
         mTabSwitcherButtonDrawable =
                 TabSwitcherDrawable.createTabSwitcherDrawable(getResources(), false);
@@ -131,12 +135,6 @@ public class ToolbarTablet
         mToolbarButtons = new TintedImageButton[] {mBackButton, mForwardButton, mReloadButton};
 
         if (FeatureUtilities.isNewTabPageButtonEnabled()) changeIconToNTPIcon(mHomeButton);
-    }
-
-    @Override
-    protected int getProgressBarTopMargin() {
-        int tabStripHeight = getResources().getDimensionPixelSize(R.dimen.tab_strip_height);
-        return super.getProgressBarTopMargin() + tabStripHeight;
     }
 
     /**
@@ -372,31 +370,32 @@ public class ToolbarTablet
     public void onTabOrModelChanged() {
         super.onTabOrModelChanged();
         boolean incognito = isIncognito();
-        if (mUseLightColorAssets == null || mUseLightColorAssets != incognito) {
-            int colorResource =
-                    incognito ? R.color.incognito_primary_color : R.color.default_primary_color;
-            setBackgroundResource(colorResource);
-            getProgressBar().setThemeColor(
-                    ApiCompatibilityUtils.getColor(getResources(), colorResource), isIncognito());
+        boolean darkAssets = incognito;
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+            darkAssets = true;
+        if (mUseLightColorAssets == null || mUseLightColorAssets != darkAssets) {
+            int color = ColorUtils.getDefaultThemeColor(getResources(), true, darkAssets);
+            setBackgroundColor(color);
+            getProgressBar().setThemeColor(color, isIncognito());
 
-            mMenuButton.setTint(incognito ? mLightModeTint : mDarkModeTint);
-            mHomeButton.setTint(incognito ? mLightModeTint : mDarkModeTint);
-            mBackButton.setTint(incognito ? mLightModeTint : mDarkModeTint);
-            mForwardButton.setTint(incognito ? mLightModeTint : mDarkModeTint);
-            mSaveOfflineButton.setTint(incognito ? mLightModeTint : mDarkModeTint);
-            if (incognito) {
+            mMenuButton.setTint(darkAssets ? mLightModeTint : mDarkModeTint);
+            mHomeButton.setTint(darkAssets ? mLightModeTint : mDarkModeTint);
+            mBackButton.setTint(darkAssets ? mLightModeTint : mDarkModeTint);
+            mForwardButton.setTint(darkAssets ? mLightModeTint : mDarkModeTint);
+            mSaveOfflineButton.setTint(darkAssets ? mLightModeTint : mDarkModeTint);
+            if (darkAssets) {
                 mLocationBar.getContainerView().getBackground().setAlpha(
                         ToolbarPhone.LOCATION_BAR_TRANSPARENT_BACKGROUND_ALPHA);
             } else {
                 mLocationBar.getContainerView().getBackground().setAlpha(255);
             }
             mAccessibilitySwitcherButton.setImageDrawable(
-                    incognito ? mTabSwitcherButtonDrawableLight : mTabSwitcherButtonDrawable);
+                    darkAssets ? mTabSwitcherButtonDrawableLight : mTabSwitcherButtonDrawable);
             mLocationBar.updateVisualsForState();
             if (mShowMenuBadge) {
-                setAppMenuUpdateBadgeDrawable(incognito);
+                setAppMenuUpdateBadgeDrawable(darkAssets);
             }
-            mUseLightColorAssets = incognito;
+            mUseLightColorAssets = darkAssets;
         }
 
         setMenuButtonHighlightDrawable(mHighlightingMenu);
@@ -468,7 +467,10 @@ public class ToolbarTablet
             mReloadButton.setContentDescription(getContext().getString(
                     R.string.accessibility_btn_refresh));
         }
-        mReloadButton.setTint(isIncognito() ? mLightModeTint : mDarkModeTint);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+            mReloadButton.setTint(mLightModeTint);
+        else
+            mReloadButton.setTint(isIncognito() ? mLightModeTint : mDarkModeTint);
         mReloadButton.setEnabled(!mIsInTabSwitcherMode);
     }
 
@@ -477,7 +479,13 @@ public class ToolbarTablet
         if (isBookmarked) {
             mBookmarkButton.setImageResource(R.drawable.btn_star_filled);
             // Non-incognito mode shows a blue filled star.
-            mBookmarkButton.setTint(isIncognito()
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+                mBookmarkButton.setTint(isIncognito()
+                    ? mLightModeTint
+                    : ApiCompatibilityUtils.getColorStateList(
+                            getResources(), R.color.blue_mode_tint));
+            else
+                mBookmarkButton.setTint(isIncognito()
                     ? mLightModeTint
                     : ApiCompatibilityUtils.getColorStateList(
                             getResources(), R.color.blue_mode_tint));
@@ -485,7 +493,10 @@ public class ToolbarTablet
                     R.string.edit_bookmark));
         } else {
             mBookmarkButton.setImageResource(R.drawable.btn_star);
-            mBookmarkButton.setTint(isIncognito() ? mLightModeTint : mDarkModeTint);
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+                mBookmarkButton.setTint(mLightModeTint);
+            else
+                mBookmarkButton.setTint(isIncognito() ? mLightModeTint : mDarkModeTint);
             mBookmarkButton.setContentDescription(getContext().getString(
                     R.string.accessibility_menu_bookmark));
         }
@@ -521,8 +532,13 @@ public class ToolbarTablet
                 getResources().getQuantityString(
                         R.plurals.accessibility_toolbar_btn_tabswitcher_toggle,
                         numberOfTabs, numberOfTabs));
-        mTabSwitcherButtonDrawable.updateForTabCount(numberOfTabs, isIncognito());
-        mTabSwitcherButtonDrawableLight.updateForTabCount(numberOfTabs, isIncognito());
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mTabSwitcherButtonDrawable.updateForTabCount(numberOfTabs, true);
+            mTabSwitcherButtonDrawableLight.updateForTabCount(numberOfTabs, true);
+        } else {
+            mTabSwitcherButtonDrawable.updateForTabCount(numberOfTabs, isIncognito());
+            mTabSwitcherButtonDrawableLight.updateForTabCount(numberOfTabs, isIncognito());
+        }
     }
 
     @Override
@@ -532,8 +548,8 @@ public class ToolbarTablet
                 && ChromeFeatureList.isEnabled(ChromeFeatureList.CHROME_MEMEX)) {
             return;
         }
-        mShowTabStack = enabled;
-        updateSwitcherButtonVisibility(enabled);
+        mShowTabStack = enabled && isAccessibilityTabSwitcherPreferenceEnabled();
+        updateSwitcherButtonVisibility(mShowTabStack);
     }
 
     @Override
@@ -714,4 +730,10 @@ public class ToolbarTablet
         return set;
     }
 
+    private boolean isAccessibilityTabSwitcherPreferenceEnabled() {
+        try (StrictModeContext unused = StrictModeContext.allowDiskReads()) {
+            return ChromePreferenceManager.getInstance().readBoolean(
+                    ChromePreferenceManager.ACCESSIBILITY_TAB_SWITCHER, true);
+        }
+    }
 }

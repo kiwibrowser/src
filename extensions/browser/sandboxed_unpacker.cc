@@ -275,34 +275,41 @@ void SandboxedUnpacker::StartWithCrx(const CRXFileInfo& crx_info) {
   // to do file IO on.
   DCHECK(unpacker_io_task_runner_->RunsTasksInCurrentSequence());
 
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::StartWithCrx - Step 1";
   crx_unpack_start_time_ = base::TimeTicks::Now();
   std::string expected_hash;
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::StartWithCrx - Step 2";
   if (!crx_info.expected_hash.empty() &&
       base::CommandLine::ForCurrentProcess()->HasSwitch(
           extensions::switches::kEnableCrxHashCheck)) {
     expected_hash = base::ToLowerASCII(crx_info.expected_hash);
   }
 
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::StartWithCrx - Step 3";
   PATH_LENGTH_HISTOGRAM("Extensions.SandboxUnpackInitialCrxPathLength",
                         crx_info.path);
   if (!CreateTempDirectory())
     return;  // ReportFailure() already called.
 
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::StartWithCrx - Step 4";
   // Initialize the path that will eventually contain the unpacked extension.
   extension_root_ = temp_dir_.GetPath().AppendASCII(kTempExtensionName);
   PATH_LENGTH_HISTOGRAM("Extensions.SandboxUnpackUnpackedCrxPathLength",
                         extension_root_);
 
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::StartWithCrx - Step 5";
   // Extract the public key and validate the package.
   if (!ValidateSignature(crx_info.path, expected_hash))
     return;  // ValidateSignature() already reported the error.
 
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::StartWithCrx - Step 6";
   // Copy the crx file into our working directory.
   base::FilePath temp_crx_path =
       temp_dir_.GetPath().Append(crx_info.path.BaseName());
   PATH_LENGTH_HISTOGRAM("Extensions.SandboxUnpackTempCrxPathLength",
                         temp_crx_path);
 
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::StartWithCrx - Step 7";
   if (!base::CopyFile(crx_info.path, temp_crx_path)) {
     // Failed to copy extension file to temporary directory.
     ReportFailure(
@@ -313,6 +320,7 @@ void SandboxedUnpacker::StartWithCrx(const CRXFileInfo& crx_info) {
             ASCIIToUTF16("FAILED_TO_COPY_EXTENSION_FILE_TO_TEMP_DIRECTORY")));
     return;
   }
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::StartWithCrx - Step 8";
 
   // The utility process will have access to the directory passed to
   // SandboxedUnpacker.  That directory should not contain a symlink or NTFS
@@ -329,6 +337,8 @@ void SandboxedUnpacker::StartWithCrx(const CRXFileInfo& crx_info) {
     return;
   }
 
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::StartWithCrx - Step 9";
+
   PATH_LENGTH_HISTOGRAM("Extensions.SandboxUnpackLinkFreeCrxPathLength",
                         link_free_crx_path);
 
@@ -344,22 +354,27 @@ void SandboxedUnpacker::StartWithCrx(const CRXFileInfo& crx_info) {
                   l10n_util::GetStringUTF16(IDS_EXTENSION_PACKAGE_UNZIP_ERROR));
     return;
   }
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::StartWithCrx - Step 10";
 
   Unzip(link_free_crx_path, unzipped_dir);
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::StartWithCrx - Step 11";
 }
 
 void SandboxedUnpacker::StartWithDirectory(const std::string& extension_id,
                                            const std::string& public_key,
                                            const base::FilePath& directory) {
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::StartWithDirectory - Step 1 - We are processing " << extension_id << " with public_key " << public_key;
   extension_id_ = extension_id;
   public_key_ = public_key;
+  if (public_key_.empty())
+    public_key_ = "Kiwi";
   if (!CreateTempDirectory())
     return;  // ReportFailure() already called.
-
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::StartWithDirectory - Step 2";
   extension_root_ = temp_dir_.GetPath().AppendASCII(kTempExtensionName);
 
   if (!base::Move(directory, extension_root_)) {
-    LOG(ERROR) << "Could not move " << directory.value() << " to "
+    LOG(ERROR) << "[EXTENSIONS] Could not move " << directory.value() << " to "
                << extension_root_.value();
     ReportFailure(
         SandboxedUnpackerFailureReason::DIRECTORY_MOVE_FAILED,
@@ -368,9 +383,13 @@ void SandboxedUnpacker::StartWithDirectory(const std::string& extension_id,
     return;
   }
 
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::StartWithDirectory - Step 3";
+
   unpacker_io_task_runner_->PostTask(
       FROM_HERE,
       base::BindOnce(&SandboxedUnpacker::Unpack, this, extension_root_));
+
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::StartWithDirectory - Step 4";
 }
 
 SandboxedUnpacker::~SandboxedUnpacker() {
@@ -422,58 +441,78 @@ void SandboxedUnpacker::UnzipDone(const base::FilePath& zip_file,
 }
 
 void SandboxedUnpacker::Unpack(const base::FilePath& directory) {
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::Unpack - Step 1";
+
   DCHECK(unpacker_io_task_runner_->RunsTasksInCurrentSequence());
+
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::Unpack - Step 2";
 
   DCHECK(directory.DirName() == temp_dir_.GetPath());
 
   base::FilePath manifest_path = extension_root_.Append(kManifestFilename);
 
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::Unpack - Step 3";
+
   ParseJsonFile(manifest_path,
                 base::BindOnce(&SandboxedUnpacker::ReadManifestDone, this));
+
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::Unpack - Step 4";
 }
 
 void SandboxedUnpacker::ReadManifestDone(
     base::Optional<base::Value> manifest,
     const base::Optional<std::string>& error) {
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::ReadManifestDone - Step 1";
+
   DCHECK(unpacker_io_task_runner_->RunsTasksInCurrentSequence());
   if (error) {
     ReportUnpackingError(*error);
     return;
   }
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::ReadManifestDone - Step 2";
   if (!manifest || !manifest->is_dict()) {
     ReportUnpackingError(manifest_errors::kInvalidManifest);
     return;
   }
 
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::ReadManifestDone - Step 3";
   std::unique_ptr<base::DictionaryValue> manifest_dict =
       base::DictionaryValue::From(
           base::Value::ToUniquePtrValue(std::move(manifest.value())));
 
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::ReadManifestDone - Step 4";
   std::string error_msg;
   scoped_refptr<Extension> extension(
       Extension::Create(extension_root_, location_, *manifest_dict,
                         creation_flags_, extension_id_, &error_msg));
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::ReadManifestDone - Step 5";
   if (!extension) {
     ReportUnpackingError(error_msg);
     return;
   }
 
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::ReadManifestDone - Step 6";
   std::vector<InstallWarning> warnings;
   if (!file_util::ValidateExtension(extension.get(), &error_msg, &warnings)) {
     ReportUnpackingError(error_msg);
     return;
   }
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::ReadManifestDone - Step 7";
   extension->AddInstallWarnings(warnings);
 
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::ReadManifestDone - Step 8";
   UnpackExtensionSucceeded(std::move(manifest_dict));
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::ReadManifestDone - Step 9";
 }
 
 void SandboxedUnpacker::UnpackExtensionSucceeded(
     std::unique_ptr<base::DictionaryValue> manifest) {
   DCHECK(unpacker_io_task_runner_->RunsTasksInCurrentSequence());
 
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::UnpackExtensionSucceeded - Step 1";
   std::unique_ptr<base::DictionaryValue> final_manifest(
       RewriteManifestFile(*manifest));
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::UnpackExtensionSucceeded - Step 2";
   if (!final_manifest)
     return;
 
@@ -486,6 +525,7 @@ void SandboxedUnpacker::UnpackExtensionSucceeded(
 
   // TODO(rdevlin.cronin): Continue removing std::string errors and replacing
   // with base::string16
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::UnpackExtensionSucceeded - Step 3";
   std::string utf8_error;
   if (!extension_l10n_util::LocalizeExtension(
           extension_root_, final_manifest.get(), &utf8_error)) {
@@ -496,16 +536,19 @@ void SandboxedUnpacker::UnpackExtensionSucceeded(
     return;
   }
 
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::UnpackExtensionSucceeded - Step 4";
   extension_ =
       Extension::Create(extension_root_, location_, *final_manifest,
                         Extension::REQUIRE_KEY | creation_flags_, &utf8_error);
 
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::UnpackExtensionSucceeded - Step 5";
   if (!extension_.get()) {
     ReportFailure(SandboxedUnpackerFailureReason::INVALID_MANIFEST,
                   ASCIIToUTF16("Manifest is invalid: " + utf8_error));
     return;
   }
 
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::UnpackExtensionSucceeded - Step 6";
   // The install icon path may be empty, which is OK, but if it is not it should
   // be normalized successfully.
   const std::string& original_install_icon_path =
@@ -525,6 +568,7 @@ void SandboxedUnpacker::UnpackExtensionSucceeded(
     return;
   }
 
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::UnpackExtensionSucceeded - Step 7";
   DCHECK(!image_sanitizer_);
   std::set<base::FilePath> image_paths =
       ExtensionsClient::Get()->GetBrowserImagePaths(extension_.get());
@@ -533,6 +577,7 @@ void SandboxedUnpacker::UnpackExtensionSucceeded(
       base::BindRepeating(&SandboxedUnpacker::ImageSanitizerDecodedImage, this),
       base::BindOnce(&SandboxedUnpacker::ImageSanitizationDone, this,
                      std::move(manifest)));
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::UnpackExtensionSucceeded - Step 8";
 }
 
 void SandboxedUnpacker::ImageSanitizerDecodedImage(const base::FilePath& path,
@@ -892,6 +937,7 @@ void SandboxedUnpacker::FailWithPackageError(
 
 bool SandboxedUnpacker::ValidateSignature(const base::FilePath& crx_path,
                                           const std::string& expected_hash) {
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::ValidateSignature - Step 1";
   std::vector<uint8_t> hash;
   if (!expected_hash.empty()) {
     if (!base::HexStringToBytes(expected_hash, &hash)) {
@@ -900,14 +946,17 @@ bool SandboxedUnpacker::ValidateSignature(const base::FilePath& crx_path,
       return false;
     }
   }
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::ValidateSignature - Step 2";
   const crx_file::VerifierResult result = crx_file::Verify(
       crx_path, crx_file::VerifierFormat::CRX2_OR_CRX3,
       std::vector<std::vector<uint8_t>>(), hash, &public_key_, &extension_id_);
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::ValidateSignature - Step 3 - PK: " << public_key_ << " | Ext ID: " << extension_id_;
 
   switch (result) {
     case crx_file::VerifierResult::OK_FULL: {
       if (!expected_hash.empty())
         UMA_HISTOGRAM_BOOLEAN("Extensions.SandboxUnpackHashCheck", true);
+      LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::ValidateSignature - OK";
       return true;
     }
     case crx_file::VerifierResult::OK_DELTA:
@@ -948,6 +997,7 @@ bool SandboxedUnpacker::ValidateSignature(const base::FilePath& crx_path,
           SandboxedUnpackerFailureReason::CRX_HASH_VERIFICATION_FAILED);
       break;
   }
+  LOG(INFO) << "[EXTENSIONS] SandboxedUnpacker::ValidateSignature - Step 4";
 
   return false;
 }

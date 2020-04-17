@@ -33,11 +33,8 @@ namespace {
 using VariationParameters = std::map<std::string, std::string>;
 
 const char kTCPFastOpenFieldTrialName[] = "TCPFastOpen";
-const char kTCPFastOpenHttpsEnabledGroupName[] = "HttpsEnabled";
 
 const char kQuicFieldTrialName[] = "QUIC";
-const char kQuicFieldTrialEnabledGroupName[] = "Enabled";
-const char kQuicFieldTrialHttpsEnabledGroupName[] = "HttpsEnabled";
 
 // Field trial for HTTP/2.
 const char kHttp2FieldTrialName[] = "HTTP2";
@@ -71,13 +68,8 @@ const std::string& GetVariationParam(
 void ConfigureTCPFastOpenParams(const base::CommandLine& command_line,
                                 base::StringPiece tfo_trial_group,
                                 net::HttpNetworkSession::Params* params) {
-  if (command_line.HasSwitch(switches::kEnableTcpFastOpen)) {
-    params->tcp_fast_open_mode =
-        net::HttpNetworkSession::Params::TcpFastOpenMode::ENABLED_FOR_ALL;
-  } else if (tfo_trial_group == kTCPFastOpenHttpsEnabledGroupName) {
-    params->tcp_fast_open_mode =
-        net::HttpNetworkSession::Params::TcpFastOpenMode::ENABLED_FOR_SSL_ONLY;
-  }
+  params->tcp_fast_open_mode =
+      net::HttpNetworkSession::Params::TcpFastOpenMode::ENABLED_FOR_ALL;
 }
 
 spdy::SettingsMap GetHttp2Settings(
@@ -136,13 +128,7 @@ bool ShouldEnableQuic(base::StringPiece quic_trial_group,
                       bool is_quic_force_enabled) {
   if (is_quic_force_disabled)
     return false;
-  if (is_quic_force_enabled)
-    return true;
-
-  return quic_trial_group.starts_with(kQuicFieldTrialEnabledGroupName) ||
-         quic_trial_group.starts_with(kQuicFieldTrialHttpsEnabledGroupName) ||
-         base::LowerCaseEqualsASCII(
-             GetVariationParam(quic_trial_params, "enable_quic"), "true");
+  return true;
 }
 
 bool ShouldMarkQuicBrokenWhenNetworkBlackholes(
@@ -465,7 +451,7 @@ void ParseCommandLineAndFieldTrials(const base::CommandLine& command_line,
                                     const std::string& quic_user_agent_id,
                                     net::HttpNetworkSession::Params* params) {
   is_quic_force_disabled |= command_line.HasSwitch(switches::kDisableQuic);
-  bool is_quic_force_enabled = command_line.HasSwitch(switches::kEnableQuic);
+  bool is_quic_force_enabled = true;
 
   std::string quic_trial_group =
       base::FieldTrialList::FindFullName(kQuicFieldTrialName);

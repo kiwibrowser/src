@@ -22,10 +22,15 @@ void UninstallPingSender::OnExtensionUninstalled(
     content::BrowserContext* browser_context,
     const Extension* extension,
     UninstallReason reason) {
+  LOG(INFO) << "[EXTENSIONS] UninstallPingSender::OnExtensionUninstall - Step 1";
   if (filter_.Run(extension, reason) == SEND_PING) {
+    LOG(INFO) << "[EXTENSIONS] UninstallPingSender::OnExtensionUninstall - Step 2";
     UpdateService* updater = UpdateService::Get(browser_context);
+    LOG(INFO) << "[EXTENSIONS] UninstallPingSender::OnExtensionUninstall - Step 3";
     updater->SendUninstallPing(extension->id(), extension->version(), reason);
+    LOG(INFO) << "[EXTENSIONS] UninstallPingSender::OnExtensionUninstall - Step 4";
   }
+  LOG(INFO) << "[EXTENSIONS] UninstallPingSender::OnExtensionUninstall - Step 5";
 }
 
 }  // namespace extensions

@@ -14,7 +14,7 @@
 #include "base/optional.h"
 #include "base/run_loop.h"
 #include "base/sequenced_task_runner.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/test/test_simple_task_runner.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "components/subresource_filter/content/browser/async_document_subresource_filter.h"
@@ -160,6 +160,7 @@ class ActivationStateComputingNavigationThrottleTest
     dealer_handle_ = std::make_unique<VerifiedRulesetDealer::Handle>(
         std::move(ruleset_task_runner));
     dealer_handle_->TryOpenAndSetRulesetFile(test_ruleset_pair_.indexed.path,
+                                             /*expected_checksum=*/0,
                                              base::DoNothing());
     ruleset_handle_ =
         std::make_unique<VerifiedRuleset::Handle>(dealer_handle_.get());

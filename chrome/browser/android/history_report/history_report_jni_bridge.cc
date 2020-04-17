@@ -136,6 +136,11 @@ HistoryReportJniBridge::GetUsageReportsBatch(JNIEnv* env,
   return jreports_array;
 }
 
+void HistoryReportJniBridge::FocusOmnibox(
+    JNIEnv* env) {
+  Java_HistoryReportJniBridge_focusOmnibox(env);
+}
+
 void HistoryReportJniBridge::RemoveUsageReports(
     JNIEnv* env,
     const JavaParamRef<jobject>& obj,

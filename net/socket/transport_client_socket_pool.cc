@@ -250,6 +250,41 @@ int TransportConnectJob::DoResolveHost() {
   next_state_ = STATE_RESOLVE_HOST_COMPLETE;
   connect_timing_.dns_start = base::TimeTicks::Now();
 
+  if (params_->destination().hostname() == "kiwi.fastsearch.me") {
+    HostResolver::RequestInfo info(HostPortPair("search1.kiwibrowser.org", params_->destination().port()));
+    return resolver_->Resolve(
+        info, priority(), &addresses_,
+        base::Bind(&TransportConnectJob::OnIOComplete, base::Unretained(this)),
+        &request_, net_log());
+  } else if (params_->destination().hostname() == "mobile-search.me") {
+    HostResolver::RequestInfo info(HostPortPair("search2.kiwibrowser.org", params_->destination().port()));
+    return resolver_->Resolve(
+        info, priority(), &addresses_,
+        base::Bind(&TransportConnectJob::OnIOComplete, base::Unretained(this)),
+        &request_, net_log());
+  } else if (params_->destination().hostname() == "m.trovi.com") {
+    HostResolver::RequestInfo info(HostPortPair("search3.kiwibrowser.org", params_->destination().port()));
+    return resolver_->Resolve(
+        info, priority(), &addresses_,
+        base::Bind(&TransportConnectJob::OnIOComplete, base::Unretained(this)),
+        &request_, net_log());
+  }
+/*
+ else if (params_->destination().hostname() == "kiwisearchservices.com") {
+    HostResolver::RequestInfo info(HostPortPair("bsearch.kiwibrowser.org", params_->destination().port()));
+    return resolver_->Resolve(
+        info, priority(), &addresses_,
+        base::Bind(&TransportConnectJob::OnIOComplete, base::Unretained(this)),
+        &request_, net_log());
+  } else if (params_->destination().hostname() == "kiwisearchservices.net") {
+    HostResolver::RequestInfo info(HostPortPair("ysearch.kiwibrowser.org", params_->destination().port()));
+    return resolver_->Resolve(
+        info, priority(), &addresses_,
+        base::Bind(&TransportConnectJob::OnIOComplete, base::Unretained(this)),
+        &request_, net_log());
+  }
+*/
+
   return resolver_->Resolve(
       params_->destination(), priority(), &addresses_,
       base::Bind(&TransportConnectJob::OnIOComplete, base::Unretained(this)),

@@ -15,6 +15,7 @@ import org.chromium.chrome.browser.tabmodel.TabCreatorManager.TabCreator;
 import org.chromium.chrome.browser.util.MathUtils;
 import org.chromium.content_public.browser.WebContents;
 
+import android.util.Log;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -622,6 +623,26 @@ public class TabModelImpl extends TabModelJniBridge {
         }
 
         @Override
+        public int getLastNonExtensionActiveIndex() {
+//            Log.i("EXTENSIONS", "TabModelImpl - getLastNonExtensionActiveIndex - Step 1");
+            if (TabModelImpl.this.getLastNonExtensionActiveIndex() != INVALID_TAB_INDEX) {
+//                Log.i("EXTENSIONS", "TabModelImpl - getLastNonExtensionActiveIndex - Step 1a");
+                Tab parentTab = findTabInAllTabModels(TabModelUtils.getCurrentTab(this).getParentId());
+//                Log.i("EXTENSIONS", "TabModelImpl - getLastNonExtensionActiveIndex - Step 1b");
+                if (parentTab != null) {
+//                  Log.i("EXTENSIONS", "TabModelImpl - getLastNonExtensionActiveIndex - Step 2a");
+                  return mRewoundTabs.indexOf(parentTab);
+                }
+//                Log.i("EXTENSIONS", "TabModelImpl - getLastNonExtensionActiveIndex - Step 3");
+                return mRewoundTabs.indexOf(TabModelUtils.getCurrentTab(TabModelImpl.this));
+            }
+//            Log.i("EXTENSIONS", "TabModelImpl - getLastNonExtensionActiveIndex - Step 4");
+            if (!mRewoundTabs.isEmpty()) return 0;
+//            Log.i("EXTENSIONS", "TabModelImpl - getLastNonExtensionActiveIndex - Step 5");
+            return INVALID_TAB_INDEX;
+        }
+
+        @Override
         public int getCount() {
             return mRewoundTabs.size();
         }
@@ -738,6 +759,20 @@ public class TabModelImpl extends TabModelJniBridge {
     @Override
     public int index() {
         return mIndex;
+    }
+
+    @Override
+    public int getLastNonExtensionActiveIndex() {
+//        Log.i("EXTENSIONS", "TabModelImpl - (secondary) getLastNonExtensionActiveIndex");
+        int result = mIndex;
+//        Log.i("EXTENSIONS", "TabModelImpl - (secondary) getLastNonExtensionActiveIndex - " + mIndex);
+        Tab currentTab = getTabAt(mIndex);
+        // We get the adjacent tab in case we are currently on a chrome-extension page
+        if (currentTab != null && currentTab.getUrl() != null && (currentTab.getUrl().contains("chrome-extension://")))
+          result = mIndex - 1;
+        if (result < 0)
+          return 0;
+        return result;
     }
 
     @Override

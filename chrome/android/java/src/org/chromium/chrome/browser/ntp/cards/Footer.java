@@ -8,7 +8,9 @@ import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.graphics.Color;
 
+import org.chromium.base.ContextUtils;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.suggestions.SuggestionsConfig;
 import org.chromium.chrome.browser.suggestions.SuggestionsNavigationDelegate;
@@ -52,6 +54,8 @@ public class Footer extends OptionalLeaf {
                     new NoUnderlineClickableSpan((view) -> navigationDelegate.navigateToHelpPage());
 
             TextView textView = (TextView) itemView.findViewById(R.id.text);
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+                textView.setTextColor(Color.WHITE);
             textView.setText(SpanApplier.applySpans(
                     root.getResources().getString(R.string.ntp_learn_more_about_suggested_content),
                     new SpanApplier.SpanInfo("<link>", "</link>", link)));

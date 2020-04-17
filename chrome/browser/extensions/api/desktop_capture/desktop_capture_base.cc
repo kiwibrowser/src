@@ -193,12 +193,8 @@ bool DesktopCaptureChooseDesktopMediaFunctionBase::Execute(
   } else {
     // DesktopMediaPicker is implemented only for Windows, OSX and
     // Aura Linux builds.
-#if defined(TOOLKIT_VIEWS) || defined(OS_MACOSX)
-    picker_ = DesktopMediaPicker::Create();
-#else
     error_ = "Desktop Capture API is not yet implemented for this platform.";
     return false;
-#endif
   }
 
   DesktopMediaPicker::DoneCallback callback = base::Bind(

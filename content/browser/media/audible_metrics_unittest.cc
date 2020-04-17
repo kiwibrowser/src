@@ -5,7 +5,7 @@
 #include "content/browser/media/audible_metrics.h"
 
 #include "base/metrics/histogram_samples.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/test/simple_test_tick_clock.h"
 #include "base/test/user_action_tester.h"
 #include "testing/gtest/include/gtest/gtest.h"

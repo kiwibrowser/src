@@ -1053,6 +1053,8 @@ bool RenderWidgetHostViewMac::IsKeyboardLocked() {
 
 void RenderWidgetHostViewMac::GestureEventAck(const WebGestureEvent& event,
                                               InputEventAckState ack_result) {
+  ForwardTouchpadPinchIfNecessary(event, ack_result);
+
   bool consumed = ack_result == INPUT_EVENT_ACK_STATE_CONSUMED;
   switch (event.GetType()) {
     case WebInputEvent::kGestureScrollBegin:
@@ -1493,7 +1495,7 @@ void RenderWidgetHostViewMac::OnNSViewForwardWheelEvent(
 void RenderWidgetHostViewMac::OnNSViewGestureBegin(
     blink::WebGestureEvent begin_event,
     bool is_synthetically_injected) {
-  gesture_begin_event_.reset(new WebGestureEvent(begin_event));
+  gesture_begin_event_ = std::make_unique<WebGestureEvent>(begin_event);
 
   // If the page is at the minimum zoom level, require a threshold be reached
   // before the pinch has an effect. Synthetic pinches are not subject to this
@@ -1529,6 +1531,7 @@ void RenderWidgetHostViewMac::OnNSViewGestureUpdate(
     begin_event.SetType(WebInputEvent::kGesturePinchBegin);
     begin_event.SetSourceDevice(
         blink::WebGestureDevice::kWebGestureDeviceTouchpad);
+    begin_event.SetNeedsWheelEvent(true);
     SendGesturePinchEvent(&begin_event);
     gesture_begin_pinch_sent_ = YES;
   }

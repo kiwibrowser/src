@@ -330,6 +330,7 @@ const ContentTypeToNibPath kNibPaths[] = {
     {CONTENT_SETTINGS_TYPE_PROTOCOL_HANDLERS, @"ContentProtocolHandlers"},
     {CONTENT_SETTINGS_TYPE_MIDI_SYSEX, @"ContentBlockedMIDISysEx"},
     {CONTENT_SETTINGS_TYPE_CLIPBOARD_READ, @"ContentBlockedSimple"},
+    {CONTENT_SETTINGS_TYPE_SENSORS, @"ContentBlockedSimple"},
 };
 
 - (id)initWithModel:(ContentSettingBubbleModel*)contentSettingBubbleModel

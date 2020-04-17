@@ -27,6 +27,7 @@
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/point_conversions.h"
 #include "ui/latency/latency_info.h"
+#include "ui/android/window_android.h"
 
 namespace gfx {
 class Transform;

@@ -5,6 +5,8 @@
 package org.chromium.chrome.browser.contextmenu;
 
 import android.app.Activity;
+import android.graphics.Color;
+import org.chromium.base.ContextUtils;
 import android.graphics.drawable.Drawable;
 import android.os.StrictMode;
 import android.text.TextUtils;
@@ -71,6 +73,9 @@ class TabularContextMenuListAdapter extends BaseAdapter {
             viewHolder = new ViewHolderItem();
             viewHolder.mIcon = (ImageView) convertView.findViewById(R.id.context_menu_icon);
             viewHolder.mText = (TextView) convertView.findViewById(R.id.context_menu_text);
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                viewHolder.mText.setTextColor(Color.WHITE);
+            }
             if (viewHolder.mText == null) {
                 throw new IllegalStateException("Context text not found in new view inflation");
             }
@@ -87,6 +92,9 @@ class TabularContextMenuListAdapter extends BaseAdapter {
 
         final String titleText = menuItem.getTitle(mActivity);
         viewHolder.mText.setText(titleText);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            viewHolder.mText.setTextColor(Color.WHITE);
+        }
 
         if (menuItem instanceof ShareContextMenuItem) {
             StrictMode.ThreadPolicy oldPolicy = StrictMode.allowThreadDiskReads();

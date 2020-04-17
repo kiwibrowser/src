@@ -13,19 +13,11 @@
 #include "extensions/common/extension_messages.h"
 #include "extensions/common/message_bundle.h"
 #include "gin/data_object_builder.h"
-#include "third_party/cld_3/src/src/nnet_language_identifier.h"
 
 namespace extensions {
 namespace i18n_hooks {
 
 namespace {
-
-// Max number of languages to detect.
-const int kCldNumLangs = 3;
-
-// CLD3 minimum reliable byte threshold. Predictions for inputs below this size
-// in bytes will be considered unreliable.
-const int kCld3MinimumByteThreshold = 50;
 
 struct DetectedLanguage {
   DetectedLanguage(const std::string& language, int percentage)
@@ -83,46 +75,6 @@ v8::Local<v8::Value> LanguageDetectionResult::ToV8(
       .Set("isReliable", is_reliable)
       .Set("languages", v8_languages.As<v8::Value>())
       .Build();
-}
-
-void InitDetectedLanguages(
-    const std::vector<chrome_lang_id::NNetLanguageIdentifier::Result>&
-        lang_results,
-    LanguageDetectionResult* result) {
-  std::vector<DetectedLanguage>* detected_languages = &result->languages;
-  DCHECK(detected_languages->empty());
-  bool* is_reliable = &result->is_reliable;
-
-  // is_reliable is set to "true", so that the reliability can be calculated by
-  // &&'ing the reliability of each predicted language.
-  *is_reliable = true;
-  for (const auto& lang_result : lang_results) {
-    const std::string& language_code = lang_result.language;
-
-    // If a language is kUnknown, then the remaining ones are also kUnknown.
-    if (language_code == chrome_lang_id::NNetLanguageIdentifier::kUnknown) {
-      break;
-    }
-
-    // The list of languages supported by CLD3 is saved in kLanguageNames
-    // in the following file:
-    // //src/third_party/cld_3/src/src/task_context_params.cc
-    // Among the entries in this list are transliterated languages
-    // (called xx-Latn) which don't belong to the spec ISO639-1 used by
-    // the previous model, CLD2. Thus, to maintain backwards compatibility,
-    // xx-Latn predictions are ignored for now.
-    if (base::EndsWith(language_code, "-Latn",
-                       base::CompareCase::INSENSITIVE_ASCII)) {
-      continue;
-    }
-
-    *is_reliable = *is_reliable && lang_result.is_reliable;
-    const int percent = static_cast<int>(100 * lang_result.proportion);
-    detected_languages->emplace_back(language_code, percent);
-  }
-
-  if (detected_languages->empty())
-    *is_reliable = false;
 }
 
 }  // namespace
@@ -199,23 +151,8 @@ v8::Local<v8::Value> GetI18nMessage(const std::string& message_name,
 
 v8::Local<v8::Value> DetectTextLanguage(v8::Local<v8::Context> context,
                                         const std::string& text) {
-  chrome_lang_id::NNetLanguageIdentifier nnet_lang_id(/*min_num_bytes=*/0,
-                                                      /*max_num_bytes=*/512);
-  std::vector<chrome_lang_id::NNetLanguageIdentifier::Result> lang_results =
-      nnet_lang_id.FindTopNMostFreqLangs(text, kCldNumLangs);
-
-  // is_reliable is set to false if we believe the input is too short to be
-  // accurately identified by the current model.
-  if (text.size() < kCld3MinimumByteThreshold) {
-    for (auto& result : lang_results)
-      result.is_reliable = false;
-  }
-
   LanguageDetectionResult result;
 
-  // Populate LanguageDetectionResult with prediction reliability, languages,
-  // and the corresponding percentages.
-  InitDetectedLanguages(lang_results, &result);
   return result.ToV8(context);
 }
 

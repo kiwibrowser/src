@@ -60,6 +60,10 @@
 #include "extensions/browser/pref_names.h"
 #endif
 
+#include "chrome/browser/ui/android/tab_model/tab_model.h"
+#include "chrome/browser/ui/android/tab_model/tab_model_list.h"
+#include "content/public/browser/web_contents.h"
+
 using content::BrowserContext;
 using content::ConsoleMessageLevel;
 using content::WebContents;
@@ -253,24 +257,7 @@ void AppWindow::Init(const GURL& url,
                      AppWindowContents* app_window_contents,
                      content::RenderFrameHost* creator_frame,
                      const CreateParams& params) {
-  // Initialize the render interface and web contents
-  app_window_contents_.reset(app_window_contents);
-  app_window_contents_->Initialize(browser_context(), creator_frame, url);
-
   initial_url_ = url;
-
-  content::WebContentsObserver::Observe(web_contents());
-  SetViewType(web_contents(), VIEW_TYPE_APP_WINDOW);
-  app_delegate_->InitWebContents(web_contents());
-
-  ExtensionWebContentsObserver::GetForWebContents(web_contents())->
-      dispatcher()->set_delegate(this);
-
-  WebContentsModalDialogManager::CreateForWebContents(web_contents());
-
-  web_contents()->SetDelegate(this);
-  WebContentsModalDialogManager::FromWebContents(web_contents())
-      ->SetDelegate(this);
 
   // Initialize the window
   CreateParams new_params = LoadDefaults(params);
@@ -279,6 +266,27 @@ void AppWindow::Init(const GURL& url,
                             WINDOW_TYPE_COUNT);
 
   window_key_ = new_params.window_key;
+
+  TabModel* tab_model = TabModelList::get(0);
+
+  web_contents_ = tab_model->CreateNewTabForDevTools(url, false);
+
+  // Initialize the render interface and web contents
+  app_window_contents_.reset(app_window_contents);
+  app_window_contents_->Initialize(browser_context(), creator_frame, url, web_contents_);
+
+  content::WebContentsObserver::Observe(web_contents());
+  SetViewType(web_contents(), VIEW_TYPE_APP_WINDOW);
+
+  ExtensionWebContentsObserver::GetForWebContents(web_contents())->
+      dispatcher()->set_delegate(this);
+/*
+  WebContentsModalDialogManager::CreateForWebContents(web_contents());
+
+  web_contents()->SetDelegate(this);
+  WebContentsModalDialogManager::FromWebContents(web_contents())
+      ->SetDelegate(this);
+*/
 
   // Windows cannot be always-on-top in fullscreen mode for security reasons.
   cached_always_on_top_ = new_params.always_on_top;
@@ -290,14 +298,8 @@ void AppWindow::Init(const GURL& url,
   show_on_lock_screen_ = params.show_on_lock_screen;
   show_in_shelf_ = params.show_in_shelf;
 
-  AppWindowClient* app_window_client = AppWindowClient::Get();
-  native_app_window_.reset(
-      app_window_client->CreateNativeAppWindow(this, &new_params));
-
   helper_.reset(new AppWebContentsHelper(
       browser_context_, extension_id_, web_contents(), app_delegate_.get()));
-
-  native_app_window_->UpdateWindowIcon();
 
   if (params.window_icon_url.is_valid())
     SetAppIconUrl(params.window_icon_url);
@@ -328,13 +330,6 @@ void AppWindow::Init(const GURL& url,
   OnNativeWindowChanged();
 
   ExtensionRegistry::Get(browser_context_)->AddObserver(this);
-
-  // Close when the browser process is exiting.
-  app_delegate_->SetTerminatingCallback(
-      base::Bind(&NativeAppWindow::Close,
-                 base::Unretained(native_app_window_.get())));
-
-  app_window_contents_->LoadContents(new_params.creator_process_id);
 }
 
 AppWindow::~AppWindow() {
@@ -372,8 +367,6 @@ void AppWindow::AddNewContents(WebContents* source,
                                bool user_gesture,
                                bool* was_blocked) {
   DCHECK(new_contents->GetBrowserContext() == browser_context_);
-  app_delegate_->AddNewContents(browser_context_, std::move(new_contents),
-                                disposition, initial_rect, user_gesture);
 }
 
 content::KeyboardEventProcessingResult AppWindow::PreHandleKeyboardEvent(
@@ -413,8 +406,6 @@ void AppWindow::HandleKeyboardEvent(
     Restore();
     return;
   }
-
-  native_app_window_->HandleKeyboardEvent(event);
 }
 
 void AppWindow::RequestToLockMouse(WebContents* web_contents,
@@ -437,7 +428,7 @@ std::unique_ptr<content::BluetoothChooser> AppWindow::RunBluetoothChooser(
 }
 
 bool AppWindow::TakeFocus(WebContents* source, bool reverse) {
-  return app_delegate_->TakeFocus(source, reverse);
+  return false;
 }
 
 bool AppWindow::OnMessageReceived(const IPC::Message& message,
@@ -451,7 +442,6 @@ bool AppWindow::OnMessageReceived(const IPC::Message& message,
 }
 
 void AppWindow::RenderViewCreated(content::RenderViewHost* render_view_host) {
-  app_delegate_->RenderViewCreated(render_view_host);
 }
 
 void AppWindow::SetOnFirstCommitOrWindowClosedCallback(
@@ -503,35 +493,6 @@ void AppWindow::OnNativeClose() {
 }
 
 void AppWindow::OnNativeWindowChanged() {
-  // This may be called during Init before |native_app_window_| is set.
-  if (!native_app_window_)
-    return;
-
-#if defined(OS_MACOSX)
-  // On Mac the user can change the window's fullscreen state. If that has
-  // happened, update AppWindow's internal state.
-  if (native_app_window_->IsFullscreen()) {
-    if (!IsFullscreen())
-      fullscreen_types_ = FULLSCREEN_TYPE_OS;
-  } else {
-    fullscreen_types_ = FULLSCREEN_TYPE_NONE;
-  }
-
-  RestoreAlwaysOnTop();  // Same as in SetNativeWindowFullscreen.
-#endif
-
-  SaveWindowPosition();
-
-#if defined(OS_WIN)
-  if (cached_always_on_top_ && !IsFullscreen() &&
-      !native_app_window_->IsMaximized() &&
-      !native_app_window_->IsMinimized()) {
-    UpdateNativeAlwaysOnTop();
-  }
-#endif
-
-  if (app_window_contents_)
-    app_window_contents_->NativeWindowChanged(native_app_window_.get());
 }
 
 void AppWindow::OnNativeWindowActivated() {
@@ -539,9 +500,7 @@ void AppWindow::OnNativeWindowActivated() {
 }
 
 content::WebContents* AppWindow::web_contents() const {
-  if (app_window_contents_)
-    return app_window_contents_->GetWebContents();
-  return nullptr;
+  return web_contents_;
 }
 
 const Extension* AppWindow::GetExtension() const {
@@ -550,15 +509,14 @@ const Extension* AppWindow::GetExtension() const {
       .GetByID(extension_id_);
 }
 
-NativeAppWindow* AppWindow::GetBaseWindow() { return native_app_window_.get(); }
+NativeAppWindow* AppWindow::GetBaseWindow() { return nullptr; }
 
 gfx::NativeWindow AppWindow::GetNativeWindow() {
-  return GetBaseWindow()->GetNativeWindow();
+  return nullptr;
 }
 
 gfx::Rect AppWindow::GetClientBounds() const {
-  gfx::Rect bounds = native_app_window_->GetBounds();
-  bounds.Inset(native_app_window_->GetFrameInsets());
+  gfx::Rect bounds = gfx::Rect();
   return bounds;
 }
 
@@ -594,19 +552,16 @@ void AppWindow::SetAppIconUrl(const GURL& url) {
 }
 
 void AppWindow::UpdateShape(std::unique_ptr<ShapeRects> rects) {
-  native_app_window_->UpdateShape(std::move(rects));
 }
 
 void AppWindow::UpdateDraggableRegions(
     const std::vector<DraggableRegion>& regions) {
-  native_app_window_->UpdateDraggableRegions(regions);
 }
 
 void AppWindow::UpdateAppIcon(const gfx::Image& image) {
   if (image.IsEmpty())
     return;
   custom_app_icon_ = image;
-  native_app_window_->UpdateWindowIcon();
 }
 
 void AppWindow::SetFullscreen(FullscreenType type, bool enable) {
@@ -652,17 +607,11 @@ void AppWindow::Fullscreen() {
   SetFullscreen(FULLSCREEN_TYPE_WINDOW_API, true);
 }
 
-void AppWindow::Maximize() { GetBaseWindow()->Maximize(); }
+void AppWindow::Maximize() { }
 
-void AppWindow::Minimize() { GetBaseWindow()->Minimize(); }
+void AppWindow::Minimize() { }
 
 void AppWindow::Restore() {
-  if (IsFullscreen()) {
-    fullscreen_types_ = FULLSCREEN_TYPE_NONE;
-    SetNativeWindowFullscreen();
-  } else {
-    GetBaseWindow()->Restore();
-  }
 }
 
 void AppWindow::OSFullscreen() {
@@ -675,31 +624,16 @@ void AppWindow::ForcedFullscreen() {
 
 void AppWindow::SetContentSizeConstraints(const gfx::Size& min_size,
                                           const gfx::Size& max_size) {
-  SizeConstraints constraints(min_size, max_size);
-  native_app_window_->SetContentSizeConstraints(constraints.GetMinimumSize(),
-                                                constraints.GetMaximumSize());
-
-  gfx::Rect bounds = GetClientBounds();
-  gfx::Size constrained_size = constraints.ClampSize(bounds.size());
-  if (bounds.size() != constrained_size) {
-    bounds.set_size(constrained_size);
-    bounds.Inset(-native_app_window_->GetFrameInsets());
-    native_app_window_->SetBounds(bounds);
-  }
-  OnNativeWindowChanged();
 }
 
 void AppWindow::Show(ShowType show_type) {
-  app_delegate_->OnShow();
   bool was_hidden = is_hidden_ || !has_been_shown_;
   is_hidden_ = false;
 
   switch (show_type) {
     case SHOW_ACTIVE:
-      GetBaseWindow()->Show();
       break;
     case SHOW_INACTIVE:
-      GetBaseWindow()->ShowInactive();
       break;
   }
   AppWindowRegistry::Get(browser_context_)->AppWindowShown(this, was_hidden);
@@ -708,68 +642,50 @@ void AppWindow::Show(ShowType show_type) {
 
 void AppWindow::Hide() {
   is_hidden_ = true;
-  GetBaseWindow()->Hide();
   AppWindowRegistry::Get(browser_context_)->AppWindowHidden(this);
-  app_delegate_->OnHide();
 }
 
 void AppWindow::SetAlwaysOnTop(bool always_on_top) {
-  if (cached_always_on_top_ == always_on_top)
-    return;
-
-  cached_always_on_top_ = always_on_top;
-
-  // As a security measure, do not allow fullscreen windows or windows that
-  // overlap the taskbar to be on top. The property will be applied when the
-  // window exits fullscreen and moves away from the taskbar.
-  if (!IsFullscreen() && !IntersectsWithTaskbar())
-    native_app_window_->SetAlwaysOnTop(always_on_top);
-
-  OnNativeWindowChanged();
 }
 
 bool AppWindow::IsAlwaysOnTop() const { return cached_always_on_top_; }
 
 void AppWindow::RestoreAlwaysOnTop() {
-  if (cached_always_on_top_)
-    UpdateNativeAlwaysOnTop();
 }
 
 void AppWindow::GetSerializedState(base::DictionaryValue* properties) const {
   DCHECK(properties);
 
   properties->SetBoolean("fullscreen",
-                         native_app_window_->IsFullscreenOrPending());
-  properties->SetBoolean("minimized", native_app_window_->IsMinimized());
-  properties->SetBoolean("maximized", native_app_window_->IsMaximized());
+                         false);
+  properties->SetBoolean("minimized", false);
+  properties->SetBoolean("maximized", true);
   properties->SetBoolean("alwaysOnTop", IsAlwaysOnTop());
-  properties->SetBoolean("hasFrameColor", native_app_window_->HasFrameColor());
+  properties->SetBoolean("hasFrameColor", false);
   properties->SetBoolean(
-      "alphaEnabled",
-      requested_alpha_enabled_ && native_app_window_->CanHaveAlphaEnabled());
+      "alphaEnabled", false);
 
   // These properties are undocumented and are to enable testing. Alpha is
   // removed to
   // make the values easier to check.
-  SkColor transparent_white = ~SK_ColorBLACK;
   properties->SetInteger(
       "activeFrameColor",
-      native_app_window_->ActiveFrameColor() & transparent_white);
+      0);
   properties->SetInteger(
       "inactiveFrameColor",
-      native_app_window_->InactiveFrameColor() & transparent_white);
+      0);
 
   gfx::Rect content_bounds = GetClientBounds();
-  gfx::Size content_min_size = native_app_window_->GetContentMinimumSize();
-  gfx::Size content_max_size = native_app_window_->GetContentMaximumSize();
+  gfx::Size content_min_size = gfx::Size();
+  gfx::Size content_max_size = gfx::Size();
   SetBoundsProperties(content_bounds,
                       content_min_size,
                       content_max_size,
                       "innerBounds",
                       properties);
 
-  gfx::Insets frame_insets = native_app_window_->GetFrameInsets();
-  gfx::Rect frame_bounds = native_app_window_->GetBounds();
+  gfx::Insets frame_insets = gfx::Insets();
+  gfx::Rect frame_bounds = gfx::Rect();
   gfx::Size frame_min_size = SizeConstraints::AddFrameToConstraints(
       content_min_size, frame_insets);
   gfx::Size frame_max_size = SizeConstraints::AddFrameToConstraints(
@@ -784,17 +700,6 @@ void AppWindow::GetSerializedState(base::DictionaryValue* properties) const {
 //------------------------------------------------------------------------------
 // Private methods
 void AppWindow::StartAppIconDownload() {
-  DCHECK(app_icon_url_.is_valid());
-
-  // Avoid using any previous icons that were being downloaded.
-  image_loader_ptr_factory_.InvalidateWeakPtrs();
-  web_contents()->DownloadImage(
-      app_icon_url_,
-      true,   // is a favicon
-      0,      // no maximum size
-      false,  // normal cache policy
-      base::BindOnce(&AppWindow::DidDownloadFavicon,
-                     image_loader_ptr_factory_.GetWeakPtr()));
 }
 
 void AppWindow::DidDownloadFavicon(
@@ -803,67 +708,19 @@ void AppWindow::DidDownloadFavicon(
     const GURL& image_url,
     const std::vector<SkBitmap>& bitmaps,
     const std::vector<gfx::Size>& original_bitmap_sizes) {
-  if (image_url != app_icon_url_ || bitmaps.empty())
-    return;
-
-  // Bitmaps are ordered largest to smallest. Choose the smallest bitmap
-  // whose height >= the preferred size.
-  int largest_index = 0;
-  for (size_t i = 1; i < bitmaps.size(); ++i) {
-    if (bitmaps[i].height() < app_delegate_->PreferredIconSize())
-      break;
-    largest_index = i;
-  }
-  const SkBitmap& largest = bitmaps[largest_index];
-  UpdateAppIcon(gfx::Image::CreateFrom1xBitmap(largest));
 }
 
 void AppWindow::SetNativeWindowFullscreen() {
-  native_app_window_->SetFullscreen(fullscreen_types_);
-
-  RestoreAlwaysOnTop();
 }
 
 bool AppWindow::IntersectsWithTaskbar() const {
-#if defined(OS_WIN)
-  display::Screen* screen = display::Screen::GetScreen();
-  gfx::Rect window_bounds = native_app_window_->GetRestoredBounds();
-  std::vector<display::Display> displays = screen->GetAllDisplays();
-
-  for (std::vector<display::Display>::const_iterator it = displays.begin();
-       it != displays.end(); ++it) {
-    gfx::Rect taskbar_bounds = it->bounds();
-    taskbar_bounds.Subtract(it->work_area());
-    if (taskbar_bounds.IsEmpty())
-      continue;
-
-    if (window_bounds.Intersects(taskbar_bounds))
-      return true;
-  }
-#endif
-
   return false;
 }
 
 void AppWindow::UpdateNativeAlwaysOnTop() {
-  DCHECK(cached_always_on_top_);
-  bool is_on_top = native_app_window_->IsAlwaysOnTop();
-  bool fullscreen = IsFullscreen();
-  bool intersects_taskbar = IntersectsWithTaskbar();
-
-  if (is_on_top && (fullscreen || intersects_taskbar)) {
-    // When entering fullscreen or overlapping the taskbar, ensure windows are
-    // not always-on-top.
-    native_app_window_->SetAlwaysOnTop(false);
-  } else if (!is_on_top && !fullscreen && !intersects_taskbar) {
-    // When exiting fullscreen and moving away from the taskbar, reinstate
-    // always-on-top.
-    native_app_window_->SetAlwaysOnTop(true);
-  }
 }
 
 void AppWindow::CloseContents(WebContents* contents) {
-  native_app_window_->Close();
 }
 
 bool AppWindow::ShouldSuppressDialogs(WebContents* source) {
@@ -874,71 +731,43 @@ content::ColorChooser* AppWindow::OpenColorChooser(
     WebContents* web_contents,
     SkColor initial_color,
     const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions) {
-  return app_delegate_->ShowColorChooser(web_contents, initial_color);
+  return nullptr;
 }
 
 void AppWindow::RunFileChooser(content::RenderFrameHost* render_frame_host,
                                const content::FileChooserParams& params) {
-  if (window_type_is_panel()) {
-    // Panels can't host a file dialog, abort. TODO(stevenjb): allow file
-    // dialogs to be unhosted but still close with the owning web contents.
-    // crbug.com/172502.
-    LOG(WARNING) << "File dialog opened by panel.";
-    return;
-  }
-
-  app_delegate_->RunFileChooser(render_frame_host, params);
+  return ;
 }
 
 bool AppWindow::IsPopupOrPanel(const WebContents* source) const { return true; }
 
 void AppWindow::MoveContents(WebContents* source, const gfx::Rect& pos) {
-  native_app_window_->SetBounds(pos);
 }
 
 void AppWindow::NavigationStateChanged(content::WebContents* source,
                                        content::InvalidateTypes changed_flags) {
-  if (changed_flags & content::INVALIDATE_TYPE_TITLE)
-    native_app_window_->UpdateWindowTitle();
-  else if (changed_flags & content::INVALIDATE_TYPE_TAB)
-    native_app_window_->UpdateWindowIcon();
 }
 
 void AppWindow::EnterFullscreenModeForTab(
     content::WebContents* source,
     const GURL& origin,
     const blink::WebFullscreenOptions& options) {
-  ToggleFullscreenModeForTab(source, true);
 }
 
 void AppWindow::ExitFullscreenModeForTab(content::WebContents* source) {
-  ToggleFullscreenModeForTab(source, false);
 }
 
 void AppWindow::OnAppWindowReady() {
   window_ready_ = true;
-
-  if (app_icon_url_.is_valid())
-    StartAppIconDownload();
 }
 
 void AppWindow::ToggleFullscreenModeForTab(content::WebContents* source,
                                            bool enter_fullscreen) {
-  const Extension* extension = GetExtension();
-  if (!extension)
-    return;
-
-  if (!IsExtensionWithPermissionOrSuggestInConsole(
-          APIPermission::kFullscreen, extension, source->GetMainFrame())) {
-    return;
-  }
-
-  SetFullscreen(FULLSCREEN_TYPE_HTML_API, enter_fullscreen);
 }
 
 bool AppWindow::IsFullscreenForTabOrPending(const content::WebContents* source)
     const {
-  return IsHtmlApiFullscreen();
+  return false;
 }
 
 blink::WebDisplayMode AppWindow::GetDisplayMode(
@@ -948,7 +777,7 @@ blink::WebDisplayMode AppWindow::GetDisplayMode(
 }
 
 WindowController* AppWindow::GetExtensionWindowController() const {
-  return app_window_contents_->GetWindowController();
+  return nullptr;
 }
 
 content::WebContents* AppWindow::GetAssociatedWebContents() const {
@@ -958,37 +787,21 @@ content::WebContents* AppWindow::GetAssociatedWebContents() const {
 void AppWindow::OnExtensionUnloaded(BrowserContext* browser_context,
                                     const Extension* extension,
                                     UnloadedExtensionReason reason) {
-  if (extension_id_ == extension->id())
-    native_app_window_->Close();
 }
 
 void AppWindow::SetWebContentsBlocked(content::WebContents* web_contents,
                                       bool blocked) {
-  app_delegate_->SetWebContentsBlocked(web_contents, blocked);
 }
 
 bool AppWindow::IsWebContentsVisible(content::WebContents* web_contents) {
-  return app_delegate_->IsWebContentsVisible(web_contents);
+  return true;
 }
 
 WebContentsModalDialogHost* AppWindow::GetWebContentsModalDialogHost() {
-  return native_app_window_.get();
+  return nullptr;
 }
 
 void AppWindow::SaveWindowPosition() {
-  DCHECK(native_app_window_);
-  if (window_key_.empty())
-    return;
-
-  AppWindowGeometryCache* cache =
-      AppWindowGeometryCache::Get(browser_context());
-
-  gfx::Rect bounds = native_app_window_->GetRestoredBounds();
-  gfx::Rect screen_bounds =
-      display::Screen::GetScreen()->GetDisplayMatching(bounds).work_area();
-  ui::WindowShowState window_state = native_app_window_->GetRestoredState();
-  cache->SaveGeometry(
-      extension_id(), window_key_, bounds, screen_bounds, window_state);
 }
 
 void AppWindow::AdjustBoundsToBeVisibleOnScreen(
@@ -997,28 +810,6 @@ void AppWindow::AdjustBoundsToBeVisibleOnScreen(
     const gfx::Rect& current_screen_bounds,
     const gfx::Size& minimum_size,
     gfx::Rect* bounds) const {
-  *bounds = cached_bounds;
-
-  // Reposition and resize the bounds if the cached_screen_bounds is different
-  // from the current screen bounds and the current screen bounds doesn't
-  // completely contain the bounds.
-  if (cached_screen_bounds != current_screen_bounds &&
-      !current_screen_bounds.Contains(cached_bounds)) {
-    bounds->set_width(
-        std::max(minimum_size.width(),
-                 std::min(bounds->width(), current_screen_bounds.width())));
-    bounds->set_height(
-        std::max(minimum_size.height(),
-                 std::min(bounds->height(), current_screen_bounds.height())));
-    bounds->set_x(
-        std::max(current_screen_bounds.x(),
-                 std::min(bounds->x(),
-                          current_screen_bounds.right() - bounds->width())));
-    bounds->set_y(
-        std::max(current_screen_bounds.y(),
-                 std::min(bounds->y(),
-                          current_screen_bounds.bottom() - bounds->height())));
-  }
 }
 
 AppWindow::CreateParams AppWindow::LoadDefaults(CreateParams params)

@@ -113,7 +113,7 @@ ChromeZoomLevelPrefs::ChromeZoomLevelPrefs(
          profile_path.IsParent(partition_path));
   base::FilePath partition_relative_path;
   profile_path.AppendRelativePath(partition_path, &partition_relative_path);
-  MigrateOldZoomPreferences(partition_relative_path);
+//  MigrateOldZoomPreferences(partition_relative_path);
   partition_key_ = GetPartitionKey(partition_relative_path);
 }
 
@@ -125,27 +125,11 @@ std::string ChromeZoomLevelPrefs::GetPartitionKeyForTesting(
 }
 
 void ChromeZoomLevelPrefs::SetDefaultZoomLevelPref(double level) {
-  if (content::ZoomValuesEqual(level, host_zoom_map_->GetDefaultZoomLevel()))
-    return;
-
-  DictionaryPrefUpdate update(pref_service_, prefs::kPartitionDefaultZoomLevel);
-  update->SetDouble(partition_key_, level);
-  // For unregistered paths, OnDefaultZoomLevelChanged won't be called, so
-  // set this manually.
-  host_zoom_map_->SetDefaultZoomLevel(level);
-  default_zoom_changed_callbacks_.Notify();
-  if (zoom_event_manager_)
-    zoom_event_manager_->OnDefaultZoomLevelChanged();
 }
 
 double ChromeZoomLevelPrefs::GetDefaultZoomLevelPref() const {
   double default_zoom_level = 0.0;
 
-  const base::DictionaryValue* default_zoom_level_dictionary =
-      pref_service_->GetDictionary(prefs::kPartitionDefaultZoomLevel);
-  // If no default has been previously set, the default returned is the
-  // value used to initialize default_zoom_level in this function.
-  default_zoom_level_dictionary->GetDouble(partition_key_, &default_zoom_level);
   return default_zoom_level;
 }
 
@@ -341,26 +325,4 @@ void ChromeZoomLevelPrefs::ExtractPerHostZoomLevels(
 void ChromeZoomLevelPrefs::InitHostZoomMap(
     content::HostZoomMap* host_zoom_map) {
   // This init function must be called only once.
-  DCHECK(!host_zoom_map_);
-  DCHECK(host_zoom_map);
-  host_zoom_map_ = host_zoom_map;
-
-  // Initialize the default zoom level.
-  host_zoom_map_->SetDefaultZoomLevel(GetDefaultZoomLevelPref());
-
-  // Initialize the HostZoomMap with per-host zoom levels from the persisted
-  // zoom-level preference values.
-  const base::DictionaryValue* host_zoom_dictionaries =
-      pref_service_->GetDictionary(prefs::kPartitionPerHostZoomLevels);
-  const base::DictionaryValue* host_zoom_dictionary = nullptr;
-  if (host_zoom_dictionaries->GetDictionary(partition_key_,
-                                            &host_zoom_dictionary)) {
-    // Since we're calling this before setting up zoom_subscription_ below we
-    // don't need to worry that host_zoom_dictionary is indirectly affected
-    // by calls to HostZoomMap::SetZoomLevelForHost().
-    ExtractPerHostZoomLevels(host_zoom_dictionary,
-                             true /* sanitize_partition_host_zoom_levels */);
-  }
-  zoom_subscription_ = host_zoom_map_->AddZoomLevelChangedCallback(base::Bind(
-      &ChromeZoomLevelPrefs::OnZoomLevelChanged, base::Unretained(this)));
 }

@@ -27,6 +27,13 @@
 
 namespace cc {
 
+namespace {
+// This is a fudge factor we subtract from the deadline to account
+// for message latency and kernel scheduling variability.
+const base::TimeDelta kDeadlineFudgeFactor =
+    base::TimeDelta::FromMicroseconds(1000);
+}
+
 std::unique_ptr<Proxy> SingleThreadProxy::Create(
     LayerTreeHost* layer_tree_host,
     LayerTreeHostSingleThreadClient* client,
@@ -50,6 +57,9 @@ SingleThreadProxy::SingleThreadProxy(LayerTreeHost* layer_tree_host,
       animate_requested_(false),
       commit_requested_(false),
       inside_synchronous_composite_(false),
+      sync_with_compositor_frame_(false),
+      composited_frame_updated_(false),
+      ready_to_scroll_(false),
       layer_tree_frame_sink_creation_requested_(false),
       layer_tree_frame_sink_lost_(true),
       frame_sink_bound_weak_factory_(this),
@@ -58,6 +68,9 @@ SingleThreadProxy::SingleThreadProxy(LayerTreeHost* layer_tree_host,
   DCHECK(task_runner_provider_);
   DCHECK(task_runner_provider_->IsMainThread());
   DCHECK(layer_tree_host);
+  begin_main_frame_closure_ = base::Bind(
+    &SingleThreadProxy::SendBeginMainFrameImmediately,
+    weak_factory_.GetWeakPtr());
 }
 
 void SingleThreadProxy::Start() {
@@ -80,6 +93,7 @@ void SingleThreadProxy::Start() {
         new Scheduler(this, scheduler_settings, layer_tree_host_->GetId(),
                       task_runner_provider_->MainThreadTaskRunner(),
                       std::move(compositor_timing_history)));
+    scheduler_on_impl_thread_->SetSingleThreadProxy();
   }
 
   host_impl_ = layer_tree_host_->CreateLayerTreeHostImpl(this);
@@ -300,6 +314,8 @@ void SingleThreadProxy::Stop() {
     scheduler_on_impl_thread_ = nullptr;
   }
   layer_tree_host_ = nullptr;
+  begin_main_frame_args_.clear();
+  begin_main_frame_task_.Cancel();
 }
 
 void SingleThreadProxy::SetMutator(std::unique_ptr<LayerTreeMutator> mutator) {
@@ -659,6 +675,28 @@ bool SingleThreadProxy::WillBeginImplFrame(const viz::BeginFrameArgs& args) {
   return host_impl_->WillBeginImplFrame(args);
 }
 
+void SingleThreadProxy::NeedToSyncWithCompositorFrame(
+    bool required, bool frame_updated) {
+  TRACE_EVENT2("cc", "SingleThreadProxy::NeedToSyncWithCompositorFrame",
+      "required",required, "frame_updated",frame_updated);
+  composited_frame_updated_ = frame_updated;
+  sync_with_compositor_frame_ =  required;
+  if (required && frame_updated) {
+    SendBeginMainFrameImmediately();
+  }
+}
+
+void SingleThreadProxy::SendBeginMainFrameImmediately() {
+  if (begin_main_frame_args_.empty()) {
+    return;
+  }
+  TRACE_EVENT0("cc", "SingleThreadProxy::SendBeginMainFrameImmediately");
+  begin_main_frame_task_.Cancel();
+  viz::BeginFrameArgs front = begin_main_frame_args_.front();
+  begin_main_frame_args_.pop_front();
+  BeginMainFrame(front);
+}
+
 void SingleThreadProxy::ScheduledActionSendBeginMainFrame(
     const viz::BeginFrameArgs& begin_frame_args) {
   TRACE_EVENT0("cc", "SingleThreadProxy::ScheduledActionSendBeginMainFrame");
@@ -673,6 +711,27 @@ void SingleThreadProxy::ScheduledActionSendBeginMainFrame(
   DCHECK(inside_impl_frame_)
       << "BeginMainFrame should only be sent inside a BeginImplFrame";
 #endif
+
+  if (begin_main_frame_args_.empty()) {
+    begin_main_frame_args_.push_back(begin_frame_args);
+  } else {
+    begin_main_frame_args_.pop_front();
+    begin_main_frame_args_.push_back(begin_frame_args);
+  }
+  viz::BeginFrameArgs front = begin_main_frame_args_.front();
+
+  begin_main_frame_task_.Cancel();
+  begin_main_frame_task_.Reset(begin_main_frame_closure_);
+
+  base::TimeTicks deadline =
+    front.frame_time + front.interval  - kDeadlineFudgeFactor;
+  base::TimeDelta delta = base::TimeDelta();
+
+  if (sync_with_compositor_frame_ || ready_to_scroll_) {
+    delta = std::max(base::TimeDelta(),
+        deadline - base::TimeTicks::Now());
+  }
+  ready_to_scroll_ = false;
 
   task_runner_provider_->MainThreadTaskRunner()->PostTask(
       FROM_HERE, base::BindOnce(&SingleThreadProxy::BeginMainFrame,
@@ -703,6 +762,7 @@ void SingleThreadProxy::BeginMainFrame(
 
   commit_requested_ = false;
   animate_requested_ = false;
+  composited_frame_updated_ = false;
 
   if (defer_commits_) {
     TRACE_EVENT_INSTANT0("cc", "EarlyOut_DeferCommit",

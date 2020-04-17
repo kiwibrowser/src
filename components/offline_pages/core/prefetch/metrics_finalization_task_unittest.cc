@@ -7,7 +7,7 @@
 #include <memory>
 #include <set>
 
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "components/offline_pages/core/prefetch/mock_prefetch_item_generator.h"
 #include "components/offline_pages/core/prefetch/prefetch_item.h"
 #include "components/offline_pages/core/prefetch/prefetch_task_test_base.h"

@@ -51,6 +51,14 @@ class UI_ANDROID_EXPORT WindowAndroid : public ViewAndroid {
 
   base::android::ScopedJavaLocalRef<jobject> GetJavaObject();
 
+  static void ConvertPointToTarget(const WindowAndroid* source,
+                                   const WindowAndroid* target,
+                                   gfx::PointF* point);
+  static void ConvertPointToTarget(const WindowAndroid* source,
+                                   const WindowAndroid* target,
+                                   gfx::Point* point);
+
+
   // Compositor callback relay.
   void OnCompositingDidCommit();
 

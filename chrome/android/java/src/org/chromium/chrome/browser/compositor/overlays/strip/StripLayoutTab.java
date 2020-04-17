@@ -181,7 +181,10 @@ public class StripLayoutTab implements VirtualView {
         mCloseButton = new CompositorButton(context, 0, 0, closeClickAction);
         mCloseButton.setResources(R.drawable.btn_tab_close_normal, R.drawable.btn_tab_close_pressed,
                 R.drawable.btn_tab_close_white_normal, R.drawable.btn_tab_close_white_pressed);
-        mCloseButton.setIncognito(mIncognito);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+            mCloseButton.setIncognito(true);
+        else
+            mCloseButton.setIncognito(mIncognito);
         mCloseButton.setBounds(getCloseRect());
         mCloseButton.setClickSlop(0.f);
     }
@@ -255,8 +258,13 @@ public class StripLayoutTab implements VirtualView {
      */
     public int getResourceId(boolean foreground) {
         if (foreground) {
-            return mIncognito ? R.drawable.bg_tabstrip_incognito_tab : R.drawable.bg_tabstrip_tab;
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+                return R.drawable.bg_tabstrip_incognito_tab;
+            else
+                return mIncognito ? R.drawable.bg_tabstrip_incognito_tab : R.drawable.bg_tabstrip_tab;
         }
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+            return R.drawable.bg_tabstrip_incognito_background_tab;
         return mIncognito ? R.drawable.bg_tabstrip_incognito_background_tab
                           : R.drawable.bg_tabstrip_background_tab;
     }

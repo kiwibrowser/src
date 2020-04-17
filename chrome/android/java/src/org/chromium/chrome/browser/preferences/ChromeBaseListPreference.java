@@ -12,6 +12,12 @@ import android.util.AttributeSet;
 import android.view.View;
 import android.widget.TextView;
 
+import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.ListView;
+
 /**
  * Contains the basic functionality that should be shared by all ListPreference in Chrome.
  */
@@ -39,6 +45,12 @@ public class ChromeBaseListPreference extends ListPreference {
         super.onBindView(view);
         ((TextView) view.findViewById(android.R.id.title)).setSingleLine(false);
         ManagedPreferencesUtils.onBindViewToPreference(mManagedPrefDelegate, this, view);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            if (((TextView) view.findViewById(android.R.id.title)) != null)
+               ((TextView) view.findViewById(android.R.id.title)).setTextColor(Color.WHITE);
+            if (((TextView) view.findViewById(android.R.id.summary)) != null)
+               ((TextView) view.findViewById(android.R.id.summary)).setTextColor(Color.GRAY);
+        }
     }
 
     @Override

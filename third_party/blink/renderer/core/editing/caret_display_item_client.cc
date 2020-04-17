@@ -169,6 +169,9 @@ void CaretDisplayItemClient::UpdateStyleAndLayoutIfNeeded(
     new_color = caret_position.AnchorNode()->GetLayoutObject()->ResolveColor(
         GetCSSPropertyCaretColor());
   }
+  Settings* settings = caret_position.GetDocument()->GetFrame()->GetSettings();
+  if (settings && settings->GetAccessibilityNightModeEnabled())
+    new_color = Color::kDarkGray;
   if (new_color != color_) {
     needs_paint_invalidation_ = true;
     color_ = new_color;

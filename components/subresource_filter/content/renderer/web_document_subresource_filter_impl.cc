@@ -173,9 +173,12 @@ std::unique_ptr<blink::WebDocumentSubresourceFilter>
 WebDocumentSubresourceFilterImpl::BuilderImpl::Build() {
   DCHECK(ruleset_file_.IsValid());
   DCHECK(!main_task_runner_->BelongsToCurrentThread());
+  scoped_refptr<MemoryMappedRuleset> ruleset =
+      MemoryMappedRuleset::CreateAndInitialize(std::move(ruleset_file_));
+  if (!ruleset)
+    return nullptr;
   return std::make_unique<WebDocumentSubresourceFilterImpl>(
-      document_origin_, activation_state_,
-      base::MakeRefCounted<MemoryMappedRuleset>(std::move(ruleset_file_)),
+      document_origin_, activation_state_, std::move(ruleset),
       base::BindOnce(&ProxyToTaskRunner, main_task_runner_,
                      std::move(first_disallowed_load_callback_)),
       is_associated_with_ad_subframe_);

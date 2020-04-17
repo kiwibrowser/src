@@ -371,6 +371,7 @@ SchemaValidatingPolicyHandler::SchemaValidatingPolicyHandler(
     Schema schema,
     SchemaOnErrorStrategy strategy)
     : policy_name_(policy_name), schema_(schema), strategy_(strategy) {
+  LOG(INFO) << "[EXTENSIONS] SchemaValidatingPolicyHandler::SchemaValidatingPolicyHandler - Policy name: " << policy_name;
   DCHECK(schema_.valid());
 }
 

@@ -911,16 +911,13 @@ void Label::UpdateColorsFromTheme(const ui::NativeTheme* theme) {
         style::GetColor(*this, text_context_, style::STYLE_PRIMARY);
   }
   if (!background_color_set_) {
-    background_color_ =
-        theme->GetSystemColor(ui::NativeTheme::kColorId_DialogBackground);
+    background_color_ = ui::NativeTheme::kColorId_DialogBackground;
   }
   if (!selection_text_color_set_) {
-    requested_selection_text_color_ = theme->GetSystemColor(
-        ui::NativeTheme::kColorId_LabelTextSelectionColor);
+    requested_selection_text_color_ = ui::NativeTheme::kColorId_LabelTextSelectionColor;
   }
   if (!selection_background_color_set_) {
-    selection_background_color_ = theme->GetSystemColor(
-        ui::NativeTheme::kColorId_LabelTextSelectionBackgroundFocused);
+    selection_background_color_ = ui::NativeTheme::kColorId_LabelTextSelectionBackgroundFocused;
   }
   RecalculateColors();
 }

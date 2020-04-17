@@ -39,7 +39,8 @@ class ToolbarLayer : public Layer {
                     float y_offset,
                     bool show_debug,
                     bool clip_shadow,
-                    bool browser_controls_at_bottom);
+                    bool modern_designed_enabled,
+                    bool bottombar_enabled);
 
   void UpdateProgressBar(int progress_bar_x,
                          int progress_bar_y,
@@ -62,6 +63,7 @@ class ToolbarLayer : public Layer {
   ui::ResourceManager* resource_manager_;
 
   scoped_refptr<cc::Layer> layer_;
+  scoped_refptr<cc::Layer> toolbar_root_;
   scoped_refptr<cc::SolidColorLayer> toolbar_background_layer_;
   scoped_refptr<cc::NinePatchLayer> url_bar_background_layer_;
   scoped_refptr<cc::UIResourceLayer> bitmap_layer_;

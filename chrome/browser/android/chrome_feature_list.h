@@ -47,6 +47,7 @@ extern const base::Feature kHomePageButtonForceEnabled;
 extern const base::Feature kHorizontalTabSwitcherAndroid;
 extern const base::Feature kImprovedA2HS;
 extern const base::Feature kLanguagesPreference;
+extern const base::Feature kLongPressBackForHistory;
 extern const base::Feature kModalPermissionDialogView;
 extern const base::Feature kSearchEnginePromoExistingDevice;
 extern const base::Feature kSearchEnginePromoNewDevice;

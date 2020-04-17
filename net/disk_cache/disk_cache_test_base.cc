@@ -14,6 +14,7 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "net/base/io_buffer.h"
 #include "net/base/net_errors.h"
+#include "net/base/request_priority.h"
 #include "net/base/test_completion_callback.h"
 #include "net/disk_cache/backend_cleanup_tracker.h"
 #include "net/disk_cache/blockfile/backend_impl.h"
@@ -133,21 +134,35 @@ void DiskCacheTestWithCache::SetMaxSize(int size) {
 
 int DiskCacheTestWithCache::OpenEntry(const std::string& key,
                                       disk_cache::Entry** entry) {
+  return OpenEntryWithPriority(key, net::HIGHEST, entry);
+}
+
+int DiskCacheTestWithCache::OpenEntryWithPriority(
+    const std::string& key,
+    net::RequestPriority request_priority,
+    disk_cache::Entry** entry) {
   net::TestCompletionCallback cb;
-  int rv = cache_->OpenEntry(key, entry, cb.callback());
+  int rv = cache_->OpenEntry(key, request_priority, entry, cb.callback());
   return cb.GetResult(rv);
 }
 
 int DiskCacheTestWithCache::CreateEntry(const std::string& key,
                                         disk_cache::Entry** entry) {
+  return CreateEntryWithPriority(key, net::HIGHEST, entry);
+}
+
+int DiskCacheTestWithCache::CreateEntryWithPriority(
+    const std::string& key,
+    net::RequestPriority request_priority,
+    disk_cache::Entry** entry) {
   net::TestCompletionCallback cb;
-  int rv = cache_->CreateEntry(key, entry, cb.callback());
+  int rv = cache_->CreateEntry(key, request_priority, entry, cb.callback());
   return cb.GetResult(rv);
 }
 
 int DiskCacheTestWithCache::DoomEntry(const std::string& key) {
   net::TestCompletionCallback cb;
-  int rv = cache_->DoomEntry(key, cb.callback());
+  int rv = cache_->DoomEntry(key, net::HIGHEST, cb.callback());
   return cb.GetResult(rv);
 }
 

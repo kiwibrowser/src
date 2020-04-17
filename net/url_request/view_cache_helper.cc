@@ -10,6 +10,7 @@
 #include "net/base/escape.h"
 #include "net/base/io_buffer.h"
 #include "net/base/net_errors.h"
+#include "net/base/request_priority.h"
 #include "net/disk_cache/disk_cache.h"
 #include "net/http/http_cache.h"
 #include "net/http/http_response_headers.h"
@@ -266,7 +267,7 @@ int ViewCacheHelper::DoOpenNextEntryComplete(int result) {
 int ViewCacheHelper::DoOpenEntry() {
   next_state_ = STATE_OPEN_ENTRY_COMPLETE;
   return disk_cache_->OpenEntry(
-      key_, &entry_,
+      key_, net::HIGHEST, &entry_,
       base::Bind(&ViewCacheHelper::OnIOComplete, base::Unretained(this)));
 }
 

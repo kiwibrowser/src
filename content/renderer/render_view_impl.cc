@@ -849,6 +849,9 @@ void RenderView::ApplyWebPreferences(const WebPreferences& prefs,
   settings->SetAllowCustomScrollbarInMainFrame(false);
   settings->SetTextAutosizingEnabled(prefs.text_autosizing_enabled);
   settings->SetAccessibilityFontScaleFactor(prefs.font_scale_factor);
+  settings->SetAccessibilityNightModeFactor(prefs.night_mode_factor);
+  settings->SetAccessibilityNightModeEnabled(prefs.night_mode_enabled);
+  settings->SetAccessibilityNightModeGrayscaleEnabled(prefs.night_mode_grayscale_enabled);
   settings->SetDeviceScaleAdjustment(prefs.device_scale_adjustment);
   settings->SetFullscreenSupported(prefs.fullscreen_supported);
   web_view->SetIgnoreViewportTagScaleLimits(prefs.force_enable_zoom);

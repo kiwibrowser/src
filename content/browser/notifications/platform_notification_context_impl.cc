@@ -105,6 +105,9 @@ void PlatformNotificationContextImpl::InitializeOnIO(
 
 void PlatformNotificationContextImpl::Shutdown() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+
+  services_.clear();
+
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
       base::BindOnce(&PlatformNotificationContextImpl::ShutdownOnIO, this));
@@ -113,40 +116,23 @@ void PlatformNotificationContextImpl::Shutdown() {
 void PlatformNotificationContextImpl::ShutdownOnIO() {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
-  services_.clear();
-
   // |service_worker_context_| may be NULL in tests.
   if (service_worker_context_)
     service_worker_context_->RemoveObserver(this);
 }
 
 void PlatformNotificationContextImpl::CreateService(
-    int render_process_id,
     const url::Origin& origin,
     blink::mojom::NotificationServiceRequest request) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  BrowserThread::PostTask(
-      BrowserThread::IO, FROM_HERE,
-      base::BindOnce(&PlatformNotificationContextImpl::CreateServiceOnIO, this,
-                     render_process_id, origin,
-                     browser_context_->GetResourceContext(),
-                     std::move(request)));
-}
-
-void PlatformNotificationContextImpl::CreateServiceOnIO(
-    int render_process_id,
-    const url::Origin& origin,
-    ResourceContext* resource_context,
-    mojo::InterfaceRequest<blink::mojom::NotificationService> request) {
-  DCHECK_CURRENTLY_ON(BrowserThread::IO);
   services_.push_back(std::make_unique<BlinkNotificationServiceImpl>(
-      this, browser_context_, resource_context, service_worker_context_,
-      render_process_id, origin, std::move(request)));
+      this, browser_context_, service_worker_context_, origin,
+      std::move(request)));
 }
 
 void PlatformNotificationContextImpl::RemoveService(
     BlinkNotificationServiceImpl* service) {
-  DCHECK_CURRENTLY_ON(BrowserThread::IO);
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
   base::EraseIf(
       services_,
       [service](const std::unique_ptr<BlinkNotificationServiceImpl>& ptr) {

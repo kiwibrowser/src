@@ -13,6 +13,7 @@
 #include "mojo/public/cpp/bindings/binding.h"
 #include "mojo/public/cpp/bindings/interface_request.h"
 #include "third_party/blink/public/platform/modules/notifications/notification_service.mojom.h"
+#include "third_party/blink/public/platform/modules/permissions/permission_status.mojom.h"
 #include "url/origin.h"
 
 namespace content {
@@ -20,20 +21,18 @@ namespace content {
 struct NotificationDatabaseData;
 class PlatformNotificationContextImpl;
 struct PlatformNotificationData;
-class ResourceContext;
 
 // Implementation of the NotificationService used for Web Notifications. Is
 // responsible for displaying, updating and reading of both non-persistent
-// and persistent notifications. Lives on the IO thread.
+// and persistent notifications. Primarily lives on the UI thread, but jumps to
+// the IO thread when needing to interact with the PlatformNotificationContext.
 class CONTENT_EXPORT BlinkNotificationServiceImpl
     : public blink::mojom::NotificationService {
  public:
   BlinkNotificationServiceImpl(
       PlatformNotificationContextImpl* notification_context,
       BrowserContext* browser_context,
-      ResourceContext* resource_context,
       scoped_refptr<ServiceWorkerContextWrapper> service_worker_context,
-      int render_process_id,
       const url::Origin& origin,
       mojo::InterfaceRequest<blink::mojom::NotificationService> request);
   ~BlinkNotificationServiceImpl() override;
@@ -60,14 +59,16 @@ class CONTENT_EXPORT BlinkNotificationServiceImpl
   // Called when an error is detected on binding_.
   void OnConnectionError();
 
-  void DisplayNonPersistentNotificationOnUIThread(
-      const std::string& notification_id,
-      const GURL& origin,
-      const content::PlatformNotificationData& notification_data,
-      const content::NotificationResources& notification_resources,
-      blink::mojom::NonPersistentNotificationListenerPtrInfo listener_ptr_info);
+  // Check the permission status for the current |origin_|.
+  blink::mojom::PermissionStatus CheckPermissionStatus();
 
-  void DisplayPersistentNotificationWithId(
+  void DisplayPersistentNotificationOnIOThread(
+      int64_t service_worker_registration_id,
+      const PlatformNotificationData& platform_notification_data,
+      const NotificationResources& notification_resources,
+      DisplayPersistentNotificationCallback callback);
+
+  void DisplayPersistentNotificationWithIdOnIOThread(
       int64_t service_worker_registration_id,
       const PlatformNotificationData& platform_notification_data,
       const NotificationResources& notification_resources,
@@ -75,20 +76,15 @@ class CONTENT_EXPORT BlinkNotificationServiceImpl
       bool success,
       const std::string& notification_id);
 
-  void DisplayPersistentNotificationWithIdForServiceWorker(
+  void DisplayPersistentNotificationWithServiceWorkerOnIOThread(
       const std::string& notification_id,
       const PlatformNotificationData& platform_notification_data,
       const NotificationResources& notification_resources,
       DisplayPersistentNotificationCallback callback,
-      content::ServiceWorkerStatusCode service_worker_status,
-      scoped_refptr<content::ServiceWorkerRegistration> registration);
+      ServiceWorkerStatusCode service_worker_status,
+      scoped_refptr<ServiceWorkerRegistration> registration);
 
-  void CloseNonPersistentNotificationOnUIThread(
-      const std::string& notification_id);
-
-  blink::mojom::PermissionStatus CheckPermissionStatus();
-
-  void DidGetNotifications(
+  void DidGetNotificationsOnIOThread(
       const std::string& filter_tag,
       GetNotificationsCallback callback,
       bool success,
@@ -99,18 +95,15 @@ class CONTENT_EXPORT BlinkNotificationServiceImpl
 
   BrowserContext* browser_context_;
 
-  ResourceContext* resource_context_;
-
   scoped_refptr<ServiceWorkerContextWrapper> service_worker_context_;
-
-  int render_process_id_;
 
   // The origin that this notification service is communicating with.
   url::Origin origin_;
 
   mojo::Binding<blink::mojom::NotificationService> binding_;
 
-  base::WeakPtrFactory<BlinkNotificationServiceImpl> weak_ptr_factory_;
+  base::WeakPtrFactory<BlinkNotificationServiceImpl> weak_factory_for_io_{this};
+  base::WeakPtrFactory<BlinkNotificationServiceImpl> weak_factory_for_ui_{this};
 
   DISALLOW_COPY_AND_ASSIGN(BlinkNotificationServiceImpl);
 };

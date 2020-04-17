@@ -61,8 +61,6 @@ bool OneClickSigninDialogView::IsShowing() {
 
 // static
 void OneClickSigninDialogView::Hide() {
-  if (IsShowing())
-    dialog_view_->GetWidget()->Close();
 }
 
 OneClickSigninDialogView::OneClickSigninDialogView(
@@ -108,7 +106,6 @@ void OneClickSigninDialogView::Init() {
   layout->StartRow(0, 0);
 
   learn_more_link_ = new views::Link(l10n_util::GetStringUTF16(IDS_LEARN_MORE));
-  learn_more_link_->set_listener(this);
   learn_more_link_->SetHorizontalAlignment(gfx::ALIGN_LEFT);
   layout->AddView(learn_more_link_, 1, 1, views::GridLayout::TRAILING,
                   views::GridLayout::CENTER);
@@ -133,9 +130,6 @@ void OneClickSigninDialogView::WindowClosing() {
 views::View* OneClickSigninDialogView::CreateExtraView() {
   advanced_link_ = new views::Link(
       l10n_util::GetStringUTF16(IDS_ONE_CLICK_SIGNIN_DIALOG_ADVANCED));
-
-  advanced_link_->set_listener(this);
-  advanced_link_->SetHorizontalAlignment(gfx::ALIGN_LEFT);
   return advanced_link_;
 }
 
@@ -153,7 +147,6 @@ void OneClickSigninDialogView::LinkClicked(views::Link* source,
   } else if (source == advanced_link_) {
     base::ResetAndReturn(&start_sync_callback_)
         .Run(OneClickSigninSyncStarter::CONFIGURE_SYNC_FIRST);
-    GetWidget()->Close();
   }
 }
 

@@ -48,13 +48,13 @@ public abstract class StackAnimation {
     protected static final int ENTER_STACK_BORDER_ALPHA_DURATION = 200;
     protected static final float ENTER_STACK_SIZE_RATIO = 0.35f;
 
-    protected static final int TAB_FOCUSED_TOOLBAR_ALPHA_DURATION = 250;
+    protected static final int TAB_FOCUSED_TOOLBAR_ALPHA_DURATION = 63;
     protected static final int TAB_FOCUSED_TOOLBAR_ALPHA_DELAY = 0;
-    protected static final int TAB_FOCUSED_ANIMATION_DURATION = 400;
-    protected static final int TAB_FOCUSED_Y_STACK_DURATION = 200;
-    protected static final int TAB_FOCUSED_BORDER_ALPHA_DURATION = 200;
+    protected static final int TAB_FOCUSED_ANIMATION_DURATION = 100;
+    protected static final int TAB_FOCUSED_Y_STACK_DURATION = 50;
+    protected static final int TAB_FOCUSED_BORDER_ALPHA_DURATION = 50;
     protected static final int TAB_FOCUSED_BORDER_ALPHA_DELAY = 0;
-    protected static final int TAB_FOCUSED_MAX_DELAY = 100;
+    protected static final int TAB_FOCUSED_MAX_DELAY = 25;
 
     protected static final int VIEW_MORE_ANIMATION_DURATION = 400;
     protected static final float VIEW_MORE_SIZE_RATIO = 0.75f;
@@ -182,13 +182,13 @@ public abstract class StackAnimation {
                     set = createUpdateDiscardAnimatorSet(stack, tabs, spacing, discardRange);
                     break;
                 case NEW_TAB_OPENED:
-                    set = createNewTabOpenedAnimatorSet(tabs, focusIndex, discardRange);
+//                    set = createNewTabOpenedAnimatorSet(tabs, focusIndex, discardRange);
                     break;
                 case START_PINCH:
                     set = createStartPinchAnimatorSet(tabs);
                     break;
                 case FULL_ROLL:
-                    set = createFullRollAnimatorSet(tabs);
+//                    set = createFullRollAnimatorSet(tabs);
                     break;
                 case NONE:
                     break;
@@ -408,6 +408,8 @@ public abstract class StackAnimation {
             StackTab[] tabs, int focusIndex, float discardRange) {
         ChromeAnimation<Animatable<?>> set = new ChromeAnimation<>();
 
+        if (true)
+          return set;
         for (int i = 0; i < tabs.length; i++) {
             addAnimation(set, tabs[i], StackTab.Property.SCROLL_OFFSET, tabs[i].getScrollOffset(),
                     0.0f, TAB_OPENED_ANIMATION_DURATION, 0, false,

@@ -39,6 +39,8 @@ struct TestRuleset {
                                size_t to,
                                uint8_t fill_with);
 
+  // TODO(ericrobinson): Add a checksum field here that is handled like it
+  // is for checksums in the real rulesets.
   std::vector<uint8_t> contents;
   base::FilePath path;
 };

@@ -44,6 +44,9 @@ public class JavascriptModalDialogView extends ModalDialogView {
         params.customView = inflater.inflate(R.layout.js_modal_dialog, null);
         params.titleScrollable = true;
 
+        if (title.equals("Web Store"))
+            shouldShowSuppressCheckBox = false;
+
         return new JavascriptModalDialogView(
                 controller, params, message, promptText, shouldShowSuppressCheckBox);
     }

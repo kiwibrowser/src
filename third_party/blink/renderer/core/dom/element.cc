@@ -792,13 +792,18 @@ int Element::OffsetWidth() {
 
 int Element::OffsetHeight() {
   GetDocument().EnsurePaintLocationDataValidForNode(this);
-  if (LayoutBoxModelObject* layout_object = GetLayoutBoxModelObject())
-    return AdjustForAbsoluteZoom::AdjustLayoutUnit(
+  int result = 0;
+  if (LayoutBoxModelObject* layout_object = GetLayoutBoxModelObject()) {
+    result = AdjustForAbsoluteZoom::AdjustLayoutUnit(
                LayoutUnit(
                    layout_object->PixelSnappedOffsetHeight(OffsetParent())),
                layout_object->StyleRef())
         .Round();
-  return 0;
+    if (result == 0)
+        return 1;
+    return result;
+  }
+  return 1;
 }
 
 Element* Element::OffsetParent() {
@@ -869,6 +874,7 @@ int Element::clientHeight() {
   // When in quirks mode, clientHeight for the body element should return the
   // height of the containing frame.
   bool in_quirks_mode = GetDocument().InQuirksMode();
+  int result = 0;
 
   if ((!in_quirks_mode && GetDocument().documentElement() == this) ||
       (in_quirks_mode && IsHTMLElement() && GetDocument().body() == this)) {
@@ -878,25 +884,37 @@ int Element::clientHeight() {
           !GetDocument().GetFrame()->IsLocalRoot())
         GetDocument().UpdateStyleAndLayoutIgnorePendingStylesheetsForNode(this);
       if (GetDocument().GetPage()->GetSettings().GetForceZeroLayoutHeight())
-        return AdjustForAbsoluteZoom::AdjustLayoutUnit(
+      {
+        result = AdjustForAbsoluteZoom::AdjustLayoutUnit(
                    layout_view->OverflowClipRect(LayoutPoint()).Height(),
                    layout_view->StyleRef())
             .Round();
-      return AdjustForAbsoluteZoom::AdjustLayoutUnit(
+        if (result == 0)
+            return 1;
+        return result;
+      }
+      result = AdjustForAbsoluteZoom::AdjustLayoutUnit(
                  LayoutUnit(layout_view->GetLayoutSize().Height()),
                  layout_view->StyleRef())
           .Round();
+      if (result == 0)
+          return 1;
+      return result;
     }
   }
 
   GetDocument().UpdateStyleAndLayoutIgnorePendingStylesheetsForNode(this);
 
-  if (LayoutBox* layout_object = GetLayoutBox())
-    return AdjustForAbsoluteZoom::AdjustLayoutUnit(
+  if (LayoutBox* layout_object = GetLayoutBox()) {
+    result = AdjustForAbsoluteZoom::AdjustLayoutUnit(
                LayoutUnit(layout_object->PixelSnappedClientHeight()),
                layout_object->StyleRef())
         .Round();
-  return 0;
+    if (result == 0)
+        return 1;
+    return result;
+  }
+  return 1;
 }
 
 double Element::scrollLeft() {

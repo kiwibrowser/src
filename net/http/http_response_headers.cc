@@ -10,6 +10,7 @@
 #include "net/http/http_response_headers.h"
 
 #include <algorithm>
+#include <limits>
 #include <memory>
 #include <unordered_map>
 #include <utility>
@@ -114,11 +115,19 @@ bool ShouldUpdateHeader(base::StringPiece name) {
   return true;
 }
 
-void CheckDoesNotHaveEmbededNulls(const std::string& str) {
+bool HasEmbeddedNulls(base::StringPiece str) {
+  for (char c : str) {
+    if (c == '\0')
+      return true;
+  }
+  return false;
+}
+
+void CheckDoesNotHaveEmbeddedNulls(base::StringPiece str) {
   // Care needs to be taken when adding values to the raw headers string to
   // make sure it does not contain embeded NULLs. Any embeded '\0' may be
   // understood as line terminators and change how header lines get tokenized.
-  CHECK(str.find('\0') == std::string::npos);
+  CHECK(!HasEmbeddedNulls(str));
 }
 
 }  // namespace
@@ -166,6 +175,18 @@ HttpResponseHeaders::HttpResponseHeaders(base::PickleIterator* iter)
   std::string raw_input;
   if (iter->ReadString(&raw_input))
     Parse(raw_input);
+}
+
+scoped_refptr<HttpResponseHeaders> HttpResponseHeaders::TryToCreate(
+    base::StringPiece headers) {
+  // Reject strings with nulls.
+  if (HasEmbeddedNulls(headers) ||
+      headers.size() > std::numeric_limits<int>::max()) {
+    return nullptr;
+  }
+
+  return base::MakeRefCounted<HttpResponseHeaders>(
+      HttpUtil::AssembleRawHeaders(headers.data(), headers.size()));
 }
 
 void HttpResponseHeaders::Persist(base::Pickle* pickle,
@@ -355,7 +376,7 @@ void HttpResponseHeaders::RemoveHeaderLine(const std::string& name,
 }
 
 void HttpResponseHeaders::AddHeader(const std::string& header) {
-  CheckDoesNotHaveEmbededNulls(header);
+  CheckDoesNotHaveEmbeddedNulls(header);
   DCHECK_EQ('\0', raw_headers_[raw_headers_.size() - 2]);
   DCHECK_EQ('\0', raw_headers_[raw_headers_.size() - 1]);
   // Don't copy the last null.
@@ -375,7 +396,7 @@ void HttpResponseHeaders::AddCookie(const std::string& cookie_string) {
 }
 
 void HttpResponseHeaders::ReplaceStatusLine(const std::string& new_status) {
-  CheckDoesNotHaveEmbededNulls(new_status);
+  CheckDoesNotHaveEmbeddedNulls(new_status);
   // Copy up to the null byte.  This just copies the status line.
   std::string new_raw_headers(new_status);
   new_raw_headers.push_back('\0');
@@ -467,6 +488,10 @@ bool HttpResponseHeaders::GetNormalizedHeader(const std::string& name,
   // If you hit this assertion, please use EnumerateHeader instead!
   DCHECK(!HttpUtil::IsNonCoalescingHeader(name));
 
+  if (!value) {
+    LOG(INFO) << "[Kiwi] HttpResponseHeaders::GetNormalizedHeader value is empty, this is strange";
+    return false;
+  }
   value->clear();
 
   bool found = false;
@@ -476,10 +501,10 @@ bool HttpResponseHeaders::GetNormalizedHeader(const std::string& name,
     if (i == std::string::npos)
       break;
 
-    found = true;
-
-    if (!value->empty())
+    if (found)
       value->append(", ");
+
+    found = true;
 
     std::string::const_iterator value_begin = parsed_[i].value_begin;
     std::string::const_iterator value_end = parsed_[i].value_end;

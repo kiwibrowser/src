@@ -25,7 +25,6 @@
 #include "net/base/net_errors.h"
 #include "net/disk_cache/backend_cleanup_tracker.h"
 #include "net/disk_cache/simple/simple_entry_format.h"
-#include "net/disk_cache/simple/simple_experiment.h"
 #include "net/disk_cache/simple/simple_histogram_macros.h"
 #include "net/disk_cache/simple/simple_index_delegate.h"
 #include "net/disk_cache/simple/simple_index_file.h"
@@ -172,7 +171,7 @@ SimpleIndex::~SimpleIndex() {
   // Fail all callbacks waiting for the index to come up.
   for (CallbackList::iterator it = to_run_when_initialized_.begin(),
        end = to_run_when_initialized_.end(); it != end; ++it) {
-    it->Run(net::ERR_ABORTED);
+    std::move(*it).Run(net::ERR_ABORTED);
   }
 }
 
@@ -204,12 +203,12 @@ void SimpleIndex::SetMaxSize(uint64_t max_bytes) {
   }
 }
 
-int SimpleIndex::ExecuteWhenReady(const net::CompletionCallback& task) {
+int SimpleIndex::ExecuteWhenReady(net::CompletionOnceCallback task) {
   DCHECK(io_thread_checker_.CalledOnValidThread());
   if (initialized_)
-    io_thread_->PostTask(FROM_HERE, base::Bind(task, net::OK));
+    io_thread_->PostTask(FROM_HERE, base::BindOnce(std::move(task), net::OK));
   else
-    to_run_when_initialized_.push_back(task);
+    to_run_when_initialized_.push_back(std::move(task));
   return net::ERR_IO_PENDING;
 }
 
@@ -525,7 +524,7 @@ void SimpleIndex::MergeInitializingSet(
   // Run all callbacks waiting for the index to come up.
   for (CallbackList::iterator it = to_run_when_initialized_.begin(),
        end = to_run_when_initialized_.end(); it != end; ++it) {
-    io_thread_->PostTask(FROM_HERE, base::Bind((*it), net::OK));
+    io_thread_->PostTask(FROM_HERE, base::BindOnce(std::move(*it), net::OK));
   }
   to_run_when_initialized_.clear();
 }

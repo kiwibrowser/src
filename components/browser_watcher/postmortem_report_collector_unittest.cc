@@ -24,7 +24,7 @@
 #include "base/metrics/persistent_memory_allocator.h"
 #include "base/process/process_handle.h"
 #include "base/stl_util.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/threading/platform_thread.h"
 #include "components/browser_watcher/stability_data_names.h"
 #include "components/browser_watcher/stability_report_extractor.h"

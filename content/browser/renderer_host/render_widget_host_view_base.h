@@ -301,6 +301,8 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
   // the GestureRecognizer until invocation of ProcessAckedTouchEvent releases
   // it to be consumed (when |ack_result| is NOT_CONSUMED OR NO_CONSUMER_EXISTS)
   // or ignored (when |ack_result| is CONSUMED).
+  // |touch|'s coordinates are in the coordinate space of the view to which it
+  // was targeted.
   virtual void ProcessAckedTouchEvent(const TouchEventWithLatencyInfo& touch,
                                       InputEventAckState ack_result) {}
 
@@ -595,6 +597,13 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
 
   ui::mojom::WindowTreeClientPtr GetWindowTreeClientFromRenderer();
 #endif
+
+  // If |event| is a touchpad pinch event for which we've sent a synthetic
+  // wheel event, forward the |event| to the renderer, subject to |ack_result|
+  // which is the ACK result of the synthetic wheel.
+  virtual void ForwardTouchpadPinchIfNecessary(
+      const blink::WebGestureEvent& event,
+      InputEventAckState ack_result);
 
   // The model object. Members will become private when
   // RenderWidgetHostViewGuest is removed.

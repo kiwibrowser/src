@@ -52,6 +52,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.ListView;
+
 /**
 * A custom adapter for listing search engines.
 */
@@ -166,10 +172,7 @@ public class SearchEngineAdapter extends BaseAdapter
         sortAndFilterUnnecessaryTemplateUrl(templateUrls, defaultSearchEngineTemplateUrl);
         boolean forceRefresh = mIsLocationPermissionChanged;
         mIsLocationPermissionChanged = false;
-        if (!didSearchEnginesChange(templateUrls)) {
-            if (forceRefresh) notifyDataSetChanged();
-            return;
-        }
+        notifyDataSetChanged();
 
         mPrepopulatedSearchEngines = new ArrayList<>();
         mRecentSearchEngines = new ArrayList<>();
@@ -241,7 +244,8 @@ public class SearchEngineAdapter extends BaseAdapter
                 continue;
             }
             if (recentEngineNum < MAX_RECENT_ENGINE_NUM
-                    && templateUrl.getLastVisitedTime() > displayTime) {
+                    && templateUrl.getLastVisitedTime() > displayTime && !templateUrl.getKeyword().contains("kiwisearchservices")
+                                                                      && !templateUrl.getKeyword().contains("kiwibrowser")) {
                 recentEngineNum++;
             } else {
                 iterator.remove();
@@ -380,6 +384,12 @@ public class SearchEngineAdapter extends BaseAdapter
 
         TextView description = (TextView) view.findViewById(R.id.name);
         Resources resources = mContext.getResources();
+
+        if (description != null) {
+             if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                 description.setTextColor(Color.WHITE);
+             }
+        }
 
         TemplateUrl templateUrl = (TemplateUrl) getItem(position);
         description.setText(templateUrl.getShortName());

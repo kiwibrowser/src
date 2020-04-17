@@ -9,7 +9,7 @@
 
 #include <vector>
 
-#include "net/base/completion_callback.h"
+#include "net/base/completion_once_callback.h"
 #include "net/base/net_export.h"
 
 namespace disk_cache {
@@ -22,7 +22,7 @@ class NET_EXPORT_PRIVATE SimpleIndexDelegate {
   // asynchronously. |entries| is mutated in an undefined way by this call,
   // for efficiency.
   virtual void DoomEntries(std::vector<uint64_t>* entry_hashes,
-                           const net::CompletionCallback& callback) = 0;
+                           net::CompletionOnceCallback callback) = 0;
 };
 
 }  // namespace disk_cache

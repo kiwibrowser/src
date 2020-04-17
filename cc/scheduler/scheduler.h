@@ -97,6 +97,10 @@ class CC_EXPORT Scheduler : public viz::BeginFrameObserverBase {
 
   void SetNeedsRedraw();
 
+  void SetSingleThreadProxy() {
+    client_is_single_thread_proxy_ = true;
+  }
+
   void SetNeedsPrepareTiles();
 
   // Requests a pending tree should be created to invalidate content on the impl
@@ -203,6 +207,8 @@ class CC_EXPORT Scheduler : public viz::BeginFrameObserverBase {
   base::Closure begin_impl_frame_deadline_closure_;
   base::CancelableClosure begin_impl_frame_deadline_task_;
   base::CancelableClosure missed_begin_frame_task_;
+
+  bool client_is_single_thread_proxy_;
 
   SchedulerStateMachine state_machine_;
   bool inside_process_scheduled_actions_ = false;

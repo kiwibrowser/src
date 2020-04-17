@@ -135,6 +135,8 @@ class NET_EXPORT HttpCache : public HttpTransactionFactory {
     // Writers does not exist and the transaction does not need to create one
     // since it is going to read from the cache.
     PARALLEL_WRITING_NONE_CACHE_READ,
+    // Unable to join since the entry is too big for cache backend to handle.
+    PARALLEL_WRITING_NOT_JOIN_TOO_BIG_FOR_CACHE,
     // On adding a value here, make sure to add in enums.xml as well.
     PARALLEL_WRITING_MAX
   };

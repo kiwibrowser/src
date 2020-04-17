@@ -265,13 +265,7 @@ IN_PROC_BROWSER_TEST_F(UpdateScreenTest, TestTemproraryOfflineNetwork) {
   update_screen_->StartNetworkCheck();
 
   // Force timer expiration.
-  {
-    base::Closure timed_callback =
-        update_screen_->GetErrorMessageTimerForTesting().user_task();
-    ASSERT_FALSE(timed_callback.is_null());
-    update_screen_->GetErrorMessageTimerForTesting().Reset();
-    timed_callback.Run();
-  }
+  update_screen_->GetErrorMessageTimerForTesting().FireNow();
 
   NetworkPortalDetector::CaptivePortalState online_state;
   online_state.status = NetworkPortalDetector::CAPTIVE_PORTAL_STATUS_ONLINE;
@@ -319,13 +313,7 @@ IN_PROC_BROWSER_TEST_F(UpdateScreenTest, TestTwoOfflineNetworks) {
   update_screen_->StartNetworkCheck();
 
   // Force timer expiration.
-  {
-    base::Closure timed_callback =
-        update_screen_->GetErrorMessageTimerForTesting().user_task();
-    ASSERT_FALSE(timed_callback.is_null());
-    update_screen_->GetErrorMessageTimerForTesting().Reset();
-    timed_callback.Run();
-  }
+  update_screen_->GetErrorMessageTimerForTesting().FireNow();
 
   // Change active network to the wifi behind proxy.
   NetworkPortalDetector::CaptivePortalState proxy_state;
@@ -401,13 +389,7 @@ IN_PROC_BROWSER_TEST_F(UpdateScreenTest, TestAPReselection) {
   update_screen_->StartNetworkCheck();
 
   // Force timer expiration.
-  {
-    base::Closure timed_callback =
-        update_screen_->GetErrorMessageTimerForTesting().user_task();
-    ASSERT_FALSE(timed_callback.is_null());
-    update_screen_->GetErrorMessageTimerForTesting().Reset();
-    timed_callback.Run();
-  }
+  update_screen_->GetErrorMessageTimerForTesting().FireNow();
 
   // User re-selects the same network manually. In this case, hide
   // offline message and skip network check. Since ethernet is still

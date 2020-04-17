@@ -545,6 +545,9 @@ EVENT_TYPE(SSL_VERIFICATION_MERGED)
 EVENT_TYPE(SSL_ALERT_RECEIVED)
 EVENT_TYPE(SSL_ALERT_SENT)
 
+// The SSL connection is being confirmed.
+EVENT_TYPE(SSL_CONFIRM_HANDSHAKE)
+
 // An SSL connection sent or received a handshake message.
 // The following parameters are attached:
 //   {

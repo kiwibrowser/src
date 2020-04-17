@@ -332,13 +332,7 @@ bool TabWebContentsDelegateAndroid::RequestPpapiBrokerPermission(
     const GURL& url,
     const base::FilePath& plugin_path,
     const base::Callback<void(bool)>& callback) {
-#if BUILDFLAG(ENABLE_PLUGINS)
-    PepperBrokerInfoBarDelegate::Create(
-        web_contents, url, plugin_path, callback);
-    return true;
-#else
     return false;
-#endif
 }
 
 WebContents* TabWebContentsDelegateAndroid::OpenURLFromTab(

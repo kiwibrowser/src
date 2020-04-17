@@ -21,6 +21,7 @@
 #include "components/viz/service/display_embedder/skia_output_surface_impl.h"
 #include "components/viz/service/display_embedder/software_output_surface.h"
 #include "components/viz/service/display_embedder/viz_process_context_provider.h"
+#include "components/viz/service/gl/gpu_service_impl.h"
 #include "gpu/command_buffer/client/shared_memory_limits.h"
 #include "gpu/command_buffer/service/image_factory.h"
 #include "gpu/ipc/common/surface_handle.h"
@@ -150,9 +151,10 @@ std::unique_ptr<Display> GpuDisplayProvider::CreateDisplay(
           gpu::SharedMemoryLimits());
       context_result = context_provider->BindToCurrentThread();
 
-      // TODO(crbug.com/819474): Don't crash here, instead fallback to software
-      // compositing for fatal failures.
-      CHECK_NE(context_result, gpu::ContextResult::kFatalFailure);
+      if (context_result == gpu::ContextResult::kFatalFailure) {
+        gpu_service_impl_->DisableGpuCompositing();
+        return nullptr;
+      }
     }
 
     if (context_provider->ContextCapabilities().surfaceless) {

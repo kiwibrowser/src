@@ -115,7 +115,7 @@ base::FilePath ChromeTabRestoreServiceClient::GetPathToSaveTo() {
 }
 
 GURL ChromeTabRestoreServiceClient::GetNewTabURL() {
-  return GURL(chrome::kChromeUINewTabURL);
+  return GURL(chrome::kChromeSearchLocalNtpUrl);
 }
 
 bool ChromeTabRestoreServiceClient::HasLastSession() {

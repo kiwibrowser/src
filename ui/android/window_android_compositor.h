@@ -33,6 +33,7 @@ class UI_ANDROID_EXPORT WindowAndroidCompositor {
   virtual viz::FrameSinkId GetFrameSinkId() = 0;
   virtual void AddChildFrameSink(const viz::FrameSinkId& frame_sink_id) = 0;
   virtual void RemoveChildFrameSink(const viz::FrameSinkId& frame_sink_id) = 0;
+  virtual void PrepareToScroll() {}
   virtual std::unique_ptr<CompositorLock> GetCompositorLock(
       CompositorLockClient* client,
       base::TimeDelta timeout) = 0;

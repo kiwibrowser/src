@@ -90,8 +90,8 @@ class HttpCacheDataRemoverTest : public testing::Test {
     for (const CacheTestEntry& test_entry : kCacheEntries) {
       disk_cache::Entry* entry = nullptr;
       net::TestCompletionCallback callback;
-      int rv =
-          backend_->CreateEntry(test_entry.url, &entry, callback.callback());
+      int rv = backend_->CreateEntry(test_entry.url, net::HIGHEST, &entry,
+                                     callback.callback());
       ASSERT_EQ(net::OK, callback.GetResult(rv));
       ASSERT_TRUE(entry);
       base::Time time;
@@ -120,7 +120,7 @@ class HttpCacheDataRemoverTest : public testing::Test {
     disk_cache::Entry* entry = nullptr;
     base::RunLoop run_loop;
     net::TestCompletionCallback callback;
-    if (backend_->OpenEntry(key, &entry, callback.callback()) ==
+    if (backend_->OpenEntry(key, net::HIGHEST, &entry, callback.callback()) ==
         net::ERR_IO_PENDING) {
       callback.WaitForResult();
     }

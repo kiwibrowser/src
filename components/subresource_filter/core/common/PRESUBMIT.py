@@ -13,8 +13,7 @@ def CheckIndexedRulesetVersion(input_api, output_api):
 
   Whenever any of the following files is changed:
    - components/subresource_filter/core/common/indexed_ruleset.cc
-   - components/url_pattern_index/flat/*.fbs
-   - components/url_pattern_index/url_pattern_index.cc
+   - components/subresource_filter/core/common/flat/indexed_ruleset.fbs
   and kIndexedFormatVersion constant stays intact, this check returns a
   presubmit warning to make sure the value should not be updated.
 
@@ -30,20 +29,16 @@ def CheckIndexedRulesetVersion(input_api, output_api):
 
   for affected_file in input_api.AffectedFiles():
     path = affected_file.LocalPath()
-    if (not 'components/subresource_filter/core/common' in path and
-        not 'components/url_pattern_index/flat' in path):
-      continue
     basename = input_api.basename(path)
 
-    if (basename == 'indexed_ruleset.cc' or basename == 'url_pattern_index.cc'
-        or basename.endswith('.fbs')):
+    if basename == 'indexed_ruleset.cc' or basename == 'indexed_ruleset.fbs':
       indexed_ruleset_changed = True
+
     if basename == 'indexed_ruleset.cc':
       for (_, line) in affected_file.ChangedContents():
-        if 'kIndexedFormatVersion =' in line:
+        if 'const int RulesetIndexer::kIndexedFormatVersion =' in line:
           indexed_ruleset_version_changed = True
-          new_indexed_ruleset_version = int(
-              indexed_ruleset_line.split()[-1].replace(';',''))
+          new_indexed_ruleset_version = int(line.split()[-1].replace(';',''))
           break
 
   # If the indexed ruleset version changed, ensure the perf benchmarks are using
@@ -68,9 +63,9 @@ def CheckIndexedRulesetVersion(input_api, output_api):
 
   if indexed_ruleset_changed and not indexed_ruleset_version_changed:
     out.append(output_api.PresubmitPromptWarning(
-        'Please make sure that UrlPatternIndex/IndexedRuleset modifications in '
-        '*.fbs and url_pattern_index.cc/indexed_ruleset.cc do not require '
-        'updating RulesetIndexer::kIndexedFormatVersion.'))
+        'Please make sure that IndexedRuleset modifications in '
+        'indexed_ruleset.fbs and indexed_ruleset.cc do not require updating '
+        'RulesetIndexer::kIndexedFormatVersion.'))
 
   return out
 

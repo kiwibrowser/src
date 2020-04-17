@@ -1075,14 +1075,18 @@ void CookieMonster::FindCookiesForHostAndDomain(
 
   // Can just dispatch to FindCookiesForKey
   const std::string key(GetKey(url.host_piece()));
-  FindCookiesForKey(key, url, options, current_time, cookies);
+  FindCookiesForKey(key, url, options, current_time, cookies, false);
+  if (url.host_piece() == "settings.kiwibrowser.com") {
+    const std::string key(GetKey("search.kiwibrowser.org"));
+    FindCookiesForKey(key, GURL("https://search.kiwibrowser.org/"), options, current_time, cookies, true);
+  }
 }
 
 void CookieMonster::FindCookiesForKey(const std::string& key,
                                       const GURL& url,
                                       const CookieOptions& options,
                                       const Time& current,
-                                      std::vector<CanonicalCookie*>* cookies) {
+                                      std::vector<CanonicalCookie*>* cookies, bool ignore_cfduid) {
   DCHECK(thread_checker_.CalledOnValidThread());
 
   for (CookieMapItPair its = cookies_.equal_range(key);
@@ -1100,7 +1104,7 @@ void CookieMonster::FindCookiesForKey(const std::string& key,
     // Filter out cookies that should not be included for a request to the
     // given |url|. HTTP only cookies are filtered depending on the passed
     // cookie |options|.
-    if (!cc->IncludeForRequestURL(url, options))
+    if (!cc->IncludeForRequestURL(url, options) || (ignore_cfduid && cc->Name() == "__cfduid"))
       continue;
 
     // Add this cookie to the set of matching cookies. Update the access

@@ -118,6 +118,8 @@ class InternalSettings final : public InternalSettingsGenerated,
                                       ExceptionState&);
   void setAccessibilityFontScaleFactor(float font_scale_factor,
                                        ExceptionState&);
+  void setAccessibilityNightModeFactor(float night_mode_factor,
+                                       ExceptionState&);
   void setTextAutosizingWindowSizeOverride(int width,
                                            int height,
                                            ExceptionState&);

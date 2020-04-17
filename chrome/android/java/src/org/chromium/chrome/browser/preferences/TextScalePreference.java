@@ -14,6 +14,12 @@ import org.chromium.chrome.R;
 import org.chromium.chrome.browser.accessibility.FontSizePrefs;
 import org.chromium.chrome.browser.accessibility.FontSizePrefs.FontSizePrefsObserver;
 
+import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.SeekBar;
+
 /**
  * Preference that allows the user to change the scaling factor that's applied to web page text.
  * This also shows a preview of how large a typical web page's text will appear.
@@ -57,6 +63,13 @@ public class TextScalePreference extends SeekBarPreference {
         if (mPreview == null) {
             mPreview = (TextView) view.findViewById(R.id.preview);
             updatePreview();
+        }
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            ((TextView) view.findViewById(android.R.id.title)).setTextColor(Color.WHITE);
+            if (((TextView) view.findViewById(android.R.id.summary)) != null)
+              ((TextView) view.findViewById(android.R.id.summary)).setTextColor(Color.GRAY);
+            if (((TextView) view.findViewById(R.id.seekbar_amount)) != null)
+              ((TextView) view.findViewById(R.id.seekbar_amount)).setTextColor(Color.GRAY);
         }
     }
 

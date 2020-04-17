@@ -32,6 +32,9 @@ import org.chromium.chrome.browser.util.FeatureUtilities;
 import org.chromium.ui.base.DeviceFormFactor;
 import org.chromium.ui.interpolators.BakedBezierInterpolator;
 
+import org.chromium.chrome.browser.accessibility.NightModePrefs;
+import org.chromium.base.ContextUtils;
+
 /**
  * Visual representation of a snackbar. On phone it matches the width of the activity; on tablet it
  * has a fixed width and is anchored at the start-bottom corner of the current window.
@@ -249,6 +252,14 @@ class SnackbarView {
                     ? R.style.BlackBodyDefault
                     : R.style.WhiteBody;
         }
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+           backgroundColor = ApiCompatibilityUtils.getColor(mContainerView.getResources(), R.color.tab_switcher_background);
+           textAppearanceResId = R.style.WhiteBody;
+        } else {
+           mActionButtonView.setTextColor(ApiCompatibilityUtils.getColor(
+                 mContainerView.getResources(), R.color.blue_when_enabled));
+        }
+
         ApiCompatibilityUtils.setTextAppearance(mMessageView, textAppearanceResId);
 
         if (mIsTablet) {
@@ -276,9 +287,6 @@ class SnackbarView {
         }
 
         if (FeatureUtilities.isChromeModernDesignEnabled()) {
-            mActionButtonView.setTextColor(ApiCompatibilityUtils.getColor(
-                    mContainerView.getResources(), R.color.blue_when_enabled));
-
             mContainerView.findViewById(R.id.snackbar_shadow_top).setVisibility(View.VISIBLE);
             if (mIsTablet) {
                 mContainerView.findViewById(R.id.snackbar_shadow_left).setVisibility(View.VISIBLE);

@@ -146,8 +146,7 @@ TEST_F(ResourceManagerTest, TestOnMemoryDumpEmitsData) {
   base::trace_event::MemoryDumpArgs dump_args = {
       base::trace_event::MemoryDumpLevelOfDetail::DETAILED};
   std::unique_ptr<base::trace_event::ProcessMemoryDump> process_memory_dump =
-      std::make_unique<base::trace_event::ProcessMemoryDump>(nullptr,
-                                                             dump_args);
+      std::make_unique<base::trace_event::ProcessMemoryDump>(dump_args);
   resource_manager_.OnMemoryDump(dump_args, process_memory_dump.get());
   const auto& allocator_dumps = process_memory_dump->allocator_dumps();
   const char* system_allocator_pool_name =

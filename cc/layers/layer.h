@@ -114,6 +114,8 @@ class CC_EXPORT Layer : public base::RefCounted<Layer> {
   // non-opaque color.  Tries to return background_color(), if possible.
   SkColor SafeOpaqueBackgroundColor() const;
 
+  void NeedToSyncWithCompositorFrame(bool required, bool frame_updated);
+
   // A layer's bounds are in logical, non-page-scaled pixels (however, the
   // root layer's bounds are in physical pixels).
   void SetBounds(const gfx::Size& bounds);

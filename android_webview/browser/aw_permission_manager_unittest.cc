@@ -10,7 +10,7 @@
 #include "android_webview/browser/aw_browser_permission_request_delegate.h"
 #include "base/bind.h"
 #include "base/bind_helpers.h"
-#include "content/public/browser/permission_manager.h"
+#include "content/public/browser/permission_controller.h"
 #include "content/public/browser/permission_type.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "url/gurl.h"

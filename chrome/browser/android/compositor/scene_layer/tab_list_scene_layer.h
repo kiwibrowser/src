@@ -101,7 +101,8 @@ class TabListSceneLayer : public SceneLayer {
                    jfloat toolbar_alpha,
                    jfloat toolbar_y_offset,
                    jfloat side_border_scale,
-                   jboolean inset_border);
+                   jboolean inset_border,
+                   jboolean bottombar_enabled);
 
   void OnDetach() override;
   bool ShouldShowBackground() override;

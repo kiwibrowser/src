@@ -77,10 +77,13 @@ class CONTENT_EXPORT GestureEventQueue {
                     const Config& config);
   ~GestureEventQueue();
 
-  // Adds a gesture to the queue if it passes the relevant filters. If
-  // there are no events currently queued, the event will be forwarded
-  // immediately. Returns false if the event wasn't queued and was filtered.
-  bool QueueEvent(const GestureEventWithLatencyInfo&);
+  // Uses fling controller to filter the gesture event. Returns true if the
+  // event wasn't queued and was filtered.
+  bool FlingControllerFilterEvent(const GestureEventWithLatencyInfo&);
+
+  // Check for debouncing, or add the gesture event to the queue. Returns false
+  // if the event wasn't queued.
+  bool DebounceOrQueueEvent(const GestureEventWithLatencyInfo&);
 
   // Indicates that the caller has received an acknowledgement from the renderer
   // with state |ack_result| and event |type|. May send events if the queue is

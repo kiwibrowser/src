@@ -59,6 +59,10 @@ AVDASurfaceBundle::ScheduleLayoutCB AVDASurfaceBundle::GetScheduleLayoutCB() {
 }
 
 void AVDASurfaceBundle::ScheduleLayout(gfx::Rect rect) {
+  if (layout_rect_ == rect)
+    return;
+  layout_rect_ = rect;
+
   if (overlay)
     overlay->ScheduleLayout(rect);
 }

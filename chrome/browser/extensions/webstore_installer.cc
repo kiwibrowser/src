@@ -511,9 +511,11 @@ void WebstoreInstaller::OnDownloadUpdated(DownloadItem* download) {
 
   switch (download->GetState()) {
     case DownloadItem::CANCELLED:
+      LOG(INFO) << "[EXTENSIONS] WebstoreInstaller::OnDownloadUpdated - Cancelled";
       ReportFailure(kDownloadCanceledError, FAILURE_REASON_CANCELLED);
       break;
     case DownloadItem::INTERRUPTED:
+      LOG(INFO) << "[EXTENSIONS] WebstoreInstaller::OnDownloadUpdated - Interrupted";
       RecordInterrupt(download);
       ReportFailure(
           GetErrorMessageForDownloadInterrupt(download->GetLastReason()),
@@ -526,6 +528,7 @@ void WebstoreInstaller::OnDownloadUpdated(DownloadItem* download) {
       // Only wait for other notifications if the download is really
       // an extension.
       if (!download_crx_util::IsExtensionDownload(*download)) {
+        LOG(INFO) << "[EXTENSIONS] WebstoreInstaller::OnDownloadUpdated - Complete but !IsExtensionDownload";
         ReportFailure(kInvalidDownloadError, FAILURE_REASON_OTHER);
         return;
       }
@@ -613,7 +616,9 @@ void WebstoreInstaller::StartDownload(const std::string& extension_id,
                                       const base::FilePath& file) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
+  LOG(INFO) << "[EXTENSIONS] WebstoreInstaller::StartDownload - Step 1";
   if (file.empty()) {
+    LOG(INFO) << "[EXTENSIONS] WebstoreInstaller::StartDownload - Step 2 - File empty";
     ReportFailure(kDownloadDirectoryError, FAILURE_REASON_OTHER);
     return;
   }
@@ -621,30 +626,36 @@ void WebstoreInstaller::StartDownload(const std::string& extension_id,
   DownloadManager* download_manager =
       BrowserContext::GetDownloadManager(profile_);
   if (!download_manager) {
+    LOG(INFO) << "[EXTENSIONS] WebstoreInstaller::StartDownload - Step 3 - GetDownloadManager";
     ReportFailure(kDownloadDirectoryError, FAILURE_REASON_OTHER);
     return;
   }
 
   content::WebContents* contents = web_contents();
   if (!contents) {
+    LOG(INFO) << "[EXTENSIONS] WebstoreInstaller::StartDownload - Step 4 - WebContents";
     ReportFailure(kDownloadDirectoryError, FAILURE_REASON_OTHER);
     return;
   }
   if (!contents->GetRenderViewHost()) {
+    LOG(INFO) << "[EXTENSIONS] WebstoreInstaller::StartDownload - Step 5 - GetRenderViewHost";
     ReportFailure(kDownloadDirectoryError, FAILURE_REASON_OTHER);
     return;
   }
   if (!contents->GetRenderViewHost()->GetProcess()) {
+    LOG(INFO) << "[EXTENSIONS] WebstoreInstaller::StartDownload - Step 6 - GetProcess";
     ReportFailure(kDownloadDirectoryError, FAILURE_REASON_OTHER);
     return;
   }
 
   content::NavigationController& controller = contents->GetController();
   if (!controller.GetBrowserContext()) {
+    LOG(INFO) << "[EXTENSIONS] WebstoreInstaller::StartDownload - Step 7 - GetController";
     ReportFailure(kDownloadDirectoryError, FAILURE_REASON_OTHER);
     return;
   }
   if (!controller.GetBrowserContext()->GetResourceContext()) {
+    LOG(INFO) << "[EXTENSIONS] WebstoreInstaller::StartDownload - Step 8 - GetResourceContext";
     ReportFailure(kDownloadDirectoryError, FAILURE_REASON_OTHER);
     return;
   }

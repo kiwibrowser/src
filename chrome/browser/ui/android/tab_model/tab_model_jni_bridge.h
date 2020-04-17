@@ -45,6 +45,7 @@ class TabModelJniBridge : public TabModel {
   // TabModel::
   int GetTabCount() const override;
   int GetActiveIndex() const override;
+  int GetLastNonExtensionActiveIndex() const override;
   content::WebContents* GetWebContentsAt(int index) const override;
   TabAndroid* GetTabAt(int index) const override;
 
@@ -55,7 +56,7 @@ class TabModelJniBridge : public TabModel {
                  content::WebContents* web_contents,
                  int parent_tab_id) override;
 
-  content::WebContents* CreateNewTabForDevTools(const GURL& url) override;
+  content::WebContents* CreateNewTabForDevTools(const GURL& url, bool incognito) override;
 
   // Return true if we are currently restoring sessions asynchronously.
   bool IsSessionRestoreInProgress() const override;
@@ -75,6 +76,7 @@ class TabModelJniBridge : public TabModel {
 
  protected:
   JavaObjectWeakGlobalRef java_object_;
+  Profile* profile_;
 
   // The observer bridge. This exists as long as there are registered observers.
   // It corresponds to a Java observer that is registered with the corresponding

@@ -27,6 +27,12 @@ import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.chrome.R;
 import org.chromium.ui.UiUtils;
 
+import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.ListView;
+
 /**
  * A utility class for the UI recording exceptions to the blocked list for site
  * settings.
@@ -81,6 +87,12 @@ public class AddExceptionPreference extends Preference implements OnPreferenceCl
         TextView titleView = (TextView) view.findViewById(android.R.id.title);
         titleView.setAllCaps(true);
         titleView.setTextColor(mPrefAccentColor);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            if (((TextView) view.findViewById(android.R.id.title)) != null)
+               ((TextView) view.findViewById(android.R.id.title)).setTextColor(Color.WHITE);
+            if (((TextView) view.findViewById(android.R.id.summary)) != null)
+               ((TextView) view.findViewById(android.R.id.summary)).setTextColor(Color.GRAY);
+        }
     }
 
     @Override

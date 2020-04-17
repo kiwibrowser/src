@@ -824,9 +824,6 @@ extern const char kRegionalLocalesAsDisplayUIDescription[];
 extern const char kRemoveNavigationHistoryName[];
 extern const char kRemoveNavigationHistoryDescription[];
 
-extern const char kRemoveUsageOfDeprecatedGaiaSigninEndpointName[];
-extern const char kRemoveUsageOfDeprecatedGaiaSigninEndpointDescription[];
-
 extern const char kRendererSideResourceSchedulerName[];
 extern const char kRendererSideResourceSchedulerDescription[];
 
@@ -976,6 +973,7 @@ extern const char kTLS13VariantDisabled[];
 extern const char kTLS13VariantDeprecated[];
 extern const char kTLS13VariantDraft23[];
 extern const char kTLS13VariantDraft28[];
+extern const char kTLS13VariantFinal[];
 
 extern const char kSuggestionsWithSubStringMatchName[];
 extern const char kSuggestionsWithSubStringMatchDescription[];
@@ -1170,6 +1168,9 @@ extern const char kZeroCopyDescription[];
 
 #if defined(OS_ANDROID)
 
+extern const char kRemoveUsageOfDeprecatedGaiaSigninEndpointName[];
+extern const char kRemoveUsageOfDeprecatedGaiaSigninEndpointDescription[];
+
 extern const char kAiaFetchingName[];
 extern const char kAiaFetchingDescription[];
 
@@ -1337,6 +1338,9 @@ extern const char kKeepPrefetchedContentSuggestionsDescription[];
 extern const char kLanguagesPreferenceName[];
 extern const char kLanguagesPreferenceDescription[];
 
+extern const char kLongPressBackForHistoryName[];
+extern const char kLongPressBackForHistoryDescription[];
+
 extern const char kLsdPermissionPromptName[];
 extern const char kLsdPermissionPromptDescription[];
 
@@ -1476,17 +1480,24 @@ extern const char kWebXrRenderPathChoiceClientWaitDescription[];
 extern const char kWebXrRenderPathChoiceGpuFenceDescription[];
 extern const char kWebXrRenderPathChoiceSharedBufferDescription[];
 
-// Non-Android ----------------------------------------------------------------
+extern const char kOneGoogleBarOnLocalNtpName[];
+extern const char kOneGoogleBarOnLocalNtpDescription[];
 
-#else  // !defined(OS_ANDROID)
+extern const char kUseGoogleLocalNtpName[];
+extern const char kUseGoogleLocalNtpDescription[];
+
+extern const char kVoiceSearchOnLocalNtpName[];
+extern const char kVoiceSearchOnLocalNtpDescription[];
+
+extern const char kDoodlesOnLocalNtpName[];
+extern const char kDoodlesOnLocalNtpDescription[];
+
+// Non-Android ----------------------------------------------------------------
 
 extern const char kAccountConsistencyName[];
 extern const char kAccountConsistencyDescription[];
 extern const char kAccountConsistencyChoiceMirror[];
 extern const char kAccountConsistencyChoiceDice[];
-
-extern const char kDoodlesOnLocalNtpName[];
-extern const char kDoodlesOnLocalNtpDescription[];
 
 extern const char kEnableAudioFocusName[];
 extern const char kEnableAudioFocusDescription[];
@@ -1508,15 +1519,6 @@ extern const char kOmniboxTabSwitchSuggestionsDescription[];
 
 extern const char kOmniboxTailSuggestionsName[];
 extern const char kOmniboxTailSuggestionsDescription[];
-
-extern const char kOneGoogleBarOnLocalNtpName[];
-extern const char kOneGoogleBarOnLocalNtpDescription[];
-
-extern const char kUseGoogleLocalNtpName[];
-extern const char kUseGoogleLocalNtpDescription[];
-
-extern const char kVoiceSearchOnLocalNtpName[];
-extern const char kVoiceSearchOnLocalNtpDescription[];
 
 extern const char kEnableWebAuthenticationAPIName[];
 extern const char kEnableWebAuthenticationAPIDescription[];

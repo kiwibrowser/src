@@ -53,6 +53,13 @@ public interface TabObserver {
     void onContentChanged(Tab tab);
 
     /**
+     * Called when loadUrl is triggered on a {@link Tab}, before the loadUrl call.
+     * @param tab      The notifying {@link Tab}.
+     * @param params   The params describe the page being loaded.
+     */
+    void onPreLoadUrl(Tab tab, LoadUrlParams params);
+
+    /**
      * Called when loadUrl is triggered on a a {@link Tab}.
      * @param tab      The notifying {@link Tab}.
      * @param params   The params describe the page being loaded.

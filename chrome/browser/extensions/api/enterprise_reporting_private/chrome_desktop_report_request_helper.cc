@@ -66,12 +66,7 @@ std::string GetProfileId(const Profile* profile) {
 // Returns last policy fetch timestamp of machine level user cloud policy if
 // it exists. Otherwise, returns zero.
 int64_t GetMachineLevelUserCloudPolicyFetchTimestamp() {
-  policy::MachineLevelUserCloudPolicyManager* manager =
-      g_browser_process->browser_policy_connector()
-          ->GetMachineLevelUserCloudPolicyManager();
-  if (!manager || !manager->IsClientRegistered())
-    return 0;
-  return manager->core()->client()->last_policy_timestamp().ToJavaTime();
+  return 0;
 }
 
 void AppendAdditionalBrowserInformation(em::ChromeDesktopReportRequest* request,

@@ -23,13 +23,8 @@ namespace media_router {
 MediaRouterDialogControllerImplBase*
 MediaRouterDialogControllerImplBase::GetOrCreateForWebContents(
     content::WebContents* web_contents) {
-  if (base::FeatureList::IsEnabled(features::kViewsCastDialog)) {
-    return MediaRouterDialogControllerViews::GetOrCreateForWebContents(
-        web_contents);
-  } else {
-    return MediaRouterDialogControllerWebUIImpl::GetOrCreateForWebContents(
-        web_contents);
-  }
+  return MediaRouterDialogControllerWebUIImpl::GetOrCreateForWebContents(
+      web_contents);
 }
 
 MediaRouterDialogControllerViews::~MediaRouterDialogControllerViews() {

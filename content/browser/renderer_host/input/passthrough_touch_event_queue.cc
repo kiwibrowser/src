@@ -146,6 +146,10 @@ void PassthroughTouchEventQueue::OnGestureScrollEvent(
           blink::WebInputEvent::kGestureScrollUpdate &&
       gesture_event.event.resending_plugin_id == -1) {
     send_touch_events_async_ = true;
+  } else if (gesture_event.event.GetType() ==
+             blink::WebInputEvent::kGesturePinchUpdate &&
+             gesture_event.event.resending_plugin_id == -1) {
+    send_touch_events_async_ = true;
   }
 }
 
@@ -155,6 +159,10 @@ void PassthroughTouchEventQueue::OnGestureEventAck(
   // Turn events sent during gesture scrolls to be async.
   if (event.event.GetType() == blink::WebInputEvent::kGestureScrollUpdate &&
       event.event.resending_plugin_id == -1) {
+    send_touch_events_async_ = (ack_result == INPUT_EVENT_ACK_STATE_CONSUMED);
+  } else if (event.event.GetType() ==
+             blink::WebInputEvent::kGesturePinchUpdate &&
+             event.event.resending_plugin_id == -1) {
     send_touch_events_async_ = (ack_result == INPUT_EVENT_ACK_STATE_CONSUMED);
   }
 }

@@ -6,9 +6,9 @@
 #define EXTENSIONS_BROWSER_API_DECLARATIVE_NET_REQUEST_FLAT_RULESET_INDEXER_H_
 
 #include <stddef.h>
-#include <utility>
 #include <vector>
 
+#include "base/containers/span.h"
 #include "base/macros.h"
 #include "components/url_pattern_index/url_pattern_index.h"
 #include "extensions/browser/api/declarative_net_request/flat/extension_ruleset_generated.h"
@@ -24,9 +24,6 @@ struct IndexedRule;
 // Request API.
 class FlatRulesetIndexer {
  public:
-  // Represents the address and the size of the buffer storing the ruleset.
-  using SerializedData = std::pair<const uint8_t*, size_t>;
-
   FlatRulesetIndexer();
   ~FlatRulesetIndexer();
 
@@ -41,7 +38,7 @@ class FlatRulesetIndexer {
 
   // Returns the data buffer, which is still owned by FlatRulesetIndexer.
   // Finish() must be called prior to calling this.
-  SerializedData GetData();
+  base::span<const uint8_t> GetData();
 
  private:
   using UrlPatternIndexBuilder = url_pattern_index::UrlPatternIndexBuilder;

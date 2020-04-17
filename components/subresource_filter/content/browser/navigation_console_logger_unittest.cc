@@ -135,4 +135,23 @@ TEST_F(NavigationConsoleLoggerTest, MultipleMessages) {
   EXPECT_EQ(2u, GetConsoleMessages(main_rfh()).size());
 }
 
+TEST_F(NavigationConsoleLoggerTest, SyncNavigationDuringNavigation) {
+  NavigateAndCommit(GURL("http://example.test/"));
+
+  auto navigation = content::NavigationSimulator::CreateRendererInitiated(
+      GURL("http://example.test/path"), main_rfh());
+  navigation->Start();
+  NavigationConsoleLogger::LogMessageOnCommit(
+      navigation->GetNavigationHandle(), content::CONSOLE_MESSAGE_LEVEL_WARNING,
+      "foo");
+
+  content::NavigationSimulator::CreateRendererInitiated(
+      GURL("http://example.test/#hash"), main_rfh())
+      ->CommitSameDocument();
+  EXPECT_EQ(0u, GetConsoleMessages(main_rfh()).size());
+
+  navigation->Commit();
+  EXPECT_EQ(1u, GetConsoleMessages(main_rfh()).size());
+}
+
 }  // namespace subresource_filter

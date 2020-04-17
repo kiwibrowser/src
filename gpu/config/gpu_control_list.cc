@@ -235,15 +235,16 @@ void GpuControlList::Entry::LogControlListMatch(
 }
 
 bool GpuControlList::DriverInfo::Contains(const GPUInfo& gpu_info) const {
-  if (StringMismatch(gpu_info.driver_vendor, driver_vendor)) {
+  const GPUInfo::GPUDevice& active_gpu = gpu_info.active_gpu();
+  if (StringMismatch(active_gpu.driver_vendor, driver_vendor)) {
     return false;
   }
-  if (driver_version.IsSpecified() && !gpu_info.driver_version.empty() &&
-      !driver_version.Contains(gpu_info.driver_version)) {
+  if (driver_version.IsSpecified() && !active_gpu.driver_version.empty() &&
+      !driver_version.Contains(active_gpu.driver_version)) {
     return false;
   }
-  if (driver_date.IsSpecified() && !gpu_info.driver_date.empty() &&
-      !driver_date.Contains(gpu_info.driver_date, '-')) {
+  if (driver_date.IsSpecified() && !active_gpu.driver_date.empty() &&
+      !driver_date.Contains(active_gpu.driver_date, '-')) {
     return false;
   }
   return true;
@@ -458,12 +459,13 @@ bool GpuControlList::Conditions::NeedsMoreInfo(const GPUInfo& gpu_info) const {
   // If certain info is missing due to some error, say, we fail to collect
   // vendor_id/device_id, then even if we launch GPU process and create a gl
   // context, we won't gather such missing info, so we still return false.
+  const GPUInfo::GPUDevice& active_gpu = gpu_info.active_gpu();
   if (driver_info) {
-    if (driver_info->driver_vendor && gpu_info.driver_vendor.empty()) {
+    if (driver_info->driver_vendor && active_gpu.driver_vendor.empty()) {
       return true;
     }
     if (driver_info->driver_version.IsSpecified() &&
-        gpu_info.driver_version.empty()) {
+        active_gpu.driver_version.empty()) {
       return true;
     }
   }

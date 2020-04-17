@@ -790,7 +790,7 @@ if (enable_java_templates) {
     if (defined(invoker.alternative_android_sdk_dep)) {
       _deps += [ invoker.alternative_android_sdk_dep ]
     } else {
-      _deps += [ "//build/android:android_sdk_java" ]
+      _deps += [ "//third_party/android_tools:android_sdk_java" ]
     }
 
     write_build_config(_build_config_target_name) {
@@ -1396,7 +1396,7 @@ if (enable_java_templates) {
       _deps = invoker.deps
     }
     if (_supports_android) {
-      _deps += [ "//build/android:android_sdk_java" ]
+      _deps += [ "//third_party/android_tools:android_sdk_java" ]
     }
     _enable_build_hooks =
         _supports_android &&
@@ -2534,9 +2534,7 @@ if (enable_java_templates) {
                              ])
       packaged_resources_path = _packaged_resources_path
       apk_path = _final_apk_path
-      android_manifest = _android_manifest
       assets_build_config = _build_config
-      base_path = _base_path
       dex_path = _final_dex_path
       load_library_from_apk = _load_library_from_apk
 
@@ -2546,6 +2544,12 @@ if (enable_java_templates) {
       keystore_name = _keystore_name
       keystore_path = _keystore_path
       keystore_password = _keystore_password
+
+      incremental_allowed = _incremental_allowed
+      if (_incremental_allowed) {
+        android_manifest = _android_manifest
+        base_path = _base_path
+      }
 
       # Incremental apk does not use native libs nor final dex.
       incremental_deps = _deps + [

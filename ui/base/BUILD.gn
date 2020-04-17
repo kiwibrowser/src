@@ -198,6 +198,8 @@ component("base") {
     "dragdrop/os_exchange_data_provider_mac.mm",
     "dragdrop/os_exchange_data_provider_win.cc",
     "dragdrop/os_exchange_data_provider_win.h",
+    "dragdrop/os_exchange_data_provider_android.cc",
+    "dragdrop/os_exchange_data_provider_android.h",
     "hit_test.h",
     "l10n/formatter.cc",
     "l10n/formatter.h",
@@ -362,6 +364,7 @@ component("base") {
       "emoji/emoji_panel_helper.h",
       "idle/idle.cc",
       "idle/idle.h",
+      "idle/idle_android.cc",
       "idle/idle_chromeos.cc",
       "idle/idle_linux.cc",
       "idle/idle_mac.mm",
@@ -612,36 +615,9 @@ component("base") {
     }
   }
 
-  if (!toolkit_views && !use_aura) {
-    sources -= [
-      "dragdrop/drag_drop_types.h",
-      "dragdrop/drop_target_event.cc",
-      "dragdrop/drop_target_event.h",
-      "dragdrop/os_exchange_data.cc",
-      "dragdrop/os_exchange_data.h",
-      "dragdrop/os_exchange_data_provider_factory.cc",
-      "dragdrop/os_exchange_data_provider_factory.h",
-      "nine_image_painter_factory.cc",
-      "nine_image_painter_factory.h",
-    ]
-  }
-
   if (is_android) {
     deps += [ ":ui_base_jni_headers" ]
     libs += [ "jnigraphics" ]
-
-    sources -= [
-      "cursor/cursor_android.cc",
-      "default_theme_provider.cc",
-      "idle/idle.cc",
-      "idle/idle.h",
-      "l10n/l10n_font_util.cc",
-      "models/button_menu_item_model.cc",
-      "models/dialog_model.cc",
-      "theme_provider.cc",
-      "touch/touch_editing_controller.cc",
-      "ui_base_types.cc",
-    ]
   }
 
   if (use_aura) {

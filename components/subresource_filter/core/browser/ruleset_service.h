@@ -26,6 +26,10 @@ class PrefRegistrySimple;
 
 namespace base {
 class SequencedTaskRunner;
+
+namespace trace_event {
+class TracedValue;
+}  // namespace trace_event
 }  // namespace base
 
 namespace subresource_filter {
@@ -64,6 +68,7 @@ struct UnindexedRulesetInfo {
 // structures is expected to evolve over time, so the indexed ruleset is
 // identified by a pair of versions: the content version of the rules that have
 // been indexed; and the binary format version of the indexed data structures.
+// It also contains a checksum of the data, to ensure it hasn't been corrupted.
 struct IndexedRulesetVersion {
   IndexedRulesetVersion();
   IndexedRulesetVersion(const std::string& content_version, int format_version);
@@ -79,8 +84,12 @@ struct IndexedRulesetVersion {
   void SaveToPrefs(PrefService* local_state) const;
   void ReadFromPrefs(PrefService* local_state);
 
+  std::unique_ptr<base::trace_event::TracedValue> ToTracedValue() const;
+
   std::string content_version;
   int format_version = 0;
+  int checksum = 0;
+  std::string architecture;
 };
 
 // Contains all utility functions that govern how files pertaining to indexed
@@ -167,9 +176,8 @@ class RulesetService : public base::SupportsWeakPtr<RulesetService> {
     MAX,
   };
 
-  // Creates a new instance that will immediately publish the most recently
-  // indexed version of the ruleset if one is available according to prefs.
-  // See class comments for details of arguments.
+  // Creates a new instance of a ruleset.  This is then assigned to a
+  // Delegate that calls Initialize for this ruleset service.
   RulesetService(
       PrefService* local_state,
       scoped_refptr<base::SequencedTaskRunner> background_task_runner,
@@ -189,6 +197,13 @@ class RulesetService : public base::SupportsWeakPtr<RulesetService> {
   // Virtual so that it can be mocked out in tests.
   virtual void IndexAndStoreAndPublishRulesetIfNeeded(
       const UnindexedRulesetInfo& unindexed_ruleset_info);
+
+  // Get the ruleset version associated with the current local_state_.
+  IndexedRulesetVersion GetMostRecentlyIndexedVersion() const;
+
+  // Publishes the most recently indexed version of the ruleset if one is
+  // available according to prefs.
+  void Initialize();
 
   void set_is_after_startup_for_testing() { is_after_startup_ = true; }
 

@@ -8,7 +8,7 @@
 #include <stdint.h>
 
 #include "base/memory/ref_counted.h"
-#include "net/base/completion_callback.h"
+#include "net/base/completion_once_callback.h"
 
 namespace net {
 class IOBuffer;
@@ -24,7 +24,7 @@ class SimpleEntryImpl;
 // and the moment when they are executed.
 class SimpleEntryOperation {
  public:
-  typedef net::CompletionCallback CompletionCallback;
+  typedef net::CompletionOnceCallback CompletionOnceCallback;
 
   enum EntryOperationType {
     TYPE_OPEN = 0,
@@ -38,66 +38,58 @@ class SimpleEntryOperation {
     TYPE_DOOM = 8,
   };
 
-  SimpleEntryOperation(const SimpleEntryOperation& other);
+  SimpleEntryOperation(SimpleEntryOperation&& other);
   ~SimpleEntryOperation();
 
   static SimpleEntryOperation OpenOperation(SimpleEntryImpl* entry,
                                             bool have_index,
-                                            const CompletionCallback& callback,
+                                            CompletionOnceCallback,
                                             Entry** out_entry);
-  static SimpleEntryOperation CreateOperation(
-      SimpleEntryImpl* entry,
-      bool have_index,
-      const CompletionCallback& callback,
-      Entry** out_entry);
+  static SimpleEntryOperation CreateOperation(SimpleEntryImpl* entry,
+                                              bool have_index,
+                                              CompletionOnceCallback callback,
+                                              Entry** out_entry);
   static SimpleEntryOperation CloseOperation(SimpleEntryImpl* entry);
   static SimpleEntryOperation ReadOperation(SimpleEntryImpl* entry,
                                             int index,
                                             int offset,
                                             int length,
                                             net::IOBuffer* buf,
-                                            const CompletionCallback& callback,
-                                            bool alone_in_queue);
-  static SimpleEntryOperation WriteOperation(
-      SimpleEntryImpl* entry,
-      int index,
-      int offset,
-      int length,
-      net::IOBuffer* buf,
-      bool truncate,
-      bool optimistic,
-      const CompletionCallback& callback);
+                                            CompletionOnceCallback callback);
+  static SimpleEntryOperation WriteOperation(SimpleEntryImpl* entry,
+                                             int index,
+                                             int offset,
+                                             int length,
+                                             net::IOBuffer* buf,
+                                             bool truncate,
+                                             bool optimistic,
+                                             CompletionOnceCallback callback);
   static SimpleEntryOperation ReadSparseOperation(
       SimpleEntryImpl* entry,
       int64_t sparse_offset,
       int length,
       net::IOBuffer* buf,
-      const CompletionCallback& callback);
+      CompletionOnceCallback callback);
   static SimpleEntryOperation WriteSparseOperation(
       SimpleEntryImpl* entry,
       int64_t sparse_offset,
       int length,
       net::IOBuffer* buf,
-      const CompletionCallback& callback);
+      CompletionOnceCallback callback);
   static SimpleEntryOperation GetAvailableRangeOperation(
       SimpleEntryImpl* entry,
       int64_t sparse_offset,
       int length,
       int64_t* out_start,
-      const CompletionCallback& callback);
-  static SimpleEntryOperation DoomOperation(
-      SimpleEntryImpl* entry,
-      const CompletionCallback& callback);
-
-  bool ConflictsWith(const SimpleEntryOperation& other_op) const;
-  // Releases all references. After calling this operation, SimpleEntryOperation
-  // will only hold POD members.
-  void ReleaseReferences();
+      CompletionOnceCallback callback);
+  static SimpleEntryOperation DoomOperation(SimpleEntryImpl* entry,
+                                            CompletionOnceCallback callback);
 
   EntryOperationType type() const {
     return static_cast<EntryOperationType>(type_);
   }
-  const CompletionCallback& callback() const { return callback_; }
+  CompletionOnceCallback ReleaseCallback() { return std::move(callback_); }
+
   Entry** out_entry() { return out_entry_; }
   bool have_index() const { return have_index_; }
   int index() const { return index_; }
@@ -108,12 +100,11 @@ class SimpleEntryOperation {
   net::IOBuffer* buf() { return buf_.get(); }
   bool truncate() const { return truncate_; }
   bool optimistic() const { return optimistic_; }
-  bool alone_in_queue() const { return alone_in_queue_; }
 
  private:
   SimpleEntryOperation(SimpleEntryImpl* entry,
                        net::IOBuffer* buf,
-                       const CompletionCallback& callback,
+                       CompletionOnceCallback callback,
                        Entry** out_entry,
                        int offset,
                        int64_t sparse_offset,
@@ -123,13 +114,12 @@ class SimpleEntryOperation {
                        bool have_index,
                        int index,
                        bool truncate,
-                       bool optimistic,
-                       bool alone_in_queue);
+                       bool optimistic);
 
   // This ensures entry will not be deleted until the operation has ran.
   scoped_refptr<SimpleEntryImpl> entry_;
   scoped_refptr<net::IOBuffer> buf_;
-  CompletionCallback callback_;
+  CompletionOnceCallback callback_;
 
   // Used in open and create operations.
   Entry** out_entry_;
@@ -150,8 +140,6 @@ class SimpleEntryOperation {
   // Used only in write operations.
   const bool truncate_;
   const bool optimistic_;
-  // Used only in SimpleCache.ReadIsParallelizable histogram.
-  const bool alone_in_queue_;
 };
 
 }  // namespace disk_cache

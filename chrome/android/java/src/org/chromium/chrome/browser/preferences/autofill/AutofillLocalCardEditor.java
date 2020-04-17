@@ -16,6 +16,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
+import android.widget.TextView;
 
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.ChromeVersionInfo;
@@ -24,6 +25,12 @@ import org.chromium.chrome.browser.autofill.PersonalDataManager.AutofillProfile;
 import org.chromium.chrome.browser.autofill.PersonalDataManager.CreditCard;
 import org.chromium.chrome.browser.payments.SettingsAutofillAndPaymentsObserver;
 import org.chromium.chrome.browser.widget.CompatibilityTextInputLayout;
+
+import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.ListView;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -60,11 +67,19 @@ public class AutofillLocalCardEditor extends AutofillCreditCardEditor {
         mNumberLabel = (CompatibilityTextInputLayout) v.findViewById(R.id.credit_card_number_label);
         mNumberText = (EditText) v.findViewById(R.id.credit_card_number_edit);
 
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            v.setBackgroundColor(Color.BLACK);
+        }
+
         // Set text watcher to format credit card number
         mNumberText.addTextChangedListener(new CreditCardNumberFormattingTextWatcher());
 
         mExpirationMonth = (Spinner) v.findViewById(R.id.autofill_credit_card_editor_month_spinner);
         mExpirationYear = (Spinner) v.findViewById(R.id.autofill_credit_card_editor_year_spinner);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mExpirationMonth.setBackgroundColor(Color.BLACK);
+            mExpirationYear.setBackgroundColor(Color.BLACK);
+        }
 
         addSpinnerAdapters();
         addCardDataToEditFields();
@@ -98,8 +113,34 @@ public class AutofillLocalCardEditor extends AutofillCreditCardEditor {
     }
 
     void addSpinnerAdapters() {
-        ArrayAdapter<CharSequence> adapter = new ArrayAdapter<CharSequence>(getActivity(),
-                android.R.layout.simple_spinner_item);
+        ArrayAdapter<CharSequence> adapter = new ArrayAdapter<CharSequence>(
+                getActivity(), android.R.layout.simple_spinner_item) {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                View view = super.getView(position, convertView, parent);
+                if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                    TextView text1 = (TextView) view.findViewById(android.R.id.text1);
+                    if (text1 != null)
+                        text1.setTextColor(Color.WHITE);
+                }
+
+                return view;
+            };
+
+            @Override
+            public View getDropDownView(int position, View convertView,
+                                        ViewGroup parent) {
+                View view = super.getDropDownView(position, convertView, parent);
+                if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                    view.setBackgroundColor(Color.BLACK);
+                    TextView tv = (TextView) view;
+                    tv.setBackgroundColor(Color.BLACK);
+                    tv.setTextColor(Color.WHITE);
+                }
+
+                return view;
+            }
+        };
 
         // Populate the month dropdown.
         Calendar calendar = Calendar.getInstance();
@@ -114,8 +155,34 @@ public class AutofillLocalCardEditor extends AutofillCreditCardEditor {
         mExpirationMonth.setAdapter(adapter);
 
         // Populate the year dropdown.
-        adapter = new ArrayAdapter<CharSequence>(getActivity(),
-                android.R.layout.simple_spinner_item);
+        adapter = new ArrayAdapter<CharSequence>(
+                getActivity(), android.R.layout.simple_spinner_item) {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                View view = super.getView(position, convertView, parent);
+                if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                    TextView text1 = (TextView) view.findViewById(android.R.id.text1);
+                    if (text1 != null)
+                         text1.setTextColor(Color.WHITE);
+                }
+
+                return view;
+            };
+
+            @Override
+            public View getDropDownView(int position, View convertView,
+                                        ViewGroup parent) {
+                View view = super.getDropDownView(position, convertView, parent);
+                if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                    view.setBackgroundColor(Color.BLACK);
+                    TextView tv = (TextView) view;
+                    tv.setBackgroundColor(Color.BLACK);
+                    tv.setTextColor(Color.WHITE);
+                }
+
+                return view;
+            }
+        };
         int initialYear = calendar.get(Calendar.YEAR);
         for (int year = initialYear; year < initialYear + 10; year++) {
             adapter.add(Integer.toString(year));

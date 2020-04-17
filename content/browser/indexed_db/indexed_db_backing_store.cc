@@ -3072,9 +3072,7 @@ bool IndexedDBBackingStore::IsBlobCleanupPending() {
 }
 
 void IndexedDBBackingStore::ForceRunBlobCleanup() {
-  base::OnceClosure task = journal_cleaning_timer_.user_task();
-  journal_cleaning_timer_.AbandonAndStop();
-  std::move(task).Run();
+  journal_cleaning_timer_.FireNow();
 }
 
 IndexedDBBackingStore::Transaction::Transaction(

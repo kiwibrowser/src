@@ -96,7 +96,7 @@ public class TranslateMenuHelper implements AdapterView.OnItemClickListener {
             // caused an incorrectly drawn background.
             // TODO(martiw): We might need a new menu background here.
             mPopup.setBackgroundDrawable(
-                    ContextCompat.getDrawable(mContextWrapper, R.drawable.edge_menu_bg));
+                    ContextCompat.getDrawable(mContextWrapper, R.drawable.popup_bg));
 
             mPopup.setOnItemClickListener(this);
 

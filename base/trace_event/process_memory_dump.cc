@@ -12,8 +12,6 @@
 #include "base/memory/shared_memory_tracker.h"
 #include "base/process/process_metrics.h"
 #include "base/strings/stringprintf.h"
-#include "base/trace_event/heap_profiler_heap_dump_writer.h"
-#include "base/trace_event/heap_profiler_serialization_state.h"
 #include "base/trace_event/memory_infra_background_whitelist.h"
 #include "base/trace_event/trace_event_argument.h"
 #include "base/unguessable_token.h"
@@ -230,12 +228,8 @@ base::Optional<size_t> ProcessMemoryDump::CountResidentBytesInSharedMemory(
 #endif  // defined(COUNT_RESIDENT_BYTES_SUPPORTED)
 
 ProcessMemoryDump::ProcessMemoryDump(
-    scoped_refptr<HeapProfilerSerializationState>
-        heap_profiler_serialization_state,
     const MemoryDumpArgs& dump_args)
     : process_token_(GetTokenForCurrentProcess()),
-      heap_profiler_serialization_state_(
-          std::move(heap_profiler_serialization_state)),
       dump_args_(dump_args) {}
 
 ProcessMemoryDump::~ProcessMemoryDump() = default;
@@ -324,15 +318,6 @@ void ProcessMemoryDump::DumpHeapUsage(
         metrics_by_context,
     base::trace_event::TraceEventMemoryOverhead& overhead,
     const char* allocator_name) {
-  // The heap profiler serialization state can be null here if heap profiler was
-  // enabled when a process dump is in progress.
-  if (heap_profiler_serialization_state() && !metrics_by_context.empty()) {
-    DCHECK_EQ(0ul, heap_dumps_.count(allocator_name));
-    std::unique_ptr<TracedValue> heap_dump = ExportHeapDump(
-        metrics_by_context, *heap_profiler_serialization_state());
-    heap_dumps_[allocator_name] = std::move(heap_dump);
-  }
-
   std::string base_name = base::StringPrintf("tracing/heap_profiler_%s",
                                              allocator_name);
   overhead.DumpInto(base_name.c_str(), this);
@@ -366,7 +351,6 @@ void ProcessMemoryDump::SetAllEdgesForSerialization(
 void ProcessMemoryDump::Clear() {
   allocator_dumps_.clear();
   allocator_dumps_edges_.clear();
-  heap_dumps_.clear();
 }
 
 void ProcessMemoryDump::TakeAllDumpsFrom(ProcessMemoryDump* other) {
@@ -380,12 +364,6 @@ void ProcessMemoryDump::TakeAllDumpsFrom(ProcessMemoryDump* other) {
   allocator_dumps_edges_.insert(other->allocator_dumps_edges_.begin(),
                                 other->allocator_dumps_edges_.end());
   other->allocator_dumps_edges_.clear();
-
-  for (auto& it : other->heap_dumps_) {
-    DCHECK_EQ(0ul, heap_dumps_.count(it.first));
-    heap_dumps_.insert(std::make_pair(it.first, std::move(it.second)));
-  }
-  other->heap_dumps_.clear();
 }
 
 void ProcessMemoryDump::SerializeAllocatorDumpsInto(TracedValue* value) const {
@@ -407,16 +385,6 @@ void ProcessMemoryDump::SerializeAllocatorDumpsInto(TracedValue* value) const {
     value->EndDictionary();
   }
   value->EndArray();
-}
-
-void ProcessMemoryDump::SerializeHeapProfilerDumpsInto(
-    TracedValue* value) const {
-  if (heap_dumps_.size() == 0)
-    return;
-  value->BeginDictionary("heaps");
-  for (const auto& name_and_dump : heap_dumps_)
-    value->SetValueWithCopiedName(name_and_dump.first, *name_and_dump.second);
-  value->EndDictionary();  // "heaps"
 }
 
 void ProcessMemoryDump::AddOwnershipEdge(const MemoryAllocatorDumpGuid& source,

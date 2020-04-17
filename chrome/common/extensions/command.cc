@@ -441,6 +441,10 @@ bool Command::Parse(const base::DictionaryValue* command,
                     base::string16* error) {
   DCHECK(!command_name.empty());
 
+  if (true) {
+    LOG(INFO) << "[EXTENSIONS] Command::Parse - Skipping";
+    return true;
+  }
   base::string16 description;
   if (IsNamedCommand(command_name)) {
     if (!command->GetString(keys::kDescription, &description) ||

@@ -78,7 +78,9 @@ TabReactivationTracker::~TabReactivationTracker() = default;
 void TabReactivationTracker::TabInsertedAt(TabStripModel* tab_strip_model,
                                            content::WebContents* contents,
                                            int index,
-                                           bool foreground) {}
+                                           bool foreground) {
+  LOG(INFO) << "[EXTENSIONS] TabReactivationTracker::TabInsertedAt";
+}
 
 void TabReactivationTracker::TabClosingAt(TabStripModel* tab_strip_model,
                                           content::WebContents* contents,

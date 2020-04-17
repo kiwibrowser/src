@@ -1079,7 +1079,7 @@ SchedulerStateMachine::CurrentBeginImplFrameDeadlineMode() const {
     return BeginImplFrameDeadlineMode::BLOCKED;
   } else if (ShouldTriggerBeginImplFrameDeadlineImmediately()) {
     return BeginImplFrameDeadlineMode::IMMEDIATE;
-  } else if (needs_redraw_) {
+  } else if (needs_redraw_ && !IsDrawThrottled()) {
     // We have an animation or fast input path on the impl thread that wants
     // to draw, so don't wait too long for a new active tree.
     return BeginImplFrameDeadlineMode::REGULAR;

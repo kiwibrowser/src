@@ -4,6 +4,7 @@
 
 package org.chromium.chrome.browser.download.ui;
 
+import android.graphics.Color;
 import android.support.annotation.LayoutRes;
 import android.support.graphics.drawable.VectorDrawableCompat;
 import android.view.LayoutInflater;
@@ -14,6 +15,7 @@ import android.widget.BaseAdapter;
 import android.widget.TextView;
 
 import org.chromium.base.ApiCompatibilityUtils;
+import org.chromium.base.ContextUtils;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.download.ui.DownloadManagerUi.DownloadUiObserver;
 import org.chromium.chrome.browser.util.FeatureUtilities;
@@ -50,6 +52,10 @@ class FilterAdapter
         iconDrawable.setTintList(ApiCompatibilityUtils.getColorStateList(
                 mManagerUi.getActivity().getResources(), R.color.dark_mode_tint));
         labelView.setCompoundDrawablesWithIntrinsicBounds(iconDrawable, null, null, null);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            labelView.setBackgroundColor(Color.BLACK);
+            labelView.setTextColor(Color.WHITE);
+        }
 
         return labelView;
     }
@@ -66,6 +72,10 @@ class FilterAdapter
 
         if (!FeatureUtilities.isChromeModernDesignEnabled()) {
             ApiCompatibilityUtils.setTextAppearance(labelView, R.style.BlackHeadline2);
+        }
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            labelView.setBackgroundColor(Color.BLACK);
+            ApiCompatibilityUtils.setTextAppearance(labelView, R.style.WhiteHeadline2);
         }
         return labelView;
     }

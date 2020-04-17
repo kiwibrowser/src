@@ -162,7 +162,7 @@
 
 #endif
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 #include "components/zoom/zoom_event_manager.h"
 #include "content/public/common/page_zoom.h"
 #endif
@@ -765,7 +765,7 @@ Profile::ProfileType ProfileImpl::GetProfileType() const {
   return REGULAR_PROFILE;
 }
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 std::unique_ptr<content::ZoomLevelDelegate>
 ProfileImpl::CreateZoomLevelDelegate(const base::FilePath& partition_path) {
   return std::make_unique<ChromeZoomLevelPrefs>(
@@ -981,7 +981,7 @@ const PrefService* ProfileImpl::GetPrefs() const {
   return prefs_.get();
 }
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 ChromeZoomLevelPrefs* ProfileImpl::GetZoomLevelPrefs() {
   return static_cast<ChromeZoomLevelPrefs*>(
       GetDefaultStoragePartition(this)->GetZoomLevelDelegate());
@@ -1059,7 +1059,8 @@ ProfileImpl::GetBrowsingDataRemoverDelegate() {
 
 // TODO(mlamouri): we should all these BrowserContext implementation to Profile
 // instead of repeating them inside all Profile implementations.
-content::PermissionManager* ProfileImpl::GetPermissionManager() {
+content::PermissionControllerDelegate*
+ProfileImpl::GetPermissionControllerDelegate() {
   return PermissionManagerFactory::GetForProfile(this);
 }
 
@@ -1312,11 +1313,11 @@ GURL ProfileImpl::GetHomePage() {
   }
 
   if (GetPrefs()->GetBoolean(prefs::kHomePageIsNewTabPage))
-    return GURL(chrome::kChromeUINewTabURL);
+    return GURL(chrome::kChromeSearchLocalNtpUrl);
   GURL home_page(url_formatter::FixupURL(
       GetPrefs()->GetString(prefs::kHomePage), std::string()));
   if (!home_page.is_valid())
-    return GURL(chrome::kChromeUINewTabURL);
+    return GURL(chrome::kChromeSearchLocalNtpUrl);
   return home_page;
 }
 

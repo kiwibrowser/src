@@ -192,10 +192,10 @@ TEST_F(PictureLayerImplPerfTest, TilingSetRasterQueueConstructAndIterate) {
   pending_layer_->AddTiling(gfx::AxisTransform2d(1.0f, gfx::Vector2dF()));
   pending_layer_->AddTiling(gfx::AxisTransform2d(2.0f, gfx::Vector2dF()));
 
-  RunRasterQueueConstructAndIterateTest("32_100x100", 32, gfx::Size(100, 100));
-  RunRasterQueueConstructAndIterateTest("32_500x500", 32, gfx::Size(500, 500));
-  RunRasterQueueConstructAndIterateTest("64_100x100", 64, gfx::Size(100, 100));
-  RunRasterQueueConstructAndIterateTest("64_500x500", 64, gfx::Size(500, 500));
+  RunRasterQueueConstructAndIterateTest("32_100x100", 4, gfx::Size(100, 100));
+  RunRasterQueueConstructAndIterateTest("32_500x500", 4, gfx::Size(500, 500));
+  RunRasterQueueConstructAndIterateTest("64_100x100", 4, gfx::Size(100, 100));
+  RunRasterQueueConstructAndIterateTest("64_500x500", 4, gfx::Size(500, 500));
 }
 
 TEST_F(PictureLayerImplPerfTest, TilingSetRasterQueueConstruct) {

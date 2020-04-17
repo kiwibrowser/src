@@ -23,7 +23,7 @@ public class TabBrowserControlsOffsetHelper implements VrModeObserver {
      * Maximum duration for the control container slide-in animation. Note that this value matches
      * the one in browser_controls_offset_manager.cc.
      */
-    private static final int MAX_CONTROLS_ANIMATION_DURATION_MS = 200;
+    private static final int MAX_CONTROLS_ANIMATION_DURATION_MS = 1;
 
     /**
      * An interface for notification about browser controls offset updates.

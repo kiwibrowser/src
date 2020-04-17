@@ -33,10 +33,6 @@ void AnimatedIconView::SetColor(SkColor color) {
 
 void AnimatedIconView::Animate(State target) {
   SetState(target);
-  if (!IsAnimating()) {
-    compositor_ = GetWidget()->GetCompositor();
-    compositor_->AddAnimationObserver(this);
-  }
   start_time_ = base::TimeTicks::Now();
 }
 

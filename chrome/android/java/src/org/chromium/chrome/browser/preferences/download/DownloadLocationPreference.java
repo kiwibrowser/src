@@ -14,6 +14,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ListView;
 
+import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.ListView;
+import android.widget.TextView;
+
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.download.DirectoryOption;
 
@@ -62,5 +69,16 @@ public class DownloadLocationPreference extends DialogPreference {
         mListView = (ListView) (view.findViewById(R.id.location_preference_list_view));
         mListView.setAdapter(mAdapter);
         return view;
+    }
+
+    @Override
+    protected void onBindView(View view) {
+        super.onBindView(view);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            if (((TextView) view.findViewById(android.R.id.title)) != null)
+               ((TextView) view.findViewById(android.R.id.title)).setTextColor(Color.WHITE);
+            if (((TextView) view.findViewById(android.R.id.summary)) != null)
+               ((TextView) view.findViewById(android.R.id.summary)).setTextColor(Color.GRAY);
+        }
     }
 }

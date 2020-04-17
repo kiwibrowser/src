@@ -28,7 +28,7 @@ namespace {
 
 // Server address for the experimental suggestions service.
 const char kDefaultExperimentalServerAddress[] =
-    "https://cuscochromeextension-pa.googleapis.com/v1/omniboxsuggestions";
+    "https://cuscochromeextension-pa.kiwibrowser.com/v1/omniboxsuggestions";
 
 void AddVariationHeaders(const std::unique_ptr<net::URLFetcher>& fetcher) {
   net::HttpRequestHeaders headers;

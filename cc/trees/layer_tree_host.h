@@ -430,6 +430,10 @@ class CC_EXPORT LayerTreeHost : public MutatorHostClient {
   LayerListReverseIterator<Layer> rbegin();
   LayerListReverseIterator<Layer> rend();
 
+  void NeedToSyncWithCompositorFrame(bool required,
+                                   bool frame_updated);
+  void PrepareToScroll();
+
   // LayerTreeHost interface to Proxy.
   void WillBeginMainFrame();
   void DidBeginMainFrame();
@@ -654,7 +658,7 @@ class CC_EXPORT LayerTreeHost : public MutatorHostClient {
   bool new_local_surface_id_request_ = false;
   bool defer_commits_ = false;
 
-  SkColor background_color_ = SK_ColorWHITE;
+  SkColor background_color_ = SK_ColorBLACK;
 
   LayerSelection selection_;
 

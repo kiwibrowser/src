@@ -30,6 +30,7 @@ import org.chromium.base.annotations.CalledByNative;
 import org.chromium.base.metrics.RecordHistogram;
 import org.chromium.base.metrics.RecordUserAction;
 import org.chromium.chrome.R;
+import org.chromium.chrome.browser.toolbar.ToolbarModel;
 import org.chromium.chrome.browser.ContentSettingsType;
 import org.chromium.chrome.browser.UrlConstants;
 import org.chromium.chrome.browser.instantapps.InstantAppsHandler;
@@ -202,6 +203,7 @@ public class PageInfoController implements ModalDialogView.Controller {
 
         // Work out the URL and connection message and status visibility.
         mFullUrl = isShowingOfflinePage() ? offlinePageUrl : mTab.getOriginalUrl();
+        mFullUrl = ToolbarModel.trimUrlData(mFullUrl);
 
         // This can happen if an invalid chrome-distiller:// url was entered.
         if (mFullUrl == null) mFullUrl = "";
@@ -462,7 +464,7 @@ public class PageInfoController implements ModalDialogView.Controller {
         }
 
         // The ads permission requires an additional static subtitle.
-        if (permission.type == ContentSettingsType.CONTENT_SETTINGS_TYPE_ADS) {
+        if (permission.type == ContentSettingsType.CONTENT_SETTINGS_TYPE_ADS && false) {
             permissionParams.subtitleTextResource = R.string.page_info_permission_ads_subtitle;
         }
 

@@ -359,6 +359,21 @@ public class PrefServiceBridge {
     }
 
     /**
+     * @return true if Desktop Mode is enabled.
+     * The default is false.
+     */
+    public boolean desktopModeEnabled() {
+        return nativeGetDesktopModeEnabled();
+    }
+
+    /**
+     * @return Whether Desktop Mode is managed by policy.
+     */
+    public boolean desktopModeManaged() {
+        return isContentSettingManaged(ContentSettingsType.CONTENT_SETTINGS_TYPE_DESKTOP_MODE);
+    }
+
+    /**
      * @return true if background sync is managed by policy.
      */
     public boolean isBackgroundSyncManaged() {
@@ -421,6 +436,10 @@ public class PrefServiceBridge {
         nativeResetTranslateDefaults();
     }
 
+    public void setDesktopModeEnabled(boolean enabled) {
+        nativeSetDesktopModeEnabled(enabled);
+    }
+
     /**
      * Enable or disable JavaScript.
      */
@@ -457,10 +476,21 @@ public class PrefServiceBridge {
     }
 
     /**
+     * @return Whether Homepage News is enabled.
+     */
+    public boolean isHomepageNewsEnabled() {
+        return nativeGetHomepageNewsEnabled();
+    }
+
+    /**
      * Sets whether search suggest should be enabled.
      */
     public void setSearchSuggestEnabled(boolean enabled) {
         nativeSetSearchSuggestEnabled(enabled);
+    }
+
+    public void setHomepageNewsEnabled(boolean enabled) {
+        nativeSetHomepageNewsEnabled(enabled);
     }
 
     /**
@@ -1106,6 +1136,7 @@ public class PrefServiceBridge {
     private native boolean nativeGetAcceptCookiesManagedByCustodian();
     private native boolean nativeGetAutoplayEnabled();
     private native boolean nativeGetBackgroundSyncEnabled();
+    private native boolean nativeGetDesktopModeEnabled();
     private native boolean nativeGetBlockThirdPartyCookiesEnabled();
     private native boolean nativeGetBlockThirdPartyCookiesManaged();
     private native boolean nativeGetRememberPasswordsEnabled();
@@ -1152,6 +1183,7 @@ public class PrefServiceBridge {
     private native void nativeSetAutoplayEnabled(boolean allow);
     private native void nativeSetAllowCookiesEnabled(boolean allow);
     private native void nativeSetBackgroundSyncEnabled(boolean allow);
+    private native void nativeSetDesktopModeEnabled(boolean enabled);
     private native void nativeSetBlockThirdPartyCookiesEnabled(boolean enabled);
     private native void nativeSetClipboardEnabled(boolean allow);
     private native void nativeSetDoNotTrackEnabled(boolean enabled);
@@ -1172,7 +1204,9 @@ public class PrefServiceBridge {
     private native String nativeGetContextualSearchPreference();
     private native boolean nativeGetContextualSearchPreferenceIsManaged();
     private native boolean nativeGetSearchSuggestEnabled();
+    private native boolean nativeGetHomepageNewsEnabled();
     private native void nativeSetSearchSuggestEnabled(boolean enabled);
+    private native void nativeSetHomepageNewsEnabled(boolean enabled);
     private native boolean nativeGetSearchSuggestManaged();
     private native boolean nativeGetSafeBrowsingExtendedReportingEnabled();
     private native boolean nativeIsScoutExtendedReportingActive();

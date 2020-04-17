@@ -36,7 +36,7 @@ namespace omnibox {
 // Feature used to enable entity suggestion images and enhanced presentation
 // showing more context and descriptive text about the entity.
 const base::Feature kOmniboxRichEntitySuggestions{
-    "OmniboxRichEntitySuggestions", base::FEATURE_DISABLED_BY_DEFAULT};
+    "OmniboxRichEntitySuggestions", base::FEATURE_ENABLED_BY_DEFAULT};
 
 // Feature used to enable enhanced presentation showing larger images.
 const base::Feature kOmniboxNewAnswerLayout{"OmniboxNewAnswerLayout",
@@ -79,7 +79,7 @@ const base::Feature kSearchProviderWarmUpOnFocus{
 
 // Feature used for the Zero Suggest Redirect to Chrome Field Trial.
 const base::Feature kZeroSuggestRedirectToChrome{
-    "ZeroSuggestRedirectToChrome", base::FEATURE_DISABLED_BY_DEFAULT};
+    "ZeroSuggestRedirectToChrome", base::FEATURE_ENABLED_BY_DEFAULT};
 
 // Feature used to swap the title and URL when providing zero suggest
 // suggestions.
@@ -116,7 +116,7 @@ const base::Feature kUIExperimentHideSteadyStateUrlSchemeAndSubdomains{
 // Feature used for showing the URL suggestion favicons as a UI experiment.
 const base::Feature kUIExperimentShowSuggestionFavicons{
     "OmniboxUIExperimentShowSuggestionFavicons",
-    base::FEATURE_DISABLED_BY_DEFAULT};
+    base::FEATURE_ENABLED_BY_DEFAULT};
 
 // Feature used to always swap the title and URL.
 const base::Feature kUIExperimentSwapTitleAndUrl{

@@ -396,6 +396,11 @@ WebUIFactoryFunction GetWebUIFactoryFunction(WebUI* web_ui,
     return &NewWebUI<UserActionsUI>;
   if (url.host_piece() == chrome::kChromeUIVersionHost)
     return &NewWebUI<VersionUI>;
+  if (url.host_piece() == chrome::kChromeUIExtensionsHost)
+    return &NewWebUI<extensions::ExtensionsUI>;
+  // Settings are implemented with native UI elements on Android.
+  if (url.host_piece() == chrome::kChromeUISettingsHost)
+    return &NewWebUI<settings::MdSettingsUI>;
 
   /****************************************************************************
    * OS Specific #defines
@@ -426,11 +431,6 @@ WebUIFactoryFunction GetWebUIFactoryFunction(WebUI* web_ui,
     return &NewWebUI<IdentityInternalsUI>;
   if (url.host_piece() == chrome::kChromeUINewTabHost)
     return &NewWebUI<NewTabUI>;
-  // Settings are implemented with native UI elements on Android.
-  if (url.host_piece() == chrome::kChromeUISettingsHost)
-    return &NewWebUI<settings::MdSettingsUI>;
-  if (url.host_piece() == chrome::kChromeUIExtensionsHost)
-    return &NewWebUI<extensions::ExtensionsUI>;
   if (url.host_piece() == chrome::kChromeUIHistoryHost)
     return &NewWebUI<MdHistoryUI>;
   if (url.host_piece() == chrome::kChromeUISyncFileSystemInternalsHost)
@@ -763,13 +763,10 @@ ChromeWebUIControllerFactory::~ChromeWebUIControllerFactory() {
 
 base::RefCountedMemory* ChromeWebUIControllerFactory::GetFaviconResourceBytes(
     const GURL& page_url, ui::ScaleFactor scale_factor) const {
-#if !defined(OS_ANDROID)
   // The extension scheme is handled in GetFaviconForURL.
   if (page_url.SchemeIs(extensions::kExtensionScheme)) {
-    NOTREACHED();
     return NULL;
   }
-#endif
 
   if (!content::HasWebUIScheme(page_url))
     return NULL;

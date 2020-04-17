@@ -603,8 +603,6 @@ void RootView::GetAccessibleNodeData(ui::AXNodeData* node_data) {
 }
 
 void RootView::UpdateParentLayer() {
-  if (layer())
-    ReparentLayer(gfx::Vector2d(GetMirroredX(), y()), widget_->GetLayer());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -651,11 +649,7 @@ void RootView::OnPaint(gfx::Canvas* canvas) {
 
 View::LayerOffsetData RootView::CalculateOffsetToAncestorWithLayer(
     ui::Layer** layer_parent) {
-  if (layer() || !widget_->GetLayer())
-    return View::CalculateOffsetToAncestorWithLayer(layer_parent);
-  if (layer_parent)
-    *layer_parent = widget_->GetLayer();
-  return LayerOffsetData(widget_->GetLayer()->device_scale_factor());
+  return LayerOffsetData(0);
 }
 
 View::DragInfo* RootView::GetDragInfo() {

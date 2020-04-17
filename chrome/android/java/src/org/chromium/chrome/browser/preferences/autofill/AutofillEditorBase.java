@@ -7,6 +7,7 @@ package org.chromium.chrome.browser.preferences.autofill;
 import android.annotation.SuppressLint;
 import android.app.Fragment;
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -26,6 +27,8 @@ import android.widget.LinearLayout;
 import android.widget.Spinner;
 
 import org.chromium.chrome.R;
+import org.chromium.base.ContextUtils;
+import org.chromium.chrome.browser.widget.DualControlLayout;
 import org.chromium.chrome.browser.widget.FadingEdgeScrollView;
 import org.chromium.chrome.browser.widget.prefeditor.EditorDialog;
 
@@ -71,8 +74,17 @@ public abstract class AutofillEditorBase
 
         // Inflate the editor and buttons into the "content" LinearLayout.
         LinearLayout contentLayout = (LinearLayout) scrollView.findViewById(R.id.content);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+            contentLayout.setBackgroundColor(Color.BLACK);
         inflater.inflate(getLayoutId(), contentLayout, true);
         inflater.inflate(R.layout.autofill_editor_base_buttons, contentLayout, true);
+
+        DualControlLayout controlLayout = (DualControlLayout) contentLayout.findViewById(R.id.button_bar);
+        if (controlLayout != null) {
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                controlLayout.setBackgroundColor(Color.BLACK);
+            }
+        }
 
         return scrollView;
     }

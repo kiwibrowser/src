@@ -103,8 +103,6 @@ class SafeBrowsingDatabaseManager
   virtual bool CanCheckResourceType(
       content::ResourceType resource_type) const = 0;
 
-  virtual bool CanCheckSubresourceFilter() const = 0;
-
   // Returns true if the url's scheme can be checked.
   virtual bool CanCheckUrl(const GURL& url) const = 0;
 

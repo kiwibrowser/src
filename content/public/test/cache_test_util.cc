@@ -71,8 +71,8 @@ void CacheTestUtil::CreateCacheEntriesOnIOThread(
   SetNumberOfWaitedTasks(keys.size());
 
   for (const std::string& key : keys) {
-    WaitForCompletion(
-        backend_->CreateEntry(key, &entries_[pos++], done_callback_));
+    WaitForCompletion(backend_->CreateEntry(key, net::HIGHEST, &entries_[pos++],
+                                            done_callback_));
   }
 }
 

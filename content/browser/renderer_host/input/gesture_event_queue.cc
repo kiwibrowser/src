@@ -47,13 +47,22 @@ GestureEventQueue::GestureEventQueue(
 
 GestureEventQueue::~GestureEventQueue() { }
 
-bool GestureEventQueue::QueueEvent(
+bool GestureEventQueue::DebounceOrQueueEvent(
+    const GestureEventWithLatencyInfo& gesture_event) {
+  // GFS should have been filtered in FlingControllerFilterEvent.
+  DCHECK_NE(gesture_event.event.GetType(), WebInputEvent::kGestureFlingStart);
+  if (!ShouldForwardForBounceReduction(gesture_event))
+    return false;
+
+  QueueAndForwardIfNecessary(gesture_event);
+  return true;
+}
+
+bool GestureEventQueue::FlingControllerFilterEvent(
     const GestureEventWithLatencyInfo& gesture_event) {
   TRACE_EVENT0("input", "GestureEventQueue::QueueEvent");
-  if (!ShouldForwardForBounceReduction(gesture_event) ||
-      fling_controller_.FilterGestureEvent(gesture_event)) {
-    return false;
-  }
+  if (fling_controller_.FilterGestureEvent(gesture_event))
+    return true;
 
   // fling_controller_ is in charge of handling GFS events and the events are
   // not sent to the renderer, the controller processes the fling and generates
@@ -62,7 +71,7 @@ bool GestureEventQueue::QueueEvent(
   if (gesture_event.event.GetType() == WebInputEvent::kGestureFlingStart) {
     fling_controller_.ProcessGestureFlingStart(gesture_event);
     fling_in_progress_ = true;
-    return false;
+    return true;
   }
 
   // If the GestureFlingStart event is processed by the fling_controller_, the
@@ -70,11 +79,10 @@ bool GestureEventQueue::QueueEvent(
   if (gesture_event.event.GetType() == WebInputEvent::kGestureFlingCancel) {
     fling_controller_.ProcessGestureFlingCancel(gesture_event);
     fling_in_progress_ = false;
-    return false;
+    return true;
   }
 
-  QueueAndForwardIfNecessary(gesture_event);
-  return true;
+  return false;
 }
 
 void GestureEventQueue::StopFling() {

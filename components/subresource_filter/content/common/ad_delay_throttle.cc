@@ -26,7 +26,7 @@ namespace subresource_filter {
 namespace {
 
 void LogSecureInfo(AdDelayThrottle::SecureInfo info) {
-  UMA_HISTOGRAM_ENUMERATION("SubresourceFilter.AdDelay.SecureInfo", info);
+  UMA_HISTOGRAM_ENUMERATION("Ads.Features.ResourceIsSecure", info);
 }
 
 class InsecureCondition : public AdDelayThrottle::DeferCondition {
@@ -65,7 +65,7 @@ class NonIsolatedCondition : public AdDelayThrottle::DeferCondition {
   ~NonIsolatedCondition() override {
     if (provider()->IsAdRequest()) {
       UMA_HISTOGRAM_ENUMERATION(
-          "SubresourceFilter.AdDelay.IsolatedInfo",
+          "Ads.Features.AdResourceIsIsolated",
           was_condition_ever_satisfied()
               ? AdDelayThrottle::IsolatedInfo::kNonIsolatedAd
               : AdDelayThrottle::IsolatedInfo::kIsolatedAd);
@@ -109,18 +109,20 @@ base::TimeDelta AdDelayThrottle::DeferCondition::OnReadyToDefer() {
 constexpr base::TimeDelta AdDelayThrottle::kDefaultDelay;
 
 AdDelayThrottle::Factory::Factory()
-    : insecure_delay_(base::TimeDelta::FromMilliseconds(
-          base::GetFieldTrialParamByFeatureAsInt(
-              kDelayUnsafeAds,
-              kInsecureDelayParam,
-              kDefaultDelay.InMilliseconds()))),
+    : delay_enabled_(base::FeatureList::IsEnabled(kAdTagging) &&
+                     base::FeatureList::IsEnabled(kDelayUnsafeAds)),
+      insecure_delay_(base::TimeDelta::FromMilliseconds(
+          delay_enabled_ ? base::GetFieldTrialParamByFeatureAsInt(
+                               kDelayUnsafeAds,
+                               kInsecureDelayParam,
+                               kDefaultDelay.InMilliseconds())
+                         : 0)),
       non_isolated_delay_(base::TimeDelta::FromMilliseconds(
-          base::GetFieldTrialParamByFeatureAsInt(
-              kDelayUnsafeAds,
-              kNonIsolatedDelayParam,
-              kDefaultDelay.InMilliseconds()))),
-      delay_enabled_(base::FeatureList::IsEnabled(kAdTagging) &&
-                     base::FeatureList::IsEnabled(kDelayUnsafeAds)) {}
+          delay_enabled_ ? base::GetFieldTrialParamByFeatureAsInt(
+                               kDelayUnsafeAds,
+                               kNonIsolatedDelayParam,
+                               kDefaultDelay.InMilliseconds())
+                         : 0)) {}
 
 AdDelayThrottle::Factory::~Factory() = default;
 

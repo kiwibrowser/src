@@ -185,7 +185,7 @@
 #include "components/ntp_snippets/breaking_news/subscription_manager_impl.h"
 #include "components/ntp_snippets/category_rankers/click_based_category_ranker.h"
 #include "components/ntp_tiles/popular_sites_impl.h"
-#else
+
 #include "chrome/browser/gcm/gcm_product_util.h"
 #include "chrome/browser/media/router/media_router_feature.h"
 #include "chrome/browser/metrics/tab_stats_tracker.h"
@@ -285,9 +285,7 @@
 #include "chrome/browser/ui/desktop_ios_promotion/desktop_ios_promotion_util.h"
 #endif
 
-#if !defined(OS_ANDROID)
 #include "chrome/browser/search/instant_service.h"
-#endif
 
 #if !defined(OS_ANDROID) && !defined(OS_CHROMEOS)
 #include "chrome/browser/ui/startup/default_browser_prompt.h"
@@ -315,7 +313,7 @@ const char kDismissedPhysicalWebPageSuggestions[] =
 // Deprecated 5/2018.
 const char kDismissedRecentOfflineTabSuggestions[] =
     "ntp_suggestions.offline_pages.recent_tabs.dismissed_ids";
-#else
+
 // Deprecated 1/2018.
 const char kShowFirstRunBubbleOption[] = "show-first-run-bubble-option";
 #endif  // defined(OS_ANDROID)
@@ -404,20 +402,20 @@ void RegisterLocalState(PrefRegistrySimple* registry) {
   registry->RegisterIntegerPref(kStabilityLaunchedActivityFlags, 0);
   registry->RegisterListPref(kStabilityCrashedActivityCounts);
   registry->RegisterListPref(kStabilityLaunchedActivityCounts);
-#else
+
   media_router::RegisterLocalStatePrefs(registry);
   // The native GCM is used on Android instead.
-  gcm::GCMChannelStatusSyncer::RegisterPrefs(registry);
-  gcm::RegisterPrefs(registry);
-  metrics::TabStatsTracker::RegisterPrefs(registry);
+//  gcm::GCMChannelStatusSyncer::RegisterPrefs(registry);
+//  gcm::RegisterPrefs(registry);
+//  metrics::TabStatsTracker::RegisterPrefs(registry);
   RegisterBrowserPrefs(registry);
-  StartupBrowserCreator::RegisterLocalStatePrefs(registry);
+//  StartupBrowserCreator::RegisterLocalStatePrefs(registry);
   task_manager::TaskManagerInterface::RegisterPrefs(registry);
-  UpgradeDetector::RegisterPrefs(registry);
+//  UpgradeDetector::RegisterPrefs(registry);
   // Obsolete. See MigrateObsoleteBrowserPrefs().
   registry->RegisterIntegerPref(kShowFirstRunBubbleOption, 0);
 #if !defined(OS_CHROMEOS)
-  RegisterDefaultBrowserPromptPrefs(registry);
+//  RegisterDefaultBrowserPromptPrefs(registry);
 #endif  // !defined(OS_CHROMEOS)
 #endif  // !defined(OS_ANDROID)
 
@@ -588,7 +586,7 @@ void RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry) {
   GeolocationPermissionContextAndroid::RegisterProfilePrefs(registry);
   PartnerBookmarksShim::RegisterProfilePrefs(registry);
   RecentTabsPagePrefs::RegisterProfilePrefs(registry);
-#else
+
   AppShortcutManager::RegisterProfilePrefs(registry);
   DeviceIDFetcher::RegisterProfilePrefs(registry);
   DevToolsWindow::RegisterProfilePrefs(registry);
@@ -615,18 +613,14 @@ void RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry) {
   OomInterventionDecider::RegisterProfilePrefs(registry);
 #endif  // defined(OS_ANDROID)
 
-#if !defined(OS_ANDROID)
-  browser_sync::ForeignSessionHandler::RegisterProfilePrefs(registry);
+//  browser_sync::ForeignSessionHandler::RegisterProfilePrefs(registry);
   first_run::RegisterProfilePrefs(registry);
   InstantService::RegisterProfilePrefs(registry);
-  gcm::GCMChannelStatusSyncer::RegisterProfilePrefs(registry);
-  gcm::RegisterProfilePrefs(registry);
+//  gcm::GCMChannelStatusSyncer::RegisterProfilePrefs(registry);
+//  gcm::RegisterProfilePrefs(registry);
   StartupBrowserCreator::RegisterProfilePrefs(registry);
-#endif
 
-#if !defined(OS_ANDROID) && !defined(OS_CHROMEOS)
   default_apps::RegisterProfilePrefs(registry);
-#endif
 
 #if defined(OS_CHROMEOS)
   arc::prefs::RegisterProfilePrefs(registry);

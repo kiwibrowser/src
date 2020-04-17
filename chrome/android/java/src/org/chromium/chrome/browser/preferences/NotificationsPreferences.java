@@ -17,6 +17,12 @@ import org.chromium.chrome.browser.preferences.website.SingleCategoryPreferences
 import org.chromium.chrome.browser.preferences.website.SiteSettingsCategory;
 import org.chromium.chrome.browser.profiles.Profile;
 
+import android.view.View;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.ListView;
+import org.chromium.base.ContextUtils;
+
 /**
  * Settings fragment that allows the user to configure notifications. It contains general
  * notification channels at the top level and links to website specific notifications. This is only
@@ -67,6 +73,18 @@ public class NotificationsPreferences extends PreferenceFragment {
     public void onDestroy() {
         super.onDestroy();
         mSnippetsBridge.destroy();
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            view.setBackgroundColor(Color.BLACK);
+            ListView list = (ListView) view.findViewById(android.R.id.list);
+            if (list != null)
+                list.setDivider(new ColorDrawable(Color.GRAY));
+                list.setDividerHeight((int) getResources().getDisplayMetrics().density);
+        }
     }
 
     /**

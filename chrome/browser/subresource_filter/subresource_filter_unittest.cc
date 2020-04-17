@@ -4,7 +4,8 @@
 
 #include <utility>
 
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
+#include "base/test/scoped_feature_list.h"
 #include "chrome/browser/subresource_filter/chrome_subresource_filter_client.h"
 #include "chrome/browser/subresource_filter/subresource_filter_content_settings_manager.h"
 #include "chrome/browser/subresource_filter/subresource_filter_test_harness.h"
@@ -12,7 +13,6 @@
 #include "components/safe_browsing/db/util.h"
 #include "components/safe_browsing/db/v4_protocol_manager_util.h"
 #include "components/subresource_filter/content/browser/content_activation_list_utils.h"
-#include "components/subresource_filter/content/browser/content_subresource_filter_driver_factory.h"
 #include "components/subresource_filter/content/browser/fake_safe_browsing_database_manager.h"
 #include "components/subresource_filter/content/browser/subresource_filter_observer_test_utils.h"
 #include "components/subresource_filter/core/browser/subresource_filter_features.h"
@@ -107,7 +107,7 @@ TEST_F(SubresourceFilterTest, SimpleAllowedLoad_WithObserver) {
   subresource_filter::TestSubresourceFilterObserver observer(web_contents());
   SimulateNavigateAndCommit(url, main_rfh());
 
-  EXPECT_EQ(subresource_filter::ActivationDecision::ACTIVATED,
+  EXPECT_EQ(subresource_filter::ActivationLevel::ENABLED,
             observer.GetPageActivation(url).value());
 
   GURL allowed_url("https://example.test/foo");
@@ -116,7 +116,7 @@ TEST_F(SubresourceFilterTest, SimpleAllowedLoad_WithObserver) {
   SimulateNavigateAndCommit(GURL(allowed_url), subframe);
   EXPECT_EQ(subresource_filter::LoadPolicy::ALLOW,
             *observer.GetSubframeLoadPolicy(allowed_url));
-  EXPECT_FALSE(*observer.GetIsAdSubframe(allowed_url));
+  EXPECT_FALSE(*observer.GetIsAdSubframe(subframe->GetFrameTreeNodeId()));
 }
 
 TEST_F(SubresourceFilterTest, SimpleDisallowedLoad_WithObserver) {
@@ -126,14 +126,17 @@ TEST_F(SubresourceFilterTest, SimpleDisallowedLoad_WithObserver) {
   subresource_filter::TestSubresourceFilterObserver observer(web_contents());
   SimulateNavigateAndCommit(url, main_rfh());
 
-  EXPECT_EQ(subresource_filter::ActivationDecision::ACTIVATED,
+  EXPECT_EQ(subresource_filter::ActivationLevel::ENABLED,
             observer.GetPageActivation(url).value());
 
   GURL disallowed_url(SubresourceFilterTest::kDefaultDisallowedUrl);
-  EXPECT_FALSE(CreateAndNavigateDisallowedSubframe(main_rfh()));
+  auto* subframe =
+      content::RenderFrameHostTester::For(main_rfh())->AppendChild("subframe");
+  EXPECT_FALSE(
+      SimulateNavigateAndCommit(GURL(kDefaultDisallowedUrl), subframe));
   EXPECT_EQ(subresource_filter::LoadPolicy::DISALLOW,
             *observer.GetSubframeLoadPolicy(disallowed_url));
-  EXPECT_TRUE(*observer.GetIsAdSubframe(disallowed_url));
+  EXPECT_TRUE(*observer.GetIsAdSubframe(subframe->GetFrameTreeNodeId()));
 }
 
 TEST_F(SubresourceFilterTest, RefreshMetadataOnActivation) {
@@ -169,7 +172,6 @@ TEST_F(SubresourceFilterTest, ToggleForceActivation) {
 
   // Navigate initially, should be no activation.
   SimulateNavigateAndCommit(url, main_rfh());
-  EXPECT_FALSE(GetClient()->ForceActivationInCurrentWebContents());
   EXPECT_TRUE(CreateAndNavigateDisallowedSubframe(main_rfh()));
   EXPECT_EQ(nullptr, GetSettingsManager()->GetSiteMetadata(url));
 
@@ -179,18 +181,17 @@ TEST_F(SubresourceFilterTest, ToggleForceActivation) {
   GetClient()->ToggleForceActivationInCurrentWebContents(true);
   histogram_tester.ExpectBucketCount(actions_histogram,
                                      kActionForcedActivationEnabled, 1);
-  EXPECT_TRUE(GetClient()->ForceActivationInCurrentWebContents());
 
   SimulateNavigateAndCommit(url, main_rfh());
   EXPECT_FALSE(CreateAndNavigateDisallowedSubframe(main_rfh()));
-  EXPECT_FALSE(GetClient()->did_show_ui_for_navigation());
-  EXPECT_EQ(nullptr, GetSettingsManager()->GetSiteMetadata(url));
+  EXPECT_TRUE(GetClient()->did_show_ui_for_navigation());
+  EXPECT_NE(nullptr, GetSettingsManager()->GetSiteMetadata(url));
   histogram_tester.ExpectBucketCount(
-      "SubresourceFilter.PageLoad.ForcedActivation.DisallowedLoad", true, 1);
+      "SubresourceFilter.PageLoad.ActivationDecision",
+      subresource_filter::ActivationDecision::FORCED_ACTIVATION, 1);
 
   // Simulate closing devtools.
   GetClient()->ToggleForceActivationInCurrentWebContents(false);
-  EXPECT_FALSE(GetClient()->ForceActivationInCurrentWebContents());
 
   SimulateNavigateAndCommit(url, main_rfh());
   EXPECT_TRUE(CreateAndNavigateDisallowedSubframe(main_rfh()));
@@ -208,39 +209,64 @@ TEST_F(SubresourceFilterTest, ToggleOffForceActivation_AfterCommit) {
   // Resource should be disallowed, since navigation commit had activation.
   EXPECT_FALSE(CreateAndNavigateDisallowedSubframe(main_rfh()));
 
-  // UI should not have shown though.
   histogram_tester.ExpectBucketCount("SubresourceFilter.Actions",
-                                     kActionUIShown, 0);
+                                     kActionUIShown, 1);
 }
+
+enum class AdBlockOnAbusiveSitesTest { kEnabled, kDisabled };
 
 TEST_F(SubresourceFilterTest, NotifySafeBrowsing) {
   typedef safe_browsing::SubresourceFilterType Type;
   typedef safe_browsing::SubresourceFilterLevel Level;
   const struct {
+    AdBlockOnAbusiveSitesTest adblock_on_abusive_sites;
     safe_browsing::SubresourceFilterMatch match;
     subresource_filter::ActivationList expected_activation;
     bool expected_warning;
   } kTestCases[]{
-      {{}, subresource_filter::ActivationList::SUBRESOURCE_FILTER, false},
-      {{{{Type::ABUSIVE, Level::ENFORCE}}, base::KEEP_FIRST_OF_DUPES},
+      // AdBlockOnAbusiveSitesTest::kDisabled
+      {AdBlockOnAbusiveSitesTest::kDisabled,
+       {},
+       subresource_filter::ActivationList::SUBRESOURCE_FILTER,
+       false},
+      {AdBlockOnAbusiveSitesTest::kDisabled,
+       {{{Type::ABUSIVE, Level::ENFORCE}}, base::KEEP_FIRST_OF_DUPES},
        subresource_filter::ActivationList::NONE,
        false},
-      {{{{Type::ABUSIVE, Level::WARN}}, base::KEEP_FIRST_OF_DUPES},
+      {AdBlockOnAbusiveSitesTest::kDisabled,
+       {{{Type::ABUSIVE, Level::WARN}}, base::KEEP_FIRST_OF_DUPES},
        subresource_filter::ActivationList::NONE,
        false},
-      {{{{Type::BETTER_ADS, Level::ENFORCE}}, base::KEEP_FIRST_OF_DUPES},
+      {AdBlockOnAbusiveSitesTest::kDisabled,
+       {{{Type::BETTER_ADS, Level::ENFORCE}}, base::KEEP_FIRST_OF_DUPES},
        subresource_filter::ActivationList::BETTER_ADS,
        false},
-      {{{{Type::BETTER_ADS, Level::WARN}}, base::KEEP_FIRST_OF_DUPES},
+      {AdBlockOnAbusiveSitesTest::kDisabled,
+       {{{Type::BETTER_ADS, Level::WARN}}, base::KEEP_FIRST_OF_DUPES},
        subresource_filter::ActivationList::BETTER_ADS,
        true},
-      {{{{Type::BETTER_ADS, Level::ENFORCE}, {Type::ABUSIVE, Level::ENFORCE}},
+      {AdBlockOnAbusiveSitesTest::kDisabled,
+       {{{Type::BETTER_ADS, Level::ENFORCE}, {Type::ABUSIVE, Level::ENFORCE}},
         base::KEEP_FIRST_OF_DUPES},
        subresource_filter::ActivationList::BETTER_ADS,
-       false}};
+       false},
+      // AdBlockOnAbusiveSitesTest::kEnabled
+      {AdBlockOnAbusiveSitesTest::kEnabled,
+       {{{Type::ABUSIVE, Level::ENFORCE}}, base::KEEP_FIRST_OF_DUPES},
+       subresource_filter::ActivationList::ABUSIVE,
+       false},
+      {AdBlockOnAbusiveSitesTest::kEnabled,
+       {{{Type::ABUSIVE, Level::WARN}}, base::KEEP_FIRST_OF_DUPES},
+       subresource_filter::ActivationList::ABUSIVE,
+       true}};
 
   const GURL url("https://example.test");
   for (const auto& test_case : kTestCases) {
+    base::test::ScopedFeatureList scoped_feature_list;
+    scoped_feature_list.InitWithFeatureState(
+        subresource_filter::kFilterAdsOnAbusiveSites,
+        test_case.adblock_on_abusive_sites ==
+            AdBlockOnAbusiveSitesTest::kEnabled);
     subresource_filter::TestSubresourceFilterObserver observer(web_contents());
     auto threat_type =
         safe_browsing::SBThreatType::SB_THREAT_TYPE_SUBRESOURCE_FILTER;
@@ -253,6 +279,7 @@ TEST_F(SubresourceFilterTest, NotifySafeBrowsing) {
     EXPECT_EQ(test_case.expected_activation,
               subresource_filter::GetListForThreatTypeAndMetadata(
                   threat_type, metadata, &warning));
+    EXPECT_EQ(warning, test_case.expected_warning);
   }
 }
 

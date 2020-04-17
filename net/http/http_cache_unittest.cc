@@ -22,7 +22,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/test/simple_test_clock.h"
 #include "base/trace_event/memory_allocator_dump.h"
 #include "base/trace_event/memory_dump_request_args.h"
@@ -3236,6 +3236,87 @@ TEST_F(HttpCacheTest, SimpleGET_ParallelWritingSuccess) {
   histograms.ExpectBucketCount(
       histogram_name,
       static_cast<int>(HttpCache::PARALLEL_WRITING_NOT_JOIN_READ_ONLY), 1);
+}
+
+// Tests the case when parallel writing involves things bigger than what cache
+// can store. In this case, the best we can do is re-fetch it.
+TEST_F(HttpCacheTest, SimpleGET_ParallelWritingHuge) {
+  base::HistogramTester histograms;
+  const std::string histogram_name = "HttpCache.ParallelWritingPattern";
+  MockHttpCache cache;
+  cache.disk_cache()->set_max_file_size(10);
+
+  MockTransaction transaction(kSimpleGET_Transaction);
+  std::string response_headers = base::StrCat(
+      {kSimpleGET_Transaction.response_headers, "Content-Length: ",
+       base::IntToString(strlen(kSimpleGET_Transaction.data)), "\n"});
+  transaction.response_headers = response_headers.c_str();
+  AddMockTransaction(&transaction);
+  MockHttpRequest request(transaction);
+
+  const int kNumTransactions = 4;
+  std::vector<std::unique_ptr<Context>> context_list;
+
+  for (int i = 0; i < kNumTransactions; ++i) {
+    context_list.push_back(std::make_unique<Context>());
+    auto& c = context_list[i];
+
+    c->result = cache.CreateTransaction(&c->trans);
+    ASSERT_THAT(c->result, IsOk());
+
+    MockHttpRequest* this_request = &request;
+    c->result = c->trans->Start(this_request, c->callback.callback(),
+                                NetLogWithSource());
+  }
+
+  // Start them up.
+  base::RunLoop().RunUntilIdle();
+
+  EXPECT_EQ(1, cache.network_layer()->transaction_count());
+  EXPECT_EQ(0, cache.disk_cache()->open_count());
+  EXPECT_EQ(1, cache.disk_cache()->create_count());
+
+  EXPECT_EQ(1, cache.GetCountWriterTransactions(kSimpleGET_Transaction.url));
+  EXPECT_EQ(kNumTransactions - 1,
+            cache.GetCountDoneHeadersQueue(kSimpleGET_Transaction.url));
+
+  // Initiate Read from first transaction.
+  const int kBufferSize = 5;
+  std::vector<scoped_refptr<IOBuffer>> buffer(
+      kNumTransactions, base::MakeRefCounted<IOBuffer>(kBufferSize));
+  auto& c = context_list[0];
+  c->result =
+      c->trans->Read(buffer[0].get(), kBufferSize, c->callback.callback());
+  EXPECT_EQ(ERR_IO_PENDING, c->result);
+
+  // ... and complete it.
+  std::vector<std::string> first_read(kNumTransactions);
+  base::RunLoop().RunUntilIdle();
+  c->result = c->callback.WaitForResult();
+  EXPECT_EQ(kBufferSize, c->result);
+  std::string data_read(buffer[0]->data(), kBufferSize);
+  first_read[0] = data_read;
+  EXPECT_EQ("<html", first_read[0]);
+
+  // Complete all of them.
+  for (int i = 0; i < kNumTransactions; i++) {
+    auto& c = context_list[i];
+    ReadRemainingAndVerifyTransaction(c->trans.get(), first_read[i],
+                                      kSimpleGET_Transaction);
+  }
+
+  // Sadly all of them have to hit the network
+  EXPECT_EQ(kNumTransactions, cache.network_layer()->transaction_count());
+
+  // Verify metrics.
+  histograms.ExpectBucketCount(
+      histogram_name, static_cast<int>(HttpCache::PARALLEL_WRITING_CREATE), 1);
+  histograms.ExpectBucketCount(
+      histogram_name,
+      static_cast<int>(HttpCache::PARALLEL_WRITING_NOT_JOIN_TOO_BIG_FOR_CACHE),
+      kNumTransactions - 1);
+
+  RemoveMockTransaction(&transaction);
 }
 
 // Tests that network transaction's info is saved correctly when a writer
@@ -10607,8 +10688,7 @@ TEST_P(HttpCacheMemoryDumpTest, DumpMemoryStats) {
 
   base::trace_event::MemoryDumpArgs dump_args = {GetParam()};
   auto process_memory_dump =
-      std::make_unique<base::trace_event::ProcessMemoryDump>(nullptr,
-                                                             dump_args);
+      std::make_unique<base::trace_event::ProcessMemoryDump>(dump_args);
   base::trace_event::MemoryAllocatorDump* parent_dump =
       process_memory_dump->CreateAllocatorDump(
           "net/url_request_context/main/0x123");

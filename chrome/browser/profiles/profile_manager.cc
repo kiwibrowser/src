@@ -221,7 +221,7 @@ void ProfileSizeTask(const base::FilePath& path, int enabled_app_count) {
     UMA_HISTOGRAM_COUNTS_10000("Profile.AppCount", enabled_app_count);
 }
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 // Schedule a profile for deletion if it isn't already scheduled.
 // Returns whether the profile has been newly scheduled.
 bool ScheduleProfileDirectoryForDeletion(const base::FilePath& path) {
@@ -332,7 +332,7 @@ void OnProfileLoaded(ProfileManager::ProfileLoadedCallback client_callback,
       .Run(incognito ? profile->GetOffTheRecordProfile() : profile);
 }
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 // Helper function for ScheduleForcedEphemeralProfileForDeletion.
 bool IsProfileEphemeral(ProfileAttributesStorage* storage,
                         const base::FilePath& profile_dir) {
@@ -830,7 +830,7 @@ ProfileShortcutManager* ProfileManager::profile_shortcut_manager() {
   return profile_shortcut_manager_.get();
 }
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 void ProfileManager::MaybeScheduleProfileForDeletion(
     const base::FilePath& profile_dir,
     ProfileLoadedCallback callback,
@@ -1455,7 +1455,7 @@ Profile* ProfileManager::CreateAndInitializeProfile(
   return profile;
 }
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 void ProfileManager::EnsureActiveProfileExistsBeforeDeletion(
     ProfileLoadedCallback callback,
     const base::FilePath& profile_dir) {
@@ -1745,7 +1745,7 @@ ProfileManager::ProfileInfo::~ProfileInfo() {
   ProfileDestroyer::DestroyProfileWhenAppropriate(profile.release());
 }
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 void ProfileManager::UpdateLastUser(Profile* last_active) {
   PrefService* local_state = g_browser_process->local_state();
   DCHECK(local_state);

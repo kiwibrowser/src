@@ -49,8 +49,11 @@ class STORAGE_EXPORT BlobDataItem : public base::RefCounted<BlobDataItem> {
   // a different backend version (mem-to-disk or the reverse), then the item
   // will be destructed after all pending reads are complete.
   class STORAGE_EXPORT DataHandle : public base::RefCounted<DataHandle> {
+   public:
+    virtual bool IsValid();
+
    protected:
-    virtual ~DataHandle() = 0;
+    virtual ~DataHandle();
 
    private:
     friend class base::RefCounted<DataHandle>;
@@ -112,9 +115,13 @@ class STORAGE_EXPORT BlobDataItem : public base::RefCounted<BlobDataItem> {
     return expected_modification_time_;
   }
 
+  // This can return null if the underlying disk cache entry was invalidated
+  // (because the user cleared site data), so users should make sure to always
+  // check for that.
   disk_cache::Entry* disk_cache_entry() const {
     DCHECK_EQ(type_, Type::kDiskCacheEntry);
-    return disk_cache_entry_;
+    DCHECK(data_handle_);
+    return data_handle_->IsValid() ? disk_cache_entry_ : nullptr;
   }
 
   int disk_cache_stream_index() const {
@@ -182,6 +189,9 @@ class STORAGE_EXPORT BlobDataItem : public base::RefCounted<BlobDataItem> {
 
   // This naked pointer is safe because the scope is protected by the DataHandle
   // instance for disk cache entries during the lifetime of this BlobDataItem.
+  // Only valid if the DataHandle's IsValid method returns true.
+  // TODO(mek): Make this part of the DataHandle and abstract away cache
+  // specific logic to be part of an API exposed by DataHandle.
   disk_cache::Entry* disk_cache_entry_;  // For Type::kDiskCacheEntry.
   int disk_cache_stream_index_;          // For Type::kDiskCacheEntry.
   int disk_cache_side_stream_index_;     // For Type::kDiskCacheEntry.

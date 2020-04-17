@@ -380,6 +380,9 @@ class GestureProvider::GestureListenerImpl : public ScaleGestureListener,
     if (!velocity_x && !velocity_y)
       return true;
 
+    velocity_x *= 0.95;
+    velocity_y *= 0.95;
+
     DCHECK(scroll_event_sent_);
     if (!scroll_event_sent_) {
       // The native side needs a ET_GESTURE_SCROLL_BEGIN before

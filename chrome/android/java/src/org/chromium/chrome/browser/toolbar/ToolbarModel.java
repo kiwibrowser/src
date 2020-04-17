@@ -4,12 +4,15 @@
 
 package org.chromium.chrome.browser.toolbar;
 
+import android.widget.Toast;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.content.res.Resources;
 import android.support.annotation.DrawableRes;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
+import android.net.Uri;
+import android.util.Log;
 
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.base.ContextUtils;
@@ -37,6 +40,11 @@ import org.chromium.components.dom_distiller.core.DomDistillerUrlUtils;
 import org.chromium.components.security_state.ConnectionSecurityLevel;
 import org.chromium.content_public.browser.WebContents;
 
+import android.app.Activity;
+import org.chromium.chrome.browser.accessibility.NightModePrefs;
+import android.graphics.Color;
+import org.chromium.base.ApiCompatibilityUtils;
+
 import java.net.URI;
 
 /**
@@ -57,6 +65,10 @@ public class ToolbarModel implements ToolbarDataProvider {
     @ConnectionSecurityLevel
     private int mPreviousSecurityLevel;
     private String mCachedSearchTerms;
+    private String mCachedTranslateTerms;
+    private String mPreviousUrlTranslate;
+    @ConnectionSecurityLevel
+    private int mPreviousSecurityLevelTranslate;
     private boolean mIgnoreSecurityLevelForSearchTerms;
 
     private long mNativeToolbarModelAndroid;
@@ -146,16 +158,63 @@ public class ToolbarModel implements ToolbarDataProvider {
         return null;
     }
 
+    static public String trimUrlData(String source) {
+        String url = source;
+        String tagParameter = null;
+        String clientParameter = null;
+        if (url != null && (url.startsWith("amazon.")
+                         || url.startsWith("http://www.amazon.")
+                         || url.startsWith("https://www.amazon."))) {
+            Uri uri = null;
+            if (!url.contains("https://"))
+                uri = Uri.parse("https://" + url);
+            else
+                uri = Uri.parse(url);
+            try {
+                tagParameter = uri.getQueryParameter("tag");
+            } catch (UnsupportedOperationException e) {
+                tagParameter = null;
+            }
+            url = url.replace("?tag=" + tagParameter + "&", "?");
+            url = url.replace("?tag=" + tagParameter, "");
+            url = url.replace("&tag=" + tagParameter + "&", "&");
+            url = url.replace("&tag=" + tagParameter, "");
+        }
+        else if (url != null && (url.startsWith("qwant.")
+                         || url.startsWith("http://www.qwant.")
+                         || url.startsWith("https://www.qwant.")
+                         || url.startsWith("http://lite.qwant.")
+                         || url.startsWith("https://lite.qwant."))) {
+            Uri uri = null;
+            if (!url.contains("https://"))
+                uri = Uri.parse("https://" + url);
+            else
+                uri = Uri.parse(url);
+            try {
+                clientParameter = uri.getQueryParameter("client");
+            } catch (UnsupportedOperationException e) {
+                clientParameter = null;
+            }
+            url = url.replace("?client=" + clientParameter + "&", "?");
+            url = url.replace("?client=" + clientParameter, "");
+            url = url.replace("&client=" + clientParameter + "&", "&");
+            url = url.replace("&client=" + clientParameter, "");
+        }
+        return url;
+    }
+
     @Override
     public UrlBarData getUrlBarData() {
         if (!hasTab()) return UrlBarData.EMPTY;
 
         String url = getCurrentUrl();
-        if (NativePageFactory.isNativePageUrl(url, isIncognito()) || NewTabPage.isNTPUrl(url)) {
+        url = trimUrlData(url);
+        if (NativePageFactory.isNativePageUrl(url, isIncognito()) || NewTabPage.isNTPUrl(url) || url.equals("about:blank") || url.equals("chrome-search://local-ntp/new-ntp.html")) {
             return UrlBarData.EMPTY;
         }
 
         String formattedUrl = getFormattedFullUrl();
+        formattedUrl = trimUrlData(formattedUrl);
         if (mTab.isFrozen()) return UrlBarData.forUrlAndText(url, formattedUrl);
 
         if (DomDistillerUrlUtils.isDistilledPage(url)) {
@@ -193,6 +252,11 @@ public class ToolbarModel implements ToolbarDataProvider {
         if (shouldDisplaySearchTerms()) {
             // Show the search terms in the omnibox instead of the URL if this is a DSE search URL.
             return UrlBarData.forUrlAndText(url, getDisplaySearchTerms());
+        }
+
+        if (shouldDisplayTranslateTerms()) {
+            // Show the search terms in the omnibox instead of the URL if this is a Translate URL.
+            return UrlBarData.forUrlAndText(url, getDisplayTranslateTerms());
         }
 
         if (ChromeFeatureList.isEnabled(
@@ -244,7 +308,7 @@ public class ToolbarModel implements ToolbarDataProvider {
                 && mPrimaryColor
                         != ColorUtils.getDefaultThemeColor(
                                    context.getResources(), mUseModernDesign, isIncognito())
-                && hasTab() && !mTab.isNativePage();
+                && hasTab();
     }
 
     @Override
@@ -304,6 +368,9 @@ public class ToolbarModel implements ToolbarDataProvider {
         if (shouldDisplaySearchTerms()) {
             return R.drawable.omnibox_search;
         }
+        if (shouldDisplayTranslateTerms()) {
+            return R.drawable.settings_translate;
+        }
         return getSecurityIconResource(getSecurityLevel(), !isTablet, isOfflinePage());
     }
 
@@ -332,11 +399,13 @@ public class ToolbarModel implements ToolbarDataProvider {
             return R.drawable.offline_pin_round;
         }
 
+        // This is to avoid unused resource
+        if (securityLevel == ConnectionSecurityLevel.NONE && securityLevel == ConnectionSecurityLevel.HTTP_SHOW_WARNING) return R.drawable.omnibox_info;
         switch (securityLevel) {
             case ConnectionSecurityLevel.NONE:
-                return isSmallDevice ? 0 : R.drawable.omnibox_info;
+                return isSmallDevice ? 0 : R.drawable.ic_omnibox_page;
             case ConnectionSecurityLevel.HTTP_SHOW_WARNING:
-                return R.drawable.omnibox_info;
+                return R.drawable.ic_omnibox_page;
             case ConnectionSecurityLevel.DANGEROUS:
                 return R.drawable.omnibox_https_invalid;
             case ConnectionSecurityLevel.SECURE_WITH_POLICY_INSTALLED_CERT:
@@ -395,10 +464,30 @@ public class ToolbarModel implements ToolbarDataProvider {
         return true;
     }
 
+   public boolean shouldDisplayTranslateTerms() {
+        if (!securityLevelSafeForTranslateInOmnibox() && !mIgnoreSecurityLevelForSearchTerms) {
+            return false;
+        }
+        if (!mQueryInOmniboxEnabled) return false;
+        if (mTab != null && !(mTab.getActivity() instanceof ChromeTabbedActivity)) return false;
+        if (TextUtils.isEmpty(getDisplayTranslateTerms())) return false;
+        return true;
+    }
+
     private boolean securityLevelSafeForQueryInOmnibox() {
         int securityLevel = getSecurityLevel();
         return securityLevel == ConnectionSecurityLevel.SECURE
                 || securityLevel == ConnectionSecurityLevel.EV_SECURE;
+    }
+
+    private boolean securityLevelSafeForTranslateInOmnibox() {
+        int securityLevel = getSecurityLevel();
+        return securityLevel == ConnectionSecurityLevel.SECURE
+                || securityLevel == ConnectionSecurityLevel.SECURE_WITH_POLICY_INSTALLED_CERT
+                || securityLevel == ConnectionSecurityLevel.EV_SECURE
+                || securityLevel == ConnectionSecurityLevel.NONE
+                || securityLevel == ConnectionSecurityLevel.HTTP_SHOW_WARNING
+                || securityLevel == ConnectionSecurityLevel.DANGEROUS;
     }
 
     /**
@@ -427,6 +516,22 @@ public class ToolbarModel implements ToolbarDataProvider {
         return mCachedSearchTerms;
     }
 
+    private String getDisplayTranslateTerms() {
+        String url = getCurrentUrl();
+        if (url == null) {
+            mCachedTranslateTerms = null;
+        } else {
+            @ConnectionSecurityLevel
+            int securityLevelTranslate = getSecurityLevel();
+//            if (!url.equals(mPreviousUrl) || securityLevelTranslate != mPreviousSecurityLevelTranslate) {
+                mCachedTranslateTerms = getDisplayTranslateTermsInternal(url);
+                mPreviousUrlTranslate = url;
+                mPreviousSecurityLevelTranslate = securityLevelTranslate;
+//            }
+        }
+        return mCachedTranslateTerms;
+    }
+
     /**
      * Extracts query terms from a URL if it's a SRP URL from the default search engine, returning
      * the cached result of the previous call if this call is being performed for the same URL and
@@ -438,13 +543,166 @@ public class ToolbarModel implements ToolbarDataProvider {
      *         display search terms in place of SRP URL.
      */
     private String getDisplaySearchTermsInternal(String url) {
+        String searchTerms = null;
+        Uri parsedUri = null;
+        String host = null;
+        if (url != null) {
+          try {
+            parsedUri = Uri.parse(url);
+            host = parsedUri.getHost();
+          } catch (UnsupportedOperationException e) {
+            return null;
+          }
+        }
+        if (host == null)
+          return null;
+        if (parsedUri == null)
+          return null;
+        if (url != null && (host.endsWith(".find.kiwi") || host.endsWith(".kiwibrowser.com") || host.endsWith(".kiwibrowser.org") || host.endsWith(".kiwisearchservices.com") || host.endsWith(".kiwisearchservices.net") || host.endsWith(".qwant.com") || host.endsWith(".startpage.com") || host.endsWith(".bing.com") || host.endsWith(".search.yahoo.com"))) {
+            Uri uri = Uri.parse(url);
+            try {
+                searchTerms = uri.getQueryParameter("q");
+            } catch (UnsupportedOperationException e) {
+                searchTerms = null;
+            }
+            return looksLikeUrl(searchTerms) ? null : searchTerms;
+        }
+        if (url != null && (host.endsWith(".yandex.ru") || host.endsWith(".yandex.com"))) {
+            Uri uri = Uri.parse(url);
+            try {
+                searchTerms = uri.getQueryParameter("text");
+            } catch (UnsupportedOperationException e) {
+                searchTerms = null;
+            }
+            return looksLikeUrl(searchTerms) ? null : searchTerms;
+        }
+        if (url != null && (host.equals("find.kiwi") || host.equals("kiwibrowser.com") || host.equals("kiwibrowser.org") || host.equals("kiwisearchservices.com") || host.equals("kiwisearchservices.net") || host.equals("qwant.com") || host.equals("startpage.com") || host.equals("bing.com"))) {
+            Uri uri = Uri.parse(url);
+            try {
+                searchTerms = uri.getQueryParameter("q");
+            } catch (UnsupportedOperationException e) {
+                searchTerms = null;
+            }
+            return looksLikeUrl(searchTerms) ? null : searchTerms;
+        }
+        if (url != null && (host.equals("yandex.ru") || host.equals("yandex.com"))) {
+            Uri uri = Uri.parse(url);
+            try {
+                searchTerms = uri.getQueryParameter("text");
+            } catch (UnsupportedOperationException e) {
+                searchTerms = null;
+            }
+            return looksLikeUrl(searchTerms) ? null : searchTerms;
+        }
+        if (url != null && (host.startsWith("www.yahoo.") || host.startsWith("www.google."))) {
+            String[] hostSplit = host.split("\\.", 3);
+            if (hostSplit.length >= 3) {
+              if (hostSplit[2].length() >= 6)
+                return null;
+            } else {
+              return null;
+            }
+            Uri uri = Uri.parse(url);
+            try {
+                searchTerms = uri.getQueryParameter("q");
+            } catch (UnsupportedOperationException e) {
+                searchTerms = null;
+            }
+            return looksLikeUrl(searchTerms) ? null : searchTerms;
+        }
+        if (url != null && (host.startsWith("search.yahoo."))) {
+            String[] hostSplit = host.split("\\.", 3);
+            if (hostSplit.length >= 3) {
+              if (hostSplit[2].length() >= 6)
+                return null;
+            } else {
+              return null;
+            }
+            Uri uri = Uri.parse(url);
+            try {
+                searchTerms = uri.getQueryParameter("p");
+            } catch (UnsupportedOperationException e) {
+                searchTerms = null;
+            }
+            return looksLikeUrl(searchTerms) ? null : searchTerms;
+        }
+        if (url != null && (host.contains("fast" + "s" + "earch.me") || host.contains("tr" + "o" + "vi.com"))) {
+            Uri uri = Uri.parse(url);
+            try {
+                searchTerms = uri.getQueryParameter("q");
+            } catch (UnsupportedOperationException e) {
+                searchTerms = null;
+            }
+            return looksLikeUrl(searchTerms) ? null : searchTerms;
+        }
+
         TemplateUrlService templateUrlService = TemplateUrlService.getInstance();
         if (!templateUrlService.isSearchResultsPageFromDefaultSearchProvider(url)) return null;
 
-        String searchTerms = templateUrlService.extractSearchTermsFromUrl(url);
+        searchTerms = templateUrlService.extractSearchTermsFromUrl(url);
         // Avoid showing search terms that would be interpreted as a URL if typed into the
         // omnibox.
         return looksLikeUrl(searchTerms) ? null : searchTerms;
+    }
+
+    private String getDisplayTranslateTermsInternal(String url) {
+        String paramValue = null;
+        Uri parsedUri = null;
+        String host = null;
+        if (url != null) {
+          try {
+            parsedUri = Uri.parse(url);
+            host = parsedUri.getHost();
+          } catch (UnsupportedOperationException e) {
+            return null;
+          }
+        }
+        if (host == null)
+          return null;
+        if (parsedUri == null)
+          return null;
+        try {
+            if (url.startsWith("https://www.microsofttranslator.com/bv.aspx") || url.startsWith("https://www.translatetheweb.com/")
+             || url.startsWith("http://www.microsofttranslator.com/bv.aspx") || url.startsWith("http://www.translatetheweb.com/")) {
+                Uri uri = Uri.parse(url);
+                try {
+                    paramValue = uri.getQueryParameter("a");
+                } catch (UnsupportedOperationException e) {
+                    paramValue = null;
+                }
+                return paramValue;
+            }
+            String[] hostSplit = host.split("\\.", 3);
+            if (hostSplit.length >= 3) {
+              if (hostSplit[2].length() >= 6)
+                return null;
+            } else {
+              return null;
+            }
+            if (url.startsWith("https://translate.googleusercontent.") || url.startsWith("https://translate.google.")
+             || url.startsWith("http://translate.googleusercontent.") || url.startsWith("http://translate.google.")) {
+                Uri uri = Uri.parse(url);
+                try {
+                    paramValue = uri.getQueryParameter("u");
+                } catch (UnsupportedOperationException e) {
+                    paramValue = null;
+                }
+                return paramValue;
+            }
+            if (url.startsWith("https://fanyi.baidu.com")
+             || url.startsWith("http://fanyi.baidu.com")) {
+                Uri uri = Uri.parse(url);
+                try {
+                    paramValue = uri.getQueryParameter("query");
+                } catch (UnsupportedOperationException e) {
+                    paramValue = null;
+                }
+                return paramValue;
+            }
+        } catch (Exception e) {
+            return null;
+        }
+        return null;
     }
 
     /**

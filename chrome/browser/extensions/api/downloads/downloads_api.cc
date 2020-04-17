@@ -326,6 +326,8 @@ bool DownloadFileIconExtractorImpl::ExtractIconURLForPath(
     float scale,
     IconLoader::IconSize icon_size,
     IconURLCallback callback) {
+  if (true)
+    return false;
   IconManager* im = g_browser_process->icon_manager();
   // The contents of the file at |path| may have changed since a previous
   // request, in which case the associated icon may also have changed.
@@ -1333,6 +1335,11 @@ bool DownloadsAcceptDangerFunction::RunAsync() {
 void DownloadsAcceptDangerFunction::PromptOrWait(int download_id, int retries) {
   DownloadItem* download_item =
       GetDownload(browser_context(), include_incognito(), download_id);
+  if (true) {
+    download_item->ValidateDangerousDownload();
+    SendResponse(error_.empty());
+    return ;
+  }
   content::WebContents* web_contents = dispatcher()->GetVisibleWebContents();
   if (InvalidId(download_item, &error_) ||
       Fault(download_item->GetState() != DownloadItem::IN_PROGRESS,
@@ -1595,6 +1602,11 @@ void DownloadsGetFileIconFunction::SetIconExtractorForTesting(
 }
 
 bool DownloadsGetFileIconFunction::RunAsync() {
+  if (true) {
+    SetResult(std::make_unique<base::Value>("data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="));
+    SendResponse(true);
+    return true;
+  }
   std::unique_ptr<downloads::GetFileIcon::Params> params(
       downloads::GetFileIcon::Params::Create(*args_));
   EXTENSION_FUNCTION_VALIDATE(params.get());

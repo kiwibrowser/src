@@ -343,13 +343,6 @@ bool BaseSearchProvider::CanSendURL(
   if (!client->SearchSuggestEnabled())
     return false;
 
-  // Only make the request if we know that the provider supports sending zero
-  // suggest. (currently only the prepopulated Google provider).
-  if (template_url == nullptr ||
-      !template_url->SupportsReplacement(search_terms_data) ||
-      template_url->GetEngineType(search_terms_data) != SEARCH_ENGINE_GOOGLE)
-    return false;
-
   if (!current_page_url.is_valid())
     return false;
 

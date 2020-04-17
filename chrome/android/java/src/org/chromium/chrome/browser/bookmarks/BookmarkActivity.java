@@ -13,6 +13,13 @@ import org.chromium.chrome.browser.SnackbarActivity;
 import org.chromium.chrome.browser.UrlConstants;
 import org.chromium.components.bookmarks.BookmarkId;
 
+import android.app.Activity;
+import android.app.Application;
+import android.content.Context;
+
+import org.chromium.ui.base.WindowAndroid;
+import org.chromium.ui.base.ActivityWindowAndroid;
+
 /**
  * The activity that displays the bookmark UI on the phone. It keeps a {@link BookmarkManager}
  * inside of it and creates a snackbar manager. This activity should only be shown on phones; on
@@ -21,6 +28,7 @@ import org.chromium.components.bookmarks.BookmarkId;
 public class BookmarkActivity extends SnackbarActivity {
 
     private BookmarkManager mBookmarkManager;
+    private ActivityWindowAndroid mWindowAndroid;
     static final int EDIT_BOOKMARK_REQUEST_CODE = 14;
     public static final String INTENT_VISIT_BOOKMARK_ID = "BookmarkEditActivity.VisitBookmarkId";
 
@@ -32,6 +40,17 @@ public class BookmarkActivity extends SnackbarActivity {
         if (TextUtils.isEmpty(url)) url = UrlConstants.BOOKMARKS_URL;
         mBookmarkManager.updateForUrl(url);
         setContentView(mBookmarkManager.getView());
+
+        mWindowAndroid = new ActivityWindowAndroid(this, true);
+        mWindowAndroid.restoreInstanceState(savedInstanceState);
+        mBookmarkManager.setWindow(mWindowAndroid);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        mWindowAndroid.saveInstanceState(outState);
     }
 
     @Override
@@ -48,6 +67,7 @@ public class BookmarkActivity extends SnackbarActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        mWindowAndroid.onActivityResult(requestCode, resultCode, data);
         if (requestCode == EDIT_BOOKMARK_REQUEST_CODE && resultCode == RESULT_OK) {
             BookmarkId bookmarkId = BookmarkId.getBookmarkIdFromString(data.getStringExtra(
                     INTENT_VISIT_BOOKMARK_ID));

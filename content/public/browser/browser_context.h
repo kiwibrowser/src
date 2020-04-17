@@ -21,7 +21,7 @@
 #include "net/url_request/url_request_job_factory.h"
 #include "services/service_manager/embedder/embedded_service_info.h"
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 #include "content/public/browser/zoom_level_delegate.h"
 #endif
 
@@ -66,7 +66,8 @@ class BrowsingDataRemover;
 class BrowsingDataRemoverDelegate;
 class DownloadManager;
 class DownloadManagerDelegate;
-class PermissionManager;
+class PermissionController;
+class PermissionControllerDelegate;
 struct PushEventPayload;
 class PushMessagingService;
 class ResourceContext;
@@ -100,6 +101,10 @@ class CONTENT_EXPORT BrowserContext : public base::SupportsUserData {
   // Returns a BrowsingDataRemover that can schedule data deletion tasks
   // for this |context|.
   static BrowsingDataRemover* GetBrowsingDataRemover(BrowserContext* context);
+
+  // Returns the PermissionController associated with this context. There's
+  // always a PermissionController instance for each BrowserContext.
+  static PermissionController* GetPermissionController(BrowserContext* context);
 
   // Returns a StoragePartition for the given SiteInstance. By default this will
   // create a new StoragePartition if it doesn't exist, unless |can_create| is
@@ -208,7 +213,7 @@ class CONTENT_EXPORT BrowserContext : public base::SupportsUserData {
   // StoragePartition can have time to do necessary cleanups on IO thread.
   void ShutdownStoragePartitions();
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
   // Creates a delegate to initialize a HostZoomMap and persist its information.
   // This is called during creation of each StoragePartition.
   virtual std::unique_ptr<ZoomLevelDelegate> CreateZoomLevelDelegate(
@@ -247,9 +252,12 @@ class CONTENT_EXPORT BrowserContext : public base::SupportsUserData {
   // return nullptr, implementing the default exception storage strategy.
   virtual SSLHostStateDelegate* GetSSLHostStateDelegate() = 0;
 
-  // Returns the PermissionManager associated with that context if any, nullptr
-  // otherwise.
-  virtual PermissionManager* GetPermissionManager() = 0;
+  // Returns the PermissionControllerDelegate associated with this context if
+  // any, nullptr otherwise.
+  //
+  // Note: if you want to check a permission status, you probably need
+  // BrowserContext::GetPermissionController() instead.
+  virtual PermissionControllerDelegate* GetPermissionControllerDelegate() = 0;
 
   // Returns the BackgroundFetchDelegate associated with that context if any,
   // nullptr otherwise.

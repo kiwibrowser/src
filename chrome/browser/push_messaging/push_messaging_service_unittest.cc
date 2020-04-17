@@ -72,7 +72,7 @@ class PushMessagingTestingProfile : public TestingProfile {
     return PushMessagingServiceFactory::GetForProfile(this);
   }
 
-  PermissionManager* GetPermissionManager() override {
+  PermissionManager* GetPermissionControllerDelegate() override {
     return PermissionManagerFactory::GetForProfile(this);
   }
 

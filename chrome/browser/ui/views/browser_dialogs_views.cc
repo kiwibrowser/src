@@ -22,13 +22,6 @@
 // select at runtime whether to show a Cocoa dialog, or the toolkit-views dialog
 // provided by browser_dialogs.h.
 // static
-scoped_refptr<LoginHandler> LoginHandler::Create(
-    net::AuthChallengeInfo* auth_info,
-    content::ResourceRequestInfo::WebContentsGetter web_contents_getter,
-    LoginAuthRequiredCallback auth_required_callback) {
-  return chrome::CreateLoginHandlerViews(auth_info, web_contents_getter,
-                                         std::move(auth_required_callback));
-}
 
 // static
 void BookmarkEditor::Show(gfx::NativeWindow parent_window,

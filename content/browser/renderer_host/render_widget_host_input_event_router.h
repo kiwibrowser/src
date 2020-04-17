@@ -320,6 +320,8 @@ class CONTENT_EXPORT RenderWidgetHostInputEventRouter
                            InputEventRouterGesturePreventDefaultTargetMapTest);
   FRIEND_TEST_ALL_PREFIXES(SitePerProcessHitTestBrowserTest,
                            InputEventRouterTouchpadGestureTargetTest);
+  FRIEND_TEST_ALL_PREFIXES(SitePerProcessHitTestBrowserTest,
+                           TouchpadPinchOverOOPIF);
   FRIEND_TEST_ALL_PREFIXES(SitePerProcessMouseWheelHitTestBrowserTest,
                            InputEventRouterWheelTargetTest);
   FRIEND_TEST_ALL_PREFIXES(SitePerProcessMacBrowserTest,

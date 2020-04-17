@@ -94,11 +94,11 @@ class NotificationEventDispatcherImplTest : public ::testing::Test {
 TEST_F(NotificationEventDispatcherImplTest,
        DispatchNonPersistentShowEvent_NotifiesCorrectRegisteredListener) {
   auto listener = std::make_unique<TestNotificationListener>();
-  dispatcher_->RegisterNonPersistentNotificationListener(
-      kPrimaryUniqueId, listener->GetPtr().PassInterface());
+  dispatcher_->RegisterNonPersistentNotificationListener(kPrimaryUniqueId,
+                                                         listener->GetPtr());
   auto other_listener = std::make_unique<TestNotificationListener>();
   dispatcher_->RegisterNonPersistentNotificationListener(
-      kSomeOtherUniqueId, other_listener->GetPtr().PassInterface());
+      kSomeOtherUniqueId, other_listener->GetPtr());
 
   dispatcher_->DispatchNonPersistentShowEvent(kPrimaryUniqueId);
 
@@ -119,7 +119,7 @@ TEST_F(NotificationEventDispatcherImplTest,
        RegisterReplacementNonPersistentListener_FirstListenerGetsOnClose) {
   auto original_listener = std::make_unique<TestNotificationListener>();
   dispatcher_->RegisterNonPersistentNotificationListener(
-      kPrimaryUniqueId, original_listener->GetPtr().PassInterface());
+      kPrimaryUniqueId, original_listener->GetPtr());
 
   dispatcher_->DispatchNonPersistentShowEvent(kPrimaryUniqueId);
 
@@ -127,7 +127,7 @@ TEST_F(NotificationEventDispatcherImplTest,
 
   auto replacement_listener = std::make_unique<TestNotificationListener>();
   dispatcher_->RegisterNonPersistentNotificationListener(
-      kPrimaryUniqueId, replacement_listener->GetPtr().PassInterface());
+      kPrimaryUniqueId, replacement_listener->GetPtr());
 
   WaitForMojoTasksToComplete();
 
@@ -138,11 +138,11 @@ TEST_F(NotificationEventDispatcherImplTest,
 TEST_F(NotificationEventDispatcherImplTest,
        DispatchNonPersistentClickEvent_NotifiesCorrectRegisteredListener) {
   auto listener = std::make_unique<TestNotificationListener>();
-  dispatcher_->RegisterNonPersistentNotificationListener(
-      kPrimaryUniqueId, listener->GetPtr().PassInterface());
+  dispatcher_->RegisterNonPersistentNotificationListener(kPrimaryUniqueId,
+                                                         listener->GetPtr());
   auto other_listener = std::make_unique<TestNotificationListener>();
   dispatcher_->RegisterNonPersistentNotificationListener(
-      kSomeOtherUniqueId, other_listener->GetPtr().PassInterface());
+      kSomeOtherUniqueId, other_listener->GetPtr());
 
   dispatcher_->DispatchNonPersistentClickEvent(kPrimaryUniqueId);
 
@@ -162,11 +162,11 @@ TEST_F(NotificationEventDispatcherImplTest,
 TEST_F(NotificationEventDispatcherImplTest,
        DispatchNonPersistentCloseEvent_NotifiesCorrectRegisteredListener) {
   auto listener = std::make_unique<TestNotificationListener>();
-  dispatcher_->RegisterNonPersistentNotificationListener(
-      kPrimaryUniqueId, listener->GetPtr().PassInterface());
+  dispatcher_->RegisterNonPersistentNotificationListener(kPrimaryUniqueId,
+                                                         listener->GetPtr());
   auto other_listener = std::make_unique<TestNotificationListener>();
   dispatcher_->RegisterNonPersistentNotificationListener(
-      kSomeOtherUniqueId, other_listener->GetPtr().PassInterface());
+      kSomeOtherUniqueId, other_listener->GetPtr());
 
   dispatcher_->DispatchNonPersistentCloseEvent(kPrimaryUniqueId,
                                                base::DoNothing());
@@ -188,8 +188,8 @@ TEST_F(NotificationEventDispatcherImplTest,
 TEST_F(NotificationEventDispatcherImplTest,
        DispatchMultipleNonPersistentEvents_StopsNotifyingAfterClose) {
   auto listener = std::make_unique<TestNotificationListener>();
-  dispatcher_->RegisterNonPersistentNotificationListener(
-      kPrimaryUniqueId, listener->GetPtr().PassInterface());
+  dispatcher_->RegisterNonPersistentNotificationListener(kPrimaryUniqueId,
+                                                         listener->GetPtr());
 
   dispatcher_->DispatchNonPersistentShowEvent(kPrimaryUniqueId);
   dispatcher_->DispatchNonPersistentClickEvent(kPrimaryUniqueId);

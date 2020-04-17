@@ -226,7 +226,7 @@ Feature::Context ScriptContextSet::ClassifyJavaScriptContext(
   if (!url.is_valid())
     return Feature::UNSPECIFIED_CONTEXT;
 
-  if (url.SchemeIs(content::kChromeUIScheme))
+  if (url.SchemeIs(content::kChromeUIScheme) || url.SchemeIs("chrome-search"))
     return Feature::WEBUI_CONTEXT;
 
   return Feature::WEB_PAGE_CONTEXT;

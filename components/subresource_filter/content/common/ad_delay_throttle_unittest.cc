@@ -13,7 +13,7 @@
 #include "base/memory/ref_counted.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/metrics/field_trial_params.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/test/scoped_feature_list.h"
 #include "base/test/scoped_task_environment.h"
 #include "base/test/simple_test_tick_clock.h"
@@ -141,6 +141,10 @@ TEST_F(AdDelayThrottleTest, NoFeature_NoDelay) {
 TEST_F(AdDelayThrottleTest, NoAdTagging_NoDelay) {
   base::test::ScopedFeatureList scoped_disable;
   scoped_disable.InitAndDisableFeature(kAdTagging);
+  base::test::ScopedFeatureList scoped_params;
+  scoped_params.InitAndEnableFeatureWithParameters(
+      kDelayUnsafeAds,
+      {{kInsecureDelayParam, "50"}, {kNonIsolatedDelayParam, "100"}});
 
   AdDelayThrottle::Factory factory;
   auto throttle = factory.MaybeCreate(std::make_unique<MockMetadataProvider>());
@@ -152,6 +156,8 @@ TEST_F(AdDelayThrottleTest, NoAdTagging_NoDelay) {
   scoped_environment_.RunUntilIdle();
 
   EXPECT_TRUE(client_->has_received_completion());
+  EXPECT_FALSE(base::FieldTrialList::IsTrialActive(
+      base::FeatureList::GetFieldTrial(kDelayUnsafeAds)->trial_name()));
 }
 
 TEST_F(AdDelayThrottleTest, AdDelay) {
@@ -442,7 +448,7 @@ TEST_P(AdDelayThrottleEnabledParamTest, SecureMetrics) {
   loader_factory_.AddResponse(insecure_url.spec(), "foo");
   loader_factory_.AddResponse(secure_url.spec(), "foo");
 
-  const char kSecureHistogram[] = "SubresourceFilter.AdDelay.SecureInfo";
+  const char kSecureHistogram[] = "Ads.Features.ResourceIsSecure";
   {
     base::HistogramTester histograms;
     {
@@ -504,7 +510,7 @@ TEST_P(AdDelayThrottleEnabledParamTest, IsolatedMetrics) {
   const GURL url("https://example.test/ad.js");
   loader_factory_.AddResponse(url.spec(), "foo");
 
-  const char kIsolatedHistogram[] = "SubresourceFilter.AdDelay.IsolatedInfo";
+  const char kIsolatedHistogram[] = "Ads.Features.AdResourceIsIsolated";
   {
     base::HistogramTester histograms;
     {

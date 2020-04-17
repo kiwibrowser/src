@@ -4,6 +4,7 @@
 
 package org.chromium.chrome.browser.download.ui;
 
+import android.graphics.Color;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
@@ -33,6 +34,7 @@ import org.chromium.chrome.browser.widget.MaterialProgressBar;
 import org.chromium.chrome.browser.widget.ThumbnailProvider;
 import org.chromium.chrome.browser.widget.TintedImageButton;
 import org.chromium.chrome.browser.widget.selection.SelectableItemView;
+import org.chromium.base.ContextUtils;
 import org.chromium.components.offline_items_collection.OfflineItem;
 import org.chromium.components.offline_items_collection.OfflineItem.Progress;
 import org.chromium.components.variations.VariationsAssociatedData;
@@ -264,6 +266,12 @@ public class DownloadItemView extends SelectableItemView<DownloadHistoryItemWrap
                 Formatter.formatFileSize(getContext(), item.getFileSize()),
                 item.getDisplayHostname());
         mDescriptionCompletedView.setText(description);
+
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mFilenameCompletedView.setTextColor(Color.WHITE);
+            mFilenameInProgressView.setTextColor(Color.WHITE);
+            mDescriptionCompletedView.setTextColor(Color.GRAY);
+        }
 
         if (item.isComplete()) {
             showLayout(mLayoutCompleted);

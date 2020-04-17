@@ -371,6 +371,28 @@ class InputRouterImplTest : public testing::Test {
         scale, anchor_x, anchor_y, modifiers, source_device));
   }
 
+  void SimulateTouchpadGesturePinchEventWithoutWheel(WebInputEvent::Type type,
+                                                     float scale,
+                                                     float anchor_x,
+                                                     float anchor_y,
+                                                     int modifiers) {
+    DCHECK(blink::WebInputEvent::IsPinchGestureEventType(type));
+    WebGestureEvent event =
+        (type == blink::WebInputEvent::kGesturePinchUpdate
+             ? SyntheticWebGestureEventBuilder::BuildPinchUpdate(
+                   scale, anchor_x, anchor_y, modifiers,
+                   blink::kWebGestureDeviceTouchpad)
+             : SyntheticWebGestureEventBuilder::Build(
+                   type, blink::kWebGestureDeviceTouchpad));
+    // For touchpad pinch, we first send wheel events to the renderer. Only
+    // after these have been acknowledged do we send the actual gesture pinch
+    // events to the renderer. We indicate here that the wheel sending phase is
+    // done for the purpose of testing the sending of the gesture events
+    // themselves.
+    event.SetNeedsWheelEvent(false);
+    SimulateGestureEvent(event);
+  }
+
   void SimulateGestureFlingStartEvent(float velocity_x,
                                       float velocity_y,
                                       WebGestureDevice source_device) {
@@ -1674,6 +1696,12 @@ TEST_F(InputRouterImplTest, TouchpadPinchUpdate) {
   // Note that the Touchscreen case is verified as NOT doing this as
   // part of the ShowPressIsInOrder test.
 
+  SimulateGestureEvent(WebInputEvent::kGesturePinchBegin,
+                       blink::kWebGestureDeviceTouchpad);
+  EXPECT_EQ(1U, disposition_handler_->GetAndResetAckCount());
+  ASSERT_EQ(WebInputEvent::kGesturePinchBegin,
+            disposition_handler_->ack_event_type());
+
   SimulateGesturePinchUpdateEvent(1.5f, 20, 25, 0,
                                   blink::kWebGestureDeviceTouchpad);
 
@@ -1683,13 +1711,15 @@ TEST_F(InputRouterImplTest, TouchpadPinchUpdate) {
   ASSERT_TRUE(dispatched_messages[0]->ToEvent());
   const WebInputEvent* input_event =
       dispatched_messages[0]->ToEvent()->Event()->web_event.get();
-  ASSERT_EQ(WebInputEvent::kGesturePinchUpdate, input_event->GetType());
-  const WebGestureEvent* gesture_event =
-      static_cast<const WebGestureEvent*>(input_event);
-  EXPECT_EQ(20, gesture_event->PositionInWidget().x);
-  EXPECT_EQ(25, gesture_event->PositionInWidget().y);
-  EXPECT_EQ(20, gesture_event->PositionInScreen().x);
-  EXPECT_EQ(25, gesture_event->PositionInScreen().y);
+  ASSERT_EQ(WebInputEvent::kMouseWheel, input_event->GetType());
+  const WebMouseWheelEvent* synthetic_wheel =
+      static_cast<const WebMouseWheelEvent*>(input_event);
+  EXPECT_EQ(20, synthetic_wheel->PositionInWidget().x);
+  EXPECT_EQ(25, synthetic_wheel->PositionInWidget().y);
+  EXPECT_EQ(20, synthetic_wheel->PositionInScreen().x);
+  EXPECT_EQ(25, synthetic_wheel->PositionInScreen().y);
+  EXPECT_TRUE(synthetic_wheel->GetModifiers() &
+              blink::WebInputEvent::kControlKey);
 
   dispatched_messages[0]->ToEvent()->CallCallback(
       INPUT_EVENT_ACK_STATE_NOT_CONSUMED);
@@ -1712,8 +1742,8 @@ TEST_F(InputRouterImplTest, TouchpadPinchUpdate) {
   ASSERT_EQ(1U, dispatched_messages.size());
   ASSERT_TRUE(dispatched_messages[0]->ToEvent());
   input_event = dispatched_messages[0]->ToEvent()->Event()->web_event.get();
-  ASSERT_EQ(WebInputEvent::kGesturePinchUpdate, input_event->GetType());
-  gesture_event = static_cast<const WebGestureEvent*>(input_event);
+  ASSERT_EQ(WebInputEvent::kMouseWheel, input_event->GetType());
+  synthetic_wheel = static_cast<const WebMouseWheelEvent*>(input_event);
 
   dispatched_messages[0]->ToEvent()->CallCallback(
       INPUT_EVENT_ACK_STATE_CONSUMED);
@@ -1726,6 +1756,12 @@ TEST_F(InputRouterImplTest, TouchpadPinchUpdate) {
   EXPECT_FLOAT_EQ(
       0.3f,
       disposition_handler_->acked_gesture_event().data.pinch_update.scale);
+
+  SimulateGestureEvent(WebInputEvent::kGesturePinchEnd,
+                       blink::kWebGestureDeviceTouchpad);
+  EXPECT_EQ(1U, disposition_handler_->GetAndResetAckCount());
+  ASSERT_EQ(WebInputEvent::kGesturePinchEnd,
+            disposition_handler_->ack_event_type());
 }
 
 // Test proper handling of touchpad Gesture{Pinch,Scroll}Update sequences.
@@ -1742,8 +1778,8 @@ TEST_F(InputRouterImplTest, TouchpadPinchAndScrollUpdate) {
   EXPECT_EQ(2, client_->in_flight_event_count());
 
   // Subsequent scroll and pinch events will also be sent immediately.
-  SimulateGesturePinchUpdateEvent(1.5f, 20, 25, 0,
-                                  blink::kWebGestureDeviceTouchpad);
+  SimulateTouchpadGesturePinchEventWithoutWheel(
+      WebInputEvent::kGesturePinchUpdate, 1.5f, 20, 25, 0);
   DispatchedMessages temp_dispatched_messages = GetAndResetDispatchedMessages();
   ASSERT_EQ(1U, temp_dispatched_messages.size());
   ASSERT_TRUE(temp_dispatched_messages[0]->ToEvent());
@@ -1758,8 +1794,8 @@ TEST_F(InputRouterImplTest, TouchpadPinchAndScrollUpdate) {
   dispatched_messages.emplace_back(std::move(temp_dispatched_messages.at(0)));
   EXPECT_EQ(4, client_->in_flight_event_count());
 
-  SimulateGesturePinchUpdateEvent(1.5f, 20, 25, 0,
-                                  blink::kWebGestureDeviceTouchpad);
+  SimulateTouchpadGesturePinchEventWithoutWheel(
+      WebInputEvent::kGesturePinchUpdate, 1.5f, 20, 25, 0);
   temp_dispatched_messages = GetAndResetDispatchedMessages();
   ASSERT_EQ(1U, temp_dispatched_messages.size());
   ASSERT_TRUE(temp_dispatched_messages[0]->ToEvent());
@@ -2265,8 +2301,8 @@ TEST_F(InputRouterImplScaleGestureEventTest, GestureScrollBegin) {
 
 TEST_F(InputRouterImplScaleGestureEventTest, GesturePinchUpdate) {
   const gfx::PointF orig(10, 20), scaled(20, 40);
-  SimulateGesturePinchUpdateEvent(1.5f, orig.x(), orig.y(), 0,
-                                  blink::kWebGestureDeviceTouchpad);
+  SimulateTouchpadGesturePinchEventWithoutWheel(
+      WebInputEvent::kGesturePinchUpdate, 1.5f, orig.x(), orig.y(), 0);
   FlushGestureEvent(WebInputEvent::kGesturePinchUpdate);
   const WebGestureEvent* sent_event = GetSentWebInputEvent<WebGestureEvent>();
   TestLocationInSentEvent(sent_event, orig, scaled);

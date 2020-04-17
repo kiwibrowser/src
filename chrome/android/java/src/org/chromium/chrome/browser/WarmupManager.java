@@ -9,6 +9,7 @@ import android.content.Context;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.SystemClock;
+import android.view.Gravity;
 import android.view.ContextThemeWrapper;
 import android.view.InflateException;
 import android.view.LayoutInflater;
@@ -17,6 +18,7 @@ import android.view.ViewGroup;
 import android.view.ViewStub;
 import android.widget.FrameLayout;
 
+import org.chromium.base.ContextUtils;
 import org.chromium.base.Log;
 import org.chromium.base.StrictModeContext;
 import org.chromium.base.SysUtils;
@@ -124,9 +126,14 @@ public final class WarmupManager {
             ContextThemeWrapper context =
                     new ContextThemeWrapper(baseContext, ChromeActivity.getThemeId());
             FrameLayout contentHolder = new FrameLayout(context);
-            mMainView = (ViewGroup) LayoutInflater.from(context).inflate(
-                    R.layout.main, contentHolder);
             mToolbarContainerId = toolbarContainerId;
+            if (ContextUtils.getAppSharedPreferences().getBoolean("enable_bottom_toolbar", false)) {
+                mMainView =
+                        (ViewGroup) LayoutInflater.from(context).inflate(R.layout.main_bottombar, contentHolder);
+            } else {
+                mMainView =
+                        (ViewGroup) LayoutInflater.from(context).inflate(R.layout.main, contentHolder);
+            }
             if (toolbarContainerId != ChromeActivity.NO_CONTROL_CONTAINER) {
                 ViewStub stub = (ViewStub) mMainView.findViewById(R.id.control_container_stub);
                 stub.setLayoutResource(toolbarContainerId);

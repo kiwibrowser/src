@@ -133,7 +133,13 @@ class DiskCacheTestWithCache : public DiskCacheTest {
 
   // Utility methods to access the cache and wait for each operation to finish.
   int OpenEntry(const std::string& key, disk_cache::Entry** entry);
+  int OpenEntryWithPriority(const std::string& key,
+                            net::RequestPriority request_priority,
+                            disk_cache::Entry** entry);
   int CreateEntry(const std::string& key, disk_cache::Entry** entry);
+  int CreateEntryWithPriority(const std::string& key,
+                              net::RequestPriority request_priority,
+                              disk_cache::Entry** entry);
   int DoomEntry(const std::string& key);
   int DoomAllEntries();
   int DoomEntriesBetween(const base::Time initial_time,

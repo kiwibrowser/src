@@ -211,8 +211,7 @@ class UnindexedRulesetRuleInputStream : public RuleInputStream {
     ruleset_ = ReadStreamToString(input.get());
     ruleset_input_.reset(new google::protobuf::io::ArrayInputStream(
         ruleset_.data(), ruleset_.size()));
-    ruleset_reader_.reset(
-        new url_pattern_index::UnindexedRulesetReader(ruleset_input_.get()));
+    ruleset_reader_.reset(new UnindexedRulesetReader(ruleset_input_.get()));
   }
 
   url_pattern_index::proto::RuleType FetchNextRule() override {
@@ -249,7 +248,7 @@ class UnindexedRulesetRuleInputStream : public RuleInputStream {
 
   std::string ruleset_;
   std::unique_ptr<google::protobuf::io::ArrayInputStream> ruleset_input_;
-  std::unique_ptr<url_pattern_index::UnindexedRulesetReader> ruleset_reader_;
+  std::unique_ptr<UnindexedRulesetReader> ruleset_reader_;
 
   url_pattern_index::proto::FilteringRules rules_chunk_;
   std::unique_ptr<ProtobufRuleInputStreamImpl> impl_;
@@ -287,7 +286,7 @@ class UnindexedRulesetRuleOutputStream : public RuleOutputStream {
 
   std::string ruleset_;
   google::protobuf::io::StringOutputStream ruleset_output_;
-  url_pattern_index::UnindexedRulesetWriter ruleset_writer_;
+  UnindexedRulesetWriter ruleset_writer_;
   std::unique_ptr<std::ostream> output_;
 };
 

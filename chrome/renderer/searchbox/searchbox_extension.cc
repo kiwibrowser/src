@@ -40,6 +40,7 @@
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_script_source.h"
 #include "third_party/blink/public/web/web_view.h"
+#include "chrome/renderer/chrome_render_thread_observer.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/base/window_open_disposition.h"
 #include "ui/events/keycodes/keyboard_codes.h"
@@ -565,6 +566,8 @@ class NewTabPageBindings : public gin::Wrappable<NewTabPageBindings> {
   static bool IsInputInProgress();
   static v8::Local<v8::Value> GetMostVisited(v8::Isolate* isolate);
   static bool GetMostVisitedAvailable(v8::Isolate* isolate);
+  static bool IsIncognito(v8::Isolate* isolate);
+  static bool IsBottomToolbarEnabled(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetThemeBackgroundInfo(v8::Isolate* isolate);
 
   // Handlers for JS functions visible to all NTPs.
@@ -611,6 +614,10 @@ gin::ObjectTemplateBuilder NewTabPageBindings::GetObjectTemplateBuilder(
       .SetProperty("mostVisited", &NewTabPageBindings::GetMostVisited)
       .SetProperty("mostVisitedAvailable",
                    &NewTabPageBindings::GetMostVisitedAvailable)
+      .SetProperty("isIncognito",
+                   &NewTabPageBindings::IsIncognito)
+      .SetProperty("isBottomToolbarEnabled",
+                   &NewTabPageBindings::IsBottomToolbarEnabled)
       .SetProperty("themeBackgroundInfo",
                    &NewTabPageBindings::GetThemeBackgroundInfo)
       .SetMethod("checkIsUserSignedIntoChromeAs",
@@ -688,6 +695,14 @@ bool NewTabPageBindings::GetMostVisitedAvailable(v8::Isolate* isolate) {
   return search_box->AreMostVisitedItemsAvailable();
 }
 
+bool NewTabPageBindings::IsIncognito(v8::Isolate* isolate) {
+  return ChromeRenderThreadObserver::is_incognito_process();
+}
+
+bool NewTabPageBindings::IsBottomToolbarEnabled(v8::Isolate* isolate) {
+  return ChromeRenderThreadObserver::is_bottom_toolbar_enabled();
+}
+
 // static
 v8::Local<v8::Value> NewTabPageBindings::GetThemeBackgroundInfo(
     v8::Isolate* isolate) {
@@ -755,7 +770,7 @@ v8::Local<v8::Value> NewTabPageBindings::GetMostVisitedItemData(
     v8::Isolate* isolate,
     int rid) {
   const SearchBox* search_box = GetSearchBoxForCurrentContext();
-  if (!search_box || !HasOrigin(GURL(chrome::kChromeSearchMostVisitedUrl)))
+  if (!search_box || (!HasOrigin(GURL(chrome::kChromeSearchMostVisitedUrl)) && !HasOrigin(GURL(chrome::kChromeSearchLocalNtpUrl))))
     return v8::Null(isolate);
 
   InstantMostVisitedItem item;

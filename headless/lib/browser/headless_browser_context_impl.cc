@@ -83,8 +83,9 @@ HeadlessBrowserContextImpl::HeadlessBrowserContextImpl(
     : browser_(browser),
       context_options_(std::move(context_options)),
       resource_context_(std::make_unique<HeadlessResourceContext>()),
-      should_remove_headers_(true),
-      permission_manager_(std::make_unique<HeadlessPermissionManager>(this)) {
+      permission_controller_delegate_(
+          std::make_unique<HeadlessPermissionManager>(this)),
+      net_log_(new net::NetLog()) {
   InitWhileIOAllowed();
 }
 
@@ -259,8 +260,9 @@ HeadlessBrowserContextImpl::GetSSLHostStateDelegate() {
   return nullptr;
 }
 
-content::PermissionManager* HeadlessBrowserContextImpl::GetPermissionManager() {
-  return permission_manager_.get();
+content::PermissionControllerDelegate*
+HeadlessBrowserContextImpl::GetPermissionControllerDelegate() {
+  return permission_controller_delegate_.get();
 }
 
 content::BackgroundFetchDelegate*

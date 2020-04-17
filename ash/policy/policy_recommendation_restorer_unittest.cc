@@ -135,10 +135,7 @@ class PolicyRecommendationRestorerTest : public NoSessionAshTestBase {
     if (!restorer_->restore_timer_for_test()->IsRunning())
       return false;
 
-    base::RepeatingClosure task =
-        restorer_->restore_timer_for_test()->user_task();
-    restorer_->restore_timer_for_test()->Stop();
-    task.Run();
+    restorer_->restore_timer_for_test()->FireNow();
     return true;
   }
 

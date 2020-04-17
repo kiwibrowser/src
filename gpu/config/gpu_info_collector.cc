@@ -130,7 +130,7 @@ bool CollectBasicGraphicsInfo(const base::CommandLine* command_line,
     // Also declare the driver_vendor to be <software GL> to be able to
     // specify exceptions based on driver_vendor==<software GL> for some
     // blacklist rules.
-    gpu_info->driver_vendor = software_gl_impl_name;
+    gpu_info->gpu.driver_vendor = software_gl_impl_name;
 
     return true;
   }
@@ -165,10 +165,11 @@ bool CollectGraphicsInfoGL(GPUInfo* gpu_info) {
 
   gl::GLVersionInfo gl_info(gpu_info->gl_version.c_str(),
                             gpu_info->gl_renderer.c_str(), extension_set);
-  if (!gl_info.driver_vendor.empty() && gpu_info->driver_vendor.empty())
-    gpu_info->driver_vendor = gl_info.driver_vendor;
-  if (!gl_info.driver_version.empty() && gpu_info->driver_version.empty())
-    gpu_info->driver_version = gl_info.driver_version;
+  GPUInfo::GPUDevice& active_gpu = gpu_info->active_gpu();
+  if (!gl_info.driver_vendor.empty() && active_gpu.driver_vendor.empty())
+    active_gpu.driver_vendor = gl_info.driver_vendor;
+  if (!gl_info.driver_version.empty() && active_gpu.driver_version.empty())
+    active_gpu.driver_version = gl_info.driver_version;
 
   GLint max_samples = 0;
   if (gl_info.IsAtLeastGL(3, 0) || gl_info.IsAtLeastGLES(3, 0) ||
@@ -309,13 +310,12 @@ void FillGPUInfoFromSystemInfo(GPUInfo* gpu_info,
 
   gpu_info->gpu.vendor_id = primary->vendorId;
   gpu_info->gpu.device_id = primary->deviceId;
+  gpu_info->gpu.driver_vendor = std::move(primary->driverVendor);
+  gpu_info->gpu.driver_version = std::move(primary->driverVersion);
+  gpu_info->gpu.driver_date = std::move(primary->driverDate);
   if (system_info->primaryGPUIndex == system_info->activeGPUIndex) {
     gpu_info->gpu.active = true;
   }
-
-  gpu_info->driver_vendor = std::move(primary->driverVendor);
-  gpu_info->driver_version = std::move(primary->driverVersion);
-  gpu_info->driver_date = std::move(primary->driverDate);
 
   for (size_t i = 0; i < system_info->gpus.size(); i++) {
     if (static_cast<int>(i) == system_info->primaryGPUIndex) {
@@ -325,6 +325,9 @@ void FillGPUInfoFromSystemInfo(GPUInfo* gpu_info,
     GPUInfo::GPUDevice device;
     device.vendor_id = system_info->gpus[i].vendorId;
     device.device_id = system_info->gpus[i].deviceId;
+    device.driver_vendor = std::move(system_info->gpus[i].driverVendor);
+    device.driver_version = std::move(system_info->gpus[i].driverVersion);
+    device.driver_date = std::move(system_info->gpus[i].driverDate);
     if (static_cast<int>(i) == system_info->activeGPUIndex) {
       device.active = true;
     }

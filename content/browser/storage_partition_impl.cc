@@ -61,7 +61,7 @@
 #include "storage/browser/quota/quota_manager.h"
 #include "third_party/blink/public/mojom/quota/quota_types.mojom.h"
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 #include "content/browser/host_zoom_map_impl.h"
 #endif  // !defined(OS_ANDROID)
 
@@ -617,7 +617,7 @@ std::unique_ptr<StoragePartitionImpl> StoragePartitionImpl::Create(
   partition->push_messaging_context_ =
       new PushMessagingContext(context, partition->service_worker_context_);
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
   partition->host_zoom_level_context_ = new HostZoomLevelContext(
       context->CreateZoomLevelDelegate(partition_path));
 #endif  // !defined(OS_ANDROID)
@@ -781,7 +781,7 @@ SharedWorkerServiceImpl* StoragePartitionImpl::GetSharedWorkerService() {
   return shared_worker_service_.get();
 }
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 HostZoomMap* StoragePartitionImpl::GetHostZoomMap() {
   DCHECK(host_zoom_level_context_.get());
   return host_zoom_level_context_->GetHostZoomMap();

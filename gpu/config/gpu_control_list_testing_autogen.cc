@@ -1998,6 +1998,36 @@ const GpuControlList::Entry kGpuControlListTestingEntries[] = {
         base::size(kExceptionsForEntry66),  // exceptions count
         kExceptionsForEntry66,              // exceptions
     },
+    {
+        67,  // id
+        "GpuControlListEntryTest.MultipleDrivers",
+        base::size(kFeatureListForEntry67),  // features size
+        kFeatureListForEntry67,              // features
+        0,                                   // DisabledExtensions size
+        nullptr,                             // DisabledExtensions
+        0,                                   // DisabledWebGLExtensions size
+        nullptr,                             // DisabledWebGLExtensions
+        0,                                   // CrBugs size
+        nullptr,                             // CrBugs
+        {
+            GpuControlList::kOsAny,  // os_type
+            {GpuControlList::kUnknown, GpuControlList::kVersionStyleNumerical,
+             nullptr, nullptr},                     // os_version
+            0x8086,                                 // vendor_id
+            0,                                      // DeviceIDs size
+            nullptr,                                // DeviceIDs
+            GpuControlList::kMultiGpuCategoryNone,  // multi_gpu_category
+            GpuControlList::kMultiGpuStyleNone,     // multi_gpu_style
+            &kDriverInfoForEntry67,                 // driver info
+            nullptr,                                // GL strings
+            nullptr,                                // machine model info
+            0,                                      // gpu_series size
+            nullptr,                                // gpu_series
+            nullptr,                                // more conditions
+        },
+        0,        // exceptions count
+        nullptr,  // exceptions
+    },
 };
-const size_t kGpuControlListTestingEntryCount = 66;
+const size_t kGpuControlListTestingEntryCount = 67;
 }  // namespace gpu

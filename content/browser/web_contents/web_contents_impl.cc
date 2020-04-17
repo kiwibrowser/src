@@ -145,6 +145,10 @@
 #include "ui/events/base_event_utils.h"
 #include "ui/events/blink/web_input_event_traits.h"
 #include "ui/gl/gl_switches.h"
+#include "chrome/browser/profiles/profile.h"
+#include "chrome/browser/extensions/api/tabs/tabs_event_router.h"
+#include "chrome/browser/extensions/api/tabs/tabs_windows_api.h"
+
 
 #if defined(OS_WIN)
 #include "content/browser/renderer_host/dip_util.h"
@@ -158,7 +162,7 @@
 #include "content/browser/media/android/media_web_contents_observer_android.h"
 #include "content/browser/web_contents/web_contents_android.h"
 #include "services/device/public/mojom/nfc.mojom.h"
-#else  // !OS_ANDROID
+
 #include "content/browser/host_zoom_map_impl.h"
 #include "content/browser/host_zoom_map_observer.h"
 #endif  // OS_ANDROID
@@ -519,7 +523,7 @@ WebContentsImpl::WebContentsImpl(BrowserContext* browser_context)
       bluetooth_connected_device_count_(0),
       media_device_group_id_salt_base_(
           BrowserContext::CreateRandomMediaDeviceIDSalt()),
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
       page_scale_factor_is_one_(true),
 #endif  // !defined(OS_ANDROID)
       is_overlay_content_(false),
@@ -539,7 +543,7 @@ WebContentsImpl::WebContentsImpl(BrowserContext* browser_context)
 #endif
 
   loader_io_thread_notifier_.reset(new LoaderIOThreadNotifier(this));
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
   host_zoom_map_observer_.reset(new HostZoomMapObserver(this));
 #endif  // !defined(OS_ANDROID)
 
@@ -612,6 +616,7 @@ WebContentsImpl::~WebContentsImpl() {
   // destroyed.
   RenderFrameHostManager* root = GetRenderManager();
 
+  GetController().back_forward_cache().Flush();
   root->current_frame_host()->SetRenderFrameCreated(false);
   root->current_frame_host()->ResetNavigationRequests();
 
@@ -726,7 +731,8 @@ WebContentsImpl* WebContentsImpl::FromFrameTreeNode(
 // static
 WebContents* WebContentsImpl::FromRenderFrameHostID(int render_process_host_id,
                                                     int render_frame_host_id) {
-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI) ||
+         !BrowserThread::IsThreadInitialized(BrowserThread::UI));
   RenderFrameHost* render_frame_host =
       RenderFrameHost::FromID(render_process_host_id, render_frame_host_id);
   if (!render_frame_host)
@@ -1099,7 +1105,7 @@ void WebContentsImpl::RecursiveRequestAXTreeSnapshotOnFrame(
   }
 }
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 void WebContentsImpl::SetTemporaryZoomLevel(double level,
                                             bool temporary_zoom_enabled) {
   SendPageMessage(new PageMsg_SetZoomLevel(
@@ -4706,6 +4712,25 @@ void WebContentsImpl::NotifyNavigationEntryCommitted(
     const LoadCommittedDetails& load_details) {
   for (auto& observer : observers_)
     observer.NavigationEntryCommitted(load_details);
+  // Send 'status' of tab change. Expecting 'loading' is fired.
+  std::set<std::string> changed_property_names;
+  changed_property_names.insert("status");
+
+  if (this->GetURL() != url_) {
+    url_ = this->GetURL();
+    changed_property_names.insert("url");
+  }
+
+  BrowserContext* browser_context = GetBrowserContext();
+  if (browser_context) {
+    Profile *profile = Profile::FromBrowserContext(browser_context);
+    if (profile) {
+      extensions::TabsWindowsAPI* tabs_window_api = extensions::TabsWindowsAPI::Get(profile);
+      if (tabs_window_api) {
+        tabs_window_api->tabs_event_router()->DispatchTabUpdatedEvent(this, std::move(changed_property_names));
+      }
+    }
+  }
 }
 
 void WebContentsImpl::NotifyNavigationEntryChanged(
@@ -4942,7 +4967,7 @@ WebContents* WebContentsImpl::GetAsWebContents() {
   return this;
 }
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 double WebContentsImpl::GetPendingPageZoomLevel() {
   NavigationEntry* pending_entry = GetController().GetPendingEntry();
   if (!pending_entry)
@@ -5129,6 +5154,11 @@ void WebContentsImpl::RenderViewTerminated(RenderViewHost* rvh,
   // renderer may not have made a clean exit.
   if (IsFullscreenForCurrentTab())
     ExitFullscreenMode(false);
+
+  // Ensure any video in Picture-in-Picture is exited in the |delegate_| since
+  // a crashed renderer may not have made a clean exit.
+  if (HasPictureInPictureVideo())
+    ExitPictureInPicture();
 
   // Cancel any visible dialogs so they are not left dangling over the sad tab.
   CancelActiveAndPendingDialogs();

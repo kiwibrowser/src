@@ -49,12 +49,6 @@ component("raster") {
   ]
 }
 
-component("gpu_util") {
-  public_deps = [
-    "//gpu/ipc/common:gpu_preferences_util_sources",
-  ]
-}
-
 if (!use_static_angle) {
   shared_library("command_buffer_gles2") {
     sources = [
@@ -77,7 +71,6 @@ if (!use_static_angle) {
     deps = [
       ":gpu",
       "//base",
-      "//build/config:exe_and_shlib_deps",
       "//gpu/command_buffer/client:gles2_c_lib",
       "//gpu/command_buffer/client:gles2_cmd_helper",
       "//gpu/command_buffer/client:gles2_implementation",
@@ -171,6 +164,7 @@ static_library("test_support") {
     "//gpu/skia_bindings:skia_bindings",
     "//testing/gmock",
     "//testing/gtest",
+    "//ui/gfx:test_support",
     "//ui/gl:gl_unittest_utils",
     "//ui/gl:test_support",
   ]
@@ -393,14 +387,13 @@ test("gpu_unittests") {
     "config/gpu_control_list_version_unittest.cc",
     "config/gpu_driver_bug_list_unittest.cc",
     "config/gpu_info_collector_unittest.cc",
-    "config/gpu_info_unittest.cc",
+    "config/gpu_preferences_unittest.cc",
     "config/gpu_test_config_unittest.cc",
     "config/gpu_test_expectations_parser_unittest.cc",
     "config/gpu_util_unittest.cc",
     "ipc/client/command_buffer_proxy_impl_unittest.cc",
     "ipc/common/gpu_memory_buffer_impl_shared_memory_unittest.cc",
     "ipc/common/gpu_memory_buffer_impl_test_template.h",
-    "ipc/common/gpu_preferences_util_unittest.cc",
     "ipc/common/struct_traits_unittest.cc",
     "ipc/host/shader_disk_cache_unittest.cc",
     "ipc/service/gpu_channel_manager_unittest.cc",
@@ -472,7 +465,6 @@ test("gpu_unittests") {
     "//gpu/ipc:gl_in_process_context",
     "//gpu/ipc/client",
     "//gpu/ipc/common",
-    "//gpu/ipc/common:gpu_preferences_util",
     "//gpu/ipc/common:test_interfaces",
     "//gpu/ipc/host",
     "//gpu/ipc/service",
@@ -527,12 +519,9 @@ test("gpu_perftests") {
     "//ui/gl/init",
   ]
 
-  data = [
+  data_deps = [
     # Needed for isolate script to execute.
-    "//testing/scripts/common.py",
-    "//testing/xvfb.py",
-    "//testing/scripts/run_gtest_perf_test.py",
-    "//tools/perf/generate_legacy_perf_dashboard_json.py",
+    "//testing:run_perf_test",
   ]
 
   # This target should not require the Chrome executable to run.
@@ -559,12 +548,9 @@ test("command_buffer_perftests") {
     "//ui/gl/init",
   ]
 
-  data = [
+  data_deps = [
     # Needed for isolate script to execute.
-    "//testing/scripts/common.py",
-    "//testing/xvfb.py",
-    "//testing/scripts/run_gtest_perf_test.py",
-    "//tools/perf/generate_legacy_perf_dashboard_json.py",
+    "//testing:run_perf_test",
   ]
 
   # This target should not require the Chrome executable to run.

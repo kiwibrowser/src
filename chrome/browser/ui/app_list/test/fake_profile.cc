@@ -61,7 +61,8 @@ content::SSLHostStateDelegate* FakeProfile::GetSSLHostStateDelegate() {
   return nullptr;
 }
 
-content::PermissionManager* FakeProfile::GetPermissionManager() {
+content::PermissionControllerDelegate*
+FakeProfile::GetPermissionControllerDelegate() {
   return nullptr;
 }
 

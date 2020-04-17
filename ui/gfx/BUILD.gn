@@ -259,7 +259,7 @@ jumbo_component("gfx") {
   ]
 
   # Text rendering conditions (complicated so separated out).
-  if (use_aura || is_mac || (is_android && enable_vr) || is_fuchsia) {
+  if (true || use_aura || is_mac || (is_android && enable_vr) || is_fuchsia) {
     # Mac doesn't use RenderTextHarfBuzz by default yet.
     sources += [
       "harfbuzz_font_skia.cc",
@@ -281,7 +281,7 @@ jumbo_component("gfx") {
     # We don't support RenderText on these platforms.
   }
 
-  if (is_android && enable_vr) {
+  if (true || (is_android && enable_vr)) {
     sources -= [
       "platform_font_android.cc",
       "text_utils_android.cc",
@@ -308,7 +308,7 @@ jumbo_component("gfx") {
 
   # Android.
   if (is_android) {
-    if (enable_vr) {
+    if (true || enable_vr) {
       sources -= [ "canvas_notimplemented.cc" ]
       sources += [ "font_fallback_android.cc" ]
     } else {
@@ -370,13 +370,6 @@ jumbo_component("gfx") {
       "CoreGraphics.framework",
       "CoreText.framework",
       "IOSurface.framework",
-    ]
-  }
-
-  if ((!use_aura && !toolkit_views) || is_ios) {
-    sources -= [
-      "nine_image_painter.cc",
-      "nine_image_painter.h",
     ]
   }
 

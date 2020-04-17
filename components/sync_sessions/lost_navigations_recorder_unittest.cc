@@ -8,7 +8,7 @@
 #include <string>
 
 #include "base/message_loop/message_loop.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "components/sync/syncable/entry.h"
 #include "components/sync/syncable/mutable_entry.h"
 #include "components/sync/syncable/syncable_base_transaction.h"

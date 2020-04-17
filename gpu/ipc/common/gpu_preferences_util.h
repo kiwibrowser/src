@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "gpu/command_buffer/service/gpu_preferences.h"
+#include "gpu/config/gpu_preferences.h"
 #include "gpu/gpu_util_export.h"
 
 namespace gpu {

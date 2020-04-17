@@ -355,6 +355,9 @@ const char kWebKitAllowRunningInsecureContent[] =
     "webkit.webprefs.allow_running_insecure_content";
 #if defined(OS_ANDROID)
 const char kWebKitFontScaleFactor[] = "webkit.webprefs.font_scale_factor";
+const char kWebKitNightModeFactor[] = "webkit.webprefs.night_mode_factor";
+const char kWebKitNightModeEnabled[] = "webkit.webprefs.night_mode_enabled";
+const char kWebKitNightModeGrayscaleEnabled[] = "webkit.webprefs.night_mode_grayscale_enabled";
 const char kWebKitForceEnableZoom[] = "webkit.webprefs.force_enable_zoom";
 const char kWebKitPasswordEchoEnabled[] =
     "webkit.webprefs.password_echo_enabled";
@@ -398,6 +401,8 @@ const char kIncognitoModeAvailability[] = "incognito.mode_availability";
 
 // Boolean that is true when Suggest support is enabled.
 const char kSearchSuggestEnabled[] = "search.suggest_enabled";
+
+const char kHomepageNewsEnabled[] = "ntp.news";
 
 #if defined(OS_ANDROID)
 // String indicating the Contextual Search enabled state.
@@ -885,7 +890,7 @@ const char kSavingBrowserHistoryDisabled[] = "history.saving_disabled";
 // permitted.
 const char kAllowDeletingBrowserHistory[] = "history.deleting_enabled";
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 // Whether the "Click here to clear your browsing data" tooltip promo has been
 // shown on the Material Design History page.
 const char kMdHistoryMenuPromoShown[] = "history.menu_promo_shown";
@@ -1002,7 +1007,7 @@ const char kContentSettingsPluginWhitelist[] =
     "profile.content_settings.plugin_whitelist";
 #endif
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 // Double that indicates the default zoom level.
 const char kPartitionDefaultZoomLevel[] = "partition.default_zoom_level";
 
@@ -1241,7 +1246,7 @@ const char kWebRTCIPHandlingPolicy[] = "webrtc.ip_handling_policy";
 // Define range of UDP ports allowed to be used by WebRTC PeerConnections.
 const char kWebRTCUDPPortRange[] = "webrtc.udp_port_range";
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 // Whether or not this profile has been shown the Welcome page.
 const char kHasSeenWelcomePage[] = "browser.has_seen_welcome_page";
 #endif
@@ -1412,7 +1417,7 @@ const char kShutdownNumProcessesSlow[] = "shutdown.num_processes_slow";
 // before shutting everything down.
 const char kRestartLastSessionOnShutdown[] = "restart.last.session.on.shutdown";
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 // Boolean that specifies whether or not showing the unsupported OS warning is
 // suppressed. False by default. Controlled by the SuppressUnsupportedOSWarning
 // policy setting.
@@ -1515,7 +1520,7 @@ const char kDevToolsRemoteEnabled[] = "devtools.remote_enabled";
 // when on-line authentication is not available.
 const char kGoogleServicesPasswordHash[] = "google.services.password_hash";
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 // Tracks the number of times the dice signin promo has been shown in the user
 // menu.
 const char kDiceSigninUserMenuPromoCount[] = "sync_promo.user_menu_show_count";
@@ -1672,8 +1677,8 @@ const char kSSLVersionMin[] = "ssl.version_min";
 const char kSSLVersionMax[] = "ssl.version_max";
 
 // String specifying the TLS 1.3 variant to negotiate when negotiating TLS 1.3.
-// Supported values are "disabled", which disables TLS 1.3, "draft23", and
-// "draft28".
+// Supported values are "disabled", which disables TLS 1.3, "draft23",
+// "draft28", and "final".
 const char kTLS13Variant[] = "ssl.tls13_variant";
 
 // String specifying the TLS ciphersuites to disable. Ciphersuites are
@@ -1954,13 +1959,13 @@ const char kSystemTimezoneAutomaticDetectionPolicy[] =
 
 // Pref name for the policy controlling whether to enable Media Router.
 const char kEnableMediaRouter[] = "media_router.enable_media_router";
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 // Pref name for the policy controlling whether to force the Cast icon to be
 // shown in the toolbar/overflow menu.
 const char kShowCastIconInToolbar[] = "media_router.show_cast_icon_in_toolbar";
 #endif  // !defined(OS_ANDROID)
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 #if !defined(OS_CHROMEOS)
 // Pref name for the policy controlling the way in which users are notified of
 // the need to relaunch the browser for a pending update.
@@ -2068,7 +2073,7 @@ const char kCustomHandlersEnabled[] = "custom_handlers.enabled";
 // by the cloud policy subsystem.
 const char kDevicePolicyRefreshRate[] = "policy.device_refresh_rate";
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 // A boolean where true means that the browser has previously attempted to
 // enable autoupdate and failed, so the next out-of-date browser start should
 // not prompt the user to enable autoupdate, it should offer to reinstall Chrome
@@ -2562,8 +2567,9 @@ const char kAutoplayAllowed[] = "media.autoplay_allowed";
 // Holds URL patterns that specify URLs that will be allowed to autoplay.
 const char kAutoplayWhitelist[] = "media.autoplay_whitelist";
 
+#endif  // !defined(OS_ANDROID)
+
 // Holds URL for New Tab Page custom background
 const char kNTPCustomBackgroundURL[] = "new_tab_page.custom_background_url";
-#endif  // !defined(OS_ANDROID)
 
 }  // namespace prefs

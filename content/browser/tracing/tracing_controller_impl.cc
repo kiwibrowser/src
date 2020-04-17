@@ -21,11 +21,11 @@
 #include "base/values.h"
 #include "build/build_config.h"
 #include "components/tracing/common/trace_startup_config.h"
+#include "content/browser/gpu/gpu_data_manager_impl.h"
 #include "content/browser/tracing/file_tracing_provider_impl.h"
 #include "content/browser/tracing/tracing_ui.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/content_browser_client.h"
-#include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/tracing_controller.h"
 #include "content/public/browser/tracing_delegate.h"
 #include "content/public/common/content_client.h"
@@ -236,14 +236,16 @@ TracingControllerImpl::GenerateMetadataDict() const {
   metadata_dict->SetString("cpu-brand", cpu.cpu_brand());
 
   // GPU
-  gpu::GPUInfo gpu_info = content::GpuDataManager::GetInstance()->GetGPUInfo();
+  const gpu::GPUInfo gpu_info =
+      content::GpuDataManagerImpl::GetInstance()->GetGPUInfo();
+  const gpu::GPUInfo::GPUDevice& active_gpu = gpu_info.active_gpu();
 
 #if !defined(OS_ANDROID)
-  metadata_dict->SetInteger("gpu-venid", gpu_info.gpu.vendor_id);
-  metadata_dict->SetInteger("gpu-devid", gpu_info.gpu.device_id);
+  metadata_dict->SetInteger("gpu-venid", active_gpu.vendor_id);
+  metadata_dict->SetInteger("gpu-devid", active_gpu.device_id);
 #endif
 
-  metadata_dict->SetString("gpu-driver", gpu_info.driver_version);
+  metadata_dict->SetString("gpu-driver", active_gpu.driver_version);
   metadata_dict->SetString("gpu-psver", gpu_info.pixel_shader_version);
   metadata_dict->SetString("gpu-vsver", gpu_info.vertex_shader_version);
 

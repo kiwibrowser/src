@@ -77,6 +77,13 @@ public class ChromePreferenceManager {
     private static final String VERIFIED_DIGITAL_ASSET_LINKS =
             "verified_digital_asset_links";
 
+    /*
+     * Whether the simplified tab switcher is enabled when accessibility mode is enabled. Keep in
+     * sync with accessibility_preferences.xml.
+     * Default value is true.
+     */
+    public static final String ACCESSIBILITY_TAB_SWITCHER = "accessibility_tab_switcher";
+
     private static class LazyHolder {
         static final ChromePreferenceManager INSTANCE = new ChromePreferenceManager();
     }
@@ -118,6 +125,10 @@ public class ChromePreferenceManager {
 
     private String successUploadKey(@ProcessType String process) {
         return process.toLowerCase(Locale.US) + SUCCESS_UPLOAD_SUFFIX;
+    }
+
+    public boolean readBoolean(String key, boolean defaultValue) {
+        return mSharedPreferences.getBoolean(key, defaultValue);
     }
 
     /**
@@ -435,7 +446,7 @@ public class ChromePreferenceManager {
      * @return True if the home page button is force enabled.
      */
     public boolean isHomePageButtonForceEnabled() {
-        return mSharedPreferences.getBoolean(HOME_PAGE_BUTTON_FORCE_ENABLED_KEY, false);
+        return true;
     }
 
     /**

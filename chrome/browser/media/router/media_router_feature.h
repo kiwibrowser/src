@@ -19,7 +19,7 @@ namespace media_router {
 // Returns true if Media Router is enabled for |context|.
 bool MediaRouterEnabled(content::BrowserContext* context);
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 
 namespace prefs {
 // Pref name for the enterprise policy for allowing Cast devices on all IPs.

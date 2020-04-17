@@ -140,8 +140,6 @@ class NET_EXPORT HttpUtil {
   // unescaped actually is a valid quoted string. Returns false for an empty
   // string, a string without quotes, a string with mismatched quotes, and
   // a string with unescaped embeded quotes.
-  // In accordance with RFC 2616 this method only allows double quotes to
-  // enclose the string.
   static bool StrictUnquote(std::string::const_iterator begin,
                             std::string::const_iterator end,
                             std::string* out) WARN_UNUSED_RESULT;
@@ -326,12 +324,6 @@ class NET_EXPORT HttpUtil {
     ValuesIterator(const ValuesIterator& other);
     ~ValuesIterator();
 
-    // Set the characters to regard as quotes.  By default, this includes both
-    // single and double quotes.
-    void set_quote_chars(const char* quotes) {
-      values_.set_quote_chars(quotes);
-    }
-
     // Advances the iterator to the next value, if any.  Returns true if there
     // is a next value.  Use value* methods to access the resultant value.
     bool GetNext();
@@ -421,8 +413,6 @@ class NET_EXPORT HttpUtil {
                                                        value_end_); }
 
    private:
-    bool IsQuote(char c) const;
-
     HttpUtil::ValuesIterator props_;
     bool valid_;
 

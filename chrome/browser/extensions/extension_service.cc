@@ -675,6 +675,7 @@ bool ExtensionService::UninstallExtension(
     const std::string& transient_extension_id,
     extensions::UninstallReason reason,
     base::string16* error) {
+  LOG(INFO) << "ExtensionService::UninstallExtension - Step 1";
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
 
   scoped_refptr<const Extension> extension =
@@ -683,6 +684,7 @@ bool ExtensionService::UninstallExtension(
   // Callers should not send us nonexistent extensions.
   CHECK(extension.get());
 
+  LOG(INFO) << "ExtensionService::UninstallExtension - Step 2";
   ManagementPolicy* by_policy = system_->management_policy();
   // Policy change which triggers an uninstall will always set
   // |external_uninstall| to true so this is the only way to uninstall
@@ -701,54 +703,76 @@ bool ExtensionService::UninstallExtension(
       (reason == extensions::UNINSTALL_REASON_ORPHANED_SHARED_MODULE) ||
       (reason == extensions::UNINSTALL_REASON_SYNC &&
        extensions::util::WasInstalledByCustodian(extension->id(), profile_));
+  LOG(INFO) << "ExtensionService::UninstallExtension - Step 3";
   if (!external_uninstall &&
       (!by_policy->UserMayModifySettings(extension.get(), error) ||
        by_policy->MustRemainInstalled(extension.get(), error))) {
+    LOG(INFO) << "ExtensionService::UninstallExtension - Step 3a";
     content::NotificationService::current()->Notify(
         extensions::NOTIFICATION_EXTENSION_UNINSTALL_NOT_ALLOWED,
         content::Source<Profile>(profile_),
         content::Details<const Extension>(extension.get()));
+    LOG(INFO) << "ExtensionService::UninstallExtension - Step 3b";
     return false;
   }
 
+  LOG(INFO) << "ExtensionService::UninstallExtension - Step 4";
+
   InstallVerifier::Get(GetBrowserContext())->Remove(extension->id());
+
+  LOG(INFO) << "ExtensionService::UninstallExtension - Step 5";
 
   UMA_HISTOGRAM_ENUMERATION("Extensions.UninstallType",
                             extension->GetType(), 100);
+  LOG(INFO) << "ExtensionService::UninstallExtension - Step 6";
   RecordPermissionMessagesHistogram(extension.get(), "Uninstall");
 
+  LOG(INFO) << "ExtensionService::UninstallExtension - Step 7";
   // Unload before doing more cleanup to ensure that nothing is hanging on to
   // any of these resources.
   UnloadExtension(extension->id(), UnloadedExtensionReason::UNINSTALL);
+  LOG(INFO) << "ExtensionService::UninstallExtension - Step 8";
   if (registry_->blacklisted_extensions().Contains(extension->id()))
     registry_->RemoveBlacklisted(extension->id());
 
+  LOG(INFO) << "ExtensionService::UninstallExtension - Step 9";
+
   // Tell the backend to start deleting installed extensions on the file thread.
   if (!Manifest::IsUnpackedLocation(extension->location())) {
+    LOG(INFO) << "ExtensionService::UninstallExtension - Step 9a";
     if (!extensions::GetExtensionFileTaskRunner()->PostTask(
             FROM_HERE,
             base::BindOnce(&ExtensionService::UninstallExtensionOnFileThread,
                            extension->id(), profile_, install_directory_,
-                           extension->path())))
+                           extension->path()))) {
+      LOG(INFO) << "ExtensionService::UninstallExtension - Step 9b";
       NOTREACHED();
+    }
   }
 
+  LOG(INFO) << "ExtensionService::UninstallExtension - Step 10";
   extensions::DataDeleter::StartDeleting(profile_, extension.get());
 
+  LOG(INFO) << "ExtensionService::UninstallExtension - Step 11";
   extension_registrar_.UntrackTerminatedExtension(extension->id());
 
+  LOG(INFO) << "ExtensionService::UninstallExtension - Step 12";
   // Notify interested parties that we've uninstalled this extension.
   ExtensionRegistry::Get(profile_)
       ->TriggerOnUninstalled(extension.get(), reason);
 
+  LOG(INFO) << "ExtensionService::UninstallExtension - Step 13";
   delayed_installs_.Remove(extension->id());
 
+  LOG(INFO) << "ExtensionService::UninstallExtension - Step 14";
   extension_prefs_->OnExtensionUninstalled(
       extension->id(), extension->location(), external_uninstall);
 
+  LOG(INFO) << "ExtensionService::UninstallExtension - Step 15";
   // Track the uninstallation.
   UMA_HISTOGRAM_ENUMERATION("Extensions.ExtensionUninstalled", 1, 2);
 
+  LOG(INFO) << "ExtensionService::UninstallExtension - Step 16";
   return true;
 }
 
@@ -1805,6 +1829,7 @@ void ExtensionService::Observe(int type,
           content::Source<Profile>(source).ptr()->GetOriginalProfile()) {
         break;
       }
+      LOG(INFO) << "[EXTENSIONS] ExtensionService::Observe received NOTIFICATION_EXTENSION_PROCESS_TERMINATED";
 
       // Mark the extension as terminated and deactivated. We want it to
       // be in a consistent state: either fully working or not loaded

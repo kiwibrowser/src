@@ -65,12 +65,12 @@ enum class FetchingInterval {
 // The values of each array specify a default time interval for the intervals
 // defined by the enum FetchingInterval. The default time intervals defined in
 // the arrays can be overridden using different variation parameters.
-const double kDefaultFetchingIntervalHoursRareNtpUser[] = {96.0, 96.0, 24.0,
-                                                           24.0, 4.0,  4.0};
-const double kDefaultFetchingIntervalHoursActiveNtpUser[] = {48.0, 48.0, 24.0,
-                                                             24.0, 4.0,  4.0};
+const double kDefaultFetchingIntervalHoursRareNtpUser[] = {24.0, 24.0, 6.0,
+                                                           6.0, 1.0,  1.0};
+const double kDefaultFetchingIntervalHoursActiveNtpUser[] = {12.0, 12.0, 3.0,
+                                                             3.0, 1.0,  1.0};
 const double kDefaultFetchingIntervalHoursActiveSuggestionsConsumer[] = {
-    24.0, 24.0, 12.0, 12.0, 1.0, 1.0};
+    8.0, 8.0, 3.0, 3.0, 0.25, 0.25};
 
 // For a simple comparison: fetching intervals that emulate the state really
 // rolled out to 100% M58 Stable. Used for evaluation of later changes. DBL_MAX

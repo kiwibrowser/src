@@ -34,8 +34,8 @@ class TestBrowserContext : public BrowserContext {
   base::FilePath TakePath();
 
   void SetSpecialStoragePolicy(storage::SpecialStoragePolicy* policy);
-  void SetPermissionManager(
-      std::unique_ptr<PermissionManager> permission_manager);
+  void SetPermissionControllerDelegate(
+      std::unique_ptr<PermissionControllerDelegate> delegate);
   net::URLRequestContextGetter* GetRequestContext();
 
   // Allow clients to make this an incognito context.
@@ -56,7 +56,7 @@ class TestBrowserContext : public BrowserContext {
   storage::SpecialStoragePolicy* GetSpecialStoragePolicy() override;
   PushMessagingService* GetPushMessagingService() override;
   SSLHostStateDelegate* GetSSLHostStateDelegate() override;
-  PermissionManager* GetPermissionManager() override;
+  PermissionControllerDelegate* GetPermissionControllerDelegate() override;
   BackgroundFetchDelegate* GetBackgroundFetchDelegate() override;
   BackgroundSyncController* GetBackgroundSyncController() override;
   BrowsingDataRemoverDelegate* GetBrowsingDataRemoverDelegate() override;
@@ -81,7 +81,7 @@ class TestBrowserContext : public BrowserContext {
   std::unique_ptr<MockResourceContext> resource_context_;
   scoped_refptr<storage::SpecialStoragePolicy> special_storage_policy_;
   std::unique_ptr<MockSSLHostStateDelegate> ssl_host_state_delegate_;
-  std::unique_ptr<PermissionManager> permission_manager_;
+  std::unique_ptr<PermissionControllerDelegate> permission_controller_delegate_;
   std::unique_ptr<MockBackgroundSyncController> background_sync_controller_;
   bool is_off_the_record_ = false;
 

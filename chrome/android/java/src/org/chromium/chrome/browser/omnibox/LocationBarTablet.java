@@ -279,11 +279,6 @@ public class LocationBarTablet extends LocationBarLayout {
         }
     }
 
-    @Override
-    public boolean useModernDesign() {
-        return false;
-    }
-
     /**
      * @param button The {@link View} of the button to show.
      * @return An animator to run for the given view when showing buttons in the unfocused location

@@ -322,7 +322,8 @@ void FlashDOMHandler::MaybeRespondToPage() {
 
   // GPU information.
   AddPair(list.get(), base::string16(), "--- GPU information ---");
-  gpu::GPUInfo gpu_info = GpuDataManager::GetInstance()->GetGPUInfo();
+  const gpu::GPUInfo gpu_info = GpuDataManager::GetInstance()->GetGPUInfo();
+  const gpu::GPUInfo::GPUDevice& active_gpu = gpu_info.active_gpu();
 
   std::string reason;
   if (!GpuDataManager::GetInstance()->GpuAccessAllowed(&reason)) {
@@ -355,12 +356,13 @@ void FlashDOMHandler::MaybeRespondToPage() {
 
   AddPair(list.get(), base::string16(), "--- GPU driver, more information ---");
   AddPair(list.get(), ASCIIToUTF16("Vendor Id"),
-          base::StringPrintf("0x%04x", gpu_info.gpu.vendor_id));
+          base::StringPrintf("0x%04x", active_gpu.vendor_id));
   AddPair(list.get(), ASCIIToUTF16("Device Id"),
-          base::StringPrintf("0x%04x", gpu_info.gpu.device_id));
-  AddPair(list.get(), ASCIIToUTF16("Driver vendor"), gpu_info.driver_vendor);
-  AddPair(list.get(), ASCIIToUTF16("Driver version"), gpu_info.driver_version);
-  AddPair(list.get(), ASCIIToUTF16("Driver date"), gpu_info.driver_date);
+          base::StringPrintf("0x%04x", active_gpu.device_id));
+  AddPair(list.get(), ASCIIToUTF16("Driver vendor"), active_gpu.driver_vendor);
+  AddPair(list.get(), ASCIIToUTF16("Driver version"),
+          active_gpu.driver_version);
+  AddPair(list.get(), ASCIIToUTF16("Driver date"), active_gpu.driver_date);
   AddPair(list.get(), ASCIIToUTF16("Pixel shader version"),
           gpu_info.pixel_shader_version);
   AddPair(list.get(), ASCIIToUTF16("Vertex shader version"),

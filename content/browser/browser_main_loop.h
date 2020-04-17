@@ -207,7 +207,7 @@ class CONTENT_EXPORT BrowserMainLoop {
   void SynchronouslyFlushStartupTasks();
 #endif  // OS_ANDROID
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
   // TODO(fsamuel): We should find an object to own HostFrameSinkManager on all
   // platforms including Android. See http://crbug.com/732507.
   viz::HostFrameSinkManager* host_frame_sink_manager() const {
@@ -383,7 +383,7 @@ class CONTENT_EXPORT BrowserMainLoop {
       discardable_shared_memory_manager_;
   scoped_refptr<SaveFileManager> save_file_manager_;
   std::unique_ptr<content::TracingControllerImpl> tracing_controller_;
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
   std::unique_ptr<viz::HostFrameSinkManager> host_frame_sink_manager_;
   // This is owned here so that SurfaceManager will be accessible in process
   // when display is in the same process. Other than using SurfaceManager,

@@ -300,6 +300,10 @@ void MostVisitedSites::OnMostVisitedURLsAvailable(
     // TODO(crbug.com/773278): Populate |data_generation_time| here in order to
     // log UMA metrics of age.
     tiles.push_back(std::move(tile));
+
+    icon_cacher_->StartFetchMostLikely(
+        visited.url, base::Bind(&MostVisitedSites::OnIconMadeAvailable,
+                        base::Unretained(this), visited.url));
   }
 
   mv_source_ = TileSource::TOP_SITES;

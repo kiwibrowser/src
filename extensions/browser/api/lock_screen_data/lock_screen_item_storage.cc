@@ -283,7 +283,9 @@ void LockScreenItemStorage::OnExtensionUninstalled(
     content::BrowserContext* browser_context,
     const Extension* extension,
     UninstallReason reason) {
+  LOG(INFO) << "[EXTENSIONS] LockScreenItemStorage::OnExtensionUninstall - Step 1";
   ClearExtensionData(extension->id());
+  LOG(INFO) << "[EXTENSIONS] LockScreenItemStorage::OnExtensionUninstall - Step 2";
 }
 
 LockScreenItemStorage::CachedExtensionData::CachedExtensionData() = default;

@@ -5,12 +5,9 @@
 package org.chromium.content_public.browser;
 
 import android.content.Context;
-import android.content.res.Configuration;
-import android.view.KeyEvent;
-import android.view.MotionEvent;
-import android.view.View;
 
 import org.chromium.content.browser.ContentViewCoreImpl;
+import org.chromium.content_public.browser.ViewEventSink.InternalAccessDelegate;
 import org.chromium.ui.base.ViewAndroidDelegate;
 import org.chromium.ui.base.WindowAndroid;
 
@@ -45,44 +42,6 @@ public interface ContentViewCore {
     }
 
     /**
-     * Interface that consumers of {@link ContentViewCore} must implement to allow the proper
-     * dispatching of view methods through the containing view.
-     *
-     * <p>
-     * All methods with the "super_" prefix should be routed to the parent of the
-     * implementing container view.
-     */
-    @SuppressWarnings("javadoc")
-    public interface InternalAccessDelegate {
-        /**
-         * @see View#onKeyUp(keyCode, KeyEvent)
-         */
-        boolean super_onKeyUp(int keyCode, KeyEvent event);
-
-        /**
-         * @see View#dispatchKeyEvent(KeyEvent)
-         */
-        boolean super_dispatchKeyEvent(KeyEvent event);
-
-        /**
-         * @see View#onGenericMotionEvent(MotionEvent)
-         */
-        boolean super_onGenericMotionEvent(MotionEvent event);
-
-        /**
-         * @see View#onScrollChanged(int, int, int, int)
-         */
-        void onScrollChanged(int lPix, int tPix, int oldlPix, int oldtPix);
-    }
-
-    /**
-     * Set the Container view Internals.
-     * @param internalDispatcher Handles dispatching all hidden or super methods to the
-     *                           containerView.
-     */
-    void setContainerViewInternals(InternalAccessDelegate internalDispatcher);
-
-    /**
      * Destroy the internal state of the ContentView. This method may only be
      * called after the ContentView has been removed from the view system. No
      * other methods may be called on this ContentView after this method has
@@ -93,50 +52,4 @@ public interface ContentViewCore {
      * onDetachedFromWindow() which is guaranteed to be called in Android WebView.
      */
     void destroy();
-
-    /**
-     * @see View#onAttachedToWindow()
-     */
-    void onAttachedToWindow();
-
-    /**
-     * @see View#onDetachedFromWindow()
-     */
-    void onDetachedFromWindow();
-
-    /**
-     * @see View#onConfigurationChanged(Configuration)
-     */
-    void onConfigurationChanged(Configuration newConfig);
-
-    /**
-     * @see View#onWindowFocusChanged(boolean)
-     */
-    void onWindowFocusChanged(boolean hasWindowFocus);
-
-    /**
-     * When the activity pauses, the content should lose focus.
-     * TODO(mthiesse): See crbug.com/686232 for context. Desktop platforms use keyboard focus to
-     * trigger blur/focus, and the equivalent to this on Android is Window focus. However, we don't
-     * use Window focus because of the complexity around popups stealing Window focus.
-     */
-    void onPause();
-
-    /**
-     * When the activity resumes, the View#onFocusChanged may not be called, so we should restore
-     * the View focus state.
-     */
-    void onResume();
-
-    /**
-     * Called when view-level focus for the container view has changed.
-     * @param gainFocus {@code true} if the focus is gained, otherwise {@code false}.
-     */
-    void onViewFocusChanged(boolean gainFocus);
-
-    /**
-     * Sets whether the keyboard should be hidden when losing input focus.
-     * @param hideKeyboardOnBlur {@code true} if we should hide soft keyboard when losing focus.
-     */
-    void setHideKeyboardOnBlur(boolean hideKeyboardOnBlur);
 }

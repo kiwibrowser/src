@@ -20,7 +20,6 @@
 #include "components/translate/core/common/translate_metrics.h"
 #include "components/translate/core/common/translate_util.h"
 #include "components/translate/core/language_detection/chinese_script_classifier.h"
-#include "third_party/cld_3/src/src/nnet_language_identifier.h"
 
 namespace {
 
@@ -73,12 +72,13 @@ void ApplyLanguageCodeCorrection(std::string* code) {
 std::string DetermineTextLanguage(const base::string16& text,
                                   bool* is_cld_reliable) {
   std::string language = translate::kUnknownLanguageCode;
+/*
   const std::string utf8_text(base::UTF16ToUTF8(text));
 
   // Make a prediction.
   chrome_lang_id::NNetLanguageIdentifier lang_id;
   const chrome_lang_id::NNetLanguageIdentifier::Result lang_id_result =
-      lang_id.FindTopNMostFreqLangs(utf8_text, /*num_langs=*/1).at(0);
+      lang_id.FindTopNMostFreqLangs(utf8_text, *//*num_langs=*//*1).at(0);
   const bool prediction_reliable = lang_id_result.is_reliable;
   const std::string& predicted_language = lang_id_result.language;
 
@@ -125,7 +125,7 @@ std::string DetermineTextLanguage(const base::string16& text,
       }
     }
   }
-
+*/
   VLOG(1) << "Detected language: " << language;
   return language;
 }

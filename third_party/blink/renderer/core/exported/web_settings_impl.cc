@@ -156,6 +156,18 @@ void WebSettingsImpl::SetAccessibilityFontScaleFactor(float font_scale_factor) {
   settings_->SetAccessibilityFontScaleFactor(font_scale_factor);
 }
 
+void WebSettingsImpl::SetAccessibilityNightModeFactor(float night_mode_factor) {
+  settings_->SetAccessibilityNightModeFactor(night_mode_factor);
+}
+
+void WebSettingsImpl::SetAccessibilityNightModeEnabled(bool night_mode_enabled) {
+  settings_->SetAccessibilityNightModeEnabled(night_mode_enabled);
+}
+
+void WebSettingsImpl::SetAccessibilityNightModeGrayscaleEnabled(bool night_mode_grayscale_enabled) {
+  settings_->SetAccessibilityNightModeGrayscaleEnabled(night_mode_grayscale_enabled);
+}
+
 void WebSettingsImpl::SetAccessibilityEnabled(bool enabled) {
   settings_->SetAccessibilityEnabled(enabled);
 }

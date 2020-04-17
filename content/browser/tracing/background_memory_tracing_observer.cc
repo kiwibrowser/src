@@ -4,21 +4,19 @@
 
 #include "content/browser/tracing/background_memory_tracing_observer.h"
 
+#include "base/trace_event/heap_profiler_allocation_context_tracker.h"
 #include "base/trace_event/heap_profiler_event_filter.h"
-#include "base/trace_event/memory_dump_manager.h"
 #include "base/trace_event/memory_dump_request_args.h"
 #include "base/trace_event/trace_log.h"
 #include "content/browser/tracing/background_tracing_rule.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h"
 
-using base::trace_event::MemoryDumpManager;
+using base::trace_event::AllocationContextTracker;
 using base::trace_event::TraceConfig;
 using base::trace_event::TraceLog;
 
 namespace content {
 namespace {
-const char kEnableHeapProfilerModeName[] = "enable_heap_profiler_mode";
-const char kBackgroundModeName[] = "background";
 const char kHeapProfilerCategoryFilter[] = "heap_profiler_category_filter";
 }  // namespace
 
@@ -35,7 +33,7 @@ BackgroundMemoryTracingObserver::~BackgroundMemoryTracingObserver() {}
 void BackgroundMemoryTracingObserver::OnScenarioActivated(
     const BackgroundTracingConfigImpl* config) {
   if (!config) {
-    DCHECK(!heap_profiling_enabled_);
+    DCHECK(!enabled_);
     return;
   }
 
@@ -50,23 +48,16 @@ void BackgroundMemoryTracingObserver::OnScenarioActivated(
   }
   if (!heap_profiling_rule)
     return;
-  std::string mode;
-  if (!heap_profiling_rule->args()->GetString(kEnableHeapProfilerModeName,
-                                              &mode) ||
-      mode != kBackgroundModeName) {
-    return;
-  }
 
-  heap_profiling_enabled_ = true;
+  enabled_ = true;
+
   // TODO(ssid): Add ability to enable profiling on all processes,
   // crbug.com/700245.
-  MemoryDumpManager::GetInstance()->EnableHeapProfiling(
-      base::trace_event::kHeapProfilingModeBackground);
+  AllocationContextTracker::SetCaptureMode(
+      AllocationContextTracker::CaptureMode::MIXED_STACK);
 
   std::string filter_string;
-  if (base::trace_event::AllocationContextTracker::capture_mode() ==
-          base::trace_event::AllocationContextTracker::CaptureMode::DISABLED ||
-      (TraceLog::GetInstance()->enabled_modes() & TraceLog::FILTERING_MODE) ||
+  if ((TraceLog::GetInstance()->enabled_modes() & TraceLog::FILTERING_MODE) ||
       !heap_profiling_rule->args()->GetString(kHeapProfilerCategoryFilter,
                                               &filter_string)) {
     return;
@@ -85,11 +76,11 @@ void BackgroundMemoryTracingObserver::OnScenarioActivated(
 }
 
 void BackgroundMemoryTracingObserver::OnScenarioAborted() {
-  if (!heap_profiling_enabled_)
+  if (!enabled_)
     return;
-  heap_profiling_enabled_ = false;
-  MemoryDumpManager::GetInstance()->EnableHeapProfiling(
-      base::trace_event::kHeapProfilingModeDisabled);
+  enabled_ = false;
+  base::trace_event::AllocationContextTracker::SetCaptureMode(
+      AllocationContextTracker::CaptureMode::DISABLED);
   TraceLog::GetInstance()->SetDisabled(TraceLog::FILTERING_MODE);
 }
 

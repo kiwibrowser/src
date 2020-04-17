@@ -66,8 +66,6 @@ class SubresourceFilterTestHarness : public ChromeRenderViewHostTestHarness {
  private:
   base::ScopedTempDir ruleset_service_dir_;
   TestingPrefServiceSimple pref_service_;
-  subresource_filter::testing::ScopedSubresourceFilterFeatureToggle
-      scoped_feature_toggle_;
   subresource_filter::testing::ScopedSubresourceFilterConfigurator
       scoped_configuration_;
 

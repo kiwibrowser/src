@@ -51,7 +51,7 @@ bool UnloadController::ShouldRunUnloadEventsHelper(
     content::WebContents* contents) {
   // If |contents| is being inspected, devtools needs to intercept beforeunload
   // events.
-  return DevToolsWindow::GetInstanceForInspectedWebContents(contents) != NULL;
+  return false;
 }
 
 bool UnloadController::RunUnloadEventsHelper(content::WebContents* contents) {
@@ -71,17 +71,6 @@ bool UnloadController::RunUnloadEventsHelper(content::WebContents* contents) {
   // Special case for when we quit an application. The devtools window can
   // close if it's beforeunload event has already fired which will happen due
   // to the interception of it's content's beforeunload.
-  if (browser_->is_devtools() &&
-      DevToolsWindow::HasFiredBeforeUnloadEventForDevToolsBrowser(browser_))
-    return false;
-
-  // If there's a devtools window attached to |contents|,
-  // we would like devtools to call its own beforeunload handlers first,
-  // and then call beforeunload handlers for |contents|.
-  // See DevToolsWindow::InterceptPageBeforeUnload for details.
-  if (DevToolsWindow::InterceptPageBeforeUnload(contents)) {
-    return true;
-  }
   // If the WebContents is not connected yet, then there's no unload
   // handler we can fire even if the WebContents has an unload listener.
   // One case where we hit this is in a tab that has an infinite loop
@@ -99,9 +88,6 @@ bool UnloadController::RunUnloadEventsHelper(content::WebContents* contents) {
 
 bool UnloadController::BeforeUnloadFired(content::WebContents* contents,
                                          bool proceed) {
-  if (!proceed)
-    DevToolsWindow::OnPageCloseCanceled(contents);
-
   if (!is_attempting_to_close_browser_) {
     if (!proceed)
       contents->SetClosedByUserGesture(false);
@@ -135,10 +121,6 @@ bool UnloadController::ShouldCloseWindow() {
   // Special case for when we quit an application. The devtools window can
   // close if it's beforeunload event has already fired which will happen due
   // to the interception of it's content's beforeunload.
-  if (browser_->is_devtools() &&
-      DevToolsWindow::HasFiredBeforeUnloadEventForDevToolsBrowser(browser_)) {
-    return true;
-  }
 
   // The behavior followed here varies based on the current phase of the
   // operation and whether a batched shutdown is in progress.
@@ -189,18 +171,6 @@ void UnloadController::ResetTryToCloseWindow() {
 }
 
 bool UnloadController::TabsNeedBeforeUnloadFired() {
-  if (tabs_needing_before_unload_fired_.empty()) {
-    for (int i = 0; i < browser_->tab_strip_model()->count(); ++i) {
-      content::WebContents* contents =
-          browser_->tab_strip_model()->GetWebContentsAt(i);
-      bool should_fire_beforeunload = contents->NeedToFireBeforeUnload() ||
-          DevToolsWindow::NeedsToInterceptBeforeUnload(contents);
-      if (!ContainsKey(tabs_needing_unload_fired_, contents) &&
-          should_fire_beforeunload) {
-        tabs_needing_before_unload_fired_.insert(contents);
-      }
-    }
-  }
   return !tabs_needing_before_unload_fired_.empty();
 }
 
@@ -208,10 +178,6 @@ void UnloadController::CancelWindowClose() {
   // Closing of window can be canceled from a beforeunload handler.
   DCHECK(is_attempting_to_close_browser_);
   tabs_needing_before_unload_fired_.clear();
-  for (UnloadListenerSet::iterator it = tabs_needing_unload_fired_.begin();
-      it != tabs_needing_unload_fired_.end(); ++it) {
-    DevToolsWindow::OnPageCloseCanceled(*it);
-  }
   tabs_needing_unload_fired_.clear();
   if (is_calling_before_unload_handlers()) {
     base::Callback<void(bool)> on_close_confirmed = on_close_confirmed_;
@@ -247,6 +213,7 @@ void UnloadController::TabInsertedAt(TabStripModel* tab_strip_model,
                                      content::WebContents* contents,
                                      int index,
                                      bool foreground) {
+  LOG(INFO) << "[EXTENSIONS] UnloadController::TabInsertedAt";
   TabAttachedImpl(contents);
 }
 
@@ -326,8 +293,6 @@ void UnloadController::ProcessPendingTabs(bool skip_beforeunload) {
       // we would like devtools to call its own beforeunload handlers first,
       // and then call beforeunload handlers for |web_contents|.
       // See DevToolsWindow::InterceptPageBeforeUnload for details.
-      if (!DevToolsWindow::InterceptPageBeforeUnload(web_contents))
-        web_contents->DispatchBeforeUnload();
     } else {
       ClearUnloadState(web_contents, true);
     }

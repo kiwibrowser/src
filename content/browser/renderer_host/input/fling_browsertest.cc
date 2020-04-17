@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "build/build_config.h"
+#include "content/browser/renderer_host/input/synthetic_smooth_scroll_gesture.h"
 #include "content/browser/web_contents/web_contents_impl.h"
 #include "content/public/test/browser_test_utils.h"
 #include "content/public/test/content_browser_test.h"
@@ -28,6 +29,19 @@ const std::string kBrowserFlingDataURL = R"HTML(
   <script>
     document.title='ready';
   </script>)HTML";
+
+const std::string kTouchActionFilterDataURL = R"HTML(
+  <!DOCTYPE html>
+  <meta name='viewport' content='width=device-width'/>
+  <style>
+    body {
+      height: 10000px;
+      touch-action: pan-y;
+    }
+  </style>
+  <script>
+    document.title='ready';
+  </script>)HTML";
 }  // namespace
 
 namespace content {
@@ -40,6 +54,11 @@ class BrowserSideFlingBrowserTest : public ContentBrowserTest {
   void SetUpCommandLine(base::CommandLine* command_line) override {
     command_line->AppendSwitchASCII("--enable-blink-features",
                                     "MiddleClickAutoscroll");
+  }
+
+  void OnSyntheticGestureCompleted(SyntheticGesture::Result result) {
+    EXPECT_EQ(SyntheticGesture::GESTURE_FINISHED, result);
+    run_loop_->Quit();
   }
 
  protected:
@@ -80,6 +99,8 @@ class BrowserSideFlingBrowserTest : public ContentBrowserTest {
     up_event.SetPositionInScreen(x, y);
     GetWidgetHost()->ForwardMouseEvent(up_event);
   }
+
+  std::unique_ptr<base::RunLoop> run_loop_;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(BrowserSideFlingBrowserTest);
@@ -218,6 +239,65 @@ IN_PROC_BROWSER_TEST_F(BrowserSideFlingBrowserTest,
              .y() <= 0) {
     observer.WaitForMetadataChange();
   }
+}
+
+// Disabled on MacOS because it doesn't support touchscreen scroll.
+#if defined(OS_MACOSX)
+#define MAYBE_ScrollEndGeneratedForFilteredFling \
+  DISABLED_ScrollEndGeneratedForFilteredFling
+#else
+#define MAYBE_ScrollEndGeneratedForFilteredFling \
+  ScrollEndGeneratedForFilteredFling
+#endif
+IN_PROC_BROWSER_TEST_F(BrowserSideFlingBrowserTest,
+                       MAYBE_ScrollEndGeneratedForFilteredFling) {
+  LoadURL(kTouchActionFilterDataURL);
+
+  // Necessary for checking the ACK source of the sent events. The events are
+  // filtered when the Browser is the source.
+  auto scroll_begin_watcher = std::make_unique<InputMsgWatcher>(
+      GetWidgetHost(), blink::WebInputEvent::kGestureScrollBegin);
+  auto fling_start_watcher = std::make_unique<InputMsgWatcher>(
+      GetWidgetHost(), blink::WebInputEvent::kGestureFlingStart);
+  auto scroll_end_watcher = std::make_unique<InputMsgWatcher>(
+      GetWidgetHost(), blink::WebInputEvent::kGestureScrollEnd);
+
+  // Do a horizontal touchscreen scroll followed by a fling. The GFS must get
+  // filtered since the GSB is filtered.
+  SyntheticSmoothScrollGestureParams params;
+  params.gesture_source_type = SyntheticGestureParams::TOUCH_INPUT;
+  params.anchor = gfx::PointF(10, 10);
+  params.distances.push_back(gfx::Vector2d(-60, 0));
+  params.prevent_fling = false;
+
+  run_loop_ = std::make_unique<base::RunLoop>();
+
+  std::unique_ptr<SyntheticSmoothScrollGesture> gesture(
+      new SyntheticSmoothScrollGesture(params));
+  GetWidgetHost()->QueueSyntheticGesture(
+      std::move(gesture),
+      base::BindOnce(&BrowserSideFlingBrowserTest::OnSyntheticGestureCompleted,
+                     base::Unretained(this)));
+
+  // Runs until we get the OnSyntheticGestureCompleted callback.
+  run_loop_->Run();
+
+  scroll_begin_watcher->GetAckStateWaitIfNecessary();
+  EXPECT_EQ(InputEventAckSource::BROWSER,
+            scroll_begin_watcher->last_event_ack_source());
+
+  fling_start_watcher->GetAckStateWaitIfNecessary();
+  EXPECT_EQ(InputEventAckSource::BROWSER,
+            fling_start_watcher->last_event_ack_source());
+
+  // Since the GFS is filtered. the input_router_impl will generate and forward
+  // a GSE to make sure that the scrolling sequence and the touch action filter
+  // state get reset properly. The generated GSE will also get filtered since
+  // its equivalent GSB is filtered. The test will timeout if the GSE is not
+  // generated.
+  scroll_end_watcher->GetAckStateWaitIfNecessary();
+  EXPECT_EQ(InputEventAckSource::BROWSER,
+            scroll_end_watcher->last_event_ack_source());
 }
 
 }  // namespace content

@@ -476,6 +476,13 @@ class CONTENT_EXPORT CacheStorageCache {
   // Owns the elements of the list
   BlobToDiskCacheIDMap active_blob_to_disk_cache_writers_;
 
+  // This class ensures that the cache and the entry have a lifetime as long as
+  // the blob that is created to contain them. We keep track of these instances
+  // to allow us to invalidate them if the cache has to be deleted while there
+  // are still references to data in it.
+  class BlobDataHandle;
+  std::set<BlobDataHandle*> blob_data_handles_;
+
   // Whether or not to store data in disk or memory.
   bool memory_only_;
 

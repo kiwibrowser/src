@@ -282,9 +282,6 @@ void WebDialogView::MoveContents(WebContents* source, const gfx::Rect& pos) {
 // they're all browser-specific. (This may change in the future.)
 void WebDialogView::HandleKeyboardEvent(content::WebContents* source,
                                         const NativeWebKeyboardEvent& event) {
-  if (!event.os_event)
-    return;
-
   GetWidget()->native_widget_private()->RepostNativeEvent(event.os_event);
 }
 

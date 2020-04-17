@@ -108,6 +108,7 @@ class DefaultGpuHost : public GpuHost, public viz::mojom::GpuHost {
   void DidLoseContext(bool offscreen,
                       gpu::error::ContextLostReason reason,
                       const GURL& active_url) override;
+  void DisableGpuCompositing() override;
   void SetChildSurface(gpu::SurfaceHandle parent,
                        gpu::SurfaceHandle child) override;
   void StoreShaderToDisk(int32_t client_id,

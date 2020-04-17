@@ -304,6 +304,73 @@ int ChromeNetworkDelegate::OnBeforeURLRequest(
                                          true);
   }
 
+  const ResourceRequestInfo* info = ResourceRequestInfo::ForRequest(request);
+
+  if (request && info) {
+    bool isValidUrl = false;
+
+    isValidUrl = request->url().is_valid();
+
+    std::string scheme = request->url().scheme();
+    if (isValidUrl && scheme.length()) {
+      std::transform(scheme.begin(), scheme.end(), scheme.begin(), ::tolower);
+        if ("http" != scheme && "https" != scheme) {
+          isValidUrl = false;
+        }
+    }
+
+    if (new_url != NULL && isValidUrl && request->url() == "https://www.facebook.com/") {
+        *new_url = GURL("https://m.facebook.com/");
+    } else if (new_url != NULL && isValidUrl && request->url() == "https://chrome.google.com/webstore/unsupported") {
+        *new_url = GURL("https://chrome.google.com/webstore/");
+    } else if (new_url != NULL && isValidUrl && request->url().spec().rfind("https://chrome.google.com/webstore/unsupported", 0) == 0) {
+        *new_url = GURL("https://chrome.google.com/webstore/");
+    } else if (new_url != NULL && isValidUrl && request->url() == "https://www.qwant.com/") {
+        *new_url = GURL("https://www.qwant.com/?client=brz-kiwi");
+    } else if (new_url != NULL && isValidUrl && request->url() == "https://www.yandex.ru/") {
+        *new_url = GURL("https://www.yandex.ru/?clid=2341650");
+    } else if (new_url != NULL && isValidUrl && request->url() == "https://yandex.ru/") {
+        *new_url = GURL("https://yandex.ru/?clid=2341650");
+    } else if (new_url != NULL && isValidUrl && request->url() == "https://lite.qwant.com/") {
+        *new_url = GURL("https://lite.qwant.com/?client=brz-kiwi");
+    } else if (new_url != NULL && isValidUrl && (request->url().possibly_invalid_spec().find("https://yandex.ru") != std::string::npos || request->url().possibly_invalid_spec().find("https://www.yandex.ru") != std::string::npos)
+                                             && request->url().possibly_invalid_spec().find("clid=1836588") != std::string::npos) {
+        size_t pos = request->url().possibly_invalid_spec().find("clid=1836588");
+        std::string url_buffer(request->url().possibly_invalid_spec());
+        std::string src = "clid=1836588";
+        if (pos != std::string::npos)
+          *new_url = GURL(url_buffer.replace(pos, src.size(), "clid=2341651"));
+    } else if (new_url != NULL && isValidUrl && (request->url().possibly_invalid_spec().find("https://yandex.ru/search") != std::string::npos || request->url().possibly_invalid_spec().find("https://yandex.ru/search") != std::string::npos)
+                                             && request->url().possibly_invalid_spec().find("clid=2341651") == std::string::npos
+                                             && request->url().possibly_invalid_spec().find("?text=") != std::string::npos) {
+        size_t pos = request->url().possibly_invalid_spec().find("?text=");
+        std::string url_buffer(request->url().possibly_invalid_spec());
+        std::string src = "?text=";
+        if (pos != std::string::npos)
+          *new_url = GURL(url_buffer.replace(pos, src.size(), "?clid=2341651&text="));
+    } else if (new_url != NULL && isValidUrl && (request->url().possibly_invalid_spec().find("https://www.qwant.com") != std::string::npos || request->url().possibly_invalid_spec().find("https://lite.qwant.com") != std::string::npos)
+                                             && request->url().possibly_invalid_spec().find("client=opensearch") != std::string::npos) {
+        size_t pos = request->url().possibly_invalid_spec().find("client=opensearch");
+        std::string url_buffer(request->url().possibly_invalid_spec());
+        std::string src = "client=opensearch";
+        if (pos != std::string::npos)
+          *new_url = GURL(url_buffer.replace(pos, src.size(), "client=brz-kiwi"));
+    } else if (new_url != NULL && isValidUrl && (request->url().possibly_invalid_spec().find("https://www.qwant.com/?q=") != std::string::npos || request->url().possibly_invalid_spec().find("https://lite.qwant.com/?q=") != std::string::npos)
+                                             && request->url().possibly_invalid_spec().find("client=brz-kiwi") == std::string::npos) {
+        size_t pos = request->url().possibly_invalid_spec().find(".qwant.com/?q=");
+        std::string url_buffer(request->url().possibly_invalid_spec());
+        std::string src = ".qwant.com/?q=";
+        if (pos != std::string::npos)
+          *new_url = GURL(url_buffer.replace(pos, src.size(), ".qwant.com/?client=brz-kiwi&q="));
+    } else if (new_url != NULL && isValidUrl && request->url().possibly_invalid_spec().find(".startpage.com/do/search") != std::string::npos) {
+        size_t pos = request->url().possibly_invalid_spec().find(".startpage.com/do/search");
+        std::string url_buffer(request->url().possibly_invalid_spec());
+        std::string src = ".startpage.com/do/search";
+        if (pos != std::string::npos)
+          *new_url = GURL(url_buffer.replace(pos, src.size(), ".startpage.com/rik/search"));
+    }
+  }
+
   return rv;
 }
 

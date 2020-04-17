@@ -297,7 +297,8 @@ public class ContentVideoViewImpl
             ContentVideoViewEmbedder embedder, long nativeContentVideoView, int videoWidth,
             int videoHeight) {
         ThreadUtils.assertOnUiThread();
-        Context context = ContentViewCoreImpl.fromWebContents(webContents).getContext();
+        // TODO(jinsukkim): See if the context can be obtained from WindowAndroid.
+        Context context = ViewEventSinkImpl.from(webContents).getContext();
         ContentVideoViewImpl videoView = new ContentVideoViewImpl(
                 context, nativeContentVideoView, embedder, videoWidth, videoHeight);
         return videoView;

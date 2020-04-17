@@ -160,8 +160,7 @@ class MockClientProcess : public mojom::ClientProcess {
             Invoke([pid](const MemoryDumpRequestArgs& args,
                          RequestChromeMemoryDumpCallback& callback) {
               MemoryDumpArgs dump_args{MemoryDumpLevelOfDetail::DETAILED};
-              auto pmd =
-                  std::make_unique<ProcessMemoryDump>(nullptr, dump_args);
+              auto pmd = std::make_unique<ProcessMemoryDump>(dump_args);
               auto* mad = pmd->CreateAllocatorDump(
                   "malloc", base::trace_event::MemoryAllocatorDumpGuid(pid));
               mad->AddScalar(MemoryAllocatorDump::kNameSize,
@@ -190,9 +189,6 @@ class MockClientProcess : public mojom::ClientProcess {
                void(mojom::MemoryMapOption option,
                     const std::vector<base::ProcessId>& args,
                     RequestOSMemoryDumpCallback& callback));
-  MOCK_METHOD2(EnableHeapProfilingMock,
-               void(base::trace_event::HeapProfilingMode mode,
-                    EnableHeapProfilingCallback& callback));
 
   void RequestChromeMemoryDump(
       const MemoryDumpRequestArgs& args,
@@ -203,10 +199,6 @@ class MockClientProcess : public mojom::ClientProcess {
                            const std::vector<base::ProcessId>& args,
                            RequestOSMemoryDumpCallback callback) override {
     RequestOSMemoryDumpMock(option, args, callback);
-  }
-  void EnableHeapProfiling(base::trace_event::HeapProfilingMode mode,
-                           EnableHeapProfilingCallback callback) override {
-    EnableHeapProfilingMock(mode, callback);
   }
 
  private:
@@ -318,7 +310,7 @@ TEST_F(CoordinatorImplTest, MissingChromeDump) {
           [](const MemoryDumpRequestArgs& args,
              MockClientProcess::RequestChromeMemoryDumpCallback& callback) {
             MemoryDumpArgs dump_args{MemoryDumpLevelOfDetail::DETAILED};
-            auto pmd = std::make_unique<ProcessMemoryDump>(nullptr, dump_args);
+            auto pmd = std::make_unique<ProcessMemoryDump>(dump_args);
             std::move(callback).Run(true, args.dump_guid, std::move(pmd));
           }));
 
@@ -533,7 +525,7 @@ TEST_F(CoordinatorImplTest, GlobalMemoryDumpStruct) {
                           MockClientProcess::RequestChromeMemoryDumpCallback&
                               callback) {
         MemoryDumpArgs dump_args{MemoryDumpLevelOfDetail::DETAILED};
-        auto pmd = std::make_unique<ProcessMemoryDump>(nullptr, dump_args);
+        auto pmd = std::make_unique<ProcessMemoryDump>(dump_args);
         auto* size = MemoryAllocatorDump::kNameSize;
         auto* bytes = MemoryAllocatorDump::kUnitsBytes;
         const uint32_t kB = 1024;
@@ -573,7 +565,7 @@ TEST_F(CoordinatorImplTest, GlobalMemoryDumpStruct) {
           [](const MemoryDumpRequestArgs& args,
              MockClientProcess::RequestChromeMemoryDumpCallback& callback) {
             MemoryDumpArgs dump_args{MemoryDumpLevelOfDetail::DETAILED};
-            auto pmd = std::make_unique<ProcessMemoryDump>(nullptr, dump_args);
+            auto pmd = std::make_unique<ProcessMemoryDump>(dump_args);
             auto* mad = pmd->CreateAllocatorDump(
                 "malloc", base::trace_event::MemoryAllocatorDumpGuid(2));
             mad->AddScalar(MemoryAllocatorDump::kNameSize,
@@ -750,7 +742,7 @@ TEST_F(CoordinatorImplTest, DumpsArentAddedToTraceUnlessRequested) {
           [](const MemoryDumpRequestArgs& args,
              MockClientProcess::RequestChromeMemoryDumpCallback& callback) {
             MemoryDumpArgs dump_args{MemoryDumpLevelOfDetail::DETAILED};
-            auto pmd = std::make_unique<ProcessMemoryDump>(nullptr, dump_args);
+            auto pmd = std::make_unique<ProcessMemoryDump>(dump_args);
             std::move(callback).Run(true, args.dump_guid, std::move(pmd));
           }));
 
@@ -788,7 +780,7 @@ TEST_F(CoordinatorImplTest, DumpsAreAddedToTraceWhenRequested) {
           [](const MemoryDumpRequestArgs& args,
              MockClientProcess::RequestChromeMemoryDumpCallback& callback) {
             MemoryDumpArgs dump_args{MemoryDumpLevelOfDetail::DETAILED};
-            auto pmd = std::make_unique<ProcessMemoryDump>(nullptr, dump_args);
+            auto pmd = std::make_unique<ProcessMemoryDump>(dump_args);
             std::move(callback).Run(true, args.dump_guid, std::move(pmd));
           }));
 

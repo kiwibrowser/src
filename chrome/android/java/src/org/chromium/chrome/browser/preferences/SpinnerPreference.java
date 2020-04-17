@@ -15,6 +15,11 @@ import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+
 import org.chromium.chrome.R;
 
 /**
@@ -56,7 +61,37 @@ public class SpinnerPreference extends Preference {
         } else {
             itemLayout = android.R.layout.simple_spinner_item;
         }
-        mAdapter = new ArrayAdapter<>(getContext(), itemLayout, options);
+        mAdapter = new ArrayAdapter<Object>(getContext(), itemLayout, options)
+                 {
+                    @Override
+                    public View getView(int position, View convertView, ViewGroup parent) {
+                        View view = super.getView(position, convertView, parent);
+                        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                            TextView text1 = (TextView) view.findViewById(android.R.id.text1);
+                            if (text1 != null)
+                                text1.setTextColor(Color.WHITE);
+                            TextView text2 = (TextView) view.findViewById(R.id.spinner_item);
+                            if (text2 != null)
+                                text2.setTextColor(Color.GRAY);
+                        }
+
+                        return view;
+                    };
+
+                    @Override
+                    public View getDropDownView(int position, View convertView,
+                                                ViewGroup parent) {
+                        View view = super.getDropDownView(position, convertView, parent);
+                        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                            view.setBackgroundColor(Color.BLACK);
+                            TextView tv = (TextView) view;
+                            tv.setBackgroundColor(Color.BLACK);
+                            tv.setTextColor(Color.WHITE);
+                        }
+
+                        return view;
+                   }
+               };
         mAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         mSelectedIndex = selectedIndex;
     }

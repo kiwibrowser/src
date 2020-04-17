@@ -4,6 +4,8 @@
 
 package org.chromium.content.browser;
 
+import android.content.res.Configuration;
+
 import org.chromium.ui.base.WindowAndroid;
 import org.chromium.ui.display.DisplayAndroid.DisplayAndroidObserver;
 
@@ -31,4 +33,16 @@ public interface WindowEventObserver extends DisplayAndroidObserver {
      * Notifies observer when WindowAndroid is changed.
      */
     default void onWindowAndroidChanged(WindowAndroid newWindowAndroid) {}
+
+    /**
+     * @see View#onConfigurationChanged()
+     */
+    default void onConfigurationChanged(Configuration newConfig) {}
+
+    /**
+     * Call this when view's focus has changed.
+     * @param gainFocus True if we're gaining focus.
+     * @param hideKeyboardOnBlur True if we should hide soft keyboard when losing focus.
+     */
+    default void onViewFocusChanged(boolean gainFocus, boolean hideKeyboardOnBlur) {}
 }

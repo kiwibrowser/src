@@ -2,6 +2,10 @@ default	rel
 %define XMMWORD
 %define YMMWORD
 %define ZMMWORD
+
+%ifdef BORINGSSL_PREFIX
+%include "boringssl_prefix_symbols_nasm.inc"
+%endif
 section	.text code align=64
 
 EXTERN	OPENSSL_ia32cap_P
@@ -17,6 +21,7 @@ $L$SEH_begin_sha1_block_data_order:
 	mov	rdi,rcx
 	mov	rsi,rdx
 	mov	rdx,r8
+
 
 
 	lea	r10,[OPENSSL_ia32cap_P]
@@ -35,17 +40,24 @@ $L$SEH_begin_sha1_block_data_order:
 ALIGN	16
 $L$ialu:
 	mov	rax,rsp
+
 	push	rbx
+
 	push	rbp
+
 	push	r12
+
 	push	r13
+
 	push	r14
+
 	mov	r8,rdi
 	sub	rsp,72
 	mov	r9,rsi
 	and	rsp,-64
 	mov	r10,rdx
 	mov	QWORD[64+rsp],rax
+
 $L$prologue:
 
 	mov	esi,DWORD[r8]
@@ -1240,16 +1252,24 @@ $L$loop:
 	jnz	NEAR $L$loop
 
 	mov	rsi,QWORD[64+rsp]
+
 	mov	r14,QWORD[((-40))+rsi]
+
 	mov	r13,QWORD[((-32))+rsi]
+
 	mov	r12,QWORD[((-24))+rsi]
+
 	mov	rbp,QWORD[((-16))+rsi]
+
 	mov	rbx,QWORD[((-8))+rsi]
+
 	lea	rsp,[rsi]
+
 $L$epilogue:
 	mov	rdi,QWORD[8+rsp]	;WIN64 epilogue
 	mov	rsi,QWORD[16+rsp]
 	DB	0F3h,0C3h		;repret
+
 $L$SEH_end_sha1_block_data_order:
 
 ALIGN	16
@@ -1264,12 +1284,19 @@ $L$SEH_begin_sha1_block_data_order_ssse3:
 
 
 _ssse3_shortcut:
+
 	mov	r11,rsp
+
 	push	rbx
+
 	push	rbp
+
 	push	r12
+
 	push	r13
+
 	push	r14
+
 	lea	rsp,[((-160))+rsp]
 	movaps	XMMWORD[(-40-96)+r11],xmm6
 	movaps	XMMWORD[(-40-80)+r11],xmm7
@@ -2439,15 +2466,22 @@ $L$done_ssse3:
 	movaps	xmm10,XMMWORD[((-40-32))+r11]
 	movaps	xmm11,XMMWORD[((-40-16))+r11]
 	mov	r14,QWORD[((-40))+r11]
+
 	mov	r13,QWORD[((-32))+r11]
+
 	mov	r12,QWORD[((-24))+r11]
+
 	mov	rbp,QWORD[((-16))+r11]
+
 	mov	rbx,QWORD[((-8))+r11]
+
 	lea	rsp,[r11]
+
 $L$epilogue_ssse3:
 	mov	rdi,QWORD[8+rsp]	;WIN64 epilogue
 	mov	rsi,QWORD[16+rsp]
 	DB	0F3h,0C3h		;repret
+
 $L$SEH_end_sha1_block_data_order_ssse3:
 
 ALIGN	16
@@ -2462,12 +2496,19 @@ $L$SEH_begin_sha1_block_data_order_avx:
 
 
 _avx_shortcut:
+
 	mov	r11,rsp
+
 	push	rbx
+
 	push	rbp
+
 	push	r12
+
 	push	r13
+
 	push	r14
+
 	lea	rsp,[((-160))+rsp]
 	vzeroupper
 	vmovaps	XMMWORD[(-40-96)+r11],xmm6
@@ -3577,15 +3618,22 @@ $L$done_avx:
 	movaps	xmm10,XMMWORD[((-40-32))+r11]
 	movaps	xmm11,XMMWORD[((-40-16))+r11]
 	mov	r14,QWORD[((-40))+r11]
+
 	mov	r13,QWORD[((-32))+r11]
+
 	mov	r12,QWORD[((-24))+r11]
+
 	mov	rbp,QWORD[((-16))+r11]
+
 	mov	rbx,QWORD[((-8))+r11]
+
 	lea	rsp,[r11]
+
 $L$epilogue_avx:
 	mov	rdi,QWORD[8+rsp]	;WIN64 epilogue
 	mov	rsi,QWORD[16+rsp]
 	DB	0F3h,0C3h		;repret
+
 $L$SEH_end_sha1_block_data_order_avx:
 ALIGN	64
 K_XX_XX:

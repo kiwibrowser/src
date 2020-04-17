@@ -159,14 +159,6 @@ void NativeViewHost::ViewHierarchyChanged(
       details.move_view->GetWidget() == this_widget) {
     return;
   }
-
-  if (details.is_add && this_widget) {
-    if (!native_wrapper_.get())
-      native_wrapper_.reset(NativeViewHostWrapper::CreateWrapper(this));
-    native_wrapper_->AddedToWidget();
-  } else if (!details.is_add) {
-    native_wrapper_->RemovedFromWidget();
-  }
 }
 
 const char* NativeViewHost::GetClassName() const {

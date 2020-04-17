@@ -39,6 +39,20 @@ struct StructTraits<gpu::mojom::GpuDeviceDataView, gpu::GPUInfo::GPUDevice> {
       const gpu::GPUInfo::GPUDevice& input) {
     return input.device_string;
   }
+
+  static const std::string& driver_vendor(
+      const gpu::GPUInfo::GPUDevice& input) {
+    return input.driver_vendor;
+  }
+
+  static const std::string& driver_version(
+      const gpu::GPUInfo::GPUDevice& input) {
+    return input.driver_version;
+  }
+
+  static const std::string& driver_date(const gpu::GPUInfo::GPUDevice& input) {
+    return input.driver_date;
+  }
 };
 
 template <>
@@ -142,18 +156,6 @@ struct StructTraits<gpu::mojom::GpuInfoDataView, gpu::GPUInfo> {
   static const std::vector<gpu::GPUInfo::GPUDevice>& secondary_gpus(
       const gpu::GPUInfo& input) {
     return input.secondary_gpus;
-  }
-
-  static const std::string& driver_vendor(const gpu::GPUInfo& input) {
-    return input.driver_vendor;
-  }
-
-  static const std::string& driver_version(const gpu::GPUInfo& input) {
-    return input.driver_version;
-  }
-
-  static const std::string& driver_date(const gpu::GPUInfo& input) {
-    return input.driver_date;
   }
 
   static const std::string& pixel_shader_version(const gpu::GPUInfo& input) {

@@ -14,7 +14,7 @@ import org.chromium.base.annotations.JNINamespace;
 import org.chromium.content.browser.input.ImeAdapterImpl;
 import org.chromium.content.browser.webcontents.WebContentsImpl;
 import org.chromium.content.browser.webcontents.WebContentsUserData;
-import org.chromium.content_public.browser.ContentViewCore;
+import org.chromium.content_public.browser.ViewEventSink.InternalAccessDelegate;
 import org.chromium.content_public.browser.WebContents;
 import org.chromium.content_public.browser.WebContents.UserDataFactory;
 import org.chromium.device.gamepad.GamepadList;
@@ -27,7 +27,7 @@ import org.chromium.ui.base.EventForwarder;
 @JNINamespace("content")
 public class ContentUiEventHandler {
     private final WebContentsImpl mWebContents;
-    private ContentViewCore.InternalAccessDelegate mEventDelegate;
+    private InternalAccessDelegate mEventDelegate;
     private long mNativeContentUiEventHandler;
 
     private static final class UserDataFactoryLazyHolder {
@@ -45,7 +45,7 @@ public class ContentUiEventHandler {
         mNativeContentUiEventHandler = nativeInit(webContents);
     }
 
-    public void setEventDelegate(ContentViewCore.InternalAccessDelegate delegate) {
+    public void setEventDelegate(InternalAccessDelegate delegate) {
         mEventDelegate = delegate;
     }
 
@@ -169,7 +169,7 @@ public class ContentUiEventHandler {
         // It's a very real (and valid) possibility that a fling may still
         // be active when programatically scrolling. Cancelling the fling in
         // such cases ensures a consistent gesture event stream.
-        if (GestureListenerManagerImpl.fromWebContents(mWebContents).hasPotentiallyActiveFling()) {
+        if (GestureListenerManagerImpl.fromWebContents(mWebContents).hasActiveFlingScroll()) {
             nativeCancelFling(mNativeContentUiEventHandler, time);
         }
         nativeSendScrollEvent(mNativeContentUiEventHandler, time, dxPix, dyPix);

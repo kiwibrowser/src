@@ -8,8 +8,4 @@
 
 namespace chrome {
 
-bool IsIncognitoSessionActive() {
-  return BrowserList::IsIncognitoSessionActive();
-}
-
 }  // namespace chrome

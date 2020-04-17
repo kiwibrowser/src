@@ -62,6 +62,12 @@ UrlRuleOffset SerializeUrlRule(const proto::UrlRule& rule,
 // value if |lhs_domain| should be ordered after |rhs_domain|.
 int CompareDomains(base::StringPiece lhs_domain, base::StringPiece rhs_domain);
 
+// The current format version of UrlPatternIndex.
+// Increase this value when introducing an incompatible change to the
+// UrlPatternIndex schema (flat/url_pattern_index.fbs). url_pattern_index
+// clients can use this as a signal to rebuild rulesets.
+constexpr int kUrlPatternIndexFormatVersion = 1;
+
 // The class used to construct an index over the URL patterns of a set of URL
 // rules. The rules themselves need to be converted to FlatBuffers format by the
 // client of this class, as well as persisted into the |flat_builder| that is

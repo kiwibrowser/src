@@ -50,6 +50,7 @@ public class SiteSettingsCategory {
     public static final String CATEGORY_SOUND = "sound";
     public static final String CATEGORY_USE_STORAGE = "use_storage";
     public static final String CATEGORY_USB = "usb";
+    public static final String CATEGORY_DESKTOP_MODE = "desktop_mode";
 
     // The id of this category.
     private String mCategory;
@@ -129,6 +130,10 @@ public class SiteSettingsCategory {
             return new SiteSettingsCategory(CATEGORY_NOTIFICATIONS, "",
                     ContentSettingsType.CONTENT_SETTINGS_TYPE_NOTIFICATIONS);
         }
+        if (CATEGORY_DESKTOP_MODE.equals(category)) {
+            return new SiteSettingsCategory(CATEGORY_DESKTOP_MODE, "",
+                    ContentSettingsType.CONTENT_SETTINGS_TYPE_DESKTOP_MODE);
+        }
         if (CATEGORY_POPUPS.equals(category)) {
             return new SiteSettingsCategory(CATEGORY_POPUPS, "",
                     ContentSettingsType.CONTENT_SETTINGS_TYPE_POPUPS);
@@ -201,6 +206,9 @@ public class SiteSettingsCategory {
         if (contentSettingsType == ContentSettingsType.CONTENT_SETTINGS_TYPE_USB_GUARD) {
             return fromString(CATEGORY_USB);
         }
+        if (contentSettingsType == ContentSettingsType.CONTENT_SETTINGS_TYPE_DESKTOP_MODE) {
+            return fromString(CATEGORY_DESKTOP_MODE);
+        }
 
         return null;
     }
@@ -238,6 +246,10 @@ public class SiteSettingsCategory {
      */
     public boolean showBackgroundSyncSites() {
         return mContentSettingsType == ContentSettingsType.CONTENT_SETTINGS_TYPE_BACKGROUND_SYNC;
+    }
+
+    public boolean showDesktopModeSites() {
+        return mContentSettingsType == ContentSettingsType.CONTENT_SETTINGS_TYPE_DESKTOP_MODE;
     }
 
     /**
@@ -331,7 +343,7 @@ public class SiteSettingsCategory {
      * Returns whether the Ads category is enabled via an experiment flag.
      */
     public static boolean adsCategoryEnabled() {
-        return ChromeFeatureList.isEnabled("SubresourceFilterExperimentalUI");
+        return ChromeFeatureList.isEnabled(ChromeFeatureList.SUBRESOURCE_FILTER);
     }
 
     /**

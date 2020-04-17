@@ -4,16 +4,21 @@
 
 #include <stdint.h>
 
+#include "base/bind_helpers.h"
 #include "base/files/file.h"
 #include "base/files/file_util.h"
+#include "base/memory/memory_pressure_listener.h"
 #include "base/metrics/field_trial.h"
 #include "base/run_loop.h"
+#include "base/sequenced_task_runner.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
-#include "base/test/histogram_tester.h"
+#include "base/task_scheduler/post_task.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/test/mock_entropy_provider.h"
+#include "base/test/scoped_feature_list.h"
 #include "base/third_party/dynamic_annotations/dynamic_annotations.h"
 #include "base/threading/platform_thread.h"
 #include "base/threading/thread_restrictions.h"
@@ -25,6 +30,7 @@
 #include "net/base/cache_type.h"
 #include "net/base/io_buffer.h"
 #include "net/base/net_errors.h"
+#include "net/base/request_priority.h"
 #include "net/base/test_completion_callback.h"
 #include "net/disk_cache/backend_cleanup_tracker.h"
 #include "net/disk_cache/blockfile/backend_impl.h"
@@ -82,7 +88,8 @@ std::unique_ptr<disk_cache::BackendImpl> CreateExistingEntryCache(
     return std::unique_ptr<disk_cache::BackendImpl>();
 
   disk_cache::Entry* entry = NULL;
-  rv = cache->CreateEntry(kExistingEntryKey, &entry, cb.callback());
+  rv = cache->CreateEntry(kExistingEntryKey, net::HIGHEST, &entry,
+                          cb.callback());
   if (cb.GetResult(rv) != net::OK)
     return std::unique_ptr<disk_cache::BackendImpl>();
   entry->Close();
@@ -186,7 +193,8 @@ int DiskCacheBackendTest::GeneratePendingIO(net::TestCompletionCallback* cb) {
   }
 
   disk_cache::Entry* entry;
-  int rv = cache_->CreateEntry("some key", &entry, cb->callback());
+  int rv =
+      cache_->CreateEntry("some key", net::HIGHEST, &entry, cb->callback());
   if (cb->GetResult(rv) != net::OK)
     return net::ERR_CACHE_CREATE_FAILURE;
 
@@ -597,7 +605,7 @@ TEST_F(DiskCacheBackendTest, CreateBackendDoubleOpenEntry) {
   EXPECT_FALSE(cb2.have_result());
 
   disk_cache::Entry* entry = nullptr;
-  rv = cache->CreateEntry("key", &entry, cb.callback());
+  rv = cache->CreateEntry("key", net::HIGHEST, &entry, cb.callback());
   ASSERT_EQ(net::OK, cb.GetResult(rv));
 
   cache.reset();
@@ -634,7 +642,7 @@ TEST_F(DiskCacheBackendTest, CreateBackendPostCleanup) {
   ASSERT_TRUE(cache.get());
 
   disk_cache::Entry* entry = nullptr;
-  rv = cache->CreateEntry("key", &entry, cb.callback());
+  rv = cache->CreateEntry("key", net::HIGHEST, &entry, cb.callback());
   ASSERT_EQ(net::OK, cb.GetResult(rv));
   EXPECT_EQ(kBufSize, WriteData(entry, 0, 0, buffer.get(), kBufSize, false));
   entry->Close();
@@ -677,7 +685,7 @@ TEST_F(DiskCacheBackendTest, MemCacheMemoryDump) {
   BackendBasics();
   base::trace_event::MemoryDumpArgs args = {
       base::trace_event::MemoryDumpLevelOfDetail::BACKGROUND};
-  base::trace_event::ProcessMemoryDump pmd(nullptr, args);
+  base::trace_event::ProcessMemoryDump pmd(args);
   base::trace_event::MemoryAllocatorDump* parent =
       pmd.CreateAllocatorDump("net/url_request_context/main/0x123/http_cache");
 
@@ -704,7 +712,7 @@ TEST_F(DiskCacheBackendTest, SimpleCacheMemoryDump) {
   BackendBasics();
   base::trace_event::MemoryDumpArgs args = {
       base::trace_event::MemoryDumpLevelOfDetail::BACKGROUND};
-  base::trace_event::ProcessMemoryDump pmd(nullptr, args);
+  base::trace_event::ProcessMemoryDump pmd(args);
   base::trace_event::MemoryAllocatorDump* parent =
       pmd.CreateAllocatorDump("net/url_request_context/main/0x123/http_cache");
 
@@ -728,12 +736,45 @@ TEST_F(DiskCacheBackendTest, BlockFileCacheMemoryDump) {
   BackendBasics();
   base::trace_event::MemoryDumpArgs args = {
       base::trace_event::MemoryDumpLevelOfDetail::BACKGROUND};
-  base::trace_event::ProcessMemoryDump pmd(nullptr, args);
+  base::trace_event::ProcessMemoryDump pmd(args);
   base::trace_event::MemoryAllocatorDump* parent =
       pmd.CreateAllocatorDump("net/url_request_context/main/0x123/http_cache");
 
   ASSERT_EQ(0u, cache_->DumpMemoryStats(&pmd, parent->absolute_name()));
   EXPECT_EQ(1u, pmd.allocator_dumps().size());
+}
+
+TEST_F(DiskCacheBackendTest, MemoryListensToMemoryPressure) {
+  const int kLimit = 16 * 1024;
+  const int kEntrySize = 256;
+  SetMaxSize(kLimit);
+  SetMemoryOnlyMode();
+  InitCache();
+
+  // Fill in to about 80-90% full.
+  scoped_refptr<net::IOBuffer> buffer(new net::IOBuffer(kEntrySize));
+  CacheTestFillBuffer(buffer->data(), kEntrySize, false);
+
+  for (int i = 0; i < 0.9 * (kLimit / kEntrySize); ++i) {
+    disk_cache::Entry* entry = nullptr;
+    ASSERT_EQ(net::OK, CreateEntry(base::IntToString(i), &entry));
+    EXPECT_EQ(kEntrySize,
+              WriteData(entry, 0, 0, buffer.get(), kEntrySize, true));
+    entry->Close();
+  }
+
+  EXPECT_GT(CalculateSizeOfAllEntries(), 0.8 * kLimit);
+
+  // Signal low-memory of various sorts, and see how small it gets.
+  base::MemoryPressureListener::NotifyMemoryPressure(
+      base::MemoryPressureListener::MEMORY_PRESSURE_LEVEL_MODERATE);
+  base::RunLoop().RunUntilIdle();
+  EXPECT_LT(CalculateSizeOfAllEntries(), 0.5 * kLimit);
+
+  base::MemoryPressureListener::NotifyMemoryPressure(
+      base::MemoryPressureListener::MEMORY_PRESSURE_LEVEL_CRITICAL);
+  base::RunLoop().RunUntilIdle();
+  EXPECT_LT(CalculateSizeOfAllEntries(), 0.1 * kLimit);
 }
 
 TEST_F(DiskCacheBackendTest, ExternalFiles) {
@@ -860,7 +901,8 @@ void DiskCacheBackendTest::BackendShutdownWithPendingIO(bool fast) {
     CreateBackend(flags);
 
     disk_cache::Entry* entry;
-    int rv = cache_->CreateEntry("some key", &entry, cb.callback());
+    int rv =
+        cache_->CreateEntry("some key", net::HIGHEST, &entry, cb.callback());
     ASSERT_THAT(cb.GetResult(rv), IsOk());
 
     entry->Close();
@@ -899,7 +941,8 @@ void DiskCacheBackendTest::BackendShutdownWithPendingCreate(bool fast) {
     CreateBackend(flags);
 
     disk_cache::Entry* entry;
-    int rv = cache_->CreateEntry("some key", &entry, cb.callback());
+    int rv =
+        cache_->CreateEntry("some key", net::HIGHEST, &entry, cb.callback());
     ASSERT_THAT(rv, IsError(net::ERR_IO_PENDING));
 
     cache_.reset();
@@ -933,12 +976,13 @@ void DiskCacheBackendTest::BackendShutdownWithPendingDoom() {
     CreateBackend(flags);
 
     disk_cache::Entry* entry;
-    int rv = cache_->CreateEntry("some key", &entry, cb.callback());
+    int rv =
+        cache_->CreateEntry("some key", net::HIGHEST, &entry, cb.callback());
     ASSERT_THAT(cb.GetResult(rv), IsOk());
     entry->Close();
     entry = nullptr;
 
-    rv = cache_->DoomEntry("some key", cb.callback());
+    rv = cache_->DoomEntry("some key", net::HIGHEST, cb.callback());
     ASSERT_THAT(rv, IsError(net::ERR_IO_PENDING));
 
     cache_.reset();
@@ -2406,7 +2450,8 @@ TEST_F(DiskCacheTest, SimpleCacheControlRestart) {
     EXPECT_EQ(1, cache->GetEntryCount());
 
     disk_cache::Entry* entry = NULL;
-    rv = cache->OpenEntry(kExistingEntryKey, &entry, cb.callback());
+    rv = cache->OpenEntry(kExistingEntryKey, net::HIGHEST, &entry,
+                          cb.callback());
     ASSERT_THAT(cb.GetResult(rv), IsOk());
     EXPECT_NE(nullptr, entry);
     entry->Close();
@@ -2446,7 +2491,8 @@ TEST_F(DiskCacheTest, SimpleCacheControlLeave) {
     EXPECT_EQ(1, cache->GetEntryCount());
 
     disk_cache::Entry* entry = NULL;
-    rv = cache->OpenEntry(kExistingEntryKey, &entry, cb.callback());
+    rv = cache->OpenEntry(kExistingEntryKey, net::HIGHEST, &entry,
+                          cb.callback());
     ASSERT_THAT(cb.GetResult(rv), IsOk());
     EXPECT_NE(nullptr, entry);
     entry->Close();
@@ -3570,7 +3616,7 @@ TEST_F(DiskCacheTest, MultipleInstances) {
   std::string key("the first key");
   disk_cache::Entry* entry;
   for (int i = 0; i < kNumberOfCaches; i++) {
-    rv = cache[i]->CreateEntry(key, &entry, cb.callback());
+    rv = cache[i]->CreateEntry(key, net::HIGHEST, &entry, cb.callback());
     ASSERT_THAT(cb.GetResult(rv), IsOk());
     entry->Close();
   }
@@ -4099,6 +4145,188 @@ TEST_F(DiskCacheBackendTest, SimpleCacheEnumerationDestruction) {
 
   cache_.reset();
   // This test passes if we don't leak memory.
+}
+
+// Verify that tasks run in priority order when the experiment is enabled.
+// Test has races, disabling until fixed: https://crbug.com/853283
+TEST_F(DiskCacheBackendTest, DISABLED_SimpleCachePrioritizedEntryOrder) {
+  base::test::ScopedFeatureList scoped_feature_list;
+  scoped_feature_list.InitAndEnableFeature(
+      disk_cache::SimpleBackendImpl::kPrioritizedSimpleCacheTasks);
+  SetSimpleCacheMode();
+  InitCache();
+
+  // Set the SimpleCache's worker pool to a sequenced type for testing
+  // priority order.
+  disk_cache::SimpleBackendImpl* simple_cache =
+      static_cast<disk_cache::SimpleBackendImpl*>(cache_.get());
+  auto task_runner = base::CreateSequencedTaskRunnerWithTraits(
+      {base::TaskPriority::USER_VISIBLE, base::MayBlock()});
+  simple_cache->SetWorkerPoolForTesting(task_runner);
+
+  // Create three entries. Priority order is 3, 1, 2 because 3 has the highest
+  // request priority and 1 is created before 2.
+  disk_cache::Entry* entry1 = nullptr;
+  disk_cache::Entry* entry2 = nullptr;
+  disk_cache::Entry* entry3 = nullptr;
+  ASSERT_THAT(CreateEntryWithPriority("first", net::LOWEST, &entry1), IsOk());
+  ASSERT_THAT(CreateEntryWithPriority("second", net::LOWEST, &entry2), IsOk());
+  ASSERT_THAT(CreateEntryWithPriority("third", net::HIGHEST, &entry3), IsOk());
+
+  // Write some data to the entries.
+  const int kSize = 10;
+  scoped_refptr<net::IOBuffer> buf1 =
+      base::MakeRefCounted<net::IOBuffer>(kSize);
+  scoped_refptr<net::IOBuffer> buf2 =
+      base::MakeRefCounted<net::IOBuffer>(kSize);
+  scoped_refptr<net::IOBuffer> buf3 =
+      base::MakeRefCounted<net::IOBuffer>(kSize);
+  CacheTestFillBuffer(buf1->data(), kSize, false);
+  CacheTestFillBuffer(buf2->data(), kSize, false);
+  CacheTestFillBuffer(buf3->data(), kSize, false);
+
+  // Write to stream 2 because it's the only stream that can't be read from
+  // synchronously.
+  EXPECT_EQ(kSize, WriteData(entry1, 2, 0, buf1.get(), kSize, true));
+  EXPECT_EQ(kSize, WriteData(entry2, 2, 0, buf1.get(), kSize, true));
+  EXPECT_EQ(kSize, WriteData(entry3, 2, 0, buf1.get(), kSize, true));
+
+  // Wait until the task_runner's queue is empty (WriteData might have
+  // optimistically returned synchronously but still had some tasks to run in
+  // the worker pool.
+  base::RunLoop run_loop;
+  task_runner->PostTaskAndReply(FROM_HERE, base::DoNothing(),
+                                run_loop.QuitClosure());
+  run_loop.Run();
+
+  std::vector<int> finished_read_order;
+  auto finished_callback = [](std::vector<int>* finished_read_order,
+                              int entry_number, base::OnceClosure quit_closure,
+                              int rv) {
+    finished_read_order->push_back(entry_number);
+    if (quit_closure)
+      std::move(quit_closure).Run();
+  };
+
+  scoped_refptr<net::IOBuffer> read_buf1 =
+      base::MakeRefCounted<net::IOBuffer>(kSize);
+  scoped_refptr<net::IOBuffer> read_buf2 =
+      base::MakeRefCounted<net::IOBuffer>(kSize);
+  scoped_refptr<net::IOBuffer> read_buf3 =
+      base::MakeRefCounted<net::IOBuffer>(kSize);
+
+  // Read from the entries in order 2, 3, 1. They should be reprioritized to
+  // 3, 1, 2.
+  base::RunLoop read_run_loop;
+
+  entry2->ReadData(2, 0, read_buf2.get(), kSize,
+                   base::BindRepeating(finished_callback, &finished_read_order,
+                                       2, read_run_loop.QuitClosure()));
+  entry3->ReadData(2, 0, read_buf3.get(), kSize,
+                   base::BindRepeating(finished_callback, &finished_read_order,
+                                       3, base::Passed(base::OnceClosure())));
+  entry1->ReadData(2, 0, read_buf1.get(), kSize,
+                   base::BindRepeating(finished_callback, &finished_read_order,
+                                       1, base::Passed(base::OnceClosure())));
+  EXPECT_EQ(0u, finished_read_order.size());
+
+  read_run_loop.Run();
+  EXPECT_EQ((std::vector<int>{3, 1, 2}), finished_read_order);
+  entry1->Close();
+  entry2->Close();
+  entry3->Close();
+}
+
+// Verify that tasks run in FIFO order when the prioritization experiment is
+// disabled.
+// TOOD(jkarlin): Delete this test if/when kPrioritizedSimpleCacheTasks is
+// enabled by default.
+TEST_F(DiskCacheBackendTest, SimpleCacheFIFOEntryOrder) {
+  base::test::ScopedFeatureList scoped_feature_list;
+  scoped_feature_list.InitAndDisableFeature(
+      disk_cache::SimpleBackendImpl::kPrioritizedSimpleCacheTasks);
+  SetSimpleCacheMode();
+  InitCache();
+
+  // Set the SimpleCache's worker pool to a sequenced type for testing
+  // priority order.
+  disk_cache::SimpleBackendImpl* simple_cache =
+      static_cast<disk_cache::SimpleBackendImpl*>(cache_.get());
+  auto task_runner = base::CreateSequencedTaskRunnerWithTraits(
+      {base::TaskPriority::USER_VISIBLE, base::MayBlock()});
+  simple_cache->SetWorkerPoolForTesting(task_runner);
+
+  // Create three entries. If their priority was honored, they'd run in order
+  // 3, 1, 2.
+  disk_cache::Entry* entry1 = nullptr;
+  disk_cache::Entry* entry2 = nullptr;
+  disk_cache::Entry* entry3 = nullptr;
+  ASSERT_THAT(CreateEntryWithPriority("first", net::LOWEST, &entry1), IsOk());
+  ASSERT_THAT(CreateEntryWithPriority("second", net::LOWEST, &entry2), IsOk());
+  ASSERT_THAT(CreateEntryWithPriority("third", net::HIGHEST, &entry3), IsOk());
+
+  // Write some data to the entries.
+  const int kSize = 10;
+  scoped_refptr<net::IOBuffer> buf1 =
+      base::MakeRefCounted<net::IOBuffer>(kSize);
+  scoped_refptr<net::IOBuffer> buf2 =
+      base::MakeRefCounted<net::IOBuffer>(kSize);
+  scoped_refptr<net::IOBuffer> buf3 =
+      base::MakeRefCounted<net::IOBuffer>(kSize);
+  CacheTestFillBuffer(buf1->data(), kSize, false);
+  CacheTestFillBuffer(buf2->data(), kSize, false);
+  CacheTestFillBuffer(buf3->data(), kSize, false);
+
+  // Write to stream 2 because it's the only stream that can't be read from
+  // synchronously.
+  EXPECT_EQ(kSize, WriteData(entry1, 2, 0, buf1.get(), kSize, true));
+  EXPECT_EQ(kSize, WriteData(entry2, 2, 0, buf1.get(), kSize, true));
+  EXPECT_EQ(kSize, WriteData(entry3, 2, 0, buf1.get(), kSize, true));
+
+  // Wait until the task_runner's queue is empty (WriteData might have
+  // optimistically returned synchronously but still had some tasks to run in
+  // the worker pool.
+  base::RunLoop run_loop;
+  task_runner->PostTaskAndReply(FROM_HERE, base::DoNothing(),
+                                run_loop.QuitClosure());
+  run_loop.Run();
+
+  std::vector<int> finished_read_order;
+  auto finished_callback = [](std::vector<int>* finished_read_order,
+                              int entry_number, base::OnceClosure quit_closure,
+                              int rv) {
+    finished_read_order->push_back(entry_number);
+    if (quit_closure)
+      std::move(quit_closure).Run();
+  };
+
+  scoped_refptr<net::IOBuffer> read_buf1 =
+      base::MakeRefCounted<net::IOBuffer>(kSize);
+  scoped_refptr<net::IOBuffer> read_buf2 =
+      base::MakeRefCounted<net::IOBuffer>(kSize);
+  scoped_refptr<net::IOBuffer> read_buf3 =
+      base::MakeRefCounted<net::IOBuffer>(kSize);
+
+  // Read from the entries in order 2, 3, 1. They should complete in that
+  // order.
+  base::RunLoop read_run_loop;
+
+  entry2->ReadData(2, 0, read_buf2.get(), kSize,
+                   base::BindRepeating(finished_callback, &finished_read_order,
+                                       2, base::Passed(base::OnceClosure())));
+  entry3->ReadData(2, 0, read_buf3.get(), kSize,
+                   base::BindRepeating(finished_callback, &finished_read_order,
+                                       3, base::Passed(base::OnceClosure())));
+  entry1->ReadData(2, 0, read_buf1.get(), kSize,
+                   base::BindRepeating(finished_callback, &finished_read_order,
+                                       1, read_run_loop.QuitClosure()));
+  EXPECT_EQ(0u, finished_read_order.size());
+
+  read_run_loop.Run();
+  EXPECT_EQ((std::vector<int>{2, 3, 1}), finished_read_order);
+  entry1->Close();
+  entry2->Close();
+  entry3->Close();
 }
 
 // Tests that enumerations include entries with long keys.

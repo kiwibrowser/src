@@ -9,6 +9,8 @@ import android.content.res.ColorStateList;
 import android.support.design.widget.TabLayout;
 import android.util.AttributeSet;
 import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -217,6 +219,14 @@ public class AccessibilityTabModelWrapper extends LinearLayout {
                 mIncognitoButton.setBackgroundResource(R.drawable.btn_bg_holo);
                 mStandardButton.setBackgroundResource(R.drawable.btn_bg_holo_active);
             }
+        }
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+          setBackgroundColor(ApiCompatibilityUtils.getColor(
+            getResources(), R.color.incognito_modern_primary_color));
+          mModernStackButtonWrapper.setSelectedTabIndicatorColor(
+                  mTabIconSelectedLightColor.getDefaultColor());
+          mModernStandardButtonIcon.setTint(mTabIconLightColor);
+          mModernIncognitoButtonIcon.setTint(mTabIconSelectedLightColor);
         }
 
         mAccessibilityView.setContentDescription(incognitoSelected

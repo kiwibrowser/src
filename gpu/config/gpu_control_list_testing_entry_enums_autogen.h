@@ -79,6 +79,7 @@ enum GpuControlListTestingEntryEnum {
   kGpuControlListEntryTest_GpuSeriesPrimary = 63,
   kGpuControlListEntryTest_GpuSeriesSecondary = 64,
   kGpuControlListEntryTest_GpuSeriesInException = 65,
+  kGpuControlListEntryTest_MultipleDrivers = 66,
 };
 }  // namespace gpu
 

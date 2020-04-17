@@ -73,6 +73,7 @@ const ContentSettingsTypeNameEntry kContentSettingsTypeGroupNames[] = {
     {CONTENT_SETTINGS_TYPE_SENSORS, "sensors"},
     {CONTENT_SETTINGS_TYPE_PAYMENT_HANDLER, "payment-handler"},
     {CONTENT_SETTINGS_TYPE_USB_GUARD, "usb-devices"},
+    {CONTENT_SETTINGS_TYPE_DESKTOP_MODE, "desktop-mode"},
 
     // Add new content settings here if a corresponding Javascript string
     // representation for it is not required. Note some exceptions, such as
@@ -161,7 +162,7 @@ SiteSettingSource CalculateSiteSettingSource(
 
   if (content_type == CONTENT_SETTINGS_TYPE_ADS &&
       base::FeatureList::IsEnabled(
-          subresource_filter::kSafeBrowsingSubresourceFilterExperimentalUI)) {
+          subresource_filter::kSafeBrowsingSubresourceFilter)) {
     HostContentSettingsMap* map =
         HostContentSettingsMapFactory::GetForProfile(profile);
     if (map->GetWebsiteSetting(origin, GURL(), CONTENT_SETTINGS_TYPE_ADS_DATA,

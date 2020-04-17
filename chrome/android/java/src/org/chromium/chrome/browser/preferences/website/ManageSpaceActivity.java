@@ -43,6 +43,9 @@ import org.chromium.chrome.browser.searchwidget.SearchWidgetProvider;
 
 import java.util.Collection;
 
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+
 /**
  * This is the target activity for the "Manage Storage" button in the Android Settings UI. This is
  * configured in AndroidManifest.xml by setting android:manageSpaceActivity for the application.
@@ -89,6 +92,10 @@ public class ManageSpaceActivity extends AppCompatActivity implements View.OnCli
         mUnimportantSiteDataSizeText =
                 (TextView) findViewById(R.id.unimportant_site_data_storage_size_text);
         mUnimportantSiteDataSizeText.setText(R.string.storage_management_computing_size);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mSiteDataSizeText.setTextColor(Color.GRAY);
+            mUnimportantSiteDataSizeText.setTextColor(Color.GRAY);
+        }
         mManageSiteDataButton = (Button) findViewById(R.id.manage_site_data_storage);
         mClearUnimportantButton = (Button) findViewById(R.id.clear_unimportant_site_data_storage);
 
@@ -116,6 +123,10 @@ public class ManageSpaceActivity extends AppCompatActivity implements View.OnCli
             public void onStartupFailure() {
                 mSiteDataSizeText.setText(R.string.storage_management_startup_failure);
                 mUnimportantSiteDataSizeText.setText(R.string.storage_management_startup_failure);
+                if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                    mSiteDataSizeText.setTextColor(Color.GRAY);
+                    mUnimportantSiteDataSizeText.setTextColor(Color.GRAY);
+                }
             }
         };
 
@@ -153,6 +164,11 @@ public class ManageSpaceActivity extends AppCompatActivity implements View.OnCli
             Log.e(TAG, "Unable to load native library.", e);
             mSiteDataSizeText.setText(R.string.storage_management_startup_failure);
             mUnimportantSiteDataSizeText.setText(R.string.storage_management_startup_failure);
+
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                mSiteDataSizeText.setTextColor(Color.GRAY);
+                mUnimportantSiteDataSizeText.setTextColor(Color.GRAY);
+            }
         }
     }
 
@@ -201,6 +217,11 @@ public class ManageSpaceActivity extends AppCompatActivity implements View.OnCli
     private void clearUnimportantData() {
         mSiteDataSizeText.setText(R.string.storage_management_computing_size);
         mUnimportantSiteDataSizeText.setText(R.string.storage_management_computing_size);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mSiteDataSizeText.setTextColor(Color.GRAY);
+            mUnimportantSiteDataSizeText.setTextColor(Color.GRAY);
+        }
+
         mClearUnimportantButton.setEnabled(false);
         mManageSiteDataButton.setEnabled(false);
         UnimportantSiteDataClearer clearer = new UnimportantSiteDataClearer();
@@ -276,6 +297,11 @@ public class ManageSpaceActivity extends AppCompatActivity implements View.OnCli
     private void onSiteStorageSizeCalculated(long totalSize, long unimportantSize) {
         mSiteDataSizeText.setText(Formatter.formatFileSize(this, totalSize));
         mUnimportantSiteDataSizeText.setText(Formatter.formatFileSize(this, unimportantSize));
+
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mSiteDataSizeText.setTextColor(Color.GRAY);
+            mUnimportantSiteDataSizeText.setTextColor(Color.GRAY);
+        }
     }
 
     private class SizeCalculator implements WebsitePermissionsFetcher.WebsitePermissionsCallback {

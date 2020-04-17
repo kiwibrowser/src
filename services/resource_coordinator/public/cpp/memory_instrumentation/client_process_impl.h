@@ -65,11 +65,6 @@ class SERVICES_RESOURCE_COORDINATOR_PUBLIC_CPP_EXPORT ClientProcessImpl
       const base::trace_event::MemoryDumpRequestArgs& args,
       RequestChromeMemoryDumpCallback callback) override;
 
-  // mojom::ClientProcess implementation.
-  // TODO(ssid): Use for GPU process.
-  void EnableHeapProfiling(base::trace_event::HeapProfilingMode mode,
-                           EnableHeapProfilingCallback callback) override;
-
   // Callback passed to base::MemoryDumpManager::CreateProcessDump().
   void OnChromeMemoryDumpDone(
       bool success,

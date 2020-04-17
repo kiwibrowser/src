@@ -31,10 +31,10 @@
 namespace {
 
 Profile* GetProfileForWindow(const views::Widget* window) {
+  LOG(INFO) << "[EXTENSIONS] GetProfileForWindow";
   if (!window)
     return NULL;
-  return reinterpret_cast<Profile*>(
-      window->GetNativeWindowProperty(Profile::kProfileKey));
+  return NULL;
 }
 
 // If the given window has a profile associated with it, use that profile's

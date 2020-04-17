@@ -139,7 +139,7 @@ public class LauncherShortcutActivity extends Activity {
             Context context, String launcherShortcutIntentAction) {
         Intent newIntent = new Intent();
         newIntent.setAction(Intent.ACTION_VIEW);
-        newIntent.setData(Uri.parse(UrlConstants.NTP_URL));
+        newIntent.setData(Uri.parse(UrlConstants.LOCAL_NTP_URL));
         newIntent.setClass(context, ChromeLauncherActivity.class);
         newIntent.putExtra(IntentHandler.EXTRA_INVOKED_FROM_SHORTCUT, true);
         newIntent.putExtra(Browser.EXTRA_CREATE_NEW_TAB, true);

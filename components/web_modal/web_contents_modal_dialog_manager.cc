@@ -27,6 +27,9 @@ WebContentsModalDialogManager::~WebContentsModalDialogManager() {
 
 void WebContentsModalDialogManager::SetDelegate(
     WebContentsModalDialogManagerDelegate* d) {
+  LOG(INFO) << "[EXTENSIONS] WebContentsModalDialogManager::SetDelegate - Step 1";
+  LOG(INFO) << "[EXTENSIONS] WebContentsModalDialogManager::SetDelegate - Step 2: " << d;
+  LOG(INFO) << "[EXTENSIONS] WebContentsModalDialogManager::SetDelegate - Step 3: " << delegate_;
   delegate_ = d;
 
   for (const auto& dialog : child_dialogs_) {

@@ -10,6 +10,8 @@ import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
 
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.WindowDelegate;
@@ -43,6 +45,9 @@ public class SearchActivityLocationBarLayout extends LocationBarLayout {
         super(context, attrs, R.layout.location_bar_base);
         setUrlBarFocusable(true);
         mPendingSearchPromoDecision = LocaleManager.getInstance().needToCheckForSearchEnginePromo();
+        if (ContextUtils.getAppSharedPreferences() != null && (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))) {
+          setBackgroundColor(Color.BLACK);
+        }
     }
 
     /** Set the {@link Delegate}. */

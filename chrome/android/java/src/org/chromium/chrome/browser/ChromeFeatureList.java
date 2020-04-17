@@ -210,6 +210,7 @@ public abstract class ChromeFeatureList {
     public static final String IMPORTANT_SITES_IN_CBD = "ImportantSitesInCBD";
     public static final String INTEREST_FEED_CONTENT_SUGGESTIONS = "InterestFeedContentSuggestions";
     public static final String LANGUAGES_PREFERENCE = "LanguagesPreference";
+    public static final String LONG_PRESS_BACK_FOR_HISTORY = "LongPressBackForHistory";
     public static final String SEARCH_ENGINE_PROMO_EXISTING_DEVICE =
             "SearchEnginePromo.ExistingDevice";
     public static final String SEARCH_ENGINE_PROMO_NEW_DEVICE = "SearchEnginePromo.NewDevice";
@@ -250,6 +251,7 @@ public abstract class ChromeFeatureList {
     public static final String SOLE_INTEGRATION = "SoleIntegration";
     public static final String SOUND_CONTENT_SETTING = "SoundContentSetting";
     public static final String SPANNABLE_INLINE_AUTOCOMPLETE = "SpannableInlineAutocomplete";
+    public static final String SUBRESOURCE_FILTER = "SubresourceFilter";
     public static final String QUERY_IN_OMNIBOX = "QueryInOmnibox";
     public static final String TAB_REPARENTING = "TabReparenting";
     public static final String TRUSTED_WEB_ACTIVITY = "TrustedWebActivity";

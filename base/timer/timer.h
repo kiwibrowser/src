@@ -168,6 +168,15 @@ class BASE_EXPORT Timer {
   bool is_repeating() const { return is_repeating_; }
   bool is_running() const { return is_running_; }
 
+  // The task runner on which the task should be scheduled. If it is null, the
+  // task runner for the current sequence will be used.
+  scoped_refptr<SequencedTaskRunner> task_runner_;
+
+  // Timer isn't thread-safe and must only be used on its origin sequence
+  // (sequence on which it was started). Once fully Stop()'ed it may be
+  // destroyed or restarted on another sequence.
+  SequenceChecker origin_sequence_checker_;
+
  private:
   friend class BaseTimerTaskInternal;
 
@@ -192,10 +201,6 @@ class BASE_EXPORT Timer {
   // at |scheduled_run_time_|.
   BaseTimerTaskInternal* scheduled_task_;
 
-  // The task runner on which the task should be scheduled. If it is null, the
-  // task runner for the current sequence will be used.
-  scoped_refptr<SequencedTaskRunner> task_runner_;
-
   // Location in user code.
   Location posted_from_;
   // Delay requested by user.
@@ -216,11 +221,6 @@ class BASE_EXPORT Timer {
   // if the task must be run immediately.
   TimeTicks desired_run_time_;
 
-  // Timer isn't thread-safe and must only be used on its origin sequence
-  // (sequence on which it was started). Once fully Stop()'ed it may be
-  // destroyed or restarted on another sequence.
-  SequenceChecker origin_sequence_checker_;
-
   // Repeating timers automatically post the task again before calling the task
   // callback.
   const bool is_repeating_;
@@ -239,11 +239,15 @@ class BASE_EXPORT Timer {
 
 //-----------------------------------------------------------------------------
 // A simple, one-shot timer.  See usage notes at the top of the file.
-class OneShotTimer : public Timer {
+class BASE_EXPORT OneShotTimer : public Timer {
  public:
   OneShotTimer() : OneShotTimer(nullptr) {}
   explicit OneShotTimer(const TickClock* tick_clock)
       : Timer(false, false, tick_clock) {}
+
+  // Run the scheduled task immediately, and stop the timer. The timer needs to
+  // be running.
+  void FireNow();
 };
 
 //-----------------------------------------------------------------------------

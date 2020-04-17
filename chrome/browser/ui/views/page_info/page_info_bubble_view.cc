@@ -95,12 +95,6 @@ bool UseHarmonyStyle() {
   return ui::MaterialDesignController::IsSecondaryUiMaterial();
 }
 
-SkColor GetRelatedTextColor() {
-  views::Label label;
-  return views::style::GetColor(label, views::style::CONTEXT_LABEL,
-                                views::style::STYLE_PRIMARY);
-}
-
 // Adds a ColumnSet on |layout| with a single View column and padding columns
 // on either side of it with |margin| width.
 void AddColumnWithSideMargin(GridLayout* layout, int margin, int id) {
@@ -119,55 +113,6 @@ void AddColumnWithSideMargin(GridLayout* layout, int margin, int id) {
 // |----------------------------------------------|
 // |      | Link |subtitle_text|                  |
 // *----------------------------------------------*
-views::View* CreateMoreInfoLinkSection(views::LinkListener* listener,
-                                       const gfx::ImageSkia& image_icon,
-                                       int title_resource_id,
-                                       const base::string16& subtitle_text,
-                                       int click_target_id,
-                                       const base::string16& tooltip_text,
-                                       views::Link** link) {
-  *link = new views::Link(subtitle_text);
-  (*link)->set_id(click_target_id);
-  (*link)->set_listener(listener);
-  (*link)->SetUnderline(false);
-  (*link)->SetTooltipText(tooltip_text);
-
-  views::View* new_view = new views::View();
-  GridLayout* layout =
-      new_view->SetLayoutManager(std::make_unique<views::GridLayout>(new_view));
-  ChromeLayoutProvider* provider = ChromeLayoutProvider::Get();
-  const int side_margin =
-      provider->GetInsetsMetric(views::INSETS_DIALOG_SUBSECTION).left();
-  const int vert_spacing =
-      provider->GetDistanceMetric(DISTANCE_CONTROL_LIST_VERTICAL) / 2;
-
-  const int column = 0;
-  views::ColumnSet* column_set = layout->AddColumnSet(column);
-  column_set->AddPaddingColumn(0, side_margin);
-  column_set->AddColumn(GridLayout::CENTER, GridLayout::CENTER, 0,
-                        GridLayout::FIXED, PageInfoBubbleView::kIconColumnWidth,
-                        0);
-  column_set->AddPaddingColumn(
-      0, provider->GetDistanceMetric(views::DISTANCE_RELATED_LABEL_HORIZONTAL));
-  column_set->AddColumn(GridLayout::LEADING, GridLayout::FILL, 0,
-                        GridLayout::USE_PREF, 0, 0);
-  column_set->AddPaddingColumn(0, side_margin);
-
-  layout->StartRowWithPadding(1, column, 0, vert_spacing);
-  views::ImageView* icon = new NonAccessibleImageView();
-  icon->SetImage(image_icon);
-  layout->AddView(icon);
-
-  views::Label* title_label = new views::Label(
-      l10n_util::GetStringUTF16(title_resource_id), CONTEXT_BODY_TEXT_LARGE);
-  layout->AddView(title_label);
-
-  layout->StartRow(1, column);
-  layout->SkipColumns(1);
-  layout->AddView(*link);
-  layout->AddPaddingRow(0, vert_spacing);
-  return new_view;
-}
 
 // Formats strings and returns the |gfx::Range| of the newly inserted string.
 gfx::Range GetRangeForFormatString(int string_id,
@@ -180,46 +125,12 @@ gfx::Range GetRangeForFormatString(int string_id,
 
 // Creates a button that formats the string given by |title_resource_id| with
 // |secondary_text| and displays the latter part in the secondary text color.
-std::unique_ptr<HoverButton> CreateMoreInfoButton(
-    views::ButtonListener* listener,
-    const gfx::ImageSkia& image_icon,
-    int title_resource_id,
-    const base::string16& secondary_text,
-    int click_target_id,
-    const base::string16& tooltip_text) {
-  auto icon = std::make_unique<NonAccessibleImageView>();
-  icon->SetImage(image_icon);
-  auto button = std::make_unique<HoverButton>(
-      listener, std::move(icon), base::string16(), base::string16());
-
-  if (secondary_text.empty()) {
-    button->SetTitleTextWithHintRange(
-        l10n_util::GetStringUTF16(title_resource_id),
-        gfx::Range::InvalidRange());
-  } else {
-    base::string16 title_text;
-    gfx::Range secondary_text_range =
-        GetRangeForFormatString(title_resource_id, secondary_text, &title_text);
-    button->SetTitleTextWithHintRange(title_text, secondary_text_range);
-  }
-
-  button->set_id(click_target_id);
-  button->SetTooltipText(tooltip_text);
-  return button;
-}
 
 std::unique_ptr<views::View> CreateSiteSettingsLink(
     const int side_margin,
     PageInfoBubbleView* listener) {
   const base::string16& tooltip =
       l10n_util::GetStringUTF16(IDS_PAGE_INFO_SITE_SETTINGS_TOOLTIP);
-  if (UseHarmonyStyle()) {
-    return CreateMoreInfoButton(
-        listener, PageInfoUI::GetSiteSettingsIcon(GetRelatedTextColor()),
-        IDS_PAGE_INFO_SITE_SETTINGS_LINK, base::string16(),
-        PageInfoBubbleView::VIEW_ID_PAGE_INFO_LINK_OR_BUTTON_SITE_SETTINGS,
-        tooltip);
-  }
   views::Link* site_settings_link = new views::Link(
       l10n_util::GetStringUTF16(IDS_PAGE_INFO_SITE_SETTINGS_LINK));
   site_settings_link->set_id(
@@ -719,25 +630,6 @@ void PageInfoBubbleView::SetCookieInfo(const CookieInfoList& cookie_info_list) {
     info.is_incognito =
         Profile::FromBrowserContext(web_contents()->GetBrowserContext())
             ->IsOffTheRecord();
-    const gfx::ImageSkia icon =
-        PageInfoUI::GetPermissionIcon(info, GetRelatedTextColor());
-
-    const base::string16& tooltip =
-        l10n_util::GetStringUTF16(IDS_PAGE_INFO_COOKIES_TOOLTIP);
-
-    if (UseHarmonyStyle()) {
-      cookie_button_ =
-          CreateMoreInfoButton(
-              this, icon, IDS_PAGE_INFO_COOKIES_BUTTON_TEXT, num_cookies_text,
-              VIEW_ID_PAGE_INFO_LINK_OR_BUTTON_COOKIE_DIALOG, tooltip)
-              .release();
-      site_settings_view_->AddChildView(cookie_button_);
-    } else {
-      site_settings_view_->AddChildView(CreateMoreInfoLinkSection(
-          this, icon, IDS_PAGE_INFO_COOKIES, num_cookies_text,
-          VIEW_ID_PAGE_INFO_LINK_OR_BUTTON_COOKIE_DIALOG, tooltip,
-          &cookie_link_legacy_));
-    }
   }
 
   // Update the text displaying the number of allowed cookies.
@@ -916,27 +808,6 @@ void PageInfoBubbleView::SetIdentityInfo(const IdentityInfo& identity_info) {
     }
 
     // Add the Certificate Section.
-    const gfx::ImageSkia icon =
-        PageInfoUI::GetCertificateIcon(GetRelatedTextColor());
-    if (UseHarmonyStyle()) {
-      const base::string16 secondary_text = l10n_util::GetStringUTF16(
-          valid_identity ? IDS_PAGE_INFO_CERTIFICATE_VALID_PARENTHESIZED
-                         : IDS_PAGE_INFO_CERTIFICATE_INVALID_PARENTHESIZED);
-      std::unique_ptr<HoverButton> certificate_button = CreateMoreInfoButton(
-          this, icon, IDS_PAGE_INFO_CERTIFICATE_BUTTON_TEXT, secondary_text,
-          VIEW_ID_PAGE_INFO_LINK_OR_BUTTON_CERTIFICATE_VIEWER, tooltip);
-      certificate_button->set_auto_compute_tooltip(false);
-      site_settings_view_->AddChildView(certificate_button.release());
-    } else {
-      const base::string16 link_title = l10n_util::GetStringUTF16(
-          valid_identity ? IDS_PAGE_INFO_CERTIFICATE_VALID_LINK
-                         : IDS_PAGE_INFO_CERTIFICATE_INVALID_LINK);
-      views::Link* certificate_viewer_link = nullptr;
-      site_settings_view_->AddChildView(CreateMoreInfoLinkSection(
-          this, icon, IDS_PAGE_INFO_CERTIFICATE, link_title,
-          VIEW_ID_PAGE_INFO_LINK_OR_BUTTON_CERTIFICATE_VIEWER, tooltip,
-          &certificate_viewer_link));
-    }
   }
 
   if (identity_info.show_change_password_buttons) {

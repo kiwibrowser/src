@@ -9,6 +9,7 @@
 #include "base/pickle.h"
 #include "base/test/scoped_task_environment.h"
 #include "net/base/net_errors.h"
+#include "net/base/request_priority.h"
 #include "net/base/test_completion_callback.h"
 #include "net/disk_cache/disk_cache.h"
 #include "net/http/http_cache.h"
@@ -84,10 +85,10 @@ void WriteToEntry(disk_cache::Backend* cache, const std::string& key,
                   const std::string& data2) {
   TestCompletionCallback cb;
   disk_cache::Entry* entry;
-  int rv = cache->CreateEntry(key, &entry, cb.callback());
+  int rv = cache->CreateEntry(key, net::HIGHEST, &entry, cb.callback());
   rv = cb.GetResult(rv);
   if (rv != OK) {
-    rv = cache->OpenEntry(key, &entry, cb.callback());
+    rv = cache->OpenEntry(key, net::HIGHEST, &entry, cb.callback());
     ASSERT_THAT(cb.GetResult(rv), IsOk());
   }
 
@@ -209,7 +210,7 @@ TEST(ViewCacheHelper, TruncatedFlag) {
 
   std::string key("the key");
   disk_cache::Entry* entry;
-  rv = cache->CreateEntry(key, &entry, cb.callback());
+  rv = cache->CreateEntry(key, net::HIGHEST, &entry, cb.callback());
   ASSERT_THAT(cb.GetResult(rv), IsOk());
 
   // RESPONSE_INFO_TRUNCATED defined on response_info.cc

@@ -5,6 +5,9 @@
 #ifndef EXTENSIONS_BROWSER_API_SOCKETS_TCP_SERVER_SOCKETS_TCP_SERVER_API_H_
 #define EXTENSIONS_BROWSER_API_SOCKETS_TCP_SERVER_SOCKETS_TCP_SERVER_API_H_
 
+#include <memory>
+#include <string>
+
 #include "base/gtest_prod_util.h"
 #include "extensions/browser/api/socket/socket_api.h"
 #include "extensions/common/api/sockets_tcp_server.h"
@@ -98,6 +101,8 @@ class SocketsTcpServerListenFunction : public TCPServerSocketAsyncApiFunction {
   void AsyncWorkStart() override;
 
  private:
+  void OnCompleted(int result, const std::string& error_msg);
+
   std::unique_ptr<sockets_tcp_server::Listen::Params> params_;
   TCPServerSocketEventDispatcher* socket_event_dispatcher_;
 };

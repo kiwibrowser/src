@@ -243,7 +243,7 @@ DevToolsManagerDelegateAndroid::CreateNewTarget(const GURL& url) {
   if (!tab_model)
     return nullptr;
 
-  WebContents* web_contents = tab_model->CreateNewTabForDevTools(url);
+  WebContents* web_contents = tab_model->CreateNewTabForDevTools(url, false);
   if (!web_contents)
     return nullptr;
 

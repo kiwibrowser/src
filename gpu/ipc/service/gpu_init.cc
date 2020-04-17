@@ -107,7 +107,7 @@ bool GpuInit::InitializeAndStartSandbox(base::CommandLine* command_line,
 
 #if defined(OS_LINUX) && !defined(OS_CHROMEOS)
   if (gpu_info_.gpu.vendor_id == 0x10de &&  // NVIDIA
-      gpu_info_.driver_vendor == "NVIDIA" && !CanAccessNvidiaDeviceFile())
+      gpu_info_.gpu.driver_vendor == "NVIDIA" && !CanAccessNvidiaDeviceFile())
     return false;
 #endif
   if (!PopGpuFeatureInfoCache(&gpu_feature_info_)) {

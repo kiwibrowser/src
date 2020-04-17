@@ -3060,6 +3060,7 @@ void SendTouchpadPinchSequenceWithExpectedTarget(
 
   ui::GestureEventDetails pinch_update_details(ui::ET_GESTURE_PINCH_UPDATE);
   pinch_update_details.set_device_type(ui::GestureDeviceType::DEVICE_TOUCHPAD);
+  pinch_update_details.set_scale(1.23);
   ui::GestureEvent pinch_update(gesture_point.x(), gesture_point.y(), 0,
                                 ui::EventTimeForNow(), pinch_update_details);
   UpdateEventRootLocation(&pinch_update, root_view_aura);
@@ -3359,6 +3360,29 @@ IN_PROC_BROWSER_TEST_P(SitePerProcessHitTestBrowserTest,
   RenderWidgetHostInputEventRouter* router = contents->GetInputEventRouter();
   EXPECT_EQ(nullptr, router->touchpad_gesture_target_.target);
 
+  // TODO(848050): If we send multiple touchpad pinch sequences to separate
+  // views and the timing of the acks are such that the begin ack of the second
+  // sequence arrives in the root before the end ack of the first sequence, we
+  // would produce an invalid gesture event sequence. For now, we wait for the
+  // root to receive the end ack before sending a pinch sequence to a different
+  // view. The root view should preserve validity of input event sequences
+  // when processing acks from multiple views, so that waiting here is not
+  // necessary.
+  auto wait_for_pinch_sequence_end = base::BindRepeating(
+      [](RenderWidgetHost* rwh) {
+        InputEventAckWaiter pinch_end_observer(
+            rwh, base::BindRepeating([](content::InputEventAckSource,
+                                        content::InputEventAckState,
+                                        const blink::WebInputEvent& event) {
+              return event.GetType() ==
+                         blink::WebGestureEvent::kGesturePinchEnd &&
+                     !static_cast<const blink::WebGestureEvent&>(event)
+                          .NeedsWheelEvent();
+            }));
+        pinch_end_observer.Wait();
+      },
+      rwhv_parent->GetRenderWidgetHost());
+
   gfx::Point main_frame_point(25, 25);
   gfx::Point child_center(150, 150);
 
@@ -3367,10 +3391,14 @@ IN_PROC_BROWSER_TEST_P(SitePerProcessHitTestBrowserTest,
       rwhv_parent, main_frame_point, router->touchpad_gesture_target_.target,
       rwhv_parent);
 
+  wait_for_pinch_sequence_end.Run();
+
   // Send touchpad pinch sequence to child.
   SendTouchpadPinchSequenceWithExpectedTarget(
       rwhv_parent, child_center, router->touchpad_gesture_target_.target,
       rwhv_child);
+
+  wait_for_pinch_sequence_end.Run();
 
   // Send another touchpad pinch sequence to main frame.
   SendTouchpadPinchSequenceWithExpectedTarget(
@@ -3396,6 +3424,86 @@ IN_PROC_BROWSER_TEST_P(SitePerProcessHitTestBrowserTest,
       rwhv_parent);
 #endif
 }
+
+namespace {
+
+class TestPageScaleObserver : public WebContentsObserver {
+ public:
+  explicit TestPageScaleObserver(WebContents* web_contents)
+      : WebContentsObserver(web_contents) {}
+
+  void OnPageScaleFactorChanged(float page_scale_factor) override {
+    seen_page_scale_change_ = true;
+    if (done_callback_)
+      std::move(done_callback_).Run();
+  }
+
+  void WaitForPageScaleUpdate() {
+    if (!seen_page_scale_change_) {
+      base::RunLoop run_loop;
+      done_callback_ = run_loop.QuitClosure();
+      run_loop.Run();
+    }
+    seen_page_scale_change_ = false;
+  }
+
+ private:
+  base::OnceClosure done_callback_;
+  bool seen_page_scale_change_ = false;
+};
+
+}  // namespace
+
+// Test that performing a touchpad pinch over an OOPIF offers the synthetic
+// wheel events to the child and causes the page scale factor to change for
+// the main frame (given that the child did not consume the wheel).
+IN_PROC_BROWSER_TEST_P(SitePerProcessHitTestBrowserTest,
+                       TouchpadPinchOverOOPIF) {
+  GURL main_url(embedded_test_server()->GetURL(
+      "/frame_tree/page_with_positioned_frame.html"));
+  EXPECT_TRUE(NavigateToURL(shell(), main_url));
+
+  WebContentsImpl* contents = web_contents();
+  FrameTreeNode* root = contents->GetFrameTree()->root();
+  ASSERT_EQ(1U, root->child_count());
+
+  GURL frame_url(
+      embedded_test_server()->GetURL("b.com", "/page_with_wheel_handler.html"));
+  NavigateFrameToURL(root->child_at(0), frame_url);
+  auto* child_frame_host = root->child_at(0)->current_frame_host();
+
+  auto* rwhv_child =
+      static_cast<RenderWidgetHostViewBase*>(child_frame_host->GetView());
+  WaitForChildFrameSurfaceReady(child_frame_host);
+
+  auto* rwhv_parent = static_cast<RenderWidgetHostViewBase*>(
+      contents->GetRenderWidgetHostView());
+
+  RenderWidgetHostInputEventRouter* router = contents->GetInputEventRouter();
+  EXPECT_EQ(nullptr, router->touchpad_gesture_target_.target);
+
+  const float scale_factor = GetPageScaleFactor(shell());
+  const gfx::Point point_in_child(gfx::ToCeiledInt(100 * scale_factor),
+                                  gfx::ToCeiledInt(100 * scale_factor));
+
+  TestPageScaleObserver scale_observer(shell()->web_contents());
+  SendTouchpadPinchSequenceWithExpectedTarget(
+      rwhv_parent, point_in_child, router->touchpad_gesture_target_.target,
+      rwhv_child);
+
+  // Ensure the child frame saw the wheel event.
+  bool default_prevented = false;
+  ASSERT_TRUE(content::ExecuteScriptAndExtractBool(
+      child_frame_host,
+      "handlerPromise.then(function(e) {"
+      "  window.domAutomationController.send(e.defaultPrevented);"
+      "});",
+      &default_prevented));
+  EXPECT_FALSE(default_prevented);
+
+  scale_observer.WaitForPageScaleUpdate();
+}
+
 #endif  // defined(USE_AURA)
 
 // A WebContentsDelegate to capture ContextMenu creation events.

@@ -15,6 +15,7 @@ import android.os.Bundle;
 import android.os.UserManager;
 import android.speech.RecognizerIntent;
 
+import org.chromium.base.ContextUtils;
 import org.chromium.base.CommandLine;
 import org.chromium.base.StrictModeContext;
 import org.chromium.base.ThreadUtils;
@@ -160,8 +161,12 @@ public class FeatureUtilities {
         // Propagate DONT_PREFETCH_LIBRARIES feature value to LibraryLoader. This can't
         // be done in LibraryLoader itself because it lives in //base and can't depend
         // on ChromeFeatureList.
-        LibraryLoader.setDontPrefetchLibrariesOnNextRuns(
-                ChromeFeatureList.isEnabled(ChromeFeatureList.DONT_PREFETCH_LIBRARIES));
+        if (!ChromeFeatureList.isInitialized()) {
+          LibraryLoader.setDontPrefetchLibrariesOnNextRuns(false);
+        } else {
+          LibraryLoader.setDontPrefetchLibrariesOnNextRuns(
+                  ChromeFeatureList.isEnabled(ChromeFeatureList.DONT_PREFETCH_LIBRARIES));
+        }
     }
 
     /**
@@ -179,11 +184,12 @@ public class FeatureUtilities {
      * available immediately.
      */
     public static void cacheChromeModernDesignEnabled() {
+        if (!ChromeFeatureList.isInitialized()) return ;
         boolean isModernEnabled =
                 ChromeFeatureList.isEnabled(ChromeFeatureList.CHROME_MODERN_DESIGN);
 
         ChromePreferenceManager manager = ChromePreferenceManager.getInstance();
-        manager.setChromeModernDesignEnabled(isModernEnabled);
+        manager.setChromeModernDesignEnabled(true);
     }
 
     /**
@@ -191,6 +197,7 @@ public class FeatureUtilities {
      * be made available immediately.
      */
     public static void cacheHomePageButtonForceEnabled() {
+        if (!ChromeFeatureList.isInitialized()) return ;
         if (PartnerBrowserCustomizations.isHomepageProviderAvailableAndEnabled()) return;
         ChromePreferenceManager.getInstance().setHomePageButtonForceEnabled(
                 ChromeFeatureList.isEnabled(ChromeFeatureList.HOME_PAGE_BUTTON_FORCE_ENABLED));
@@ -223,6 +230,7 @@ public class FeatureUtilities {
      * be made available immediately.
      */
     public static void cacheNewTabPageButtonEnabled() {
+        if (!ChromeFeatureList.isInitialized()) return ;
         ChromePreferenceManager.getInstance().setNewTabPageButtonEnabled(
                 ChromeFeatureList.isEnabled(ChromeFeatureList.NTP_BUTTON));
     }
@@ -257,6 +265,7 @@ public class FeatureUtilities {
      * Cache whether or not command line is enabled on non-rooted devices.
      */
     private static void cacheCommandLineOnNonRootedEnabled() {
+        if (!ChromeFeatureList.isInitialized()) return ;
         boolean isCommandLineOnNonRootedEnabled =
                 ChromeFeatureList.isEnabled(ChromeFeatureList.COMMAND_LINE_ON_NON_ROOTED);
         ChromePreferenceManager manager = ChromePreferenceManager.getInstance();
@@ -276,6 +285,7 @@ public class FeatureUtilities {
      * @return Whether or not the download progress infobar is enabled.
      */
     public static boolean isDownloadProgressInfoBarEnabled() {
+        if (!ChromeFeatureList.isInitialized()) return true;
         return ChromeFeatureList.isEnabled(ChromeFeatureList.DOWNLOAD_PROGRESS_INFOBAR);
     }
 
@@ -290,8 +300,10 @@ public class FeatureUtilities {
      * @return Whether Chrome Duplex, split toolbar Chrome Home, is enabled.
      */
     public static boolean isChromeDuplexEnabled() {
+        if (!ChromeFeatureList.isInitialized()) return false;
         return ChromeFeatureList.isInitialized()
-                && ChromeFeatureList.isEnabled(ChromeFeatureList.CHROME_DUPLEX);
+                && ChromeFeatureList.isEnabled(ChromeFeatureList.CHROME_DUPLEX)
+                && !ContextUtils.getAppSharedPreferences().getBoolean("enable_bottom_toolbar", false);
     }
 
     /**
@@ -312,6 +324,7 @@ public class FeatureUtilities {
      * Cache whether or not Sole integration is enabled.
      */
     public static void cacheSoleEnabled() {
+        if (!ChromeFeatureList.isInitialized()) return ;
         boolean featureEnabled = ChromeFeatureList.isEnabled(ChromeFeatureList.SOLE_INTEGRATION);
         ChromePreferenceManager prefManager = ChromePreferenceManager.getInstance();
         boolean prefEnabled = prefManager.isSoleEnabled();
@@ -351,11 +364,11 @@ public class FeatureUtilities {
         if (sIsChromeModernDesignEnabled == null) {
             ChromePreferenceManager prefManager = ChromePreferenceManager.getInstance();
             try (StrictModeContext unused = StrictModeContext.allowDiskReads()) {
-                sIsChromeModernDesignEnabled = prefManager.isChromeModernDesignEnabled();
+                sIsChromeModernDesignEnabled = true;
             }
         }
 
-        return sIsChromeModernDesignEnabled;
+        return true;
     }
 
     /**
@@ -363,6 +376,7 @@ public class FeatureUtilities {
      * @return Whether the contextual suggestions bottom sheet is enabled.
      */
     public static boolean isContextualSuggestionsBottomSheetEnabled(boolean isTablet) {
+        if (!ChromeFeatureList.isInitialized()) return false;
         return !isTablet && !LocaleManager.getInstance().needToCheckForSearchEnginePromo()
                 && isChromeModernDesignEnabled()
                 && ChromeFeatureList.isEnabled(

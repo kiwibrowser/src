@@ -379,7 +379,6 @@ ui::TextInputType OmniboxViewViews::GetTextInputType() const {
 
 void OmniboxViewViews::AddedToWidget() {
   views::Textfield::AddedToWidget();
-  scoped_observer_.Add(GetWidget()->GetCompositor());
 }
 
 void OmniboxViewViews::RemovedFromWidget() {
@@ -662,15 +661,15 @@ bool OmniboxViewViews::OnAfterPossibleChange(bool allow_keyword_ui_change) {
 }
 
 gfx::NativeView OmniboxViewViews::GetNativeView() const {
-  return GetWidget()->GetNativeView();
+  return gfx::NativeView();
 }
 
 gfx::NativeView OmniboxViewViews::GetRelativeWindowForPopup() const {
-  return GetWidget()->GetTopLevelWidget()->GetNativeView();
+  return gfx::NativeView();
 }
 
 int OmniboxViewViews::GetWidth() const {
-  return location_bar_view_ ? location_bar_view_->width() : 0;
+  return 0;
 }
 
 bool OmniboxViewViews::IsImeShowingPopup() const {
@@ -708,6 +707,8 @@ void OmniboxViewViews::SetEmphasis(bool emphasize, const gfx::Range& range) {
 }
 
 void OmniboxViewViews::UpdateSchemeStyle(const gfx::Range& range) {
+  if (true)
+    return;
   DCHECK(range.IsValid());
   // Only SECURE and DANGEROUS levels (pages served over HTTPS or flagged by
   // SafeBrowsing) get a special scheme color treatment. If the security level

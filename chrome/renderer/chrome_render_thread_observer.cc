@@ -135,6 +135,7 @@ class RendererResourceDelegate : public content::ResourceDispatcherDelegate {
 }  // namespace
 
 bool ChromeRenderThreadObserver::is_incognito_process_ = false;
+bool ChromeRenderThreadObserver::is_bottom_toolbar_enabled_ = false;
 
 ChromeRenderThreadObserver::ChromeRenderThreadObserver()
     : visited_link_slave_(new visitedlink::VisitedLinkSlave),
@@ -187,8 +188,9 @@ void ChromeRenderThreadObserver::UnregisterMojoInterfaces(
 }
 
 void ChromeRenderThreadObserver::SetInitialConfiguration(
-    bool is_incognito_process) {
+    bool is_incognito_process, bool is_bottom_toolbar_enabled) {
   is_incognito_process_ = is_incognito_process;
+  is_bottom_toolbar_enabled_ = is_bottom_toolbar_enabled;
 }
 
 void ChromeRenderThreadObserver::SetContentSettingRules(

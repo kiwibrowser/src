@@ -14,6 +14,7 @@ import org.chromium.base.Log;
 import org.chromium.base.ObserverList.RewindableIterator;
 import org.chromium.base.metrics.RecordHistogram;
 import org.chromium.chrome.browser.AppHooks;
+import org.chromium.chrome.browser.SwipeRefreshHandler;
 import org.chromium.chrome.browser.fullscreen.FullscreenManager;
 import org.chromium.chrome.browser.media.MediaCaptureNotificationService;
 import org.chromium.chrome.browser.policy.PolicyAuditor;
@@ -220,7 +221,9 @@ public class TabWebContentsObserver extends WebContentsObserver {
         }
 
         if (isInMainFrame) {
-            mTab.stopSwipeRefreshHandler();
+            // Stop swipe-to-refresh animation.
+            SwipeRefreshHandler handler = SwipeRefreshHandler.get(mTab);
+            if (handler != null) handler.didStopRefreshing();
         }
     }
 

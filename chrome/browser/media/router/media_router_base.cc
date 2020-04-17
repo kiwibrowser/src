@@ -12,7 +12,7 @@
 #include "chrome/browser/chrome_notification_types.h"
 #include "chrome/browser/profiles/profile.h"
 #include "content/public/browser/browser_thread.h"
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 #include "chrome/browser/media/router/mojo/media_route_controller.h"
 #endif  // !defined(OS_ANDROID)
 
@@ -91,7 +91,7 @@ std::unique_ptr<content::MediaController> MediaRouterBase::GetMediaController(
   return nullptr;
 }
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 scoped_refptr<MediaRouteController> MediaRouterBase::GetRouteController(
     const MediaRoute::Id& route_id) {
   return nullptr;
@@ -170,7 +170,7 @@ void MediaRouterBase::Shutdown() {
   internal_routes_observer_.reset();
 }
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 void MediaRouterBase::DetachRouteController(const MediaRoute::Id& route_id,
                                             MediaRouteController* controller) {}
 #endif  // !defined(OS_ANDROID)

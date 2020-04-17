@@ -28,11 +28,10 @@ bool IndexAndWriteRuleset(const base::FilePath& unindexed_path,
 
   subresource_filter::RulesetIndexer indexer;
 
-  url_pattern_index::CopyingFileInputStream copying_stream(
-      std::move(unindexed_file));
+  CopyingFileInputStream copying_stream(std::move(unindexed_file));
   google::protobuf::io::CopyingInputStreamAdaptor zero_copy_stream_adaptor(
       &copying_stream, 4096 /* buffer_size */);
-  url_pattern_index::UnindexedRulesetReader reader(&zero_copy_stream_adaptor);
+  UnindexedRulesetReader reader(&zero_copy_stream_adaptor);
 
   url_pattern_index::proto::FilteringRules ruleset_chunk;
 

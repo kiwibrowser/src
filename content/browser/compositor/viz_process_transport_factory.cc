@@ -349,6 +349,11 @@ viz::FrameSinkManagerImpl* VizProcessTransportFactory::GetFrameSinkManager() {
   return nullptr;
 }
 
+void VizProcessTransportFactory::DisableGpuCompositing() {
+  if (!is_gpu_compositing_disabled_)
+    DisableGpuCompositing(nullptr);
+}
+
 bool VizProcessTransportFactory::IsGpuCompositingDisabled() {
   return is_gpu_compositing_disabled_;
 }

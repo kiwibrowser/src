@@ -4,12 +4,14 @@
 
 package org.chromium.chrome.browser.bookmarks;
 
+import android.graphics.Color;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.util.AttributeSet;
 
 import org.chromium.chrome.R;
+import org.chromium.base.ContextUtils;
 import org.chromium.chrome.browser.bookmarks.BookmarkBridge.BookmarkItem;
 import org.chromium.chrome.browser.favicon.IconType;
 import org.chromium.chrome.browser.favicon.LargeIconBridge.LargeIconCallback;
@@ -69,6 +71,10 @@ public class BookmarkItemRow extends BookmarkRow implements LargeIconCallback {
         mIconView.setImageDrawable(null);
         mTitleView.setText(item.getTitle());
         mDescriptionView.setText(item.getUrlForDisplay());
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mTitleView.setTextColor(Color.WHITE);
+            mDescriptionView.setTextColor(Color.GRAY);
+        }
         mDelegate.getLargeIconBridge().getLargeIconForUrl(mUrl, mMinIconSize, this);
         return item;
     }

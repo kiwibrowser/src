@@ -8,7 +8,7 @@
 
 #include "base/macros.h"
 #include "base/metrics/histogram_base.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/test/scoped_feature_list.h"
 #include "build/build_config.h"
 #include "components/network_session_configurator/common/network_switches.h"

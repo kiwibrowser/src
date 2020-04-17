@@ -69,7 +69,7 @@ TEST(VariationsRequestSchedulerMobileTest, OnAppEnterForegroundNoRun) {
 
   // Force execution of the task on this timer to verify that the correct task
   // was added to the timer.
-  scheduler.schedule_fetch_timer_.user_task().Run();
+  scheduler.schedule_fetch_timer_.FireNow();
 
   // The task should not execute because the seed was fetched too recently.
   EXPECT_EQ(0, executed);
@@ -95,7 +95,7 @@ TEST(VariationsRequestSchedulerMobileTest, OnAppEnterForegroundRun) {
 
   // Force execution of the task on this timer to verify that the correct task
   // was added to the timer - this will verify that the right task is running.
-  scheduler.schedule_fetch_timer_.user_task().Run();
+  scheduler.schedule_fetch_timer_.FireNow();
 
   // We expect the input task to have triggered.
   EXPECT_EQ(1, executed);
@@ -134,7 +134,7 @@ TEST(VariationsRequestSchedulerMobileTest, OnAppEnterForegroundOnStartup) {
 
   scheduler.OnAppEnterForeground();
   EXPECT_TRUE(scheduler.schedule_fetch_timer_.IsRunning());
-  scheduler.schedule_fetch_timer_.user_task().Run();
+  scheduler.schedule_fetch_timer_.FireNow();
   // This time it should execute the task.
   EXPECT_EQ(2, executed);
 }

@@ -26,6 +26,37 @@ import org.chromium.chrome.browser.preferences.PrefServiceBridge;
 import org.chromium.chrome.browser.preferences.PreferenceUtils;
 import org.chromium.chrome.browser.profiles.Profile;
 
+import org.chromium.base.ContextUtils;
+import android.content.SharedPreferences;
+
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+
+import android.view.View;
+import android.widget.ListView;
+
+import org.chromium.chrome.browser.RestartWorker;
+import org.chromium.chrome.R;
+import org.chromium.chrome.browser.ChromeFeatureList;
+import org.chromium.chrome.browser.accessibility.FontSizePrefs;
+import org.chromium.chrome.browser.accessibility.NightModePrefs;
+import org.chromium.chrome.browser.accessibility.FontSizePrefs.FontSizePrefsObserver;
+import org.chromium.chrome.browser.accessibility.NightModePrefs.NightModePrefsObserver;
+import org.chromium.base.ContextUtils;
+import org.chromium.ui.widget.Toast;
+import org.chromium.chrome.browser.util.AccessibilityUtil;
+
+import android.view.View;
+import android.content.DialogInterface;
+import android.support.v7.app.AlertDialog;
+import java.text.NumberFormat;
+
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+
+import android.widget.ListView;
+import org.chromium.base.ContextUtils;
+
 /**
  * Fragment to keep track of the all the privacy related preferences.
  */
@@ -40,10 +71,13 @@ public class PrivacyPreferences extends PreferenceFragment
     private static final String PREF_SAFE_BROWSING = "safe_browsing";
     private static final String PREF_CAN_MAKE_PAYMENT = "can_make_payment";
     private static final String PREF_CONTEXTUAL_SEARCH = "contextual_search";
+    private static final String PREF_CLOSE_TABS_ON_EXIT = "close_tabs_on_exit";
+    private static final String PREF_CLOSE_BROWSER_AFTER_LAST_TAB = "close_browser_after_last_tab";
     private static final String PREF_NETWORK_PREDICTIONS = "network_predictions";
     private static final String PREF_DO_NOT_TRACK = "do_not_track";
     private static final String PREF_USAGE_AND_CRASH_REPORTING = "usage_and_crash_reports";
     private static final String PREF_CLEAR_BROWSING_DATA = "clear_browsing_data";
+    private static final String PREF_AVOID_AMP_WEBSITES = "avoid_amp_websites";
 
     private ManagedPreferenceDelegate mManagedPreferenceDelegate;
 
@@ -98,7 +132,9 @@ public class PrivacyPreferences extends PreferenceFragment
         String extended_reporting_pref_to_remove =
                 prefServiceBridge.isSafeBrowsingScoutReportingActive()
                     ? PREF_SAFE_BROWSING_EXTENDED_REPORTING : PREF_SAFE_BROWSING_SCOUT_REPORTING;
-        preferenceScreen.removePreference(findPreference(extended_reporting_pref_to_remove));
+        preferenceScreen.removePreference(findPreference(PREF_SAFE_BROWSING_EXTENDED_REPORTING));
+        preferenceScreen.removePreference(findPreference(PREF_SAFE_BROWSING_SCOUT_REPORTING));
+        preferenceScreen.removePreference(findPreference(PREF_USAGE_AND_CRASH_REPORTING));
 
         ChromeBaseCheckBoxPreference safeBrowsingPref =
                 (ChromeBaseCheckBoxPreference) findPreference(PREF_SAFE_BROWSING);
@@ -108,6 +144,8 @@ public class PrivacyPreferences extends PreferenceFragment
         ChromeBaseCheckBoxPreference canMakePaymentPref =
                 (ChromeBaseCheckBoxPreference) findPreference(PREF_CAN_MAKE_PAYMENT);
         canMakePaymentPref.setOnPreferenceChangeListener(this);
+
+        ((ChromeBaseCheckBoxPreference) findPreference("hide_incognito_window_content")).setOnPreferenceChangeListener(this);
 
         updateSummaries();
     }
@@ -131,6 +169,23 @@ public class PrivacyPreferences extends PreferenceFragment
         } else if (PREF_CAN_MAKE_PAYMENT.equals(key)) {
             PrefServiceBridge.getInstance().setBoolean(
                     Pref.CAN_MAKE_PAYMENT_ENABLED, (boolean) newValue);
+        } else if (PREF_CLOSE_TABS_ON_EXIT.equals(key)) {
+            SharedPreferences.Editor sharedPreferencesEditor = ContextUtils.getAppSharedPreferences().edit();
+            sharedPreferencesEditor.putBoolean(PREF_CLOSE_TABS_ON_EXIT, (boolean)newValue);
+            sharedPreferencesEditor.apply();
+        } else if (PREF_CLOSE_BROWSER_AFTER_LAST_TAB.equals(key)) {
+            SharedPreferences.Editor sharedPreferencesEditor = ContextUtils.getAppSharedPreferences().edit();
+            sharedPreferencesEditor.putBoolean(PREF_CLOSE_BROWSER_AFTER_LAST_TAB, (boolean)newValue);
+            sharedPreferencesEditor.apply();
+        } else if (PREF_AVOID_AMP_WEBSITES.equals(key)) {
+            SharedPreferences.Editor sharedPreferencesEditor = ContextUtils.getAppSharedPreferences().edit();
+            sharedPreferencesEditor.putBoolean(PREF_AVOID_AMP_WEBSITES, (boolean)newValue);
+            sharedPreferencesEditor.apply();
+        } else if ("hide_incognito_window_content".equals(key)) {
+            SharedPreferences.Editor sharedPreferencesEditor = ContextUtils.getAppSharedPreferences().edit();
+            sharedPreferencesEditor.putBoolean("hide_incognito_window_content", (boolean)newValue);
+            sharedPreferencesEditor.apply();
+            AskForRelaunch();
         }
 
         return true;
@@ -145,6 +200,18 @@ public class PrivacyPreferences extends PreferenceFragment
     public void onResume() {
         super.onResume();
         updateSummaries();
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            view.setBackgroundColor(Color.BLACK);
+            ListView list = (ListView) view.findViewById(android.R.id.list);
+            if (list != null)
+                list.setDivider(new ColorDrawable(Color.GRAY));
+                list.setDividerHeight((int) getResources().getDisplayMetrics().density);
+        }
     }
 
     /**
@@ -239,9 +306,6 @@ public class PrivacyPreferences extends PreferenceFragment
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         menu.clear();
-        MenuItem help = menu.add(
-                Menu.NONE, R.id.menu_id_targeted_help, Menu.NONE, R.string.menu_help);
-        help.setIcon(R.drawable.ic_help_and_feedback);
     }
 
     @Override
@@ -253,5 +317,28 @@ public class PrivacyPreferences extends PreferenceFragment
             return true;
         }
         return false;
+    }
+
+    private void AskForRelaunch() {
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this.getActivity());
+         alertDialogBuilder
+            .setMessage(R.string.preferences_restart_is_needed)
+            .setCancelable(true)
+            .setPositiveButton(R.string.preferences_restart_now, new DialogInterface.OnClickListener() {
+              @Override
+              public void onClick(DialogInterface dialog,int id) {
+                  RestartWorker restartWorker = new RestartWorker();
+                  restartWorker.Restart();
+                  dialog.cancel();
+              }
+            })
+            .setNegativeButton(R.string.preferences_restart_later,new DialogInterface.OnClickListener() {
+              @Override
+              public void onClick(DialogInterface dialog,int id) {
+                  dialog.cancel();
+              }
+            });
+            AlertDialog alertDialog = alertDialogBuilder.create();
+            alertDialog.show();
     }
 }

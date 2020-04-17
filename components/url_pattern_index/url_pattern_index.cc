@@ -133,16 +133,16 @@ class UrlRuleFlatBufferConverter {
                       IsMeaningful();
   }
 
-  // Returns whether the |rule| can be converted to its FlatBuffers equivalent.
-  // The conversion is not possible if the rule has attributes not supported by
-  // this client version.
-  bool is_convertible() const { return is_convertible_; }
-
   // Writes the URL |rule| to the FlatBuffer using the |builder|, and returns
-  // the offset to the serialized rule.
+  // the offset to the serialized rule. Returns an empty offset in case the rule
+  // can't be converted. The conversion is not possible if the rule has
+  // attributes not supported by this client version.
   UrlRuleOffset SerializeConvertedRule(
       flatbuffers::FlatBufferBuilder* builder) const {
-    DCHECK(is_convertible());
+    if (!is_convertible_)
+      return UrlRuleOffset();
+
+    DCHECK_NE(rule_.url_pattern_type(), proto::URL_PATTERN_TYPE_REGEXP);
 
     FlatDomainsOffset domains_included_offset;
     FlatDomainsOffset domains_excluded_offset;
@@ -155,12 +155,15 @@ class UrlRuleFlatBufferConverter {
       domains_included.reserve(rule_.domains_size());
 
       for (const auto& domain_list_item : rule_.domains()) {
-        // Note: The |domain| can have non-ASCII UTF-8 characters, but
-        // ToLowerASCII leaves these intact.
-        // TODO(pkalinnikov): Convert non-ASCII characters to lower case too.
-        // TODO(pkalinnikov): Possibly convert Punycode to IDN here or directly
-        // assume this is done in the proto::UrlRule.
         const std::string& domain = domain_list_item.domain();
+
+        // Non-ascii characters in domains are unsupported.
+        if (!base::IsStringASCII(domain))
+          return UrlRuleOffset();
+
+        // Note: This is not always correct. Chrome's URL parser uses upper-case
+        // for percent encoded hosts. E.g. https://,.com is encoded as
+        // https://%2C.com.
         auto offset = builder->CreateSharedString(
             HasNoUpperAscii(domain) ? domain : base::ToLowerASCII(domain));
 
@@ -189,6 +192,10 @@ class UrlRuleFlatBufferConverter {
         domains_excluded_offset = builder->CreateVector(domains_excluded);
       }
     }
+
+    // Non-ascii characters in patterns are unsupported.
+    if (!base::IsStringASCII(rule_.url_pattern()))
+      return UrlRuleOffset();
 
     auto url_pattern_offset = builder->CreateString(rule_.url_pattern());
 
@@ -349,9 +356,6 @@ UrlRuleOffset SerializeUrlRule(const proto::UrlRule& rule,
                                flatbuffers::FlatBufferBuilder* builder) {
   DCHECK(builder);
   UrlRuleFlatBufferConverter converter(rule);
-  if (!converter.is_convertible())
-    return UrlRuleOffset();
-  DCHECK_NE(rule.url_pattern_type(), proto::URL_PATTERN_TYPE_REGEXP);
   return converter.SerializeConvertedRule(builder);
 }
 
@@ -376,6 +380,20 @@ void UrlPatternIndexBuilder::IndexUrlRule(UrlRuleOffset offset) {
 
   const auto* rule = flatbuffers::GetTemporaryPointer(*flat_builder_, offset);
   DCHECK(rule);
+
+// Sanity check that the rule does not have fields with non-ascii characters.
+#if DCHECK_IS_ON()
+  DCHECK(base::IsStringASCII(ToStringPiece(rule->url_pattern())));
+  if (rule->domains_included()) {
+    for (auto* domain : *rule->domains_included())
+      DCHECK(base::IsStringASCII(ToStringPiece(domain)));
+  }
+  if (rule->domains_excluded()) {
+    for (auto* domain : *rule->domains_excluded())
+      DCHECK(base::IsStringASCII(ToStringPiece(domain)));
+  }
+#endif
+
   NGram ngram = GetMostDistinctiveNGram(ToStringPiece(rule->url_pattern()));
 
   if (ngram) {

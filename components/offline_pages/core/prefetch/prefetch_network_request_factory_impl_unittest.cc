@@ -4,7 +4,7 @@
 
 #include "components/offline_pages/core/prefetch/prefetch_network_request_factory_impl.h"
 
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/test/mock_callback.h"
 #include "base/test/test_simple_task_runner.h"
 #include "base/threading/thread_task_runner_handle.h"

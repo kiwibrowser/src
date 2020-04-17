@@ -412,13 +412,14 @@ GpuFeatureInfo ComputeGpuFeatureInfo(const GPUInfo& gpu_info,
 }
 
 void SetKeysForCrashLogging(const GPUInfo& gpu_info) {
+  const GPUInfo::GPUDevice& active_gpu = gpu_info.active_gpu();
 #if !defined(OS_ANDROID)
   crash_keys::gpu_vendor_id.Set(
-      base::StringPrintf("0x%04x", gpu_info.gpu.vendor_id));
+      base::StringPrintf("0x%04x", active_gpu.vendor_id));
   crash_keys::gpu_device_id.Set(
-      base::StringPrintf("0x%04x", gpu_info.gpu.device_id));
+      base::StringPrintf("0x%04x", active_gpu.device_id));
 #endif
-  crash_keys::gpu_driver_version.Set(gpu_info.driver_version);
+  crash_keys::gpu_driver_version.Set(active_gpu.driver_version);
   crash_keys::gpu_pixel_shader_version.Set(gpu_info.pixel_shader_version);
   crash_keys::gpu_vertex_shader_version.Set(gpu_info.vertex_shader_version);
 #if defined(OS_MACOSX)

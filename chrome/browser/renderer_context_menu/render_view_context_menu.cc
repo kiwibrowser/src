@@ -138,9 +138,7 @@
 #include "ui/gfx/text_elider.h"
 #include "ui/strings/grit/ui_strings.h"
 
-#if !BUILDFLAG(USE_BROWSER_SPELLCHECKER)
 #include "chrome/browser/renderer_context_menu/spelling_options_submenu_observer.h"
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
 #include "chrome/browser/extensions/devtools_util.h"

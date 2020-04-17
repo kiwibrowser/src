@@ -17,13 +17,13 @@
 #include "components/user_prefs/user_prefs.h"
 #endif  // defined(OS_ANDROID) || BUILDFLAG(ENABLE_EXTENSIONS)
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 #include "components/prefs/pref_registry_simple.h"
 #endif
 
 namespace media_router {
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 // Controls if browser side DialMediaRouteProvider is enabled.
 const base::Feature kDialMediaRouteProvider{"DialMediaRouteProvider",
                                             base::FEATURE_DISABLED_BY_DEFAULT};
@@ -65,7 +65,7 @@ bool MediaRouterEnabled(content::BrowserContext* context) {
 #endif  // defined(OS_ANDROID) || BUILDFLAG(ENABLE_EXTENSIONS)
 }
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 void RegisterLocalStatePrefs(PrefRegistrySimple* registry) {
   registry->RegisterBooleanPref(prefs::kMediaRouterCastAllowAllIPs, false,
                                 PrefRegistry::PUBLIC);

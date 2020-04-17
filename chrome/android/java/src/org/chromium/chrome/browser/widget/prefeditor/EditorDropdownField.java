@@ -6,6 +6,7 @@ package org.chromium.chrome.browser.widget.prefeditor;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.Color;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -20,6 +21,7 @@ import android.widget.TextView;
 
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.preferences.autofill.AutofillProfileBridge.DropdownKeyValue;
+import org.chromium.base.ContextUtils;
 import org.chromium.ui.UiUtils;
 
 import java.util.ArrayList;
@@ -62,6 +64,9 @@ class EditorDropdownField implements EditorFieldView {
         mLabel.setText(mFieldModel.isRequired()
                         ? mFieldModel.getLabel() + EditorDialog.REQUIRED_FIELD_INDICATOR
                         : mFieldModel.getLabel());
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mLabel.setTextColor(Color.WHITE);
+        }
 
         final List<DropdownKeyValue> dropdownKeyValues = mFieldModel.getDropdownKeyValues();
         final List<CharSequence> dropdownValues = getDropdownValues(dropdownKeyValues);
@@ -71,11 +76,71 @@ class EditorDropdownField implements EditorFieldView {
             if (mFieldModel.isDisplayPlusIcon()) {
                 mAdapter = new HintedDropDownAdapterWithPlusIcon<CharSequence>(context,
                         R.layout.multiline_spinner_item, R.id.spinner_item, dropdownValues,
-                        mFieldModel.getHint().toString());
+                        mFieldModel.getHint().toString())
+                 {
+                    @Override
+                    public View getView(int position, View convertView, ViewGroup parent) {
+                        View view = super.getView(position, convertView, parent);
+                        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                            TextView text1 = (TextView) view.findViewById(android.R.id.text1);
+                            if (text1 != null)
+                                text1.setTextColor(Color.WHITE);
+                            TextView text2 = (TextView) view.findViewById(R.id.spinner_item);
+                            if (text2 != null)
+                                text2.setTextColor(Color.GRAY);
+                        }
+
+                        return view;
+                    };
+
+                    @Override
+                    public View getDropDownView(int position, View convertView,
+                                                ViewGroup parent) {
+                        View view = super.getDropDownView(position, convertView, parent);
+                        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                            view.setBackgroundColor(Color.BLACK);
+                            TextView tv = (TextView) view;
+                            tv.setBackgroundColor(Color.BLACK);
+                            tv.setTextColor(Color.WHITE);
+                        }
+
+                        return view;
+                   }
+               };
             } else {
                 mAdapter = new HintedDropDownAdapter<CharSequence>(context,
                         R.layout.multiline_spinner_item, R.id.spinner_item, dropdownValues,
-                        mFieldModel.getHint().toString());
+                        mFieldModel.getHint().toString())
+                 {
+                    @Override
+                    public View getView(int position, View convertView, ViewGroup parent) {
+                        View view = super.getView(position, convertView, parent);
+                        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                            TextView text1 = (TextView) view.findViewById(android.R.id.text1);
+                            if (text1 != null)
+                                text1.setTextColor(Color.WHITE);
+                            TextView text2 = (TextView) view.findViewById(R.id.spinner_item);
+                            if (text2 != null)
+                                text2.setTextColor(Color.GRAY);
+                        }
+
+                        return view;
+                    };
+
+                    @Override
+                    public View getDropDownView(int position, View convertView,
+                                                ViewGroup parent) {
+                        View view = super.getDropDownView(position, convertView, parent);
+                        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                            view.setBackgroundColor(Color.BLACK);
+                            TextView tv = (TextView) view;
+                            tv.setBackgroundColor(Color.BLACK);
+                            tv.setTextColor(Color.WHITE);
+                        }
+
+                        return view;
+                   }
+               };
             }
             // Wrap the TextView in the dropdown popup around with a FrameLayout to display the text
             // in multiple lines.
@@ -85,7 +150,37 @@ class EditorDropdownField implements EditorFieldView {
             mAdapter.setDropDownViewResource(R.layout.payment_request_dropdown_item);
         } else {
             mAdapter = new DropdownFieldAdapter<CharSequence>(
-                    context, R.layout.multiline_spinner_item, dropdownValues);
+                    context, R.layout.multiline_spinner_item, dropdownValues)
+            {
+               @Override
+               public View getView(int position, View convertView, ViewGroup parent) {
+                   View view = super.getView(position, convertView, parent);
+                   if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                       TextView text1 = (TextView) view.findViewById(android.R.id.text1);
+                       if (text1 != null)
+                           text1.setTextColor(Color.WHITE);
+                       TextView text2 = (TextView) view.findViewById(R.id.spinner_item);
+                       if (text2 != null)
+                           text2.setTextColor(Color.GRAY);
+                   }
+
+                   return view;
+               };
+
+               @Override
+               public View getDropDownView(int position, View convertView,
+                                           ViewGroup parent) {
+                   View view = super.getDropDownView(position, convertView, parent);
+                   if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                       view.setBackgroundColor(Color.BLACK);
+                       TextView tv = (TextView) view;
+                       tv.setBackgroundColor(Color.BLACK);
+                       tv.setTextColor(Color.WHITE);
+                   }
+
+                   return view;
+               }
+            };
             mAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         }
 

@@ -8,6 +8,12 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.preference.Preference;
 
+import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.TextView;
+
 import org.chromium.base.Callback;
 import org.chromium.chrome.browser.widget.prefeditor.EditorDialog;
 import org.chromium.chrome.browser.widget.prefeditor.PasswordEditor;
@@ -49,5 +55,16 @@ public class PasswordEntryEditorPreference extends Preference {
                         .updatePasswordLists();
             }
         });
+    }
+
+    @Override
+    protected void onBindView(View view) {
+        super.onBindView(view);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            if (((TextView) view.findViewById(android.R.id.title)) != null)
+               ((TextView) view.findViewById(android.R.id.title)).setTextColor(Color.WHITE);
+            if (((TextView) view.findViewById(android.R.id.summary)) != null)
+               ((TextView) view.findViewById(android.R.id.summary)).setTextColor(Color.GRAY);
+        }
     }
 }

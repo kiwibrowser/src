@@ -20,7 +20,11 @@
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/profiles/profile_android.h"
 #include "chrome/browser/signin/signin_manager_factory.h"
+#include "chrome/common/chrome_paths_internal.h"
 #include "chrome/browser/undo/bookmark_undo_service_factory.h"
+#include "chrome/browser/download/download_location_dialog_type.h"
+#include "chrome/browser/android/download/download_location_dialog_bridge_impl.h"
+#include "chrome/browser/download/download_target_determiner_delegate.h"
 #include "components/bookmarks/browser/bookmark_model.h"
 #include "components/bookmarks/browser/bookmark_utils.h"
 #include "components/bookmarks/browser/scoped_group_bookmark_actions.h"
@@ -35,6 +39,20 @@
 #include "components/undo/undo_manager.h"
 #include "content/public/browser/browser_thread.h"
 #include "jni/BookmarkBridge_jni.h"
+
+#include "base/android/content_uri_utils.h"
+#include "base/android/path_utils.h"
+#include "base/strings/utf_string_conversions.h"
+#include "chrome/utility/importer/bookmark_html_reader.h"
+#include "chrome/browser/bookmarks/bookmark_html_writer.h"
+#include "chrome/browser/importer/profile_writer.h"
+#include "chrome/browser/platform_util.h"
+#include "chrome/browser/ui/chrome_select_file_policy.h"
+#include "chrome/common/importer/imported_bookmark_entry.h"
+#include "chrome/common/importer/importer_data_types.h"
+#include "chrome/common/url_constants.h"
+#include "components/url_formatter/url_fixer.h"
+#include "ui/android/window_android.h"
 
 using base::android::AttachCurrentThread;
 using base::android::ConvertUTF8ToJavaString;
@@ -52,6 +70,58 @@ using bookmarks::BookmarkNode;
 using bookmarks::BookmarkPermanentNode;
 using bookmarks::BookmarkType;
 using content::BrowserThread;
+
+// Taken from chrome/utility/importer/bookmarks_file_importer.cc
+namespace internal {
+
+// Returns true if |url| has a valid scheme that we allow to import. We
+// filter out the URL with a unsupported scheme.
+bool CanImportURL(const GURL& url) {
+  // The URL is not valid.
+  if (!url.is_valid())
+    return false;
+
+  // Filter out the URLs with unsupported schemes.
+  const char* const kInvalidSchemes[] = {"wyciwyg", "place"};
+  for (size_t i = 0; i < arraysize(kInvalidSchemes); ++i) {
+    if (url.SchemeIs(kInvalidSchemes[i]))
+      return false;
+  }
+
+  // Check if |url| is about:blank.
+  if (url == url::kAboutBlankURL)
+    return true;
+
+  // If |url| starts with chrome:// or about:, check if it's one of the URLs
+  // that we support.
+  if (url.SchemeIs(content::kChromeUIScheme) ||
+      url.SchemeIs(url::kAboutScheme)) {
+    if (url.host_piece() == chrome::kChromeUIUberHost ||
+        url.host_piece() == chrome::kChromeUIAboutHost)
+      return true;
+
+    GURL fixed_url(url_formatter::FixupURL(url.spec(), std::string()));
+    for (size_t i = 0; i < chrome::kNumberOfChromeHostURLs; ++i) {
+      if (fixed_url.DomainIs(chrome::kChromeHostURLs[i]))
+        return true;
+    }
+
+    for (size_t i = 0; i < chrome::kNumberOfChromeDebugURLs; ++i) {
+      if (fixed_url == chrome::kChromeDebugURLs[i])
+        return true;
+    }
+
+    // If url has either chrome:// or about: schemes but wasn't found in the
+    // above lists, it means we don't support it, so we don't allow the user
+    // to import it.
+    return false;
+  }
+
+  // Otherwise, we assume the url has a valid (importable) scheme.
+  return true;
+}
+
+}  // namespace internal
 
 namespace {
 
@@ -129,6 +199,118 @@ BookmarkBridge::~BookmarkBridge() {
   bookmark_model_->RemoveObserver(this);
   if (partner_bookmarks_shim_)
     partner_bookmarks_shim_->RemoveObserver(this);
+}
+
+void BookmarkBridge::FileSelected(const base::FilePath& file_path, int index,
+                            void* params) {
+  LOG(ERROR) << "Bookmarks - Bookmarks file to be imported is present in " << file_path;
+
+  base::FilePath file_path_tmp;
+  if (!chrome::GetDefaultUserDataDirectory(&file_path_tmp)) {
+    LOG(ERROR) << "Bookmarks - Getting Default User Data Directory for Import";
+    return;
+  }
+  file_path_tmp = file_path_tmp.Append(FILE_PATH_LITERAL("bookmarks.html.tmp"));
+
+  LOG(ERROR) << "Bookmarks - Copying from " << file_path << " to " << file_path_tmp;
+
+  base::CopyFile(file_path, file_path_tmp);
+
+  LOG(ERROR) << "Bookmarks - Reading " << file_path_tmp;
+
+  std::string content;
+  if (!base::ReadFileToString(file_path_tmp, &content)) {
+     LOG(ERROR) << "Bookmarks - File to import cannot be read";
+     return;
+  }
+
+  base::DeleteFile(file_path_tmp, false);
+
+  std::vector<ImportedBookmarkEntry> bookmarks;
+  std::vector<importer::SearchEngineInfo> search_engines;
+
+  bookmark_html_reader::ImportBookmarksFile(
+      base::Callback<bool(void)>(),
+      base::Bind(internal::CanImportURL),
+      content,
+      &bookmarks,
+      &search_engines,
+      nullptr);
+
+  auto *writer = new ProfileWriter(profile_);
+
+  if (!bookmarks.empty()) {
+    writer->AddBookmarks(bookmarks, base::ASCIIToUTF16("Imported"));
+  }
+
+  JNIEnv* env = AttachCurrentThread();
+  ScopedJavaLocalRef<jobject> obj = weak_java_ref_.get(env);
+  if (obj.is_null())
+    return;
+
+  std::string message = "";
+  if (bookmarks.size())
+    message = "Imported " + std::to_string(bookmarks.size()) + " bookmarks";
+  else
+    message = "No bookmarks have been imported";
+  Java_BookmarkBridge_bookmarksImported(env, obj, ConvertUTF8ToJavaString(env, message));
+}
+
+void BookmarkBridge::FileSelectionCanceled(void* params) {
+}
+
+void BookmarkBridge::ImportBookmarks(JNIEnv* env,
+                                       const JavaParamRef<jobject>& obj,
+                                       const JavaParamRef<jobject>& java_window) {
+  DCHECK(IsLoaded());
+
+  ui::WindowAndroid* window =
+      ui::WindowAndroid::FromJavaWindowAndroid(java_window);
+  CHECK(window);
+
+  select_file_dialog_ = ui::SelectFileDialog::Create(
+    this, std::make_unique<ChromeSelectFilePolicy>(nullptr));
+
+  ui::SelectFileDialog::FileTypeInfo file_type_info;
+  file_type_info.extensions = {{FILE_PATH_LITERAL("html"), FILE_PATH_LITERAL("htm")}};
+  file_type_info.allowed_paths = ui::SelectFileDialog::FileTypeInfo::NATIVE_OR_DRIVE_PATH;
+
+  select_file_dialog_->SelectFile(
+        ui::SelectFileDialog::SELECT_OPEN_FILE_BUT_NO_CAMERA,
+        base::string16(),
+        base::FilePath(),
+        &file_type_info,
+        0,
+        base::FilePath::StringType(),
+        window,
+        NULL);
+}
+
+void OnDownloadLocationDetermined(
+    const DownloadTargetDeterminerDelegate::ConfirmationCallback& callback,
+    DownloadLocationDialogResult result,
+    const base::FilePath& path) {
+}
+
+void BookmarkBridge::ExportBookmarks(JNIEnv* env,
+                                       const JavaParamRef<jobject>& obj,
+                                       const JavaParamRef<jobject>& java_window) {
+  DCHECK(IsLoaded());
+
+  base::FilePath file_path;
+  if (!chrome::GetDefaultUserDataDirectory(&file_path)) {
+    LOG(ERROR) << "Bookmarks - Getting Default User Data Directory";
+    return;
+  }
+
+  file_path = file_path.Append(FILE_PATH_LITERAL("bookmarks.html"));
+
+  LOG(ERROR) << "Bookmarks - Output path is " << file_path;
+
+
+  bookmark_html_writer::WriteBookmarks(profile_, file_path, NULL);
+
+  Java_BookmarkBridge_bookmarksExported(env, obj, ConvertUTF8ToJavaString(env, file_path.MaybeAsASCII()));
 }
 
 void BookmarkBridge::Destroy(JNIEnv*, const JavaParamRef<jobject>&) {
@@ -1042,4 +1224,29 @@ void BookmarkBridge::PartnerShimLoaded(PartnerBookmarksShim* shim) {
 
 void BookmarkBridge::ShimBeingDeleted(PartnerBookmarksShim* shim) {
   partner_bookmarks_shim_ = NULL;
+}
+
+void BookmarkBridge::ReorderChildren(
+    JNIEnv* env,
+    const JavaParamRef<jobject>& obj,
+    const JavaParamRef<jobject>& j_bookmark_id_obj,
+    jlongArray arr) {
+  DCHECK(IsLoaded());
+  // get the BookmarkNode* for the "parent" bookmark parameter
+  const long bookmark_id = JavaBookmarkIdGetId(env, j_bookmark_id_obj);
+  const int bookmark_type = JavaBookmarkIdGetType(env, j_bookmark_id_obj);
+
+  const BookmarkNode* bookmark_node = GetNodeByID(bookmark_id, bookmark_type);
+
+  // populate a vector
+  std::vector<const BookmarkNode*> ordered_nodes;
+  jsize arraySize = env->GetArrayLength(arr);
+  jlong* elements = env->GetLongArrayElements(arr, 0);
+
+  // iterate through array, adding the BookmarkNode*s of the objects
+  for (int i = 0; i < arraySize; ++i) {
+    ordered_nodes.push_back(GetNodeByID(elements[i], 0));
+  }
+
+  bookmark_model_->ReorderChildren(bookmark_node, ordered_nodes);
 }

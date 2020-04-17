@@ -145,52 +145,17 @@ void GestureListenerManager::SetMultiTouchZoomSupportEnabled(
 void GestureListenerManager::GestureEventAck(
     const blink::WebGestureEvent& event,
     InputEventAckState ack_result) {
+  // This is called to fix crash happening while WebContents is being
+  // destroyed. See https://crbug.com/803244#c20
+  if (web_contents_->IsBeingDestroyed())
+    return;
   JNIEnv* env = AttachCurrentThread();
   ScopedJavaLocalRef<jobject> j_obj = java_ref_.get(env);
   if (j_obj.is_null())
     return;
-
-  // TODO(jinsukkim): Define WebInputEvent in Java.
-  switch (event.GetType()) {
-    case WebInputEvent::kGestureFlingStart:
-      if (ack_result == INPUT_EVENT_ACK_STATE_CONSUMED) {
-        // The view expects the fling velocity in pixels/s.
-        Java_GestureListenerManagerImpl_onFlingStartEventConsumed(env, j_obj);
-      } else {
-        // If a scroll ends with a fling, a SCROLL_END event is never sent.
-        // However, if that fling went unconsumed, we still need to let the
-        // listeners know that scrolling has ended.
-        Java_GestureListenerManagerImpl_onScrollEndEventAck(env, j_obj);
-      }
-      break;
-    case WebInputEvent::kGestureScrollBegin:
-      Java_GestureListenerManagerImpl_onScrollBeginEventAck(env, j_obj);
-      break;
-    case WebInputEvent::kGestureScrollUpdate:
-      if (ack_result == INPUT_EVENT_ACK_STATE_CONSUMED)
-        Java_GestureListenerManagerImpl_onScrollUpdateGestureConsumed(env,
-                                                                      j_obj);
-      break;
-    case WebInputEvent::kGestureScrollEnd:
-      Java_GestureListenerManagerImpl_onScrollEndEventAck(env, j_obj);
-      break;
-    case WebInputEvent::kGesturePinchBegin:
-      Java_GestureListenerManagerImpl_onPinchBeginEventAck(env, j_obj);
-      break;
-    case WebInputEvent::kGesturePinchEnd:
-      Java_GestureListenerManagerImpl_onPinchEndEventAck(env, j_obj);
-      break;
-    case WebInputEvent::kGestureTap:
-      Java_GestureListenerManagerImpl_onSingleTapEventAck(
-          env, j_obj, ack_result == INPUT_EVENT_ACK_STATE_CONSUMED);
-      break;
-    case WebInputEvent::kGestureLongPress:
-      if (ack_result == INPUT_EVENT_ACK_STATE_CONSUMED)
-        Java_GestureListenerManagerImpl_onLongPressAck(env, j_obj);
-      break;
-    default:
-      break;
-  }
+  Java_GestureListenerManagerImpl_onEventAck(
+      env, j_obj, event.GetType(),
+      ack_result == INPUT_EVENT_ACK_STATE_CONSUMED);
 }
 
 void GestureListenerManager::DidStopFlinging() {

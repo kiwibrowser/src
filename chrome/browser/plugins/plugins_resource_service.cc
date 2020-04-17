@@ -65,7 +65,7 @@ GURL GetPluginsServerURL() {
 #elif defined(OS_MACOSX)
   filename = "plugins_mac.json";
 #else
-#error Unknown platform
+  filename = "plugins_linux.json";
 #endif
 
   return GURL(kPluginsServerUrl + filename);

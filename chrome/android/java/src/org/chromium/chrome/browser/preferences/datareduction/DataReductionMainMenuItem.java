@@ -6,6 +6,7 @@ package org.chromium.chrome.browser.preferences.datareduction;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.drawable.Drawable;
@@ -19,6 +20,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.chromium.base.ApiCompatibilityUtils;
+import org.chromium.base.ContextUtils;
+import org.chromium.base.metrics.RecordHistogram;
 import org.chromium.base.metrics.RecordUserAction;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.feature_engagement.TrackerFactory;
@@ -28,6 +31,8 @@ import org.chromium.chrome.browser.profiles.Profile;
 import org.chromium.components.feature_engagement.EventConstants;
 import org.chromium.components.feature_engagement.Tracker;
 import org.chromium.third_party.android.datausagechart.ChartDataUsageView;
+
+
 
 /**
  * Specific {@link FrameLayout} that displays the data savings of Data Saver in the main menu.
@@ -47,7 +52,6 @@ public class DataReductionMainMenuItem extends FrameLayout implements View.OnCli
         TextView itemText = (TextView) findViewById(R.id.menu_item_text);
         TextView itemSummary = (TextView) findViewById(R.id.menu_item_summary);
 
-        if (DataReductionProxySettings.getInstance().isDataReductionProxyEnabled()) {
             DataReductionProxyUma.dataReductionProxyUIAction(
                     DataReductionProxyUma.ACTION_MAIN_MENU_DISPLAYED_ON);
 
@@ -65,38 +69,36 @@ public class DataReductionMainMenuItem extends FrameLayout implements View.OnCli
                     : firstEnabledInMillisSinceEpoch;
 
             final int flags = DateUtils.FORMAT_ABBREV_MONTH | DateUtils.FORMAT_NO_YEAR;
+            try
+            {
+              mostRecentTime = getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0).firstInstallTime;
+            } catch (Exception e) { }
+
             String date = DateUtils.formatDateTime(getContext(), mostRecentTime, flags).toString();
 
+            long adsBlocked = RecordHistogram.getHistogramTotalCountForTesting("ContentSettings.Popups.BlockerActions")
+                            + RecordHistogram.getHistogramTotalCountForTesting("SubresourceFilter.Actions")
+                            + RecordHistogram.getHistogramTotalCountForTesting("SubresourceFilter.DocumentLoad.NumSubresourceLoads.Disallowed") - 1;
+
             itemText.setText(
-                    getContext().getString(R.string.data_reduction_saved_label, dataSaved));
-            itemSummary.setText(getContext().getString(R.string.data_reduction_date_label, date));
+                    getContext().getString(R.string.main_menu_ads_and_trackers_blocked, adsBlocked));
+            itemSummary.setText(getContext().getString(R.string.main_menu_ads_blocked_since, date));
 
             int lightActiveColor = ApiCompatibilityUtils.getColor(
                     getContext().getResources(), R.color.light_active_color);
             itemText.setTextColor(lightActiveColor);
+
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                itemText.setTextColor(Color.GRAY);
+                itemSummary.setTextColor(Color.GRAY);
+                this.setBackgroundColor(Color.BLACK);
+            }
 
             // Reset the icon to blue.
             ImageView icon = (ImageView) findViewById(R.id.chart_icon);
             LayerDrawable layers = (LayerDrawable) icon.getDrawable();
             Drawable chart = layers.findDrawableByLayerId(R.id.main_menu_chart);
             chart.setColorFilter(null);
-        } else {
-            DataReductionProxyUma.dataReductionProxyUIAction(
-                    DataReductionProxyUma.ACTION_MAIN_MENU_DISPLAYED_OFF);
-
-            itemText.setText(R.string.data_reduction_title);
-            itemSummary.setText(R.string.text_off);
-
-            // Make the icon grey.
-            ImageView icon = (ImageView) findViewById(R.id.chart_icon);
-            LayerDrawable layers = (LayerDrawable) icon.getDrawable();
-            Drawable chart = layers.findDrawableByLayerId(R.id.main_menu_chart);
-            ColorMatrix matrix = new ColorMatrix();
-            matrix.setSaturation(0);
-            chart.setColorFilter(new ColorMatrixColorFilter(matrix));
-        }
-
-        setOnClickListener(this);
     }
 
     @Override

@@ -87,7 +87,7 @@ namespace breakpad {
 namespace {
 
 #if !defined(OS_CHROMEOS)
-const char kUploadURL[] = "https://clients2.google.com/cr/report";
+const char kUploadURL[] = "https://crash2.kiwibrowser.com/cr/report";
 #endif
 
 bool g_is_crash_reporter_enabled = false;
@@ -608,9 +608,12 @@ void AndroidLogWriteHorizontalRule() {
 // handler. A Chrome build fingerprint is written to the log, so that the
 // specific build of Chrome and the location of the archived Chrome symbols can
 // be determined directly from it.
-bool FinalizeCrashDoneAndroid(bool is_browser_process) {
+bool FinalizeCrashDoneAndroid(bool is_browser_process, const MinidumpDescriptor& minidump) {
   base::android::BuildInfo* android_build_info =
       base::android::BuildInfo::GetInstance();
+
+  __android_log_write(ANDROID_LOG_WARN, kGoogleBreakpad,
+                      "### Preparing to connect to crash servers:");
 
   AndroidLogWriteHorizontalRule();
   __android_log_write(ANDROID_LOG_WARN, kGoogleBreakpad,
@@ -621,6 +624,23 @@ bool FinalizeCrashDoneAndroid(bool is_browser_process) {
                       android_build_info->package_version_code());
   AndroidLogWriteHorizontalRule();
 
+  std::string cmd = "/system/bin/logcat -t 1000 | grep -F google-breakpad | /system/bin/curl -X POST -H 'Content-Type: application/json' --data-binary ";
+  cmd += "'";
+  cmd += "@";
+  cmd += "-";
+  cmd += "'";
+  cmd += " ";
+  cmd += "'";
+  cmd += "https://crash2.kiwibrowser.com/cr/report_android?package=";
+  cmd += android_build_info->package_version_name();
+  cmd += "&ver=";
+  cmd += android_build_info->package_version_code();
+  cmd += "&sdk=";
+  cmd += android_build_info->sdk_int();
+  cmd += "&bt=";
+  cmd += android_build_info->build_type();
+  cmd += "'";
+  system(cmd.c_str());
   if (!is_browser_process &&
       android_build_info->sdk_int() >=
           base::android::SDK_VERSION_JELLY_BEAN_MR2 &&
@@ -652,7 +672,7 @@ bool MicrodumpCrashDone(const MinidumpDescriptor& minidump,
   }
 
   const bool is_browser_process = (context != nullptr);
-  return FinalizeCrashDoneAndroid(is_browser_process);
+  return FinalizeCrashDoneAndroid(is_browser_process, minidump);
 }
 #endif  // defined(OS_ANDROID)
 
@@ -694,7 +714,7 @@ bool CrashDone(const MinidumpDescriptor& minidump,
   HandleCrashDump(info);
 #if defined(OS_ANDROID)
   return !should_finalize ||
-         FinalizeCrashDoneAndroid(true /* is_browser_process */);
+         FinalizeCrashDoneAndroid(true /* is_browser_process */, minidump);
 #else
   return true;
 #endif
@@ -871,7 +891,7 @@ bool CrashDoneInProcessNoUpload(
   info.pid = g_pid;
   info.crash_keys = crash_reporter::internal::GetCrashKeyStorage();
   HandleCrashDump(info);
-  return FinalizeCrashDoneAndroid(false /* is_browser_process */);
+  return FinalizeCrashDoneAndroid(false /* is_browser_process */, descriptor);
 }
 
 void EnableNonBrowserCrashDumping(const std::string& process_type,

@@ -49,8 +49,7 @@ const int DisplayConfigurator::kSetDisplayPowerOnlyIfSingleInternalDisplay =
 
 bool DisplayConfigurator::TestApi::TriggerConfigureTimeout() {
   if (configurator_->configure_timer_.IsRunning()) {
-    configurator_->configure_timer_.user_task().Run();
-    configurator_->configure_timer_.Stop();
+    configurator_->configure_timer_.FireNow();
     return true;
   } else {
     return false;

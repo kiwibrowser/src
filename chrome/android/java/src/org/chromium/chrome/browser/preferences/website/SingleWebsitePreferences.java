@@ -38,6 +38,12 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.ListView;
+
 /**
  * Shows the permissions and other settings for a particular website.
  */
@@ -463,6 +469,18 @@ public class SingleWebsitePreferences extends PreferenceFragment
             if (notificationsPreference != null) {
                 setUpNotificationsPreference(notificationsPreference);
             }
+        }
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            view.setBackgroundColor(Color.BLACK);
+            ListView list = (ListView) view.findViewById(android.R.id.list);
+            if (list != null)
+                list.setDivider(new ColorDrawable(Color.GRAY));
+                list.setDividerHeight((int) getResources().getDisplayMetrics().density);
         }
     }
 

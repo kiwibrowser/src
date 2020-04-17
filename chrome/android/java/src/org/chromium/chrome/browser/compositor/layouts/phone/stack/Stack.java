@@ -401,8 +401,9 @@ public abstract class Stack implements ChromeAnimation.Animatable<Stack.Property
         mIsDying = false;
 
         finishAnimation(time);
-        startAnimation(time, OverviewAnimationType.NEW_TAB_OPENED,
-                TabModelUtils.getTabIndexById(mTabList, id), TabList.INVALID_TAB_INDEX, false);
+        if (false)
+          startAnimation(time, OverviewAnimationType.NEW_TAB_OPENED,
+                  TabModelUtils.getTabIndexById(mTabList, id), TabList.INVALID_TAB_INDEX, false);
     }
 
     /**
@@ -1516,7 +1517,7 @@ public abstract class Stack implements ChromeAnimation.Animatable<Stack.Property
      * @param stackRect The frame of the stack.
      */
     private void fullRollHelper(long time, RectF stackRect) {
-        if (mOverviewAnimationType != OverviewAnimationType.FULL_ROLL
+        if (false && mOverviewAnimationType != OverviewAnimationType.FULL_ROLL
                 && computeOverscrollPercent() < 0
                 && mOverScrollCounter >= OVERSCROLL_FULL_ROLL_TRIGGER) {
             startAnimation(time, OverviewAnimationType.FULL_ROLL);
@@ -1932,8 +1933,7 @@ public abstract class Stack implements ChromeAnimation.Animatable<Stack.Property
         mAnimationFactory = StackAnimation.createAnimationFactory(this, mLayout.getWidth(),
                 mLayout.getHeight(), mLayout.getTopBrowserControlsHeight(), mBorderTopPadding,
                 opaqueTopPadding, mBorderLeftPadding, mCurrentMode);
-        float dpToPx = mLayout.getContext().getResources().getDisplayMetrics().density;
-        mViewAnimationFactory = new StackViewAnimation(dpToPx, mLayout.getWidth());
+        mViewAnimationFactory = new StackViewAnimation(mLayout.getContext().getResources());
         if (mStackTabs == null) return;
         float width = mLayout.getWidth();
         for (int i = 0; i < mStackTabs.length; i++) {

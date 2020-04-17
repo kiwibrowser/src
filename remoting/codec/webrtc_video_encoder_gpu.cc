@@ -12,7 +12,7 @@
 #include "base/logging.h"
 #include "base/memory/ptr_util.h"
 #include "build/build_config.h"
-#include "gpu/command_buffer/service/gpu_preferences.h"
+#include "gpu/config/gpu_preferences.h"
 #include "media/gpu/gpu_video_encode_accelerator_factory.h"
 #include "remoting/base/constants.h"
 #include "third_party/libyuv/include/libyuv/convert_from_argb.h"

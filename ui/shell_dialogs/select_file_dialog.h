@@ -49,7 +49,9 @@ class SHELL_DIALOGS_EXPORT SelectFileDialog
     SELECT_OPEN_FILE,
 
     // Like SELECT_OPEN_FILE, but allowing multiple files to open.
-    SELECT_OPEN_MULTI_FILE
+    SELECT_OPEN_MULTI_FILE,
+
+    SELECT_OPEN_FILE_BUT_NO_CAMERA,
   };
 
   // An interface implemented by a Listener object wishing to know about the

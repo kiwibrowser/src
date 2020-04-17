@@ -206,7 +206,7 @@ const base::Feature kOverlayFullscreenVideo{"overlay-fullscreen-video",
 
 // Enable Picture-in-Picture.
 const base::Feature kPictureInPicture{"PictureInPicture",
-                                      base::FEATURE_DISABLED_BY_DEFAULT};
+                                      base::FEATURE_ENABLED_BY_DEFAULT};
 
 const base::Feature kPreloadMetadataSuspend{"PreloadMetadataSuspend",
                                             base::FEATURE_ENABLED_BY_DEFAULT};

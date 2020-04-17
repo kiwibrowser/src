@@ -4,6 +4,7 @@
 
 package org.chromium.chrome.browser.ntp;
 
+import android.graphics.Color;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.drawable.LevelListDrawable;
@@ -14,6 +15,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import org.chromium.chrome.R;
+import org.chromium.base.ContextUtils;
 import org.chromium.chrome.browser.ntp.ForeignSessionHelper.ForeignSession;
 import org.chromium.chrome.browser.widget.TintedDrawable;
 
@@ -72,6 +74,10 @@ public class RecentTabsGroupView extends RelativeLayout {
         mDeviceLabel.setText(session.name);
         mTimeLabel.setVisibility(View.VISIBLE);
         mTimeLabel.setText(getTimeString(session));
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mDeviceLabel.setTextColor(Color.WHITE);
+            mTimeLabel.setTextColor(Color.WHITE);
+        }
         setGroupViewHeight(true);
         configureExpandedCollapsed(isExpanded);
     }
@@ -83,6 +89,10 @@ public class RecentTabsGroupView extends RelativeLayout {
      */
     public void configureForRecentlyClosedTabs(boolean isExpanded) {
         mDeviceLabel.setText(R.string.recently_closed);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mDeviceLabel.setTextColor(Color.WHITE);
+            mTimeLabel.setTextColor(Color.WHITE);
+        }
         mTimeLabel.setVisibility(View.GONE);
         setGroupViewHeight(false);
         configureExpandedCollapsed(isExpanded);
@@ -95,6 +105,10 @@ public class RecentTabsGroupView extends RelativeLayout {
      */
     public void configureForPromo(boolean isExpanded) {
         mDeviceLabel.setText(R.string.ntp_recent_tabs_sync_promo_title);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mDeviceLabel.setTextColor(Color.WHITE);
+            mTimeLabel.setTextColor(Color.WHITE);
+        }
         mTimeLabel.setVisibility(View.GONE);
         setGroupViewHeight(false);
         configureExpandedCollapsed(isExpanded);

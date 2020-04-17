@@ -162,61 +162,6 @@ developer::RuntimeError ConstructRuntimeError(const RuntimeError& error) {
 void ConstructCommands(CommandService* command_service,
                        const std::string& extension_id,
                        std::vector<developer::Command>* commands) {
-  auto construct_command = [](const Command& command, bool active,
-                              bool is_extension_action) {
-    developer::Command command_value;
-    command_value.description =
-        is_extension_action
-            ? l10n_util::GetStringUTF8(IDS_EXTENSION_COMMANDS_GENERIC_ACTIVATE)
-            : base::UTF16ToUTF8(command.description());
-    command_value.keybinding =
-        base::UTF16ToUTF8(command.accelerator().GetShortcutText());
-    command_value.name = command.command_name();
-    command_value.is_active = active;
-    command_value.scope = command.global() ? developer::COMMAND_SCOPE_GLOBAL
-                                           : developer::COMMAND_SCOPE_CHROME;
-    command_value.is_extension_action = is_extension_action;
-    return command_value;
-  };
-  bool active = false;
-  Command browser_action;
-  if (command_service->GetBrowserActionCommand(extension_id,
-                                               CommandService::ALL,
-                                               &browser_action,
-                                               &active)) {
-    commands->push_back(construct_command(browser_action, active, true));
-  }
-
-  Command page_action;
-  if (command_service->GetPageActionCommand(extension_id,
-                                            CommandService::ALL,
-                                            &page_action,
-                                            &active)) {
-    commands->push_back(construct_command(page_action, active, true));
-  }
-
-  CommandMap named_commands;
-  if (command_service->GetNamedCommands(extension_id,
-                                        CommandService::ALL,
-                                        CommandService::ANY_SCOPE,
-                                        &named_commands)) {
-    for (auto& pair : named_commands) {
-      Command& command_to_use = pair.second;
-      // TODO(devlin): For some reason beyond my knowledge, FindCommandByName
-      // returns different data than GetNamedCommands, including the
-      // accelerators, but not the descriptions - and even then, only if the
-      // command is active.
-      // Unfortunately, some systems may be relying on the other data (which
-      // more closely matches manifest data).
-      // Until we can sort all this out, we merge the two command structures.
-      Command active_command = command_service->FindCommandByName(
-          extension_id, command_to_use.command_name());
-      command_to_use.set_accelerator(active_command.accelerator());
-      command_to_use.set_global(active_command.global());
-      bool active = command_to_use.accelerator().key_code() != ui::VKEY_UNKNOWN;
-      commands->push_back(construct_command(command_to_use, active, false));
-    }
-  }
 }
 
 }  // namespace

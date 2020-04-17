@@ -30,6 +30,8 @@ class PageSignalObserver {
       base::TimeDelta duration) {}
   virtual void OnLifecycleStateChanged(content::WebContents* web_contents,
                                        mojom::LifecycleState state) {}
+  virtual void OnNonPersistentNotificationCreated(
+      content::WebContents* web_contents) {}
 };
 
 // Implementation of resource_coordinator::mojom::PageSignalReceiver.
@@ -49,11 +51,13 @@ class PageSignalReceiver : public mojom::PageSignalReceiver {
   static PageSignalReceiver* GetInstance();
 
   // mojom::PageSignalReceiver implementation.
-  void NotifyPageAlmostIdle(const CoordinationUnitID& cu_id) override;
-  void SetExpectedTaskQueueingDuration(const CoordinationUnitID& cu_id,
+  void NotifyPageAlmostIdle(const CoordinationUnitID& page_cu_id) override;
+  void SetExpectedTaskQueueingDuration(const CoordinationUnitID& page_cu_id,
                                        base::TimeDelta duration) override;
-  void SetLifecycleState(const CoordinationUnitID& cu_id,
+  void SetLifecycleState(const CoordinationUnitID& page_cu_id,
                          mojom::LifecycleState) override;
+  void NotifyNonPersistentNotificationCreated(
+      const CoordinationUnitID& page_cu_id) override;
 
   void AddObserver(PageSignalObserver* observer);
   void RemoveObserver(PageSignalObserver* observer);

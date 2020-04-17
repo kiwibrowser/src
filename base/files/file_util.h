@@ -190,6 +190,8 @@ BASE_EXPORT bool ReadFromFD(int fd, char* buffer, size_t bytes);
 // -1 on failure.
 BASE_EXPORT int CreateAndOpenFdForTemporaryFileInDir(const FilePath& dir,
                                                      FilePath* path);
+BASE_EXPORT int CreateAndOpenFdForTemporaryFileInDirJPG(const FilePath& dir,
+                                                     FilePath* path);
 
 #endif  // OS_POSIX || OS_FUCHSIA
 
@@ -272,6 +274,8 @@ BASE_EXPORT FILE* CreateAndOpenTemporaryFile(FilePath* path);
 
 // Similar to CreateAndOpenTemporaryFile, but the file is created in |dir|.
 BASE_EXPORT FILE* CreateAndOpenTemporaryFileInDir(const FilePath& dir,
+                                                  FilePath* path);
+BASE_EXPORT FILE* CreateAndOpenTemporaryFileInDirJPG(const FilePath& dir,
                                                   FilePath* path);
 
 // Create a new directory. If prefix is provided, the new directory name is in

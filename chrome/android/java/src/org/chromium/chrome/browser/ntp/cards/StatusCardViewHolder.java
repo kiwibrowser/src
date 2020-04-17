@@ -19,6 +19,9 @@ import org.chromium.chrome.browser.suggestions.SuggestionsMetrics;
 import org.chromium.chrome.browser.suggestions.SuggestionsRecyclerView;
 import org.chromium.chrome.browser.widget.displaystyle.UiConfig;
 
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+
 /**
  * ViewHolder for Status and Promo cards.
  */
@@ -68,6 +71,11 @@ public class StatusCardViewHolder extends CardViewHolder {
 
         mTitleView.setText(item.getHeader());
         mBodyView.setText(item.getDescription());
+
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            mTitleView.setTextColor(Color.WHITE);
+            mBodyView.setTextColor(Color.WHITE);
+        }
 
         @StringRes
         int actionLabel = item.getActionLabel();

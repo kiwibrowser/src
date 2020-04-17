@@ -34,6 +34,7 @@ void ServiceWorkerManager::OnExtensionUninstalled(
     content::BrowserContext* browser_context,
     const Extension* extension,
     extensions::UninstallReason reason) {
+  LOG(INFO) << "[EXTENSIONS] ServiceWorkerManager::OnExtensionUninstall - Step 1";
   // TODO(devlin): Technically, this can fail. We should ideally:
   // a) Keep track of extensions with registered service workers.
   // b) Add a callback to the (Un)SuspendServiceWorkersOnOrigin() method.
@@ -42,6 +43,7 @@ void ServiceWorkerManager::OnExtensionUninstalled(
                                                       extension->url())
       ->GetServiceWorkerContext()
       ->DeleteForOrigin(extension->url(), base::DoNothing());
+  LOG(INFO) << "[EXTENSIONS] ServiceWorkerManager::OnExtensionUninstall - Step 2";
 }
 
 }  // namespace extensions

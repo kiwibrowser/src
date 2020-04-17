@@ -136,6 +136,7 @@ class BookmarkPromoHeader implements AndroidSyncSettingsObserver, SignInStateObs
      * @return Personalized signin promo header {@link ViewHolder} instance that can be used with
      *         {@link RecyclerView}.
      */
+    // TODO(crbug.com/160194): Clean up after bookmark reordering launches.
     ViewHolder createPersonalizedSigninPromoHolder(ViewGroup parent) {
         View view = LayoutInflater.from(mContext).inflate(
                 R.layout.personalized_signin_promo_view_bookmarks, parent, false);
@@ -148,6 +149,7 @@ class BookmarkPromoHeader implements AndroidSyncSettingsObserver, SignInStateObs
      * @return Sync promo header {@link ViewHolder} instance that can be used with
      *         {@link RecyclerView}.
      */
+    // TODO(crbug.com/160194): Clean up after bookmark reordering launches.
     ViewHolder createSyncPromoHolder(ViewGroup parent) {
         SyncPromoView view = SyncPromoView.create(parent, SigninAccessPoint.BOOKMARK_MANAGER);
 

@@ -161,7 +161,9 @@ void StateStore::OnExtensionUninstalled(
     content::BrowserContext* browser_context,
     const Extension* extension,
     extensions::UninstallReason reason) {
+  LOG(INFO) << "[EXTENSIONS] StateStore::OnExtensionUninstall - Step 1";
   RemoveKeysForExtension(extension->id());
+  LOG(INFO) << "[EXTENSIONS] StateStore::OnExtensionUninstall - Step 2";
 }
 
 void StateStore::Init() {

@@ -9,7 +9,7 @@
 #include "base/optional.h"
 #include "base/threading/thread_checker.h"
 #include "base/timer/elapsed_timer.h"
-#include "gpu/command_buffer/service/gpu_preferences.h"
+#include "gpu/config/gpu_preferences.h"
 #include "media/base/android_overlay_mojo_factory.h"
 #include "media/base/overlay_info.h"
 #include "media/base/video_decoder.h"

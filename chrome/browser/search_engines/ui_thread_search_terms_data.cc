@@ -10,10 +10,12 @@
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/google/google_brand.h"
 #include "chrome/browser/google/google_url_tracker_factory.h"
+#include "chrome/browser/google/search_url_tracker_factory.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/common/channel_info.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/google/core/browser/google_url_tracker.h"
+#include "components/google/core/browser/search_url_tracker.h"
 #include "components/google/core/browser/google_util.h"
 #include "components/version_info/version_info.h"
 #include "content/public/browser/browser_thread.h"
@@ -29,6 +31,7 @@ using content::BrowserThread;
 
 // static
 std::string* UIThreadSearchTermsData::google_base_url_ = NULL;
+std::string* UIThreadSearchTermsData::search_base_url_ = NULL;
 
 UIThreadSearchTermsData::UIThreadSearchTermsData(Profile* profile)
     : profile_(profile) {

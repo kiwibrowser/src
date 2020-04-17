@@ -87,7 +87,7 @@ void CastBrowserContext::InitWhileIOAllowed() {
   BrowserContext::Initialize(this, path_);
 }
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 std::unique_ptr<content::ZoomLevelDelegate>
 CastBrowserContext::CreateZoomLevelDelegate(
     const base::FilePath& partition_path) {
@@ -137,7 +137,8 @@ content::SSLHostStateDelegate* CastBrowserContext::GetSSLHostStateDelegate() {
   return nullptr;
 }
 
-content::PermissionManager* CastBrowserContext::GetPermissionManager() {
+content::PermissionControllerDelegate*
+CastBrowserContext::GetPermissionControllerDelegate() {
   if (!permission_manager_.get())
     permission_manager_.reset(new CastPermissionManager());
   return permission_manager_.get();

@@ -35,16 +35,17 @@ const int kMaxSparseEntryBits = 12;
 const int kMaxSparseEntrySize = 1 << kMaxSparseEntryBits;
 
 // This enum is used for histograms, so only append to the end.
-enum WriteResult {
-  WRITE_RESULT_SUCCESS = 0,
-  WRITE_RESULT_INVALID_ARGUMENT = 1,
-  WRITE_RESULT_OVER_MAX_ENTRY_SIZE = 2,
-  WRITE_RESULT_EXCEEDED_CACHE_STORAGE_SIZE = 3,
-  WRITE_RESULT_MAX = 4,
+enum MemEntryWriteResult {
+  MEM_ENTRY_WRITE_RESULT_SUCCESS = 0,
+  MEM_ENTRY_WRITE_RESULT_INVALID_ARGUMENT = 1,
+  MEM_ENTRY_WRITE_RESULT_OVER_MAX_ENTRY_SIZE = 2,
+  MEM_ENTRY_WRITE_RESULT_EXCEEDED_CACHE_STORAGE_SIZE = 3,
+  MEM_ENTRY_WRITE_RESULT_MAX = 4,
 };
 
-void RecordWriteResult(WriteResult result) {
-  UMA_HISTOGRAM_ENUMERATION("MemCache.WriteResult", result, WRITE_RESULT_MAX);
+void RecordWriteResult(MemEntryWriteResult result) {
+  UMA_HISTOGRAM_ENUMERATION("MemCache.WriteResult", result,
+                            MEM_ENTRY_WRITE_RESULT_MAX);
 }
 
 // Convert global offset to child index.
@@ -159,6 +160,17 @@ void MemEntryImpl::Doom() {
 void MemEntryImpl::Close() {
   DCHECK_EQ(PARENT_ENTRY, type());
   --ref_count_;
+  if (ref_count_ == 0 && !doomed_) {
+    // At this point the user is clearly done writing, so make sure there isn't
+    // wastage due to exponential growth of vector for main data stream.
+    Compact();
+    if (children_) {
+      for (const auto& child_info : *children_) {
+        if (child_info.second != this)
+          child_info.second->Compact();
+      }
+    }
+  }
   DCHECK_GE(ref_count_, 0);
   if (!ref_count_ && doomed_)
     delete this;
@@ -184,8 +196,11 @@ int32_t MemEntryImpl::GetDataSize(int index) const {
   return data_[index].size();
 }
 
-int MemEntryImpl::ReadData(int index, int offset, IOBuffer* buf, int buf_len,
-                           const CompletionCallback& callback) {
+int MemEntryImpl::ReadData(int index,
+                           int offset,
+                           IOBuffer* buf,
+                           int buf_len,
+                           CompletionOnceCallback callback) {
   if (net_log_.IsCapturing()) {
     net_log_.BeginEvent(
         net::NetLogEventType::ENTRY_READ_DATA,
@@ -201,8 +216,12 @@ int MemEntryImpl::ReadData(int index, int offset, IOBuffer* buf, int buf_len,
   return result;
 }
 
-int MemEntryImpl::WriteData(int index, int offset, IOBuffer* buf, int buf_len,
-                            const CompletionCallback& callback, bool truncate) {
+int MemEntryImpl::WriteData(int index,
+                            int offset,
+                            IOBuffer* buf,
+                            int buf_len,
+                            CompletionOnceCallback callback,
+                            bool truncate) {
   if (net_log_.IsCapturing()) {
     net_log_.BeginEvent(
         net::NetLogEventType::ENTRY_WRITE_DATA,
@@ -221,7 +240,7 @@ int MemEntryImpl::WriteData(int index, int offset, IOBuffer* buf, int buf_len,
 int MemEntryImpl::ReadSparseData(int64_t offset,
                                  IOBuffer* buf,
                                  int buf_len,
-                                 const CompletionCallback& callback) {
+                                 CompletionOnceCallback callback) {
   if (net_log_.IsCapturing()) {
     net_log_.BeginEvent(net::NetLogEventType::SPARSE_READ,
                         CreateNetLogSparseOperationCallback(offset, buf_len));
@@ -235,7 +254,7 @@ int MemEntryImpl::ReadSparseData(int64_t offset,
 int MemEntryImpl::WriteSparseData(int64_t offset,
                                   IOBuffer* buf,
                                   int buf_len,
-                                  const CompletionCallback& callback) {
+                                  CompletionOnceCallback callback) {
   if (net_log_.IsCapturing()) {
     net_log_.BeginEvent(net::NetLogEventType::SPARSE_WRITE,
                         CreateNetLogSparseOperationCallback(offset, buf_len));
@@ -249,7 +268,7 @@ int MemEntryImpl::WriteSparseData(int64_t offset,
 int MemEntryImpl::GetAvailableRange(int64_t offset,
                                     int len,
                                     int64_t* start,
-                                    const CompletionCallback& callback) {
+                                    CompletionOnceCallback callback) {
   if (net_log_.IsCapturing()) {
     net_log_.BeginEvent(net::NetLogEventType::SPARSE_GET_RANGE,
                         CreateNetLogSparseOperationCallback(offset, len));
@@ -268,7 +287,7 @@ bool MemEntryImpl::CouldBeSparse() const {
   return (children_.get() != nullptr);
 }
 
-int MemEntryImpl::ReadyForSparseIO(const CompletionCallback& callback) {
+int MemEntryImpl::ReadyForSparseIO(CompletionOnceCallback callback) {
   return net::OK;
 }
 
@@ -355,17 +374,17 @@ int MemEntryImpl::InternalWriteData(int index, int offset, IOBuffer* buf,
   if (!backend_) {
     // We have to fail writes after the backend is destroyed since we can't
     // ensure we wouldn't use too much memory if it's gone.
-    RecordWriteResult(WRITE_RESULT_EXCEEDED_CACHE_STORAGE_SIZE);
+    RecordWriteResult(MEM_ENTRY_WRITE_RESULT_EXCEEDED_CACHE_STORAGE_SIZE);
     return net::ERR_INSUFFICIENT_RESOURCES;
   }
 
   if (index < 0 || index >= kNumStreams) {
-    RecordWriteResult(WRITE_RESULT_INVALID_ARGUMENT);
+    RecordWriteResult(MEM_ENTRY_WRITE_RESULT_INVALID_ARGUMENT);
     return net::ERR_INVALID_ARGUMENT;
   }
 
   if (offset < 0 || buf_len < 0) {
-    RecordWriteResult(WRITE_RESULT_INVALID_ARGUMENT);
+    RecordWriteResult(MEM_ENTRY_WRITE_RESULT_INVALID_ARGUMENT);
     return net::ERR_INVALID_ARGUMENT;
   }
 
@@ -374,7 +393,7 @@ int MemEntryImpl::InternalWriteData(int index, int offset, IOBuffer* buf,
   // offset of buf_len could be negative numbers.
   if (offset > max_file_size || buf_len > max_file_size ||
       offset + buf_len > max_file_size) {
-    RecordWriteResult(WRITE_RESULT_OVER_MAX_ENTRY_SIZE);
+    RecordWriteResult(MEM_ENTRY_WRITE_RESULT_OVER_MAX_ENTRY_SIZE);
     return net::ERR_FAILED;
   }
 
@@ -384,7 +403,7 @@ int MemEntryImpl::InternalWriteData(int index, int offset, IOBuffer* buf,
     backend_->ModifyStorageSize(delta);
     if (backend_->HasExceededStorageSize()) {
       backend_->ModifyStorageSize(-delta);
-      RecordWriteResult(WRITE_RESULT_EXCEEDED_CACHE_STORAGE_SIZE);
+      RecordWriteResult(MEM_ENTRY_WRITE_RESULT_EXCEEDED_CACHE_STORAGE_SIZE);
       return net::ERR_INSUFFICIENT_RESOURCES;
     }
 
@@ -398,7 +417,7 @@ int MemEntryImpl::InternalWriteData(int index, int offset, IOBuffer* buf,
   }
 
   UpdateStateOnUse(ENTRY_WAS_MODIFIED);
-  RecordWriteResult(WRITE_RESULT_SUCCESS);
+  RecordWriteResult(MEM_ENTRY_WRITE_RESULT_SUCCESS);
 
   if (!buf_len)
     return 0;
@@ -443,8 +462,9 @@ int MemEntryImpl::InternalReadSparseData(int64_t offset,
           CreateNetLogSparseReadWriteCallback(child->net_log_.source(),
                                               io_buf->BytesRemaining()));
     }
-    int ret = child->ReadData(kSparseData, child_offset, io_buf.get(),
-                              io_buf->BytesRemaining(), CompletionCallback());
+    int ret =
+        child->ReadData(kSparseData, child_offset, io_buf.get(),
+                        io_buf->BytesRemaining(), CompletionOnceCallback());
     if (net_log_.IsCapturing()) {
       net_log_.EndEventWithNetErrorCode(
           net::NetLogEventType::SPARSE_READ_CHILD_DATA, ret);
@@ -510,7 +530,7 @@ int MemEntryImpl::InternalWriteSparseData(int64_t offset,
     // TODO(hclam): if there is data in the entry and this write is not
     // continuous we may want to discard this write.
     int ret = child->WriteData(kSparseData, child_offset, io_buf.get(),
-                               write_len, CompletionCallback(), true);
+                               write_len, CompletionOnceCallback(), true);
     if (net_log_.IsCapturing()) {
       net_log_.EndEventWithNetErrorCode(
           net::NetLogEventType::SPARSE_WRITE_CHILD_DATA, ret);
@@ -618,6 +638,12 @@ net::Interval<int64_t> MemEntryImpl::ChildInterval(
   return net::Interval<int64_t>(
       child_responsibility_start + child->child_first_pos_,
       child_responsibility_start + child->GetDataSize(kSparseData));
+}
+
+void MemEntryImpl::Compact() {
+  // Stream 0 should already be fine since it's written out in a single WriteData().
+  data_[1].shrink_to_fit();
+  data_[2].shrink_to_fit();
 }
 
 }  // namespace disk_cache

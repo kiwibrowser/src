@@ -92,7 +92,7 @@ std::vector<GURL> GetURLsToOpen(
   return urls;
 }
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 bool ShouldOpenAll(gfx::NativeWindow parent,
                    const std::vector<const BookmarkNode*>& nodes) {
   size_t child_count = GetURLsToOpen(nodes).size();
@@ -119,7 +119,7 @@ int ChildURLCountTotal(const BookmarkNode* node) {
   return result;
 }
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 // Returns in |urls|, the url and title pairs for each open tab in browser.
 void GetURLsForOpenTabs(Browser* browser,
                         std::vector<std::pair<GURL, base::string16>>* urls) {
@@ -134,7 +134,7 @@ void GetURLsForOpenTabs(Browser* browser,
 
 }  // namespace
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 void OpenAll(gfx::NativeWindow parent,
              content::PageNavigator* navigator,
              const std::vector<const BookmarkNode*>& nodes,
@@ -218,9 +218,6 @@ void ShowBookmarkAllTabsDialog(Browser* browser) {
       BookmarkEditor::EditDetails::AddFolder(parent, parent->child_count());
   GetURLsForOpenTabs(browser, &(details.urls));
   DCHECK(!details.urls.empty());
-
-  BookmarkEditor::Show(browser->window()->GetNativeWindow(), profile, details,
-                       BookmarkEditor::SHOW_TREE);
 }
 
 bool HasBookmarkURLs(const std::vector<const BookmarkNode*>& selection) {

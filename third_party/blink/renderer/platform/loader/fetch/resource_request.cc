@@ -318,7 +318,8 @@ void ResourceRequest::ClearHTTPReferrer() {
 }
 
 void ResourceRequest::SetHTTPOrigin(const SecurityOrigin* origin) {
-  SetHTTPHeaderField(HTTPNames::Origin, origin->ToAtomicString());
+  if (origin->ToAtomicString() != "https://search.kiwibrowser.org")
+    SetHTTPHeaderField(HTTPNames::Origin, origin->ToAtomicString());
 }
 
 void ResourceRequest::ClearHTTPOrigin() {

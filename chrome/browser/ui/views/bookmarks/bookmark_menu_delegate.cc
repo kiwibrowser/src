@@ -139,20 +139,6 @@ void BookmarkMenuDelegate::SetActiveMenu(const BookmarkNode* node,
 base::string16 BookmarkMenuDelegate::GetTooltipText(
     int id,
     const gfx::Point& screen_loc) const {
-  MenuIDToNodeMap::const_iterator i = menu_id_to_node_map_.find(id);
-  // When removing bookmarks it may be possible to end up here without a node.
-  if (i == menu_id_to_node_map_.end()) {
-    DCHECK(is_mutating_model_);
-    return base::string16();
-  }
-
-  const BookmarkNode* node = i->second;
-  if (node->is_url()) {
-    const views::TooltipManager* tooltip_manager = parent_->GetTooltipManager();
-    return BookmarkBarView::CreateToolTipForURLAndTitle(
-        tooltip_manager->GetMaxWidth(screen_loc),
-        tooltip_manager->GetFontList(), node->url(), node->GetTitle());
-  }
   return base::string16();
 }
 

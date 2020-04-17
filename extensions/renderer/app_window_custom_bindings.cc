@@ -47,11 +47,17 @@ void AppWindowCustomBindings::GetFrame(
   int frame_id = args[0]->Int32Value();
   bool notify_browser = args[1]->BooleanValue();
 
+  if (notify_browser)
+    LOG(INFO) << "[EXTENSIONS] AppWindowCustomBindings::GetFrame, we are getting frame: " << frame_id << " and we should notify browser";
+  else
+    LOG(INFO) << "[EXTENSIONS] AppWindowCustomBindings::GetFrame, we are getting frame: " << frame_id << " and we should not notify browser";
+
   if (frame_id == MSG_ROUTING_NONE)
     return;
 
   content::RenderFrame* app_frame =
       content::RenderFrame::FromRoutingID(frame_id);
+  LOG(INFO) << "[EXTENSIONS] AppWindowCustomBindings::GetFrame, we are getting frame: " << frame_id << " and app_frame: " << app_frame;
   if (!app_frame)
     return;
 
@@ -60,8 +66,17 @@ void AppWindowCustomBindings::GetFrame(
         new ExtensionHostMsg_AppWindowReady(app_frame->GetRoutingID()));
   }
 
+  LOG(INFO) << "[EXTENSIONS] AppWindowCustomBindings::GetFrame, we are getting frame: " << frame_id << " and app_frame: " << app_frame << " - Step 2";
+
   v8::Local<v8::Value> window =
       app_frame->GetWebFrame()->MainWorldScriptContext()->Global();
+  if (app_frame->GetWebFrame()->MainWorldScriptContext().IsEmpty()) {
+    LOG(INFO) << "[EXTENSIONS] MainWorldScriptContext() is empty";
+  } else {
+    LOG(INFO) << "[EXTENSIONS] MainWorldScriptContext() is not empty";
+  }
+
+  LOG(INFO) << "[EXTENSIONS] AppWindowCustomBindings::GetFrame, we are getting frame: " << frame_id << " and app_frame: " << app_frame << " - Step 3";
 
   // If the new window loads a sandboxed page and has started loading its
   // document, its security origin is unique and the background script is not
@@ -70,8 +85,10 @@ void AppWindowCustomBindings::GetFrame(
       args.GetIsolate()->GetCurrentContext();
   if (!ContextCanAccessObject(caller_context,
                               v8::Local<v8::Object>::Cast(window), true)) {
+    LOG(INFO) << "[EXTENSIONS] AppWindowCustomBindings::GetFrame, we are getting frame: " << frame_id << " and app_frame: " << app_frame << " - Step 3a";
     return;
   }
+  LOG(INFO) << "[EXTENSIONS] AppWindowCustomBindings::GetFrame, we are getting frame: " << frame_id << " and app_frame: " << app_frame << " - Step 4";
 
   args.GetReturnValue().Set(window);
 }

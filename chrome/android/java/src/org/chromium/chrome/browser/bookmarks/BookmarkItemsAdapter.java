@@ -17,6 +17,7 @@ import org.chromium.base.VisibleForTesting;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.bookmarks.BookmarkBridge.BookmarkItem;
 import org.chromium.chrome.browser.bookmarks.BookmarkBridge.BookmarkModelObserver;
+import org.chromium.chrome.browser.bookmarks.BookmarkManager.ItemsAdapter;
 import org.chromium.chrome.browser.signin.PersonalizedSigninPromoView;
 import org.chromium.components.bookmarks.BookmarkId;
 
@@ -28,10 +29,10 @@ import java.util.List;
 /**
  * BaseAdapter for {@link RecyclerView}. It manages bookmarks to list there.
  */
-class BookmarkItemsAdapter
-        extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements BookmarkUIObserver {
+class BookmarkItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
+        implements BookmarkUIObserver, ItemsAdapter {
     /**
-     * Specifies the view types that the bookmark manager screen can contain.
+     * Specifies the view types that the bookmark delegate screen can contain.
      */
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({ViewType.PERSONALIZED_SIGNIN_PROMO, ViewType.SYNC_PROMO, ViewType.FOLDER,
@@ -195,7 +196,9 @@ class BookmarkItemsAdapter
         if (section == mPromoHeaderSection) {
             assert section.size() == 1 : "Only one element is supported in promo header section!";
             return mPromoHeaderSection.get(0);
-        } else if (section == mFolderSection) {
+        }
+
+        if (section == mFolderSection) {
             return ViewType.FOLDER;
         } else if (section == mBookmarkSection) {
             return ViewType.BOOKMARK;
@@ -217,12 +220,12 @@ class BookmarkItemsAdapter
             case ViewType.FOLDER:
                 BookmarkFolderRow folder = (BookmarkFolderRow) LayoutInflater.from(
                         parent.getContext()).inflate(R.layout.bookmark_folder_row, parent, false);
-                folder.onBookmarkDelegateInitialized(mDelegate);
+                folder.onDelegateInitialized(mDelegate);
                 return new ItemViewHolder(folder);
             case ViewType.BOOKMARK:
                 BookmarkItemRow item = (BookmarkItemRow) LayoutInflater.from(
                         parent.getContext()).inflate(R.layout.bookmark_item_row, parent, false);
-                item.onBookmarkDelegateInitialized(mDelegate);
+                item.onDelegateInitialized(mDelegate);
                 return new ItemViewHolder(item);
             default:
                 assert false;
@@ -265,6 +268,7 @@ class BookmarkItemsAdapter
      * Sets the delegate to use to handle UI actions related to this adapter.
      * @param delegate A {@link BookmarkDelegate} instance to handle all backend interaction.
      */
+    @Override
     public void onBookmarkDelegateInitialized(BookmarkDelegate delegate) {
         mDelegate = delegate;
         mDelegate.addUIObserver(this);
@@ -312,6 +316,7 @@ class BookmarkItemsAdapter
         if (folder.equals(mDelegate.getModel().getRootFolderId())) {
             setBookmarks(mTopLevelFolders, new ArrayList<BookmarkId>());
         } else {
+            // Get folders and bookmarks separately.
             setBookmarks(mDelegate.getModel().getChildIDs(folder, true, false),
                     mDelegate.getModel().getChildIDs(folder, false, true));
         }
@@ -328,6 +333,7 @@ class BookmarkItemsAdapter
     /**
      * Refresh the list of bookmarks within the currently visible folder.
      */
+    @Override
     public void refresh() {
         if (mCurrentFolder == null) return;
         onFolderStateSet(mCurrentFolder);
@@ -337,7 +343,8 @@ class BookmarkItemsAdapter
      * Synchronously searches for the given query.
      * @param query The query text to search for.
      */
-    void search(String query) {
+    @Override
+    public void search(String query) {
         mSearchText = query.toString().trim();
         List<BookmarkId> results =
                 mDelegate.getModel().searchBookmarks(mSearchText, MAXIMUM_NUMBER_OF_SEARCH_RESULTS);

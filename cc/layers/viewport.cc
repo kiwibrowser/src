@@ -226,7 +226,8 @@ void Viewport::PinchEnd(const gfx::Point& anchor, bool snap_to_min) {
     float min_scale = active_tree->min_page_scale_factor();
 
     // If the page is close to minimum scale at pinch end, snap to minimum.
-    if (page_scale < min_scale * kMaxZoomForSnapToMin) {
+    if (page_scale < min_scale * kMaxZoomForSnapToMin &&
+        page_scale != min_scale) {
       gfx::PointF adjusted_anchor =
           gfx::PointF(anchor + pinch_anchor_adjustment_);
       adjusted_anchor =

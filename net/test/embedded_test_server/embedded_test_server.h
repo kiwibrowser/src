@@ -193,6 +193,9 @@ class EmbeddedTestServer {
   void SetSSLConfig(ServerCertificate cert, const SSLServerConfig& ssl_config);
   void SetSSLConfig(ServerCertificate cert);
 
+  bool ResetSSLConfig(ServerCertificate cert,
+                      const SSLServerConfig& ssl_config);
+
   // Returns the file name of the certificate the server is using. The test
   // certificates can be found in net/data/ssl/certificates/.
   std::string GetCertificateName() const;
@@ -241,6 +244,10 @@ class EmbeddedTestServer {
  private:
   // Shuts down the server.
   void ShutdownOnIOThread();
+
+  // Resets the SSLServerConfig on the IO thread.
+  void ResetSSLConfigOnIOThread(ServerCertificate cert,
+                                const SSLServerConfig& ssl_config);
 
   // Upgrade the TCP connection to one over SSL.
   std::unique_ptr<StreamSocket> DoSSLUpgrade(

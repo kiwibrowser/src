@@ -46,8 +46,7 @@ class TabHandleLayer : public Layer {
                      float close_button_alpha,
                      bool is_loading,
                      float spinner_rotation,
-                     float brightness,
-                     float border_opacity);
+                     float brightness);
   scoped_refptr<cc::Layer> layer() override;
 
  protected:
@@ -60,7 +59,6 @@ class TabHandleLayer : public Layer {
   scoped_refptr<cc::Layer> layer_;
   scoped_refptr<cc::UIResourceLayer> close_button_;
   scoped_refptr<cc::NinePatchLayer> decoration_tab_;
-  scoped_refptr<cc::SolidColorLayer> border_;
   scoped_refptr<cc::Layer> title_layer_;
 
   float brightness_;

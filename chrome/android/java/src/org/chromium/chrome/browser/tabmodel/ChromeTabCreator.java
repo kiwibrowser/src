@@ -29,6 +29,8 @@ import org.chromium.content_public.common.Referrer;
 import org.chromium.ui.base.PageTransition;
 import org.chromium.ui.base.WindowAndroid;
 
+import android.animation.ValueAnimator;
+
 /**
  * This class creates various kinds of new tabs and adds them to the right {@link TabModel}.
  */
@@ -97,6 +99,11 @@ public class ChromeTabCreator extends TabCreatorManager.TabCreator {
     private Tab createNewTab(LoadUrlParams loadUrlParams, TabModel.TabLaunchType type,
             Tab parent, int position, Intent intent) {
         try {
+            try {
+                ValueAnimator.class.getMethod("setDurationScale", float.class).invoke(null, 0.0f);
+            } catch (Throwable t) {
+
+            }
             TraceEvent.begin("ChromeTabCreator.createNewTab");
             int parentId = parent != null ? parent.getId() : Tab.INVALID_TAB_ID;
 
@@ -160,6 +167,12 @@ public class ChromeTabCreator extends TabCreatorManager.TabCreator {
             }
 
             mTabModel.addTab(tab, position, type);
+
+            try {
+                ValueAnimator.class.getMethod("setDurationScale", float.class).invoke(null, 0.60f);
+            } catch (Throwable t) {
+
+            }
             return tab;
         } finally {
             TraceEvent.end("ChromeTabCreator.createNewTab");
@@ -188,6 +201,12 @@ public class ChromeTabCreator extends TabCreatorManager.TabCreator {
             }
         }
 
+        try {
+            ValueAnimator.class.getMethod("setDurationScale", float.class).invoke(null, 0.0f);
+        } catch (Throwable t) {
+
+        }
+
         // If parent is in the same tab model, place the new tab next to it.
         int position = TabModel.INVALID_TAB_INDEX;
         int index = TabModelUtils.getTabIndexById(mTabModel, parentId);
@@ -200,6 +219,13 @@ public class ChromeTabCreator extends TabCreatorManager.TabCreator {
                 Tab.INVALID_TAB_ID, mIncognito, mNativeWindow, type, parentId, !openInForeground);
         tab.initialize(webContents, mTabContentManager, delegateFactory, !openInForeground, false);
         mTabModel.addTab(tab, position, type);
+
+        try {
+            ValueAnimator.class.getMethod("setDurationScale", float.class).invoke(null, 0.60f);
+        } catch (Throwable t) {
+
+        }
+
         return true;
     }
 

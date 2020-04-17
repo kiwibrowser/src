@@ -38,6 +38,8 @@ import org.chromium.components.url_formatter.UrlFormatter;
 import org.chromium.content_public.browser.LoadUrlParams;
 import org.chromium.content_public.common.ContentUrlConstants;
 import org.chromium.ui.base.ActivityWindowAndroid;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
 
 /** Queries the user's default search engine and shows autocomplete suggestions. */
 public class SearchActivity extends AsyncInitializationActivity
@@ -127,6 +129,16 @@ public class SearchActivity extends AsyncInitializationActivity
         // Build the search box.
         mSearchBox = (SearchActivityLocationBarLayout) mContentView.findViewById(
                 R.id.search_location_bar);
+        if (ContextUtils.getAppSharedPreferences() != null && (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))) {
+          if (mContentView != null)
+            mContentView.setBackgroundColor(Color.BLACK);
+          if (mSearchBox != null)
+            mSearchBox.setBackgroundColor(Color.BLACK);
+          if (mContentView != null && mContentView.findViewById(
+                R.id.toolbar) != null)
+            mContentView.findViewById(
+                  R.id.toolbar).setBackgroundColor(Color.BLACK);
+        }
         mSearchBox.setDelegate(this);
         mSearchBox.setToolbarDataProvider(mSearchBoxDataProvider);
         mSearchBox.initializeControls(new WindowDelegate(getWindow()), getWindowAndroid());

@@ -27,7 +27,8 @@ class EVENTS_EXPORT GestureEventAndroid {
                       float velocity_x,
                       float velocity_y,
                       bool target_viewport,
-                      bool synthetic_scroll);
+                      bool synthetic_scroll,
+                      bool prevent_boosting);
 
   ~GestureEventAndroid();
 
@@ -42,6 +43,7 @@ class EVENTS_EXPORT GestureEventAndroid {
   float velocity_y() const { return velocity_y_; }
   bool target_viewport() const { return target_viewport_; }
   bool synthetic_scroll() const { return synthetic_scroll_; }
+  bool prevent_boosting() const { return prevent_boosting_; }
 
   // Creates a new GestureEventAndroid instance different from |this| only by
   // its location.
@@ -61,6 +63,10 @@ class EVENTS_EXPORT GestureEventAndroid {
   float velocity_y_;
   bool target_viewport_;
   bool synthetic_scroll_;
+
+  // Used by fling cancel. If true, this gesture will never attempt to boost an
+  // existing fling. It will immediately cancel an existing fling.
+  bool prevent_boosting_;
 
   DISALLOW_COPY_AND_ASSIGN(GestureEventAndroid);
 };

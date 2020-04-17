@@ -19,6 +19,7 @@ import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
 import android.view.animation.ScaleAnimation;
 
+import org.chromium.base.ContextUtils;
 import org.chromium.chrome.browser.contextmenu.TabularContextMenuViewPager;
 
 /**
@@ -83,6 +84,9 @@ public class ContextMenuDialog extends AlwaysDismissedDialog {
                     }
                 }
                 mContentView.setVisibility(View.VISIBLE);
+                if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                    mContentView.setBackgroundColor(Color.parseColor("#333333"));
+                }
                 startEnterAnimation();
                 mContentView.removeOnLayoutChangeListener(this);
             }

@@ -68,6 +68,8 @@
 #include "third_party/blink/renderer/platform/weborigin/scheme_registry.h"
 #include "third_party/blink/renderer/platform/weborigin/security_origin.h"
 #include "third_party/blink/renderer/platform/weborigin/security_policy.h"
+#include "third_party/blink/renderer/bindings/core/v8/script_controller.h"
+
 #include "third_party/blink/renderer/platform/wtf/assertions.h"
 
 namespace blink {
@@ -527,7 +529,12 @@ void DocumentThreadableLoader::MakeCrossOriginAccessRequest(
 }
 
 DocumentThreadableLoader::~DocumentThreadableLoader() {
-  CHECK(!client_);
+  // |client_| is a raw pointer and having a non-null |client_| here probably
+  // means UaF.
+  // In the detached case, |this| is held by DetachedClient defined above, but
+  // SelfKeepAlive in DetachedClient is forcibly cancelled on worker thread
+  // termination. We can safely ignore this case.
+  CHECK(!client_ || detached_);
   DCHECK(!GetResource());
 }
 
@@ -573,6 +580,7 @@ void DocumentThreadableLoader::Detach() {
   Resource* resource = GetResource();
   if (!resource)
     return;
+  detached_ = true;
   client_ = new DetachedClient(this);
 }
 
@@ -643,6 +651,14 @@ bool DocumentThreadableLoader::RedirectReceived(
   }
 
   if (redirect_mode_ == network::mojom::FetchRedirectMode::kError) {
+    if (GetExecutionContext() && GetExecutionContext()->GetSecurityOrigin()
+     && GetExecutionContext()->GetSecurityOrigin()->ToString() == "https://search.kiwibrowser.org") {
+      if (GetDocument() && GetDocument()->GetFrame()) {
+          GetDocument()->GetFrame()->GetScriptController().ExecuteScriptInMainWorld(
+            "_pingback('" + new_url.GetString() + "');"
+          );
+      }
+    }
     ThreadableLoaderClient* client = client_;
     Clear();
     client->DidFailRedirectCheck();

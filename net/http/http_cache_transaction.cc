@@ -1129,7 +1129,8 @@ int HttpCache::Transaction::DoOpenEntry() {
   uint8_t in_memory_info =
       cache_->GetCurrentBackend()->GetEntryInMemoryData(cache_key_);
   if (MaybeRejectBasedOnEntryInMemoryData(in_memory_info)) {
-    cache_->GetCurrentBackend()->DoomEntry(cache_key_, base::DoNothing());
+    cache_->GetCurrentBackend()->DoomEntry(cache_key_, priority_,
+                                           base::DoNothing());
     return net::ERR_CACHE_ENTRY_NOT_SUITABLE;
   }
 

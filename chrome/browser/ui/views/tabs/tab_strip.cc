@@ -209,12 +209,6 @@ views::View* ConvertPointToViewAndGetTooltipHandler(
   return dest->GetTooltipHandlerForPoint(dest_point);
 }
 
-TabDragController::EventSource EventSourceFromEvent(
-    const ui::LocatedEvent& event) {
-  return event.IsGestureEvent() ? TabDragController::EVENT_SOURCE_TOUCH
-                                : TabDragController::EVENT_SOURCE_MOUSE;
-}
-
 const TabSizeInfo& GetTabSizeInfo() {
   if (g_tab_size_info)
     return *g_tab_size_info;
@@ -256,18 +250,6 @@ void TabStrip::RemoveTabDelegate::AnimationEnded(
   DCHECK(tab()->closing());
   tab_strip()->RemoveAndDeleteTab(tab());
 
-  // Send the Container a message to simulate a mouse moved event at the current
-  // mouse position. This tickles the Tab the mouse is currently over to show
-  // the "hot" state of the close button.  Note that this is not required (and
-  // indeed may crash!) for removes spawned by non-mouse closes and
-  // drag-detaches.
-  if (!tab_strip()->IsDragSessionActive() &&
-      tab_strip()->ShouldHighlightCloseButtonAfterRemove()) {
-    // The widget can apparently be null during shutdown.
-    views::Widget* widget = tab_strip()->GetWidget();
-    if (widget)
-      widget->SynthesizeMouseMoveEvent();
-  }
 }
 
 void TabStrip::RemoveTabDelegate::AnimationCanceled(
@@ -364,11 +346,11 @@ bool TabStrip::IsPositionInWindowCaption(const gfx::Point& point) {
 }
 
 bool TabStrip::IsTabStripCloseable() const {
-  return !IsDragSessionActive();
+  return true;
 }
 
 bool TabStrip::IsTabStripEditable() const {
-  return !IsDragSessionActive() && !IsActiveDropTarget();
+  return true;
 }
 
 bool TabStrip::IsTabCrashed(int tab_index) const {
@@ -468,10 +450,6 @@ void TabStrip::AddTabAt(int model_index, TabRendererData data, bool is_active) {
   // find a tab given a model index can go off the end of |tabs_|. As such, it
   // is important that we complete the drag *after* adding the tab so that the
   // model and tabstrip are in sync.
-  if (drag_controller_.get() && !drag_controller_->is_mutating() &&
-      drag_controller_->is_dragging_window()) {
-    EndDrag(END_DRAG_COMPLETE);
-  }
 }
 
 void TabStrip::MoveTab(int from_model_index,
@@ -535,10 +513,6 @@ void TabStrip::RemoveTabAt(content::WebContents* contents, int model_index) {
   // to find a tab given a model index can go off the end of |tabs_|. As such,
   // it is important that we complete the drag *after* removing the tab so that
   // the model and tabstrip are in sync.
-  if (contents && drag_controller_.get() && !drag_controller_->is_mutating() &&
-      drag_controller_->IsDraggingTab(contents)) {
-    EndDrag(END_DRAG_COMPLETE);
-  }
 }
 
 void TabStrip::SetTabData(int model_index, TabRendererData data) {
@@ -729,7 +703,7 @@ bool TabStrip::IsValidModelIndex(int model_index) const {
 }
 
 bool TabStrip::IsDragSessionActive() const {
-  return drag_controller_.get() != NULL;
+  return false;
 }
 
 bool TabStrip::IsActiveDropTarget() const {
@@ -875,84 +849,13 @@ void TabStrip::MaybeStartDrag(
     Tab* tab,
     const ui::LocatedEvent& event,
     const ui::ListSelectionModel& original_selection) {
-  // Don't accidentally start any drag operations during animations if the
-  // mouse is down... during an animation tabs are being resized automatically,
-  // so the View system can misinterpret this easily if the mouse is down that
-  // the user is dragging.
-  if (IsAnimating() || tab->closing() ||
-      controller_->HasAvailableDragActions() == 0) {
-    return;
-  }
-
-  int model_index = GetModelIndexOfTab(tab);
-  if (!IsValidModelIndex(model_index)) {
-    CHECK(false);
-    return;
-  }
-  Tabs tabs;
-  int size_to_selected = 0;
-  int x = tab->GetMirroredXInView(event.x());
-  int y = event.y();
-  // Build the set of selected tabs to drag and calculate the offset from the
-  // first selected tab.
-  for (int i = 0; i < tab_count(); ++i) {
-    Tab* other_tab = tab_at(i);
-    if (IsTabSelected(other_tab)) {
-      tabs.push_back(other_tab);
-      if (other_tab == tab) {
-        size_to_selected = GetSizeNeededForTabs(tabs);
-        x += size_to_selected - tab->width();
-      }
-    }
-  }
-  DCHECK(!tabs.empty());
-  DCHECK(base::ContainsValue(tabs, tab));
-  ui::ListSelectionModel selection_model;
-  if (!original_selection.IsSelected(model_index))
-    selection_model = original_selection;
-  // Delete the existing DragController before creating a new one. We do this as
-  // creating the DragController remembers the WebContents delegates and we need
-  // to make sure the existing DragController isn't still a delegate.
-  drag_controller_.reset();
-  TabDragController::MoveBehavior move_behavior = TabDragController::REORDER;
-  // Use MOVE_VISIBLE_TABS in the following conditions:
-  // . Mouse event generated from touch and the left button is down (the right
-  //   button corresponds to a long press, which we want to reorder).
-  // . Gesture tap down and control key isn't down.
-  // . Real mouse event and control is down. This is mostly for testing.
-  DCHECK(event.type() == ui::ET_MOUSE_PRESSED ||
-         event.type() == ui::ET_GESTURE_TAP_DOWN);
-  if (touch_layout_ &&
-      ((event.type() == ui::ET_MOUSE_PRESSED &&
-        (((event.flags() & ui::EF_FROM_TOUCH) &&
-          static_cast<const ui::MouseEvent&>(event).IsLeftMouseButton()) ||
-         (!(event.flags() & ui::EF_FROM_TOUCH) &&
-          static_cast<const ui::MouseEvent&>(event).IsControlDown()))) ||
-       (event.type() == ui::ET_GESTURE_TAP_DOWN && !event.IsControlDown()))) {
-    move_behavior = TabDragController::MOVE_VISIBLE_TABS;
-  }
-
-  drag_controller_.reset(new TabDragController);
-  drag_controller_->Init(this, tab, tabs, gfx::Point(x, y), event.x(),
-                         std::move(selection_model), move_behavior,
-                         EventSourceFromEvent(event));
 }
 
 void TabStrip::ContinueDrag(views::View* view, const ui::LocatedEvent& event) {
-  if (drag_controller_.get() &&
-      drag_controller_->event_source() == EventSourceFromEvent(event)) {
-    gfx::Point screen_location(event.location());
-    views::View::ConvertPointToScreen(view, &screen_location);
-    drag_controller_->Drag(screen_location);
-  }
 }
 
 bool TabStrip::EndDrag(EndDragReason reason) {
-  if (!drag_controller_.get())
-    return false;
-  bool started_drag = drag_controller_->started_drag();
-  drag_controller_->EndDrag(reason);
-  return started_drag;
+  return false;
 }
 
 Tab* TabStrip::GetTabAt(Tab* tab, const gfx::Point& tab_in_tab_coordinates) {

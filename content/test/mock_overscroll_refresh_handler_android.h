@@ -22,8 +22,8 @@ class MockOverscrollRefreshHandlerAndroid : public ui::OverscrollRefreshHandler,
   ~MockOverscrollRefreshHandlerAndroid() override;
 
   // ui::OverscrollRefreshHandler:
-  bool PullStart() override;
-  void PullUpdate(float) override;
+  bool PullStart(float, float) override;
+  void PullUpdate(float, float) override;
   void PullRelease(bool) override;
   void PullReset() override;
 

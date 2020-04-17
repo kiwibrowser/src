@@ -9,6 +9,8 @@
 #include "base/files/file_enumerator.h"
 #include "base/files/file_util.h"
 #include "base/location.h"
+#include "base/metrics/field_trial_params.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
@@ -83,6 +85,9 @@ namespace disk_cache {
 
 const int kDefaultCacheSize = 80 * 1024 * 1024;
 
+const base::Feature kChangeDiskCacheSizeExperiment{
+    "ChangeDiskCacheSize", base::FEATURE_DISABLED_BY_DEFAULT};
+
 void DeleteCache(const base::FilePath& path, bool remove_folder) {
   if (remove_folder) {
     if (!base::DeleteFile(path, /* recursive */ true))
@@ -147,15 +152,45 @@ bool DelayedCacheCleanup(const base::FilePath& full_path) {
 // Returns the preferred maximum number of bytes for the cache given the
 // number of available bytes.
 int PreferredCacheSize(int64_t available) {
+  // Percent of cache size to use, relative to the default size. "100" means to
+  // use 100% of the default size.
+  int percent_relative_size;
+  std::map<std::string, std::string> params;
+  if (!base::GetFieldTrialParamsByFeature(
+          disk_cache::kChangeDiskCacheSizeExperiment, &params) ||
+      !base::StringToInt(params["percent_relative_size"],
+                         &percent_relative_size) ||
+      percent_relative_size <= 0) {
+    percent_relative_size = 100;
+  }
+
+  // Cap scaling, as a safety check, to avoid overflow.
+  if (percent_relative_size > 200)
+    percent_relative_size = 200;
+
+  int64_t scaled_default_disk_cache_size =
+      static_cast<int64_t>(disk_cache::kDefaultCacheSize) *
+      percent_relative_size / 100;
   if (available < 0)
-    return kDefaultCacheSize;
+    return static_cast<int32_t>(scaled_default_disk_cache_size);
+
+  int64_t preferred_cache_size = PreferredCacheSizeInternal(available);
+
+  // If the preferred cache size is less 20% of the available space, scale for
+  // the field trial, capping the scaled value at 20% of the available space.
+  if (preferred_cache_size < available / 5) {
+    preferred_cache_size = preferred_cache_size * percent_relative_size / 100;
+    if (preferred_cache_size > available / 5)
+      preferred_cache_size = available / 5;
+  }
 
   // Limit cache size to somewhat less than kint32max to avoid potential
   // integer overflows in cache backend implementations.
-  DCHECK_LT(kDefaultCacheSize * 4, std::numeric_limits<int32_t>::max());
+  DCHECK_LT(scaled_default_disk_cache_size * 4,
+            std::numeric_limits<int32_t>::max());
   return static_cast<int32_t>(
-      std::min(PreferredCacheSizeInternal(available),
-               static_cast<int64_t>(kDefaultCacheSize * 4)));
+      std::min(preferred_cache_size,
+               static_cast<int64_t>(scaled_default_disk_cache_size * 4)));
 }
 
 }  // namespace disk_cache

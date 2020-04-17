@@ -12,7 +12,9 @@
 
 #include "base/files/file_path.h"
 #include "content/common/content_export.h"
-#include "third_party/skia/include/core/SkColor.h"
+// #include "third_party/skia/include/core/SkColor.h"
+
+typedef uint32_t SkColor;
 
 namespace base {
 class Version;
@@ -58,7 +60,7 @@ struct CONTENT_EXPORT WebPluginInfo {
     PLUGIN_TYPE_BROWSER_PLUGIN
   };
 
-  static constexpr SkColor kDefaultBackgroundColor = SkColorSetRGB(38, 38, 38);
+  static constexpr SkColor kDefaultBackgroundColor = 0;
 
   WebPluginInfo();
   WebPluginInfo(const WebPluginInfo& rhs);

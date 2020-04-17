@@ -19,7 +19,6 @@ import org.chromium.base.Callback;
 import org.chromium.base.Log;
 import org.chromium.base.library_loader.LibraryLoader;
 import org.chromium.base.metrics.RecordHistogram;
-import org.chromium.chrome.browser.AppHooks;
 import org.chromium.chrome.browser.ChromeActivity;
 import org.chromium.chrome.browser.ChromeFeatureList;
 import org.chromium.chrome.browser.rappor.RapporServiceBridge;
@@ -103,8 +102,7 @@ public class PictureInPictureController {
         if (!ChromeFeatureList.isEnabled(ChromeFeatureList.VIDEO_PERSISTENCE)) return false;
 
         // Only auto-PiP if there is a playing fullscreen video that allows PiP.
-        if (!AppHooks.get().shouldDetectVideoFullscreen()
-                || !webContents.hasActiveEffectivelyFullscreenVideo()
+        if (!webContents.hasActiveEffectivelyFullscreenVideo()
                 || !webContents.isPictureInPictureAllowedForFullscreenVideo()) {
             recordAttemptResult(METRICS_ATTEMPT_RESULT_NO_VIDEO);
             return false;

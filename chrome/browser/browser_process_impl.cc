@@ -174,9 +174,7 @@
 #include "chrome/browser/plugins/plugins_resource_service.h"
 #endif
 
-#if defined(OS_WIN) || defined(OS_MACOSX) || defined(OS_LINUX)
 #include "chrome/browser/resource_coordinator/tab_manager.h"
-#endif
 
 #if !defined(OS_ANDROID) && !defined(OS_CHROMEOS)
 #include "chrome/browser/first_run/upgrade_util.h"
@@ -842,7 +840,6 @@ gcm::GCMDriver* BrowserProcessImpl::gcm_driver() {
 
 resource_coordinator::TabManager* BrowserProcessImpl::GetTabManager() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-#if defined(OS_WIN) || defined(OS_MACOSX) || defined(OS_LINUX)
   if (!tab_manager_) {
     tab_manager_ = std::make_unique<resource_coordinator::TabManager>();
     tab_lifecycle_unit_source_ =
@@ -850,9 +847,6 @@ resource_coordinator::TabManager* BrowserProcessImpl::GetTabManager() {
     tab_lifecycle_unit_source_->AddObserver(tab_manager_.get());
   }
   return tab_manager_.get();
-#else
-  return nullptr;
-#endif
 }
 
 shell_integration::DefaultWebClientState
@@ -1261,7 +1255,7 @@ void BrowserProcessImpl::CreateSubresourceFilterRulesetService() {
   subresource_filter_ruleset_service_ =
       std::make_unique<subresource_filter::ContentRulesetService>(
           blocking_task_runner);
-  subresource_filter_ruleset_service_->set_ruleset_service(
+  subresource_filter_ruleset_service_->SetAndInitializeRulesetService(
       std::make_unique<subresource_filter::RulesetService>(
           local_state(), background_task_runner,
           subresource_filter_ruleset_service_.get(), indexed_ruleset_base_dir));

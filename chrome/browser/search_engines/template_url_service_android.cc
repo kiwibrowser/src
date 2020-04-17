@@ -107,28 +107,7 @@ jboolean TemplateUrlServiceAndroid::IsDefaultSearchEngineGoogle(
 jboolean TemplateUrlServiceAndroid::DoesDefaultSearchEngineHaveLogo(
     JNIEnv* env,
     const JavaParamRef<jobject>& obj) {
-  // |kSearchProviderLogoURL| applies to all search engines (Google or
-  // third-party).
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
-          search_provider_logos::switches::kSearchProviderLogoURL)) {
-    return true;
-  }
-
-  // Google always has a logo.
-  if (IsDefaultSearchEngineGoogle(env, obj))
-    return true;
-
-  // Third-party search engines can have a doodle specified via the command
-  // line, or a static logo or doodle from the TemplateURLService.
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
-          search_provider_logos::switches::kThirdPartyDoodleURL)) {
-    return true;
-  }
-  const TemplateURL* default_search_provider =
-      template_url_service_->GetDefaultSearchProvider();
-  return default_search_provider &&
-         (default_search_provider->doodle_url().is_valid() ||
-          default_search_provider->logo_url().is_valid());
+  return false;
 }
 
 jboolean
@@ -236,7 +215,7 @@ TemplateUrlServiceAndroid::GetUrlForContextualSearchQuery(
   std::string url;
 
   if (!query.empty()) {
-    GURL gurl(GetDefaultSearchURLForSearchTerms(template_url_service_, query));
+    GURL gurl(GetDefaultSearchURLForContextualSearchTerms(template_url_service_, query));
     if (google_util::IsGoogleSearchUrl(gurl)) {
       std::string protocol_version(
           base::android::ConvertJavaStringToUTF8(env, jprotocol_version));

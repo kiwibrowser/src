@@ -244,7 +244,7 @@ TEST_F(SubresourceFilterContentRulesetServiceTest,
   // and post ruleset setup on |blocking_task_runner|. (Yes, exactly
   // |blocking_task_runner| via |ContentRulesetService| as its delegate).
   ASSERT_EQ(0u, blocking_task_runner->NumPendingTasks());
-  service->set_ruleset_service(std::make_unique<RulesetService>(
+  service->SetAndInitializeRulesetService(std::make_unique<RulesetService>(
       &prefs, background_task_runner, service.get(), base_dir));
 
   // The key test assertion is that ruleset data is published via exactly one

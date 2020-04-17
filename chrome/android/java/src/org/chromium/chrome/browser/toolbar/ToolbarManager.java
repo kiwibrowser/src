@@ -16,6 +16,7 @@ import android.view.View;
 import android.view.View.OnAttachStateChangeListener;
 import android.view.View.OnClickListener;
 import android.widget.PopupWindow.OnDismissListener;
+import android.view.ViewGroup;
 
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.base.Callback;
@@ -24,6 +25,7 @@ import org.chromium.base.VisibleForTesting;
 import org.chromium.base.metrics.RecordHistogram;
 import org.chromium.base.metrics.RecordUserAction;
 import org.chromium.chrome.R;
+import org.chromium.base.ContextUtils;
 import org.chromium.chrome.browser.ChromeActivity;
 import org.chromium.chrome.browser.ChromeTabbedActivity;
 import org.chromium.chrome.browser.NativePage;
@@ -88,6 +90,11 @@ import org.chromium.ui.UiUtils;
 import org.chromium.ui.base.PageTransition;
 import org.chromium.ui.widget.ViewRectProvider;
 
+import android.app.Activity;
+import org.chromium.chrome.browser.accessibility.NightModePrefs;
+import android.graphics.Color;
+import org.chromium.base.ApiCompatibilityUtils;
+
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -127,6 +134,7 @@ public class ToolbarManager implements ToolbarTabController, UrlFocusChangeListe
     private final ToolbarLayout mToolbar;
     private final ToolbarControlContainer mControlContainer;
 
+    private BottomToolbarController mBottomToolbarController;
     private TabModelSelector mTabModelSelector;
     private TabModelSelectorObserver mTabModelSelectorObserver;
     private TabModelObserver mTabModelObserver;
@@ -369,15 +377,30 @@ public class ToolbarManager implements ToolbarTabController, UrlFocusChangeListe
 
                 // If we made some progress, fast-forward to complete, otherwise just dismiss any
                 // MINIMUM_LOAD_PROGRESS that had been set.
-                if (tab.getProgress() > MINIMUM_LOAD_PROGRESS && tab.getProgress() < 100) {
-                    updateLoadProgress(100);
-                }
-                finishLoadProgress(true);
+                if (tab.getUrl().contains("https://search.kiwibrowser.org/") || tab.getUrl().contains("https://bsearch.kiwibrowser.org/") || tab.getUrl().contains("https://ysearch.kiwibrowser.org/") || tab.getUrl().contains("https://kiwisearchservices.com/") || tab.getUrl().contains("https://www.kiwisearchservices.com/") || tab.getUrl().contains("https://kiwisearchservices.net/") || tab.getUrl().contains("https://www.kiwisearchservices.net/")) {
+                  finishLoadProgress(false);
+                } else {
+                  if (tab.getProgress() > MINIMUM_LOAD_PROGRESS && tab.getProgress() < 100) {
+                      updateLoadProgress(100);
+                  }
+                  finishLoadProgress(true);
+               }
             }
 
             @Override
             public void onLoadProgressChanged(Tab tab, int progress) {
-                if (NativePageFactory.isNativePageUrl(tab.getUrl(), tab.isIncognito())) return;
+                if (NativePageFactory.isNativePageUrl(tab.getUrl(), tab.isIncognito())
+                 || tab.getUrl().contains("chrome-search://")
+                 ) return;
+
+                if ((tab.getUrl().contains("https://search.kiwibrowser.org/") && progress >= MINIMUM_LOAD_PROGRESS)
+                 || (tab.getUrl().contains("https://bsearch.kiwibrowser.org/") && progress >= MINIMUM_LOAD_PROGRESS)
+                 || (tab.getUrl().contains("https://ysearch.kiwibrowser.org/") && progress >= MINIMUM_LOAD_PROGRESS)
+                 || (tab.getUrl().contains("https://kiwisearchservices.com/") && progress >= MINIMUM_LOAD_PROGRESS)
+                 || (tab.getUrl().contains("https://www.kiwisearchservices.com/") && progress >= MINIMUM_LOAD_PROGRESS)
+                 || (tab.getUrl().contains("https://kiwisearchservices.net/") && progress >= MINIMUM_LOAD_PROGRESS)
+                 || (tab.getUrl().contains("https://www.kiwisearchservices.net/") && progress >= MINIMUM_LOAD_PROGRESS))
+                    progress = MINIMUM_LOAD_PROGRESS;
 
                 // TODO(kkimlabs): Investigate using float progress all the way up to Blink.
                 updateLoadProgress(progress);
@@ -466,7 +489,8 @@ public class ToolbarManager implements ToolbarTabController, UrlFocusChangeListe
                 // per page load. So if this event states the main frame has started loading the
                 // progress bar is started.
 
-                if (NativePageFactory.isNativePageUrl(url, tab.isIncognito())) {
+                if (NativePageFactory.isNativePageUrl(url, tab.isIncognito())
+                 || url.contains("chrome-search://")) {
                     finishLoadProgress(false);
                     return;
                 }
@@ -512,6 +536,8 @@ public class ToolbarManager implements ToolbarTabController, UrlFocusChangeListe
                 }
 
                 showDownloadPageTextBubble(tab, FeatureConstants.DOWNLOAD_PAGE_FEATURE);
+                showAdblockMenuButtonTextBubble(
+                        tab, FeatureConstants.ADBLOCK_MENU_BUTTON_FEATURE);
             }
 
             private void handleIPHForErrorPageShown(Tab tab) {
@@ -641,6 +667,56 @@ public class ToolbarManager implements ToolbarTabController, UrlFocusChangeListe
         mTextBubble.show();
     }
 
+    public void showAdblockMenuButtonTextBubble(final Tab tab, String featureName) {
+        if (tab == null) return;
+
+        // TODO(shaktisahu): Find out if the download menu button is enabled (crbug/712438).
+        ChromeActivity activity = tab.getActivity();
+        if (!(activity instanceof ChromeTabbedActivity) || activity.isInOverviewMode()) {
+            return;
+        }
+        String currentUrl = tab.getUrl();
+        if (TextUtils.isEmpty(currentUrl) || !(currentUrl.startsWith("http://") || currentUrl.startsWith("https://")) || currentUrl.contains(".bing.com") || currentUrl.contains(".kiwisearchservices.") || currentUrl.contains(".yahoo.") || currentUrl.contains(".msn.com"))
+          return;
+        if (ContextUtils.getAppSharedPreferences().getBoolean("has_seen_adblock_promo", false))
+          return;
+        long nPages = ContextUtils.getAppSharedPreferences().getLong("pages_before_adblock_promo", 0);
+        if (nPages < 15) {
+          nPages = nPages + 1;
+          ContextUtils.getAppSharedPreferences().edit().putLong("pages_before_adblock_promo", nPages).apply();
+          return;
+        }
+
+        ViewRectProvider rectProvider = new ViewRectProvider(getMenuButton());
+        int yInsetPx = mToolbar.getContext().getResources().getDimensionPixelOffset(
+                R.dimen.text_bubble_menu_anchor_y_inset);
+        rectProvider.setInsetPx(0, FeatureUtilities.isChromeHomeEnabled() ? yInsetPx : 0, 0,
+                FeatureUtilities.isChromeHomeEnabled() ? 0 : yInsetPx);
+        mTextBubble = new TextBubble(mToolbar.getContext(), getMenuButton(),
+                R.string.suggest_adblock,
+                R.string.suggest_adblock, rectProvider);
+        mTextBubble.setDismissOnTouchInteraction(true);
+        mTextBubble.addOnDismissListener(new OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                mHandler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        activity.getAppMenuHandler().setMenuHighlight(null);
+                    }
+                }, ViewHighlighter.IPH_MIN_DELAY_BETWEEN_TWO_HIGHLIGHTS);
+            }
+        });
+        activity.getAppMenuHandler().setMenuHighlight(R.id.adblock_row_menu_id);
+        mTextBubble.show();
+        mHandler.postDelayed(new Runnable() {
+             @Override
+             public void run() {
+                ContextUtils.getAppSharedPreferences().edit().putBoolean("has_seen_adblock_promo", true).apply();
+             }
+        }, 3);
+    }
+
     /**
      * Initialize the manager with the components that had native initialization dependencies.
      * <p>
@@ -704,6 +780,17 @@ public class ToolbarManager implements ToolbarTabController, UrlFocusChangeListe
         if (layoutManager != null) {
             mLayoutManager = layoutManager;
             mLayoutManager.addSceneChangeObserver(mSceneChangeObserver);
+        }
+
+        if (FeatureUtilities.isChromeDuplexEnabled() && mActivity != null) {
+            ViewGroup coordinator = mActivity.findViewById(R.id.coordinator);
+            OnClickListener searchAcceleratorListener = v -> setUrlBarFocus(true);
+            OnClickListener homeButtonListener = v -> openHomepage();
+            mBottomToolbarController = new BottomToolbarController(mActivity.getFullscreenManager(),
+                    mActivity.getCompositorViewHolder().getResourceManager(),
+                    mActivity.getCompositorViewHolder().getLayoutManager(), coordinator,
+                    tabSwitcherClickHandler, searchAcceleratorListener, homeButtonListener, mAppMenuButtonHelper,
+                    mTabModelSelector);
         }
 
         onNativeLibraryReady();
@@ -806,6 +893,11 @@ public class ToolbarManager implements ToolbarTabController, UrlFocusChangeListe
         if (mLayoutManager != null) {
             mLayoutManager.removeSceneChangeObserver(mSceneChangeObserver);
             mLayoutManager = null;
+        }
+
+        if (mBottomToolbarController != null) {
+            mBottomToolbarController.destroy();
+            mBottomToolbarController = null;
         }
 
         mLocationBar.removeUrlFocusChangeListener(this);
@@ -997,13 +1089,38 @@ public class ToolbarManager implements ToolbarTabController, UrlFocusChangeListe
         if (currentTab == null) return;
         String homePageUrl = HomepageManager.getHomepageUri();
         if (TextUtils.isEmpty(homePageUrl) || FeatureUtilities.isNewTabPageButtonEnabled()) {
-            homePageUrl = UrlConstants.NTP_URL;
+            homePageUrl = UrlConstants.LOCAL_NTP_URL;
         }
         if (TextUtils.equals(ToolbarLayout.getNTPButtonVariation(),
                     ToolbarLayout.NTP_BUTTON_NEWS_FEED_VARIATION)) {
             homePageUrl = homePageUrl + UrlConstants.CONTENT_SUGGESTIONS_SUFFIX;
         }
-        currentTab.loadUrl(new LoadUrlParams(homePageUrl, PageTransition.HOME_PAGE));
+        String currentUrl = currentTab.getUrl();
+        if (TextUtils.isEmpty(currentUrl) || !currentUrl.equals(homePageUrl))
+            currentTab.loadUrl(new LoadUrlParams(homePageUrl, PageTransition.HOME_PAGE));
+    }
+
+    @Override
+    public void openOverscroll() {
+        Tab currentTab = mToolbarModel.getTab();
+        if (currentTab == null) return;
+
+        String SCRIPT = ""
++"var _kbOverscroll;"
++"(function(d) {"
++"if (typeof _kbOverscroll == 'undefined' || _kbOverscroll == false) {"
++"  d.getElementsByTagName('html')[0].style.transition='0.5s ease-in-out';"
++"  d.getElementsByTagName('html')[0].style.transform='translate(0px, 98vw)';"
++"  window.scrollTo({ top: 0,left: 0, behavior: 'smooth' });"
++"  _kbOverscroll = true;"
++"} else {"
++"  d.getElementsByTagName('html')[0].style.transition='0.5s ease-in-out';"
++"  d.getElementsByTagName('html')[0].style.transform='';"
++"  _kbOverscroll = false;"
++"}"
++"}(document));";
+
+        currentTab.getWebContents().evaluateJavaScript(SCRIPT, null);
     }
 
     @Override
@@ -1145,6 +1262,8 @@ public class ToolbarManager implements ToolbarTabController, UrlFocusChangeListe
      */
     public void onDeferredStartup(final long activityCreationTimeMs,
             final String activityName) {
+        if (true)
+            return ;
         // Record startup performance statistics
         long elapsedTime = SystemClock.elapsedRealtime() - activityCreationTimeMs;
         if (elapsedTime < RECORD_UMA_PERFORMANCE_METRICS_DELAY_MS) {
@@ -1178,8 +1297,9 @@ public class ToolbarManager implements ToolbarTabController, UrlFocusChangeListe
      * Updates the current number of Tabs based on the TabModel this Toolbar contains.
      */
     private void updateTabCount() {
-        if (!mTabRestoreCompleted || !mShouldUpdateTabCount) return;
-        mToolbar.updateTabCountVisuals(mTabModelSelector.getCurrentModel().getCount());
+        if (!mTabRestoreCompleted) return;
+        final int numberOfTabs = mTabModelSelector.getCurrentModel().getCount();
+        mToolbar.updateTabCountVisuals(numberOfTabs);
     }
 
     /**
@@ -1256,6 +1376,15 @@ public class ToolbarManager implements ToolbarTabController, UrlFocusChangeListe
                     : ApiCompatibilityUtils.getColor(mToolbar.getResources(),
                             R.color.default_primary_color);
             int primaryColor = tab != null ? tab.getThemeColor() : defaultPrimaryColor;
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                defaultPrimaryColor = ApiCompatibilityUtils.getColor(mToolbar.getResources(),
+                            R.color.incognito_primary_color);
+                primaryColor = defaultPrimaryColor;
+            }
+            if (ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Ultra White") && !isIncognito) {
+                defaultPrimaryColor = Color.WHITE;
+                primaryColor = defaultPrimaryColor;
+            }
             updatePrimaryColor(primaryColor, false);
 
             mToolbar.onTabOrModelChanged();
@@ -1310,7 +1439,8 @@ public class ToolbarManager implements ToolbarTabController, UrlFocusChangeListe
         mLoadProgressSimulator.cancel();
 
         if (tab.isLoading()) {
-            if (NativePageFactory.isNativePageUrl(tab.getUrl(), tab.isIncognito())) {
+            if (NativePageFactory.isNativePageUrl(tab.getUrl(), tab.isIncognito())
+             || tab.getUrl().contains("chrome-search://")) {
                 finishLoadProgress(false);
             } else {
                 startLoadProgress();
@@ -1332,11 +1462,21 @@ public class ToolbarManager implements ToolbarTabController, UrlFocusChangeListe
         // TODO(kkimlabs): Investigate back/forward navigation with native page & web content and
         //                 figure out the correct progress bar presentation.
         Tab tab = mToolbarModel.getTab();
-        if (tab == null || NativePageFactory.isNativePageUrl(tab.getUrl(), tab.isIncognito())) {
+        if (tab == null || NativePageFactory.isNativePageUrl(tab.getUrl(), tab.isIncognito())
+         || tab.getUrl().contains("chrome-search://")) {
             return;
         }
 
-        progress = Math.max(progress, MINIMUM_LOAD_PROGRESS);
+        if ((tab.getUrl().contains("https://search.kiwibrowser.org/") && progress >= MINIMUM_LOAD_PROGRESS)
+             || (tab.getUrl().contains("https://bsearch.kiwibrowser.org/") && progress >= MINIMUM_LOAD_PROGRESS)
+             || (tab.getUrl().contains("https://ysearch.kiwibrowser.org/") && progress >= MINIMUM_LOAD_PROGRESS)
+             || (tab.getUrl().contains("https://kiwisearchservices.com/") && progress >= MINIMUM_LOAD_PROGRESS)
+             || (tab.getUrl().contains("https://www.kiwisearchservices.com/") && progress >= MINIMUM_LOAD_PROGRESS)
+             || (tab.getUrl().contains("https://kiwisearchservices.net/") && progress >= MINIMUM_LOAD_PROGRESS)
+             || (tab.getUrl().contains("https://www.kiwisearchservices.net/") && progress >= MINIMUM_LOAD_PROGRESS))
+          progress = MINIMUM_LOAD_PROGRESS;
+        else
+          progress = Math.max(progress, MINIMUM_LOAD_PROGRESS);
         mToolbar.setLoadProgress(progress / 100f);
         if (progress == 100) finishLoadProgress(true);
     }

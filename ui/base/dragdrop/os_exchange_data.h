@@ -61,7 +61,7 @@ class UI_BASE_EXPORT OSExchangeData {
 #if defined(OS_WIN)
     FILE_CONTENTS  = 1 << 4,
 #endif
-#if defined(USE_AURA)
+#if true || defined(USE_AURA)
     HTML           = 1 << 5,
 #endif
   };
@@ -124,13 +124,13 @@ class UI_BASE_EXPORT OSExchangeData {
     virtual void SetDownloadFileInfo(const DownloadFileInfo& download) = 0;
 #endif
 
-#if defined(USE_AURA)
+#if true || defined(USE_AURA)
     virtual void SetHtml(const base::string16& html, const GURL& base_url) = 0;
     virtual bool GetHtml(base::string16* html, GURL* base_url) const = 0;
     virtual bool HasHtml() const = 0;
 #endif
 
-#if defined(USE_AURA) || defined(OS_MACOSX)
+#if true || defined(USE_AURA) || defined(OS_MACOSX)
     virtual void SetDragImage(const gfx::ImageSkia& image,
                               const gfx::Vector2d& cursor_offset) = 0;
     virtual gfx::ImageSkia GetDragImage() const = 0;
@@ -217,7 +217,7 @@ class UI_BASE_EXPORT OSExchangeData {
   void SetDownloadFileInfo(const DownloadFileInfo& download);
 #endif
 
-#if defined(USE_AURA)
+#if true || defined(USE_AURA)
   // Adds a snippet of HTML.  |html| is just raw html but this sets both
   // text/html and CF_HTML.
   void SetHtml(const base::string16& html, const GURL& base_url);

@@ -40,9 +40,6 @@
 
 namespace {
 
-// (Square) pixel size of icon.
-constexpr int kIconSize = 18;
-
 // The type of arrow to display on the permission bubble.
 constexpr views::BubbleBorder::Arrow kPermissionAnchorArrow =
     views::BubbleBorder::TOP_LEFT;
@@ -119,26 +116,6 @@ PermissionsBubbleDialogDelegateView::PermissionsBubbleDialogDelegateView(
   SetLayoutManager(std::make_unique<views::BoxLayout>(
       views::BoxLayout::kVertical, gfx::Insets(),
       provider->GetDistanceMetric(views::DISTANCE_RELATED_CONTROL_VERTICAL)));
-
-  for (size_t index = 0; index < requests.size(); index++) {
-    views::View* label_container = new views::View();
-    int indent =
-        provider->GetDistanceMetric(DISTANCE_SUBSECTION_HORIZONTAL_INDENT);
-    label_container->SetLayoutManager(std::make_unique<views::BoxLayout>(
-        views::BoxLayout::kHorizontal, gfx::Insets(0, indent),
-        provider->GetDistanceMetric(views::DISTANCE_RELATED_LABEL_HORIZONTAL)));
-    views::ImageView* icon = new views::ImageView();
-    const gfx::VectorIcon& vector_id = requests[index]->GetIconId();
-    icon->SetImage(
-        gfx::CreateVectorIcon(vector_id, kIconSize, gfx::kChromeIconGrey));
-    icon->SetTooltipText(base::string16());  // Redundant with the text fragment
-    label_container->AddChildView(icon);
-    views::Label* label =
-        new views::Label(requests.at(index)->GetMessageTextFragment());
-    label->SetHorizontalAlignment(gfx::ALIGN_LEFT);
-    label_container->AddChildView(label);
-    AddChildView(label_container);
-  }
 
   chrome::RecordDialogCreation(chrome::DialogIdentifier::PERMISSIONS);
 }

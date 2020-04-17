@@ -144,7 +144,8 @@ class CacheStorageBlobToDiskCacheTest : public testing::Test {
 
     std::unique_ptr<disk_cache::Entry*> entry(new disk_cache::Entry*());
     disk_cache::Entry** entry_ptr = entry.get();
-    rv = cache_backend_->CreateEntry(kEntryKey, entry_ptr, base::DoNothing());
+    rv = cache_backend_->CreateEntry(kEntryKey, net::HIGHEST, entry_ptr,
+                                     base::DoNothing());
     EXPECT_EQ(net::OK, rv);
     disk_cache_entry_.reset(*entry);
   }

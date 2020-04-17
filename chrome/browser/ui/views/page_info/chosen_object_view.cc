@@ -69,8 +69,6 @@ ChosenObjectView::ChosenObjectView(
       l10n_util::GetStringFUTF16(info_->ui_info.label_string_id,
                                  PageInfoUI::ChosenObjectToUIString(*info_)),
       CONTEXT_BODY_TEXT_LARGE);
-  icon_->SetImage(
-      PageInfoUI::GetChosenObjectIcon(*info_, false, label->enabled_color()));
   layout->AddView(label);
   // Create the delete button.
   if (ui::MaterialDesignController::IsSecondaryUiMaterial()) {
@@ -116,11 +114,6 @@ ChosenObjectView::~ChosenObjectView() {}
 void ChosenObjectView::ButtonPressed(views::Button* sender,
                                      const ui::Event& event) {
   // Change the icon to reflect the selected setting.
-  icon_->SetImage(PageInfoUI::GetChosenObjectIcon(
-      *info_, true,
-      views::style::GetColor(*this, views::style::CONTEXT_LABEL,
-                             views::style::STYLE_PRIMARY)));
-
   DCHECK(delete_button_->visible());
   delete_button_->SetVisible(false);
 

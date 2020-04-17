@@ -433,11 +433,6 @@ jumbo_static_library("test_support") {
       "//third_party/libvpx",
       "//ui/compositor",
     ]
-
-    sources += [
-      "../browser/compositor/test/test_image_transport_factory.cc",
-      "../browser/compositor/test/test_image_transport_factory.h",
-    ]
   }
 
   if (use_ozone) {
@@ -697,6 +692,7 @@ test("content_browsertests") {
     "../browser/accessibility/snapshot_ax_tree_browsertest.cc",
     "../browser/accessibility/touch_accessibility_aura_browsertest.cc",
     "../browser/appcache/appcache_browsertest.cc",
+    "../browser/back_forward_cache_browsertest.cc",
     "../browser/background_sync/background_sync_browsertest.cc",
     "../browser/battery_monitor_browsertest.cc",
     "../browser/blob_storage/blob_storage_browsertest.cc",
@@ -708,7 +704,7 @@ test("content_browsertests") {
     "../browser/browsing_data/conditional_cache_deletion_helper_browsertest.cc",
     "../browser/child_process_launcher_browsertest.cc",
     "../browser/child_process_security_policy_browsertest.cc",
-    "../browser/compositor/image_transport_factory_browsertest.cc",
+    "../browser/content_service_browsertest.cc",
     "../browser/cross_site_transfer_browsertest.cc",
     "../browser/database_browsertest.cc",
     "../browser/device_sensors/device_sensor_browsertest.cc",
@@ -794,6 +790,7 @@ test("content_browsertests") {
     "../browser/renderer_host/input/touch_action_browsertest.cc",
     "../browser/renderer_host/input/touch_input_browsertest.cc",
     "../browser/renderer_host/input/touch_selection_controller_client_aura_browsertest.cc",
+    "../browser/renderer_host/input/touchpad_pinch_browsertest.cc",
     "../browser/renderer_host/input/wheel_scroll_latching_browsertest.cc",
     "../browser/renderer_host/media/video_capture_browsertest.cc",
     "../browser/renderer_host/render_process_host_browsertest.cc",
@@ -925,6 +922,8 @@ test("content_browsertests") {
     "//ppapi/buildflags",
     "//services/audio/public/cpp",
     "//services/catalog:lib",
+    "//services/content/public/cpp",
+    "//services/content/public/mojom",
     "//services/device/public/cpp:device_features",
     "//services/device/public/cpp/generic_sensor",
     "//services/device/public/cpp/test:test_support",
@@ -1116,11 +1115,6 @@ test("content_browsertests") {
 
   if (use_aura && !is_win) {
     deps += [ "//ui/events:test_support" ]
-  }
-
-  if (!use_aura && !is_mac) {
-    sources -=
-        [ "../browser/compositor/image_transport_factory_browsertest.cc" ]
   }
 
   if (enable_plugins) {
@@ -1439,6 +1433,7 @@ test("content_unittests") {
     "../browser/renderer_host/input/tap_suppression_controller_unittest.cc",
     "../browser/renderer_host/input/touch_action_filter_unittest.cc",
     "../browser/renderer_host/input/touch_emulator_unittest.cc",
+    "../browser/renderer_host/input/touchpad_pinch_event_queue_unittest.cc",
     "../browser/renderer_host/input/web_input_event_builders_android_unittest.cc",
     "../browser/renderer_host/input/web_input_event_builders_mac_unittest.mm",
     "../browser/renderer_host/input/web_input_event_util_unittest.cc",

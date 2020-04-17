@@ -387,13 +387,6 @@ int SSLConnectJob::DoSSLConnectComplete(int result) {
                                  base::TimeDelta::FromMilliseconds(1),
                                  base::TimeDelta::FromMinutes(1), 100);
     }
-
-    if (ssl_info.dummy_pq_padding_received) {
-      UMA_HISTOGRAM_CUSTOM_TIMES("Net.SSL_Connection_Latency_PQPadding",
-                                 connect_duration,
-                                 base::TimeDelta::FromMilliseconds(1),
-                                 base::TimeDelta::FromMinutes(1), 100);
-    }
   }
 
   // Don't double-count the version interference probes.

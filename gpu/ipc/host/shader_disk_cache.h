@@ -16,6 +16,7 @@
 #include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/threading/thread_checker.h"
+#include "net/base/completion_callback.h"
 #include "net/disk_cache/disk_cache.h"
 
 namespace gpu {

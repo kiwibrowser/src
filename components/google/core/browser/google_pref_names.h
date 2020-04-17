@@ -11,6 +11,7 @@ namespace prefs {
 // component. Keep alphabetized, and document each in the .cc file.
 extern const char kLastKnownGoogleURL[];
 extern const char kLastPromptedGoogleURL[];
+extern const char kLastKnownSearchVersion[];
 
 }  // namespace prefs
 

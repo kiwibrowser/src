@@ -795,6 +795,11 @@ cc::TaskGraphRunner* GpuProcessTransportFactory::GetTaskGraphRunner() {
   return task_graph_runner_.get();
 }
 
+void GpuProcessTransportFactory::DisableGpuCompositing() {
+  if (!is_gpu_compositing_disabled_)
+    DisableGpuCompositing(nullptr);
+}
+
 bool GpuProcessTransportFactory::IsGpuCompositingDisabled() {
   return is_gpu_compositing_disabled_;
 }
@@ -997,14 +1002,6 @@ GpuProcessTransportFactory::CreatePerCompositorData(
   auto data = std::make_unique<PerCompositorData>();
   if (widget == gfx::kNullAcceleratedWidget) {
     data->surface_handle = gpu::kNullSurfaceHandle;
-  } else {
-#if defined(GPU_SURFACE_HANDLE_IS_ACCELERATED_WINDOW)
-    data->surface_handle = widget;
-#else
-    gpu::GpuSurfaceTracker* tracker = gpu::GpuSurfaceTracker::Get();
-    data->surface_handle = tracker->AddSurfaceForNativeWidget(
-        gpu::GpuSurfaceTracker::SurfaceRecord(widget));
-#endif
   }
 
   PerCompositorData* return_ptr = data.get();

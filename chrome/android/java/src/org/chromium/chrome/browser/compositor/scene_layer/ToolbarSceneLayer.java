@@ -8,6 +8,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.graphics.RectF;
 
+import org.chromium.base.ContextUtils;
 import org.chromium.base.annotations.JNINamespace;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.compositor.LayerTitleCache;
@@ -118,10 +119,16 @@ public class ToolbarSceneLayer extends SceneOverlayLayer implements SceneOverlay
             textBoxResourceId = R.drawable.modern_location_bar;
         }
 
+        boolean enableBottomToolbar = ContextUtils.getAppSharedPreferences().getBoolean("enable_bottom_toolbar", false);
+
+        float controlsOffset = enableBottomToolbar
+                ? fullscreenManager.getBottomControlOffset()
+                : fullscreenManager.getTopControlOffset();
+
         nativeUpdateToolbarLayer(mNativePtr, resourceManager, R.id.control_container,
                 browserControlsBackgroundColor, textBoxResourceId, browserControlsUrlBarAlpha,
-                textBoxColor, fullscreenManager.getTopControlOffset(), windowHeight, useTexture,
-                showShadow, useModern);
+                textBoxColor, controlsOffset, windowHeight, useTexture,
+                showShadow, useModern, enableBottomToolbar);
 
         if (mProgressBarDrawingInfo == null) return;
         nativeUpdateProgressBar(mNativePtr, mProgressBarDrawingInfo.progressBarRect.left,
@@ -272,7 +279,8 @@ public class ToolbarSceneLayer extends SceneOverlayLayer implements SceneOverlay
             float viewHeight,
             boolean visible,
             boolean showShadow,
-            boolean browserControlsAtBottom);
+            boolean modernControlsEnabled,
+            boolean bottombarEnabled);
     private native void nativeUpdateProgressBar(
             long nativeToolbarSceneLayer,
             int progressBarX,

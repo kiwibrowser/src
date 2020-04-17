@@ -80,7 +80,8 @@ class CompositorView : public content::CompositorClient,
                            bool enabled);
   void SetSceneLayer(JNIEnv* env,
                      const base::android::JavaParamRef<jobject>& object,
-                     const base::android::JavaParamRef<jobject>& jscene_layer);
+                     const base::android::JavaParamRef<jobject>& jscene_layer,
+                     bool night_mode_enabled);
   void SetCompositorWindow(
       JNIEnv* env,
       const base::android::JavaParamRef<jobject>& object,

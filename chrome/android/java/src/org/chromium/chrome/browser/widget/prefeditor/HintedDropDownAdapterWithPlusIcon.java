@@ -4,6 +4,7 @@
 
 package org.chromium.chrome.browser.widget.prefeditor;
 
+import android.graphics.Color;
 import android.content.Context;
 import android.content.res.Resources;
 import android.view.View;
@@ -12,6 +13,7 @@ import android.widget.TextView;
 
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.chrome.R;
+import org.chromium.base.ContextUtils;
 import org.chromium.chrome.browser.widget.TintedDrawable;
 import org.chromium.ui.UiUtils;
 
@@ -54,6 +56,18 @@ public class HintedDropDownAdapterWithPlusIcon<T> extends HintedDropDownAdapter<
     }
 
     @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
+        View view = super.getView(position, convertView, parent);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+           TextView text1 = (TextView) view.findViewById(android.R.id.text1);
+           if (text1 != null)
+              text1.setTextColor(Color.WHITE);
+        }
+
+        return view;
+    };
+
+    @Override
     public View getDropDownView(int position, View convertView, ViewGroup parent) {
         convertView = super.getDropDownView(position, convertView, parent);
 
@@ -77,6 +91,9 @@ public class HintedDropDownAdapterWithPlusIcon<T> extends HintedDropDownAdapter<
             ApiCompatibilityUtils.setTextAppearance(
                     mTextView, R.style.EditorDialogSectionAddButtonLabel);
             mTextView.setTypeface(UiUtils.createRobotoMediumTypeface());
+            if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+                mTextView.setTextColor(Color.WHITE);
+            }
 
             // Padding at the bottom of the dropdown.
             ApiCompatibilityUtils.setPaddingRelative(convertView,

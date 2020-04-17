@@ -23,7 +23,6 @@ namespace content {
 class BrowserContext;
 struct NotificationResources;
 struct PlatformNotificationData;
-class ResourceContext;
 
 // The service using which notifications can be presented to the user. There
 // should be a unique instance of the PlatformNotificationService depending
@@ -35,23 +34,6 @@ class CONTENT_EXPORT PlatformNotificationService {
   using DisplayedNotificationsCallback =
       base::Callback<void(std::unique_ptr<std::set<std::string>>,
                           bool /* supports synchronization */)>;
-
-  // Checks if |origin| has permission to display Web Notifications.
-  // This method must only be called on the UI thread.
-  virtual blink::mojom::PermissionStatus CheckPermissionOnUIThread(
-      BrowserContext* browser_context,
-      const GURL& origin,
-      int render_process_id) = 0;
-
-  // Checks if |origin| has permission to display Web Notifications. This method
-  // exists to serve the synchronous IPC required by the Notification.permission
-  // JavaScript getter, and should not be used for other purposes. See
-  // https://crbug.com/446497 for the plan to deprecate this method.
-  // This method must only be called on the IO thread.
-  virtual blink::mojom::PermissionStatus CheckPermissionOnIOThread(
-      ResourceContext* resource_context,
-      const GURL& origin,
-      int render_process_id) = 0;
 
   // Displays the notification described in |notification_data| to the user.
   // This method must be called on the UI thread.

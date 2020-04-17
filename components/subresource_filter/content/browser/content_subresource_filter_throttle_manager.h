@@ -35,8 +35,9 @@ namespace subresource_filter {
 
 class AsyncDocumentSubresourceFilter;
 class ActivationStateComputingNavigationThrottle;
-class SubresourceFilterObserverManager;
 class PageLoadStatistics;
+class SubresourceFilterObserverManager;
+class SubresourceFilterClient;
 struct DocumentLoadStatistics;
 
 // The ContentSubresourceFilterThrottleManager manages NavigationThrottles in
@@ -53,17 +54,8 @@ class ContentSubresourceFilterThrottleManager
       public SubresourceFilterObserver,
       public SubframeNavigationFilteringThrottle::Delegate {
  public:
-  // It is expected that the Delegate outlives |this|, and manages the lifetime
-  // of this class.
-  class Delegate {
-   public:
-    // The embedder may be interested in displaying UI to the user when the
-    // first load is disallowed for a given page load.
-    virtual void OnFirstSubresourceLoadDisallowed() {}
-  };
-
   ContentSubresourceFilterThrottleManager(
-      Delegate* delegate,
+      SubresourceFilterClient* client,
       VerifiedRulesetDealer::Handle* dealer_handle,
       content::WebContents* web_contents);
   ~ContentSubresourceFilterThrottleManager() override;
@@ -109,7 +101,6 @@ class ContentSubresourceFilterThrottleManager
   void OnSubresourceFilterGoingAway() override;
   void OnPageActivationComputed(
       content::NavigationHandle* navigation_handle,
-      ActivationDecision activation_decision,
       const ActivationState& activation_state) override;
   void OnSubframeNavigationEvaluated(
       content::NavigationHandle* navigation_handle,
@@ -197,7 +188,7 @@ class ContentSubresourceFilterThrottleManager
 
   // These members outlive this class.
   VerifiedRulesetDealer::Handle* dealer_handle_;
-  Delegate* delegate_;
+  SubresourceFilterClient* client_;
 
   base::WeakPtrFactory<ContentSubresourceFilterThrottleManager>
       weak_ptr_factory_;

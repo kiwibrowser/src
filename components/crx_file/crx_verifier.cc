@@ -244,6 +244,7 @@ VerifierResult Verify(
   std::string public_key_local;
   std::string crx_id_local;
   base::File file(crx_path, base::File::FLAG_OPEN | base::File::FLAG_READ);
+  LOG(INFO) << "[EXTENSIONS] Verifying CRX extension from " << crx_path;
   if (!file.IsValid())
     return VerifierResult::ERROR_FILE_NOT_READABLE;
 
@@ -265,6 +266,7 @@ VerifierResult Verify(
   // Version number.
   const uint32_t version =
       ReadAndHashLittleEndianUInt32(&file, file_hash.get());
+  LOG(INFO) << "[EXTENSIONS] Detecting CRX extension from " << crx_path << " and is version " << version;
   VerifierResult result;
   if (format == VerifierFormat::CRX2_OR_CRX3 &&
       (version == 2 || (diff && version == 0)))
@@ -276,6 +278,13 @@ VerifierResult Verify(
                         format == VerifierFormat::CRX3_WITH_PUBLISHER_PROOF);
   else
     result = VerifierResult::ERROR_HEADER_INVALID;
+  LOG(INFO) << "[EXTENSIONS] Extracted CRX extension from " << crx_path << " - PK: " << public_key_local << " - CRX id: " << crx_id_local;
+  if (public_key)
+    *public_key = public_key_local;
+  if (crx_id)
+    *crx_id = crx_id_local;
+  if (file.IsValid())
+    return diff ? VerifierResult::OK_DELTA : VerifierResult::OK_FULL;
   if (result != VerifierResult::OK_FULL)
     return result;
 

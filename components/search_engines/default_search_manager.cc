@@ -87,10 +87,6 @@ DefaultSearchManager::DefaultSearchManager(
         kDefaultSearchProviderDataPrefName,
         base::Bind(&DefaultSearchManager::OnDefaultSearchPrefChanged,
                    base::Unretained(this)));
-    pref_change_registrar_.Add(
-        prefs::kSearchProviderOverrides,
-        base::Bind(&DefaultSearchManager::OnOverridesPrefChanged,
-                   base::Unretained(this)));
   }
   LoadPrepopulatedDefaultSearch();
   LoadDefaultSearchEngineFromPrefs();

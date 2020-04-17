@@ -15,6 +15,7 @@ enum SSLVersion {
 enum TLS13Variant {
   kDraft23,
   kDraft28,
+  kFinal,
 };
 
 // This contains the subset of net::SSLConfig members that are managed by the
@@ -26,11 +27,12 @@ struct SSLConfig {
   bool sha1_local_anchors_enabled = false;
   bool symantec_enforcement_disabled = false;
 
-  // SSL 2.0 and 3.0 are not supported.
+  // SSL 2.0 and 3.0 are not supported. Note these lines must be kept in sync
+  // with net/ssl/ssl_config.cc.
   SSLVersion version_min = kTLS1;
-  SSLVersion version_max = kTLS12;
+  SSLVersion version_max = kTLS13;
 
-  TLS13Variant tls13_variant = kDraft23;
+  TLS13Variant tls13_variant = kFinal;
 
   // Though cipher suites are sent in TLS as "uint8_t CipherSuite[2]", in
   // big-endian form, they should be declared in host byte order, with the

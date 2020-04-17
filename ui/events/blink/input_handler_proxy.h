@@ -222,7 +222,7 @@ class InputHandlerProxy : public cc::InputHandlerClient,
   bool expect_scroll_update_end_;
 #endif
   bool gesture_scroll_on_impl_thread_;
-  bool gesture_pinch_on_impl_thread_;
+  bool gesture_pinch_in_progress_ = false;
   bool in_inertial_scrolling_ = false;
   bool scroll_sequence_ignored_;
   // This is always false when there are no flings on the main thread, but

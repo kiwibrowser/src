@@ -38,9 +38,13 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import org.chromium.base.SysUtils;
+import org.chromium.chrome.browser.preferences.PrefServiceBridge;
+import org.chromium.base.ContextUtils;
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.base.CommandLine;
 import org.chromium.base.Log;
+import org.chromium.chrome.browser.ContentSettingsType;
 import org.chromium.base.ObserverList;
 import org.chromium.base.VisibleForTesting;
 import org.chromium.base.metrics.RecordUserAction;
@@ -81,10 +85,15 @@ import org.chromium.ui.base.DeviceFormFactor;
 import org.chromium.ui.base.PageTransition;
 import org.chromium.ui.base.WindowAndroid;
 
+import org.chromium.chrome.browser.accessibility.NightModePrefs;
+import android.graphics.Color;
+import org.chromium.base.ApiCompatibilityUtils;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
+import java.net.URLEncoder;
 
 /**
  * This class represents the location bar where the user types in URLs and
@@ -223,6 +232,7 @@ public class LocationBarLayout
     private final class UrlBarKeyListener implements OnKeyListener {
         @Override
         public boolean onKey(View v, int keyCode, KeyEvent event) {
+            mSuggestionListAdapter.notifyDataSetChanged();
             if (KeyNavigationUtil.isGoDown(event)
                     && mSuggestionList != null
                     && mSuggestionList.isShown()) {
@@ -273,7 +283,10 @@ public class LocationBarLayout
             } else if (KeyNavigationUtil.isEnter(event)
                     && LocationBarLayout.this.getVisibility() == VISIBLE) {
                 UiUtils.hideKeyboard(mUrlBar);
-                final String urlText = mUrlBar.getTextWithAutocomplete();
+                String urlTextT = mUrlBar.getTextWithAutocomplete();
+                urlTextT = urlTextT.replace("kiwi://", "chrome://");
+                urlTextT = urlTextT.replace("kiwi-extension://", "chrome-extension://");
+                final String urlText = urlTextT;
                 if (mNativeInitialized) {
                     findMatchAndLoadUrl(urlText);
                 } else {
@@ -566,6 +579,26 @@ public class LocationBarLayout
     @Override
     public void onNativeLibraryReady() {
         mNativeInitialized = true;
+
+        if (mIsTablet && mWindowAndroid != null) {
+            Activity activity = mWindowAndroid.getActivity().get();
+            if (activity instanceof ChromeActivity && NightModePrefs.getInstance(activity).getUserNightModeEnabled()) {
+                NightModePrefs.getInstance(activity).setUserNightModeEnabled(false);
+            }
+        }
+        if (mWindowAndroid != null) {
+            Activity activity = mWindowAndroid.getActivity().get();
+            if (activity instanceof ChromeActivity) {
+                Log.i("Kiwi", "[Settings] Install date: " + SysUtils.firstInstallDate());
+                if (SysUtils.firstInstallDate() >= 1559736000 && !ContextUtils.getAppSharedPreferences().getBoolean("has_set_adblock_settings", false)) {
+                    Log.i("Kiwi", "[Settings] Configuring default ads settings");
+                    PrefServiceBridge.getInstance().setContentSettingEnabled(ContentSettingsType.CONTENT_SETTINGS_TYPE_ADS, true);
+                    ContextUtils.getAppSharedPreferences().edit().putBoolean("has_set_adblock_settings", true).apply();
+                } else {
+                    Log.i("Kiwi", "[Settings] Leaving default ads settings");
+                }
+            }
+        }
 
         mSecurityButton.setOnClickListener(this);
         mNavigationButton.setOnClickListener(this);
@@ -1110,7 +1143,10 @@ public class LocationBarLayout
                 mNavigationButton.setImageDrawable(page);
                 break;
             case MAGNIFIER:
-                mNavigationButton.setImageResource(R.drawable.ic_omnibox_magnifier);
+                Drawable search = TintedDrawable.constructTintedDrawable(getResources(),
+                        R.drawable.omnibox_search,
+                        mUseDarkColors ? R.color.dark_mode_tint : R.color.light_mode_tint);
+                mNavigationButton.setImageDrawable(search);
                 break;
             case EMPTY:
                 mNavigationButton.setImageDrawable(null);
@@ -1311,8 +1347,10 @@ public class LocationBarLayout
                 });
             }
         };
-        getRootView().findViewById(R.id.control_container)
-                .addOnLayoutChangeListener(suggestionListResizer);
+        View rootView = getRootView();
+        if (rootView != null)
+          rootView.findViewById(R.id.control_container)
+                  .addOnLayoutChangeListener(suggestionListResizer);
 
         OmniboxSuggestionsList.OmniboxSuggestionListEmbedder embedder =
                 new OmniboxSuggestionsList.OmniboxSuggestionListEmbedder() {
@@ -1343,7 +1381,10 @@ public class LocationBarLayout
 
                     @Override
                     public View getAnchorView() {
-                        return getRootView().findViewById(R.id.toolbar);
+                        View rootView = getRootView();
+                        if (rootView != null)
+                          return rootView.findViewById(R.id.toolbar);
+                        return null;
                     }
                 };
         mSuggestionList = new OmniboxSuggestionsList(getContext(), embedder);
@@ -1444,9 +1485,15 @@ public class LocationBarLayout
             final boolean isShowing = mSuggestionList.isShown();
             if (visible && !isShowing) {
                 mIgnoreOmniboxItemSelection = true; // Reset to default value.
+                if (mSuggestionList.getParent() == null) {
+                    mOmniboxResultsContainer.addView(mSuggestionList);
+                }
+
                 mSuggestionList.show();
             } else if (!visible && isShowing) {
                 mSuggestionList.setVisibility(GONE);
+
+                UiUtils.removeViewFromParent(mSuggestionList);
             }
         }
         updateOmniboxResultsContainer();
@@ -1508,7 +1555,7 @@ public class LocationBarLayout
         // Make sure to notify the adapter. If the ListView becomes out of sync
         // with its adapter and it has not been notified, it will throw an
         // exception when some UI events are propagated.
-        if (notifyChange) mSuggestionListAdapter.notifyDataSetChanged();
+        mSuggestionListAdapter.notifyDataSetChanged();
     }
 
     /**
@@ -1708,7 +1755,11 @@ public class LocationBarLayout
         }
 
         if (mSuggestionItems.isEmpty()) {
-            if (mSuggestionsShown) hideSuggestions();
+            if (mSuggestionsShown) {
+                hideSuggestions();
+            } else {
+                mSuggestionListAdapter.notifySuggestionsChanged();
+            }
             return;
         }
 
@@ -1729,7 +1780,8 @@ public class LocationBarLayout
         if (itemsChanged) mSuggestionListAdapter.notifySuggestionsChanged();
 
         if (mUrlBar.hasFocus()) {
-            final boolean updateLayoutParams = itemCountChanged;
+            final boolean updateLayoutParams = itemCountChanged || mShowSuggestions != null;
+            if (mShowSuggestions != null) removeCallbacks(mShowSuggestions);
             mShowSuggestions = new Runnable() {
                 @Override
                 public void run() {
@@ -1884,11 +1936,23 @@ public class LocationBarLayout
 
             transition = PageTransition.LINK;
         }
+        url = url.replace("kiwi://", "chrome://");
+        url = url.replace("kiwi-extension://", "chrome-extension://");
+        if (suggestion.getDisplayText().startsWith("!")) {
+//            String queryUrl = TemplateUrlService.getInstance().getUrlForSearchQuery(query);
+
+//            if (!TextUtils.isEmpty(queryUrl)) {
+//                url = queryUrl;
+//            }
+           url = "https://www.duckduckgo.com/?q=" + URLEncoder.encode(suggestion.getDisplayText());
+        }
         loadUrl(url, transition);
     }
 
     @Override
     public void loadUrlFromVoice(String url) {
+        url = url.replace("kiwi://", "chrome://");
+        url = url.replace("kiwi-extension://", "chrome-extension://");
         loadUrl(url, PageTransition.TYPED);
     }
 
@@ -1961,9 +2025,19 @@ public class LocationBarLayout
     private void initOmniboxResultsContainer() {
         if (mOmniboxResultsContainer != null) return;
 
-        ViewStub overlayStub =
-                (ViewStub) getRootView().findViewById(R.id.omnibox_results_container_stub);
-        mOmniboxResultsContainer = (ViewGroup) overlayStub.inflate();
+        View rootView = getRootView();
+        if (rootView != null) {
+          ViewStub overlayStub =
+                  (ViewStub) rootView.findViewById(R.id.omnibox_results_container_stub);
+          mOmniboxResultsContainer = (ViewGroup) overlayStub.inflate();
+        }
+/*
+        int topMargin = getResources().getDimensionPixelSize(R.dimen.tab_strip_height);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("enable_bottom_toolbar", false))
+            mScrimParams = new ScrimParams(mOmniboxResultsContainer, false, true, topMargin, this);
+        else
+            mScrimParams = new ScrimParams(mOmniboxResultsContainer, false, false, topMargin, this);
+*/
     }
 
     private void updateOmniboxResultsContainer() {
@@ -1992,9 +2066,12 @@ public class LocationBarLayout
      * Initialize the fading background for when the omnibox is focused.
      */
     protected void initFadingOverlayView() {
-        mFadingView =
-                (FadingBackgroundView) getRootView().findViewById(R.id.fading_focus_target);
-        mFadingView.addObserver(this);
+        View rootView = getRootView();
+        if (rootView != null)
+          mFadingView =
+                  (FadingBackgroundView) rootView.findViewById(R.id.fading_focus_target);
+        if (mFadingView != null)
+          mFadingView.addObserver(this);
     }
 
     @Override
@@ -2025,6 +2102,7 @@ public class LocationBarLayout
      * @param visible Whether the background should be made visible.
      */
     private void updateFadingBackgroundView(boolean visible) {
+        if (getCurrentTab() == null || getCurrentTab().getActivity() == null) return;
         if (mFadingView == null) initFadingOverlayView();
 
         // If Chrome Home is enabled (the bottom sheet is not null), it will be controlling the
@@ -2132,6 +2210,13 @@ public class LocationBarLayout
 
         boolean useDarkColors = !mToolbarDataProvider.isIncognito()
                 && (!mToolbarDataProvider.hasTab() || !brandColorNeedsLightText);
+        if (mWindowAndroid != null) {
+           Activity activity = mWindowAndroid.getActivity().get();
+           if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+               useDarkColors = false;
+           }
+        }
+
         boolean hasChanged = useDarkColors != mUseDarkColors;
         mUseDarkColors = useDarkColors;
 

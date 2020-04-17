@@ -1422,7 +1422,7 @@ TEST_F(SQLConnectionTest, TimeUpdateTransaction) {
 TEST_F(SQLConnectionTest, OnMemoryDump) {
   base::trace_event::MemoryDumpArgs args = {
       base::trace_event::MemoryDumpLevelOfDetail::DETAILED};
-  base::trace_event::ProcessMemoryDump pmd(nullptr, args);
+  base::trace_event::ProcessMemoryDump pmd(args);
   ASSERT_TRUE(db().memory_dump_provider_->OnMemoryDump(args, &pmd));
   EXPECT_GE(pmd.allocator_dumps().size(), 1u);
 }

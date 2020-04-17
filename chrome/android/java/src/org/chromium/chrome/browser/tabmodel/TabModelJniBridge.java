@@ -128,8 +128,8 @@ public abstract class TabModelJniBridge implements TabModel {
      * @param url URL to show.
      */
     @CalledByNative
-    protected Tab createNewTabForDevTools(String url) {
-        return getTabCreator(false).createNewTab(new LoadUrlParams(url),
+    protected Tab createNewTabForDevTools(String url, boolean incognito) {
+        return getTabCreator(incognito).createNewTab(new LoadUrlParams(url),
                 TabModel.TabLaunchType.FROM_CHROME_UI, null);
     }
 
@@ -140,6 +140,10 @@ public abstract class TabModelJniBridge implements TabModel {
     @Override
     @CalledByNative
     public abstract int index();
+
+    @Override
+    @CalledByNative
+    public abstract int getLastNonExtensionActiveIndex();
 
     /** @return Whether or not a sync session is currently being restored. */
     @CalledByNative

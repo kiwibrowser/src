@@ -10,6 +10,7 @@ import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.widget.LinearLayout;
+import android.view.ViewGroup;
 
 import org.chromium.chrome.R;
 
@@ -58,6 +59,7 @@ public class BoundedLinearLayout extends LinearLayout {
 
         mMaxWidth = maxWidth <= 0 ? NOT_SPECIFIED : maxWidth;
         mMaxHeight = maxHeight <= 0 ? NOT_SPECIFIED : maxHeight;
+        super.setLayoutParams(new android.widget.AbsListView.LayoutParams(android.widget.AbsListView.LayoutParams.WRAP_CONTENT, android.widget.AbsListView.LayoutParams.WRAP_CONTENT));
     }
 
     @Override

@@ -28,7 +28,7 @@ INSTANTIATE_TEST_CASE_P(
 TEST_P(URLRequestContextMemoryDumpTest, MemoryDumpProvider) {
   base::trace_event::MemoryDumpArgs dump_args = {GetParam()};
   std::unique_ptr<base::trace_event::ProcessMemoryDump> process_memory_dump(
-      new base::trace_event::ProcessMemoryDump(nullptr, dump_args));
+      new base::trace_event::ProcessMemoryDump(dump_args));
   URLRequestContextBuilder builder;
 #if defined(OS_LINUX) || defined(OS_ANDROID)
   builder.set_proxy_config_service(std::make_unique<ProxyConfigServiceFixed>(

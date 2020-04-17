@@ -231,8 +231,11 @@ base::LazyInstance<scoped_refptr<ConfigurationList>>::Leaky
 const base::Feature kSafeBrowsingSubresourceFilter{
     "SubresourceFilter", base::FEATURE_ENABLED_BY_DEFAULT};
 
-const base::Feature kSafeBrowsingSubresourceFilterExperimentalUI{
-    "SubresourceFilterExperimentalUI", base::FEATURE_ENABLED_BY_DEFAULT};
+const base::Feature kSafeBrowsingSubresourceFilterConsiderRedirects{
+    "SubresourceFilterConsiderRedirects", base::FEATURE_DISABLED_BY_DEFAULT};
+
+const base::Feature kFilterAdsOnAbusiveSites{"FilterAdsOnAbusiveSites",
+                                             base::FEATURE_DISABLED_BY_DEFAULT};
 
 // Legacy name `activation_state` is used in variation parameters.
 const char kActivationLevelParameterName[] = "activation_state";
@@ -286,16 +289,6 @@ Configuration Configuration::MakePresetForPerformanceTestingDryRunOnAllSites() {
 }
 
 // static
-Configuration Configuration::MakeForForcedActivation() {
-  // This is a strange configuration, but it is generated on-the-fly rather than
-  // via finch configs, and is separate from the standard activation computation
-  // (which is why scope is no_sites).
-  Configuration config(ActivationLevel::ENABLED, ActivationScope::NO_SITES);
-  config.activation_conditions.forced_activation = true;
-  return config;
-}
-
-// static
 Configuration Configuration::MakePresetForLiveRunForBetterAds() {
   Configuration config(ActivationLevel::ENABLED,
                        ActivationScope::ACTIVATION_LIST,
@@ -323,7 +316,6 @@ bool Configuration::operator==(const Configuration& rhs) const {
     return std::tie(config.activation_conditions.activation_scope,
                     config.activation_conditions.activation_list,
                     config.activation_conditions.priority,
-                    config.activation_conditions.forced_activation,
                     config.activation_options.activation_level,
                     config.activation_options.performance_measurement_rate,
                     config.general_settings.ruleset_flavor);
@@ -341,7 +333,6 @@ Configuration::ActivationConditions::ToTracedValue() const {
   value->SetString("activation_scope", StreamToString(activation_scope));
   value->SetString("activation_list", StreamToString(activation_list));
   value->SetInteger("priority", priority);
-  value->SetBoolean("forced_activation", forced_activation);
   return value;
 }
 
@@ -369,11 +360,9 @@ ActivationState Configuration::GetActivationState(
       (measurement_rate == 1 || base::RandDouble() < measurement_rate);
 
   // This bit keeps track of BAS enforcement-style logging, not warning logging.
-  state.enable_logging =
-      effective_activation_level == ActivationLevel::ENABLED &&
-      *this != Configuration::MakeForForcedActivation() &&
-      base::FeatureList::IsEnabled(
-          kSafeBrowsingSubresourceFilterExperimentalUI);
+  // TODO(csharrison): Consider removing it since it can be computed directly
+  // from the ActivationLevel.
+  state.enable_logging = effective_activation_level == ActivationLevel::ENABLED;
   return state;
 }
 

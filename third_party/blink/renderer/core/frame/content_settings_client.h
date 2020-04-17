@@ -48,6 +48,9 @@ class CORE_EXPORT ContentSettingsClient {
   // Controls whether scripts are allowed to execute.
   bool AllowScript(bool enabled_per_settings);
 
+  // Controls whether ads are allowed to execute.
+  bool AllowAds(bool enabled_per_settings);
+
   // Controls whether scripts loaded from the given URL are allowed to execute.
   bool AllowScriptFromSource(bool enabled_per_settings, const KURL&);
 

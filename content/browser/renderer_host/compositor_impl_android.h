@@ -130,6 +130,8 @@ class CONTENT_EXPORT CompositorImpl
   viz::FrameSinkId GetFrameSinkId() override;
   void AddChildFrameSink(const viz::FrameSinkId& frame_sink_id) override;
   void RemoveChildFrameSink(const viz::FrameSinkId& frame_sink_id) override;
+  void PrepareToScroll() override;
+
   std::unique_ptr<ui::CompositorLock> GetCompositorLock(
       ui::CompositorLockClient* client,
       base::TimeDelta timeout) override;

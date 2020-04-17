@@ -184,7 +184,7 @@ class CacheCounterTest : public PlatformTest {
 
           DCHECK(backend_);
           rv = backend_->CreateEntry(
-              "entry_key", &entry_,
+              "entry_key", net::HIGHEST, &entry_,
               base::BindRepeating(&CacheCounterTest::CacheOperationStep,
                                   base::Unretained(this)));
 

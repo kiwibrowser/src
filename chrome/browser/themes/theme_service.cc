@@ -249,7 +249,6 @@ ThemeService::ThemeService()
 
 ThemeService::~ThemeService() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  FreePlatformCaches();
 }
 
 void ThemeService::Init(Profile* profile) {
@@ -630,7 +629,7 @@ void ThemeService::NotifyThemeChanged() {
   }
 }
 
-#if defined(USE_AURA)
+#if true || defined(USE_AURA)
 void ThemeService::FreePlatformCaches() {
   // Views (Skia) has no platform image cache to clear.
 }
@@ -919,7 +918,6 @@ void ThemeService::OnThemeBuiltFromExtension(
   SwapThemeSupplier(pack);
 
   // Clear our image cache.
-  FreePlatformCaches();
   SaveThemeID(extension->id());
   NotifyThemeChanged();
 

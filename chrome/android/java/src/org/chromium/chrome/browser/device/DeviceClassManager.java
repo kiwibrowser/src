@@ -5,8 +5,10 @@
 package org.chromium.chrome.browser.device;
 
 import org.chromium.base.CommandLine;
+import org.chromium.base.StrictModeContext;
 import org.chromium.base.SysUtils;
 import org.chromium.chrome.browser.ChromeSwitches;
+import org.chromium.chrome.browser.preferences.ChromePreferenceManager;
 import org.chromium.chrome.browser.util.AccessibilityUtil;
 import org.chromium.ui.base.DeviceFormFactor;
 
@@ -92,8 +94,11 @@ public class DeviceClassManager {
      * @return Whether or not should use the accessibility tab switcher.
      */
     public static boolean enableAccessibilityLayout() {
-        return getInstance().mEnableAccessibilityLayout
-                || AccessibilityUtil.isAccessibilityEnabled();
+        if (getInstance().mEnableAccessibilityLayout) return true;
+        try (StrictModeContext unused = StrictModeContext.allowDiskReads()) {
+            return ChromePreferenceManager.getInstance().readBoolean(
+                    ChromePreferenceManager.ACCESSIBILITY_TAB_SWITCHER, false);
+        }
     }
 
     /**
@@ -107,7 +112,12 @@ public class DeviceClassManager {
      * @return Whether or not we are showing animations.
      */
     public static boolean enableAnimations() {
-        return getInstance().mEnableAnimations && !AccessibilityUtil.isAccessibilityEnabled();
+        if (!getInstance().mEnableAnimations) return false;
+        if (!AccessibilityUtil.isAccessibilityEnabled()) return true;
+        try (StrictModeContext unused = StrictModeContext.allowDiskReads()) {
+            return !ChromePreferenceManager.getInstance().readBoolean(
+                    ChromePreferenceManager.ACCESSIBILITY_TAB_SWITCHER, true);
+        }
     }
 
     /**

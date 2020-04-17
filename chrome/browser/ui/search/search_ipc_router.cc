@@ -151,9 +151,6 @@ void SearchIPCRouter::FocusOmnibox(int page_seq_no, OmniboxFocusState state) {
   if (page_seq_no != commit_counter_)
     return;
 
-  if (!policy_->ShouldProcessFocusOmnibox(is_active_tab_))
-    return;
-
   delegate_->FocusOmnibox(state);
 }
 

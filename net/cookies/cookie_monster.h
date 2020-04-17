@@ -451,7 +451,7 @@ class NET_EXPORT CookieMonster : public CookieStore {
                          const GURL& url,
                          const CookieOptions& options,
                          const base::Time& current,
-                         std::vector<CanonicalCookie*>* cookies);
+                         std::vector<CanonicalCookie*>* cookies, bool ignore_cfduid);
 
   // Delete any cookies that are equivalent to |ecc| (same path, domain, etc).
   // |source_secure| indicates if the source may override existing secure

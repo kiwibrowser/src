@@ -6,7 +6,6 @@
 
 #include "base/auto_reset.h"
 #include "base/bind.h"
-#include "base/feature_list.h"
 #include "base/logging.h"
 #include "base/time/default_clock.h"
 #include "base/values.h"
@@ -20,7 +19,6 @@
 #include "components/content_settings/core/common/content_settings_pattern.h"
 #include "components/history/core/browser/history_service.h"
 #include "components/keyed_service/core/service_access_type.h"
-#include "components/subresource_filter/core/browser/subresource_filter_features.h"
 #include "url/gurl.h"
 
 namespace {
@@ -30,8 +28,7 @@ const char kInfobarLastShownTimeKey[] = "InfobarLastShownTime";
 
 bool ShouldUseSmartUI() {
 #if defined(OS_ANDROID)
-  return base::FeatureList::IsEnabled(
-      subresource_filter::kSafeBrowsingSubresourceFilterExperimentalUI);
+  return true;
 #endif
   return false;
 }
@@ -75,8 +72,6 @@ ContentSetting SubresourceFilterContentSettingsManager::GetSitePermission(
 }
 
 void SubresourceFilterContentSettingsManager::WhitelistSite(const GURL& url) {
-  DCHECK(base::FeatureList::IsEnabled(
-      subresource_filter::kSafeBrowsingSubresourceFilterExperimentalUI));
   base::AutoReset<bool> resetter(&ignore_settings_changes_, true);
   settings_map_->SetContentSettingDefaultScope(
       url, GURL(), ContentSettingsType::CONTENT_SETTINGS_TYPE_ADS,
@@ -128,9 +123,6 @@ SubresourceFilterContentSettingsManager::GetSiteMetadata(
 void SubresourceFilterContentSettingsManager::SetSiteMetadata(
     const GURL& url,
     std::unique_ptr<base::DictionaryValue> dict) {
-  if (!base::FeatureList::IsEnabled(
-          subresource_filter::kSafeBrowsingSubresourceFilterExperimentalUI))
-    return;
   settings_map_->SetWebsiteSettingDefaultScope(
       url, GURL(), ContentSettingsType::CONTENT_SETTINGS_TYPE_ADS_DATA,
       std::string(), std::move(dict));

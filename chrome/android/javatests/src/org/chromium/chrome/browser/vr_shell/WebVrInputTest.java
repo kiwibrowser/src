@@ -51,6 +51,7 @@ import org.chromium.chrome.test.ChromeJUnit4RunnerDelegate;
 import org.chromium.content.browser.test.util.Criteria;
 import org.chromium.content.browser.test.util.CriteriaHelper;
 import org.chromium.content.browser.test.util.TouchCommon;
+import org.chromium.content_public.browser.ViewEventSink;
 import org.chromium.content_public.browser.WebContents;
 
 import java.lang.ref.WeakReference;
@@ -580,8 +581,7 @@ public class WebVrInputTest {
         ThreadUtils.runOnUiThreadBlocking(new Runnable() {
             @Override
             public void run() {
-                mTestRule.getActivity().getActivityTab().getContentViewCore().onPause();
-
+                ViewEventSink.from(mTestRule.getWebContents()).onPauseForTesting();
                 Assert.assertFalse(
                         VrShellDelegateUtils.getDelegateInstance().isListeningForWebVrActivate());
             }

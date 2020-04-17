@@ -118,11 +118,13 @@ class EventForwarder {
                   jlong time_ms,
                   jfloat velocity_x,
                   jfloat velocity_y,
-                  jboolean synthetic_scroll);
+                  jboolean synthetic_scroll,
+                  jboolean prevent_boosting);
 
   void CancelFling(JNIEnv* env,
                    const base::android::JavaParamRef<jobject>& jobj,
-                   jlong time_ms);
+                   jlong time_ms,
+                   jboolean prevent_boosting);
 
  private:
   friend class ViewAndroid;

@@ -11,7 +11,7 @@
 void MockInfoBarService::CreateForWebContents(
     content::WebContents* web_contents) {
   DCHECK(web_contents);
-  void* user_data_key = UserDataKey();
+  const void* user_data_key = UserDataKey();
   DCHECK(!web_contents->GetUserData(user_data_key));
   web_contents->SetUserData(
       user_data_key, base::WrapUnique(new MockInfoBarService(web_contents)));

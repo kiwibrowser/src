@@ -137,8 +137,8 @@ public class TabStripSceneLayer extends SceneOverlayLayer {
                     layoutHelper.getWidth() * mDpToPx, st.getDrawX() * mDpToPx,
                     st.getDrawY() * mDpToPx, st.getWidth() * mDpToPx, st.getHeight() * mDpToPx,
                     st.getContentOffsetX() * mDpToPx, st.getCloseButton().getOpacity(),
-                    st.isLoading(), st.getLoadingSpinnerRotation(), layoutHelper.getBorderOpacity(),
-                    layerTitleCache, resourceManager);
+                    st.isLoading(), st.getLoadingSpinnerRotation(), layerTitleCache,
+                    resourceManager);
         }
     }
 
@@ -167,7 +167,7 @@ public class TabStripSceneLayer extends SceneOverlayLayer {
     private native void nativePutStripTabLayer(long nativeTabStripSceneLayer, int id,
             int closeResourceId, int handleResourceId, boolean foreground, boolean closePressed,
             float toolbarWidth, float x, float y, float width, float height, float contentOffsetX,
-            float closeButtonAlpha, boolean isLoading, float spinnerRotation, float borderOpacity,
+            float closeButtonAlpha, boolean isLoading, float spinnerRotation,
             LayerTitleCache layerTitleCache, ResourceManager resourceManager);
     private native void nativeSetContentTree(long nativeTabStripSceneLayer, SceneLayer contentTree);
 }

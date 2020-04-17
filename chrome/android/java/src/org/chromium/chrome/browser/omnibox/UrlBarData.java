@@ -36,7 +36,8 @@ public class UrlBarData {
     private static final HashSet<String> ACCEPTED_SCHEMES = CollectionUtil.newHashSet(
             ContentUrlConstants.ABOUT_SCHEME, UrlConstants.DATA_SCHEME, UrlConstants.FILE_SCHEME,
             UrlConstants.FTP_SCHEME, UrlConstants.HTTP_SCHEME, UrlConstants.HTTPS_SCHEME,
-            UrlConstants.INLINE_SCHEME, UrlConstants.JAVASCRIPT_SCHEME, UrlConstants.CHROME_SCHEME);
+            UrlConstants.INLINE_SCHEME, UrlConstants.JAVASCRIPT_SCHEME, UrlConstants.CHROME_SCHEME,
+            "kiwi");
     // Unicode "Left-To-Right Mark" (LRM) character.
     private static final char LRM = '\u200E';
 
@@ -60,6 +61,13 @@ public class UrlBarData {
     public static UrlBarData forUrlAndText(
             String url, String displayText, @Nullable String editingText) {
         int pathSearchOffset = 0;
+        String originalScheme = Uri.parse(displayText).getScheme();
+        if (!TextUtils.isEmpty(originalScheme) && (originalScheme.equals("chrome") || originalScheme.equals("chrome-extension"))) {
+          displayText = displayText.replace("chrome://", "kiwi://");
+          url = url.replace("chrome://", "kiwi://");
+          displayText = displayText.replace("chrome-extension://", "kiwi-extension://");
+          url = url.replace("chrome-extension://", "kiwi-extension://");
+        }
         String scheme = Uri.parse(displayText).getScheme();
 
         // Because Android versions 4.2 and before lack proper RTL support,

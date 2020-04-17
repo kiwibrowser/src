@@ -135,7 +135,7 @@ public abstract class GcmUpstreamSenderService extends IntentService {
     // Currently we do not check for message size limits since this will be run as an experiment.
     // Feedback from the experiment will be used to decide whether handling of message size
     // limit is required.
-    deliverMessage(GcmSharedConstants.GCM_UPDATED_SENDER_ID + "@google.com", dataBundle);
+    deliverMessage(GcmSharedConstants.GCM_UPDATED_SENDER_ID + "@gcm.googleapis.com", dataBundle);
   }
 
   /**

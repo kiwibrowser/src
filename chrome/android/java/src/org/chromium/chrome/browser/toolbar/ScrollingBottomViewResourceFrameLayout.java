@@ -9,9 +9,12 @@ import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 
 import org.chromium.chrome.browser.widget.ViewResourceFrameLayout;
 import org.chromium.ui.resources.dynamics.ViewResourceAdapter;
+import org.chromium.chrome.browser.compositor.layouts.eventfilter.EdgeSwipeHandler;
+import org.chromium.chrome.browser.contextualsearch.SwipeRecognizer;
 
 /**
  * A {@link ViewResourceFrameLayout} that specifically handles redraw of the top shadow of the view
@@ -24,8 +27,42 @@ public class ScrollingBottomViewResourceFrameLayout extends ViewResourceFrameLay
     /** The height of the shadow sitting above the bottom view in px. */
     private int mTopShadowHeightPx;
 
+    /** A swipe recognizer for handling swipe gestures. */
+    private SwipeRecognizer mSwipeRecognizer;
+
+
     public ScrollingBottomViewResourceFrameLayout(Context context, AttributeSet attrs) {
         super(context, attrs);
+    }
+
+    /**
+     * Set the swipe handler for this view and set {@link #isClickable()} to true to allow motion
+     * events to be intercepted by the view itself.
+     * @param handler A handler for swipe events on this view.
+     */
+    public void setSwipeDetector(EdgeSwipeHandler handler) {
+        mSwipeRecognizer = new SwipeRecognizer(getContext());
+        mSwipeRecognizer.setSwipeHandler(handler);
+
+        // TODO(mdjones): This line of code makes it impossible to scroll through the bottom
+        // toolbar. If the user accidentally swipes up on this view, the scroll no longer goes
+        // through to the web contents. We should figure out how to make this work while also
+        // supporting the toolbar swipe behavior.
+        setClickable(true);
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent event) {
+        boolean handledEvent = false;
+        if (mSwipeRecognizer != null) handledEvent = mSwipeRecognizer.onTouchEvent(event);
+        return handledEvent || super.onInterceptTouchEvent(event);
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        boolean handledEvent = false;
+        if (mSwipeRecognizer != null) handledEvent = mSwipeRecognizer.onTouchEvent(event);
+        return handledEvent || super.onTouchEvent(event);
     }
 
     @Override

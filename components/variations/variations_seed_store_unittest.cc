@@ -9,7 +9,7 @@
 
 #include "base/base64.h"
 #include "base/macros.h"
-#include "base/test/histogram_tester.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/time/time.h"
 #include "base/version.h"
 #include "build/build_config.h"

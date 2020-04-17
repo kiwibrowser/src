@@ -45,6 +45,8 @@ const base::Feature kViewsTaskManager{"ViewsTaskManager",
 #if !defined(OS_ANDROID)
 const base::Feature kAnimatedAppMenuIcon{"AnimatedAppMenuIcon",
                                          base::FEATURE_DISABLED_BY_DEFAULT};
+#endif  // !defined(OS_ANDROID)
+
 const base::Feature kAppBanners {
   "AppBanners",
 #if defined(OS_CHROMEOS)
@@ -53,7 +55,6 @@ const base::Feature kAppBanners {
       base::FEATURE_DISABLED_BY_DEFAULT,
 #endif  // defined(OS_CHROMEOS)
 };
-#endif  // !defined(OS_ANDROID)
 
 #if defined(OS_CHROMEOS)
 // Whether to handle low memory kill of ARC apps by Chrome.
@@ -101,7 +102,7 @@ const base::Feature kBlockPromptsIfDismissedOften{
 // Enables or disables whether permission prompts are automatically blocked
 // after the user has ignored them too many times.
 const base::Feature kBlockPromptsIfIgnoredOften{
-    "BlockPromptsIfIgnoredOften", base::FEATURE_DISABLED_BY_DEFAULT};
+    "BlockPromptsIfIgnoredOften", base::FEATURE_ENABLED_BY_DEFAULT};
 
 #if defined(OS_MACOSX)
 // Enables the new bookmark app system (e.g. Add To Applications on Mac).
@@ -156,7 +157,7 @@ const base::Feature kChangePictureVideoMode{"ChangePictureVideoMode",
 #if defined(OS_ANDROID)
 // Enables clearing of browsing data which is older than given time period.
 const base::Feature kClearOldBrowsingData{"ClearOldBrowsingData",
-                                          base::FEATURE_DISABLED_BY_DEFAULT};
+                                          base::FEATURE_ENABLED_BY_DEFAULT};
 #endif
 
 const base::Feature kClickToOpenPDFPlaceholder{
@@ -207,10 +208,8 @@ const base::Feature kDisallowUnsafeHttpDownloads{
     "DisallowUnsafeHttpDownloads", base::FEATURE_DISABLED_BY_DEFAULT};
 const char kDisallowUnsafeHttpDownloadsParamName[] = "MimeTypeList";
 
-#if !defined(OS_ANDROID)
 const base::Feature kDoodlesOnLocalNtp{"DoodlesOnLocalNtp",
                                        base::FEATURE_DISABLED_BY_DEFAULT};
-#endif
 
 #if defined(OS_ANDROID)
 // Enables downloads as a foreground service for all versions of Android.
@@ -221,7 +220,7 @@ const base::Feature kDownloadsForeground{"DownloadsForeground",
 #if defined(OS_ANDROID)
 // Enable changing default downloads storage location on Android.
 const base::Feature kDownloadsLocationChange{"DownloadsLocationChange",
-                                             base::FEATURE_DISABLED_BY_DEFAULT};
+                                             base::FEATURE_ENABLED_BY_DEFAULT};
 #endif
 
 // Enables Expect CT reporting, which sends reports for opted-in sites
@@ -324,7 +323,7 @@ const base::Feature kIncompatibleApplicationsWarning{
     "IncompatibleApplicationsWarning", base::FEATURE_DISABLED_BY_DEFAULT};
 #endif
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 // Enables Casting a Presentation API-enabled website to a secondary display.
 const base::Feature kLocalScreenCasting{"LocalScreenCasting",
                                         base::FEATURE_ENABLED_BY_DEFAULT};
@@ -376,7 +375,7 @@ const base::Feature kWarnBeforeQuitting{"WarnBeforeQuitting",
 const base::Feature kMaterialDesignIncognitoNTP{
   "MaterialDesignIncognitoNTP",
 #if defined(OS_ANDROID)
-      base::FEATURE_DISABLED_BY_DEFAULT
+      base::FEATURE_ENABLED_BY_DEFAULT
 #else
       base::FEATURE_ENABLED_BY_DEFAULT
 #endif
@@ -384,7 +383,7 @@ const base::Feature kMaterialDesignIncognitoNTP{
 
 // Enables or disables modal permission prompts.
 const base::Feature kModalPermissionPrompts{"ModalPermissionPrompts",
-                                            base::FEATURE_ENABLED_BY_DEFAULT};
+                                            base::FEATURE_DISABLED_BY_DEFAULT};
 
 #if defined(OS_WIN)
 // Enables or disables the ModuleDatabase backend for the conflicts UI.
@@ -451,11 +450,9 @@ const base::Feature kOomIntervention{"OomIntervention",
                                      base::FEATURE_DISABLED_BY_DEFAULT};
 #endif
 
-#if !defined(OS_ANDROID)
 // Enables or disabled the OneGoogleBar on the local NTP.
 const base::Feature kOneGoogleBarOnLocalNtp{"OneGoogleBarOnLocalNtp",
                                             base::FEATURE_ENABLED_BY_DEFAULT};
-#endif
 
 // Adds the base language code to the Language-Accept headers if at least one
 // corresponding language+region code is present in the user preferences.
@@ -476,7 +473,7 @@ const base::Feature kDisablePostScriptPrinting{
 #endif
 
 // Enables a page for manaing policies at chrome://policy-tool.
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 const base::Feature kPolicyTool{"PolicyTool",
                                 base::FEATURE_DISABLED_BY_DEFAULT};
 #endif
@@ -508,7 +505,7 @@ const base::Feature kNupPrinting{"NupPrinting",
 const base::Feature kPushMessagingBackgroundMode{
     "PushMessagingBackgroundMode", base::FEATURE_DISABLED_BY_DEFAULT};
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 const base::Feature kRemoveUsageOfDeprecatedGaiaSigninEndpoint{
     "RemoveUsageOfDeprecatedGaiaSigninEndpoint",
     base::FEATURE_ENABLED_BY_DEFAULT};
@@ -609,11 +606,9 @@ const base::Feature kUserActivityEventLogging{"UserActivityEventLogging",
 const base::Feature kUseSameCacheForMedia{"UseSameCacheForMedia",
                                           base::FEATURE_DISABLED_BY_DEFAULT};
 
-#if !defined(OS_ANDROID)
 // Enables or disables Voice Search on the local NTP.
 const base::Feature kVoiceSearchOnLocalNtp{"VoiceSearchOnLocalNtp",
                                            base::FEATURE_ENABLED_BY_DEFAULT};
-#endif
 
 #if defined(OS_CHROMEOS)
 // Enables or disables the opt-in IME menu in the language settings page.

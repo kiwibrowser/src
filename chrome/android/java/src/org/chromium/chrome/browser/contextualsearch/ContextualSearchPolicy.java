@@ -171,7 +171,7 @@ class ContextualSearchPolicy {
      * @return Whether the Opt-out promo is available to be shown in any panel.
      */
     boolean isPromoAvailable() {
-        return isUserUndecided();
+        return false;
     }
 
     /**

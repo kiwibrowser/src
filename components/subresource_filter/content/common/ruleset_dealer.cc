@@ -35,11 +35,11 @@ scoped_refptr<const MemoryMappedRuleset> RulesetDealer::GetRuleset() {
   scoped_refptr<const MemoryMappedRuleset> strong_ruleset_ref;
   if (weak_cached_ruleset_) {
     strong_ruleset_ref = weak_cached_ruleset_.get();
-  } else {
-    MemoryMappedRuleset* ruleset =
-        new MemoryMappedRuleset(ruleset_file_.Duplicate());
-    strong_ruleset_ref = ruleset;
+  } else if (scoped_refptr<MemoryMappedRuleset> ruleset =
+                 MemoryMappedRuleset::CreateAndInitialize(
+                     ruleset_file_.Duplicate())) {
     weak_cached_ruleset_ = ruleset->AsWeakPtr();
+    strong_ruleset_ref = std::move(ruleset);
   }
   return strong_ruleset_ref;
 }

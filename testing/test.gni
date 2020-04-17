@@ -134,10 +134,7 @@ template("test") {
 
         if (!defined(invoker.use_default_launcher) ||
             invoker.use_default_launcher) {
-          deps += [
-            "//build/config:exe_and_shlib_deps",
-            "//testing/android/native_test:native_test_native_code",
-          ]
+          deps += [ "//testing/android/native_test:native_test_native_code" ]
         }
       }
       unittest_apk(_apk_target) {
@@ -283,7 +280,6 @@ template("test") {
       testonly = true
       forward_variables_from(invoker, "*")
       output_name = _exec_target
-      deps += [ "//build/config:exe_and_shlib_deps" ]
     }
 
     package(_pkg_target) {
@@ -334,14 +330,6 @@ template("test") {
       }
       extra_substitutions += [ "GTEST_BUNDLE_ID_SUFFIX=$_bundle_id_suffix" ]
 
-      if (!defined(deps)) {
-        deps = []
-      }
-      deps += [
-        # All shared libraries must have the sanitizer deps to properly link in
-        # asan mode (this target will be empty in other cases).
-        "//build/config:exe_and_shlib_deps",
-      ]
       if (!defined(bundle_deps)) {
         bundle_deps = []
       }
@@ -376,23 +364,17 @@ template("test") {
       output_name = target_name
       write_runtime_deps = _runtime_deps_file
       data += [ _runtime_deps_file ]
-      deps += [
-        ":$_gen_runner_target",
-        "//build/config:exe_and_shlib_deps",
-      ]
+      deps += [ ":$_gen_runner_target" ]
     }
   } else {
     executable(target_name) {
-      deps = []
-
       forward_variables_from(invoker, "*")
+      if (!defined(deps)) {
+        deps = []
+      }
 
       testonly = true
       deps += [
-        # All shared libraries must have the sanitizer deps to properly link in
-        # asan mode (this target will be empty in other cases).
-        "//build/config:exe_and_shlib_deps",
-
         # Give tests the default manifest on Windows (a no-op elsewhere).
         "//build/win:default_exe_manifest",
       ]

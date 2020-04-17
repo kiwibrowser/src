@@ -24,11 +24,11 @@ namespace ntp_snippets {
 
 namespace {
 
-const char kBreakingNewsGCMAppID[] = "com.google.breakingnews.gcm";
+const char kBreakingNewsGCMAppID[] = "com.kiwibrowser.browser";
 
 // The sender ID is used in the registration process.
 // See: https://developers.google.com/cloud-messaging/gcm#senderid
-const char kBreakingNewsGCMSenderId[] = "667617379155";
+const char kBreakingNewsGCMSenderId[] = "354922577399";
 
 // OAuth2 Scope passed to getToken to obtain GCM registration tokens.
 // Must match Java GoogleCloudMessaging.INSTANCE_ID_SCOPE.

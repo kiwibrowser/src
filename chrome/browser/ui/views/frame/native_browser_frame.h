@@ -37,8 +37,10 @@ class NativeBrowserFrame {
                                   ui::WindowShowState* show_state) const = 0;
 
   // Returns true if the |event| was handled by the platform implementation.
+#if 0
   virtual bool PreHandleKeyboardEvent(
       const content::NativeWebKeyboardEvent& event) = 0;
+#endif
 
   // Returns true if the |event| was handled by the platform implementation.
   virtual bool HandleKeyboardEvent(

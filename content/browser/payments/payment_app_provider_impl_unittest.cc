@@ -65,7 +65,7 @@ class PaymentAppProviderTest : public PaymentAppContentUnitTestBase {
         .WillByDefault(
             testing::Return(blink::mojom::PermissionStatus::GRANTED));
     static_cast<TestBrowserContext*>(browser_context())
-        ->SetPermissionManager(std::move(mock_permission_manager));
+        ->SetPermissionControllerDelegate(std::move(mock_permission_manager));
   }
   ~PaymentAppProviderTest() override {}
 

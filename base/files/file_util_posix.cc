@@ -138,6 +138,18 @@ std::string TempFileName() {
 #endif
 }
 
+std::string TempFileNameJPG() {
+#if defined(OS_MACOSX)
+  return StringPrintf(".%s.XXXXXX", base::mac::BaseBundleID());
+#endif
+
+#if defined(GOOGLE_CHROME_BUILD)
+  return std::string(".com.google.Chrome.XXXXXX");
+#else
+  return std::string("screenshot.kiwibrowser.XXXXXX.jpg");
+#endif
+}
+
 #if defined(OS_LINUX) || defined(OS_AIX)
 // Determine if /dev/shm files can be mapped and then mprotect'd PROT_EXEC.
 // This depends on the mount options used for /dev/shm, which vary among
@@ -533,6 +545,17 @@ int CreateAndOpenFdForTemporaryFileInDir(const FilePath& directory,
   return HANDLE_EINTR(mkstemp(buffer));
 }
 
+int CreateAndOpenFdForTemporaryFileInDirJPG(const FilePath& directory,
+                                         FilePath* path) {
+  AssertBlockingAllowed();  // For call to mkstemp().
+  *path = directory.Append(TempFileNameJPG());
+  const std::string& tmpdir_string = path->value();
+  // this should be OK since mkstemp just replaces characters in place
+  char* buffer = const_cast<char*>(tmpdir_string.c_str());
+
+  return HANDLE_EINTR(mkstemps(buffer, 4));
+}
+
 #if !defined(OS_FUCHSIA)
 bool CreateSymbolicLink(const FilePath& target_path,
                         const FilePath& symlink_path) {
@@ -671,6 +694,17 @@ bool CreateTemporaryFile(FilePath* path) {
 
 FILE* CreateAndOpenTemporaryFileInDir(const FilePath& dir, FilePath* path) {
   int fd = CreateAndOpenFdForTemporaryFileInDir(dir, path);
+  if (fd < 0)
+    return nullptr;
+
+  FILE* file = fdopen(fd, "a+");
+  if (!file)
+    close(fd);
+  return file;
+}
+
+FILE* CreateAndOpenTemporaryFileInDirJPG(const FilePath& dir, FilePath* path) {
+  int fd = CreateAndOpenFdForTemporaryFileInDirJPG(dir, path);
   if (fd < 0)
     return nullptr;
 

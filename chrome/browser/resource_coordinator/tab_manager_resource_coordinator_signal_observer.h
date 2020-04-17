@@ -25,6 +25,8 @@ class TabManager::ResourceCoordinatorSignalObserver
   void OnPageAlmostIdle(content::WebContents* web_contents) override;
   void OnExpectedTaskQueueingDurationSet(content::WebContents* web_contents,
                                          base::TimeDelta duration) override;
+  void OnNonPersistentNotificationCreated(
+      content::WebContents* web_contents) override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(ResourceCoordinatorSignalObserver);

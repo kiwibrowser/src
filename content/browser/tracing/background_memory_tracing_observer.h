@@ -19,15 +19,13 @@ class CONTENT_EXPORT BackgroundMemoryTracingObserver
   void OnTracingEnabled(
       BackgroundTracingConfigImpl::CategoryPreset preset) override;
 
-  bool heap_profiling_enabled_for_testing() const {
-    return heap_profiling_enabled_;
-  }
+  bool enabled_for_testing() const { return enabled_; }
 
  private:
   BackgroundMemoryTracingObserver();
   ~BackgroundMemoryTracingObserver() override;
 
-  bool heap_profiling_enabled_ = false;
+  bool enabled_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(BackgroundMemoryTracingObserver);
 };

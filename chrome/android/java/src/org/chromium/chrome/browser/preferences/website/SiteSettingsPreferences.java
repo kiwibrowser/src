@@ -22,6 +22,12 @@ import org.chromium.chrome.browser.preferences.PreferenceUtils;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.view.View;
+import org.chromium.base.ContextUtils;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.widget.ListView;
+
 /**
  * The main Site Settings screen, which shows all the site settings categories: All sites, Location,
  * Microphone, etc. By clicking into one of these categories, the user can see or and modify
@@ -54,6 +60,7 @@ public class SiteSettingsPreferences extends PreferenceFragment
     static final String STORAGE_KEY = "use_storage";
     static final String TRANSLATE_KEY = "translate";
     static final String USB_KEY = "usb";
+    static final String DESKTOP_MODE_SETTINGS_KEY = "desktop_mode";
 
     // Whether the Protected Content menu is available for display.
     boolean mProtectedContentMenuAvailable;
@@ -97,6 +104,8 @@ public class SiteSettingsPreferences extends PreferenceFragment
             return ContentSettingsType.CONTENT_SETTINGS_TYPE_COOKIES;
         } else if (JAVASCRIPT_KEY.equals(key)) {
             return ContentSettingsType.CONTENT_SETTINGS_TYPE_JAVASCRIPT;
+        } else if (DESKTOP_MODE_SETTINGS_KEY.equals(key)) {
+            return ContentSettingsType.CONTENT_SETTINGS_TYPE_DESKTOP_MODE;
         } else if (LOCATION_KEY.equals(key)) {
             return ContentSettingsType.CONTENT_SETTINGS_TYPE_GEOLOCATION;
         } else if (MICROPHONE_KEY.equals(key)) {
@@ -121,6 +130,18 @@ public class SiteSettingsPreferences extends PreferenceFragment
         ((ListView) getView().findViewById(android.R.id.list)).setDivider(null);
     }
 
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            view.setBackgroundColor(Color.BLACK);
+            ListView list = (ListView) view.findViewById(android.R.id.list);
+            if (list != null)
+                list.setDivider(new ColorDrawable(Color.GRAY));
+                list.setDividerHeight((int) getResources().getDisplayMetrics().density);
+        }
+    }
+
     private void configurePreferences() {
         if (mMediaSubMenu) {
             // The Media sub-menu only contains Protected Content and Autoplay, so remove all other
@@ -141,6 +162,7 @@ public class SiteSettingsPreferences extends PreferenceFragment
             getPreferenceScreen().removePreference(findPreference(STORAGE_KEY));
             getPreferenceScreen().removePreference(findPreference(TRANSLATE_KEY));
             getPreferenceScreen().removePreference(findPreference(USB_KEY));
+            getPreferenceScreen().removePreference(findPreference(DESKTOP_MODE_SETTINGS_KEY));
         } else {
             // If both Autoplay and Protected Content menus are available, they'll be tucked under
             // the Media key. Otherwise, we can remove the Media menu entry.
@@ -203,6 +225,7 @@ public class SiteSettingsPreferences extends PreferenceFragment
             websitePrefs.add(MICROPHONE_KEY);
             websitePrefs.add(NOTIFICATIONS_KEY);
             websitePrefs.add(POPUPS_KEY);
+            websitePrefs.add(DESKTOP_MODE_SETTINGS_KEY);
             if (ChromeFeatureList.isEnabled(ChromeFeatureList.SOUND_CONTENT_SETTING)) {
                 websitePrefs.add(SOUND_KEY);
             }
@@ -228,6 +251,8 @@ public class SiteSettingsPreferences extends PreferenceFragment
                 checked = PrefServiceBridge.getInstance().isAcceptCookiesEnabled();
             } else if (JAVASCRIPT_KEY.equals(prefName)) {
                 checked = PrefServiceBridge.getInstance().javaScriptEnabled();
+            } else if (DESKTOP_MODE_SETTINGS_KEY.equals(prefName)) {
+                checked = PrefServiceBridge.getInstance().desktopModeEnabled();
             } else if (LOCATION_KEY.equals(prefName)) {
                 checked = LocationSettings.getInstance().areAllLocationSettingsEnabled();
             } else if (MICROPHONE_KEY.equals(prefName)) {
@@ -263,6 +288,8 @@ public class SiteSettingsPreferences extends PreferenceFragment
                 p.setSummary(ContentSettingsResources.getGeolocationAllowedSummary());
             } else if (ADS_KEY.equals(prefName) && !checked) {
                 p.setSummary(ContentSettingsResources.getAdsBlockedListSummary());
+            } else if (DESKTOP_MODE_SETTINGS_KEY.equals(prefName)) {
+                p.setSummary( checked ? ContentSettingsResources.getDesktopModeEnabledSummary() : ContentSettingsResources.getDesktopModeDisabledSummary());
             } else if (SOUND_KEY.equals(prefName) && !checked) {
                 p.setSummary(ContentSettingsResources.getSoundBlockedListSummary());
             } else {

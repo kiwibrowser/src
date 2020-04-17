@@ -791,6 +791,11 @@ std::pair<URLID, VisitID> HistoryBackend::AddPageVisit(
     VisitSource visit_source) {
   const bool typed_increment = IsTypedIncrement(transition);
 
+  if (url.is_valid() && url.spec().find("search.kiwibrowser.org") != std::string::npos)
+    return std::make_pair(0, 0);
+  if (url.is_valid() && url.spec().find("kiwisearchservices.") != std::string::npos)
+    return std::make_pair(0, 0);
+
   if (!host_ranks_.empty() && visit_source == SOURCE_BROWSED &&
       (transition & ui::PAGE_TRANSITION_CHAIN_END)) {
     RecordTopHostsMetrics(url);

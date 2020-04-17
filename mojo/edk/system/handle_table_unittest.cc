@@ -63,7 +63,7 @@ TEST(HandleTableTest, OnMemoryDump) {
 
   base::trace_event::MemoryDumpArgs args = {
       base::trace_event::MemoryDumpLevelOfDetail::DETAILED};
-  base::trace_event::ProcessMemoryDump pmd(nullptr, args);
+  base::trace_event::ProcessMemoryDump pmd(args);
   ht.OnMemoryDump(args, &pmd);
 
   CheckNameAndValue(&pmd, "mojo/message_pipe", 1);

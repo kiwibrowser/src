@@ -9,9 +9,9 @@
 
 #include "base/callback.h"
 #include "base/threading/thread_checker.h"
-#include "gpu/command_buffer/service/gpu_preferences.h"
 #include "gpu/config/gpu_driver_bug_workarounds.h"
 #include "gpu/config/gpu_info.h"
+#include "gpu/config/gpu_preferences.h"
 #include "media/base/android_overlay_mojo_factory.h"
 #include "media/gpu/buildflags.h"
 #include "media/gpu/media_gpu_export.h"

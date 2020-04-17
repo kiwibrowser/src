@@ -59,7 +59,7 @@ bool SubresourceFilter::AllowLoad(
   WebDocumentSubresourceFilter::LoadPolicy load_policy =
       subresource_filter_->GetLoadPolicy(resource_url, request_context);
 
-  if (reporting_policy == SecurityViolationReportingPolicy::kReport)
+  if (reporting_policy == SecurityViolationReportingPolicy::kReport && false)
     ReportLoad(resource_url, load_policy);
 
   last_resource_check_result_ = std::make_pair(
@@ -85,9 +85,11 @@ bool SubresourceFilter::AllowWebSocketConnection(const KURL& url) {
   scoped_refptr<base::SingleThreadTaskRunner> task_runner =
       execution_context_->GetTaskRunner(TaskType::kNetworking);
   DCHECK(task_runner->RunsTasksInCurrentSequence());
-  task_runner->PostTask(
-      FROM_HERE, WTF::Bind(&SubresourceFilter::ReportLoad, WrapPersistent(this),
-                           url, load_policy));
+  if (false) {
+      task_runner->PostTask(
+          FROM_HERE, WTF::Bind(&SubresourceFilter::ReportLoad, WrapPersistent(this),
+                               url, load_policy));
+  }
   return load_policy != WebDocumentSubresourceFilter::kDisallow;
 }
 

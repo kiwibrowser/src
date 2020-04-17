@@ -4,7 +4,7 @@
 
 #include "components/subresource_filter/core/browser/copying_file_stream.h"
 
-namespace url_pattern_index {
+namespace subresource_filter {
 
 // CopyingFileInputStream ------------------------------------------------------
 
@@ -28,4 +28,4 @@ bool CopyingFileOutputStream::Write(const void* buffer, int size) {
          size;
 }
 
-}  // namespace url_pattern_index
+}  // namespace subresource_filter

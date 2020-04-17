@@ -29,6 +29,7 @@ IdentityLaunchWebAuthFlowFunction::~IdentityLaunchWebAuthFlowFunction() {
 }
 
 bool IdentityLaunchWebAuthFlowFunction::RunAsync() {
+  LOG(INFO) << "[EXTENSIONS] Received a call on IdentityLaunchWebAuthFlowFunction::RunAsync";
   if (GetProfile()->IsOffTheRecord()) {
     error_ = identity_constants::kOffTheRecord;
     return false;
@@ -39,6 +40,7 @@ bool IdentityLaunchWebAuthFlowFunction::RunAsync() {
   EXTENSION_FUNCTION_VALIDATE(params.get());
 
   GURL auth_url(params->details.url);
+  LOG(INFO) << "[EXTENSIONS] Received a call on IdentityLaunchWebAuthFlowFunction::RunAsync - URL: " << auth_url.spec();
   WebAuthFlow::Mode mode =
       params->details.interactive && *params->details.interactive ?
       WebAuthFlow::INTERACTIVE : WebAuthFlow::SILENT;

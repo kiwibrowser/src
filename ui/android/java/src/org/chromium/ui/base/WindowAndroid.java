@@ -137,6 +137,23 @@ public class WindowAndroid {
     }
 
     /**
+     * An interface to notify listeners of the changes in activity state.
+     */
+    public interface ActivityStateObserver {
+        /**
+         * Called when the activity goes into paused state.
+         */
+
+        void onActivityPaused();
+        /**
+         * Called when the activity goes into resumed state.
+         */
+        void onActivityResumed();
+    }
+
+    private ObserverList<ActivityStateObserver> mActivityStateObservers = new ObserverList<>();
+
+    /**
      * Gets the view for readback.
      */
     public View getReadbackView() {
@@ -533,6 +550,30 @@ public class WindowAndroid {
     protected void onActivityStarted() {
         if (mNativeWindowAndroid == 0) return;
         nativeOnActivityStarted(mNativeWindowAndroid);
+    }
+
+    protected void onActivityPaused() {
+        for (ActivityStateObserver observer : mActivityStateObservers) observer.onActivityPaused();
+    }
+
+    protected void onActivityResumed() {
+        for (ActivityStateObserver observer : mActivityStateObservers) observer.onActivityResumed();
+    }
+
+    /**
+     * Adds a new {@link ActivityStateObserver} instance.
+     */
+    public void addActivityStateObserver(ActivityStateObserver observer) {
+        assert !mActivityStateObservers.hasObserver(observer);
+        mActivityStateObservers.addObserver(observer);
+    }
+
+    /**
+     * Removes a new {@link ActivityStateObserver} instance.
+     */
+    public void removeActivityStateObserver(ActivityStateObserver observer) {
+        assert mActivityStateObservers.hasObserver(observer);
+        mActivityStateObservers.removeObserver(observer);
     }
 
     @CalledByNative

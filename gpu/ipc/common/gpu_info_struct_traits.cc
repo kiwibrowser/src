@@ -17,7 +17,10 @@ bool StructTraits<gpu::mojom::GpuDeviceDataView, gpu::GPUInfo::GPUDevice>::Read(
   out->device_id = data.device_id();
   out->active = data.active();
   return data.ReadVendorString(&out->vendor_string) &&
-         data.ReadDeviceString(&out->device_string);
+         data.ReadDeviceString(&out->device_string) &&
+         data.ReadDriverVendor(&out->driver_vendor) &&
+         data.ReadDriverVersion(&out->driver_version) &&
+         data.ReadDriverDate(&out->driver_date);
 }
 
 // static
@@ -237,9 +240,6 @@ bool StructTraits<gpu::mojom::GpuInfoDataView, gpu::GPUInfo>::Read(
   return data.ReadInitializationTime(&out->initialization_time) &&
          data.ReadGpu(&out->gpu) &&
          data.ReadSecondaryGpus(&out->secondary_gpus) &&
-         data.ReadDriverVendor(&out->driver_vendor) &&
-         data.ReadDriverVersion(&out->driver_version) &&
-         data.ReadDriverDate(&out->driver_date) &&
          data.ReadPixelShaderVersion(&out->pixel_shader_version) &&
          data.ReadVertexShaderVersion(&out->vertex_shader_version) &&
          data.ReadMaxMsaaSamples(&out->max_msaa_samples) &&

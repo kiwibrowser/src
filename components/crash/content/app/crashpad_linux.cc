@@ -183,7 +183,7 @@ bool BuildHandlerArgs(base::FilePath* handler_path,
 // TODO(jperaza): Set URL for Android when Crashpad takes over report upload.
 #if defined(GOOGLE_CHROME_BUILD) && defined(OFFICIAL_BUILD) && \
     !defined(OS_ANDROID)
-  *url = "https://clients2.google.com/cr/report";
+  *url = "https://crash2.kiwibrowser.com/cr/report";
 #else
   *url = std::string();
 #endif

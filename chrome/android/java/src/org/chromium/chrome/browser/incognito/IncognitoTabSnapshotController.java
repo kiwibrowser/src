@@ -6,7 +6,7 @@ package org.chromium.chrome.browser.incognito;
 
 import android.view.Window;
 import android.view.WindowManager;
-
+import org.chromium.base.ContextUtils;
 import org.chromium.base.VisibleForTesting;
 import org.chromium.chrome.browser.compositor.layouts.LayoutManagerChrome;
 import org.chromium.chrome.browser.compositor.layouts.OverviewModeBehavior.OverviewModeObserver;
@@ -78,10 +78,14 @@ public class IncognitoTabSnapshotController
         boolean expectedSecureState = isShowingIncognito();
         if (currentSecureState == expectedSecureState) return;
 
-        if (expectedSecureState) {
-            mWindow.addFlags(WindowManager.LayoutParams.FLAG_SECURE);
-        } else {
-            mWindow.clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        final boolean hideIncognitoWindow = ContextUtils.getAppSharedPreferences().getBoolean("hide_incognito_window_content", false);
+
+        if (hideIncognitoWindow) {
+            if (expectedSecureState) {
+                mWindow.addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+            } else {
+                mWindow.clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
+            }
         }
     }
 

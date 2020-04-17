@@ -186,6 +186,9 @@ class SSLServerContextImpl::SocketImpl : public SSLServerSocket,
   // OpenSSL stuff
   bssl::UniquePtr<SSL> ssl_;
 
+  // Whether we received any data in early data.
+  bool early_data_received_;
+
   // StreamSocket for sending and receiving data.
   std::unique_ptr<StreamSocket> transport_socket_;
   std::unique_ptr<SocketBIOAdapter> transport_adapter_;
@@ -208,6 +211,7 @@ SSLServerContextImpl::SocketImpl::SocketImpl(
       signature_result_(kNoPendingResult),
       user_read_buf_len_(0),
       user_write_buf_len_(0),
+      early_data_received_(false),
       transport_socket_(std::move(transport_socket)),
       next_handshake_state_(STATE_NONE),
       completed_handshake_(false),
@@ -505,6 +509,7 @@ bool SSLServerContextImpl::SocketImpl::GetSSLInfo(SSLInfo* ssl_info) {
   SSLConnectionStatusSetVersion(GetNetSSLVersion(ssl_.get()),
                                 &ssl_info->connection_status);
 
+  ssl_info->early_data_received = early_data_received_;
   ssl_info->handshake_type = SSL_session_reused(ssl_.get())
                                  ? SSLInfo::HANDSHAKE_RESUME
                                  : SSLInfo::HANDSHAKE_FULL;
@@ -577,8 +582,11 @@ int SSLServerContextImpl::SocketImpl::DoPayloadRead() {
 
   crypto::OpenSSLErrStackTracer err_tracer(FROM_HERE);
   int rv = SSL_read(ssl_.get(), user_read_buf_->data(), user_read_buf_len_);
-  if (rv >= 0)
+  if (rv >= 0) {
+    if (SSL_in_early_data(ssl_.get()))
+      early_data_received_ = true;
     return rv;
+  }
   int ssl_error = SSL_get_error(ssl_.get(), rv);
   OpenSSLErrorInfo error_info;
   int net_error =
@@ -849,6 +857,8 @@ void SSLServerContextImpl::Init() {
       break;
   }
 
+  SSL_CTX_set_early_data_enabled(ssl_ctx_.get(),
+                                 ssl_server_config_.early_data_enabled);
   DCHECK_LT(SSL3_VERSION, ssl_server_config_.version_min);
   DCHECK_LT(SSL3_VERSION, ssl_server_config_.version_max);
   CHECK(SSL_CTX_set_min_proto_version(ssl_ctx_.get(),

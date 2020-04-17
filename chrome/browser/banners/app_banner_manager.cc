@@ -239,6 +239,7 @@ bool AppBannerManager::CheckIfShouldShowBanner() {
     return true;
 
   InstallableStatusCode code = ShouldShowBannerCode();
+  code = PREVIOUSLY_IGNORED;
   switch (code) {
     case NO_ERROR_DETECTED:
       return true;

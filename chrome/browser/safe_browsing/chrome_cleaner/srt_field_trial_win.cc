@@ -23,10 +23,10 @@ const char kSRTElevationAsNeededGroup[] = "AsNeeded";
 
 // The download links of the Software Removal Tool.
 const char kDownloadRootPath[] =
-    "https://dl.google.com/dl/softwareremovaltool/win/";
+    "https://dl.kiwibrowser.com/dl/softwareremovaltool/win/";
 
 const char kLegacySRTDownloadURL[] =
-    "https://dl.google.com/dl"
+    "https://dl.kiwibrowser.com/dl"
     "/softwareremovaltool/win/chrome_cleanup_tool.exe";
 
 }  // namespace

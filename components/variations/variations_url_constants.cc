@@ -8,9 +8,9 @@ namespace variations {
 
 // Default server of Variations seed info.
 const char kDefaultServerUrl[] =
-    "https://clientservices.googleapis.com/chrome-variations/seed";
+    "https://clientservices.kiwibrowser.com/chrome-variations/seed";
 
 const char kDefaultInsecureServerUrl[] =
-    "http://clientservices.googleapis.com/chrome-variations/seed";
+    "http://clientservices.kiwibrowser.com/chrome-variations/seed";
 
 }  // namespace variations

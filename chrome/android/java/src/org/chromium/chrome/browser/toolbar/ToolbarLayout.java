@@ -47,6 +47,12 @@ import org.chromium.components.security_state.ConnectionSecurityLevel;
 import org.chromium.components.variations.VariationsAssociatedData;
 import org.chromium.ui.UiUtils;
 
+import android.app.Activity;
+
+import org.chromium.chrome.browser.accessibility.NightModePrefs;
+import android.graphics.Color;
+import org.chromium.base.ApiCompatibilityUtils;
+
 /**
  * Layout class that contains the base shared logic for manipulating the toolbar component. For
  * interaction that are not from Views inside Toolbar hierarchy all interactions should be done
@@ -111,22 +117,11 @@ public abstract class ToolbarLayout extends FrameLayout implements Toolbar {
                 if (isNativeLibraryReady() && mProgressBar.getParent() != null) {
                     mProgressBar.initializeAnimation();
                 }
-                mProgressBar.setTopMargin(getProgressBarTopMargin());
 
                 // Since this only needs to happen once, remove this listener from the view.
                 removeOnLayoutChangeListener(this);
             }
         });
-    }
-
-    /**
-     * Get the top margin of the progress bar relative to the toolbar layout. This is used to set
-     * the position of the progress bar (either top or bottom of the toolbar).
-     * @return The top margin of the progress bar.
-     */
-    protected int getProgressBarTopMargin() {
-        return getHeight()
-                - getResources().getDimensionPixelSize(R.dimen.toolbar_progress_bar_height);
     }
 
     /**
@@ -141,8 +136,7 @@ public abstract class ToolbarLayout extends FrameLayout implements Toolbar {
      * @return A progress bar for Chrome to use.
      */
     protected ToolbarProgressBar createProgressBar() {
-        return new ToolbarProgressBar(
-                getContext(), getProgressBarHeight(), getProgressBarTopMargin(), false);
+        return new ToolbarProgressBar(getContext(), getProgressBarHeight(), this, false);
     }
 
     @Override
@@ -446,6 +440,8 @@ public abstract class ToolbarLayout extends FrameLayout implements Toolbar {
      */
     public void updateButtonVisibility() { }
 
+    public void updateOverscrollButtonVisibility() { }
+
     /**
      * Gives inheriting classes the chance to update the visibility of the
      * back button.
@@ -493,6 +489,8 @@ public abstract class ToolbarLayout extends FrameLayout implements Toolbar {
      * @param homeButtonEnabled Whether or not home button is enabled in preference.
      */
     protected void onHomeButtonUpdate(boolean homeButtonEnabled) { }
+
+    protected void onOverscrollButtonUpdate(boolean overscrollButtonEnabled) { }
 
     /**
      * Triggered when the current tab or model has changed.
@@ -783,6 +781,14 @@ public abstract class ToolbarLayout extends FrameLayout implements Toolbar {
     }
 
     /**
+     * Opens hompage in the current tab.
+     */
+    protected void openOverscroll() {
+        getLocationBar().hideSuggestions();
+        if (mToolbarTabController != null) mToolbarTabController.openOverscroll();
+    }
+
+    /**
      * Opens the Memex UI in the current tab.
      */
     protected void openMemexUI() {
@@ -953,8 +959,7 @@ public abstract class ToolbarLayout extends FrameLayout implements Toolbar {
      * @return The NTP button variation.
      */
     public static String getNTPButtonVariation() {
-        return VariationsAssociatedData.getVariationParamValue(
-                NTP_BUTTON_TRIAL_NAME, NTP_BUTTON_VARIATION_PARAM_NAME);
+        return NTP_BUTTON_HOME_VARIATION;
     }
 
     protected void changeIconToNTPIcon(TintedImageButton ntpButton) {

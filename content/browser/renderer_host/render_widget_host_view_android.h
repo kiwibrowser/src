@@ -298,6 +298,8 @@ class CONTENT_EXPORT RenderWidgetHostViewAndroid
 
   bool SynchronizeVisualProperties();
 
+  void NeedToSyncWithCompositorFrame(bool required, bool updated);
+
   bool HasValidFrame() const;
 
   void MoveCaret(const gfx::Point& point);
@@ -465,6 +467,9 @@ class CONTENT_EXPORT RenderWidgetHostViewAndroid
   // Provides gesture synthesis given a stream of touch events (derived from
   // Android MotionEvent's) and touch event acks.
   ui::FilteredGestureProvider gesture_provider_;
+
+  bool is_scroll_in_progress_;
+  bool moved_beyond_slop_region_;
 
   // Handles gesture based text selection
   StylusTextSelector stylus_text_selector_;

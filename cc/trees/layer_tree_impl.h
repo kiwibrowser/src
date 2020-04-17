@@ -125,6 +125,7 @@ class CC_EXPORT LayerTreeImpl {
   bool IsSyncTree() const;
   LayerImpl* FindActiveTreeLayerById(int id);
   LayerImpl* FindPendingTreeLayerById(int id);
+  bool PageScaleAnimationActive() const;
   bool PinchGestureActive() const;
   viz::BeginFrameArgs CurrentBeginFrameArgs() const;
   base::TimeDelta CurrentBeginFrameInterval() const;

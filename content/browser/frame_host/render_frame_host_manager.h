@@ -325,6 +325,12 @@ class CONTENT_EXPORT RenderFrameHostManager
   // Returns whether it was deleted.
   bool DeleteFromPendingList(RenderFrameHostImpl* render_frame_host);
 
+  // BackForwardCache:
+  // During an history navigation, try to swap back a document from the
+  // BackForwardCache. The document is referenced from its navigation entry ID.
+  // Returns true when it succeed.
+  void RestoreFromBackForwardCache(std::unique_ptr<RenderFrameHostImpl>);
+
   // Deletes any proxy hosts associated with this node. Used during destruction
   // of WebContentsImpl.
   void ResetProxyHosts();
@@ -688,9 +694,10 @@ class CONTENT_EXPORT RenderFrameHostManager
   // when the current RenderFrameHost commits and it has a pending WebUI.
   void CommitPendingWebUI();
 
-  // Sets the speculative RenderFrameHost to be the active one. Called when the
-  // pending RenderFrameHost commits.
-  void CommitPending();
+  // Sets the |pending_rfh| to be the active one. Called when the pending
+  // RenderFrameHost commits.
+  // BackForwardCache: Called to restore a RenderFrameHost.
+  void CommitPending(std::unique_ptr<RenderFrameHostImpl> pending_rfh);
 
   // Helper to call CommitPending() in all necessary cases.
   void CommitPendingIfNecessary(RenderFrameHostImpl* render_frame_host,

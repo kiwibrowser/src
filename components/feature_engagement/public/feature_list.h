@@ -46,6 +46,8 @@ namespace {
 // Defines a flags_ui::FeatureEntry::FeatureParam for each feature.
 DEFINE_VARIATION_PARAM(kIPHDummyFeature, "IPH_Dummy");
 #if defined(OS_ANDROID)
+DEFINE_VARIATION_PARAM(kIPHAdblockMenuButtonFeature,
+                       "IPH_AdblockMenuButton");
 DEFINE_VARIATION_PARAM(kIPHDataSaverDetailFeature, "IPH_DataSaverDetail");
 DEFINE_VARIATION_PARAM(kIPHDataSaverPreviewFeature, "IPH_DataSaverPreview");
 DEFINE_VARIATION_PARAM(kIPHDownloadHomeFeature, "IPH_DownloadHome");
@@ -111,6 +113,7 @@ constexpr flags_ui::FeatureEntry::FeatureVariation
         VARIATION_ENTRY(kIPHDownloadInfoBarDownloadsAreFasterFeature),
         VARIATION_ENTRY(kIPHHomePageButtonFeature),
         VARIATION_ENTRY(kIPHNewTabPageButtonFeature),
+        VARIATION_ENTRY(kIPHAdblockMenuButtonFeature),
 #elif BUILDFLAG(ENABLE_DESKTOP_IN_PRODUCT_HELP)
         VARIATION_ENTRY(kIPHBookmarkFeature),
         VARIATION_ENTRY(kIPHIncognitoWindowFeature),

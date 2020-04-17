@@ -20,13 +20,13 @@
 #include "content/shell/browser/layout_test/layout_test_browser_context.h"
 #include "content/shell/browser/layout_test/layout_test_browser_main_parts.h"
 #include "content/shell/browser/layout_test/layout_test_message_filter.h"
-#include "content/shell/browser/layout_test/layout_test_notification_manager.h"
 #include "content/shell/browser/layout_test/mojo_layout_test_helper.h"
 #include "content/shell/browser/shell_browser_context.h"
 #include "content/shell/common/layout_test/layout_test_switches.h"
 #include "content/shell/common/shell_messages.h"
 #include "content/shell/renderer/layout_test/blink_test_helpers.h"
 #include "content/test/mock_clipboard_host.h"
+#include "content/test/mock_platform_notification_service.h"
 #include "device/bluetooth/test/fake_bluetooth.h"
 #include "mojo/public/cpp/bindings/strong_binding.h"
 #include "services/service_manager/public/cpp/binder_registry.h"
@@ -72,10 +72,10 @@ class WebPackageInternalsImpl : public blink::test::mojom::WebPackageInternals {
 
 }  // namespace
 
-LayoutTestContentBrowserClient::LayoutTestContentBrowserClient() {
+LayoutTestContentBrowserClient::LayoutTestContentBrowserClient()
+    : mock_platform_notification_service_(
+          std::make_unique<MockPlatformNotificationService>()) {
   DCHECK(!g_layout_test_browser_client);
-
-  layout_test_notification_manager_.reset(new LayoutTestNotificationManager());
 
   g_layout_test_browser_client = this;
 }
@@ -106,11 +106,6 @@ void LayoutTestContentBrowserClient::ResetMockClipboardHost() {
 std::unique_ptr<FakeBluetoothChooser>
 LayoutTestContentBrowserClient::GetNextFakeBluetoothChooser() {
   return std::move(next_fake_bluetooth_chooser_);
-}
-
-LayoutTestNotificationManager*
-LayoutTestContentBrowserClient::GetLayoutTestNotificationManager() {
-  return layout_test_notification_manager_.get();
 }
 
 void LayoutTestContentBrowserClient::RenderProcessWillLaunch(
@@ -233,7 +228,7 @@ bool LayoutTestContentBrowserClient::DoesSiteRequireDedicatedProcess(
 
 PlatformNotificationService*
 LayoutTestContentBrowserClient::GetPlatformNotificationService() {
-  return layout_test_notification_manager_.get();
+  return mock_platform_notification_service_.get();
 }
 
 bool LayoutTestContentBrowserClient::CanCreateWindow(

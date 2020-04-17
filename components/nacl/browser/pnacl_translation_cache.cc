@@ -174,8 +174,7 @@ void PnaclTranslationCacheEntry::Start() {
 // from DispatchNext, so they know that cache_ is still valid.
 void PnaclTranslationCacheEntry::OpenEntry() {
   int rv = cache_->backend()->OpenEntry(
-      key_,
-      &entry_,
+      key_, net::HIGHEST, &entry_,
       base::Bind(&PnaclTranslationCacheEntry::DispatchNext, this));
   if (rv != net::ERR_IO_PENDING)
     DispatchNext(rv);
@@ -183,8 +182,7 @@ void PnaclTranslationCacheEntry::OpenEntry() {
 
 void PnaclTranslationCacheEntry::CreateEntry() {
   int rv = cache_->backend()->CreateEntry(
-      key_,
-      &entry_,
+      key_, net::HIGHEST, &entry_,
       base::Bind(&PnaclTranslationCacheEntry::DispatchNext, this));
   if (rv != net::ERR_IO_PENDING)
     DispatchNext(rv);

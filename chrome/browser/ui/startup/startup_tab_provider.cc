@@ -58,7 +58,8 @@ bool ProfileHasOtherTabbedBrowser(Profile* profile) {
 
 StartupTabs StartupTabProviderImpl::GetOnboardingTabs(Profile* profile) const {
 // Onboarding content has not been launched on Chrome OS.
-#if defined(OS_CHROMEOS)
+// #if defined(OS_CHROMEOS)
+#if 1
   return StartupTabs();
 #else
   if (!profile)

@@ -1482,6 +1482,10 @@ LayerImpl* LayerTreeImpl::FindPendingTreeLayerById(int id) {
   return tree->LayerById(id);
 }
 
+bool LayerTreeImpl::PageScaleAnimationActive() const {
+  return host_impl_->page_scale_animation_active();
+}
+
 bool LayerTreeImpl::PinchGestureActive() const {
   return host_impl_->pinch_gesture_active();
 }
@@ -1506,7 +1510,9 @@ std::unique_ptr<ScrollbarAnimationController>
 LayerTreeImpl::CreateScrollbarAnimationController(ElementId scroll_element_id,
                                                   float initial_opacity) {
   DCHECK(!settings().scrollbar_fade_delay.is_zero());
-  DCHECK(!settings().scrollbar_fade_duration.is_zero());
+// FIXME: Commented the code during dev/m62_3202 rebase.
+// It Needs to be checked by author.
+//  DCHECK_GE(!settings().scrollbar_fade_duration.is_zero(), 0);
   base::TimeDelta fade_delay = settings().scrollbar_fade_delay;
   base::TimeDelta fade_duration = settings().scrollbar_fade_duration;
   switch (settings().scrollbar_animator) {

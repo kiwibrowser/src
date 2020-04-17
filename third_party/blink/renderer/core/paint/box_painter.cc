@@ -10,6 +10,8 @@
 #include "third_party/blink/renderer/core/layout/layout_object.h"
 #include "third_party/blink/renderer/core/layout/layout_table.h"
 #include "third_party/blink/renderer/core/layout/layout_theme.h"
+#include "third_party/blink/renderer/core/frame/local_frame.h"
+#include "third_party/blink/renderer/core/frame/settings.h"
 #include "third_party/blink/renderer/core/layout/svg/layout_svg_foreign_object.h"
 #include "third_party/blink/renderer/core/paint/adjust_paint_offset_scope.h"
 #include "third_party/blink/renderer/core/paint/background_image_geometry.h"
@@ -155,7 +157,16 @@ void BoxPainter::PaintBoxDecorationBackgroundWithRect(
     // FIXME: Should eventually give the theme control over whether the box
     // shadow should paint, since controls could have custom shadows of their
     // own.
-    BoxPainterBase::PaintNormalBoxShadow(paint_info, paint_rect, style);
+
+    bool can_draw_box_shadow = true;
+    if (layout_box_.GetDocument() != nullptr)
+    {
+      Settings* settings = layout_box_.GetDocument().GetFrame()->GetSettings();
+      if (settings && settings->GetAccessibilityNightModeEnabled())
+        can_draw_box_shadow = false;
+    }
+    if (can_draw_box_shadow)
+      BoxPainterBase::PaintNormalBoxShadow(paint_info, paint_rect, style);
 
     if (BleedAvoidanceIsClipping(box_decoration_data.bleed_avoidance)) {
       state_saver.Save();
@@ -193,8 +204,16 @@ void BoxPainter::PaintBoxDecorationBackgroundWithRect(
   }
 
   if (!painting_overflow_contents) {
-    BoxPainterBase::PaintInsetBoxShadowWithBorderRect(paint_info, paint_rect,
-                                                      style);
+    bool can_draw_box_shadow = true;
+    if (layout_box_.GetDocument() != nullptr)
+    {
+      Settings* settings = layout_box_.GetDocument().GetFrame()->GetSettings();
+      if (settings && settings->GetAccessibilityNightModeEnabled())
+        can_draw_box_shadow = false;
+    }
+    if (can_draw_box_shadow)
+      BoxPainterBase::PaintInsetBoxShadowWithBorderRect(paint_info, paint_rect,
+                                                        style);
 
     // The theme will tell us whether or not we should also paint the CSS
     // border.

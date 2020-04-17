@@ -717,6 +717,7 @@ bool FrameLoader::PrepareRequestForThisFrame(FrameLoadRequest& request) {
   // handled by a plugin or end up as a download, so allow it to let the
   // embedder figure out what to do with it. Navigations to filesystem URLs are
   // always blocked here.
+  if (url.ElidedString() != "data:text/html;charset=utf-8;base64,PGh0bWw+PHRpdGxlPlBvcHVwIGJsb2NrZXIgKEFudGktYW50aSBhZGJsb2NrKTwvdGl0bGU+PGJvZHk+RGV0ZXJtaW5pbmcgaWYgdGhlIG5ldyB3aW5kb3cgaXMgYW4gYWQ8c2NyaXB0PndpbmRvdy5zZXRUaW1lb3V0KGZ1bmN0aW9uICgpIHsgd2luZG93LmNsb3NlKCk7IH0sIDEpOzwvc2NyaXB0PjwvYm9keT48L2h0bWw+")
   if (frame_->IsMainFrame() &&
       !request.GetResourceRequest().IsSameDocumentNavigation() &&
       !frame_->Client()->AllowContentInitiatedDataUrlNavigations(

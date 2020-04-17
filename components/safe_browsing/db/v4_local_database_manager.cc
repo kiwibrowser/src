@@ -294,10 +294,6 @@ bool V4LocalDatabaseManager::CanCheckResourceType(
   return true;
 }
 
-bool V4LocalDatabaseManager::CanCheckSubresourceFilter() const {
-  return true;
-}
-
 bool V4LocalDatabaseManager::CanCheckUrl(const GURL& url) const {
   return url.SchemeIsHTTPOrHTTPS() || url.SchemeIs(url::kFtpScheme) ||
          url.SchemeIsWSOrWSS();
@@ -382,7 +378,6 @@ bool V4LocalDatabaseManager::CheckResourceUrl(const GURL& url, Client* client) {
 bool V4LocalDatabaseManager::CheckUrlForSubresourceFilter(const GURL& url,
                                                           Client* client) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
-  DCHECK(CanCheckSubresourceFilter());
 
   StoresToCheck stores_to_check(
       {GetUrlSocEngId(), GetUrlSubresourceFilterId()});

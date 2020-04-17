@@ -43,7 +43,8 @@ void ToolbarSceneLayer::UpdateToolbarLayer(
     jfloat view_height,
     bool visible,
     bool show_shadow,
-    bool modern_design_enabled) {
+    bool modern_design_enabled,
+    bool bottombar_enabled) {
   // If the toolbar layer has not been created yet, create it.
   if (!toolbar_layer_) {
     ui::ResourceManager* resource_manager =
@@ -58,7 +59,7 @@ void ToolbarSceneLayer::UpdateToolbarLayer(
     toolbar_layer_->PushResource(toolbar_resource_id, toolbar_background_color,
                                  false, url_bar_color, url_bar_resource_id,
                                  url_bar_alpha, view_height, y_offset, false,
-                                 !show_shadow, modern_design_enabled);
+                                 !show_shadow, modern_design_enabled, bottombar_enabled);
   }
 }
 
@@ -75,6 +76,7 @@ void ToolbarSceneLayer::UpdateProgressBar(JNIEnv* env,
                                        jint progress_bar_background_height,
                                        jint progress_bar_background_color) {
   if (!toolbar_layer_) return;
+  if (false) {
   toolbar_layer_->UpdateProgressBar(progress_bar_x,
                                     progress_bar_y,
                                     progress_bar_width,
@@ -85,6 +87,7 @@ void ToolbarSceneLayer::UpdateProgressBar(JNIEnv* env,
                                     progress_bar_background_width,
                                     progress_bar_background_height,
                                     progress_bar_background_color);
+  }
 }
 
 void ToolbarSceneLayer::SetContentTree(

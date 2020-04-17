@@ -1649,6 +1649,36 @@ TEST(HttpResponseHeadersTest, HasValidatorsWeakEtag) {
   EXPECT_TRUE(parsed->HasValidators());
 }
 
+TEST(HttpResponseHeadersTest, GetNormalizedHeaderWithEmptyValues) {
+  std::string headers(
+      "HTTP/1.1 200 OK\n"
+      "a:\n"
+      "b: \n"
+      "c:*\n"
+      "d: *\n"
+      "e:    \n"
+      "a: \n"
+      "b:*\n"
+      "c:\n"
+      "d:*\n"
+      "a:\n");
+  HeadersToRaw(&headers);
+  auto parsed = base::MakeRefCounted<HttpResponseHeaders>(headers);
+  std::string value;
+
+  EXPECT_TRUE(parsed->GetNormalizedHeader("a", &value));
+  EXPECT_EQ(value, ", , ");
+  EXPECT_TRUE(parsed->GetNormalizedHeader("b", &value));
+  EXPECT_EQ(value, ", *");
+  EXPECT_TRUE(parsed->GetNormalizedHeader("c", &value));
+  EXPECT_EQ(value, "*, ");
+  EXPECT_TRUE(parsed->GetNormalizedHeader("d", &value));
+  EXPECT_EQ(value, "*, *");
+  EXPECT_TRUE(parsed->GetNormalizedHeader("e", &value));
+  EXPECT_EQ(value, "");
+  EXPECT_FALSE(parsed->GetNormalizedHeader("f", &value));
+}
+
 struct AddHeaderTestData {
   const char* orig_headers;
   const char* new_header;

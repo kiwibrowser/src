@@ -11,7 +11,7 @@
 #include "base/single_thread_task_runner.h"
 #include "base/test/null_task_runner.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/permission_manager.h"
+#include "content/public/browser/permission_controller_delegate.h"
 #include "content/public/test/mock_resource_context.h"
 #include "content/test/mock_background_sync_controller.h"
 #include "content/test/mock_ssl_host_state_delegate.h"
@@ -81,9 +81,9 @@ void TestBrowserContext::SetSpecialStoragePolicy(
   special_storage_policy_ = policy;
 }
 
-void TestBrowserContext::SetPermissionManager(
-    std::unique_ptr<PermissionManager> permission_manager) {
-  permission_manager_ = std::move(permission_manager);
+void TestBrowserContext::SetPermissionControllerDelegate(
+    std::unique_ptr<PermissionControllerDelegate> delegate) {
+  permission_controller_delegate_ = std::move(delegate);
 }
 
 net::URLRequestContextGetter* TestBrowserContext::GetRequestContext() {
@@ -137,8 +137,9 @@ SSLHostStateDelegate* TestBrowserContext::GetSSLHostStateDelegate() {
   return ssl_host_state_delegate_.get();
 }
 
-PermissionManager* TestBrowserContext::GetPermissionManager() {
-  return permission_manager_.get();
+PermissionControllerDelegate*
+TestBrowserContext::GetPermissionControllerDelegate() {
+  return permission_controller_delegate_.get();
 }
 
 BackgroundFetchDelegate* TestBrowserContext::GetBackgroundFetchDelegate() {

@@ -38,7 +38,6 @@ void RegisterBrowserPrefs(PrefRegistrySimple* registry) {
   registry->RegisterIntegerPref(prefs::kOptionsWindowLastTabIndex, 0);
   registry->RegisterBooleanPref(prefs::kAllowFileSelectionDialogs, true);
 
-#if !defined(OS_ANDROID)
 #if !defined(OS_CHROMEOS)
   registry->RegisterIntegerPref(prefs::kRelaunchNotification, 0);
 #endif  // !defined(OS_CHROMEOS)
@@ -47,7 +46,6 @@ void RegisterBrowserPrefs(PrefRegistrySimple* registry) {
       base::saturated_cast<int>(
           UpgradeDetector::GetDefaultHighAnnoyanceThreshold()
               .InMilliseconds()));
-#endif  // !defined(OS_ANDROID)
 }
 
 void RegisterBrowserUserPrefs(user_prefs::PrefRegistrySyncable* registry) {

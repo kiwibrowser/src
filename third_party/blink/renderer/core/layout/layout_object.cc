@@ -46,6 +46,7 @@
 #include "third_party/blink/renderer/core/editing/position_with_affinity.h"
 #include "third_party/blink/renderer/core/editing/text_affinity.h"
 #include "third_party/blink/renderer/core/editing/visible_units.h"
+#include "third_party/blink/renderer/core/frame/content_settings_client.h"
 #include "third_party/blink/renderer/core/frame/deprecated_schedule_style_recalc_during_layout.h"
 #include "third_party/blink/renderer/core/frame/event_handler_registry.h"
 #include "third_party/blink/renderer/core/frame/local_frame.h"
@@ -234,6 +235,429 @@ LayoutObject* LayoutObject::CreateObject(Element* element,
     }
     image->SetStyleInternal(nullptr);
     return image;
+  }
+
+  if (!IsHTMLBodyElement(element)) {
+    if (element->getAttribute(HTMLNames::idAttr) == "bvSecurePageWarning")
+        return nullptr;
+    if (element->getAttribute(HTMLNames::idAttr) == "titleDiv" && element->getAttribute(HTMLNames::classAttr) == "cell")
+        return nullptr;
+    if (element->getAttribute(HTMLNames::idAttr) == "inpUrlContainer" && element->nodeName() == "SPAN")
+        return nullptr;
+    if (element->nodeName() == "G-BOTTOM-SHEET")
+        return nullptr;
+    if (element->getAttribute(HTMLNames::idAttr) == "mealbar:0")
+        return nullptr;
+    if (element->getAttribute(HTMLNames::idAttr) == "mealbar:1")
+        return nullptr;
+    if (element->getAttribute(HTMLNames::idAttr) == "mealbar:2")
+        return nullptr;
+    if (element->getAttribute(HTMLNames::idAttr) == "mealbar:3")
+        return nullptr;
+    if (element->getAttribute(HTMLNames::idAttr) == "CookieBannerWrapper")
+        return nullptr;
+    if (element->GetDocument().Url().Host().Contains("duckduckgo") && element->getAttribute(HTMLNames::idAttr) == "ads")
+        return nullptr;
+    bool shouldBlockElement = true;
+    if (
+           ((element->GetDocument().Url().Host().Contains("google") && element->nodeName() != "G-BOTTOM-SHEET")
+         || element->GetDocument().Url().Host().Contains("kiwisearchservices.com")
+         || element->GetDocument().Url().Host().Contains("kiwisearchservices.net")
+         || element->GetDocument().Url().Host().Contains("doubleclick")
+         || element->GetDocument().Url().Host().Contains("bing")
+         || element->GetDocument().Url().Host().Contains("qwant")
+         || element->GetDocument().Url().Host().Contains("startpage")
+         || element->GetDocument().Url().Host().Contains("yahoo")
+         || element->GetDocument().Url().Host().Contains(".amazon.")
+         || (element->GetDocument().Url().Host().Contains("youtube") && element->getAttribute(HTMLNames::idAttr) != "mealbar:0")
+         || element->GetDocument().Url().Host().Contains("sueddeutsche.de")
+         || element->GetDocument().Url().Host().Contains("find.kiwi")
+         || element->GetDocument().Url().Host().Contains("ecosia.org")
+         || element->GetDocument().Url().Host().Contains("flashx")
+         || element->GetDocument().Url().Host().Contains(".ebay.")
+         || element->GetDocument().Url().Host().Contains("kiwibrowser.org"))
+       )
+         shouldBlockElement = false;
+    if (element->style() && element->style()->getPropertyValue("top") == "-5000px" && element->style()->getPropertyValue("left") == "-5000px")
+         shouldBlockElement = false;
+    if (shouldBlockElement && element->getAttribute(HTMLNames::idAttr) == "adbdetect")
+         shouldBlockElement = false;
+    if (shouldBlockElement && (
+     element->getAttribute(HTMLNames::classAttr).Contains("cc_banner")
+     || element->getAttribute(HTMLNames::classAttr).Contains("cc-banner")
+     || element->getAttribute(HTMLNames::idAttr).Contains("privacy-policy")
+     || (element->getAttribute(HTMLNames::classAttr) == "ads" && element->nodeName() == "INS")
+     || (element->getAttribute(HTMLNames::classAttr).Contains("adsbygoogle") && element->nodeName() == "INS")
+     || element->getAttribute(HTMLNames::classAttr).Contains("lg-cc")
+     || element->getAttribute(HTMLNames::classAttr).Contains("app-recommand-layer")
+     || element->getAttribute(HTMLNames::classAttr).Contains("tea-mobilebanner")
+     || element->getAttribute(HTMLNames::idAttr).Contains("google_ads_iframe_")
+     || element->getAttribute(HTMLNames::classAttr).Contains("truste_")
+     || element->getAttribute(HTMLNames::classAttr) == "BetterJsPopOverlay"
+     || element->getAttribute(HTMLNames::idAttr).Contains("ScriptRootC")
+     || element->getAttribute(HTMLNames::classAttr).Contains("mobile-app-banner")
+     || (
+        element->getAttribute(HTMLNames::classAttr).Contains("notification-bar")
+     && !element->getAttribute(HTMLNames::classAttr).Contains("top-notification-bar")
+        )
+     || element->getAttribute(HTMLNames::classAttr).Contains("as-oil")
+     || element->getAttribute(HTMLNames::classAttr).Contains("cnil")
+     || element->getAttribute(HTMLNames::classAttr).Contains("Cnil")
+     || element->getAttribute(HTMLNames::classAttr).Contains("Partners")
+     || element->getAttribute(HTMLNames::classAttr).Contains("addelivered")
+     || element->getAttribute(HTMLNames::classAttr).Contains("billboard")
+     || element->getAttribute(HTMLNames::classAttr).Contains("cams-widget")
+     || element->getAttribute(HTMLNames::idAttr).Contains("billboard")
+     || element->getAttribute(HTMLNames::idAttr) == "afap-above-nav"
+     || element->getAttribute(HTMLNames::idAttr) == "b_notificationContainer"
+     || element->getAttribute(HTMLNames::idAttr) == "bnp_ttc_div"
+     || element->getAttribute(HTMLNames::idAttr) == "AdWidgetContainer"
+     || element->getAttribute(HTMLNames::idAttr).Contains("onesignal")
+     || element->getAttribute(HTMLNames::classAttr).Contains("site-message")
+     || element->getAttribute(HTMLNames::classAttr).Contains("contributions__epic")
+     || element->getAttribute(HTMLNames::classAttr).Contains("outbrain")
+     || element->getAttribute(HTMLNames::classAttr).Contains("flash-message")
+     || element->getAttribute(HTMLNames::classAttr).Contains("taboola")
+     || element->getAttribute(HTMLNames::classAttr).Contains("evidon")
+     || element->getAttribute(HTMLNames::idAttr).Contains("outbrain")
+     || element->getAttribute(HTMLNames::idAttr).Contains("zergnet")
+     || element->getAttribute(HTMLNames::idAttr).Contains("taboola")
+     || element->getAttribute(HTMLNames::classAttr).Contains("user-msg")
+     || element->getAttribute(HTMLNames::classAttr).Contains("_Notice")
+     || element->getAttribute(HTMLNames::classAttr).Contains("adspopup")
+     || element->getAttribute(HTMLNames::classAttr).Contains("zergnet")
+     || element->getAttribute(HTMLNames::classAttr).Contains("results--ads")
+     || element->getAttribute(HTMLNames::classAttr).Contains("js-atb-banner")
+     || element->getAttribute(HTMLNames::idAttr).Contains("content-ad-top-zone")
+     || element->getAttribute(HTMLNames::idAttr).Contains("ad-header-mobile")
+     || element->getAttribute(HTMLNames::classAttr).Contains("cbz-leaderboard-banner")
+     || element->getAttribute(HTMLNames::classAttr).Contains("optanon-")
+     || element->getAttribute(HTMLNames::classAttr).Contains("privacyBarComponent")
+     || element->getAttribute(HTMLNames::classAttr).Contains("SnackBar")
+     || element->getAttribute(HTMLNames::classAttr).Contains("question_page_ad")
+     || element->getAttribute(HTMLNames::classAttr).Contains("TopButton pulse")
+     || element->getAttribute(HTMLNames::classAttr).Contains("fbPageBanner")
+     || (element->getAttribute(HTMLNames::classAttr).Contains("ad_") && !element->getAttribute(HTMLNames::classAttr).Contains("text-ad_links") && !element->getAttribute(HTMLNames::classAttr).Contains("head") && !element->getAttribute(HTMLNames::classAttr).Contains("pre-ad_container") && !element->getAttribute(HTMLNames::classAttr).Contains("read_") && !element->getAttribute(HTMLNames::classAttr).Contains("pad_") && !element->getAttribute(HTMLNames::classAttr).Contains("oad_") && !element->getAttribute(HTMLNames::classAttr).Contains("ead_"))
+     || element->getAttribute(HTMLNames::classAttr) == "cbz-leaderboard-banner"
+     || element->getAttribute(HTMLNames::classAttr) == "playerAdCtn"
+     || element->getAttribute(HTMLNames::classAttr) == "dgpr-drop-down"
+     || element->getAttribute(HTMLNames::classAttr) == "post-footer-meta"
+     || element->getAttribute(HTMLNames::classAttr).Contains("DualPartInterstitial")
+     || element->getAttribute(HTMLNames::classAttr).Contains("bst-panel-fixed")
+     || element->getAttribute(HTMLNames::classAttr) == "xenOverlay"
+     || element->getAttribute(HTMLNames::idAttr) == "exposeMask"
+     || element->getAttribute(HTMLNames::classAttr) == "EUCookieNotice"
+     || element->getAttribute(HTMLNames::classAttr) == "FloatingOIA-container"
+     || element->getAttribute(HTMLNames::classAttr) == "adContainer"
+     || element->getAttribute(HTMLNames::classAttr) == "sharingfooter"
+     || element->getAttribute(HTMLNames::classAttr) == "mobileHeaderPr"
+     || element->getAttribute(HTMLNames::classAttr) == "underPlayerPr"
+     || element->getAttribute(HTMLNames::classAttr) == "video_ad"
+     || element->getAttribute(HTMLNames::classAttr) == "sda-container"
+     || element->getAttribute(HTMLNames::classAttr) == "md-banner-placement"
+     || element->getAttribute(HTMLNames::classAttr) == "smart-app-banner"
+     || element->getAttribute(HTMLNames::classAttr) == "outeradcontainer"
+     || element->getAttribute(HTMLNames::classAttr) == "mobile-header-space"
+     || element->getAttribute(HTMLNames::idAttr) == "bvMSABanner"
+     || element->getAttribute(HTMLNames::idAttr) == "notify-container"
+     || element->getAttribute(HTMLNames::idAttr) == "mobileFooterPr"
+     || element->getAttribute(HTMLNames::idAttr) == "gh-appBanner"
+     || element->getAttribute(HTMLNames::idAttr) == "sliding-popup"
+     || element->getAttribute(HTMLNames::idAttr) == "smart-banner"
+     || element->getAttribute(HTMLNames::idAttr) == "sharingfooter"
+     || element->getAttribute(HTMLNames::idAttr) == "privacy-consent"
+     || element->getAttribute(HTMLNames::idAttr) == "footer_tc_privacy"
+     || element->getAttribute(HTMLNames::idAttr) == "ad-footer"
+     || element->getAttribute(HTMLNames::idAttr) == "app-upsell"
+     || element->getAttribute(HTMLNames::idAttr) == "dcMaavaronDiv"
+     || element->getAttribute(HTMLNames::idAttr) == "x-home-messages"
+     || element->getAttribute(HTMLNames::idAttr) == "x-messages-btn"
+     || element->getAttribute(HTMLNames::idAttr) == "x-messages"
+     || element->getAttribute(HTMLNames::idAttr) == "bannerContainer"
+     || element->getAttribute(HTMLNames::idAttr) == "content-supp"
+     || element->getAttribute(HTMLNames::idAttr) == "content-supp-player"
+     || element->getAttribute(HTMLNames::idAttr).Contains("ad320x50")
+     || element->getAttribute(HTMLNames::classAttr) == "remove-ads"
+     || element->getAttribute(HTMLNames::classAttr) == "socialfooter"
+     || element->getAttribute(HTMLNames::idAttr).Contains("cookie")
+     || element->getAttribute(HTMLNames::idAttr).Contains("share-bar")
+     || element->getAttribute(HTMLNames::idAttr).Contains("my_web_push_")
+     || element->getAttribute(HTMLNames::idAttr).Contains("floatLayer1")
+     || element->getAttribute(HTMLNames::idAttr).Contains("floatLayer2")
+     || element->getAttribute(HTMLNames::idAttr).Contains("floatLayer3") // in case it is used (not sure)
+     || element->getAttribute(HTMLNames::idAttr).Contains("video_ads_overdiv")
+     || element->getAttribute(HTMLNames::idAttr).Contains("Composite")
+     || element->getAttribute(HTMLNames::idAttr).Contains("header-notices")
+     || element->getAttribute(HTMLNames::idAttr).Contains("div-gpt-")
+     || element->getAttribute(HTMLNames::idAttr).Contains("gpt_unit_")
+     || element->getAttribute(HTMLNames::idAttr).Contains("signup_wall_wrapper")
+     || element->getAttribute(HTMLNames::classAttr).Contains("vidzi_backscreen2")
+     || element->getAttribute(HTMLNames::classAttr).Contains("custom-zivert-banner")
+     || element->getAttribute(HTMLNames::classAttr).Contains("tab-bar-fixed")
+     || element->getAttribute(HTMLNames::classAttr).Contains("320X50")
+     || element->getAttribute(HTMLNames::idAttr) == "adbtm"
+     || element->getAttribute(HTMLNames::idAttr) == "notice_banner"
+     || element->getAttribute(HTMLNames::idAttr) == "megabanner"
+     || element->getAttribute(HTMLNames::idAttr) == "surprise-full"
+     || element->getAttribute(HTMLNames::idAttr) == "surprise-sticky"
+     || element->getAttribute(HTMLNames::classAttr) == "sticky-buttons  " // This is really like this
+     || element->getAttribute(HTMLNames::classAttr).Contains("lefermeur")
+     || element->getAttribute(HTMLNames::classAttr).Contains("surprise-container")
+     || element->getAttribute(HTMLNames::classAttr).Contains("facebok")
+     || element->getAttribute(HTMLNames::classAttr).Contains("bx-campaign-")
+     || element->getAttribute(HTMLNames::idAttr) == "wp_social_popup_and_get_traffic"
+     || (element->getAttribute(HTMLNames::idAttr) == "videooverlay" && style.ZIndex() == 999999999)
+     || element->getAttribute(HTMLNames::idAttr) == "stream-link"
+     || element->getAttribute(HTMLNames::idAttr) == "openapp"
+     || element->getAttribute(HTMLNames::idAttr) == "relatedcontent"
+     || element->getAttribute(HTMLNames::idAttr) == "app-bumper-main"
+     || element->getAttribute(HTMLNames::idAttr) == "sm_follow_us"
+     || element->getAttribute(HTMLNames::idAttr) == "topSocialPanel"
+     || element->getAttribute(HTMLNames::idAttr) == "markup"
+     || (element->getAttribute(HTMLNames::idAttr) == "button3"
+      || element->getAttribute(HTMLNames::idAttr) == "html1" || element->getAttribute(HTMLNames::idAttr) == "html3")
+     || element->getAttribute(HTMLNames::idAttr) == "sofascoreLiveStream"
+     || element->getAttribute(HTMLNames::idAttr) == "player-preview-container"
+     || element->getAttribute(HTMLNames::idAttr) == "___ndtvpushdiv"
+     || element->getAttribute(HTMLNames::idAttr) == "CatFish"
+     || element->getAttribute(HTMLNames::idAttr) == "social-share"
+     || element->getAttribute(HTMLNames::idAttr) == "js-gcm-notif"
+     || element->getAttribute(HTMLNames::idAttr) == "pub-banner"
+     || element->getAttribute(HTMLNames::idAttr) == "upsell-banner"
+     || element->getAttribute(HTMLNames::classAttr) == "add__wrp"
+     || element->getAttribute(HTMLNames::classAttr) == "anchor_ad_wrapper"
+     || element->getAttribute(HTMLNames::classAttr) == "CookieBanner"
+     || element->getAttribute(HTMLNames::classAttr) == "banner-container"
+     || element->getAttribute(HTMLNames::classAttr).Contains("t-i-agree")
+     || element->getAttribute(HTMLNames::classAttr).Contains("OUTBRAIN")
+     || element->getAttribute(HTMLNames::classAttr).Contains("sticky-art")
+     || element->getAttribute(HTMLNames::classAttr).Contains("sticky-bar-bottom")
+     || element->getAttribute(HTMLNames::classAttr).Contains("dy-modal-container")
+     || element->getAttribute(HTMLNames::classAttr).Contains("_3ySVUrHPphSj5g2JqDOctE")
+     || element->getAttribute(HTMLNames::classAttr).Contains("_2eLBJDo4r_wxFuHkMXLiro")
+     || element->getAttribute(HTMLNames::classAttr).Contains("social-share")
+     || element->getAttribute(HTMLNames::idAttr).Contains("smartbanner")
+     || element->getAttribute(HTMLNames::idAttr).Contains("toky")
+     || element->getAttribute(HTMLNames::classAttr).Contains("smartbanner")
+     || element->getAttribute(HTMLNames::classAttr).Contains("mfp-ready")
+     || element->getAttribute(HTMLNames::classAttr).Contains("inlineOverlay")
+     || element->getAttribute(HTMLNames::classAttr).Contains("inlinePopup")
+     || element->getAttribute(HTMLNames::classAttr).Contains("popup_tosEdition")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("24smi")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("a8")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("a9")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("accesstrade")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("adagio")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("adblade")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("adbutler")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("adform")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("adfox")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("adgeneration")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("adhese")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("adincube")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("adition")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("adman")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("admanmedia")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("admixer")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("adocean")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("adpicker")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("adplugg")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("adreactor")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("ads")
+     || element->getAttribute(HTMLNames::classAttr) == "ads"
+     || element->getAttribute(HTMLNames::typeAttr).Contains("adsnative")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("adspeed")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("adspirit")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("adstir")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("adtech")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("adthrive")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("aduptech")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("adventive")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("adverline")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("adverticum")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("advertserve")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("affiliateb")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("amoad")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("appnexus")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("appvador")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("atomx")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("bidtellect")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("brainy")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("bringhub")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("broadstreetads")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("caajainfeed")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("capirs")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("caprofitx")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("cedato")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("chargeads")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("colombia")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("connatix")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("contentad")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("criteo")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("custom")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("dable")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("dianomi")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("directadvert")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("distroscale")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("dotandads")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("doubleclick")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("eadv")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("eas")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("engageya")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("eplanning")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("ezoic")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("f1e")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("f1h")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("felmat")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("flite")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("fluct")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("fusion")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("genieessp")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("giraff")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("gmossp")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("gumgum")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("holder")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("ibillboard")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("imedia")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("imobile")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("imonomy")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("improvedigital")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("industrybrains")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("inmobi")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("innity")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("ix")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("kargo")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("kiosked")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("kixer")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("kuadio")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("ligatus")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("lockerdome")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("loka")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("mads")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("mantis")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("mediaimpact")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("medianet")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("mediavine")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("medyanet")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("meg")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("microad")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("mixpo")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("monetizer101")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("mytarget")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("mywidget")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("nativo")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("navegg")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("nend")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("netletix")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("nokta")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("openadstream")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("openx")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("outbrain")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("pixels")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("plista")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("polymorphicads")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("popin")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("postquare")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("pubexchange")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("pubguru")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("pubmatic")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("pubmine")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("pulsepoint")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("purch")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("quoraad")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("relap")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("revcontent")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("revjet")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("rubicon")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("sekindo")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("sharethrough")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("sklik")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("slimcutmedia")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("smartadserver")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("smartclip")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("smi2")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("sogouad")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("sortable")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("sovrn")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("spotx")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("sunmedia")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("swoop")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("taboola")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("teads")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("triplelift")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("trugaze")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("uas")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("valuecommerce")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("videonow")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("viralize")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("vmfive")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("webediads")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("weborama")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("widespace")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("wpmedia")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("xlift")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("yahoo")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("yahoojp")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("yandex")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("yengo")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("yieldbot")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("yieldmo")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("yieldone")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("yieldpro")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("zedo")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("zergnet")
+     || element->getAttribute(HTMLNames::typeAttr).Contains("zucks")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width:250")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width:468")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width: 250")
+     || (element->getAttribute(HTMLNames::styleAttr).Contains("width: 468") && element->getAttribute(HTMLNames::idAttr) != "banner_ad")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width:728px;height:90")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width:728px; height:90")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width: 728px; height: 90")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width:728 px; height:90")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width:728 px; height: 90")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width:320px;height:50")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width:320px; height:50")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width: 320px; height: 50")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width:320 px; height:50")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width:320 px; height: 50")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width:300px;height:50")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width:300px; height:50")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width: 300px; height: 50")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width:300 px; height:50")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width:300 px; height: 50")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width:300px;height:250")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width:300px; height:250")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width: 300px; height: 250")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width:300 px; height:250")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width:300 px; height: 250")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width:300px;height:300")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width:300px; height:300")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width: 300px; height: 300")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width:300 px; height:300")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("width:300 px; height: 300")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("min-height:90px; max-height:90px")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("min-height:90px; max-height:250px")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("min-height:250px; max-height:250px")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("min-height:300px; max-height:300px")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("min-height:90px;max-height:90px")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("min-height:90px;max-height:250px")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("min-height:250px;max-height:250px")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("min-height:300px;max-height:300px")
+     || element->getAttribute(HTMLNames::styleAttr).Contains("transform-origin: left bottom 0px; height: 137px;")
+   )) {
+       if (LocalFrame* frame = element->GetDocument().GetFrame()) {
+         ContentSettingsClient* settings_client =
+             frame->GetContentSettingsClient();
+         if (!settings_client)
+           return nullptr;
+
+         if (!settings_client->AllowAds(false))
+           return nullptr;
+       } else {
+           return nullptr;
+       }
+    }
   }
 
   switch (style.Display()) {

@@ -22,7 +22,7 @@
 class TabModelObserverJniBridge {
  public:
   TabModelObserverJniBridge(JNIEnv* env,
-                            const base::android::JavaRef<jobject>& tab_model);
+                            const base::android::JavaRef<jobject>& tab_model, Profile *profile);
 
   ~TabModelObserverJniBridge();
 
@@ -95,6 +95,7 @@ class TabModelObserverJniBridge {
   }
 
  private:
+  Profile* profile_;
   // This object's Java counterpart. This objects controls its lifetime.
   base::android::ScopedJavaGlobalRef<jobject> java_object_;
 

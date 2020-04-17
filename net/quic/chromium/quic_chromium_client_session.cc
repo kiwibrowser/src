@@ -168,7 +168,7 @@ void RecordHandshakeState(HandshakeState state) {
 
 std::string ConnectionMigrationCauseToString(ConnectionMigrationCause cause) {
   switch (cause) {
-    case UNKNOWN:
+    case UNKNOWN_MIGRATION:
       return "Unknown";
     case ON_NETWORK_CONNECTED:
       return "OnNetworkConnected";
@@ -743,7 +743,7 @@ QuicChromiumClientSession::QuicChromiumClientSession(
       bytes_pushed_and_unclaimed_count_(0),
       probing_manager_(this, task_runner_),
       retry_migrate_back_count_(0),
-      current_connection_migration_cause_(UNKNOWN),
+      current_connection_migration_cause_(UNKNOWN_MIGRATION),
       migration_pending_(false),
       headers_include_h2_stream_dependency_(
           headers_include_h2_stream_dependency &&
@@ -2432,7 +2432,7 @@ void QuicChromiumClientSession::LogConnectionMigrationResultToHistogram(
       "Net.QuicSession.ConnectionMigration." +
       ConnectionMigrationCauseToString(current_connection_migration_cause_);
   base::UmaHistogramEnumeration(histogram_name, status, MIGRATION_STATUS_MAX);
-  current_connection_migration_cause_ = UNKNOWN;
+  current_connection_migration_cause_ = UNKNOWN_MIGRATION;
 }
 
 void QuicChromiumClientSession::LogHandshakeStatusOnConnectionMigrationSignal()

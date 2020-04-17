@@ -23,7 +23,7 @@ import org.chromium.base.test.util.RetryOnFailure;
 import org.chromium.base.test.util.UrlUtils;
 import org.chromium.content.browser.test.util.Criteria;
 import org.chromium.content.browser.test.util.CriteriaHelper;
-import org.chromium.content_public.browser.ContentViewCore.InternalAccessDelegate;
+import org.chromium.content_public.browser.ViewEventSink.InternalAccessDelegate;
 import org.chromium.content_shell_apk.ContentShellActivityTestRule;
 import org.chromium.content_shell_apk.ContentShellActivityTestRule.RerunWithUpdatedContainerView;
 
@@ -334,12 +334,11 @@ public class ContentViewScrollingTest {
     public void testOnScrollChanged() throws Throwable {
         final int scrollToX = mCoordinates.getScrollXPixInt() + 2500;
         final int scrollToY = mCoordinates.getScrollYPixInt() + 2500;
-        final TestInternalAccessDelegate containerViewInternals = new TestInternalAccessDelegate();
+        final TestInternalAccessDelegate accessDelegate = new TestInternalAccessDelegate();
         InstrumentationRegistry.getInstrumentation().runOnMainSync(new Runnable() {
             @Override
             public void run() {
-                mActivityTestRule.getContentViewCore().setContainerViewInternals(
-                        containerViewInternals);
+                mActivityTestRule.getViewEventSink().setAccessDelegate(accessDelegate);
             }
         });
         scrollTo(scrollToX, scrollToY);
@@ -347,7 +346,7 @@ public class ContentViewScrollingTest {
         CriteriaHelper.pollInstrumentationThread(new Criteria() {
             @Override
             public boolean isSatisfied() {
-                return containerViewInternals.isScrollChanged();
+                return accessDelegate.isScrollChanged();
             }
         });
     }

@@ -11,16 +11,18 @@
  *     if the mode is 'interactive'.
  */
 function showAuthDialog(key, url, mode) {
+  console.log("[EXTENSIONS] ScopeApprovalDialog (background) - Asking to load: " + url);
   var options =
       {frame: 'none', id: key, minWidth: 1024, minHeight: 768, hidden: true};
+  console.log("[EXTENSIONS] ScopeApprovalDialog (background) - Calling chrome.app.window.create");
   chrome.app.window.create(
       'scope_approval_dialog.html', options, function(win) {
-        win.contentWindow.addEventListener('load', function(event) {
-          var windowParam;
-          if (mode == 'interactive')
-            windowParam = win;
-          win.contentWindow.loadAuthUrlAndShowWindow(url, windowParam);
-        });
+        console.log("[EXTENSIONS] ScopeApprovalDialog (background) - Received window back from chrome.app.window.create");
+        console.log(win);
+        var windowParam;
+        if (mode == 'interactive')
+          windowParam = win;
+        win.contentWindow.loadAuthUrlAndShowWindow(url, windowParam);
       });
 }
 

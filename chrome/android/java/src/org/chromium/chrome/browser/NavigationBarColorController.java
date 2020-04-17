@@ -4,6 +4,7 @@
 
 package org.chromium.chrome.browser;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.res.Resources;
 import android.graphics.Color;
@@ -24,6 +25,9 @@ import org.chromium.chrome.browser.tabmodel.TabModelSelectorObserver;
 import org.chromium.chrome.browser.util.FeatureUtilities;
 import org.chromium.chrome.browser.vr_shell.VrShellDelegate;
 import org.chromium.chrome.browser.vr_shell.VrShellDelegate.VrModeObserver;
+
+import org.chromium.chrome.browser.accessibility.NightModePrefs;
+import org.chromium.base.ContextUtils;
 
 /**
  * Controls the bottom system navigation bar color for the provided {@link Window}.
@@ -115,7 +119,7 @@ public class NavigationBarColorController implements VrModeObserver {
     @Override
     public void onEnterVr() {}
 
-    private void updateNavigationBarColor() {
+    public void updateNavigationBarColor() {
         boolean overviewVisible = mOverviewModeBehavior.overviewVisible() && !mOverviewModeHiding;
 
         boolean useLightNavigation;
@@ -127,6 +131,8 @@ public class NavigationBarColorController implements VrModeObserver {
             useLightNavigation = !mTabModelSelector.isIncognitoSelected() && !overviewVisible;
         }
 
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) useLightNavigation = false;
+
         if (mUseLightNavigation == useLightNavigation) return;
 
         mUseLightNavigation = useLightNavigation;
@@ -136,7 +142,19 @@ public class NavigationBarColorController implements VrModeObserver {
                                   mResources, R.color.bottom_system_nav_color)
                         : Color.BLACK);
 
+        setNavigationBarColor(useLightNavigation);
+
         updateSystemUiVisibility(useLightNavigation);
+    }
+
+    @SuppressLint("NewApi")
+    private void setNavigationBarColor(boolean useLightNavigation) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            mWindow.setNavigationBarDividerColor(useLightNavigation
+                            ? ApiCompatibilityUtils.getColor(
+                                      mResources, R.color.bottom_system_nav_divider_color)
+                            : Color.BLACK);
+        }
     }
 
     private void updateSystemUiVisibility(boolean useLightNavigation) {

@@ -89,11 +89,10 @@ public class CastWebContentsActivity extends Activity {
             setContentView(R.layout.cast_web_contents_activity);
 
             mSurfaceHelper = new CastWebContentsSurfaceHelper(this, /* hostActivity */
-                    CastWebContentsView.onLayout(getApplicationContext(),
+                    CastWebContentsView.onLayout(this,
                             (FrameLayout) findViewById(R.id.web_contents_container),
                             CastSwitches.getSwitchValueColor(
-                                    CastSwitches.CAST_APP_BACKGROUND_COLOR, Color.BLACK),
-                            mResumedState),
+                                    CastSwitches.CAST_APP_BACKGROUND_COLOR, Color.BLACK)),
                     (Uri uri) -> mIsFinishingState.set("Delayed teardown for URI: " + uri));
         }));
 

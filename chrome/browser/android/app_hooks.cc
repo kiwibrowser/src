@@ -16,13 +16,6 @@ AppHooks::AppHooks() = default;
 
 AppHooks::~AppHooks() = default;
 
-bool AppHooks::ShouldDetectVideoFullscreen() {
-  JNIEnv* env = base::android::AttachCurrentThread();
-  ScopedJavaLocalRef<jobject> app_hooks_obj = Java_AppHooks_get(env);
-
-  return Java_AppHooks_shouldDetectVideoFullscreen(env, app_hooks_obj);
-}
-
 ScopedJavaLocalRef<jobject> AppHooks::GetOfflinePagesCCTRequestDoneCallback() {
   JNIEnv* env = base::android::AttachCurrentThread();
   ScopedJavaLocalRef<jobject> app_hooks_obj = Java_AppHooks_get(env);

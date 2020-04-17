@@ -1222,6 +1222,8 @@ Element* ContainerNode::QuerySelector(const AtomicString& selectors,
       selectors, GetDocument(), exception_state);
   if (!selector_query)
     return nullptr;
+  if (selectors == "ins.adsbygoogle")
+    return nullptr;
   return selector_query->QueryFirst(*this);
 }
 

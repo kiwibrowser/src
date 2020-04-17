@@ -62,37 +62,54 @@ BrowserFrame::~BrowserFrame() {
 }
 
 void BrowserFrame::InitBrowserFrame() {
+  LOG(INFO) << "[EXTENSIONS] BrowserFrame::InitBrowserFrame - Step 1";
   native_browser_frame_ =
       NativeBrowserFrameFactory::CreateNativeBrowserFrame(this, browser_view_);
+  LOG(INFO) << "[EXTENSIONS] Spawning native_browser_frame_: " << native_browser_frame_;
   views::Widget::InitParams params = native_browser_frame_->GetWidgetParams();
   params.delegate = browser_view_;
+  LOG(INFO) << "[EXTENSIONS] BrowserFrame::InitBrowserFrame - Step 2";
   if (browser_view_->browser()->is_type_tabbed()) {
+    LOG(INFO) << "[EXTENSIONS] BrowserFrame::InitBrowserFrame - Step 2a";
     // Typed panel/popup can only return a size once the widget has been
     // created.
     chrome::GetSavedWindowBoundsAndShowState(browser_view_->browser(),
                                              &params.bounds,
                                              &params.show_state);
+    LOG(INFO) << "[EXTENSIONS] BrowserFrame::InitBrowserFrame - Step 2b";
 
     params.workspace = browser_view_->browser()->initial_workspace();
+    LOG(INFO) << "[EXTENSIONS] BrowserFrame::InitBrowserFrame - Step 2c";
     const base::CommandLine& parsed_command_line =
         *base::CommandLine::ForCurrentProcess();
+    LOG(INFO) << "[EXTENSIONS] BrowserFrame::InitBrowserFrame - Step 2d";
 
     if (parsed_command_line.HasSwitch(switches::kWindowWorkspace)) {
       params.workspace =
           parsed_command_line.GetSwitchValueASCII(switches::kWindowWorkspace);
     }
+    LOG(INFO) << "[EXTENSIONS] BrowserFrame::InitBrowserFrame - Step 2e";
   }
+
+  LOG(INFO) << "[EXTENSIONS] BrowserFrame::InitBrowserFrame - Step 3";
 
   Init(params);
 
+  LOG(INFO) << "[EXTENSIONS] BrowserFrame::InitBrowserFrame - Step 4";
   if (!native_browser_frame_->UsesNativeSystemMenu()) {
+    LOG(INFO) << "[EXTENSIONS] BrowserFrame::InitBrowserFrame - Step 4a";
+
     DCHECK(non_client_view());
+    LOG(INFO) << "[EXTENSIONS] BrowserFrame::InitBrowserFrame - Step 4b";
+
     non_client_view()->set_context_menu_controller(this);
+    LOG(INFO) << "[EXTENSIONS] BrowserFrame::InitBrowserFrame - Step 4c";
   }
 
 #if defined(OS_LINUX)
   browser_command_handler_.reset(new BrowserCommandHandlerLinux(browser_view_));
 #endif
+  LOG(INFO) << "[EXTENSIONS] BrowserFrame::InitBrowserFrame - Step 5";
 }
 
 int BrowserFrame::GetMinimizeButtonOffset() const {
@@ -136,7 +153,10 @@ void BrowserFrame::GetWindowPlacement(gfx::Rect* bounds,
 
 bool BrowserFrame::PreHandleKeyboardEvent(
     const content::NativeWebKeyboardEvent& event) {
+#if 0
   return native_browser_frame_->PreHandleKeyboardEvent(event);
+#endif
+  return false;
 }
 
 bool BrowserFrame::HandleKeyboardEvent(

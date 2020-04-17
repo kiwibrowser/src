@@ -438,6 +438,9 @@ def ResourceArgsParser():
   input_opts.add_argument('--aapt-path', required=True,
                          help='Path to the Android aapt tool')
 
+  input_opts.add_argument('--aapt2-path',
+                          help='Path to the Android aapt2 tool')
+
   input_opts.add_argument('--dependencies-res-zips', required=True,
                     help='Resources zip archives from dependents. Required to '
                          'resolve @type/foo references into dependent '

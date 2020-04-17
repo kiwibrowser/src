@@ -13,8 +13,8 @@ namespace content {
 
 class FakeBluetoothChooser;
 class LayoutTestBrowserContext;
-class LayoutTestNotificationManager;
 class MockClipboardHost;
+class MockPlatformNotificationService;
 
 class LayoutTestContentBrowserClient : public ShellContentBrowserClient {
  public:
@@ -30,9 +30,6 @@ class LayoutTestContentBrowserClient : public ShellContentBrowserClient {
 
   // Retrieves the last created FakeBluetoothChooser instance.
   std::unique_ptr<FakeBluetoothChooser> GetNextFakeBluetoothChooser();
-
-  // Implements the PlatformNotificationService interface.
-  LayoutTestNotificationManager* GetLayoutTestNotificationManager();
 
   // ContentBrowserClient overrides.
   void RenderProcessWillLaunch(
@@ -88,8 +85,8 @@ class LayoutTestContentBrowserClient : public ShellContentBrowserClient {
   void CreateFakeBluetoothChooser(mojom::FakeBluetoothChooserRequest request);
   void BindClipboardHost(blink::mojom::ClipboardHostRequest request);
 
-  std::unique_ptr<LayoutTestNotificationManager>
-      layout_test_notification_manager_;
+  std::unique_ptr<MockPlatformNotificationService>
+      mock_platform_notification_service_;
   bool block_popups_ = false;
 
   // Stores the next instance of FakeBluetoothChooser that is to be returned

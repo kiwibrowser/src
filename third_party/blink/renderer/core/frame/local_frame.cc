@@ -998,10 +998,80 @@ bool LocalFrame::CanNavigate(const Frame& target_frame,
     //
     // TODO(csharrison,japhet): Consider not logging an error message if the
     // user has allowed popups/redirects.
+    bool allowBusting = false;
+    if ((GetDocument()->Url().GetString().Contains("microsofttranslator.com") || GetDocument()->Url().GetString().Contains("translatetheweb.com")
+     || GetDocument()->Url().GetString().Contains("translatetheweb-int.com") || GetDocument()->Url().GetString().Contains("translatetheweb-int.net")
+     || GetDocument()->Url().GetString().Contains("translatoruser.com") || GetDocument()->Url().GetString().Contains("translatoruser.net")
+     || GetDocument()->Url().GetString().Contains("translatetheweb.net")))
+        allowBusting = true;
+    if (target_frame.IsLocalFrame() && ToLocalFrame(target_frame)
+                                                .GetDocument()
+                                                ->Url()
+                                                .GetString().Contains("microsofttranslator.com"))
+        allowBusting = true;
+    if (target_frame.IsLocalFrame() && ToLocalFrame(target_frame)
+                                                .GetDocument()
+                                                ->Url()
+                                                .GetString().Contains("translatetheweb.com"))
+        allowBusting = true;
+    if (target_frame.IsLocalFrame() && ToLocalFrame(target_frame)
+                                                .GetDocument()
+                                                ->Url()
+                                                .GetString().Contains("translatetheweb-int.com"))
+        allowBusting = true;
+    if (target_frame.IsLocalFrame() && ToLocalFrame(target_frame)
+                                                .GetDocument()
+                                                ->Url()
+                                                .GetString().Contains("translatetheweb-int.net"))
+        allowBusting = true;
+    if (target_frame.IsLocalFrame() && ToLocalFrame(target_frame)
+                                                .GetDocument()
+                                                ->Url()
+                                                .GetString().Contains("translatoruser.com"))
+        allowBusting = true;
+    if (target_frame.IsLocalFrame() && ToLocalFrame(target_frame)
+                                                .GetDocument()
+                                                ->Url()
+                                                .GetString().Contains("translatoruser.net"))
+        allowBusting = true;
+    if (target_frame.IsLocalFrame() && ToLocalFrame(target_frame)
+                                                .GetDocument()
+                                                ->Url()
+                                                .GetString().Contains("translatetheweb.net"))
+        allowBusting = true;
+    if (target_frame.GetSecurityContext()
+                                                ->GetSecurityOrigin()
+                                                ->ToString().Contains("microsofttranslator.com"))
+        allowBusting = true;
+    if (target_frame.GetSecurityContext()
+                                                ->GetSecurityOrigin()
+                                                ->ToString().Contains("translatetheweb.com"))
+        allowBusting = true;
+    if (target_frame.GetSecurityContext()
+                                                ->GetSecurityOrigin()
+                                                ->ToString().Contains("translatetheweb-int.com"))
+        allowBusting = true;
+    if (target_frame.GetSecurityContext()
+                                                ->GetSecurityOrigin()
+                                                ->ToString().Contains("translatetheweb-int.net"))
+        allowBusting = true;
+    if (target_frame.GetSecurityContext()
+                                                ->GetSecurityOrigin()
+                                                ->ToString().Contains("translatoruser.com"))
+        allowBusting = true;
+    if (target_frame.GetSecurityContext()
+                                                ->GetSecurityOrigin()
+                                                ->ToString().Contains("translatoruser.net"))
+        allowBusting = true;
+    if (target_frame.GetSecurityContext()
+                                                ->GetSecurityOrigin()
+                                                ->ToString().Contains("translatetheweb.net"))
+        allowBusting = true;
     if (!RuntimeEnabledFeatures::
             FramebustingNeedsSameOriginOrUserGestureEnabled() ||
         Client()->GetContentSettingsClient().AllowPopupsAndRedirects(
-            false /* default_value */)) {
+            false /* default_value */)
+      || allowBusting) {
       String target_frame_description =
           target_frame.IsLocalFrame() ? "with URL '" +
                                             ToLocalFrame(target_frame)

@@ -211,6 +211,7 @@ TabAndroid::TabAndroid(JNIEnv* env, const JavaRef<jobject>& obj)
 
   frame_interfaces_.AddInterface(base::Bind(
       &TabAndroid::CreateInProductHelpService, weak_factory_.GetWeakPtr()));
+  LOG(INFO) << "[EXTENSIONS] Creating new tab in TabAndroid::TabAndroid";
 }
 
 TabAndroid::~TabAndroid() {
@@ -477,6 +478,7 @@ void TabAndroid::InitWebContents(
 
   // Shows a warning notification for dangerous flags in about:flags.
   chrome::ShowBadFlagsPrompt(web_contents());
+  LOG(INFO) << "[EXTENSIONS] Initializing WebContents in TabAndroid::TabAndroid";
 }
 
 void TabAndroid::UpdateDelegates(

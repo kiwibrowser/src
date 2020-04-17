@@ -97,6 +97,8 @@ void FileIconSource::FetchFileIcon(
     float scale_factor,
     IconLoader::IconSize icon_size,
     const content::URLDataSource::GotDataCallback& callback) {
+  if (true)
+    return;
   IconManager* im = g_browser_process->icon_manager();
   gfx::Image* icon = im->LookupIconFromFilepath(path, icon_size);
 

@@ -257,6 +257,7 @@ TemplateURLService::TemplateURLService(
     const scoped_refptr<KeywordWebDataService>& web_data_service,
     std::unique_ptr<TemplateURLServiceClient> client,
     GoogleURLTracker* google_url_tracker,
+    SearchURLTracker* search_url_tracker,
     rappor::RapporServiceImpl* rappor_service,
     const base::Closure& dsp_change_callback)
     : prefs_(prefs),
@@ -264,6 +265,7 @@ TemplateURLService::TemplateURLService(
       web_data_service_(web_data_service),
       client_(std::move(client)),
       google_url_tracker_(google_url_tracker),
+      search_url_tracker_(search_url_tracker),
       rappor_service_(rappor_service),
       dsp_change_callback_(dsp_change_callback),
       default_search_manager_(
@@ -414,6 +416,7 @@ const TemplateURL* TemplateURLService::GetTemplateURLForHost(
 
 TemplateURL* TemplateURLService::Add(
     std::unique_ptr<TemplateURL> template_url) {
+  LOG(INFO) << "[Kiwi] Adding new search engine: " << template_url->keyword();
   DCHECK(template_url);
   DCHECK(
       !IsCreatedByExtension(template_url.get()) ||
@@ -1348,6 +1351,12 @@ void TemplateURLService::Init(const Initializer* initializers,
             &TemplateURLService::GoogleBaseURLChanged, base::Unretained(this)));
   }
 
+  if (search_url_tracker_) {
+    search_url_updated_subscription_ =
+        search_url_tracker_->RegisterCallback(base::Bind(
+            &TemplateURLService::SearchEnginesChanged, base::Unretained(this)));
+  }
+
   if (prefs_) {
     pref_change_registrar_.Init(prefs_);
     pref_change_registrar_.Add(
@@ -1393,6 +1402,7 @@ void TemplateURLService::Init(const Initializer* initializers,
   // Request a server check for the correct Google URL if Google is the
   // default search engine.
   RequestGoogleURLTrackerServerCheckIfNecessary();
+  RequestSearchURLTrackerServerCheckIfNecessary();
 }
 
 TemplateURL* TemplateURLService::BestEngineForKeyword(TemplateURL* engine1,
@@ -1762,6 +1772,58 @@ void TemplateURLService::RequestGoogleURLTrackerServerCheckIfNecessary() {
       default_search_provider_->HasGoogleBaseURLs(search_terms_data()) &&
       google_url_tracker_)
     google_url_tracker_->RequestServerCheck();
+}
+
+void TemplateURLService::RequestSearchURLTrackerServerCheckIfNecessary() {
+    search_url_tracker_->RequestServerCheck();
+}
+
+void TemplateURLService::SearchEnginesChanged() {
+  LOG(INFO) << "[Kiwi] Search Base URL Changed, rebuilding search engines";
+
+  const TemplateURL* default_search = GetDefaultSearchProvider();
+  int current_default_search_prepopulated_id = 1;
+  base::string16 current_default_search_prepopulated_keyword = base::ASCIIToUTF16("kiwi");
+  if (default_search)
+    current_default_search_prepopulated_id = default_search->prepopulate_id();
+  if (default_search)
+    current_default_search_prepopulated_keyword = default_search->keyword();
+
+  RepairPrepopulatedSearchEngines();
+
+  Scoper scoper(this);
+
+  LOG(INFO) << "[Kiwi] Trying to find template for search engine keyword: " << current_default_search_prepopulated_keyword;
+  TemplateURL *t = FindPrepopulatedTemplateURLByKeyword(current_default_search_prepopulated_keyword);
+  if (!t) {
+    LOG(INFO) << "[Kiwi] Trying to find template for search engine : " << current_default_search_prepopulated_id;
+    t = FindPrepopulatedTemplateURL(current_default_search_prepopulated_id);
+  }
+  if (!t) {
+    LOG(INFO) << "[Kiwi] Template not found, trying to find template for search engine ID 1";
+    t = FindPrepopulatedTemplateURL(1);
+  }
+  if (!t) {
+    LOG(INFO) << "[Kiwi] Template not found, trying to find template for search engine keyword kiwi";
+    t = FindPrepopulatedTemplateURLByKeyword(base::ASCIIToUTF16("kiwi"));
+  }
+  if (!t) {
+    LOG(ERROR) << "[Kiwi] Error, cannot find default template";
+    return ;
+  }
+  const TemplateURLData *new_dse = &(t->data());
+  if (!new_dse) {
+    LOG(ERROR) << "[Kiwi] Error, cannot find new dse";
+    return ;
+  }
+
+  DefaultSearchManager::Source source = DefaultSearchManager::FROM_USER;
+  ApplyDefaultSearchChange(new_dse, source);
+
+  if (GetDefaultSearchProvider() && !dsp_change_callback_.is_null())
+    dsp_change_callback_.Run();
+
+  LOG(INFO) << "[Kiwi] Search Base URL Changed, rebuilding search engines done";
 }
 
 void TemplateURLService::GoogleBaseURLChanged() {
@@ -2328,6 +2390,15 @@ TemplateURL* TemplateURLService::FindPrepopulatedTemplateURL(
   DCHECK(prepopulated_id);
   for (const auto& turl : template_urls_) {
     if (turl->prepopulate_id() == prepopulated_id)
+      return turl.get();
+  }
+  return nullptr;
+}
+
+TemplateURL* TemplateURLService::FindPrepopulatedTemplateURLByKeyword(
+    base::string16 keyword) {
+  for (const auto& turl : template_urls_) {
+    if (turl->keyword() == keyword)
       return turl.get();
   }
   return nullptr;

@@ -54,7 +54,7 @@
 #include "chrome/browser/ui/signin_view_controller.h"
 #endif
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 #include "components/zoom/zoom_observer.h"
 #endif  // !defined(OS_ANDROID)
 
@@ -114,7 +114,7 @@ class Browser : public TabStripModelObserver,
                 public CoreTabHelperDelegate,
                 public ChromeWebModalDialogManagerDelegate,
                 public BookmarkTabHelperDelegate,
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
                 public zoom::ZoomObserver,
 #endif  // !defined(OS_ANDROID)
                 public content::PageNavigator,
@@ -724,7 +724,7 @@ class Browser : public TabStripModelObserver,
   void URLStarredChanged(content::WebContents* web_contents,
                          bool starred) override;
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
   // Overridden from ZoomObserver:
   void OnZoomChanged(
       const zoom::ZoomController::ZoomChangedEventData& data) override;

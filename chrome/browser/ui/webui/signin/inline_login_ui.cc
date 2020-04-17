@@ -13,7 +13,7 @@
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/sessions/session_tab_helper.h"
 #include "chrome/browser/ui/webui/metrics_handler.h"
-#include "chrome/browser/ui/webui/signin/inline_login_handler_impl.h"
+// #include "chrome/browser/ui/webui/signin/inline_login_handler_impl.h"
 #include "chrome/browser/ui/webui/test_files_request_filter.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/url_constants.h"
@@ -61,7 +61,7 @@ InlineLoginUI::InlineLoginUI(content::WebUI* web_ui)
       auth_extension_(Profile::FromWebUI(web_ui)) {
   Profile* profile = Profile::FromWebUI(web_ui);
   content::WebUIDataSource::Add(profile, CreateWebUIDataSource());
-  web_ui->AddMessageHandler(std::make_unique<InlineLoginHandlerImpl>());
+//  web_ui->AddMessageHandler(std::make_unique<InlineLoginHandlerImpl>());
   web_ui->AddMessageHandler(std::make_unique<MetricsHandler>());
 
   content::WebContents* contents = web_ui->GetWebContents();

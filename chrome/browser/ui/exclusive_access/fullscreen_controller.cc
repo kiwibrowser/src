@@ -99,6 +99,8 @@ bool FullscreenController::IsTabFullscreen() const {
 
 bool FullscreenController::IsFullscreenForTabOrPending(
     const WebContents* web_contents) const {
+  if (true)
+     return false;
   if (IsFullscreenWithinTab(web_contents))
     return true;
   if (web_contents == exclusive_access_tab()) {

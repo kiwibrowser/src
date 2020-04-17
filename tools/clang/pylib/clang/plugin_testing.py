@@ -12,22 +12,17 @@ import sys
 class ClangPluginTest(object):
   """Test harness for clang plugins."""
 
-  def __init__(self, test_base, clang_path, plugin_path, plugin_name,
-               reset_results):
+  def __init__(self, test_base, clang_path, plugin_name, reset_results):
     """Constructor.
 
     Args:
       test_base: Path to the directory containing the tests.
       clang_path: Path to the clang binary.
-      plugin_path: Optional path to the plugin binary. May be None, such as on
-                   Windows, where the plugin is built directly into the clang
-                   binary.
       plugin_name: Name of the plugin.
       reset_results: If true, resets expected results to the actual test output.
     """
     self._test_base = test_base
     self._clang_path = clang_path
-    self._plugin_path = plugin_path
     self._plugin_name = plugin_name
     self._reset_results = reset_results
 
@@ -49,13 +44,10 @@ class ClangPluginTest(object):
     Returns: the number of failing tests.
     """
     print 'Using clang %s...' % self._clang_path
-    print 'Using plugin %s...' % self._plugin_path
 
     os.chdir(self._test_base)
 
     clang_cmd = [self._clang_path, '-c', '-std=c++14']
-    if self._plugin_path:
-      clang_cmd.extend(['-Xclang', '-load', '-Xclang', self._plugin_path])
     clang_cmd.extend(['-Xclang', '-add-plugin', '-Xclang', self._plugin_name])
     self.AdjustClangArguments(clang_cmd)
 

@@ -23,13 +23,18 @@ namespace subresource_filter {
 class MemoryMappedRuleset : public base::RefCounted<MemoryMappedRuleset>,
                             public base::SupportsWeakPtr<MemoryMappedRuleset> {
  public:
-  explicit MemoryMappedRuleset(base::File ruleset_file);
+  REQUIRE_ADOPTION_FOR_REFCOUNTED_TYPE();
+  static scoped_refptr<MemoryMappedRuleset> CreateAndInitialize(
+      base::File ruleset_file);
+
+  static void SetMemoryMapFailuresForTesting(bool fail);
 
   const uint8_t* data() const { return ruleset_.data(); }
   size_t length() const { return base::strict_cast<size_t>(ruleset_.length()); }
 
  private:
   friend class base::RefCounted<MemoryMappedRuleset>;
+  MemoryMappedRuleset();
   ~MemoryMappedRuleset();
 
   base::MemoryMappedFile ruleset_;

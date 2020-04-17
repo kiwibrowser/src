@@ -31,6 +31,7 @@ import android.widget.TextView.BufferType;
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.base.metrics.RecordUserAction;
 import org.chromium.chrome.R;
+import org.chromium.chrome.browser.toolbar.ToolbarModel;
 import org.chromium.chrome.browser.omnibox.OmniboxResultsAdapter.OmniboxResultItem;
 import org.chromium.chrome.browser.omnibox.OmniboxResultsAdapter.OmniboxSuggestionDelegate;
 import org.chromium.chrome.browser.omnibox.OmniboxSuggestion.MatchClassification;
@@ -440,7 +441,9 @@ class SuggestionView extends ViewGroup {
      */
     private boolean setUrlText(OmniboxResultItem result, boolean useModernDesign) {
         OmniboxSuggestion suggestion = result.getSuggestion();
-        Spannable str = SpannableString.valueOf(suggestion.getDisplayText());
+        String displayText = suggestion.getDisplayText();
+        displayText = ToolbarModel.trimUrlData(displayText);
+        Spannable str = SpannableString.valueOf(displayText);
         boolean hasMatch = applyHighlightToMatchRegions(
                 str, suggestion.getDisplayTextClassifications());
         showDescriptionLine(str, true, useModernDesign);

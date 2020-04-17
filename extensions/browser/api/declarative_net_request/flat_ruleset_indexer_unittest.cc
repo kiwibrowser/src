@@ -195,15 +195,15 @@ void AddRulesAndVerifyIndex(const std::vector<IndexedRule>& blacklist_rules,
     indexer.AddUrlRule(rule);
 
   indexer.Finish();
-  FlatRulesetIndexer::SerializedData data = indexer.GetData();
+  base::span<const uint8_t> data = indexer.GetData();
   EXPECT_EQ(
       blacklist_rules.size() + whitelist_rules.size() + redirect_rules.size(),
       indexer.indexed_rules_count());
-  flatbuffers::Verifier verifier(data.first, data.second);
+  flatbuffers::Verifier verifier(data.data(), data.size());
   ASSERT_TRUE(flat::VerifyExtensionIndexedRulesetBuffer(verifier));
 
   const flat::ExtensionIndexedRuleset* ruleset =
-      flat::GetExtensionIndexedRuleset(data.first);
+      flat::GetExtensionIndexedRuleset(data.data());
   ASSERT_TRUE(ruleset);
 
   VerifyIndexEquality(blacklist_rules, ruleset->blacklist_index());

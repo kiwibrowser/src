@@ -30,6 +30,7 @@
 #include "base/threading/thread.h"
 #include "base/threading/thread_checker.h"
 #include "base/threading/thread_task_runner_handle.h"
+#include "base/trace_event/trace_event.h"
 #include "cc/animation/animation_host.h"
 #include "cc/base/switches.h"
 #include "cc/input/input_handler.h"
@@ -769,6 +770,13 @@ void CompositorImpl::CreateLayerTreeHost() {
 
   if (needs_animate_)
     host_->SetNeedsAnimate();
+}
+
+void CompositorImpl::PrepareToScroll() {
+  if (host_->IsVisible()) {
+    host_->PrepareToScroll();
+    host_->SetNeedsCommit();
+  }
 }
 
 void CompositorImpl::SetVisible(bool visible) {

@@ -96,6 +96,15 @@ public class DomDistillerTabUtils {
                 && getDistillerHeuristics() == DistillerHeuristicsType.ADABOOST_MODEL;
     }
 
+     /**
+     * Check if "Simplified view for accessibility" is enabled in accessibility settings
+     *
+     * @return True if "Simplified view for accessibility" is enabled in accessibility settings
+     */
+    public static boolean isReaderForAccessibilityEnabled() {
+        return PrefServiceBridge.getInstance().getBoolean(Pref.READER_FOR_ACCESSIBILITY_ENABLED);
+    }
+
     /**
      * Cached version of nativeGetDistillerHeuristics().
      */

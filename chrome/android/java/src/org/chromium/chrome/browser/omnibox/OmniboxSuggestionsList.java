@@ -23,6 +23,11 @@ import org.chromium.chrome.browser.omnibox.OmniboxResultsAdapter.OmniboxResultIt
 import org.chromium.chrome.browser.util.ViewUtils;
 import org.chromium.chrome.browser.widget.bottomsheet.BottomSheet;
 
+import java.util.ArrayList;
+import org.chromium.chrome.browser.accessibility.NightModePrefs;
+
+import org.chromium.base.ContextUtils;
+
 /**
  * A widget for showing a list of omnibox suggestions.
  */
@@ -32,6 +37,7 @@ public class OmniboxSuggestionsList extends ListView {
     private static final int OMNIBOX_RESULTS_CHROME_MODERN_BG_COLOR = 0xFFFFFFFF;
     private static final int OMNIBOX_INCOGNITO_RESULTS_BG_COLOR = 0xFF323232;
     private static final int OMNIBOX_INCOGNITO_RESULTS_CHROME_MODERN_BG_COLOR = 0xFF3C4043;
+    private static final int OMNIBOX_NIGHT_RESULTS_CHROME_MODERN_BG_COLOR = 0xFF323232;
 
     private final OmniboxSuggestionListEmbedder mEmbedder;
     private final int mSuggestionHeight;
@@ -91,7 +97,7 @@ public class OmniboxSuggestionsList extends ListView {
         mSuggestionDefinitionHeight = context.getResources().getDimensionPixelOffset(
                 R.dimen.omnibox_suggestion_definition_height);
 
-        int paddingTop = mEmbedder.useModernDesign()
+        int paddingTop = false
                 ? 0
                 : context.getResources().getDimensionPixelOffset(
                           R.dimen.omnibox_suggestion_list_padding_top);
@@ -141,6 +147,10 @@ public class OmniboxSuggestionsList extends ListView {
 
         int color = mEmbedder.isIncognito() ? omniboxResultsColorForIncognito
                                             : omniboxResultsColorForNonIncognito;
+
+        if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black")) {
+            return new ColorDrawable(OMNIBOX_NIGHT_RESULTS_CHROME_MODERN_BG_COLOR);
+        }
         if (!isHardwareAccelerated()) {
             // When HW acceleration is disabled, changing mSuggestionList' items somehow erases
             // mOmniboxResultsContainer' background from the area not covered by mSuggestionList.
@@ -225,6 +235,8 @@ public class OmniboxSuggestionsList extends ListView {
         int parentY = mTempPosition[1];
 
         int anchorBottomRelativeToContent = anchorY + mAnchorView.getMeasuredHeight();
+        if (ContextUtils.getAppSharedPreferences().getBoolean("enable_bottom_toolbar", false))
+            anchorBottomRelativeToContent = 0;
         int desiredTopMargin = anchorBottomRelativeToContent - parentY;
         if (layoutParams.topMargin != desiredTopMargin) {
             layoutParams.topMargin = desiredTopMargin;
@@ -246,10 +258,16 @@ public class OmniboxSuggestionsList extends ListView {
         int availableViewportHeight =
                 Math.min(mTempRect.height(), decorHeight) + additionalHeightForBottomNavMenu;
         int availableListHeight = availableViewportHeight - anchorBottomRelativeToContent;
-        // The suggestions should consume all available space in Modern on phone.
-        int desiredHeight = mEmbedder.useModernDesign() && !mEmbedder.isTablet()
+        // The suggestions should consume all available space in Modern on phone and in Bottom toolbar mode.
+        int desiredHeight = ContextUtils.getAppSharedPreferences().getBoolean("enable_bottom_toolbar", false) && !mEmbedder.isTablet()
                 ? availableListHeight
                 : Math.min(availableListHeight, getIdealHeight());
+        if (ContextUtils.getAppSharedPreferences().getBoolean("enable_bottom_toolbar", false)) {
+            desiredTopMargin = availableListHeight - Math.min(availableListHeight, getIdealHeight());
+            desiredHeight = Math.min(availableListHeight, getIdealHeight());
+            layoutParams.topMargin = desiredTopMargin;
+            updateLayout = true;
+        }
         if (layoutParams.height != desiredHeight) {
             layoutParams.height = desiredHeight;
             updateLayout = true;

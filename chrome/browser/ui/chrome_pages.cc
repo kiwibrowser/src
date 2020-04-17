@@ -55,7 +55,7 @@
 #include "extensions/browser/extension_registry.h"
 #endif
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 #include "chrome/browser/signin/signin_manager_factory.h"
 #include "components/signin/core/browser/signin_manager.h"
 #endif
@@ -393,7 +393,7 @@ void ShowSearchEngineSettings(Browser* browser) {
   ShowSettingsSubPage(browser, kSearchEnginesSubPage);
 }
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 void ShowBrowserSignin(Browser* browser,
                        signin_metrics::AccessPoint access_point) {
   Profile* original_profile = browser->profile()->GetOriginalProfile();

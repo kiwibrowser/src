@@ -437,11 +437,9 @@ gfx::Size IconLabelBubbleView::GetNonLabelSize() const {
 }
 
 float IconLabelBubbleView::GetScaleFactor() const {
-  const views::Widget* widget = GetWidget();
   // There may be no widget in tests, and in ash there may be no compositor if
   // the native view of the Widget doesn't have a parent.
-  const ui::Compositor* compositor = widget ? widget->GetCompositor() : nullptr;
-  return compositor ? compositor->device_scale_factor() : 1.0f;
+  return 1.0f;
 }
 
 bool IconLabelBubbleView::OnActivate(const ui::Event& event) {

@@ -47,6 +47,7 @@ using content::WebContents;
 //     ContentSettingMIDISysExImageModel         - midi sysex
 //     ContentSettingDownloadsImageModel         - automatic downloads
 //     ContentSettingClipboardReadImageModel     - clipboard read
+//     ContentSettingSensorsImageModel           - sensors
 //   ContentSettingMediaImageModel             - media
 //   ContentSettingSubresourceFilterImageModel - deceptive content
 //   ContentSettingFramebustBlockImageModel    - blocked framebust
@@ -133,6 +134,16 @@ class ContentSettingMediaImageModel : public ContentSettingImageModel {
 
  private:
   DISALLOW_COPY_AND_ASSIGN(ContentSettingMediaImageModel);
+};
+
+class ContentSettingSensorsImageModel : public ContentSettingSimpleImageModel {
+ public:
+  ContentSettingSensorsImageModel();
+
+  void UpdateFromWebContents(WebContents* web_contents) override;
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(ContentSettingSensorsImageModel);
 };
 
 namespace {
@@ -259,6 +270,8 @@ ContentSettingImageModel::CreateForContentType(ImageType image_type) {
       return std::make_unique<ContentSettingFramebustBlockImageModel>();
     case ImageType::CLIPBOARD_READ:
       return std::make_unique<ContentSettingClipboardReadImageModel>();
+    case ImageType::SENSORS:
+      return std::make_unique<ContentSettingSensorsImageModel>();
     case ImageType::NUM_IMAGE_TYPES:
       break;
   }
@@ -682,6 +695,33 @@ void ContentSettingFramebustBlockImageModel::SetAnimationHasRun(
       ->set_animation_has_run();
 }
 
+// Sensors ---------------------------------------------------------------------
+
+ContentSettingSensorsImageModel::ContentSettingSensorsImageModel()
+    : ContentSettingSimpleImageModel(ImageType::SENSORS,
+                                     CONTENT_SETTINGS_TYPE_SENSORS) {}
+
+void ContentSettingSensorsImageModel::UpdateFromWebContents(
+    WebContents* web_contents) {
+  set_visible(false);
+  if (!web_contents)
+    return;
+  auto* content_settings =
+      TabSpecificContentSettings::FromWebContents(web_contents);
+  if (!content_settings)
+    return;
+
+  bool blocked = content_settings->IsContentBlocked(content_type());
+  bool allowed = content_settings->IsContentAllowed(content_type());
+  if (!blocked && !allowed)
+    return;
+
+  set_visible(true);
+  set_icon(kSensorsIcon, allowed ? gfx::kNoneIcon : kBlockedBadgeIcon);
+  set_tooltip(l10n_util::GetStringUTF16(allowed ? IDS_SENSORS_ALLOWED_TOOLTIP
+                                                : IDS_SENSORS_BLOCKED_TOOLTIP));
+}
+
 // Base class ------------------------------------------------------------------
 
 gfx::Image ContentSettingImageModel::GetIcon(SkColor icon_color) const {
@@ -726,6 +766,7 @@ ContentSettingImageModel::GenerateContentSettingImageModels() {
       ImageType::MIXEDSCRIPT,
       ImageType::PROTOCOL_HANDLERS,
       ImageType::MEDIASTREAM,
+      ImageType::SENSORS,
       ImageType::ADS,
       ImageType::AUTOMATIC_DOWNLOADS,
       ImageType::MIDI_SYSEX,

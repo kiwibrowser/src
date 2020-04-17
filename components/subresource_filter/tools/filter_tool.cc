@@ -4,6 +4,7 @@
 
 #include "components/subresource_filter/tools/filter_tool.h"
 
+#include <algorithm>
 #include <istream>
 #include <ostream>
 #include <string>
@@ -186,13 +187,27 @@ void FilterTool::MatchBatchImpl(std::istream* request_stream,
   if (print_each_request)
     return;
 
+  // Sort the rules in descending order by match count.
+  std::vector<std::pair<std::string, int>> vector_rules;
   for (auto rule_and_count : matched_rules) {
-    if (rule_and_count.second >= min_match_count) {
-      *output_ << url_pattern_index::FlatUrlRuleToFilterlistString(
-                      rule_and_count.first)
-                      .c_str()
-               << std::endl;
-    }
+    if (rule_and_count.second < min_match_count)
+      continue;
+
+    vector_rules.push_back(std::make_pair(
+        url_pattern_index::FlatUrlRuleToFilterlistString(rule_and_count.first)
+            .c_str(),
+        rule_and_count.second));
+  }
+
+  std::sort(vector_rules.begin(), vector_rules.end(),
+            [](const std::pair<std::string, int>& left,
+               const std::pair<std::string, int>& right) {
+              return left.second > right.second;
+            });
+
+  for (auto rule_and_count : vector_rules) {
+    *output_ << rule_and_count.second << " " << rule_and_count.first
+             << std::endl;
   }
 }
 

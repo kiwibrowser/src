@@ -915,6 +915,7 @@ void ExtractUnderlines(NSAttributedString* string,
     endEvent.SetType(WebInputEvent::kGesturePinchEnd);
     endEvent.SetSourceDevice(
         blink::WebGestureDevice::kWebGestureDeviceTouchpad);
+    endEvent.SetNeedsWheelEvent(true);
     client_->OnNSViewGestureEnd(endEvent);
   }
 }

@@ -18,7 +18,7 @@
 #include "content/public/browser/content_browser_client.h"
 #include "services/network/public/mojom/network_service.mojom.h"
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
 class ChromeZoomLevelPrefs;
 #endif
 
@@ -176,7 +176,7 @@ class Profile : public content::BrowserContext {
   virtual PrefService* GetPrefs() = 0;
   virtual const PrefService* GetPrefs() const = 0;
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
   // Retrieves a pointer to the PrefService that manages the default zoom
   // level and the per-host zoom levels for this user profile.
   // TODO(wjmaclean): Remove this when HostZoomMap migrates to StoragePartition.
@@ -323,7 +323,7 @@ class Profile : public content::BrowserContext {
   // Creates an OffTheRecordProfile which points to this Profile.
   Profile* CreateOffTheRecordProfile();
 
-#if !defined(OS_ANDROID)
+#if true || !defined(OS_ANDROID)
   // Convenience method to retrieve the default zoom level for the default
   // storage partition.
   double GetDefaultZoomLevelForProfile();

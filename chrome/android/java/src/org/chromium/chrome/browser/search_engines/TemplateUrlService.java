@@ -248,7 +248,10 @@ public class TemplateUrlService {
      *              {@code query} inserted as the search parameter.
      */
     public String getUrlForSearchQuery(String query) {
-        return nativeGetUrlForSearchQuery(mNativeTemplateUrlServiceAndroid, query);
+        String result = nativeGetUrlForSearchQuery(mNativeTemplateUrlServiceAndroid, query);
+        if (result.contains("search.kiwibrowser.org"))
+          result = result + "&aqs=chrome";
+        return result;
     }
 
     /**

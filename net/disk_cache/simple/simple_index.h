@@ -25,7 +25,7 @@
 #include "base/time/time.h"
 #include "base/timer/timer.h"
 #include "net/base/cache_type.h"
-#include "net/base/completion_callback.h"
+#include "net/base/completion_once_callback.h"
 #include "net/base/net_export.h"
 
 #if defined(OS_ANDROID)
@@ -159,7 +159,7 @@ class NET_EXPORT_PRIVATE SimpleIndex
                              const EntryMetadata& entry_metadata);
 
   // Executes the |callback| when the index is ready. Allows multiple callbacks.
-  int ExecuteWhenReady(const net::CompletionCallback& callback);
+  int ExecuteWhenReady(net::CompletionOnceCallback callback);
 
   // Returns entries from the index that have last accessed time matching the
   // range between |initial_time| and |end_time| where open intervals are
@@ -256,7 +256,7 @@ class NET_EXPORT_PRIVATE SimpleIndex
   base::OneShotTimer write_to_disk_timer_;
   base::Closure write_to_disk_cb_;
 
-  typedef std::list<net::CompletionCallback> CallbackList;
+  typedef std::list<net::CompletionOnceCallback> CallbackList;
   CallbackList to_run_when_initialized_;
 
   // Set to true when the app is on the background. When the app is in the
