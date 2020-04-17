@@ -52,7 +52,7 @@ To build Kiwi Browser you can directly clone the repository, as we have packed a
 
 You will have a new folder with the Kiwi Browser source-code.
 
-In this directory, create an android_arm folder, and create a file called args.gn with this content:
+In this directory create an android_arm folder, and create a file called args.gn with this content:
 
     target_os = "android"
     target_cpu = "arm" # <---- can be arm, arm64, x86 or x64
@@ -105,6 +105,11 @@ In this directory, create an android_arm folder, and create a file called args.g
 
 
 Make sure to replace android keystore password and android keystore keypath
+
+To prepare initial setup run:
+
+    gclient runhooks
+
 
 then generate the build files:
 
