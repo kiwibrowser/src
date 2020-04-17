@@ -1,0 +1,188 @@
+<!doctype html>
+<!--
+Copyright 2016 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes"> <!-- Fullscreen Landscape on iOS -->
+
+    <!-- Origin Trial Token, feature = WebVR (For Chrome M59+), origin = https://webvr.info, expires = 2017-10-13 -->
+    <meta http-equiv="origin-trial" data-feature="WebVR (For Chrome M59+)" data-expires="2017-10-13" content="Aqw0TUvp8CwZmgIS50pM1blhzy05y7OkBeW3AQQGjer4KuKV0p13xfrRbe2bT8B1+DgRW0O3Dda0yOjcL46GBwgAAABMeyJvcmlnaW4iOiJodHRwczovL3dlYnZyLmluZm86NDQzIiwiZmVhdHVyZSI6IldlYlZSMS4xIiwiZXhwaXJ5IjoxNTA3ODU5MDE4fQ==">
+
+    <title>02 - Stereo Rendering</title>
+
+    <!--
+      This sample demonstrates how to properly render stereo views of a scene
+      using the VRDisplay's eye paramaters. Nothing is presented to the
+      VRDisplay.
+    -->
+
+    <style>
+      #webgl-canvas {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        left: 0;
+        top: 0;
+        margin: 0;
+      }
+    </style>
+
+    <!-- This entire block in only to facilitate dynamically enabling and
+    disabling the WebVR polyfill, and is not necessary for most WebVR apps.
+    If you want to use the polyfill in your app, just include the js file and
+    everything will work the way you want it to by default. -->
+    <script>
+      // Prevents the polyfill from initializing automatically.
+      var WebVRConfig = {
+        // Prevents the polyfill from initializing automatically.
+        DEFER_INITIALIZATION: true,
+        // Ensures the polyfill is always active when initialized, even if the
+        // native API is available. This is probably NOT what most pages want.
+        ALWAYS_APPEND_POLYFILL_DISPLAY: true,
+      }
+    </script>
+    <script src="js/third-party/webvr-polyfill.js"></script>
+    <script src="js/third-party/wglu/wglu-url.js"></script>
+    <script>
+      // Dynamically turn the polyfill on if requested by the query args.
+      if (WGLUUrl.getBool('polyfill', false)) {
+        InitializeWebVRPolyfill();
+      } else {
+        // Shim for migration from older version of WebVR. Shouldn't be necessary for very long.
+        InitializeSpecShim();
+      }
+    </script>
+    <!-- End sample polyfill enabling logic -->
+
+    <script src="js/third-party/gl-matrix-min.js"></script>
+
+    <script src="js/third-party/wglu/wglu-program.js"></script>
+    <script src="js/third-party/wglu/wglu-stats.js"></script>
+    <script src="js/third-party/wglu/wglu-texture.js"></script>
+
+    <script src="js/vr-cube-sea.js"></script>
+    <script src="js/vr-samples-util.js"></script>
+  </head>
+  <body>
+    <canvas id="webgl-canvas"></canvas>
+    <script>
+      /* global mat4, VRCubeSea, VRSamplesUtil, WGLUStats, WGLUTextureLoader */
+      (function () {
+      "use strict";
+
+      var vrDisplay = null;
+      var frameData = null;
+      var projectionMat = mat4.create();
+      var identityMat = mat4.create();
+
+      // ===================================================
+      // WebGL scene setup. This code is not WebVR specific.
+      // ===================================================
+
+      // WebGL setup.
+      var webglCanvas = document.getElementById("webgl-canvas");
+      var glAttribs = {
+        alpha: false,
+      };
+      var useWebgl2 = WGLUUrl.getBool('webgl2', false);
+      var contextTypes = useWebgl2 ? ["webgl2"] : ["webgl", "experimental-webgl"];
+      var gl = null;
+      for (var i in contextTypes) {
+        gl = webglCanvas.getContext(contextTypes[i], glAttribs);
+        if (gl)
+          break;
+      }
+      if (!gl) {
+        var webglType = (useWebgl2 ? "WebGL 2" : "WebGL")
+        VRSamplesUtil.addError("Your browser does not support " + webglType + ".");
+        return;
+      }
+      gl.clearColor(0.1, 0.2, 0.3, 1.0);
+      gl.enable(gl.DEPTH_TEST);
+      gl.enable(gl.CULL_FACE);
+
+      var textureLoader = new WGLUTextureLoader(gl);
+      var texture = textureLoader.loadTexture("media/textures/cube-sea.png");
+      var cubeSea = new VRCubeSea(gl, texture);
+
+      var enablePerformanceMonitoring = WGLUUrl.getBool(
+          'enablePerformanceMonitoring', false);
+      var stats = new WGLUStats(gl, enablePerformanceMonitoring);
+
+      function onResize () {
+        webglCanvas.width = webglCanvas.offsetWidth * window.devicePixelRatio;
+        webglCanvas.height = webglCanvas.offsetHeight * window.devicePixelRatio;
+      }
+      window.addEventListener("resize", onResize, false);
+      onResize();
+
+      // ================================
+      // WebVR-specific code begins here.
+      // ================================
+      if (navigator.getVRDisplays) {
+        frameData = new VRFrameData();
+
+        navigator.getVRDisplays().then(function (displays) {
+          if (displays.length > 0) {
+            vrDisplay = displays[displays.length - 1];
+          } else {
+            VRSamplesUtil.addInfo("WebVR supported, but no VRDisplays found.", 3000);
+          }
+        }, function () {
+          VRSamplesUtil.addError("Your browser does not support WebVR. See <a href='http://webvr.info'>webvr.info</a> for assistance.");
+        });
+      } else if (navigator.getVRDevices) {
+        VRSamplesUtil.addError("Your browser supports WebVR but not the latest version. See <a href='http://webvr.info'>webvr.info</a> for more info.");
+      } else {
+        VRSamplesUtil.addError("Your browser does not support WebVR. See <a href='http://webvr.info'>webvr.info</a> for assistance.");
+      }
+
+      function onAnimationFrame (t) {
+        window.requestAnimationFrame(onAnimationFrame);
+
+        stats.begin();
+
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        if (vrDisplay) {
+          // When a VR display is available, render a stereo view of the scene
+          // based on the display's current matrices.
+
+          // VRFrameData contains the projection and view matrices each eye
+          // should be rendered with. These values change from frame to
+          // frame, so don't attempt to cache them.
+          vrDisplay.getFrameData(frameData);
+
+          // For each eye we'll adjust the viewport to only render to half the
+          // canvas, which will give us the "split screen" output that we want.
+
+          // Left eye.
+          gl.viewport(0, 0, webglCanvas.width * 0.5, webglCanvas.height);
+          cubeSea.render(frameData.leftProjectionMatrix, frameData.leftViewMatrix, stats, t);
+
+          // Right eye.
+          gl.viewport(webglCanvas.width * 0.5, 0, webglCanvas.width * 0.5, webglCanvas.height);
+          cubeSea.render(frameData.rightProjectionMatrix, frameData.rightViewMatrix, stats, t);
+
+          gl.viewport(0, 0, webglCanvas.width, webglCanvas.height);
+          stats.renderOrtho();
+        } else {
+          // No VRDisplay found. Render a normal mono view to the entire canvas.
+          gl.viewport(0, 0, webglCanvas.width, webglCanvas.height);
+          mat4.perspective(projectionMat, Math.PI*0.4, webglCanvas.width/webglCanvas.height, 0.1, 1024.0);
+          cubeSea.render(projectionMat, identityMat, stats, t);
+          stats.renderOrtho();
+        }
+
+        stats.end();
+      }
+      window.requestAnimationFrame(onAnimationFrame);
+      })();
+    </script>
+  </body>
+</html>

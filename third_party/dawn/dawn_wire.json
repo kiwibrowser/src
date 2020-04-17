@@ -1,0 +1,97 @@
+{
+    "_comment": [
+        "Copyright 2019 The Dawn Authors",
+        "",
+        "Licensed under the Apache License, Version 2.0 (the \"License\");",
+        "you may not use this file except in compliance with the License.",
+        "You may obtain a copy of the License at",
+        "",
+        "    http://www.apache.org/licenses/LICENSE-2.0",
+        "",
+        "Unless required by applicable law or agreed to in writing, software",
+        "distributed under the License is distributed on an \"AS IS\" BASIS,",
+        "WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.",
+        "See the License for the specific language governing permissions and",
+        "limitations under the License."
+    ],
+    "commands": {
+        "buffer map async": [
+            { "name": "buffer id", "type": "ObjectId" },
+            { "name": "request serial", "type": "uint32_t" },
+            { "name": "is write", "type": "bool" }
+        ],
+        "buffer set sub data internal": [
+            {"name": "buffer id", "type": "ObjectId" },
+            {"name": "start", "type": "uint64_t"},
+            {"name": "count", "type": "uint64_t"},
+            {"name": "data", "type": "uint8_t", "annotation": "const*", "length": "count"}
+        ],
+        "buffer update mapped data": [
+            { "name": "buffer id", "type": "ObjectId" },
+            { "name": "data length", "type": "uint32_t" },
+            { "name": "data", "type": "uint8_t", "annotation": "const*", "length": "data length" }
+        ],
+        "device create buffer mapped": [
+            { "name": "device", "type": "device" },
+            { "name": "descriptor", "type": "buffer descriptor", "annotation": "const*" },
+            { "name": "result", "type": "ObjectHandle", "handle_type": "buffer" }
+        ],
+        "destroy object": [
+            { "name": "object type", "type": "ObjectType" },
+            { "name": "object id", "type": "ObjectId" }
+        ]
+    },
+    "return commands": {
+        "buffer map read async callback": [
+            { "name": "buffer", "type": "ObjectHandle", "handle_type": "buffer" },
+            { "name": "request serial", "type": "uint32_t" },
+            { "name": "status", "type": "uint32_t" },
+            { "name": "data length", "type": "uint64_t" },
+            { "name": "data", "type": "uint8_t", "annotation": "const*", "length": "data length" }
+        ],
+        "buffer map write async callback": [
+            { "name": "buffer", "type": "ObjectHandle", "handle_type": "buffer" },
+            { "name": "request serial", "type": "uint32_t" },
+            { "name": "status", "type": "uint32_t" },
+            { "name": "data length", "type": "uint64_t" }
+        ],
+        "device error callback": [
+            { "name": "message", "type": "char", "annotation": "const*", "length": "strlen" }
+        ],
+        "fence update completed value": [
+            { "name": "fence", "type": "ObjectHandle", "handle_type": "fence" },
+            { "name": "value", "type": "uint64_t" }
+        ]
+    },
+    "special items": {
+        "client_side_structures": [
+            "CreateBufferMappedResult"
+        ],
+        "client_side_commands": [
+            "BufferSetSubData",
+            "FenceGetCompletedValue"
+        ],
+        "client_handwritten_commands": [
+            "BufferSetSubData",
+            "BufferUnmap",
+            "DeviceCreateBufferMapped",
+            "QueueCreateFence",
+            "FenceGetCompletedValue",
+            "QueueSignal"
+        ],
+        "client_special_objects": [
+            "Buffer",
+            "Device",
+            "Fence"
+        ],
+        "server_custom_pre_handler_commands": [
+            "BufferUnmap"
+        ],
+        "server_handwritten_commands": [
+            "QueueSignal"
+        ],
+        "server_reverse_lookup_objects": [
+            "Fence"
+        ]
+    }
+}

@@ -1,0 +1,150 @@
+# Copyright 2018 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# =============================================================================
+# WHAT IS THIS FILE?
+# =============================================================================
+#
+# This is the master GN build configuration. This file is loaded after the
+# build args (args.gn) for the build directory and after the toplevel ".gn"
+# file (which points to this file as the build configuration).
+#
+# This file will be executed and the resulting context will be used to execute
+# every other file in the build. So variables declared here (that don't start
+# with an underscore) will be implicitly global.
+
+# =============================================================================
+# PLATFORM SELECTION
+# =============================================================================
+#
+# There are two main things to set: "os" and "cpu". The "toolchain" is the name
+# of the GN thing that encodes combinations of these things.
+#
+# Users typically only set the variables "target_os" and "target_cpu" in "gn
+# args", the rest are set up by our build and internal to GN.
+#
+# There are three different types of each of these things: The "host"
+# represents the computer doing the compile and never changes. The "target"
+# represents the main thing we're trying to build. The "current" represents
+# which configuration is currently being defined, which can be either the
+# host, the target, or something completely different.
+
+if (target_os == "") {
+  target_os = host_os
+}
+if (target_cpu == "") {
+  target_cpu = host_cpu
+}
+if (current_cpu == "") {
+  current_cpu = target_cpu
+}
+if (current_os == "") {
+  current_os = target_os
+}
+
+# =============================================================================
+# BUILD FLAGS
+# =============================================================================
+#
+# This block lists input arguments to the build, along with their default
+# values.
+#
+# If a value is specified on the command line, it will overwrite the defaults
+# given in a declare_args block, otherwise the default will be used.
+#
+# YOU SHOULD ALMOST NEVER NEED TO ADD FLAGS TO THIS FILE. GN allows any file in
+# the build to declare build flags. If you need a flag for a single component,
+# you can just declare it in the corresponding BUILD.gn file.
+
+default_clang_base_path = "//third_party/llvm-build/Release+Asserts"
+
+declare_args() {
+  # Debug build.  Most global debug build flags are declared in
+  # //build/config/BUILD.gn.
+  is_debug = false
+
+  # By default, we use the clang compiler on both Mac and Linux. To use the
+  # gcc compiler on Linux instead, set is_gcc to true.
+  is_gcc = false
+  clang_base_path = default_clang_base_path
+}
+
+declare_args() {
+  is_clang = !is_gcc
+}
+
+# We need to ensure that clang is pulled down using the update script. In
+# Chromium, this is done with a gclient hook, but we can just call
+if (is_clang) {
+  exec_script("//tools/clang/scripts/update.py")
+}
+
+# ==============================================================================
+# TOOLCHAIN SETUP
+# ==============================================================================
+#
+# Here we set the default toolchain. Currently only Mac and POSIX are defined.
+if (current_os == "chromeos" || current_os == "linux") {
+  set_default_toolchain("//build/toolchain/linux:linux")
+} else if (current_os == "mac") {
+  set_default_toolchain("//build/toolchain/mac:clang")
+} else {
+  # TODO(miu): Windows, and others.
+  assert(false, "Toolchain for current_os is not defined.")
+}
+
+# =============================================================================
+# OS DEFINITIONS
+# =============================================================================
+#
+# We set these various is_FOO booleans for convenience in writing OS-based
+# conditions.
+
+if (current_os == "chromeos" || current_os == "linux") {
+  is_linux = true
+  is_mac = false
+  is_posix = true
+} else if (current_os == "mac") {
+  is_linux = false
+  is_mac = true
+  is_posix = true
+} else {
+  # TODO(miu): Windows, and others.
+  assert(false, "is_FOO booleans not defined for current_os.")
+}
+
+# =============================================================================
+# TARGET DEFAULTS
+# =============================================================================
+#
+# Set up the default configuration for every build target of the given type.
+# The values configured here will be automatically set on the scope of the
+# corresponding target. Target definitions can add or remove to the settings
+# here as needed.
+
+# All binary targets will get this list of configs by default.
+_shared_binary_target_configs = [
+  "//build/config:openscreen_code",
+  "//build/config:no_exceptions",
+  "//build/config:no_rtti",
+  "//build/config:symbol_visibility_hidden",
+  "//build/config:default_sanitizers",
+  "//build/config:compiler_defaults",
+  "//build/config:default_optimization",
+  "//build:default_include_dirs",
+]
+
+# Apply that default list to the binary target types.
+set_defaults("executable") {
+  configs = _shared_binary_target_configs
+}
+set_defaults("static_library") {
+  configs = _shared_binary_target_configs
+}
+set_defaults("shared_library") {
+  configs = _shared_binary_target_configs
+}
+set_defaults("source_set") {
+  configs = _shared_binary_target_configs
+}

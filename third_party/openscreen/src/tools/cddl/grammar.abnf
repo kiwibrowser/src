@@ -1,0 +1,93 @@
+cddl = S 1*(rule S)
+rule = typename [genericparm] S assignt S type
+     / groupname [genericparm] S assigng S grpent
+
+typename = id
+groupname = id
+
+assignt = "=" / "/="
+assigng = "=" / "//="
+
+genericparm = "<" S id S *("," S id S ) ">"
+genericarg = "<" S type1 S *("," S type1 S ) ">"
+
+type = type1 *(S "/" S type1)
+
+type1 = type2 [S (rangeop / ctlop) S type2]
+
+type2 = value
+      / typename [genericarg]
+      / "(" S type S ")"
+      / "{" S group S "}"
+      / "[" S group S "]"
+      / "~" S typename [genericarg]
+      / "&" S "(" S group S ")"
+      / "&" S groupname [genericarg]
+      / "#" "6" ["." uint] "(" S type S ")" ; note no space!
+      / "#" DIGIT ["." uint]                ; major/ai
+      / "#"                                 ; any
+
+rangeop = "..." / ".."
+
+ctlop = "." id
+
+group = grpchoice *(S "//" S grpchoice)
+
+grpchoice = *(grpent optcom)
+
+grpent = [occur S] [memberkey S] type
+       / [occur S] groupname [genericarg]  ; preempted by above
+       / [occur S] "(" S group S ")"
+
+memberkey = type1 S ["^" S] "=>"
+          / bareword S ":"
+          / value S ":"
+
+bareword = id
+
+optcom = S ["," S]
+
+occur = [uint] "*" [uint]
+      / "+"
+      / "?"
+
+uint = DIGIT1 *DIGIT
+     / "0x" 1*HEXDIG
+     / "0b" 1*BINDIG
+     / "0"
+
+value = number
+      / text
+      / bytes
+
+int = ["-"] uint
+
+; This is a float if it has fraction or exponent; int otherwise
+number = hexfloat / (int ["." fraction] ["e" exponent ])
+hexfloat = "0x" 1*HEXDIG ["." 1*HEXDIG] "p" exponent
+fraction = 1*DIGIT
+exponent = ["+"/"-"] 1*DIGIT
+
+text = %x22 *SCHAR %x22
+SCHAR = %x20-21 / %x23-5B / %x5D-10FFFD / SESC
+SESC = "\" %x20-10FFFD
+
+bytes = [bsqual] %x27 *BCHAR %x27
+BCHAR = %x20-26 / %x28-5B / %x5D-10FFFD / SESC / CRLF
+bsqual = "h" / "b64"
+
+id = EALPHA *(*("-" / ".") (EALPHA / DIGIT))
+ALPHA = %x41-5A / %x61-7A
+EALPHA = ALPHA / "@" / "_" / "$"
+DIGIT = %x30-39
+DIGIT1 = %x31-39
+HEXDIG = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
+BINDIG = %x30-31
+
+S = *WS
+WS = SP / NL
+SP = %x20
+NL = COMMENT / CRLF
+COMMENT = ";" *PCHAR CRLF
+PCHAR = %x20-10FFFD
+CRLF = %x0A / %x0D.0A

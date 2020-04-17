@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="WebVR Samples">
+    <meta name="twitter:description" content="Sample WebVR pages for testing and reference">
+    <meta name="twitter:image" content="https://webvr.info/images/webvr-logo-square.png">
+
+    <link rel="stylesheet" href="../stylesheets/stylesheet.css">
+    <link rel="stylesheet" href="../stylesheets/pygment_trac.css">
+
+    <style>
+      h3 {
+        font-size: 1.0em;
+        margin-top: 2em;
+      }
+
+      .github-link {
+        font-size: 0.8em;
+      }
+
+      ul.sample-list {
+        list-style: none;
+        padding-left: 0.0em;
+        margin-left: 0.0em;
+        display: table;
+      }
+
+      ul.sample-list li {
+        display: table-row;
+        list-style: none;
+        padding-left: 0.5em;
+      }
+
+      ul.sample-list li::before {
+        display: table-cell;
+        content: attr(data-index) " - ";
+        font-weight: bold;
+        white-space: nowrap;
+      }
+
+      ul.sample-list a {
+        display: table-cell;
+        padding-right: 0.5em;
+      }
+    </style>
+
+    <!--[if lt IE 9]>
+    <script src="https://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <title>WebVR - Samples</title>
+  </head>
+  <body>
+
+    <div class="container" id="container">
+      <header class="header">
+        <div id="nav">
+            <a href="../">About</a>
+            <a href="../developers" class="selected">Developers</a>
+        </div>
+
+        <h1><a href="" class="wordmark"><span>WebVR</span></a></h1>
+        <h2 class="tagline">Sample Pages</h2>
+      </header>
+
+      <main class="main" id="main">
+        <p>Sample pages demonstrating how to use various aspects of the WebVR API.</p>
+
+        <h3>Non-presenting samples</h3>
+        <p>These samples use the WebVR API but do not display anything in the headset.</p>
+        <ul id="non-presenting-samples" class="sample-list"></ul>
+
+        <h3>Presenting samples</h3>
+        <p>These samples use the WebVR API to display imagery in the headset.</p>
+        <ul id="samples" class="sample-list"></ul>
+
+        <h3>Work-in-progress samples</h3>
+        <p>These samples are not yet complete and may not accurately portray the API's usage.</p>
+        <ul id="wip-samples" class="sample-list"></ul>
+
+        <h3>Testing pages</h3>
+        <p>These pages help stress browser conformance.</p>
+        <ul id="tests" class="sample-list"></ul>
+
+        <br/>
+
+        <h3><a class="github-link" href="https://github.com/toji/webvr.info/blob/master/samples">View samples on GitHub</a></h3>
+
+        <script>
+          var pages = [
+            { index: "00", path: "00-hello-webvr.html", title: "Hello WebVR!", nonPresenting: true},
+            { index: "01", path: "01-vr-input.html", title: "VR Input", nonPresenting: true },
+            { index: "02", path: "02-stereo-rendering.html", title: "Stereo Rendering", nonPresenting: true },
+            { index: "03", path: "03-vr-presentation.html", title: "VR Presentation" },
+            { index: "04", path: "04-simple-mirroring.html", title: "Simple Mirroring" },
+            { index: "04b", path: "04b-simple-mirroring-2.html", title: "Simple Mirroring pt. 2" },
+            { index: "05", path: "05-room-scale.html", title: "Room Scale" },
+            { index: "06", path: "06-vr-audio.html", title: "VR Audio" },
+            { index: "07", path: "07-advanced-mirroring.html", title: "Advanced Mirroring" },
+            { index: "08", path: "08-dynamic-resolution.html", title: "Dynamic Resolution" },
+            { index: "09", path: "09-splash-screen.html", title: "Splash Screen" },
+
+            // WIP samples, no index
+            { path: "XX-360-panorama.html", title: "360 Degree Panorama" },
+            { path: "XX-360-video.html", title: "360 Degree Video" },
+            { path: "XX-vr-controllers.html", title: "VR Controllers" },
+
+            // Tests
+            { index: "Test", path: "test-canvas-attributes.html", title: "Canvas Attributes" },
+            { index: "Test", path: "test-slow-render.html?heavyGpu=1&cubeScale=0.3&standardSize=true&renderScale=1.0", title: "Slow GPU" },
+            { index: "Test", path: "test-slow-render.html?workTime=12&standardSize=true&renderScale=1.0", title: "Slow Javascript" },
+            { index: "Test", path: "test-slow-render.html?heavyGpu=1&cubeScale=0.3&workTime=12&standardSize=true&renderScale=1.0", title: "Slow GPU and Javascript" },
+            { index: "Test", path: "03-vr-presentation.html?webgl2=1", title: "WebGL 2" },
+            { index: "Test", path: "test-vr-links.html", title: "VR Links" },
+            { index: "Test", path: "insecure/test-insecure.html", title: "Insecure WebVR", insecure: true },
+          ];
+
+          // Append an element for every item in the pages list.
+          var npSamples = document.getElementById("non-presenting-samples");
+          var samples = document.getElementById("samples");
+          var wipSamples = document.getElementById("wip-samples");
+          var tests = document.getElementById("tests");
+
+          for (var i = 0; i < pages.length; ++i) {
+            var page = pages[i];
+            var wipPage = !page.index;
+            var testPage = (page.index == "Test");
+
+            var li = document.createElement("li");
+            li.setAttribute("data-index", page.index ? page.index : "XX");
+
+            var linkPath = page.insecure ? "http://webvr.info/samples/" + page.path : page.path;
+
+            var sampleLink = document.createElement("a");
+            sampleLink.href = linkPath;
+            sampleLink.innerHTML = page.title;
+            li.appendChild(sampleLink);
+
+            if (!testPage) {
+              var polyfillLink = document.createElement("a");
+              polyfillLink.href = linkPath + "?polyfill=1";
+              polyfillLink.innerHTML = "(Polyfill)";
+              li.appendChild(polyfillLink);
+            }
+
+            var sourceLink = document.createElement("a");
+            sourceLink.href = "https://github.com/toji/webvr.info/blob/master/samples/" + page.path;
+            sourceLink.innerHTML = "(Source)";
+            li.appendChild(sourceLink);
+
+            if (testPage) {
+              tests.appendChild(li);
+            } else if (wipPage) {
+              wipSamples.appendChild(li);
+            } else if (page.nonPresenting) {
+              npSamples.appendChild(li);
+            } else {
+              samples.appendChild(li);
+            }
+          }
+        </script>
+      </main>
+
+      <footer class="footer">
+      </footer>
+    </div>
+  </body>
+</html>

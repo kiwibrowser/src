@@ -1,0 +1,218 @@
+<!doctype html>
+<!--
+Copyright 2016 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+    <!-- Origin Trial Token, feature = WebVR (For Chrome M59+), origin = https://webvr.info, expires = 2017-10-13 -->
+    <meta http-equiv="origin-trial" data-feature="WebVR (For Chrome M59+)" data-expires="2017-10-13" content="Aqw0TUvp8CwZmgIS50pM1blhzy05y7OkBeW3AQQGjer4KuKV0p13xfrRbe2bT8B1+DgRW0O3Dda0yOjcL46GBwgAAABMeyJvcmlnaW4iOiJodHRwczovL3dlYnZyLmluZm86NDQzIiwiZmVhdHVyZSI6IldlYlZSMS4xIiwiZXhwaXJ5IjoxNTA3ODU5MDE4fQ==">
+    
+
+    <title>00 - Hello WebVR!</title>
+
+    <!--
+      This sample enumerates over the connected VRDisplays and displays their
+      contents on screen. Useful for debugging. WebGL is not used in this sample
+      and nothing is presented to the VRDisplay.
+    -->
+
+    <style>
+      .vr-display {
+        font-family: sans-serif;
+        font-size: 0.8em;
+        border-bottom: 1px solid #888;
+      }
+
+      .vr-display h1 {
+        font-size: 1.2em;
+      }
+
+      .vr-display .float-array {
+        font-family: monospace;
+      }
+    </style>
+
+    <!-- This entire block in only to facilitate dynamically enabling and
+    disabling the WebVR polyfill, and is not necessary for most WebVR apps.
+    If you want to use the polyfill in your app, just include the js file and
+    everything will work the way you want it to by default. -->
+    <script>
+      var WebVRConfig = {
+        // Prevents the polyfill from initializing automatically.
+        DEFER_INITIALIZATION: true,
+        // Ensures the polyfill is always active when initialized, even if the
+        // native API is available. This is probably NOT what most pages want.
+        ALWAYS_APPEND_POLYFILL_DISPLAY: true,
+      }
+    </script>
+    <script src="js/third-party/webvr-polyfill.js"></script>
+    <script src="js/third-party/wglu/wglu-url.js"></script>
+    <script>
+      // Dynamically turn the polyfill on if requested by the query args.
+      if (WGLUUrl.getBool('polyfill', false)) {
+        InitializeWebVRPolyfill();
+      } else {
+        // Shim for migration from older version of WebVR. Shouldn't be necessary for very long.
+        InitializeSpecShim();
+      }
+    </script>
+    <!-- End sample polyfill enabling logic -->
+
+    <script src="js/vr-samples-util.js"></script>
+  </head>
+  <body>
+    <script>
+      /* global VRSamplesUtil */
+      (function () {
+      "use strict";
+
+      function buildVRElement (vrDisplay) {
+        var vrElement = document.createElement("div");
+        vrElement.classList.add("vr-display");
+
+        var header = document.createElement("h1");
+        header.innerHTML = vrDisplay.displayId + " - " + vrDisplay.displayName;
+        vrElement.appendChild(header);
+
+        // This function walks through the object recursively and builds a
+        // list of all the properties and values. It's a quick and dirty way
+        // to dump the contents of a VRDisplay onto the screen.
+        function buildMemberList (obj, depth) {
+          if (depth >= 5) {
+            return; // Don't let this infinitely recurse on us.
+          }
+
+          var ul = document.createElement("ul");
+
+          for (var key in obj) {
+            // Ignore some names that are intended to be "private"
+            if (!key.length || key[0] == "_" || key[key.length-1] == "_") {
+              continue;
+            }
+
+            // Don't list functions
+            if (typeof obj[key] === "function") {
+              continue;
+            }
+
+            var li = document.createElement("li");
+
+            if (obj[key] === null) {
+              li.innerHTML = "<b>" + key + ":</b> <i>null</i>";
+            } else if (Object.prototype.toString.call(obj[key]) === "[object Float32Array]") {
+              // This formatting ensures that the array prints at a fixed size
+              // as the values in the array change.
+              var value = "";
+              for (var idx in obj[key]) {
+                if (value !== "")
+                  value += ",";
+                if (obj[key][idx] >= 0)
+                  value += " ";
+                value += obj[key][idx].toFixed(3);
+              }
+              li.innerHTML = "<b>" + key + ":</b> <span class='float-array'>[" + value + " ]</span>";
+            } else if (typeof obj[key] === "number" && obj[key] !== (obj[key]|0)) {
+              li.innerHTML = "<b>" + key + ":</b> " + obj[key].toFixed(3);
+            } else if (typeof obj[key] === "object") {
+              li.innerHTML = "<b>" + key + ":</b>";
+              li.appendChild(buildMemberList(obj[key], depth+1));
+            } else {
+              li.innerHTML = "<b>" + key + ":</b> " + obj[key];
+            }
+
+            ul.appendChild(li);
+          }
+
+          return ul;
+        }
+
+        var memberUL = buildMemberList(vrDisplay, 0);
+
+        var frameData = new VRFrameData();
+        vrDisplay.getFrameData(frameData);
+        var frameDataLI = document.createElement("li");
+        frameDataLI.innerHTML = "<b>getFrameData():</b>";
+        var frameDataUL = buildMemberList(frameData);
+        frameDataLI.appendChild(frameDataUL);
+        memberUL.appendChild(frameDataLI);
+
+        var leftEye = vrDisplay.getEyeParameters("left");
+        var leftEyeLI = document.createElement("li");
+        leftEyeLI.innerHTML = "<b>getEyeParameters('left'):</b>";
+        var leftEyeUL = buildMemberList(leftEye);
+        leftEyeLI.appendChild(leftEyeUL);
+        memberUL.appendChild(leftEyeLI);
+
+        var rightEye = vrDisplay.getEyeParameters("right");
+        var rightEyeLI = document.createElement("li");
+        rightEyeLI.innerHTML = "<b>getEyeParameters('right'):</b>";
+        var rightEyeUL = buildMemberList(rightEye);
+        rightEyeLI.appendChild(rightEyeUL);
+        memberUL.appendChild(rightEyeLI);
+
+        // Update the values that may change frame-to-frame
+        function onAnimationFrame () {
+          vrDisplay.requestAnimationFrame(onAnimationFrame);
+
+          vrDisplay.getFrameData(frameData);
+          frameDataLI.removeChild(frameDataUL);
+          frameDataUL = buildMemberList(frameData);
+          frameDataLI.appendChild(frameDataUL);
+
+          leftEye = vrDisplay.getEyeParameters("left");
+          leftEyeLI.removeChild(leftEyeUL);
+          leftEyeUL = buildMemberList(leftEye);
+          leftEyeLI.appendChild(leftEyeUL);
+
+          rightEye = vrDisplay.getEyeParameters("right");
+          rightEyeLI.removeChild(rightEyeUL);
+          rightEyeUL = buildMemberList(rightEye);
+          rightEyeLI.appendChild(rightEyeUL);
+        }
+        vrDisplay.requestAnimationFrame(onAnimationFrame);
+
+        vrElement.appendChild(memberUL);
+
+        return vrElement;
+      }
+
+      function eventFired(evt) {
+        VRSamplesUtil.addInfo("[" + evt.type + "] VR Display: " + evt.display.displayName + ", Reason: " + evt.reason, 3000);
+      }
+
+      if (navigator.getVRDisplays) {
+        // Enumerate the VRDisplays
+        navigator.getVRDisplays().then(function (displays) {
+          if (!displays.length) {
+            VRSamplesUtil.addInfo("WebVR supported, but no VRDisplays found.");
+            return;
+          }
+          for (var i = 0; i < displays.length; ++i) {
+            document.body.appendChild(buildVRElement(displays[i]));
+          }
+        }, function () {
+          VRSamplesUtil.addError("Your browser does not support WebVR. See <a href='http://webvr.info'>webvr.info</a> for assistance.");
+        });
+
+        window.addEventListener("vrdisplayconnect", eventFired, false);
+        window.addEventListener("vrdisplaydisconnect", eventFired, false);
+        window.addEventListener("vrdisplayactivate", eventFired, false);
+        window.addEventListener("vrdisplaydeactivate", eventFired, false);
+        window.addEventListener("vrdisplayblur", eventFired, false);
+        window.addEventListener("vrdisplayfocus", eventFired, false);
+      } else if (navigator.getVRDevices) {
+        VRSamplesUtil.addError("Your browser supports WebVR but not the latest version. See <a href='http://webvr.info'>webvr.info</a> for more info.");
+      } else {
+        VRSamplesUtil.addError("Your browser does not support WebVR. See <a href='http://webvr.info'>webvr.info</a> for assistance.");
+      }
+      })();
+    </script>
+  </body>
+</html>

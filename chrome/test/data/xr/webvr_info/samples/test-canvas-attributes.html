@@ -1,0 +1,254 @@
+<!doctype html>
+<!--
+Copyright 2016 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+    <!-- Origin Trial Token, feature = WebVR (For Chrome M59+), origin = https://webvr.info, expires = 2017-10-13 -->
+    <meta http-equiv="origin-trial" data-feature="WebVR (For Chrome M59+)" data-expires="2017-10-13" content="Aqw0TUvp8CwZmgIS50pM1blhzy05y7OkBeW3AQQGjer4KuKV0p13xfrRbe2bT8B1+DgRW0O3Dda0yOjcL46GBwgAAABMeyJvcmlnaW4iOiJodHRwczovL3dlYnZyLmluZm86NDQzIiwiZmVhdHVyZSI6IldlYlZSMS4xIiwiZXhwaXJ5IjoxNTA3ODU5MDE4fQ==">
+
+    <title>Canvas Attribute tests</title>
+
+    <!--
+      This sample tests a variety of canvas creation attribute combinations to
+      ensure they all work with the WebVR implementation.
+    -->
+
+    <script src="js/third-party/gl-matrix-min.js"></script>
+
+    <script src="js/third-party/wglu/wglu-program.js"></script>
+    <script src="js/third-party/wglu/wglu-stats.js"></script>
+    <script src="js/third-party/wglu/wglu-texture.js"></script>
+    <script src="js/third-party/wglu/wglu-url.js"></script>
+
+    <script src="js/vr-cube-sea.js"></script>
+    <script src="js/vr-samples-util.js"></script>
+  </head>
+  <body>
+    <script>
+      /* global mat4, VRCubeSea, WGLUStats, WGLUTextureLoader, VRSamplesUtil */
+      (function () {
+      "use strict";
+
+      var vrDisplay = null;
+      var frameData = null;
+      var projectionMat = mat4.create();
+      var viewMat = mat4.create();
+      var presentingCanvas = null;
+
+      // Register for mouse restricted events while in VR
+      // (e.g. mouse no longer available on desktop 2D view)
+      function onDisplayPointerRestricted() {
+        if (presentingCanvas && presentingCanvas.requestPointerLock) {
+          presentingCanvas.requestPointerLock();
+        }
+      }
+
+      // Register for mouse unrestricted events while in VR
+      // (e.g. mouse once again available on desktop 2D view)
+      function onDisplayPointerUnrestricted() {
+        var lock = document.pointerLockElement;
+        if (lock && lock === presentingCanvas && document.exitPointerLock) {
+          document.exitPointerLock();
+        }
+      }
+
+      function onVRRequestPresent (canvas) {
+        // This can only be called in response to a user gesture.
+        vrDisplay.requestPresent([{ source: canvas }]).then(function () {
+          onDisplayPointerUnrestricted();
+          presentingCanvas = canvas;
+        }, function (err) {
+          var errMsg = "requestPresent failed.";
+          if (err && err.message) {
+            errMsg += "<br/>" + err.message
+          }
+          VRSamplesUtil.addError(errMsg, 2000);
+        });
+      }
+
+      window.addEventListener('vrdisplaypointerrestricted', onDisplayPointerRestricted);
+      window.addEventListener('vrdisplaypointerunrestricted', onDisplayPointerUnrestricted);
+
+      window.addEventListener('vrdisplaypresentchange', function() {
+        if (!vrDisplay.isPresenting) {
+          presentingCanvas = null;
+        }
+      }, false);
+
+      function appendCanvas(name, glAttribs) {
+        // WebGL setup.
+        var gl = null;
+        var cubeSea = null;
+        var stats = null;
+
+        function initWebGL() {
+          gl = webglCanvas.getContext("webgl", glAttribs);
+          if (!gl) {
+            gl = webglCanvas.getContext("experimental-webgl", glAttribs);
+            if (!gl) {
+              VRSamplesUtil.addError("Your browser does not support WebGL.");
+              return;
+            }
+          }
+
+          gl.clearColor(0.1, 0.2, 0.3, 1.0);
+          gl.enable(gl.DEPTH_TEST);
+          gl.enable(gl.CULL_FACE);
+
+          var textureLoader = new WGLUTextureLoader(gl);
+          var texture = textureLoader.loadTexture("media/textures/cube-sea.png");
+          cubeSea = new VRCubeSea(gl, texture);
+
+          var enablePerformanceMonitoring = WGLUUrl.getBool(
+              'enablePerformanceMonitoring', false);
+          stats = new WGLUStats(gl, enablePerformanceMonitoring);
+        }
+
+        function onContextLost( event ) {
+          event.preventDefault();
+          console.log( 'WebGL Context Lost.' );
+          gl = null;
+          cubeSea = null;
+          stats = null;
+        }
+
+        function onContextRestored( event ) {
+          console.log( 'WebGL Context Restored.' );
+          initWebGL();
+        }
+
+        var webglCanvas = document.createElement("canvas");
+        webglCanvas.addEventListener( 'webglcontextlost', onContextLost, false );
+        webglCanvas.addEventListener( 'webglcontextrestored', onContextRestored, false );
+
+
+        initWebGL();
+
+        var container = document.createElement("div");
+        container.appendChild(webglCanvas);
+
+        container.appendChild(document.createElement("br"));
+
+        var presentLink = document.createElement("a");
+        presentLink.innerHTML = name + " - Enter VR";
+        presentLink.href = "#"
+        presentLink.addEventListener("click", function() {
+          if (vrDisplay) {
+            onVRRequestPresent(webglCanvas);
+          }
+        }, false);
+        container.appendChild(presentLink);
+
+        container.appendChild(document.createElement("hr"));
+
+        document.body.appendChild(container);
+
+        //===================
+
+        function onClick () {
+          // Reset the background color to a random value
+          if (gl) {
+            gl.clearColor(
+              Math.random() * 0.5,
+              Math.random() * 0.5,
+              Math.random() * 0.5, 1.0);
+          }
+        }
+        webglCanvas.addEventListener("click", onClick, false);
+
+
+        function onAnimationFrame (t) {
+          // do not attempt to render if there is no available WebGL context
+          if (!gl || !stats || !cubeSea) {
+            return;
+          }
+
+          stats.begin();
+
+          gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+          if (vrDisplay) {
+            vrDisplay.requestAnimationFrame(onAnimationFrame);
+
+            // Don't draw if another canvas is presenting
+            if (presentingCanvas && presentingCanvas != webglCanvas)
+                return;
+
+            vrDisplay.getFrameData(frameData);
+
+            if (vrDisplay.isPresenting) {
+              gl.viewport(0, 0, webglCanvas.width * 0.5, webglCanvas.height);
+              cubeSea.render(frameData.leftProjectionMatrix, frameData.leftViewMatrix, stats, t);
+
+              gl.viewport(webglCanvas.width * 0.5, 0, webglCanvas.width * 0.5, webglCanvas.height);
+              cubeSea.render(frameData.rightProjectionMatrix, frameData.rightViewMatrix, stats, t);
+
+              vrDisplay.submitFrame();
+            } else {
+              gl.viewport(0, 0, webglCanvas.width, webglCanvas.height);
+
+              mat4.perspective(projectionMat, Math.PI*0.4, webglCanvas.width / webglCanvas.height, 0.1, 1024.0);
+              cubeSea.render(projectionMat, frameData.leftViewMatrix, stats, t);
+              stats.renderOrtho(10, 10, webglCanvas.height - 20, webglCanvas.height - 20);
+            }
+          } else {
+            window.requestAnimationFrame(onAnimationFrame);
+
+            // No VRDisplay found.
+            gl.viewport(0, 0, webglCanvas.width, webglCanvas.height);
+            mat4.perspective(projectionMat, Math.PI*0.4, webglCanvas.width / webglCanvas.height, 0.1, 1024.0);
+            mat4.identity(viewMat);
+            cubeSea.render(projectionMat, viewMat, stats, t);
+
+            stats.renderOrtho(10, 10, webglCanvas.height - 20, webglCanvas.height - 20);
+          }
+
+          stats.end();
+        }
+        window.requestAnimationFrame(onAnimationFrame);
+      }
+
+      if (navigator.getVRDisplays) {
+        frameData = new VRFrameData();
+
+        navigator.getVRDisplays().then(function (displays) {
+          if (displays.length > 0) {
+            vrDisplay = displays[0];
+
+            // It's heighly reccommended that you set the near and far planes to
+            // something appropriate for your scene so the projection matricies
+            // WebVR produces have a well scaled depth buffer.
+            vrDisplay.depthNear = 0.1;
+            vrDisplay.depthFar = 1024.0;
+          } else {
+            VRSamplesUtil.addInfo("WebVR supported, but no VRDisplays found.", 3000);
+          }
+        }, function () {
+          VRSamplesUtil.addError("Your browser does not support WebVR. See <a href='http://webvr.info'>webvr.info</a> for assistance.");
+        });
+      } else if (navigator.getVRDevices) {
+        VRSamplesUtil.addError("Your browser supports WebVR but not the latest version. See <a href='http://webvr.info'>webvr.info</a> for more info.");
+      } else {
+        VRSamplesUtil.addError("Your browser does not support WebVR. See <a href='http://webvr.info'>webvr.info</a> for assistance.");
+      }
+
+      appendCanvas("Default", {});
+      appendCanvas("Alpha False", { alpha: false });
+      appendCanvas("Depth False", { depth: false });
+      appendCanvas("Stencil True", { stencil: true });
+      appendCanvas("Antialias False", { antialias: false });
+      appendCanvas("Premultiplied Alpha False", { premultipliedAlpha: false });
+      appendCanvas("Preserve Drawing Buffer False", { preserveDrawingBuffer: true });
+
+      })();
+    </script>
+  </body>
+</html>

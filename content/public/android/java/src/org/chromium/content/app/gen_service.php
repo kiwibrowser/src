@@ -1,0 +1,20 @@
+<?php
+for ($i = 20; $i < 150; $i++)
+{
+$content = '// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+package org.chromium.content.app;
+
+/**
+ * This is needed to register multiple SandboxedProcess services so that we can have
+ * more than one sandboxed process.
+ */
+public class SandboxedProcessService'.$i.' extends SandboxedProcessService {
+
+}
+';
+file_put_contents('SandboxedProcessService'.$i.'.java', $content);
+echo '"java/src/org/chromium/content/app/SandboxedProcessService'.$i.'.java",' . "\n";
+}

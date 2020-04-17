@@ -1,0 +1,224 @@
+; Open Screen protocol spec: https://webscreens.github.io/openscreenprotocol/#appendix-a
+; CDDL spec: https://tools.ietf.org/html/draft-ietf-cbor-cddl-08
+
+; type key 10
+agent-info-request = {
+  request
+}
+
+; type key 11
+agent-info-response = {
+  response
+  1: agent-info ; agent-info
+}
+
+agent-info = {
+  0: text ; friendly-name
+  1: text ; model-name
+  ; ...
+}
+
+; type key 12
+agent-status-request = {
+  request
+  ? 1: status ; status
+}
+
+; type key 13
+agent-status-response = {
+  response
+  ? 1: status ; status
+}
+
+request = (
+ 0: request-id ; request-id
+)
+
+response = (
+ 0: request-id ; request-id
+)
+
+request-id = uint
+
+microseconds = uint
+
+; type key 1001
+authentication-request = {
+  request
+  1: authentication-mechanism ; mechanism
+  2: bytes ; salt
+  3: uint ; cost
+}
+
+; type key 1002
+authentication-response = {
+  response
+  1: authentication-response-result ; result
+  2: bytes ; proof
+}
+
+; type key 1003
+authentication-result = {
+  1: authentication-result-result ; result
+}
+
+authentication-mechanism = &(
+  hkdf-of-scrypt-of-psk: 1
+)
+
+authentication-response-result = &(
+  ok: 0
+  unknown-error: 1
+  mechanism-unknown: 2
+  salt-too-small: 3
+  cost-too-low: 4
+  cost-too-high: 5
+  secret-unknown: 6
+  calculation-took-too-long: 7
+)
+
+authentication-result-result = &(
+  authenticated: 0
+  unknown-error: 1
+  proof-invalid: 2
+)
+
+; type key 14
+presentation-url-availability-request = {
+  request
+  1: [* text] ; urls
+  2: microseconds ; watch-duration
+  3: uint ; watch-id
+}
+
+; type key 15
+presentation-url-availability-response = {
+  response
+  1: [* url-availability] ; url-availabilities
+}
+
+; type key 103
+presentation-url-availability-event = {
+  1: uint ; watch-id
+  2: [* url-availability] ; url-availabilities
+}
+
+; idea: use HTTP response codes?
+url-availability = &(
+  available: 0
+  unavailable: 1
+  invalid: 10
+)
+
+; type key 104
+presentation-start-request = {
+  request
+  1: text ; presentation-id
+  2: text ; url
+  3: [* http-header] ; headers
+}
+
+http-header = [
+  key: text
+  value: text
+]
+
+; type key 105
+presentation-start-response = {
+  response
+  1: &result ; result
+  2: uint ; connection-id
+}
+
+; type key 106
+presentation-termination-request = {
+  request
+  1: text ; presentation-id
+  2: &(
+    controller-called-terminate: 10
+    user-terminated-via-controller: 11
+    unknown: 255
+  )
+ ; reason
+}
+
+; type key 107
+presentation-termination-response = {
+  response
+  1: &result ; result
+}
+
+; type key 108
+presentation-termination-event = {
+  1: text ; presentation-id
+  2: &(
+    receiver-called-terminate: 1
+    user-terminated-via-receiver: 2
+    controller-called-terminate: 10
+    user-terminated-via-controller: 11
+    receiver-replaced-presentation: 20
+    receiver-idle-too-long: 30
+    receiver-attempted-to-navigate: 31
+    receiver-powering-down: 100
+    receiver-crashed: 101
+    unknown: 255
+  ) ; reason
+}
+
+; type key 109
+presentation-connection-open-request = {
+  request
+  1: text ; presentation-id
+  2: text ; url
+}
+
+; type key 110
+presentation-connection-open-response = {
+  response
+  1: &result ; result
+  2: uint; connection-id
+}
+
+; type key 111
+presentation-connection-close-request = {
+  request
+  1: uint ; connection-id
+}
+
+; type key 112
+presentation-connection-close-response = {
+  response
+  1: &result ; result
+}
+
+; type key 113
+presentation-connection-close-event = {
+  1: uint; connection-id
+  2: &(
+    close-method-called: 1
+    connection-object-discarded: 10
+    unrecoverable-error-while-sending-or-receiving-message: 100
+  ) ; reason
+  ? 3: text ; error-message
+}
+
+; type key 16
+presentation-connection-message = {
+  1: uint ; connection-id
+  2: bytes / text ; message
+}
+
+status = {
+  status: text
+}
+
+result = (
+  success: 1
+  invalid-url: 10
+  invalid-presentation-id: 11
+  timeout: 100
+  transient-error: 101
+  permanent-error: 102
+  terminating: 103
+  unknown-error: 199
+)

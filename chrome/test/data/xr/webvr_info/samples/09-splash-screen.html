@@ -1,0 +1,364 @@
+<!doctype html>
+<!--
+Copyright 2016 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+    <!-- Origin Trial Token, feature = WebVR (For Chrome M59+), origin = https://webvr.info, expires = 2017-10-13 -->
+    <meta http-equiv="origin-trial" data-feature="WebVR (For Chrome M59+)" data-expires="2017-10-13" content="Aqw0TUvp8CwZmgIS50pM1blhzy05y7OkBeW3AQQGjer4KuKV0p13xfrRbe2bT8B1+DgRW0O3Dda0yOjcL46GBwgAAABMeyJvcmlnaW4iOiJodHRwczovL3dlYnZyLmluZm86NDQzIiwiZmVhdHVyZSI6IldlYlZSMS4xIiwiZXhwaXJ5IjoxNTA3ODU5MDE4fQ==">
+
+    <title>09 - Splash Screen</title>
+
+    <!--
+      This sample demonstrates best practices for displaying splash screens
+      while loading large content.
+    -->
+
+    <style>
+      canvas {
+        box-sizing: border-box;
+        height: 100%;
+        left: 0;
+        margin: 0;
+        position: absolute;
+        top: 0;
+        width: 100%;
+      }
+    </style>
+
+    <!-- This entire block in only to facilitate dynamically enabling and
+    disabling the WebVR polyfill, and is not necessary for most WebVR apps.
+    If you want to use the polyfill in your app, just include the js file and
+    everything will work the way you want it to by default. -->
+    <script>
+      var WebVRConfig = {
+        // Prevents the polyfill from initializing automatically.
+        DEFER_INITIALIZATION: true,
+        // Ensures the polyfill is always active when initialized, even if the
+        // native API is available. This is probably NOT what most pages want.
+        ALWAYS_APPEND_POLYFILL_DISPLAY: true,
+        // Polyfill optimizations
+        DIRTY_SUBMIT_FRAME_BINDINGS: true,
+        BUFFER_SCALE: 0.75,
+      };
+    </script>
+    <script src="js/third-party/webvr-polyfill.js"></script>
+    <script src="js/third-party/wglu/wglu-url.js"></script>
+    <script>
+      // Dynamically turn the polyfill on if requested by the query args.
+      if (WGLUUrl.getBool('polyfill', false)) {
+        InitializeWebVRPolyfill();
+      }
+    </script>
+    <!-- End sample polyfill enabling logic -->
+
+    <script src="js/third-party/gl-matrix-min.js"></script>
+
+    <script src="js/third-party/wglu/wglu-program.js"></script>
+    <script src="js/third-party/wglu/wglu-stats.js"></script>
+    <script src="js/third-party/wglu/wglu-texture.js"></script>
+
+    <script src="js/vr-cube-sea.js"></script>
+    <script src="js/vr-samples-util.js"></script>
+    <script src="js/vr-splash.js"></script>
+  </head>
+  <body>
+    <p>This sample only displays in VR. To view click the "Enter VR" button.</p>
+    <script>
+      /* global mat4, VRCubeSea, WGLUStats, WGLUTextureLoader, VRSamplesUtil */
+      (function () {
+      "use strict";
+
+      var vrDisplay = null;
+      var frameData = null;
+      var projectionMat = mat4.create();
+      var viewMat = mat4.create();
+      var vrPresentButton = null;
+
+      // ================================
+      // WebVR-specific code begins here.
+      // ================================
+
+      // For many WebVR apps it can be handy to display a splash screen while
+      // the main scene's resources load, especially if the VR content isn't
+      // preloaded via a magic window. This lets the user know that their
+      // request to enter VR has been acknowledged and provides a super minimal
+      // tracked environment while everything else is being built.
+
+      // There are some best practices to follow when doing a splash screen,
+      // which this sample aims to demonstrate. They are:
+
+      // * Render a single frame and allow the underlying VR system to reproject
+      //   it for you.
+      // * Always render the splash such against a black background so the user
+      //   can't tell where the edge of the reprojected surface is.
+      // * The splash screen image should fit entirely in the users field of
+      //   view, otherwise reprojection may show clipped edges.
+      // * Always render the splash directly in front of the user, no matter
+      //   where they are looking at the moment the splash screen is shown.
+      // * Avoid the temptation to continuously render a spinner or other small
+      //   animation. You're just eating up GPU time that should be used to load
+      //   faster, and you're likely to jank terribly.
+      // * Beyond that, avoid even sparsely updated progress bars, as the user
+      //   may not be looking at the splash wen you update and then reprojection
+      //   breaks.
+      // * If you MUST update the splash while loading, always draw the updated
+      //   frames directy in front of the user. This is really janky, though, so
+      //   please just don't?
+      // * In general render the ABSOLUTE MINIMUM NECESSARY and spend all the
+      //   rest of your time loading. People did not come to your site to gawk
+      //   at your fabulous splash image.
+
+      // WebGL setup.
+      var webglCanvas = null;
+      var gl = null;
+      var cubeSea = null;
+      var stats = null;
+      var textureLoader = null;
+      var splashScreen = null;
+
+      function onContextLost( event ) {
+        event.preventDefault();
+        console.log( 'WebGL Context Lost.' );
+        gl = null;
+        cubeSea = null;
+        stats = null;
+        textureLoader = null;
+        splashScreen = null;
+      }
+
+      function onContextRestored( event ) {
+        console.log( 'WebGL Context Restored.' );
+        initWebGL(vrDisplay ? vrDisplay.capabilities.hasExternalDisplay : false);
+      }
+
+      webglCanvas = document.createElement('canvas');
+      webglCanvas.addEventListener( 'webglcontextlost', onContextLost, false );
+      webglCanvas.addEventListener( 'webglcontextrestored', onContextRestored, false );
+
+      // This sample is going to use a slightly different start up sequence.
+      // In order to show the splash screen effect we won't have any magic
+      // window content and only begin loading the scene once the "Enter VR"
+      // button is clicked. At that point we'll render a single frame of the
+      // splash screen and let it reproject while the real scene loads. Once
+      // that scene is ready we'll begin rendering it.
+      function initWebGL (preserveDrawingBuffer) {
+        var glAttribs = {
+          alpha: false,
+          preserveDrawingBuffer: preserveDrawingBuffer
+        };
+        var useWebgl2 = WGLUUrl.getBool('webgl2', false);
+        var contextTypes = useWebgl2 ? ["webgl2"] : ["webgl", "experimental-webgl"];
+        for (var i in contextTypes) {
+          gl = webglCanvas.getContext(contextTypes[i], glAttribs);
+          if (gl)
+            break;
+        }
+        if (!gl) {
+          var webglType = (useWebgl2 ? "WebGL 2" : "WebGL")
+          VRSamplesUtil.addError("Your browser does not support " + webglType + ".");
+          return;
+        }
+        gl.clearColor(0.1, 0.2, 0.3, 1.0);
+        gl.enable(gl.DEPTH_TEST);
+        gl.enable(gl.CULL_FACE);
+
+        textureLoader = new WGLUTextureLoader(gl);
+
+        document.body.appendChild(webglCanvas);
+
+        // Wait until we have a WebGL context to resize and start rendering.
+        window.addEventListener("resize", onResize, false);
+        onResize();
+      }
+
+      function loadSplash() {
+        textureLoader.loadTexture("media/textures/splash.png", null, function(texture) {
+          splashScreen = new VRSplashScreen(gl, texture, false);
+
+          // When the splash texture is loaded, draw a single frame with it.
+          vrDisplay.requestAnimationFrame(onSplashFrame);
+        });
+      }
+
+      function loadScene() {
+        // Totally cheating here to pretend like our load times are long
+        setTimeout(function () {
+          var texture = textureLoader.loadTexture("media/textures/cube-sea.png");
+          cubeSea = new VRCubeSea(gl, texture);
+          var enablePerformanceMonitoring = WGLUUrl.getBool(
+              'enablePerformanceMonitoring', false);
+          stats = new WGLUStats(gl, enablePerformanceMonitoring);
+
+          // Once the scene is fully loaded kick off the animation loop
+          vrDisplay.requestAnimationFrame(onAnimationFrame);
+        }, 5000);
+      }
+
+      function onVRRequestPresent () {
+        // Only use preserveDrawingBuffer if we have an external display to
+        // mirror to.
+        initWebGL(vrDisplay.capabilities.hasExternalDisplay);
+        vrDisplay.requestPresent([{ source: webglCanvas }]).then(function () {
+          // Immediate upon presentation load up the splash image.
+          loadSplash();
+        }, function (err) {
+          var errMsg = "requestPresent failed.";
+          if (err && err.message) {
+            errMsg += "<br/>" + err.message
+          }
+          VRSamplesUtil.addError(errMsg, 2000);
+        });
+      }
+
+      function onVRExitPresent () {
+        if (!vrDisplay.isPresenting)
+          return;
+
+        vrDisplay.exitPresent().then(function () {
+        }, function () {
+          VRSamplesUtil.addError("exitPresent failed.", 2000);
+        });
+      }
+
+      function onVRPresentChange () {
+        onResize();
+
+        if (vrDisplay.isPresenting) {
+          if (vrDisplay.capabilities.hasExternalDisplay) {
+            VRSamplesUtil.removeButton(vrPresentButton);
+            vrPresentButton = VRSamplesUtil.addButton("Exit VR", "E", "media/icons/cardboard64.png", onVRExitPresent);
+          }
+        } else {
+          // For this sample we'll tear down the GL scene when we exit VR.
+          document.body.removeChild(webglCanvas);
+          webglCanvas = null;
+          gl = null;
+
+          if (vrDisplay.capabilities.hasExternalDisplay) {
+            VRSamplesUtil.removeButton(vrPresentButton);
+            vrPresentButton = VRSamplesUtil.addButton("Enter VR", "E", "media/icons/cardboard64.png", onVRRequestPresent);
+          }
+        }
+      }
+
+      if (navigator.getVRDisplays) {
+        frameData = new VRFrameData();
+
+        navigator.getVRDisplays().then(function (displays) {
+          if (displays.length > 0) {
+            vrDisplay = displays[displays.length - 1];
+            vrDisplay.depthNear = 0.1;
+            vrDisplay.depthFar = 1024.0;
+
+            if (vrDisplay.capabilities.canPresent)
+              vrPresentButton = VRSamplesUtil.addButton("Enter VR", "E", "media/icons/cardboard64.png", onVRRequestPresent);
+
+            // For the benefit of automated testing. Safe to ignore.
+            if (vrDisplay.capabilities.canPresent && WGLUUrl.getBool('canvasClickPresents', false))
+              webglCanvas.addEventListener("click", onVRRequestPresent, false);
+
+            window.addEventListener('vrdisplaypresentchange', onVRPresentChange, false);
+            window.addEventListener('vrdisplayactivate', onVRRequestPresent, false);
+            window.addEventListener('vrdisplaydeactivate', onVRExitPresent, false);
+          } else {
+            VRSamplesUtil.addInfo("WebVR supported, but no VRDisplays found.", 3000);
+          }
+        });
+      } else if (navigator.getVRDevices) {
+        VRSamplesUtil.addError("Your browser supports WebVR but not the latest version. See <a href='http://webvr.info'>webvr.info</a> for more info.");
+      } else {
+        VRSamplesUtil.addError("Your browser does not support WebVR. See <a href='http://webvr.info'>webvr.info</a> for assistance.");
+      }
+
+      function onResize () {
+        if (vrDisplay && vrDisplay.isPresenting) {
+          // If we're presenting we want to use the drawing buffer size
+          // recommended by the VRDevice, since that will ensure the best
+          // results post-distortion.
+          var leftEye = vrDisplay.getEyeParameters("left");
+          var rightEye = vrDisplay.getEyeParameters("right");
+
+          // For simplicity we're going to render both eyes at the same size,
+          // even if one eye needs less resolution. You can render each eye at
+          // the exact size it needs, but you'll need to adjust the viewports to
+          // account for that.
+          webglCanvas.width = Math.max(leftEye.renderWidth, rightEye.renderWidth) * 2;
+          webglCanvas.height = Math.max(leftEye.renderHeight, rightEye.renderHeight);
+        }
+      }
+
+      function onSplashFrame (t) {
+        // do not attempt to render if there is no available WebGL context
+        if (!gl) {
+          return;
+        }
+
+        // Splash screens should always be cleared to black to avoid showing the
+        // edges of the reprojected frame
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        // Note: We explicity do NOT request a new animation frame here. That
+        // should wait until the content is loaded and we are ready to begin
+        // rendering the full scene.
+
+        vrDisplay.getFrameData(frameData);
+
+        // The splash screen should always be rendered directly in front of the
+        // user no matter what direction they are looking. This ensures that the
+        // full splash can be seen and reprojected. Otherwise the splash screen
+        // might be partially off-screen when rendered and subsequent
+        // reprojections will be cut off at the edges.
+
+        // Splash screen images can be mono, but it's fun to use a stereo image
+        // too! That's what we're doing here.
+        gl.viewport(0, 0, webglCanvas.width * 0.5, webglCanvas.height);
+        splashScreen.render(frameData.leftProjectionMatrix, "left");
+
+        gl.viewport(webglCanvas.width * 0.5, 0, webglCanvas.width * 0.5, webglCanvas.height);
+        splashScreen.render(frameData.rightProjectionMatrix, "right");
+
+        vrDisplay.submitFrame();
+
+        // Now that the splash screen has been rendered we can begin loading the
+        // real scene:
+        loadScene();
+      }
+
+      function onAnimationFrame (t) {
+        // do not attempt to render if there is no available WebGL context
+        if (!gl || !stats || !cubeSea) {
+          window.requestAnimationFrame(onAnimationFrame);
+          return;
+        }
+
+        stats.begin();
+
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        vrDisplay.requestAnimationFrame(onAnimationFrame);
+
+        vrDisplay.getFrameData(frameData);
+
+        gl.viewport(0, 0, webglCanvas.width * 0.5, webglCanvas.height);
+        cubeSea.render(frameData.leftProjectionMatrix, frameData.leftViewMatrix, stats, t);
+
+        gl.viewport(webglCanvas.width * 0.5, 0, webglCanvas.width * 0.5, webglCanvas.height);
+        cubeSea.render(frameData.rightProjectionMatrix, frameData.rightViewMatrix, stats, t);
+
+        vrDisplay.submitFrame();
+
+        stats.end();
+      }
+      })();
+    </script>
+  </body>
+</html>
