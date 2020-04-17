@@ -113,7 +113,7 @@ To prepare initial setup run:
 
 then generate the build files:
 
-    ~/chromium/opensourcebuild$ gn gen out/android_arm
+    ~/chromium/opensourcebuild$ gn gen out/android_arm (or gen args out/android_arm)
     Writing build/secondary/third_party/android_tools/google_play_services_basement_java.info
     Writing build/secondary/third_party/android_tools/google_play_services_tasks_java.info
     Writing third_party/android_support_test_runner/rules_java.info
