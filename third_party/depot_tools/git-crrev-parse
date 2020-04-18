@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# Copyright 2015 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+
+# This git extension converts a chromium commit number to its git commit hash.
+# It accepts the following input formats:
+#
+#   $ git crrev-parse Cr-Commit-Position: refs/heads/master@{#311769}
+#   $ git crrev-parse '    Cr-Commit-Position: refs/heads/master@{#311769}'
+#   $ git crrev-parse 'Cr-Commit-Position: refs/heads/master@{#311769}'
+#   $ git crrev-parse refs/heads/master@{#311769}
+#
+# It also works for branches (assuming you have branches in your local
+# checkout):
+#
+#   $ git crrev-parse refs/branch-heads/2278@{#2}
+#
+# If you don't specify a branch, refs/heads/master is assumed:
+#
+#   $ git crrev-parse @{#311769}
+#   $ git crrev-parse 311769
+
+# Developer note: this script makes heavy use of prefix/suffix/pattern
+# substitution for bash variables.  Refer to the "Parameter Expansion"
+# section of the man page for bash.
+
+while [ -n "$1" ]; do
+  if [[ "$1" = "Cr-Commit-Position:" ]] && [[ "$2" =~ .*@\{#[0-9][0-9]*\} ]]; then
+    commit_pos="$2"
+    shift
+  else
+    commit_pos="${1#*Cr-Commit-Position: }"
+  fi
+  ref="${commit_pos%@\{#*\}}"
+  if [ "$ref" = "$commit_pos" -o -z "$ref" ]; then
+    ref="refs/heads/master"
+  fi
+  remote_ref="${ref/refs\/heads/refs\/remotes\/origin}"
+  remote_ref="${remote_ref/refs\/branch-heads/refs\/remotes\/branch-heads}"
+  remote_ref="${remote_ref//\\}"
+  num="${commit_pos#*@\{\#}"
+  num="${num%\}}"
+  if [ -z "$ref" -o -z "$num" ]; then
+    git rev-parse "$1"
+  else
+    grep_str="^Cr-Commit-Position: $ref@{#$num}"
+    git rev-list -n 1 --grep="$grep_str" "$remote_ref"
+  fi
+
+  shift
+done

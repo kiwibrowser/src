@@ -1,0 +1,130 @@
+#!/bin/bash -e
+
+# Copyright (c) 2016 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+set -e -o pipefail
+
+CYGWIN=false
+MYPATH=$(dirname "${BASH_SOURCE[0]}")
+
+: ${CIPD_CLIENT_VER:=`cat $MYPATH/cipd_client_version`}
+: ${CIPD_CLIENT_SRV:='https://chrome-infra-packages.appspot.com'}
+
+UNAME=`uname -s | tr '[:upper:]' '[:lower:]'`
+case $UNAME in
+  linux)
+    PLAT=linux
+    ;;
+  cygwin*)
+    PLAT=windows
+    CYGWIN=true
+    ;;
+  msys*|mingw*)
+    PLAT=windows
+    ;;
+  darwin)
+    PLAT=mac
+    ;;
+  *)
+    echo "UNKNOWN OS: $UNAME"
+    exit 1
+esac
+
+UNAME=`uname -m | tr '[:upper:]' '[:lower:]'`
+case $UNAME in
+  x86_64|amd64)
+    ARCH=amd64
+    ;;
+  s390x)  # best-effort support for IBM s390x: crbug.com/764087
+    ARCH=s390x
+    ;;
+  ppc64)  # best-effort support for 64-bit PowerPC: crbug.com/773857
+    ARCH=ppc64
+    ;;
+  ppc64le)  # best-effort support for 64-bit PowerPC/LE: crbug.com/773857
+    ARCH=ppc64le
+    ;;
+  aarch64)
+    ARCH=arm64
+    ;;
+  armv7l)
+    ARCH=armv6l
+    ;;
+  arm*)
+    ARCH=$UNAME
+    ;;
+  *86)
+    ARCH=386
+    ;;
+  *)
+    echo "UNKNOWN Machine architecture: $UNAME"
+    exit 1
+esac
+
+URL="$CIPD_CLIENT_SRV/client?platform=${PLAT}-${ARCH}&version=$CIPD_CLIENT_VER"
+CLIENT="$MYPATH/.cipd_client"
+
+USER_AGENT="depot_tools/$(git -C $MYPATH rev-parse HEAD 2>/dev/null || echo "???")"
+
+if [ ! -e "$CLIENT" ]; then
+  echo "Bootstrapping cipd client for ${PLAT}-${ARCH} from ${URL}..."
+
+  # Download the client into a temporary file, then move it into the final
+  # location atomically.
+  #
+  # This wonky tempdir method works on Linux and Mac.
+  CIPD_CLIENT_TMP=$(\
+    mktemp -p "$MYPATH" 2>/dev/null || \
+    mktemp "$MYPATH/.cipd_client.XXXXXXX")
+
+  if hash curl 2> /dev/null ; then
+    curl "$URL" -s --show-error -f -A "$USER_AGENT"  -L -o "$CIPD_CLIENT_TMP"
+  elif hash wget 2> /dev/null ; then
+    wget "$URL" -q -U "${USER_AGENT}" -O "${CIPD_CLIENT_TMP}"
+  else
+    echo Your platform is missing a supported fetch command. Please use your package
+    echo manager to install one before continuing:
+    echo
+    echo  curl
+    echo  wget
+    echo
+    echo Alternately, manually download:
+    echo   "$URL"
+    echo To $CLIENT, and then re-run this command.
+    rm "${CIPD_CLIENT_TMP}"
+    exit 1
+  fi
+
+  chmod +x "$CIPD_CLIENT_TMP"
+
+  set +e
+  mv "$CIPD_CLIENT_TMP" "$CLIENT"
+  set -e
+fi
+
+export CIPD_HTTP_USER_AGENT_PREFIX=$USER_AGENT
+if ! "$CLIENT" selfupdate -version "$CIPD_CLIENT_VER" ; then
+  echo -n "[31;1mselfupdate failed:[0;1m " 1>&2
+  echo "run \`CIPD_HTTP_USER_AGENT_PREFIX=$USER_AGENT/manual $CLIENT selfupdate -version '$CIPD_CLIENT_VER'\` to diagnose" 1>&2
+  echo "[0m" 1>&2
+fi
+
+# CygWin requires changing absolute paths to Windows form. Relative paths
+# are typically okay as Windows generally accepts both forward and back
+# slashes. This could possibly be constrained to only /tmp/ and /cygdrive/.
+if $CYGWIN; then
+  args=("$@")
+  for i in `seq 2 $#`; do
+    arg="${@:$i:1}"
+    if [ "${arg:0:1}" == "/" ]; then
+      last=$((i-1))
+      next=$((i+1))
+      set -- "${@:1:$last}" `cygpath -w "$arg"` "${@:$next}"
+    fi
+  done
+  echo "$CLIENT" "${@}"
+fi
+
+exec "$CLIENT" "${@}"

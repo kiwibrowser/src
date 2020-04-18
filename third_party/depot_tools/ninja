@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+# Copyright (c) 2012 Google Inc. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+OS="$(uname -s)"
+THIS_DIR="$(dirname "${0}")"
+
+function print_help() {
+cat <<-EOF
+No prebuilt ninja binary was found for this system.
+Try building your own binary by doing:
+  cd ~
+  git clone https://github.com/martine/ninja.git -b v1.8.2
+  cd ninja && ./configure.py --bootstrap
+Then add ~/ninja/ to your PATH.
+EOF
+}
+
+case "$OS" in
+  Linux)
+    MACHINE=$(uname -m)
+    case "$MACHINE" in
+      i?86|x86_64)
+        LONG_BIT=$(getconf LONG_BIT)
+        # We know we are on x86 but we need to use getconf to determine
+        # bittage of the userspace install (e.g. when running 32-bit userspace
+        # on x86_64 kernel)
+        exec "${THIS_DIR}/ninja-linux${LONG_BIT}" "$@";;
+      *)
+        echo Unknown architecture \($MACHINE\) -- unable to run ninja.
+        print_help
+        exit 1;;
+    esac
+    ;;
+  Darwin)    exec "${THIS_DIR}/ninja-mac" "$@";;
+  CYGWIN*)   exec cmd.exe /c $(cygpath -t windows $0).exe "$@";;
+  MINGW*)    cmd.exe //c $0.exe "$@";;
+  *)         echo "Unsupported OS ${OS}"
+             print_help
+             exit 1;;
+esac

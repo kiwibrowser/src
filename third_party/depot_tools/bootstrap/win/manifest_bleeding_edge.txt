@@ -1,0 +1,20 @@
+# CIPD manifest for Windows tools.
+#
+# We must install anything that we want included on PATH to a different
+# subdirectory than Git, as Git's msys bash strips its root directory
+# from PATH, hence the subdirs.
+#
+# If any paths or package layouts change, updates will be required in
+# "win_tools.bat" and "win_tools.py" templates.
+#
+# "win_tools.bat" has a hard requirement that the Python package contains the
+# string "cpython" and ends with the CIPD tag "version:VERSION". It uses this
+# to extract VERSION.
+
+$VerifiedPlatform windows-386 windows-amd64
+
+@Subdir python
+infra/python/cpython/${platform} version:2.7.13.chromium7
+
+@Subdir git
+infra/git/windows-${arch} version:2.17.0.chromium12

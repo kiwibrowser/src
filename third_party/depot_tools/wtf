@@ -1,0 +1,79 @@
+#!/usr/bin/env python
+# Copyright (c) 2010 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+"""Display active git branches and code changes in a chromiumos workspace."""
+
+import gclient_utils
+import os
+import re
+import subprocess
+import sys
+
+
+def show_dir(full_name, relative_name, color):
+  """Display active work in a single git repo."""
+
+  def show_name():
+    """Display the directory name."""
+
+    if color:
+      sys.stdout.write('========= %s[44m%s[37m%s%s[0m ========\n' %
+                       (chr(27), chr(27), relative_name, chr(27)))
+    else:
+      sys.stdout.write('========= %s ========\n' % relative_name)
+
+  lines_printed = 0
+
+  cmd = ['git', 'branch', '-v']
+  if color:
+    cmd.append('--color')
+
+  branch = subprocess.Popen(cmd,
+                            cwd=full_name,
+                            stdout=subprocess.PIPE).communicate()[0].rstrip()
+
+  if len(branch.splitlines()) > 1:
+    if lines_printed == 0:
+      show_name()
+    lines_printed += 1
+    print branch
+
+  status = subprocess.Popen(['git', 'status'],
+                            cwd=full_name,
+                            stdout=subprocess.PIPE).communicate()[0].rstrip()
+
+  if len(status.splitlines()) > 2:
+    if lines_printed == 0:
+      show_name()
+    if lines_printed == 1:
+      print '---------------'
+    print status
+
+
+def main():
+  """Take no arguments."""
+
+  color = False
+
+  if os.isatty(1):
+    color = True
+
+  base = os.path.basename(os.getcwd())
+  root, entries = gclient_utils.GetGClientRootAndEntries()
+
+  # which entries map to a git repos?
+  raw = [k for k, v in entries.items() if v and not re.search('svn', v)]
+  raw.sort()
+
+  # We want to use the full path for testing, but we want to use the relative
+  # path for display.
+  fulldirs = map(lambda(p): os.path.normpath(os.path.join(root, p)), raw)
+  reldirs = map(lambda(p): re.sub('^' + base, '.', p), raw)
+
+  for full_path, relative_path in zip(fulldirs, reldirs):
+    show_dir(full_path, relative_path, color)
+
+if __name__ == '__main__':
+  main()

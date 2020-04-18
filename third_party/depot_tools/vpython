@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Copyright 2018 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+if [[ $VPYTHON_BYPASS == "manually managed python not supported by chrome operations" ]]
+then
+  NEWARGS=()
+  while [[ $# -gt 0 ]]
+  do
+    case "$1" in
+      -vpython-tool*) # these tools all do something vpython related and quit
+        exit 0
+        ;;
+      -vpython*=*) # delete any vpython-specific flag (w/ attached argument)
+        shift
+        ;;
+      -vpython*) # delete any vpython-specific flag (w/ separate argument)
+        shift
+        shift
+        ;;
+      --)     # stop parsing
+        NEWARGS+=( "$@" )
+        break
+        ;;
+      *)      # regular arg
+        NEWARGS+=( "$1" )
+        shift
+        ;;
+    esac
+  done
+  exec "python" "${NEWARGS[@]}"
+fi
+
+
+MYPATH=$(dirname "${BASH_SOURCE[0]}")
+
+source "$MYPATH/cipd_bin_setup.sh"
+cipd_bin_setup &> /dev/null
+
+exec "$MYPATH/.cipd_bin/vpython" "$@"

@@ -1,0 +1,102 @@
+git-drover(1)
+=============
+
+NAME
+----
+git-drover -
+include::_git-drover_desc.helper.txt[]
+
+SYNOPSIS
+--------
+[verse]
+'git drover' --branch <branch>
+           (--cherry-pick <change> | --continue [path_to_workdir] |
+            --abort [path_to_workdir])
+           [--parent_checkout <path-to-existing-checkout>]
+           [--verbose] [--dry-run]
+
+DESCRIPTION
+-----------
+
+`git drover` applies a commit to a release branch. It creates a new workdir from
+an existing checkout to avoid downloading a new checkout without affecting the
+existing checkout.
+
+`git drover` does not support reverts. See the EXAMPLE section for the
+equivalent sequence of commands to run.
+
+OPTIONS
+-------
+--branch <branch>::
+  The branch to cherry-pick the commit to.
+
+--cherry-pick <commit>::
+  The commit to cherry-pick.
+
+--continue [path_to_workdir]::
+  Continue a cherry-pick that required manual resolution. The path to the drover
+  workdir is optional. If unspecified, the current directory is used.
+
+--abort [path_to_workdir]::
+  Abort a cherry-pick that required manual resolution and clean up its workdir.
+  The path to the drover workdir is optional. If unspecified, the current
+  directory is used.
+
+--parent_checkout::
+  The path to the chromium checkout to use as the source for a creating
+  git-new-workdir workdir to use for cherry-picking. If unspecified, the current
+  directory is used.
+
+-v::
+--verbose::
+  Enable verbose logging.
+
+--dry-run::
+  Skip landing the cherry-pick. Just ensure that the commit can be cherry-picked
+  into the branch.
+
+EXAMPLE
+-------
+
+PREREQUISITES
+~~~~~~~~~~~~~
+Before working with branches, you must
+ifdef::backend-xhtml11[]
+`gclient sync --with_branch_heads`
+endif::backend-xhtml11[]
+ifdef::backend-docbook[]
+'gclient sync --with_branch_heads'
+endif::backend-docbook[]
+at least once to fetch the branches.
+
+Merge Example
+^^^^^^^^^^^^^
+demo:1[]
+
+Merge with Conflicts Example
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+demo:4[]
+
+Revert Example
+^^^^^^^^^^^^^^
+demo:2[]
+
+If your cherrypick onto a release branch gets reverted, do not create a new
+cherrypick from master onto that release branch. Instead, use the "Reland"
+button on the original cherrypick CL.
+
+Manual Merge Example
+^^^^^^^^^^^^^^^^^^^^
+demo:3[]
+
+If `git cl upload` errors out, the branch you're uploading to probably has a CL
+with the same Change-Id. Instead of cherry-picking manually, use the Reland
+button in the Gerrit UI to create a new CL, and patch that CL into your client.
+
+SEE ALSO
+--------
+linkgit:git-cherry-pick[1], linkgit:git-revert[1]
+
+include::_footer.txt[]
+
+// vim: ft=asciidoc:

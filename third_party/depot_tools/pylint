@@ -1,0 +1,19 @@
+#!/bin/sh
+# Copyright (c) 2012 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# pylint -- a shell wrapper for pylint.py.
+
+base_dir=$(dirname "$0")
+
+# Test if this script is running under a MSys install.  If it is, we will
+# hardcode the path to Python where possible.
+OUTPUT="$(uname | grep 'MINGW')"
+MINGW=$?
+
+if [ -e "$base_dir/python.bat" -a $MINGW = 0 ]; then
+  PYTHONDONTWRITEBYTECODE=1 cmd.exe //c "$base_dir\\python.bat" "$base_dir\\pylint.py" "$@"
+else
+  PYTHONDONTWRITEBYTECODE=1 exec "$base_dir/pylint.py" "$@"
+fi

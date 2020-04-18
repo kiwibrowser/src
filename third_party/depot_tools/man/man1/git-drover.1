@@ -1,0 +1,330 @@
+'\" t
+.\"     Title: git-drover
+.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 06/21/2017
+.\"    Manual: Chromium depot_tools Manual
+.\"    Source: depot_tools 0867192e
+.\"  Language: English
+.\"
+.TH "GIT\-DROVER" "1" "06/21/2017" "depot_tools 0867192e" "Chromium depot_tools Manual"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+git-drover \- Apply a commit from the trunk to a release branch, or from one release branch to another\&.
+.SH "SYNOPSIS"
+.sp
+.nf
+\fIgit drover\fR \-\-branch <branch>
+           (\-\-cherry\-pick <change> | \-\-continue [path_to_workdir] |
+            \-\-abort [path_to_workdir])
+           [\-\-parent_checkout <path\-to\-existing\-checkout>]
+           [\-\-verbose] [\-\-dry\-run]
+.fi
+.sp
+.SH "DESCRIPTION"
+.sp
+git drover applies a commit to a release branch\&. It creates a new workdir from an existing checkout to avoid downloading a new checkout without affecting the existing checkout\&.
+.sp
+git drover does not support reverts\&. See the EXAMPLE section for the equivalent sequence of commands to run\&.
+.SH "OPTIONS"
+.PP
+\-\-branch <branch>
+.RS 4
+The branch to cherry\-pick the commit to\&.
+.RE
+.PP
+\-\-cherry\-pick <commit>
+.RS 4
+The commit to cherry\-pick\&.
+.RE
+.PP
+\-\-continue [path_to_workdir]
+.RS 4
+Continue a cherry\-pick that required manual resolution\&. The path to the drover workdir is optional\&. If unspecified, the current directory is used\&.
+.RE
+.PP
+\-\-abort [path_to_workdir]
+.RS 4
+Abort a cherry\-pick that required manual resolution and clean up its workdir\&. The path to the drover workdir is optional\&. If unspecified, the current directory is used\&.
+.RE
+.PP
+\-\-parent_checkout
+.RS 4
+The path to the chromium checkout to use as the source for a creating git\-new\-workdir workdir to use for cherry\-picking\&. If unspecified, the current directory is used\&.
+.RE
+.PP
+\-v, \-\-verbose
+.RS 4
+Enable verbose logging\&.
+.RE
+.PP
+\-\-dry\-run
+.RS 4
+Skip landing the cherry\-pick\&. Just ensure that the commit can be cherry\-picked into the branch\&.
+.RE
+.SH "EXAMPLE"
+.SS "PREREQUISITES"
+.sp
+Before working with branches, you must \fIgclient sync \-\-with_branch_heads\fR at least once to fetch the branches\&.
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBMerge Example\fR
+.RS 4
+.sp
+
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# Here\*(Aqs a commit (from some\&.committer) that we want to \*(Aqdrover\*(Aq\&.
+\fB$ git log \-n 1 \-\-pretty=fuller\fR
+commit 386bdd1dc15d367d7c33aa5d2ae5d10eb4b278bf
+Author:     some\&.committer <some\&.committer@chromium\&.org>
+AuthorDate: Thu Apr 10 08:54:46 2014 +0000
+Commit:     some\&.committer <some\&.committer@chromium\&.org>
+CommitDate: Thu Apr 10 08:54:46 2014 +0000
+
+    This change needs to go to branch 9999
+
+# Now do the \*(Aqdrover\*(Aq\&.
+\fB$ git drover \-\-branch 9999 \-\-cherry\-pick 386bdd1dc15d367d7c33aa5d2ae5d10eb4b278bf\fR
+Going to cherry\-pick
+"""
+commit 386bdd1dc15d367d7c33aa5d2ae5d10eb4b278bf
+Author: some\&.committer <some\&.committer@chromium\&.org>
+Date:   Thu Apr 10 08:54:46 2014 +0000
+
+    This change needs to go to branch 9999
+"""
+to 9999\&. Continue (y/n)? y
+
+# A cl is uploaded to rietveld, where it can be reviewed before landing\&.
+
+About to land on 9999\&. Continue (y/n)? y
+# The cherry\-pick cl is landed on the branch 9999\&.
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.RE
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBMerge with Conflicts Example\fR
+.RS 4
+.sp
+
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# Here\*(Aqs a commit (from some\&.committer) that we want to \*(Aqdrover\*(Aq\&.
+\fB$ git log \-n 1 \-\-pretty=fuller\fR
+commit 870faa8f7621b82b98e2e9a29056dff1fbf6b713
+Author:     some\&.committer <some\&.committer@chromium\&.org>
+AuthorDate: Thu Apr 10 08:54:46 2014 +0000
+Commit:     some\&.committer <some\&.committer@chromium\&.org>
+CommitDate: Thu Apr 10 08:54:46 2014 +0000
+
+    This change needs to go to branch 9999
+
+# Now do the \*(Aqdrover\*(Aq\&.
+\fB$ git drover \-\-branch 9999 \-\-cherry\-pick 870faa8f7621b82b98e2e9a29056dff1fbf6b713\fR
+Going to cherry\-pick
+"""
+commit 870faa8f7621b82b98e2e9a29056dff1fbf6b713
+Author: some\&.committer <some\&.committer@chromium\&.org>
+Date:   Thu Apr 10 08:54:46 2014 +0000
+
+    This change needs to go to branch 9999
+"""
+to 9999\&. Continue (y/n)? y
+
+Error: Patch failed to apply\&.
+
+A workdir for this cherry\-pick has been created in
+  /tmp/drover_9999
+
+To continue, resolve the conflicts there and run
+  git drover \-\-continue /tmp/drover_9999
+
+To abort this cherry\-pick run
+  git drover \-\-abort /tmp/drover_9999
+
+\fB$ pushd /tmp/drover_9999\fR
+# Manually resolve conflicts\&.
+\fB$ git add path/to/file_with_conflicts\fR
+\fB$ popd\fR
+\fB$ git drover \-\-continue /tmp/drover_9999\fR
+
+# A cl is uploaded to rietveld, where it can be reviewed before landing\&.
+
+About to land on 9999\&. Continue (y/n)? y
+# The cherry\-pick cl is landed on the branch 9999\&.
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.RE
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBRevert Example\fR
+.RS 4
+.sp
+
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# Make sure we have the most up\-to\-date branch sources\&.
+\fB$ git fetch\fR
+
+# Checkout the branch with the change we want to revert\&.
+\fB$ git checkout \-b drover_9999 branch\-heads/9999\fR
+Branch drover_9999 set up to track remote ref refs/branch\-heads/9999\&.
+
+# Here\*(Aqs the commit we want to revert\&.
+\fB$ git log \-n 1\fR
+commit 7066f3820fe39e50400b9d406a394117f807538e
+Author: some\&.committer <some\&.committer@chromium\&.org>
+Date:   Thu Apr 10 08:54:46 2014 +0000
+
+    This change is horribly broken\&.
+
+# Now do the revert\&.
+\fB$ git revert 7066f3820fe39e50400b9d406a394117f807538e\fR
+
+# That reverted the change and committed the revert\&.
+\fB$ git log \-n 1\fR
+commit 13e37b2a88d8fcd4ca4a55a4db27c619345f8396
+Author: you <you@chromium\&.org>
+Date:   Thu Apr 10 09:11:36 2014 +0000
+
+    Revert "This change is horribly broken\&."
+
+    This reverts commit 7066f3820fe39e50400b9d406a394117f807538e\&.
+
+# As with old drover, reverts are generally OK to commit without LGTM\&.
+\fB$ git cl upload \-r some\&.committer@chromium\&.org \-\-send\-mail\fR
+\fB$ git cl land \-\-bypass\-hooks\fR
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.sp
+If your cherrypick onto a release branch gets reverted, do not create a new cherrypick from master onto that release branch\&. Instead, use the "Reland" button on the original cherrypick CL\&.
+.RE
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBManual Merge Example\fR
+.RS 4
+.sp
+
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# Make sure we have the most up\-to\-date branch sources\&.
+\fB$ git fetch\fR
+
+# Here\*(Aqs a commit (from some\&.committer) that we want to \*(Aqdrover\*(Aq\&.
+\fB$ git log \-n 1 \-\-pretty=fuller\fR
+commit 54631489ecf24a4ae3f5a12c393619a717cee85a
+Author:     some\&.committer <some\&.committer@chromium\&.org>
+AuthorDate: Thu Apr 10 08:54:46 2014 +0000
+Commit:     some\&.committer <some\&.committer@chromium\&.org>
+CommitDate: Thu Apr 10 08:54:46 2014 +0000
+
+    This change needs to go to branch 9999
+
+# Checkout the branch we want to \*(Aqdrover\*(Aq to\&.
+\fB$ git checkout \-b drover_9999 branch\-heads/9999\fR
+Branch drover_9999 set up to track remote ref refs/branch\-heads/9999\&.
+
+# Now do the \*(Aqdrover\*(Aq\&.
+# IMPORTANT!!! Do Not leave off the \*(Aq\-x\*(Aq flag
+\fB$ git cherry\-pick \-x 54631489ecf24a4ae3f5a12c393619a717cee85a\fR
+[drover_9999 56188f1] This change needs to go to branch 9999
+ Author: some\&.committer <some\&.committer@chromium\&.org>
+ Date: Thu Apr 10 08:54:46 2014 +0000
+ 1 file changed, 1 insertion(+)
+ create mode 100644 modified_file
+
+# That took the code authored by some\&.committer and committed it to
+# the branch by the person who drovered it (i\&.e\&. you)\&.
+\fB$ git log \-n 1 \-\-pretty=fuller\fR
+commit 56188f1e5b44b5ce95394d41912e980bccca8cc2
+Author:     some\&.committer <some\&.committer@chromium\&.org>
+AuthorDate: Thu Apr 10 08:54:46 2014 +0000
+Commit:     you <you@chromium\&.org>
+CommitDate: Thu Apr 10 09:11:36 2014 +0000
+
+    This change needs to go to branch 9999
+
+    (cherry picked from commit 54631489ecf24a4ae3f5a12c393619a717cee85a)
+
+# Looks good\&. Ship it!
+\fB$ git cl upload\fR
+# Wait for LGTM or TBR it\&.
+\fB$ git cl land\fR
+# Or skip the LGTM/TBR and just \*(Aqgit cl land \-\-bypass\-hooks\*(Aq
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.sp
+If git cl upload errors out, the branch you\(cqre uploading to probably has a CL with the same Change\-Id\&. Instead of cherry\-picking manually, use the Reland button in the Gerrit UI to create a new CL, and patch that CL into your client\&.
+.RE
+.SH "SEE ALSO"
+.sp
+\fBgit-cherry-pick\fR(1), \fBgit-revert\fR(1)
+.SH "CHROMIUM DEPOT_TOOLS"
+.sp
+Part of the chromium \fBdepot_tools\fR(7) suite\&. These tools are meant to assist with the development of chromium and related projects\&. Download the tools from \m[blue]\fBhere\fR\m[]\&\s-2\u[1]\d\s+2\&.
+.SH "NOTES"
+.IP " 1." 4
+here
+.RS 4
+\%https://chromium.googlesource.com/chromium/tools/depot_tools.git
+.RE

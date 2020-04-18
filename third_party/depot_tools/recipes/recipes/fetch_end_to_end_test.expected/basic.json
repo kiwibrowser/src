@@ -1,0 +1,173 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
+      "--spec-path",
+      "cache_dir = '[CACHE]/git'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'depot_tools', 'url': 'https://chromium.googlesource.com/chromium/tools/depot_tools.git'}]",
+      "--patch_root",
+      "depot_tools",
+      "--revision_mapping_file",
+      "{\"got_revision\": \"depot_tools\"}",
+      "--git-cache-dir",
+      "[CACHE]/git",
+      "--cleanup-dir",
+      "[CLEANUP]/bot_update",
+      "--output_json",
+      "/path/to/tmp/json",
+      "--revision",
+      "depot_tools@HEAD"
+    ],
+    "env_prefixes": {
+      "PATH": [
+        "RECIPE_PACKAGE_REPO[depot_tools]"
+      ]
+    },
+    "infra_step": true,
+    "name": "bot_update",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@Some step text@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"did_run\": true, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"fixed_revisions\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"depot_tools\": \"HEAD\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"manifest\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"depot_tools\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"repository\": \"https://fake.org/depot_tools.git\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"revision\": \"59bbfb4465019d8ed83bfe88fef566922953452a\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"patch_failure\": false, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"patch_root\": \"depot_tools\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"properties\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"got_revision\": \"59bbfb4465019d8ed83bfe88fef566922953452a\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"got_revision_cp\": \"refs/heads/master@{#91780}\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"root\": \"depot_tools\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"source_manifest\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"directories\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"depot_tools\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"git_checkout\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@          \"repo_url\": \"https://fake.org/depot_tools.git\", @@@",
+      "@@@STEP_LOG_LINE@json.output@          \"revision\": \"59bbfb4465019d8ed83bfe88fef566922953452a\"@@@",
+      "@@@STEP_LOG_LINE@json.output@        }@@@",
+      "@@@STEP_LOG_LINE@json.output@      }@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"version\": 0@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"step_text\": \"Some step text\"@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@SET_BUILD_PROPERTY@got_revision@\"59bbfb4465019d8ed83bfe88fef566922953452a\"@@@",
+      "@@@SET_BUILD_PROPERTY@got_revision_cp@\"refs/heads/master@{#91780}\"@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "listdir",
+      "[START_DIR]/depot_tools/fetch_configs"
+    ],
+    "infra_step": true,
+    "name": "listdir fetch_configs",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@listdir@[START_DIR]/depot_tools/fetch_configs/depot_tools.py@@@",
+      "@@@STEP_LOG_LINE@listdir@[START_DIR]/depot_tools/fetch_configs/infra.py@@@",
+      "@@@STEP_LOG_END@listdir@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/depot_tools/fetch.py",
+      "depot_tools"
+    ],
+    "cwd": "[TMP_BASE]/fetch_end_to_end_test_depot_tools_tmp_1",
+    "env": {
+      "CHROME_HEADLESS": "1",
+      "DEPOT_TOOLS_UPDATE": "0"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/depot_tools"
+      ]
+    },
+    "name": "fetch depot_tools"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[TMP_BASE]/fetch_end_to_end_test_depot_tools_tmp_1"
+    ],
+    "env": {
+      "CHROME_HEADLESS": "1",
+      "DEPOT_TOOLS_UPDATE": "0"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/depot_tools"
+      ]
+    },
+    "infra_step": true,
+    "name": "cleanup"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/depot_tools/fetch.py",
+      "infra"
+    ],
+    "cwd": "[TMP_BASE]/fetch_end_to_end_test_infra_tmp_2",
+    "env": {
+      "CHROME_HEADLESS": "1",
+      "DEPOT_TOOLS_UPDATE": "0"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/depot_tools"
+      ]
+    },
+    "name": "fetch infra"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[TMP_BASE]/fetch_end_to_end_test_infra_tmp_2"
+    ],
+    "env": {
+      "CHROME_HEADLESS": "1",
+      "DEPOT_TOOLS_UPDATE": "0"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/depot_tools"
+      ]
+    },
+    "infra_step": true,
+    "name": "cleanup (2)"
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]

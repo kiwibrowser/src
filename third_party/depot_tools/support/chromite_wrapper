@@ -1,0 +1,96 @@
+#!/usr/bin/env python
+# Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+"""Wrapper for chromite tools.
+
+The script is intend to be symlinked to any number of chromite tools, attempts
+to find the path for chromite, and hands off to the right tool via exec if
+possible.
+
+It is intended to used strictly outside of the chroot.
+
+If you're looking at a copy and want to know where the original looks at, look
+here:
+  http://git.chromium.org/gitweb/?p=chromite.git;a=blob;f=bin/chromite
+
+Since this script is _copied_, it should remain small and not use internal libs.
+
+"""
+
+import errno
+import os
+import sys
+
+# Due to historical reasons, and the fact depot_tools ToT is used by older
+# factory branches (lacking chromite script cleanups), note we have to
+# fallback to some odd import locations.  This is the only reason for the
+# fallback code- any/all new scripts symlinked to this script *must* exist
+# in chromite/bin/ .
+
+def _FindChromite(path):
+  """Find the chromite dir in a repo, gclient, or submodule checkout."""
+  path = os.path.abspath(path)
+  # Depending on the checkout type (whether repo chromeos or gclient chrome)
+  # Chromite lives in a different location.
+  roots = (
+    ('.repo', 'chromite/.git'),
+    ('.gclient', 'src/third_party/chromite/.git'),
+    ('src/.gitmodules', 'src/third_party/chromite/.git'),
+  )
+
+  while path != '/':
+    for root, chromite_git_dir in roots:
+      if all(os.path.exists(os.path.join(path, x))
+             for x in [root, chromite_git_dir]):
+        return os.path.dirname(os.path.join(path, chromite_git_dir))
+    path = os.path.dirname(path)
+  return None
+
+
+def _MissingErrorOut(target):
+  sys.stderr.write(
+"""ERROR: Couldn't find the chromite tool %s.
+
+Please change to a directory inside your Chromium OS source tree
+and retry.  If you need to setup a Chromium OS source tree, see
+  http://www.chromium.org/chromium-os/developer-guide
+""" % target)
+  return 127
+
+
+def main():
+  chromite_dir = _FindChromite(os.getcwd())
+  target = os.path.basename(sys.argv[0])
+  if chromite_dir is None:
+    return _MissingErrorOut(target)
+
+  path = os.path.join(chromite_dir, 'bin', target)
+  try:
+    os.execv(path, [path] + sys.argv[1:])
+  except EnvironmentError, e:
+    if e.errno not in (errno.ENOENT, errno.EPERM):
+      raise
+
+  # Reaching here means it's either a bad target, or we're working against
+  # an old (pre 6be2efcf5bb575b03862113eec097c44d8d7f93e) revision of
+  # chromite.  Fallback to trying to import it; this code works at least as
+  # far back as branch 0.11.241.B; likely further.
+
+  if target == 'cbuildbot':
+    target = 'chromite.buildbot.cbuildbot'
+  else:
+    target = 'chromite.bin.%s' % (target,)
+
+  # Adjust the path importation so we can import our our target.
+  sys.path.insert(0, os.path.dirname(chromite_dir))
+
+  try:
+    module = __import__(target, fromlist=['main'])
+  except ImportError:
+    return _MissingErrorOut(target)
+  return module.main()
+
+if __name__ == '__main__':
+  sys.exit(main())

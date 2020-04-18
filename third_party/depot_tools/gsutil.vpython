@@ -1,0 +1,102 @@
+# vpython VirtualEnv protobuf for "gsutil".
+#
+# See:
+# https://chromium.googlesource.com/infra/luci/luci-go/+/master/vpython/api/vpython/spec.proto
+#
+# This is a "vpython" VirtualEnv specification applied to invocations of "gsutil"
+# by the bootstrap wrapper, "gsutil.py". It ensures that any Python distribution
+# has the expected Python packages installed.
+#
+# This is specifically relevant on Google Compute Engine invocations of
+# "gsutil", where a stock system-deployed file in "/etc/" explicitly specifies
+# that the "google_compute_engine" and "boto" Python packages are available.
+
+wheel <
+  name: "infra/python/wheels/google_compute_engine-py2_py3"
+  version: "version:2.6.2"
+>
+wheel <
+  name: "infra/python/wheels/boto-py2_py3"
+  version: "version:2.48.0"
+>
+
+# "gsutil" on non-GCE can require PyOpenSSL, which, in turn, requires
+# "cryptography".
+
+wheel: <
+  name: "infra/python/wheels/pyopenssl-py2_py3"
+  version: "version:17.2.0"
+>
+
+##
+# BEGIN "cryptography" dependencies.
+##
+
+wheel: <
+  name: "infra/python/wheels/cryptography/${platform}_${py_python}_${py_abi}"
+  version: "version:2.0.3"
+>
+
+wheel: <
+  name: "infra/python/wheels/appdirs-py2_py3"
+  version: "version:1.4.3"
+>
+
+wheel: <
+  name: "infra/python/wheels/asn1crypto-py2_py3"
+  version: "version:0.22.0"
+>
+
+wheel: <
+  name: "infra/python/wheels/enum34-py2"
+  version: "version:1.1.6"
+>
+
+wheel: <
+  name: "infra/python/wheels/cffi/${platform}_${py_python}_${py_abi}"
+  version: "version:1.10.0"
+>
+
+wheel: <
+  name: "infra/python/wheels/idna-py2_py3"
+  version: "version:2.5"
+>
+
+wheel: <
+  name: "infra/python/wheels/ipaddress-py2"
+  version: "version:1.0.18"
+>
+
+wheel: <
+  name: "infra/python/wheels/packaging-py2_py3"
+  version: "version:16.8"
+>
+
+wheel: <
+  name: "infra/python/wheels/pyasn1-py2_py3"
+  version: "version:0.2.3"
+>
+
+wheel: <
+  name: "infra/python/wheels/pycparser-py2_py3"
+  version: "version:2.17"
+>
+
+wheel: <
+  name: "infra/python/wheels/pyparsing-py2_py3"
+  version: "version:2.2.0"
+>
+
+wheel: <
+  name: "infra/python/wheels/setuptools-py2_py3"
+  version: "version:34.3.2"
+>
+
+wheel: <
+  name: "infra/python/wheels/six-py2_py3"
+  version: "version:1.10.0"
+>
+
+##
+# END "cryptography" dependencies.
+##

@@ -1,0 +1,52 @@
+#!/usr/bin/env python
+# Copyright (c) 2010 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+"""Display log of checkins of one particular developer since a particular
+date. Only works on git dependencies at the moment."""
+
+import gclient_utils
+import optparse
+import os
+import re
+import subprocess
+import sys
+
+
+def show_log(path, authors, since='1 week ago'):
+  """Display log in a single git repo."""
+
+  author_option = ' '.join(['--author=' + author for author in authors])
+  command = ' '.join(['git log', author_option, '--since="%s"' % since,
+                      'origin/master', '| git shortlog'])
+  status = subprocess.Popen(['sh', '-c', command],
+                            cwd=path,
+                            stdout=subprocess.PIPE).communicate()[0].rstrip()
+
+  if len(status.splitlines()) > 0:
+    print '---------- %s ----------' % path
+    print status
+
+
+def main():
+  """Take no arguments."""
+
+  option_parser = optparse.OptionParser()
+  option_parser.add_option("-a", "--author", action="append", default=[])
+  option_parser.add_option("-s", "--since", default="1 week ago")
+  options, args = option_parser.parse_args()
+
+  root, entries = gclient_utils.GetGClientRootAndEntries()
+
+  # which entries map to a git repos?
+  paths = [k for k, v in entries.items() if not re.search('svn', v)]
+  paths.sort()
+
+  for path in paths:
+    dir = os.path.normpath(os.path.join(root, path))
+    show_log(dir, options.author, options.since)
+
+
+if __name__ == '__main__':
+  main()
