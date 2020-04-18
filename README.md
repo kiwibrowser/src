@@ -70,7 +70,7 @@ In the chromium directory run:
 
     git clone https://github.com/kiwibrowser/dependencies.git .cipd
     cp ~/chromium/.cipd/.gclient ~/chromium/
-    cp ~/chromium/.cipd/.gclient_entries to ~/chromium/
+    cp ~/chromium/.cipd/.gclient_entries ~/chromium/
 
 3. Enter ~/chromium/ and run:
 
