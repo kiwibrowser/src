@@ -46,23 +46,25 @@ You can use a virtual machine, or a Google Cloud VM.
 
 To build Kiwi Browser you can directly clone the repository, as we have packed all dependencies already:
 
-1. Install depot_tools in your home directory using git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git and add it to the PATH: export PATH=/path/to/depot_tools:$PATH - This will give you access to gclient utility
+1. Install depot_tools in your home directory using git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git and add it to the PATH: export PATH=/path/to/depot_tools:$PATH - This will give you access to one utility called gclient (as in "Google client")
 
-2. In a folder called ~/chromium/, unpack dependencies.tar.gz (tar -xzvf)
+2. In a folder called ~/chromium/, fetch the dependencies (git LFS repository): git clone https://github.com/kiwibrowser/dependencies.git .cipd (do not forget the .cipd) and then copy ~/chromium/.cipd/.gclient and ~/chromium/.cipd/.gclient_entries to ~/chromium/
 
-3. From ~/chromium/ folder, run: git clone https://github.com/kiwibrowser/android.git
+3. From ~/chromium/ folder, fetch the main source-code: git clone https://github.com/kiwibrowser/src.git
 
-In ~/chromium/ you will have the .cipd folder, and a folder with the Kiwi Browser source-code.
+In ~/chromium/ you will have the .cipd folder, and a folder with the Kiwi Browser source-code called src.
 
 4. In the Kiwi Browser source-code directory, run install-build-deps.sh using: bash install-build-deps.sh
 
 5. In the Kiwi Browser source-code directory, create a android_arm folder and create a folder called android_arm/args.gn with this content:
 
+args.gn:
+
     target_os = "android"
     target_cpu = "arm" # <---- can be arm, arm64, x86 or x64
     is_debug = false
     is_java_debug = false
-
+    
     android_channel = "stable"
     is_official_build = true
     is_component_build = false
