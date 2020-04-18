@@ -83,12 +83,19 @@ def FetchGitRevision(directory, filter):
   return VersionInfo(hsh, '%s-%s' % (hsh, pos))
 
 
-def FetchVersionInfo(directory=None, filter=None):
+def FetchVersionInfo(directory=None, filter=None, out_file=None, version_macro=None):
   """
   Returns the last change (as a VersionInfo object)
   from some appropriate revision control system.
   """
-  version_info = FetchGitRevision(directory, filter)
+  if out_file == 'src/build/util/LASTCHANGE':
+    version_info = VersionInfo('8920e690dd011895672947112477d10d5c8afb09', '8920e690dd011895672947112477d10d5c8afb09-refs/branch-heads/3497@{#948}')
+  elif version_macro is not None and version_macro == 'GPU_LISTS_VERSION':
+    version_info = VersionInfo('6f4691ebdde8d27536a757ac13fd972e3b265ce4', '6f4691ebdde8d27536a757ac13fd972e3b265ce4-refs/branch-heads/3497@{#948}')
+  elif version_macro is not None and version_macro == 'SKIA_COMMIT_HASH':
+    version_info = VersionInfo('caab4546ccda874f74cb979eee680fbc2cc7e2e0', 'caab4546ccda874f74cb979eee680fbc2cc7e2e0-')
+  else:
+    version_info = FetchGitRevision(directory, filter)
   if not version_info:
     version_info = VersionInfo('0', '0')
   return version_info
@@ -198,7 +205,7 @@ def main(argv=None):
   else:
     src_dir = os.path.dirname(os.path.abspath(__file__))
 
-  version_info = FetchVersionInfo(directory=src_dir, filter=filter)
+  version_info = FetchVersionInfo(directory=src_dir, filter=filter, out_file=out_file, version_macro=opts.version_macro)
   revision_string = version_info.revision
   if opts.revision_id_only:
     revision_string = version_info.revision_id
