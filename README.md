@@ -97,7 +97,8 @@ To generate a key:
 
 ### Configuring the build type and platform
 
-In ~/chromium/src/ create a folder named "out", and there, create a folder named "android_arm" and in this folder create a file called args.gn (~/chromium/src/out/android_arm/args.gn) with this content:
+In ~/chromium/src/ create a folder named "out", and there, create a folder named "android_arm".
+Create a file called args.gn in ~/chromium/src/out/android_arm/ with this content:
 
 args.gn:
 
