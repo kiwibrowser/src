@@ -78,6 +78,7 @@ At this stage, in ~/chromium/ you will have the .cipd folder, and a folder with 
 To be able to build Kiwi Browser, you need python and OpenJDK (OpenJDK to create Java bindings for Android):
 
     sudo apt-get install python openjdk-8-jdk-headless libncurses5
+    sudo update-java-alternatives --set java-1.8.0-openjdk-amd64 # We want to be sure to use Java 1.8 in order to not get compilation errors (lint and errorprone)
 
 then run the following commands:
 
