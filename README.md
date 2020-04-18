@@ -66,7 +66,7 @@ This will give you access to one utility called gclient (as in "Google client")
 
 2. Create a directory called ~/chromium/
 
-In the chromium directory run:
+In this newly created directory run:
 
     git clone https://github.com/kiwibrowser/dependencies.git .cipd
     cp ~/chromium/.cipd/.gclient ~/chromium/
@@ -84,7 +84,9 @@ At this stage, in ~/chromium/ you will have the .cipd folder, and a folder with 
 
     sudo apt-get install python
 
-4. In ~/chromium/src/ run install-build-deps.sh using:
+5. In ~/chromium/src/:
+
+Run the following commands:
 
     bash install-build-deps.sh --no-chromeos-fonts
     build/linux/sysroot_scripts/install-sysroot.py --arch=i386
@@ -92,9 +94,17 @@ At this stage, in ~/chromium/ you will have the .cipd folder, and a folder with 
 
 This script will install all necessary system packages using apt-get and gather a minimal build filesystem.
 
+### Preparing a signing key
+
+APKs (application packages) on Android need to be signed by developers in order to be distributed.
+
+To generate a key:
+
+    keytool -genkey -v -keystore ~/chromium/kiwi.keystore -alias production -keyalg RSA -keysize 2048 -validity 10000 -keypass HERE_YOUR_ANDROID_KEYSTORE_PASSWORD
+
 ### Configuring the build type and platform
 
-5. In ~/chromium/src/, create a folder named "android_arm" and in this folder create a file called args.gn with this content:
+6. In ~/chromium/src/, create a folder named "android_arm" and in this folder create a file called args.gn with this content:
 
 args.gn:
 
@@ -113,7 +123,7 @@ args.gn:
     android_default_version_code = "158"
     android_keystore_name = "production"
     android_keystore_password = "HERE_YOUR_ANDROID_KEYSTORE_PASSWORD"
-    android_keystore_path = "keystore.jks"
+    android_keystore_path = "~/chromium/kiwi.keystore"
     android_default_version_name = "Quadea"
     fieldtrial_testing_like_official_build = true
     icu_use_data_file = false
