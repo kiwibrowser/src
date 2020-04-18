@@ -64,14 +64,11 @@ Validate the changes by running:
 
 This will give you access to one utility called gclient (as in "Google client")
 
-Create a directory called ~/chromium/, and in this newly created directory run:
+Create a directory called ~/chromium/, and in ~/chromium/ run:
 
     git clone https://github.com/kiwibrowser/dependencies.git .cipd
     cp ~/chromium/.cipd/.gclient ~/chromium/
     cp ~/chromium/.cipd/.gclient_entries ~/chromium/
-
-Enter ~/chromium/ and run:
-
     git clone https://github.com/kiwibrowser/src.git
 
 At this stage, in ~/chromium/ you will have the .cipd folder, and a folder with the Kiwi Browser source-code called src.
