@@ -87,8 +87,10 @@ At this stage, in ~/chromium/ you will have the .cipd folder, and a folder with 
 4. In ~/chromium/src/ run install-build-deps.sh using:
 
     bash install-build-deps.sh --no-chromeos-fonts
+    build/linux/sysroot_scripts/install-sysroot.py --arch=i386
+    build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
 
-This script will install all necessary system packages using apt-get.
+This script will install all necessary system packages using apt-get and gather a minimal build filesystem.
 
 ### Configuring the build type and platform
 
@@ -191,7 +193,7 @@ or change SHA1 in build/util/LASTCHANGE
 
     LASTCHANGE=8920e690dd011895672947112477d10d5c8afb09-refs/branch-heads/3497@{#948}
 
-and
+and confirm the change using:
 
      rm out/android_arm/gen/components/version_info/version_info_values.h out/android_x86/gen/components/version_info/version_info_values.h out/android_arm/gen/build/util/webkit_version.h out/android_x86/gen/build/util/webkit_version.h out/android_arm/gen/chrome/common/chrome_version.h out/android_x86/gen/chrome/common/chrome_version.h
 
