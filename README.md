@@ -2,7 +2,7 @@
 
 Kiwi Browser is a fully open-source web browser for Android.
 
-Kiwi is based on Chromium, the engine that powers the most popular browser in the world so you won't loose your habits.
+Kiwi is based on Chromium. Easily switch to Kiwi without having to painstakingly learn a new interface or break your existing browsing habits.
 
 Among other functionalities, Kiwi Browser supports:
 
