@@ -1,9 +1,39 @@
-#!/bin/bash -e
+#!/usr/bin/env bash
 # Copyright (c) 2012 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 # Script to install everything needed to build chromium (well, ideally, anyway)
 # See https://chromium.googlesource.com/chromium/src/+/master/docs/linux/build_instructions.md
+
+set -e
+
+einfo() { printf 'INFO: %s\n' "$1" ;}
+ewarn(){ printf 'WARN: %s\n' "$1" ;}
+eerror() { printf 'ERROR: %s\n' "$1" ;}
+efixme() { printf 'FIXME: %s\n' "$1" ;}
+edebug(){ [ "$DEBUG" = 1 ] && printf 'DEBUG: %s\n' "$1" ;}
+ebench() {
+  case "$1" in
+    start)
+      SECONDS=0 
+      return 0
+    ;;
+    result)
+      printf 'BENCHMARK: %s\n' "Action $2 took $SECONDS seconds"
+      return 0
+    *)
+      die 2 "Unexpected argument '$1' has been parsed in ebench"
+  esac
+}
+die() {
+  case "$1" in
+    # FIXME: Speficy your exit codes here
+    *) printf 'FATAL: %s\n' "$2"
+  esac
+
+  exit "$1"
+}
+
 usage() {
   echo "Usage: $0 [--options]"
   echo "Options:"
@@ -27,7 +57,7 @@ usage() {
 }
 # Build list of apt packages in dpkg --get-selections format.
 build_apt_package_list() {
-  echo "Building apt package list." >&2
+  einfo "Building apt package list"
   apt-cache dumpavail | \
     python -c '\
       from __future__ import print_function; \
@@ -44,7 +74,7 @@ build_apt_package_list() {
 # USAGE: $ package_exists <package name>
 package_exists() {
   if [ -z "${apt_package_list}" ]; then
-    echo "Call build_apt_package_list() prior to calling package_exists()" >&2
+    einfo "Call build_apt_package_list() prior to calling package_exists()"
     apt_package_list=$(build_apt_package_list)
   fi
   # 'apt-cache search' takes a regex string, so eg. the +'s in packages like
@@ -58,7 +88,7 @@ package_exists() {
 # own workstations can pass --no-arm --no-nacl when running the script.
 do_inst_arm=1
 do_inst_nacl=1
-while [ "$1" != "" ]
+while [ "$1" != "" ];
 do
   case "$1" in
   --syms)                    do_inst_syms=1;;
@@ -87,8 +117,7 @@ if [ "$do_inst_arm" = "1" ]; then
 fi
 # Check for lsb_release command in $PATH
 if ! which lsb_release > /dev/null; then
-  echo "ERROR: lsb_release not found in \$PATH" >&2
-  exit 1;
+  die 1 "Command 'lsb_release' was not found in PATH: $PATH"
 fi
 distro_codename=$(lsb_release --codename --short)
 distro_id=$(lsb_release --id --short)
@@ -107,14 +136,12 @@ if [ 0 -eq "${do_unsupported-0}" ] && [ 0 -eq "${do_quick_check-0}" ] ; then
     exit 1
   fi
   if ! uname -m | egrep -q "i686|x86_64"; then
-    echo "Only x86 architectures are currently supported" >&2
-    exit
+    die 1 "Only x86 architectures are currently supported"
   fi
 fi
 if [ "x$(id -u)" != x0 ] && [ 0 -eq "${do_quick_check-0}" ]; then
-  echo "Running as non-root user."
-  echo "You might have to enter your password one or more times for 'sudo'."
-  echo
+  einfo "Running as non-root user."
+  ewarn "You might have to enter your password one or more times for 'sudo'."
 fi
 if [ "$do_inst_lib32" = "1" ] || [ "$do_inst_nacl" = "1" ]; then
   sudo dpkg --add-architecture i386
@@ -349,13 +376,11 @@ case $distro_codename in
           gpg --keyserver pgp.mit.edu --recv-keys ${EM_ARCHIVE_KEY_FINGER}
           gpg -a --export ${EM_ARCHIVE_KEY_FINGER} | sudo apt-key add -
           if ! grep "^${EM_REPO}" "${CROSSTOOLS_LIST}" &>/dev/null; then
-            echo "${EM_SOURCE}" | sudo tee -a "${CROSSTOOLS_LIST}" >/dev/null
+            printf '%s\n' "${EM_SOURCE}" | sudo tee -a "${CROSSTOOLS_LIST}" >/dev/null
           fi
           arm_list+=" ${GPP_ARM_PACKAGE}"
         else
-          echo "The Debian Cross-toolchains repository is necessary to"
-          echo "cross-compile Chromium for arm."
-          echo "Rerun with --add-deb-cross-tool-repo to have it added for you."
+          ewarn "The Debian Cross-toolchains repository is necessary to cross-compile Chromium for arm. Rerun with --add-deb-cross-tool-repo to have it added for you."
         fi
       fi
     fi
@@ -524,16 +549,16 @@ if file -L /sbin/init | grep -q 'ELF 64-bit'; then
   lib32_list="$lib32_list $multilib_package"
 fi
 if [ "$do_inst_syms" = "1" ]; then
-  echo "Including debugging symbols."
+  einfo "Including debugging symbols."
   # Debian is in the process of transitioning to automatic debug packages, which
   # have the -dbgsym suffix (https://wiki.debian.org/AutomaticDebugPackages).
   # Untransitioned packages have the -dbg suffix.  And on some systems, neither
   # will be available, so exclude the ones that are missing.
   dbg_package_name() {
     if package_exists "$1-dbgsym"; then
-      echo "$1-dbgsym"
+      printf '%s\n' "$1-dbgsym"
     elif package_exists "$1-dbg"; then
-      echo "$1-dbg"
+      printf '%s\n' "$1-dbg"
     fi
   }
   for package in "${common_lib_list}"; do
@@ -566,30 +591,30 @@ if [ "$do_inst_syms" = "1" ]; then
     dbg_list="$dbg_list $(dbg_package_name libpango1.0-dev)"
   fi
 else
-  echo "Skipping debugging symbols."
+  einfo "Skipping debugging symbols."
   dbg_list=
 fi
 if [ "$do_inst_lib32" = "1" ]; then
-  echo "Including 32-bit libraries."
+  einfo "Including 32-bit libraries."
 else
-  echo "Skipping 32-bit libraries."
+  einfo "Skipping 32-bit libraries."
   lib32_list=
 fi
 if [ "$do_inst_arm" = "1" ]; then
-  echo "Including ARM cross toolchain."
+  einfo "Including ARM cross toolchain."
 else
-  echo "Skipping ARM cross toolchain."
+  einfo "Skipping ARM cross toolchain."
   arm_list=
 fi
 if [ "$do_inst_nacl" = "1" ]; then
-  echo "Including NaCl, NaCl toolchain, NaCl ports dependencies."
+  einfo "Including NaCl, NaCl toolchain, NaCl ports dependencies."
 else
-  echo "Skipping NaCl, NaCl toolchain, NaCl ports dependencies."
+  einfo "Skipping NaCl, NaCl toolchain, NaCl ports dependencies."
   nacl_list=
 fi
 filtered_backwards_compatible_list=
 if [ "$do_inst_backwards_compatible" = "1" ]; then
-  echo "Including backwards compatible packages."
+  einfo "Including backwards compatible packages."
   for package in ${backwards_compatible_list}; do
     if package_exists ${package}; then
       filtered_backwards_compatible_list+=" ${package}"
@@ -599,16 +624,15 @@ fi
 # The `sort -r -s -t: -k2` sorts all the :i386 packages to the front, to avoid
 # confusing dpkg-query (crbug.com/446172).
 packages="$(
-  echo "${dev_list} ${lib_list} ${dbg_list} ${lib32_list} ${arm_list}" \
-       "${nacl_list}" ${filtered_backwards_compatible_list} | tr " " "\n" | \
-       sort -u | sort -r -s -t: -k2 | tr "\n" " "
+  printf '%s\n' \
+    "${dev_list} ${lib_list} ${dbg_list} ${lib32_list} ${arm_list} ${nacl_list} ${filtered_backwards_compatible_list}" | tr ' ' '\n' | sort -u | sort -r -s -t: -k2 | tr '\n' ' '
 )"
 if [ 1 -eq "${do_quick_check-0}" ] ; then
   if ! missing_packages="$(dpkg-query -W -f ' ' ${packages} 2>&1)"; then
     # Distinguish between packages that actually aren't available to the
     # system (i.e. not in any repo) and packages that just aren't known to
     # dpkg (i.e. managed by apt).
-    missing_packages="$(echo "${missing_packages}" | awk '{print $NF}')"
+    missing_packages="$(printf '%s\n' "${missing_packages}" | awk '{print $NF}')"
     not_installed=""
     unknown=""
     for p in ${missing_packages}; do
@@ -619,72 +643,66 @@ if [ 1 -eq "${do_quick_check-0}" ] ; then
       fi
     done
     if [ -n "${not_installed}" ]; then
-      echo "WARNING: The following packages are not installed:"
-      echo -e "${not_installed}" | sed -e "s/^/  /"
+      ewarn "The following packages are not installed: $(printf '%s\n' "${not_installed}" | sed -e "s/^/  /")"
     fi
     if [ -n "${unknown}" ]; then
-      echo "WARNING: The following packages are unknown to your system"
-      echo "(maybe missing a repo or need to 'sudo apt-get update'):"
-      echo -e "${unknown}" | sed -e "s/^/  /"
+      ewarn "The following packages are unknown to your system (maybe missing a repo or need to 'sudo apt-get update'): $(printf '%s\n' -e "${unknown}" | sed -e "s/^/  /")"
     fi
     exit 1
   fi
   exit 0
 fi
-echo "Finding missing packages..."
+einfo "Finding missing packages..."
 # Intentionally leaving $packages unquoted so it's more readable.
-echo "Packages required: " $packages
-echo
-query_cmd="apt-get --just-print install $(echo $packages)"
+einfo "Packages required: $packages"
+query_cmd="apt-get --just-print install $packages"
 if cmd_output="$(LANGUAGE=en LANG=C $query_cmd)"; then
-  new_list=$(echo "$cmd_output" |
+  new_list=$(printf '%s\n' "$cmd_output" |
     sed -e '1,/The following NEW packages will be installed:/d;s/^  //;t;d' |
     sed 's/ *$//')
-  upgrade_list=$(echo "$cmd_output" |
+  upgrade_list=$(printf '%s\n' "$cmd_output" |
     sed -e '1,/The following packages will be upgraded:/d;s/^  //;t;d' |
     sed 's/ *$//')
   if [ -z "$new_list" ] && [ -z "$upgrade_list" ]; then
-    echo "No missing packages, and the packages are up to date."
+    einfo "No missing packages, and the packages are up to date."
   else
-    echo "Installing and upgrading packages: $new_list $upgrade_list."
+    einfo "Installing and upgrading packages: $new_list $upgrade_list."
     sudo apt-get install ${do_quietly-} ${new_list} ${upgrade_list}
   fi
-  echo
 else
   # An apt-get exit status of 100 indicates that a real error has occurred.
   # I am intentionally leaving out the '"'s around query_cmd,
   # as this makes it easier to cut and paste the output
-  echo "The following command failed: " ${query_cmd}
-  echo
-  echo "It produced the following output:"
-  echo "$cmd_output"
-  echo
-  echo "You will have to install the above packages yourself."
-  echo
-  exit 100
+  die 100 "The following command failed: ${query_cmd}
+
+It produced the following output:
+  $cmd_output
+
+You will have to install the above packages yourself.
+"
 fi
 # Install the Chrome OS default fonts. This must go after running
 # apt-get, since install-chromeos-fonts depends on curl.
 if [ "$do_inst_chromeos_fonts" != "0" ]; then
-  echo
-  echo "Installing Chrome OS fonts."
-  dir=`echo $0 | sed -r -e 's/\/[^/]+$//'`
+  einfo "Installing Chrome OS fonts."
+  dir=`printf '%s\n' $0 | sed -r -e 's/\/[^/]+$//'`
   if ! sudo $dir/linux/install-chromeos-fonts.py; then
-    echo "ERROR: The installation of the Chrome OS default fonts failed."
+    eerror "The installation of the Chrome OS default fonts failed."
     if [ `stat -f -c %T $dir` == "nfs" ]; then
-      echo "The reason is that your repo is installed on a remote file system."
+      printf '%s\n' "The reason is that your repo is installed on a remote file system."
     else
-      echo "This is expected if your repo is installed on a remote file system."
+      printf '%s\n' "This is expected if your repo is installed on a remote file system."
     fi
-    echo "It is recommended to install your repo on a local file system."
-    echo "You can skip the installation of the Chrome OS default founts with"
-    echo "the command line option: --no-chromeos-fonts."
+    printf '%s\n' \
+      "It is recommended to install your repo on a local file system." \
+      "You can skip the installation of the Chrome OS default founts with" \
+     "the command line option: --no-chromeos-fonts."
     exit 1
   fi
 else
-  echo "Skipping installation of Chrome OS fonts."
+  einfo "Skipping installation of Chrome OS fonts."
 fi
-echo "Installing locales."
+einfo "Installing locales."
 CHROMIUM_LOCALES="da_DK.UTF-8 fr_FR.UTF-8 he_IL.UTF-8 zh_TW.UTF-8"
 LOCALE_GEN=/etc/locale.gen
 if [ -e ${LOCALE_GEN} ]; then
@@ -693,8 +711,8 @@ if [ -e ${LOCALE_GEN} ]; then
     sudo sed -i "s/^# ${CHROMIUM_LOCALE}/${CHROMIUM_LOCALE}/" ${LOCALE_GEN}
   done
   # Regenerating locales can take a while, so only do it if we need to.
-  if (echo "${OLD_LOCALE_GEN}" | cmp -s ${LOCALE_GEN}); then
-    echo "Locales already up-to-date."
+  if (prinf '%s\n' "${OLD_LOCALE_GEN}" | cmp -s ${LOCALE_GEN}); then
+    einfo "Locales already up-to-date."
   else
     sudo locale-gen
   fi
