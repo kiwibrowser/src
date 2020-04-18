@@ -96,7 +96,7 @@ APKs (application packages) on Android need to be signed by developers in order 
 
 To generate a key:
 
-    keytool -genkey -v -keystore ~/chromium/kiwi.keystore -alias production -keyalg RSA -keysize 2048 -validity 10000 -keypass HERE_YOUR_ANDROID_KEYSTORE_PASSWORD
+    keytool -genkey -v -keystore ~/chromium/keystore.jks -alias production -keyalg RSA -keysize 2048 -validity 10000 -keypass HERE_YOUR_ANDROID_KEYSTORE_PASSWORD
 
 ### Configuring the build type and platform
 
@@ -119,7 +119,7 @@ args.gn:
     android_default_version_code = "158"
     android_keystore_name = "production"
     android_keystore_password = "HERE_YOUR_ANDROID_KEYSTORE_PASSWORD"
-    android_keystore_path = "~/chromium/kiwi.keystore"
+    android_keystore_path = "../../../keystore.jks"
     android_default_version_name = "Quadea"
     fieldtrial_testing_like_official_build = true
     icu_use_data_file = false
