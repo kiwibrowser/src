@@ -100,7 +100,7 @@ To generate a key:
 
 ### Configuring the build type and platform
 
-In ~/chromium/src/, create a folder named "android_arm" and in this folder create a file called args.gn with this content:
+In ~/chromium/src/ create a folder named "out", and there, create a folder named "android_arm" and in this folder create a file called args.gn (~/chromium/src/out/android_arm/args.gn) with this content:
 
 args.gn:
 
@@ -154,7 +154,7 @@ args.gn:
     enable_plugins = true
 
 
-You can replace Android keystore password and Android keystore keypath with the data for your Android keystore (or you can generate a new key)
+You can replace Android keystore password and Android keystore keypath with the data for your Android keystore (or you can generate a new key).
 
 ### Prepare the first build
 
