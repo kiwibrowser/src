@@ -38,25 +38,61 @@ If you want your code to be integrated into Kiwi, open a merge request, I (and/o
 If you create your own browser or a mod, make sure to change the browser name and icon in chrome/android/java/res_chromium/values/channel_constants.xml and translation strings (search and replace Kiwi in all *.xtb, all *.grd and all *.grdp files)
 
 
-### How to build
+## How to build
 
-The reference build machine is using Ubuntu 19.04
+The reference build machine is using Ubuntu 19.04 (tested also using Ubuntu 19.10).
+
+Minimum system requirements is 2 vCPUs, 7.5 GB Memory.
 
 You can use a virtual machine, or a Google Cloud VM.
 
+### Getting the source-code and environment
+
 To build Kiwi Browser you can directly clone the repository, as we have packed all dependencies already:
 
-1. Install depot_tools in your home directory using git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git and add it to the PATH: export PATH=/path/to/depot_tools:$PATH - This will give you access to one utility called gclient (as in "Google client")
+1. In ~ (your home directory) run:
 
-2. In a folder called ~/chromium/, fetch the dependencies (git LFS repository): git clone https://github.com/kiwibrowser/dependencies.git .cipd (do not forget the .cipd) and then copy ~/chromium/.cipd/.gclient and ~/chromium/.cipd/.gclient_entries to ~/chromium/
+    git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
 
-3. From ~/chromium/ folder, fetch the main source-code: git clone https://github.com/kiwibrowser/src.git
+and edit the file ~/.bashrc to add at the very end
 
-In ~/chromium/ you will have the .cipd folder, and a folder with the Kiwi Browser source-code called src.
+    export PATH=$HOME/depot_tools:$PATH
+    
+Run:
 
-4. In the Kiwi Browser source-code directory, run install-build-deps.sh using: bash install-build-deps.sh
+    source ~/.bashrc
 
-5. In the Kiwi Browser source-code directory, create a android_arm folder and create a folder called android_arm/args.gn with this content:
+This will give you access to one utility called gclient (as in "Google client")
+
+2. Create a directory called ~/chromium/
+
+In the chromium directory run:
+
+    git clone https://github.com/kiwibrowser/dependencies.git .cipd
+    cp ~/chromium/.cipd/.gclient ~/chromium/
+    cp ~/chromium/.cipd/.gclient_entries to ~/chromium/
+
+3. Enter ~/chromium/ and run:
+
+    git clone https://github.com/kiwibrowser/src.git
+
+At this stage, in ~/chromium/ you will have the .cipd folder, and a folder with the Kiwi Browser source-code called src.
+
+### Setting-up dependencies
+
+4. Run:
+
+    sudo apt-get install python
+
+4. In ~/chromium/src/ run install-build-deps.sh using:
+
+    bash install-build-deps.sh --no-chromeos-fonts
+
+This script will install all necessary system packages using apt-get.
+
+### Configuring the build type and platform
+
+5. In ~/chromium/src/, create a folder named "android_arm" and in this folder create a file called args.gn with this content:
 
 args.gn:
 
@@ -119,7 +155,7 @@ To prepare initial setup run:
 
 then generate the build files:
 
-    ~/chromium/opensourcebuild$ gn gen out/android_arm (or gen args out/android_arm)
+    ~/chromium/src$ gn gen out/android_arm # (you can also use 'gn args out/android_arm')
     Writing build/secondary/third_party/android_tools/google_play_services_basement_java.info
     Writing build/secondary/third_party/android_tools/google_play_services_tasks_java.info
     Writing third_party/android_support_test_runner/rules_java.info
