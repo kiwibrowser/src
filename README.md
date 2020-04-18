@@ -40,7 +40,7 @@ If you create your own browser or a mod, make sure to change the browser name an
 
 ## How to build
 
-The reference build machine is using Ubuntu 19.04 (tested also using Ubuntu 19.10).
+The reference build machine is using Ubuntu 19.04 (also tested using Ubuntu 18.04 and Ubuntu 19.10).
 
 Minimum system requirements is 2 vCPUs, 7.5 GB Memory.
 
