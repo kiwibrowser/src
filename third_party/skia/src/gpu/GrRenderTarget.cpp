@@ -1,0 +1,91 @@
+/*
+ * Copyright 2011 Google Inc.
+ *
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+
+#include "GrRenderTarget.h"
+
+#include "GrContext.h"
+#include "GrContextPriv.h"
+#include "GrRenderTargetContext.h"
+#include "GrGpu.h"
+#include "GrRenderTargetOpList.h"
+#include "GrRenderTargetPriv.h"
+#include "GrStencilAttachment.h"
+#include "GrStencilSettings.h"
+#include "SkRectPriv.h"
+
+GrRenderTarget::GrRenderTarget(GrGpu* gpu, const GrSurfaceDesc& desc,
+                               GrStencilAttachment* stencil)
+        : INHERITED(gpu, desc)
+        , fSampleCnt(desc.fSampleCnt)
+        , fStencilAttachment(stencil) {
+    SkASSERT(desc.fFlags & kRenderTarget_GrSurfaceFlag);
+    SkASSERT(!this->hasMixedSamples() || fSampleCnt > 1);
+    SkASSERT(!this->supportsWindowRects() || gpu->caps()->maxWindowRectangles() > 0);
+    fResolveRect = SkRectPriv::MakeILargestInverted();
+}
+
+void GrRenderTarget::flagAsNeedingResolve(const SkIRect* rect) {
+    if (kCanResolve_ResolveType == getResolveType()) {
+        if (rect) {
+            fResolveRect.join(*rect);
+            if (!fResolveRect.intersect(0, 0, this->width(), this->height())) {
+                fResolveRect.setEmpty();
+            }
+        } else {
+            fResolveRect.setLTRB(0, 0, this->width(), this->height());
+        }
+    }
+}
+
+void GrRenderTarget::overrideResolveRect(const SkIRect rect) {
+    fResolveRect = rect;
+    if (fResolveRect.isEmpty()) {
+        fResolveRect = SkRectPriv::MakeILargestInverted();
+    } else {
+        if (!fResolveRect.intersect(0, 0, this->width(), this->height())) {
+            fResolveRect = SkRectPriv::MakeILargestInverted();
+        }
+    }
+}
+
+void GrRenderTarget::flagAsResolved() {
+    fResolveRect = SkRectPriv::MakeILargestInverted();
+}
+
+void GrRenderTarget::onRelease() {
+    SkSafeSetNull(fStencilAttachment);
+
+    INHERITED::onRelease();
+}
+
+void GrRenderTarget::onAbandon() {
+    SkSafeSetNull(fStencilAttachment);
+
+    INHERITED::onAbandon();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool GrRenderTargetPriv::attachStencilAttachment(sk_sp<GrStencilAttachment> stencil) {
+    if (!stencil && !fRenderTarget->fStencilAttachment) {
+        // No need to do any work since we currently don't have a stencil attachment and
+        // we're not actually adding one.
+        return true;
+    }
+    fRenderTarget->fStencilAttachment = stencil.release();
+    if (!fRenderTarget->completeStencilAttachment()) {
+        SkSafeSetNull(fRenderTarget->fStencilAttachment);
+        return false;
+    }
+    return true;
+}
+
+int GrRenderTargetPriv::numStencilBits() const {
+    SkASSERT(this->getStencilAttachment());
+    return this->getStencilAttachment()->bits();
+}

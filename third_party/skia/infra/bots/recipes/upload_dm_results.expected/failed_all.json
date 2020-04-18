@@ -1,0 +1,166 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/tmp_upload"
+    ],
+    "infra_step": true,
+    "name": "makedirs tmp dir"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "[START_DIR]/test/dm/dm.json",
+      "[START_DIR]/tmp_upload"
+    ],
+    "infra_step": true,
+    "name": "copy dm.json"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "[START_DIR]/test/dm/verbose.log",
+      "[START_DIR]/tmp_upload"
+    ],
+    "infra_step": true,
+    "name": "copy verbose.log"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "remove",
+      "[START_DIR]/test/dm/dm.json"
+    ],
+    "infra_step": true,
+    "name": "rm old dm.json"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "remove",
+      "[START_DIR]/test/dm/verbose.log"
+    ],
+    "infra_step": true,
+    "name": "rm old verbose.log"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "glob",
+      "[START_DIR]/test/dm",
+      "*.png"
+    ],
+    "infra_step": true,
+    "name": "find images",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@glob@[START_DIR]/test/dm/someimage.png@@@",
+      "@@@STEP_LOG_END@glob@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "gsutil",
+      "-m",
+      "cp",
+      "[START_DIR]/test/dm/*.png",
+      "gs://skia-infra-gm/dm-images-v1"
+    ],
+    "name": "upload images",
+    "~followup_annotations": [
+      "step returned non-zero exit code: 1",
+      "@@@STEP_FAILURE@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "gsutil",
+      "-m",
+      "cp",
+      "[START_DIR]/test/dm/*.png",
+      "gs://skia-infra-gm/dm-images-v1"
+    ],
+    "name": "upload images (attempt 2)",
+    "~followup_annotations": [
+      "step returned non-zero exit code: 1",
+      "@@@STEP_FAILURE@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "gsutil",
+      "-m",
+      "cp",
+      "[START_DIR]/test/dm/*.png",
+      "gs://skia-infra-gm/dm-images-v1"
+    ],
+    "name": "upload images (attempt 3)",
+    "~followup_annotations": [
+      "step returned non-zero exit code: 1",
+      "@@@STEP_FAILURE@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "gsutil",
+      "-m",
+      "cp",
+      "[START_DIR]/test/dm/*.png",
+      "gs://skia-infra-gm/dm-images-v1"
+    ],
+    "name": "upload images (attempt 4)",
+    "~followup_annotations": [
+      "step returned non-zero exit code: 1",
+      "@@@STEP_FAILURE@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "gsutil",
+      "-m",
+      "cp",
+      "[START_DIR]/test/dm/*.png",
+      "gs://skia-infra-gm/dm-images-v1"
+    ],
+    "name": "upload images (attempt 5)",
+    "~followup_annotations": [
+      "step returned non-zero exit code: 1",
+      "@@@STEP_FAILURE@@@"
+    ]
+  },
+  {
+    "name": "$result",
+    "reason": "Step('upload images (attempt 5)') failed with return_code 1",
+    "recipe_result": null,
+    "status_code": 1
+  }
+]
