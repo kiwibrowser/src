@@ -1,6 +1,6 @@
 # Welcome to Kiwi Browser
 
-Kiwi Browser is a fully open-source web browser for Android.
+[Kiwi Browser](https://play.google.com/store/apps/details?id=com.kiwibrowser.browser) is a fully open-source web browser for Android.
 
 Kiwi is based on Chromium. Easily switch to Kiwi without having to painstakingly learn a new interface or break your existing browsing habits.
 
@@ -23,7 +23,7 @@ The browser is licensed under the same licence as Chromium, which means that you
 
 This code is up-to-date and is matching the build on the Play Store.
 
-The new builds are done from the open-source edition directly to the Play Store.
+The new builds are done from the open-source edition directly to the [Play Store](https://play.google.com/store/apps/details?id=com.kiwibrowser.browser).
 
 There are thousands of hours of work in this repository and thousands of files changed.
 
