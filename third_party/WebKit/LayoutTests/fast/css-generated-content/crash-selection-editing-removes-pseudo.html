@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+
+<style>
+    #before:before {
+        /* must be an inline-block */
+        display: inline-block;
+        content: 'before';
+    }
+    #start:after {
+        /* must be an inline-block */
+        display: inline-block;
+        content: 'after';
+    }
+</style>
+
+
+<p>Passes if it doesn't crash.</p>
+
+<div id="test">
+    <span id="before"><!-- no content can be here --></span>
+    <span>text</span>
+    <span id="start"><!-- no content can be here --></span>
+</div>
+
+<script>
+if (window.testRunner)
+    testRunner.dumpAsText();
+
+var before = document.getElementById('before');
+var start = document.getElementById('start');
+var test = document.getElementById('test');
+
+// Select from the #start backwards to the start of the line.
+window.getSelection().collapse(document.getElementById('start'));
+window.getSelection().modify('extend', 'backward', 'lineBoundary')
+
+// Replace the selection with a break. This replaces #before, text,
+// #start with two <br>'s.
+document.designMode = 'on';
+document.execCommand('InsertLineBreak');
+
+// Crash during tear down.
+test.innerHTML = "Both pseudos have been removed: " + (before.offsetHeight == 0 && start.offsetHeight == 0);
+</script>

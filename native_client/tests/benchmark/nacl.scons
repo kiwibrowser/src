@@ -1,0 +1,49 @@
+# -*- python -*-
+# Copyright 2014 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+
+# Disable this on Valgrind because we don't particularly need to measure
+# performance under Valgrind.  Also, disable on emulation, since these
+# are benchmarks and need to run on real hardware.
+is_broken = env.Bit('running_on_valgrind') or env.UsingEmulator()
+
+# Increase the test timeout for Subzero.
+# https://code.google.com/p/nativeclient/issues/detail?id=4136
+timeout_override = 1000 if env.Bit('use_sz') else 0
+
+libs = []
+if env.Bit('nacl_glibc'):
+  # Needed for clock_gettime().
+  libs.append('rt')
+
+env.Append(CFLAGS=['-std=c99', '-O2'])
+env.Append(CCFLAGS=['-O2'])
+env.Prepend(CPPPATH=['${MAIN_DIR}/src'])
+
+nexe = env.ComponentProgram(
+    'benchmark_test',
+    ['benchmark_life.cc',
+     'framework.cc',
+     'main.cc',
+     'thread_pool.cc'],
+    EXTRA_LIBS=['${NONIRT_LIBS}',
+                '${PTHREAD_LIBS}',
+                '${EXCEPTION_LIBS}']
+               + libs)
+
+# Allow this to be built even if sel_ldr  / trusted code is not.
+if 'TRUSTED_ENV' not in env:
+  Return()
+
+node = env.CommandSelLdrTestNacl(
+    'benchmark_test.out', nexe, [env.GetPerfEnvDescription()],
+    time_error=timeout_override,
+    # Don't hide output: We want the timings to be reported in the
+    # Buildbot logs so that Buildbot records the "RESULT" lines.
+    capture_output=False)
+env.AddNodeToTestSuite(node, ['large_tests'], 'run_benchmark_test',
+                       is_broken=is_broken)

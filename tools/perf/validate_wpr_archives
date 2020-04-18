@@ -1,0 +1,106 @@
+#!/usr/bin/env vpython
+# Copyright 2017 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import argparse
+import optparse
+import os
+import sys
+
+from core import path_util
+from core import benchmark_finders
+
+from py_utils import cloud_storage
+
+path_util.AddAndroidPylibToPath()
+
+
+def GetAllStorySets():
+  story_sets = []
+  benchmarks_to_skip = [
+      'analysis_metrics_ct',
+      'skpicture_printer_ct',
+      'screenshot_ct',
+      'smoothness_ct',
+      'repaint_ct',
+      'rasterize_and_record_micro_ct',
+      'multipage_skpicture_printer_ct',
+      'loading.cluster_telemetry',
+      'memory.cluster_telemetry',
+      'skpicture_printer',
+      'cros_tab_switching.typical_24',
+      'multipage_skpicture_printer',
+      'leak_detection.cluster_telemetry']
+
+  for benchmark in benchmark_finders.GetAllBenchmarks():
+    if benchmark.Name() in benchmarks_to_skip:
+      continue
+
+    parser = optparse.OptionParser()
+    benchmark.AddBenchmarkCommandLineArgs(parser)
+    options, _ = parser.parse_args([])
+    story_sets.append(benchmark().CreateStorySet(options))
+  return story_sets
+
+
+def NormalizedPath(p):
+  return os.path.normpath(os.path.abspath(p))
+
+def GetMissingArchivesInCloudStorage(archive_infos, wpr_sha_files):
+  if wpr_sha_files:
+    abs_wpr_sha_files_path = []
+    for f in wpr_sha_files:
+      assert os.path.exists(f), '% does not exist' % f
+      abs_wpr_sha_files_path.append(NormalizedPath(f))
+    wpr_sha_files = abs_wpr_sha_files_path
+
+  cloud_storage_paths = set()
+  missing_sha_files = set()
+  for wpr_archive_info in archive_infos:
+    bucket = wpr_archive_info._bucket
+    story_archives = wpr_archive_info._data['archives']
+    for story in story_archives:
+      for _, archive_path in story_archives[story].iteritems():
+        archive_path = os.path.join(wpr_archive_info._base_dir,
+            archive_path)
+        hash_path = NormalizedPath(archive_path + '.sha1')
+        if not os.path.exists(hash_path):
+          missing_sha_files.add(hash_path)
+          continue
+        if hash_path not in wpr_sha_files:
+          continue
+        remote_path = cloud_storage.ReadHash(hash_path)
+        cloud_storage_paths.add((bucket, remote_path, archive_path))
+
+  missing_archives = set()
+  for (bucket, remote_path, archive_path) in cloud_storage_paths:
+    if not cloud_storage.Exists(bucket, remote_path):
+      missing_archives.add((archive_path, bucket))
+  return missing_archives, missing_sha_files
+
+
+def main(args):
+  parser = argparse.ArgumentParser(
+      'Validate whether WPR archives are properly stored in CloudStorage.')
+  parser.add_argument('wpr_sha_files', nargs='*')
+  options = parser.parse_args(args)
+  archive_infos = []
+  for s in GetAllStorySets():
+    if not s.wpr_archive_info:
+      continue
+    archive_infos.append(s.wpr_archive_info)
+
+  missing_archives, missing_sha_files = GetMissingArchivesInCloudStorage(
+      archive_infos, options.wpr_sha_files)
+  assert not missing_archives, (
+      'Archives not checked in cloud storage properly:\n%s' %
+      '\n'.join('%s (expected bucket: %s)' % (p, b) for p, b in missing_archives))
+  assert not missing_sha_files, (
+      'These SHA files are missing. Did you forget to check them in?\n%s' %
+      '\n'.join(missing_sha_files))
+
+
+
+if __name__ == '__main__':
+  sys.exit(main(sys.argv[1:]))

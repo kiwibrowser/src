@@ -1,0 +1,32 @@
+;;
+;; Copyright (c) 2011 The Chromium Authors. All rights reserved.
+;; Use of this source code is governed by a BSD-style license that can be
+;; found in the LICENSE file.
+;;
+
+; *** The contents of common.sb are implicitly included here. ***
+
+; Allow communication between the GPU process and the UI server.
+(allow mach-lookup (global-name "com.apple.tsm.uiserver"))
+
+(allow file-read-metadata (literal "/"))
+
+; Needed for WebGL - crbug.com/75343
+(allow iokit-open
+  (iokit-connection "IOAccelerator")
+  (iokit-user-client-class "IOAccelerationUserClient")
+  (iokit-user-client-class "IOFramebufferSharedUserClient")
+  (iokit-user-client-class "AppleGraphicsControlClient")
+  (iokit-user-client-class "AGPMClient")
+  (iokit-user-client-class "IOHIDParamUserClient")
+  (iokit-user-client-class "RootDomainUserClient")
+  (iokit-user-client-class "IOSurfaceRootUserClient")
+  (iokit-user-client-class "IOSurfaceSendRight"))
+
+; https://crbug.com/515280
+(if (param-true? elcap-or-later)
+  (allow file-read* (subpath "/System/Library/Extensions")))
+
+; Needed for VideoToolbox usage - https://crbug.com/767037
+(if (param-true? macos-1013)
+  (allow mach-lookup (global-name "com.apple.coremedia.videodecoder")))

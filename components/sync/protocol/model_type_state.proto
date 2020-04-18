@@ -1,0 +1,33 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package sync_pb;
+
+import "sync.proto";
+
+// Sync proto to store data type global metadata in model type storage.
+message ModelTypeState {
+  // The latest progress markers received from the server.
+  optional DataTypeProgressMarker progress_marker = 1;
+
+  // A data type context.  Sent to the server in every commit or update
+  // request.  May be updated by either responses from the server or requests
+  // made on the model thread.  The interpretation of this value may be
+  // data-type specific.  Many data types ignore it.
+  optional DataTypeContext type_context = 2;
+
+  // This value is set if this type's data should be encrypted on the server.
+  // If this key changes, the client will need to re-commit all of its local
+  // data to the server using the new encryption key.
+  optional string encryption_key_name = 3;
+
+  // This flag is set to true when the first download cycle is complete.  The
+  // ModelTypeProcessor should not attempt to commit any items until this
+  // flag is set.
+  optional bool initial_sync_done = 4;
+}

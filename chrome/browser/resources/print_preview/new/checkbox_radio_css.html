@@ -1,0 +1,123 @@
+<!-- Styles copied from resources/css/widgets.css. -->
+<link rel="import" href="chrome://resources/html/polymer.html">
+<link rel="import" href="print_preview_shared_css.html">
+
+<dom-module id="checkbox-radio">
+  <template>
+    <style include="print-preview-shared">
+      input[type='checkbox'] {
+        height: 13px;
+        position: relative;
+        vertical-align: middle;
+        width: 13px;
+      }
+
+      input[type='radio'] {
+        /* OVERRIDE */
+        border-radius: 100%;
+        height: 15px;
+        position: relative;
+        vertical-align: middle;
+        width: 15px;
+      }
+
+      input[type='checkbox']:checked::before {
+        background-image: url(chrome://resources/images/check.png);
+        background-size: 100% 100%;
+        content: '';
+        display: block;
+        height: 100%;
+        user-select: none;
+        width: 100%;
+      }
+
+      input[type='radio']:checked::before {
+        background-color: #666;
+        border-radius: 100%;
+        bottom: 3px;
+        content: '';
+        display: block;
+        left: 3px;
+        position: absolute;
+        right: 3px;
+        top: 3px;
+      }
+
+    <if expr="not is_ios">
+      input:enabled:hover:-webkit-any([type='checkbox'],
+                                      [type='radio']) {
+        background-image:
+            linear-gradient(#f0f0f0, #f0f0f0 38%, #e0e0e0);
+        @apply --print-preview-hover;
+      }
+    </if>
+
+      input:enabled:active:-webkit-any([type='checkbox'],
+                                       [type='radio']) {
+        background-image: linear-gradient(#e7e7e7, #e7e7e7 38%, #d7d7d7);
+        @apply --print-preview-active;
+      }
+
+      input:disabled:-webkit-any([type='checkbox'],
+                                 [type='radio']) {
+        opacity: .75;
+      }
+
+      /* Checkbox/radio helpers ***********************************************
+       *
+       * .checkbox and .radio classes wrap labels. Checkboxes and radios should
+       * use these classes with the markup structure:
+       *
+       *   <div class="checkbox">
+       *     <label>
+       *       <input type="checkbox">
+       *       <span>
+       *     </label>
+       *   </div>
+       */
+
+      :-webkit-any(.checkbox, .radio) label {
+        /* Don't expand horizontally: <http://crbug.com/112091>. */
+        align-items: center;
+        display: flex;
+        user-select: none;
+      }
+
+      .radio label {
+        padding-bottom: 5px;
+        padding-top: 10px;
+      }
+
+      .checkbox label {
+        padding-bottom: 7px;
+        padding-top: 7px;
+      }
+
+      :-webkit-any(.checkbox, .radio) label input {
+        flex-shrink: 0;
+      }
+
+      :-webkit-any(.checkbox, .radio) label input ~ span {
+        -webkit-margin-start: 0.6em;
+        /* Make sure long spans wrap at the same horizontal position they
+         * start.
+         */
+        display: block;
+      }
+
+      :-webkit-any(.checkbox, .radio) label:hover {
+        color: black;
+      }
+
+      :host .radio input[type='radio'],
+      :host label input[type='checkbox'] {
+        --min-size: 13.19px;
+        --size: 1.1em;
+        height: var(--size);
+        min-height: var(--min-size);
+        min-width: var(--min-size);
+        width: var(--size);
+      }
+   </style>
+  </template>
+</dom-module>

@@ -1,0 +1,23 @@
+# -*- python -*-
+# Copyright (c) 2014 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+if not env.Bit('nonsfi_nacl'):
+  Return()
+
+# Specifying the target arch is necessary for using inline assembly.
+if env.Bit('build_x86_32'):
+  env.Append(CCFLAGS=['--target=i686-unknown-nacl'])
+elif env.Bit('build_arm'):
+  env.Append(CCFLAGS=['--target=armv7a-unknown-nacl-gnueabihf', '-mfloat-abi=hard'])
+else:
+  raise Exception('Unsupported architecture')
+# Enable the use of inline assembly.
+env.Append(CCFLAGS=['-fgnu-inline-asm'])
+
+env.ComponentLibrary('libnacl_sys_private', ['linux_sys_private.c',
+                                             'directory.c',
+                                             'irt_signal_handling.c'])

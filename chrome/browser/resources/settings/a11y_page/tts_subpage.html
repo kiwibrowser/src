@@ -1,0 +1,128 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/html/md_select_css.html">
+<link rel="import" href="chrome://resources/html/web_ui_listener_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-input/paper-textarea.html">
+<link rel="import" href="../device_page/display_size_slider.html">
+<link rel="import" href="../i18n_setup.html">
+<link rel="import" href="../languages_page/languages_browser_proxy.html">
+<link rel="import" href="../settings_shared_css.html">
+<link rel="import" href="../settings_vars_css.html">
+
+<dom-module id="settings-tts-subpage">
+  <template>
+    <style include="settings-shared md-select">
+      h2 {
+        -webkit-padding-start: var(--settings-box-row-padding);
+      }
+
+      .settings-box {
+        -webkit-margin-end: var(--settings-box-row-padding);
+        -webkit-margin-start: var(--settings-box-row-indent);
+        -webkit-padding-end: 0;
+        -webkit-padding-start: 0;
+      }
+    </style>
+
+    <h2>$i18n{textToSpeechProperties}</h2>
+    <div class="settings-box first">
+      <div class="start">$i18n{textToSpeechRate}</div>
+      <display-size-slider
+          pref="{{prefs.settings.tts.speech_rate}}"
+          ticks="[[speechRateTicks_()]]"
+          min-label="$i18n{textToSpeechRateMinimumLabel}"
+          max-label="$i18n{textToSpeechRateMaximumLabel}">
+      </display-size-slider>
+    </div>
+    <div class="settings-box continuation">
+      <div class="start">$i18n{textToSpeechPitch}</div>
+      <display-size-slider
+          pref="{{prefs.settings.tts.speech_pitch}}"
+          ticks="[[speechPitchTicks_()]]"
+          min-label="$i18n{textToSpeechPitchMinimumLabel}"
+          max-label="$i18n{textToSpeechPitchMaximumLabel}">
+      </display-size-slider>
+    </div>
+    <div class="settings-box continuation">
+      <div class="start">$i18n{textToSpeechVolume}</div>
+      <display-size-slider
+          pref="{{prefs.settings.tts.speech_volume}}"
+          ticks="[[speechVolumeTicks_()]]"
+          min-label="$i18n{textToSpeechVolumeMinimumLabel}"
+          max-label="$i18n{textToSpeechVolumeMaximumLabel}">
+      </display-size-slider>
+    </div>
+
+    <h2>$i18n{textToSpeechPreviewHeading}</h2>
+    <div class="settings-box first">
+      <div class="start">
+        $i18n{textToSpeechPreviewVoice}
+      </div>
+      <select id="previewVoice" class="md-select"
+          label="$i18n{textToSpeechPreviewVoice}"
+          value="{{defaultPreviewVoice}}"
+          disabled="[[!hasVoices]]">
+        <template is="dom-repeat" id="previewVoiceOptions"
+            items="[[allVoices]]" as="voice">
+          <!-- TODO: Use a combobox with a search field instead. -->
+          <option value="[[voice.id]]">
+            [[voice.displayLanguage]] - [[voice.name]]
+          </option>
+        </template>
+      </select>
+    </div>
+    <div class="settings-box continuation">
+      <div class="start">
+        <paper-textarea id="previewInput" type="text"
+            label="$i18n{textToSpeechPreviewInputLabel}"
+            always-float-label value="$i18n{textToSpeechPreviewInput}">
+        </paper-textarea>
+      </div>
+      <paper-button on-click="onPreviewTtsClick_" disabled="[[!hasVoices]]">
+          $i18n{textToSpeechPreviewPlay}
+      </paper-button>
+    </div>
+
+    <h2>$i18n{textToSpeechVoices}</h2>
+    <template is="dom-repeat" items="[[languagesToVoices]]" as="lang"
+        sort="alphabeticalSort_">
+      <div class="settings-box first">
+        <div class="start">
+          [[lang.language]]
+        </div>
+        <settings-dropdown-menu label="[[lang.language]]"
+            pref="{{prefs.settings.tts.lang_to_voice_name}}"
+            pref-key="[[lang.code]]"
+            menu-options="[[menuOptionsForLang_(lang)]]"
+            disabled="[[hasOneLanguage_(lang)]]">
+        </settings-dropdown-menu>
+      </div>
+    </template>
+    <div class="settings-box first" hidden$="[[hasVoices]]">
+      $i18n{textToSpeechNoVoicesMessage}
+    </div>
+
+    <h2>$i18n{textToSpeechEngines}</h2>
+    <template is="dom-repeat" items="[[extensions]]" as="extension">
+      <div class="settings-box continuation">
+        <div id="extension_name_[[index]]" class="start">
+          [[extension.name]]
+        </div>
+        <a href="[[extension.optionsPage]]"
+            tabindex=-1
+            target="_blank"
+            hidden$="[[!extension.optionsPage]]">
+          <paper-button aria-describedby="extension_name_[[index]]">
+            $i18n{settings}
+          </paper-button>
+        </a>
+      </div>
+    </template>
+    <div class="settings-box block continuation">
+      <a href="">$i18n{textToSpeechInstallEngines}</a>
+    </div>
+  </template>
+  <script src="tts_subpage.js"></script>
+</dom-module>

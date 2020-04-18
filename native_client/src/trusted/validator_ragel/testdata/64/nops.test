@@ -1,0 +1,116 @@
+@hex:
+  # Recommended nops
+  90
+  66 90
+  0F 1F 00
+  0F 1F 40 00
+  0F 1F 44 00 00
+  66 0F 1F 44 00 00
+  0F 1F 80 00 00 00 00
+@dis:
+     0:	90                                           	nop
+     1:	66 90                                        	xchg   %ax,%ax
+     3:	0f 1f 00                                     	nopl   (%rax)
+     6:	0f 1f 40 00                                  	nopl   0x0(%rax)
+     a:	0f 1f 44 00 00                               	nopl   0x0(%rax,%rax,1)
+     f:	66 0f 1f 44 00 00                            	nopw   0x0(%rax,%rax,1)
+    15:	0f 1f 80 00 00 00 00                         	nopl   0x0(%rax)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  0F 1F 84 00 00 00 00 00
+  66 0F 1F 84 00 00 00 00 00
+  66 2E 0F 1F 84 00 00 00 00 00
+@dis:
+     0:	0f 1f 84 00 00 00 00 00                      	nopl   0x0(%rax,%rax,1)
+     8:	66 0f 1f 84 00 00 00 00 00                   	nopw   0x0(%rax,%rax,1)
+    11:	66 2e 0f 1f 84 00 00 00 00 00                	nopw   %cs:0x0(%rax,%rax,1)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  66 66 2E 0F 1F 84 00 00 00 00 00
+  66 66 66 2E 0F 1F 84 00 00 00 00 00
+@dis:
+     0:	66 66 2e 0f 1f 84 00 00 00 00 00             	data32 nopw %cs:0x0(%rax,%rax,1)
+     b:	66 66 66 2e 0f 1f 84 00 00 00 00 00          	data32 data32 nopw %cs:0x0(%rax,%rax,1)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  66 66 66 66 2E 0F 1F 84 00 00 00 00 00
+  66 66 66 66 66 2E 0F 1F 84 00 00 00 00 00
+@dis:
+     0:	66 66 66 66 2e 0f 1f 84 00 00 00 00 00       	data32 data32 data32 nopw %cs:0x0(%rax,%rax,1)
+     d:	66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00    	data32 data32 data32 data32 nopw %cs:0x0(%rax,%rax,1)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  66 66 66 66 66 66 2E 0F 1F 84 00 00 00 00 00
+@dis:
+     0:	66 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 	data32 data32 data32 data32 data32 nopw %cs:0x0(%rax,%rax,1)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Test cases for illegal nops
+  66 66 90
+@dis:
+     0:	66 66 90                                     	data32 xchg %ax,%ax
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('duplicate legacy prefix', Instruction(0x0: 66 66 90  data32 xchg %ax,%ax))
+----------------------------------------------------------------------
+@hex:
+  66 66 66 90
+@dis:
+     0:	66 66 66 90                                  	data32 data32 xchg %ax,%ax
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('duplicate legacy prefix', Instruction(0x0: 66 66 66 90  data32 data32 xchg %ax,%ax))
+----------------------------------------------------------------------
+@hex:
+  3E 0F 1F 84 00 00 00 00 00
+@dis:
+     0:	3e 0f 1f 84 00 00 00 00 00                   	nopl   %ds:0x0(%rax,%rax,1)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('segments in memory references are not allowed', Instruction(0x0: 3e 0f 1f 84 00 00 00 00 00  nopl %ds:0x0(%rax,%rax,1)))
+----------------------------------------------------------------------
+@hex:
+  66 3E 0F 1F 84 00 00 00 00 00
+@dis:
+     0:	66 3e 0f 1f 84 00 00 00 00 00                	nopw   %ds:0x0(%rax,%rax,1)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('segments in memory references are not allowed', Instruction(0x0: 66 3e 0f 1f 84 00 00 00 00 00  nopw %ds:0x0(%rax,%rax,1)))
+----------------------------------------------------------------------
+@hex:
+  66 66 0F 1F 84 00 00 00 00 00
+@dis:
+     0:	66 66 0f 1f 84 00 00 00 00 00                	data32 nopw 0x0(%rax,%rax,1)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('duplicate legacy prefix', Instruction(0x0: 66 66 0f 1f 84 00 00 00 00 00  data32 nopw 0x0(%rax,%rax,1)))

@@ -1,0 +1,84 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(`Tests bottom-up view self and total time calculation in CPU profiler.\n`);
+  await TestRunner.loadModule('cpu_profiler_test_runner');
+
+  var profileAndExpectations = {
+    'title': 'profile1',
+    'target': function() {
+      return SDK.targetManager.targets()[0];
+    },
+    'profileModel': () => new SDK.CPUProfileDataModel({
+      'nodes': [
+        {
+          'id': 0,
+          'callFrame': {'functionName': '(root)', 'scriptId': '0', 'url': 'a.js', 'lineNumber': 0},
+          'hitCount': 350
+        },
+        {
+          'id': 1,
+          'callFrame': {'functionName': '(idle)', 'scriptId': '0', 'url': 'a.js', 'lineNumber': 1},
+          'hitCount': 1000,
+          'parent': 0
+        },
+        {
+          'id': 2,
+          'callFrame': {'functionName': 'A', 'scriptId': '0', 'url': 'a.js', 'lineNumber': 4642},
+          'hitCount': 250,
+          'parent': 0
+        },
+        {
+          'id': 3,
+          'callFrame': {'functionName': 'C', 'scriptId': '0', 'url': 'a.js', 'lineNumber': 525},
+          'hitCount': 100,
+          'parent': 2
+        },
+        {
+          'id': 4,
+          'callFrame': {'functionName': 'D', 'scriptId': '0', 'url': 'a.js', 'lineNumber': 425},
+          'hitCount': 20,
+          'parent': 3
+        },
+        {
+          'id': 5,
+          'callFrame': {'functionName': 'B', 'scriptId': '0', 'url': 'a.js', 'lineNumber': 4662},
+          'hitCount': 150,
+          'parent': 0
+        },
+        {
+          'id': 6,
+          'callFrame': {'functionName': 'C', 'scriptId': '0', 'url': 'a.js', 'lineNumber': 525},
+          'hitCount': 100,
+          'parent': 5
+        },
+        {
+          'id': 7,
+          'callFrame': {'functionName': 'D', 'scriptId': '0', 'url': 'a.js', 'lineNumber': 425},
+          'hitCount': 30,
+          'parent': 6
+        }
+      ],
+      'startTime': 0,
+      'endTime': 1e6
+    })
+  };
+  var view = new Profiler.CPUProfileView(profileAndExpectations);
+  view.viewSelectComboBox.setSelectedIndex(1);
+  view._changeView();
+  var tree = view.profileDataGridTree;
+  if (!tree)
+    TestRunner.addResult('no tree');
+  var node = tree.children[0];
+  if (!node)
+    TestRunner.addResult('no node');
+  while (node) {
+    TestRunner.addResult(
+        node.callUID + ': ' + node.functionName + ' ' + node.self + ' ' + node.total + ' ' +
+        node.element().textContent);
+    node = node.traverseNextNode(true, null, true);
+  }
+  CPUProfilerTestRunner.completeProfilerTest();
+})();

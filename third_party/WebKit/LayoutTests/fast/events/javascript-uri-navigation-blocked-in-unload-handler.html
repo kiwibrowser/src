@@ -1,0 +1,29 @@
+<html>
+<head>
+<title>Ensure that javascript: document navigations are blocked during onunload.</title>
+</head>
+<body>
+<pre id="console"></pre>
+<script>
+if (window.testRunner) {
+    testRunner.dumpAsText();
+    testRunner.waitUntilDone();
+}
+
+function log(msg) {
+    document.getElementById("console").appendChild(document.createTextNode(msg + "\n"));
+}
+
+var i = document.body.appendChild(document.createElement('iframe'));
+i.contentWindow.onunload = function() {
+    i.src = "javascript:top.log('PASS: script executed');" +
+            "'<script>top.log(\\'FAIL: document navigation not aborted\\');<" +
+            "/script>'";
+    if (window.testRunner)
+        testRunner.notifyDone();
+}
+
+i.src = "data:text/html,test";
+</script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!-- Copyright 2015 The Chromium Authors. All rights reserved.
+     Use of this source code is governed by a BSD-style license that can be
+     found in the LICENSE file. -->
+
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/shared_style_css.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_dialog/cr_dialog.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/animations/slide-from-left-animation.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/animations/slide-from-right-animation.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/animations/slide-left-animation.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/animations/slide-right-animation.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/neon-animatable.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/neon-animated-pages.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/web-animations.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+
+<!--
+  Offline UI for the New Gaia flow.
+  Contains two cards with a slide transition between them:
+    1. Email input form.
+    2. Password input form.
+
+  Example:
+    <offline-gaia></offline-gaia>
+
+  Attributes:
+    'showEnterpriseMessage' - If the "manged by" message should be shown.
+    'domain' - The enterprise domain the device is managed by.
+    'emailDomain' - autocomplete domain for the email input.
+    'glif-mode' - GLIF MM mode (Gaia v2 API).
+
+  Events:
+    'authCompleted' - fired when user enters login and password. Fires with an
+                      argument |credentials| which contains.
+                      |credentials| = { 'useOffline': true,
+                                        'email': <email>,
+                                        'password': <typed password> }
+                      If user did not type domain |email| will be added by
+                      "@gmail.com" or by 'emailDomain' if it is set.
+  Methods:
+    'focus' - focuses current screen (email input or password input);
+    'setEmail' - accepts an argument |email|. If |email| is empty it sets
+                 current screen to the email input, otherwise it sets current
+                 screen to password input and shows error that previously
+                 entered password is incorrect.
+-->
+<dom-module id="offline-gaia">
+  <link rel="stylesheet" href="offline_gaia.css">
+
+  <template>
+    <style include="cr-shared-style"></style>
+    <link rel="stylesheet" href="oobe_flex_layout.css">
+    <link rel="stylesheet" href="oobe_dialog_host.css">
+    <link rel="stylesheet" href="oobe_dialog_parameters.css">
+    <template is="dom-if" if="[[glifMode]]" restamp>
+      <oobe-dialog role="dialog" has-buttons selected$="[[activeSection]]"
+          animation-in-progress$="[[animationInProgress]]">
+        <img src="chrome://theme/IDR_LOGO_GOOGLE_COLOR_90"
+            class="oobe-icon" alt="">
+        <div id="headerContainer" class="header layout horizontal"
+            on-animationend="onSlideAnimationEnd_">
+          <div id="emailSectionHeader" class="section email-section">
+            <h1 class="title">
+              [[i18nDynamic(locale, 'loginWelcomeMessage')]]
+            </h1>
+            <p id="managedBy" class="enterprise-info"
+                hidden$="[[!showEnterpriseMessage]]">
+            </p>
+          </div>
+          <div id="passwordSectionHeader" class="section password-section">
+            <gaia-header class="title" id="passwordHeader"></gaia-header>
+          </div>
+        </div>
+        <div id="footerContainer" class="footer layout horizontal">
+          <div id="emailSectionFooter" class="section email-section">
+            <gaia-input-form on-submit="onEmailSubmitted_"
+                disabled="[[disabled]]"
+                button-text="[[i18nDynamic(locale, 'offlineLoginNextBtn')]]">
+              <gaia-input id="emailInput" type="email" required
+                  domain="[[emailDomain]]"
+                  error="[[i18nDynamic(locale, 'offlineLoginInvalidEmail')]]"
+                  label="[[i18nDynamic(locale, 'offlineLoginEmail')]]">
+              </gaia-input>
+            </gaia-input-form>
+          </div>
+          <div id="passwordSectionFooter" class="section password-section">
+            <gaia-input-form class="footer" disabled="[[disabled]]"
+                on-submit="onPasswordSubmitted_"
+                button-text="[[i18nDynamic(locale, 'offlineLoginNextBtn')]]">
+              <gaia-input id="passwordInput" type="password" required
+                  error="[[i18nDynamic(locale,
+                                       'offlineLoginInvalidPassword')]]"
+                  label="[[i18nDynamic(locale, 'offlineLoginPassword')]]">
+              </gaia-input>
+              <gaia-button type="link" on-tap="onForgotPasswordClicked_">
+                [[i18nDynamic(locale, 'offlineLoginForgotPasswordBtn')]]
+              </gaia-button>
+            </gaia-input-form>
+          </div>
+        </div>
+        <div class="bottom-buttons flex layout horizontal">
+          <oobe-back-button id="offline-gaia-back-button"
+              on-tap="onBackButtonClicked_">
+          </oobe-back-button>
+          <div class="flex">
+          </div>
+        </div>
+      </oobe-dialog>
+    </template>
+
+    <template is="dom-if" if="[[!glifMode]]" restamp>
+      <neon-animated-pages id="animatedPages" class="fit" attr-for-selected="id"
+          entry-animation="slide-from-right-animation"
+          exit-animation="slide-to-left-animation"
+          on-neon-animation-finish="onAnimationFinish_" selected="emailSection">
+
+        <neon-animatable id="emailSection" class="fit">
+            <gaia-card class="fit">
+              <div class="header flex vertical layout end-justified start">
+                <h1 class="welcome-message" i18n-content="loginWelcomeMessage">
+                </h1>
+                <p id="managedBy" class="enterprise-info"
+                    hidden$="[[!showEnterpriseMessage]]">
+                </p>
+              </div>
+              <div class="footer flex vertical layout justified">
+                <gaia-input-form on-submit="onEmailSubmitted_"
+                    disabled="[[disabled]]"
+                    i18n-values="button-text:offlineLoginNextBtn">
+                  <gaia-input id="emailInput" type="email" required
+                      domain="[[emailDomain]]"
+                      i18n-values="error:offlineLoginInvalidEmail;
+                                   label:offlineLoginEmail">
+                  </gaia-input>
+                </gaia-input-form>
+                <img src="chrome://theme/IDR_LOGO_GOOGLE_COLOR_90"
+                    class="self-center" alt="">
+              </div>
+            </gaia-card>
+        </neon-animatable>
+
+        <neon-animatable id="passwordSection" class="fit">
+            <gaia-card id="passwordCard" class="fit">
+              <gaia-header class="header flex" id="passwordHeader">
+              </gaia-header>
+              <gaia-input-form class="footer" disabled="[[disabled]]"
+                  on-submit="onPasswordSubmitted_"
+                  i18n-values="button-text:offlineLoginNextBtn">
+                <gaia-input id="passwordInput" type="password" required
+                    i18n-values="error:offlineLoginInvalidPassword;
+                                 label:offlineLoginPassword">
+                </gaia-input>
+                <gaia-button type="link" on-tap="onForgotPasswordClicked_"
+                    i18n-content="offlineLoginForgotPasswordBtn">
+                </gaia-button>
+              </gaia-input-form>
+            </gaia-card>
+        </neon-animatable>
+      </neon-animated-pages>
+    </template>
+
+    <cr-dialog id="forgotPasswordDlg"
+        on-close="onDialogOverlayClosed_">
+      <div slot="body"
+          i18n-content="offlineLoginForgotPasswordDlg"></div>
+      <div slot="button-container">
+        <paper-button autofocus on-tap="onForgotPasswordCloseTap_"
+            i18n-content="offlineLoginCloseBtn" class="action-button">
+        </paper-button>
+      </div>
+    </cr-dialog>
+  </template>
+</dom-module>

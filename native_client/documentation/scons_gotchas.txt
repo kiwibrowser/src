@@ -1,0 +1,28 @@
+
+SCons gotchas
+=============
+
+Avoiding getting object files in the source tree
+------------------------------------------------
+
+If you use an absolute pathname in a source file list, SCons has the
+annoying default behaviour of putting the resulting .o object file into the
+source tree instead of into the build directory (under "scons-out").
+
+For example, the following will do that:
+
+# bad
+env.ComponentLibrary('gtest',
+                     ['${SOURCE_ROOT}/testing/gtest/src/gtest-all.cc'])
+
+The workaround, which we use in various places, is to use ComponentObject()
+to override the .o filename.  For example:
+
+# good
+env.ComponentLibrary(
+    'gtest',
+    [env.ComponentObject('gtest-all.o',
+                         '${SOURCE_ROOT}/testing/gtest/src/gtest-all.cc')])
+
+This fixed version avoids the problem of gtest-all.c getting rebuilt when
+switching between the x86-32 and x86-64 builds.

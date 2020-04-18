@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="file:///gen/layout_test_data/mojo/public/js/mojo_bindings.js"></script>
+<script src="file:///gen/media/capture/mojom/image_capture.mojom.js"></script>
+<script src="resources/mock-imagecapture.js"></script>
+<body>
+<canvas id='canvas' width=10 height=10/>
+</body>
+<script>
+
+// This test verifies that ImageCapture can get PhotoCapabilities(), with a mock
+// Mojo interface implementation.
+
+promise_test(async function() {
+  let canvas = document.getElementById('canvas');
+  let context = canvas.getContext('2d');
+  context.fillStyle = 'red';
+  context.fillRect(0, 0, 10, 10);
+  let stream = canvas.captureStream();
+
+  let mockCapabilities = mockImageCapture.state();
+  let capturer = new ImageCapture(stream.getVideoTracks()[0]);
+  assert_true(typeof capturer.getPhotoCapabilities == 'function');
+
+  let capabilities = await capturer.getPhotoCapabilities();
+  assert_true(capabilities instanceof PhotoCapabilities);
+
+  assert_equals(capabilities.redEyeReduction, 'controllable',
+                'redEyeReduction');
+
+  assert_true(capabilities.imageHeight instanceof MediaSettingsRange);
+  assert_equals(capabilities.imageHeight.max, mockCapabilities.height.max);
+  assert_equals(capabilities.imageHeight.min, mockCapabilities.height.min);
+  assert_equals(capabilities.imageHeight.step, mockCapabilities.height.step);
+
+  assert_true(capabilities.imageWidth instanceof MediaSettingsRange);
+  assert_equals(capabilities.imageWidth.max, mockCapabilities.width.max);
+  assert_equals(capabilities.imageWidth.min, mockCapabilities.width.min);
+  assert_equals(capabilities.imageWidth.step, mockCapabilities.width.step);
+
+  assert_array_equals(capabilities.fillLightMode, [ 'auto', 'flash' ],
+                      'fillLightMode');
+
+}, 'exercises ImageCapture.getPhotoCapabilities()');
+
+</script>

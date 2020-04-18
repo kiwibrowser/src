@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+<head>
+<script src="https://cdn.rawgit.com/google/closure-library/master/closure/goog/base.js"></script>
+<script src="../../cr.js"></script>
+<script src="../event_target.js"></script>
+<script src="../ui.js"></script>
+<script src="command.js"></script>
+<script src="menu.js"></script>
+<script src="menu_item.js"></script>
+<script>
+
+goog.require('goog.testing.jsunit');
+
+</script>
+
+</head>
+<body>
+
+<script>
+
+/**
+ * Tests that if the command attributes are spacified, they are copied to the
+ * corresponding menuitem.
+ */
+function testCommandMenuItem() {
+  // Test 1: The case that the command label is set and other attributes copied.
+  var command = new cr.ui.Command();
+  command.id = 'the-command';
+  command.label = 'CommandLabel';
+  command.disabled = true;
+  command.hidden = true;
+  command.checked = true;
+  document.body.appendChild(command);
+
+  var menuItem = new cr.ui.MenuItem();
+  menuItem.command = '#the-command';
+
+  // Confirms the label is copied from the command.
+  assertEquals('CommandLabel', menuItem.label);
+  // Confirms the attributes are copied from the command.
+  assertEquals(true, menuItem.disabled);
+  assertEquals(true, menuItem.hidden);
+  assertEquals(true, menuItem.checked);
+
+  // Test 2: The case that the command label is not set, and other attributes
+  // have default values.
+  var command2 = new cr.ui.Command();
+  command2.id = 'the-command2';
+  document.body.appendChild(command2);
+
+  var menuItem2 = new cr.ui.MenuItem();
+  menuItem2.label = 'MenuLabel';
+  menuItem2.command = '#the-command2';
+
+  // Confirms the label is not copied, keeping the original label.
+  assertEquals('MenuLabel', menuItem2.label);
+  // Confirms the attributes are copied from the command.
+  assertEquals(false, menuItem2.disabled);
+  assertEquals(false, menuItem2.hidden);
+  assertEquals(false, menuItem2.checked);
+}
+
+</script>
+
+</body>
+</html>

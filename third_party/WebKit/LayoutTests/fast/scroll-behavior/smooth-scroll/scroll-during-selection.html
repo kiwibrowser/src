@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<script src="../../../resources/js-test.js"></script>
+<style>
+body {
+    height: 1000px;
+}
+#fixed {
+    position:fixed;
+    right: 20px;
+    width: 100px;
+    height: 40px;
+    background-color: #ace;
+}
+#text {
+    font: bold 18pt monospace;
+}
+</style>
+<div id="fixed"></div>
+<div id="text">TEXT</div>
+<div id="console"></div>
+<script>
+
+var jsTestIsAsync = true;
+
+description(
+    "This test verifies that text selection does not prevent smooth " +
+    "scrolls running on the main thread.");
+
+eventSender.dragMode = false;
+
+// Start a text selection.
+eventSender.mouseMoveTo(20, 20);
+eventSender.mouseDown();
+eventSender.mouseMoveTo(40, 20);
+
+eventSender.mouseScrollBy(0, -1);
+shouldBecomeEqual("scrollY", "40", finishJSTest);
+
+</script>

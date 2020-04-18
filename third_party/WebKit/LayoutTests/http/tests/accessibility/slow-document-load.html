@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<head>
+<title>Accessibility: slow document load</title>
+<script src="/js-test-resources/js-test.js"></script>
+</head>
+<body>
+
+<div id="console"></div>
+
+<script>
+description("This tests that accessibility events will be fired after the first layout, rather than only after the document loads.");
+window.jsTestIsAsync = true;
+
+if (window.testRunner && window.accessibilityController) {
+    testRunner.dumpAsText();
+
+    startTime = new Date();
+    gotLayoutCompleteBeforeOneSecond = false;
+
+    accessibilityController.addNotificationListener(function (target, notification) {
+        elapsedTime = new Date() - startTime;
+        if (notification == "LayoutComplete" && elapsedTime < 900) {
+            gotLayoutCompleteBeforeOneSecond = true;
+        }
+
+        if (notification == "LoadComplete") {
+            accessibilityController.removeNotificationListener();
+            shouldBeGreaterThanOrEqual("elapsedTime", "900");
+            shouldBeTrue("gotLayoutCompleteBeforeOneSecond");
+            finishJSTest();
+        }
+    });
+}
+
+setTimeout(function() {
+    // Cause an incremental layout.
+    document.body.offsetTop;
+}, 10);
+</script>
+
+<!-- This is a cgi script that waits 1 second before loading.
+     In practice, it seems to sometimes load after slightly less
+     time, like 996 ms, so that's why we use 900 ms as the threshold
+     in the tests, above.
+ -->
+<script src="slow-loading-script.cgi"></script>
+
+</body>
+</html>

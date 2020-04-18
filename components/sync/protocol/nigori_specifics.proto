@@ -1,0 +1,154 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+//
+// Sync protocol datatype extension for nigori keys.
+
+// Update proto_value_conversions{.h,.cc,_unittest.cc} if you change
+// any fields in this file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package sync_pb;
+
+import "encryption.proto";
+
+message NigoriKey {
+  optional string name = 1;
+  optional bytes user_key = 2 [deprecated = true];
+  optional bytes encryption_key = 3;
+  optional bytes mac_key = 4;
+}
+
+message NigoriKeyBag {
+  repeated NigoriKey key = 2;
+}
+
+// Properties of nigori sync object.
+message NigoriSpecifics {
+  optional EncryptedData encryption_keybag = 1;
+  // Once keystore migration is performed, we have to freeze the keybag so that
+  // older clients (that don't support keystore encryption) do not attempt to
+  // update the keybag.
+  // Previously |using_explicit_passphrase|.
+  optional bool keybag_is_frozen = 2;
+
+  // Obsolete encryption fields. These were deprecated due to legacy versions
+  // that understand their usage but did not perform encryption properly.
+  // optional bool deprecated_encrypt_bookmarks = 3;
+  // optional bool deprecated_encrypt_preferences = 4;
+  // optional bool deprecated_encrypt_autofill_profile = 5;
+  // optional bool deprecated_encrypt_autofill = 6;
+  // optional bool deprecated_encrypt_themes = 7;
+  // optional bool deprecated_encrypt_typed_urls = 8;
+  // optional bool deprecated_encrypt_extensions = 9;
+  // optional bool deprecated_encrypt_sessions = 10;
+  // optional bool deprecated_encrypt_apps = 11;
+  // optional bool deprecated_encrypt_search_engines = 12;
+
+  // Booleans corresponding to whether a datatype should be encrypted.
+  // Passwords are always encrypted, so we don't need a field here.
+  // History delete directives need to be consumable by the server, and
+  // thus can't be encrypted.
+  // Synced Notifications need to be consumed by the server (the read flag)
+  // and thus can't be encrypted.
+  // Synced Notification App Info is set by the server, and thus cannot be
+  // encrypted.
+  optional bool encrypt_bookmarks = 13;
+  optional bool encrypt_preferences = 14;
+  optional bool encrypt_autofill_profile = 15;
+  optional bool encrypt_autofill = 16;
+  optional bool encrypt_themes = 17;
+  optional bool encrypt_typed_urls = 18;
+  optional bool encrypt_extensions = 19;
+  optional bool encrypt_sessions = 20;
+  optional bool encrypt_apps = 21;
+  optional bool encrypt_search_engines = 22;
+
+  // Deprecated on clients where tab sync is enabled by default.
+  // optional bool sync_tabs = 23;
+
+  // If true, all current and future datatypes will be encrypted.
+  optional bool encrypt_everything = 24;
+
+  optional bool encrypt_extension_settings = 25;
+  optional bool encrypt_app_notifications = 26;
+  optional bool encrypt_app_settings = 27;
+
+  // User device information. Contains information about each device that has a
+  // sync-enabled Chrome browser connected to the user account.
+  // This has been moved to the DeviceInfo message.
+  // repeated DeviceInformation deprecated_device_information = 28;
+
+  // Enable syncing favicons as part of tab sync.
+  optional bool sync_tab_favicons = 29;
+
+  // The state of the passphrase required to decrypt |encryption_keybag|.
+  enum PassphraseType {
+    // Proto enums should begin with an 'unknown' value for switch statements,
+    // unknown fields, etc.
+    UNKNOWN = 0;
+    // Gaia-based encryption passphrase. Deprecated.
+    IMPLICIT_PASSPHRASE = 1;
+    // Keystore key encryption passphrase. Uses |keystore_bootstrap| to
+    // decrypt |encryption_keybag|.
+    KEYSTORE_PASSPHRASE = 2;
+    // Previous Gaia-based passphrase frozen and treated as a custom passphrase.
+    FROZEN_IMPLICIT_PASSPHRASE = 3;
+    // User provided custom passphrase.
+    CUSTOM_PASSPHRASE = 4;
+  }
+  optional PassphraseType passphrase_type = 30 [default = IMPLICIT_PASSPHRASE];
+
+  // The keystore decryptor token blob. Encrypted with the keystore key, and
+  // contains the encryption key used to decrypt |encryption_keybag|.
+  // Only set if passphrase_state == KEYSTORE_PASSPHRASE.
+  optional EncryptedData keystore_decryptor_token = 31;
+
+  // The time (in epoch milliseconds) at which the keystore migration was
+  // performed.
+  optional int64 keystore_migration_time = 32;
+
+  // The time (in epoch milliseconds) at which a custom passphrase was set.
+  // Note: this field may not be set if the custom passphrase was applied before
+  // this field was introduced.
+  optional int64 custom_passphrase_time = 33;
+
+  // Boolean corresponding to whether custom spelling dictionary should be
+  // encrypted.
+  optional bool encrypt_dictionary = 34;
+
+  // Boolean corresponding to Whether to encrypt favicons data or not.
+  optional bool encrypt_favicon_images = 35;
+  optional bool encrypt_favicon_tracking = 36;
+
+  // Boolean corresponding to whether articles should be encrypted.
+  optional bool encrypt_articles = 37;
+
+  // Boolean corresponding to whether app list items should be encrypted.
+  optional bool encrypt_app_list = 38;
+
+  // Boolean corresponding to whether usage count and last use date of Wallet
+  // data should be encrypted.
+  optional bool encrypt_autofill_wallet_metadata = 39;
+
+  // Boolean indicating whether this node was originally missing a
+  // |keystore_migration_time| field value, and was fixed on the server by
+  // giving the field a value.
+  // THIS FIELD SHOULD ONLY BE SET BY THE SERVER.
+  optional bool server_only_was_missing_keystore_migration_time = 40;
+
+  // Boolean corresponding to whether arc pakcage items should be encrypted.
+  optional bool encrypt_arc_package = 41;
+
+  // Boolean corresponding to whether printer items should be encrypted.
+  optional bool encrypt_printers = 42;
+
+  // Boolean corresponding to whether reading list items should be encrypted.
+  optional bool encrypt_reading_list = 43;
+
+  // Boolean corresponding to whether mountain shares should be encrypted.
+  optional bool encrypt_mountain_shares = 44;
+}

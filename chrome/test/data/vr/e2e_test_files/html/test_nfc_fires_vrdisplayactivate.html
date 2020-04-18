@@ -1,0 +1,33 @@
+<!doctype html>
+<!--
+Tests that scanning the Daydream View NFC tag on supported devices fires the
+vrdisplayactivate event
+-->
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="../resources/webvr_e2e.css">
+    <meta name="timeout" content="long">
+  </head>
+  <body>
+    <canvas id="webgl-canvas"></canvas>
+    <script src="../../../../../../third_party/WebKit/LayoutTests/resources/testharness.js"></script>
+    <script src="../resources/webvr_e2e.js"></script>
+    <script src="../resources/webvr_boilerplate.js"></script>
+    <script>
+      var t = async_test("NFC scan fires the vrdisplayactivate event");
+      function addListener() {
+        window.addEventListener("vrdisplayactivate", () => {
+          vrDisplay.requestPresent([{source: webglCanvas}]).then( () => {
+            // Do nothing
+          }, (err) => {
+            t.step( () => {
+              assert_unreached(
+                  "Was unable to present with vrdisplayactivate: " + err);
+            });
+          }).then( () => {t.done()});
+        }, false);
+      }
+      // NFC scan triggered after page loaded and listener added
+    </script>
+  </body>
+</html>

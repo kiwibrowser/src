@@ -1,0 +1,297 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="about_page_browser_proxy.html">
+<link rel="import" href="../i18n_setup.html">
+<link rel="import" href="../icons.html">
+<link rel="import" href="../lifetime_browser_proxy.html">
+<link rel="import" href="../route.html">
+<link rel="import" href="../settings_page/main_page_behavior.html">
+<link rel="import" href="../settings_page/settings_animated_pages.html">
+<link rel="import" href="../settings_page/settings_section.html">
+<link rel="import" href="../settings_page_css.html">
+<link rel="import" href="../settings_shared_css.html">
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/html/assert.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/html/web_ui_listener_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-icon/iron-icon.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/neon-animatable.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+
+<if expr="chromeos">
+<link rel="import" href="detailed_build_info.html">
+<link rel="import" href="update_warning_dialog.html">
+<link rel="import" href="../settings_page/settings_subpage.html">
+<link rel="import" href="../reset_page/powerwash_dialog.html">
+</if>
+
+<if expr="_google_chrome and is_macosx">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+</if>
+
+<dom-module id="settings-about-page">
+  <template>
+    <style include="settings-shared settings-page-styles">
+      :host {
+        --about-page-image-space: 10px;
+      }
+
+      .info-section {
+        margin-bottom: 12px;
+      }
+
+      .padded {
+        padding-bottom: 10px;
+        padding-top: 10px;
+      }
+
+      .product-title {
+        font-size: 153.85%;  /* 20px / 13px */
+        margin-bottom: auto;
+        margin-top: auto;
+      }
+
+      img {
+        -webkit-margin-end: var(--about-page-image-space);
+      }
+
+      iron-icon {
+        -webkit-margin-end: var(--about-page-image-space);
+        min-width: 32px;  /* The width of the product-logo img. */
+      }
+
+      iron-icon[icon='settings:check-circle'] {
+        fill: var(--google-blue-500);
+      }
+
+      iron-icon[icon='settings:error'] {
+        fill: var(--google-red-700);
+      }
+
+      .settings-box .start {
+        overflow-x: auto;
+      }
+
+      paper-button {
+        white-space: nowrap;
+      }
+
+      #regulatoryInfo img {
+        width: 330px;
+      }
+
+<if expr="_google_chrome and is_macosx">
+      #promoteUpdater[disabled] {
+        @apply --cr-secondary-text;
+      }
+</if>
+    </style>
+    <div>
+      <settings-section page-title="$i18n{aboutPageTitle}" section="about">
+        <settings-animated-pages id="pages" section="about"
+            focus-config="[[focusConfig_]]">
+          <neon-animatable route-path="default">
+            <div class="settings-box two-line">
+              <img id="product-logo" on-click="onProductLogoTap_"
+                  srcset="chrome://theme/current-channel-logo@1x 1x,
+                          chrome://theme/current-channel-logo@2x 2x"
+                  alt="$i18n{aboutProductLogoAlt}">
+              <span class="product-title">$i18n{aboutProductTitle}</span>
+            </div>
+            <div class="settings-box two-line">
+              <!-- TODO(dpapad): Investigate why vulcanize does not handle well
+                a new line after "getThrobberSrcIfUpdating_(", causes incorrect
+                src URL -->
+              <!-- Set the icon from the iconset (when it's obsolete/EOL and
+                when update is done) or set the src (when it's updating). -->
+              <iron-icon
+                  hidden="[[!shouldShowIcons_(showUpdateStatus_)]]"
+<if expr="not chromeos">
+                  icon$="[[getUpdateStatusIcon_(
+                      obsoleteSystemInfo_, currentUpdateStatusEvent_)]]"
+                  src="[[getThrobberSrcIfUpdating_(obsoleteSystemInfo_, currentUpdateStatusEvent_)]]">
+</if>
+<if expr="chromeos">
+                  icon$="[[getUpdateStatusIcon_(
+                      hasEndOfLife_, currentUpdateStatusEvent_)]]"
+                  src="[[getThrobberSrcIfUpdating_(hasEndOfLife_, currentUpdateStatusEvent_)]]">
+</if>
+              </iron-icon>
+              <div class="start padded">
+                <div id="updateStatusMessage" hidden="[[!showUpdateStatus_]]">
+                  <div
+<if expr="not chromeos">
+                    inner-h-t-m-l="[[getUpdateStatusMessage_(
+                        currentUpdateStatusEvent_)]]">
+</if>
+<if expr="chromeos">
+                    inner-h-t-m-l="[[getUpdateStatusMessage_(
+                        currentUpdateStatusEvent_, targetChannel_)]]">
+</if>
+                  </div>
+                  <a hidden$="[[!shouldShowLearnMoreLink_(
+                      currentUpdateStatusEvent_)]]" target="_blank"
+                      href="https://support.google.com/chrome?p=update_error">
+                    $i18n{learnMore}
+                  </a>
+                </div>
+<if expr="not chromeos">
+                <span id="deprecationWarning"
+                    hidden="[[!obsoleteSystemInfo_.obsolete]]">
+                  $i18n{aboutObsoleteSystem}
+                  <a href="$i18n{aboutObsoleteSystemURL}" target="_blank">
+                    $i18n{learnMore}
+                  </a>
+                </span>
+</if>
+<if expr="chromeos">
+               <div id="endOfLifeMessageContainer" hidden="[[!hasEndOfLife_]]">
+                 $i18n{endOfLifeMessage}
+                 <a href="$i18n{endOfLifeLearnMoreURL}" target="_blank">
+                   $i18n{learnMore}
+                 </a>
+               </div>
+</if>
+                <div class="secondary">$i18n{aboutBrowserVersion}</div>
+              </div>
+              <div class="separator" hidden="[[!showButtonContainer_]]"></div>
+              <span id="buttonContainer" hidden="[[!showButtonContainer_]]">
+                <paper-button id="relaunch" class="secondary-button"
+                    hidden="[[!showRelaunch_]]" on-click="onRelaunchTap_">
+                  $i18n{aboutRelaunch}
+                </paper-button>
+<if expr="chromeos">
+                <paper-button id="relaunchAndPowerwash" class="secondary-button"
+                    hidden="[[!showRelaunchAndPowerwash_]]"
+                    on-click="onRelaunchAndPowerwashTap_">
+                  $i18n{aboutRelaunchAndPowerwash}
+                </paper-button>
+                <paper-button id="checkForUpdates" class="secondary-button"
+                    hidden="[[!showCheckUpdates_]]"
+                    on-click="onCheckUpdatesTap_">
+                  $i18n{aboutCheckForUpdates}
+                </paper-button>
+</if>
+              </span>
+            </div>
+<if expr="chromeos">
+            <div id="aboutTPMFirmwareUpdate" class="settings-box two-line"
+                hidden$="[[!showTPMFirmwareUpdateLineItem_]]"
+                on-click="onTPMFirmwareUpdateTap_" actionable>
+              <div class="start">
+                <div>$i18n{aboutTPMFirmwareUpdateTitle}</div>
+                <div class="secondary">
+                  $i18n{aboutTPMFirmwareUpdateDescription}
+                  <a href="$i18n{aboutTPMFirmwareUpdateLearnMoreURL}"
+                      target="_blank" on-click="onLearnMoreTap_">
+                    $i18n{learnMore}
+                  </a>
+                </div>
+              </div>
+              <paper-icon-button-light class="subpage-arrow">
+                <button aria-labelledby="aboutTPMFirmwareUpdate"></button>
+              </paper-icon-button-light>
+            </div>
+</if>
+<if expr="_google_chrome and is_macosx">
+            <template is="dom-if" if="[[!promoteUpdaterStatus_.hidden]]">
+              <div id="promoteUpdater" class="settings-box"
+                  disabled$="[[promoteUpdaterStatus_.disabled]]"
+                  actionable$="[[promoteUpdaterStatus_.actionable]]"
+                  on-click="onPromoteUpdaterTap_">
+                <div class="start">
+                  [[promoteUpdaterStatus_.text]]
+                  <a href="https://support.google.com/chrome/answer/95414"
+                      target="_blank" id="updaterLearnMore"
+                      on-click="onLearnMoreTap_">
+                    $i18n{learnMore}
+                  </a>
+                </div>
+                <paper-icon-button-light class="subpage-arrow"
+                    hidden="[[!promoteUpdaterStatus_.actionable]]">
+                  <button disabled="[[promoteUpdaterStatus_.disabled]]"
+                      aria-label$="[[promoteUpdaterStatus_.text]]">
+                  </button>
+                </paper-icon-button-light>
+              </div>
+            </template>
+</if>
+            <div id="help" class="settings-box" on-click="onHelpTap_"
+                actionable>
+              <div class="start">$i18n{aboutGetHelpUsingChrome}</div>
+              <paper-icon-button-light class="icon-external">
+                <button aria-labelledby="help"></button>
+              </paper-icon-button-light>
+            </div>
+<if expr="_google_chrome">
+            <div id="reportIssue" class="settings-box" actionable
+                on-click="onReportIssueTap_">
+              <div class="start">$i18n{aboutReportAnIssue}</div>
+              <paper-icon-button-light class="subpage-arrow">
+                <button aria-labelledby="reportIssue"></button>
+              </paper-icon-button-light>
+            </div>
+</if>
+<if expr="chromeos">
+            <div class="settings-box" on-click="onDetailedBuildInfoTap_"
+                actionable>
+              <div class="start">$i18n{aboutDetailedBuildInfo}</div>
+              <paper-icon-button-light class="subpage-arrow">
+                <button id="detailed-build-info-trigger"
+                    aria-label="$i18n{aboutDetailedBuildInfo}">
+                </button>
+              </paper-icon-button-light>
+            </div>
+</if>
+          </neon-animatable>
+<if expr="chromeos">
+          <template is="dom-if" route-path="/help/details">
+            <settings-subpage page-title="$i18n{aboutDetailedBuildInfo}">
+              <settings-detailed-build-info></settings-detailed-build-info>
+            </settings-subpage>
+          </template>
+</if>
+        </settings-animated-pages>
+      </settings-section>
+
+      <settings-section>
+        <div class="settings-box padded block">
+          <div class="info-section">
+            <div class="secondary">$i18n{aboutProductTitle}</div>
+            <div class="secondary">$i18n{aboutProductCopyright}</div>
+          </div>
+
+          <div class="info-section">
+            <div class="secondary">$i18nRaw{aboutProductLicense}</div>
+<if expr="chromeos">
+            <div class="secondary">$i18nRaw{aboutProductOsLicense}</div>
+</if>
+          </div>
+<if expr="_google_chrome">
+          <div class="secondary">$i18nRaw{aboutProductTos}</div>
+</if>
+        </div>
+<if expr="chromeos">
+        <div class="settings-box padded block" id="regulatoryInfo"
+            hidden$="[[!shouldShowRegulatoryInfo_(regulatoryInfo_)]]">
+          <img src="[[regulatoryInfo_.url]]" alt="[[regulatoryInfo_.text]]">
+        </div>
+</if>
+      </settings-section>
+    </div>
+<if expr="chromeos">
+    <template is="dom-if" if="[[showUpdateWarningDialog_]]" restamp>
+      <settings-update-warning-dialog update-info="[[updateInfo_]]"
+          on-close="onUpdateWarningDialogClose_">
+      </settings-update-warning-dialog>
+    </template>
+    <template is="dom-if" if="[[showTPMFirmwareUpdateDialog_]]"
+        restamp>
+      <settings-powerwash-dialog request-tpm-firmware-update
+          on-close="onPowerwashDialogClose_">
+      </settings-powerwash-dialog>
+    </template>
+</if>
+  </template>
+  <script src="about_page.js"></script>
+</dom-module>

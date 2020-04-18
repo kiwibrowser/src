@@ -1,0 +1,16 @@
+<script src="../../resources/js-test.js"></script>
+<script>
+function test(iframe) {
+    iframe.contentWindow.location.href = "resources/does-not-exist.html";
+    testPassed('if no crash');
+}
+</script>
+<iframe id=testIframe onload="test(this)"></iframe>
+<script>
+description('Detaching a frame in beforeunload event handler should not crash.');
+var testIframe = document.getElementById('testIframe');
+testIframe.contentWindow.onbeforeunload = function(event) {
+    testIframe.parentNode.removeChild(testIframe);
+    event.returnValue = 'beforeunload';
+}
+</script>

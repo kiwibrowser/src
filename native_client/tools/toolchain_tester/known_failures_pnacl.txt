@@ -1,0 +1,149 @@
+# Copyright (c) 2013 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# NOTE:
+# progress on eliminating failures here should be recorded via
+# http://code.google.com/p/nativeclient/issues/detail?id=2204
+# ======================================================================
+# failures in phase sel_ldr
+# ======================================================================
+# alloca() in C is currently not guaranteed to return an aligned
+# address with Clang/LLVM.
+# See: https://code.google.com/p/nativeclient/issues/detail?id=3795
+alloca-1.c
+# setjmp/longjmp TODO
+built-in-setjmp.c
+# ??? (funny shenanigans with bitfields)
+bitfld-5.c
+bitfld-3.c
+# local version of llabs overrides libc version
+20021127-1.c O0f
+# bad shift of a 40-bit bitfield (assumes intermediate values are 40-bit)
+pr32244-1.c
+pr34971.c
+# Probably some kind of issue with NEON (started failing when we enabled it)
+mul-subnormal-single-1.c arm O0f
+# This uses __builtin_return_address(1) and it segfaults because of an
+# uninit frame pointer (must force fp on?).
+20010122-1.c
+# ======================================================================
+# failures in phase translate
+# ======================================================================
+# undef signal
+fp-cmp-1.c
+# undef signal
+fp-cmp-2.c
+# undef signal
+fp-cmp-3.c
+# undef isinfl
+pr39228.c
+# undef signal
+20101011-1.c
+# undef __builtin_va_arg_pack
+va-arg-pack-1.c
+# prefetch broken on ARM
+builtin-prefetch-2.c arm
+# DCE not performed at -O0 (wontfix?)
+medce-1.c O0f
+fp-cmp-7.c O0f
+# packed volatile structs, fail when promoting volatile to atomic
+# we could fix this by being clever
+20010518-2.c
+# ======================================================================
+# failures in phase compile-bc
+# ======================================================================
+# unknown builtin __builtin_malloc (wontfix?)
+20071018-1.c
+20071120-1.c
+pr36765.c
+pr43008.c
+# ======================================================================
+# additional failures at -O3
+# ======================================================================
+# uses  __builtin_constant_p
+bcp-1.c O3f
+# uses __builtin_constant_p
+builtin-constant.c O3f
+# llvm does not know how to evaluate "(x<y) && (x>y)" and "(x==y) && (x!=y)"
+compare-fp-3.c O3f
+# math functions not simplified the way the test expects
+20030125-1.c O3f
+# some kind of misoptimization, or optimization not done that the test
+# expects. not sure why it wasn't caught before
+fprintf-chk-1.c O3f
+printf-chk-1.c O3f
+vprintf-chk-1.c O3f
+vfprintf-chk-1.c O3f
+# ======================================================================
+# wont fixes - misc reasons
+# ======================================================================
+# fields must have a constant size: 'variable length array in structure'
+# extension will never be supported
+20070919-1.c
+20020412-1.c
+20040308-1.c
+20040423-1.c
+20041218-2.c
+align-nest.c
+pr41935.c
+# mode attribute only supported for integer and float types
+20050107-1.c
+20050119-1.c
+20050119-2.c
+simd-1.c
+pr23135.c
+# asm - invalid output constraint =t (is apparently undocumented in gcc)
+990413-2.c
+# <scumbagsteve> implicit return type int
+# does not return a value </scumbagsteve> (error only in clang)
+920728-1.c
+# __builtin_nan result is not a compile-time constant
+builtin-nan-1.c
+# __builtin_apply and friends not supported by clang
+pr47237.c
+# This test has an integer overflow / undefined behavior:
+20031003-1.c
+# ======================================================================
+# wont fixes - nested functions
+# ======================================================================
+# nested function
+nest-align-1.c
+# nested function
+nest-stdar-1.c
+# nested function
+nestfunc-7.c
+# nested function
+pr22061-3.c
+# nested function
+pr22061-4.c
+# nested function
+20010209-1.c
+# nested function
+20010605-1.c
+# nested function
+20090219-1.c
+# nested function
+920612-2.c
+# nested function
+921017-1.c
+# nested function
+20030501-1.c
+# nested function
+20040520-1.c
+# nested function
+20061220-1.c
+
+# ======================================================================
+# complex va_arg (e.g. structs passed as va_args)
+# ======================================================================
+
+# In some cases, PNaCl ABI simplification passes can expand out the
+# x = va_arg(list, struct X) instructions. E.g., simple flat structs.
+# However, some cases (structs with array elements), fail:
+# Function foo disallowed:
+# bad result type: [72 x i8]*   %a72.bc = bitcast i8* %a72 to [72 x i8]*
+# bad pointer:     store [72 x i8] %.field61, [72 x i8]* %a72.bc, align 1
+pr38151.c
+va-arg-22.c
+pr44575.c

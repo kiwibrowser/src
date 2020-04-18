@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="file:///gen/layout_test_data/mojo/public/js/mojo_bindings.js"></script>
+<script src="file:///gen/device/vr/public/mojom/vr_service.mojom.js"></script>
+<script src="../xr/resources/xr-device-mocking.js"></script>
+<script src="../xr/resources/xr-test-utils.js"></script>
+<script src="../xr/resources/test-constants.js"></script>
+<canvas id="webgl-canvas"></canvas>
+
+<script>
+let fakeDevices = fakeXRDevices();
+let watcherDone = new Event("watcherdone");
+
+xr_session_promise_test( (session, t) => {
+    // Session must have a baseLayer or frame requests will be ignored.
+    session.baseLayer = new XRWebGLLayer(session, gl);
+
+    let eventWatcher = new EventWatcher(t, session, ["resetpose", "watcherdone"]);
+    let eventPromise = eventWatcher.wait_for(["resetpose", "watcherdone"]);
+
+    // Need to have a valid pose or input event's don't process.
+    var pose = Object.assign({}, VALID_POSE);
+    pose.poseReset = true;
+    setPose(pose);
+
+    function onPoseReset(event) {
+      t.step( () => {
+        assert_equals(event.session, session);
+        session.dispatchEvent(watcherDone);
+      });
+    }
+
+    session.addEventListener("resetpose", onPoseReset, false);
+
+    // Trigger the reset pose.
+    session.requestAnimationFrame((time, xrFrame) => {});
+
+    return eventPromise;
+  }, fakeDevices["FakeGooglePixelPhone"], [
+    { outputContext: getOutputContext() },
+    { exclusive: true },
+  ],
+"XRSession resetpose from a device properly fires off the right events");
+
+</script>

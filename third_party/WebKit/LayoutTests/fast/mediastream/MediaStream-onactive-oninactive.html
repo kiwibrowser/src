@@ -1,0 +1,64 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+<script src="../../resources/js-test.js"></script>
+</head>
+<body>
+<p id="description"></p>
+<div id="console"></div>
+<script>
+description("Test onactive/oninactive callback.");
+
+function error() {
+    testFailed('Stream generation failed.');
+    finishJSTest();
+}
+
+function getUserMedia(dictionary, callback) {
+    try {
+        navigator.webkitGetUserMedia(dictionary, callback, error);
+    } catch (e) {
+        testFailed('webkitGetUserMedia threw exception :' + e);
+        finishJSTest();
+    }
+}
+
+var stream;
+
+function streamActive() {
+    testPassed('streamActive was called.');
+    shouldBeTrue('stream.active');
+    finishJSTest();
+}
+
+function gotStream2(s) {
+    stream = new MediaStream();
+    shouldBeFalse('stream.active');
+    stream.onactive = streamActive;
+    stream.addTrack(s.getAudioTracks()[0]);
+}
+
+function streamInactive() {
+    testPassed('streamInactive was called.');
+    shouldBeFalse('stream.active');
+
+    getUserMedia({audio:true, video:true}, gotStream2);
+}
+
+function gotStream(s) {
+    stream = s;
+    shouldBeTrue('stream.active');
+    stream.oninactive = streamInactive;
+    shouldBe('stream.getAudioTracks().length', '1');
+    shouldBe('stream.getVideoTracks().length', '1');
+    stream.removeTrack(stream.getAudioTracks()[0]);
+    stream.removeTrack(stream.getVideoTracks()[0]);
+}
+
+getUserMedia({audio:true, video:true}, gotStream);
+
+window.jsTestIsAsync = true;
+window.successfullyParsed = true;
+</script>
+</body>
+</html>

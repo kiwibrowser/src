@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id='output' width='200' height='400'></canvas>
+<script src="/js-test-resources/js-test.js"></script>
+<script id='myWorker' type='text/worker'>
+self.onmessage = function(e) {
+    var aCanvas = new OffscreenCanvas(200, 400);
+    var ctx = aCanvas.getContext('2d');
+
+    // Draw a tainted imagebitmap into OffscreenCanvas 2d
+    ctx.drawImage(e.data, 0, 0, 10, 10);
+
+    var image = aCanvas.transferToImageBitmap();
+    self.postMessage(image, [image]);
+};
+</script>
+<script>
+description("The taintedness of the imagebitmap drawn to OffscrenCanvas must be transfered");
+
+window.jsTestIsAsync = true;
+
+function shouldBeTainted(imageBitmap) {
+    var canvas = document.createElement("canvas");
+    canvas.width = 10;
+    canvas.height = 10;
+    var context = canvas.getContext("2d");
+    context.drawImage(imageBitmap, 0, 0, 10, 10);
+    try {
+        var imageData = context.getImageData(0, 0, 10, 10);
+        testFailed("ImageBitmap is not tainted.");
+    } catch (e) {
+        testPassed("ImageBitmap is tainted. Threw error: " + e);
+    }
+}
+
+var blob = new Blob([document.getElementById('myWorker').textContent]);
+var worker = new Worker(URL.createObjectURL(blob));
+worker.addEventListener('message', msg => {
+    shouldBeTainted(msg.data);
+    finishJSTest();
+});
+
+var image = document.createElement('img');
+image.src = 'http://localhost:8080/security/resources/abe.png';
+image.addEventListener('load', function() {
+    createImageBitmap(image, 0, 0, 10, 10).then(
+        function(imagebitmap) {
+            // Post the tainted imagebitmap to worker
+            worker.postMessage(imagebitmap, [imagebitmap]);
+        },
+        function(e) {
+            testFailed("Image rejected unexpectedly. ");
+            debug(e);
+        }
+    );
+});
+
+</script>
+</body>
+</html>

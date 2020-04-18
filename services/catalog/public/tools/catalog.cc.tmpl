@@ -1,0 +1,57 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// This is a generated file. Please see the "catalog_cpp_source" template in
+// src/services/catalog/public/tools/catalog.gni for more details.
+
+#include "{{path}}.h"
+
+#include "base/values.h"
+
+namespace {
+
+template <typename T>
+std::unique_ptr<base::Value> GenerateValue(T generator) { return generator(); }
+
+}  // namespace
+
+{%- macro generate_value(source) -%}
+{%-   if source|is_dict -%}
+GenerateValue([]() {
+  auto dict = std::make_unique<base::DictionaryValue>();
+{%-     for key, value in source.iteritems() %}
+  dict->Set("{{key}}", {{generate_value(value)|indent(2)}});
+{%-     endfor %}
+  return dict;
+})
+{%-   elif source|is_list -%}
+GenerateValue([]() {
+  auto list = std::make_unique<base::ListValue>();
+{%-     for value in source %}
+  list->Append({{generate_value(value)|indent(2)}});
+{%-     endfor %}
+  return list;
+})
+{%-   elif source|is_number -%}
+std::make_unique<base::Value>({{source}})
+{%-   elif source|is_bool -%}
+std::make_unique<base::Value>({{source|lower}})
+{%-   elif source|is_string or source|is_unicode -%}
+std::make_unique<base::Value>("{{source|make_ascii}}")
+{%-   else %}
+{{raise("Unknown value type: %s" % source, source)}}
+{%-   endif %}
+{%- endmacro -%}
+
+{% for namespace in namespaces %}
+namespace {{namespace}} {
+{%- endfor %}
+
+std::unique_ptr<base::Value> {{function_name}}() {
+  return {{generate_value(catalog)|indent(2)}};
+}
+
+{%- for namespace in namespaces|reverse %}
+}  // namespace {{namespace}}
+{%- endfor %}

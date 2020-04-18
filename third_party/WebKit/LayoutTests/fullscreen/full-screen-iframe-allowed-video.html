@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<script>
+    if (window.internals)
+        runPixelTests = internals.runtimeFlags.forceOverlayFullscreenVideoEnabled;
+</script>
+<script src="full-screen-test.js"></script>
+<script>
+    var initialized = false;
+    window.onmessage = function(messageEvent) {
+        if (!initialized) {
+            // video has been loaded and messaged us.
+            // Send click to center of iframe.
+            iframe = document.getElementById("frame");
+            x = iframe.offsetLeft + iframe.offsetWidth / 2;
+            y = iframe.offsetTop + iframe.offsetHeight / 2;
+            if (window.eventSender) {
+                eventSender.mouseMoveTo(x, y);
+                eventSender.mouseDown();
+                eventSender.mouseUp();
+            }
+            initialized = true;
+        } else {
+            consoleWrite(messageEvent.data);
+            endTest();
+        }
+    }
+</script>
+Video inside an iframe is allowed to enter fullscreen</p>
+<iframe id="frame" src="resources/video.html" width="320" height="240" allowfullscreen></iframe>
+

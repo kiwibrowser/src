@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script>
+if (window.internals) {
+  internals.settings.setCSSExternalScannerPreload(true);
+}
+var link = "<link rel='stylesheet' type='text/css' href='resources/import-loop1.css'><\/link>";
+var slowScript = "<script src='../resources/slow-script.pl?delay=1000'><\/script>";
+document.write(slowScript + link);
+</script>
+
+<script>
+test(function() { assert_true(true); }, "should not crash");
+</script>
+<p>No crash

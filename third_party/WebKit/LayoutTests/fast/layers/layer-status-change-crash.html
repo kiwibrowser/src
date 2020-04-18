@@ -1,0 +1,22 @@
+<!DOCTYPE HTML>
+<body>
+<div id="div">This test passes if it does not crash.</div>
+<script>
+if (window.testRunner) {
+  testRunner.waitUntilDone();
+  testRunner.dumpAsText();
+
+  var div = document.getElementById('div');
+  testRunner.layoutAndPaintAsyncThen(function() {
+    div.style.position = 'relative';
+    div.style.backgroundColor = 'blue';
+    testRunner.layoutAndPaintAsyncThen(function() {
+      div.textContent += ' PASS';
+      testRunner.notifyDone();
+    });
+  });
+} else {
+  document.body.textContent = 'This test needs DumpRenderTree.';
+} 
+</script>
+</body>

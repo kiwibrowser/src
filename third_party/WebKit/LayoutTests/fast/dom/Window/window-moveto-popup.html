@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+<script>
+  let minWindowDimension = 100;
+
+  if (window.testRunner) {
+    testRunner.setCanOpenWindows();
+    testRunner.setCloseRemainingWindowsWhenComplete();
+  }
+  test(t => {
+    let w = window.open('about:blank', '', 'resizable=1,menubar=0,status=1');
+    w.moveTo(screen.width + 1000, screen.height + 1000);
+    assert_equals(w.screenY, (screen.availTop + screen.availHeight) - minWindowDimension);
+    assert_equals(w.screenX, (screen.availLeft + screen.availWidth) - minWindowDimension);
+  }, 'popup must not be moved outside of screen');
+</script>

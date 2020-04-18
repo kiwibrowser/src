@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script>
+
+test(function() {
+    assert_true('language' in window.navigator);
+    assert_true('languages' in window.navigator);
+    assert_true(Array.isArray(window.navigator.languages));
+    assert_true(Object.isFrozen(window.navigator.languages));
+    assert_true('onlanguagechange' in window);
+}, "Test that NavigatorLanguage API is present in window");
+
+test(function() {
+    var received = false;
+    window.onlanguagechange = function() {
+      received = true;
+    }
+
+    testRunner.setAcceptLanguages('klingon');
+    assert_true(received);
+}, "Test that the languagechange event fires on window.onlanguagechange");
+
+test(function() {
+    var received = false;
+    window.addEventListener('languagechange', function() {
+        received = true;
+    });
+
+    testRunner.setAcceptLanguages('klingon-FR');
+    assert_true(received);
+}, "Test that the languagechange event fires on window.addEventListener('languagechange')");
+
+test(function() {
+    window.received = false; // We need a global variable here.
+    document.body.setAttribute('onlanguagechange', 'window.received = true;');
+
+    testRunner.setAcceptLanguages('klingon-US');
+    assert_true(window.received);
+}, "Test that the languagechange event fires on body onlanguagechange attribute");
+
+test(function() {
+    window.received = 0; // We need a global variable here.
+    var fromWindowHandler = false;
+    document.body.setAttribute('onlanguagechange', 'window.received++;');
+    window.onlanguagechange = function() {
+        received++;
+        fromWindowHandler = true;
+    }
+
+    testRunner.setAcceptLanguages('klingon');
+    assert_equals(window.received, 1);
+    assert_true(fromWindowHandler);
+
+    window.received = 0;
+    fromWindowHandler = false;
+    window.onlanguagechange = function() {
+        received++;
+        fromWindowHandler = true;
+    }
+    document.body.setAttribute('onlanguagechange', 'window.received++;');
+
+    testRunner.setAcceptLanguages('klingon-FR');
+    assert_equals(window.received, 1);
+    assert_false(fromWindowHandler);
+}, "Test that the languagechange event fires on body onlanguagechange attribute XOR window.onlanguagechange");
+
+test(function() {
+    var eventsCount = 0;
+    window.onlanguagechange = function() {
+        eventsCount++;
+    }
+
+    testRunner.setAcceptLanguages('klingon-US');
+    testRunner.setAcceptLanguages('klingon-US');
+
+    assert_equals(eventsCount, 1);
+}, "Test that changing the language to the same value doesn't fire an event.")
+
+test(function() {
+    window.addEventListener('languagechange', function(e) {
+        assert_false(e.cancelable);
+        assert_false(e.bubbles);
+    });
+
+    testRunner.setAcceptLanguages('klingon');
+}, "Test properties of the fired event.");
+
+test(function() {
+    var testValues = [
+        { accept_languages: 'foo', languages: ['foo'] },
+        { accept_languages: '', languages: ['en-US'] },
+        { accept_languages: 'foo,bar', languages: [ 'foo', 'bar' ] },
+        { accept_languages: '  foo , bar ', languages: [ 'foo', 'bar' ] },
+        { accept_languages: '  foo ; bar ', languages: [ 'foo ; bar' ] },
+        { accept_languages: '_foo_', languages: ['_foo_'] },
+        { accept_languages: 'en_', languages: ['en-'] },
+        { accept_languages: 'en__', languages: ['en-_'] },
+        { accept_languages: 'en_US, fr_FR', languages: ['en-US', 'fr-FR'] },
+        { accept_languages: 'en_US_CA', languages: ['en-US_CA'] },
+    ];
+
+    var eventsCount = 0;
+    window.onlanguagechange = function() {
+        eventsCount++;
+    }
+
+    for (var i = 0; i < testValues.length; ++i) {
+        var data = testValues[i];
+
+        testRunner.setAcceptLanguages(data.accept_languages);
+        assert_equals(eventsCount, i + 1);
+
+        assert_equals(navigator.languages.length, data.languages.length);
+        assert_equals(navigator.language, data.languages[0]);
+        for (var j = 0; j < navigator.languages.length; ++j) {
+            assert_equals(navigator.languages[j], data.languages[j]);
+        }
+    }
+}, "Test that navigator.languages reflects the accept languages value.");
+
+test(function() {
+    var previous = navigator.languages;
+    assert_equals(navigator.languages, navigator.languages);
+    assert_equals(navigator.languages, previous);
+
+    testRunner.setAcceptLanguages('fr-FR');
+    assert_not_equals(navigator.languages, previous);
+}, "Test navigator.languages' caching behaviour.");
+
+</script>
+</body>
+</html>

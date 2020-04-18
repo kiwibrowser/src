@@ -1,0 +1,60 @@
+From c4968d01d5115504420298361f030df19e8adcc9 Mon Sep 17 00:00:00 2001
+From: Scott Hess <shess@chromium.org>
+Date: Tue, 16 Dec 2014 13:02:27 -0800
+Subject: [PATCH 06/10] [fts3] Disable fts3_tokenizer and fts4.
+
+fts3_tokenizer allows a SQLite user to specify a pointer to call as a
+function, which has obvious sercurity implications.  Disable fts4 until
+someone explicitly decides to own support for it.  Disable fts3tokenize
+virtual table until someone explicitly decides to own support for it.
+
+No original review URL because this was part of the initial Chromium commit.
+---
+ third_party/sqlite/src/ext/fts3/fts3.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/third_party/sqlite/src/ext/fts3/fts3.c b/third_party/sqlite/src/ext/fts3/fts3.c
+index cf73455a9dd3..215278a823bb 100644
+--- a/third_party/sqlite/src/ext/fts3/fts3.c
++++ b/third_party/sqlite/src/ext/fts3/fts3.c
+@@ -287,6 +287,7 @@
+ ** query logic likewise merges doclists so that newer data knocks out
+ ** older data.
+ */
++#define CHROMIUM_FTS3_CHANGES 1
+ 
+ #include "fts3Int.h"
+ #if !defined(SQLITE_CORE) || defined(SQLITE_ENABLE_FTS3)
+@@ -3972,7 +3973,11 @@ int sqlite3Fts3Init(sqlite3 *db){
+   ** module with sqlite.
+   */
+   if( SQLITE_OK==rc
++#if CHROMIUM_FTS3_CHANGES && !SQLITE_TEST
++      /* fts3_tokenizer() disabled for security reasons. */
++#else
+    && SQLITE_OK==(rc = sqlite3Fts3InitHashTable(db, pHash, "fts3_tokenizer"))
++#endif
+    && SQLITE_OK==(rc = sqlite3_overload_function(db, "snippet", -1))
+    && SQLITE_OK==(rc = sqlite3_overload_function(db, "offsets", 1))
+    && SQLITE_OK==(rc = sqlite3_overload_function(db, "matchinfo", 1))
+@@ -3982,6 +3987,9 @@ int sqlite3Fts3Init(sqlite3 *db){
+     rc = sqlite3_create_module_v2(
+         db, "fts3", &fts3Module, (void *)pHash, hashDestroy
+     );
++#if CHROMIUM_FTS3_CHANGES && !SQLITE_TEST
++    /* Disable fts4 and tokenizer vtab pending review. */
++#else
+     if( rc==SQLITE_OK ){
+       rc = sqlite3_create_module_v2(
+           db, "fts4", &fts3Module, (void *)pHash, 0
+@@ -3990,6 +3998,7 @@ int sqlite3Fts3Init(sqlite3 *db){
+     if( rc==SQLITE_OK ){
+       rc = sqlite3Fts3InitTok(db, (void *)pHash);
+     }
++#endif
+     return rc;
+   }
+ 
+-- 
+2.16.0
+

@@ -1,0 +1,32 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+//
+// Sync protocol datatype extension for bookmarks.
+
+// Update proto_value_conversions{.h,.cc,_unittest.cc} if you change
+// any fields in this file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package sync_pb;
+
+// Corresponds to a single meta info key/value pair for a bookmark node.
+message MetaInfo {
+  optional string key = 1;
+  optional string value = 2;
+}
+
+// Properties of bookmark sync objects.
+message BookmarkSpecifics {
+  optional string url = 1;
+  optional bytes favicon = 2;
+  optional string title = 3;
+  // Corresponds to BookmarkNode::date_added() represented as microseconds since
+  // the Windows epoch.
+  optional int64 creation_time_us = 4;
+  optional string icon_url = 5;
+  repeated MetaInfo meta_info = 6;
+}

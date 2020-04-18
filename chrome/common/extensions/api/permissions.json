@@ -1,0 +1,144 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+[
+  {
+    "namespace": "permissions",
+    "description": "Use the <code>chrome.permissions</code> API to request <a href='permissions#manifest'>declared optional permissions</a> at run time rather than install time, so users understand why the permissions are needed and grant only those that are necessary.",
+    "types": [
+      {
+        "id": "Permissions",
+        "type": "object",
+        "properties": {
+          "permissions": {
+            "type": "array",
+            "items": {"type": "string"},
+            "optional": true,
+            "description": "List of named permissions (does not include hosts or origins).  Anything listed here must appear in the <code>optional_permissions</code> list in the manifest."
+          },
+          "origins": {
+            "type": "array",
+            "items": {"type": "string"},
+            "optional": true,
+            "description": "List of origin permissions. Anything listed here must be a subset of a host that appears in the <code>optional_permissions</code> list in the manifest. For example, if <code>http://*.example.com/</code> or <code>http://*/</code> appears in <code>optional_permissions</code>, you can request an origin of <code>http://help.example.com/</code>. Any path is ignored."
+          }
+        }
+      }
+    ],
+    "events": [
+      {
+        "name": "onAdded",
+        "type": "function",
+        "description": "Fired when the extension acquires new permissions.",
+        "parameters": [
+          {
+            "$ref": "Permissions",
+            "name": "permissions",
+            "description": "The newly acquired permissions."
+          }
+        ]
+      },
+      {
+        "name": "onRemoved",
+        "type": "function",
+        "description": "Fired when access to permissions has been removed from the extension.",
+        "parameters": [
+          {
+            "$ref": "Permissions",
+            "name": "permissions",
+            "description": "The permissions that have been removed."
+          }
+        ]
+      }
+     ],
+    "functions": [
+      {
+        "name": "getAll",
+        "type": "function",
+        "description": "Gets the extension's current set of permissions.",
+        "parameters": [
+          {
+            "name": "callback",
+            "type": "function",
+            "parameters": [
+               {
+                "name": "permissions",
+                "$ref": "Permissions",
+                "description": "The extension's active permissions."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "contains",
+        "type": "function",
+        "description": "Checks if the extension has the specified permissions.",
+        "parameters": [
+          {
+            "name": "permissions",
+            "$ref": "Permissions"
+          },
+          {
+            "name": "callback",
+            "type": "function",
+            "parameters": [
+              {
+                "name": "result",
+                "type": "boolean",
+                "description": "True if the extension has the specified permissions."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "request",
+        "type": "function",
+        "description": "Requests access to the specified permissions. These permissions must be defined in the optional_permissions field of the manifest. If there are any problems requesting the permissions, $(ref:runtime.lastError) will be set.",
+        "parameters": [
+          {
+            "name": "permissions",
+            "$ref": "Permissions"
+          },
+          {
+            "name": "callback",
+            "type": "function",
+            "optional": true,
+            "parameters": [
+              {
+                "name": "granted",
+                "type": "boolean",
+                "description": "True if the user granted the specified permissions."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "remove",
+        "type": "function",
+        "description": "Removes access to the specified permissions. If there are any problems removing the permissions, $(ref:runtime.lastError) will be set.",
+        "parameters": [
+          {
+            "name": "permissions",
+            "$ref": "Permissions"
+          },
+          {
+            "name": "callback",
+            "type": "function",
+            "optional": true,
+            "parameters": [
+              {
+                "name": "removed",
+                "type": "boolean",
+                "description": "True if the permissions were removed."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

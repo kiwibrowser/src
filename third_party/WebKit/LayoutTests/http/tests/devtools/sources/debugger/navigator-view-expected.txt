@@ -1,0 +1,1469 @@
+Tests scripts panel file selectors.
+
+
+
+================================================
+Adding first resource:
+Sources:
+-------- Setting mode: [frame]
+top
+  script.js
+Sources:
+-------- Setting mode: [frame/domain]
+top
+  localhost:8080
+    script.js
+Sources:
+-------- Setting mode: [frame/domain/folder]
+top
+  localhost:8080
+    LayoutTests/inspector/debugger/foo/bar
+      script.js
+Sources:
+-------- Setting mode: [domain]
+localhost:8080
+  script.js
+Sources:
+-------- Setting mode: [domain/folder]
+localhost:8080
+  LayoutTests/inspector/debugger/foo/bar
+    script.js
+
+
+================================================
+Adding second resource:
+Sources:
+-------- Setting mode: [frame]
+top
+  script.js
+  script.js?a=2
+Sources:
+-------- Setting mode: [frame/domain]
+top
+  localhost:8080
+    script.js
+    script.js?a=2
+Sources:
+-------- Setting mode: [frame/domain/folder]
+top
+  localhost:8080
+    LayoutTests/inspector/debugger/foo/bar
+      script.js
+      script.js?a=2
+Sources:
+-------- Setting mode: [domain]
+localhost:8080
+  script.js
+  script.js?a=2
+Sources:
+-------- Setting mode: [domain/folder]
+localhost:8080
+  LayoutTests/inspector/debugger/foo/bar
+    script.js
+    script.js?a=2
+
+
+================================================
+Adding resources into another frame:
+Sources:
+-------- Setting mode: [frame]
+top
+  script.js
+  script.js?a=2
+  childframe (post-message-listener.html)
+    script.js
+    script.js?a=1
+Sources:
+-------- Setting mode: [frame/domain]
+top
+  localhost:8080
+    script.js
+    script.js?a=2
+  childframe (post-message-listener.html)
+    localhost:8080
+      script.js
+      script.js?a=1
+Sources:
+-------- Setting mode: [frame/domain/folder]
+top
+  localhost:8080
+    LayoutTests/inspector/debugger/foo/bar
+      script.js
+      script.js?a=2
+  childframe (post-message-listener.html)
+    localhost:8080
+      LayoutTests/inspector/debugger/foo
+        bar
+          script.js?a=1
+        baz
+          script.js
+Sources:
+-------- Setting mode: [domain]
+localhost:8080
+  script.js
+  script.js
+  script.js?a=1
+  script.js?a=2
+Sources:
+-------- Setting mode: [domain/folder]
+localhost:8080
+  LayoutTests/inspector/debugger/foo
+    bar
+      script.js
+      script.js?a=1
+      script.js?a=2
+    baz
+      script.js
+
+
+================================================
+Adding resources into another target:
+Sources:
+-------- Setting mode: [frame]
+top
+  script.js
+  script.js?a=2
+  childframe (post-message-listener.html)
+    script.js
+    script.js?a=1
+mock-target-100
+  script.js
+  script.js?a=3
+Sources:
+-------- Setting mode: [frame/domain]
+top
+  localhost:8080
+    script.js
+    script.js?a=2
+  childframe (post-message-listener.html)
+    localhost:8080
+      script.js
+      script.js?a=1
+mock-target-100
+  localhost:8080
+    script.js
+    script.js?a=3
+Sources:
+-------- Setting mode: [frame/domain/folder]
+top
+  localhost:8080
+    LayoutTests/inspector/debugger/foo/bar
+      script.js
+      script.js?a=2
+  childframe (post-message-listener.html)
+    localhost:8080
+      LayoutTests/inspector/debugger/foo
+        bar
+          script.js?a=1
+        baz
+          script.js
+mock-target-100
+  localhost:8080
+    LayoutTests/inspector/debugger/foo
+      bar
+        script.js?a=3
+      baz
+        script.js
+Sources:
+-------- Setting mode: [domain]
+localhost:8080
+  script.js
+  script.js
+  script.js?a=1
+  script.js?a=2
+mock-target-100
+  localhost:8080
+    script.js
+    script.js?a=3
+Sources:
+-------- Setting mode: [domain/folder]
+localhost:8080
+  LayoutTests/inspector/debugger/foo
+    bar
+      script.js
+      script.js?a=1
+      script.js?a=2
+    baz
+      script.js
+mock-target-100
+  localhost:8080
+    LayoutTests/inspector/debugger/foo
+      bar
+        script.js?a=3
+      baz
+        script.js
+
+
+================================================
+Adding content scripts and some random resources:
+Sources:
+-------- Setting mode: [frame]
+top
+  (index)
+  ?a=b
+  ?a=b
+  foo?bar=100%&baz=a%20%2fb
+  foo?bar=100&baz=a %2fb
+  script.js
+  script.js?a=2
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  white space.html
+  childframe (post-message-listener.html)
+    script.js
+    script.js?a=1
+mock-target-100
+  script.js
+  script.js?a=3
+Sources:
+-------- Setting mode: [frame/domain]
+top
+  (no domain)
+    ?a=b
+    very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  example.com
+    (index)
+    ?a=b
+    foo?bar=100%&baz=a%20%2fb
+    foo?bar=100&baz=a %2fb
+    white space.html
+  localhost:8080
+    script.js
+    script.js?a=2
+  childframe (post-message-listener.html)
+    localhost:8080
+      script.js
+      script.js?a=1
+mock-target-100
+  localhost:8080
+    script.js
+    script.js?a=3
+Sources:
+-------- Setting mode: [frame/domain/folder]
+top
+  (no domain)
+    ?a=b
+    very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  example.com
+    path with spaces
+      white space.html
+    the%2fdir
+      foo?bar=100%&baz=a%20%2fb
+      foo?bar=100&baz=a %2fb
+    (index)
+    ?a=b
+  localhost:8080
+    LayoutTests/inspector/debugger/foo/bar
+      script.js
+      script.js?a=2
+  childframe (post-message-listener.html)
+    localhost:8080
+      LayoutTests/inspector/debugger/foo
+        bar
+          script.js?a=1
+        baz
+          script.js
+mock-target-100
+  localhost:8080
+    LayoutTests/inspector/debugger/foo
+      bar
+        script.js?a=3
+      baz
+        script.js
+Sources:
+-------- Setting mode: [domain]
+(no domain)
+  ?a=b
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+example.com
+  (index)
+  ?a=b
+  foo?bar=100%&baz=a%20%2fb
+  foo?bar=100&baz=a %2fb
+  white space.html
+localhost:8080
+  script.js
+  script.js
+  script.js?a=1
+  script.js?a=2
+mock-target-100
+  localhost:8080
+    script.js
+    script.js?a=3
+Sources:
+-------- Setting mode: [domain/folder]
+(no domain)
+  ?a=b
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+example.com
+  path with spaces
+    white space.html
+  the%2fdir
+    foo?bar=100%&baz=a%20%2fb
+    foo?bar=100&baz=a %2fb
+  (index)
+  ?a=b
+localhost:8080
+  LayoutTests/inspector/debugger/foo
+    bar
+      script.js
+      script.js?a=1
+      script.js?a=2
+    baz
+      script.js
+mock-target-100
+  localhost:8080
+    LayoutTests/inspector/debugger/foo
+      bar
+        script.js?a=3
+      baz
+        script.js
+Content Scripts:
+-------- Setting mode: [frame]
+top
+  contentScript.js?a=1
+  contentScript.js?a=2
+  contentScript2.js?a=1
+Content Scripts:
+-------- Setting mode: [frame/domain]
+top
+  localhost:8080
+    contentScript.js?a=1
+    contentScript.js?a=2
+    contentScript2.js?a=1
+Content Scripts:
+-------- Setting mode: [frame/domain/folder]
+top
+  localhost:8080
+    LayoutTests/inspector/debugger/foo/bar
+      contentScript.js?a=1
+      contentScript.js?a=2
+      contentScript2.js?a=1
+Content Scripts:
+-------- Setting mode: [domain]
+localhost:8080
+  contentScript.js?a=1
+  contentScript.js?a=2
+  contentScript2.js?a=1
+Content Scripts:
+-------- Setting mode: [domain/folder]
+localhost:8080
+  LayoutTests/inspector/debugger/foo/bar
+    contentScript.js?a=1
+    contentScript.js?a=2
+    contentScript2.js?a=1
+
+
+================================================
+Revealing first resource:
+Sources:
+-------- Setting mode: [frame]
+top
+  (index)
+  ?a=b
+  ?a=b
+  foo?bar=100%&baz=a%20%2fb
+  foo?bar=100&baz=a %2fb
+  script.js
+  script.js?a=2
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  white space.html
+  childframe (post-message-listener.html)
+    script.js
+    script.js?a=1
+mock-target-100
+  script.js
+  script.js?a=3
+Sources:
+-------- Setting mode: [frame/domain]
+top
+  (no domain)
+    ?a=b
+    very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  example.com
+    (index)
+    ?a=b
+    foo?bar=100%&baz=a%20%2fb
+    foo?bar=100&baz=a %2fb
+    white space.html
+  localhost:8080
+    script.js
+    script.js?a=2
+  childframe (post-message-listener.html)
+    localhost:8080
+      script.js
+      script.js?a=1
+mock-target-100
+  localhost:8080
+    script.js
+    script.js?a=3
+Sources:
+-------- Setting mode: [frame/domain/folder]
+top
+  (no domain)
+    ?a=b
+    very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  example.com
+    path with spaces
+      white space.html
+    the%2fdir
+      foo?bar=100%&baz=a%20%2fb
+      foo?bar=100&baz=a %2fb
+    (index)
+    ?a=b
+  localhost:8080
+    LayoutTests/inspector/debugger/foo/bar
+      script.js
+      script.js?a=2
+  childframe (post-message-listener.html)
+    localhost:8080
+      LayoutTests/inspector/debugger/foo
+        bar
+          script.js?a=1
+        baz
+          script.js
+mock-target-100
+  localhost:8080
+    LayoutTests/inspector/debugger/foo
+      bar
+        script.js?a=3
+      baz
+        script.js
+Sources:
+-------- Setting mode: [domain]
+(no domain)
+  ?a=b
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+example.com
+  (index)
+  ?a=b
+  foo?bar=100%&baz=a%20%2fb
+  foo?bar=100&baz=a %2fb
+  white space.html
+localhost:8080
+  script.js
+  script.js
+  script.js?a=1
+  script.js?a=2
+mock-target-100
+  localhost:8080
+    script.js
+    script.js?a=3
+Sources:
+-------- Setting mode: [domain/folder]
+(no domain)
+  ?a=b
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+example.com
+  path with spaces
+    white space.html
+  the%2fdir
+    foo?bar=100%&baz=a%20%2fb
+    foo?bar=100&baz=a %2fb
+  (index)
+  ?a=b
+localhost:8080
+  LayoutTests/inspector/debugger/foo
+    bar
+      script.js
+      script.js?a=1
+      script.js?a=2
+    baz
+      script.js
+mock-target-100
+  localhost:8080
+    LayoutTests/inspector/debugger/foo
+      bar
+        script.js?a=3
+      baz
+        script.js
+
+
+================================================
+Adding some resources to change the way debugger folder looks like, first:
+Sources:
+-------- Setting mode: [frame]
+top
+  (index)
+  ?a=b
+  ?a=b
+  foo?bar=100%&baz=a%20%2fb
+  foo?bar=100&baz=a %2fb
+  script.js
+  script.js
+  script.js?a=2
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  white space.html
+  childframe (post-message-listener.html)
+    script.js
+    script.js?a=1
+mock-target-100
+  script.js
+  script.js?a=3
+Sources:
+-------- Setting mode: [frame/domain]
+top
+  (no domain)
+    ?a=b
+    very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  example.com
+    (index)
+    ?a=b
+    foo?bar=100%&baz=a%20%2fb
+    foo?bar=100&baz=a %2fb
+    white space.html
+  localhost:8080
+    script.js
+    script.js
+    script.js?a=2
+  childframe (post-message-listener.html)
+    localhost:8080
+      script.js
+      script.js?a=1
+mock-target-100
+  localhost:8080
+    script.js
+    script.js?a=3
+Sources:
+-------- Setting mode: [frame/domain/folder]
+top
+  (no domain)
+    ?a=b
+    very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  example.com
+    path with spaces
+      white space.html
+    the%2fdir
+      foo?bar=100%&baz=a%20%2fb
+      foo?bar=100&baz=a %2fb
+    (index)
+    ?a=b
+  localhost:8080
+    LayoutTests/inspector
+      debugger/foo/bar
+        script.js
+        script.js?a=2
+      debugger2/foo/bar
+        script.js
+  childframe (post-message-listener.html)
+    localhost:8080
+      LayoutTests/inspector/debugger/foo
+        bar
+          script.js?a=1
+        baz
+          script.js
+mock-target-100
+  localhost:8080
+    LayoutTests/inspector/debugger/foo
+      bar
+        script.js?a=3
+      baz
+        script.js
+Sources:
+-------- Setting mode: [domain]
+(no domain)
+  ?a=b
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+example.com
+  (index)
+  ?a=b
+  foo?bar=100%&baz=a%20%2fb
+  foo?bar=100&baz=a %2fb
+  white space.html
+localhost:8080
+  script.js
+  script.js
+  script.js
+  script.js?a=1
+  script.js?a=2
+mock-target-100
+  localhost:8080
+    script.js
+    script.js?a=3
+Sources:
+-------- Setting mode: [domain/folder]
+(no domain)
+  ?a=b
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+example.com
+  path with spaces
+    white space.html
+  the%2fdir
+    foo?bar=100%&baz=a%20%2fb
+    foo?bar=100&baz=a %2fb
+  (index)
+  ?a=b
+localhost:8080
+  LayoutTests/inspector
+    debugger/foo
+      bar
+        script.js
+        script.js?a=1
+        script.js?a=2
+      baz
+        script.js
+    debugger2/foo/bar
+      script.js
+mock-target-100
+  localhost:8080
+    LayoutTests/inspector/debugger/foo
+      bar
+        script.js?a=3
+      baz
+        script.js
+
+
+================================================
+Second:
+Sources:
+-------- Setting mode: [frame]
+top
+  (index)
+  ?a=b
+  ?a=b
+  foo?bar=100%&baz=a%20%2fb
+  foo?bar=100&baz=a %2fb
+  script.js
+  script.js
+  script.js?a=2
+  script.js?a=2
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  white space.html
+  childframe (post-message-listener.html)
+    script.js
+    script.js?a=1
+mock-target-100
+  script.js
+  script.js?a=3
+Sources:
+-------- Setting mode: [frame/domain]
+top
+  (no domain)
+    ?a=b
+    very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  example.com
+    (index)
+    ?a=b
+    foo?bar=100%&baz=a%20%2fb
+    foo?bar=100&baz=a %2fb
+    white space.html
+  localhost:8080
+    script.js
+    script.js
+    script.js?a=2
+    script.js?a=2
+  childframe (post-message-listener.html)
+    localhost:8080
+      script.js
+      script.js?a=1
+mock-target-100
+  localhost:8080
+    script.js
+    script.js?a=3
+Sources:
+-------- Setting mode: [frame/domain/folder]
+top
+  (no domain)
+    ?a=b
+    very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  example.com
+    path with spaces
+      white space.html
+    the%2fdir
+      foo?bar=100%&baz=a%20%2fb
+      foo?bar=100&baz=a %2fb
+    (index)
+    ?a=b
+  localhost:8080
+    LayoutTests/inspector
+      debugger/foo/bar
+        script.js
+        script.js?a=2
+      debugger2/foo/bar
+        script.js
+        script.js?a=2
+  childframe (post-message-listener.html)
+    localhost:8080
+      LayoutTests/inspector/debugger/foo
+        bar
+          script.js?a=1
+        baz
+          script.js
+mock-target-100
+  localhost:8080
+    LayoutTests/inspector/debugger/foo
+      bar
+        script.js?a=3
+      baz
+        script.js
+Sources:
+-------- Setting mode: [domain]
+(no domain)
+  ?a=b
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+example.com
+  (index)
+  ?a=b
+  foo?bar=100%&baz=a%20%2fb
+  foo?bar=100&baz=a %2fb
+  white space.html
+localhost:8080
+  script.js
+  script.js
+  script.js
+  script.js?a=1
+  script.js?a=2
+  script.js?a=2
+mock-target-100
+  localhost:8080
+    script.js
+    script.js?a=3
+Sources:
+-------- Setting mode: [domain/folder]
+(no domain)
+  ?a=b
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+example.com
+  path with spaces
+    white space.html
+  the%2fdir
+    foo?bar=100%&baz=a%20%2fb
+    foo?bar=100&baz=a %2fb
+  (index)
+  ?a=b
+localhost:8080
+  LayoutTests/inspector
+    debugger/foo
+      bar
+        script.js
+        script.js?a=1
+        script.js?a=2
+      baz
+        script.js
+    debugger2/foo/bar
+      script.js
+      script.js?a=2
+mock-target-100
+  localhost:8080
+    LayoutTests/inspector/debugger/foo
+      bar
+        script.js?a=3
+      baz
+        script.js
+
+
+================================================
+Others:
+Sources:
+-------- Setting mode: [frame]
+top
+  (index)
+  ?a=b
+  ?a=b
+  foo?bar=100%&baz=a%20%2fb
+  foo?bar=100&baz=a %2fb
+  script.js
+  script.js
+  script.js
+  script.js?a=1
+  script.js?a=2
+  script.js?a=2
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  white space.html
+  childframe (post-message-listener.html)
+    script.js
+    script.js?a=1
+mock-target-100
+  script.js
+  script.js?a=3
+Sources:
+-------- Setting mode: [frame/domain]
+top
+  (no domain)
+    ?a=b
+    very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  example.com
+    (index)
+    ?a=b
+    foo?bar=100%&baz=a%20%2fb
+    foo?bar=100&baz=a %2fb
+    white space.html
+  localhost:8080
+    script.js
+    script.js
+    script.js
+    script.js?a=1
+    script.js?a=2
+    script.js?a=2
+  childframe (post-message-listener.html)
+    localhost:8080
+      script.js
+      script.js?a=1
+mock-target-100
+  localhost:8080
+    script.js
+    script.js?a=3
+Sources:
+-------- Setting mode: [frame/domain/folder]
+top
+  (no domain)
+    ?a=b
+    very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  example.com
+    path with spaces
+      white space.html
+    the%2fdir
+      foo?bar=100%&baz=a%20%2fb
+      foo?bar=100&baz=a %2fb
+    (index)
+    ?a=b
+  localhost:8080
+    LayoutTests/inspector
+      debugger/foo/bar
+        script.js
+        script.js?a=2
+      debugger2/foo
+        bar
+          script.js
+          script.js?a=1
+          script.js?a=2
+        baz
+          script.js
+  childframe (post-message-listener.html)
+    localhost:8080
+      LayoutTests/inspector/debugger/foo
+        bar
+          script.js?a=1
+        baz
+          script.js
+mock-target-100
+  localhost:8080
+    LayoutTests/inspector/debugger/foo
+      bar
+        script.js?a=3
+      baz
+        script.js
+Sources:
+-------- Setting mode: [domain]
+(no domain)
+  ?a=b
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+example.com
+  (index)
+  ?a=b
+  foo?bar=100%&baz=a%20%2fb
+  foo?bar=100&baz=a %2fb
+  white space.html
+localhost:8080
+  script.js
+  script.js
+  script.js
+  script.js
+  script.js?a=1
+  script.js?a=1
+  script.js?a=2
+  script.js?a=2
+mock-target-100
+  localhost:8080
+    script.js
+    script.js?a=3
+Sources:
+-------- Setting mode: [domain/folder]
+(no domain)
+  ?a=b
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+example.com
+  path with spaces
+    white space.html
+  the%2fdir
+    foo?bar=100%&baz=a%20%2fb
+    foo?bar=100&baz=a %2fb
+  (index)
+  ?a=b
+localhost:8080
+  LayoutTests/inspector
+    debugger/foo
+      bar
+        script.js
+        script.js?a=1
+        script.js?a=2
+      baz
+        script.js
+    debugger2/foo
+      bar
+        script.js
+        script.js?a=1
+        script.js?a=2
+      baz
+        script.js
+mock-target-100
+  localhost:8080
+    LayoutTests/inspector/debugger/foo
+      bar
+        script.js?a=3
+      baz
+        script.js
+
+
+================================================
+Sources:
+-------- Setting mode: [frame]
+top
+  (index)
+  ?a=b
+  ?a=b
+  foo.js
+  foo.js
+  foo.js
+  foo?bar=100%&baz=a%20%2fb
+  foo?bar=100&baz=a %2fb
+  script.js
+  script.js
+  script.js
+  script.js?a=1
+  script.js?a=2
+  script.js?a=2
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  white space.html
+  childframe (post-message-listener.html)
+    script.js
+    script.js?a=1
+mock-target-100
+  script.js
+  script.js?a=3
+Sources:
+-------- Setting mode: [frame/domain]
+top
+  (no domain)
+    ?a=b
+    very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  example.com
+    (index)
+    ?a=b
+    foo?bar=100%&baz=a%20%2fb
+    foo?bar=100&baz=a %2fb
+    white space.html
+  localhost:8080
+    foo.js
+    foo.js
+    foo.js
+    script.js
+    script.js
+    script.js
+    script.js?a=1
+    script.js?a=2
+    script.js?a=2
+  childframe (post-message-listener.html)
+    localhost:8080
+      script.js
+      script.js?a=1
+mock-target-100
+  localhost:8080
+    script.js
+    script.js?a=3
+Sources:
+-------- Setting mode: [frame/domain/folder]
+top
+  (no domain)
+    ?a=b
+    very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  example.com
+    path with spaces
+      white space.html
+    the%2fdir
+      foo?bar=100%&baz=a%20%2fb
+      foo?bar=100&baz=a %2fb
+    (index)
+    ?a=b
+  localhost:8080
+    LayoutTests/inspector
+      debugger/foo/bar
+        script.js
+        script.js?a=2
+      debugger2/foo
+        bar
+          script.js
+          script.js?a=1
+          script.js?a=2
+        baz
+          script.js
+      debugger3/hasOwnProperty
+        __proto__
+          constructor
+            foo.js
+          foo.js
+        foo.js
+  childframe (post-message-listener.html)
+    localhost:8080
+      LayoutTests/inspector/debugger/foo
+        bar
+          script.js?a=1
+        baz
+          script.js
+mock-target-100
+  localhost:8080
+    LayoutTests/inspector/debugger/foo
+      bar
+        script.js?a=3
+      baz
+        script.js
+Sources:
+-------- Setting mode: [domain]
+(no domain)
+  ?a=b
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+example.com
+  (index)
+  ?a=b
+  foo?bar=100%&baz=a%20%2fb
+  foo?bar=100&baz=a %2fb
+  white space.html
+localhost:8080
+  foo.js
+  foo.js
+  foo.js
+  script.js
+  script.js
+  script.js
+  script.js
+  script.js?a=1
+  script.js?a=1
+  script.js?a=2
+  script.js?a=2
+mock-target-100
+  localhost:8080
+    script.js
+    script.js?a=3
+Sources:
+-------- Setting mode: [domain/folder]
+(no domain)
+  ?a=b
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+example.com
+  path with spaces
+    white space.html
+  the%2fdir
+    foo?bar=100%&baz=a%20%2fb
+    foo?bar=100&baz=a %2fb
+  (index)
+  ?a=b
+localhost:8080
+  LayoutTests/inspector
+    debugger/foo
+      bar
+        script.js
+        script.js?a=1
+        script.js?a=2
+      baz
+        script.js
+    debugger2/foo
+      bar
+        script.js
+        script.js?a=1
+        script.js?a=2
+      baz
+        script.js
+    debugger3/hasOwnProperty
+      __proto__
+        constructor
+          foo.js
+        foo.js
+      foo.js
+mock-target-100
+  localhost:8080
+    LayoutTests/inspector/debugger/foo
+      bar
+        script.js?a=3
+      baz
+        script.js
+
+
+================================================
+Revealing all resources:
+Sources:
+-------- Setting mode: [frame]
+top
+  (index)
+  ?a=b
+  ?a=b
+  foo.js
+  foo.js
+  foo.js
+  foo?bar=100%&baz=a%20%2fb
+  foo?bar=100&baz=a %2fb
+  script.js
+  script.js
+  script.js
+  script.js?a=1
+  script.js?a=2
+  script.js?a=2
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  white space.html
+  childframe (post-message-listener.html)
+    script.js
+    script.js?a=1
+mock-target-100
+  script.js
+  script.js?a=3
+Sources:
+-------- Setting mode: [frame/domain]
+top
+  (no domain)
+    ?a=b
+    very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  example.com
+    (index)
+    ?a=b
+    foo?bar=100%&baz=a%20%2fb
+    foo?bar=100&baz=a %2fb
+    white space.html
+  localhost:8080
+    foo.js
+    foo.js
+    foo.js
+    script.js
+    script.js
+    script.js
+    script.js?a=1
+    script.js?a=2
+    script.js?a=2
+  childframe (post-message-listener.html)
+    localhost:8080
+      script.js
+      script.js?a=1
+mock-target-100
+  localhost:8080
+    script.js
+    script.js?a=3
+Sources:
+-------- Setting mode: [frame/domain/folder]
+top
+  (no domain)
+    ?a=b
+    very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  example.com
+    path with spaces
+      white space.html
+    the%2fdir
+      foo?bar=100%&baz=a%20%2fb
+      foo?bar=100&baz=a %2fb
+    (index)
+    ?a=b
+  localhost:8080
+    LayoutTests/inspector
+      debugger/foo/bar
+        script.js
+        script.js?a=2
+      debugger2/foo
+        bar
+          script.js
+          script.js?a=1
+          script.js?a=2
+        baz
+          script.js
+      debugger3/hasOwnProperty
+        __proto__
+          constructor
+            foo.js
+          foo.js
+        foo.js
+  childframe (post-message-listener.html)
+    localhost:8080
+      LayoutTests/inspector/debugger/foo
+        bar
+          script.js?a=1
+        baz
+          script.js
+mock-target-100
+  localhost:8080
+    LayoutTests/inspector/debugger/foo
+      bar
+        script.js?a=3
+      baz
+        script.js
+Sources:
+-------- Setting mode: [domain]
+(no domain)
+  ?a=b
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+example.com
+  (index)
+  ?a=b
+  foo?bar=100%&baz=a%20%2fb
+  foo?bar=100&baz=a %2fb
+  white space.html
+localhost:8080
+  foo.js
+  foo.js
+  foo.js
+  script.js
+  script.js
+  script.js
+  script.js
+  script.js?a=1
+  script.js?a=1
+  script.js?a=2
+  script.js?a=2
+mock-target-100
+  localhost:8080
+    script.js
+    script.js?a=3
+Sources:
+-------- Setting mode: [domain/folder]
+(no domain)
+  ?a=b
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+example.com
+  path with spaces
+    white space.html
+  the%2fdir
+    foo?bar=100%&baz=a%20%2fb
+    foo?bar=100&baz=a %2fb
+  (index)
+  ?a=b
+localhost:8080
+  LayoutTests/inspector
+    debugger/foo
+      bar
+        script.js
+        script.js?a=1
+        script.js?a=2
+      baz
+        script.js
+    debugger2/foo
+      bar
+        script.js
+        script.js?a=1
+        script.js?a=2
+      baz
+        script.js
+    debugger3/hasOwnProperty
+      __proto__
+        constructor
+          foo.js
+        foo.js
+      foo.js
+mock-target-100
+  localhost:8080
+    LayoutTests/inspector/debugger/foo
+      bar
+        script.js?a=3
+      baz
+        script.js
+Content Scripts:
+-------- Setting mode: [frame]
+top
+  contentScript.js?a=1
+  contentScript.js?a=2
+  contentScript2.js?a=1
+Content Scripts:
+-------- Setting mode: [frame/domain]
+top
+  localhost:8080
+    contentScript.js?a=1
+    contentScript.js?a=2
+    contentScript2.js?a=1
+Content Scripts:
+-------- Setting mode: [frame/domain/folder]
+top
+  localhost:8080
+    LayoutTests/inspector/debugger/foo/bar
+      contentScript.js?a=1
+      contentScript.js?a=2
+      contentScript2.js?a=1
+Content Scripts:
+-------- Setting mode: [domain]
+localhost:8080
+  contentScript.js?a=1
+  contentScript.js?a=2
+  contentScript2.js?a=1
+Content Scripts:
+-------- Setting mode: [domain/folder]
+localhost:8080
+  LayoutTests/inspector/debugger/foo/bar
+    contentScript.js?a=1
+    contentScript.js?a=2
+    contentScript2.js?a=1
+
+
+================================================
+Removing all resources:
+Sources:
+-------- Setting mode: [frame]
+top
+  (index)
+  ?a=b
+  ?a=b
+  foo.js
+  foo.js
+  foo.js
+  foo?bar=100%&baz=a%20%2fb
+  foo?bar=100&baz=a %2fb
+  script.js
+  script.js
+  script.js
+  script.js?a=1
+  script.js?a=2
+  script.js?a=2
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  white space.html
+  childframe (post-message-listener.html)
+    script.js
+    script.js?a=1
+Sources:
+-------- Setting mode: [frame/domain]
+top
+  (no domain)
+    ?a=b
+    very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  example.com
+    (index)
+    ?a=b
+    foo?bar=100%&baz=a%20%2fb
+    foo?bar=100&baz=a %2fb
+    white space.html
+  localhost:8080
+    foo.js
+    foo.js
+    foo.js
+    script.js
+    script.js
+    script.js
+    script.js?a=1
+    script.js?a=2
+    script.js?a=2
+  childframe (post-message-listener.html)
+    localhost:8080
+      script.js
+      script.js?a=1
+Sources:
+-------- Setting mode: [frame/domain/folder]
+top
+  (no domain)
+    ?a=b
+    very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+  example.com
+    path with spaces
+      white space.html
+    the%2fdir
+      foo?bar=100%&baz=a%20%2fb
+      foo?bar=100&baz=a %2fb
+    (index)
+    ?a=b
+  localhost:8080
+    LayoutTests/inspector
+      debugger/foo/bar
+        script.js
+        script.js?a=2
+      debugger2/foo
+        bar
+          script.js
+          script.js?a=1
+          script.js?a=2
+        baz
+          script.js
+      debugger3/hasOwnProperty
+        __proto__
+          constructor
+            foo.js
+          foo.js
+        foo.js
+  childframe (post-message-listener.html)
+    localhost:8080
+      LayoutTests/inspector/debugger/foo
+        bar
+          script.js?a=1
+        baz
+          script.js
+Sources:
+-------- Setting mode: [domain]
+(no domain)
+  ?a=b
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+example.com
+  (index)
+  ?a=b
+  foo?bar=100%&baz=a%20%2fb
+  foo?bar=100&baz=a %2fb
+  white space.html
+localhost:8080
+  foo.js
+  foo.js
+  foo.js
+  script.js
+  script.js
+  script.js
+  script.js
+  script.js?a=1
+  script.js?a=1
+  script.js?a=2
+  script.js?a=2
+Sources:
+-------- Setting mode: [domain/folder]
+(no domain)
+  ?a=b
+  very_looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo…
+example.com
+  path with spaces
+    white space.html
+  the%2fdir
+    foo?bar=100%&baz=a%20%2fb
+    foo?bar=100&baz=a %2fb
+  (index)
+  ?a=b
+localhost:8080
+  LayoutTests/inspector
+    debugger/foo
+      bar
+        script.js
+        script.js?a=1
+        script.js?a=2
+      baz
+        script.js
+    debugger2/foo
+      bar
+        script.js
+        script.js?a=1
+        script.js?a=2
+      baz
+        script.js
+    debugger3/hasOwnProperty
+      __proto__
+        constructor
+          foo.js
+        foo.js
+      foo.js
+Content Scripts:
+-------- Setting mode: [frame]
+top
+  contentScript.js?a=1
+  contentScript.js?a=2
+  contentScript2.js?a=1
+Content Scripts:
+-------- Setting mode: [frame/domain]
+top
+  localhost:8080
+    contentScript.js?a=1
+    contentScript.js?a=2
+    contentScript2.js?a=1
+Content Scripts:
+-------- Setting mode: [frame/domain/folder]
+top
+  localhost:8080
+    LayoutTests/inspector/debugger/foo/bar
+      contentScript.js?a=1
+      contentScript.js?a=2
+      contentScript2.js?a=1
+Content Scripts:
+-------- Setting mode: [domain]
+localhost:8080
+  contentScript.js?a=1
+  contentScript.js?a=2
+  contentScript2.js?a=1
+Content Scripts:
+-------- Setting mode: [domain/folder]
+localhost:8080
+  LayoutTests/inspector/debugger/foo/bar
+    contentScript.js?a=1
+    contentScript.js?a=2
+    contentScript2.js?a=1
+

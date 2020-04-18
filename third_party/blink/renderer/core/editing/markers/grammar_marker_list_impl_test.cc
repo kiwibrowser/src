@@ -1,0 +1,29 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.  Use of
+// this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "third_party/blink/renderer/core/editing/markers/spell_check_marker_list_impl.h"
+
+#include "testing/gtest/include/gtest/gtest.h"
+#include "third_party/blink/renderer/core/editing/markers/grammar_marker_list_impl.h"
+#include "third_party/blink/renderer/platform/heap/handle.h"
+
+namespace blink {
+
+// Functionality implemented in SpellCheckMarkerListImpl is tested in
+// SpellingMarkerListImplTest.cpp.
+
+class GrammarMarkerListImplTest : public testing::Test {
+ protected:
+  GrammarMarkerListImplTest() : marker_list_(new GrammarMarkerListImpl()) {}
+
+  Persistent<GrammarMarkerListImpl> marker_list_;
+};
+
+// Test cases for functionality implemented by GrammarMarkerListImpl.
+
+TEST_F(GrammarMarkerListImplTest, MarkerType) {
+  EXPECT_EQ(DocumentMarker::kGrammar, marker_list_->MarkerType());
+}
+
+}  // namespace

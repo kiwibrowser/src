@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="file:///gen/layout_test_data/mojo/public/js/mojo_bindings.js"></script>
+<script src="file:///gen/device/vr/public/mojom/vr_service.mojom.js"></script>
+<script src="../xr/resources/xr-device-mocking.js"></script>
+<script src="../xr/resources/xr-test-utils.js"></script>
+<script src="../xr/resources/test-constants.js"></script>
+<canvas id="webgl-canvas"></canvas>
+
+<script>
+let fakeDevices = fakeXRDevices();
+
+let displayLeftEye = fakeDevices["FakeGooglePixelPhone"].leftEye;
+let displayRightEye = fakeDevices["FakeGooglePixelPhone"].rightEye;
+
+xr_session_promise_test( (session) => {
+  // Session must have a baseLayer or frame requests will be ignored.
+  session.baseLayer = new XRWebGLLayer(session, gl);
+
+  return session.requestFrameOfReference("eyeLevel")
+    .then((frameOfRef) => new Promise((resolve) =>{
+      let counter = 0;
+
+      function onFrame(time, xrFrame) {
+        if (counter == 0) {
+          session.requestAnimationFrame(onFrame);
+
+          let expectedLeftProjection = perspectiveFromFieldOfView(
+              displayLeftEye.fieldOfView, session.depthNear, session.depthFar);
+          let expectedRightProjection = perspectiveFromFieldOfView(
+              displayRightEye.fieldOfView, session.depthNear, session.depthFar);
+
+          assert_matrices_approx_equal(xrFrame.views[0].projectionMatrix, expectedLeftProjection);
+          assert_matrices_approx_equal(xrFrame.views[1].projectionMatrix, expectedRightProjection);
+
+          // Update the near and far depths for the session.
+          session.depthNear = 1.0;
+          session.depthFar = 10.0;
+
+          // The projection matrices the views report should not take into
+          // account the new session depth values this frame.
+          assert_matrices_approx_equal(xrFrame.views[0].projectionMatrix, expectedLeftProjection);
+          assert_matrices_approx_equal(xrFrame.views[1].projectionMatrix, expectedRightProjection);
+        } else {
+          // New depth values should be retained between frames.
+          assert_equals(session.depthNear, 1.0);
+          assert_equals(session.depthFar, 10.0);
+
+          let expectedLeftProjection = perspectiveFromFieldOfView(
+              displayLeftEye.fieldOfView, session.depthNear, session.depthFar);
+          let expectedRightProjection = perspectiveFromFieldOfView(
+              displayRightEye.fieldOfView, session.depthNear, session.depthFar);
+
+          // Projection matricies should now reflect the new depth values
+          assert_matrices_approx_equal(xrFrame.views[0].projectionMatrix, expectedLeftProjection);
+          assert_matrices_approx_equal(xrFrame.views[1].projectionMatrix, expectedRightProjection);
+          resolve();
+        }
+        counter++;
+      }
+
+      session.requestAnimationFrame(onFrame);
+  }));
+}, fakeDevices["FakeGooglePixelPhone"], [{ exclusive: true }],
+"XRView projection matrices update near and far depths on the next frame");
+
+</script>

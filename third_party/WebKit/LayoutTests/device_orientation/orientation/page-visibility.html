@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="../resources/device-orientation-helpers.js"></script>
+<script>
+'use strict';
+
+async_test(test => {
+  assertTestRunner();
+
+  var orientationData = generateOrientationData(1, 2, 3, true);
+  var succeedAndFinish = test.step_func_done(() => {});
+
+  function testWithPageVisible() {
+    window.removeEventListener('deviceorientation', failAndFinish);
+    testRunner.setPageVisibility("visible");
+    window.addEventListener('deviceorientation', succeedAndFinish);
+  }
+
+  var failAndFinish = test.step_func_done(() => {
+    assert_unreached("Should not have received a deviceorientation event while the page was hidden");
+  });
+
+  function testWithPageHidden() {
+    window.removeEventListener('deviceorientation', deviceOrientationListener);
+    testRunner.setPageVisibility("hidden");
+    window.addEventListener('deviceorientation', failAndFinish);
+    setTimeout(testWithPageVisible, 100);
+  }
+
+  var deviceOrientationListener = test.step_func(() => {
+    setTimeout(testWithPageHidden, 0);
+  });
+
+  setMockOrientation(orientationData);
+  window.addEventListener('deviceorientation', deviceOrientationListener);
+}, 'Tests to check that deviceorientation events are not fired when the page is not visible.');
+</script>
+</body>
+</html>

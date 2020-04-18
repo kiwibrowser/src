@@ -1,0 +1,19 @@
+// Copyright (c) 2010 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// extension api test
+// browser_tests.exe --gtest_filter=ExtensionModuleApiTest.IncognitoFile
+
+chrome.test.runTests([
+  function testPermissions() {
+    chrome.extension.isAllowedIncognitoAccess(
+        chrome.test.callbackPass(function(hasAccess) {
+          chrome.test.assertTrue(hasAccess);
+        }));
+    chrome.extension.isAllowedFileSchemeAccess(
+        chrome.test.callbackPass(function(hasAccess) {
+          chrome.test.assertTrue(hasAccess);
+        }));
+  }
+]);

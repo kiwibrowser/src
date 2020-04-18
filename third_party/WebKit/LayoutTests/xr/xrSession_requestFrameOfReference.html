@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="file:///gen/layout_test_data/mojo/public/js/mojo_bindings.js"></script>
+<script src="file:///gen/device/vr/public/mojom/vr_service.mojom.js"></script>
+<script src="../xr/resources/xr-device-mocking.js"></script>
+<script src="../xr/resources/xr-test-utils.js"></script>
+<script src="../xr/resources/test-constants.js"></script>
+<canvas id="webgl-canvas"></canvas>
+
+<script>
+let fakeDevices = fakeXRDevices();
+
+xr_session_promise_test( (session, t) => {
+  return promise_rejects(t, new TypeError(), session.requestFrameOfReference("foo"))
+    .then(() => Promise.all([
+      session.requestFrameOfReference("headModel").then( (frameOfRef) => {
+        assert_true(frameOfRef instanceof XRCoordinateSystem,
+          "headModel frameOfRef is not correct type.");
+        assert_true(frameOfRef instanceof XRFrameOfReference,
+          "headModel frameOfRef is not correct type.");
+      }),
+      session.requestFrameOfReference("eyeLevel").then( (frameOfRef) => {
+        assert_true(frameOfRef instanceof XRCoordinateSystem,
+          "eyeLevel frameOfRef is not correct type.");
+        assert_true(frameOfRef instanceof XRFrameOfReference,
+          "eyeLevel frameOfRef is not correct type.");
+      }),
+      session.requestFrameOfReference("stage").then( (frameOfRef) => {
+        assert_true(frameOfRef instanceof XRCoordinateSystem,
+          "stage frameOfRef is not correct type.");
+        assert_true(frameOfRef instanceof XRFrameOfReference,
+          "stage frameOfRef is not correct type.");
+      })
+  ]));
+}, fakeDevices["FakeGooglePixelPhone"], [
+    { exclusive: true },
+    { outputContext: getOutputContext() }
+],
+"requestFrameOfReference returns the expected objects");
+
+</script>

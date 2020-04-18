@@ -1,0 +1,73 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(`Test that device mode's responsive mode behaves correctly when adjusting inputs.\n`);
+  await TestRunner.loadModule('device_mode_test_runner');
+
+  var phone0 = DeviceModeTestRunner.buildFakePhone();
+  var phone1 = DeviceModeTestRunner.buildFakePhone();
+
+  var view = new Emulation.DeviceModeView();
+  var toolbar = view._toolbar;
+  var model = view._model;
+  var viewportSize = new UI.Size(320, 480);
+  model.setAvailableSize(viewportSize, viewportSize);
+
+  TestRunner.addResult(
+      '\nSetting device mode to responsive mode with viewport of size: ' + JSON.stringify(viewportSize));
+  toolbar._switchToResponsive();
+  dumpModelInfo();
+
+  var width = viewportSize.width - 1;
+  TestRunner.addResult('Setting width to ' + width);
+  toolbar._applyWidth(width);
+  dumpModelInfo();
+
+  width = viewportSize.width + 1;
+  TestRunner.addResult('Setting width to ' + width);
+  toolbar._applyWidth(width);
+  dumpModelInfo();
+
+  TestRunner.addResult('Setting width to ' + viewportSize.width);
+  toolbar._applyWidth(viewportSize.width);
+  dumpModelInfo();
+
+
+  var height = viewportSize.height - 1;
+  TestRunner.addResult('Setting height to ' + height);
+  toolbar._applyHeight(height);
+  dumpModelInfo();
+
+  height = viewportSize.height + 1;
+  TestRunner.addResult('Setting height to ' + height);
+  toolbar._applyHeight(height);
+  dumpModelInfo();
+
+  TestRunner.addResult('Setting height to ' + viewportSize.height);
+  toolbar._applyHeight(viewportSize.height);
+  dumpModelInfo();
+
+
+  TestRunner.addResult('\nSetting scale to 0.5');
+  toolbar._onScaleMenuChanged(0.5);
+  dumpModelInfo();
+
+  TestRunner.addResult('Setting scale to 1');
+  toolbar._onScaleMenuChanged(1);
+  dumpModelInfo();
+
+  TestRunner.addResult('Setting scale to 1.25');
+  toolbar._onScaleMenuChanged(1.25);
+  dumpModelInfo();
+
+  TestRunner.completeTest();
+
+  function dumpModelInfo() {
+    TestRunner.addResult(
+        'Scale: ' + model.scale() + ', appliedDeviceSize: ' + JSON.stringify(model.appliedDeviceSize()) +
+        ', screenRect: ' + JSON.stringify(model.screenRect()) + ', visiblePageRect: ' +
+        JSON.stringify(model.visiblePageRect()) + ', outlineRect: ' + JSON.stringify(model.outlineRect()));
+  }
+})();

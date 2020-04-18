@@ -1,0 +1,31 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<style>
+/* By applying a transform to the html element, we ensure that
+LayoutGeometryMap::pushMappingsToAncestor takes the slow bath (which doesn't push
+the LayoutView */
+html {
+  transform: scale(1.1);
+}
+</style>
+<script src="../../../resources/js-test.js"></script>
+</head>
+<body>
+<p id="description"></p>
+<div id="console"></div>
+<div id="touchtarget" ontouchstart="foo()">Foo</div>
+<script>
+    description("Make sure we don't ASSERT when the first layer is special and can't use the LayoutGeometryMap fast path - crbug.com/339141.");
+
+    var rects;
+    // Verify we actually have a hit rect in the document.
+    if (window.internals) {
+      internals.forceCompositingUpdate(document);
+      rects = internals.touchEventTargetLayerRects(document);
+      shouldBe("rects.length", "1");
+      shouldBeEqualToString("rects[0].layerAssociatedNode.nodeName", "#document");
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE HTML>
+<meta charset=utf-8>
+<title>Custom User Timing: measure</title>
+<script src="../../../../resources/testharness.js"></script>
+<script src="../../../../resources/testharnessreport.js"></script>
+<script src="performanceobservers.js"></script>
+<h1>Custom User Timing: measure</h1>
+<p>
+Custom User Timing: measure
+</p>
+<div id="log"></div>
+<script>
+  async_test(function (t) {
+    let measureEntries = [];
+    const timeStamp1 = 784.4;
+    const timeStamp2 = 1234.5;
+    const timeStamp3 = 66.6;
+    const timeStamp4 = 5566;
+    const expectectedEntries =
+        [{ entryType: "measure", name: "measure1", detail: null, startTime: 0 },
+        { entryType: "measure", name: "measure2", detail: null, startTime: 0 },
+        { entryType: "measure", name: "measure3", detail: null, startTime: 0 },
+        { entryType: "measure", name: "measure4", detail: null },
+        { entryType: "measure", name: "measure5", detail: null },
+        { entryType: "measure", name: "measure6", detail: null, startTime: 0 },
+        { entryType: "measure", name: "measure7", detail: null, startTime: 0 },
+        { entryType: "measure", name: "measure8", detail: null, startTime: timeStamp2 },
+        { entryType: "measure", name: "measure9", detail: null, startTime: timeStamp2, duration: timeStamp3 - timeStamp2 },
+        { entryType: "measure", name: "measure10", detail: null, startTime: timeStamp2, duration: timeStamp1 - timeStamp2 },
+        { entryType: "measure", name: "measure11", detail: null, startTime: timeStamp1 },
+        { entryType: "measure", name: "measure12", detail: null, startTime: timeStamp1, duration: timeStamp3 - timeStamp1 },
+        { entryType: "measure", name: "measure13", detail: null, startTime: timeStamp1, duration: timeStamp2 - timeStamp1 },
+        { entryType: "measure", name: "measure14", detail: null, startTime: 0 },
+        { entryType: "measure", name: "measure15", detail: null, startTime: 0 },
+        { entryType: "measure", name: "measure16", detail: null, startTime: 0 },
+        { entryType: "measure", name: "measure17", detail: null, startTime: timeStamp1 },
+        { entryType: "measure", name: "measure18", detail: null, startTime: timeStamp3 },
+        { entryType: "measure", name: "measure19", detail: null, startTime: 0 },
+        { entryType: "measure", name: "measure20", detail: null, startTime: 0 },
+        { entryType: "measure", name: "measure21", detail: null, startTime: timeStamp3, duration: timeStamp1 - timeStamp3 },
+        { entryType: "measure", name: "measure22", detail: null, startTime: timeStamp1, duration: timeStamp2 - timeStamp1 },
+        { entryType: "measure", name: "measure23", detail: null, startTime: timeStamp1 },
+        { entryType: "measure", name: "measure24", detail: {}, startTime: 0 },
+        { entryType: "measure", name: "measure25", detail: { customInfo: 159 }, startTime: timeStamp3, duration: timeStamp2 - timeStamp3 }];
+    const observer = new PerformanceObserver(
+        t.step_func(function (entryList, obs) {
+          measureEntries =
+            measureEntries.concat(entryList.getEntries());
+          if (measureEntries.length >= expectectedEntries.length) {
+            checkEntries(measureEntries, expectectedEntries);
+            observer.disconnect();
+            t.done();
+          }
+        })
+      );
+    self.performance.clearMarks();
+    self.performance.clearMeasures();
+    observer.observe({ entryTypes: ["measure"] });
+    self.performance.mark("mark1", { detail: { randomInfo: 3 }, startTime: timeStamp1 });
+    self.performance.mark("mark2", timeStamp2);
+
+    self.performance.measure("measure1");
+    self.performance.measure("measure2", undefined);
+    self.performance.measure("measure3", null);
+    self.performance.measure("measure4", timeStamp1);
+    self.performance.measure("measure5", 'mark1');
+    self.performance.measure("measure6", undefined, timeStamp1);
+    self.performance.measure("measure7", null, 'mark1');
+    self.performance.measure("measure8", timeStamp2, null);
+    self.performance.measure("measure9", timeStamp2, timeStamp3);
+    self.performance.measure("measure10", timeStamp2, 'mark1');
+    self.performance.measure("measure11", 'mark1', undefined);
+    self.performance.measure("measure12", 'mark1', timeStamp3);
+    self.performance.measure("measure13", 'mark1', 'mark2');
+    self.performance.measure("measure14", {});
+    self.performance.measure("measure15", { startTime: null });
+    self.performance.measure("measure16", { startTime: undefined });
+    self.performance.measure("measure17", { startTime: 'mark1' });
+    self.performance.measure("measure18", { startTime: timeStamp3 });
+    self.performance.measure("measure19", { endTime: undefined });
+    self.performance.measure("measure20", { endTime: 'mark1' });
+    self.performance.measure("measure21", { startTime: timeStamp3, endTime: 'mark1' });
+    self.performance.measure("measure22", { startTime: timeStamp1, endTime: timeStamp2, detail: undefined });
+    self.performance.measure("measure23", { startTime: 'mark1', endTime: undefined, detail: null });
+    self.performance.measure("measure24", { startTime: null, endTime: timeStamp1, detail: {} });
+    self.performance.measure("measure25", { startTime: timeStamp3, endTime: 'mark2', detail: { customInfo: 159 }});
+  }, "measure entries' detail and start/end are customizable");
+
+  async_test(function (t) {
+    assert_throws("SyntaxError", function() {
+      self.performance.measure("wrongUsage1", {}, 12);
+    });
+    t.done();
+  }, "measure should throw exception when passing option object and end at the same time");
+</script>

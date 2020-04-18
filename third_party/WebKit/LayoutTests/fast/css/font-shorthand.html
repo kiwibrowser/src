@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<div id="target"></div>
+<pre id="output"></pre>
+<script>
+if (window.testRunner) {
+    testRunner.dumpAsText();
+}
+
+var style = target.style;
+function showFontLonghands(fontValue, suppressLonghandValue)
+{
+    output.textContent += 'Longhands for font: ' + fontValue + '\n';
+    style.font = '';
+    style.font = fontValue;
+    for (var i = 0; i < style.length; i++) {
+        output.textContent += style[i];
+        if (!suppressLonghandValue) {
+            output.textContent += ': ' + style.getPropertyValue(style[i]);
+        }
+        output.textContent += '\n';
+    }
+    output.textContent += '\n';
+}
+
+showFontLonghands('12px monospace');
+showFontLonghands('12px/24px serif');
+showFontLonghands('normal 12px serif');
+showFontLonghands('normal normal 12px serif');
+showFontLonghands('normal normal normal 12px serif');
+showFontLonghands('italic small-caps 12px/24px serif');
+showFontLonghands('italic bold 12px/24px serif');
+showFontLonghands('small-caps bold 14px/28px Arial, sans-serif');
+showFontLonghands('italic small-caps bold 14px/28px Arial, sans-serif');
+
+// Suppress showing the longhand values for system fonts because they are platform specific.
+// Platform specific system font styles are covered in fast/css/css2-system-fonts.html.
+showFontLonghands('caption', true);
+showFontLonghands('icon', true);
+showFontLonghands('menu', true);
+showFontLonghands('message-box', true);
+showFontLonghands('small-caption', true);
+showFontLonghands('status-bar', true);
+showFontLonghands('-webkit-mini-control', true);
+showFontLonghands('-webkit-small-control', true);
+showFontLonghands('-webkit-control', true);
+
+// Invalid values should yield no longhands.
+showFontLonghands('italic small-caps bold 12px/24px');
+showFontLonghands('italic small-caps bold 12px');
+showFontLonghands('italic small-caps bold /12px serif');
+showFontLonghands('italic small-caps small-caps 12px serif');
+showFontLonghands('italic italic small-caps bold 12px serif');
+showFontLonghands('12px/italic serif');
+showFontLonghands("caption italic");
+showFontLonghands("icon 12px");
+showFontLonghands("icon 12px serif");
+showFontLonghands("menu italic 12px");
+</script>

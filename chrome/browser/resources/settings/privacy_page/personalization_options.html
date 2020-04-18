@@ -1,0 +1,93 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_toggle/cr_toggle.html">
+<link rel="import" href="chrome://resources/html/web_ui_listener_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+<link rel="import" href="../controls/settings_toggle_button.html">
+<link rel="import" href="../lifetime_browser_proxy.html">
+<link rel="import" href="../route.html">
+<link rel="import" href="../settings_shared_css.html">
+<link rel="import" href="privacy_page_browser_proxy.html">
+
+<dom-module id="settings-personalization-options">
+  <template>
+    <style include="settings-shared">
+      :host(.list-frame) settings-toggle-button,
+      :host(.list-frame) .settings-box {
+        -webkit-padding-end: 0;
+        -webkit-padding-start: 0;
+      }
+
+      :host(.list-frame) settings-toggle-button:first-of-type {
+        border-top: none;
+      }
+    </style>
+    <settings-toggle-button pref="{{prefs.alternate_error_pages.enabled}}"
+        label="$i18n{linkDoctorPref}"
+        sub-label="$i18n{linkDoctorPrefDesc}">
+    </settings-toggle-button>
+    <settings-toggle-button hidden="[[!pageVisibility.searchPrediction]]"
+        pref="{{prefs.search.suggest_enabled}}"
+        label="$i18n{searchSuggestPref}"
+        sub-label="$i18n{searchSuggestPrefDesc}">
+    </settings-toggle-button>
+    <settings-toggle-button id="safeBrowsingExtendedReportingControl"
+        pref="[[safeBrowsingExtendedReportingPref_]]"
+        label="$i18n{safeBrowsingEnableExtendedReporting}"
+        sub-label="$i18n{safeBrowsingEnableExtendedReportingDesc}"
+        on-settings-boolean-control-change="onSberChange_"
+        no-set-pref>
+    </settings-toggle-button>
+    <settings-toggle-button hidden="[[!pageVisibility.networkPrediction]]"
+        pref="{{prefs.net.network_prediction_options}}"
+        label="$i18n{networkPredictionEnabled}"
+        sub-label="$i18n{networkPredictionEnabledDesc}"
+        numeric-unchecked-value="[[networkPredictionEnum_.NEVER]]">
+    </settings-toggle-button>
+    <settings-toggle-button pref="{{prefs.safebrowsing.enabled}}"
+        label="$i18n{safeBrowsingEnableProtection}"
+        sub-label="$i18n{safeBrowsingEnableProtectionDesc}">
+    </settings-toggle-button>
+<if expr="_google_chrome">
+    <template is="dom-if" if="[[!unifiedConsentEnabled]]">
+      <settings-toggle-button id="spellCheckControl"
+          pref="{{prefs.spellcheck.use_spelling_service}}"
+          label="$i18n{spellingPref}"
+          sub-label="$i18n{spellingDescription}">
+      </settings-toggle-button>
+    </template>
+    <template is="dom-if" if="[[unifiedConsentEnabled]]">
+      <div class="settings-box two-line" id="spellCheckLinkBox">
+        <div class="start">
+          $i18n{spellingPref}
+          <div class="secondary" on-click="onLanguageLinkBoxClick_">
+            $i18nRaw{spellingDescription}
+          </div>
+        </div>
+        <cr-toggle checked="[[prefs.spellcheck.use_spelling_service]]" disabled>
+        </cr-toggle>
+      </div>
+    </template>
+<if expr="chromeos">
+    <settings-toggle-button pref="{{prefs.cros.metrics.reportingEnabled}}"
+        label="$i18n{enableLogging}"
+        sub-label="$i18n{enableLoggingDesc}">
+    </settings-toggle-button>
+</if><!-- chromeos -->
+<if expr="not chromeos">
+    <settings-toggle-button id="metricsReportingControl"
+        pref="[[metricsReportingPref_]]" label="$i18n{enableLogging}"
+        sub-label="$i18n{enableLoggingDesc}" no-set-pref
+        on-settings-boolean-control-change="onMetricsReportingChange_">
+      <template is="dom-if" if="[[showRestart_]]" restamp>
+        <paper-button on-click="onRestartTap_" id="restart"
+            slot="more-actions">
+          $i18n{restart}
+        </paper-button>
+      </template>
+    </settings-toggle-button>
+</if><!-- not chromeos -->
+</if><!-- _google_chrome -->
+  </template>
+  <script src="personalization_options.js"></script>
+</dom-module>

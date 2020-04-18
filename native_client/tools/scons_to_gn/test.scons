@@ -1,0 +1,38 @@
+# Copyright (c) 2014 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file
+
+# Test file for scons_to_gn
+
+sources = ['A.c', 'B.c', 'C.c']
+defines = []
+
+if env.Bit('win'):
+  sources += ['win']
+if env.Bit('build_x86_32'):
+  defines += ['_x86']
+if env.Bit('build_x86_64'):
+  defines += ['_x64']
+
+if True:
+  sources += ['FOOBAR.c']
+
+env.ComponentLibrary('all', sources, CFLAGS=['-D' + x for x in defines])
+
+nacl_env = env.Clone()
+nacl_env.Append(CFLAGS=['-DNACL'])
+
+if nacl_env.Bit('win'):
+  nacl_env.ComponentLibrary('win', sources)
+
+if env.Bit('linux'):
+  env.ComponentLibrary('linux', sources)
+
+if env.Bit('linux'):
+  cpu_test = nacl_env.ComponentProgram('my_test', ['testing/test.c'],
+      EXTRA_LIBS=['cpu_features','platform'])
+
+  node = nacl_env.CommandTest(
+      'cpu_x86_test.out',
+      [cpu_test])
+  nacl_env.AddNodeToTestSuite(node, ['small_tests'], 'run_cpu_x86_test')

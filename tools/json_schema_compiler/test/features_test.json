@@ -1,0 +1,142 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+  "alpha": {
+    "channel": "stable",
+    "contexts": ["blessed_extension"],
+    "dependencies": ["permission:alpha"],
+    "max_manifest_version": 1
+  },
+  "beta": {
+    "channel": "dev",
+    "contexts": ["blessed_extension"],
+    "extension_types": ["extension", "platform_app"],
+    "location": "component",
+    "whitelist": ["aaa", "bbb"],
+    "blacklist": ["zzz", "yyy"],
+    "component_extensions_auto_granted": false
+  },
+  "gamma": {
+    "channel": "beta",
+    "platforms": ["win", "mac"],
+    "contexts": ["blessed_extension"],
+    "dependencies": ["permission:gamma"],
+    "extension_types": ["extension"],
+    "internal": true
+  },
+  "gamma.child": {
+    "whitelist": ["ccc"],
+    "dependencies": [],
+    "platforms": ["linux"]
+  },
+  "gamma.unparented": {
+    "channel": "dev",
+    "blacklist": ["ddd"],
+    "contexts": ["unblessed_extension"],
+    "noparent": true
+  },
+  "gamma.complex_unparented": [{
+    "channel": "stable",
+    "contexts": ["unblessed_extension"],
+    "noparent": true
+  }, {
+    "channel": "stable",
+    "contexts": ["unblessed_extension"],
+    "noparent": true
+  }],
+  "delta": {
+    "channel": "dev",
+    "contexts": ["blessed_extension", "webui"],
+    "matches": ["*://example.com/*"],
+    "min_manifest_version": 2
+  },
+  "complex": [{
+    "channel": "beta",
+    "contexts": ["blessed_extension"],
+    "extension_types": ["extension"],
+    "whitelist": ["aaa"]
+  }, {
+    "channel": "stable",
+    "contexts": ["blessed_extension"],
+    "extension_types": ["extension"],
+    "default_parent": true
+  }],
+  "complex.child": {
+    "platforms": ["win"],
+    "dependencies": ["permission:complex.child"]
+  },
+  "allEnum": {
+    "channel": "beta",
+    "extension_types": "all",
+    "contexts": "all"
+  },
+  "uncompiled": {
+    "contexts": ["blessed_extension"],
+    "nocompile": true
+  },
+  "alias": {
+    "channel": "stable",
+    "contexts": ["blessed_extension"],
+    "source": "alias_source"
+  },
+  "alias_source": {
+    "channel": "stable",
+    "contexts": ["blessed_extension"],
+    "alias": "alias"
+  },
+  "complex_alias": [{
+    "channel": "beta",
+    "contexts": ["blessed_extension"],
+    "source": "complex_alias_source"
+  }, {
+    "channel": "dev",
+    "contexts": ["webui"]
+  }],
+  "complex_alias_source": [{
+    "channel": "beta",
+    "contexts": ["blessed_extension"],
+    "alias": "complex_alias"
+  }, {
+    "channel": "dev",
+    "contexts": ["webui"]
+  }],
+  "parent_source" : {
+    "channel": "beta",
+    "contexts": ["blessed_extension"],
+    "alias": "parent_source_alias"
+  },
+  "parent_source.child" : {
+    "channel": "beta",
+    "contexts": ["blessed_extension"]
+  },
+  "parent_source.child_source" : {
+    "channel": "beta",
+    "contexts": ["blessed_extension"],
+    "alias": "parent_source_child_alias"
+  },
+  "parent_source_alias": {
+    "channel": "beta",
+    "contexts": ["blessed_extension"],
+    "source": "parent_source"
+  },
+  "parent_source_child_alias": {
+    "channel": "beta",
+    "contexts": ["blessed_extension"],
+    "source": "parent_source.child_source"
+  },
+  "alias_parent": {
+    "channel": "beta",
+    "contexts": ["blessed_extension"]
+  },
+  "alias_parent.child": {
+    "channel": "beta",
+    "contexts": ["blessed_extension"],
+    "source": "child_source"
+  },
+  "child_source": {
+    "channel": "beta",
+    "contexts": ["blessed_extension"],
+    "alias": "alias_parent.child"
+  }
+}

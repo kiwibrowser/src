@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="../resources/js-test.js"></script>
+  </head>
+  <body>
+
+    <textarea id="textarea" rows="3" cols="40">
+Line 1
+Line 2
+Line 3
+    </textarea>
+
+    <textarea id="textarea-empty" rows="5" cols="40"></textarea>
+
+    <script>
+        description("This tests that text selection is reported correctly for textarea elements.");
+
+        if (window.accessibilityController) {
+
+            var textarea = document.getElementById('textarea');
+            textarea.focus();
+            var textareaAccessible =
+                accessibilityController.accessibleElementById('textarea');
+
+            // Select the entire contents.
+            textarea.select();
+            shouldBeZero("textareaAccessible.selectionStart");
+            shouldBeEqualToNumber("textareaAccessible.selectionEnd",
+                textarea.textLength);
+            shouldBeZero("textareaAccessible.selectionStartLineNumber");
+            shouldBeEqualToNumber(
+                "textareaAccessible.selectionEndLineNumber",
+                3);
+
+            // Select entire lines.
+            for (var lineNumber = 0; lineNumber < 3; ++lineNumber) {
+                for (var directionIndex = 0; directionIndex < 2;
+                    ++directionIndex) {
+                    var selectionStart = lineNumber * 7;
+                    var selectionEnd = (lineNumber + 1) * 7;
+                    var direction = 'forward';
+                    if (directionIndex)
+                        direction = 'backward';
+
+                    textarea.setSelectionRange(selectionStart, selectionEnd,
+                                               direction);
+                    shouldBeEqualToNumber("textareaAccessible.selectionStart",
+                        selectionStart);
+                    shouldBeEqualToNumber("textareaAccessible.selectionEnd",
+                        selectionEnd);
+                    shouldBeEqualToNumber(
+                        "textareaAccessible.selectionStartLineNumber",
+                        lineNumber);
+                    shouldBeEqualToNumber(
+                        "textareaAccessible.selectionEndLineNumber",
+                        lineNumber + 1);
+                }
+            }
+
+            var emptyTextarea = document.getElementById('textarea-empty');
+            emptyTextarea.focus();
+            // Each textarea has its own independent selection.
+            shouldBeEqualToNumber("textareaAccessible.selectionStart", 14);
+            shouldBeEqualToNumber("textareaAccessible.selectionEnd", 21);
+            shouldBeEqualToNumber(
+                "textareaAccessible.selectionStartLineNumber", 2);
+            shouldBeEqualToNumber(
+                "textareaAccessible.selectionEndLineNumber", 3);
+
+            var emptyTextareaAccessible =
+                accessibilityController.accessibleElementById('textarea-empty');
+            shouldBeZero("emptyTextareaAccessible.selectionStart");
+            shouldBeZero("emptyTextareaAccessible.selectionEnd");
+            shouldBeZero("emptyTextareaAccessible.selectionStartLineNumber");
+            shouldBeZero("emptyTextareaAccessible.selectionEndLineNumber");
+
+            // Setting an invalid selection should not be visible.
+            emptyTextarea.setSelectionRange(1, 1);
+            shouldBeZero("emptyTextareaAccessible.selectionStart");
+            shouldBeZero("emptyTextareaAccessible.selectionEnd");
+            shouldBeZero("emptyTextareaAccessible.selectionStartLineNumber");
+            shouldBeZero("emptyTextareaAccessible.selectionEndLineNumber");
+
+        }
+    </script>
+
+  </body>
+</html>

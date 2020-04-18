@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="../resources/device-orientation-helpers.js"></script>
+<script>
+'use strict';
+
+async_test(test => {
+  assertTestRunner();
+  var motionData1 = generateMotionData(1, 2, 3,
+                                       4, 5, 6,
+                                       7, 8, 9,
+                                       10);
+  var motionData2 = generateMotionData(11, 12, 13,
+                                       14, 15, 16,
+                                       17, 18, 19,
+                                       0);
+  var counter = 0;
+
+  var firstListener = test.step_func(event => {
+    checkMotion(event, motionData1);
+    ++counter;
+    proceedIfNecessary();
+  });
+
+  var secondListener = test.step_func(event => {
+    checkMotion(event, motionData1);
+    ++counter;
+    proceedIfNecessary();
+  });
+
+  function proceedIfNecessary() {
+    if (counter == 2) {
+      setMockMotion(motionData2);
+      // Note: this should not stop Device Motion updates,
+      // because there is still one listener active.
+      window.removeEventListener('devicemotion', secondListener);
+      setTimeout(initThirdListener, 0);
+    }
+  }
+
+  var childFrame;
+  function initThirdListener() {
+    childFrame = document.createElement('iframe');
+    document.body.appendChild(childFrame);
+    childFrame.contentWindow.addEventListener('devicemotion', thirdListener);
+  }
+
+  var thirdListener = test.step_func(event => {
+    // Expect the cached event because Device Motion was already active
+    // when third listener was added.
+    checkMotion(event, motionData1);
+    window.removeEventListener('devicemotion', firstListener);
+    childFrame.contentWindow.removeEventListener('devicemotion', thirdListener);
+    setTimeout(initFourthListener, 0);
+  });
+
+  function initFourthListener() {
+    window.addEventListener('devicemotion', fourthListener);
+  }
+
+  var fourthListener = test.step_func(event => {
+    checkMotion(event, motionData2);
+    test.done();
+  });
+
+  setMockMotion(motionData1);
+  window.addEventListener('devicemotion', firstListener);
+  window.addEventListener('devicemotion', secondListener);
+}, 'Tests using multiple event handlers for the Device Motion API.');
+</script>
+</body>
+</html>

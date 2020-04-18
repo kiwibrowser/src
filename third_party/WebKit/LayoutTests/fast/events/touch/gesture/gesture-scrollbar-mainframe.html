@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<script src="../../../../resources/testharness.js"></script>
+<script src="../../../../resources/testharnessreport.js"></script>
+<style>
+::-webkit-scrollbar {
+  background-color: #ccc;
+  /* fixed size for consistent touch adjustment behavior across platforms */
+  width: 15px;
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #777;
+  width: 15px;
+}
+
+body {
+    margin: 0;
+}
+
+.large {
+    height: 2000px;
+    width: 600px;
+}
+</style>
+<div id="console"></div>
+<div class="large">
+
+<script type="text/javascript">
+
+// Ensure there's a candidate for touch adjustment.
+document.addEventListener("click", function() {});
+
+test(function(t) {
+  assert_not_equals(window.eventSender, undefined, 'This test requires eventSender.');
+
+  //if (window.internals)
+  //    internals.settings.setMockScrollbarsEnabled(true);
+
+  assert_greater_than(window.innerWidth - document.body.clientWidth, 5);
+  var scrollbarX = document.body.clientWidth + 5;
+  var scrollbarY = window.innerHeight / 2;  // Trying to grab the thumb
+
+  // Ensure we use a touch with an area to test under touch adjustment
+  var touchWidth = 25;
+  var touchHeight = 25;
+
+  // Scroll down to ensure we test the difference between content and client
+  // co-ordinate spaces.
+  window.scrollTo(0, 800);
+  assert_equals(window.scrollY, 800);
+
+  eventSender.gestureTapDown(scrollbarX, scrollbarY, touchWidth, touchHeight);
+  eventSender.gestureShowPress(scrollbarX, scrollbarY, touchWidth, touchHeight);
+  eventSender.gestureScrollBegin(scrollbarX - 20, scrollbarY);
+  eventSender.gestureTapCancel(scrollbarX, scrollbarY);
+  assert_equals(window.scrollY, 800);
+  eventSender.gestureScrollUpdate(0, 20);
+  // We don't know exactly how far draging the thumb will scroll.  If we end
+  // up scrolling in the wrong direction it probably means hit tests are passing
+  // through the scrollbar and hitting the content.
+  assert_greater_than(window.scrollY, 820);
+  eventSender.gestureScrollUpdate(0, 60);
+  assert_greater_than(window.scrollY, 885);
+  eventSender.gestureScrollEnd(0, 0);
+  assert_greater_than(window.scrollY, 885);
+}, 'This tests scroll gesture events on main frame scroll bars The document should be slightly scrolled down if successful.');
+
+</script>

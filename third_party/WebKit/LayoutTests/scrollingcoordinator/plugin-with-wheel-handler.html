@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<script src="../resources/js-test.js"></script>
+<script src="../resources/run-after-layout-and-paint.js"></script>
+
+<script>
+description('This test ensures that a plugin which wants to receive wheel ' +
+            'events is included in the non-fast scrollable region.');
+window.jsTestIsAsync = true;
+
+onload = function() {
+  runAfterLayoutAndPaint(function() {
+    if (window.internals) {
+        shouldBe('internals.nonFastScrollableRects(document).length', '1');
+    } else {
+        debug('This test requires access to internals.nonFastScrollableRects.');
+    }
+
+    finishJSTest();
+  });
+}
+</script>
+
+<embed id="plugin" type="application/x-webkit-test-webplugin"></embed>
+<div style="height:2000px"></div>

@@ -1,0 +1,240 @@
+include_rules = [
+  "+apps",
+  "+cc/paint",
+  "+chrome/app",
+  "+chrome/chrome_watcher",
+  "+chrome/grit",
+  "+chrome/install_static",
+  "+chrome/installer/util",
+  "+chrome/notification_helper/notification_helper_constants.h",
+  "+chrome/services/file_util/public",
+  "+chrome/services/media_gallery_util/public",
+  "+chrome/services/printing/public",
+  "+chrome/services/removable_storage_writer/public",
+  "+chrome/services/util_win/public",
+  "+chrome/services/wifi_util_win/public",
+  "+chrome_elf/blacklist",
+  "+chrome_elf/chrome_elf_constants.h",
+  "+chrome_elf/dll_hash",
+  "+chromeos",
+  "+components",
+  "+components/policy/throttle/",
+  "+content/public/browser",
+  "+content/public/common",
+  "+courgette",
+  "+device/base",
+  "+device/bluetooth",
+  "+device/fido",
+  "+device/geolocation",
+  "+device/usb",
+  "+device/vr/buildflags/buildflags.h",
+  "+extensions/browser",
+  "+extensions/common",
+  "+extensions/components/javascript_dialog_extensions_client",
+  "+extensions/buildflags",
+  "+extensions/grit",
+  "+extensions/test",
+  "+google/cacheinvalidation",  # Sync invalidation API protobuf files.
+  "+google_apis",
+  "+google_update",
+  "+installer_util_strings",  # For generated headers
+  "+jni",
+  "+mash/public/mojom",
+  "+media/audio", # For media audio hang monitor.
+  "+media/base",  # For media switches
+  "+media/cdm/cdm_paths.h",
+  "+media/capture",
+  "+media/midi",  # For midi switches
+  "+media/mojo",  # For mojo media services.
+  "+media/renderers",
+  "+ppapi/c",  # For various types.
+  "+ppapi/host",
+  "+ppapi/proxy",
+  "+ppapi/shared_impl",
+  "+rlz",
+  "+sandbox/win/src",  # The path doesn't say it, but this is the Windows sandbox.
+  "+services/audio/public",
+  "+services/data_decoder/public",
+  "+services/device/public",
+  "+services/identity/public",
+  "+services/metrics/metrics_mojo_service.h",
+  "+services/metrics/public",
+  "+services/network/ignore_errors_cert_verifier.h",
+  "+services/network/network_service.h",
+  "+services/network/public",
+  "+services/network/test",
+  "+services/network/url_request_context_owner.h",
+  "+services/network/url_request_context_builder_mojo.h",
+  "+services/preferences/public/cpp",
+  "+services/preferences/public/mojom",
+  "+services/proxy_resolver",  # Android runs the packaged proxy resolver
+                               # service in process and needs impl access.
+  "+services/proxy_resolver/public/mojom",
+  "+services/resource_coordinator/public/cpp",
+  "+services/resource_coordinator/public/mojom",
+  "+services/shape_detection/public/mojom",
+  "+services/ui/common",
+  "+services/ui/public",
+  "+services/ui/service.h",
+  "+services/video_capture/public",
+  "+services/viz/privileged",
+  "+skia/ext",
+  "+third_party/boringssl/src/include",
+  "+third_party/crashpad",
+  "+third_party/cros_system_api",
+  "+third_party/libaom/av1_buildflags.h",
+  "+third_party/metrics_proto",
+
+  # Code under //ash runs out-of-process in mash so it must be accessed via mojo
+  # interfaces in //ash/public/interfaces. See //ash/README.md.
+  "-ash",
+  "+ash/public",
+  "+ash/components/quick_launch/public/mojom",
+  "+ash/components/shortcut_viewer/public/mojom",
+  "+ash/components/tap_visualizer/public/mojom",
+
+  # The message center may not exist, or may run out of process (in mash).
+  "-ui/message_center",
+  "+ui/message_center/public",
+
+  # chrome only needs switches from cc. All usage of the compositor is from
+  # content. Definitely don't include generic stuff from cc/base here, if this
+  # is needed these files need to move to base/
+  "+cc/base/switches.h",
+
+  # Unsafe to use from //chrome, see http://goo.gl/QQG5wo
+  "-content/public/test/test_browser_context.h",
+
+  "+storage/browser",
+  "+storage/common",
+
+  "-chrome/browser/ui/views",
+  "+chrome/browser/ui/views/ash/chrome_browser_main_extra_parts_ash.h",
+  "+chrome/browser/ui/views/chrome_browser_main_extra_parts_views.h",
+  "+chrome/browser/ui/views/chrome_browser_main_extra_parts_views_linux.h",
+  "+chrome/browser/ui/views/extensions/request_file_system_dialog_view.h",
+  "+chrome/browser/ui/views/try_chrome_dialog_win/try_chrome_dialog.h",
+
+  # Explicitly disallow using SyncMessageFilter to prevent browser from
+  # sending synchronous IPC messages on non-UI threads.
+  "-ipc/ipc_sync_message_filter.h",
+
+  # Allows in-process use of NetworkService for URLRequestContext configuration.
+  # Should be removed once the actual network service ships.
+  "+content/public/network",
+
+  # Other libraries.
+  "+libxml",
+  "+third_party/google_toolbox_for_mac/src",
+  "+third_party/icu/source/common/unicode",
+  "+third_party/icu/source/i18n/unicode",
+  "+third_party/leveldatabase",
+  "+third_party/libxml",
+  "+third_party/mozilla",     # Mozilla interface headers.
+  "+third_party/ocmock/gtest_support.h",
+  "+third_party/protobuf/src/google/protobuf",
+  "+third_party/re2",
+  "+third_party/smhasher",
+  "+third_party/sqlite",
+  "+third_party/zlib",
+
+  # No inclusion of WebKit from the browser, other than the ones in
+  # WebKit/public/{mojom,common}, or the ones that are strictly enum/POD,
+  # header-only types, and some selected common code.
+  "-third_party/blink",
+  "+third_party/blink/public/common",
+  "+third_party/blink/public/mojom",
+  "+third_party/blink/public/platform/web_cache.h",
+  "+third_party/blink/public/platform/web_loading_behavior_flag.h",
+  "+third_party/blink/public/platform/web_gesture_event.h",
+  "+third_party/blink/public/platform/web_input_event.h",
+  "+third_party/blink/public/platform/web_mouse_event.h",
+  "+third_party/blink/public/platform/web_mouse_wheel_event.h",
+  "+third_party/blink/public/platform/web_referrer_policy.h",
+  "+third_party/blink/public/platform/web_security_style.h",
+  "+third_party/blink/public/platform/web_speech_synthesis_constants.h",
+  "+third_party/blink/public/platform/web_sudden_termination_disabler_type.h",
+  "+third_party/blink/public/platform/modules/notifications/web_notification_constants.h",
+  "+third_party/blink/public/platform/modules/remoteplayback/web_remote_playback_availability.h",
+  "+third_party/blink/public/platform/modules/screen_orientation/web_screen_orientation_lock_type.h",
+  "+third_party/blink/public/public_buildflags.h",
+  "+third_party/blink/public/web/web_context_menu_data.h",
+  "+third_party/blink/public/web/web_find_options.h",
+  "+third_party/blink/public/web/web_fullscreen_options.h",
+  "+third_party/blink/public/web/web_media_player_action.h",
+  "+third_party/blink/public/web/web_plugin_action.h",
+  "+third_party/blink/public/web/web_presentation_receiver_flags.h",
+  "+third_party/blink/public/web/web_text_direction.h",
+  "+third_party/blink/public/web/web_triggering_event_info.h",
+
+  # Allow mojo generated files in WebKit. These files use STL types and
+  # don't use WTF types.
+  "+third_party/blink/public/platform/autoplay.mojom.h",
+  "+third_party/blink/public/platform/web_feature.mojom.h",
+  "+third_party/blink/public/platform/modules/app_banner/app_banner.mojom.h",
+  "+third_party/blink/public/platform/modules/budget_service/budget_service.mojom.h",
+  "+third_party/blink/public/platform/modules/insecure_input/insecure_input_service.mojom.h",
+  "+third_party/blink/public/platform/modules/installation/installation.mojom.h",
+  "+third_party/blink/public/platform/modules/installedapp/installed_app_provider.mojom.h",
+  "+third_party/blink/public/platform/modules/payments/payment_app.mojom.h",
+  "+third_party/blink/public/platform/modules/payments/payment_request.mojom.h",
+  "+third_party/blink/public/platform/modules/permissions/permission_status.mojom.h",
+  "+third_party/blink/public/platform/modules/presentation/presentation.mojom.h",
+  "+third_party/blink/public/platform/modules/webauth/authenticator.mojom.h",
+  "+third_party/blink/public/platform/modules/webshare/webshare.mojom.h",
+  "+third_party/blink/public/platform/oom_intervention.mojom.h",
+  "+third_party/blink/public/platform/site_engagement.mojom.h",
+  "+third_party/blink/public/web/window_features.mojom.h",
+
+  # The following restrictions are for ChromeOS and in particular mus/mash where
+  # Ozone does not run in process. If the linux build transitions to Ozone then
+  # we likely need to make these restrictions applicable only to ChromeOS files.
+  "-ui/events/ozone",
+  "-ui/ozone",
+  "+ui/ozone/public/ozone_switches.h",
+  # ui/events/devices is tied with ozone, which is controlled by mus, and
+  # shouldn't be used by Chrome directly.
+  "-ui/events/devices",
+  # Enums and supporting classes or observers that are safe (should be moved to
+  # services/ui/public/cpp). http://crbug.com/747544.
+  "+ui/events/devices/device_hotplug_event_observer.h",
+  "+ui/events/devices/input_device.h",
+  "+ui/events/devices/input_device_event_observer.h",
+  "+ui/events/devices/input_device_manager.h",
+  "+ui/events/devices/stylus_state.h",
+  "+ui/events/devices/touchscreen_device.h",
+
+  # Only used by X11 (non-ChromeOS) code, which can use X directly.
+  "+ui/events/devices/x11",
+]
+
+specific_include_rules = {
+  "ash_service_registry\.cc": [
+    # The following are needed for classic mode to create the WindowService.
+    # Once Ash runs out of process no longer needed.
+    "+ash/shell.h",
+    "+ash/strings/grit/ash_strings.h",
+    "+ash/ws/window_service_owner.h",
+    "+services/ui/ws2/window_service.h",
+
+    # Needed for classic mode.
+    "+ash/ash_service.h",
+  ],
+  # TODO(mash): see bugs 768439 and 768395.
+  "exo_parts\.cc": [
+    "+ash/shell.h",
+  ],
+  # TODO(mash): Remove. http://crbug.com/678705
+  "fullscreen_chromeos\.cc": [
+    "+ash/root_window_controller.h",
+    "+ash/shell.h",
+  ],
+  "display_info_provider_chromeos_unittest.cc": [
+    "+ui/events/devices/touch_device_transform.h"
+  ],
+  # TODO(estade): the message center is initialized and shut down here, but it
+  # should be the responsibility of code in chrome/browser/notifications/
+  "browser_process_impl.cc": [
+    "+ui/message_center/message_center.h",
+  ],
+}

@@ -1,0 +1,31 @@
+@hex:
+  e0 00
+  e1 00
+@dis:
+     0:	e0 00                                        	loopne 0x2
+     2:	e1 00                                        	loope  0x4
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  e0 ff
+@dis:
+     0:	e0 ff                                        	loopne 0x1
+@rdfa_output:
+  0: bad jump target
+  return code: 1
+@spec:
+  0: jump into a middle of instruction (0x1)
+----------------------------------------------------------------------
+@hex:
+  # Loop with branch prefix should be forbidden.
+  3e e1 00
+@dis:
+     0:	3e e1 00                                     	loope,pt 0x3
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('branch hints are not allowed with loop instruction', Instruction(0x0: 3e e1 00  loope,pt 0x3))

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<script src='../../../resources/testharness.js'></script>
+<script src='../../../resources/testharnessreport.js'></script>
+<script src='../../../editing/assert_selection.js'></script>
+
+<script>
+test(() => {
+  assert_not_equals(window.internals,
+                    undefined,
+                    'This test requires internals.');
+
+  assert_selection(
+    '<div contenteditable id="editable">|appla^ </div>',
+    selection => {
+      const document = selection.document;
+      internals.setMarker(document, selection.getRangeAt(0), 'Spelling');
+      const editable = document.getElementById('editable');
+
+      editable.addEventListener('beforeinput', (event) => {
+        assert_equals(event.inputType, 'insertReplacementText');
+        assert_equals(event.dataTransfer.getData('text/plain'), 'apple');
+        assert_equals(event.getTargetRanges().length, 1);
+      });
+
+      internals.replaceMisspelled(document, 'apple');
+    },
+    '<div contenteditable id="editable">apple| </div>');
+}, 'spellcheck-replace-in-contenteditable');
+
+test(() => {
+  assert_not_equals(window.internals,
+                    undefined,
+                    'This test requires internals.');
+
+  assert_selection(
+    '<textarea id="ta">^appla| </textarea>',
+    selection => {
+      const document = selection.document;
+      const textarea = document.getElementById('ta');
+
+      const shadowRoot = internals.shadowRoot(textarea);
+      const selection1 = shadowRoot.getSelection();
+      const range = selection1.getRangeAt(0);
+      internals.setMarker(document, range, 'Spelling');
+
+      textarea.addEventListener('beforeinput', (event) => {
+        assert_equals(event.inputType, 'insertReplacementText');
+        assert_equals(event.data, 'apple');
+        assert_equals(event.getTargetRanges().length, 0);
+      });
+
+      internals.replaceMisspelled(document, 'apple');
+    },
+    '<textarea id="ta">apple| </textarea>');
+}, 'spellcheck-replace-in-textarea');
+</script>

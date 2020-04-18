@@ -1,0 +1,143 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "base/single_thread_task_runner.h"
+#include "testing/gtest/include/gtest/gtest.h"
+#include "third_party/blink/public/platform/task_type.h"
+#include "third_party/blink/renderer/bindings/core/v8/v8_binding_for_core.h"
+#include "third_party/blink/renderer/core/frame/use_counter.h"
+#include "third_party/blink/renderer/core/origin_trials/origin_trial_context.h"
+#include "third_party/blink/renderer/core/script/script.h"
+#include "third_party/blink/renderer/core/testing/page_test_base.h"
+#include "third_party/blink/renderer/core/workers/global_scope_creation_params.h"
+#include "third_party/blink/renderer/core/workers/main_thread_worklet_global_scope.h"
+#include "third_party/blink/renderer/core/workers/main_thread_worklet_reporting_proxy.h"
+#include "third_party/blink/renderer/core/workers/worklet_module_responses_map.h"
+#include "third_party/blink/renderer/platform/weborigin/security_origin.h"
+
+namespace blink {
+
+class MainThreadWorkletReportingProxyForTest final
+    : public MainThreadWorkletReportingProxy {
+ public:
+  explicit MainThreadWorkletReportingProxyForTest(Document* document)
+      : MainThreadWorkletReportingProxy(document),
+        reported_features_(static_cast<int>(WebFeature::kNumberOfFeatures)) {}
+
+  void CountFeature(WebFeature feature) override {
+    // Any feature should be reported only one time.
+    EXPECT_FALSE(reported_features_.QuickGet(static_cast<int>(feature)));
+    reported_features_.QuickSet(static_cast<int>(feature));
+    MainThreadWorkletReportingProxy::CountFeature(feature);
+  }
+
+  void CountDeprecation(WebFeature feature) override {
+    // Any feature should be reported only one time.
+    EXPECT_FALSE(reported_features_.QuickGet(static_cast<int>(feature)));
+    reported_features_.QuickSet(static_cast<int>(feature));
+    MainThreadWorkletReportingProxy::CountDeprecation(feature);
+  }
+
+ private:
+  BitVector reported_features_;
+};
+
+class MainThreadWorkletTest : public PageTestBase {
+ public:
+  void SetUp() override {
+    PageTestBase::SetUp(IntSize());
+    Document* document = &GetDocument();
+    document->SetURL(KURL("https://example.com/"));
+    document->UpdateSecurityOrigin(SecurityOrigin::Create(document->Url()));
+
+    // Set up the CSP for Document before starting MainThreadWorklet because
+    // MainThreadWorklet inherits the owner Document's CSP.
+    ContentSecurityPolicy* csp = ContentSecurityPolicy::Create();
+    csp->DidReceiveHeader("script-src 'self' https://allowed.example.com",
+                          kContentSecurityPolicyHeaderTypeEnforce,
+                          kContentSecurityPolicyHeaderSourceHTTP);
+    document->InitContentSecurityPolicy(csp);
+
+    reporting_proxy_ =
+        std::make_unique<MainThreadWorkletReportingProxyForTest>(document);
+    auto creation_params = std::make_unique<GlobalScopeCreationParams>(
+        document->Url(), ScriptType::kModule, document->UserAgent(),
+        document->GetContentSecurityPolicy()->Headers().get(),
+        document->GetReferrerPolicy(), document->GetSecurityOrigin(),
+        document->IsSecureContext(), nullptr /* worker_clients */,
+        document->AddressSpace(), OriginTrialContext::GetTokens(document).get(),
+        base::UnguessableToken::Create(), nullptr /* worker_settings */,
+        kV8CacheOptionsDefault,
+        new WorkletModuleResponsesMap(document->Fetcher()));
+    global_scope_ = new MainThreadWorkletGlobalScope(
+        &GetFrame(), std::move(creation_params), *reporting_proxy_);
+  }
+
+  void TearDown() override { global_scope_->Terminate(); }
+
+ protected:
+  std::unique_ptr<MainThreadWorkletReportingProxyForTest> reporting_proxy_;
+  Persistent<MainThreadWorkletGlobalScope> global_scope_;
+};
+
+TEST_F(MainThreadWorkletTest, SecurityOrigin) {
+  // The SecurityOrigin for a worklet should be a unique opaque origin, while
+  // the owner Document's SecurityOrigin shouldn't.
+  EXPECT_TRUE(global_scope_->GetSecurityOrigin()->IsUnique());
+  EXPECT_FALSE(global_scope_->DocumentSecurityOrigin()->IsUnique());
+}
+
+TEST_F(MainThreadWorkletTest, ContentSecurityPolicy) {
+  ContentSecurityPolicy* csp = global_scope_->GetContentSecurityPolicy();
+
+  // The "script-src 'self'" directive is specified but the Worklet has a
+  // unique opaque origin, so this should not be allowed.
+  EXPECT_FALSE(csp->AllowScriptFromSource(
+      global_scope_->Url(), String(), IntegrityMetadataSet(), kParserInserted));
+
+  // The "script-src https://allowed.example.com" should allow this.
+  EXPECT_TRUE(csp->AllowScriptFromSource(KURL("https://allowed.example.com"),
+                                         String(), IntegrityMetadataSet(),
+                                         kParserInserted));
+
+  EXPECT_FALSE(csp->AllowScriptFromSource(
+      KURL("https://disallowed.example.com"), String(), IntegrityMetadataSet(),
+      kParserInserted));
+}
+
+TEST_F(MainThreadWorkletTest, UseCounter) {
+  // This feature is randomly selected.
+  const WebFeature kFeature1 = WebFeature::kRequestFileSystem;
+
+  // API use on the MainThreadWorkletGlobalScope should be recorded in
+  // UseCounter on the Document.
+  EXPECT_FALSE(UseCounter::IsCounted(GetDocument(), kFeature1));
+  UseCounter::Count(global_scope_, kFeature1);
+  EXPECT_TRUE(UseCounter::IsCounted(GetDocument(), kFeature1));
+
+  // API use should be reported to the Document only one time. See comments in
+  // MainThreadWorkletReportingProxyForTest::ReportFeature.
+  UseCounter::Count(global_scope_, kFeature1);
+
+  // This feature is randomly selected from Deprecation::deprecationMessage().
+  const WebFeature kFeature2 = WebFeature::kPrefixedStorageInfo;
+
+  // Deprecated API use on the MainThreadWorkletGlobalScope should be recorded
+  // in UseCounter on the Document.
+  EXPECT_FALSE(UseCounter::IsCounted(GetDocument(), kFeature2));
+  Deprecation::CountDeprecation(global_scope_, kFeature2);
+  EXPECT_TRUE(UseCounter::IsCounted(GetDocument(), kFeature2));
+
+  // API use should be reported to the Document only one time. See comments in
+  // MainThreadWorkletReportingProxyForTest::ReportDeprecation.
+  Deprecation::CountDeprecation(global_scope_, kFeature2);
+}
+
+TEST_F(MainThreadWorkletTest, TaskRunner) {
+  scoped_refptr<base::SingleThreadTaskRunner> task_runner =
+      global_scope_->GetTaskRunner(TaskType::kInternalTest);
+  EXPECT_TRUE(task_runner->RunsTasksInCurrentSequence());
+}
+
+}  // namespace blink

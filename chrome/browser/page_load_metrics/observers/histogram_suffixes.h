@@ -1,0 +1,29 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef CHROME_BROWSER_PAGE_LOAD_METRICS_OBSERVERS_HISTOGRAM_SUFFIXES_H_
+#define CHROME_BROWSER_PAGE_LOAD_METRICS_OBSERVERS_HISTOGRAM_SUFFIXES_H_
+
+namespace internal {
+
+// Histogram suffixes used by multiple observers.
+extern const char kHistogramDOMContentLoadedEventFiredBackgroundSuffix[];
+extern const char kHistogramDOMContentLoadedEventFiredSuffix[];
+extern const char kHistogramFirstContentfulPaintSuffix[];
+extern const char kHistogramFirstImagePaintSuffix[];
+extern const char kHistogramFirstLayoutSuffix[];
+extern const char kHistogramFirstMeaningfulPaintSuffix[];
+extern const char kHistogramFirstPaintSuffix[];
+extern const char kHistogramFirstTextPaintSuffix[];
+extern const char kHistogramForegroundToFirstContentfulPaintSuffix[];
+extern const char kHistogramForegroundToFirstMeaningfulPaintSuffix[];
+extern const char kHistogramLoadEventFiredBackgroundSuffix[];
+extern const char kHistogramLoadEventFiredSuffix[];
+extern const char kHistogramParseBlockedOnScriptLoadSuffix[];
+extern const char kHistogramParseDurationSuffix[];
+extern const char kHistogramParseStartSuffix[];
+
+}  // namespace internal
+
+#endif  // CHROME_BROWSER_PAGE_LOAD_METRICS_OBSERVERS_HISTOGRAM_SUFFIXES_H_

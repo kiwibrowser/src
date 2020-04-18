@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<script>
+  if (window.internals) {
+    internals.runtimeFlags.overlayScrollbarsEnabled = true;
+    internals.settings.setMockScrollbarsEnabled(true);
+
+    window.onload = function() {
+      var div = document.getElementById('iframe')
+                        .contentDocument
+                        .getElementById('target');
+      internals.setScrollbarVisibilityInScrollableArea(div, false);
+    }
+  }
+</script>
+<iframe srcdoc="
+        <div id='target' style='overflow:auto; width:300px; height:300px'>
+          <div style='height:2000px; width:100px; background-color:green'>
+          </div>
+        </div>"
+        id="iframe" width="400" height="400" scrolling="yes"></iframe>

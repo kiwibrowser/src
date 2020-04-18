@@ -1,0 +1,134 @@
+<html>
+<script>
+
+  function success_() {
+    domAutomationController.send(true);
+  }
+
+  function failure_() {
+    domAutomationController.send(false);
+  }
+
+  function setCookie() {
+    document.cookie = 'foo=bar';
+    success_();
+  }
+
+  function hasCookie() {
+    domAutomationController.send(document.cookie == 'foo=bar');
+  }
+
+  function setLocalStorage() {
+    localStorage.setItem('foo', 'bar');
+    success_();
+  }
+
+  function hasLocalStorage() {
+    domAutomationController.send(localStorage.getItem('foo') == 'bar');
+  }
+
+  function setSessionStorage() {
+    sessionStorage.setItem('foo', 'bar');
+    success_();
+  }
+
+  function hasSessionStorage() {
+    domAutomationController.send(sessionStorage.getItem('foo') == 'bar');
+  }
+
+  function setServiceWorker() {
+    navigator.serviceWorker.register('empty_worker.js').then(function() {
+      navigator.serviceWorker.ready.then(success_);
+    });
+  }
+
+  function hasServiceWorker() {
+    navigator.serviceWorker.getRegistrations().then(function (registrations) {
+      domAutomationController.send(registrations.length > 0);
+    });
+  }
+
+  function setCacheStorage() {
+    caches.open("cache").then(function (cache) {
+      cache.put("/foo", new Response("bar")).then(success_);
+    });
+  }
+
+  function hasCacheStorage() {
+    caches.open("cache").then(function (cache) {
+      cache.keys().then(function (keys) {
+        domAutomationController.send(keys.length > 0);
+      });
+    });
+  }
+
+  function openFile_(name, options, callback, error) {
+    window.webkitRequestFileSystem(TEMPORARY, 1024, function (fs) {
+      fs.root.getFile(name, options, callback, error);
+    });
+  }
+
+  function setFileSystem() {
+    openFile_('foo.txt', { create: true, exclusive: true }, success_, failure_);
+  }
+
+  function hasFileSystem() {
+    openFile_('foo.txt', { create: false }, success_, failure_);
+  }
+
+  function setWebSql() {
+    var db = openDatabase('testdb', '1.0', 'a test db', 1024);
+    db.transaction(function (tx) {
+      tx.executeSql('CREATE TABLE IF NOT EXISTS foo (text)');
+      tx.executeSql('INSERT INTO foo (text) VALUES ("bar")');
+    }, failure_, success_);
+  }
+
+  function hasWebSql() {
+    var db = openDatabase('testdb', '1.0', 'a test db', 1024);
+    db.transaction(function (tx) {
+      tx.executeSql('CREATE TABLE IF NOT EXISTS foo (text)');
+      tx.executeSql('SELECT * FROM foo', [], function (tx, results) {
+        domAutomationController.send(results.rows.length > 0);
+      });
+    });
+  }
+
+  function setIndexedDb() {
+    var open = indexedDB.open('db', 2);
+    open.onupgradeneeded = function() {
+      open.result.createObjectStore('store');
+    }
+    open.onsuccess = function() {
+      open.result.close();
+      success_();
+    }
+  }
+
+  function hasIndexedDb() {
+    var open = indexedDB.open('db');
+    open.onsuccess = function() {
+      var hasStore = open.result.objectStoreNames.contains('store');
+      open.result.close();
+      domAutomationController.send(hasStore);
+    }
+  }
+
+  function setHistory() {
+    history.pushState({}, "foo");
+    success_();
+  }
+
+  function hasHistory() {
+    domAutomationController.send(history.length > 1);
+  }
+
+</script>
+
+<body>
+  This page is used to test creation and deletion of various site data types.
+  The functions are called from BrowsingDataRemoverBrowserTest::HasDataForType
+  and BrowsingDataRemoverBrowserTest::SetDataForType.
+</body>
+
+</html>

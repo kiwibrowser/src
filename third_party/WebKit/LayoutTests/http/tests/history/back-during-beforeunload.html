@@ -1,0 +1,21 @@
+<body>
+<script>
+if (window.testRunner) {
+    testRunner.dumpAsText();
+    testRunner.waitUntilDone();
+    testRunner.dumpBackForwardList();
+}
+
+window.onbeforeunload = function() {
+    history.back();
+    if (window.testRunner)
+        testRunner.notifyDone();
+};
+
+setTimeout(function() {
+    history.pushState("", "", "#");
+    location = "we-wont-actually-go-here.html";
+}, 0);
+</script>
+Ensure we ignore back/forward navigations during beforeunload.
+</body>

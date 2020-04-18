@@ -1,0 +1,40 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_action_menu/cr_action_menu.html">
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="cups_printers_browser_proxy.html">
+<link rel="import" href="../settings_shared_css.html">
+
+<dom-module id="settings-cups-printers-list">
+  <template>
+    <style include="settings-shared">
+      .printer-name {
+        flex: 1;
+      }
+    </style>
+
+    <cr-action-menu>
+      <button slot="item" class="dropdown-item" on-click="onEditTap_">
+        $i18n{editPrinter}
+      </button>
+      <button slot="item" class="dropdown-item" on-click="onRemoveTap_">
+        $i18n{removePrinter}
+      </button>
+    </cr-action-menu>
+    <div class="list-frame vertical-list">
+      <template is="dom-repeat" items="[[printers]]"
+          filter="[[filterPrinter_(searchTerm)]]">
+        <div class="list-item">
+          <div class="printer-name text-elide">[[item.printerName]]</div>
+          <!--TODO(xdai): Add icon for enterprise CUPS printer. -->
+          <paper-icon-button-light class="icon-more-vert">
+            <button on-click="onOpenActionMenuTap_" title="$i18n{moreActions}">
+            </button>
+          </paper-icon-button-light>
+        </div>
+      </template>
+    </div>
+  </template>
+  <script src="cups_printers_list.js"></script>
+</dom-module>

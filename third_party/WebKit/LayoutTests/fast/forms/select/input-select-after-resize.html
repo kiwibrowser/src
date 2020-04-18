@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<script src="../resources/picker-common.js"></script>
+<select>
+    <option value="1" selected></option>
+    <option value="2"></option>
+</select>
+<script>
+    addEventListener('load', function() {
+        // This test passes if the menu dropdown is drawn attached to the
+        // <select> box. This is a test for crbug.com/638671.
+        if (window.testRunner) {
+            testRunner.waitUntilDone();
+            testRunner.dumpAsTextWithPixelResults();
+        }
+
+        window.moveBy(400, 400);
+        window.resizeBy(2000, 2000);
+
+        // Wait a frame so that the move has a chance to be ack'd by the
+        // browser.
+        window.requestAnimationFrame(function() {
+            var select = document.getElementsByTagName('select')[0];
+            select.focus();
+            eventSender.keyDown("ArrowDown", ["altKey"]);
+            testRunner.notifyDone();
+        });
+    });
+</script>

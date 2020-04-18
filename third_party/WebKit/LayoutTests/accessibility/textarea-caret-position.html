@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="../resources/js-test.js"></script>
+  </head>
+  <body>
+
+    <textarea id="textarea" rows="3" cols="40">
+Line 1
+Line 2
+Line 3
+    </textarea>
+
+    <textarea id="textarea-empty" rows="5" cols="40"></textarea>
+
+    <script>
+        description("This tests that caret position is reported correctly for textarea elements.");
+
+        if (window.accessibilityController) {
+
+            var textarea = document.getElementById('textarea');
+            textarea.focus();
+            var textareaAccessible =
+                accessibilityController.accessibleElementById('textarea');
+
+            for (var i = 0; i < 3; ++i) {
+                for (var j = 0; j < 7; ++j) {
+                    var caretPosition = i * 7 + j;
+                    textarea.selectionStart = caretPosition;
+                    textarea.selectionEnd = caretPosition;
+                    shouldBeEqualToNumber("textareaAccessible.selectionStart",
+                        caretPosition);
+                    shouldBeEqualToNumber("textareaAccessible.selectionEnd",
+                        caretPosition);
+                    shouldBeEqualToNumber("textareaAccessible.selectionStartLineNumber", i);
+                    shouldBeEqualToNumber("textareaAccessible.selectionEndLineNumber", i);
+                }
+            }
+
+            var emptyTextarea = document.getElementById('textarea-empty');
+            emptyTextarea.focus();
+            // Each textarea has its own independent caret.
+            shouldBeEqualToNumber("textareaAccessible.selectionStart", 20);
+            shouldBeEqualToNumber("textareaAccessible.selectionEnd", 20);
+
+            var emptyTextareaAccessible =
+                accessibilityController.accessibleElementById('textarea-empty');
+            shouldBeZero("emptyTextareaAccessible.selectionStart");
+            shouldBeZero("emptyTextareaAccessible.selectionEnd");
+
+            // Setting the caret at an invalid offset should not move it.
+            emptyTextarea.setSelectionRange(1, 1);
+            shouldBeZero("emptyTextareaAccessible.selectionStart");
+            shouldBeZero("emptyTextareaAccessible.selectionEnd");
+
+        }
+    </script>
+
+  </body>
+</html>

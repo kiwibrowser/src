@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<style>
+#frame {
+  position: absolute;
+  top: -1000px;
+}
+</style>
+
+<iframe id="frame" sandbox="allow-scripts" src="resources/raf-throttling-frame.html"></iframe>
+
+<script>
+if (window.testRunner)
+  testRunner.dumpAsText();
+let throttlingTest = async_test("Test requestAnimationFrame() throttling in out-of-view cross origin frames");
+
+addEventListener('load', () => {
+  // Check how many animation frames have been served to the frame after 1
+  // second.
+  setTimeout(() => {
+    var frame = document.querySelector('#frame');
+    frame.contentWindow.postMessage(null, '*');
+  }, 1000);
+});
+
+addEventListener('message', (e) => {
+  let rafCount = e.data;
+  // TODO(skyostil): Chrome always runs one animation frame while the layout
+  // test harness does none. Find out where the difference is coming from.
+  assert_less_than_equal(rafCount, 1, "requestAnimationFrame() callback count")
+  throttlingTest.done();
+});
+</script>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<script src=../../../../resources/testharness.js></script>
+<script src=../../../../resources/testharnessreport.js></script>
+<script>
+
+// http:// resources are considered cross-origin from the current file://.
+const IMAGE_URL = "http://localhost:8080/security/resources/abe.png";
+const VIDEO_URL = "http://localhost:8080/external/wpt/media/white.webm";
+
+// Returns a Promise that is resolve()d if detect() is rejected. Needs an input
+// |element| (e.g. an HTMLImageElement or HTMLVideoElement) and a |url| to load.
+function detectFaceOnElementAndExpectError(element, url) {
+  return new Promise(function(resolve, reject) {
+    var tryFaceDetection = function() {
+      var faceDetector = new FaceDetector();
+      faceDetector.detect(element)
+          .then(faceDetectionResult => {
+            reject("Promise should have been rejected.");
+          })
+          .catch(error => {
+            resolve(error);
+          });
+    };
+    element.onload = tryFaceDetection;
+    element.onerror = tryFaceDetection;
+    element.src = url;
+  });
+}
+
+function detectFaceOnImageBitmapAndExpectError(imageUrl) {
+  return new Promise(function(resolve, reject) {
+    var image = new Image();
+    image.onload = function() {
+      createImageBitmap(image)
+          .then(imageBitmap => {
+            var faceDetector = new FaceDetector();
+            return faceDetector.detect(imageBitmap);
+          })
+          .then(faceDetectionResult => {
+            reject("Promise should have been rejected.");
+          })
+          .catch(error => {
+            resolve(error);
+          });
+    };
+    image.onerror = () => {};  // Explicitly ignore expected error events.
+    image.src = imageUrl;
+  });
+}
+
+// Verifies that FaceDetector rejects a cross-origin HTMLImageElement.
+promise_test(function(t) {
+  var image = new Image();
+  return detectFaceOnElementAndExpectError(image, IMAGE_URL)
+      .then(error => {
+        assert_equals(error.name, "SecurityError");
+      });
+},
+"FaceDetector should reject cross-origin HTMLImageElements with a SecurityError.");
+
+// Verifies that FaceDetector rejects a cross-origin ImageBitmap.
+promise_test(function(t) {
+  return detectFaceOnImageBitmapAndExpectError(IMAGE_URL)
+      .then(error => {
+        assert_equals(error.name, "SecurityError");
+      });
+},
+"FaceDetector should reject cross-origin ImageBitmaps with a SecurityError.");
+
+// Verifies that FaceDetector rejects a cross-origin HTMLVideoElement.
+promise_test(function(t) {
+  var video = document.createElement('video');
+  return detectFaceOnElementAndExpectError(video, VIDEO_URL)
+      .then(error => {
+        assert_equals(error.name, "SecurityError");
+      });
+},
+"FaceDetector should reject cross-origin HTMLVideoElements with a SecurityError.");
+
+</script>

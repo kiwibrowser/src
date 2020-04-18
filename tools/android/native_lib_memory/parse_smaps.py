@@ -1,0 +1,154 @@
+#!/usr/bin/python
+# Copyright 2018 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+"""Parses /proc/[pid]/smaps on a device and shows the total amount of swap used.
+"""
+
+import argparse
+import collections
+import logging
+import os
+import re
+import sys
+
+_SRC_PATH = os.path.join(
+    os.path.dirname(__file__), os.pardir, os.pardir, os.pardir)
+sys.path.append(os.path.join(_SRC_PATH, 'third_party', 'catapult', 'devil'))
+from devil.android import device_utils
+
+
+class Mapping(object):
+  """A single entry (mapping) in /proc/[pid]/smaps."""
+  def __init__(self, start, end, permissions, offset, pathname):
+    """Initializes an instance.
+
+    Args:
+      start: (str) Start address of the mapping.
+      end: (str) End address of the mapping.
+      permissions: (str) Permission string, e.g. r-wp.
+      offset: (str) Offset into the file or 0 if this is not a file mapping.
+      pathname: (str) Path name, or pseudo-path, e.g. [stack]
+    """
+    self.start = int(start, 16)
+    self.end = int(end, 16)
+    self.permissions = permissions
+    self.offset = int(offset, 16)
+    self.pathname = pathname.strip()
+    self.fields = collections.OrderedDict()
+
+  def AddField(self, line):
+    """Adds a field to an entry.
+
+    Args:
+      line: (str) As it appears in /proc/[pid]/smaps.
+    """
+    assert ':' in line
+    split_index = line.index(':')
+    k, v = line[:split_index].strip(), line[split_index + 1:].strip()
+    assert k not in self.fields
+    if v.endswith('kB'):
+      v = int(v[:-2])
+    self.fields[k] = v
+
+  def ToString(self):
+    """Returns a string representation of a mapping.
+
+    The returned string is similar (but not identical) to the /proc/[pid]/smaps
+    entry it was generated from.
+    """
+    lines = []
+    lines.append('%x-%x %s %x %s' % (
+        self.start, self.end, self.permissions, self.offset, self.pathname))
+    for name in self.fields:
+      format_str = None
+      if isinstance(self.fields[name], int):
+        format_str = '%s: %d kB'
+      else:
+        format_str = '%s: %s'
+      lines.append(format_str % (name, self.fields[name]))
+    return '\n'.join(lines)
+
+
+def _ParseProcSmapsLines(lines):
+  SMAPS_ENTRY_START_RE = (
+      # start-end
+      '^([0-9a-f]{1,16})-([0-9a-f]{1,16}) '
+      # Permissions
+      '([r\-][w\-][x\-][ps]) '
+      # Offset
+      '([0-9a-f]{1,16}) '
+      # Device
+      '([0-9a-f]{2}:[0-9a-f]{2}) '
+      # Inode
+      '([0-9]*) '
+      # Pathname
+      '(.*)')
+  assert re.search(SMAPS_ENTRY_START_RE,
+                   '35b1800000-35b1820000 r-xp 00000000 08:02 135522  '
+                   '/usr/lib64/ld-2.15.so')
+  entry_re = re.compile(SMAPS_ENTRY_START_RE)
+
+  mappings = []
+  for line in lines:
+    match = entry_re.search(line)
+    if match:
+      (start, end, perms, offset, _, _, pathname) = match.groups()
+      mappings.append(Mapping(start, end, perms, offset, pathname))
+    else:
+      mappings[-1].AddField(line)
+  return mappings
+
+
+def ParseProcSmaps(device, pid):
+  """Parses /proc/[pid]/smaps on a device, and returns a list of Mapping.
+
+  Args:
+    device: (device_utils.DeviceUtils) device to parse the file from.
+    pid: (int) PID of the process.
+
+  Returns:
+    [Mapping] all the mappings in /proc/[pid]/smaps.
+  """
+  command = ['cat', '/proc/%d/smaps' % pid]
+  lines = device.RunShellCommand(command, check_return=True)
+  return _ParseProcSmapsLines(lines)
+
+
+def _PrintSwapStats(mappings):
+  total_swap_kb = sum(m.fields['Swap'] for m in mappings)
+  print 'Total Swap Size (kB) = %d' % total_swap_kb
+  swap_sorted = sorted(mappings, key=lambda m: m.fields['Swap'], reverse=True)
+  for mapping in swap_sorted:
+    swapped = mapping.fields['Swap']
+    if not swapped:
+      break
+    print '%s %s: %d kB (Total Size: %d kB)' % (
+        mapping.pathname, mapping.permissions, swapped,
+        (mapping.end - mapping.start) / 1024)
+
+
+def _CreateArgumentParser():
+  parser = argparse.ArgumentParser()
+  parser.add_argument('--pid', help='PID.', required=True)
+  return parser
+
+
+def main():
+  parser = _CreateArgumentParser()
+  args = parser.parse_args()
+  devices = device_utils.DeviceUtils.HealthyDevices()
+  if not devices:
+    logging.error('No connected devices')
+    return
+  device = devices[0]
+  device.EnableRoot()
+  # Enable logging after device handling as devil is noisy at INFO level.
+  logging.basicConfig(level=logging.INFO)
+  mappings = ParseProcSmaps(device, int(args.pid))
+  _PrintSwapStats(mappings)
+
+
+if __name__ == '__main__':
+  main()

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+
+<script src="../../../../resources/js-test.js"></script>
+<script>
+  if (window.testRunner && window.eventSender && window.internals) {
+    window.jsTestIsAsync = true;
+    testRunner.waitUntilDone();
+  }
+
+  var horizontalContainer;
+  var verticalContainer;
+
+  var visualViewportContentX = 300;
+  var visualViewportContentY = 300;
+  var scale = 2;
+
+  var fullyScrolled;
+
+  var currentTest = 0;
+  var checkExpectation;
+
+  window.onload = function() {
+    verticalContainer = document.getElementById('vcontainer');
+    horizontalContainer = document.getElementById('hcontainer');
+    fullyScrolled = verticalContainer.scrollHeight - verticalContainer.clientHeight;
+
+    if (window.testRunner && window.eventSender && window.internals) {
+      internals.setPageScaleFactorLimits(1, 4.0);
+      runTest();
+    }
+
+    description('Tests that slow-path flings convert to the scaled coordinate '
+              + 'space correctly. To test manually, pinch zoom into the page '
+              + 'and perform a touchpad fling. If the mouse passes over the '
+              + 'div it should cause it to scroll. If it doesn\'t pass over '
+              + 'the div it shouldn\'t scroll.');
+  }
+
+  var verticalContainerScrollHandler = function() {
+    if (verticalContainer.scrollTop < fullyScrolled)
+      finishedTest();
+  }
+
+  var horizontalContainerScrollHandler = function() {
+    if (horizontalContainer.scrollLeft < fullyScrolled)
+      finishedTest();
+  }
+
+  var setHorizontalContainerScrollsExpectation = function() {
+    horizontalContainer.addEventListener("scroll", horizontalContainerScrollHandler);
+    checkExpectation = function() {
+          shouldNotBe('horizontalContainer.scrollLeft', 'fullyScrolled');
+    }
+  }
+
+  var setVerticalContainerScrollsExpectation = function() {
+    verticalContainer.addEventListener("scroll", verticalContainerScrollHandler);
+    checkExpectation = function() {
+      shouldNotBe('verticalContainer.scrollTop', 'fullyScrolled');
+    }
+  }
+
+  var reset = function() {
+    horizontalContainer.removeEventListener("scroll", horizontalContainerScrollHandler);
+    verticalContainer.removeEventListener("scroll", verticalContainerScrollHandler);
+
+    // Fully scroll both containers.
+    verticalContainer.scrollTop = verticalContainer.scrollHeight;
+    horizontalContainer.scrollLeft = horizontalContainer.scrollWidth;
+
+    checkExpectation = null;
+
+    internals.setPageScaleFactor(scale);
+
+    // Position the visual viewport.
+    eventSender.gestureScrollBegin(0, 0);
+
+    // Start from visual viewport offset (0, 0).
+    eventSender.gestureScrollUpdate(10000, 10000);
+    eventSender.gestureScrollUpdate(-visualViewportContentX*scale,
+                                    -visualViewportContentY*scale);
+    eventSender.gestureScrollEnd(0, 0);
+  }
+
+  var verticalFlingOverContainerTest = function() {
+    debug('Flinging vertically with mouse over container. Container should be scrolled.');
+    var verticalStartX = verticalContainer.offsetLeft + verticalContainer.offsetWidth/2;
+    var verticalStartY = verticalContainer.offsetTop + verticalContainer.offsetHeight/2;
+    var startXInViewport = (verticalStartX - visualViewportContentX)*scale;
+    var startYInViewport = (verticalStartY - visualViewportContentY)*scale;
+    setVerticalContainerScrollsExpectation();
+    eventSender.gestureFlingCancel();
+    eventSender.gestureScrollBegin(startXInViewport, startYInViewport);
+    eventSender.gestureFlingStart(
+      startXInViewport,
+      startYInViewport,
+      0,
+      10000,
+      "touchpad");
+  };
+
+  var horizontalFlingOverContainerTest = function() {
+    debug('Flinging horizontally with mouse over container. Container should be scrolled.');
+    var horizontalStartX = horizontalContainer.offsetLeft + horizontalContainer.offsetWidth/2;
+    var horizontalStartY = horizontalContainer.offsetTop + horizontalContainer.offsetHeight/2;
+    var startXInViewport = (horizontalStartX - visualViewportContentX)*scale;
+    var startYInViewport = (horizontalStartY - visualViewportContentY)*scale;
+    setHorizontalContainerScrollsExpectation();
+    eventSender.gestureFlingCancel();
+    eventSender.gestureScrollBegin(startXInViewport, startYInViewport);
+    eventSender.gestureFlingStart(
+      startXInViewport,
+      startYInViewport,
+      10000,
+      0,
+      "touchpad");
+  };
+
+  var tests = [verticalFlingOverContainerTest, horizontalFlingOverContainerTest];
+
+  var finishedTest = function() {
+    checkExpectation();
+
+    currentTest++;
+    var test = tests[currentTest];
+    if (test === undefined) {
+      finishJSTest();
+    } else {
+      reset();
+      test();
+    }
+  }
+
+  var runTest = function() {
+    reset();
+    tests[currentTest]();
+  }
+</script>
+
+<style>
+  .verticalContainer {
+    position: absolute;
+    left: 350px;
+    top: 0px;
+    width: 50px;
+    height: 300px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+  }
+
+  .horizontalContainer {
+    position: absolute;
+    left: 0px;
+    top: 350px;
+    width: 300px;
+    height: 50px;
+    overflow-y: hidden;
+    overflow-x: scroll;
+
+  }
+  .redbox {
+    width: 50px;
+    height: 50px;
+    background-color: red;
+  }
+  .greenbox {
+    width: 50px;
+    height: 50px;
+    background-color: green;
+  }
+</style>
+
+<div class="verticalContainer" id="vcontainer">
+  <div class="greenbox"></div>
+  <div class="redbox"></div>
+  <div class="greenbox"></div>
+  <div class="redbox"></div>
+  <div class="greenbox"></div>
+  <div class="redbox"></div>
+  <div class="greenbox"></div>
+  <div class="redbox"></div>
+  <div class="greenbox"></div>
+  <div class="redbox"></div>
+  <div class="greenbox"></div>
+  <div class="redbox"></div>
+  <div class="greenbox"></div>
+</div>
+<div class="horizontalContainer" id="hcontainer">
+  <div style="overflow: hidden; width: 650px; height:50px;">
+    <div style="float: left" class="redbox"></div>
+    <div style="float: left" class="greenbox"></div>
+    <div style="float: left" class="redbox"></div>
+    <div style="float: left" class="greenbox"></div>
+    <div style="float: left" class="redbox"></div>
+    <div style="float: left" class="greenbox"></div>
+    <div style="float: left" class="redbox"></div>
+    <div style="float: left" class="greenbox"></div>
+    <div style="float: left" class="redbox"></div>
+    <div style="float: left" class="greenbox"></div>
+    <div style="float: left" class="redbox"></div>
+    <div style="float: left" class="greenbox"></div>
+    <div style="float: left" class="redbox"></div>
+  </div>
+</div>

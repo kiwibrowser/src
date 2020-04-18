@@ -1,0 +1,119 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+import os
+
+hello_nexe = env.ComponentProgram('hello_world', 'hello_world.c',
+                                  EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl(
+    'hello_world_test.out',
+    hello_nexe,
+    stdout_golden=env.File('hello_world.stdout'),
+    )
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_hello_world_test')
+
+if not env.Bit('nacl_static_link') and not env.Bit('bitcode'):
+  # Check the (unstripped) executable size.  This is just a rough sanity
+  # check.  The minimal size with today's toolchain is a little over 128k
+  # due to alignment padding for the code segment.
+  expected_max = 145000
+else:
+  expected_max = None
+
+
+node = env.FileSizeTest('hello_world_size.out',
+                        hello_nexe,
+                        expected_max)
+
+# Mark all performance tests as large tests, to avoid
+# running them in parallel.
+env.AddNodeToTestSuite(node,
+                       ['large_tests'],
+                       'run_hello_world_size_test')
+
+
+at_exit_nexe = env.ComponentProgram('at_exit', 'at_exit.c',
+                                    EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+    'at_exit_test.out',
+    at_exit_nexe,
+    stdout_golden=env.File('at_exit.stdout'),
+    )
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_at_exit_test')
+
+
+exit_nexe = env.ComponentProgram('exit', 'exit.c',
+                                 EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl(
+    'exit_test.out',
+    exit_nexe,
+    exit_status='69',
+    )
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_exit_test')
+
+
+printf_nexe = env.ComponentProgram('printf', 'printf.c',
+                                   EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl(
+    'printf_test.out',
+    printf_nexe,
+    args=['1000', '1', '0',],
+    stdout_golden=env.File('printf.stdout'),
+    )
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_printf_test')
+
+
+float_nexe = env.ComponentProgram('float', 'float.c',
+                                  EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl(
+  'float_test.out',
+  float_nexe,
+  args=['1.0', '3.0', '0.5', '100.0', '0.3'],
+  stdout_golden=env.File('float.stdout'),
+  )
+env.AddNodeToTestSuite(node, ['small_tests', 'sel_ldr_tests'], 'run_float_test')
+
+
+# TODO(robertm): use a golden file
+dump_env_nexe = env.ComponentProgram('dump_env', 'dump_env.c',
+                                     EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl(
+    'dump_env.out',
+    dump_env_nexe,
+    args=['arg1', 'arg2', 'arg3', 'arg4', 'arg5', 'arg6', 'arg7'],
+    )
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_dump_env_test')
+
+
+misc_math_nexe = env.ComponentProgram('misc_math', 'misc_math.c',
+                                      EXTRA_LIBS=['m', '${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl(
+    'misc_math_test.out',
+    misc_math_nexe)
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_misc_math_test')
+
+# BUG: http://code.google.com/p/nativeclient/issues/detail?id=2203
+if env.Bit('bitcode'):
+  env.Append(CPPDEFINES=['PNACL_ABI_TEST=1'])
+else:
+  env.Append(CCFLAGS=['-std=c99'])
+abi_nexe = env.ComponentProgram('abi', 'abi.c',
+                                EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl(
+    'abi_test.out',
+    abi_nexe)
+env.AddNodeToTestSuite(node,  ['small_tests'], 'run_abi_test')

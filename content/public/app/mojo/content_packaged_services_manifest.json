@@ -1,0 +1,29 @@
+// Primordial service for the browser process. This is a singleton service which
+// acts as a runtime ServiceFactory for other packaged global services exposed
+// at or below the content layer.
+//
+// Note that this is only for packaging services which do not require user
+// profile context. Services which require user profile context must instead be
+// packaged within the content_browser service.
+{
+  "name": "content_packaged_services",
+  "display_name": "Content Packaged Services",
+  "interface_provider_specs": {
+    "service_manager:connector": {
+      "provides": {
+        "service_manager:service_factory": [
+          "service_manager.mojom.ServiceFactory"
+        ]
+      },
+      "requires": {
+        "*": [ "app" ],
+        "content_browser": [],
+        "service_manager": [
+          "service_manager:client_process",
+          "service_manager:singleton",
+          "service_manager:user_id"
+        ]
+      }
+    }
+  }
+}

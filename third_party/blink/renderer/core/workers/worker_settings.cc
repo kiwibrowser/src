@@ -1,0 +1,42 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "third_party/blink/renderer/core/workers/worker_settings.h"
+
+namespace blink {
+
+WorkerSettings::WorkerSettings(Settings* settings) {
+  if (settings)
+    this->CopyFlagValuesFromSettings(settings);
+}
+
+std::unique_ptr<WorkerSettings> WorkerSettings::Copy(
+    WorkerSettings* old_settings) {
+  std::unique_ptr<WorkerSettings> new_settings =
+      std::make_unique<WorkerSettings>(nullptr);
+  new_settings->disable_reading_from_canvas_ =
+      old_settings->disable_reading_from_canvas_;
+  new_settings->strict_mixed_content_checking_ =
+      old_settings->strict_mixed_content_checking_;
+  new_settings->allow_running_of_insecure_content_ =
+      old_settings->allow_running_of_insecure_content_;
+  new_settings->strictly_block_blockable_mixed_content_ =
+      old_settings->strictly_block_blockable_mixed_content_;
+  old_settings->generic_font_family_settings_.IsolatedCopyTo(
+      new_settings->generic_font_family_settings_);
+  return new_settings;
+}
+
+void WorkerSettings::CopyFlagValuesFromSettings(Settings* settings) {
+  disable_reading_from_canvas_ = settings->GetDisableReadingFromCanvas();
+  strict_mixed_content_checking_ = settings->GetStrictMixedContentChecking();
+  allow_running_of_insecure_content_ =
+      settings->GetAllowRunningOfInsecureContent();
+  strictly_block_blockable_mixed_content_ =
+      settings->GetStrictlyBlockBlockableMixedContent();
+  settings->GetGenericFontFamilySettings().IsolatedCopyTo(
+      generic_font_family_settings_);
+}
+
+}  // namespace blink

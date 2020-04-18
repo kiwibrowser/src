@@ -1,0 +1,34 @@
+@hex:
+  # test 1: a first very simple test with an illegal inst.
+  55
+  89 e5
+  83 ec 08
+  e8 81 00 00 00
+  e8 d3 00 00 00
+  e8 f3 04 00 00
+  c9
+  c3
+  00 00 f4
+  
+@dis:
+     0:	55                                           	push   %ebp
+     1:	89 e5                                        	mov    %esp,%ebp
+     3:	83 ec 08                                     	sub    $0x8,%esp
+     6:	e8 81 00 00 00                               	call   0x8c
+     b:	e8 d3 00 00 00                               	call   0xe3
+    10:	e8 f3 04 00 00                               	call   0x508
+    15:	c9                                           	leave  
+    16:	c3                                           	ret    
+    17:	00 00                                        	add    %al,(%eax)
+    19:	f4                                           	hlt    
+@rdfa_output:
+  6: direct jump out of range
+  b: direct jump out of range
+  10: direct jump out of range
+  16: unrecognized instruction
+  return code: 1
+@spec:
+  16: unrecognized instruction 'ret'
+  6: jump into a middle of instruction (0x8c)
+  b: jump into a middle of instruction (0xe3)
+  10: jump into a middle of instruction (0x508)

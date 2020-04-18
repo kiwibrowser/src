@@ -1,0 +1,86 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_dialog/cr_dialog.html">
+<link rel="import" href="chrome://resources/cr_elements/hidden_style_css.html">
+<link rel="import" href="chrome://resources/html/cr.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="../data/destination.html">
+<link rel="import" href="../data/destination_store.html">
+<link rel="import" href="button_css.html">
+<link rel="import" href="print_preview_shared_css.html">
+<link rel="import" href="search_dialog_css.html">
+<link rel="import" href="strings.html">
+<link rel="import" href="throbber_css.html">
+
+<dom-module id="print-preview-provisional-destination-resolver">
+  <template>
+    <style include="print-preview-shared search-dialog button cr-hidden-style throbber">
+      :host #dialog {
+        --cr-dialog-native: {
+          border-radius: 2px;
+          box-shadow: 0 4px 23px 5px rgba(0, 0, 0, 0.2),
+            0 2px 6px rgba(0, 0, 0, 0.15);
+          width: 360px;
+        };
+        --cr-dialog-top-container-min-height: 35px;
+      }
+
+      :host .throbber-placeholder {
+        height: 16px;
+        margin: 4px;
+        width: 16px;
+      }
+
+      .message {
+        line-height: 1.4rem;
+        margin: 0;
+        padding-bottom: 35px;
+      }
+
+      .extension-desc {
+        display: flex;
+      }
+
+      .extension-icon {
+        background-position: center;
+        background-repeat: none;
+        height: 24px;
+        width: 24px;
+      }
+
+      .extension-name {
+        flex: 1;
+        line-height: 24px;
+        overflow-wrap: break-word;
+      }
+
+      div[slot='button-container'] {
+        margin: 0 3px 10px;
+      }
+    </style>
+    <cr-dialog id="dialog" on-close="onCancel_" show-close-button>
+      <div slot="body">
+        <p class="message">
+          [[getPermissionMessage_(state_, destination_.extensionName)]]
+        </p>
+        <div class="extension-desc" hidden="[[isInErrorState_(state_)]]">
+          <div class$="throbber-placeholder [[getThrobberClass_(state_)]]"
+              role="img" alt=""></div>
+          <div class="extension-icon" role="img" alt=""></div>
+          <div class="extension-name">
+            [[destination_.extensionName]]
+          </div>
+        </div>
+      </div>
+      <div slot="button-container">
+        <button class="cancel" on-click="onCancel_">$i18n{goBackButton}</button>
+        <button class="default" hidden="[[isInErrorState_(state_)]]"
+            disabled="[[!isInActiveState_(state_)]]"
+            on-click="startResolveDestination_">
+          $i18n{selectButton}
+        </button>
+      </div>
+    </cr-dialog>
+  </template>
+  <script src="provisional_destination_resolver.js"></script>
+</dom-module>

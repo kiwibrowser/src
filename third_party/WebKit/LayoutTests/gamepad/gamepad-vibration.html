@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<body>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script>
+
+test(function() {
+    // Connect a gamepad with no vibration actuator.
+    gamepadController.connect(0);
+    gamepadController.setId(0, "ZEROAXIS");
+    gamepadController.setDualRumbleVibrationActuator(0, false);
+
+    gamepad = navigator.getGamepads()[0];
+    assert_equals(gamepad.vibrationActuator, null);
+}, "null vibration actuator is null");
+
+test(function() {
+    // Connect a gamepad with a dual-rumble vibration actuator.
+    gamepadController.connect(0);
+    gamepadController.setId(0, "DullShark Rumble");
+    gamepadController.setDualRumbleVibrationActuator(0, true);
+
+    gamepad = navigator.getGamepads()[0];
+    assert_equals(gamepad.vibrationActuator.__proto__,
+                  GamepadHapticActuator.prototype);
+    assert_equals(gamepad.vibrationActuator.type.__proto__,
+                  String.prototype);
+    assert_equals(gamepad.vibrationActuator.type, 'dual-rumble');
+    assert_equals(gamepad.vibrationActuator.playEffect.__proto__,
+                  Function.prototype);
+    assert_equals(gamepad.vibrationActuator.reset.__proto__,
+                  Function.prototype);
+}, "validate gamepad haptic actuator API");
+
+test(function() {
+    // Connect a gamepad with a dual-rumble vibration actuator.
+    gamepadController.connect(0);
+    gamepadController.setId(0, "Checkbox Elite");
+    gamepadController.setDualRumbleVibrationActuator(0, true);
+
+    gamepad = navigator.getGamepads()[0];
+    assert_equals(gamepad.vibrationActuator, gamepad.vibrationActuator);
+}, "vibration actuator is same object");
+
+</script>
+</body>

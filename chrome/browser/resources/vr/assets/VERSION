@@ -1,0 +1,2 @@
+MAJOR=2
+MINOR=3

@@ -1,0 +1,47 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# TODO: this extra include is necessary because of
+#       gtest/gtest.h
+#       The problem is that gtest.h includes other files
+#       expecting the include path to be set
+#       Sadly, we also have to set this path for every unittest
+env.Append(CPPPATH=
+           ['${SOURCE_ROOT}/testing/gtest/include'])
+
+
+# NOTE: src/gtest-all.cc *includes* a bunch of other .cc files
+env.Append(
+    CPPPATH=['${SOURCE_ROOT}/testing/gtest'])
+
+
+if env.Bit('linux') or env.Bit('mac'):
+  # because of: gtest-typed-test.h:236:46: error:
+  # anonymous variadic macros were introduced in C99
+  #
+  # testing/gtest/src/gtest-all.cc skips an enum value
+  #
+  # gtest does not compile successfully with "-Wundef"
+  env.FilterOut(CCFLAGS=['-pedantic', '-Wswitch-enum', '-Wundef'])
+
+if env.Bit('clang'):
+  # testing/gtest/src/gtest-internal-inl.h has an unused struct field.
+  env.Append(CCFLAGS=['-Wno-unused-private-field'])
+
+if env.Bit('linux') or env.Bit('clang'):
+  # because of: testing/gtest/src/gtest-printers.cc:291: error:
+  # comparison of unsigned expression >= 0 is always true [-Wtype-limits]
+  env.Append(CCFLAGS=['-Wno-type-limits'])
+
+if env.Bit('linux') or env.Bit('clang') or env.Bit('mac'):
+  # See gtest-port.h GTEST_DEFINE_STATIC_MUTEX_ define for more info
+  env.Append(CCFLAGS=['-Wno-missing-field-initializers'])
+
+env.ComponentLibrary(
+    'gtest',
+    [env.ComponentObject('gtest-all.o',
+                         '${SOURCE_ROOT}/testing/gtest/src/gtest-all.cc')])

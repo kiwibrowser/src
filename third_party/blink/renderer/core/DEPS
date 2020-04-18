@@ -1,0 +1,60 @@
+include_rules = [
+    "+base/atomic_sequence_num.h",
+    "+base/memory/scoped_refptr.h",
+    "+base/synchronization/waitable_event.h",
+    "+base/unguessable_token.h",
+    "+build/mac",
+    "+build/win",
+    "+cc/base/region.h",
+    "+cc/input/overscroll_behavior.h",
+    "+cc/layers/content_layer_client.h",
+    "+cc/layers/layer.h",
+    "+cc/layers/layer_position_constraint.h",
+    "+cc/layers/layer_sticky_position_constraint.h",
+    "+cc/layers/scrollbar_layer_interface.h",
+    "+cc/paint/display_item_list.h",
+    "+gpu/config/gpu_feature_info.h",
+    "-inspector/v8",
+    "+inspector/v8/public",
+    "+mojo/public/cpp/base",
+    "+mojo/public/cpp/bindings",
+    "+mojo/public/cpp/system",
+    "+services/metrics/public",
+    "+services/network/public/cpp/features.h",
+    "+services/network/public/mojom",
+    "+services/resource_coordinator/public/cpp/resource_coordinator_features.h",
+    "+services/service_manager/public",
+    "+services/ui/public/interfaces/ime/ime.mojom-shared.h",
+    "+skia/public/interfaces/bitmap_skbitmap_struct_traits.h",
+    "+third_party/blink/public/common",
+    "+third_party/blink/public/mojom",
+    "+third_party/blink/public/public_buildflags.h",
+    "+third_party/blink/public/web",
+    "+third_party/blink/renderer/bindings/core",
+    "-third_party/blink/renderer/bindings/modules",
+    "+third_party/blink/renderer/core",
+    "-third_party/blink/renderer/modules",
+    "+third_party/skia/include",
+    "+ui/gfx/geometry",
+    "-web",
+    # We do not want any new dependencies into core/exported until we resolve
+    # controller layer.
+    "!third_party/blink/renderer/core/exported",
+    # We do not want any new dependencies on Web(Local|Remote)FrameBase.h until
+    # we resolve the control layer.
+    "!third_party/blink/renderer/core/frame/web_local_frame_impl.h",
+    "!third_party/blink/renderer/core/frame/web_remote_frame_impl.h",
+]
+
+specific_include_rules = {
+    # Additional allowed includes for tests.
+    ".*_test\.cc" : [
+        "+third_party/blink/renderer/core/frame/web_local_frame_impl.h",
+        "+third_party/blink/renderer/core/frame/web_remote_frame_impl.h",
+        "+gin"
+    ],
+
+    "find_in_page.cc" : [
+        "+third_party/blink/renderer/core/frame/web_local_frame_impl.h",
+    ],
+}

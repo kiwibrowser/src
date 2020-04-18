@@ -1,0 +1,590 @@
+# ARMv7 Instruction Encodings
+#
+# This table is derived from the "ARM Architecture Reference Manual, ARMv7-A
+# and ARMv7-R edition" and is used here with the permission of ARM Limited.
+# Reproduction for purposes other than the development and distribution of
+# Native Client may require the explicit permission of ARM Limited.
+
+# This file defines the Native Client "instruction classes" assigned to every
+# possible ARMv7 instruction encoding.  It is organized into a series of tables,
+# and directly parallels the ARM Architecture Reference Manual cited above.
+#
+# Each table consists of
+# - A name,
+# - A citation in the Architecture Reference Manual,
+# - One or more columns defining bitfields to match, and
+# - One or more rows describing patterns in those bitfields.
+#
+# A leading tilde (~) negates a pattern.  A hyphen (-) is short for a string of
+# don't-care bits (x).  A double-quote (") indicates that a pattern is the same
+# as the row above it.
+#
+# Each row may specify a terminal instruction class ("=InstClass"), or forward
+# the reader to a different table ("->table_name").
+#
+# If an encoding is not valid in every ARM architecture rev, the instruction
+# class may indicate the rev or feature that makes the encoding valid in
+# parentheses.
+
+-- ARMv7 (See Section A5.1)
+cond(31:28) op1(27:25) op(4)
+~1111       00x        -     ->dp_misc
+"           010        -     ->load_store_word_byte
+"           011        0     ->load_store_word_byte
+"           "          1     ->media
+"           10x        -     ->branch_block_xfer
+"           11x        -     ->super_cop
+1111        -          -     ->unconditional
+
+-- dp_misc (See Section A5.2)
+op(25) op1(24:20) op2(7:4)
+0      ~10xx0     xxx0     ->dp_reg
+"      "          0xx1     ->dp_reg
+"      10xx0      0xxx     ->misc
+"      "          1xx0     ->half_mult
+"      0xxxx      1001     ->mult
+"      1xxxx      1001     ->sync
+"      ~0xx1x     1011     ->extra_load_store
+"      "          11x1     "
+"      0xx1x      1011     =Forbidden  # Load/Store Unprivileged, plus undef
+"      "          11x1     "
+1      ~10xx0     -        ->dp_immed
+"      10000      -        =DataProc(v6T2)  # MOV (immediate) 16-bit version
+"      10100      -        =DataProc(v6T2)  # MOVT
+"      10x10      -        ->msr_and_hints
+
+-- dp_reg (See Sections A5.2.1, A5.2.2)
+op1(24:20) op2(11:7) op3(6:5)
+0000x      -         -        =DataProc  # AND(register), AND(shifted-reg)
+0001x      -         -        =DataProc  # EOR(register), EOR(shifted-reg)
+0010x      -         -        =DataProc  # SUB(register), SUB(shifted-reg)
+0011x      -         -        =DataProc  # RSB(register), RSB(shifted-reg)
+0100x      -         -        =DataProc  # ADD(register), ADD(shifted-reg)
+0101x      -         -        =DataProc  # ADC(register), ADC(shifted-reg)
+0110x      -         -        =DataProc  # SBC(register), SBC(shifted-reg)
+0111x      -         -        =DataProc  # RSC(register), RSC(shifted-reg)
+10001      -         -        =Test      # TST(register), TST(shifted-reg)
+10011      -         -        =Test      # TEQ(register), TEQ(shifted-reg)
+10101      -         -        =Test      # CMP(register), CMP(shifted-reg)
+10111      -         -        =Test      # CMN(register), CMN(shifted-reg)
+1100x      -         -        =DataProc  # ORR(register), ORR(shifted-reg)
+1101x      00000     00       =DataProc  # MOV(register), LSL(register)
+"          ~00000    00       =DataProc  # LSL(immediate), LSL(register)
+"          -         01       =DataProc  # LSR(immediate), LSR(register)
+"          -         10       =DataProc  # ASR(immediate), ASR(register)
+"          00000     11       =DataProc  # RRX, ROR(register)
+"          ~00000    11       =DataProc  # ROR(immediate), ROR(register)
+1110x      -         -        =DataProc  # BIC(register), BIC(shifted-reg)
+1111x      -         -        =DataProc  # MVN(register), MVN(shifted-reg)
+
+-- dp_immed (See Section A5.2.3)
+# We model this separately so we can recognize our mask instructions.
+# Side-effect-wise it's identical to dp_reg, above.
+op(24:20) Rn(19:16)
+0000x      -        =DataProc  # AND(immediate)
+0001x      -        =DataProc  # EOR(immediate)
+0010x      ~1111    =DataProc  # SUB(immediate)
+"          1111     =DataProc  # ADR
+0011x      -        =DataProc  # RSB(immediate)
+0100x      ~1111    =DataProc  # ADD(immediate)
+"          1111     =DataProc  # ADR
+0101x      -        =DataProc  # ADC(immediate)
+0110x      -        =DataProc  # SBC(immediate)
+0111x      -        =DataProc  # RSC(immediate)
+10001      -        =TestImmediate # TST(immediate)
+10011      -        =Test      # TEQ(immediate)
+10101      -        =Test      # CMP(immediate)
+10111      -        =Test      # CMN(immediate)
+1100x      -        =DataProc  # ORR(immediate)
+1101x      -        =DataProc  # MOV(immediate)
+1110x      -        =ImmediateBic  # BIC(immediate)
+1111x      -        =DataProc  # MVN(immediate)
+
+-- mult (See Section A5.2.5)
+op(23:20)
+000x      =Multiply          # MUL
+001x      =Multiply          # MLA
+0100      =LongMultiply(v6)  # UMAAL
+0101      =Undefined
+0110      =Multiply(v6T2)    # MLS
+0111      =Undefined
+100x      =LongMultiply  # UMULL
+101x      =LongMultiply  # UMLAL
+110x      =LongMultiply  # SMULL
+111x      =LongMultiply  # SMLAL
+
+-- sat_add_sub (See Section A5.2.6)
+op(22:21)
+00        =SatAddSub(v5TE)  # QADD
+01        =SatAddSub(v5TE)  # QSUB
+10        =SatAddSub(v5TE)  # QDADD
+11        =SatAddSub(v5TE)  # QDSUB
+
+-- half_mult (See Section A5.2.7)
+op1(22:21) op(5)
+00         -     =Multiply(v5TE)      # SMLABB et al.
+01         0     =Multiply(v5TE)      # SMLAWB et al.
+01         1     =Multiply(v5TE)      # SMULWB et al.
+10         -     =LongMultiply(v5TE)  # SMLALBB
+11         -     =Multiply(v5TE)      # SMULBB et al.
+
+-- extra_load_store (See Section A5.2.8)
+op2(6:5) op1(24:20) Rn(19:16)
+01       xx0x0      -         =StoreRegister      # STRH(register)
+"        xx0x1      -         =LoadRegister       # LDRH(register)
+"        xx1x0      -         =StoreImmediate     # STRH(immediate)
+"        xx1x1      ~1111     =LoadImmediate      # LDRH(immediate)
+"        "          1111      =LoadImmediate      # LDRH(literal)
+10       xx0x0      -         =LoadDoubleR(v5TE)  # LDRD(register)
+"        xx0x1      -         =LoadRegister       # LDRSB(register)
+"        xx1x0      ~1111     =LoadDoubleI(v5TE)  # LDRD(immediate)
+"        "          1111      =LoadDoubleI(v5TE)  # LDRD(literal)
+"        xx1x1      ~1111     =LoadImmediate      # LDRSB(immediate)
+"        "          1111      =LoadImmediate      # LDRSB(literal)
+11       xx0x0      -         =StoreRegister      # STRD(register)
+"        xx0x1      -         =LoadRegister       # LDRSH(register)
+"        xx1x0      -         =StoreImmediate     # STRD(immediate)
+"        xx1x1      ~1111     =LoadImmediate      # LDRSH(immediate)
+"        "          1111      =LoadImmediate      # LDRSH(literal)
+
+# Unprivileged load-store table omitted: modeled as Forbidden.
+# They are not expected in user code.
+
+-- sync (See Section A5.2.10)
+op(23:20)
+0x00      =Deprecated      # SWP, SWPB  TODO(cbiffle): model these?
+1000      =StoreExclusive(v6)        # STREX
+1001      =LoadExclusive(v6)         # LDREX
+1010      =StoreExclusive(v6K)       # STREXD
+1011      =LoadDoubleExclusive(v6K)  # LDREXD
+1100      =StoreExclusive(v6K)       # STREXB
+1101      =LoadExclusive(v6K)        # LDREXB
+1110      =StoreExclusive(v6K)       # STREXH
+1111      =LoadExclusive(v6K)        # LDREXH
+-         =Undefined(v6K)            # Note on page A5-16
+
+-- msr_and_hints (See Section A5.2.11)
+op(22) op1(19:16) op2(7:0)
+0      0000       0000_0000  =EffectiveNoOp(v6K,v6T2)  # NOP
+"      "          0000_0001  =EffectiveNoOp(v6K)  # YIELD
+"      "          0000_0010  =EffectiveNoOp(v6K)  # WFE
+"      "          0000_0011  =EffectiveNoOp(v6K)  # WFI
+"      "          0000_0100  =EffectiveNoOp(v6K)  # SEV
+"      "          1111_xxxx  =EffectiveNoOp(v7)   # DBG
+"      0100       -          =MoveToStatusRegister  # MSR(immediate)
+"      1x00       -          =MoveToStatusRegister  # MSR(immediate)
+"      xx01       -          =Forbidden  # MSR(immediate), ring0 version
+"      xx1x       -          =Forbidden  # MSR(immediate), ring0 version
+1      -          -          =Forbidden  # MSR(immediate), ring0 version
+-      -          -          =Forbidden  # Unallocated hints, page A5-17
+
+-- misc (See Section A5.2.12)
+op2(6:4) op(22:21) op1(19:16)
+000      x0        xxxx       =DataProc      # MRS
+"        01        xx00       =MoveToStatusRegister  # MSR(register)
+"        01        xx01       =Forbidden     # MSR(register), ring0 version
+"        "         xx1x       =Forbidden     # MSR(register), ring0 version
+"        11        -          =Forbidden     # MSR(register), ring0 version
+001      01        -          =BxBlx(v4T)    # BX
+"        11        -          =DataProc(v6)  # CLZ
+010      01        -          =Forbidden     # BXJ
+011      01        -          =BxBlx(v5T)    # BLX(register)
+101      -         -          ->sat_add_sub
+111      01        -          =Breakpoint(v5T)  # BKPT
+111      11        -          =Forbidden     # SMC
+-        -         -          =Undefined     # Note on page A5-18
+
+-- load_store_word_byte (See Section A5.3)
+# The source table's "x not y" rules are implicit in the decoder, since we
+# evaluate patterns in order of specificity, not table order.
+A(25) op1(24:20) B(4) Rn(19:16)
+0     xx0x0      -    -        =StoreImmediate  # STR(immediate)
+1     xx0x0      0    -        =StoreRegister   # STR(register)
+0     0x010      -    -        =Forbidden       # STRT
+1     0x010      0    -        "
+0     xx0x1      -    ~1111    =LoadImmediate   # LDR(immediate)
+"     "          "    1111     =LoadImmediate   # LDR(literal)
+1     xx0x1      0    -        =LoadRegister    # LDR(register)
+0     0x011      -    -        =Forbidden       # LDRT
+1     0x011      0    -        "
+0     xx1x0      -    -        =StoreImmediate  # STRB(immediate)
+1     xx1x0      0    -        =StoreRegister   # STRB(register)
+0     0x110      -    -        =Forbidden       # STRBT
+1     0x110      0    -        "
+0     xx1x1      -    ~1111    =LoadImmediate   # LDRB(immediate)
+"     "          "    1111     =LoadImmediate   # LDRB(literal)
+1     xx1x1      0    -        =LoadRegister    # LDRB(register)
+0     0x111      -    -        =Forbidden       # LDRBT
+1     0x111      0    -        "
+
+-- media (See Section A5.4)
+op1(24:20) op2(7:5) Rd(15:12) Rn(3:0)
+000xx      -        -         -       ->parallel_add_sub  # signed
+001xx      -        -         -       ->parallel_add_sub  # unsigned
+01xxx      -        -         -       ->pack_sat_rev
+10xxx      -        -         -       ->signed_mult
+11000      000      1111      -       =Multiply(v6)    # USAD8
+"          000      ~1111     -       =Multiply(v6)    # USADA8
+1101x      x10      -         -       =DataProc(v6T2)  # SBFX
+1110x      x00      -         1111    =DataProc(v6T2)  # BFC
+"          x00      -         ~1111   =DataProc(v6T2)  # BFI
+1111x      x10      -         -       =DataProc(v6T2)  # UBFX
+11111      111      -         -       =Roadblock  # Permanently Undefined
+-          -        -         -       =Undefined  # Note on page A5-21
+
+-- parallel_add_sub (See Sections A5.4.1, A5.4.2)
+# N.B. These instructions are defined as UNPREDICTABLE when using r15 as any
+# operand.  This "UNPREDICTABLE" means the result is not defined, and is very
+# different than UNDEFINED.  Since we don't allow these ops to write r15, and
+# don't consider them suitable for producing a sandboxed address, we don't need
+# the result to be defined, and we don't model this here.
+op1(21:20) op2(7:5)
+01         000      =DataProc(v6)  # UADD16
+01         001      =DataProc(v6)  # UASX
+01         010      =DataProc(v6)  # USAX
+01         011      =DataProc(v6)  # USUB16
+01         100      =DataProc(v6)  # UADD8
+01         111      =DataProc(v6)  # USUB8
+10         000      =DataProc(v6)  # UQADD16
+10         001      =DataProc(v6)  # UQASX
+10         010      =DataProc(v6)  # UQSAX
+10         011      =DataProc(v6)  # UQSUB16
+10         100      =DataProc(v6)  # UQADD8
+10         111      =DataProc(v6)  # UQSUB8
+11         000      =DataProc(v6)  # UHADD16
+11         001      =DataProc(v6)  # UHASX
+11         010      =DataProc(v6)  # UHSAX
+11         011      =DataProc(v6)  # UHSUB16
+11         100      =DataProc(v6)  # UHADD8
+11         111      =DataProc(v6)  # UHSUB8
+-          -        =Undefined  # Note on page A5-23
+
+-- pack_sat_rev (See Section A5.4.3)
+op1(22:20) op2(7:5) A(19:16)
+000        xx0      -        =PackSatRev(v6)    # PKH
+01x        xx0      -        =PackSatRev(v6)    # SSAT
+11x        xx0      -        =PackSatRev(v6)    # USAT
+000        011      ~1111    =PackSatRev(v6)    # SXTAB16
+"          "        1111     =PackSatRev(v6)    # SXTB16
+"          101      -        =PackSatRev(v6)    # SEL
+010        001      -        =PackSatRev(v6)    # SSAT16
+"          011      ~1111    =PackSatRev(v6)    # SXTAB
+"          "        1111     =PackSatRev(v6)    # SXTB
+011        001      -        =PackSatRev(v6)    # REV
+"          011      ~1111    =PackSatRev(v6)    # SXTAH
+"          "        1111     =PackSatRev(v6)    # SXTH
+011        101      -        =PackSatRev(v6)    # REV16
+100        011      ~1111    =PackSatRev(v6)    # UXTAB16
+"          "        1111     =PackSatRev(v6)    # UXTB16
+110        001      -        =PackSatRev(v6)    # USAT16
+"          011      ~1111    =PackSatRev(v6)    # UXTAB
+"          "        1111     =PackSatRev(v6)    # UXTB
+111        001      -        =PackSatRev(v6T2)  # RBIT
+"          011      ~1111    =PackSatRev(v6)    # UXTAH
+"          "        1111     =PackSatRev(v6)    # UXTH
+"          101      -        =PackSatRev(v6)    # REVSH
+-          -        -        =Undefined  # Note on page A5-24
+
+-- signed_mult (See Section A5.4.4)
+op1(22:20) op2(7:5) A(15:12)
+000        00x      ~1111    =Multiply(v6T2)          # SMLAD
+"          "        1111     =Multiply(v6T2)          # SMUAD
+"          01x      ~1111    =Multiply(v6T2)          # SMLSD
+"          "        -        =Multiply(v6T2)          # SMUSD
+100        00x      -        =LongMultiply(v6T2)      # SMLALD
+"          01x      -        =LongMultiply(v6T2)      # SMLSLD
+101        00x      ~1111    =Multiply(v6T2)          # SMMLA
+"          "        1111     =Multiply(v6T2)          # SMMUL
+"          11x      -        =Multiply(v6T2)          # SMMLS
+-          -        -        =Undefined  # Note on page A5-26
+
+-- branch_block_xfer (See Section A5.5)
+op(25:20) R(15)
+0000x0    -     =StoreImmediate  # STMDA / STMED
+0000x1    -     =LoadMultiple    # LDMDA / LDMFA
+0010x0    -     =StoreImmediate  # STM / STMIA / STMEA
+0010x1    -     =LoadMultiple    # LDM / LDMIA / LDMFD
+0100x0    -     =StoreImmediate  # STMDB / STMFD
+0100x1    -     =LoadMultiple    # LDMDB / LDMEA
+0110x0    -     =StoreImmediate  # STMIB / STMFA
+0110x1    -     =LoadMultiple    # LDMIB / LDMED
+0xx1x0    -     =Forbidden       # STM, ring0 version
+0xx1x1    0     =Forbidden       # LDM, ring0 version
+"         1     =Forbidden       # LDM, exception return
+10xxxx    -     =Branch          # B
+11xxxx    -     =Branch          # BL
+
+-- super_cop (See Section A5.6)
+# N.B. The ISA spec models the "Advanced SIMD" operations separately from other
+# coprocessor operations.  We don't, so the coproc column is omitted.
+op1(25:20) op(4) Rn(19:16)
+0xxxx0     -     -         =StoreCoprocessor  # STC
+0xxxx1     -     ~1111     =LoadCoprocessor   # LDC(immediate), LDC2(immediate)
+"          "     1111      =LoadCoprocessor   # LDC(literal), LDC2(literal)
+00000x     -     -         =Undefined
+000100     -     -         =CoprocessorOp(v5TE)  # MCRR, MCRR2
+000101     -     -         =MoveDoubleFromCoprocessor(v5TE)  # MRRC, MRRC2
+10xxxx     0     -         =CoprocessorOp     # CDP, CDP2
+10xxx0     1     -         =CoprocessorOp     # MCR, MCR2
+10xxx1     1     -         =MoveFromCoprocessor  # MRC, MRC2
+11xxxx     -     -         =Forbidden         # SVC (nee SWI)
+
+-- unconditional (See Section A5.7)
+op1(27:20) op(4) Rn(19:16)
+0xxx_xxxx  -     -         ->misc_hints_simd
+100x_x1x0  -     -         =Forbidden         # SRS
+100x_x0x1  -     -         =Forbidden         # RFE
+101x_xxxx  -     -         =Forbidden         # BLX(immediate)
+1100_0x11  -     ~1111     =LoadCoprocessor(v5)   # LDC(immed), LDC2(immed)
+1100_1xx1  -     1111      =LoadCoprocessor(v5)   # LDC(literal), LDC2(literal)
+1101_xxx1  -     1111      =LoadCoprocessor(v5)   # LDC(literal), LDC2(literal)
+1100_0x10  -     -         =StoreCoprocessor(v5)  # STC, STC2
+1100_1xx0  -     -         "
+1101_xxx0  -     -         "
+1100_0100  -     -         =CoprocessorOp(v6)  # MCRR, MCRR2
+1100_0101  -     -         =MoveDoubleFromCoprocessor(v6)  # MRRC, MRRC2
+1110_xxxx  0     -         =CoprocessorOp(v5)  # CDP, CDP2
+1110_xxx0  1     -         =CoprocessorOp(v5)  # MCR, MCR2
+1110_xxx1  1     -         =MoveFromCoprocessor(v5)  # MRC, MRC2
+-          -     -         =Undefined         # Note on page A5-30
+
+-- misc_hints_simd (See Section A5.7.1)
+op1(26:20) op2(7:4) Rn(19:16)
+001_0000   xx0x     xxx0      =Forbidden  # CPS
+001_0000   0000     xxx1      =Forbidden  # SETEND
+01x_xxxx   -        -         ->simd_dp
+100_xxx0   -        -         ->simd_load_store
+100_x001   -        -         =EffectiveNoOp(MP)    # Unallocated memory hint
+100_x101   -        -         =EffectiveNoOp(v7)    # PLI(immediate, literal)
+101_x001   -        ~1111     =EffectiveNoOp(MP)    # PLDW(immediate)
+"          -        1111      =Unpredictable
+101_x101   -        ~1111     =EffectiveNoOp(v5TE)  # PLD(immediate)
+101_x101   -        1111      =EffectiveNoOp(v5TE)  # PLD(literal)
+101_0111   0001     -         =EffectiveNoOp(v6K)   # CLREX
+"          0100     -         =EffectiveNoOp(v6T2)  # DSB
+"          0101     -         =EffectiveNoOp(v7)    # DMB
+"          0110     -         =EffectiveNoOp(v6T2)  # ISB
+10x_xx11   -        -         =Unpredictable
+110_x001   xxx0     -         =EffectiveNoOp(MP)    # Unallocated memory hint
+110_x101   xxx0     -         =EffectiveNoOp(v7)    # PLI(register)
+111_x001   xxx0     -         =EffectiveNoOp(MP)    # PLDW(register)
+111_x101   xxx0     -         =EffectiveNoOp(v5TE)  # PLD(register)
+11x_xx11   xxx0     -         =Unpredictable
+-          -        -         =Undefined   # Note on page A5-31
+
+-- simd_dp (See Section A7.4)
+U(24) A(23:19) B(11:8) C(7:4)
+-     0xxxx    -       -      ->simd_dp_3same
+"     1x000    -       0xx1   ->simd_dp_1imm
+"     1x001    -       0xx1   ->simd_dp_2shift
+"     1x01x    -       0xx1   "
+"     1x1xx    -       0xx1   "
+"     1xxxx    -       1xx1   "
+"     1x0xx    -       x0x0   ->simd_dp_3diff
+"     1x10x    -       x0x0   "
+"     1x0xx    -       x1x0   ->simd_dp_2scalar
+"     1x10x    -       x1x0   "
+0     1x11x    -       xxx0   =EffectiveNoOp  # VEXT
+1     1x11x    0xxx    xxx0   ->simd_dp_2misc
+"     "        10xx    xxx0   =EffectiveNoOp  # VTBL, VTBX
+"     "        1100    0xx0   =EffectiveNoOp  # VDUP(scalar)
+-     -        -       -      =Undefined  # Note on page A7-10
+
+-- simd_dp_3same (See Section A7.4.1)
+# This table is much larger than it needs to be, since we don't model these
+# ops (they work entirely in a separate register set, and cannot access memory).
+# Unfortunately there are some UNDEFINED holes here, so we have to be precise.
+A(11:8) B(4) U(24) C(21:20)
+0000    0    -     -        =EffectiveNoOp  # VHADD
+"       1    -     -        =EffectiveNoOp  # VQADD
+0001    0    -     -        =EffectiveNoOp  # VRHADD
+"       1    0     00       =EffectiveNoOp  # VAND(register)
+"       "    "     01       =EffectiveNoOp  # VBIC(register)
+"       "    "     10       =EffectiveNoOp  # VORR(register)
+"       "    "     11       =EffectiveNoOp  # VORN(register)
+"       1    1     00       =EffectiveNoOp  # VEOR(register)
+"       "    "     01       =EffectiveNoOp  # VBSL
+"       "    "     10       =EffectiveNoOp  # VBIT
+"       "    "     11       =EffectiveNoOp  # VBIF
+0010    0    -     -        =EffectiveNoOp  # VHSUB
+"       1    -     -        =EffectiveNoOp  # VQSUB
+0011    0    -     -        =EffectiveNoOp  # VCGT(register)
+"       1    -     -        =EffectiveNoOp  # VCGE(register)
+0100    0    -     -        =EffectiveNoOp  # VSHL(register)
+"       1    -     -        =EffectiveNoOp  # VQSHL(register)
+0101    0    -     -        =EffectiveNoOp  # VRSHL(register)
+"       1    -     -        =EffectiveNoOp  # VQRSHL(register)
+0110    -    -     -        =EffectiveNoOp  # VMAX, VMIN (integer)
+0111    0    -     -        =EffectiveNoOp  # VABD, VABDL (integer)
+"       1    -     -        =EffectiveNoOp  # VABA, VABAL
+1000    0    0     -        =EffectiveNoOp  # VADD(integer)
+"       "    1     -        =EffectiveNoOp  # VSUB(integer)
+"       1    0     -        =EffectiveNoOp  # VTST(integer)
+"       "    1     -        =EffectiveNoOp  # VCEQ(integer)
+1001    0    -     -        =EffectiveNoOp  # VMLA, VMLAL, VMLS, VMLSL (integer)
+"       1    -     -        =EffectiveNoOp  # VMUL, VMULL(integer/poly)
+1010    -    -     -        =EffectiveNoOp  # VPMAX, VPMIN(integer)
+1011    0    0     -        =EffectiveNoOp  # VQDMULH
+"       "    1     -        =EffectiveNoOp  # VQRDMULH
+"       1    0     -        =EffectiveNoOp  # VPADD(integer)
+1101    0    0     0x       =EffectiveNoOp  # VADD(float)
+"       "    "     1x       =EffectiveNoOp  # VSUB(float)
+"       "    1     0x       =EffectiveNoOp  # VPADD(float)
+"       "    "     1x       =EffectiveNoOp  # VABD(float)
+"       1    0     -        =EffectiveNoOp  # VMLA, VMLS(float)
+"       "    1     0x       =EffectiveNoOp  # VMUL(float)
+1110    0    0     0x       =EffectiveNoOp  # VCEQ(register)
+"       "    1     0x       =EffectiveNoOp  # VCGE(register)
+"       "    "     1x       =EffectiveNoOp  # VCGT(register)
+"       1    1     -        =EffectiveNoOp  # VACGE, VACGT, VACLE, VACLT
+1111    0    0     -        =EffectiveNoOp  # VMAX, VMIN(float)
+"       "    1     -        =EffectiveNoOp  # VPMAX, VPMIN(float)
+"       1    0     0x       =EffectiveNoOp  # VRECPS
+"       "    0     1x       =EffectiveNoOp  # VRSQRTS
+-       -    -     -        =Undefined  # Note on page A7-12
+
+-- simd_dp_3diff (See Section A7.4.2)
+A(11:8) U(24)
+000x    -     =EffectiveNoOp  # VADDL
+001x    -     =EffectiveNoOp  # VSUBL
+0100    0     =EffectiveNoOp  # VADDHN
+"       1     =EffectiveNoOp  # VRADDHN
+0101    -     =EffectiveNoOp  # VABA, VABAL
+0110    0     =EffectiveNoOp  # VSUBHN
+"       1     =EffectiveNoOp  # VRSUBHN
+0111    -     =EffectiveNoOp  # VABD, VABDL(integer)
+10x0    -     =EffectiveNoOp  # VMLA, VMLAL, VMLS, VMLSL (integer)
+10x1    0     =EffectiveNoOp  # VQDMLAL, VQDMLSL
+1100    -     =EffectiveNoOp  # VMUL, VMULL (integer)
+1101    0     =EffectiveNoOp  # VQDMULL
+1110    -     =EffectiveNoOp  # VMUL, VMULL (polynomial)
+-       -     =Undefined  # Note on page A7-15
+
+-- simd_dp_2scalar (See Section A7.4.3)
+A(11:8) U(24)
+0x0x    -     =EffectiveNoOp  # VMLA, VMLS (scalar)
+0x10    -     =EffectiveNoOp  # VMLAL, VMLSL (scalar)
+0x11    0     =EffectiveNoOp  # VQDMLAL, VMQDLSL
+100x    -     =EffectiveNoOp  # VMUL(scalar)
+1010    -     =EffectiveNoOp  # VMULL(scalar)
+1011    0     =EffectiveNoOp  # VQDMULL
+1100    -     =EffectiveNoOp  # VQDMULH
+1101    -     =EffectiveNoOp  # VQRDMULH
+-       -     =Undefined  # Note on page A7-16
+
+-- simd_dp_2shift (See Section A7.4.4)
+A(11:8) U(24) B(6) L(7)
+0000    -     -    -    =EffectiveNoOp  # VSHR
+0001    -     -    -    =EffectiveNoOp  # VSRA
+0010    -     -    -    =EffectiveNoOp  # VRSHR
+0011    -     -    -    =EffectiveNoOp  # VRSRA
+0100    1     -    -    =EffectiveNoOp  # VSRI
+0101    0     -    -    =EffectiveNoOp  # VSHL(immediate)
+0101    1     -    -    =EffectiveNoOp  # VSLI
+011x    -     -    -    =EffectiveNoOp  # VQSHL, VQSHLU(immediate)
+1000    0     0    0    =EffectiveNoOp  # VSHRN
+"       "     1    -    =EffectiveNoOp  # VRSHRN
+"       1     0    -    =EffectiveNoOp  # VQSHRUN
+"       "     1    -    =EffectiveNoOp  # VQRSHRUN
+1001    -     0    -    =EffectiveNoOp  # VQSHRN
+"       -     1    -    =EffectiveNoOp  # VQRSHRN
+1010    -     0    -    =EffectiveNoOp  # VSHLL, VMOVL
+111x    -     -    -    =EffectiveNoOp  # VCVT (floating- and fixed-point)
+-       -     -    -    =Undefined  # Note on page A7-17
+
+-- simd_dp_2misc (See Section A7.4.5)
+A(17:16) B(10:6)
+00       0000x   =EffectiveNoOp  # VREV64
+"        0001x   =EffectiveNoOp  # VREV32
+"        0010x   =EffectiveNoOp  # VREV16
+"        010xx   =EffectiveNoOp  # VPADDL
+"        1000x   =EffectiveNoOp  # VCLS
+"        1001x   =EffectiveNoOp  # VCLZ
+"        1010x   =EffectiveNoOp  # VCNT
+"        1011x   =EffectiveNoOp  # VMVN(register)
+"        110xx   =EffectiveNoOp  # VPADAL
+"        1110x   =EffectiveNoOp  # VQABS
+"        1111x   =EffectiveNoOp  # VQNEG
+01       x000x   =EffectiveNoOp  # VCGT (immediate #0)
+"        x001x   =EffectiveNoOp  # VCGE (immediate #0)
+"        x010x   =EffectiveNoOp  # VCEQ (immediate #0)
+"        x011x   =EffectiveNoOp  # VCLE (immediate #0)
+"        x100x   =EffectiveNoOp  # VCLT (immediate #0)
+"        x110x   =EffectiveNoOp  # VABS
+"        x111x   =EffectiveNoOp  # VNEG
+10       0000x   =EffectiveNoOp  # VSWP
+"        0001x   =EffectiveNoOp  # VTRN
+"        0010x   =EffectiveNoOp  # VUZP
+"        0011x   =EffectiveNoOp  # VZIP
+"        01000   =EffectiveNoOp  # VMOVN
+"        01001   =EffectiveNoOp  # VQMOVUN
+"        0101x   =EffectiveNoOp  # VQMOVN
+"        01100   =EffectiveNoOp  # VSHLL
+"        11x00   =EffectiveNoOp  # VCVT (half- and single-precision)
+11       10x0x   =EffectiveNoOp  # VRECPE
+"        10x1x   =EffectiveNoOp  # VRSQRTE
+"        11xxx   =EffectiveNoOp  # VCVT (float and integer)
+-        -       =Undefined  # Note on page A7-19
+
+-- simd_dp_1imm (See Section A7.4.6)
+op(5) cmode(11:8)
+0     0xx0        =EffectiveNoOp  # VMOV(immediate)
+"     0xx1        =EffectiveNoOp  # VORR(immediate)
+"     10x0        =EffectiveNoOp  # VMOV(immediate)
+"     10x1        =EffectiveNoOp  # VORR(immediate)
+"     11xx        =EffectiveNoOp  # VMOV(immediate)
+1     0xx0        =EffectiveNoOp  # VMVN(immediate)
+"     0xx1        =EffectiveNoOp  # VBIC(immediate)
+"     10x0        =EffectiveNoOp  # VMVN(immediate)
+"     10x1        =EffectiveNoOp  # VBIC(immediate)
+"     110x        =EffectiveNoOp  # VMVN(immediate)
+"     1110        =EffectiveNoOp  # VMOV(immediate)
+"     1111        =Undefined
+
+-- simd_load_store (See Section A7.7)
+# This "table" is the first paragraph in A7.7.
+L(21)
+0    ->simd_load_store_l0
+1    ->simd_load_store_l1
+
+-- simd_load_store_l0 (See Section A7.7, Table A7-20)
+A(23) B(11:8)
+0     0010    =VectorStore  # VST1(multiple)
+"     011x    "
+"     1010    "
+"     0011    =VectorStore  # VST2(multiple)
+"     100x    "
+"     010x    =VectorStore  # VST3(multiple)
+"     000x    =VectorStore  # VST4(multiple)
+1     0x00    =VectorStore  # VST1(single)
+"     1000    "
+"     0x01    =VectorStore  # VST2(single)
+"     1001    "
+"     0x10    =VectorStore  # VST3(single)
+"     1010    "
+"     0x11    =VectorStore  # VST4(single)
+"     1011    "
+-     -       =Undefined    # Note on page A7-27
+
+-- simd_load_store_l1 (See Section A7.7, Table A7-21)
+A(23) B(11:8)
+0     0010    =VectorLoad  # VLD1(multiple)
+"     011x    "
+"     1010    "
+"     0011    =VectorLoad  # VLD2(multiple)
+"     100x    "
+"     010x    =VectorLoad  # VLD3(multiple)
+"     000x    =VectorLoad  # VLD4(multiple)
+1     0x00    =VectorLoad  # VLD1(single)
+"     1000    "
+"     1100    =VectorLoad  # VLD1(single, all lanes)
+"     0x01    =VectorLoad  # VLD2(single)
+"     1001    "
+"     1101    =VectorLoad  # VLD2(single, all lanes)
+"     0x10    =VectorLoad  # VLD3(single)
+"     1010    "
+"     1110    =VectorLoad  # VLD3(single, all lanes)
+"     0x11    =VectorLoad  # VLD4(single)
+"     1011    "
+"     1111    =VectorLoad  # VLD4(single, all lanes)
+-     -       =Undefined   # Note on page A7-27

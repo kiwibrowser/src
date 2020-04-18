@@ -1,0 +1,80 @@
+@hex:
+  66 87 2d 00 00 00 00
+@dis:
+     0:	66 87 2d 00 00 00 00                         	xchg   %bp,0x0(%rip)        # 0x7
+@rdfa_output:
+  0: error - %bpl or %bp is changed
+  return code: 1
+@spec:
+  0: ('changes to rbp are not allowed', Instruction(0x0: 66 87 2d 00 00 00 00  xchg %bp,0x0(%rip) # 0x7))
+----------------------------------------------------------------------
+@hex:
+  48 87 2d 00 00 00 00
+@dis:
+     0:	48 87 2d 00 00 00 00                         	xchg   %rbp,0x0(%rip)        # 0x7
+@rdfa_output:
+  0: error - %bpl or %bp is changed
+  return code: 1
+@spec:
+  0: ('changes to rbp are not allowed', Instruction(0x0: 48 87 2d 00 00 00 00  xchg %rbp,0x0(%rip) # 0x7))
+----------------------------------------------------------------------
+@hex:
+  66 87 25 00 00 00 00
+@dis:
+     0:	66 87 25 00 00 00 00                         	xchg   %sp,0x0(%rip)        # 0x7
+@rdfa_output:
+  0: error - %spl or %sp is changed
+  return code: 1
+@spec:
+  0: ('changes to rsp are not allowed', Instruction(0x0: 66 87 25 00 00 00 00  xchg %sp,0x0(%rip) # 0x7))
+----------------------------------------------------------------------
+@hex:
+  48 87 25 00 00 00 00
+@dis:
+     0:	48 87 25 00 00 00 00                         	xchg   %rsp,0x0(%rip)        # 0x7
+@rdfa_output:
+  0: error - %spl or %sp is changed
+  return code: 1
+@spec:
+  0: ('changes to rsp are not allowed', Instruction(0x0: 48 87 25 00 00 00 00  xchg %rsp,0x0(%rip) # 0x7))
+----------------------------------------------------------------------
+@hex:
+  4c 87 3d 00 00 00 00
+@dis:
+     0:	4c 87 3d 00 00 00 00                         	xchg   %r15,0x0(%rip)        # 0x7
+@rdfa_output:
+  0: error - %r15 is changed
+  return code: 1
+@spec:
+  0: ('changes to r15 are not allowed', Instruction(0x0: 4c 87 3d 00 00 00 00  xchg %r15,0x0(%rip) # 0x7))
+----------------------------------------------------------------------
+@hex:
+  # These sequences technically are safe, but xchg with memory is not 
+  # considered zero-extending instruction, so they are rejected.
+  # See https://code.google.com/p/nativeclient/issues/detail?id=3071
+  87 2d 00 00 00 00
+  4c 01 fd
+@dis:
+     0:	87 2d 00 00 00 00                            	xchg   %ebp,0x0(%rip)        # 0x6
+     6:	4c 01 fd                                     	add    %r15,%rbp
+@rdfa_output:
+  0: error - %bpl or %bp is changed
+  6: improper %rbp sandboxing
+  return code: 1
+@spec:
+  0: ('non-zero-extending changes to ebp and esp are not allowed', Instruction(0x0: 87 2d 00 00 00 00  xchg %ebp,0x0(%rip) # 0x6))
+  6: register %rbp should be restricted, while in fact None is restricted
+----------------------------------------------------------------------
+@hex:
+  87 25 00 00 00 00
+  4c 01 fc
+@dis:
+     0:	87 25 00 00 00 00                            	xchg   %esp,0x0(%rip)        # 0x6
+     6:	4c 01 fc                                     	add    %r15,%rsp
+@rdfa_output:
+  0: error - %spl or %sp is changed
+  6: improper %rsp sandboxing
+  return code: 1
+@spec:
+  0: ('non-zero-extending changes to ebp and esp are not allowed', Instruction(0x0: 87 25 00 00 00 00  xchg %esp,0x0(%rip) # 0x6))
+  6: register %rsp should be restricted, while in fact None is restricted

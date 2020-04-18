@@ -1,0 +1,168 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+//
+// Sync protocol for communication between sync client and server.
+
+// Update proto_value_conversions{.h,.cc,_unittest.cc} if you change
+// any fields in this file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package sync_pb;
+
+message SyncEnums {
+  // These events are sent by the DebugInfo class for singleton events.
+  enum SingletonDebugEventType {
+    CONNECTION_STATUS_CHANGE = 1;  // Connection status change. Note this
+                                   // gets generated even during a successful
+                                   // connection.
+    UPDATED_TOKEN = 2;             // Client received an updated token.
+    PASSPHRASE_REQUIRED = 3;       // Cryptographer needs passphrase.
+    PASSPHRASE_ACCEPTED = 4;       // Passphrase was accepted by cryptographer.
+    INITIALIZATION_COMPLETE = 5;   // Sync Initialization is complete.
+
+    // |STOP_SYNCING_PERMANENTLY| event should never be seen by the server in
+    // the absence of bugs.
+    STOP_SYNCING_PERMANENTLY = 6;  // Server sent stop syncing permanently.
+
+    ENCRYPTION_COMPLETE = 7;      // Client has finished encrypting all data.
+    ACTIONABLE_ERROR = 8;         // Client received an actionable error.
+    ENCRYPTED_TYPES_CHANGED = 9;  // Set of encrypted types has changed.
+    // NOTE: until m25 bootstrap token updated also
+    // shared this field (erroneously).
+    PASSPHRASE_TYPE_CHANGED = 10;  // The encryption passphrase state changed.
+    KEYSTORE_TOKEN_UPDATED = 11;   // A new keystore encryption token was
+                                   // persisted.
+    CONFIGURE_COMPLETE = 12;       // The datatype manager has finished an
+                                   // at least partially successful
+                                   // configuration and is once again syncing
+                                   // with the server.
+    BOOTSTRAP_TOKEN_UPDATED = 13;  // A new cryptographer bootstrap token was
+                                   // generated.
+  }
+
+  // See ui/base/page_transition_types.h for detailed information on the
+  // values of PageTransition and PageTransitionRedirectType below.
+
+  // Types of transitions between pages.
+  enum PageTransition {
+    LINK = 0;
+    TYPED = 1;
+    AUTO_BOOKMARK = 2;
+    AUTO_SUBFRAME = 3;
+    MANUAL_SUBFRAME = 4;
+    GENERATED = 5;
+    AUTO_TOPLEVEL = 6;
+    FORM_SUBMIT = 7;
+    RELOAD = 8;
+    KEYWORD = 9;
+    KEYWORD_GENERATED = 10;
+    // The below two were mistakenly added but never properly used. They are
+    // actually transition qualifiers, and are set independently of other
+    // qualifiers and of the main transitions. See session_specifics.proto for
+    // the list of synced transition qualifiers.
+    // CHAIN_START = 12;     Deprecated.
+    // CHAIN_END = 13;       Deprecated.
+  }
+
+  // Types of redirects that triggered a transition.
+  enum PageTransitionRedirectType {
+    CLIENT_REDIRECT = 1;
+    SERVER_REDIRECT = 2;
+  }
+
+  enum ErrorType {
+    SUCCESS = 0;
+    DEPRECATED_ACCESS_DENIED = 1;
+    NOT_MY_BIRTHDAY = 2;  // Returned when the server and client disagree
+                          // on the store birthday.
+    THROTTLED = 3;        // Returned when the store has exceeded the
+                          // allowed bandwidth utilization.
+    DEPRECATED_AUTH_EXPIRED = 4;
+    DEPRECATED_USER_NOT_ACTIVATED = 5;
+    DEPRECATED_AUTH_INVALID = 6;
+    CLEAR_PENDING = 7;       // A clear of the user data is pending (e.g.
+                             // initiated by privacy request).  Client should
+                             // come back later.
+    TRANSIENT_ERROR = 8;     // A transient error occured (eg. backend
+                             // timeout). Client should try again later.
+    MIGRATION_DONE = 9;      // Migration has finished for one or more data
+                             // types.  Client should clear the cache for
+                             // these data types only and then re-sync with
+                             // a server.
+    DISABLED_BY_ADMIN = 10;  // An administrator disabled sync for this
+                             // domain.
+    DEPRECATED_USER_ROLLBACK = 11;  // Deprecated in M50.
+    PARTIAL_FAILURE = 12;           // Return when client want to update several
+                                    // data types, but some of them failed(e.g.
+                                    // throttled).
+    CLIENT_DATA_OBSOLETE = 13;      // Returned when server detects that this
+                                    // client's data is obsolete. Client should
+                                    // reset local data and restart syncing.
+    UNKNOWN = 100;                  // Unknown value. This should never be
+    // explicitly used; it is the default value when
+    // an out-of-date client parses a value it
+    // doesn't recognize.
+  }
+
+  enum Action {
+    UPGRADE_CLIENT = 0;              // Upgrade the client to latest version.
+    CLEAR_USER_DATA_AND_RESYNC = 1;  // Clear user data from dashboard and
+                                     // setup sync again.
+    ENABLE_SYNC_ON_ACCOUNT = 2;      // The administrator needs to enable sync
+                                     // on the account.
+    STOP_AND_RESTART_SYNC = 3;       // Stop sync and set up sync again.
+    DISABLE_SYNC_ON_CLIENT = 4;      // Wipe the client of all sync data and
+                                     // stop syncing.
+    UNKNOWN_ACTION = 5;              // This is the default.
+  }
+
+  // Please keep in sync with chrome/android/java/.../ForeignSessionHelper.java
+  enum DeviceType {
+    TYPE_UNSET = 0;
+    TYPE_WIN = 1;
+    TYPE_MAC = 2;
+    TYPE_LINUX = 3;
+    TYPE_CROS = 4;
+    TYPE_OTHER = 5;
+    TYPE_PHONE = 6;
+    TYPE_TABLET = 7;
+  }
+
+  // This is the successor to GetUpdatesSource.  It merges the "normal mode"
+  // values (LOCAL, NOTIFICATION and DATATYPE_REFRESH), which were never really
+  // mutually exclusive to being with, into the GU_TRIGGER value.  It also
+  // drops support for some old values that are not supported by newer clients.
+  //
+  // Mind the gaps: Some values are intentionally unused because we want to
+  // keep the values in sync with GetUpdatesSource as much as possible.  Please
+  // don't add any values < 12 unless there's a good reason for it.
+  //
+  // Introduced in M28.
+  enum GetUpdatesOrigin {
+    UNKNOWN_ORIGIN = 0;  // The source was not set by the caller.
+    PERIODIC = 4;        // The source of the update was periodic polling.
+    NEWLY_SUPPORTED_DATATYPE = 7;  // The client is in configuration mode
+                                   // because it's syncing all datatypes, and
+                                   // support for a new datatype was recently
+                                   // released via a software auto-update.
+    MIGRATION = 8;         // The client is in configuration mode because a
+                           // MIGRATION_DONE error previously returned by the
+                           // server necessitated resynchronization.
+    NEW_CLIENT = 9;        // The client is in configuration mode because the
+                           // user enabled sync for the first time.  Not to be
+                           // confused with FIRST_UPDATE.
+    RECONFIGURATION = 10;  // The client is in configuration mode because the
+                           // user opted to sync a different set of datatypes.
+    GU_TRIGGER = 12;  // The client is in 'normal' mode.  It may have several
+                      // reasons for requesting an update.  See the per-type
+                      // GetUpdateTriggers message for more details.
+    RETRY = 13;       // A retry GU to pick up updates missed by last GU due to
+                      // replication delay, missing hints, etc.
+    PROGRAMMATIC = 14;  // A GU to programmatically enable/disable a
+                        // datatype, often due to error handling.
+  }
+}

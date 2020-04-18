@@ -1,0 +1,186 @@
+<!--
+  -- Copyright 2014 The Chromium Authors. All rights reserved.
+  -- Use of this source code is governed by a BSD-style license that can be
+  -- found in the LICENSE file.
+  -->
+<html i18n-values="dir:textdirection">
+<head>
+  <link rel="stylesheet" href="chrome://resources/css/text_defaults.css">
+  <link rel="stylesheet" href="../file_manager/foreground/css/list.css">
+  <link rel="stylesheet" href="../file_manager/foreground/css/common.css">
+  <link rel="stylesheet" href="../file_manager/foreground/css/file_types.css">
+  <link rel="stylesheet" href="../file_manager/foreground/css/share_dialog.css">
+  <link rel="stylesheet" href="css/gallery.css">
+
+  <script src="chrome://resources/js/polymer_config.js"></script>
+  <script src="chrome://resources/js/util.js"></script>
+
+  <link rel="import" href="chrome://resources/cr_elements/cr_checkbox/cr_checkbox.html">
+  <link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+  <link rel="import" href="chrome://resources/polymer/v1_0/paper-input/paper-input.html">
+  <link rel="import" href="chrome://resources/polymer/v1_0/paper-progress/paper-progress.html">
+  <link rel="import" href="chrome://resources/polymer/v1_0/paper-ripple/paper-ripple.html">
+  <link rel="import" href="chrome://resources/polymer/v1_0/paper-slider/paper-slider.html">
+  <link rel="import" href="chrome-extension://hhaomjibdihmijegdhdafkllkbggdgoj/foreground/elements/files_ripple.html">
+  <link rel="import" href="chrome-extension://hhaomjibdihmijegdhdafkllkbggdgoj/foreground/elements/files_toast.html">
+  <link rel="import" href="chrome-extension://hhaomjibdihmijegdhdafkllkbggdgoj/foreground/elements/files_toggle_ripple.html">
+  <link rel="import" href="chrome-extension://hhaomjibdihmijegdhdafkllkbggdgoj/foreground/elements/files_tooltip.html">
+
+  <script src="js/gallery_scripts.js"></script>
+  <style is="custom-style">
+    cr-checkbox {
+      --cr-checkbox-checked-box-color: white;
+      --cr-checkbox-label-container: {
+        -webkit-padding-start: 6px;
+        color: white;
+      };
+      --cr-checkbox-mark-color: black;
+      --cr-checkbox-ripple-checked-color: white;
+      --cr-checkbox-ripple-size: 38px;
+      --cr-checkbox-ripple-unchecked-color: white;
+      --cr-checkbox-size: 14px;
+      --cr-checkbox-unchecked-box-color: white;
+    }
+    paper-input-container {
+      --paper-input-container-color: rgba(255, 255, 255, 0.2);
+      --paper-input-container-focus-color: white;
+      --paper-input-container-underline-focus: {
+        height: 1px;
+      }
+    }
+    paper-slider {
+      --paper-slider-active-color: white;
+      --paper-slider-container-color: rgba(255, 255, 255, 0.2);
+      --paper-slider-knob-color: white;
+      --paper-slider-secondary-color: transparent;
+    }
+    paper-progress {
+      --paper-progress-container-color: rgba(0, 0, 0, 0.3);
+      --paper-progress-active-color: #1AC222;
+    }
+    paper-button {
+      --paper-button-ink-color: black;
+    }
+    files-toggle-ripple {
+      --files-toggle-ripple-activated: {
+        opacity: 0.4;
+      };
+    }
+    .edit-modal paper-input {
+      --paper-input-container-focus-color: white;
+      --paper-input-container-underline-focus: {
+        height: 1px;
+      };
+      --paper-input-container: {
+        color: rgba(255, 255, 0, 0.54);
+        padding: 7px 0 8px 0;
+      };
+      --paper-input-container-input: {
+        color: white;
+        font-size: 13px;
+        padding: 0;
+      };
+      --paper-input-container-label: {
+        color: rgba(255, 255, 255, 0.54);
+        font-size: 16px;
+      };
+      --paper-font-caption: {
+        height: 17px;
+      };
+    }
+  </style>
+</head>
+<body>
+  <div class="gallery">
+    <div id="content" class="content">
+      <div class="thumbnail-view"></div>
+    </div>
+    <div id="top-toolbar" class="toolbar top tool dimmable">
+      <div class="filename-spacer">
+        <!-- Change this to use paper-input after ChromeVox supports shadow DOM. -->
+        <paper-input-container id="rename-input" no-label-float>
+          <input spellcheck="false" slot="input">
+        </paper-input-container>
+      </div>
+      <div class="button-spacer">
+        <!-- Use button element for edit button to implement toggle button with
+          -- custom ripple effect. -->
+        <button class="edit icon-button" i18n-values="aria-label:GALLERY_EDIT"
+                has-tooltip
+                disabled>
+          <div class="icon"></div>
+          <files-toggle-ripple></files-toggle-ripple>
+        </button>
+        <button class="print icon-button"
+                i18n-values="aria-label:GALLERY_PRINT"
+                has-tooltip
+                disabled>
+          <div class="icon"></div>
+          <files-ripple></files-ripple>
+        </button>
+        <button class="delete icon-button"
+                i18n-values="aria-label:GALLERY_DELETE"
+                has-tooltip
+                disabled>
+          <div class="icon"></div>
+          <files-ripple></files-ripple>
+        </button>
+        <!-- Use button element for mode button to implement toggle switch
+          -- button. -->
+        <button class="mode icon-button"
+                i18n-values="aria-label:GALLERY_THUMBNAIL"
+                has-tooltip
+                disabled>
+          <div class="icon slide-mode"></div>
+          <div class="icon thumbnail-mode"></div>
+          <files-ripple></files-ripple>
+        </button>
+        <button class="slideshow icon-button"
+                i18n-values="aria-label:GALLERY_SLIDESHOW"
+                has-tooltip
+                disabled>
+          <div class="icon"></div>
+          <files-ripple></files-ripple>
+        </button>
+        <button class="share icon-button"
+                i18n-values="aria-label:GALLERY_SHARE"
+                has-tooltip
+                disabled>
+          <div class="icon"></div>
+          <files-ripple></files-ripple>
+        </button>
+      </div>
+    </div>
+    <paper-progress id="progress-bar" min="0" max="100" hidden></paper-progress>
+    <div id="bottom-toolbar" class="toolbar bottom tool dimmable">
+      <div class="slide-mode-toolbar">
+        <div class="ribbon-spacer"></div>
+      </div>
+      <div class="edit-mode-toolbar">
+        <div class="options">
+          <cr-checkbox class="overwrite-original"
+                          i18n-content="GALLERY_OVERWRITE_ORIGINAL">
+          </cr-checkbox>
+          <div class="saved" i18n-content="GALLERY_SAVED" hidden></div>
+        </div>
+        <div class="edit-bar-spacer"></div>
+        <div class="exit-button-spacer">
+          <paper-button class="exit" i18n-content="GALLERY_EXIT"></paper-button>
+        </div>
+      </div>
+      <div class="bubble" hidden>
+        <div class="content"></div>
+        <span class="pointer bottom"></span>
+        <div class="close-x"></div>
+      </div>
+    </div>
+    <div class="prompt-wrapper" pos="center">
+      <div class="error-banner"></div>
+    </div>
+    <div class="toast-stage">
+      <files-toast></files-toast>
+    </div>
+    <files-tooltip></files-tooltip>
+  </div>
+</body>
+</html>

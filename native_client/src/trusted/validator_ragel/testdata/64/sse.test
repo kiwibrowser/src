@@ -1,0 +1,243 @@
+@hex:
+  # SSE
+  0f 58 c8
+  f3 0f 5c c8
+  66 0f ee c8
+  66 0f da c8
+  66 0f c4 c0 01
+  66 0f d7 c0
+  66 0f e4 c8
+  0f 2f c8
+@dis:
+     0:	0f 58 c8                                     	addps  %xmm0,%xmm1
+     3:	f3 0f 5c c8                                  	subss  %xmm0,%xmm1
+     7:	66 0f ee c8                                  	pmaxsw %xmm0,%xmm1
+     b:	66 0f da c8                                  	pminub %xmm0,%xmm1
+     f:	66 0f c4 c0 01                               	pinsrw $0x1,%eax,%xmm0
+    14:	66 0f d7 c0                                  	pmovmskb %xmm0,%eax
+    18:	66 0f e4 c8                                  	pmulhuw %xmm0,%xmm1
+    1c:	0f 2f c8                                     	comiss %xmm0,%xmm1
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  0f 2d c1
+  0f ae 14 24
+  0f ae 1c 24
+  0f 28 c8
+  0f 50 c1
+  0f 2b 04 24
+  0f c6 c8 01
+  0f 14 c8
+  0f ae f8
+@dis:
+     0:	0f 2d c1                                     	cvtps2pi %xmm1,%mm0
+     3:	0f ae 14 24                                  	ldmxcsr (%rsp)
+     7:	0f ae 1c 24                                  	stmxcsr (%rsp)
+     b:	0f 28 c8                                     	movaps %xmm0,%xmm1
+     e:	0f 50 c1                                     	movmskps %xmm1,%eax
+    11:	0f 2b 04 24                                  	movntps %xmm0,(%rsp)
+    15:	0f c6 c8 01                                  	shufps $0x1,%xmm0,%xmm1
+    19:	0f 14 c8                                     	unpcklps %xmm0,%xmm1
+    1c:	0f ae f8                                     	sfence 
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  0f 18 1c 24
+@dis:
+     0:	0f 18 1c 24                                  	prefetcht2 (%rsp)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # SSE2
+  66 0f 58 c8
+  f2 0f 5f c8
+  66 0f c2 c8 00
+  66 0f 2f c8
+  f2 0f e6 c8
+  66 0f 28 c8
+  66 0f 50 c0
+@dis:
+     0:	66 0f 58 c8                                  	addpd  %xmm0,%xmm1
+     4:	f2 0f 5f c8                                  	maxsd  %xmm0,%xmm1
+     8:	66 0f c2 c8 00                               	cmpeqpd %xmm0,%xmm1
+     d:	66 0f 2f c8                                  	comisd %xmm0,%xmm1
+    11:	f2 0f e6 c8                                  	cvtpd2dq %xmm0,%xmm1
+    15:	66 0f 28 c8                                  	movapd %xmm0,%xmm1
+    19:	66 0f 50 c0                                  	movmskpd %xmm0,%eax
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # SSE2
+  66 0f c6 c8 01
+  66 0f 15 c8
+  f2 0f d6 c8
+  66 0f 6f c8
+  66 0f d4 c8
+  66 0f 73 d8 01
+  66 0f 70 c8 01
+@dis:
+     0:	66 0f c6 c8 01                               	shufpd $0x1,%xmm0,%xmm1
+     5:	66 0f 15 c8                                  	unpckhpd %xmm0,%xmm1
+     9:	f2 0f d6 c8                                  	movdq2q %xmm0,%mm1
+     d:	66 0f 6f c8                                  	movdqa %xmm0,%xmm1
+    11:	66 0f d4 c8                                  	paddq  %xmm0,%xmm1
+    15:	66 0f 73 d8 01                               	psrldq $0x1,%xmm0
+    1a:	66 0f 70 c8 01                               	pshufd $0x1,%xmm0,%xmm1
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # SSE2
+  66 0f 6c c8
+@dis:
+     0:	66 0f 6c c8                                  	punpcklqdq %xmm0,%xmm1
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # SSE 3
+  66 0f d0 c8
+  f2 0f 7c c8
+  f3 0f 16 c8
+@dis:
+     0:	66 0f d0 c8                                  	addsubpd %xmm0,%xmm1
+     4:	f2 0f 7c c8                                  	haddps %xmm0,%xmm1
+     8:	f3 0f 16 c8                                  	movshdup %xmm0,%xmm1
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # SSSE3
+  66 0f 38 08 c8
+  66 0f 38 00 c8
+  66 0f 38 04 c8
+  66 0f 38 02 c8
+  66 0f 3a 0f c8 01
+@dis:
+     0:	66 0f 38 08 c8                               	psignb %xmm0,%xmm1
+     5:	66 0f 38 00 c8                               	pshufb %xmm0,%xmm1
+     a:	66 0f 38 04 c8                               	pmaddubsw %xmm0,%xmm1
+     f:	66 0f 38 02 c8                               	phaddd %xmm0,%xmm1
+    14:	66 0f 3a 0f c8 01                            	palignr $0x1,%xmm0,%xmm1
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # SSE41
+  66 0f 3a 42 c8 01
+  66 0f 38 41 c8
+  66 0f 3a 41 c8 01
+  66 0f 38 15 c8
+  66 0f 38 3e c8
+@dis:
+     0:	66 0f 3a 42 c8 01                            	mpsadbw $0x1,%xmm0,%xmm1
+     6:	66 0f 38 41 c8                               	phminposuw %xmm0,%xmm1
+     b:	66 0f 3a 41 c8 01                            	dppd   $0x1,%xmm0,%xmm1
+    11:	66 0f 38 15 c8                               	blendvpd %xmm0,%xmm0,%xmm1
+    16:	66 0f 38 3e c8                               	pmaxuw %xmm0,%xmm1
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # SSE41
+  66 0f 3a 21 c8 01
+  66 0f 38 24 c8
+  66 0f 38 17 c8
+  66 0f 38 2b c8
+  66 0f 38 2a 04 24
+@dis:
+     0:	66 0f 3a 21 c8 01                            	insertps $0x1,%xmm0,%xmm1
+     6:	66 0f 38 24 c8                               	pmovsxwq %xmm0,%xmm1
+     b:	66 0f 38 17 c8                               	ptest  %xmm0,%xmm1
+    10:	66 0f 38 2b c8                               	packusdw %xmm0,%xmm1
+    15:	66 0f 38 2a 04 24                            	movntdqa (%rsp),%xmm0
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # SSE4a
+  # Three-operand extrq is disallowed for historical reasons, although it's
+  # safe.
+  f3 48 0f b8 c0
+  f3 48 0f bd c0
+  66 0f 78 c0 02 01
+  f3 0f 2b 04 24
+@dis:
+     0:	f3 48 0f b8 c0                               	popcnt %rax,%rax
+     5:	f3 48 0f bd c0                               	lzcnt  %rax,%rax
+     a:	66 0f 78 c0 02 01                            	extrq  $0x1,$0x2,%xmm0
+    10:	f3 0f 2b 04 24                               	movntss %xmm0,(%rsp)
+@rdfa_output:
+  a: unrecognized instruction
+  return code: 1
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # SSE42
+  f2 48 0f 38 f0 c0
+  66 0f 3a 63 c8 01
+  66 0f 38 37 c8
+@dis:
+     0:	f2 48 0f 38 f0 c0                            	crc32b %al,%rax
+     6:	66 0f 3a 63 c8 01                            	pcmpistri $0x1,%xmm0,%xmm1
+     c:	66 0f 38 37 c8                               	pcmpgtq %xmm0,%xmm1
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # AVX FMA
+  # It's not supported by validator currently, but there are plans,
+  # see https://code.google.com/p/nativeclient/issues/detail?id=1972
+  c4 e3 f1 69 d8 20
+@dis:
+     0:	c4 e3 f1 69 d8 20                            	vfmaddpd %xmm0,%xmm2,%xmm1,%xmm3
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # AES
+  # (were not supported in old validator, but are safe)
+  66 0f 38 dc c8
+  66 0f 3a df c8 01
+  66 0f 38 db c8
+@dis:
+     0:	66 0f 38 dc c8                               	aesenc %xmm0,%xmm1
+     5:	66 0f 3a df c8 01                            	aeskeygenassist $0x1,%xmm0,%xmm1
+     b:	66 0f 38 db c8                               	aesimc %xmm0,%xmm1
+@rdfa_output:
+  0: unrecognized instruction
+  5: unrecognized instruction
+  b: unrecognized instruction
+  return code: 1
+@spec:
+  SAFE

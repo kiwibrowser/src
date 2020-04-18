@@ -1,0 +1,28 @@
+# -*- python -*-
+# Copyright (c) 2013 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# PNaCl doesn't have -finstrument-for-thread-suspension currently
+# BUG http://code.google.com/p/nativeclient/issues/detail?id=2363
+# Neither does next-generation GCC, so far extant only for ARM (and the
+# only non-bitcode compiler for ARM).
+if env.Bit('bitcode') or env.Bit('build_arm') or env.Bit('nacl_clang'):
+  Return()
+
+inputs = ['gc_noinst.c']
+
+# Compile gc_inst.c with -finstrument-for-thread-suspension
+env_inst = env.Clone()
+env_inst.Append(CFLAGS=['-finstrument-for-thread-suspension'])
+inputs += env_inst.ComponentObject('gc_inst.c')
+
+nexe = env.ComponentProgram('compiler_thread_suspension', inputs,
+                            EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl('compiler_thread_suspension.out', nexe)
+
+env.AddNodeToTestSuite(node, ['small_tests'],
+                       'run_compiler_thread_suspension_test')

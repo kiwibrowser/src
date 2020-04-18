@@ -1,0 +1,17 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// https://w3c.github.io/ServiceWorker/#client-interface
+[
+    Exposed=ServiceWorker,
+    ImplementedAs=ServiceWorkerClient
+] interface Client {
+    readonly attribute USVString url;
+    readonly attribute DOMString id;
+    readonly attribute ClientType type;
+    [PostMessage, RaisesException, CallWith=ScriptState] void postMessage(any message, optional sequence<object> transfer);
+
+    // FIXME: frameType is non-standard, see https://crbug.com/697110
+    [CallWith=ScriptState] readonly attribute ContextFrameType frameType;
+};

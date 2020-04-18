@@ -1,0 +1,238 @@
+<!doctype html>
+<!--
+Copyright 2018 The Immersive Web Community Group
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-->
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1, user-scalable=no'>
+    <meta name='mobile-web-app-capable' content='yes'>
+    <meta name='apple-mobile-web-app-capable' content='yes'>
+
+    <title>Stereo Video Player</title>
+
+    <link href='css/common.css' rel='stylesheet'></link>
+
+    <script src='js/cottontail/build/cottontail.js'></script>
+
+    <script src='js/webxr-button.js'></script>
+  </head>
+  <body>
+    <header>
+      <details open>
+        <summary>Stereo Video Player</summary>
+        <p>
+          This sample demonstrates how to play a stereo 3D video. (Stereo part not yet working.)
+          <a class="back" href="./">Back</a>
+        </p>
+      </summary>
+    </header>
+    <script>
+      (function () {
+      'use strict';
+
+      // XR globals.
+      let xrButton = null;
+      let xrExclusiveFrameOfRef = null;
+      let xrNonExclusiveFrameOfRef = null;
+
+      // WebGL scene globals.
+      let gl = null;
+      let renderer = null;
+      let scene = new Scene();
+      scene.addNode(new Gltf2Node({url: 'media/gltf/home-theater/home-theater.gltf'}));
+      scene.enableStats(false);
+
+      let video = document.createElement('video');
+      video.loop = true;
+      video.src = 'media/video/bbb-sunflower-540p2-1min.webm';
+
+      let videoNode = new VideoNode({
+        video: video,
+        displayMode: 'stereoTopBottom'
+      });
+      
+      // When the video is clicked we'll pause it if it's playing.
+      videoNode.onSelect(() => {
+        if (!video.paused) {
+          playButton.visible = true;
+          video.pause();
+        }
+      });
+      videoNode.selectable = true;
+
+      // Move back to the position of the in-room screen and size to cover it.
+      // Values determined experimentally and with many refreshes.
+      videoNode.translation = [0.025, 0.275, -4.4];
+      videoNode.scale = [2.1, 1.1, 1.0];
+      scene.addNode(videoNode);
+
+      video.addEventListener('loadeddata', () => {
+        // Once the video has loaded up adjust the aspect ratio of the "screen"
+        // to fit the video's native shape.
+        let aspect = videoNode.aspectRatio;
+        if (aspect < 2.0) {
+          videoNode.scale = [aspect * 1.1, 1.1, 1.0];
+        } else {
+          videoNode.scale = [2.1, 2.1 / aspect, 1.0];
+        }
+      });
+
+      // Add a button to the scene to play/pause the movie.
+      let playTexture = new UrlTexture('media/textures/play-button.png');
+
+      // Create a button that plays the video when clicked.
+      let playButton = new ButtonNode(playTexture, () => {
+        // Play the video and hide the button.
+        if (video.paused) {
+          playButton.visible = false;
+          video.play();
+        }
+      });
+      // Move the play button to the center of the screen and make it much
+      // bigger.
+      playButton.translation = [0.025, 0.275, -4.3];
+      playButton.scale = [5.0, 5.0, 5.0];
+      scene.addNode(playButton);
+
+      function initXR() {
+        xrButton = new XRDeviceButton({
+          onRequestSession: onRequestSession,
+          onEndSession: onEndSession
+        });
+        document.querySelector('header').appendChild(xrButton.domElement);
+
+        if (navigator.xr) {
+          navigator.xr.requestDevice().then((device) => {
+            device.supportsSession({exclusive: true}).then(() => {
+              xrButton.setDevice(device);
+            });
+
+            let outputCanvas = document.createElement('canvas');
+            let ctx = outputCanvas.getContext('xrpresent');
+
+            device.requestSession({ outputContext: ctx })
+                .then((session) => {
+                  document.body.appendChild(outputCanvas);
+                  onSessionStarted(session);
+                });
+          }).catch(() => {
+            initFallback();
+          });
+        } else {
+          initFallback();
+        }
+      }
+
+      function initFallback() {
+        initGL();
+        document.body.appendChild(gl.canvas);
+        let fallbackHelper = new FallbackHelper(scene, gl);
+      }
+
+      function initGL(compatibleDevice) {
+        if (gl)
+          return;
+
+        gl = createWebGLContext({
+          compatibleXRDevice: compatibleDevice
+        });
+
+        renderer = new Renderer(gl);
+        scene.setRenderer(renderer);
+        scene.inputRenderer.setControllerMesh(new Gltf2Node({url: 'media/gltf/controller/controller.gltf'}));
+      }
+
+      function onRequestSession(device) {
+        // Set up a mirror canvas
+        let mirrorCanvas = document.createElement('canvas');
+        let ctx = mirrorCanvas.getContext('xrpresent');
+        mirrorCanvas.setAttribute('id', 'mirror-canvas');
+        document.body.appendChild(mirrorCanvas);
+
+        device.requestSession({ exclusive: true, outputContext: ctx }).then((session) => {
+          xrButton.setSession(session);
+          onSessionStarted(session);
+        });
+      }
+
+      function onSessionStarted(session) {
+        session.addEventListener('end', onSessionEnded);
+        session.addEventListener('select', (ev) => {
+          let frameOfRef = ev.frame.session.exclusive ?
+                           xrExclusiveFrameOfRef :
+                           xrNonExclusiveFrameOfRef;
+          scene.handleSelect(ev.inputSource, ev.frame, frameOfRef);
+        });
+
+        initGL(session.device);
+
+        session.baseLayer = new XRWebGLLayer(session, gl);
+
+        // In this case we're going to use an eyeLevel frame of reference
+        // because we want to users head to appear in the right place relative
+        // to the center chair, as if they're sitting in it, rather than
+        // somewhere in the room relative to the floor.
+        session.requestFrameOfReference('eyeLevel').then((frameOfRef) => {
+          if (session.exclusive) {
+            xrExclusiveFrameOfRef = frameOfRef;
+          } else {
+            xrNonExclusiveFrameOfRef = frameOfRef;
+          }
+
+          session.requestAnimationFrame(onXRFrame);
+        });
+      }
+
+      function onEndSession(session) {
+        session.end();
+      }
+
+      function onSessionEnded(event) {
+        if (event.session.exclusive) {
+          document.body.removeChild(document.querySelector('#mirror-canvas'));
+          xrButton.setSession(null);
+        }
+      }
+
+      function onXRFrame(t, frame) {
+        let session = frame.session;
+        let frameOfRef = session.exclusive ?
+                         xrExclusiveFrameOfRef :
+                         xrNonExclusiveFrameOfRef;
+        let pose = frame.getDevicePose(frameOfRef);
+
+        scene.startFrame();
+
+        session.requestAnimationFrame(onXRFrame);
+
+        scene.updateInputSources(frame, frameOfRef);
+
+        scene.drawXRFrame(frame, pose);
+
+        scene.endFrame();
+      }
+
+      // Start the XR application.
+      initXR();
+      })();
+    </script>
+  </body>
+</html>

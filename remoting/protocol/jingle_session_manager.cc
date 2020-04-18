@@ -1,0 +1,156 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "remoting/protocol/jingle_session_manager.h"
+
+#include <utility>
+
+#include "base/bind.h"
+#include "remoting/protocol/authenticator.h"
+#include "remoting/protocol/content_description.h"
+#include "remoting/protocol/jingle_messages.h"
+#include "remoting/protocol/jingle_session.h"
+#include "remoting/protocol/transport.h"
+#include "remoting/signaling/iq_sender.h"
+#include "remoting/signaling/signal_strategy.h"
+#include "third_party/libjingle_xmpp/xmllite/xmlelement.h"
+#include "third_party/libjingle_xmpp/xmpp/constants.h"
+#include "third_party/webrtc/rtc_base/socketaddress.h"
+
+using buzz::QName;
+
+namespace remoting {
+namespace protocol {
+
+JingleSessionManager::JingleSessionManager(SignalStrategy* signal_strategy)
+    : signal_strategy_(signal_strategy),
+      protocol_config_(CandidateSessionConfig::CreateDefault()),
+      iq_sender_(new IqSender(signal_strategy_)) {
+  signal_strategy_->AddListener(this);
+}
+
+JingleSessionManager::~JingleSessionManager() {
+  DCHECK(sessions_.empty());
+  signal_strategy_->RemoveListener(this);
+}
+
+void JingleSessionManager::AcceptIncoming(
+    const IncomingSessionCallback& incoming_session_callback) {
+  incoming_session_callback_ = incoming_session_callback;
+}
+
+void JingleSessionManager::set_protocol_config(
+    std::unique_ptr<CandidateSessionConfig> config) {
+  protocol_config_ = std::move(config);
+}
+
+std::unique_ptr<Session> JingleSessionManager::Connect(
+    const SignalingAddress& peer_address,
+    std::unique_ptr<Authenticator> authenticator) {
+  std::unique_ptr<JingleSession> session(new JingleSession(this));
+  session->StartConnection(peer_address, std::move(authenticator));
+  sessions_[session->session_id_] = session.get();
+  return std::move(session);
+}
+
+void JingleSessionManager::set_authenticator_factory(
+    std::unique_ptr<AuthenticatorFactory> authenticator_factory) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  authenticator_factory_ = std::move(authenticator_factory);
+}
+
+void JingleSessionManager::OnSignalStrategyStateChange(
+    SignalStrategy::State state) {}
+
+bool JingleSessionManager::OnSignalStrategyIncomingStanza(
+    const buzz::XmlElement* stanza) {
+  if (!JingleMessage::IsJingleMessage(stanza))
+    return false;
+
+  std::unique_ptr<buzz::XmlElement> stanza_copy(new buzz::XmlElement(*stanza));
+  std::unique_ptr<JingleMessage> message(new JingleMessage());
+  std::string error;
+  if (!message->ParseXml(stanza, &error)) {
+    SendReply(std::move(stanza_copy), JingleMessageReply::BAD_REQUEST);
+    return true;
+  }
+
+  if (message->action == JingleMessage::SESSION_INITIATE) {
+    // Description must be present in session-initiate messages.
+    DCHECK(message->description.get());
+
+    SendReply(std::move(stanza_copy), JingleMessageReply::NONE);
+
+    std::unique_ptr<Authenticator> authenticator =
+        authenticator_factory_->CreateAuthenticator(
+            signal_strategy_->GetLocalAddress().id(), message->from.id());
+
+    JingleSession* session = new JingleSession(this);
+    session->InitializeIncomingConnection(stanza->Attr(buzz::QN_ID), *message,
+                                          std::move(authenticator));
+    sessions_[session->session_id_] = session;
+
+    // Destroy the session if it was rejected due to incompatible protocol.
+    if (session->state_ != Session::ACCEPTING) {
+      delete session;
+      DCHECK(sessions_.find(message->sid) == sessions_.end());
+      return true;
+    }
+
+    IncomingSessionResponse response = SessionManager::DECLINE;
+    if (!incoming_session_callback_.is_null())
+      incoming_session_callback_.Run(session, &response);
+
+    if (response == SessionManager::ACCEPT) {
+      session->AcceptIncomingConnection(*message);
+    } else {
+      ErrorCode error;
+      switch (response) {
+        case OVERLOAD:
+          error = HOST_OVERLOAD;
+          break;
+
+        case DECLINE:
+          error = SESSION_REJECTED;
+          break;
+
+        default:
+          NOTREACHED();
+          error = SESSION_REJECTED;
+      }
+
+      session->Close(error);
+      delete session;
+      DCHECK(sessions_.find(message->sid) == sessions_.end());
+    }
+
+    return true;
+  }
+
+  SessionsMap::iterator it = sessions_.find(message->sid);
+  if (it == sessions_.end()) {
+    SendReply(std::move(stanza_copy), JingleMessageReply::INVALID_SID);
+    return true;
+  }
+
+  it->second->OnIncomingMessage(
+      stanza->Attr(buzz::QN_ID), std::move(message),
+      base::Bind(&JingleSessionManager::SendReply, base::Unretained(this),
+                 base::Passed(std::move(stanza_copy))));
+  return true;
+}
+
+void JingleSessionManager::SendReply(
+    std::unique_ptr<buzz::XmlElement> original_stanza,
+    JingleMessageReply::ErrorType error) {
+  signal_strategy_->SendStanza(
+      JingleMessageReply(error).ToXml(original_stanza.get()));
+}
+
+void JingleSessionManager::SessionDestroyed(JingleSession* session) {
+  sessions_.erase(session->session_id_);
+}
+
+}  // namespace protocol
+}  // namespace remoting

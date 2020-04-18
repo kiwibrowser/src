@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../../resources/js-test.js"></script>
+<script>
+description("Tests that an exception is thrown when the value returned in the beforeunload callback cannot be converted to a String");
+window.jsTestIsAsync = true;
+
+var testMessage;
+var alreadyTested = false;
+function test(frame) {
+    if (alreadyTested)
+        return;
+    alreadyTested = true;
+
+    frame.contentWindow.onbeforeunload = function(event) {
+        return {toString: function() { throw "Exception in toString()"; }};
+    };
+
+    frame.contentWindow.onerror = function(msg) {
+        testMessage = msg;
+        testPassed("Exception was thrown");
+        shouldBeEqualToString("testMessage", "Uncaught Exception in toString()");
+        return true;
+    };
+
+    frame.contentWindow.location.href = "resources/does-not-exist.html";
+    setTimeout(function() {
+        window.stop();
+        finishJSTest();
+    }, 0);
+}
+</script>
+</head>
+<body>
+<iframe onload="test(this)" src="resources/onclick.html"></iframe>
+</body>
+</html>

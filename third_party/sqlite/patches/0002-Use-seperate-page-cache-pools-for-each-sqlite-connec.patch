@@ -1,0 +1,44 @@
+From e9aa46661e72451f7a418d76a1c0335338c2a43d Mon Sep 17 00:00:00 2001
+From: rmcilroy <rmcilroy@chromium.org>
+Date: Thu, 20 Jun 2013 22:50:12 +0000
+Subject: [PATCH 02/10] Use seperate page-cache pools for each sqlite
+ connection.
+
+Due to multiple different subsystems using sqlite, the shared global page
+cache policy does not suite our use-cases on Chrome very well.  This CL
+enables a compile time flag to be set to disable shared cache pools.
+
+BUG=243769
+
+Original review URL: https://chromiumcodereview.appspot.com/17413004
+---
+ third_party/sqlite/src/src/pcache1.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/third_party/sqlite/src/src/pcache1.c b/third_party/sqlite/src/src/pcache1.c
+index 2692bd6ac9d3..c93294a9df71 100644
+--- a/third_party/sqlite/src/src/pcache1.c
++++ b/third_party/sqlite/src/src/pcache1.c
+@@ -689,6 +689,8 @@ static int pcache1Init(void *NotUsed){
+   ** private PGroup (mode-1).  pcache1.separateCache is false if the single
+   ** PGroup in pcache1.grp is used for all page caches (mode-2).
+   **
++  **   *  Always use separate caches (mode-1) if SQLITE_SEPARATE_CACHE_POOLS
++  **
+   **   *  Always use a unified cache (mode-2) if ENABLE_MEMORY_MANAGEMENT
+   **
+   **   *  Use a unified cache in single-threaded applications that have
+@@ -698,7 +700,9 @@ static int pcache1Init(void *NotUsed){
+   **
+   **   *  Otherwise use separate caches (mode-1)
+   */
+-#if defined(SQLITE_ENABLE_MEMORY_MANAGEMENT)
++#ifdef SQLITE_SEPARATE_CACHE_POOLS
++  pcache1.separateCache = 1;
++#elif defined(SQLITE_ENABLE_MEMORY_MANAGEMENT)
+   pcache1.separateCache = 0;
+ #elif SQLITE_THREADSAFE
+   pcache1.separateCache = sqlite3GlobalConfig.pPage==0
+-- 
+2.16.0
+

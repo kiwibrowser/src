@@ -1,0 +1,132 @@
+# -*- python -*-
+# Copyright (c) 2015 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import os
+import os.path
+
+Import('env')
+
+if env.Bit('bitcode'):
+  Return()
+
+# elf_loader requires some IRT interfaces.
+if not env.Bit('tests_use_irt'):
+  Return()
+
+# The builds here don't make sense for dynamic linking.
+if not env.Bit('nacl_static_link'):
+  Return()
+
+# elf_loader only handles ELFCLASS32, not ELFCLASS64.
+# TODO(mcgrathr): Remove this check when x86-64 switches to ELFCLASS32.
+if env.Bit('build_x86_64'):
+  Return()
+
+nacl_env = env['NACL_ENV']
+loader_nexe = nacl_env.File('${STAGING_DIR}/elf_loader.nexe')
+
+golden_file = env.File('echo.stdout')
+echo_args = open(str(golden_file)).read().splitlines()
+
+def BuildWithFlags(name, source, link_flags, c_flags=[], cppdefines=[]):
+  prog_env = env.Clone()
+  prog_env.Append(LINKFLAGS=link_flags)
+  prog_env.Append(CCFLAGS=c_flags)
+  prog_env.Append(CPPDEFINES=cppdefines)
+  obj = prog_env.ComponentObject(name + '.o', source)
+  prog = prog_env.ComponentProgram(name, obj)
+  return prog
+
+def LoaderTest(name, depends_on=None, **kwargs):
+  out_name = 'elf_loader_%s_test.out' % name
+  run_name = 'run_elf_loader_%s_test' % name
+  node = env.CommandSelLdrTestNacl(out_name,
+                                   loader_nexe,
+                                   sel_ldr_flags=['-a'],
+                                   **kwargs)
+  if depends_on is not None:
+    env.Depends(node, depends_on)
+  env.AddNodeToTestSuite(node, ['small_tests', 'sel_ldr_tests'], run_name)
+
+# For each test foo we run it in two variants: foo, where mmap works;
+# and foo_dyncode, where mmap refuses to work for the code segment.
+# This tests the fallback path using dyncode_create, replicating the
+# situation in the browser for a nexe not in a "blessed" location.
+def LoaderTests(name, depends_on=None, **kwargs):
+  LoaderTest(name, depends_on, **kwargs)
+  LoaderTest(name + '_dyncode', depends_on,
+             osenv=['NACL_FAULT_INJECTION=' +
+                    'MMAP_FORCE_DESCRIPTOR_SAFETY_CHECK_FAIL=GF@'],
+             **kwargs)
+
+# These are arbitrary, but should be different from each, and positive.
+dyn_exit_status = 17
+pie_exit_status = 23
+
+# Build a tiny standalone ET_DYN object that will stand in for
+# a dynamic linker.  Test loading that as the main program.
+interp_nexe = BuildWithFlags('interp', 'interp.c',
+                             ['-nostdlib', '-shared'],
+                             ['-fPIC', '-fno-asynchronous-unwind-tables'],
+                             [['TEST_EXIT', str(dyn_exit_status)]])
+LoaderTests('dyn', args=[interp_nexe], exit_status=dyn_exit_status)
+
+# nacl-clang fails to grok -pie. See:
+#       https://code.google.com/p/nativeclient/issues/detail?id=4148
+# TODO(mcgrathr): Remove the conditional when that's fixed.
+if not env.Bit('nacl_clang'):
+  # Build a tiny PIE that uses 'interp' (above) as its "dynamic linker".
+  # Test loading an ET_DYN object with a PT_INTERP.
+  pie_nexe = BuildWithFlags('pie', 'interp.c',
+                            ['-nostdlib', '-pie',
+                             '-Wl,-dynamic-linker=%s' % interp_nexe.abspath],
+                            ['-fPIE', '-fno-asynchronous-unwind-tables'],
+                            [['TEST_EXIT', str(pie_exit_status)]])
+  LoaderTests('pie', args=[pie_nexe], exit_status=pie_exit_status)
+
+# elf_loader itself loads at the canonical "main nexe" address of 0x20000.
+# This address just needs to be high enough above that to leave space for
+# elf_loader's own code segment.
+text_start = '-Ttext-segment=0x100000'
+
+# Build a normal executable both with and without a PT_INTERP.
+def EchoTest(name, interpreter=None, loader_args=[]):
+  nexe_name = 'echo_' + name
+  cppdefines = []
+  if interpreter is not None:
+    cppdefines.append(['INTERPRETER', interpreter])
+  nexe = BuildWithFlags(nexe_name, 'echo.c',
+                        ['-Wl,' + text_start],
+                        cppdefines=cppdefines)
+  LoaderTests(nexe_name,
+              depends_on=interp_nexe if interpreter is not None else None,
+              args=loader_args + [nexe] + echo_args,
+              stdout_golden=golden_file)
+
+EchoTest('plain')
+
+# Turn a native pathname on Windows into a '/'-separated one.
+interp_abspath = os.path.splitdrive(interp_nexe.abspath)[1].split(os.sep)
+EchoTest('interp', '/'.join(interp_abspath))
+
+interp_name = '/' + interp_abspath[-1]
+interp_prefix = '/'.join(interp_abspath[:-1])
+EchoTest('interp_prefix', interp_name,
+         ['--interp-prefix', interp_prefix])
+
+onlycode_obj = env.ComponentObject('onlycode.o', 'onlycode.S')
+# Newer toolchains include an allocated SHT_NOTE section (.note.NaCl.ABI.*)
+# in every object file, that just contributes to RODATA.  We do not want
+# any RODATA at all for this test.
+onlycode_text_obj = env.Command('onlycode_text.o', onlycode_obj,
+                                '${OBJCOPY} -j .text ${SOURCES} ${TARGET}')
+onlycode_env = env.Clone()
+onlycode_env.Append(LINKFLAGS=[
+    '-nostdlib',
+    '-Wl,--build-id=none',  # A build ID is just more RODATA we don't want.
+    '-Wl,--section-start=.text=0x100000',
+    ])
+nexe = onlycode_env.ComponentProgram('onlycode', onlycode_text_obj)
+LoaderTests('onlycode', args=[nexe])

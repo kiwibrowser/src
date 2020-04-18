@@ -1,0 +1,56 @@
+// Copyright 2013 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include <winresrc.h>
+#include "remoting/host/win/core_resource.h"
+#ifdef IDC_STATIC
+#undef IDC_STATIC
+#endif
+#define IDC_STATIC (-1)
+
+{% for lang in languages %}
+  {% do SelectLanguage(lang) %}
+
+LANGUAGE {{ lang | GetPrimaryLanguage }}, {{ lang | GetSublanguage }}
+
+#if (REMOTING_HOST_BINARY == BINARY_CORE)
+
+STRINGTABLE
+BEGIN
+  IDS_DISPLAY_SERVICE_NAME "{% trans %}DISPLAY_SERVICE_NAME{% endtrans %}"
+  IDS_SERVICE_DESCRIPTION "{% trans %}SERVICE_DESCRIPTION{% endtrans %}"
+  IDS_PRODUCT_NAME "{% trans %}PRODUCT_NAME{% endtrans %}"
+  IDS_SHARE_CONFIRM_DIALOG_MESSAGE "{% trans %}SHARE_CONFIRM_DIALOG_MESSAGE{% endtrans %}"
+  IDS_SHARE_CONFIRM_DIALOG_MESSAGE_WITH_USERNAME "{% trans %}SHARE_CONFIRM_DIALOG_MESSAGE_WITH_USERNAME{% endtrans %}"
+  IDS_SHARE_CONFIRM_DIALOG_CONFIRM "{% trans %}SHARE_CONFIRM_DIALOG_CONFIRM{% endtrans %}"
+  IDS_SHARE_CONFIRM_DIALOG_DECLINE "{% trans %}SHARE_CONFIRM_DIALOG_DECLINE{% endtrans %}"
+END
+
+IDI_CHROME_REMOTE_DESKTOP      ICON    "remoting/resources/chromoting.ico"
+
+#endif  // (REMOTING_HOST_BINARY == BINARY_CORE)
+
+IDD_DISCONNECT DIALOGEX 0, 0, 145, 24
+STYLE DS_SETFONT | WS_POPUP
+EXSTYLE WS_EX_TOPMOST | WS_EX_TOOLWINDOW {% if IsRtlLanguage(lang) %} | WS_EX_LAYOUTRTL | WS_EX_RTLREADING {% endif %}
+FONT 9, "Microsoft Sans Serif", 400, 0, 0x0
+BEGIN
+    DEFPUSHBUTTON   "{% trans %}STOP_SHARING_BUTTON{% endtrans %}",IDC_DISCONNECT,68,5,70,14
+    LTEXT           "{% trans %}MESSAGE_SHARED{% endtrans %}",IDC_DISCONNECT_SHARINGWITH,18,7,43,8
+    CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDVERT,6,6,1,12
+    CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDVERT,8,6,1,12
+END
+
+IDD_CONTINUE DIALOGEX 0, 0, 221, 58
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION
+EXSTYLE WS_EX_TOPMOST | WS_EX_TOOLWINDOW {% if IsRtlLanguage(lang) %} | WS_EX_LAYOUTRTL | WS_EX_RTLREADING {% endif %}
+CAPTION "{% trans %}PRODUCT_NAME{% endtrans %}"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "{% trans %}CONTINUE_BUTTON{% endtrans %}",IDC_CONTINUE_DEFAULT,116,38,98,14
+    LTEXT           "{% trans %}CONTINUE_PROMPT{% endtrans %}",IDC_CONTINUE_MESSAGE,7,7,207,30
+    PUSHBUTTON      "{% trans %}STOP_SHARING_BUTTON{% endtrans %}",IDC_CONTINUE_CANCEL,7,38,98,14
+END
+
+{% endfor %}

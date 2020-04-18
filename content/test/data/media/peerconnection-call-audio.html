@@ -1,0 +1,220 @@
+<html>
+<head>
+  <script type="text/javascript" src="webrtc_test_utilities.js"></script>
+  <script type="text/javascript" src="webrtc_test_common.js"></script>
+  <script type="text/javascript" src="webrtc_test_audio.js"></script>
+  <script type="text/javascript">
+  $ = function(id) {
+    return document.getElementById(id);
+  };
+
+  window.onerror = function(errorMsg, url, lineNumber, column, errorObj) {
+    failTest('Error: ' + errorMsg + '\nScript: ' + url +
+             '\nLine: ' + lineNumber + '\nColumn: ' + column +
+             '\nStackTrace: ' + errorObj);
+  }
+
+  var gFirstConnection = null;
+  var gSecondConnection = null;
+  var gLocalStream = null;
+
+  var gRemoteStreams = {};
+
+  // The second set of constraints should request audio (e.g. audio:true) since
+  // we expect audio to be playing after the second renegotiation.
+  function callAndRenegotiateToAudio(constraints, renegotiationConstraints) {
+    createConnections(null);
+    navigator.mediaDevices.getUserMedia(constraints)
+        .then(addStreamToBothConnectionsAndNegotiate)
+        .catch(failTest);
+
+    waitForConnectionToStabilize(gFirstConnection).then(() => {
+      gFirstConnection.removeStream(gLocalStream);
+      gSecondConnection.removeStream(gLocalStream);
+      return navigator.mediaDevices.getUserMedia(renegotiationConstraints)
+          .then(addStreamToTheFirstConnectionAndNegotiate);
+      }).then(() => {
+        return waitForConnectionToStabilize(gFirstConnection)
+      }).then(() => {
+        return ensureAudioPlaying(gSecondConnection);
+      })
+      .then(reportTestSuccess)
+      .catch(failTest);
+  }
+
+  function setupCallAndPromiseAudioPlaying(constraints) {
+    createConnections(null);
+
+    // Add the local stream to gFirstConnection to play one-way audio.
+    navigator.mediaDevices.getUserMedia(constraints)
+        .then(addStreamToTheFirstConnectionAndNegotiate)
+        .catch(failTest);
+
+    return waitForConnectionToStabilize(gFirstConnection)
+        .then(() => { return ensureAudioPlaying(gSecondConnection); });
+  }
+
+  function callAndEnsureAudioIsPlaying(constraints) {
+    setupCallAndPromiseAudioPlaying(constraints)
+        .then(reportTestSuccess)
+        .catch(failTest);
+  }
+
+  function callWithIsac16KAndEnsureAudioIsPlaying(constraints) {
+    setOfferSdpTransform(function(sdp) {
+      sdp = sdp.replace(/m=audio (\d+) RTP\/SAVPF.*\r\n/g,
+                        'm=audio $1 RTP/SAVPF 103 126\r\n');
+      sdp = sdp.replace('a=fmtp:111 minptime=10', 'a=fmtp:103 minptime=10');
+      if (sdp.search(/a=rtpmap:103 ISAC\/16000/i) == -1)
+        failTest('Missing iSAC 16K codec on Android; cannot force codec.');
+
+      return sdp;
+    });
+    callAndEnsureAudioIsPlaying(constraints);
+  }
+
+  function enableRemoteVideo(peerConnection, enabled) {
+    remoteStream = peerConnection.getRemoteStreams()[0];
+    remoteStream.getVideoTracks()[0].enabled = enabled;
+  }
+
+  function enableRemoteAudio(peerConnection, enabled) {
+    remoteStream = peerConnection.getRemoteStreams()[0];
+    remoteStream.getAudioTracks()[0].enabled = enabled;
+  }
+
+  function enableLocalVideo(peerConnection, enabled) {
+    localStream = peerConnection.getLocalStreams()[0];
+    localStream.getVideoTracks()[0].enabled = enabled;
+  }
+
+  function enableLocalAudio(peerConnection, enabled) {
+    localStream = peerConnection.getLocalStreams()[0];
+    localStream.getAudioTracks()[0].enabled = enabled;
+  }
+
+  function callAndEnsureRemoteAudioTrackMutingWorks() {
+    setupCallAndPromiseAudioPlaying({audio: true, video: true}).then(() => {
+      // Call is up, now mute the remote track and check we stop playing out
+      // audio (after a small delay, we don't expect it to happen instantly).
+      enableRemoteAudio(gSecondConnection, false);
+      return ensureSilence(gSecondConnection)
+          .then(reportTestSuccess);
+    })
+    .catch(failTest);
+  }
+
+  function callAndEnsureLocalAudioTrackMutingWorks() {
+    setupCallAndPromiseAudioPlaying({audio: true, video: true}).then(() => {
+      // Call is up, now mute the local track of the sending side and ensure
+      // the receiving side stops receiving audio.
+      enableLocalAudio(gFirstConnection, false);
+      return ensureSilence(gSecondConnection)
+          .then(reportTestSuccess);
+    })
+    .catch(failTest);
+  }
+
+  function callAndEnsureAudioTrackUnmutingWorks() {
+    setupCallAndPromiseAudioPlaying({audio: true, video: true}).then(() => {
+      // Mute, wait a while, unmute, verify audio gets back up.
+      // (Also, ensure video muting doesn't affect audio).
+      enableRemoteAudio(gSecondConnection, false);
+      enableRemoteVideo(gSecondConnection, false);
+
+      setTimeout(function() {
+        enableRemoteAudio(gSecondConnection, true);
+      }, 500);
+
+      setTimeout(function() {
+        ensureAudioPlaying(gSecondConnection)
+            .then(reportTestSuccess)
+            .catch(failTest);
+      }, 1500);
+    }).catch(failTest);
+  }
+
+  function callAndEnsureLocalVideoMutingDoesntMuteAudio() {
+    setupCallAndPromiseAudioPlaying({audio: true, video: true}).then(() => {
+      enableLocalVideo(gFirstConnection, false);
+      return ensureAudioPlaying(gSecondConnection)
+          .then(reportTestSuccess);
+    });
+  }
+
+  function callAndEnsureRemoteVideoMutingDoesntMuteAudio() {
+    setupCallAndPromiseAudioPlaying({audio: true, video: true}).then(() => {
+      enableRemoteVideo(gSecondConnection, false);
+      return ensureAudioPlaying(gSecondConnection)
+          .then(reportTestSuccess);
+    });
+  }
+
+  function createConnections(constraints) {
+    gFirstConnection = createConnection(constraints, 'remote-view-1');
+    assertEquals('stable', gFirstConnection.signalingState);
+
+    gSecondConnection = createConnection(constraints, 'remote-view-2');
+    assertEquals('stable', gSecondConnection.signalingState);
+  }
+
+  function createConnection(constraints, remoteView) {
+    var pc = new RTCPeerConnection(null, constraints);
+    pc.onaddstream = function(event) {
+      onRemoteStream(event, remoteView);
+    }
+    return pc;
+  }
+
+  function displayAndRemember(localStream) {
+    $('local-view').srcObject = localStream;
+
+    gLocalStream = localStream;
+  }
+
+  // Called if getUserMedia succeeds and we want to send from both connections.
+  function addStreamToBothConnectionsAndNegotiate(localStream) {
+    displayAndRemember(localStream);
+    gFirstConnection.addStream(localStream);
+    gSecondConnection.addStream(localStream);
+    negotiate();
+  }
+
+  // Called if getUserMedia succeeds when we want to send from one connection.
+  function addStreamToTheFirstConnectionAndNegotiate(localStream) {
+    displayAndRemember(localStream);
+    gFirstConnection.addStream(localStream);
+    negotiate();
+  }
+
+  function negotiate() {
+    negotiateBetween(gFirstConnection, gSecondConnection);
+  }
+
+  function onRemoteStream(e, target) {
+    console.log("Receiving remote stream...");
+    gRemoteStreams[target] = e.stream;
+    var remoteVideo = $(target);
+    remoteVideo.srcObject = e.stream;
+  }
+
+  </script>
+</head>
+<body>
+  <table border="0">
+    <tr>
+      <td><video width="320" height="240" id="local-view" style="display:none"
+          autoplay muted></video></td>
+      <td><video width="320" height="240" id="remote-view-1"
+          style="display:none" autoplay></video></td>
+      <td><video width="320" height="240" id="remote-view-2"
+          style="display:none" autoplay></video></td>
+      <!-- Canvases are named after their corresponding video elements. -->
+      <td><canvas width="320" height="240" id="remote-view-1-canvas"
+          style="display:none"></canvas></td>
+      <td><canvas width="320" height="240" id="remote-view-2-canvas"
+          style="display:none"></canvas></td>
+    </tr>
+  </table>
+</body>
+</html>

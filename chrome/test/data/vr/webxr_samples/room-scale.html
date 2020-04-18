@@ -1,0 +1,191 @@
+<!doctype html>
+<!--
+Copyright 2018 The Immersive Web Community Group
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-->
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1, user-scalable=no'>
+    <meta name='mobile-web-app-capable' content='yes'>
+    <meta name='apple-mobile-web-app-capable' content='yes'>
+
+    <title>Room Scale</title>
+
+    <link href='css/common.css' rel='stylesheet'></link>
+
+    <script src='js/cottontail/build/cottontail.js'></script>
+
+    <script src='js/webxr-button.js'></script>
+  </head>
+  <body>
+    <header>
+      <details open>
+        <summary>Room Scale</summary>
+        <p>
+          This sample demonstrates using a 'stage' frame of reference to provide
+          room scale tracking. If stage bounds are provided by the XRDevice, they
+          will be represented as a green ground plane.
+          <a class="back" href="./">Back</a>
+        </p>
+      </summary>
+    </header>
+    <script>
+      (function () {
+      'use strict';
+
+      // XR globals.
+      let xrButton = null;
+      let xrExclusiveFrameOfRef = null;
+      let xrNonExclusiveFrameOfRef = null;
+
+      // WebGL scene globals.
+      let gl = null;
+      let renderer = null;
+      let scene = new Scene();
+      scene.addNode(new Gltf2Node({url: 'media/gltf/camp/camp.gltf'}));
+      scene.addNode(new SkyboxNode({url: 'media/textures/eilenriede-park-2k.png'}));
+      scene.standingStats(true);
+
+      function initXR() {
+        xrButton = new XRDeviceButton({
+          onRequestSession: onRequestSession,
+          onEndSession: onEndSession
+        });
+        document.querySelector('header').appendChild(xrButton.domElement);
+
+        if (navigator.xr) {
+          navigator.xr.requestDevice().then((device) => {
+            device.supportsSession({exclusive: true}).then(() => {
+              xrButton.setDevice(device);
+            });
+
+            let outputCanvas = document.createElement('canvas');
+            let ctx = outputCanvas.getContext('xrpresent');
+
+            device.requestSession({ outputContext: ctx })
+                .then((session) => {
+                  document.body.appendChild(outputCanvas);
+                  onSessionStarted(session);
+                });
+          }).catch(() => {
+            initFallback();
+          });
+        } else {
+          initFallback();
+        }
+      }
+
+      function initFallback() {
+        initGL();
+        document.body.appendChild(gl.canvas);
+        let fallbackHelper = new FallbackHelper(scene, gl);
+        fallbackHelper.emulateStage = true;
+      }
+
+      function onRequestSession(device) {
+        // Set up a mirror canvas
+        let mirrorCanvas = document.createElement('canvas');
+        let ctx = mirrorCanvas.getContext('xrpresent');
+        mirrorCanvas.setAttribute('id', 'mirror-canvas');
+        document.body.appendChild(mirrorCanvas);
+
+        device.requestSession({ exclusive: true, outputContext: ctx }).then((session) => {
+          xrButton.setSession(session);
+          onSessionStarted(session);
+        });
+      }
+
+      function initGL(compatibleDevice) {
+        if (gl)
+          return;
+
+        gl = createWebGLContext({
+          compatibleXRDevice: compatibleDevice
+        });
+
+        renderer = new Renderer(gl);
+
+        scene.setRenderer(renderer);
+      }
+
+      function onSessionStarted(session) {
+        session.addEventListener('end', onSessionEnded);
+
+        initGL(session.device);
+
+        session.baseLayer = new XRWebGLLayer(session, gl);
+
+        // Get a stage frame of reference, which will align the user's physical
+        // floor with Y=0 and can provide boundaries that indicate where the
+        // user can safely walk. If the system can't natively provide stage
+        // coordinates (for example, with a 3DoF device) then it will return an
+        // emulated stage, where the view is translated up by a static height so
+        // that the scene still renders in approximately the right place.
+        session.requestFrameOfReference('stage').then((frameOfRef) => {
+          if (session.exclusive) {
+            xrExclusiveFrameOfRef = frameOfRef;
+            let boundsRenderer = new BoundsRenderer();
+            boundsRenderer.stageBounds = frameOfRef.bounds;
+            scene.addNode(boundsRenderer);
+          } else {
+            xrNonExclusiveFrameOfRef = frameOfRef;
+          }
+
+          session.requestAnimationFrame(onXRFrame);
+        });
+      }
+
+      function onEndSession(session) {
+        session.end();
+      }
+
+      function onSessionEnded(event) {
+        if (event.session.exclusive) {
+          document.body.removeChild(document.querySelector('#mirror-canvas'));
+          xrButton.setSession(null);
+        }
+      }
+
+      function onXRFrame(t, frame) {
+        let session = frame.session;
+        let frameOfRef = session.exclusive ?
+                         xrExclusiveFrameOfRef :
+                         xrNonExclusiveFrameOfRef;
+        let pose = frame.getDevicePose(frameOfRef);
+
+        scene.startFrame();
+
+        session.requestAnimationFrame(onXRFrame);
+
+        // Every XR frame uses basically the same render loop, so for the sake
+        // of keeping the sample code focused on the interesting bits most
+        // samples after this one will start using this helper function to hide
+        // away the majority of the rendering logic.
+        scene.drawXRFrame(frame, pose);
+
+        scene.endFrame();
+      }
+
+      // Start the XR application.
+      initXR();
+      })();
+    </script>
+  </body>
+</html>

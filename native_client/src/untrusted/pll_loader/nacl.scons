@@ -1,0 +1,17 @@
+# -*- python -*-
+# Copyright 2016 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+if not env.Bit('bitcode'):
+  Return()
+
+env.ComponentLibrary('pll_loader_lib', ['pll_loader.cc'])
+
+# Ideally we would want to build an executable here (using
+# ComponentProgram()), but Scons makes it difficult for a nacl.scons file
+# in tests/ to refer to an executable built in src/untrusted/, because the
+# two can use different subdirectories of scons-out/.
+env.ComponentLibrary('pll_loader_main', ['pll_loader_main.cc'])

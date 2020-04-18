@@ -1,0 +1,54 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#import "ios/showcase/tab_grid/sc_toolbars_view_controller.h"
+
+#import "ios/chrome/browser/ui/tab_grid/tab_grid_bottom_toolbar.h"
+#import "ios/chrome/browser/ui/tab_grid/tab_grid_top_toolbar.h"
+
+#if !defined(__has_feature) || !__has_feature(objc_arc)
+#error "This file requires ARC support."
+#endif
+
+@implementation SCToolbarsViewController
+
+- (void)viewDidLoad {
+  [super viewDidLoad];
+  self.view.backgroundColor = [UIColor whiteColor];
+
+  TabGridTopToolbar* topToolbar = [[TabGridTopToolbar alloc] init];
+  topToolbar.translatesAutoresizingMaskIntoConstraints = NO;
+  [topToolbar.leadingButton setTitle:@"Leading" forState:UIControlStateNormal];
+  [topToolbar.trailingButton setTitle:@"Trailing"
+                             forState:UIControlStateNormal];
+  [self.view addSubview:topToolbar];
+
+  TabGridBottomToolbar* bottomToolbar = [[TabGridBottomToolbar alloc] init];
+  bottomToolbar.translatesAutoresizingMaskIntoConstraints = NO;
+  [bottomToolbar.leadingButton setTitle:@"Leading"
+                               forState:UIControlStateNormal];
+  [bottomToolbar.trailingButton setTitle:@"Trailing"
+                                forState:UIControlStateNormal];
+  [self.view addSubview:bottomToolbar];
+
+  NSArray* constraints = @[
+    [topToolbar.topAnchor constraintEqualToAnchor:self.view.topAnchor
+                                         constant:10.0f],
+    [topToolbar.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+    [topToolbar.trailingAnchor
+        constraintEqualToAnchor:self.view.trailingAnchor],
+    [topToolbar.heightAnchor
+        constraintEqualToConstant:topToolbar.intrinsicContentSize.height],
+    [bottomToolbar.topAnchor constraintEqualToAnchor:topToolbar.bottomAnchor
+                                            constant:10.0f],
+    [bottomToolbar.leadingAnchor
+        constraintEqualToAnchor:self.view.leadingAnchor],
+    [bottomToolbar.trailingAnchor
+        constraintEqualToAnchor:self.view.trailingAnchor],
+    [bottomToolbar.heightAnchor
+        constraintEqualToConstant:bottomToolbar.intrinsicContentSize.height],
+  ];
+  [NSLayoutConstraint activateConstraints:constraints];
+}
+@end

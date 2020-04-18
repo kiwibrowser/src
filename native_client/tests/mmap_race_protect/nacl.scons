@@ -1,0 +1,43 @@
+# -*- python -*-
+# Copyright 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+mmap_race_nexe = env.ComponentProgram('mmap_race', ['mmap_race.c'],
+                                      EXTRA_LIBS=[
+                                        'platform',
+                                        'imc',
+                                        'imc_syscalls',
+                                        '${PTHREAD_LIBS}',
+                                        '${NONIRT_LIBS}'])
+
+trusted_env = env.get('TRUSTED_ENV')
+
+# If scons is run with mode=nacl_irt_test leaving out opt-host or dbg-host,
+# then trusted_env is None.
+if trusted_env is not None and trusted_env.Bit('coverage_enabled'):
+  expected_exit = 'naclabort_coverage'
+else:
+  expected_exit = 'trusted_sigabrt'
+
+node = env.CommandSelLdrTestNacl('mmap_race_socketpair_test.out',
+                                 mmap_race_nexe,
+                                 ['-m', 'socketpair'],
+                                 # Pass '-a' to enable imc_mem_obj_create().
+                                 sel_ldr_flags=['-a'],
+                                 exit_status=expected_exit)
+
+env.AddNodeToTestSuite(node, ['small_tests', 'mmap_race_tests'],
+                       'run_mmap_race_socketpair_test')
+
+node = env.CommandSelLdrTestNacl('mmap_race_connect_test.out',
+                                 mmap_race_nexe,
+                                 ['-m', 'imc_connect'],
+                                 # Pass '-a' to enable imc_mem_obj_create().
+                                 sel_ldr_flags=['-a'],
+                                 exit_status=expected_exit)
+
+env.AddNodeToTestSuite(node, ['small_tests', 'mmap_race_tests'],
+                       'run_mmap_race_connect_test')

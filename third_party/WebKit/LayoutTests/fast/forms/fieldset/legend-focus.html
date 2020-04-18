@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<body>
+<div id="log"></div>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+
+<fieldset>
+<legend id="legend1">Legend</legend>
+<input>
+</fieldset>
+
+<fieldset>
+<legend id="legend2" tabindex=10>Legend</legend>
+<input>
+</fieldset>
+
+<script>
+test(function() {
+    document.getElementById('legend1').focus();
+    assert_equals(document.activeElement.tagName, 'INPUT');
+}, 'focus() for non-focusable LEGEND element delegates focus to the first control in the owner FIELDSET.');
+
+test(function() {
+    document.getElementById('legend2').focus();
+    assert_equals(document.activeElement.tagName, 'LEGEND');
+}, 'focus() for focusable LEGEND should not delgates focus.');
+</script>
+</body>

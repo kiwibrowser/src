@@ -1,0 +1,121 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_dialog/cr_dialog.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_scrollable_behavior.html">
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-dropdown/iron-dropdown.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-input/iron-input.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-input/paper-input-container.html">
+<link rel="import" href="cups_printer_shared_css.html">
+<link rel="import" href="cups_printers_browser_proxy.html">
+
+<dom-module id="add-printer-list">
+  <template>
+    <style include="cups-printer-shared">
+      .list-item {
+        padding: 0 20px;
+      }
+    </style>
+    <div>
+      <array-selector id="arraySelector" items="[[printers]]"
+          selected="{{selectedPrinter}}">
+      </array-selector>
+      <template is="dom-repeat" items="[[printers]]">
+        <button class="list-item" on-click="onSelect_">
+          [[item.printerName]]
+        </button>
+      </template>
+    </div>
+  </template>
+</dom-module>
+
+<dom-module id="drop-down-search-box">
+  <template>
+    <style include="cups-printer-shared">
+      iron-dropdown,
+      paper-input-container {
+        width: 270px;
+      }
+
+      iron-dropdown {
+        height: 270px;
+      }
+
+      iron-dropdown [slot='dropdown-content'] {
+        background-color: white;
+        box-shadow: 0 2px 6px var(--paper-grey-500);
+        min-width: 128px;
+        padding: 8px 0;
+      }
+
+      /* The following styles make the arrow look aligned with md-select */
+      paper-icon-button-light {
+        height: 24px;
+        width: 24px;
+      }
+
+      #dropdownIcon {
+        background-size: 24px;
+      }
+
+      iron-input input {
+        @apply --paper-input-container-shared-input-style;
+      }
+    </style>
+    <paper-input-container no-label-float on-click="onTap_">
+      <iron-input id="search" slot="input" bind-value="{{selectedItem}}">
+        <input type="search" on-search="onInputValueChanged_"
+            value="{{value::input}}" on-change="onChange_" incremental>
+      </iron-input>
+      <paper-icon-button-light id="searchIcon" class="icon-search" hidden
+          slot="suffix">
+        <button></button>
+      </paper-icon-button-light>
+      <paper-icon-button-light class="icon-arrow-dropdown">
+        <button id="dropdownIcon" slot="suffix"></button>
+      </paper-icon-button-light>
+    </paper-input-container>
+    <iron-dropdown horizontal-align="left" vertical-align="top"
+        vertical-offset="35">
+      <div slot="dropdown-content">
+        <template is="dom-repeat" items="[[items]]"
+            filter="[[filterItems_(searchTerm_)]]">
+          <button class="list-item" on-click="onSelect_">[[item]]</button>
+        </template>
+      </div>
+    </iron-dropdown>
+  </template>
+</dom-module>
+
+<dom-module id="add-printer-dialog">
+  <template>
+    <style include="settings-shared">
+      #dialog {
+        --cr-dialog-body-container: {
+          /* Force a bottom border regardless of scroll state. */
+          border-bottom: 1px solid var(--paper-grey-300) !important;
+        };
+      }
+      #dialog [slot=body] {
+        -webkit-padding-end: 0;
+        -webkit-padding-start: 0;
+        height: 350px;
+      }
+    </style>
+
+    <cr-dialog id="dialog" close-text="$i18n{close}">
+      <div slot="title">
+        <slot name="dialog-title"></slot>
+      </div>
+      <div slot="body" scrollable>
+        <slot name="dialog-body"></slot>
+      </div>
+      <div slot="button-container">
+        <slot name="dialog-buttons"></slot>
+      </div>
+    </cr-dialog>
+  </template>
+  <script src="cups_add_printer_dialog_util.js"></script>
+</dom-module>

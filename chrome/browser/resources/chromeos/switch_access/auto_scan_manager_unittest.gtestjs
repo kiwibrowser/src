@@ -1,0 +1,175 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+/**
+ * @constructor
+ * @implements {SwitchAccessInterface}
+ */
+function FakeSwitchAccess() {
+  this.moveToNextCount = 0;
+  this.getNumberPref = function(key) {
+    if (key === 'autoScanTime')
+      return 1;
+  };
+  this.getBooleanPref = function(key) {
+    if (key === 'enableAutoScan')
+      return false;
+  };
+};
+
+FakeSwitchAccess.prototype = {
+  /** @override */
+  moveToNode: function(doNext) {
+    if (doNext)
+      this.moveToNextCount += 1;
+  },
+};
+
+/**
+ * Test fixture for auto_scan_manager.js.
+ * @constructor
+ * @extends {testing.Test}
+ */
+function AutoScanManagerUnitTest() {
+  testing.Test.call(this);
+};
+
+AutoScanManagerUnitTest.prototype = {
+  __proto__: testing.Test.prototype,
+
+  /** @override */
+  extraLibraries: [
+    'auto_scan_manager.js',
+  ],
+
+  /** @override */
+  isAsync: true,
+
+  /** @override */
+  browsePreload: DUMMY_URL,
+
+  /** @override */
+  setUp: function() {
+    // Use intervalCount and intervalDelay to check how many intervals are
+    // currently running (should be 1 at most) and what the current delay is.
+    window.intervalCount = 0;
+    window.intervalDelay = undefined;
+    window.realSetInterval = window.setInterval;
+    window.realClearInterval = window.clearInterval;
+
+    window.setInterval = function(func, delay) {
+      window.intervalCount += 1;
+      window.intervalDelay = delay;
+
+      // Set the actual delay to 1 ms to speed up the test.
+      return window.realSetInterval(func, 1);
+    };
+
+    window.clearInterval = function(intervalID) {
+      if (intervalID)
+        window.intervalCount -= 1;
+      window.realClearInterval(intervalID);
+    };
+  }
+};
+
+TEST_F('AutoScanManagerUnitTest', 'SetEnabled', function() {
+  let switchAccess = new FakeSwitchAccess();
+  let autoScanManager = new AutoScanManager(switchAccess);
+  assertFalse(autoScanManager.isRunning());
+  assertEquals(0, switchAccess.moveToNextCount);
+  assertEquals(0, window.intervalCount);
+
+  autoScanManager.setEnabled(true);
+  window.setTimeout(function() {
+    assertTrue(autoScanManager.isRunning());
+    assertGT(switchAccess.moveToNextCount, 1);
+    assertEquals(1, window.intervalCount);
+    testDone();
+  }, 10);
+});
+
+TEST_F('AutoScanManagerUnitTest', 'EnableMultiple', function() {
+  let switchAccess = new FakeSwitchAccess();
+  let autoScanManager = new AutoScanManager(switchAccess);
+  assertFalse(autoScanManager.isRunning());
+  assertEquals(0, switchAccess.moveToNextCount);
+  assertEquals(0, window.intervalCount);
+
+  autoScanManager.setEnabled(true);
+  autoScanManager.setEnabled(true);
+  autoScanManager.setEnabled(true);
+  window.setTimeout(function() {
+    assertTrue(autoScanManager.isRunning());
+    assertGT(switchAccess.moveToNextCount, 1);
+    assertEquals(1, window.intervalCount);
+    testDone();
+  }, 10);
+});
+
+TEST_F('AutoScanManagerUnitTest', 'EnableAndDisable', function() {
+  let switchAccess = new FakeSwitchAccess();
+  let autoScanManager = new AutoScanManager(switchAccess);
+  assertFalse(autoScanManager.isRunning());
+
+  autoScanManager.setEnabled(true);
+  assertTrue(autoScanManager.isRunning());
+
+  autoScanManager.setEnabled(false);
+  assertFalse(autoScanManager.isRunning());
+  testDone();
+});
+
+TEST_F('AutoScanManagerUnitTest', 'RestartMultiple', function() {
+  let switchAccess = new FakeSwitchAccess();
+  let autoScanManager = new AutoScanManager(switchAccess);
+  assertFalse(autoScanManager.isRunning());
+  assertEquals(0, switchAccess.moveToNextCount);
+  assertEquals(0, window.intervalCount);
+
+  autoScanManager.setEnabled(true);
+  autoScanManager.restartIfRunning();
+  autoScanManager.restartIfRunning();
+  autoScanManager.restartIfRunning();
+  window.setTimeout(function() {
+    assertTrue(autoScanManager.isRunning());
+    assertGT(switchAccess.moveToNextCount, 1);
+    assertEquals(1, window.intervalCount);
+    testDone();
+  }, 10);
+});
+
+TEST_F('AutoScanManagerUnitTest', 'RestartWhenOff', function() {
+  let switchAccess = new FakeSwitchAccess();
+  let autoScanManager = new AutoScanManager(switchAccess);
+  assertFalse(autoScanManager.isRunning());
+
+  autoScanManager.restartIfRunning();
+  assertFalse(autoScanManager.isRunning());
+  testDone();
+});
+
+TEST_F('AutoScanManagerUnitTest', 'SetScanTime', function() {
+  let switchAccess = new FakeSwitchAccess();
+  let autoScanManager = new AutoScanManager(switchAccess);
+  assertFalse(autoScanManager.isRunning());
+  assertEquals(1, autoScanManager.scanTime_);
+  assertEquals(undefined, window.intervalDelay);
+
+  autoScanManager.setScanTime(2);
+  assertFalse(autoScanManager.isRunning());
+  assertEquals(2, autoScanManager.scanTime_);
+  assertEquals(undefined, window.intervalDelay);
+
+  autoScanManager.setEnabled(true);
+  assertTrue(autoScanManager.isRunning());
+  assertEquals(2, autoScanManager.scanTime_);
+  assertEquals(2, window.intervalDelay);
+
+  autoScanManager.setScanTime(5);
+  assertTrue(autoScanManager.isRunning());
+  assertEquals(5, autoScanManager.scanTime_);
+  assertEquals(5, window.intervalDelay);
+  testDone();
+});

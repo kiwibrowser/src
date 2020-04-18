@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<script src="../../../resources/js-test.js"></script>
+<script src="../resources/picker-common.js"></script>
+<style>
+#menu {
+    -webkit-appearance: none;
+    width: 100px;
+}
+</style>
+<select id="menu">
+<option>o1</option>
+<option>o2</option>
+</select>
+<script>
+function openPickerErrorCallback() {
+    testFailed('picker didn\'t open')
+    finishJSTest();
+}
+function checkPopupWidth() {
+    shouldBe('popupWindow.innerWidth', '150');
+    finishJSTest();
+}
+var menu = document.getElementById('menu');
+openPicker(menu, function() {
+    shouldBe('popupWindow.innerWidth', '100');
+    popupWindow.addEventListener("resize", checkPopupWidth, false);
+    menu.style.width = "150px";
+    menu.offsetTop;
+}, openPickerErrorCallback);
+</script>

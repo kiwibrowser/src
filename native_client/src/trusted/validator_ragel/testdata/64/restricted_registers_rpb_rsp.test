@@ -1,0 +1,112 @@
+@hex:
+  # %rbp and %rsp play special role with respect to restricted_registers
+  
+  # %rbp can't be used for memory indexing
+  89 ed
+  41 8a 04 2f
+@dis:
+     0:	89 ed                                        	mov    %ebp,%ebp
+     2:	41 8a 04 2f                                  	mov    (%r15,%rbp,1),%al
+@rdfa_output:
+  2: improper %rbp sandboxing
+  return code: 1
+@spec:
+  2: ("%rbp can't be used as index in memory access", Instruction(0x2: 41 8a 04 2f  mov (%r15,%rbp,1),%al))
+----------------------------------------------------------------------
+@hex:
+  # %rsp too
+  89 e4
+  42 8a 04 3c
+@dis:
+     0:	89 e4                                        	mov    %esp,%esp
+     2:	42 8a 04 3c                                  	mov    (%rsp,%r15,1),%al
+@rdfa_output:
+  2: improper memory address - bad index
+  2: improper %rsp sandboxing
+  return code: 1
+@spec:
+  2: ("%r15 can't be used as index in memory access", Instruction(0x2: 42 8a 04 3c  mov (%rsp,%r15,1),%al))
+----------------------------------------------------------------------
+@hex:
+  # But they can be restricted provided next instruction immediately
+  # sandboxes them back.
+  89 ed \\
+  4c 01 fd
+@dis:
+     0:	89 ed                                        	mov    %ebp,%ebp
+     2:	4c 01 fd                                     	add    %r15,%rbp
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  83 c4 04 \\
+  4a 8d 24 3c
+@dis:
+     0:	83 c4 04                                     	add    $0x4,%esp
+     3:	4a 8d 24 3c                                  	lea    (%rsp,%r15,1),%rsp
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # But in lea base register should be restricted and index register
+  # should be sandboxed, not vice versa.
+  89 ed \\
+  49 8d 2c 2f
+@dis:
+     0:	89 ed                                        	mov    %ebp,%ebp
+     2:	49 8d 2c 2f                                  	lea    (%r15,%rbp,1),%rbp
+@rdfa_output:
+  2: improper %rbp sandboxing
+  2: error - %bpl or %bp is changed
+  return code: 1
+@spec:
+  2: ('changes to rbp are not allowed', Instruction(0x2: 49 8d 2c 2f  lea (%r15,%rbp,1),%rbp))
+----------------------------------------------------------------------
+@hex:
+  # They can be freely assigned to each other
+  48 89 e5
+  90
+  48 89 ec
+@dis:
+     0:	48 89 e5                                     	mov    %rsp,%rbp
+     3:	90                                           	nop
+     4:	48 89 ec                                     	mov    %rbp,%rsp
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # But when one of them is restricted, we can't simply overwrite it with
+  # assignment--we have to use lea or add to restore it.
+  # This requirement is not necessary from security point of view,
+  # but it simplifies implementation.
+  89 ed
+  48 89 e5
+@dis:
+     0:	89 ed                                        	mov    %ebp,%ebp
+     2:	48 89 e5                                     	mov    %rsp,%rbp
+@rdfa_output:
+  2: improper %rbp sandboxing
+  return code: 1
+@spec:
+  2: %rbp should not be restricted
+----------------------------------------------------------------------
+@hex:
+  # Non-zero-extending modification.
+  11 c4
+  4c 01 fc
+@dis:
+     0:	11 c4                                        	adc    %eax,%esp
+     2:	4c 01 fc                                     	add    %r15,%rsp
+@rdfa_output:
+  0: error - %spl or %sp is changed
+  2: improper %rsp sandboxing
+  return code: 1
+@spec:
+  0: ('non-zero-extending changes to ebp and esp are not allowed', Instruction(0x0: 11 c4  adc %eax,%esp))
+  2: register %rsp should be restricted, while in fact None is restricted

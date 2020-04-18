@@ -1,0 +1,186 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import os
+
+Import('env')
+
+if 'TRUSTED_ENV' not in env:
+  Return()
+
+if env.UnderWindowsCoverage():
+  Return()
+
+if env.Bit('build_arm') or env.Bit('build_mips32'):
+  if env.UsingEmulator():
+    # nacl-gdb is built with ARM support but not MIPS support.
+    if env.Bit('build_mips32'):
+      Return()
+    nacl_x86_toolchain_dir = env.GetToolchainDir(target_arch='x86',
+                                                 is_pnacl=False,
+                                                 lib_name='glibc')
+    nacl_gdb_path = os.path.join(nacl_x86_toolchain_dir, 'bin', 'i686-nacl-gdb')
+    env.Replace(GDB=nacl_gdb_path)
+  else:
+    # Use the system's ARM/MIPS GDB because the NaCl toolchain does not
+    # include a copy of GDB built to run on ARM/MIPS.
+    env.Replace(GDB='gdb')
+    # Unlike nacl-gdb, the system version of GDB does not support the
+    # "nacl-irt" command.
+    if env.Bit('tests_use_irt'):
+      Return()
+
+# Disable finalization (which would strip debug metadata), but allow
+# the sandbox translator where it makes sense.
+if not env.SetNonStableBitcodeIfAllowed(allow_sb_translator=True):
+  Return()
+
+# We need -O0 to make stepping predictable and read local variables/function
+# arguments that may otherwise be optimized out.
+env.Append(CCFLAGS=['-O0', '-g', '-fno-omit-frame-pointer'])
+# We need to disable PNaCl's link time optimizations so that functions
+# do not get inlined, so that we can set breakpoints on these
+# functions.  Also make translation optimizaton level -O0.
+if env.Bit('bitcode'):
+  env.Append(LINKFLAGS=['-O0'])
+  env.Append(TRANSLATEFLAGS=['-O0'])
+  # TODO(jfb) ARM bots test the local GDB, which isn't as recent as
+  #           nacl-gdb. The move to LLVM 3.5 broke line info reading on some of
+  #           the ARM bots, and using DWARF 3 "fixes" this issue.
+  if env.Bit('build_arm'):
+    env.Append(CCFLAGS=['-gdwarf-3'])
+
+sel_ldr_command = env.AddBootstrap(env.GetSelLdr(), ['-v'])
+if env.GetEmulator():
+  # Run sel_ldr through qemu-arm.  Add "-Q" to disable the platform
+  # qualification tests because they fail under qemu-arm.
+  sel_ldr_command = [env.GetEmulator()] + sel_ldr_command + ['-Q']
+
+test_args = ['--gdb', env['GDB'],
+             '--output_dir', env.subst('${TARGET_ROOT}/test_results')]
+if env.Bit('tests_use_irt'):
+  test_args += ['--irt', env.GetIrtNexe()]
+if not env.Bit('nacl_static_link'):
+  test_args += ['--ld_so', env.File('${NACL_SDK_LIB}/runnable-ld.so'),
+                '--library_path', env['NACL_SDK_LIB']]
+test_args += ['--'] + sel_ldr_command
+
+extra_deps = [env.File('gdb_test.py')]
+
+test_suites = ['medium_tests', 'gdb_tests']
+
+gdb_test_guest = env.ComponentProgram(
+    'gdb_test_guest', 'gdb_test_guest.c',
+    EXTRA_LIBS=['${NONIRT_LIBS}'])
+gdb_test_guest = env.GetTranslatedNexe(gdb_test_guest)
+
+# GDB treats multithreaded programs specially. Provide distinct nexe for
+# multithreaded tests to isolate multiple threads-specific issues.
+gdb_test_guest_thread = env.ComponentProgram(
+    'gdb_test_guest_thread', 'gdb_test_guest_thread.c',
+    EXTRA_LIBS=['${PTHREAD_LIBS}', '${NONIRT_LIBS}'])
+gdb_test_guest_thread = env.GetTranslatedNexe(gdb_test_guest_thread)
+
+
+# TempFileArguments: gdb_test_guest-based tests below accept a
+# temporary file argument, and we encapsulate this here for brevity /
+# to avoid code duplication.
+def TempFileArguments():
+  temp_path = env.MakeEmptyFile(prefix='nacl_gdb_test_')
+  return ','.join(['-f', temp_path])
+
+
+def AddGdbTest(name, is_broken=False, is_thread_test=False):
+  if is_thread_test:
+    script_args = ['--nexe', gdb_test_guest_thread]
+  else:
+    script_args = ['--nexe', gdb_test_guest,
+                   '--nexe_args', TempFileArguments()]
+  node = env.CommandTest('%s.out' % name,
+                         extra_deps=extra_deps,
+                         command=(['${PYTHON}', env.File('%s.py' % name)]
+                                  + script_args
+                                  + test_args),
+                         # Don't run the host Python through qemu-arm.
+                         direct_emulation=False)
+  env.TestBindsFixedTcpPort(node)
+  env.AddNodeToTestSuite(node, test_suites, 'run_gdb_%s_test' % name,
+                         is_broken=(is_broken or env.Bit('no_gdb_tests') or
+                                    # TODO(mcgrathr): Currently these tests
+                                    # do not work with the new glibc.
+                                    (env.Bit('nacl_glibc') and
+                                     env.Bit('build_arm'))))
+
+
+AddGdbTest('complete')
+AddGdbTest('detach')
+AddGdbTest('disconnect')
+# https://code.google.com/p/nativeclient/issues/detail?id=4059
+AddGdbTest('invalid_memory',
+           is_broken = (env.Bit('nacl_clang') and not env.UsingEmulator()))
+AddGdbTest('kill')
+AddGdbTest('remote_get')
+
+# Single-stepping does work reliably with ARM and MIPS in qemu due to the code
+# cache not being flushable.
+AddGdbTest('stepi_after_break', is_broken=env.UsingEmulator())
+
+using_clang = env.Bit('bitcode') or env.Bit('nacl_clang')
+
+# This fails on ARM+PNaCl. The set_global_var function appears to be
+# getting the wrong argument value (68K vs 1), so the value of
+# global_var doesn't match the expected value.
+# TODO(mseaborn): Investigate and enable this test.
+# http://code.google.com/p/nativeclient/issues/detail?id=3252
+# This test also fails with arm-nacl-clang:
+# https://code.google.com/p/nativeclient/issues/detail?id=4059
+AddGdbTest('print_symbol',
+           is_broken=((using_clang and env.Bit('build_arm'))
+                      or env.UsingEmulator()))
+
+# This fails on ARM+PNaCl because it gets an
+# unexpected value for a function argument from
+# the stack backtrace.
+# TODO(mseaborn): Investigate and enable this test.
+# http://code.google.com/p/nativeclient/issues/detail?id=3252
+AddGdbTest('stack_trace',
+           is_broken=using_clang and env.Bit('build_arm'))
+
+# This fails on ARM+nacl-clang
+# https://code.google.com/p/nativeclient/issues/detail?id=4059
+AddGdbTest('step_from_func_start',
+           is_broken=(env.UsingEmulator() or
+                      (env.Bit('nacl_clang') and env.Bit('build_arm'))))
+
+# This fails on MIPS, since GDB for MIPS executes inferior calls on stack
+# (call dummy location in MIPS GDB is set as ON_STACK method). Since the stack
+# is not executable under NaCl, this makes inferior call impossible to execute.
+AddGdbTest('call_from_gdb', is_broken=env.Bit('build_mips32'))
+
+# This fails on ARM/MIPS+PNaCl because it is reading
+# local_var before it has been initialised.
+# TODO(mseaborn): Investigate and enable this test.
+# http://code.google.com/p/nativeclient/issues/detail?id=3252
+# This test also fails with arm-nacl-clang:
+# https://code.google.com/p/nativeclient/issues/detail?id=4059
+AddGdbTest('change_variable',
+           is_broken=((using_clang and env.Bit('build_arm')) or
+                      env.Bit('build_mips32') or
+                      env.UsingEmulator()))
+
+if not env.Bit('nacl_static_link'):
+  AddGdbTest('execute_nacl_manifest_twice')
+
+# This test hangs under qemu-arm because thread suspension doesn't
+# work on qemu-arm.
+AddGdbTest('break_continue_thread', is_thread_test=True,
+           is_broken=env.UsingEmulator())
+
+AddGdbTest('syscall_thread', is_thread_test=True)
+
+# We don't run this test on non-x86 architectures or PNaCl since it
+# contains inline assembly.
+if env.Bit('build_x86') and not env.Bit('bitcode'):
+  AddGdbTest('mmap')

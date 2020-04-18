@@ -1,0 +1,17 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+pagesize_test_nexe = env.ComponentProgram(
+  'pagesize_test',
+  'pagesize_test.c',
+  EXTRA_LIBS=['${PTHREAD_LIBS}', '${RANDOM_LIBS}', '${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+  'pagesize_test.out',
+  pagesize_test_nexe)
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_pagesize_test')

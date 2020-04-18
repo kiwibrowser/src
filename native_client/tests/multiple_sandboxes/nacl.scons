@@ -1,0 +1,45 @@
+# -*- python -*-
+# Copyright 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# This test case tests an experimental use case for NaCl.  If you make
+# a change which breaks this test which is difficult to fix, you can
+# disable the test, but please CC mseaborn,krasin.
+
+if 'TRUSTED_ENV' not in env:
+  Return()
+trusted_env = env['TRUSTED_ENV']
+
+runner = trusted_env.ComponentProgram(
+    'multidomain_test_host', ['multidomain_test_host.c'],
+    EXTRA_LIBS=['sel'])
+
+test_prog = env.ComponentProgram(
+    'multidomain_test_guest', ['multidomain_test_guest.c'],
+    EXTRA_LIBS=['imc_syscalls', '${NONIRT_LIBS}'])
+
+# If we are generating a pexe, translate it first
+test_prog = env.GetTranslatedNexe(test_prog)
+
+node = env.CommandTest('multidomain_test.out', [runner, test_prog],
+                       # Increase verbosity to get more information in
+                       # the event of a crash.
+                       osenv='NACLVERBOSITY=4',
+                       stdout_golden=env.File('multidomain_test.stdout'))
+
+# This test does not work everywhere:
+#  * NaCl's ARM/MIPS sandboxes do not support multiple sandboxes per
+#    process, so this test is disabled for ARM/MIPS.
+#  * multidomain_test_host assumes it is given a statically linked
+#    executable.  Furthermore, statically-linked nacl-glibc does not
+#    work here because of validation failures which require stubout
+#    mode.
+is_broken = (env.Bit('build_arm') or
+             env.Bit('build_mips32') or
+             env.Bit('nacl_glibc'))
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_multidomain_test',
+                       is_broken=is_broken)

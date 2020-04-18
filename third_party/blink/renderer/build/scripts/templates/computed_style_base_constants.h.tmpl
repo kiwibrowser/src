@@ -1,0 +1,39 @@
+{% from 'templates/macros.tmpl' import license, print_if, source_files_for_generated_file %}
+{{license()}}
+
+{{source_files_for_generated_file(template_file, input_files)}}
+
+#ifndef THIRD_PARTY_BLINK_RENDERER_CORE_COMPUTED_STYLE_BASE_CONSTANTS_H_
+#define THIRD_PARTY_BLINK_RENDERER_CORE_COMPUTED_STYLE_BASE_CONSTANTS_H_
+
+namespace blink {
+
+// TODO(sashab): Move these enums to their own namespace, or add a CSS prefix,
+// for consistency and to prevent name conflicts.
+
+{% for enum in enums %}
+enum class {{enum.type_name}} : unsigned {
+  {% for value in enum.values %}
+  {{value}}{{print_if(enum.is_set, " = " ~ (0 if loop.first else 2**loop.index0))}},
+  {% endfor %}
+};
+
+{% if enum.is_set %}
+static const int k{{enum.type_name}}Bits = {{enum.values|length - 1}};
+
+{% for op in ('|', '^') %}
+inline {{enum.type_name}} operator{{op}}({{enum.type_name}} a, {{enum.type_name}} b) {
+  return static_cast<{{enum.type_name}}>(
+    static_cast<unsigned>(a) {{op}} static_cast<unsigned>(b)
+  );
+}
+inline {{enum.type_name}}& operator{{op}}=({{enum.type_name}}& a, {{enum.type_name}} b) {
+  return a = a {{op}} b;
+}
+
+{% endfor %}
+{% endif %}
+{% endfor %}
+}  // namespace blink
+
+#endif  // THIRD_PARTY_BLINK_RENDERER_CORE_COMPUTED_STYLE_BASE_CONSTANTS_H_

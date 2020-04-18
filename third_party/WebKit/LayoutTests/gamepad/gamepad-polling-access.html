@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<body>
+<script src="../resources/js-test.js"></script>
+<script>
+    if (window.gamepadController)
+    {
+        // start all disconnected
+        gamepadController.disconnect(0);
+        gamepadController.disconnect(1);
+        gamepadController.disconnect(2);
+        gamepadController.disconnect(3);
+        shouldBe("navigator.getGamepads().length", "4");
+        shouldBeNull("navigator.getGamepads().item(0)");
+        shouldBeNull("navigator.getGamepads().item(1)");
+        shouldBeNull("navigator.getGamepads().item(2)");
+        shouldBeNull("navigator.getGamepads().item(3)");
+        shouldBeNull("navigator.getGamepads()[0]");
+        shouldBeNull("navigator.getGamepads()[1]");
+        shouldBeNull("navigator.getGamepads()[2]");
+        shouldBeNull("navigator.getGamepads()[3]");
+
+        // connect and disconnect
+        gamepadController.connect(0);
+        shouldBeNonNull("navigator.getGamepads()[0]");
+        gamepadController.disconnect(0);
+        shouldBeNull("navigator.getGamepads().item(0)");
+        shouldBeNull("navigator.getGamepads()[0]");
+
+        // connect again, and check standard access
+        gamepadController.connect(0);
+        gamepadController.setId(0, "MockStick 3000");
+        gamepadController.setButtonCount(0, 2);
+        gamepadController.setAxisCount(0, 2);
+        gamepadController.setButtonData(0, 0, 1);
+        gamepadController.setButtonData(0, 1, 0);
+        gamepadController.setAxisData(0, 0, .5);
+        gamepadController.setAxisData(0, 1, -1.0);
+        shouldBe("navigator.getGamepads()[0].id", "'MockStick 3000'");
+        shouldBe("navigator.getGamepads()[0].buttons.length", "2");
+        shouldBe("navigator.getGamepads()[0].axes.length", "2");
+        shouldBe("navigator.getGamepads()[0].buttons[0].value", "1.0");
+        shouldBe("navigator.getGamepads()[0].buttons[0].pressed", "true");
+        shouldBe("navigator.getGamepads()[0].buttons[1].value", "0.0");
+        shouldBe("navigator.getGamepads()[0].buttons[1].pressed", "false");
+        shouldBe("navigator.getGamepads()[0].axes.length", "2");
+        shouldBe("navigator.getGamepads()[0].axes[0]", "0.5");
+        shouldBe("navigator.getGamepads()[0].axes[1]", "-1.0");
+
+        // check that accessing the |axes| and |buttons| attributes fetches the
+        // same objects until their values change.
+        shouldBeTrue("navigator.getGamepads()[0].axes === navigator.getGamepads()[0].axes");
+        shouldBeTrue("navigator.getGamepads()[0].buttons === navigator.getGamepads()[0].buttons");
+        oldAxes = navigator.getGamepads()[0].axes;
+        oldButtons = navigator.getGamepads()[0].buttons;
+        // updates with the same values are skipped.
+        gamepadController.setAxisCount(0, 2);
+        gamepadController.setButtonCount(0, 2);
+        shouldBeTrue("navigator.getGamepads()[0].axes === oldAxes");
+        shouldBeTrue("navigator.getGamepads()[0].buttons === oldButtons");
+        gamepadController.setAxisData(0, 0, .5);
+        gamepadController.setButtonData(0, 1, 0);
+        shouldBeTrue("navigator.getGamepads()[0].axes === oldAxes");
+        shouldBeTrue("navigator.getGamepads()[0].buttons === oldButtons");
+        // updates with different values are not skipped.
+        gamepadController.setAxisCount(0, 1);
+        gamepadController.setButtonCount(0, 1);
+        shouldBeFalse("navigator.getGamepads()[0].axes === oldAxes");
+        shouldBeFalse("navigator.getGamepads()[0].buttons === oldButtons");
+        oldAxes = navigator.getGamepads()[0].axes;
+        oldButtons = navigator.getGamepads()[0].buttons;
+        shouldBeTrue("navigator.getGamepads()[0].axes === oldAxes");
+        shouldBeTrue("navigator.getGamepads()[0].buttons === oldButtons");
+        gamepadController.setAxisData(0, 0, .9);
+        gamepadController.setButtonData(0, 0, .3);
+        shouldBeFalse("navigator.getGamepads()[0].axes === oldAxes");
+        shouldBeFalse("navigator.getGamepads()[0].buttons === oldButtons");
+    }
+    else
+    {
+        console.log("FAIL: no gamepadController available.")
+    }
+</script>
+<p>Typical polling access to gamepads contents.</p>
+</body>

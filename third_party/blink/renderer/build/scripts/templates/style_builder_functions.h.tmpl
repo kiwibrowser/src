@@ -1,0 +1,35 @@
+{% from 'templates/macros.tmpl' import license, source_files_for_generated_file %}
+{{license()}}
+
+{{source_files_for_generated_file(template_file, input_files)}}
+
+#ifndef BLINK_CORE_STYLE_BUILDER_FUNCTIONS_H_
+#define BLINK_CORE_STYLE_BUILDER_FUNCTIONS_H_
+
+#include "third_party/blink/renderer/core/css/resolver/style_builder_converter.h"
+
+namespace blink {
+
+class CSSValue;
+class StyleResolverState;
+
+// TODO(crbug.com/751354): Delete this class once all StyleBuilderFunctions
+// have been moved to property classes.
+class StyleBuilderFunctions {
+ public:
+
+  {% for property in properties if property.should_declare_functions
+      and not property.use_property_class_in_stylebuilder %}
+  static void applyInitial{{property.property_id}}(StyleResolverState&);
+  static void applyInherit{{property.property_id}}(StyleResolverState&);
+  static void applyValue{{property.property_id}}(StyleResolverState&, const CSSValue&);
+
+  {% endfor %}
+
+  static void applyValueCSSPropertyVariable(StyleResolverState&,
+                                            const CSSValue&);
+};
+
+}  // namespace blink
+
+#endif  // BLINK_CORE_STYLE_BUILDER_FUNCTIONS_H_

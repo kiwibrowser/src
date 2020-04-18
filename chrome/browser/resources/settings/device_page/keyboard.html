@@ -1,0 +1,121 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/html/cr.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-collapse/iron-collapse.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="../controls/settings_dropdown_menu.html">
+<link rel="import" href="../controls/settings_slider.html">
+<link rel="import" href="../controls/settings_toggle_button.html">
+<link rel="import" href="../i18n_setup.html">
+<link rel="import" href="../route.html">
+<link rel="import" href="../settings_shared_css.html">
+
+<dom-module id="settings-keyboard">
+  <template>
+    <style include="settings-shared"></style>
+    <div class="settings-box first">
+      <div class="start">$i18n{keyboardKeySearch}</div>
+      <settings-dropdown-menu label="$i18n{keyboardKeySearch}"
+          pref="{{prefs.settings.language.xkb_remap_search_key_to}}"
+          menu-options="[[keyMapTargets_]]">
+      </settings-dropdown-menu>
+    </div>
+    <div class="settings-box">
+      <div class="start">$i18n{keyboardKeyCtrl}</div>
+      <settings-dropdown-menu label="$i18n{keyboardKeyCtrl}"
+          pref="{{prefs.settings.language.xkb_remap_control_key_to}}"
+          menu-options="[[keyMapTargets_]]">
+      </settings-dropdown-menu>
+    </div>
+    <div class="settings-box">
+      <div class="start">$i18n{keyboardKeyAlt}</div>
+      <settings-dropdown-menu label="$i18n{keyboardKeyAlt}"
+          pref="{{prefs.settings.language.xkb_remap_alt_key_to}}"
+          menu-options="[[keyMapTargets_]]">
+      </settings-dropdown-menu>
+    </div>
+    <template is="dom-if" if="[[showCapsLock_]]">
+      <div class="settings-box" id="capsLockKey">
+        <div class="start">$i18n{keyboardKeyCapsLock}</div>
+        <settings-dropdown-menu label="$i18n{keyboardKeyCapsLock}"
+            pref="{{prefs.settings.language.remap_caps_lock_key_to}}"
+            menu-options="[[keyMapTargets_]]">
+        </settings-dropdown-menu>
+      </div>
+    </template>
+    <template is="dom-if" if="[[showDiamondKey_]]">
+      <div class="settings-box" id="diamondKey">
+        <div class="start">$i18n{keyboardKeyDiamond}</div>
+        <settings-dropdown-menu label="$i18n{keyboardKeyDiamond}"
+            pref="{{prefs.settings.language.remap_diamond_key_to}}"
+            menu-options="[[keyMapTargets_]]">
+        </settings-dropdown-menu>
+      </div>
+    </template>
+    <div class="settings-box">
+      <div class="start">$i18n{keyboardKeyEscape}</div>
+      <settings-dropdown-menu label="$i18n{keyboardKeyEscape}"
+          pref="{{prefs.settings.language.remap_escape_key_to}}"
+          menu-options="[[keyMapTargets_]]">
+      </settings-dropdown-menu>
+    </div>
+    <div class="settings-box">
+      <div class="start">$i18n{keyboardKeyBackspace}</div>
+      <settings-dropdown-menu label="$i18n{keyboardKeyBackspace}"
+          pref="{{prefs.settings.language.remap_backspace_key_to}}"
+          menu-options="[[keyMapTargets_]]">
+      </settings-dropdown-menu>
+    </div>
+    <settings-toggle-button
+        pref="{{prefs.settings.language.send_function_keys}}"
+        label="$i18n{keyboardSendFunctionKeys}"
+        sub-label="$i18n{keyboardSendFunctionKeysDescription}">
+    </settings-toggle-button>
+    <settings-toggle-button
+        pref="{{prefs.settings.language.xkb_auto_repeat_enabled_r2}}"
+        label="$i18n{keyboardEnableAutoRepeat}">
+    </settings-toggle-button>
+    <iron-collapse
+        opened="[[prefs.settings.language.xkb_auto_repeat_enabled_r2.value]]">
+      <div class="settings-box continuation embedded">
+        <div class="start" id="repeatDelayLabel">$i18n{keyRepeatDelay}</div>
+        <settings-slider id="delaySlider"
+            pref="{{prefs.settings.language.xkb_auto_repeat_delay_r2}}"
+            tick-values="[[autoRepeatDelays_]]"
+            disabled="[[
+                !prefs.settings.language.xkb_auto_repeat_enabled_r2.value]]"
+            aria-labelledby="repeatDelayLabel"
+            label-min="$i18n{keyRepeatDelayLong}"
+            label-max="$i18n{keyRepeatDelayShort}">
+        </settings-slider>
+      </div>
+      <div class="settings-box continuation embedded">
+        <div class="start" id="repeatRateLabel">$i18n{keyRepeatRate}</div>
+        <settings-slider id="repeatRateSlider"
+            pref="{{
+                prefs.settings.language.xkb_auto_repeat_interval_r2}}"
+            tick-values="[[autoRepeatIntervals_]]"
+            disabled="[[
+                !prefs.settings.language.xkb_auto_repeat_enabled_r2.value]]"
+            aria-labelledby="repeatRateLabel"
+            label-min="$i18n{keyRepeatRateSlow}"
+            label-max="$i18n{keyRepeatRateFast}">
+        </settings-slider>
+      </div>
+    </iron-collapse>
+    <div id="keyboardOverlay" class="settings-box"
+        on-click="onShowKeyboardShortcutsOverlayTap_" actionable>
+      <div class="start">$i18n{showKeyboardShortcutsOverlay}</div>
+      <paper-icon-button-light class="icon-external">
+        <button aria-label="$i18n{showKeyboardShortcutsOverlay}"></button>
+      </paper-icon-button-light>
+    </div>
+    <div class="settings-box" on-click="onShowLanguageInputTap_" actionable>
+      <div class="start">$i18n{keyboardShowLanguageAndInput}</div>
+      <paper-icon-button-light class="subpage-arrow">
+        <button aria-label="$i18n{keyboardShowLanguageAndInput}"></button>
+      </paper-icon-button-light>
+    </div>
+  </template>
+  <script src="keyboard.js"></script>
+</dom-module>

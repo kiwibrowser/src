@@ -1,0 +1,58 @@
+# -*- python -*-
+# Copyright 2008 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# There is no stat64 in newlib
+if not env.Bit('nacl_glibc'):
+  Return()
+
+test_stat_nexe = env.ComponentProgram('test_stat', 'test_stat.c')
+
+test_stat = env.CommandSelLdrTestNacl(
+    'test_stat.out',
+     test_stat_nexe,
+     args=[env.File('test_stat_data')])
+
+env.AddNodeToTestSuite(test_stat, ['small_tests'], 'run_stat_test')
+
+test_fstat_nexe = env.ComponentProgram('test_fstat', 'test_fstat.c')
+
+test_fstat = env.CommandSelLdrTestNacl(
+    'test_fstat.out',
+    test_fstat_nexe,
+    args=[env.File('test_stat_data')],
+    stdout_golden=env.File('test_fstat.stdout'))
+
+env.AddNodeToTestSuite(test_fstat, ['small_tests'], 'run_fstat_test')
+
+test_dir_nexe = env.ComponentProgram('test_dir', 'test_dir.c')
+
+test_dir = env.CommandSelLdrTestNacl(
+    'test_dir.out',
+    test_dir_nexe,
+    args=[test_dir_nexe.path.rstrip('test_dir${PROGSUFFIX}')])
+
+# TODO(bsy): This is broken because sel_ldr's getdents() syscall
+# expects "struct nacl_abi_dirent" to match up with the kernel's
+# "struct dirent" on Linux, and this no longer the case.
+# See http://code.google.com/p/nativeclient/issues/detail?id=1253
+env.AddNodeToTestSuite(test_dir, ['small_tests'], 'run_dir_test',
+                       is_broken=True)
+
+test_time_nexe = env.ComponentProgram('test_time', 'test_time.c')
+
+test_time = env.CommandSelLdrTestNacl('test_time.out', test_time_nexe)
+
+env.AddNodeToTestSuite(test_time, ['small_tests'], 'run_time_test')
+
+test_rewind_nexe = env.ComponentProgram('test_rewind', 'test_rewind.c')
+
+test_rewind = env.CommandSelLdrTestNacl(
+    'test_rewind.out',
+    test_rewind_nexe,
+    args=[env.File('test_rewind_data')])
+
+env.AddNodeToTestSuite(test_rewind, ['small_tests'], 'run_rewind_test')

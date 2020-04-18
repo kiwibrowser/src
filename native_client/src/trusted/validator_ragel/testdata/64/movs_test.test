@@ -1,0 +1,71 @@
+@hex:
+  # Test that we correctly check both implicit arguments to movsb
+  
+  89 f6 \\
+  49 8d 34 37 \\
+  89 ff \\
+  49 8d 3c 3f \\
+  a4
+@dis:
+     0:	89 f6                                        	mov    %esi,%esi
+     2:	49 8d 34 37                                  	lea    (%r15,%rsi,1),%rsi
+     6:	89 ff                                        	mov    %edi,%edi
+     8:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     c:	a4                                           	movsb  %ds:(%rsi),%es:(%rdi)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  90 90 90 90 90 90 90 90
+  90 90 90 90 90 90 90 90
+  90 90 90 90 90 90 90 90
+  90 90 90 90 90 90
+  
+  89 f6
+  49 8d 34 37
+  89 ff
+  49 8d 3c 3f
+  a4
+@dis:
+     0:	90                                           	nop
+     1:	90                                           	nop
+     2:	90                                           	nop
+     3:	90                                           	nop
+     4:	90                                           	nop
+     5:	90                                           	nop
+     6:	90                                           	nop
+     7:	90                                           	nop
+     8:	90                                           	nop
+     9:	90                                           	nop
+     a:	90                                           	nop
+     b:	90                                           	nop
+     c:	90                                           	nop
+     d:	90                                           	nop
+     e:	90                                           	nop
+     f:	90                                           	nop
+    10:	90                                           	nop
+    11:	90                                           	nop
+    12:	90                                           	nop
+    13:	90                                           	nop
+    14:	90                                           	nop
+    15:	90                                           	nop
+    16:	90                                           	nop
+    17:	90                                           	nop
+    18:	90                                           	nop
+    19:	90                                           	nop
+    1a:	90                                           	nop
+    1b:	90                                           	nop
+    1c:	90                                           	nop
+    1d:	90                                           	nop
+    1e:	89 f6                                        	mov    %esi,%esi
+    20:	49 8d 34 37                                  	lea    (%r15,%rsi,1),%rsi
+    24:	89 ff                                        	mov    %edi,%edi
+    26:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+    2a:	a4                                           	movsb  %ds:(%rsi),%es:(%rdi)
+@rdfa_output:
+  2a: unrecognized instruction
+  return code: 1
+@spec:
+  1e: superinstruction crosses bundle boundary

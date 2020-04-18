@@ -1,0 +1,89 @@
+/* Copyright 2013 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file. */
+
+/* Derived from /ui/webui/resources/css/menu.css. */
+
+cr-menu {
+  position: fixed;
+  white-space: nowrap;
+  z-index: 3;
+}
+
+cr-menu:not(.decorated) {
+  display: none;
+}
+
+cr-menu > * {
+  box-sizing: border-box;
+  display: block;
+  text-align: start;
+  width: 100%;
+}
+
+cr-menu > hr {
+  border: 0;
+  height: 1px;
+}
+
+cr-menu > [hidden] {
+  display: none;
+}
+
+cr-menu > [shortcutText]::after {
+  -webkit-padding-start: 30px;
+  color: rgb(100, 100, 100);
+  content: attr(shortcutText);
+  float: right;
+}
+
+html[dir='rtl'] cr-menu > [shortcutText]::after {
+  float: left;
+}
+
+/* Keeps menu visibile while animating. Fade out animation is performed by
+   Javascript. */
+cr-menu[hidden].files-menu.animating {
+  opacity: 1;
+  visibility: visible;
+}
+
+cr-menu.files-menu > cr-menu-item {
+  background-size: 16px 16px;
+  position: relative;
+}
+
+/* Icon on the left of the item label for cr.ui.FilesMenuItem.
+   TODO(mtomasz): Upstream to cr.ui.MenuItem. */
+cr-menu.files-menu.has-icon-start cr-menu-item .icon.start {
+  -webkit-margin-end: 8px;
+  background-repeat: no-repeat;
+  background-position: center;
+  display: inline-block;
+  height: 16px;
+  vertical-align: middle;
+  width: 16px;
+}
+
+cr-menu.files-menu:not(.has-icon-start) cr-menu-item .icon.start {
+  display: none;
+}
+
+cr-menu.files-menu > cr-menu-item > .icon {
+  position: relative;
+  z-index: 1;
+}
+
+cr-menu.files-menu > cr-menu-item > span {
+  position: relative;
+  vertical-align: middle;
+  z-index: 1;
+}
+
+/* Make ripple size wider to make the animation speed faster since paper-ripple
+   doesn't allow us to change its animation speed. */
+cr-menu.files-menu > cr-menu-item > paper-ripple {
+  left: -25%;
+  width: 150%;
+  z-index: 0;
+}

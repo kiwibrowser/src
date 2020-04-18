@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="resources/fake-vr-displays.js"></script>
+<script src="file:///gen/layout_test_data/mojo/public/js/mojo_bindings.js"></script>
+<script src="file:///gen/device/vr/public/mojom/vr_service.mojom.js"></script>
+<script src="resources/mock-vr-service.js"></script>
+<canvas id="webgl-canvas"></canvas>
+<script src="resources/presentation-setup.js"></script>
+<script>
+let fakeDisplays = fakeVRDisplays();
+
+vr_test( (t, mockService) => {
+  let watcherDone = new Event("watcherdone");
+  let eventWatcher = new EventWatcher(t, window, ["vrdisplayactivate",
+                                                  "watcherdone"]);
+  eventWatcher.wait_for(["vrdisplayactivate",
+                         "watcherdone"])
+    .then( () => {
+      t.done();
+    });
+
+  return navigator.getVRDisplays().then( (displays) => {
+    var display = displays[0];
+
+    function onDisplayActivate() {
+      display.requestPresent([{source: webglCanvas}]).then( () => {
+        window.dispatchEvent(watcherDone);
+      }, (err) => {
+        t.step( () => {
+          assert_unreached(err);
+        }, "requestPresent rejected");
+        t.done();
+      });
+    }
+    window.addEventListener("vrdisplayactivate", onDisplayActivate, false);
+    mockService.mockVRDisplays_[0].forceActivate(2 /*Display mounted, although any int 0-3 is valid*/);
+
+  }, (err) => {
+    t.step( () => {
+      assert_unreached(err);
+    }, "getVRDisplays rejected");
+    t.done();
+  });
+}, [fakeDisplays["Pixel"]],
+"Test vrdisplayactivate fires when display activates and resulting event can be used to present");
+
+</script>

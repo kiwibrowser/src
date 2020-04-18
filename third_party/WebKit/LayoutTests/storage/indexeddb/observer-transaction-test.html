@@ -1,0 +1,49 @@
+<html>
+<title>IndexedDB: Observer Constructor Tests</title>
+<meta name=timeout content=long>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="resources/testharness-helpers.js"></script>
+<script>
+
+indexeddb_test(function(t, db) {
+  db.createObjectStore("store");
+}, function(t, db) {
+  var kKey = 'key';
+  var kNumIters = 20;
+  var callback_number = 1;
+
+  var callbackFunction = function(changes) {
+    assert_true(changes.records.has('store'), "Store not in changes");
+    // Read the value using the transaction.
+    var os = changes.transaction.objectStore('store');
+    var req = os.get(kKey);
+    var expected_value = callback_number;
+    callback_number++;
+    req.onsuccess = t.step_func(function() {
+      assert_equals(req.result, expected_value);
+      if (req.result == kNumIters) {
+        t.done();
+      }
+    });
+  }
+
+  var obs = new IDBObserver(callbackFunction);
+  var txn = db.transaction(['store'], 'readonly');
+  obs.observe(db, txn, { transaction: true, operationTypes: ['put'] });
+
+  txn.oncomplete = t.step_func(function() {
+    var name_dict = {
+      db_name: db.name,
+      num_iters: kNumIters,
+      incrementing_actions: true,
+      key: kKey
+    };
+    var hash_string = encodeURIComponent(JSON.stringify(name_dict));
+    var url = 'resources/observer-actions.js#' + hash_string;
+    new Worker(url);
+  });
+}, 'IndexedDB Observers: Transaction data consistancy.');
+
+</script>
+</html>

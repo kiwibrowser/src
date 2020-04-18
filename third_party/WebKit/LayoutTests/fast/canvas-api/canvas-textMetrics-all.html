@@ -1,0 +1,90 @@
+<!DOCTYPE HTML>
+<head>
+<style>
+@font-face {
+  font-family: Libertine;
+  src: url('../../third_party/Libertine/LinLibertine_R.woff');
+}
+</style>
+</head>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script>
+function testTextMetrics(textMetrics, expected)
+{
+    var w  = textMetrics.width;
+    var ab = textMetrics.alphabeticBaseline;
+    var hb = textMetrics.hangingBaseline;
+    var ib = textMetrics.ideographicBaseline;
+    var fa = textMetrics.fontBoundingBoxAscent;
+    var fd = textMetrics.fontBoundingBoxDescent;
+    var ea = textMetrics.emHeightAscent;
+    var ed = textMetrics.emHeightDescent;
+    var lb = textMetrics.actualBoundingBoxLeft;
+    var rb = textMetrics.actualBoundingBoxRight;
+    var aa = textMetrics.actualBoundingBoxAscent;
+    var ad = textMetrics.actualBoundingBoxDescent;
+
+    var epsilon = 2;
+    assert_approx_equals(w,  expected[0], epsilon, "testing width");
+    assert_approx_equals(ab, expected[1], epsilon, "testing alphabeticBaseline");
+    assert_approx_equals(hb, expected[2], epsilon, "testing hangingBaseline");
+    assert_approx_equals(ib, expected[3], epsilon, "testing ideographicBaseline");
+    assert_approx_equals(fa, expected[4], epsilon, "testing fontBoundingBoxAscent");
+    assert_approx_equals(fd, expected[5], epsilon, "testing fontBoundingBoxDescent");
+    assert_approx_equals(ea, expected[6], epsilon, "testing emHeightAscent");
+    assert_approx_equals(ed, expected[7], epsilon, "testing emHeightDescent");
+    assert_approx_equals(lb, expected[8], epsilon, "testing actualBoundingBoxLeft");
+    assert_approx_equals(rb, expected[9], epsilon, "testing actualBoundingBoxRight");
+    assert_approx_equals(aa, expected[10], epsilon, "testing actualBoundingBoxAscent");
+    assert_approx_equals(ad, expected[11], epsilon, "testing actualBoundingBoxDescent");
+}
+
+function measureMetrics(ctx)
+{
+    var text = "Hello World";
+
+    ctx.textBaseline = "top";
+    var textMetrics = ctx.measureText(text);
+    var expected = [249, -44, -8.8, -57, 0, 57, 13, 44, -0, 249, -9, 46];
+    testTextMetrics(textMetrics, expected);
+
+    ctx.textBaseline = "hanging";
+    var textMetrics = ctx.measureText(text);
+    expected = [249, -35, 0.2, -48, 9, 48, 22, 35, -0, 249, 0, 37];
+    testTextMetrics(textMetrics, expected);
+
+    ctx.textBaseline = "middle";
+    var textMetrics = ctx.measureText(text);
+    expected = [249, -15, 20.2, -28, 29, 28, 42, 15, -0, 249, 20, 17];
+    testTextMetrics(textMetrics, expected);
+
+    ctx.textBaseline = "alphabetic";
+    var textMetrics = ctx.measureText(text);
+    expected = [249, -0, 35.2, -13, 44, 13, 57, 0, -0, 249, 35, 2];
+    testTextMetrics(textMetrics, expected);
+
+    ctx.textBaseline = "ideographic";
+    var textMetrics = ctx.measureText(text);
+    expected = [249, 13, 48.2, 0, 57, 0, 70, -13, -0, 249, 48, -11];
+    testTextMetrics(textMetrics, expected);
+
+    ctx.textBaseline = "bottom";
+    var textMetrics = ctx.measureText(text);
+    expected = [249, 13, 48.2, 0, 57, 0, 70, -13, -0, 249, 48, -11];
+    testTextMetrics(textMetrics, expected);
+}
+
+async_test(t => {
+    var canvas = document.createElement('canvas');
+    canvas.width = 100;
+    canvas.height = 100;
+    var ctx = canvas.getContext('2d');
+    ctx.font = '50px Libertine';
+    // Kick off loading of the font
+    ctx.fillText(" ", 0, 0);
+    document.fonts.addEventListener('loadingdone', t.step_func_done(function() {
+        measureMetrics(ctx);
+    }));
+}, "Test all attributes of TextMetrics.");
+</script>

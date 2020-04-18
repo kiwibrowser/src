@@ -1,0 +1,454 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "ui/wm/core/transient_window_manager.h"
+
+#include <utility>
+
+#include "base/macros.h"
+#include "ui/aura/client/window_parenting_client.h"
+#include "ui/aura/test/aura_test_base.h"
+#include "ui/aura/test/test_windows.h"
+#include "ui/aura/window.h"
+#include "ui/aura/window_observer.h"
+#include "ui/wm/core/transient_window_observer.h"
+#include "ui/wm/core/window_util.h"
+
+using aura::Window;
+
+using aura::test::ChildWindowIDsAsString;
+using aura::test::CreateTestWindowWithId;
+
+namespace wm {
+
+class TestTransientWindowObserver : public TransientWindowObserver {
+ public:
+  TestTransientWindowObserver() : add_count_(0), remove_count_(0) {
+  }
+
+  ~TestTransientWindowObserver() override {}
+
+  int add_count() const { return add_count_; }
+  int remove_count() const { return remove_count_; }
+
+  // TransientWindowObserver overrides:
+  void OnTransientChildAdded(Window* window, Window* transient) override {
+    add_count_++;
+  }
+  void OnTransientChildRemoved(Window* window, Window* transient) override {
+    remove_count_++;
+  }
+
+ private:
+  int add_count_;
+  int remove_count_;
+
+  DISALLOW_COPY_AND_ASSIGN(TestTransientWindowObserver);
+};
+
+class WindowVisibilityObserver : public aura::WindowObserver {
+ public:
+  WindowVisibilityObserver(Window* observed_window,
+                           std::unique_ptr<Window> owned_window)
+      : observed_window_(observed_window),
+        owned_window_(std::move(owned_window)) {
+    observed_window_->AddObserver(this);
+  }
+  ~WindowVisibilityObserver() override {
+    observed_window_->RemoveObserver(this);
+  }
+
+  void OnWindowVisibilityChanged(Window* window, bool visible) override {
+    owned_window_.reset();
+  }
+ private:
+  Window* observed_window_;
+  std::unique_ptr<Window> owned_window_;
+
+  DISALLOW_COPY_AND_ASSIGN(WindowVisibilityObserver);
+};
+
+class TransientWindowManagerTest : public aura::test::AuraTestBase {
+ public:
+  TransientWindowManagerTest() {}
+  ~TransientWindowManagerTest() override {}
+
+ protected:
+  // Creates a transient window that is transient to |parent|.
+  Window* CreateTransientChild(int id, Window* parent) {
+    Window* window = new Window(NULL);
+    window->set_id(id);
+    window->SetType(aura::client::WINDOW_TYPE_NORMAL);
+    window->Init(ui::LAYER_TEXTURED);
+    AddTransientChild(parent, window);
+    aura::client::ParentWindowWithContext(window, root_window(), gfx::Rect());
+    return window;
+  }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(TransientWindowManagerTest);
+};
+
+// Various assertions for transient children.
+TEST_F(TransientWindowManagerTest, TransientChildren) {
+  std::unique_ptr<Window> parent(CreateTestWindowWithId(0, root_window()));
+  std::unique_ptr<Window> w1(CreateTestWindowWithId(1, parent.get()));
+  std::unique_ptr<Window> w3(CreateTestWindowWithId(3, parent.get()));
+  Window* w2 = CreateTestWindowWithId(2, parent.get());
+  // w2 is now owned by w1.
+  AddTransientChild(w1.get(), w2);
+  // Stack w1 at the top (end), this should force w2 to be last (on top of w1).
+  parent->StackChildAtTop(w1.get());
+  ASSERT_EQ(3u, parent->children().size());
+  EXPECT_EQ(w2, parent->children().back());
+
+  // Destroy w1, which should also destroy w3 (since it's a transient child).
+  w1.reset();
+  w2 = NULL;
+  ASSERT_EQ(1u, parent->children().size());
+  EXPECT_EQ(w3.get(), parent->children()[0]);
+
+  w1.reset(CreateTestWindowWithId(4, parent.get()));
+  w2 = CreateTestWindowWithId(5, w3.get());
+  AddTransientChild(w1.get(), w2);
+  parent->StackChildAtTop(w3.get());
+  // Stack w1 at the top (end), this shouldn't affect w2 since it has a
+  // different parent.
+  parent->StackChildAtTop(w1.get());
+  ASSERT_EQ(2u, parent->children().size());
+  EXPECT_EQ(w3.get(), parent->children()[0]);
+  EXPECT_EQ(w1.get(), parent->children()[1]);
+
+  // Hiding parent should hide transient children.
+  EXPECT_TRUE(w2->IsVisible());
+  w1->Hide();
+  EXPECT_FALSE(w2->IsVisible());
+
+  // And they should stay hidden even after the parent became visible.
+  w1->Show();
+  EXPECT_FALSE(w2->IsVisible());
+
+  // Hidden transient child should stay hidden regardless of
+  // parent's visibility.
+  w2->Hide();
+  EXPECT_FALSE(w2->IsVisible());
+  w1->Hide();
+  EXPECT_FALSE(w2->IsVisible());
+  w1->Show();
+  EXPECT_FALSE(w2->IsVisible());
+
+  // Transient child can be shown even if the transient parent is hidden.
+  w1->Hide();
+  EXPECT_FALSE(w2->IsVisible());
+  w2->Show();
+  EXPECT_TRUE(w2->IsVisible());
+  w1->Show();
+  EXPECT_TRUE(w2->IsVisible());
+
+  // When the parent_controls_visibility is true, TransientWindowManager
+  // controls the children's visibility. It stays invisible even if
+  // Window::Show() is called, and gets shown when the parent becomes visible.
+  wm::TransientWindowManager::GetOrCreate(w2)->set_parent_controls_visibility(
+      true);
+  w1->Hide();
+  EXPECT_FALSE(w2->IsVisible());
+  w2->Show();
+  EXPECT_FALSE(w2->IsVisible());
+  w1->Show();
+  EXPECT_TRUE(w2->IsVisible());
+
+  // Hiding a transient child that is hidden by the transient parent
+  // is not currently handled and will be shown anyway.
+  w1->Hide();
+  EXPECT_FALSE(w2->IsVisible());
+  w2->Hide();
+  EXPECT_FALSE(w2->IsVisible());
+  w1->Show();
+  EXPECT_TRUE(w2->IsVisible());
+}
+
+// Tests that transient children are stacked as a unit when using stack above.
+TEST_F(TransientWindowManagerTest, TransientChildrenGroupAbove) {
+  std::unique_ptr<Window> parent(CreateTestWindowWithId(0, root_window()));
+  std::unique_ptr<Window> w1(CreateTestWindowWithId(1, parent.get()));
+  Window* w11 = CreateTestWindowWithId(11, parent.get());
+  std::unique_ptr<Window> w2(CreateTestWindowWithId(2, parent.get()));
+  Window* w21 = CreateTestWindowWithId(21, parent.get());
+  Window* w211 = CreateTestWindowWithId(211, parent.get());
+  Window* w212 = CreateTestWindowWithId(212, parent.get());
+  Window* w213 = CreateTestWindowWithId(213, parent.get());
+  Window* w22 = CreateTestWindowWithId(22, parent.get());
+  ASSERT_EQ(8u, parent->children().size());
+
+  // w11 is now owned by w1.
+  AddTransientChild(w1.get(), w11);
+  // w21 is now owned by w2.
+  AddTransientChild(w2.get(), w21);
+  // w22 is now owned by w2.
+  AddTransientChild(w2.get(), w22);
+  // w211 is now owned by w21.
+  AddTransientChild(w21, w211);
+  // w212 is now owned by w21.
+  AddTransientChild(w21, w212);
+  // w213 is now owned by w21.
+  AddTransientChild(w21, w213);
+  EXPECT_EQ("1 11 2 21 211 212 213 22", ChildWindowIDsAsString(parent.get()));
+
+  // Stack w1 at the top (end), this should force w11 to be last (on top of w1).
+  parent->StackChildAtTop(w1.get());
+  EXPECT_EQ(w11, parent->children().back());
+  EXPECT_EQ("2 21 211 212 213 22 1 11", ChildWindowIDsAsString(parent.get()));
+
+  // This tests that the order in children_ array rather than in
+  // transient_children_ array is used when reinserting transient children.
+  // If transient_children_ array was used '22' would be following '21'.
+  parent->StackChildAtTop(w2.get());
+  EXPECT_EQ(w22, parent->children().back());
+  EXPECT_EQ("1 11 2 21 211 212 213 22", ChildWindowIDsAsString(parent.get()));
+
+  parent->StackChildAbove(w11, w2.get());
+  EXPECT_EQ(w11, parent->children().back());
+  EXPECT_EQ("2 21 211 212 213 22 1 11", ChildWindowIDsAsString(parent.get()));
+
+  parent->StackChildAbove(w21, w1.get());
+  EXPECT_EQ(w22, parent->children().back());
+  EXPECT_EQ("1 11 2 21 211 212 213 22", ChildWindowIDsAsString(parent.get()));
+
+  parent->StackChildAbove(w21, w22);
+  EXPECT_EQ(w213, parent->children().back());
+  EXPECT_EQ("1 11 2 22 21 211 212 213", ChildWindowIDsAsString(parent.get()));
+
+  parent->StackChildAbove(w11, w21);
+  EXPECT_EQ(w11, parent->children().back());
+  EXPECT_EQ("2 22 21 211 212 213 1 11", ChildWindowIDsAsString(parent.get()));
+
+  parent->StackChildAbove(w213, w21);
+  EXPECT_EQ(w11, parent->children().back());
+  EXPECT_EQ("2 22 21 213 211 212 1 11", ChildWindowIDsAsString(parent.get()));
+
+  // No change when stacking a transient parent above its transient child.
+  parent->StackChildAbove(w21, w211);
+  EXPECT_EQ(w11, parent->children().back());
+  EXPECT_EQ("2 22 21 213 211 212 1 11", ChildWindowIDsAsString(parent.get()));
+
+  // This tests that the order in children_ array rather than in
+  // transient_children_ array is used when reinserting transient children.
+  // If transient_children_ array was used '22' would be following '21'.
+  parent->StackChildAbove(w2.get(), w1.get());
+  EXPECT_EQ(w212, parent->children().back());
+  EXPECT_EQ("1 11 2 22 21 213 211 212", ChildWindowIDsAsString(parent.get()));
+
+  parent->StackChildAbove(w11, w213);
+  EXPECT_EQ(w11, parent->children().back());
+  EXPECT_EQ("2 22 21 213 211 212 1 11", ChildWindowIDsAsString(parent.get()));
+}
+
+// Tests that transient children are stacked as a unit when using stack below.
+TEST_F(TransientWindowManagerTest, TransientChildrenGroupBelow) {
+  std::unique_ptr<Window> parent(CreateTestWindowWithId(0, root_window()));
+  std::unique_ptr<Window> w1(CreateTestWindowWithId(1, parent.get()));
+  Window* w11 = CreateTestWindowWithId(11, parent.get());
+  std::unique_ptr<Window> w2(CreateTestWindowWithId(2, parent.get()));
+  Window* w21 = CreateTestWindowWithId(21, parent.get());
+  Window* w211 = CreateTestWindowWithId(211, parent.get());
+  Window* w212 = CreateTestWindowWithId(212, parent.get());
+  Window* w213 = CreateTestWindowWithId(213, parent.get());
+  Window* w22 = CreateTestWindowWithId(22, parent.get());
+  ASSERT_EQ(8u, parent->children().size());
+
+  // w11 is now owned by w1.
+  AddTransientChild(w1.get(), w11);
+  // w21 is now owned by w2.
+  AddTransientChild(w2.get(), w21);
+  // w22 is now owned by w2.
+  AddTransientChild(w2.get(), w22);
+  // w211 is now owned by w21.
+  AddTransientChild(w21, w211);
+  // w212 is now owned by w21.
+  AddTransientChild(w21, w212);
+  // w213 is now owned by w21.
+  AddTransientChild(w21, w213);
+  EXPECT_EQ("1 11 2 21 211 212 213 22", ChildWindowIDsAsString(parent.get()));
+
+  // Stack w2 at the bottom, this should force w11 to be last (on top of w1).
+  // This also tests that the order in children_ array rather than in
+  // transient_children_ array is used when reinserting transient children.
+  // If transient_children_ array was used '22' would be following '21'.
+  parent->StackChildAtBottom(w2.get());
+  EXPECT_EQ(w11, parent->children().back());
+  EXPECT_EQ("2 21 211 212 213 22 1 11", ChildWindowIDsAsString(parent.get()));
+
+  parent->StackChildAtBottom(w1.get());
+  EXPECT_EQ(w22, parent->children().back());
+  EXPECT_EQ("1 11 2 21 211 212 213 22", ChildWindowIDsAsString(parent.get()));
+
+  parent->StackChildBelow(w21, w1.get());
+  EXPECT_EQ(w11, parent->children().back());
+  EXPECT_EQ("2 21 211 212 213 22 1 11", ChildWindowIDsAsString(parent.get()));
+
+  parent->StackChildBelow(w11, w2.get());
+  EXPECT_EQ(w22, parent->children().back());
+  EXPECT_EQ("1 11 2 21 211 212 213 22", ChildWindowIDsAsString(parent.get()));
+
+  parent->StackChildBelow(w22, w21);
+  EXPECT_EQ(w213, parent->children().back());
+  EXPECT_EQ("1 11 2 22 21 211 212 213", ChildWindowIDsAsString(parent.get()));
+
+  parent->StackChildBelow(w21, w11);
+  EXPECT_EQ(w11, parent->children().back());
+  EXPECT_EQ("2 22 21 211 212 213 1 11", ChildWindowIDsAsString(parent.get()));
+
+  parent->StackChildBelow(w213, w211);
+  EXPECT_EQ(w11, parent->children().back());
+  EXPECT_EQ("2 22 21 213 211 212 1 11", ChildWindowIDsAsString(parent.get()));
+
+  // No change when stacking a transient parent below its transient child.
+  parent->StackChildBelow(w21, w211);
+  EXPECT_EQ(w11, parent->children().back());
+  EXPECT_EQ("2 22 21 213 211 212 1 11", ChildWindowIDsAsString(parent.get()));
+
+  parent->StackChildBelow(w1.get(), w2.get());
+  EXPECT_EQ(w212, parent->children().back());
+  EXPECT_EQ("1 11 2 22 21 213 211 212", ChildWindowIDsAsString(parent.get()));
+
+  parent->StackChildBelow(w213, w11);
+  EXPECT_EQ(w11, parent->children().back());
+  EXPECT_EQ("2 22 21 213 211 212 1 11", ChildWindowIDsAsString(parent.get()));
+}
+
+// Tests that transient windows are stacked properly when created.
+TEST_F(TransientWindowManagerTest, StackUponCreation) {
+  std::unique_ptr<Window> window0(CreateTestWindowWithId(0, root_window()));
+  std::unique_ptr<Window> window1(CreateTestWindowWithId(1, root_window()));
+
+  std::unique_ptr<Window> window2(CreateTransientChild(2, window0.get()));
+  EXPECT_EQ("0 2 1", ChildWindowIDsAsString(root_window()));
+}
+
+// Tests for a crash when window destroyed inside
+// UpdateTransientChildVisibility loop.
+TEST_F(TransientWindowManagerTest, CrashOnVisibilityChange) {
+  std::unique_ptr<Window> window1(CreateTransientChild(1, root_window()));
+  std::unique_ptr<Window> window2(CreateTransientChild(2, root_window()));
+  window1->Show();
+  window2->Show();
+
+  WindowVisibilityObserver visibility_observer(window1.get(),
+                                               std::move(window2));
+  root_window()->Hide();
+}
+// Tests that windows are restacked properly after a call to AddTransientChild()
+// or RemoveTransientChild().
+TEST_F(TransientWindowManagerTest, RestackUponAddOrRemoveTransientChild) {
+  std::unique_ptr<Window> windows[4];
+  for (int i = 0; i < 4; i++)
+    windows[i].reset(CreateTestWindowWithId(i, root_window()));
+  EXPECT_EQ("0 1 2 3", ChildWindowIDsAsString(root_window()));
+
+  AddTransientChild(windows[0].get(), windows[2].get());
+  EXPECT_EQ("0 2 1 3", ChildWindowIDsAsString(root_window()));
+
+  AddTransientChild(windows[0].get(), windows[3].get());
+  EXPECT_EQ("0 2 3 1", ChildWindowIDsAsString(root_window()));
+
+  RemoveTransientChild(windows[0].get(), windows[2].get());
+  EXPECT_EQ("0 3 2 1", ChildWindowIDsAsString(root_window()));
+
+  RemoveTransientChild(windows[0].get(), windows[3].get());
+  EXPECT_EQ("0 3 2 1", ChildWindowIDsAsString(root_window()));
+}
+
+namespace {
+
+// Used by NotifyDelegateAfterDeletingTransients. Adds a string to a vector when
+// OnWindowDestroyed() is invoked so that destruction order can be verified.
+class DestroyedTrackingDelegate : public aura::test::TestWindowDelegate {
+ public:
+  explicit DestroyedTrackingDelegate(const std::string& name,
+                                     std::vector<std::string>* results)
+      : name_(name),
+        results_(results) {}
+
+  void OnWindowDestroyed(aura::Window* window) override {
+    results_->push_back(name_);
+  }
+
+ private:
+  const std::string name_;
+  std::vector<std::string>* results_;
+
+  DISALLOW_COPY_AND_ASSIGN(DestroyedTrackingDelegate);
+};
+
+}  // namespace
+
+// Verifies the delegate is notified of destruction after transients are
+// destroyed.
+TEST_F(TransientWindowManagerTest, NotifyDelegateAfterDeletingTransients) {
+  std::vector<std::string> destruction_order;
+
+  DestroyedTrackingDelegate parent_delegate("parent", &destruction_order);
+  std::unique_ptr<Window> parent(new Window(&parent_delegate));
+  parent->Init(ui::LAYER_NOT_DRAWN);
+
+  DestroyedTrackingDelegate transient_delegate("transient", &destruction_order);
+  Window* transient = new Window(&transient_delegate);  // Owned by |parent|.
+  transient->Init(ui::LAYER_NOT_DRAWN);
+  AddTransientChild(parent.get(), transient);
+  parent.reset();
+
+  ASSERT_EQ(2u, destruction_order.size());
+  EXPECT_EQ("transient", destruction_order[0]);
+  EXPECT_EQ("parent", destruction_order[1]);
+}
+
+TEST_F(TransientWindowManagerTest,
+       StackTransientsLayersRelativeToOtherTransients) {
+  // Create a window with several transients, then a couple windows on top.
+  std::unique_ptr<Window> window1(CreateTestWindowWithId(1, root_window()));
+  std::unique_ptr<Window> window11(CreateTransientChild(11, window1.get()));
+  std::unique_ptr<Window> window12(CreateTransientChild(12, window1.get()));
+  std::unique_ptr<Window> window13(CreateTransientChild(13, window1.get()));
+
+  EXPECT_EQ("1 11 12 13", ChildWindowIDsAsString(root_window()));
+
+  // Stack 11 above 12.
+  root_window()->StackChildAbove(window11.get(), window12.get());
+  EXPECT_EQ("1 12 11 13", ChildWindowIDsAsString(root_window()));
+
+  // Stack 13 below 12.
+  root_window()->StackChildBelow(window13.get(), window12.get());
+  EXPECT_EQ("1 13 12 11", ChildWindowIDsAsString(root_window()));
+
+  // Stack 11 above 1.
+  root_window()->StackChildAbove(window11.get(), window1.get());
+  EXPECT_EQ("1 11 13 12", ChildWindowIDsAsString(root_window()));
+
+  // Stack 12 below 13.
+  root_window()->StackChildBelow(window12.get(), window13.get());
+  EXPECT_EQ("1 11 12 13", ChildWindowIDsAsString(root_window()));
+}
+
+// Verifies TransientWindowObserver is notified appropriately.
+TEST_F(TransientWindowManagerTest, TransientWindowObserverNotified) {
+  std::unique_ptr<Window> parent(CreateTestWindowWithId(0, root_window()));
+  std::unique_ptr<Window> w1(CreateTestWindowWithId(1, parent.get()));
+
+  TestTransientWindowObserver test_observer;
+  TransientWindowManager::GetOrCreate(parent.get())
+      ->AddObserver(&test_observer);
+
+  AddTransientChild(parent.get(), w1.get());
+  EXPECT_EQ(1, test_observer.add_count());
+  EXPECT_EQ(0, test_observer.remove_count());
+
+  RemoveTransientChild(parent.get(), w1.get());
+  EXPECT_EQ(1, test_observer.add_count());
+  EXPECT_EQ(1, test_observer.remove_count());
+
+  TransientWindowManager::GetOrCreate(parent.get())
+      ->RemoveObserver(&test_observer);
+}
+
+}  // namespace wm

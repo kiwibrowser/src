@@ -1,0 +1,65 @@
+# -*- python -*-
+#
+# Copyright (c) 2013 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+if not env.Bit('windows'):
+  epsilon = ['-d', '25']
+
+  nacl_file_lock_test_exe = env.ComponentProgram('nacl_file_lock_test',
+                                                 ['nacl_file_lock_test.c',
+                                                  'nacl_test_util_sexp.c',
+                                                  'nacl_test_util_repl.c'],
+                                                 EXTRA_LIBS=['platform'])
+
+  # Lambda functions are used below so that each test will get its own
+  # directory, so that files created within will not conflict should
+  # the tests be run in parallel.
+  for (param, modifier) in [(lambda: [], ''),
+                            (lambda:
+                             ['-D', env.MakeTempDir(prefix='file_lock')],
+                             '_real')]:
+
+    # 2 threads competing for 1 file; exercises the (all ...) special form
+    node = env.CommandTest(
+      'nacl_file_lock_all_special_form' + modifier + '_test.out',
+      [nacl_file_lock_test_exe] + param() + epsilon,
+      stdin=env.File('testdata/nacl_file_lock_all_special_form.txt'))
+
+    env.AddNodeToTestSuite(node, ['small_tests'],
+                           'run_nacl_file_lock_all' + modifier + '_test')
+
+    # 3 threads competing for 1 file; exercises the (any ...) special form
+    node = env.CommandTest(
+      'nacl_file_lock_any_special_form' + modifier + '_test.out',
+      [nacl_file_lock_test_exe] + param() + epsilon,
+      stdin=env.File('testdata/nacl_file_lock_any_special_form.txt'))
+
+    env.AddNodeToTestSuite(node, ['small_tests'],
+                           'run_nacl_file_lock_any' + modifier + '_test')
+
+    # 3 threads, 2 files, using the (any ...) form to accept two
+    # possible execution traces following the unlock due to lock
+    # contention by two threads.
+    node = env.CommandTest(
+      'nacl_file_lock_t3f2' + modifier + '_test.out',
+      [nacl_file_lock_test_exe] + param() + epsilon,
+      stdin=env.File('testdata/nacl_file_lock_3_threads_2_files.txt'))
+
+    env.AddNodeToTestSuite(node, ['small_tests'],
+                           'run_nacl_file_lock_t3f2' + modifier + '_test')
+
+    # 3 threads, 3 files, with locks being contended and ownership cycling
+    node = env.CommandTest(
+      'nacl_file_lock_t3f3' + modifier + '_test.out',
+      [nacl_file_lock_test_exe] + param() + epsilon,
+      stdin=env.File(
+        'testdata/nacl_file_lock_3_threads_3_files_rotation.txt'))
+
+    env.AddNodeToTestSuite(node, ['small_tests'],
+                           'run_nacl_file_lock_t3f3' + modifier + '_test')
+
+env.EnsureRequiredBuildWarnings()

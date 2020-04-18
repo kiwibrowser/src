@@ -1,0 +1,51 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import os
+
+Import('env')
+
+env.DualLibrary('gio',
+                ['gio.c',
+                 'gprintf.c',
+                 ])
+
+
+gtest_env = env.MakeGTestEnv()
+
+gtest_env.DualLibrary('gio_test', ['gio_test_base.cc'])
+
+gio_test_exe = gtest_env.ComponentProgram(
+    'gio_test',
+    ['gio_test.cc'],
+    EXTRA_LIBS=['gio', 'platform', 'gio_test'])
+
+# temp file will be removed by gio_test (if it compiles and test completes).
+temp_path = env.MakeEmptyFile(prefix='tmp_gio', suffix='.tmp')
+
+node = gtest_env.CommandTest(
+    'gio_test_output.xml.out',
+    command=[gio_test_exe,
+             '--gtest_output=xml:${TARGET}',
+             '-t', temp_path,
+   # Note: to regenerate the premade_text/binary_file, use "make_premade.py"
+             '-x', env.File('premade_text_file'),
+             '-b', env.File('premade_binary_file'),
+             ],
+    )
+gtest_env.AddNodeToTestSuite(node, ['small_tests'],
+    'run_gio_test')
+
+gprintf_test_exe = env.ComponentProgram(
+    'gprintf_test',
+    ['gprintf_test.c'],
+    EXTRA_LIBS=['gio'])
+
+node = env.CommandTest(
+    'gprintf_test.out',
+    command=[gprintf_test_exe],
+    stdout_golden=env.File('testdata/gprintf_test.stdout'))
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_gprintf_test')

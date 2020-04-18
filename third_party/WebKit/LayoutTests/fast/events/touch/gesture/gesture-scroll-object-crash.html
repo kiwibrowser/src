@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<style>
+#spacer {
+  height: 1000px;
+}
+#target {
+  width: 50px;
+  height: 50px;
+}
+</style>
+<object id=target></object>
+<div id=spacer></div>
+<script src="../../../../resources/js-test.js"></script>
+<script>
+description("Verifies that scrolling on top of a LayoutEmbeddedContent with null widget works and doesn't crash.");
+
+var sentEvents = false;
+
+onload = function() {
+    var target = document.getElementById('target');
+    var rect = target.getBoundingClientRect();
+    var targetX = rect.left + rect.width / 2;
+    var targetY = rect.top + rect.height / 2;
+    eventSender.gestureScrollBegin(targetX, targetY);
+    eventSender.gestureScrollUpdate(0, -20);
+    eventSender.gestureScrollEnd(0,0);
+    sentEvents = true;
+}
+
+window.addEventListener('scroll', function(e) {
+    shouldBeTrue('sentEvents');
+    setTimeout(finishJSTest, 0);
+});
+
+jsTestIsAsync = true;
+</script>

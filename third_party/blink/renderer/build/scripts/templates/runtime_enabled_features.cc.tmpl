@@ -1,0 +1,68 @@
+{% from 'templates/macros.tmpl' import license, source_files_for_generated_file %}
+{{license()}}
+
+{{source_files_for_generated_file(template_file, input_files)}}
+
+#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+
+#include "third_party/blink/renderer/platform/wtf/assertions.h"
+#include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
+
+namespace blink {
+
+RuntimeEnabledFeatures::Backup::Backup()
+  : {% for feature in standard_features -%}
+{% if feature.origin_trial_feature_name %}
+    {{feature.class_member_name}}(RuntimeEnabledFeatures::{{feature.name}}EnabledByRuntimeFlag())
+{% else %}
+    {{feature.class_member_name}}(RuntimeEnabledFeatures::{{feature.name}}Enabled())
+{% endif %}
+    {%- if not loop.last %},
+    {%+ endif -%}
+    {% endfor %} {}
+
+void RuntimeEnabledFeatures::Backup::Restore() {
+  {% for feature in standard_features %}
+  RuntimeEnabledFeatures::Set{{feature.name}}Enabled({{feature.class_member_name}});
+  {% endfor %}
+}
+
+{% for feature_set in feature_sets %}
+void RuntimeEnabledFeatures::Set{{feature_set|capitalize}}FeaturesEnabled(bool enable) {
+  {% for feature in features if feature.status == feature_set %}
+  Set{{feature.name}}Enabled(enable);
+  {% endfor %}
+}
+
+{% endfor %}
+
+void RuntimeEnabledFeatures::SetOriginTrialControlledFeaturesEnabled(bool enable) {
+  {% for feature in origin_trial_controlled_features %}
+  Set{{feature.name}}Enabled(enable);
+  {% endfor %}
+}
+
+void RuntimeEnabledFeatures::SetFeatureEnabledFromString(
+    const std::string& name, bool enable) {
+  static const struct {
+    const char* name;
+    bool* setting;
+  } kFeatures[] = {
+  {% for feature in standard_features %}
+    {"{{feature.name}}", &is_{{feature.class_member_name}}enabled_},
+  {% endfor %}
+  };
+  for (const auto& feature : kFeatures) {
+    if (name == feature.name) {
+      *feature.setting = enable;
+      return;
+    }
+  }
+  DLOG(ERROR) << "RuntimeEnabledFeature not recognized: " << name;
+}
+
+{% for feature in standard_features %}
+bool RuntimeEnabledFeatures::is_{{feature.class_member_name}}enabled_ = {{'true' if feature.status == 'stable' else 'false'}};
+{% endfor %}
+
+} // namespace blink

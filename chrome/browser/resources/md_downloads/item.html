@@ -1,0 +1,325 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_icons_css.html">
+<link rel="import" href="chrome://resources/cr_elements/hidden_style_css.html">
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/cr_elements/shared_vars_css.html">
+<link rel="import" href="chrome://resources/html/action_link.html">
+<link rel="import" href="chrome://resources/html/action_link_css.html">
+<link rel="import" href="chrome://resources/html/cr.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-icon/iron-icon.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-progress/paper-progress.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-styles/color.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-styles/shadow.html">
+<link rel="import" href="chrome://downloads/browser_proxy.html">
+<link rel="import" href="chrome://downloads/constants.html">
+<link rel="import" href="chrome://downloads/i18n_setup.html">
+<link rel="import" href="chrome://downloads/icons.html">
+
+<dom-module id="downloads-item">
+  <template>
+    <style include="action-link cr-hidden-style cr-icons">
+      :host {
+        display: flex;
+        flex-direction: column;
+      }
+
+      paper-button {
+        font-weight: 500;
+        margin: 0;
+        min-width: auto;
+      }
+
+      #date {
+        color: var(--paper-grey-700);
+        font-size: 100%;
+        font-weight: 500;
+        margin: 24px auto 10px;
+        width: var(--downloads-card-width);
+      }
+
+      #date:empty {
+        display: none;
+      }
+
+      #content {
+        background: white;
+        border-radius: var(--cr-card-border-radius);
+        display: flex;
+        flex: none;
+        margin: 6px auto;
+        min-height: 103px;
+        position: relative;
+        width: var(--downloads-card-width);
+      }
+
+      #content.is-active {
+        @apply --shadow-elevation-2dp;
+      }
+
+      #content:not(.is-active) {
+        background: rgba(255, 255, 255, .6);
+        box-shadow: 0 2px 2px 0 rgba(0, 0, 0, .03),
+                    0 1px 4px 0 rgba(0, 0, 0, .048),
+                    0 3px 1px -2px rgba(0, 0, 0, .12);
+      }
+
+      #details {
+        -webkit-border-start: 1px #d8d8d8 solid;
+        -webkit-padding-end: 16px;
+        -webkit-padding-start: var(--downloads-card-margin);
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        min-width: 0;  /* This allows #url to ellide correctly. */
+        padding-bottom: 12px;
+        padding-top: 16px;
+      }
+
+      #content:not(.is-active) #details {
+        color: rgba(27, 27, 27, .6);
+      }
+
+      #content:not(.is-active) #name {
+        text-decoration: line-through;
+      }
+
+      .icon-wrapper {
+        align-self: center;
+        flex: none;
+        justify-content: center;
+        margin: 0 24px;
+      }
+
+      .icon {
+        height: 32px;
+        width: 32px;
+      }
+
+      #content:-webkit-any(.show-progress, .dangerous) #file-icon-wrapper {
+        /* TODO(dbeam): animate from top-aligned to centered when items finish?
+         */
+        align-self: flex-start;
+        padding-top: 16px;
+      }
+
+      #content:not(.is-active) .icon {
+        -webkit-filter: grayscale(100%);
+        opacity: .5;
+      }
+
+      #danger-icon {
+        height: 32px;
+        width: 32px;
+      }
+
+      #danger-icon[icon='cr:warning'],
+      .dangerous #description {
+        color: var(--google-red-700);
+      }
+
+      #name,
+      #file-link,
+      #url {
+        max-width: 100%;
+      }
+
+      #name,
+      #file-link {
+        font-weight: 500;
+        word-break: break-all;
+      }
+
+      #name {
+        -webkit-margin-end: 12px;  /* Only really affects #tag. */
+      }
+
+      #pause-or-resume,
+      .is-active :-webkit-any(#name, #file-link, #show) {
+        color: rgb(51, 103, 214);
+      }
+
+      #tag {
+        color: #5a5a5a;
+        font-weight: 500;
+      }
+
+      #url {
+        color: inherit;
+        margin-top: 6px;
+        min-height: 0;
+        overflow: hidden;
+        text-decoration: none;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .is-active #url {
+        color: var(--paper-grey-600);
+      }
+
+      #progress,
+      #description:not(:empty),
+      .controls {
+        margin-top: 16px;
+      }
+
+      .is-active #description {
+        color: #616161;
+      }
+
+      #progress {
+        --paper-progress-active-color: rgb(54, 126, 237);
+        --paper-progress-container-color: rgb(223, 222, 223);
+        width: auto;
+      }
+
+      .controls {
+        -webkit-margin-start: -.57em;
+      }
+
+      #cancel,
+      #retry,
+      .keep,
+      .discard {
+        color: #5a5a5a;
+      }
+
+      #show {
+        margin: .7em .57em;
+      }
+
+      #controlled-by {
+        -webkit-margin-start: 8px;
+      }
+
+      #controlled-by,
+      #controlled-by a {
+        color: #5a5a5a;
+      }
+
+      .is-active #controlled-by {
+        color: #333;
+      }
+
+      .is-active #controlled-by a {
+        color: rgb(51, 103, 214);
+      }
+
+      #remove-wrapper {
+        align-self: flex-start;
+        margin: 0;
+      }
+
+      #remove-wrapper > paper-icon-button-light {
+        -webkit-margin-end: 0;
+        -webkit-margin-start: 0;
+        color: var(--paper-grey-700);
+        height: 32px;
+        width: 32px;
+      }
+
+      #incognito {
+        bottom: 20px;
+        content: -webkit-image-set(
+            url(chrome://downloads/1x/incognito_marker.png) 1x,
+            url(chrome://downloads/2x/incognito_marker.png) 2x);
+        position: absolute;
+        right: 10px;
+      }
+    </style>
+
+    <h3 id="date">[[computeDate_(data.hideDate, data.since_string, data.date_string)]]</h3>
+
+    <div id="content" on-dragstart="onDragStart_"
+        class$="[[computeClass_(isActive_, isDangerous_, showProgress_)]]">
+      <div id="file-icon-wrapper" class="icon-wrapper">
+        <img class="icon" id="file-icon" alt="" hidden="[[isDangerous_]]">
+        <iron-icon id="danger-icon"
+            icon$="[[computeDangerIcon_(isDangerous_, data.danger_type)]]"
+            hidden="[[!isDangerous_]]"></iron-icon>
+      </div>
+
+      <div id="details">
+        <div id="title-area"><!--
+          Can't have any line breaks.
+          --><a is="action-link" id="file-link" href="[[data.url]]"
+              on-click="onFileLinkTap_"
+              hidden="[[!completelyOnDisk_]]">[[data.file_name]]</a><!--
+          Before #name.
+          --><span id="name"
+              hidden="[[completelyOnDisk_]]">[[data.file_name]]</span>
+          <span id="tag">[[computeTag_(data.state, data.last_reason_text, data.file_externally_removed)]]</span>
+        </div>
+
+        <a id="url" target="_blank">[[chopUrl_(data.url)]]</a>
+
+        <div id="description">[[computeDescription_(data.state, data.danger_type, data.file_name, data.progress_status_text)]]</div>
+
+        <template is="dom-if" if="[[showProgress_]]">
+          <paper-progress id="progress"
+              indeterminate="[[isIndeterminate_(data.percent)]]"
+              value="[[data.percent]]"></paper-progress>
+        </template>
+
+        <div id="safe" class="controls" hidden="[[isDangerous_]]">
+          <a is="action-link" id="show" on-click="onShowTap_"
+              hidden="[[!completelyOnDisk_]]">$i18n{controlShowInFolder}</a>
+          <template is="dom-if" if="[[data.retry]]">
+            <paper-button id="retry" on-click="onRetryTap_">
+              $i18n{controlRetry}
+            </paper-button>
+          </template>
+          <template is="dom-if" if="[[pauseOrResumeText_]]">
+            <paper-button id="pause-or-resume" on-click="onPauseOrResumeTap_">
+              [[pauseOrResumeText_]]
+            </paper-button>
+          </template>
+          <template is="dom-if" if="[[showCancel_]]">
+            <paper-button id="cancel" on-click="onCancelTap_">
+              $i18n{controlCancel}
+            </paper-button>
+          </template>
+          <span id="controlled-by"><!-- Text populated dynamically. --></span>
+        </div>
+
+        <template is="dom-if" if="[[isDangerous_]]">
+          <div id="dangerous" class="controls">
+            <!-- Dangerous file types (e.g. .exe, .jar). -->
+            <template is="dom-if" if="[[!isMalware_]]">
+              <paper-button id="discard" on-click="onDiscardDangerousTap_"
+                  class="discard">$i18n{dangerDiscard}</paper-button>
+              <paper-button id="save" on-click="onSaveDangerousTap_"
+                  class="keep">$i18n{dangerSave}</paper-button>
+            </template>
+
+            <!-- Things that safe browsing has determined to be dangerous. -->
+            <template is="dom-if" if="[[isMalware_]]">
+              <paper-button id="danger-remove" on-click="onDiscardDangerousTap_"
+                  class="discard">$i18n{controlRemoveFromList}</paper-button>
+              <paper-button id="restore" on-click="onSaveDangerousTap_"
+                  class="keep">$i18n{dangerRestore}</paper-button>
+            </template>
+          </div>
+        </template>
+      </div>
+
+      <div id="remove-wrapper" class="icon-wrapper ">
+        <paper-icon-button-light class="icon-clear"
+            style$="[[computeRemoveStyle_(isDangerous_, showCancel_)]]">
+          <button id="remove"
+              title="$i18n{controlRemoveFromList}"
+              aria-label="$i18n{controlRemoveFromList}"
+              on-click="onRemoveTap_"></button>
+        </paper-icon-button-light>
+      </div>
+
+      <div id="incognito" title="$i18n{inIncognito}" hidden="[[!data.otr]]">
+      </div>
+    </div>
+
+  </template>
+  <script src="chrome://downloads/item.js"></script>
+</dom-module>

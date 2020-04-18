@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<meta charset="UTF-8">
+<body>
+<script src="../interpolation/resources/interpolation-test.js"></script>
+<script>
+assertComposition({
+  property: 'backdrop-filter',
+  underlying: 'blur(10px)',
+  addFrom: 'blur(40px)',
+  addTo: 'blur(90px)',
+}, [
+  {at: -0.5, is: 'blur(25px)'},
+  {at: 0, is: 'blur(50px)'},
+  {at: 0.25, is: 'blur(62.5px)'},
+  {at: 0.5, is: 'blur(75px)'},
+  {at: 0.75, is: 'blur(87.5px)'},
+  {at: 1, is: 'blur(100px)'},
+  {at: 1.5, is: 'blur(125px)'},
+]);
+
+assertComposition({
+  property: 'backdrop-filter',
+  underlying: 'sepia(0.5)',
+  addFrom: 'sepia(0.5)',
+  replaceTo: 'sepia(0)',
+}, [
+  {at: -0.5, is: 'sepia(1)'},
+  {at: 0, is: 'sepia(1)'},
+  {at: 0.25, is: 'sepia(0.75)'},
+  {at: 0.5, is: 'sepia(0.5)'},
+  {at: 0.75, is: 'sepia(0.25)'},
+  {at: 1, is: 'sepia(0)'},
+  {at: 1.5, is: 'sepia(0)'},
+]);
+
+assertComposition({
+  property: 'backdrop-filter',
+  underlying: 'brightness(0.25)',
+  replaceFrom: 'brightness(0.5)',
+  addTo: 'brightness(1.25)',
+}, [
+  {at: -0.5, is: 'brightness(0)'},
+  {at: 0, is: 'brightness(0.5)'},
+  {at: 0.25, is: 'brightness(0.75)'},
+  {at: 0.5, is: 'brightness(1)'},
+  {at: 0.75, is: 'brightness(1.25)'},
+  {at: 1, is: 'brightness(1.5)'},
+  {at: 1.5, is: 'brightness(2)'},
+]);
+
+assertComposition({
+  property: 'backdrop-filter',
+  underlying: 'invert(0.5) saturate(1)',
+  addFrom: 'invert(1) saturate(2)',
+  addTo: 'invert(25%) saturate(3)',
+}, [
+  {at: -0.5, is: 'invert(1) saturate(2.5)'},
+  {at: 0, is: 'invert(1) saturate(3)'},
+  {at: 0.25, is: 'invert(1) saturate(3.25)'},
+  {at: 0.5, is: 'invert(1) saturate(3.5)'},
+  {at: 0.75, is: 'invert(0.9375) saturate(3.75)'},
+  {at: 1, is: 'invert(0.75) saturate(4)'},
+  {at: 1.5, is: 'invert(0.375) saturate(4.5)'},
+]);
+
+assertComposition({
+  property: 'backdrop-filter',
+  underlying: 'invert(0.5)',
+  addFrom: 'invert(1) saturate(200%)',
+  addTo: 'invert(25%) saturate(3) contrast(50%)',
+}, [
+  {at: -0.5, is: 'invert(1) saturate(1.5) contrast(1.25)'},
+  {at: 0, is: 'invert(1) saturate(2)'},
+  {at: 0.25, is: 'invert(1) saturate(2.25) contrast(0.875)'},
+  {at: 0.5, is: 'invert(1) saturate(2.5) contrast(0.75)'},
+  {at: 0.75, is: 'invert(0.9375) saturate(2.75) contrast(0.625)'},
+  {at: 1, is: 'invert(0.75) saturate(3) contrast(0.5)'},
+  {at: 1.5, is: 'invert(0.375) saturate(3.5) contrast(0.25)'},
+]);
+
+assertComposition({
+  property: 'backdrop-filter',
+  underlying: 'invert(0.5)',
+  addFrom: 'none',
+  addTo: 'invert(25%) saturate(3) contrast(50%)',
+}, [
+  {at: -0.5, is: 'invert(0.375) saturate(0) contrast(1.25)'},
+  {at: 0, is: 'invert(0.5)'},
+  {at: 0.25, is: 'invert(0.5625) saturate(1.5) contrast(0.875)'},
+  {at: 0.5, is: 'invert(0.625) saturate(2) contrast(0.75)'},
+  {at: 0.75, is: 'invert(0.6875) saturate(2.5) contrast(0.625)'},
+  {at: 1, is: 'invert(0.75) saturate(3) contrast(0.5)'},
+  {at: 1.5, is: 'invert(0.875) saturate(4) contrast(0.25)'},
+]);
+
+assertComposition({
+  property: 'backdrop-filter',
+  underlying: 'invert(0.5)',
+  addFrom: 'invert(1) saturate(200%)',
+  addTo: 'none',
+}, [
+  {at: -0.5, is: 'invert(1) saturate(2.5)'},
+  {at: 0, is: 'invert(1) saturate(2)'},
+  {at: 0.25, is: 'invert(1) saturate(1.75)'},
+  {at: 0.5, is: 'invert(1) saturate(1.5)'},
+  {at: 0.75, is: 'invert(0.75) saturate(1.25)'},
+  {at: 1, is: 'invert(0.5)'},
+  {at: 1.5, is: 'invert(0) saturate(0.5)'},
+]);
+
+assertComposition({
+  property: 'backdrop-filter',
+  underlying: 'none',
+  addFrom: 'invert(1) saturate(200%)',
+  addTo: 'invert(25%) saturate(3) contrast(50%)',
+}, [
+  {at: -0.5, is: 'invert(1) saturate(1.5) contrast(1.25)'},
+  {at: 0, is: 'invert(1) saturate(2)'},
+  {at: 0.25, is: 'invert(0.8125) saturate(2.25) contrast(0.875)'},
+  {at: 0.5, is: 'invert(0.625) saturate(2.5) contrast(0.75)'},
+  {at: 0.75, is: 'invert(0.4375) saturate(2.75) contrast(0.625)'},
+  {at: 1, is: 'invert(0.25) saturate(3) contrast(0.5)'},
+  {at: 1.5, is: 'invert(0) saturate(3.5) contrast(0.25)'},
+]);
+
+assertComposition({
+  property: 'backdrop-filter',
+  underlying: 'grayscale(25%) blur(10px)',
+  addFrom: 'grayscale(50%) blur(10px)',
+  addTo: 'blur(10px)',
+}, [
+  {at: -0.5, is: 'grayscale(0.75) blur(20px)'},
+  {at: 0, is: 'grayscale(0.75) blur(20px)'},
+  {at: 0.25, is: 'grayscale(0.75) blur(20px)'},
+  {at: 0.5, is: 'blur(10px)'},
+  {at: 0.75, is: 'blur(10px)'},
+  {at: 1, is: 'blur(10px)'},
+  {at: 1.5, is: 'blur(10px)'},
+]);
+
+assertComposition({
+  property: 'backdrop-filter',
+  underlying: 'blur(10px)',
+  addFrom: 'grayscale(50%) blur(10px)',
+  addTo: 'grayscale(25%) blur(10px)',
+}, [
+  {at: -0.5, is: 'grayscale(0.625) blur(10px)'},
+  {at: 0, is: 'grayscale(0.5) blur(10px)'},
+  {at: 0.25, is: 'grayscale(0.4375) blur(10px)'},
+  {at: 0.5, is: 'grayscale(0.375) blur(10px)'},
+  {at: 0.75, is: 'grayscale(0.3125) blur(10px)'},
+  {at: 1, is: 'grayscale(0.25) blur(10px)'},
+  {at: 1.5, is: 'grayscale(0.125) blur(10px)'},
+]);
+
+assertComposition({
+  property: 'backdrop-filter',
+  underlying: 'url(#a) grayscale(50%) blur(20px)',
+  addFrom: 'url(#a) grayscale(50%) blur(30px)',
+  addTo: 'url(#a) grayscale(25%) blur(40px)',
+}, [
+  {at: -0.5, is: 'url("#a") grayscale(0.5) blur(30px)'},
+  {at: 0, is: 'url("#a") grayscale(0.5) blur(30px)'},
+  {at: 0.25, is: 'url("#a") grayscale(0.5) blur(30px)'},
+  {at: 0.5, is: 'url("#a") grayscale(0.25) blur(40px)'},
+  {at: 0.75, is: 'url("#a") grayscale(0.25) blur(40px)'},
+  {at: 1, is: 'url("#a") grayscale(0.25) blur(40px)'},
+  {at: 1.5, is: 'url("#a") grayscale(0.25) blur(40px)'},
+]);
+</script>
+</body>

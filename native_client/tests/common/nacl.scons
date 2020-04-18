@@ -1,0 +1,22 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+if not env.AllowInlineAssembly():
+  Return()
+
+env.ComponentLibrary('test_common', ['register_set.c'])
+
+# This test just checks that the utility functions in register_set.h
+# work properly.
+nexe = env.ComponentProgram('register_set_test', ['register_set_test.c'],
+                            EXTRA_LIBS=['test_common', '${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl('register_set_test.out', nexe)
+# Valgrind does not seem to like the stack switching that this test does.
+is_broken = env.IsRunningUnderValgrind()
+env.AddNodeToTestSuite(node, ['small_tests', 'nonpexe_tests'],
+                       'run_register_set_test',
+                       is_broken=is_broken)

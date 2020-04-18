@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<title>Test that videos do not fullscreen when double-clicked before preload.</title>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+<script src="../../media-controls.js"></script>
+<video controls width=400 preload=none src="../../content/60_sec_video.webm"></video>
+<script>
+async_test(t => {
+  const video = document.querySelector('video');
+  video.addEventListener("webkitfullscreenchange", t.unreached_func());
+
+  window.onload = t.step_func(() => {
+    const coordinates = coordinatesOutsideElement(mediaControlsOverlayPlayButton(video));
+    doubleTapAtCoordinates(coordinates[0] + 1, coordinates[1] + 1, undefined, t.step_func(() => {
+      // Wait to see if the video attempts to go fullscreen.
+      setTimeout(t.done.bind(t));
+    }));
+  });
+});
+</script>
+</html>

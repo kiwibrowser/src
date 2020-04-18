@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<title>Tests that a media document will always autoplay.</title>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="../media-file.js"></script>
+<body>
+<script>
+async_test(function(t) {
+  const iframe = document.createElement('iframe');
+
+  iframe.onload = t.step_func(() => {
+    const video = iframe.contentDocument.querySelector('video');
+    assert_not_equals(undefined, video);
+
+    if (video.paused) {
+      video.play().then(() => { t.done(); }, (error) => {
+        assert_not_equals('NotAllowedError', error.code);
+      });
+    } else {
+      t.done();
+    }
+  });
+
+  iframe.src = '../content/test.ogv';
+  document.body.appendChild(iframe);
+});
+</script>

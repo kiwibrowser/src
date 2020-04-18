@@ -1,0 +1,28 @@
+@hex:
+  # If instruction writes to two operands, only the second write is
+  # treated as zero-extending.
+  # See https://code.google.com/p/nativeclient/issues/detail?id=3071
+  
+  87 75 00
+  2a 5c 35 00
+@dis:
+     0:	87 75 00                                     	xchg   %esi,0x0(%rbp)
+     3:	2a 5c 35 00                                  	sub    0x0(%rbp,%rsi,1),%bl
+@rdfa_output:
+  3: improper memory address - bad index
+  return code: 1
+@spec:
+  3: register %rsi should be restricted, while in fact None is restricted
+----------------------------------------------------------------------
+@hex:
+  # Same fo xadd:
+  0f c1 14 24
+  20 7c 15 00
+@dis:
+     0:	0f c1 14 24                                  	xadd   %edx,(%rsp)
+     4:	20 7c 15 00                                  	and    %bh,0x0(%rbp,%rdx,1)
+@rdfa_output:
+  4: improper memory address - bad index
+  return code: 1
+@spec:
+  4: register %rdx should be restricted, while in fact None is restricted

@@ -1,0 +1,63 @@
+// Copyright 2015 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "third_party/blink/renderer/modules/webusb/usb_configuration.h"
+
+#include "device/usb/public/mojom/device.mojom-blink.h"
+#include "third_party/blink/renderer/bindings/core/v8/exception_state.h"
+#include "third_party/blink/renderer/modules/webusb/usb_device.h"
+#include "third_party/blink/renderer/modules/webusb/usb_interface.h"
+
+namespace blink {
+
+USBConfiguration* USBConfiguration::Create(const USBDevice* device,
+                                           size_t configuration_index) {
+  return new USBConfiguration(device, configuration_index);
+}
+
+USBConfiguration* USBConfiguration::Create(const USBDevice* device,
+                                           size_t configuration_value,
+                                           ExceptionState& exception_state) {
+  const auto& configurations = device->Info().configurations;
+  for (size_t i = 0; i < configurations.size(); ++i) {
+    if (configurations[i]->configuration_value == configuration_value)
+      return new USBConfiguration(device, i);
+  }
+  exception_state.ThrowRangeError("Invalid configuration value.");
+  return nullptr;
+}
+
+USBConfiguration::USBConfiguration(const USBDevice* device,
+                                   size_t configuration_index)
+    : device_(device), configuration_index_(configuration_index) {
+  DCHECK(device_);
+  DCHECK_LT(configuration_index_, device_->Info().configurations.size());
+}
+
+const USBDevice* USBConfiguration::Device() const {
+  return device_;
+}
+
+size_t USBConfiguration::Index() const {
+  return configuration_index_;
+}
+
+const device::mojom::blink::UsbConfigurationInfo& USBConfiguration::Info()
+    const {
+  return *device_->Info().configurations[configuration_index_];
+}
+
+HeapVector<Member<USBInterface>> USBConfiguration::interfaces() const {
+  HeapVector<Member<USBInterface>> interfaces;
+  for (size_t i = 0; i < Info().interfaces.size(); ++i)
+    interfaces.push_back(USBInterface::Create(this, i));
+  return interfaces;
+}
+
+void USBConfiguration::Trace(blink::Visitor* visitor) {
+  visitor->Trace(device_);
+  ScriptWrappable::Trace(visitor);
+}
+
+}  // namespace blink

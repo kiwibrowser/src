@@ -1,0 +1,15 @@
+{% from "templates/macros.tmpl" import license, source_files_for_generated_file %}
+{{ license() }}
+
+{{source_files_for_generated_file(template_file, input_files)}}
+
+interface InternalRuntimeFlags {
+    {% for feature in standard_features %}
+    {%+ if feature.condition %}[Conditional={{feature.condition}}] {% endif -%}
+    {% if feature.settable_from_internals %}
+    attribute boolean {{feature.tokenized_name.to_lower_camel_case()}}Enabled;
+    {% else %}
+    readonly attribute boolean {{feature.tokenized_name.to_lower_camel_case()}}Enabled;
+    {% endif %}
+    {% endfor %}
+};

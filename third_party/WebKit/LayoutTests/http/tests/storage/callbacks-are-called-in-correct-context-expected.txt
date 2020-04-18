@@ -1,0 +1,53 @@
+CONSOLE WARNING: line 9: Synchronous XMLHttpRequest on the main thread is deprecated because of its detrimental effects to the end user's experience. For more help, check https://xhr.spec.whatwg.org/.
+
+
+--------
+Frame: 'outputFrame'
+--------
+This test tests that all DB callbacks are called in the context they were created, rather than the context where the DB handle was created.
+PASS: The transaction callback was called in the correct context.
+Referrer: http://127.0.0.1:8000/storage/resources/callbacks-are-called-in-correct-context-second-frame.html
+PASS: The statement success callback was called in the correct context.
+Referrer: http://127.0.0.1:8000/storage/resources/callbacks-are-called-in-correct-context-second-frame.html
+PASS: The statement error callback was called in the correct context.
+Referrer: http://127.0.0.1:8000/storage/resources/callbacks-are-called-in-correct-context-second-frame.html
+PASS: The transaction error callback was called in the correct context.
+Referrer: http://127.0.0.1:8000/storage/resources/callbacks-are-called-in-correct-context-second-frame.html
+PASS: The transaction success callback was called in the correct context.
+Referrer: http://127.0.0.1:8000/storage/resources/callbacks-are-called-in-correct-context-second-frame.html
+PASS: The transaction callback was called in the correct context.
+Referrer: http://127.0.0.1:8000/storage/resources/callbacks-are-called-in-correct-context-second-frame.html
+PASS: The statement success callback was called in the correct context.
+Referrer: http://127.0.0.1:8000/storage/resources/callbacks-are-called-in-correct-context-second-frame.html
+PASS: The statement error callback was called in the correct context.
+Referrer: http://127.0.0.1:8000/storage/resources/callbacks-are-called-in-correct-context-second-frame.html
+PASS: The transaction error callback was called in the correct context.
+Referrer: http://127.0.0.1:8000/storage/resources/callbacks-are-called-in-correct-context-second-frame.html
+PASS: The transaction success callback was called in the correct context.
+Referrer: http://127.0.0.1:8000/storage/resources/callbacks-are-called-in-correct-context-second-frame.html
+PASS: The transaction callback was called in the correct context.
+Referrer: http://127.0.0.1:8000/storage/resources/callbacks-are-called-in-correct-context-second-frame.html
+PASS: The statement success callback was called in the correct context.
+Referrer: http://127.0.0.1:8000/storage/resources/callbacks-are-called-in-correct-context-second-frame.html
+PASS: The statement error callback was called in the correct context.
+Referrer: http://127.0.0.1:8000/storage/resources/callbacks-are-called-in-correct-context-second-frame.html
+PASS: The transaction error callback was called in the correct context.
+Referrer: http://127.0.0.1:8000/storage/resources/callbacks-are-called-in-correct-context-second-frame.html
+PASS: The transaction success callback was called in the correct context.
+Referrer: http://127.0.0.1:8000/storage/resources/callbacks-are-called-in-correct-context-second-frame.html
+
+
+--------
+Frame: 'firstFrame'
+--------
+
+
+--------
+Frame: 'secondFrame'
+--------
+
+
+--------
+Frame: 'thirdFrame'
+--------
+

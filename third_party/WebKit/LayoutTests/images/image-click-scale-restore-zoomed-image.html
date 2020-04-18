@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+
+<script>
+var clicked = false;
+var count = 0;
+var requestId = 0;
+
+if (window.testRunner) {
+    testRunner.dumpAsText();
+    testRunner.setCanOpenWindows();
+    testRunner.waitUntilDone();
+}
+
+function log(message)
+{
+    var console = document.getElementById("console");
+    console.appendChild(document.createTextNode(message + "\n"));
+}
+
+function click(newwindow, image)
+{
+    var e = newwindow.document.createEvent("MouseEvent");
+    e.initMouseEvent("click", true, true, newwindow, 1, 1, 1, 1, 1, false, false, false, false, 0, newwindow.document);
+    image.dispatchEvent(e);
+}
+
+window.onload = function()
+{
+    var newwindow = window.open("resources/flowchart.jpg");
+    if (window.testRunner)
+        testRunner.useUnfortunateSynchronousResizeMode();
+    newwindow.onload = function() {
+
+        newwindow.onresize = function() {
+            var image = newwindow.document.querySelector("img");
+            if (image.clientWidth == 0) {
+                // On GTK+, sometimes the resize callback fires before the GTK
+                // window has finished resizing. If that happens, try to resize
+                // again.
+                requestId = newWindow.requestAnimationFrame(function() {
+                    newwindow.resizeTo(100, 100);
+                    if (requestId)
+                        newwindow.cancelAnimationFrame(requestId);
+                    requestId = 0;
+                });
+                return;
+            }
+
+            if (window.eventSender) {
+                if (!clicked) {
+                    // Zoom in level 1
+                    eventSender.zoomPageIn();
+                    var w = Math.round(image.clientWidth);
+                    var h = Math.round(image.clientHeight);
+                    log("Size at zoomed in level : "  + w + " x " + h);
+                    clicked = true;
+                    count++;
+                    click(newwindow, image);
+                } else {
+                    var w = Math.round(image.clientWidth);
+                    var h = Math.round(image.clientHeight);
+                    log("Size at zoomed level after scale up click " + count + " : "  + w + " x " + h);
+                    if (count == 3)
+                        testRunner.notifyDone();
+
+                    // Restore the image size
+                    click(newwindow, image);
+                    count++;
+                    // Brings to normal zoom
+                    eventSender.zoomPageOut();
+                    // Zoom out level 1
+                    eventSender.zoomPageOut();
+                    // Restore the image size
+                    var w = Math.round(image.clientWidth);
+                    var h = Math.round(image.clientHeight);
+                    log("Size at zoomed out level after click " + count + " (Image restored): "  + w + " x " + h);
+                    count++;
+                    click(newwindow, image);
+                }
+            }
+        };
+
+        newwindow.resizeTo(100, 100);
+    };
+}
+</script>
+<p>This tests that on a zoomed page, click to scale up / down works fine.  This test requires testRunner to run.  To test manually, open <a href="resources/dice.png">this image</a> in a browser window, resize the window to 100px tall and zoom out and click on the image to scale it up.</p>
+<pre id="console"></pre>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<style>
+#break-test {
+    font:50px/1 Ahem;
+    width:3em;
+}
+#result {
+    font:15px/1 monospace;
+    white-space:pre;
+}
+</style>
+<div id="result"></div>
+<div id="break-test"></div>
+<script>
+var beginChar = 33;
+var endChar = 127;
+var breakTest = document.getElementById("break-test");
+var breakTestFontsize = parseFloat(getComputedStyle(breakTest).fontSize);
+var nbsp = String.fromCharCode(0xA0);
+nbsp = nbsp + nbsp;
+
+var matrix = getLineBreakMatrix();
+
+var header = [];
+for (var i = 0; i < matrix.length; i++)
+    header.push(String.fromCharCode(beginChar + i));
+var rows = ["  " + header.join("")];
+for (var i = 0; i < matrix.length; i++) {
+    rows.push(String.fromCharCode(beginChar + i) + " " + matrix[i].map(function (canBreak) {
+        return canBreak ? "/" : "X";
+    }).join(""));
+}
+result.textContent = rows.join("\n");
+
+function getLineBreakMatrix() {
+    var matrix = [];
+    for (var last = beginChar; last < endChar; last++) {
+        var canBreakBefore = [];
+        for (var current = beginChar; current < endChar; current++)
+            canBreakBefore.push(canBreakBetween(last, current));
+        matrix.push(canBreakBefore);
+    }
+    return matrix;
+}
+
+function canBreakBetween(last, current) {
+    breakTest.textContent = nbsp + String.fromCharCode(last) + String.fromCharCode(current);
+    return breakTest.offsetHeight / breakTestFontsize > 1.9;
+}
+
+breakTest.textContent = "";
+if (window.testRunner)
+    testRunner.dumpAsText();
+</script>

@@ -1,0 +1,65 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<script src="../resources/js-test.js"></script>
+</head>
+<body>
+
+<!-- Cases with no whitespace -->
+
+<button id="n1"><span>Hello</span>World</button>
+<button id="n2">Hello<span>World</span></button>
+<button id="n3"><span>Hello</span><span>World</span></button>
+<button id="n4"><b>Hello</b><b>World</b></button>
+<button id="n5"><div style="display:inline">Hello</div><div style="display:inline">World</div></button>
+<div role="button" id="n6"><span>Hello</span>World</div>
+
+<!-- Cases where whitespace should be added -->
+
+<button id="y1">
+  <div>Hello</div><div>World</div>
+</button>
+<button id="y2">
+  <span style="float:left">Hello</span>World
+</button>
+<button id="y3">
+  <span style="float:left">Hello</span><span style="float:right">World</span>
+</button>
+<div role="button" id="y4">
+  <div>Hello</div><div>World</div>
+</div>
+<div role="button" id="y5">
+  <span style="float:left">Hello</span>World
+</div>
+<div role="button" id="y6">
+  <span style="float:left">Hello</span><span style="float:right">World</span>
+</div>
+
+<div id="console"></div>
+<script>
+if (window.testRunner && window.accessibilityController) {
+    testRunner.dumpAsText();
+
+    function accessibleTitle(id) {
+      var axObject = accessibilityController.accessibleElementById(id);
+      return axObject.name.replace('', '');
+    }
+
+    shouldBe('accessibleTitle("n1")', '"HelloWorld"');
+    shouldBe('accessibleTitle("n2")', '"HelloWorld"');
+    shouldBe('accessibleTitle("n3")', '"HelloWorld"');
+    shouldBe('accessibleTitle("n4")', '"HelloWorld"');
+    shouldBe('accessibleTitle("n5")', '"HelloWorld"');
+    shouldBe('accessibleTitle("n6")', '"HelloWorld"');
+
+    shouldBe('accessibleTitle("y1")', '"Hello World"');
+    shouldBe('accessibleTitle("y2")', '"Hello World"');
+    shouldBe('accessibleTitle("y3")', '"Hello World"');
+    shouldBe('accessibleTitle("y4")', '"Hello World"');
+    shouldBe('accessibleTitle("y5")', '"Hello World"');
+    shouldBe('accessibleTitle("y6")', '"Hello World"');
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,25 @@
+@hex:
+  # Example showing that we don't default to non-66 prefix, when there non-66
+  # prefix form doesn't allow opt-in 66 prefix.
+  #
+  #  pslldq without 66 prefix.
+  0f 73 ff 00
+@dis:
+     0:	0f 73                                        	(bad)  
+     2:	ff 00                                        	incl   (%rax)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('objdump failed to decode', Instruction(0x0: 0f 73  (bad)))
+  2: ("memory access only is allowed with base from ['%r15', '%rbp', '%rsp', '%rip']", Instruction(0x2: ff 00  incl (%rax)))
+----------------------------------------------------------------------
+@hex:
+  #  pslldq with proper 66 prefix.
+  66 0f 73 ff 00
+@dis:
+     0:	66 0f 73 ff 00                               	pslldq $0x0,%xmm7
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE

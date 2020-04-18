@@ -1,0 +1,29 @@
+include_rules = [
+  "+components/crash/core/common/crash_key.h",  # Remove after fixing crbug.com/724999.
+  "+third_party/khronos",
+  "+third_party/libsync",
+  "+third_party/skia",
+  "+ui/events",
+  "+ui/base/x",
+  "+ui/gfx",
+]
+
+specific_include_rules = {
+# This is the only target that should use the osmesa.h header. Everything else
+# should use the GLES2 headers from third_party/khronos/ or use gl_bindings.h to
+# get access to desktop OpenGL.
+  "gl_surface_osmesa.cc": [
+    "+third_party/mesa/src/include/GL/osmesa.h",
+  ],
+# Allow us to include ANGLE's base platform implementation.
+  "angle_platform_impl.cc": [
+    "+third_party/angle/include/platform/Platform.h",
+  ],
+  "gl_angle_util_win.cc": [
+    "+third_party/angle/include/EGL/egl.h",
+    "+third_party/angle/include/EGL/eglext.h",
+  ],
+  "gl_surface_egl_unittest.cc": [
+    "+ui/platform_window",
+  ],
+}

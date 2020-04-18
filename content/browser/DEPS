@@ -1,0 +1,157 @@
+include_rules = [
+  # Allow inclusion of specific components that we depend on.
+  # See comment in content/DEPS for which components are allowed.
+  "+components/discardable_memory/common",
+  "+components/discardable_memory/service",
+  "+components/download/downloader/in_progress",
+  "+components/download/public/common",
+  "+components/download/quarantine/quarantine.h",
+  "+components/filename_generation",
+  "+components/services/filesystem",
+  "+components/services/leveldb",
+  "+components/link_header_util",
+  "+components/metrics",
+  "+components/metrics:single_sample_metrics",
+  "+components/network_session_configurator/common",
+  "+components/offline_pages/buildflags/buildflags.h",
+  "+components/offline_pages/core/request_header",
+  "+components/payments",
+  "+components/profile_service",
+  "+components/rappor/public",
+  "+components/tracing",
+  "+components/ukm",
+  "+components/url_formatter",
+  "+components/viz",
+  "+components/cbor",
+
+  "+content/app/strings/grit",  # For generated headers
+  "+content/public/browser",
+  "+device/base/synchronization",
+  "+device/gamepad", # For gamepad API
+  "+device/geolocation/public/cpp",
+  "+device/nfc",
+  "+device/vr",  # For WebVR API
+  # This can only be used on POSIX, in particular it mustn't be used on Windows
+  # in the browser DLL.
+  "+gin/v8_initializer.h",
+  "+mojo",
+  "+services",
+  "+sql",
+  "+ui/aura_extra",
+  "+components/vector_icons",
+  "+ui/webui",
+
+  # In general, //content shouldn't depend on //device.
+  # This is the an exception.
+  "+device/udev_linux",  # For udev utility and wrapper library.
+
+  # Explicitly disallow using SyncMessageFilter to prevent browser from
+  # sending synchronous IPC messages on non-UI threads.
+  "-ipc/ipc_sync_message_filter.h",
+
+  # Other libraries.
+  "+third_party/iaccessible2",
+  "+third_party/isimpledom",
+  "+third_party/khronos",   # For enum definitions only
+  "+third_party/libaom/av1_buildflags.h",
+  "+third_party/re2",
+  "+third_party/zlib",
+
+  # Allow non-browser Chrome OS code to be used.
+  "+chromeos",
+  "+third_party/cros_system_api",
+
+  # No inclusion of WebKit from the browser, other than the ones in
+  # WebKit/public/{mojom,common}, or the ones that are strictly enum/POD,
+  # header-only types, and some selected common code.
+  "-third_party/blink",
+  "+third_party/blink/public/common",
+  "+third_party/blink/public/mojom",
+  "+third_party/blink/public/platform/resource_request_blocked_reason.h",
+  "+third_party/blink/public/platform/WebAddressSpace.h",
+  "+third_party/blink/public/platform/web_content_security_policy.h",
+  "+third_party/blink/public/platform/web_cursor_info.h",
+  "+third_party/blink/public/platform/web_drag_operation.h",
+  "+third_party/blink/public/platform/web_focus_type.h",
+  "+third_party/blink/public/platform/web_fullscreen_video_status.h",
+  "+third_party/blink/public/platform/web_gesture_event.h",
+  "+third_party/blink/public/platform/web_input_event.h",
+  "+third_party/blink/public/platform/web_insecure_request_policy.h",
+  "+third_party/blink/public/platform/web_intrinsic_sizing_info.h",
+  "+third_party/blink/public/platform/web_keyboard_event.h",
+  "+third_party/blink/public/platform/web_mixed_content_context_type.h",
+  "+third_party/blink/public/platform/web_mouse_event.h",
+  "+third_party/blink/public/platform/web_mouse_wheel_event.h",
+  "+third_party/blink/public/platform/WebPageVisibilityState.h",
+  "+third_party/blink/public/platform/web_referrer_policy.h",
+  "+third_party/blink/public/platform/WebRemoteFrameProperties.h",
+  "+third_party/blink/public/platform/web_screen_info.h",
+  "+third_party/blink/public/platform/web_scroll_into_view_params.h",
+  "+third_party/blink/public/platform/web_security_style.h",
+  "+third_party/blink/public/platform/web_sudden_termination_disabler_type.h",
+  "+third_party/blink/public/platform/web_touch_event.h",
+  "+third_party/blink/public/platform/web_text_input_type.h",
+  "+third_party/blink/public/platform/mac/web_scrollbar_theme.h",
+  "+third_party/blink/public/platform/modules/locks/lock_manager.mojom.h",
+  "+third_party/blink/public/platform/modules/indexeddb/web_idb_database_exception.h",
+  "+third_party/blink/public/platform/modules/indexeddb/web_idb_types.h",
+  "+third_party/blink/public/platform/modules/notifications/web_notification_constants.h",
+  "+third_party/blink/public/platform/modules/serviceworker/web_service_worker_error.h",
+  "+third_party/blink/public/public_buildflags.h",
+  "+third_party/blink/public/web/web_ax_enums.h",
+  "+third_party/blink/public/web/web_console_message.h",
+  "+third_party/blink/public/web/web_context_menu_data.h",
+  "+third_party/blink/public/web/web_device_emulation_params.h",
+  "+third_party/blink/public/web/web_drag_status.h",
+  "+third_party/blink/public/web/web_find_options.h",
+  "+third_party/blink/public/web/web_fullscreen_options.h",
+  "+third_party/blink/public/web/web_frame_serializer_cache_control_policy.h",
+  "+third_party/blink/public/web/web_ime_text_span.h",
+  "+third_party/blink/public/web/web_media_player_action.h",
+  "+third_party/blink/public/web/web_plugin_action.h",
+  "+third_party/blink/public/web/web_popup_type.h",
+  "+third_party/blink/public/web/web_serialized_script_value_version.h",
+  "+third_party/blink/public/web/WebSharedWorkerCreationContextType.h",
+  "+third_party/blink/public/web/WebSharedWorkerCreationErrors.h",
+  "+third_party/blink/public/web/web_text_direction.h",
+  "+third_party/blink/public/web/web_tree_scope_type.h",
+  "+third_party/blink/public/web/web_triggering_event_info.h",
+
+  # Allow mojo generated files in WebKit. These files use STL types and
+  # don't use WTF types.
+  "+third_party/blink/public/platform/dedicated_worker_factory.mojom.h",
+  "+third_party/blink/public/platform/input_host.mojom.h",
+  "+third_party/blink/public/platform/input_messages.mojom.h",
+  "+third_party/blink/public/platform/mime_registry.mojom.h",
+  "+third_party/blink/public/platform/modules/background_sync/background_sync.mojom.h",
+  "+third_party/blink/public/platform/modules/bluetooth/web_bluetooth.mojom.h",
+  "+third_party/blink/public/platform/modules/broadcastchannel/broadcast_channel.mojom.h",
+  "+third_party/blink/public/platform/modules/cache_storage/cache_storage.mojom.h",
+  "+third_party/blink/public/platform/modules/cookie_store/cookie_store.mojom.h",
+  "+third_party/blink/public/platform/modules/geolocation/geolocation_service.mojom.h",
+  "+third_party/blink/public/platform/modules/installedapp/installed_app_provider.mojom.h",
+  "+third_party/blink/public/platform/modules/installedapp/related_application.mojom.h",
+  "+third_party/blink/public/platform/modules/keyboard_lock/keyboard_lock.mojom.h",
+  "+third_party/blink/public/platform/modules/mediasession/media_session.mojom.h",
+  "+third_party/blink/public/platform/modules/mediastream/media_devices.mojom.h",
+  "+third_party/blink/public/platform/modules/notifications/notification_service.mojom.h",
+  "+third_party/blink/public/platform/modules/frame_sinks/embedded_frame_sink.mojom.h",
+  "+third_party/blink/public/platform/modules/payments/payment_app.mojom.h",
+  "+third_party/blink/public/platform/modules/permissions/permission.mojom.h",
+  "+third_party/blink/public/platform/modules/permissions/permission_status.mojom.h",
+  "+third_party/blink/public/platform/modules/presentation/presentation.mojom.h",
+  "+third_party/blink/public/platform/modules/webauth/authenticator.mojom.h",
+  "+third_party/blink/public/platform/modules/webauth/virtual_authenticator.mojom.h",
+  "+third_party/blink/public/platform/modules/webdatabase/web_database.mojom.h",
+  "+third_party/blink/public/platform/modules/websockets/websocket.mojom.h",
+  "+third_party/blink/public/platform/oom_intervention.mojom.h",
+  "+third_party/blink/public/platform/reporting.mojom.h",
+  "+third_party/blink/public/platform/web_feature.mojom.h",
+  "+third_party/blink/public/web/commit_result.mojom.h",
+  "+third_party/blink/public/web/devtools_agent.mojom.h",
+  "+third_party/blink/public/web/devtools_frontend.mojom.h",
+
+  # DO NOT ADD ANY CHROME OR COMPONENTS INCLUDES HERE!!!
+  # See https://sites.google.com/a/chromium.org/dev/developers/content-module
+  # for more information.
+]

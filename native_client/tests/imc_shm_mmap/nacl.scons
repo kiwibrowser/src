@@ -1,0 +1,19 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+
+imc_shm_mmap_test = env.ComponentProgram(
+    env.ProgramNameForNmf('imc_shm_mmap_test'),
+    'imc_shm_mmap_test.c',
+    EXTRA_LIBS=['${NONIRT_LIBS}', 'imc_syscalls', '${TESTRUNNER_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+    'imc_shm_mmap_test.out',
+    imc_shm_mmap_test,
+    # Pass '-a' to enable imc_mem_obj_create().
+    sel_ldr_flags=['-a', '-E', 'OUTSIDE_BROWSER=1'])
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_imc_shm_mmap_test')

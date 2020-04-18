@@ -1,0 +1,76 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(
+      `Tests that breakpoints are correctly handled while debugger is turned off\n`);
+  await TestRunner.loadModule('sources_test_runner');
+  await TestRunner.showPanel('sources');
+  await TestRunner.navigatePromise(
+      'resources/debugger-disable-add-breakpoint.html');
+
+  SourcesTestRunner.startDebuggerTest(step1);
+  var testSourceFrame;
+  function step1() {
+    SourcesTestRunner.showScriptSource(
+        'debugger-disable-add-breakpoint.html', step2);
+  }
+
+  function step2(sourceFrame) {
+    testSourceFrame = sourceFrame;
+    TestRunner.addResult('Main resource was shown.');
+    TestRunner.debuggerModel.addEventListener(
+        SDK.DebuggerModel.Events.DebuggerWasDisabled, step3, this);
+    TestRunner.debuggerModel._disableDebugger();
+  }
+
+  async function step3() {
+    TestRunner.debuggerModel.removeEventListener(
+        SDK.DebuggerModel.Events.DebuggerWasDisabled, step3, this);
+    TestRunner.addResult('Debugger disabled.');
+    SourcesTestRunner.setBreakpoint(testSourceFrame, 3, '', true);
+    TestRunner.addResult('Breakpoint added');
+    await TestRunner.debuggerModel._enableDebugger();
+    step4();
+  }
+
+  function step4() {
+    TestRunner.addResult('Debugger was enabled');
+    SourcesTestRunner.runTestFunctionAndWaitUntilPaused(step5);
+  }
+
+  function step5() {
+    SourcesTestRunner.resumeExecution(step6);
+  }
+
+  function step6() {
+    TestRunner.addResult('Disable debugger again');
+    TestRunner.debuggerModel.addEventListener(
+        SDK.DebuggerModel.Events.DebuggerWasDisabled, step7, this);
+    TestRunner.debuggerModel._disableDebugger();
+  }
+
+  function step7() {
+    TestRunner.addResult('Debugger disabled');
+    var breakpoint = Bindings.breakpointManager.findBreakpoints(
+        testSourceFrame.uiSourceCode(), 3)[0];
+    breakpoint.remove();
+    TestRunner.addResult('Breakpoint removed');
+    TestRunner.debuggerModel.addEventListener(
+        SDK.DebuggerModel.Events.DebuggerWasEnabled, step8, this);
+    TestRunner.debuggerModel._enableDebugger();
+  }
+
+  function step8() {
+    TestRunner.addResult('Debugger enabled');
+    TestRunner.addResult('Evaluating test function.');
+    TestRunner.evaluateInPage('testFunction()', step9);
+  }
+
+  function step9() {
+    TestRunner.addResult(
+        'function evaluated without a pause on the breakpoint.');
+    SourcesTestRunner.completeDebuggerTest();
+  }
+})();

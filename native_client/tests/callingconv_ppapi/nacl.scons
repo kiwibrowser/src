@@ -1,0 +1,113 @@
+# -*- python -*-
+# Copyright 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Calling convention test to ensure interoperabilty of nacl-gcc and
+# pnacl generated code
+
+Import('env')
+
+# This test does not make any sense for pure pnacl
+if not env.Bit('bitcode'):
+  Return()
+
+if env.Bit('pnacl_generate_pexe'):
+  Return()
+
+# This test is disabled for MIPS because we do not have a MIPS-enabled nacl-gcc
+# to test PNaCl against.
+if env.Bit('build_mips32'):
+  Return()
+
+env_pnacl_cc = env.Clone()
+env_pnacl_cc.PNaClForceNative()
+# for ppapi headers which include other ppapi headers
+env_pnacl_cc.Append(CPPPATH='${SCONSTRUCT_DIR}/tests/callingconv_ppapi')
+
+if env.Bit('build_arm'):
+  pnacl_nativecc_flags = ['--target=armv7a-unknown-nacl-gnueabi',
+                          '-mfloat-abi=hard']
+elif env.Bit('build_x86_32'):
+  pnacl_nativecc_flags = ['--target=i686-unknown-nacl']
+elif env.Bit('build_x86_64'):
+  pnacl_nativecc_flags = ['--target=x86_64-unknown-nacl']
+
+env_pnacl_cc_calling = env_pnacl_cc.Clone()
+env_pnacl_cc_calling.Append(
+    CCFLAGS=pnacl_nativecc_flags,
+    # force invoked functions to have "gcc" prefix
+    CPPDEFINES=['INVOCATION_PREFIX=gcc'])
+env_pnacl_cc_called = env_pnacl_cc.Clone()
+env_pnacl_cc_called.Append(
+    CCFLAGS=pnacl_nativecc_flags,
+    # force both defined and invoked functions to have the "pnacl" prefix
+    CPPDEFINES=['FUNCTION_PREFIX=pnacl', 'INVOCATION_PREFIX=pnacl'])
+
+gcc_cc_env = env_pnacl_cc.PNaClGetNNaClEnv()
+# GCC's C++ EH support requires GCC's runtime, which we don't link with.
+gcc_cc_env.Append(CXXFLAGS=['-fno-exceptions'])
+
+# This can generate references to runtime code we won't link with.
+gcc_cc_env.FilterOut(CCFLAGS=['-fasynchronous-unwind-tables'])
+
+env_gcc_cc_calling = gcc_cc_env.Clone()
+env_gcc_cc_calling.Append(
+    # force invoked functions to have "pnacl" prefix
+    CPPDEFINES=['INVOCATION_PREFIX=pnacl'])
+env_gcc_cc_called = gcc_cc_env.Clone()
+env_gcc_cc_called.Append(
+    # force both defined and invoked functions to have the "gcc" prefix
+    CPPDEFINES=['FUNCTION_PREFIX=gcc', 'INVOCATION_PREFIX=gcc'])
+
+# Note: this file is alwyas built with the pnacl TC
+obj_support = env_pnacl_cc.ComponentObject('support.c')
+
+env_pnacl_cc_called.ComponentObject('obj_pnacl_called',
+                                    'ppapi_callingconv_test.cpp')
+
+env_pnacl_cc_calling.ComponentObject('obj_pnacl_calling',
+                                     'ppapi_callingconv_test.cpp')
+env_pnacl_cc.ComponentObject('obj_pnacl_both',
+                             'ppapi_callingconv_test.cpp')
+
+env_gcc_cc_called.ComponentObject('obj_gcc_called',
+                                  'ppapi_callingconv_test.cpp')
+
+env_gcc_cc_calling.ComponentObject('obj_gcc_calling',
+                                   'ppapi_callingconv_test.cpp')
+
+gcc_cc_env.ComponentObject('obj_gcc_both',
+                           'ppapi_callingconv_test.cpp')
+
+
+TARGETS = [
+  # pnacl self consistency tests
+  ('pnacl_both', ['obj_pnacl_both', obj_support]),
+  # gcc self consistency tests
+  ('gcc_both', ['obj_gcc_both', obj_support]),
+  # gcc compiled code invoking pnacl compiled code:
+  # * obj_gcc_calling contains gcc compiled code invoking functions
+  #   with the "pnacl" prefix
+  # * obj_pnacl_called contains pnacl compiled functions with the "pnacl"
+  #   prefix
+  ('gcc_calls_pnacl', ['obj_gcc_calling', 'obj_pnacl_called', obj_support]),
+  # pnacl compiled code invoking gcc compiled code:
+  # * obj_pnacl_calling contains pnacl compiled code invoking functions
+  #   with the "gcc" prefix
+  # * obj_gcc_called contains gcc compiled functions with the "gcc"
+  #   prefix
+  ('pnacl_calls_gcc',['obj_pnacl_calling', 'obj_gcc_called', obj_support]),
+]
+
+
+for name, objs in TARGETS:
+  nexe = env_pnacl_cc.ComponentProgram('callingconv_ppapi_%s' % name,
+                                       objs,
+                                       EXTRA_LIBS=['${NONIRT_LIBS}'])
+  test= env.CommandSelLdrTestNacl('callingconv_ppapi_%s.out' % name,
+                                  nexe,
+                                  stdout_golden=env.File('golden.out'))
+  env.AddNodeToTestSuite(test,
+                         ['medium_tests', 'nonpexe_tests'],
+                         'run_callingconv_ppapi_%s_test' % name)

@@ -1,0 +1,209 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "third_party/blink/renderer/platform/graphics/compositing_reasons.h"
+
+#include "third_party/blink/renderer/platform/wtf/std_lib_extras.h"
+#include "third_party/blink/renderer/platform/wtf/text/string_builder.h"
+
+namespace blink {
+
+namespace {
+
+struct CompositingReasonStringMap {
+  CompositingReasons reason;
+  const char* short_name;
+  const char* description;
+};
+
+constexpr CompositingReasonStringMap kCompositingReasonsStringMap[] = {
+    {CompositingReason::k3DTransform, "transform3D", "Has a 3d transform"},
+    {CompositingReason::kVideo, "video", "Is an accelerated video"},
+    {CompositingReason::kCanvas, "canvas",
+     "Is an accelerated canvas, or is a display list backed canvas that was "
+     "promoted to a layer based on a performance heuristic."},
+    {CompositingReason::kPlugin, "plugin", "Is an accelerated plugin"},
+    {CompositingReason::kIFrame, "iFrame", "Is an accelerated iFrame"},
+    {CompositingReason::kBackfaceVisibilityHidden, "backfaceVisibilityHidden",
+     "Has backface-visibility: hidden"},
+    {CompositingReason::kActiveTransformAnimation, "activeTransformAnimation",
+     "Has an active accelerated transform animation or transition"},
+    {CompositingReason::kActiveOpacityAnimation, "activeOpacityAnimation",
+     "Has an active accelerated opacity animation or transition"},
+    {CompositingReason::kActiveFilterAnimation, "activeFilterAnimation",
+     "Has an active accelerated filter animation or transition"},
+    {CompositingReason::kActiveBackdropFilterAnimation,
+     "activeBackdropFilterAnimation",
+     "Has an active accelerated backdrop filter animation or transition"},
+    {CompositingReason::kTransitionProperty, "transitionProperty",
+     "Has an acceleratable transition property (active or inactive)"},
+    {CompositingReason::kScrollDependentPosition, "scrollDependentPosition",
+     "Is fixed or sticky position"},
+    {CompositingReason::kOverflowScrollingTouch, "overflowScrollingTouch",
+     "Is a scrollable overflow element"},
+    {CompositingReason::kOverflowScrollingParent, "overflowScrollingParent",
+     "Scroll parent is not an ancestor"},
+    {CompositingReason::kOutOfFlowClipping, "outOfFlowClipping",
+     "Has clipping ancestor"},
+    {CompositingReason::kVideoOverlay, "videoOverlay",
+     "Is overlay controls for video"},
+    {CompositingReason::kWillChangeCompositingHint, "willChange",
+     "Has a will-change compositing hint"},
+    {CompositingReason::kBackdropFilter, "backdropFilter",
+     "Has a backdrop filter"},
+    {CompositingReason::kRootScroller, "rootScroller",
+     "Is the document.rootScroller"},
+    {CompositingReason::kAssumedOverlap, "assumedOverlap",
+     "Might overlap other composited content"},
+    {CompositingReason::kOverlap, "overlap",
+     "Overlaps other composited content"},
+    {CompositingReason::kNegativeZIndexChildren, "negativeZIndexChildren",
+     "Parent with composited negative z-index content"},
+    {CompositingReason::kSquashingDisallowed, "squashingDisallowed",
+     "Layer was separately composited because it could not be squashed."},
+    {CompositingReason::kTransformWithCompositedDescendants,
+     "transformWithCompositedDescendants",
+     "Has a transform that needs to be known by compositor because of "
+     "composited descendants"},
+    {CompositingReason::kOpacityWithCompositedDescendants,
+     "opacityWithCompositedDescendants",
+     "Has opacity that needs to be applied by compositor because of composited "
+     "descendants"},
+    {CompositingReason::kMaskWithCompositedDescendants,
+     "maskWithCompositedDescendants",
+     "Has a mask that needs to be known by compositor because of composited "
+     "descendants"},
+    {CompositingReason::kReflectionWithCompositedDescendants,
+     "reflectionWithCompositedDescendants",
+     "Has a reflection that needs to be known by compositor because of "
+     "composited descendants"},
+    {CompositingReason::kFilterWithCompositedDescendants,
+     "filterWithCompositedDescendants",
+     "Has a filter effect that needs to be known by compositor because of "
+     "composited descendants"},
+    {CompositingReason::kBlendingWithCompositedDescendants,
+     "blendingWithCompositedDescendants",
+     "Has a blending effect that needs to be known by compositor because of "
+     "composited descendants"},
+    {CompositingReason::kClipsCompositingDescendants,
+     "clipsCompositingDescendants",
+     "Has a clip that needs to be known by compositor because of composited "
+     "descendants"},
+    {CompositingReason::kPerspectiveWith3DDescendants,
+     "perspectiveWith3DDescendants",
+     "Has a perspective transform that needs to be known by compositor because "
+     "of 3d descendants"},
+    {CompositingReason::kPreserve3DWith3DDescendants,
+     "preserve3DWith3DDescendants",
+     "Has a preserves-3d property that needs to be known by compositor because "
+     "of 3d descendants"},
+    {CompositingReason::kReflectionOfCompositedParent,
+     "reflectionOfCompositedParent", "Is a reflection of a composited layer"},
+    {CompositingReason::kIsolateCompositedDescendants,
+     "isolateCompositedDescendants",
+     "Should isolate descendants to apply a blend effect"},
+    {CompositingReason::kPositionFixedOrStickyWithCompositedDescendants,
+     "positionFixedOrStickyWithCompositedDescendants"
+     "Is a position:fixed or position:sticky element with composited "
+     "descendants"},
+    {CompositingReason::kRoot, "root", "Is the root layer"},
+    {CompositingReason::kLayerForAncestorClip, "layerForAncestorClip",
+     "Secondary layer, applies a clip due to a sibling in the compositing "
+     "tree"},
+    {CompositingReason::kLayerForDescendantClip, "layerForDescendantClip",
+     "Secondary layer, to clip descendants of the owning layer"},
+    {CompositingReason::kLayerForPerspective, "layerForPerspective",
+     "Secondary layer, to house the perspective transform for all descendants"},
+    {CompositingReason::kLayerForHorizontalScrollbar,
+     "layerForHorizontalScrollbar",
+     "Secondary layer, the horizontal scrollbar layer"},
+    {CompositingReason::kLayerForVerticalScrollbar, "layerForVerticalScrollbar",
+     "Secondary layer, the vertical scrollbar layer"},
+    {CompositingReason::kLayerForOverflowControlsHost,
+     "layerForOverflowControlsHost",
+     "Secondary layer, the overflow controls host layer"},
+    {CompositingReason::kLayerForScrollCorner, "layerForScrollCorner",
+     "Secondary layer, the scroll corner layer"},
+    {CompositingReason::kLayerForScrollingContents, "layerForScrollingContents",
+     "Secondary layer, to house contents that can be scrolled"},
+    {CompositingReason::kLayerForScrollingContainer,
+     "layerForScrollingContainer",
+     "Secondary layer, used to position the scrolling contents while "
+     "scrolling"},
+    {CompositingReason::kLayerForSquashingContents, "layerForSquashingContents",
+     "Secondary layer, home for a group of squashable content"},
+    {CompositingReason::kLayerForSquashingContainer,
+     "layerForSquashingContainer",
+     "Secondary layer, no-op layer to place the squashing layer correctly in "
+     "the composited layer tree"},
+    {CompositingReason::kLayerForForeground, "layerForForeground",
+     "Secondary layer, to contain any normal flow and positive z-index "
+     "contents on top of a negative z-index layer"},
+    {CompositingReason::kLayerForBackground, "layerForBackground",
+     "Secondary layer, to contain acceleratable background content"},
+    {CompositingReason::kLayerForMask, "layerForMask",
+     "Secondary layer, to contain the mask contents"},
+    {CompositingReason::kLayerForClippingMask, "layerForClippingMask",
+     "Secondary layer, for clipping mask"},
+    {CompositingReason::kLayerForAncestorClippingMask,
+     "layerForAncestorClippingMask",
+     "Secondary layer, applies a clipping mask due to a sibling in the "
+     "composited layer tree"},
+    {CompositingReason::kLayerForScrollingBlockSelection,
+     "layerForScrollingBlockSelection",
+     "Secondary layer, to house block selection gaps for composited scrolling "
+     "with no scrolling contents"},
+    {CompositingReason::kLayerForDecoration, "layerForDecoration",
+     "Layer painted on top of other layers as decoration"},
+    {CompositingReason::kInlineTransform, "inlineTransform",
+     "Has an inline transform, which causes subsequent layers to assume "
+     "overlap"},
+
+};
+
+}  // anonymous namespace
+
+Vector<const char*> CompositingReason::ShortNames(CompositingReasons reasons) {
+#define V(name)                                                             \
+  static_assert(                                                            \
+      CompositingReason::k##name ==                                         \
+          kCompositingReasonsStringMap[CompositingReason::kE##name].reason, \
+      "kCompositingReasonsStringMap needs update for "                      \
+      "CompositingReason::k" #name);                                        \
+  FOR_EACH_COMPOSITING_REASON(V)
+#undef V
+
+  Vector<const char*> result;
+  if (reasons == kNone)
+    return result;
+  for (auto& map : kCompositingReasonsStringMap) {
+    if (reasons & map.reason)
+      result.push_back(map.short_name);
+  }
+  return result;
+}
+
+Vector<const char*> CompositingReason::Descriptions(
+    CompositingReasons reasons) {
+  Vector<const char*> result;
+  if (reasons == kNone)
+    return result;
+  for (auto& map : kCompositingReasonsStringMap) {
+    if (reasons & map.reason)
+      result.push_back(map.description);
+  }
+  return result;
+}
+
+String CompositingReason::ToString(CompositingReasons reasons) {
+  StringBuilder builder;
+  for (const char* name : ShortNames(reasons)) {
+    if (builder.length())
+      builder.Append(',');
+    builder.Append(name);
+  }
+  return builder.ToString();
+}
+
+}  // namespace blink

@@ -1,0 +1,41 @@
+<script src="../../resources/js-test.js"></script>
+<script src="resources/spatial-navigation-utils.js"></script>
+<script type="application/javascript">
+
+var resultMap = [
+  ["Down", "1"],
+  ["Down", "end"],
+  ["DONE", "DONE"]
+];
+
+if (window.testRunner) {
+  testRunner.dumpAsText();
+  testRunner.overridePreference("WebKitTabToLinksPreferenceKey", 1);
+  testRunner.overridePreference("WebKitSpatialNavigationEnabled", 1);
+  testRunner.waitUntilDone();
+}
+
+function runTest()
+{
+  // Start the test after going to a known place.
+  document.getElementById("start").focus();
+
+  initTest(resultMap, testCompleted);
+}
+
+function testCompleted()
+{
+  if (window.testRunner)
+    testRunner.notifyDone();
+}
+
+window.onload = runTest;
+</script>
+
+<a id="start" href="#">Start</a><br>
+<iframe src="data:text/html,
+    <a id='1' href='%23' style='margin-left: 125px'>a</a>"
+></iframe><br>
+<a id="2" href="#">b</a>
+<a id="end" href="#" style="margin-left: 125px;">End</a>
+<div id="console"></div>

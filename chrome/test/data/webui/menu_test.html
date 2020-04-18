@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script>
+
+/** @type {cr.ui.Menu} */
+var menu;
+
+/**
+ * @param {number} x The screenX coord of the mouseup event.
+ * @param {number} y The screenY coord of the mouseup event.
+ */
+function mouseUpAt(x, y) {
+  var mouseUpEvent = new MouseEvent('mouseup', {
+    bubbles: true,
+    cancelable: true,
+    target: menu,
+    screenX: x,
+    screenY: y,
+  });
+  mouseUpEvent.isTrustedForTesting = true;
+  return menu.dispatchEvent(mouseUpEvent);
+}
+
+function setUp() {
+  menu = new cr.ui.Menu;
+}
+
+function testHandleMouseOver() {
+  var called = false;
+  menu.findMenuItem_ = function() {
+    called = true;
+    return cr.ui.Menu.prototype.findMenuItem_.apply(this, arguments);
+  };
+
+  var over = new MouseEvent('mouseover', {bubbles: true, target: cr.doc.body});
+  assertFalse(called);
+  menu.dispatchEvent(over);
+  assertTrue(called);
+}
+
+function testHandleMouseUp() {
+  var realNow = Date.now;
+  Date.now = function() { return 10; };
+
+  menu.show({x: 5, y: 5});
+
+  // Stop mouseups at the same time and position.
+  assertFalse(mouseUpAt(5, 5));
+
+  // Allow mouseups with different positions but the same time.
+  assertTrue(mouseUpAt(50, 50));
+
+  // Alow mouseups with the same position but different times.
+  Date.now = function() { return 1000; };
+  assertTrue(mouseUpAt(5, 5));
+
+  Date.now = realNow;
+}
+
+function testShowViaKeyboardIgnoresMouseUps() {
+  menu.show();
+  assertTrue(mouseUpAt(0, 0));
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE HTML>
+<style>
+@keyframes slide {
+  0% { transform: translate3d(0px, 0px, 0px); }
+  100% { transform: translate3d(100px, 0px, 1px); }
+}
+
+div {
+  width: 100px;
+  height: 100px;
+  background: green;
+  animation-duration: 2s;
+  animation-name: slide;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+</style>
+<div id="animated"></div>
+<script src='../../resources/js-test.js'></script>
+
+<script>
+description('Verifies hidden, compositor-animated layers still get composited');
+
+if (window.internals)
+  internals.settings.setPreferCompositingToLCDTextEnabled(true);
+
+function hiddenLayerIsComposited(layers) {
+  var found = false;
+  layers["layers"].forEach(function(layer) {
+    if (layer.bounds[0] == 100 && layer.bounds[1] == 100) {
+      for (var j = 0; j < layer.compositingReasons.length; j++) {
+        if (layer.compositingReasons[j] === 'activeTransformAnimation')
+          found = true;
+      }
+    }
+  });
+  return found;
+}
+
+onload = function() {
+  if (!window.internals)
+    return;
+
+  document.getElementById('animated').style.visibility = 'hidden';
+  internals.forceCompositingUpdate(document);
+
+  documentLayerTree = JSON.parse(internals.layerTreeAsText(
+      document, window.internals.LAYER_TREE_INCLUDES_COMPOSITING_REASONS));
+
+  shouldBe('hiddenLayerIsComposited(documentLayerTree)', 'true');
+};
+</script>

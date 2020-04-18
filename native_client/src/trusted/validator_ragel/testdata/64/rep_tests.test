@@ -1,0 +1,151 @@
+@hex:
+  # This file does some simple tests to see if we recognize when the REP/REPNE (F2 F3)
+  # prefix bytes are allowed.
+  
+  # The following is an example of an instruction without the REP/REPNE prefix.
+  #  add %al, %al
+  00 c0
+@dis:
+     0:	00 c0                                        	add    %al,%al
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # The following is the same instruction with an illegal REP prefix.
+  f3 00 c0
+@dis:
+     0:	f3 00 c0                                     	repz add %al,%al
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('prefix repz is not allowed', Instruction(0x0: f3 00 c0  repz add %al,%al))
+----------------------------------------------------------------------
+@hex:
+  # The following is the same instruction with an illegal REPNE prefix.
+  f2 00 c0
+@dis:
+     0:	f2 00 c0                                     	repnz add %al,%al
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('prefix repnz is not allowed', Instruction(0x0: f2 00 c0  repnz add %al,%al))
+----------------------------------------------------------------------
+@hex:
+  # Here 0xf3 prefix is used as part of SSE instruction encoding, not as REP.
+  f3 0f 10 45 00
+@dis:
+     0:	f3 0f 10 45 00                               	movss  0x0(%rbp),%xmm0
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # The following is an example of a multibyte instruction explicitly requiring
+  # a REPNE prefix.
+  #   movsd [%rsp+0x10], %xmm2
+  f2 0f 11 54 24 10
+@dis:
+     0:	f2 0f 11 54 24 10                            	movsd  %xmm2,0x10(%rsp)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # The following is an example of an instruction that can get a REP prefix.
+  #    insb
+  6c
+@dis:
+     0:	6c                                           	insb   (%dx),%es:(%rdi)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('segments in memory references are not allowed', Instruction(0x0: 6c  insb (%dx),%es:(%rdi)))
+----------------------------------------------------------------------
+@hex:
+  # The same instrucition with a REP prefix.
+  f3 6c
+@dis:
+     0:	f3 6c                                        	rep insb (%dx),%es:(%rdi)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('prefix rep is not allowed', Instruction(0x0: f3 6c  rep insb (%dx),%es:(%rdi)))
+----------------------------------------------------------------------
+@hex:
+  # The same instruction with a REPNE prefix.
+  f2 6c
+@dis:
+     0:	f2 6c                                        	repnz insb (%dx),%es:(%rdi)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('prefix repnz is not allowed', Instruction(0x0: f2 6c  repnz insb (%dx),%es:(%rdi)))
+----------------------------------------------------------------------
+@hex:
+  # The following is an example of an instruction that can get a REP/REPNE prefix.
+  #    cmpsb
+  a6
+@dis:
+     0:	a6                                           	cmpsb  %es:(%rdi),%ds:(%rsi)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('segments in memory references are not allowed', Instruction(0x0: a6  cmpsb %es:(%rdi),%ds:(%rsi)))
+----------------------------------------------------------------------
+@hex:
+  # The same instruction with a REP prefix.
+  f3 a6
+@dis:
+     0:	f3 a6                                        	repz cmpsb %es:(%rdi),%ds:(%rsi)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('prefix repz is not allowed', Instruction(0x0: f3 a6  repz cmpsb %es:(%rdi),%ds:(%rsi)))
+----------------------------------------------------------------------
+@hex:
+  # The same instruction with a REPNE prefix
+  f2 a6
+@dis:
+     0:	f2 a6                                        	repnz cmpsb %es:(%rdi),%ds:(%rsi)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('prefix repnz is not allowed', Instruction(0x0: f2 a6  repnz cmpsb %es:(%rdi),%ds:(%rsi)))
+----------------------------------------------------------------------
+@hex:
+  # Despite maskmov it similar to string instruction
+  # in that it writes to es:rdi, ...
+  89 ff \\
+  49 8d 3c 3f \\
+  0f f7 d1
+  
+  # ... it does not admit REP prefix
+  89 ff \\
+  49 8d 3c 3f \\
+  f3 0f f7 d1
+@dis:
+     0:	89 ff                                        	mov    %edi,%edi
+     2:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     6:	0f f7 d1                                     	maskmovq %mm1,%mm2
+     9:	89 ff                                        	mov    %edi,%edi
+     b:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     f:	f3 0f f7                                     	(bad)  
+    12:	d1                                           	.byte 0xd1
+@rdfa_output:
+  f: unrecognized instruction
+  return code: 1
+@spec:
+  f: ('objdump failed to decode', Instruction(0xf: f3 0f f7  (bad)))
+  12: ('objdump failed to decode', Instruction(0x12: d1  .byte 0xd1))

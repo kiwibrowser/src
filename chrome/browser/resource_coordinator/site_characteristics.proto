@@ -1,0 +1,32 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+// Contains the information that we want to track about a given site feature.
+// Next Id: 3
+message SiteCharacteristicsFeatureProto {
+  // The cumulative observation time for this feature in seconds, set to 0 once
+  // this feature has been observed.
+  required int64 observation_duration = 1;
+  // The time at which this feature has been used (set to 0 if it hasn't been
+  // used), in seconds since epoch.
+  required int64 use_timestamp = 2;
+}
+
+// Defines the characteristics that we want to track about a given site.
+// Next Id: 6
+message SiteCharacteristicsProto {
+  // The last time this site has been in the loaded state, in seconds since
+  // epoch.
+  required uint32 last_loaded = 1;
+
+  // List of features that we're tracking.
+  required SiteCharacteristicsFeatureProto updates_favicon_in_background = 2;
+  required SiteCharacteristicsFeatureProto updates_title_in_background = 3;
+  required SiteCharacteristicsFeatureProto uses_audio_in_background = 4;
+  required SiteCharacteristicsFeatureProto uses_notifications_in_background = 5;
+}

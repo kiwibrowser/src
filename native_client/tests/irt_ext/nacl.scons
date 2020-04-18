@@ -1,0 +1,59 @@
+# -*- python -*-
+# Copyright (c) 2014 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# IRT extensions test
+
+if env.Bit('bitcode'):
+  Return()
+
+# The old glibc does not support nacl_interface_ext_supply.
+if env.Bit('nacl_glibc') and env.Bit('build_x86'):
+  Return()
+
+IRT_EXT_TEST_SRCS = [
+    'basic_calls.c',
+    'error_report.c',
+    'file_desc.c',
+    'mem_calls.c',
+    'threading.c',
+    ]
+
+IRT_EXT_LIBC_TEST_SRCS = [
+    'libc/basic_tests.c',
+    'libc/file_tests.c',
+    'libc/libc_test.c',
+    'libc/mem_tests.c',
+    'libc/thread_tests.c',
+    ]
+
+irt_ext_libc_test_nexe = env.ComponentProgram(
+    'irt_ext_libc_test',
+    (IRT_EXT_TEST_SRCS +
+     IRT_EXT_LIBC_TEST_SRCS),
+    EXTRA_LIBS=['${PTHREAD_LIBS}', '${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl('irt_ext_libc_test.out',
+                                 irt_ext_libc_test_nexe)
+
+env.AddNodeToTestSuite(node, ['small_tests'],
+                       'run_irt_ext_libc_test',
+                       # The thread related tests are flaky on mac asan.
+                       is_broken=(env.Bit('asan') and env.Bit('host_mac')))
+
+irt_ext_no_pthread_nexe = env.ComponentProgram(
+    'irt_ext_no_pthread_test',
+    'no_pthread_test/no_pthread_test.c',
+    EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl('irt_ext_no_pthread_test.out',
+                                 irt_ext_no_pthread_nexe)
+
+# In glibc there are no IRT interfaces that are requested only by
+# libpthread and not by libc, so this test can do nothing useful.
+env.AddNodeToTestSuite(node, ['small_tests'],
+                       'run_irt_ext_no_pthread_test',
+                       is_broken=env.Bit('nacl_glibc'))

@@ -1,0 +1,285 @@
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+################################################################################
+# This file describes instructions from AMD64 Architecture Programmer's Manual
+#                     Volume 5: 64-Bit Media and x87 Floating-Point Instructions
+#                                  Chapter 1: 64-Bit Media Instruction Reference
+################################################################################
+# File format: see def_format.py
+######## CVTPD2PI ##############################################################
+cvtpd2pi Wpd Pq, 0x66 0x0f 0x2d, CPUFeature_SSE2
+######## CVTPI2PD ##############################################################
+cvtpi2pd Qq Vpd, 0x66 0x0f 0x2a, CPUFeature_SSE2
+######## CVTPI2PS ##############################################################
+cvtpi2ps Qq Vps, 0x0f 0x2a, CPUFeature_SSE2
+######## CVTPS2PI ##############################################################
+cvtps2pi Wps Pq, 0x0f 0x2d, CPUFeature_SSE2
+######## CVTTPD2PI #############################################################
+cvttpd2pi Wpd Pq, 0x66 0x0f 0x2c, CPUFeature_SSE2
+######## CVTTPS2PI #############################################################
+cvttps2pi Wps Pq, 0x0f 0x2c, CPUFeature_SSE2
+######## EMMS ##################################################################
+emms, 0x0f 0x77, CPUFeature_MMX
+######## FEMMS #################################################################
+femms, 0x0f 0x0e, CPUFeature_3DNOW
+######## FRSTOR ################################################################
+frstor Msr, 0xdd /4, CPUFeature_x87
+######## FSAVE/FNSAVE ##########################################################
+fnsave Msr, 0xdd /6, CPUFeature_x87
+######## FXRSTOR ###############################################################
+fxrstor Msx, 0x0f 0xae /1, norexw CPUFeature_FXSR
+fxrstor64 Msx, rexw 0x0f 0xae /1, amd64 CPUFeature_FXSR
+######## FXSAVE ################################################################
+fxsave Msx, 0x0f 0xae /0, norexw CPUFeature_FXSR
+fxsave64 Msx, rexw 0x0f 0xae /0, amd64 CPUFeature_FXSR
+######## MASKMOVQ ##############################################################
+maskmovq Nq Pq, 0x0f 0xf7, CPUFeature_EMMXSSE nacl-amd64-forbidden
+######## MOVD ##################################################################
+# Textbook definition of "movd" as per AMD/Intel manuals looks like this:
+#  movd Ey Py, 0x0f 0x6e, CPUFeature_MMX
+#  movd Py Ey, 0x0f 0x7e, CPUFeature_MMX
+# Objdump names 64bit version not "movd" but movq".  We describe 32bit version
+# and 64bit separately.
+movd Ed Pq, 0x0f 0x6e, norexw CPUFeature_MMX
+movd Pq Ed, 0x0f 0x7e, norexw CPUFeature_MMX nacl-amd64-zero-extends
+movq Eq Pq, rexw 0x0f 0x6e, amd64 CPUFeature_MMX
+movq Pq Eq, rexw 0x0f 0x7e, amd64 CPUFeature_MMX
+######## MOVNTQ ################################################################
+movntq Pq Mq, 0x0f 0xe7, CPUFeature_EMMXSSE nacl-unsupported
+######## MOVQ ##################################################################
+movq Qq Pq, 0x0f 0x6f, CPUFeature_MMX
+movq Pq Qq, 0x0f 0x7f, CPUFeature_MMX
+######## MOVDQ2Q ###############################################################
+movdq2q Uq Pq, 0xf2 0x0f 0xd6, CPUFeature_SSE2
+######## MOVQ2DQ ###############################################################
+movq2dq Nq Vdq, 0xf3 0x0f 0xd6, CPUFeature_SSE2
+######## PABSB #################################################################
+pabsb Qpk Ppk, 0x0f 0x38 0x1c, CPUFeature_SSSE3
+######## PABSD #################################################################
+pabsd Qpj Ppj, 0x0f 0x38 0x1e, CPUFeature_SSSE3
+######## PABSW #################################################################
+pabsw Qpi Ppi, 0x0f 0x38 0x1d, CPUFeature_SSSE3
+######## PACKSSDW ##############################################################
+packssdw Qq Pq, 0x0f 0x6b, CPUFeature_MMX
+######## PACKSSWB ##############################################################
+packsswb Qq Pq, 0x0f 0x63, CPUFeature_MMX
+######## PACKUSWB ##############################################################
+packuswb Qq Pq, 0x0f 0x67, CPUFeature_MMX
+######## PADDB #################################################################
+paddb Qq Pq, 0x0f 0xfc, CPUFeature_MMX
+######## PADDD #################################################################
+paddd Qq Pq, 0x0f 0xfe, CPUFeature_MMX
+######## PADDQ #################################################################
+paddq Qq Pq, 0x0f 0xd4, CPUFeature_SSE2
+######## PADDSB ################################################################
+paddsb Qq Pq, 0x0f 0xec, CPUFeature_MMX
+######## PADDSW ################################################################
+paddsw Qq Pq, 0x0f 0xed, CPUFeature_MMX
+######## PADDUSB ###############################################################
+paddusb Qq Pq, 0x0f 0xdc, CPUFeature_MMX
+######## PADDUSW ###############################################################
+paddusw Qq Pq, 0x0f 0xdd, CPUFeature_MMX
+######## PADDW #################################################################
+paddw Qq Pq, 0x0f 0xfd, CPUFeature_MMX
+######## PALIGNR ###############################################################
+palignr Ib Qq Pq, 0x0f 0x3a 0x0f, CPUFeature_SSSE3
+######## PAND ##################################################################
+pand Qq Pq, 0x0f 0xdb, CPUFeature_MMX
+######## PANDN #################################################################
+pandn Qq Pq, 0x0f 0xdf, CPUFeature_MMX
+######## PAVGB #################################################################
+pavgb Qq Pq, 0x0f 0xe0, CPUFeature_EMMXSSE
+######## PAVGUSB ###############################################################
+pavgusb Qq Pq, 0x0f 0x0f / 0xbf, CPUFeature_3DNOW
+######## PAVGW #################################################################
+pavgw Qq Pq, 0x0f 0xe3, CPUFeature_EMMXSSE
+######## PCMPEQB ###############################################################
+pcmpeqb Qq Pq, 0x0f 0x74, CPUFeature_MMX
+######## PCMPEQD ###############################################################
+pcmpeqd Qq Pq, 0x0f 0x76, CPUFeature_MMX
+######## PCMPEQW ###############################################################
+pcmpeqw Qq Pq, 0x0f 0x75, CPUFeature_MMX
+######## PCMPGTB ###############################################################
+pcmpgtb Qq Pq, 0x0f 0x64, CPUFeature_MMX
+######## PCMPGTD ###############################################################
+pcmpgtd Qq Pq, 0x0f 0x66, CPUFeature_MMX
+######## PCMPGTW ###############################################################
+pcmpgtw Qq Pq, 0x0f 0x65, CPUFeature_MMX
+######## PEXTRW ################################################################
+# Textbook definition of "pextrw" as per AMD/Intel manuals looks like this:
+#  pextrw Ib Nq Gd, 0x0f 0xc5, CPUFeature_EMMXSSE
+# GNU as accepts this description, but objdump decodes last operand as "Gy".
+# Technically it makes no difference: "pextrw" only sets low 16bit of the third
+# operand thus the whole operation produces precisely idential output for "Gy"
+# and "Gd" operands.  We'll use objdump's description.
+#
+# "pextrw" is not marked as nacl-amd64-zero-extends because you shouldn't use
+# MMX registers to hold addresses.
+pextrw Ib Nq Gy, 0x0f 0xc5, CPUFeature_EMMXSSE
+######## PF2ID #################################################################
+pf2id Qq Pq, 0x0f 0x0f / 0x1d, CPUFeature_3DNOW
+######## PF2IW #################################################################
+pf2iw Qq Pq, 0x0f 0x0f / 0x1c, CPUFeature_E3DNOW
+######## PFACC #################################################################
+pfacc Qq Pq, 0x0f 0x0f / 0xae, CPUFeature_3DNOW
+######## PFADD #################################################################
+pfadd Qq Pq, 0x0f 0x0f / 0x9e, CPUFeature_3DNOW
+######## PFCMPEQ ###############################################################
+pfcmpeq Qq Pq, 0x0f 0x0f / 0xb0, CPUFeature_3DNOW
+######## PFCMPGE ###############################################################
+pfcmpge Qq Pq, 0x0f 0x0f / 0x90, CPUFeature_3DNOW
+######## PFCMPGT ###############################################################
+pfcmpgt Qq Pq, 0x0f 0x0f / 0xa0, CPUFeature_3DNOW
+######## PFMAX #################################################################
+pfmax Qq Pq, 0x0f 0x0f / 0xa4, CPUFeature_3DNOW
+######## PFMIN #################################################################
+pfmin Qq Pq, 0x0f 0x0f / 0x94, CPUFeature_3DNOW
+######## PFMUL #################################################################
+pfmul Qq Pq, 0x0f 0x0f / 0xb4, CPUFeature_3DNOW
+######## PFNACC ################################################################
+pfnacc Qq Pq, 0x0f 0x0f / 0x8a, CPUFeature_E3DNOW
+######## PFPNACC ###############################################################
+pfpnacc Qq Pq, 0x0f 0x0f / 0x8e, CPUFeature_E3DNOW
+######## PFRCP #################################################################
+pfrcp Qq Pq, 0x0f 0x0f / 0x96, CPUFeature_3DNOW
+######## PFRCPIT1 ##############################################################
+pfrcpit1 Qq Pq, 0x0f 0x0f / 0xa6, CPUFeature_3DNOW
+######## PFRCPIT2 ##############################################################
+pfrcpit2 Qq Pq, 0x0f 0x0f / 0xb6, CPUFeature_3DNOW
+######## PFRSQIT1 ##############################################################
+pfrsqit1 Qq Pq, 0x0f 0x0f / 0xa7, CPUFeature_3DNOW
+######## PFRSQRT ###############################################################
+pfrsqrt Qq Pq, 0x0f 0x0f / 0x97, CPUFeature_3DNOW
+######## PFSUB #################################################################
+pfsub Qq Pq, 0x0f 0x0f / 0x9a, CPUFeature_3DNOW
+######## PFSUBR ################################################################
+pfsubr Qq Pq, 0x0f 0x0f / 0xaa, CPUFeature_3DNOW
+######## PHADDD ################################################################
+phaddd Qpj Ppj, 0x0f 0x38 0x02, CPUFeature_SSSE3
+######## PHADDSW ###############################################################
+phaddsw Qpi Ppi, 0x0f 0x38 0x03, CPUFeature_SSSE3
+######## PHADDW ################################################################
+phaddw Qpi Ppi, 0x0f 0x38 0x01, CPUFeature_SSSE3
+######## PHSUBD ################################################################
+phsubd Qpj Ppj, 0x0f 0x38 0x06, CPUFeature_SSSE3
+######## PHADDSW ###############################################################
+phsubsw Qpi Ppi, 0x0f 0x38 0x07, CPUFeature_SSSE3
+######## PHADDW ################################################################
+phsubw Qpi Ppi, 0x0f 0x38 0x05, CPUFeature_SSSE3
+######## PI2FD #################################################################
+pi2fd Qq Pq, 0x0f 0x0f / 0x0d, CPUFeature_3DNOW
+######## PI2FW #################################################################
+pi2fw Qq Pq, 0x0f 0x0f / 0x0c, CPUFeature_E3DNOW
+######## PINSTRW ###############################################################
+pinsrw Ib Mw Pq, 0x0f 0xc4, CPUFeature_EMMXSSE
+# Textbook definition of "pinsrw" as per AMD/Intel manuals looks like this:
+#  pinsrw Ib Rd Pq, 0x0f 0xc4, CPUFeature_EMMXSSE
+# GNU as accepts this description, but objdump decodes last operand as "Gy".
+# Technically it makes no difference: "pinsrw" only uses low 16bit of the second
+# operand thus the whole operation produces precisely idential output for "Gy"
+# and "Gd" operands.  We'll use objdump's description.
+pinsrw Ib Ry Pq, 0x0f 0xc4, CPUFeature_EMMXSSE
+######## PMADDUBSW #############################################################
+pmaddubsw Qpk Ppk, 0x0f 0x38 0x04, CPUFeature_MMX
+######## PMADDWD ###############################################################
+pmaddwd Qq Pq, 0x0f 0xf5, CPUFeature_MMX
+######## PMAXSW ################################################################
+pmaxsw Qq Pq, 0x0f 0xee, CPUFeature_EMMXSSE
+######## PMAXUB ################################################################
+pmaxub Qq Pq, 0x0f 0xde, CPUFeature_EMMXSSE
+######## PMINSW ################################################################
+pminsw Qq Pq, 0x0f 0xea, CPUFeature_EMMXSSE
+######## PMINUB ################################################################
+pminub Qq Pq, 0x0f 0xda, CPUFeature_EMMXSSE
+######## PMOVMSKB ##############################################################
+# Textbook definition of "pmovmskb" as per AMD/Intel manuals looks like this:
+#  pmovmskb Nq Gd, 0x0f 0xd7, CPUFeature_EMMXSSE
+# GNU as accepts this description, but objdump decodes last operand as "Gy".
+# Technically it makes no difference: "pmovmskb" clears everything except least
+# significant eight bits and this operation produces precisely idential output
+# for "Gy" and "Gd" operands.  We'll use objdump's description.
+pmovmskb Nq Gy, 0x0f 0xd7, CPUFeature_EMMXSSE
+######## PMULHRW ###############################################################
+pmulhrw Qq Pq, 0x0f 0x0f / 0xb7, CPUFeature_3DNOW
+######## PMULHUW ###############################################################
+pmulhuw Qq Pq, 0x0f 0xe4, CPUFeature_EMMXSSE
+######## PMULHW ################################################################
+pmulhw Qq Pq, 0x0f 0xe5, CPUFeature_MMX
+######## PMULHRSW ##############################################################
+pmulhrsw Qpi Ppi, 0x0f 0x38 0x0b, CPUFeature_SSSE3
+######## PMULLW ################################################################
+pmullw Qq Pq, 0x0f 0xd5, CPUFeature_MMX
+######## PMULUDQ ###############################################################
+pmuludq Qq Pq, 0x0f 0xf4, CPUFeature_SSE2
+######## POR ###################################################################
+por Qq Pq, 0x0f 0xeb, CPUFeature_MMX
+######## PSADBW ################################################################
+psadbw Qq Pq, 0x0f 0xf6, CPUFeature_EMMXSSE
+######## PSHUFB ################################################################
+pshufb Qpb Ppb, 0x0f 0x38 0x00, CPUFeature_SSSE3
+######## PSHUFW ################################################################
+pshufw Ib Qq Pq, 0x0f 0x70, CPUFeature_EMMXSSE
+######## PSIGNB ################################################################
+psignb Qpk Ppk, 0x0f 0x38 0x08, CPUFeature_SSSE3
+######## PSIGND ################################################################
+psignd Qpj Ppj, 0x0f 0x38 0x0a, CPUFeature_SSSE3
+######## PSIGNW ################################################################
+psignw Qpi Ppi, 0x0f 0x38 0x09, CPUFeature_SSSE3
+######## PSLLD #################################################################
+pslld Qq Pq, 0x0f 0xf2, CPUFeature_MMX
+pslld Ib Nq, 0x0f 0x72 /6, CPUFeature_MMX
+######## PSLLQ #################################################################
+psllq Qq Pq, 0x0f 0xf3, CPUFeature_MMX
+psllq Ib Nq, 0x0f 0x73 /6, CPUFeature_MMX
+######## PSLLW #################################################################
+psllw Qq Pq, 0x0f 0xf1, CPUFeature_MMX
+psllw Ib Nq, 0x0f 0x71 /6, CPUFeature_MMX
+######## PSRAD #################################################################
+psrad Qq Pq, 0x0f 0xe2, CPUFeature_MMX
+psrad Ib Nq, 0x0f 0x72 /4, CPUFeature_MMX
+######## PSRAW #################################################################
+psraw Qq Pq, 0x0f 0xe1, CPUFeature_MMX
+psraw Ib Nq, 0x0f 0x71 /4, CPUFeature_MMX
+######## PSRLD #################################################################
+psrld Qq Pq, 0x0f 0xd2, CPUFeature_MMX
+psrld Ib Nq, 0x0f 0x72 /2, CPUFeature_MMX
+######## PSRLQ #################################################################
+psrlq Qq Pq, 0x0f 0xd3, CPUFeature_MMX
+psrlq Ib Nq, 0x0f 0x73 /2, CPUFeature_MMX
+######## PSRLW #################################################################
+psrlw Qq Pq, 0x0f 0xd1, CPUFeature_MMX
+psrlw Ib Nq, 0x0f 0x71 /2, CPUFeature_MMX
+######## PSUBB #################################################################
+psubb Qq Pq, 0x0f 0xf8, CPUFeature_MMX
+######## PSUBD #################################################################
+psubd Qq Pq, 0x0f 0xfa, CPUFeature_MMX
+######## PSUBQ #################################################################
+psubq Qq Pq, 0x0f 0xfb, CPUFeature_SSE2
+######## PSUBSB ################################################################
+psubsb Qq Pq, 0x0f 0xe8, CPUFeature_MMX
+######## PSUBSW ################################################################
+psubsw Qq Pq, 0x0f 0xe9, CPUFeature_MMX
+######## PSUBUSB ###############################################################
+psubusb Qq Pq, 0x0f 0xd8, CPUFeature_MMX
+######## PSUBUSW ###############################################################
+psubusw Qq Pq, 0x0f 0xd9, CPUFeature_MMX
+######## PSUBW #################################################################
+psubw Qq Pq, 0x0f 0xf9, CPUFeature_MMX
+######## PSWAPD ################################################################
+pswapd Qq Pq, 0x0f 0x0f / 0xbb, CPUFeature_E3DNOW
+######## PUNPCKHBW #############################################################
+punpckhbw Qq Pq, 0x0f 0x68, CPUFeature_MMX
+######## PUNPCKHDQ #############################################################
+punpckhdq Qq Pq, 0x0f 0x6a, CPUFeature_MMX
+######## PUNPCKHWD #############################################################
+punpckhwd Qq Pq, 0x0f 0x69, CPUFeature_MMX
+######## PUNPCKLBW #############################################################
+punpcklbw Qq Pq, 0x0f 0x60, CPUFeature_MMX
+######## PUNPCKLDQ #############################################################
+punpckldq Qq Pq, 0x0f 0x62, CPUFeature_MMX
+######## PUNPCKLWD #############################################################
+punpcklwd Qq Pq, 0x0f 0x61, CPUFeature_MMX
+######## PXOR ##################################################################
+pxor Qq Pq, 0x0f 0xef, CPUFeature_MMX
+################################################################################

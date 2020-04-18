@@ -1,0 +1,2 @@
+PASS: non-cross-site exception thrown.
+

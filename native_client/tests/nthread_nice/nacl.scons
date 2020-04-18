@@ -1,0 +1,29 @@
+# -*- python -*-
+# Copyright 2010 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+if env.Bit('nacl_glibc'):
+  # This test does not build successfully with nacl-glibc yet.
+  # TODO(mseaborn): Fix this to build.
+  Return()
+
+######################################################################
+# Smoke Test
+######################################################################
+nexe = env.ComponentProgram('nthread_nice', 'nthread_nice.c',
+                            EXTRA_LIBS=['pthread'])
+
+# TODO(bradchen): create and then apply framework for
+# non-deterministic test results.
+# node = env.CommandSelLdrTestNacl(
+#    'nthread_nice.out',
+#    nexe,
+#    args=['--', '-t', '-d'],
+#    stdout_golden=env.File('nthread_nice.stdout'),
+#    )
+# env.AddNodeToTestSuite(node, ['small_tests'])
+
+env.Publish('nthread_nice', 'run', [])

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>cr.ui.Command test</title>
+</head>
+<body>
+<command></command>
+<script>
+
+function testCommandDefaultPrevented() {
+  var calls = 0;
+  document.addEventListener('canExecute', function(e) {
+    ++calls;
+    assertFalse(e.defaultPrevented);
+    e.canExecute = true;
+    assertTrue(e.defaultPrevented);
+  });
+
+  cr.ui.decorate('command', cr.ui.Command);
+  document.querySelector('command').canExecuteChange();
+  assertEquals(1, calls);
+}
+
+</script>
+</body>
+</html>

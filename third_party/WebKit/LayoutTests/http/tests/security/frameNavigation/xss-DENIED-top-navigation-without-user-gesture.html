@@ -1,0 +1,25 @@
+<html>
+<head>
+<script>
+if (window.testRunner) {
+    testRunner.dumpAsText();
+    testRunner.dumpChildFramesAsText();
+    testRunner.setDumpConsoleMessages(true);
+    testRunner.waitUntilDone();
+}
+
+if (window.internals)
+    internals.runtimeFlags.setFramebustingNeedsSameOriginOrUserGesture = true;
+
+window.addEventListener("message", e => {
+  if (e.data == "PASS")
+    testRunner.notifyDone();
+  else
+    testRunner.testFailed("'top.location' didn't throw.");
+});
+</script>
+</head>
+<body>
+<iframe src="http://localhost:8000/security/frameNavigation/resources/iframe-that-performs-top-navigation-without-user-gesture.html"></iframe>
+</body>
+</html>

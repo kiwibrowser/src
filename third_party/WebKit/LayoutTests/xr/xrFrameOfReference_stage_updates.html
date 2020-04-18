@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="file:///gen/layout_test_data/mojo/public/js/mojo_bindings.js"></script>
+<script src="file:///gen/device/vr/public/mojom/vr_service.mojom.js"></script>
+<script src="../xr/resources/xr-device-mocking.js"></script>
+<script src="../xr/resources/xr-test-utils.js"></script>
+<script src="../xr/resources/test-constants.js"></script>
+<canvas id="webgl-canvas"></canvas>
+
+<script>
+let fakeDevices = fakeXRDevices();
+
+xr_session_promise_test( (session, t) =>  {
+  // Session must have a baseLayer or else frame requests will be ignored.
+  session.baseLayer = new XRWebGLLayer(session, gl);
+
+  setPose(ORIGIN_POSE);
+  setStageTransform(null);
+
+  return session.requestFrameOfReference("stage")
+    .then((frameOfRef) => new Promise((resolve, reject) => {
+      function onFirstFrame(time, xrFrame) {
+        // On the first frame, the stage should be using an emulated frame of
+        // reference because it has no stageParameters yet. So the pose should
+        // be ~1.5 meters off the floor.
+        t.step( () => {
+          let pose = xrFrame.getDevicePose(frameOfRef);
+          assert_not_equals(pose, null);
+
+          let poseMatrix = pose.poseModelMatrix;
+          assert_approx_equals(poseMatrix[12], 0.0, FLOAT_EPSILON);
+          assert_greater_than(poseMatrix[13], 1.0);
+          assert_approx_equals(poseMatrix[14], 0.0, FLOAT_EPSILON);
+
+          setStageTransform(VALID_STAGE_TRANSFORM);
+        });
+
+        session.requestAnimationFrame(onFrame);
+      }
+
+      function onFrame(time, xrFrame) {
+        t.step( () => {
+          // Check that stage transform was updated.
+          let pose = xrFrame.getDevicePose(frameOfRef);
+          assert_not_equals(pose, null);
+
+          let poseMatrix = pose.poseModelMatrix;
+          assert_matrices_approx_equal(poseMatrix, VALID_STAGE_TRANSFORM);
+        });
+
+        // Finished.
+        resolve();
+      }
+
+      session.requestAnimationFrame(onFirstFrame);
+    }));
+}, fakeDevices["FakeGooglePixelPhone"], [
+      { exclusive: true },
+      { outputContext: getOutputContext() }
+  ],
+"'stage' XRFrameOfReference updates properly when the transform changes");
+
+</script>

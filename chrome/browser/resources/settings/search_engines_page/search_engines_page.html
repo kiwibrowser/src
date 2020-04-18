@@ -1,0 +1,84 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/html/action_link.html">
+<link rel="import" href="chrome://resources/html/action_link_css.html">
+<link rel="import" href="chrome://resources/html/assert.html">
+<link rel="import" href="chrome://resources/html/cr.html">
+<link rel="import" href="chrome://resources/html/cr/ui/focus_without_ink.html">
+<link rel="import" href="chrome://resources/html/web_ui_listener_behavior.html">
+<link rel="import" href="search_engines_browser_proxy.html">
+<link rel="import" href="search_engine_dialog.html">
+<link rel="import" href="search_engines_list.html">
+<link rel="import" href="omnibox_extension_entry.html">
+<link rel="import" href="../global_scroll_target_behavior.html">
+<link rel="import" href="../settings_shared_css.html">
+
+<dom-module id="settings-search-engines-page">
+  <template>
+    <style include="settings-shared action-link">
+      .extension-engines,
+      #noOtherEngines,
+      .no-search-results {
+        @apply --settings-list-frame-padding;
+      }
+
+      settings-omnibox-extension-entry {
+        border-top: var(--settings-separator-line);
+      }
+    </style>
+    <div class="settings-box first">
+      <h2>$i18n{searchEnginesDefault}</h2>
+    </div>
+    <div class="no-search-results" hidden="[[matchingDefaultEngines_.length]]">
+      $i18n{searchNoResults}
+    </div>
+    <settings-search-engines-list fixed-height
+        hidden="[[!matchingDefaultEngines_.length]]"
+        engines="[[matchingDefaultEngines_]]">
+    </settings-search-engines-list>
+    <template is="dom-if" if="[[showDialog_]]" restamp>
+      <settings-search-engine-dialog model="[[dialogModel_]]"
+          on-close="onCloseDialog_">
+      </settings-search-engine-dialog>
+    </template>
+
+    <div class="settings-box first">
+      <h2 class="start">$i18n{searchEnginesOther}</h2>
+      <paper-button class="secondary-button header-aligned-button"
+          on-click="onAddSearchEngineTap_" id="addSearchEngine">
+        $i18n{add}
+      </paper-button>
+    </div>
+    <div id="noOtherEngines" hidden="[[otherEngines.length]]">
+      $i18n{searchEnginesNoOtherEngines}
+    </div>
+    <div class="no-search-results"
+        hidden="[[!showNoResultsMessage_(
+            otherEngines, matchingOtherEngines_)]]">
+      $i18n{searchNoResults}
+    </div>
+    <settings-search-engines-list id="otherEngines"
+        hidden="[[!matchingOtherEngines_.length]]"
+        engines="[[matchingOtherEngines_]]"
+        scroll-target="[[subpageScrollTarget]]">
+    </settings-search-engines-list>
+    <template is="dom-if" if="[[showExtensionsList_]]">
+      <div class="settings-box first">
+        <h2>$i18n{searchEnginesExtension}</h2>
+      </div>
+      <div class="no-search-results" hidden="[[matchingExtensions_.length]]">
+        $i18n{searchNoResults}
+      </div>
+      <iron-list id="extensions" class="extension-engines"
+          items="[[matchingExtensions_]]" preserve-focus risk-selection>
+        <template>
+          <settings-omnibox-extension-entry engine="[[item]]"
+              tabindex$="[[tabIndex]]" iron-list-tab-index="[[tabIndex]]"
+              last-focused="{{omniboxExtensionlastFocused_}}">
+          </settings-omnibox-extension-entry>
+        </template>
+      </iron-list>
+    </template>
+  </template>
+  <script src="search_engines_page.js"></script>
+</dom-module>

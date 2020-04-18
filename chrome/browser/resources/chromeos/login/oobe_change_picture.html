@@ -1,0 +1,71 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/chromeos/cr_picture/cr_picture_list.html">
+<link rel="import" href="chrome://resources/cr_elements/chromeos/cr_picture/cr_picture_pane.html">
+<link rel="import" href="chrome://resources/cr_elements/chromeos/cr_picture/cr_picture_types.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/html/util.html">
+
+<dom-module id="oobe-change-picture">
+  <template>
+    <style>
+      #description {
+        -webkit-margin-end: 32px;
+        -webkit-margin-start: 8px;
+        font-size: 13px;
+        line-height: 10px;
+      }
+
+      #container {
+        -webkit-margin-start: 8px;
+        align-items: flex-start;
+        display: flex;
+        margin-bottom: 32px;
+        padding-top: 32px;
+      }
+
+      #picturePane {
+        --cr-picture-image-size: 192px;
+        -webkit-margin-end: 28px;
+        flex-shrink: 0;
+        height: 288px;
+        position: relative;
+        width: 288px;
+      }
+
+      #pictureList {
+        -webkit-margin-end: 32px;
+        height: 330px;
+        overflow-x: hidden;
+        overflow-y: auto;
+        width: 340px;
+      }
+    </style>
+    <div id="description" inner-h-t-m-l="[[getDescription_(locale)]]"></div>
+    <div id="container">
+      <cr-picture-pane id="picturePane"
+          camera-present="[[cameraPresent]]",
+          image-src="[[getImageSrc_(selectedItem_)]]"
+          image-type="[[getImageType_(selectedItem_)]]"
+          discard-image-label="[[i18nDynamic(locale, 'discardPhoto')]]"
+          take-photo-label="[[i18nDynamic(locale, 'takePhoto')]]"
+          capture-video-label="[[i18nDynamic(locale, 'captureVideo')]]"
+          switch-mode-to-camera-label="[[i18nDynamic(locale,
+              'switchModeToCamera')]]"
+          switch-mode-to-video-label="[[i18nDynamic(locale,
+              'switchModeToVideo')]]"
+          camera-video-mode-enabled="[[cameraVideoModeEnabled]]">
+      </cr-picture-pane>
+      <cr-picture-list id="pictureList"
+          camera-present="[[cameraPresent]]"
+          default-images="[[getDefaultImages_(defaultImages,
+              firstDefaultImageIndex)]]"
+          selected-item="{{selectedItem_}}"
+          old-image-label="[[i18nDynamic(locale, 'photoFromCamera')]]"
+          profile-image-label="[[i18nDynamic(locale, 'profilePhoto')]]"
+          take-photo-label="[[i18nDynamic(locale, 'takePhoto')]]"
+          capture-video-label="[[i18nDynamic(locale, 'captureVideo')]]">
+      </cr-picture-list>
+    </div>
+  </template>
+</dom-module>

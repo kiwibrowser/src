@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="../external/wpt/webusb/resources/fake-devices.js"></script>
+<script src="../external/wpt/resources/chromium/mojo_bindings.js"></script>
+<script src="../external/wpt/resources/chromium/device.mojom.js"></script>
+<script src="../external/wpt/resources/chromium/device_manager.mojom.js"></script>
+<script src="../external/wpt/resources/chromium/chooser_service.mojom.js"></script>
+<script src="../external/wpt/resources/chromium/webusb-test.js"></script>
+<body>
+<script>
+'use strict';
+
+promise_test(() => {
+  return navigator.usb.test.initialize().then(() => {
+    return new Promise((resolve, reject) => {
+      let opened = false;
+      let fakeDeviceGuid = null;
+
+      let iframe = document.createElement('iframe');
+      iframe.src = '../external/wpt/webusb/resources/open-in-iframe.html';
+      iframe.onload = () => {
+        navigator.usb.test.attachToWindow(iframe.contentWindow).then(() => {
+          iframe.contentWindow.postMessage('Ready', '*');
+        });
+      };
+
+      window.onmessage = messageEvent => {
+        if (messageEvent.data == 'Ready') {
+          document.body.removeChild(iframe);
+          GCController.collect();
+          navigator.usb.test.addFakeDevice(fakeDeviceInit);
+          resolve();
+        } else {
+          reject(messageEvent.data);
+        }
+      };
+
+      document.body.appendChild(iframe);
+    });
+  });
+}, 'events are not delivered to detached frames');
+</script>
+</body>

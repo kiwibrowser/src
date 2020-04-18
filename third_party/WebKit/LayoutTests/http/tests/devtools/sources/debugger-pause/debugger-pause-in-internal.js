@@ -1,0 +1,40 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(
+      `Tests that pause on exception in internal script does not crash.\n`);
+  await TestRunner.loadModule('sources_test_runner');
+  await TestRunner.showPanel('sources');
+  await TestRunner.evaluateInPagePromise(`
+      function throwException()
+      {
+          new Function("return ()");
+      }
+
+      function handleClick()
+      {
+          throwException();
+      }
+  `);
+
+  SourcesTestRunner.startDebuggerTest(step1);
+
+  function step1() {
+    TestRunner.DebuggerAgent.setPauseOnExceptions(
+        SDK.DebuggerModel.PauseOnExceptionsState.PauseOnUncaughtExceptions);
+    SourcesTestRunner.showScriptSource('debugger-pause-in-internal.js', step2);
+  }
+
+  function step2() {
+    TestRunner.addResult('Script source was shown.');
+    TestRunner.evaluateInPage('setTimeout(handleClick, 0)');
+    SourcesTestRunner.waitUntilPaused(step3);
+  }
+
+  function step3(callFrames) {
+    SourcesTestRunner.captureStackTrace(callFrames);
+    SourcesTestRunner.completeDebuggerTest();
+  }
+})();

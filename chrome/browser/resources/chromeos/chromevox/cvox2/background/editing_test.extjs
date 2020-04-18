@@ -1,0 +1,898 @@
+// Copyright 2015 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// Include test fixture.
+GEN_INCLUDE(['../../testing/chromevox_next_e2e_test_base.js',
+             '../../testing/assert_additions.js']);
+
+GEN_INCLUDE(['../../testing/mock_feedback.js']);
+
+/**
+ * Test fixture for editing tests.
+ * @constructor
+ * @extends {ChromeVoxNextE2ETest}
+ */
+function EditingTest() {
+  ChromeVoxNextE2ETest.call(this);
+  window.RoleType = chrome.automation.RoleType;
+}
+
+EditingTest.prototype = {
+  __proto__: ChromeVoxNextE2ETest.prototype,
+
+  /**
+   * @return {!MockFeedback}
+   */
+  createMockFeedback: function() {
+    var mockFeedback = new MockFeedback(this.newCallback(),
+                                        this.newCallback.bind(this));
+    mockFeedback.install();
+    return mockFeedback;
+  },
+
+};
+
+var doc = function() {/*!
+  <label for='singleLine'>singleLine</label>
+  <input type='text' id='singleLine' value='Single line field'><br>
+  <label for='textarea'>textArea</label>
+  <textarea id='textarea'>
+Line 1&#xa;
+line 2&#xa;
+line 3
+</textarea>
+*/};
+
+TEST_F('EditingTest', 'Focus', function() {
+  var mockFeedback = this.createMockFeedback();
+  this.runWithLoadedTree(doc, function(root) {
+    var singleLine = root.find({role: RoleType.TEXT_FIELD,
+                                attributes: {name: 'singleLine'}});
+    var textarea = root.find({role: RoleType.TEXT_FIELD,
+                              attributes: {name: 'textArea'}});
+    singleLine.focus();
+    mockFeedback
+        .expectSpeech('singleLine', 'Single line field', 'Edit text')
+        .expectBraille('singleLine Single line field ed',
+                       {startIndex: 11, endIndex: 11})
+        .call(textarea.focus.bind(textarea))
+        .expectSpeech('textArea',
+                      'Line 1\nline 2\nline 3',
+                      'Text area')
+        .expectBraille('textArea Line 1\nline 2\nline 3 mled',
+                      {startIndex: 9, endIndex: 9});
+
+    mockFeedback.replay();
+  });
+});
+
+TEST_F('EditingTest', 'Multiline', function() {
+  var mockFeedback = this.createMockFeedback();
+  this.runWithLoadedTree(doc, function(root) {
+    var textarea = root.find({role: RoleType.TEXT_FIELD,
+                              attributes: {name: 'textArea'}});
+    textarea.focus();
+    mockFeedback
+        .expectSpeech('textArea',
+                      'Line 1\nline 2\nline 3',
+                      'Text area')
+        .expectBraille('textArea Line 1\nline 2\nline 3 mled',
+                      {startIndex: 9, endIndex: 9})
+        .call(textarea.setSelection.bind(textarea, 1, 1))
+        .expectSpeech('i')
+        .expectBraille('Line 1\nmled',
+                       {startIndex: 1, endIndex: 1})
+        .call(textarea.setSelection.bind(textarea, 7, 7))
+        .expectSpeech('line 2')
+        .expectBraille('line 2\n',
+                       {startIndex: 0, endIndex: 0})
+        .call(textarea.setSelection.bind(textarea, 7, 13))
+        .expectSpeech('line 2', 'selected')
+        .expectBraille('line 2\n',
+                       {startIndex: 0, endIndex: 6});
+
+    mockFeedback.replay();
+  });
+});
+
+TEST_F('EditingTest', 'TextButNoSelectionChange', function() {
+  var mockFeedback = this.createMockFeedback();
+  this.runWithLoadedTree(
+    function() {/*!
+      <h1>Test doc</h1>
+      <input type='text' id='input' value='text1'>
+      <!-- We don't seem to get an event in js when the automation
+           setSelection function is called, so poll for the actual change. -->
+
+      <script>
+        var timer;
+        var input = document.getElementById('input');
+        function poll(e) {
+          if (input.selectionStart == 0)
+            return;
+          console.log('TIM' + 'ER');
+          input.value = 'text2';
+          window.clearInterval(timer);
+        }
+        timer = window.setInterval(poll, 200);
+      </script>
+    */},
+    function(root) {
+      var input = root.find({role: RoleType.TEXT_FIELD});
+      input.focus();
+      mockFeedback
+          .expectSpeech('text1', 'Edit text')
+          .expectBraille('text1 ed', {startIndex: 0, endIndex: 0})
+          .call(input.setSelection.bind(input, 5, 5))
+          .expectBraille('text2 ed', {startIndex: 5, endIndex: 5})
+
+      mockFeedback.replay();
+    });
+});
+
+TEST_F('EditingTest', 'RichTextMoveByLine', function() {
+  var mockFeedback = this.createMockFeedback();
+  this.runWithLoadedTree(function() {/*!
+    <div id="go" role="textbox" contenteditable>
+      <h2>hello</h2>
+      <div><br></div>
+      <p>This is a <a href="#test">test</a> of rich text</p>
+    </div>
+    <script>
+      var dir = 'forward';
+      var line = 0;
+      document.getElementById('go').addEventListener('click', function() {
+        var sel = getSelection();
+        sel.modify('move', dir, 'line');
+        if (dir == 'forward')
+          line++;
+        else
+          line--;
+
+        if (line == 0)
+          dir = 'forward';
+        if (line == 2)
+          dir = 'backward';
+      }, true);
+    </script>
+  */}, function(root) {
+    var input = root.find({role: RoleType.TEXT_FIELD});
+    var moveByLine = input.doDefault.bind(input);
+    this.listenOnce(input, 'focus', function() {
+      mockFeedback.call(moveByLine)
+          .expectSpeech('\n')
+          .expectBraille('\n')
+          .call(moveByLine)
+          .expectSpeech('This is a ', 'test', 'Link', ' of rich text')
+          .expectBraille('This is a test of rich text')
+          .call(moveByLine)
+          .expectSpeech('\n')
+          .expectBraille('\n')
+          .call(moveByLine)
+          .expectSpeech('hello', 'Heading 2')
+          .expectBraille('hello h2 mled')
+          .replay();
+    });
+    input.focus();
+  });
+});
+
+TEST_F('EditingTest', 'RichTextMoveByCharacter', function() {
+  var mockFeedback = this.createMockFeedback();
+  this.runWithLoadedTree(function() {/*!
+    <div id="go" role="textbox" contenteditable>This <b>is</b> a test.</div>
+
+    <script>
+      var dir = 'forward';
+      var char = 0;
+      document.getElementById('go').addEventListener('click', function() {
+        var sel = getSelection();
+        sel.modify('move', dir, 'character');
+        if (dir == 'forward')
+          char++;
+        else
+          char--;
+
+        if (char == 0)
+          dir = 'forward';
+        if (line == 16)
+          dir = 'backward';
+      }, true);
+    </script>
+  */}, function(root) {
+    var input = root.find({role: RoleType.TEXT_FIELD});
+    var moveByChar = input.doDefault.bind(input);
+    var lineText = 'This is a test. mled';
+
+    this.listenOnce(input, 'focus', function() {
+      mockFeedback.call(moveByChar)
+          .expectSpeech('h')
+          .expectBraille(lineText, { startIndex: 1, endIndex: 1 })
+          .call(moveByChar)
+          .expectSpeech('i')
+          .expectBraille(lineText, { startIndex: 2, endIndex: 2 })
+          .call(moveByChar)
+          .expectSpeech('s')
+          .expectBraille(lineText, { startIndex: 3, endIndex: 3 })
+          .call(moveByChar)
+          .expectSpeech(' ')
+          .expectBraille(lineText, { startIndex: 4, endIndex: 4 })
+
+          .call(moveByChar)
+          .expectSpeech('i')
+          .expectSpeech('Bold start')
+          .expectBraille(lineText, { startIndex: 5, endIndex: 5 })
+
+          .call(moveByChar)
+          .expectSpeech('s')
+          .expectSpeech('Bold end')
+          .expectBraille(lineText, { startIndex: 6, endIndex: 6 })
+
+          .call(moveByChar)
+          .expectSpeech(' ')
+          .expectBraille(lineText, { startIndex: 7, endIndex: 7 })
+
+          .call(moveByChar)
+          .expectSpeech('a')
+          .expectBraille(lineText, { startIndex: 8, endIndex: 8 })
+
+          .call(moveByChar)
+          .expectSpeech(' ')
+          .expectBraille(lineText, { startIndex: 9, endIndex: 9 })
+
+          .replay();
+    });
+    input.focus();
+  });
+});
+
+// Tests specifically for cursor workarounds.
+TEST_F('EditingTest', 'RichTextMoveByCharacterNodeWorkaround', function() {
+  var mockFeedback = this.createMockFeedback();
+  this.runWithLoadedTree(function() {/*!
+    <div id="go" role="textbox" contenteditable>hello <b>world</b></div>
+
+    <script>
+      document.getElementById('go').addEventListener('click', function() {
+        var sel = getSelection();
+        sel.modify('move', 'forward', 'character');
+      }, true);
+    </script>
+  */}, function(root) {
+    var input = root.find({role: RoleType.TEXT_FIELD});
+    var moveByChar = input.doDefault.bind(input)
+    var lineText = 'hello world mled';
+
+    this.listenOnce(input, 'focus', function() {
+      mockFeedback.call(moveByChar)
+          .expectSpeech('e')
+          .expectBraille(lineText, { startIndex: 1, endIndex: 1 })
+          .call(moveByChar)
+          .expectSpeech('l')
+          .expectBraille(lineText, { startIndex: 2, endIndex: 2 })
+          .call(moveByChar)
+          .expectSpeech('l')
+          .expectBraille(lineText, { startIndex: 3, endIndex: 3 })
+          .call(moveByChar)
+          .expectSpeech('o')
+          .expectBraille(lineText, { startIndex: 4, endIndex: 4 })
+          .call(moveByChar)
+          .expectSpeech(' ')
+          .expectBraille(lineText, { startIndex: 5, endIndex: 5 })
+          .call(moveByChar)
+          .expectSpeech('w')
+          .expectBraille(lineText, { startIndex: 6, endIndex: 6 })
+          .replay();
+    });
+    input.focus();
+  });
+});
+
+TEST_F('EditingTest', 'RichTextMoveByCharacterEndOfLine', function() {
+  var mockFeedback = this.createMockFeedback();
+  this.runWithLoadedTree(function() {/*!
+    <div id="go" role="textbox" contenteditable>Test</div>
+
+    <script>
+      document.getElementById('go').addEventListener('click', function() {
+        var sel = getSelection();
+        sel.modify('move', 'forward', 'character');
+      }, true);
+    </script>
+  */}, function(root) {
+    var input = root.find({role: RoleType.TEXT_FIELD});
+    var moveByChar = input.doDefault.bind(input);
+    var lineText = 'Test mled';
+
+    this.listenOnce(input, 'focus', function() {
+      mockFeedback.call(moveByChar)
+          .expectSpeech('e')
+          .expectBraille(lineText, { startIndex: 1, endIndex: 1 })
+          .call(moveByChar)
+          .expectSpeech('s')
+          .expectBraille(lineText, { startIndex: 2, endIndex: 2 })
+          .call(moveByChar)
+          .expectSpeech('t')
+          .expectBraille(lineText, { startIndex: 3, endIndex: 3 })
+          .call(moveByChar)
+          .expectSpeech('\n')
+          .expectBraille(lineText, { startIndex: 4, endIndex: 4 })
+
+          .replay();
+    });
+    input.focus();
+  });
+});
+
+TEST_F('EditingTest', 'RichTextLinkOutput', function() {
+  var mockFeedback = this.createMockFeedback();
+  this.runWithLoadedTree(function() {/*!
+    <div id="go" role="textbox" contenteditable>a <a href="#">test</a></div>
+
+    <script>
+      document.getElementById('go').addEventListener('click', function() {
+        var sel = getSelection();
+        sel.modify('move', 'forward', 'character');
+      }, true);
+    </script>
+  */}, function(root) {
+    var input = root.find({role: RoleType.TEXT_FIELD});
+    var moveByChar = input.doDefault.bind(input);
+    var lineText = 'a test mled';
+    var lineOnLinkText = 'a test lnk mled';
+
+    this.listenOnce(input, 'focus', function() {
+      mockFeedback.call(moveByChar)
+          .expectSpeech(' ')
+          .expectBraille(lineText, { startIndex: 1, endIndex: 1 })
+          .call(moveByChar)
+          .expectSpeech('t')
+          .expectSpeech('Link start')
+          .expectSpeech('Underline start')
+          .expectBraille(lineOnLinkText, { startIndex: 2, endIndex: 2 })
+          .call(moveByChar)
+          .expectSpeech('e')
+          .expectBraille(lineOnLinkText, { startIndex: 3, endIndex: 3 })
+          .call(moveByChar)
+          .expectSpeech('s')
+          .expectBraille(lineOnLinkText, { startIndex: 4, endIndex: 4 })
+          .call(moveByChar)
+          .expectSpeech('t')
+          .expectSpeech('Link end')
+          .expectSpeech('Underline end')
+          .expectBraille(lineOnLinkText, { startIndex: 5, endIndex: 5 })
+
+          .replay();
+    });
+    input.focus();
+  });
+});
+
+TEST_F('EditingTest', 'RichTextExtendByCharacter', function() {
+  var mockFeedback = this.createMockFeedback();
+  this.runWithLoadedTree(function() {/*!
+    <div id="go" role="textbox" contenteditable>Te<br>st</div>
+
+    <script>
+      document.getElementById('go').addEventListener('click', function() {
+        var sel = getSelection();
+        sel.modify('extend', 'forward', 'character');
+      }, true);
+    </script>
+  */}, function(root) {
+    var input = root.find({role: RoleType.TEXT_FIELD});
+    var moveByChar = input.doDefault.bind(input);
+
+    this.listenOnce(input, 'focus', function() {
+      mockFeedback.call(moveByChar)
+          .expectSpeech('T', 'selected')
+          .call(moveByChar)
+          .expectSpeech('e', 'added to selection')
+          .call(moveByChar)
+          .expectSpeech('selected')
+          .call(moveByChar)
+          // This gets described by the line logic in EditableLine.
+          .expectSpeech('s', 'selected')
+          .call(moveByChar)
+          .expectSpeech('t', 'added to selection')
+
+          .replay();
+    });
+    input.focus();
+  });
+});
+
+TEST_F('EditingTest', 'RichTextImageByCharacter', function() {
+  var mockFeedback = this.createMockFeedback();
+  this.runWithLoadedTree(function() {/*!
+    <p id="go" contenteditable>
+      <img alt="dog"></img> is a <img alt="cat"</img> test
+    </p>
+    <script>
+      document.getElementById('go').addEventListener('click', function() {
+        var sel = getSelection();
+        sel.modify('move', 'forward', 'character');
+      }, true);
+    </script>
+  */}, function(root) {
+    var input = root.find({role: RoleType.PARAGRAPH});
+    var moveByChar = input.doDefault.bind(input);
+
+    this.listenOnce(input, 'focus', function() {
+      var lineText = 'dog is a cat test mled';
+      var lineOnDogText = 'dog img is a cat test mled';
+      var lineOnCatText = 'dog is a cat img test';
+      mockFeedback
+          // This is initial output from focusing the contenteditable (which has
+          // no role).
+          .expectSpeech('dog', 'Image', ' is a ', 'cat', 'Image', ' test')
+          .expectBraille('dog img is a cat img test')
+          .call(moveByChar)
+          .expectSpeech('dog', 'Image')
+          .expectBraille(lineText, {startIndex: 3, endIndex: 3})
+          .call(moveByChar)
+          .expectSpeech('i')
+          .expectBraille(lineText, {startIndex: 4, endIndex: 4})
+          .call(moveByChar)
+          .expectSpeech('s')
+          .expectBraille(lineText, {startIndex: 5, endIndex: 5})
+          .call(moveByChar)
+          .expectSpeech(' ')
+          .expectBraille(lineText, {startIndex: 6, endIndex: 6})
+          .call(moveByChar)
+          .expectSpeech('a')
+          .expectBraille(lineText, {startIndex: 7, endIndex: 7})
+          .call(moveByChar)
+          .expectSpeech(' ')
+          .expectBraille(lineText, {startIndex: 8, endIndex: 8})
+          .call(moveByChar)
+
+          // This is technically wrong because we're actually over the entire
+          // image. This is broken because of bad node offsets.
+          .expectSpeech('c')
+          .expectBraille(lineOnCatText, {startIndex: 9, endIndex: 9})
+
+          // Unfortunately, the node offset being wrong here means there's no
+          // output for the next character move. Fix Once node offsets get fixed
+          // in Blink.
+
+          .replay();
+    });
+    input.focus();
+  });
+});
+
+TEST_F('EditingTest', 'RichTextSelectByLine', function() {
+  var mockFeedback = this.createMockFeedback();
+  this.runWithLoadedTree(function() {/*!
+    <p id="go" contenteditable>
+      first line<br>
+      second line<br>
+      third line<br>
+    </p>
+    <script>
+      var commands = [
+        ['extend', 'forward', 'character'],
+        ['extend', 'forward', 'character'],
+
+        ['extend', 'forward', 'line'],
+        ['extend', 'forward', 'line'],
+
+        ['extend', 'backward', 'line'],
+        ['extend', 'backward', 'line'],
+
+        ['extend', 'forward', 'documentBoundary'],
+
+        ['move', 'forward', 'character'],
+        ['move', 'backward', 'character'],
+        ['move', 'backward', 'character'],
+
+        ['extend', 'backward', 'line'],
+        ['extend', 'backward', 'line'],
+
+        ['extend', 'forward', 'line'],
+      ];
+      document.getElementById('go').addEventListener('click', function() {
+        var sel = getSelection();
+        sel.modify.apply(sel, commands.shift());
+      }, true);
+    </script>
+  */}, function(root) {
+    var input = root.find({role: RoleType.PARAGRAPH});
+    var move = input.doDefault.bind(input);
+
+    this.listenOnce(input, 'focus', function() {
+
+      // By character.
+      mockFeedback.call(move)
+          .expectSpeech('f', 'selected')
+          .expectBraille('first line\nmled', {startIndex: 0, endIndex: 1})
+          .call(move)
+          .expectSpeech('i', 'added to selection')
+          .expectBraille('first line\nmled', {startIndex: 0, endIndex: 2})
+
+          // Forward selection.
+
+          // Growing.
+
+          // By line (notice the partial selections from the first and second
+          // lines).
+          .call(move)
+          .expectSpeech('rst line \n se', 'selected')
+          .expectBraille('second line\n', {startIndex: 0, endIndex: 2})
+
+          .call(move)
+          .expectSpeech('cond line \n th', 'selected')
+          .expectBraille('third line\n', {startIndex: 0, endIndex: 2})
+
+          // Shrinking.
+          .call(move)
+          .expectSpeech('cond line \n th', 'unselected')
+          .expectBraille('second line\n', {startIndex: 0, endIndex: 2})
+
+          .call(move)
+          .expectSpeech('fi', 'selected')
+          .expectBraille('first line\nmled', {startIndex: 0, endIndex: 2})
+
+          // Document boundary.
+          .call(move)
+          .expectSpeech('rst line \n second line \n third line \n \n',
+                        'selected')
+          .expectBraille('third line\n', {startIndex: 0, endIndex: 10})
+
+          // The script repositions the caret to the 'n' of the third line.
+          .call(move)
+          .expectSpeech('third line')
+          .expectBraille('third line\n', {startIndex: 10, endIndex: 10})
+          .call(move)
+          .expectSpeech('e')
+          .expectBraille('third line\n', {startIndex: 9, endIndex: 9})
+          .call(move)
+          .expectSpeech('n')
+          .expectBraille('third line\n', {startIndex: 8, endIndex: 8})
+
+          // Backward selection.
+
+          // Growing.
+          .call(move)
+          .expectSpeech(' line \n third li', 'selected')
+          .expectBraille('second line\n', {startIndex: 6, endIndex: 12})
+
+          .call(move)
+          .expectSpeech('e \n second', 'selected')
+          .expectBraille('first line\n', {startIndex: 9, endIndex: 11})
+
+          // Shrinking.
+          .call(move)
+          .expectSpeech('e \n second', 'unselected')
+          .expectBraille('second line\n', {startIndex: 6, endIndex: 12})
+
+          .replay();
+    });
+    input.focus();
+  });
+});
+
+TEST_F('EditingTest', 'EditableLineOneStaticText', function() {
+  this.runWithLoadedTree(function() {/*!
+    <p contenteditable style="word-spacing:100000px">this is a test</p>
+  */}, function(root) {
+    var staticText = root.find({role: RoleType.STATIC_TEXT});
+
+    var e = new editing.EditableLine(staticText, 0, staticText, 0);
+    assertEquals('this ', e.text);
+
+    assertEquals(0, e.startOffset);
+    assertEquals(0, e.endOffset);
+    assertEquals(0, e.localStartOffset);
+    assertEquals(0, e.localEndOffset);
+
+    assertEquals(0, e.containerStartOffset);
+    assertEquals(4, e.containerEndOffset);
+
+    e = new editing.EditableLine(staticText, 1, staticText, 1);
+    assertEquals('this ', e.text);
+
+    assertEquals(1, e.startOffset);
+    assertEquals(1, e.endOffset);
+    assertEquals(1, e.localStartOffset);
+    assertEquals(1, e.localEndOffset);
+
+    assertEquals(0, e.containerStartOffset);
+    assertEquals(4, e.containerEndOffset);
+
+    e = new editing.EditableLine(staticText, 5, staticText, 5);
+    assertEquals('is ', e.text);
+
+    assertEquals(0, e.startOffset);
+    assertEquals(0, e.endOffset);
+    assertEquals(5, e.localStartOffset);
+    assertEquals(5, e.localEndOffset);
+
+    assertEquals(0, e.containerStartOffset);
+    assertEquals(2, e.containerEndOffset);
+
+    e = new editing.EditableLine(staticText, 7, staticText, 7);
+    assertEquals('is ', e.text);
+
+    assertEquals(2, e.startOffset);
+    assertEquals(2, e.endOffset);
+    assertEquals(7, e.localStartOffset);
+    assertEquals(7, e.localEndOffset);
+
+    assertEquals(0, e.containerStartOffset);
+    assertEquals(2, e.containerEndOffset);
+  });
+});
+
+TEST_F('EditingTest', 'EditableLineTwoStaticTexts', function() {
+  this.runWithLoadedTree(function() {/*!
+    <p contenteditable>hello <b>world</b></p>
+  */}, function(root) {
+    var text = root.find({role: RoleType.STATIC_TEXT});
+    var bold = text.nextSibling;
+
+    var e = new editing.EditableLine(text, 0, text, 0);
+    assertEquals('hello world', e.text);
+
+    assertEquals(0, e.startOffset);
+    assertEquals(0, e.endOffset);
+    assertEquals(0, e.localStartOffset);
+    assertEquals(0, e.localEndOffset);
+
+    assertEquals(0, e.containerStartOffset);
+    assertEquals(5, e.containerEndOffset);
+
+    e = new editing.EditableLine(text, 5, text, 5);
+    assertEquals('hello world', e.text);
+
+    assertEquals(5, e.startOffset);
+    assertEquals(5, e.endOffset);
+    assertEquals(5, e.localStartOffset);
+    assertEquals(5, e.localEndOffset);
+
+    assertEquals(0, e.containerStartOffset);
+    assertEquals(5, e.containerEndOffset);
+
+    e = new editing.EditableLine(bold, 0, bold, 0);
+    assertEquals('hello world', e.text);
+
+    assertEquals(6, e.startOffset);
+    assertEquals(6, e.endOffset);
+    assertEquals(0, e.localStartOffset);
+    assertEquals(0, e.localEndOffset);
+
+    assertEquals(6, e.containerStartOffset);
+    assertEquals(10, e.containerEndOffset);
+
+    e = new editing.EditableLine(bold, 4, bold, 4);
+    assertEquals('hello world', e.text);
+
+    assertEquals(10, e.startOffset);
+    assertEquals(10, e.endOffset);
+    assertEquals(4, e.localStartOffset);
+    assertEquals(4, e.localEndOffset);
+
+    assertEquals(6, e.containerStartOffset);
+    assertEquals(10, e.containerEndOffset);
+  });
+});
+
+TEST_F('EditingTest', 'EditableLineEquality', function() {
+  this.runWithLoadedTree(function() {/*!
+    <div contenteditable role="textbox">
+      <p style="word-spacing:100000px">this is a test</p>
+      <p>hello <b>world</b></p>
+    </div>
+  */}, function(root) {
+    var thisIsATest = root.findAll({role: RoleType.PARAGRAPH})[0].firstChild;
+    var hello = root.findAll({role: RoleType.PARAGRAPH})[1].firstChild;
+    var world = root.findAll({role: RoleType.PARAGRAPH})[1].lastChild;
+
+    // The same position -- sanity check.
+    var e1 = new editing.EditableLine(thisIsATest, 0, thisIsATest, 0);
+    assertEquals('this ', e1.text);
+    assertTrue(e1.isSameLine(e1));
+
+    // Offset into the same soft line.
+    var e2 = new editing.EditableLine(thisIsATest, 1, thisIsATest, 1);
+    assertTrue(e1.isSameLine(e2));
+
+    // Boundary.
+    e2 = new editing.EditableLine(thisIsATest, 4, thisIsATest, 4);
+    assertTrue(e1.isSameLine(e2));
+
+    // Offsets into different soft lines.
+    e2 = new editing.EditableLine(thisIsATest, 5, thisIsATest, 5);
+    assertEquals('is ', e2.text);
+    assertFalse(e1.isSameLine(e2));
+
+    // Sanity check; second soft line.
+    assertTrue(e2.isSameLine(e2));
+
+    // Different offsets into second soft line.
+    e1 = new editing.EditableLine(thisIsATest, 6, thisIsATest, 6);
+    assertTrue(e1.isSameLine(e2));
+
+    // Boundary.
+    e1 = new editing.EditableLine(thisIsATest, 7, thisIsATest, 7);
+    assertTrue(e1.isSameLine(e2));
+
+    // Third line.
+    e1 = new editing.EditableLine(thisIsATest, 8, thisIsATest, 8);
+    assertEquals('a ', e1.text);
+    assertFalse(e1.isSameLine(e2));
+
+    // Last line.
+    e2 = new editing.EditableLine(thisIsATest, 10, thisIsATest, 10);
+    assertEquals('test', e2.text);
+    assertFalse(e1.isSameLine(e2));
+
+    // Boundary.
+    e1 = new editing.EditableLine(thisIsATest, 13, thisIsATest, 13);
+    assertTrue(e1.isSameLine(e2));
+
+    // Cross into new paragraph.
+    e2 = new editing.EditableLine(hello, 0, hello, 0);
+    assertEquals('hello world', e2.text);
+    assertFalse(e1.isSameLine(e2));
+
+    // On same node, with multi-static text line.
+    e1 = new editing.EditableLine(hello, 1, hello, 1);
+    assertTrue(e1.isSameLine(e2));
+
+    // On same node, with multi-static text line; boundary.
+    e1 = new editing.EditableLine(hello, 5, hello, 5);
+    assertTrue(e1.isSameLine(e2));
+
+    // On different node, with multi-static text line.
+    e1 = new editing.EditableLine(world, 1, world, 1);
+    assertTrue(e1.isSameLine(e2));
+
+    // Another mix of lines.
+    e2 = new editing.EditableLine(thisIsATest, 9, thisIsATest, 9);
+    assertFalse(e1.isSameLine(e2));
+  });
+});
+
+TEST_F('EditingTest', 'EditableLineStrictEquality', function() {
+  this.runWithLoadedTree(function() {/*!
+    <div contenteditable role="textbox">
+      <p style="word-spacing:100000px">this is a test</p>
+      <p>hello <b>world</b></p>
+    </div>
+  */}, function(root) {
+    var thisIsATest = root.findAll({role: RoleType.PARAGRAPH})[0].firstChild;
+    var hello = root.findAll({role: RoleType.PARAGRAPH})[1].firstChild;
+    var world = root.findAll({role: RoleType.PARAGRAPH})[1].lastChild;
+
+    // The same position -- sanity check.
+    var e1 = new editing.EditableLine(thisIsATest, 0, thisIsATest, 0);
+    assertEquals('this ', e1.text);
+    assertTrue(e1.isSameLineAndSelection(e1));
+
+    // Offset into the same soft line.
+    var e2 = new editing.EditableLine(thisIsATest, 1, thisIsATest, 1);
+    assertFalse(e1.isSameLineAndSelection(e2));
+
+    // Boundary.
+    e2 = new editing.EditableLine(thisIsATest, 4, thisIsATest, 4);
+    assertFalse(e1.isSameLineAndSelection(e2));
+
+    // Offsets into different soft lines.
+    e2 = new editing.EditableLine(thisIsATest, 5, thisIsATest, 5);
+    assertEquals('is ', e2.text);
+    assertFalse(e1.isSameLineAndSelection(e2));
+
+    // Sanity check; second soft line.
+    assertTrue(e2.isSameLineAndSelection(e2));
+
+    // Different offsets into second soft line.
+    e1 = new editing.EditableLine(thisIsATest, 6, thisIsATest, 6);
+    assertFalse(e1.isSameLineAndSelection(e2));
+
+    // Boundary.
+    e1 = new editing.EditableLine(thisIsATest, 7, thisIsATest, 7);
+    assertFalse(e1.isSameLineAndSelection(e2));
+
+    // Cross into new paragraph.
+    e2 = new editing.EditableLine(hello, 0, hello, 0);
+    assertEquals('hello world', e2.text);
+    assertFalse(e1.isSameLineAndSelection(e2));
+
+    // On same node, with multi-static text line.
+    e1 = new editing.EditableLine(hello, 1, hello, 1);
+    assertFalse(e1.isSameLineAndSelection(e2));
+
+    // On same node, with multi-static text line; boundary.
+    e1 = new editing.EditableLine(hello, 5, hello, 5);
+    assertFalse(e1.isSameLineAndSelection(e2));
+  });
+});
+
+TEST_F('EditingTest', 'EditableLineBaseLineAnchorOrFocus', function() {
+  this.runWithLoadedTree(function() {/*!
+    <div contenteditable role="textbox">
+      <p style="word-spacing:100000px">this is a test</p>
+      <p>hello <b>world</b></p>
+    </div>
+  */}, function(root) {
+    var thisIsATest = root.findAll({role: RoleType.PARAGRAPH})[0].firstChild;
+    var hello = root.findAll({role: RoleType.PARAGRAPH})[1].firstChild;
+    var world = root.findAll({role: RoleType.PARAGRAPH})[1].lastChild;
+
+    // The same position -- sanity check.
+    var e1 = new editing.EditableLine(thisIsATest, 0, thisIsATest, 0, true);
+    assertEquals('this ', e1.text);
+
+    // Offsets into different soft lines; base on focus (default).
+    e1 = new editing.EditableLine(thisIsATest, 0, thisIsATest, 6);
+    assertEquals('is ', e1.text);
+    // Notice that the offset is truncated at the beginning of the line.
+    assertEquals(0, e1.startOffset);
+    // Notice that the end offset is properly retained.
+    assertEquals(1, e1.endOffset);
+
+    // Offsets into different soft lines; base on anchor.
+    e1 = new editing.EditableLine(thisIsATest, 0, thisIsATest, 6, true);
+    assertEquals('this ', e1.text);
+    assertEquals(0, e1.startOffset);
+    // Notice            that the end offset is truncated up to the end of line.
+    assertEquals(5, e1.endOffset);
+
+    // Across paragraph selection with base line on focus.
+    e1 = new editing.EditableLine(thisIsATest, 5, hello, 2);
+    assertEquals('hello world', e1.text);
+    assertEquals(0, e1.startOffset);
+    assertEquals(2, e1.endOffset);
+
+    // Across paragraph selection with base line on anchor.
+    e1 = new editing.EditableLine(thisIsATest, 5, hello, 2, true);
+    assertEquals('is ', e1.text);
+    assertEquals(0, e1.startOffset);
+    assertEquals(3, e1.endOffset);
+  })
+});
+
+TEST_F('EditingTest', 'IsValidLine', function() {
+  this.runWithLoadedTree(function() {/*!
+    <div contenteditable role="textbox">
+      <p style="word-spacing:100000px">this is a test</p>
+      <p>end</p>
+    </div>
+  */}, function(root) {
+    // Each word is on its own line, but parented by a static text.
+    var text, endText;
+    [text, endText] = root.findAll({role: RoleType.STATIC_TEXT});
+
+    // The EditableLine object automatically adjusts to surround the line no
+    // matter what the input is.
+    var line = new editing.EditableLine(text, 0, text, 0);
+    assertTrue(line.isValidLine());
+
+    // During the course of editing operations, this line may become
+    // invalidted. For example, if a user starts typing into the line, the
+    // bounding nodes might change.
+    // Simulate that here by modifying private state.
+
+    // This puts the line at offset 8 (|this is a|).
+    line.localLineStartContainerOffset_ = 0;
+    line.localLineEndContainerOffset_ = 8;
+    assertFalse(line.isValidLine());
+
+    // This puts us in the first line.
+    line.localLineStartContainerOffset_ = 0;
+    line.localLineEndContainerOffset_ = 4;
+    assertTrue(line.isValidLine());
+
+    // This is still fine (for our purposes) because the line is still intact.
+    line.localLineStartContainerOffset_ = 0;
+    line.localLineEndContainerOffset_ = 2;
+    assertTrue(line.isValidLine());
+
+    // The line has changed. The end has been moved for some reason.
+    line.lineEndContainer_ = endText;
+    assertFalse(line.isValidLine());
+  })
+});

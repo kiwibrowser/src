@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<body>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+<script>
+
+var xWidth = xHeight = 10;
+
+function checkImageData(canvasColorSettings, imageData) {
+  var imageDataColorSettings = imageData.getColorSettings();
+  assert_equals(canvasColorSettings.colorSpace, imageDataColorSettings.colorSpace);
+  if (canvasColorSettings.pixelFormat == "8-8-8-8") {
+    assert_equals("uint8", imageDataColorSettings.storageFormat);
+    assert_equals(imageData.data.length, 4 * xWidth * xHeight);
+  } else {
+    assert_equals("float32", imageDataColorSettings.storageFormat);
+    assert_equals(imageData.dataUnion.length, 4 * xWidth * xHeight);
+  }
+}
+
+// Test createImageData when the canvas is color managed
+var helperImageData = new ImageData(xWidth, xHeight);
+function runTestCreateImageData(canvasColorSettings) {
+  var aCanvas = document.createElement("canvas");
+  aCanvas.width = xWidth;
+  aCanvas.height = xHeight;
+  var ctx = aCanvas.getContext('2d', canvasColorSettings);
+  var imageData = ctx.createImageData(xWidth, xHeight);
+  checkImageData(canvasColorSettings, imageData);
+
+  imageData = ctx.createImageData(helperImageData);
+  checkImageData(canvasColorSettings, imageData);
+}
+
+var testScenariosCreateImageData = [
+  ["Test color managed cretateImageData: {srgb, 8-8-8-8} -> {srgb, uint8}", {colorSpace: "srgb", pixelFormat: "8-8-8-8"}],
+  ["Test color managed cretateImageData: {srgb, float16} -> {srgb, float32}", {colorSpace: "srgb", pixelFormat: "float16"}], 
+  ["Test color managed cretateImageData: {rec2020, float16} -> {rec2020, float32}", {colorSpace: "rec2020", pixelFormat: "float16"}],
+  ["Test color managed cretateImageData: {p3, float16} -> {p3, float32}", {colorSpace: "p3", pixelFormat: "float16"}],
+];
+
+generate_tests(runTestCreateImageData, testScenariosCreateImageData);
+
+// Test getImageData when the canvas is color managed
+function runTestGetImageData(canvasColorSettings) {
+  var aCanvas = document.createElement("canvas");
+  aCanvas.width = xWidth;
+  aCanvas.height = xHeight;
+  var ctx = aCanvas.getContext('2d', canvasColorSettings);
+  var imageData = ctx.getImageData(0, 0, xWidth, xHeight);
+  checkImageData(canvasColorSettings, imageData);
+}
+
+var testScenariosGetImageData = [
+  ["Test color managed getImageData: {srgb, 8-8-8-8} -> {srgb, uint8}", {colorSpace: "srgb", pixelFormat: "8-8-8-8"}],
+  ["Test color managed getImageData: {srgb, float16} -> {srgb, float32}", {colorSpace: "srgb", pixelFormat: "float16"}],
+  ["Test color managed getImageData: {rec2020, float16} -> {rec2020, float32}", {colorSpace: "rec2020", pixelFormat: "float16"}],
+  ["Test color managed getImageData: {p3, float16} -> {p3, float32}", {colorSpace: "p3", pixelFormat: "float16"}],
+];
+
+generate_tests(runTestGetImageData, testScenariosGetImageData);
+
+// Test putImageData when the canvas is color managed.
+// This test passes if differen possible calls do not crash. To avoid hard
+// coded expected results that need to get synced after related Skia updates,
+// the output correcteness is verified as a unit test. Please see:
+// CanvasRenderingContext2DTest::ColorManagedGetPutImageData
+
+var dataU8 = new Uint8ClampedArray(4 * xWidth * xHeight);
+var dataU16 = new Uint16Array(4 * xWidth * xHeight);
+var dataF32 = new Float32Array(4 * xWidth * xHeight);
+function prepareDataArrays() {
+  for (i = 0; i < 4 * xWidth * xHeight; i++) {
+    dataU8[i] = (i % 4 == 3) ? 255 : i % 256;
+    dataU16[i] = dataU8[i] * 257;
+    dataF32[i] = dataU8[i] / 255.0;
+  }
+}
+
+var testScenariosPutImageData = [];
+function prepareTestScenariosPutImageData() {
+  var colorSpaces = ["srgb", "p3", "rec2020"];
+  var imageDataStorageFormats = ["uint8", "uint16", "float32"];
+  var canvasPixelFormats = ["8-8-8-8", "float16"];
+
+  for (i = 0; i < colorSpaces.length; i++)
+    for (j = 0; j < imageDataStorageFormats.length; j++)
+      for (k = 0; k < colorSpaces.length; k++)
+        for (l = 0; l < canvasPixelFormats.length; l++) {
+          testTitle = "Test color managed putImageData: ".concat(
+            "{", colorSpaces[i], ", ", imageDataStorageFormats[j], "} -> {", colorSpaces[k],
+            ", ", canvasPixelFormats[l], "}");
+          imageDataColorSettings =
+            {colorSpace: colorSpaces[i], storageFormat: imageDataStorageFormats[j]};
+          canvasColorSettings =
+            {colorSpace: colorSpaces[k], pixelFormat: canvasPixelFormats[l]};
+          testScenariosPutImageData.push([testTitle, imageDataColorSettings, canvasColorSettings]);
+        }
+}
+
+function createAndPutImageData(data, imageDataColorSettings, canvasColorSettings) {
+  // create color managed canvas
+  var aCanvas = document.createElement("canvas");
+  aCanvas.width = xWidth;
+  aCanvas.height = xHeight;
+  var ctx = aCanvas.getContext('2d', canvasColorSettings);
+  // create color managed ImageData
+  var imageData = ctx.createImageData(data, xWidth, xHeight, imageDataColorSettings);
+  // put image data into canvas. test succeeds if this does not crash.
+  ctx.putImageData(imageData, 0, 0);
+}
+
+function runTestPutImageData(imageDataColorSettings, canvasColorSettings) {
+  createAndPutImageData(dataU8, imageDataColorSettings, canvasColorSettings);
+  createAndPutImageData(dataU16, imageDataColorSettings, canvasColorSettings);
+  createAndPutImageData(dataF32, imageDataColorSettings, canvasColorSettings);
+}
+
+prepareDataArrays();
+prepareTestScenariosPutImageData();
+generate_tests(runTestPutImageData, testScenariosPutImageData);
+
+</script>
+</body>

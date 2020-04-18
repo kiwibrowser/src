@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<title>Test that player buffering is reflected in CSS classes</title>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="../../../media-resources/media-controls.js"></script>
+<script src="../../../media-resources/media-file.js"></script>
+<video controls width=400 preload=metadata></video>
+<script>
+async_test(t => {
+  const video = document.querySelector('video');
+  checkControlsDoesNotHaveClass(video, "state-buffering");
+
+  video.onstalled = t.step_func_done(() => {
+    checkControlsHasClass(video, "state-buffering");
+  });
+
+  const mediaFile = "../../../media/" + "content/test.ogv";
+  const mimeType = mimeTypeForFile(mediaFile);
+  video.src = "http://127.0.0.1:8000/resources/load-and-stall.php?name="
+    + mediaFile + "&mimeType=" + mimeType + "&stallAt=100000&stallFor=8";
+  video.play();
+});
+</script>
+</html>

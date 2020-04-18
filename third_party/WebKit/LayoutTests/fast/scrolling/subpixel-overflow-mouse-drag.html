@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<style>
+body {
+  zoom: 175%;
+  margin: 0;
+}
+#container {
+  overflow-y: scroll;
+  width: 200px;
+  height: 200px;
+}
+#content {
+  background-color: green;
+  width: 100px;
+  height: 200.3px;
+}
+</style>
+Tests scroll behavior when a subpixel scrollbar thumb is dragged by mouse.
+<div id="container">
+  <div id="content"></div>
+</div>
+<script src="../../resources/js-test.js"></script>
+<script>
+if (window.eventSender) {
+  onload = function() {
+    var container = document.getElementById('container');
+    eventSender.mouseMoveTo(340, 200);
+    eventSender.mouseDown();
+    eventSender.mouseMoveTo(340, 250);
+    eventSender.mouseUp();
+
+    shouldBeCloseTo("container.scrollTop", "0.57", 0.02);
+  };
+}
+</script>

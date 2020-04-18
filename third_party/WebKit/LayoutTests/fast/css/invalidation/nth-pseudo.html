@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+<style>
+    #t1 > span:nth-child(even) {
+        background-color: green
+    }
+    #t2 > span:nth-last-child(even) {
+        background-color: green
+    }
+    #t3 > .second:nth-child(2) {
+        background-color: green
+    }
+</style>
+<div id="t1">
+    <span></span>
+</div>
+<div id="t2">
+    <span></span>
+</div>
+<div id="t3">
+    <div class="second"></div>
+    <div></div>
+    <div></div>
+    <div></div>
+</div>
+
+<script>
+    function backgroundIsGreen(element) {
+        assert_equals(getComputedStyle(element).backgroundColor, "rgb(0, 128, 0)");
+    }
+
+    function backgroundIsTransparent(element) {
+        assert_equals(getComputedStyle(element).backgroundColor, "rgba(0, 0, 0, 0)");
+    }
+
+    test(() => {
+        t1.offsetTop;
+        assert_equals(t1.lastChild.nodeType, Node.TEXT_NODE);
+        t1.insertBefore(document.createElement("span"), t1.lastChild);
+        assert_equals(internals.updateStyleAndReturnAffectedElementCount(), 1);
+    }, "Appending an element sibling should not affect :nth-child of preceding siblings.");
+
+    test(() => {
+        t2.offsetTop;
+        assert_equals(t2.firstChild.nodeType, Node.TEXT_NODE);
+        assert_equals(t2.firstChild.nextSibling.nodeType, Node.ELEMENT_NODE);
+        t2.insertBefore(document.createElement("span"), t2.firstChild.nextSibling);
+        assert_equals(internals.updateStyleAndReturnAffectedElementCount(), 1);
+    }, "Prepending an element sibling should not affect :nth-last-child of succeeding siblings.");
+
+    test(() => {
+        t3.offsetTop;
+        let second = t3.querySelector(".second");
+        backgroundIsTransparent(second);
+        t3.insertBefore(document.createElement("div"), t3.firstChild);
+        assert_equals(internals.updateStyleAndReturnAffectedElementCount(), 2);
+        backgroundIsGreen(second);
+    }, "Prepending an element sibling causing :nth-child class invalidation.");
+
+</script>

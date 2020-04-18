@@ -1,0 +1,119 @@
+<!--
+Copyright 2013 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+
+A web page intended for both manual and automated end-to-end testing of
+the Hangout Services component extension and the APIs it uses.
+-->
+<html>
+<head>
+<title>Hangout Services Test Page</title>
+<script src="hangout_services_test.js">
+</script>
+<script>
+//
+// UI glue and other code that needs to use the document. Leaving in
+// HTML file with the UI elements it is using.
+//
+
+// Populates UI elements with initial contents.
+function populate() {
+  populateSinks();
+  navigator.mediaDevices.enumerateDevices().then(populateSources);
+}
+
+// Populates the select box with information on all sinks.
+function populateSinks() {
+  var select = document.getElementById('select');
+  while (select.length > 0)
+    select.remove(0);
+  getSinks(function(sinks) {
+      for (var i = 0; i < sinks.length; ++i) {
+        var option = document.createElement('option');
+        option.value = sinks[i].sinkId;
+        option.text = sinks[i].sinkLabel + ' (' + sinks[i].sinkId + ')';
+        select.add(option);
+      }
+    });
+}
+
+function populateSources(devices) {
+  var select = document.getElementById('selectSource');
+  for (var i = 0; i < devices.length; ++i) {
+    var device = devices[i];
+    if (device.kind == 'audioinput') {
+      var option = document.createElement('option');
+      option.value = device.deviceId;
+      option.text = device.label + ' (' + device.deviceId + ')';
+      select.add(option);
+    }
+  }
+}
+
+function getAssociatedDeviceFromSelection() {
+  var select = document.getElementById('selectSource');
+  getAssociatedSink(select.value, function(sinkId) {
+      alert('Associated sink ID: ' + sinkId);
+    });
+}
+
+//
+// Manual tests.
+//
+
+function manualTestChooseDesktopMedia() {
+  chooseDesktopMedia(function(results) {
+      alert('Cancel ID: ' + results.cancelId +
+            ', stream ID: ' + results.streamId);
+    });
+}
+
+function manualTestListenForSinksChangedEvent() {
+  listenForSinksChangedEvent(function(msg) {
+      if (msg['eventName'] && msg['eventName'] == 'onSinksChanged')
+        alert('Got onSinksChanged event.');
+    });
+}
+
+// Browser test scaffolding. Starts the test run from a browser
+// test. Sets the document title to 'success' or 'failure' when the
+// test completes.
+function browsertestRunAllTests() {
+  runAllTests(function(results) {
+      if (results == '') {
+	document.title = 'success';
+      } else {
+	console.log('Test failed:');
+	console.log(results);
+	document.title = 'failure';
+      }
+    });
+}
+</script>
+</head>
+<body onload="populate()">
+<audio id="audio" src="long_audio.ogg" controls autoplay></audio>
+<br/>
+
+Audio output devices<br/>
+<select style="width:100%" id="select" size=10></select>
+<br/>
+
+Audio input devices. Click to get associated output device ID:<br/>
+<select size=10 id="selectSource" onClick="getAssociatedDeviceFromSelection()">
+</select>
+
+<p>
+Run all automated tests manually (empty results indicate success):
+<input type="submit" value="Run"
+       onclick="runAllTests(function(results) { alert('Results:\n' +
+       results); });"><br/>
+Manually test choosing desktop media:
+<input type="submit" value="Choose Media"
+       onclick="manualTestChooseDesktopMedia();"><br/>
+Start listening for onSinksChanged event (manual test):
+<input type="submit" value="Start listening"
+       onclick="manualTestListenForSinksChangedEvent();"><br/>
+</body>
+</html>

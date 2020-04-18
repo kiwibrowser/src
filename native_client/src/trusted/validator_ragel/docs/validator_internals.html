@@ -1,0 +1,395 @@
+<!doctype html>
+<html>
+<head>
+<title>Validator structure</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+
+<style type="text/css">
+  .hoverable {
+    color: green;
+    border-bottom: 1px dotted;
+  }
+</style>
+
+</head>
+
+<body>
+<div>
+<div style="width:20%; float:left; padding-right:5%;"><a href="http://en.wikipedia.org/wiki/File:Duesenberg.jpg"><img border="0" src="http://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Duesenberg.jpg/800px-Duesenberg.jpg" width="100%" /></a><center style="position: relative; top:-0.7em; left:0px;"><span style="font-size:50%">Source: <a href="http://en.wikipedia.org/wiki/File:Duesenberg.jpg">http://en.wikipedia.org/wiki/File:Duesenberg.jpg</a></span></center></div><div style="width:33%; float:right; padding-left:5%;"><a href="http://en.wikipedia.org/wiki/File:Felipe_Massa_2011_Malaysia_FP1.jpg"><img border="0" src="http://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Felipe_Massa_2011_Malaysia_FP1.jpg/800px-Felipe_Massa_2011_Malaysia_FP1.jpg" width="100%" /></a><center style="position: relative; top:-0.7em; left:0px;"><span style="font-size:50%">Source: <a href="http://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Felipe_Massa_2011_Malaysia_FP1.jpg/800px-Felipe_Massa_2011_Malaysia_FP1.jpg">http://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Felipe_Massa_2011_Malaysia_FP1.jpg/800px-Felipe_Massa_2011_Malaysia_FP1.jpg</a></span></center></div>
+<h1>New, DFA-based validator with 5-10x speed of the original one, or…<br />
+<div style="text-align:right;">Luxury car to F1 car.</div></h1>
+<div style="position:relative; width:55%; left:10%;">Trust me: every problem in computer science may be solved by an indirection, but those indirections are <b>expensive</b>. Pointer chasing is just about the most expensive thing you can do on modern CPU's.<br /><a href="http://lwn.net/Articles/509416/"><i>—Linus Torvalds</i></a></div>
+<div>
+<a name="TOC"></a>
+<ol style="clear:both;">
+<li><a href="#1">DFA, Ragel, macros and inline functions, oh my…</a></li>
+<li><a href="#2">What is ragel and how it works.</a></li>
+  <ol>
+  <li><a href="#2-1">Ragel actions.</a></li>
+  </ol>
+<li><a href="#3">Validator for x86-32 mode</a></li>
+  <ol>
+  <li><a href="#3-1">Valid jump targets (instruction boundaries).</a></li>
+  <li><a href="#3-2">Jump destinations.</a></li>
+  </ol>
+<li><a href="#4">Validation for x86-64 mode.</a></li>
+  <ol>
+  <li><a href="#4-1">“Secondary” state.</a></li>
+  <li><a href="#4-2">“Normal” instructions.</a></li>
+  <li><a href="#4-3">Operands handling.</a></li>
+  </ol>
+<li><a href="#5">Features beyond minimal validation.</a></li>
+  <ol>
+  <li><a href="#5-1"><code>CPUID</code> support.</a></li>
+  <li><a href="#5-2">Dynamic code modification support.</a></li>
+    <ol>
+    <li><a href="#5-2-1">Replacement validation.</a></li>
+    <li><a href="#5-2-2">Replacement copying.</a></li>
+    </ol>
+  </ol>
+
+<li><a href="#6">Decoders.</a></li>
+</ol>
+<h2><div style="float:right"><a href="#TOC">▲</a></div><a name="1">1. DFA, Ragel, macros and inline functions, oh my…</a></h2>
+
+<p>Contemporary computer systems are extremely powerful and most complex components and libraries are built like a <a href="http://en.wikipedia.org/wiki/Luxury_vehicle">luxury car</a>: they include a lot of comfort and safety technologies which are designed to improve the life of the user of said components. This also facilitates <a href="http://en.wikipedia.org/wiki/Code_reuse">code reuse</a> via <a href="http://en.wikipedia.org/wiki/Modular_programming">modular programming</a> and generally improves <a href="http://en.wikipedia.org/wiki/Maintainability">maintainability</a>.</p>
+
+<p>Unfortunately these complex structures, improved comfort for the library user and commendable flexibility have a flip side: they lead to a lot of additional work in runtime! You first fill and then parse complex data structures—and this takes time. You often produce a lot of information on the low levels which is just not used on higher levels—and this work is also not free.</p>
+
+<p>This new validator is built differently. It only keeps around the indispensable minimum of the information needed to prove (or disprove) that code is safe. Similarly to how a <a href="http://en.wikipedia.org/wiki/Formula_One_car">F1 car</a> uses <a href="http://www.youtube.com/watch?v=NsvWnGgT7Ok">custom-designed car seats</a>, we use custom-designed data structures to push the data from one point of the validator to another. We only collect the bare minimum of the information (and perhaps a little bit besides that to make testing possible)—and if the requirements are changing we often change all the pieces: from the <code>gen_dfa</code> input data format to the highest-level <code>dfa_validate_32.c</code>/<code>dfa_validate_64.c</code> external API adapters.</p>
+
+<p>This streamlining was one of the most important design goals of a new validator. And indeed the code which reaches the CPU is very simple: it does not contain complex data structures and multilayered functions while all the previous validators had many layers and quite a few complex data structures. How can it be? Were all these structures superfluous and unnecessary? Well… not really. The new validator throws away all that complexity and trades it for a few comparisons and jumps. <b>Tens of thousands comparisons and similar number of jumps</b>, to be exact. In a <b>single flat function</b>. Basically we trade runtime complexity for build-time complexity.</p>
+
+<p>But note that build-time complexity ≠ source code complexity. Since our goal is to produce an extremely fast validator, not an extremely complicated validator with impenetrable source, we try to keep its source as simple as feasible. To achieve this we employ <a href="http://www.complang.org/ragel/">ragel</a> and our own generator of ragel code. Why two levels of indirection? Ragel is an industry-standard tool for DFA generation (you can find it in most Linux distributions, <a href="http://en.wikipedia.org/wiki/Ragel">article on the Wikipedia</a> was added in 2006, etc) and our generator is used to produce ragel output from textual description of the x86 instruction set. Said textual description uses a form which is pretty close to what you can find in the AMD manual (Intel manuals use similar acronyms, but they take a significantly different approach to describe VEX-encoded commands). The initial goal was to use snippets from the manual, but this proved to be unfeasible in a few cases because the manual is designed to be read by humans. For example <code>POPF/D/Q Fv</code> describes the instruction which has different names in legacy 16bit mode, 32bit ia32 mode and 64bit x86-64 mode while <code>STOSW/D/Q Yv, rAX</code> is an instruction which is called differently if different prefixes are used. The fact that you have access to all three forms of <code>STOSW/D/Q</code> in x86-64 mode but can only use <code>POPF</code> and <code>POPFD</code> is not reflected anywhere. To solve this problem we use a slightly more formalized (and thus machine-parseable) description, but, thankfully, such cases are rare thus most commands in our tables are described exactly as they are described in the AMD manual.</p>
+
+<h2><div style="float:right"><a href="#TOC">▲</a></div><a name="2">2. What is ragel and how it works.</a></h2>
+
+<p>If you know how Ragel works <b>or</b> if the phrase “Ragel is a compiler of <a href="http://en.wikipedia.org/wiki/Finite_state_machine">finite state machines</a> and it can produce not just <a href="http://en.wikipedia.org/wiki/Finite_state_automaton">finite-state automata</a> but <a href="http://en.wikipedia.org/wiki/Finite_state_transducer">finite state transducers</a> and we use this capability in our work” makes perfect sense and clarifies the affairs to you then you can skip next [optional] part.</p>
+
+<blockquote style="background:lightgray; font-size:90%;">
+
+<p>I'll not explain what the DFA is (it's explained in CS courses you took years back… or you can refresh your knowledge on <a href="http://en.wikipedia.org/wiki/Deterministic_finite_automaton">Wikipedia</a>). But I'll explain a little about Ragel's take on <a href="http://en.wikipedia.org/wiki/Finite_state_transducer">finite state transducers</a>. Extensive documentation with all the gory details is <a href="http://www.complang.org/ragel/">on Ragel's site</a>, but while it explains <b>how</b> to use Ragel it does not explain <b>what</b> it is and <b>why</b> you might want to use it.</p>
+
+<p>Let's start with the first question: <b>what</b> it is. Ragel is a compiler of DFA machines… but with a twist. You describe a DFA structure using simple <a href="http://en.wikipedia.org/wiki/Regular_expression">RE</a>-style format and Ragel generates the corresponding code in C (D/Go/Java/Ruby/etc: Ragel supports a lot of languages, but we are interested in C here). When you describe the DFA you just write acceptable bytes and then use the following operations: concatenation (“1 . 2” will accept either “1” followed by “2”), union (“1 | 2” will accept either “1” or “2”), intersection (“('a'..'n') & ('m'..'z')” will accept either “m” or “n”), difference (“('a'..'n') - ('m'..'z')” will accept everything between “a” and “l”, but will not accept either “m” or “n”) and kleene star (“(1 | 2)*” will accept any number of “1” or “2”).</p>
+
+<p>These operations can produce quite non-trivial results: e.g. “("b" . ("aa"+ | "aaa"+))*” will produce the following DFA:</p>
+<center><img src="sample1.svg" width="100%"/></center><br />
+<p>If, instead of “("aa"+ | "aaa"+)” in the example above you'll use something like “("a"{5}+ | "a"{7}+ | "a"{11}+)” then the resulting DFA will include almost four hundreds nodes and over five hundreds transitions! This limits applicability of DFA technology: e.g. it's possible to describe “valid code sequence” (including bundles, “restricted registers” and everything else) as a DFA, but… said DFA will include millions of nodes and billions of transitions!</p>
+
+<h3><div style="float:right"><a href="#TOC">▲</a></div><a name="2-1">2.1. Ragel actions.</a></h3>
+
+<p>To overcome this problem Ragel offers so-called "actions": pieces of code which are called when certain pieces in DFA are reached. E.g. we can mark begin and end of “aa” (or “aaa”) in the example above—“("b" . (("aa" >begin @end)+ | ("aaa" >begin @end)+ ))*” produces the following DFA:</p>
+<center><img src="sample2.svg" width="100%"/></center>
+<p style="margin-bottom:0px;">Let's see what happens if we'll feed it with “baaaaaaaaa” sequence:</p>
+<ul style="margin-top:0px;">
+<li><i>offset 0</i>: <i>nothing</i></li>
+<li><i>offset 1</i>: <code>begin</code></li>
+<li><i>offset 2</i>: <code>end</code></li>
+<li><i>offset 3</i>: <code>begin</code> then <code>end</code></li>
+<li><i>offset 4</i>: <code>end</code> then <code>begin</code></li>
+<li><i>offset 5</i>: <code>begin</code></li>
+<li><i>offset 6</i>: <code>end</code></li>
+<li><i>offset 7</i>: <code>begin</code></li>
+<li><i>offset 8</i>: <code>end</code></li>
+<li><i>offset 9</i>: <code>begin</code> then <code>end</code></li>
+</ul>
+<p>Hmm. Something is wrong here: why do we have so many <code>begin</code>'s and <code>end</code>'s?!! Let's try to change the DFA a bit: “("b" . (("aa" >begin2 @end2)+ | ("aaa" >begin3 @end3)+ ))*” produces the following DFA:</p>
+<center><img src="sample3.svg" width="100%"/></center>
+<p style="margin-bottom:0px;">This time we have:</p>
+<ul style="margin-top:0px;">
+<li><i>offset 0</i>: <i>nothing</i></li>
+<li><i>offset 1</i>: <code>begin2</code> then <code>begin3</code></li>
+<li><i>offset 2</i>: <code>end2</code></li>
+<li><i>offset 3</i>: <code>begin2</code> then <code>end3</code></li>
+<li><i>offset 4</i>: <code>end2</code> then <code>begin3</code></li>
+<li><i>offset 5</i>: <code>begin2</code></li>
+<li><i>offset 6</i>: <code>end2</code> then <code>end3</code></li>
+<li><i>offset 7</i>: <code>begin2</code> then <code>begin3</code></li>
+<li><i>offset 8</i>: <code>end2</code></li>
+<li><i>offset 9</i>: <code>begin2</code> then <code>end3</code></li>
+</ul>
+<p style="margin-bottom:0px;">Ah-ha. Now everything is clear. DFA is DFA: it does not support memory and it does not support rollbacks. This means that our DFA it processing two branches simultaneously—both “"aa"+” and “"aaa"+”. We'll need to keep this in mind. Another couple of observations:</p>
+<ol style="margin-top:0px;">
+<li>When we used just the <code>begin</code> action, the action <code>begin</code> was called once, but when we split it in two (<code>begin2</code> and <code>begin3</code>) both are called! By default Ragel merges actions.</li>
+<li>Actions are called in non-random order—take a look at <i>offset 4</i>: <code>end2</code> is called before <code>begin3</code>. That's because <code>begin3</code> has lower priority than <code>end2</code>! Note that in the previous example this same effect was observed, but it was quite mysterious there. The closer the action is to the beginning of the source file the higher its priority.</li>
+</ol>
+</blockquote>
+
+<h2><div style="float:right"><a href="#TOC">▲</a></div><a name="3">3. Validator for x86-32 mode.</a></h2>
+
+<p>Here is the build diagram:</p>
+<center><img src="files32.svg" style="width:40em;"/><br />Gray elements are hand-written, white elements are generated and dark-gray are aforementioned code generators.</center><br />
+
+<p>
+  <code>*.def</code> files contain instruction definitions taken almost verbatim from the AMD instruction manual. They are parsed by <code>gen_dfa</code>, which in turn produces ragel definitions of a regular language of all instructions (<code>validator_x86_32_instruction.rl</code>). This regular language (machine in ragel terms) is used as a building block to define the language of all 'valid' bundles (give or take some subtle details we will discuss later). The language of valid bundles is defined in <code>validator_x86_32.rl</code>.
+</p>
+
+<p>To understand how the validator works it's best to start from the function <code>ValidateChunkIA32</code> in <code>validator_x86_32.rl</code>. Said function is very short and “simple”: it allocates a couple of arrays (<code>valid_targets</code> and <code>jump_dests</code>), then cycles over code passed to it (processing it in bundle-sized chunks) and at the end it compares valid jump targets and collected jump destinations… that's it. Oh, and it also includes a couple of cryptic lines right in the middle of the innermost cycle:<hr />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>%% write init;</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>%% write exec;</code><hr />
+</p>
+
+<p>These lines instruct ragel to insert DFA code (in C) here. The resulting output will go to the file <code>validator_x86-32.c</code>, which performs actual validation. </p>
+
+<p>Our main DFA is “<code>(one_instruction | special_instruction)*</code>”—i.e. it accepts sequences of “normal” instructions and “special” instructions.
+It consumes byte by byte from the <code>current_position</code> pointer until one of the following ending conditions is met:
+<ul>
+  <li>there is no transition from the given state for a given byte (that is, either instruction is unknown or explicitly disallowed);</li>
+  <li>end of bundle is reached (<code>current_position == end_position</code>).</li>
+</ul>
+
+If the end of the bundle is reached when automaton is not in the accepting state, it means the instruction we are currently reading crosses a bundle boundary (strictly speaking, it may be not a valid instruction at all, only a prefix of some valid instruction (we haven't seen what's in the next bundle yet), but anyway it's something that definitely violates the ABI).
+</p>
+
+<p> Note that even if automaton leaves prematurely (before the end of the bundle), validation goes on from the beginning of the next bundle. If one bundle is rejected then the whole chunk is always rejected, but this approach makes it possible to diagnose more errors in one pass which helps while code is developed. </p>
+
+<p>Apparently the collection of valid jump targets and actual target destinations happens inside this automaton. How? </p>
+
+<h3><div style="float:right"><a href="#TOC">▲</a></div><a name="3-1">3.1. Valid jump targets (instruction boundaries).</a></h3>
+
+<p>There are three “special” instructions in the IA32 case: <code>naclcall</code>, <code>nacljmp</code> and <code>mov %gs:0x0/0x4,%reg</code> (the public ABI allows read-only access to <code>%gs:0</code>, and read-only access to <code>%gs:4</code> is allowed for IRT). The last one is declared as a “special” instruction to simplify the validation logic (and DFA, too): instead of accepting all versions of the <code>mov %gs:<i>something</i>,%reg</code> instruction followed by additional logic which rejects most possibilities (only plain vanilla “zero” is allowed here as per the ABI) we only describe this one version of the instruction and ragel does the rest. <code>naclcall</code> and <code>nacljmp</code> are two-instruction sequences: <code>and $~0x1f, %e<i>XX</i></code> and <code>call %e<i>XX</i></code>/<code>jmp %e<i>XX</i></code>. First instruction (<code>and $~0x1f, %e<i>XX</i></code>) can also be used as “normal” instruction.</p>
+
+<p>Just like in the <a href="#2-1">example</a> above there are two actions: the “generic cleanup” one (<code>end_of_instruction_cleanup</code>) is triggered at the instruction end (“normal” or “special”)—it's used to remember the <b>beginning</b> of the instruction, to clear the instruction_info_collected, and to mark the first byte of the instruction as a valid target for the direct jump; the second action is triggered at the final byte of <code>naclcall</code> or <code>nacljmp</code>: it expands boundaris of the instruction to cover both “component” instructions of <code>naclcall</code> or <code>nacljmp</code> and also marks instruction as “special”. Note that this <code>naclcall</code>/<code>nacljmp</code>-specific action textually is placed <b>above</b> <code>end_of_instruction_cleanup</code> action in file and that means that it'll be processed first (which important because we don't want to mark <code>call</code>/</code>jmp</code> in <code>naclcall</code>/</code>nacljmp</code> as a valid jump target!). This guarantees that <code>end_of_instruction_cleanup</code> will not mark start of the <code>and $~0x1f, %e<i>XX</i></code> as a valid jump target.</p>
+
+<p>There is one additional action which is declared as “<code>$err</code>”. This is the <i>error fallback action</i>: it's called whenever there is no transition for a particular byte in our DFA. This means we've hit either a forbidden instruction like <code>lgdt</code> or some undefined byte sequence… in both cases the <code>UNRECOGNIZED_INSTRUCTION</code> error is reported and processing is stopped.</p>
+
+<p>This explains how the <code>valid_targets</code> array is filled and invalid instructions are rejected.</p>
+
+<h3><div style="float:right"><a href="#TOC">▲</a></div><a name="3-2">3.2. Jump destinations.</a></h3>
+<p>But of course there are <code>jump_dests</code>, too. Special instructions don't touch it, but something obviously fills the array. This can only be the result of processing of normal instructions, thus we need to go deeper. Where does it all come from? To understand that we need to look at the [autogenerated] <code>validator_x86_32_instruction.rl</code> file. It looks like this:<hr />
+&nbsp;&nbsp;&nbsp;&nbsp;⋮<br />
+&nbsp;&nbsp;<code>one_instruction&nbsp;=</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;⋮<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>(branch_hint?&nbsp;0x77&nbsp;rel8)&nbsp;|</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>(branch_hint?&nbsp;(0x0f&nbsp;0x87)&nbsp;rel32)&nbsp;|</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;⋮<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>((0x0f&nbsp;0x01&nbsp;0xd0)&nbsp;@CPUFeature_FXSR)</code>;<hr />
+</p>
+<code>0x77</code> and <code>0x0f&nbsp;0x87</code> are opcodes for <code>ja</code> (aka <code>jnbe</code>) instruction, but what are <code>branch_hint?</code> and <code>rel8</code>/<code>rel32</code> doing here? Well, “<code>?</code>” means “optional” (like in most <a href="http://en.wikipedia.org/wiki/Regular_expression">RE</a>-engines) and both <code>branch_hint</code> and <code>rel8</code>/<code>rel32</code> definitions are references to machines defined in the <code>parse_instruction.rl</code> file. The whole construct describes part of the DFA which is designed to accept the <code>ja</code> (aka <code>jnbe</code>) instruction—complete with optional P4-inspired branch prediction prefix. Definition of <code>branch_hint</code> is trivial and obvious (“<code>branch_hint = 0x2e | 0x3e;</code>” if you want to know), but <code>rel8</code>/<code>rel32</code> are somewhat more “interesting”:<hr />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>rel8&nbsp;=&nbsp;any&nbsp;@rel8_operand;</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>rel32&nbsp;=&nbsp;any{4}&nbsp;@rel32_operand;</code><hr />
+It's “more interesting” not because it's complex or non-obvious. The interesting part here is the fact that actions <code>rel8_operand</code>/<code>rel32_operand</code> are <b>not</b> present in <code>validator_x86_32_instruction.rl</code>, they are in the <code>parse_instruction.rl</code> file! But the definition itself is pretty trivial—they just call simple functions from <code>validator_internal.h</code>:<hr />
+&nbsp;&nbsp;<code>action&nbsp;rel8_operand&nbsp;{</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>Rel8Operand(current_position&nbsp;+&nbsp;1,&nbsp;codeblock,&nbsp;jump_dests,&nbsp;size,</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;instruction_info_collected);</code><br />
+&nbsp;&nbsp;<code>}</code><br />
+&nbsp;&nbsp;<code>action&nbsp;rel32_operand&nbsp;{</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>Rel32Operand(current_position&nbsp;+&nbsp;1,&nbsp;codeblock,&nbsp;jump_dests,&nbsp;size,</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;instruction_info_collected);</code></br />
+&nbsp;&nbsp;<code>}</code><hr />
+<code>static&nbsp;FORCEINLINE&nbsp;int&nbsp;MarkJumpTarget(size_t&nbsp;jump_dest,</code></br>
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bitmap_word&nbsp;*jump_dests,</code></br>
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;size_t&nbsp;size)&nbsp;{</code></br>
+&nbsp;&nbsp;<code>if&nbsp;((jump_dest&nbsp;&amp;&nbsp;kBundleMask)&nbsp;==&nbsp;0)&nbsp;{</code></br>
+&nbsp;&nbsp;&nbsp;&nbsp;<code>return&nbsp;TRUE;</code></br>
+&nbsp;&nbsp;<code>}</code></br>
+&nbsp;&nbsp;<code>if&nbsp;(jump_dest&nbsp;&gt;=&nbsp;size)&nbsp;{</code></br>
+&nbsp;&nbsp;&nbsp;&nbsp;<code>return&nbsp;FALSE;</code></br>
+&nbsp;&nbsp;<code>}</code></br>
+&nbsp;&nbsp;<code>BitmapSetBit(jump_dests,&nbsp;jump_dest);</code></br>
+&nbsp;&nbsp;<code>return&nbsp;TRUE;</code></br>
+<code>}</code></br>
+<code>static&nbsp;FORCEINLINE&nbsp;void&nbsp;Rel8Operand(const&nbsp;uint8_t&nbsp;*rip,</code><br />
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;const&nbsp;uint8_t&nbsp;codeblock[],</code><br />
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bitmap_word&nbsp;*jump_dests,</code><br />
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;size_t&nbsp;jumpdests_size,</code><br />
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;uint32_t&nbsp;*instruction_info_collected)&nbsp;{</code><br />
+&nbsp;&nbsp;<code>int8_t&nbsp;offset&nbsp;=&nbsp;rip[-1];</code><br />
+&nbsp;&nbsp;<code>size_t&nbsp;jump_dest&nbsp;=&nbsp;offset&nbsp;+&nbsp;(rip&nbsp;-&nbsp;codeblock);</code><br /><br />
+&nbsp;&nbsp;<code>if&nbsp;(MarkJumpTarget(jump_dest,&nbsp;jump_dests,&nbsp;jumpdests_size))</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>*instruction_info_collected&nbsp;|=&nbsp;RELATIVE_8BIT;</code><br />
+&nbsp;&nbsp;<code>else</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>*instruction_info_collected&nbsp;|=&nbsp;RELATIVE_8BIT&nbsp;|&nbsp;DIRECT_JUMP_OUT_OF_RANGE;</code><br />
+<code>}</code><br /><br /><br />
+<code>static&nbsp;FORCEINLINE&nbsp;void&nbsp;Rel32Operand(const&nbsp;uint8_t&nbsp;*rip,</code><br />
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;const&nbsp;uint8_t&nbsp;codeblock[],</code><br />
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bitmap_word&nbsp;*jump_dests,</code><br />
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;size_t&nbsp;jumpdests_size,</code><br />
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;uint32_t&nbsp;*instruction_info_collected)&nbsp;{</code><br />
+&nbsp;&nbsp;<code>int32_t&nbsp;offset&nbsp;=</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>rip[-4]&nbsp;+&nbsp;256U&nbsp;*&nbsp;(rip[-3]&nbsp;+&nbsp;256U&nbsp;*&nbsp;(rip[-2]&nbsp;+&nbsp;256U&nbsp;*&nbsp;(rip[-1])));</code><br />
+&nbsp;&nbsp;<code>size_t&nbsp;jump_dest&nbsp;=&nbsp;offset&nbsp;+&nbsp;(rip&nbsp;-&nbsp;codeblock);</code><br /><br />
+&nbsp;&nbsp;<code>if&nbsp;(MarkJumpTarget(jump_dest,&nbsp;jump_dests,&nbsp;jumpdests_size))</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>*instruction_info_collected&nbsp;|=&nbsp;RELATIVE_32BIT;</code><br />
+&nbsp;&nbsp;<code>else</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>*instruction_info_collected&nbsp;|=&nbsp;RELATIVE_32BIT&nbsp;|&nbsp;DIRECT_JUMP_OUT_OF_RANGE;</code><br />
+<code>}</code><hr />
+We just check if the jump target passes preliminary checks (a direct <b>unaligned</b> jump to the outside of the region is always invalid) and if that's not so then we detect error <code>DIRECT_JUMP_OUT_OF_RANGE</code>.</p>
+
+<h2><div style="float:right"><a href="#TOC">▲</a></div><a name="4">4. Validation for x86-64 mode.</a></h2>
+
+<p>While the validator for ia32 mode is very simple and short (it also produces pretty compact code), the validator for x86-64 mode is different. It still has all the same properties the validator for ia32 mode had (<code>valid_targets</code> and <code>jump_dests</code> arrays, “normal” and “special” instructions, bundles and <code>rel8_operand</code>/<code>rel32_operand</code> actions), but it adds quite a few additional twists to the whole scheme.</p>
+
+<p>It's created in a process which is similar to the process which creates the ia32 validator.</p>
+
+<center><img src="files64.svg" style="width:40em;"/><br />Gray elements are hand-written, white elements are generated and dark-gray are code generators.</center><br />
+
+<h3><div style="float:right"><a href="#TOC">▲</a></div><a name="4-1">4.1. “Secondary” state.</a></h3>
+
+<p>First of all: the ia32 mode validator had one DFA in it and two arrays which kept track of the instruction boundaries, but x86-64 has a few more state variables. Most of them (<code>rex_prefix</code>, <code>vex_prefix2</code>, <code>vex_prefix3</code>, <code>operand_states</code>, <code>base</code>, and <code>index</code>) keep track of the instruction parts (and thus they are cleared before each instruction), but one variable called <code>restricted_register</code> is used to tie different instructions together. As the name implies it keeps track of the restricted register (if any). The restricted register in the <a href="http://www.chromium.org/nativeclient/design-documents/nacl-sfi-model-on-x86-64-systems">NaCl SFI model on x86-64 systems</a> is a general purpose register which has the top 32bits cleared up. Note that not all restricted registers are born equal: most registers can be restricted and then forgotten (if you write to <code>%eax</code> and do nothing with the value before <code>call</code> then nothing problematic or dangerous can ever happen), but <code>%esp</code> and <code>%ebp</code> are exceptions. If you write to the <code>%esp</code> then the very next instruction must be <code>add %r15,%rsp</code> or <code>lea (%r15,%rsp,1),%rsp</code>—and <code>%rbp</code> has similar requirements. This means that if at the end of a bundle, the restricted register is <code>%rsp</code> or <code>%rbp</code>, then the program is invalid. For the same reason, if, at the beginning of a normal instruction (this includes the first instruction in the “compound”), we see the restricted <code>%rsp</code> or <code>%rbp</code>, then it's an error too. On the other hand, few rare special instructions which are used to restore the SFI invariant WRT <code>%rsp</code> or <code>%rbp</code> will only be accepted if the restricted register is <code>%rsp</code> xor <code>%rbp</code> (depending on the special instruction).</p>
+
+<h3><div style="float:right"><a href="#TOC">▲</a></div><a name="4-2">4.2. “Normal” instructions.</a></h3>
+
+<p>The hard part is, as before, in the DFA. First of all, the main machine is similar to what we had in ia32 mode, but subtly different: it's “<code>(normal_instruction | special_instruction)*</code>” now. I.e.: <code>one_instruction</code> is replaced with <code>normal_instruction</code>. And what is <code>normal_instruction</code>? Why, it's “<code>one_instruction - special_instruction</code>”, of course! Well… this is unexpected: why will we want to remove <code>special_instruction</code>s from <code>normal_instruction</code>s only to add them back? The answer is related to actions: recall how <a href="#2-1">actions</a> work. When we remove <code>special_instruction</code> from <code>one_instruction</code> we also remove the associated actions. This is important in the x86-64 case because some special instructions are just normal instructions which are permitted to violate the usual rules! E.g. “special” instruction <code>and $~0x1f,%rsp</code> (which is used to align the stack pointer) changes the <code>%rsp</code> directly which is usually forbidden, but because of the properties of <code>and $xxx,…</code> (for any <code>$xxx</code> &lt; <code>0</code>) we know that invariants will not be violated.</p>
+
+<p>This approach works well, but only if violations are detected at the instruction end. E.g. the aforementioned <code>and $~0x1f,%rsp</code> instruction is encoded as </code>0x48&nbsp;0x83&nbsp;0xe4&nbsp;0xe0</code> and after we've read </code>0x48&nbsp;0x83&nbsp;0xe4</code> we already know it's a normal instruction (opcode <code>0x83</code> means it's <code>and</code>) which writes to <code>%rsp</code> (<code>0x48&nbsp;</code><i>opcode</i><code>&nbsp;0xe4</code> means it's some instruction which accepts some kind of immediate and writes to <code>%rsp</code>) and we'll signal the error at this point—the fact that later we'll find out it's a <code>special_instruction</code> which is accepted anyway will not matter: <code>SP_MODIFIED</code> error will be triggered which means the code is rejected!</p>
+
+<p>This means that we can not do actual conditions checking till the very end of the normal instruction (we can try to process some, but not all, of them, but this approach will be quite complex and fragile—not something you want in the most critical security piece). There is an exception: memory access. <b>This</b> one is checked inline: memory accesses outside of the “40GiB safe area” is strictly forbidden no matter how “special” the instruction is. That's why it's checked immediately after operands discovery. This is what the relevant fragment for the <code>and</code> instruction looks like:<hr />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>(0x83&nbsp;(opcode_4&nbsp;any*&nbsp;&amp;&nbsp;operand_disp&nbsp;@check_access)&nbsp;imm8&nbsp;@process_0_operand)&nbsp;|</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>(0x83&nbsp;(opcode_4&nbsp;any*&nbsp;&amp;&nbsp;operand_rip&nbsp;@check_access)&nbsp;imm8&nbsp;@process_0_operand)&nbsp;|</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>(REX_B?&nbsp;0x83&nbsp;(opcode_4&nbsp;any*&nbsp;&amp;&nbsp;single_register_memory&nbsp;@check_access)&nbsp;imm8&nbsp;@process_0_operand)&nbsp;|</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>(REX_X?&nbsp;0x83&nbsp;(opcode_4&nbsp;any*&nbsp;&amp;&nbsp;operand_sib_pure_index&nbsp;@check_access)&nbsp;imm8&nbsp;@process_0_operand)&nbsp;|</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>(REX_XB?&nbsp;0x83&nbsp;(opcode_4&nbsp;any*&nbsp;&amp;&nbsp;operand_sib_base_index&nbsp;@check_access)&nbsp;imm8&nbsp;@process_0_operand)&nbsp;|</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>(lock&nbsp;0x83&nbsp;(opcode_4&nbsp;any*&nbsp;&amp;&nbsp;operand_disp&nbsp;@check_access)&nbsp;imm8&nbsp;@process_0_operand)&nbsp;|</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>(lock&nbsp;0x83&nbsp;(opcode_4&nbsp;any*&nbsp;&amp;&nbsp;operand_rip&nbsp;@check_access)&nbsp;imm8&nbsp;@process_0_operand)&nbsp;|</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>(lock&nbsp;REX_B?&nbsp;0x83&nbsp;(opcode_4&nbsp;any*&nbsp;&amp;&nbsp;single_register_memory&nbsp;@check_access)&nbsp;imm8&nbsp;@process_0_operand)&nbsp;|</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>(lock&nbsp;REX_X?&nbsp;0x83&nbsp;(opcode_4&nbsp;any*&nbsp;&amp;&nbsp;operand_sib_pure_index&nbsp;@check_access)&nbsp;imm8&nbsp;@process_0_operand)&nbsp;|</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>(lock&nbsp;REX_XB?&nbsp;0x83&nbsp;(opcode_4&nbsp;any*&nbsp;&amp;&nbsp;operand_sib_base_index&nbsp;@check_access)&nbsp;imm8&nbsp;@process_0_operand)&nbsp;|</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>(REX_B?&nbsp;0x83&nbsp;(opcode_4&nbsp;@operand0_32bit&nbsp;any*&nbsp;&&nbsp;modrm_registers&nbsp;@operand0_from_modrm_rm)&nbsp;imm8&nbsp;@process_1_operand)&nbsp;|</code><hr />
+As you can see <code>check_access</code> is triggered after parsing ModRM/SIB bytes, but before parsing <code>imm<i>NN</i></code> field while <code>process_<i>N</i>_operands</code> action is triggered at the very end of the “normal” instruction. Even if the instruction does not use the <code>imm<i>NN</i></code> field, the <code>check_access</code> action is <b>still</b> triggered before the <code>process_<i>N</i>_operands</code> action. This is important because the <code>check_access</code> action actually depends on the <b>previous</b> state of <code>restricted_register</code> variable while <code>process_<i>N</i>_operands</code> action changes the <code>restricted_register</code> variable. Note that it's only triggered for “normal” instructions—“special” instructions either do the work themselves (e.g. <code>add %r15,%rsp</code>—which is only valid if the previous state of the <code>restricted_register</code> variable was <code>NC_REG_RSP</code> and changes it to <code>NC_NO_REG</code> in case of success) or call the usual <code>process_<i>N</i>_operands</code> action (e.g. <code>mov %rsp,%rbp</code> calls <code>process_0_operands</code> which ensures that this operation is not called when <code>restricted_register</code> is set to <code>NC_REG_RSP</code>/<code>NC_REG_RBP</code> state and transitions it to <code>NC_NO_REG</code> state).</p>
+
+<p>You can find yet another surprising thing in the snippet above: <code>and</code> instruction is handled either as instruction with zero operands or as instruction with one operand… but of course in reality it always has two operands! Something is strange here… Well, sure: the decoder part of the validator is as streamlined as possible. We just ignore all non-register arguments and arguments which are not written to (but we <b>don't</b> ignore memory accesses if they happen here, of course). That's why <code>and</code> has either one or zero operands as far as the validator is concerned.</p>
+
+<p>And, finally, there are a twist related to “superinstructions” (sequences of normal instructions followed by the “dangrous” instruction like <code>jmp *%rax</code> or <code>maskmovq</code>): in ia32 case we only had <code>naclcall</code> and <code>nacljmp</code>, they both included two instructions and we only needed to avoid marking second one as “valid jump target”. In x86-64 mode “superinstructions” can be much longer (they can include two, three, or even five instructions!) thus the simple approach (don't mark the beginning of the “dangerous” superinstruction as a valid jump target) does not work. Instead we mark all bytes of the superinstruction as “invalid jump target” using <code>UnmarkValidJumpTargets</code> function. Note that we also need to mark the beginning of regular instruction as “invalid jump target” if said instruction uses <code>restricted_register</code>—that's why at we mark mark the first byte of the <b>next</b> instruction as the “valid jump target” in the <code>end_of_instruction_cleanup</code>, not the first byte of the <b>current</b> instruction. Note that even invalid instructions would be marked as valid jump targets in this scheme, but we don't care about this peculiarity because the validation result will be negative anyway.</p>
+
+<h3><div style="float:right"><a href="#TOC">▲</a></div><a name="4-3">4.3. Operands handling.</a></h3>
+
+<p>Operands handling is, again, not that complex… if you are familiar with bit operations. An initial version of the validator used a simple array of records to store the information and everything worked well… with GCC, that is. MSVC produced awful code which was almost 30% slower and also needed twenty minutes to compile, thus we replaced this simple version with the current macro-based one.</p>
+
+<p>All the information about encountered operands is collected in a single scalar variable <code>operand_states</code>. The layout of said variable looks like this:</p>
+<table width="100%"><tr><td align="left">63</td><td align="right">39</td><td align="left">38</td><td align="right">37</td><td align="left">36</td><td align="right">32</td><td align="center">31</td><td align="left">30</td><td align="right">29</td><td align="left">28</td><td align="right">24</td><td align="center">23</td><td align="left">22</td><td align="right">21</td><td align="left">20</td><td align="right">16</td><td align="center">15</td><td align="left">14</td><td align="right">13</td><td align="left">12</td><td align="right">8</td><td align="center">7</td><td align="left">6</td><td align="right">5</td><td align="left">4</td><td align="right">0</td></tr>
+<tr><td colspan="2" style="border: thin solid black;" width="100%" align="center">padding</td><td colspan="2" style="border: thin solid black;" align="center">operand4:<br />register_type</td><td colspan="2" style="border: thin solid black;" align="center">operand4:<br />register_name</td><td style="border: thin solid black;" align="center">padding</td><td colspan="2" style="border: thin solid black;" align="center">operand3:<br />register_type</td><td colspan="2" style="border: thin solid black;" align="center">operand3:<br />register_name</td><td style="border: thin solid black;" align="center">padding</td><td colspan="2" style="border: thin solid black;" align="center">operand2:<br />register_type</td><td colspan="2" style="border: thin solid black;" align="center">operand2:<br />register_name</td><td style="border: thin solid black;">padding</td><td colspan="2" style="border: thin solid black;" align="center">operand1:<br />register_type</td><td colspan="2" style="border: thin solid black;" align="center">operand1:<br />register_name</td><td style="border: thin solid black;" align="center">padding</td><td colspan="2" style="border: thin solid black;" align="center">operand0:<br />register_type</td><td colspan="2" style="border: thin solid black;" align="center">operand0:<br />register_name</td></tr>
+<tr><td></td><td></td><td></td><td></td><td colspan="2">&nbsp;↖<br />&nbsp;&nbsp;&nbsp;&nbsp;0 if normal<br />&nbsp;&nbsp;&nbsp;&nbsp;register</td><td></td><td></td><td></td><td colspan="2">&nbsp;↖<br />&nbsp;&nbsp;&nbsp;&nbsp;0 if normal<br />&nbsp;&nbsp;&nbsp;&nbsp;register</td><td></td><td></td><td></td><td colspan="2">&nbsp;↖<br />&nbsp;&nbsp;&nbsp;&nbsp;0 if normal<br />&nbsp;&nbsp;&nbsp;&nbsp;register</td><td></td><td></td><td></td><td colspan="2">&nbsp;↖<br />&nbsp;&nbsp;&nbsp;&nbsp;0 if normal<br />&nbsp;&nbsp;&nbsp;&nbsp;register</td><td></td><td></td><td></td><td colspan="2">&nbsp;↖<br />&nbsp;&nbsp;&nbsp;&nbsp;0 if normal<br />&nbsp;&nbsp;&nbsp;&nbsp;register</td></tr></table>
+
+<p>Register names are defined in the <code>register_name</code> enum: the first 16 are identical to the AMD/Intel names (from <code>NC_REG_RAX</code> to <code>NC_REG_R15</code>) while the other 16 are used (partially) to describe non-register operands (memory operand, immediate operand, <code>NC_REG_RIP</code> and <code>NC_REG_RIZ</code>, etc). This means that if the operand's name is &gt;15 then it can be ignored. There are only four operand types: <code>OperandSandboxIrrelevant</code>, <code>OperandSandbox8bit</code>, <code>OperandSandboxRestricted</code>, and <code>OperandSandboxUnrestricted</code>. The first type is something not related to a general purpose register (x87, MMX, XMM, or YMM registers fall unto this category). We need to handle 8bit operands specially because they are finicky: if <code>REX</code> byte is used they access <code>%spl</code>, <code>%bps</code>, <code>%sil</code>, and <code>%dil</code>, but when <code>REX</code> byte is not used the same numbers are reused for <code>%ah</code>, <code>%ch</code>, <code>%dh</code>, and <code>%bh</code>! The last two types are the most important: these are 32bit operands (which will make the appropriate register “restricted”) or 16bit/64bit operands (these may affect the register in question negatively if it's <code>%rbp</code>, <code>%rsp</code>, or <code>%r15</code>, but for other registers these are just ignored). Note that if you assign <code>0</code> to this variable then all operands will be of <code>OperandSandboxIrrelevant</code> type.</p>
+
+<p>Now the set of macros used to work with operands should look less mysterious:<hr />
+<code>#define&nbsp;SET_OPERAND_NAME(INDEX,&nbsp;REGISTER_NAME)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\</code><br />
+<code>&nbsp;&nbsp;operand_states&nbsp;|=&nbsp;((REGISTER_NAME)&nbsp;&lt;&lt;&nbsp;((INDEX)&nbsp;&lt;&lt;&nbsp;3))</code><br />
+<code>#define&nbsp;SET_OPERAND_FORMAT(INDEX,&nbsp;FORMAT)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\</code><br />
+<code>&nbsp;&nbsp;SET_OPERAND_FORMAT_&nbsp;##&nbsp;FORMAT(INDEX)</code><br />
+<code>#define&nbsp;SET_OPERAND_FORMAT_OPERAND_FORMAT_8_BIT(INDEX)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\</code><br />
+<code>&nbsp;&nbsp;operand_states&nbsp;|=&nbsp;OPERAND_SANDBOX_8BIT&nbsp;&lt;&lt;&nbsp;(5&nbsp;+&nbsp;((INDEX)&nbsp;&lt;&lt;&nbsp;3))</code><br />
+<code>#define&nbsp;SET_OPERAND_FORMAT_OPERAND_FORMAT_16_BIT(INDEX)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\</code><br />
+<code>&nbsp;&nbsp;operand_states&nbsp;|=&nbsp;OPERAND_SANDBOX_UNRESTRICTED&nbsp;&lt;&lt;&nbsp;(5&nbsp;+&nbsp;((INDEX)&nbsp;&lt;&lt;&nbsp;3))</code><br />
+<code>#define&nbsp;SET_OPERAND_FORMAT_OPERAND_FORMAT_32_BIT(INDEX)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\</code><br />
+<code>&nbsp;&nbsp;operand_states&nbsp;|=&nbsp;OPERAND_SANDBOX_RESTRICTED&nbsp;&lt;&lt;&nbsp;(5&nbsp;+&nbsp;((INDEX)&nbsp;&lt;&lt;&nbsp;3))</code><br />
+<code>#define&nbsp;SET_OPERAND_FORMAT_OPERAND_FORMAT_64_BIT(INDEX)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\</code><br />
+<code>&nbsp;&nbsp;operand_states&nbsp;|=&nbsp;OPERAND_SANDBOX_UNRESTRICTED&nbsp;&lt;&lt;&nbsp;(5&nbsp;+&nbsp;((INDEX)&nbsp;&lt;&lt;&nbsp;3))</code><br />
+<code>#define&nbsp;CHECK_OPERAND(INDEX,&nbsp;REGISTER_NAME,&nbsp;KIND)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\</code><br />
+<code>&nbsp;&nbsp;((operand_states&nbsp;&amp;&nbsp;(0xff&nbsp;&lt;&lt;&nbsp;((INDEX)&nbsp;&lt;&lt;&nbsp;3)))&nbsp;==&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\</code><br />
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((((KIND)&nbsp;&lt;&lt;&nbsp;5)&nbsp;|&nbsp;(REGISTER_NAME))&nbsp;&lt;&lt;&nbsp;((INDEX)&nbsp;&lt;&lt;&nbsp;3)))</code><br />
+<hr />
+Calls like <code>SET_OPERAND_NAME(0, NC_REG_RAX)</code> are used by actions to set name of the operand (this particular one is used by <code>operand0_rax</code> action) while calls like <code>SET_OPERAND_FORMAT(0, OPERAND_FORMAT_2_BIT)</code> are used by actions to set the type of operand (this particular one is used by <code>operand0_2bit</code> action). Note that we <b>don't</b> handle 2bit operands in the set of macros above. This is not a mistake: 2bit operands are only ever used as immediate operands (and then only in two instructions: <code>vpermil2pd</code> and <code>vpermil2ps</code>) and we don't process immediate operands here. If they will be by some reason left in the <code>validator_x86_64_instruction.rl</code> file this will lead to the compile-time error, not to some kind of weird overflow which may [potentially] produce security hole.</p>
+
+<p>Almost all manipulations with <code>operand_states</code> are done using macros described above, but there are one another construct which accesses the <code>operand_states</code> directly:<hr />
+<code>#define&nbsp;CHECK_OPERAND_RESTRICTED(INDEX)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\</code><br />
+<code>&nbsp;&nbsp;/*&nbsp;Take&nbsp;2&nbsp;bits&nbsp;of&nbsp;operand&nbsp;type&nbsp;from&nbsp;operand_states&nbsp;as&nbsp;*restricted_register&nbsp;*/\</code><br />
+<code>&nbsp;&nbsp;/*&nbsp;and&nbsp;also&nbsp;make&nbsp;sure&nbsp;operand_states&nbsp;denotes&nbsp;a&nbsp;register&nbsp;(4th&nbsp;bit&nbsp;==&nbsp;0).&nbsp;&nbsp;&nbsp;&nbsp;*/\</code><br />
+<code>&nbsp;&nbsp;(operand_states&nbsp;&amp;&nbsp;(0x70&nbsp;&lt;&lt;&nbsp;((INDEX)&nbsp;&lt;&lt;&nbsp;3)))&nbsp;==&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\</code><br />
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(OPERAND_SANDBOX_RESTRICTED&nbsp;&lt;&lt;&nbsp;(5&nbsp;+&nbsp;((INDEX)&nbsp;&lt;&lt;&nbsp;3)))</code><hr />
+If you'll take a look on the layout of <code>operand_states</code> then it's pretty easy to understand what goes on here: <code>(operand_states &amp; (0x70 &lt;&lt; ((INDEX) &lt;&lt; 3))) == (OPERAND_SANDBOX_RESTRICTED &lt;&lt; (5 + ((INDEX) &lt;&lt; 3)))</code> yields <code>TRUE</code> if and only if zeroth operand is “normal” register <b>and</b> it's of type <code>OperandSandboxRestricted</code>. This is actually central piece of the <code>restricted_register</code> handling—most other pieces just return it back to <code>NC_NO_REG</code> state.</p>
+
+
+<h2><div style="float:right"><a href="#TOC">▲</a></div><a name="5">5. Features beyond minimal validation.</a></h2>
+
+<h3><div style="float:right"><a href="#TOC">▲</a></div><a name="5-1">5.1. <code>CPUID</code> support.</a></h3>
+
+<p><code>CPUID</code> support is implemented using a large set of actions embedded in the definition of instructions (see, e.g. <code>@CPUFeature_FXSR</code> in the line for instruction <code>0x0f 0x01 0xd0</code> AKA <code>xgetbv</code>). CPUID-related actions are triggered when we know the identity of the instruction (which happens at different times for different instructions: some instructions are detected when the opcode is read, some use <i>opcode extension</i>, etc—AMD/Intel manuals contain all the gory details), but the definition for said actions in <code>validator_x86_32_instruction.rl</code> are very simple<hr />
+&nbsp;&nbsp;<code>action&nbsp;CPUFeature_FXSR&nbsp;{</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>SET_CPU_FEATURE(CPUFeature_FXSR);</code><br />
+&nbsp;&nbsp;<code>}</code><hr />
+This time the magic is in <code>validator_internal.h</code>. <code>SET_CPU_FEATURE</code> is defined as<hr />
+&nbsp;&nbsp;<code>if&nbsp;(!(FEATURE(kValidatorCPUIDFeatures.data)))&nbsp;{&nbsp;\</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>instruction_info_collected&nbsp;|=&nbsp;UNRECOGNIZED_INSTRUCTION;&nbsp;\</code><br />
+&nbsp;&nbsp;<code>}&nbsp;\</code><br />
+&nbsp;&nbsp;<code>if&nbsp;(!(FEATURE(cpu_features-&gt;data)))&nbsp;{&nbsp;\</code><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<code>instruction_info_collected&nbsp;|=&nbsp;CPUID_UNSUPPORTED_INSTRUCTION;&nbsp;\</code><br />
+&nbsp;&nbsp;<code>}</code><hr />
+IOW: it's pretty straightforward and simple, but there is a twist: <code>CPUFeature_FXSR</code> is not the name of variable, but the name of a macrodefinition. This is needed to handle special cases where <code>CPUFeature</code> does not correspond to a single <code>CPUID</code> bit. E.g. <code>prefetch</code> instruction is available when <b>any one</b> of two bits are set: <code>3DNnow!</code> bit or dedicated <code>Prefetch instruction</code> bit. AMD documentation also claims <code>prefetch</code> is always available if <code>LongMode</code> bit is set but Intel documentation does not support this assertion. On the other hand <code>vaesenc</code> is available when <b>both</b> <code>AES</code> and <code>AVX</code> bits are set. And our ABI <a href="http://code.google.com/p/nativeclient/issues/detail?id=2869">permits <code>lzcnt</code> and <code>tzcnt</code> unconditionally</a> (thus <code>CPUFeature_LZCNT</code> does not check for anything but just returns <code>TRUE</code> in all cases).</p>
+
+<p>Note: there are two CPUID masks: a hardcoded one (it can be replaced if you link in a different definition of the <code>validator_cpuid_features</code> global variable in your program) and a runtime-supplied one (usually obtained from an actual <code>CPUID</code> call in production, but hardcoded in tests). New instructions are first added in the “production disabled” mode and must pass a security review before they can be used in Chrome.</p>
+
+<h3><div style="float:right"><a href="#TOC">▲</a></div><a name="5-2">5.2. Dynamic code modification support.</a></h3>
+
+<p>Dynamic code modification support is implemented with the help of the <code>CALL_USER_CALLBACK_ON_EACH_INSTRUCTION</code> option. Normally the user callback is only used when some kind of error is detected, but if this option is used then callback is called after <b>each</b> instruction. When that happens, the callback has all the information needed to process the instruction: collected errors, information about immediates, etc.</p>
+
+<p>All that information is squeezed into the <code>instruction_info_collected</code> variable. It has the following format:
+
+<table width="100%"><tr><td align="left">31</td><td align="left">30</td><td align="left">29</td><td align="left">28</td><td align="left">27</td><td align="left">26</td><td align="left">25</td><td align="left">24</td><td align="left">23</td><td align="left">22</td><td align="left">21</td><td align="left">20</td><td align="left">19</td><td align="left">18</td><td align="left">17</td><td align="left">16</td><td align="left">15</td><td align="left">14</td><td align="left">13</td><td align="left">12</td><td align="right">8</td><td align="left">7</td><td align="left">6</td><td align="right">5</td><td align="left">4</td><td align="left">3</td><td align="right">0</td></tr>
+<tr><td align="left">&nbsp;</td><td align="left">&nbsp;</td><td align="left">&nbsp;</td><td align="left">&nbsp;</td><td align="left">&nbsp;</td><td align="left">&nbsp;</td><td align="left">&nbsp;</td><td colspan="11" align="left" style="border: thin solid black;"><table width="100%"><tr><td align="left">⇤</td><td align="center"><code>VALIDATION_ERRORS_MASK</code></td><td align="right">⇥</td></table></td><td align="left">&nbsp;</td><td colspan="2" align="left" width="1%" style="border: thin solid black; background: lightgray;"><table width="100%"><tr><td align="left">⇤</td><td width="1%" align="center"><code>RESTRICTED_REGISTER_MASK</code></td><td align="right">⇥</td></table></td><td align="left">&nbsp;</td><td colspan="2" align="left" width="1%" style="border: thin solid black;"><table width="100%"><tr><td align="left">⇤</td><td width="1%" align="center"><code>DISPLACEMENT_SIZE_MASK</code></td><td align="right">⇥</td></table></td><td align="left">&nbsp;</td><td colspan="2" align="left" width="1%" style="border: thin solid black;"><table width="100%"><tr><td align="left">⇤</td><td width="1%" align="center"><code>IMMEDIATES_SIZE_MASK</code></td><td align="right">⇥</td></table></td></tr>
+<tr><td style="border: thin solid black; background: gray;" width="1%" align="center">&nbsp;0&nbsp;</td><td style="border: thin solid black;" width="1%" align="center">&nbsp;&nbsp;&nbsp;</td><td width="1%" style="border: thin solid black;" align="center">&nbsp;&nbsp;&nbsp;</td><td style="border: thin solid black;" width="1%" align="center">&nbsp;&nbsp;&nbsp;</td><td style="border: thin solid black;" width="1%" align="center">&nbsp;&nbsp;&nbsp;</td><td style="border: thin solid black; background: lightgray;" width="1%" align="center">&nbsp;&nbsp;&nbsp;</td><td style="border: thin solid black;" width="1%" align="center">&nbsp;&nbsp;&nbsp;</td><td style="border: thin solid black; background: lightgray;" width="1%" align="center">&nbsp;&nbsp;&nbsp;</td><td style="border: thin solid black; background: lightgray;" width="1%" align="center">&nbsp;&nbsp;&nbsp;</td><td style="border: thin solid black; background: lightgray;" width="1%" align="center">&nbsp;&nbsp;&nbsp;</td><td colspan="2" style="border: thin solid black; background: lightgray;" width="1%" align="center">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td style="border: thin solid black; background: lightgray;" width="1%" align="center">&nbsp;&nbsp;&nbsp;</td><td style="border: thin solid black; background: lightgray;" width="1%" align="center">&nbsp;&nbsp;&nbsp;</td><td style="border: thin solid black; background: lightgray;" width="1%" align="center">&nbsp;&nbsp;&nbsp;</td><td style="border: thin solid black;" width="1%" align="center">&nbsp;&nbsp;&nbsp;</td><td style="border: thin solid black;" width="1%" align="center">&nbsp;&nbsp;&nbsp;</td><td style="border: thin solid black;" width="1%" align="center">&nbsp;&nbsp;&nbsp;</td><td style="border: thin solid black; background: lightgray;" width="1%" align="center">&nbsp;&nbsp;&nbsp;</td><td colspan="2" style="border: thin solid black; background: lightgray;" align="center">&nbsp;&nbsp;&nbsp;</td><td style="border: thin solid black;" width="1%" align="center">&nbsp;&nbsp;&nbsp;</td><td colspan="2" style="border: thin solid black;" align="center">&nbsp;&nbsp;&nbsp;</td><td style="border: thin solid black;" width="1%" align="center">&nbsp;&nbsp;&nbsp;</td><td colspan="2" style="border: thin solid black;" align="center">&nbsp;&nbsp;&nbsp;</td><td>&nbsp;&nbsp;&nbsp;</td></tr>
+<tr><td align="left">↑</td><td align="left">↑</td><td align="left">↑</td><td align="left">↑</td><td align="left">↑</td><td align="left">↑</td><td align="left">↑</td><td align="left">↑</td><td align="left">↑</td><td align="left">↑</td><td colspan="2" align="left">↑</td><td align="left">↑</td><td align="left">↑</td><td align="left">↑</td><td align="left">↑</td><td align="left">↑</td><td align="left">↑</td><td align="left">↑</td><td align="left">↑</td><td align="left">&nbsp;</td><td align="left">↑</td><td align="left">↑</td><td align="left">&nbsp;</td><td align="left">↑</td><td align="left">↑</td><td align="left" colspan="100" >&nbsp;</td></tr>
+<tr><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td colspan="2" align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">&nbsp;</td><td align="left">┊</td><td align="left">┊</td><td align="left">&nbsp;</td><td align="left">┊</td><td align="left" colspan="100" >└&nbsp;Cumulative size of <i class="hoverable" title="Immediates, displacements, relative offsets.">anyfields</i>.</td></tr>
+<tr><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td colspan="2" align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">&nbsp;</td><td align="left">┊</td><td align="left">┊</td><td align="left">&nbsp;</td><td align="left" colspan="100" >└&nbsp;<span class="hoverable" title="enter, extrq, insertq">Instruction has two immediates</a>.</td></tr>
+<tr><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td colspan="2" align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">&nbsp;</td><td align="left">┊</td><td align="left" colspan="100" >└&nbsp;<span class="hoverable" title="00 == 0 bytes, 01 == 1 bytes, 10 = 2 bytes, 11 = 4 bytes">Instruction displacement size</span>.</td></tr>
+<tr><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td colspan="2" align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">&nbsp;</td><td align="left" colspan="100" >└&nbsp;Instruction has relative offset.</td></tr>
+<tr><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td colspan="2" align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left" colspan="100" >└&nbsp;<span style="background: lightgray;">ia32 mode: reserved;</span> amd64 mode: <span class="hoverable" title="NC_NO_REG if instruction does not zero-extending one">Register, zero-extended by the instruction.</span></td></tr>
+<tr><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td colspan="2" align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left" colspan="100" >└&nbsp;<span style="background: lightgray;">ia32 mode: reserved;</span> amd64 mode: <span class="hoverable" title="This means that start of this instruction is not a valid jump target.">Instruction is valid, but it access memory using register which is zero-extended by previous instruction.</span></td></tr>
+<tr><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td colspan="2" align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left" colspan="100" >└&nbsp;<span class="hoverable" title="Note that all unsupported instructions trigger this error. This includes mov by absolute 64bit address, system instructions like lidt or even call and jmp used not as part of superinstruction. If combined with CPUID_UNSUPPORTED_INSTRUCTION it means that instruction is not yet enabled in validator.">DFA error: invalid instruction. Validation then resumes from the next bundle.</span></td></tr>
+<tr><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td colspan="2" align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left" colspan="100" >└&nbsp;Unaligned direct jump to address outside of given region.</td></tr>
+<tr><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td colspan="2" align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left" colspan="100" >└&nbsp;Instruction is not supported for a given CPUID mask.</td></tr>
+<tr><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td colspan="2" align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left" colspan="100" >└&nbsp;<span style="background: lightgray;">ia32 mode: reserved;</span> amd64 mode: Base register is not <code>%rbp</code>, <code>%rsp</code>, or <code>%r15</code>.</td></tr>
+<tr><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td colspan="2" align="left">┊</td><td align="left">┊</td><td align="left" colspan="100" >└&nbsp;<span style="background: lightgray;">ia32 mode: reserved;</span> amd64 mode: Index register is not zero-extended by previous instruction.</td></tr>
+<tr><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td colspan="2" align="left">┊</td><td align="left" colspan="100" >└&nbsp;<span style="background: lightgray;">ia32 mode: reserved;</span> amd64 mode: %rbp/%rsp sandboxing detected. Next two bits reveal details of the error:</td></tr>
+<tr><td align="left">┊<br />┊<br />┊<br />┊<br />┊</td><td align="left">┊<br />┊<br />┊<br />┊<br />┊</td><td align="left">┊<br />┊<br />┊<br />┊<br />┊</td><td align="left">┊<br />┊<br />┊<br />┊<br />┊</td><td align="left">┊<br />┊<br />┊<br />┊<br />┊</td><td align="left">┊<br />┊<br />┊<br />┊<br />┊</td><td align="left">┊<br />┊<br />┊<br />┊<br />┊</td><td align="left">┊<br />┊<br />┊<br />┊<br />┊</td><td align="left">┊<br />┊<br />┊<br />┊<br />┊</td><td align="left">┊<br />┊<br />┊<br />┊<br />┊</td><td align="left" colspan="100" >└&nbsp;<span style="background: lightgray;">ia32 mode: reserved;</span> amd64 mode (only if some <code>%rbp</code>/<code>%rsp</code> related error is detected):<br />&nbsp;&nbsp;&nbsp;&nbsp;00: Instruction which zero-extends <code>%rbp</code> must be followed by <code>add %r15,%rbp</code>, <code>lea (%rbp,%r15,1),%rbp</code>, or <code>lea 0x0(%rbp,%r15,1),%rbp</code>.<br />&nbsp;&nbsp;&nbsp;&nbsp;01:<code>add %r15,%rbp</code>, <code>lea (%rbp,%r15,1),%rbp</code>, or <code>lea 0x0(%rbp,%r15,1),%rbp</code> is used after instruction which does not zero-extend <code>%rbp</code>.<br />&nbsp;&nbsp;&nbsp;&nbsp;10: Instruction which zero-extends <code>%rsp</code> must be followed by <code>add %r15,%rsp</code> or <code>lea (%rsp,%r15,1),%rsp</code>.<br />&nbsp;&nbsp;&nbsp;&nbsp;11: <code>add %r15,%rsp</code> or <code>lea (%rsp,%r15,1),%rsp</code> is used after instruction which does not zero-extend <code>%rsp</code>.</td></tr>
+<tr><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left" colspan="100" >└&nbsp;<code>%r15b</code>, <code>%r15w</code>, <code>%r15d</code>, or <code>%r15</code> is modified. <code>%r15</code> is untouchable in amd64 mode.</td></tr>
+<tr><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left" colspan="100" >└&nbsp;<span style="background: lightgray;">ia32 mode: reserved;</span> amd64 mode: <span class="hoverable" title="Note that %ebp is not mentioned. It can be modified by a regular instruction. But NEXT instruction must be special if that happened."><code>%bpl</code>, <code>%bp</code>, or <code>%rbp</code> is incorrectly modified. Only <code>%rbp</code> can be modified and then only by special instructions.</span></td></tr>
+<tr><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left" colspan="100" >└&nbsp;<span style="background: lightgray;">ia32 mode: reserved;</span> amd64 mode: <span class="hoverable" title="Note that %esp is not mentioned. It can be modified by a regular instruction. But NEXT instruction must be special if that happened."><code>%spl</code>, <code>%sp</code>, or <code>%rsp</code> is incorrectly modified. Only <code>%rsp</code> can be modified and then only by special instructions.</span></td></tr>
+<tr><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left" colspan="100" >└&nbsp;Bad <code>call</code> alignment: <code>call</code> must end at the end of the bundle, since <code>nacljmp</code> only can jump to aligned address.</span></td></tr>
+<tr><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left" colspan="100" >└&nbsp;Reserved.</td></tr>
+<tr><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left" colspan="100">└&nbsp;<span style="background: lightgray;">ia32 mode: reserved;</span> amd64 mode: <span class="hoverable" title="amd64 mode: in ia32 mode all non-special instructions are modifiable">Instruction is modifiable.</span></td></tr>
+<tr><td align="left">┊</td><td align="left">┊</td><td align="left">┊</td><td align="left" colspan="100">└&nbsp;Special instruction (uses different validation rules from the regular instruction). Can not be changed in ia32bit mode.</td></tr>
+<tr><td align="left">┊</td><td align="left">┊</td><td align="left" colspan="100">└&nbsp;Last byte is not immediate. It's either <span class="hoverable" title="3DNow! instructions.">opcode</span>, <span class="hoverable" title="Some AVX, FMA4, XOP instructions.">register number</span> or <span class="hoverable" title="vpermil2pd and vpermil2ps">register number and two-bit immediate</span>.</td></tr>
+<tr><td align="left">┊</td><td align="left" colspan="100">└&nbsp;Invalid jump target.  When this flag is set <code>instruction_begin</code> and <code>instruction_end</code> both point to the <b>jump target</b> instruction, not to the <b>jump</b> instruction itself.</td></tr>
+<tr><td align="left" colspan="100">└&nbsp;Reserved.</td></tr>
+</table>
+
+<p>Note that half of the information does not make sense for ia32 mode and is not collected by ValidateChunkIA32.</p>
+
+<p>Using this information you can determine if the given instruction follows special rules (only <code>naclcall</code> and <code>nacljmp</code> in ia32 mode; a lot of different commands in amd64 mode: <code>%rbp</code>/<code>%rsp</code> modifications, string instructions, <code>naclcall</code>, and <code>nacljmp</code>), if it includes relative offsets (commands like <code>j<i>cc</i></code>, <code>jmp</code>, <code>loop<i>cc</i></code>, or <code>call</code>), displacements (most commands which access memory support displacements), or immediates (immediates are supported by many different commands; they can be combined with displacement if the command accesses memory). Tests might use the information collected to precisely separate different <i>anyfields</i> (immediates, displacements, relative offsets), but in production only few bits are used to determine if the instruction can be changed: in ia32 mode only the special instructions <code>naclcall</code> and <code>nacljmp</code> can not be changed, while the amd64 situation is the opposite: only <code>call</code> and <code>mov</code> instructions can be changed, and only in their <i>anyfields</i> part.</p>
+
+<h4><div style="float:right"><a href="#TOC">▲</a></div><a name="5-2-1">5.2.1. Replacement validation.</a></h4>
+
+<p>Code replacement is not performed by <code>ValidateChunk*</code> function directly. Instead it's done by a higher-level function in <code>dfa_validate_*.c</code>.</p>
+
+<p>It calls <code>ValidateChunk*</code> with the <code>CALL_USER_CALLBACK_ON_EACH_INSTRUCTION</code> option to compare lengths of instructions in two fragments in the callback. IA32 mode uses the <code>SPECIAL_INSTRUCTION</code> flag in the callback's <code>validation_info</code> to determine if the instruction can be changed (all non-special instructions are fair game), but in amd64 mode we only allow changes in a few hand-picked instructions (currently <code>call</code> and <code>mov</code>) and they are marked with <code>MODIFIABLE_INSTRUCTION</code> flag.</p>
+
+<p>One tricky thing there is handling of relative jumps and calls: if relative jump (or call) triggers <code>DIRECT_JUMP_OUT_OF_RANGE</code> <b>but</b> is bit-to-bit identical to the original instruction it's accepted anyway: this means that this particular <code>jump</code> (or <code>call</code>) jumps (or calls) some valid position outside of a given range. If it must be changed then you need to pass a bigger region to the <code>ValidatorCodeReplacement_x86_*</code> function—this way the validator will have a chance to check the landing place for validity (this is, of course, not needed if the landing point is bundle-aligned).</p>
+
+<p style="margin-bottom:0px;">In ia32 mode the whole instruction can be changed, but in amd64 mode we don't allow arbitrary changes to the instruction, we only allow changes to <i>anyfields</i> (immediates, displacements, relative offsets) which is somewhat tricky: most instructions put them at the end, but some instruction use last byte for:</p>
+<ul style="margin-top:0px; margin-bottom:0px;">
+<li><i>opcode extension</i>: 3DNow! instructions, <code>cmp<i>cc</i>sd</code>/<code>vcmp<i>cc</i>sd</code> and <code>cmp<i>cc</i>ss</code>/<code>vcmp<i>cc</i>ss</code>, and <code>pclmulqdq</code>/<code>vpclmulqdq</code>.</li>
+<li><i>fourth register operand</i>: some AVX instructions (such as <code>vblendvpd</code>/<code>vblendvps</code>), some FMA4 instructions (such as <code>vfmaddsubpd</code>), and some XOP instructions (such as <code>vpperm</code>).</li>
+<li><i>fourth register operand</i> <b>and</b> <i>fifth 2-bit immediate operand</i>: <code>vpermil2pd</code>/<code>vpermil2ps</code>.</li>
+</ul>
+<p style="margin-top:0px;">All these instructions set the <code>LAST_BYTE_IS_NOT_IMMEDIATE</code> flag; the last form can be distinguished because it sets the <code>IMMEDIATE_2BIT</code> flag (which actually includes the <code>LAST_BYTE_IS_NOT_IMMEDIATE</code> flag).</p>
+
+<h4><div style="float:right"><a href="#TOC">▲</a></div><a name="5-2-2">5.2.2. Replacement copying.</a></h4>
+
+<p>This is done by a very simple function which uses the <code>CALL_USER_CALLBACK_ON_EACH_INSTRUCTION</code> mode to process instructions one-after-another.</p>
+
+<h2><div style="float:right"><a href="#TOC">▲</a></div><a name="6">6. Decoders.</a></h2>
+
+<p>The only remaining issue (but a big one) is about the generation of the actual decoders (<code>{decoder,validator}_x86_{32,64}_instruction.rl files)</code>. This is a big part of the whole package, but, thankfully, it happens in a significantly less hostile environment: the decoder and validator must work even if they are processing specially-crafted files created by clever adversaries while <code>gen_dfa</code> processes data files created by us and should only correctly process certain “good” files.</p>
+
+<p>To understand how it works it's better to start with the decoders. Remember how we've talked about “streamlined data structures”, “indispensable minimum of the information”, etc? This approach produces fast and a [relatively] simple validator, but it makes it hard to test and debug. To facilitate testing and debugging we create separate decoders: these return all the information about all the instructions they can parse and in fact can produce output identical to <a href="http://sourceware.org/binutils/docs/binutils/objdump.html#objdump">objdump</a>'s output.</p>
+
+<p>They are used to verify the description of the instructions from <code>.def</code> files—with a special attention to the length of said instructions.</p>
+
+<p>Decoders are created using the familiar process.</p>
+
+<center><img src="filesdecoder.svg" style="width:35em;"/><br />Gray elements are hand-written, white elements are generated and dark-gray are code generators.</center><br />
+
+<p></p>
+<p style="margin-bottom:0px;">There are few big differences between standalone decoders and simplified decoders embedded in <code>ValidateChunkIA32</code>/<code>ValidateChunkAMD64</code>:</p>
+<ul style="margin-top:0px;">
+<li>Standalone decoders are pretty close to each other (the only differences are CPU-dictated differences such as REX prefix handling)—simplified decoders are quite different (as dictated by appropriate SFI models).</li>
+<li>Standalone decoders don't have hand-encoded “special” instructions, all the instructions they can decode come from <code>.def</code> files.</li>
+<li>Standalone decoders don't squeeze extracted information into a few flat variables. Instead they use <code>struct instruction</code>—common for both decoders.</li>
+</ul>
+
+<p>All these facts mean that standalone decoders are significantly larger and slower—but also much easier to understand. For each regular instruction validator DFA and decoder DFA define exactly the same language and only differ in actions thus validator and decoder accept the same set of byte sequences as instructions.</p>
+
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<script src="../resources/js-test.js"></script>
+<style>
+.bigbutton {
+    display:block;
+    width: 600px;
+    height: 600px;
+}
+</style>
+</head>
+<body>
+
+<button class="bigbutton">One</button>
+<button class="bigbutton">Two</button>
+<button class="bigbutton">Three</button>
+
+<div id="console"></div>
+<script>
+
+description("This test ensures that scrolling the window sends a notification.");
+window.jsTestIsAsync = true;
+
+if (window.testRunner && window.accessibilityController) {
+    testRunner.dumpAsText();
+
+    window.scrollTo(0, 0);
+    shouldBe("window.pageYOffset", "0");
+
+    accessibilityController.addNotificationListener(function (target, notification) {
+        if (target.role == 'AXRole: AXWebArea' && notification == 'ScrollPositionChanged') {
+            debug('Got notification on web area');
+            accessibilityController.removeNotificationListener();
+            shouldBe("window.pageYOffset", "500");
+            finishJSTest();
+        }
+    });
+
+    window.setTimeout(function() {
+        window.scrollTo(0, 500);
+    }, 0);
+}
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../../resources/js-test.js"></script>
+<style>
+#base {
+    animation-name: anim;
+    animation-duration: 5s;
+    animation-timing-function: linear;
+    animation-delay: 2s;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+    animation-play-state: running;
+}
+
+#inherit {
+    animation-name: inherit;
+    animation-duration: inherit;
+    animation-timing-function: inherit;
+    animation-delay: inherit;
+    animation-iteration-count: inherit;
+    animation-direction: inherit;
+    animation-play-state: inherit;
+}
+
+#initial {
+    animation-name: initial;
+    animation-duration: initial;
+    animation-timing-function: initial;
+    animation-delay: initial;
+    animation-iteration-count: initial;
+    animation-direction: initial;
+    animation-play-state: initial;
+}
+
+</style>
+</head>
+<body>
+<div style="width:500px;height:500px" id="base">
+    <div id="inherit"></div>
+    <div id="initial"></div>
+</div>
+<script>
+description("Test that inherit and initial works on unprefixed animations.")
+
+var testContainer = document.createElement("div");
+document.body.appendChild(testContainer);
+
+e = document.getElementById('inherit');
+computedStyle = window.getComputedStyle(e, null);
+
+debug("Testing inherit.");
+shouldBe("computedStyle.animationName", "'anim'");
+shouldBe("computedStyle.webkitAnimationName", "'anim'");
+
+shouldBe("computedStyle.animationDuration", "'5s'");
+shouldBe("computedStyle.webkitAnimationDuration", "'5s'");
+
+shouldBe("computedStyle.animationTimingFunction", "'linear'");
+shouldBe("computedStyle.webkitAnimationTimingFunction", "'linear'");
+
+shouldBe("computedStyle.animationDelay", "'2s'");
+shouldBe("computedStyle.webkitAnimationDelay", "'2s'");
+
+shouldBe("computedStyle.animationIterationCount", "'infinite'");
+shouldBe("computedStyle.webkitAnimationIterationCount", "'infinite'");
+
+shouldBe("computedStyle.animationDirection", "'alternate'");
+shouldBe("computedStyle.webkitAnimationDirection", "'alternate'");
+
+shouldBe("computedStyle.animationPlayState", "'running'");
+shouldBe("computedStyle.webkitAnimationPlayState", "'running'");
+
+e = document.getElementById('initial');
+computedStyle = window.getComputedStyle(e, null);
+debug("Testing initial.");
+
+shouldBe("computedStyle.animationName", "'none'");
+shouldBe("computedStyle.webkitAnimationName", "'none'");
+
+shouldBe("computedStyle.animationDuration", "'0s'");
+shouldBe("computedStyle.webkitAnimationDuration", "'0s'");
+
+shouldBe("computedStyle.animationTimingFunction", "'ease'");
+shouldBe("computedStyle.webkitAnimationTimingFunction", "'ease'");
+
+shouldBe("computedStyle.animationDelay", "'0s'");
+shouldBe("computedStyle.webkitAnimationDelay", "'0s'");
+
+shouldBe("computedStyle.animationIterationCount", "'1'");
+shouldBe("computedStyle.webkitAnimationIterationCount", "'1'");
+
+shouldBe("computedStyle.animationDirection", "'normal'");
+shouldBe("computedStyle.webkitAnimationDirection", "'normal'");
+
+shouldBe("computedStyle.animationPlayState", "'running'");
+shouldBe("computedStyle.webkitAnimationPlayState", "'running'");
+
+document.body.removeChild(testContainer);
+</script>
+</body>
+</html>

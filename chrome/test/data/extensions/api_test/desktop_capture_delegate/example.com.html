@@ -1,0 +1,67 @@
+<!--
+Copyright 2013 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<script>
+
+var extensionId = "knldjmfmopnpolahpmmgbagdohdnhkik";
+
+function sendToBrowser(msg) {
+  domAutomationController.send(msg);
+}
+
+function requestStreamId(callback) {
+  function onResponse(response) {
+    if (chrome.runtime.lastError) {
+      sendToBrowser(false);
+      return;
+    }
+    id = response["id"];
+    callback(id);
+  };
+
+  chrome.runtime.sendMessage(
+      extensionId, ["getStream"], onResponse);
+}
+
+function getStream() {
+  function onStreamId(id) {
+    if (!id) {
+      sendToBrowser(false);
+      return;
+    }
+    navigator.webkitGetUserMedia({
+      audio:false,
+      video: { mandatory: { chromeMediaSource: "desktop",
+                            chromeMediaSourceId: id } }
+    }, sendToBrowser.bind(null, true), sendToBrowser.bind(null, false));
+  };
+  requestStreamId(onStreamId);
+}
+
+function getStreamWithInvalidId() {
+  function onStreamId(id) {
+    if (!id) {
+      sendToBrowser(false);
+      return;
+    }
+    navigator.webkitGetUserMedia({
+      audio:false,
+      video: { mandatory: { chromeMediaSource: "desktop",
+                            chromeMediaSourceId: id + "x" } }
+    }, sendToBrowser.bind(null, false), sendToBrowser.bind(null, true));
+  };
+  requestStreamId(onStreamId);
+}
+
+function openPickerDialogAndReturn() {
+  chrome.runtime.sendMessage(
+      extensionId, ["getStreamNoWait"], function(message) {
+        // Once the picker is shown request to close the tab. The picker should
+        // be destroyed as result.
+        sendToBrowser(true);
+      });
+}
+
+</script>

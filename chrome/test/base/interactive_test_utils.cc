@@ -1,0 +1,216 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "chrome/test/base/interactive_test_utils.h"
+
+#include "base/logging.h"
+#include "base/memory/scoped_refptr.h"
+#include "build/build_config.h"
+#include "chrome/browser/ui/browser.h"
+#include "chrome/browser/ui/browser_finder.h"
+#include "chrome/browser/ui/browser_list.h"
+#include "chrome/browser/ui/browser_window.h"
+#include "testing/gtest/include/gtest/gtest.h"
+#include "ui/events/keycodes/keyboard_codes.h"
+
+namespace ui_test_utils {
+
+namespace {
+
+bool GetNativeWindow(const Browser* browser, gfx::NativeWindow* native_window) {
+  BrowserWindow* window = browser->window();
+  if (!window)
+    return false;
+
+  *native_window = window->GetNativeWindow();
+  return *native_window;
+}
+
+}  // namespace
+
+BrowserActivationWaiter::BrowserActivationWaiter(const Browser* browser)
+    : browser_(browser), observed_(false) {
+  // When the active browser closes, the next "last active browser" in the
+  // BrowserList might not be immediately activated. So we need to wait for the
+  // "last active browser" to actually be active.
+  if (chrome::FindLastActive() == browser_ && browser_->window()->IsActive()) {
+    observed_ = true;
+    return;
+  }
+  BrowserList::AddObserver(this);
+}
+
+BrowserActivationWaiter::~BrowserActivationWaiter() {}
+
+void BrowserActivationWaiter::WaitForActivation() {
+  if (observed_)
+    return;
+  DCHECK(!run_loop_.running()) << "WaitForActivation() can be called at most "
+                                  "once. Construct a new "
+                                  "BrowserActivationWaiter instead.";
+  run_loop_.Run();
+}
+
+void BrowserActivationWaiter::OnBrowserSetLastActive(Browser* browser) {
+  if (browser != browser_)
+    return;
+
+// On Mac, BrowserWindowCocoa::Show() sets the active browser before the
+// window becomes the key window.
+#if !defined(OS_MACOSX)
+  EXPECT_TRUE(browser->window()->IsActive());
+#endif
+
+  observed_ = true;
+  BrowserList::RemoveObserver(this);
+  if (run_loop_.running())
+    run_loop_.Quit();
+}
+
+BrowserDeactivationWaiter::BrowserDeactivationWaiter(const Browser* browser)
+    : browser_(browser), observed_(false) {
+  if (chrome::FindLastActive() != browser_ && !browser->window()->IsActive()) {
+    observed_ = true;
+    return;
+  }
+  BrowserList::AddObserver(this);
+}
+
+BrowserDeactivationWaiter::~BrowserDeactivationWaiter() = default;
+
+void BrowserDeactivationWaiter::WaitForDeactivation() {
+  if (observed_)
+    return;
+  DCHECK(!run_loop_.running()) << "WaitForDeactivation() can be called at most "
+                                  "once. Construct a new "
+                                  "BrowserDeactivationWaiter instead.";
+  run_loop_.Run();
+}
+
+void BrowserDeactivationWaiter::OnBrowserNoLongerActive(Browser* browser) {
+  if (browser != browser_)
+    return;
+
+  observed_ = true;
+  BrowserList::RemoveObserver(this);
+  if (run_loop_.running())
+    run_loop_.Quit();
+}
+
+bool BringBrowserWindowToFront(const Browser* browser) {
+  gfx::NativeWindow window = NULL;
+  if (!GetNativeWindow(browser, &window))
+    return false;
+
+  if (!ShowAndFocusNativeWindow(window))
+    return false;
+
+  BrowserActivationWaiter waiter(browser);
+  waiter.WaitForActivation();
+  return true;
+}
+
+bool SendKeyPressSync(const Browser* browser,
+                      ui::KeyboardCode key,
+                      bool control,
+                      bool shift,
+                      bool alt,
+                      bool command) {
+  gfx::NativeWindow window = NULL;
+  if (!GetNativeWindow(browser, &window))
+    return false;
+  return SendKeyPressToWindowSync(window, key, control, shift, alt, command);
+}
+
+bool SendKeyPressToWindowSync(const gfx::NativeWindow window,
+                              ui::KeyboardCode key,
+                              bool control,
+                              bool shift,
+                              bool alt,
+                              bool command) {
+#if defined(OS_WIN)
+  DCHECK(key != ui::VKEY_ESCAPE || !control)
+      << "'ctrl + esc' opens start menu on Windows. Start menu on windows "
+         "2012 is a full-screen always on top window. It breaks all "
+         "interactive tests.";
+#endif
+
+  scoped_refptr<content::MessageLoopRunner> runner =
+      new content::MessageLoopRunner;
+  bool result;
+  result = ui_controls::SendKeyPressNotifyWhenDone(
+      window, key, control, shift, alt, command, runner->QuitClosure());
+#if defined(OS_WIN)
+  if (!result && ui_test_utils::ShowAndFocusNativeWindow(window)) {
+    result = ui_controls::SendKeyPressNotifyWhenDone(
+        window, key, control, shift, alt, command, runner->QuitClosure());
+  }
+#endif
+  if (!result) {
+    LOG(ERROR) << "ui_controls::SendKeyPressNotifyWhenDone failed";
+    return false;
+  }
+
+  // Run the message loop. It'll stop running when either the key was received
+  // or the test timed out (in which case testing::Test::HasFatalFailure should
+  // be set).
+  runner->Run();
+  return !testing::Test::HasFatalFailure();
+}
+
+bool SendKeyPressAndWait(const Browser* browser,
+                         ui::KeyboardCode key,
+                         bool control,
+                         bool shift,
+                         bool alt,
+                         bool command,
+                         int type,
+                         const content::NotificationSource& source) {
+  content::WindowedNotificationObserver observer(type, source);
+
+  if (!SendKeyPressSync(browser, key, control, shift, alt, command))
+    return false;
+
+  observer.Wait();
+  return !testing::Test::HasFatalFailure();
+}
+
+bool SendMouseMoveSync(const gfx::Point& location) {
+  scoped_refptr<content::MessageLoopRunner> runner =
+      new content::MessageLoopRunner;
+  if (!ui_controls::SendMouseMoveNotifyWhenDone(
+          location.x(), location.y(), runner->QuitClosure())) {
+    return false;
+  }
+  runner->Run();
+  return !testing::Test::HasFatalFailure();
+}
+
+bool SendMouseEventsSync(ui_controls::MouseButton type, int state) {
+  scoped_refptr<content::MessageLoopRunner> runner =
+      new content::MessageLoopRunner;
+  if (!ui_controls::SendMouseEventsNotifyWhenDone(
+          type, state, runner->QuitClosure())) {
+    return false;
+  }
+  runner->Run();
+  return !testing::Test::HasFatalFailure();
+}
+
+namespace internal {
+
+void ClickTask(ui_controls::MouseButton button,
+               int state,
+               base::OnceClosure followup) {
+  if (!followup.is_null()) {
+    ui_controls::SendMouseEventsNotifyWhenDone(button, state,
+                                               std::move(followup));
+  } else {
+    ui_controls::SendMouseEvents(button, state);
+  }
+}
+
+}  // namespace internal
+
+}  // namespace ui_test_utils

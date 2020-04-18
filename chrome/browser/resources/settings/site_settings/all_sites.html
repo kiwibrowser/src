@@ -1,0 +1,29 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="../settings_shared_css.html">
+<link rel="import" href="site_entry.html">
+
+<dom-module id="all-sites">
+  <template>
+    <style include="settings-shared">
+      :host {
+        display: block;
+      }
+
+      /* There is only one top-level heading for All Sites, so remove the
+       * additional leading padding used for lists. */
+      .list-frame.without-heading {
+        -webkit-padding-start: var(--settings-box-row-padding);
+      }
+    </style>
+    <div class="list-frame" hidden$="[[sites.length]]">
+      <div class="list-item secondary">$i18n{noSitesAdded}</div>
+    </div>
+    <div class="list-frame without-heading" id="listContainer">
+      <template is="dom-repeat" items="[[sites]]">
+        <site-entry site="{{item}}" label="[[item.displayName]]">
+      </template>
+    </div>
+  </template>
+  <script src="all_sites.js"></script>
+</dom-module>

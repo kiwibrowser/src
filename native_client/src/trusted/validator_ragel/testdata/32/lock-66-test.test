@@ -1,0 +1,22 @@
+@hex:
+  # Test that we accept prefix "66 0f" but not "0f 66".
+  66 f0 83 00 01
+@dis:
+     0:	66 f0 83 00 01                               	lock addw $0x1,(%eax)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # For compatibility with old validator, lock prefix is only allowed
+  # after data16.
+  # https://code.google.com/p/nativeclient/issues/detail?id=2518
+  f0 66 83 00 01
+@dis:
+     0:	f0 66 83 00 01                               	lock addw $0x1,(%eax)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  SAFE

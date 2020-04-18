@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<title>Test <svg:image>'s sizing with css size as auto, with dynamic image change</title>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<svg height="0">
+  <image width="200" height="200" xlink:href="resources/square-green-checker.png" style="width:auto; height:auto"/>
+</svg>
+<script>
+async_test(function(t) {
+  var image = document.querySelector('image');
+  window.onload = t.step_func(function() {
+    var rectBBox = image.getBBox();
+    assert_equals(rectBBox.width, 400);
+    assert_equals(rectBBox.height, 400);
+    image.setAttributeNS("http://www.w3.org/1999/xlink","href","data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'></svg>");
+    image.onload = t.step_func_done(function() {
+        var rectBBox = image.getBBox();
+        assert_equals(rectBBox.width, 100);
+        assert_equals(rectBBox.height, 100);
+    });
+  });
+});
+</script>

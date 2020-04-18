@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<title>Test that WebVTT objects are being styled correctly based on user settings that should override default settings.</title>
+<script src="../media-controls.js"></script>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<video>
+    <track src="captions-webvtt/styling.vtt" kind="captions" default>
+</video>
+<script>
+async_test(function(t) {
+    var video = document.querySelector("video");
+    video.src = "../content/test.ogv";
+
+    video.oncanplaythrough = t.step_func_done(function() {
+        var cue = textTrackCueElementByIndex(video, 0).firstChild;
+        var cueStyle = getComputedStyle(cue);
+        // These are the expected default cue settings per spec
+        // http://dev.w3.org/html5/webvtt/#applying-css-properties-to-webvtt-node-objects
+        assert_equals(cueStyle.color, "rgb(255, 255, 255)");
+        assert_equals(cueStyle.backgroundColor, "rgba(0, 0, 0, 0.8)");
+        assert_equals(cueStyle.fontFamily, "sans-serif");
+
+        // Apply user settings for color and font-size and verify that the other internal settings are retained.
+        internals.settings.setTextTrackTextColor("purple");
+        internals.settings.setTextTrackTextSize("14px");
+
+        video.currentTime = 0.3;
+
+        cue = textTrackCueElementByIndex(video, 0).firstChild;
+        cueStyle = getComputedStyle(cue);
+        assert_equals(cueStyle.color, "rgb(128, 0, 128)");
+        assert_equals(cueStyle.fontSize, "14px");
+        // When there is no user setting specified for background-color and font-family, the internal settings are applied.
+        assert_equals(cueStyle.backgroundColor, "rgba(0, 0, 0, 0.8)");
+        assert_equals(cueStyle.fontFamily, "sans-serif");
+    });
+});
+</script>

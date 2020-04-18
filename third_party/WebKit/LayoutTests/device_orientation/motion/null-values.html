@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="../resources/device-orientation-helpers.js"></script>
+<script>
+'use strict';
+
+async_test(test => {
+  assertTestRunner();
+  var motionData1 = generateMotionData(null, null, null,
+                                       null, null, null,
+                                       null, null, null,
+                                       0);
+
+  var motionData2 = generateMotionData(1, 2, 3,
+                                       null, null, null,
+                                       null, null, null,
+                                       100);
+
+  var motionData3 = generateMotionData(null, null, null,
+                                       1, 2, 3,
+                                       null, null, null,
+                                       100);
+
+  var motionData4 = generateMotionData(null, null, null,
+                                       null, null, null,
+                                       1, 2, 3,
+                                       100);
+
+  var firstListener = test.step_func(event => {
+    checkMotion(event, motionData1);
+    window.removeEventListener('devicemotion', firstListener);
+    setTimeout(initSecondListener, 0);
+  });
+
+  function initSecondListener() {
+    setMockMotion(motionData2);
+    window.addEventListener('devicemotion', secondListener);
+  }
+
+  var secondListener = test.step_func(event => {
+    checkMotion(event, motionData2);
+    window.removeEventListener('devicemotion', secondListener);
+    setTimeout(initThirdListener, 0);
+  });
+
+  function initThirdListener() {
+    setMockMotion(motionData3);
+    window.addEventListener('devicemotion', thirdListener);
+  }
+
+  var thirdListener = test.step_func(event => {
+    checkMotion(event, motionData3);
+    window.removeEventListener('devicemotion', thirdListener);
+    setTimeout(initFourthListener, 0);
+  });
+
+  function initFourthListener() {
+    setMockMotion(motionData4);
+    window.addEventListener('devicemotion', fourthListener);
+  }
+
+  var fourthListener = test.step_func(event => {
+    checkMotion(event, motionData4);
+    test.done();
+  });
+
+  setMockMotion(motionData1);
+  window.addEventListener('devicemotion', firstListener);
+}, 'Tests using null values for some or all of the event properties.');
+</script>
+</body>
+</html>

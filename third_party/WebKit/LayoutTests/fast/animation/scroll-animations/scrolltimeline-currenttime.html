@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<style>
+.scroller {
+  height: 100px;
+  width: 100px;
+  overflow: scroll;
+}
+
+.content {
+  height: 500px;
+  width: 500px;
+}
+</style>
+
+<script src='../../../resources/testharness.js'></script>
+<script src='../../../resources/testharnessreport.js'></script>
+
+<div id='scroller1' class='scroller'>
+  <div class='content'></div>
+</div>
+<script>
+test(function() {
+  const scroller = document.querySelector('#scroller1');
+  // For simplicity, we set the timeRange such that currentTime maps directly to
+  // the value scrolled. We have a square scroller/contents, so can just compute
+  // one edge and use it for inline and block.
+  const scrollerSize = scroller.scrollHeight - scroller.clientHeight;
+
+  const blockScrollTimeline = new ScrollTimeline(
+      { scrollSource: scroller, timeRange: scrollerSize, orientation: 'block' });
+  const inlineScrollTimeline = new ScrollTimeline(
+      { scrollSource: scroller, timeRange: scrollerSize, orientation: 'inline' });
+
+  // Unscrolled, both timelines should read a currentTime of 0.
+  assert_equals(blockScrollTimeline.currentTime, 0);
+  assert_equals(inlineScrollTimeline.currentTime, 0);
+
+  // Now do some scrolling and make sure that the ScrollTimelines update.
+  scroller.scrollTop = 50;
+  scroller.scrollLeft = 75;
+
+  // As noted above, we have mapped timeRange such that currentTime should just
+  // be the scroll offset.
+  assert_equals(blockScrollTimeline.currentTime, 50);
+  assert_equals(inlineScrollTimeline.currentTime, 75);
+}, 'currentTime calculates the correct time based on scrolled amount');
+</script>
+
+
+<div id='scroller2' class='scroller'>
+  <div class='content' style='height: 1000px; width: 1000px;'></div>
+</div>
+<script>
+test(function() {
+  // It is unfortunately difficult to calculate what scroll offset results in an
+  // exact currentTime. Scrolling is calculated in integers which allows for the
+  // possibility of rounding, and scrollbar widths differ between platforms
+  // which means it is not possible to ensure a divisible scroller size.
+  //
+  // Instead we make the scroller content big enough that a 1-pixel rounding
+  // difference results in a negligible difference in the output value.
+
+  const scroller = document.querySelector('#scroller2');
+  const scrollTimeline = new ScrollTimeline(
+      { scrollSource: scroller, timeRange: 100, orientation: 'block' });
+
+  // Mapping timeRange to 100 gives a form of 'percentage scrolled', so
+  // calculate where the 50% scroll mark would be.
+  const halfwayY = (scroller.scrollHeight - scroller.clientHeight) / 2;
+  scroller.scrollTop = halfwayY;
+
+  assert_approx_equals(scrollTimeline.currentTime, 50, 0.5);
+}, 'currentTime adjusts correctly for the timeRange');
+</script>
+
+<div id='scroller3' class='scroller' style='direction: rtl;'>
+  <div class='content'></div>
+</div>
+<script>
+test(function() {
+  const scroller = document.querySelector('#scroller3');
+
+  // For simplicity, we set the timeRange such that currentTime maps directly to
+  // the value scrolled. We have a square scroller/contents, so can just compute
+  // one edge and use it for inline and block.
+  const scrollerSize = scroller.scrollHeight - scroller.clientHeight;
+
+  const blockScrollTimeline = new ScrollTimeline(
+      { scrollSource: scroller, timeRange: scrollerSize, orientation: 'block' });
+  const inlineScrollTimeline = new ScrollTimeline(
+      { scrollSource: scroller, timeRange: scrollerSize, orientation: 'inline' });
+
+  // Unscrolled, both timelines should read a current time of 0 even though the
+  // X-axis will have started at the right hand side for rtl.
+  assert_equals(blockScrollTimeline.currentTime, 0);
+  assert_equals(inlineScrollTimeline.currentTime, 0);
+
+  // The offset in the inline direction should be inverted. The block direction
+  // should be unaffected.
+  scroller.scrollTop = 50;
+  scroller.scrollLeft = 75;
+
+  assert_equals(blockScrollTimeline.currentTime, 50);
+  assert_equals(inlineScrollTimeline.currentTime, scrollerSize - 75);
+}, 'currentTime handles direction: rtl correctly');
+</script>
+
+<div id='scroller4' class='scroller' style='writing-mode: vertical-rl;'>
+  <div class='content'></div>
+</div>
+<script>
+test(function() {
+  const scroller = document.querySelector('#scroller4');
+
+  // For simplicity, we set the timeRange such that currentTime maps directly to
+  // the value scrolled. We have a square scroller/contents, so can just compute
+  // one edge and use it for inline and block.
+  const scrollerSize = scroller.scrollHeight - scroller.clientHeight;
+
+  const blockScrollTimeline = new ScrollTimeline(
+      { scrollSource: scroller, timeRange: scrollerSize, orientation: 'block' });
+  const inlineScrollTimeline = new ScrollTimeline(
+      { scrollSource: scroller, timeRange: scrollerSize, orientation: 'inline' });
+
+  // Unscrolled, both timelines should read a current time of 0 even though the
+  // X-axis will have started at the right hand side for vertical-rl.
+  assert_equals(blockScrollTimeline.currentTime, 0);
+  assert_equals(inlineScrollTimeline.currentTime, 0);
+
+  // For vertical-rl, the X-axis starts on the right-hand-side and is the block
+  // axis. The Y-axis is normal but is the inline axis.
+  scroller.scrollTop = 50;
+  scroller.scrollLeft = 75;
+
+  assert_equals(blockScrollTimeline.currentTime, scrollerSize - 75);
+  assert_equals(inlineScrollTimeline.currentTime, 50);
+}, 'currentTime handles writing-mode: vertical-rl correctly');
+</script>
+
+<div id='scroller5' class='scroller' style='writing-mode: vertical-lr;'>
+  <div class='content'></div>
+</div>
+<script>
+test(function() {
+  const scroller = document.querySelector('#scroller5');
+
+  // For simplicity, we set the timeRange such that currentTime maps directly to
+  // the value scrolled. We have a square scroller/contents, so can just compute
+  // one edge and use it for inline and block.
+  const scrollerSize = scroller.scrollHeight - scroller.clientHeight;
+
+  const blockScrollTimeline = new ScrollTimeline(
+      { scrollSource: scroller, timeRange: scrollerSize, orientation: 'block' });
+  const inlineScrollTimeline = new ScrollTimeline(
+      { scrollSource: scroller, timeRange: scrollerSize, orientation: 'inline' });
+
+  // Unscrolled, both timelines should read a current time of 0.
+  assert_equals(blockScrollTimeline.currentTime, 0);
+  assert_equals(inlineScrollTimeline.currentTime, 0);
+
+  // For vertical-lr, both axes start at their 'normal' positions but the X-axis
+  // is the block direction and the Y-axis is the inline direction.
+  scroller.scrollTop = 50;
+  scroller.scrollLeft = 75;
+
+  assert_equals(blockScrollTimeline.currentTime, 75);
+  assert_equals(inlineScrollTimeline.currentTime, 50);
+}, 'currentTime handles writing-mode: vertical-lr correctly');
+</script>

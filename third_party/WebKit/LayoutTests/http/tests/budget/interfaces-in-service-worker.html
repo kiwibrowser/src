@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Budget interfaces available in a Service Worker</title>
+    <script src="../resources/testharness.js"></script>
+    <script src="../resources/testharnessreport.js"></script>
+    <script src="../serviceworker/resources/test-helpers.js"></script>
+    <script src="../notifications/resources/test-helpers.js"></script>
+  </head>
+  <body>
+    <script>
+      promise_test(function(test) {
+        const script = 'resources/instrumentation-service-worker.js';
+        const scope = 'resources/scope/' + location.pathname;
+        let port;
+
+        return getActiveServiceWorkerWithMessagePort(test, script, scope)
+          .then(function(workerInfo) {
+            port = workerInfo.port;
+
+            port.addEventListener('message', function(event) {
+              if (typeof event.data != 'object' || !event.data.command)
+                assert_unreached('Invalid message from the service worker');
+
+              assert_equals(event.data.command, 'checkInterfaces');
+              assert_true(event.data.success,
+                  'checkInterfaces should succeed but failed with error: ' +
+                  event.data.message);
+            });
+
+            return sendCommand(port, { command: 'checkInterfaces' });
+          })
+      }, 'Budget interfaces should be available in a Service Worker');
+    </script>
+  </body>
+</html>

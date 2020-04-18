@@ -1,0 +1,206 @@
+# -*- python -*-
+# Copyright (c) 2014 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+if not env.Bit('bitcode'):
+  Return()
+# Translating the PSO to an ELF DSO doesn't work on x86-64 yet.  The
+# Gold linker complains that the input "requires dynamic R_X86_64_32
+# reloc against <blah> which may overflow at runtime".  (In contrast,
+# the BFD linker in the glibc toolchain does handle this relocation.)
+# TODO(mseaborn): Fix this and enable the test for x86-64.
+if env.Bit('build_x86_64'):
+  Return()
+# TODO(sbc): Enable this test for mips.
+if env.Bit('build_mips32'):
+  Return()
+# The sandboxed translator does not support translating PSOs yet.
+if env.Bit('use_sandboxed_translator'):
+  Return()
+
+
+def FinalizePso(dest, opt_result):
+  # Finalize to strip debugging info and to emit PNaCl bitcode.
+  return env.Command(dest + '.so', [opt_result],
+                     '${PNACLFINALIZE} ${SOURCES} -o ${TARGET}')
+
+
+def TranslatePso(dest, finalized_result):
+  # Translate to an ELF loadable object.
+  return env.Command(dest + '.so.translated', [finalized_result],
+                     '${TRANSLATE} -pso ${SOURCES} -o ${TARGET}')
+
+
+def MakeAndTranslatePso(dest, bitcode_file, llvm_passes):
+  # Run opt to optionally apply PNaCl ABI simplifications to the IR and to
+  # run the PNaCl ABI checker.  We are bypassing pnacl-ld for now because
+  # its invocation of Gold internalizes __pnacl_pso_root, which we want to
+  # keep externally-visible.
+  opt_result = env.Command(
+      dest + '.nonfinal.pso', [bitcode_file],
+      '${PNACLOPT} ' + llvm_passes + ' '
+      '-verify-pnaclabi-module -verify-pnaclabi-functions '
+      '-pnaclabi-allow-debug-metadata '
+      '${SOURCES} -o ${TARGET}')
+  finalized_result = FinalizePso(dest, opt_result)
+  return TranslatePso(dest, finalized_result)
+
+def PsoFromLLVMAssembly(base_name):
+  bitcode_file = env.Command(
+      '%s.bc' % base_name, ['%s.ll' % base_name],
+      [Action('${ASCOM}', '${ASCOMSTR}')])
+  return MakeAndTranslatePso(base_name, [bitcode_file],
+                             # Skip PNaCl passes because they add TLS functions.
+                             llvm_passes='')
+
+
+def MakePll(dest, source_file, dependencies):
+  deps = ''
+  if len(dependencies) != 0:
+    deps += ' -L' + Dir('.').abspath
+  for d in dependencies:
+    deps += ' -l:' + d[0].name
+  pll_object = env.ComponentObject(dest + '.po', [source_file])
+  nonfinal_pll = env.Command(
+      dest + '.nonfinal.pll', [pll_object],
+      '${LD} -shared ${SOURCES} -o ${TARGET}' + deps)
+  # Linking the nonfinal_pll depends on the untranslated, finalized PLL (.so)
+  # dependencies existing.
+  Depends(nonfinal_pll, dependencies)
+  return FinalizePso(dest, nonfinal_pll)
+
+def MakeAndTranslatePll(dest, source_file, dependencies):
+  finalized_pll = MakePll(dest, source_file, dependencies)
+  return TranslatePso(dest, finalized_pll)
+
+# Under SFI NaCl, the loader currently depends on the allocate_code_data()
+# interface provided by the IRT.
+is_broken = not env.Bit('tests_use_irt') and not env.Bit('nonsfi_nacl')
+
+dso1 = MakeAndTranslatePso(
+    'test_pso', [env.ComponentObject('test_pso.c')],
+    llvm_passes='-pnacl-abi-simplify-preopt -pnacl-abi-simplify-postopt')
+dso2 = PsoFromLLVMAssembly('data_only_pso')
+dso3 = PsoFromLLVMAssembly('data_only_pso_largebss')
+
+dynloader_test = env.ComponentProgram(
+    'dynloader_test', ['dynloader_test.c'],
+    EXTRA_LIBS=['${NONIRT_LIBS}', 'pnacl_dynloader'])
+
+node = env.CommandSelLdrTestNacl(
+    'dynloader_test.out', dynloader_test, [dso1, dso2, dso3],
+    # Add '-a' to enable filesystem access for opening DSOs.
+    sel_ldr_flags=['-a'])
+env.AddNodeToTestSuite(
+    node, ['small_tests', 'toolchain_tests'],
+    'run_pnacl_dynamic_loading_test', is_broken=is_broken)
+
+
+# Use of the ConvertToPSO pass requires this toolchain version.
+if env['TOOLCHAIN_FEATURE_VERSION'] < 26:
+  Return()
+
+test_pll_a_finalized = MakePll('test_pll_a', 'test_pll_a.c', [])
+test_pll_a = TranslatePso('test_pll_a', test_pll_a_finalized)
+test_pll_b_finalized = MakePll('test_pll_b', 'test_pll_b.c',
+                               [test_pll_a_finalized])
+test_pll_b = TranslatePso('test_pll_b', test_pll_b_finalized)
+test_pll_tls_dependency_finalized = MakePll(
+    'test_pll_tls_dependency', 'test_pll_tls_dependency.c',
+    [test_pll_a_finalized])
+test_pll_tls_dependency = TranslatePso(
+    'test_pll_tls_dependency', test_pll_tls_dependency_finalized)
+
+test_pll = MakeAndTranslatePll(
+    'test_pll', 'test_pll.c',
+    [test_pll_a_finalized, test_pll_b_finalized])
+test_pll_tls = MakeAndTranslatePll(
+    'test_pll_tls', 'test_pll_tls.c', [test_pll_tls_dependency_finalized])
+
+pll_symbols_test = env.ComponentProgram(
+    'pll_symbols_test', ['pll_symbols_test.cc'],
+    EXTRA_LIBS=['${NONIRT_LIBS}', 'pnacl_dynloader', 'pll_loader_lib'])
+
+node = env.CommandSelLdrTestNacl(
+    'pll_symbols_test.out', pll_symbols_test, [test_pll, test_pll_tls],
+    # Add '-a' to enable filesystem access for opening DSOs.
+    sel_ldr_flags=['-a'])
+env.AddNodeToTestSuite(
+    node, ['small_tests', 'toolchain_tests'],
+    'run_pll_symbols_test', is_broken=is_broken)
+
+
+pll_loader_test = env.ComponentProgram(
+    'pll_loader_test', ['pll_loader_test.cc'],
+    EXTRA_LIBS=['${NONIRT_LIBS}', 'pll_loader_lib'])
+
+node = env.CommandSelLdrTestNacl(
+    'pll_loader_test.out', pll_loader_test,
+    [Dir('.').abspath, 'test_pll_a.so', 'test_pll_b.so', 'test_pll_tls.so'],
+    # Add '-a' to enable filesystem access for opening DSOs.
+    sel_ldr_flags=['-a'],
+    extra_deps=[test_pll_a, test_pll_b, test_pll_tls, test_pll_tls_dependency])
+# TODO: Fix on arm panda hardware.
+on_arm_hw = not env.UsingEmulator() and env.Bit('build_arm')
+env.AddNodeToTestSuite(
+    node, ['small_tests', 'toolchain_tests'],
+    'run_pll_loader_test', is_broken=is_broken or on_arm_hw)
+
+
+pll_libc_nonfinal = env.Command(
+    'libc${OBJSUFFIX}',
+    # libnacl should come first so that it can override definitions in libc.
+    [env.File('${LIB_DIR}/libnacl.a'),
+     env.File('${NACL_SDK_LIB}/libc.a'),
+     env.ComponentObject('libc_entry.c')],
+    '${CC} -shared -Wl,--whole-archive -Wl,--allow-multiple-definition ' +
+    '${SOURCES} -o ${TARGET}')
+
+pll_libc_finalized = FinalizePso('pll_libc', pll_libc_nonfinal)
+pll_libc = TranslatePso('pll_libc', pll_libc_finalized)
+
+pll_hello_world = MakeAndTranslatePll(
+    'pll_hello_world',
+    '../hello_world/hello_world.c',
+    [pll_libc_finalized])
+
+# Ideally we would have this ComponentProgram() definition in
+# src/untrusted/pll_loader/nacl.scons instead; see the comment there for
+# why we don't.
+pll_loader = env.ComponentProgram(
+    'pll_loader', [],
+    EXTRA_LIBS=['${NONIRT_LIBS}', 'pll_loader_main', 'pll_loader_lib'])
+
+node = env.CommandSelLdrTestNacl(
+    'pll_hello_world_test.out', pll_loader,
+    [Dir('.').abspath, pll_hello_world],
+    # Add '-a' to enable filesystem access for opening DSOs.
+    sel_ldr_flags=['-a'],
+    stdout_golden=env.File('../hello_world/hello_world.stdout'),
+    extra_deps=[pll_libc, pll_hello_world])
+env.AddNodeToTestSuite(
+    node, ['small_tests', 'toolchain_tests'],
+    'run_pll_hello_world_test', is_broken=is_broken)
+
+
+test_pll_c_finalized = MakePll(
+    'test_pll_c', 'test_pll_c.c', [test_pll_a_finalized, test_pll_b_finalized])
+test_pll_c = TranslatePso('test_pll_c', test_pll_c_finalized)
+
+pll_dependencies_test = MakeAndTranslatePll(
+    'pll_dependencies_test', 'dependencies_test.c',
+    [pll_libc_finalized, test_pll_c_finalized])
+
+node = env.CommandSelLdrTestNacl(
+    'pll_dependencies_test.out', pll_loader,
+    [Dir('.').abspath, pll_dependencies_test],
+    # Add '-a' to enable filesystem access for opening DSOs.
+    sel_ldr_flags=['-a'],
+    extra_deps=[pll_libc, test_pll_a, test_pll_b, test_pll_c,
+                pll_dependencies_test])
+env.AddNodeToTestSuite(
+    node, ['small_tests', 'toolchain_tests'], 'run_pll_dependencies_test',
+    is_broken=is_broken)

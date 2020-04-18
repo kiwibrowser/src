@@ -1,0 +1,19 @@
+include_rules = [
+  "+chrome/browser/ui/views",
+  "+third_party/apple_sample_code",  # Apple code ImageAndTextCell.
+  "+third_party/molokocacao",  # For NSBezierPath additions.
+  "+third_party/ocmock",  # For unit tests.
+  # Tooklit-views dependencies shouldn't be introduced here except for special
+  # cases below.
+  "-ui/views",
+]
+
+specific_include_rules = {
+  # Allow access to toolkit-views for specific bridging classes to integrate
+  # with a Cocoa browser window. These need to have "_views" somewhere in the
+  # file name. Mac-specific toolkit-views code that doesn't need to interact
+  # with a Cocoa browser should go under chrome/browser/ui/views.
+  ".*(_views).*\.(cc|h|mm)$": [
+    "+ui/views",
+  ],
+}

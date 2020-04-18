@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>
+      Test AudioContext.close()
+    </title>
+    <script src="../../resources/testharness.js"></script>
+    <script src="../../resources/testharnessreport.js"></script>
+    <script src="../resources/audit-util.js"></script>
+    <script src="../resources/audit.js"></script>
+  </head>
+  <body>
+    <script id="layout-test-code">
+      let context;
+      let destination;
+      let offline;
+      let osc;
+      let gain;
+      let offlinePromise;
+      let wave = new Float32Array(1);
+
+      let audit = Audit.createTaskRunner();
+
+      // Task: test online context (1).
+      audit.define(
+          {
+            label: 'test-online-context-1',
+            description: 'Test online context 1'
+          },
+          function(task, should) {
+            // Create a context and verify that the various states are correct
+            // and that close() exists.
+            should(
+                () => context = new AudioContext(),
+                'context0 = new AudioContext()')
+                .notThrow();
+            should(context.state, 'context0.state').beEqualTo('running');
+
+            // Create gain and oscillator for testing later.
+            should(
+                () => osc = context.createOscillator(),
+                'osc = context.createOscillator()')
+                .notThrow();
+            should(
+                () => gain = context.createGain(),
+                'gain = context0.createGain()')
+                .notThrow();
+            destination = context.destination;
+            should(
+                () => gain.connect(context.destination),
+                'gain.connect(context0.destination)')
+                .notThrow();
+
+            // Close the context.  When the promise is resolved, continue the
+            // next test task.
+            let promise = context.close().then(() => {
+              should(
+                  () => gain.disconnect(destination),
+                  'gain.disconnect(destination) after close')
+                  .notThrow();
+            });
+            should(promise, 'context0.close()')
+                .beResolved()
+                .then(task.done.bind(this));
+          });
+
+      // Task: test online context (2).
+      audit.define(
+          {
+            label: 'test-online-context-2',
+            description: 'Test closed online context 2'
+          },
+          function(task, should) {
+            // Context is closed, so verify that we cannot create any more
+            // nodes, nor connect any.
+            should(() => context.createAnalyser(), 'context.createAnalyser()')
+                .throw('InvalidStateError');
+            should(
+                () => context.createBiquadFilter(),
+                'context.createBiquadFilter()')
+                .throw('InvalidStateError');
+
+            // createBuffer is an exception because it's not really tied in any
+            // way to an audio context. And it's useful to be able to create a
+            // buffer inside the oncomplete event of an offline context to use
+            // for testing purposes.
+            should(
+                () => context.createBuffer(1, 1, 48000),
+                'context.createBuffer(1, 1, 48000)')
+                .notThrow();
+
+            should(
+                () => context.createBufferSource(),
+                'context.createBufferSource()')
+                .throw('InvalidStateError');
+            should(
+                () => context.createChannelMerger(),
+                'context.createChannelMerger()')
+                .throw('InvalidStateError');
+            should(
+                () => context.createChannelSplitter(),
+                'context.createChannelSplitter()')
+                .throw('InvalidStateError');
+            should(() => context.createConvolver(), 'context.createConvolver()')
+                .throw('InvalidStateError');
+            should(() => context.createDelay(), 'context.createDelay()')
+                .throw('InvalidStateError');
+            should(
+                () => context.createDynamicsCompressor(),
+                'context.createDynamicsCompressor()')
+                .throw('InvalidStateError');
+            should(() => context.createGain(), 'context.createGain()')
+                .throw('InvalidStateError');
+            should(
+                () => context.createOscillator(), 'context.createOscillator()')
+                .throw('InvalidStateError');
+            should(() => context.createPanner(), 'context.createPanner()')
+                .throw('InvalidStateError');
+            should(
+                () => context.createPeriodicWave(wave, wave),
+                'context.createPeriodicWave(wave, wave)')
+                .throw('InvalidStateError');
+            should(
+                () => context.createScriptProcessor(),
+                'context.createScriptProcessor()')
+                .throw('InvalidStateError');
+            should(
+                () => context.createStereoPanner(),
+                'context.createStereoPanner()')
+                .throw('InvalidStateError');
+            should(
+                () => context.createWaveShaper(), 'context.createWaveShaper()')
+                .throw('InvalidStateError');
+
+            should(() => osc.connect(gain), 'osc.connect(gain)')
+                .throw('InvalidStateError');
+            should(() => gain.disconnect(), 'gain.disconnect()').notThrow();
+
+            // Can't resume a context that is closed (released).
+            should(context.resume(), 'context.resume()')
+                .beRejected()
+                .then(task.done.bind(task));
+          });
+
+      // Task: test online context (3).
+      audit.define(
+          {
+            label: 'test-online-context-3',
+            description: 'Close an online context again'
+          },
+          function(task, should) {
+            // Try closing the context again. The promise should be rejected.
+            should(context.close(), 'context.close() again')
+                .beRejected()
+                .then(() => {
+                  // Finally, run GC. The context should be gone, but this seems
+                  // difficult to verify.
+                  if (window.gc)
+                    gc();
+                  should(context.destination, 'context.destination')
+                      .beEqualTo(null);
+                })
+                .then(task.done.bind(task));
+          });
+
+      // Task: test online context (4).
+      audit.define(
+          {
+            label: 'test-online-context-4',
+            description: 'Test closed online context 4'
+          },
+          function(task, should) {
+            // Create a context and verify that its sampleRate and baseLatency
+            // return valid values whether it's open or closed.
+            should(
+                () => context = new AudioContext(),
+                'context1 = new AudioContext()')
+                .notThrow();
+            should(context.sampleRate, 'context1.sampleRate')
+                .beGreaterThan('0');
+            should(context.sampleRate, 'context1.baseLatency')
+                .beGreaterThan('0');
+
+            should(context.close(), 'context1.close()')
+                .beResolved()
+                .then(() => {
+                  should(context.sampleRate, 'After close, context1.sampleRate')
+                      .beGreaterThan('0');
+                  should(
+                      context.sampleRate, 'After close, context1.baseLatency')
+                      .beGreaterThan('0');
+                })
+                .then(task.done.bind(task));
+          });
+
+      // Task: test offline context (1).
+      audit.define(
+          {
+            label: 'test-offline-context-1',
+            description: 'Test offline context'
+          },
+          function(task, should) {
+            // For an offline context, verify that close is not defined.
+            should(
+                () => offline = new OfflineAudioContext(1, 1000, 48000),
+                'offline = new OfflineAudioContext(1, 1000, 48000)')
+                .notThrow();
+            should(offline.state, 'offline.state').beEqualTo('suspended');
+            should(offline.close, 'offline.close').beEqualTo(undefined);
+            task.done();
+          });
+
+      audit.run();
+    </script>
+  </body>
+</html>

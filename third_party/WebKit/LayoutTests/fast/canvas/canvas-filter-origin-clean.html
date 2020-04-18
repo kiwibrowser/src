@@ -1,0 +1,119 @@
+<svg style="display: block; width: 0; height: 0">
+  <defs>
+    <filter id="drop-shadow">
+      <feOffset dx="0" dy="10" result="offset" in="SourceAlpha"></feOffset>
+      <feFlood flood-color="rgba(0,0,0,1)"></feFlood>
+      <feComposite in2="offset" operator="in"></feComposite>
+      <feMerge>
+        <feMergeNode></feMergeNode>
+        <feMergeNode in="SourceGraphic"></feMergeNode>
+      </feMerge>
+    </filter>
+    <filter id="image">
+      <feImage xlink:href="#circle" />
+      <feColorMatrix type="matrix" values="0 0 0 1 0  0 0 0 1 0  0 0 0 1 0  0 0 0 0 1" />
+    </filter>
+    <filter id="merge-clean">
+      <feColorMatrix type="matrix" values="0 0 0 1 0  0 0 0 1 0  0 0 0 1 0  0 0 0 0 1" />
+      <feMerge>
+        <feMergeNode></feMergeNode>
+        <feMergeNode in="SourceGraphic"></feMergeNode>
+        <feMergeNode in="SourceAlpha"></feMergeNode>
+        <feMergeNode in="FillPaint"></feMergeNode>
+        <feMergeNode in="StrokePaint"></feMergeNode>
+      </feMerge>
+    </filter>
+    <circle id="circle" r="100" fill="blue" />
+  </defs>
+</svg>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script>
+
+// CSS shorthand filters never taint the canvas.
+test(function() {
+    var canvas = document.createElement('canvas');
+    var ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#0f0';
+    ctx.filter = 'brightness(0.5)';
+    ctx.fillRect(5, 5, 10, 10);
+    assert_not_equals(ctx.getImageData(0, 0, 1, 1), null);
+
+    canvas = document.createElement('canvas');
+    ctx = canvas.getContext('2d');
+    ctx.filter = 'blur(5px)';
+    ctx.fillRect(5, 5, 10, 10);
+    assert_not_equals(ctx.getImageData(0, 0, 1, 1), null);
+
+    canvas = document.createElement('canvas');
+    ctx = canvas.getContext('2d');
+    ctx.filter = 'hue-rotate(45deg) drop-shadow(16px 16px 20px blue)';
+    ctx.fillRect(5, 5, 10, 10);
+    assert_not_equals(ctx.getImageData(0, 0, 1, 1), null);
+}, "CSS shorthand filters never taint the canvas");
+
+// SVG reference filters taint the canvas, unless the filter DAG consists only
+// of some combination of:
+// 1. SourceGraphic
+// 2. SourceAlpha
+// 3. FillPaint
+// 4. StrokePaint
+// 5. feColorMatrix
+// 6. feMerge
+
+test(function() {
+    var canvas = document.createElement('canvas');
+    var ctx = canvas.getContext('2d');
+    ctx.filter = 'url(#merge-clean)';
+    ctx.fillRect(5, 5, 10, 10);
+    assert_not_equals(ctx.getImageData(0, 0, 1, 1), null);
+
+    canvas = document.createElement('canvas');
+    ctx = canvas.getContext('2d');
+    ctx.filter = 'blur(5px) url(#merge-clean) blur(5px)';
+    ctx.fillRect(5, 5, 10, 10);
+    assert_not_equals(ctx.getImageData(0, 0, 1, 1), null);
+}, "Whitelisted SVG filters don't taint the canvas");
+
+test(function() {
+    var canvas = document.createElement('canvas');
+    var ctx = canvas.getContext('2d');
+    ctx.filter = 'url(#drop-shadow)';
+    ctx.fillRect(5, 5, 10, 10);
+    assert_throws("SecurityError", () => ctx.getImageData(0, 0, 1, 1));
+
+    canvas = document.createElement('canvas');
+    ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#0f0';
+    ctx.filter = 'url(#drop-shadow) brightness(0.5) url(#merge-clean)';
+    ctx.fillRect(5, 5, 10, 10);
+    assert_throws("SecurityError", () => ctx.getImageData(0, 0, 1, 1));
+
+    canvas = document.createElement('canvas');
+    ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#0f0';
+    ctx.filter = 'brightness(0.5) url(#drop-shadow)';
+    ctx.fillRect(5, 5, 10, 10);
+    assert_throws("SecurityError", () => ctx.getImageData(0, 0, 1, 1));
+
+    canvas = document.createElement('canvas');
+    ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#0f0';
+    ctx.filter = 'brightness(0.5) url(#drop-shadow) brightness(0.5)';
+    ctx.fillRect(5, 5, 10, 10);
+    assert_throws("SecurityError", () => ctx.getImageData(0, 0, 1, 1));
+
+    canvas = document.createElement('canvas');
+    ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#0f0';
+    ctx.filter = 'brightness(0.5) url(#drop-shadow) brightness(0.5)';
+    ctx.fillRect(5, 5, 10, 10);
+    assert_throws("SecurityError", () => ctx.getImageData(0, 0, 1, 1));
+
+    canvas = document.createElement('canvas');
+    ctx = canvas.getContext('2d');
+    ctx.filter = 'url(#image)';
+    ctx.fillRect(5, 5, 10, 10);
+    assert_throws("SecurityError", () => ctx.getImageData(0, 0, 1, 1));
+}, "Non-whitelisted SVG filters taint the canvas");
+</script>

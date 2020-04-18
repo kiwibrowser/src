@@ -1,0 +1,1 @@
+var inWorker = 1;

@@ -1,0 +1,101 @@
+<!DOCTYPE HTML>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="../assert_selection.js"></script>
+<script>
+// Win does not support the 'moveCaretToBoundary' editing behavior.
+if (window.internals)
+    internals.settings.setEditingBehavior('win');
+
+test(() => {
+    // Test continuations across a block when not hitting the margin.
+    assert_selection(
+        '<font color="blue" id="font">|AAAAA<div>BLOCK</div><p>BBBBB</p><p id="secondP">CCCCC</p></font>',
+        selection => {
+            var document = selection.document;
+            var font = document.getElementById('font');
+            var secondP = document.getElementById('secondP');
+
+            eventSender.mouseMoveTo(document.offsetLeft + font.offsetLeft, document.offsetTop + font.offsetTop + 5);
+            eventSender.mouseDown();
+            eventSender.mouseMoveTo(document.offsetLeft + secondP.offsetLeft + 20, document.offsetTop + secondP.offsetTop + 5);
+            eventSender.mouseUp();
+        },
+        '<font color="blue" id="font">^AAAAA<div>BLOCK</div><p>BBBBB</p><p id="secondP">CC|CCC</p></font>');
+
+    // Test continuation margin.
+    assert_selection(
+        '<font color="blue" id="font">|AAAAA<p>BBBBB</p><p id="secondP">CCCCC</p></font>',
+        selection => {
+            var document = selection.document;
+            var font = document.getElementById('font');
+            var secondP = document.getElementById('secondP');
+
+            eventSender.mouseMoveTo(document.offsetLeft + font.offsetLeft, document.offsetTop + font.offsetTop + 5);
+            eventSender.mouseDown();
+            eventSender.mouseMoveTo(document.offsetLeft + secondP.offsetLeft + 20, document.offsetTop + secondP.offsetTop - 5);
+            eventSender.mouseUp();
+        },
+        '<font color="blue" id="font">^AAAAA<p>BBBBB</p><p id="secondP">CC|CCC</p></font>');
+
+    // Test continuation margin across a block.
+    assert_selection(
+        '<font color="blue" id="font">|AAAAA<div>BLOCK</div><p>BBBBB</p><p id="secondP">CCCCC</p></font>',
+        selection => {
+            var document = selection.document;
+            var font = document.getElementById('font');
+            var secondP = document.getElementById('secondP');
+
+            eventSender.mouseMoveTo(document.offsetLeft + font.offsetLeft, document.offsetTop + font.offsetTop + 5);
+            eventSender.mouseDown();
+            eventSender.mouseMoveTo(document.offsetLeft + secondP.offsetLeft + 20, document.offsetTop + secondP.offsetTop - 5);
+            eventSender.mouseUp();
+        },
+        '<font color="blue" id="font">^AAAAA<div>BLOCK</div><p>BBBBB</p><p id="secondP">CC|CCC</p></font>');
+
+    // Test continuation margin across a block.
+    assert_selection(
+        '<font color="blue" id="font">|AAAAA<p>BBBBB</p><div>BLOCK</div><p id="secondP">CCCCC</p></font>',
+        selection => {
+            var document = selection.document;
+            var font = document.getElementById('font');
+            var secondP = document.getElementById('secondP');
+
+            eventSender.mouseMoveTo(document.offsetLeft + font.offsetLeft, document.offsetTop + font.offsetTop + 5);
+            eventSender.mouseDown();
+            eventSender.mouseMoveTo(document.offsetLeft + secondP.offsetLeft + 20, document.offsetTop + secondP.offsetTop - 5);
+            eventSender.mouseUp();
+        },
+        '<font color="blue" id="font">^AAAAA<p>BBBBB</p><div>BLOCK</div><p id="secondP">CC|CCC</p></font>');
+
+    // Test continuation margin across a relative block.
+    assert_selection(
+        '<font color="blue" id="font">|AAAAA<div style="position: relative; margin-top: 50px;">BLOCK</div><p>BBBBB</p><p id="secondP">CCCCC</p></font>',
+        selection => {
+            var document = selection.document;
+            var font = document.getElementById('font');
+            var secondP = document.getElementById('secondP');
+
+            eventSender.mouseMoveTo(document.offsetLeft + font.offsetLeft, document.offsetTop + font.offsetTop + 5);
+            eventSender.mouseDown();
+            eventSender.mouseMoveTo(document.offsetLeft + secondP.offsetLeft + 20, document.offsetTop + secondP.offsetTop - 5);
+            eventSender.mouseUp();
+        },
+        '<font color="blue" id="font">^AAAAA<div style="position: relative; margin-top: 50px;">BLOCK</div><p>BBBBB</p><p id="secondP">CC|CCC</p></font>');
+
+    // Test continuation margin across a relative block.
+    assert_selection(
+        '<font color="blue" id="font">|AAAAA<p>BBBBB</p><div style="position: relative; margin-top: 50px;">BLOCK</div><p id="secondP">CCCCC</p></font>',
+        selection => {
+            var document = selection.document;
+            var font = document.getElementById('font');
+            var secondP = document.getElementById('secondP');
+
+            eventSender.mouseMoveTo(document.offsetLeft + font.offsetLeft, document.offsetTop + font.offsetTop + 5);
+            eventSender.mouseDown();
+            eventSender.mouseMoveTo(document.offsetLeft + secondP.offsetLeft + 20, document.offsetTop + secondP.offsetTop - 5);
+            eventSender.mouseUp();
+        },
+        '<font color="blue" id="font">^AAAAA<p>BBBBB</p><div style="position: relative; margin-top: 50px;">BLOCK</div><p id="secondP">CC|CCC</p></font>');
+});
+</script>

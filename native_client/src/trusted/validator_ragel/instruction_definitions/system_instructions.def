@@ -1,0 +1,139 @@
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+################################################################################
+# This file describes instructions from AMD64 Architecture Programmer's Manual
+#                               Volume 3: General-Purpose and System Instruction
+#                                        Chapter 4: System Instruction Reference
+################################################################################
+# File format: see def_format.py
+######## CLGI ##################################################################
+clgi, 0x0f 0x01 0xdd, CPUFeature_SVM nacl-forbidden
+######## CLI ###################################################################
+cli, 0xfa, nacl-forbidden
+######## CLTS ##################################################################
+clts, 0x0f 0x06, nacl-forbidden
+######## HLT ###################################################################
+hlt, 0xf4
+######## ICEBP #################################################################
+# Note: this instruction is documented in AMD64 Architecture Programmer's Manual
+# Volume 2: System Programming.  It's called "int1" there but objdump uses name
+# "icebp".
+icebp, 0xf1, nacl-forbidden
+######## INT 3 #################################################################
+int3, 0xcc, nacl-forbidden
+######## INVD ##################################################################
+invd, 0x0f 0x08, nacl-forbidden
+######## INVLPG ################################################################
+invlpg Mb, 0x0f 0x01 /7, nacl-forbidden
+######## INVLPGA ###############################################################
+invlpga, 0x0f 0x01 0xdf, CPUFeature_SVM nacl-forbidden
+######## IRET/IRETD/IRETQ ######################################################
+# Note: objdump always uses name iret in all modes: 16bit, 32bit, and 64bit
+iret, 0xcf, norexw nacl-forbidden
+iretq, rexw 0xcf, amd64 nacl-forbidden
+######## LAR ###################################################################
+# "lar" is not marked as nacl-amd64-zero-extends because they shouldn't be.
+lar Ew Gv, 0x0f 0x02, nacl-forbidden
+######## LGDT ##################################################################
+lgdtl Ms, 0x0f 0x01 /2, ia32 nacl-forbidden
+lgdt Ms, 0x0f 0x01 /2, amd64 nacl-forbidden
+######## LIDT ##################################################################
+lidtl Ms, 0x0f 0x01 /3, ia32 nacl-forbidden
+lidt Ms, 0x0f 0x01 /3, amd64 nacl-forbidden
+######## LLDT ##################################################################
+lldt Ew, 0x0f 0x00 /2, nacl-forbidden
+######## LMSW ##################################################################
+lmsw Ew, 0x0f 0x01 /6, nacl-forbidden
+######## LSL ###################################################################
+# "lsl" is not marked as nacl-amd64-zero-extends because segment addresses
+# shouldn't be used.
+lsl Ew Gv, 0x0f 0x03, nacl-forbidden
+######## LTR ###################################################################
+ltr Ew, 0x0f 0x00 /3, nacl-forbidden
+######## MONITOR ###############################################################
+monitor ar cr dr, 0x0f 0x01 0xc8, CPUFeature_MON
+######## MOV (CRn) #############################################################
+mov Rr Cr, 0x0f 0x22, nacl-forbidden
+mov Cr Rr, 0x0f 0x20, nacl-forbidden
+mov Rr Cr, 0xf0 0x0f 0x22, CPUFeature_ALTMOVCR8 nacl-forbidden
+mov Cr Rr, 0xf0 0x0f 0x20, CPUFeature_ALTMOVCR8 nacl-forbidden
+######## MOV (DRn) #############################################################
+# TODO(shcherbina): Uncomment these instructions in the unlikely event
+# they are needed by the validator or something (only after
+# https://code.google.com/p/nativeclient/issues/detail?id=3329 is fixed).
+# mov Dr Rr, 0x0f 0x21, nacl-forbidden
+# mov Rr Dr, 0x0f 0x23, nacl-forbidden
+######## MWAIT #################################################################
+mwait ar cr, 0x0f 0x01 0xc9, CPUFeature_MON
+######## RDMSR #################################################################
+# "rdmsr" is not marked as nacl-amd64-zero-extends because you shouldn't be
+# reading model specific registers.
+rdmsr, 0x0f 0x32, CPUFeature_MSR nacl-forbidden
+######## RDPMC #################################################################
+# "rdpmc" is not marked as nacl-amd64-zero-extends because you shouldn't be
+# basing addresses on the performance-monitor counter.
+rdpmc, 0x0f 0x33, nacl-forbidden
+######## RDTSC #################################################################
+# "rdtsc" is not marked as nacl-amd64-zero-extends because you shouldn't be
+# basing addresses on the time-stamp counter.
+rdtsc, 0x0f 0x31, CPUFeature_TSC
+######## RDTSCP ################################################################
+# "rdtsc" is not marked as nacl-amd64-zero-extends because you shouldn't be
+# basing addresses on the time-stamp counter or the processor id.
+rdtscp, 0x0f 0x01 0xf9, CPUFeature_TSCP nacl-forbidden
+######## RSM ###################################################################
+rsm, 0x0f 0xaa, CPUFeature_SVM nacl-forbidden
+######## SGDT ##################################################################
+sgdtl Ms, 0x0f 0x01 /0, ia32 nacl-forbidden
+sgdt Ms, 0x0f 0x01 /0, amd64 nacl-forbidden
+######## SIDT ##################################################################
+sidtl Ms, 0x0f 0x01 /1, ia32 nacl-forbidden
+sidt Ms, 0x0f 0x01 /1, amd64 nacl-forbidden
+######## SKINIT ################################################################
+skinit, 0x0f 0x01 0xde, CPUFeature_SKINIT nacl-forbidden
+######## SLDT ##################################################################
+sldt Mw, 0x0f 0x00 /0, nacl-forbidden
+sldt Rv, 0x0f 0x00 /0, nacl-forbidden
+######## SMSW ##################################################################
+# "smsw" is not marked as nacl-amd64-zero-extends since you shouldn't be basing
+# addresses on the machine status word.
+smsw Mw, 0x0f 0x01 /4, nacl-forbidden
+smsw Rv, 0x0f 0x01 /4, nacl-forbidden
+######## STGI ##################################################################
+stgi, 0x0f 0x01 0xdc, CPUFeature_SKINIT nacl-forbidden
+######## STI ###################################################################
+sti, 0xfb, nacl-forbidden
+######## STR ###################################################################
+str Mw, 0x0f 0x00 /1, nacl-forbidden
+str Rv, 0x0f 0x00 /1, nacl-forbidden
+######## SWAPGS ################################################################
+swapgs, 0x0f 0x01 0xf8, amd64 nacl-forbidden
+######## SYSCALL ###############################################################
+syscall, 0x0f 0x05, CPUFeature_SYSCALL nacl-forbidden
+######## SYSENTER ##############################################################
+sysenter, 0x0f 0x34, CPUFeature_SEP nacl-forbidden
+######## SYSEXIT ###############################################################
+sysexit, 0x0f 0x35, CPUFeature_SEP nacl-forbidden
+######## SYSRET ################################################################
+sysret, 0x0f 0x07, norexw nacl-forbidden
+sysretq, rexw 0x0f 0x07, amd64 nacl-forbidden
+######## UD2 ###################################################################
+ud2, 0x0f 0x0b, norex
+######## VERR ##################################################################
+verr Ew, 0x0f 0x00 /4, nacl-forbidden
+######## VERW ##################################################################
+verw Ew, 0x0f 0x00 /5, nacl-forbidden
+######## VMLOAD ################################################################
+vmload, 0x0f 0x01 0xda, CPUFeature_SVM nacl-forbidden
+######## VMMCALL ###############################################################
+vmmcall, 0x0f 0x01 0xd9, CPUFeature_SVM nacl-forbidden
+######## VMRUN #################################################################
+vmrun, 0x0f 0x01 0xd8, CPUFeature_SVM nacl-forbidden
+######## VMSAVE ################################################################
+vmsave, 0x0f 0x01 0xdb, CPUFeature_SVM nacl-forbidden
+######## WBINVD ################################################################
+wbinvd, 0x0f 0x09, nacl-forbidden
+######## WRMSR #################################################################
+wrmsr, 0x0f 0x30, CPUFeature_MSR nacl-forbidden
+################################################################################

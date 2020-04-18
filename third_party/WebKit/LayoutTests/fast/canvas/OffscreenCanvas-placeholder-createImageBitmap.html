@@ -1,0 +1,46 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+</head>
+<body>
+<script>
+async_test(function(t) {
+  var canvas = document.createElement('canvas');
+  var offscreen = canvas.transferControlToOffscreen();
+  var ctx = offscreen.getContext('2d');
+  ctx.fillStyle = '#0f0';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  var testCanvas = document.createElement('canvas');
+  var testCtx = testCanvas.getContext('2d');
+
+  createImageBitmap(canvas).then(image => {
+    testCtx.drawImage(image, 0, 0);
+    t.step( function() {
+      var pixel = testCtx.getImageData(0, 0, 1, 1).data;
+      var expectedValue = [0, 0, 0, 0]; // pixel is blank because commit() is async
+      assert_array_equals(pixel, expectedValue, "Verify that commit() is not synchronous.");
+    });
+
+    // TODO(junov): Use the Promise returned by commit to schedule after the
+    // commit. (crbug.com/709484)
+    setTimeout(function() {
+      setTimeout(function() {
+        createImageBitmap(canvas).then(image => {
+          testCtx.drawImage(image, 0, 0);
+          t.step( function() {
+            var pixel = testCtx.getImageData(0, 0, 1, 1).data;
+            var expectedValue = [0, 255, 0, 255];
+            assert_array_equals(pixel, expectedValue, "Verify that async update of placeholder propagated through createImageData");
+          });
+          t.done();
+        });
+      }, 0);
+    }, 0);
+  });
+}, "Test whether createImageBitmap on a placeholder canvas captures the image committed to the associated OffscreenCanvas.");
+</script>
+</body>
+</html>

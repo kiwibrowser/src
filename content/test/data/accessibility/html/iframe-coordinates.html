@@ -1,0 +1,79 @@
+<!--
+@MAC-DENY:AXTitle*
+@MAC-DENY:AXValue*
+@MAC-ALLOW:position*
+@MAC-ALLOW:size*
+
+@WIN-DENY:title*
+@WIN-ALLOW:location*
+@WIN-ALLOW:size=(300, 150)
+@WIN-ALLOW:size=(300, 100)
+@WIN-ALLOW:size=(250, 50)
+@WIN-ALLOW:size=(150, 50)
+@WIN-ALLOW:IA2_STATE_EDITABLE
+
+@BLINK-ALLOW:location*
+@BLINK-ALLOW:scrollX=*
+@BLINK-ALLOW:scrollY=*
+@BLINK-ALLOW:size=(300, 150)
+@BLINK-ALLOW:size=(300, 100)
+@BLINK-ALLOW:size=(250, 50)
+@BLINK-ALLOW:size=(150, 50)
+@BLINK-ALLOW:unclippedLocation=(-150, 400)
+@BLINK-ALLOW:unclippedSize=(300, 100)
+@BLINK-ALLOW:unclippedLocation=(-125, 425)
+@BLINK-ALLOW:unclippedSize=(250, 50)
+
+These can be removed when bug 532249 is fixed because
+then the test framework will just wait until all frames
+have finished loading. Until then we need these because
+the test doesn't wait for same-process iframes to finish
+loading.
+@WAIT-FOR:Ordinary Button
+@WAIT-FOR:Scrolled Button
+-->
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body {
+  overflow: hidden;
+}
+iframe {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+div {
+  width: 300px;
+  height: 150px;
+}
+</style>
+</head>
+<body style="margin: 0; padding: 0;">
+
+<div>
+  <button style="margin: 25px; border: 0; width: 250px; height: 50px">
+    Button
+  </button>
+</div>
+
+<div>
+  <button style="margin: 25px; border: 0; width: 250px; height: 50px">
+    Button
+  </button>
+</div>
+
+<div>
+  <iframe id="frame1" style="width: 300px; height: 100px;"
+          scrolling="no" src="frame/button.html"></iframe>
+</div>
+
+<div>
+  <iframe id="frame2" style="width: 150px; height: 50px;"
+          scrolling="no" src="frame/button_scrolled.html"></iframe>
+</div>
+
+</body>
+</html>

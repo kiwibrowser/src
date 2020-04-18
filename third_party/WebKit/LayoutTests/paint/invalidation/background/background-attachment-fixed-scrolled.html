@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<style>
+#bloat {
+    height: 1000px;
+}
+
+#composited-background-attachment-fixed {
+    position: absolute;
+    left: 50px;
+    top: 200px;
+    width: 500px;
+    height: 1000px;
+    background: url('../resources/grid.png') fixed;
+    will-change: opacity;
+}
+</style>
+<div id="bloat">
+The test verifies background-attachment:fixed gets invalidated after scroll even if they are composited.
+</div>
+<div id="composited-background-attachment-fixed"></div>
+<script src="../../../resources/run-after-layout-and-paint.js"></script>
+<script>
+document.body.offsetTop;
+runAfterLayoutAndPaint(function() {
+    scrollTo(0, 123);
+}, true);
+</script>

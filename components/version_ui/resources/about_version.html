@@ -1,0 +1,153 @@
+<!doctype html>
+
+<!--
+about:version template page
+-->
+
+<html id="t" dir="$i18n{textdirection}" lang="$i18n{language}">
+  <head>
+    <meta charset="utf-8">
+    <title>$i18n{title}</title>
+    <link rel="stylesheet" href="chrome://resources/css/text_defaults.css">
+<if expr="is_android or is_ios">
+    <meta name="viewport" content="width=device-width">
+</if>
+    <link rel="stylesheet" href="chrome://version/about_version.css">
+<if expr="is_android or is_ios">
+    <link rel="stylesheet" href="about_version_mobile.css">
+</if>
+
+<if expr="is_ios">
+    <!-- TODO(crbug.com/487000): Remove this once injected by web. -->
+    <script src="chrome://resources/js/ios/web_ui.js"></script>
+</if>
+
+    <script src="chrome://resources/js/cr.js"></script>
+    <script src="chrome://resources/js/load_time_data.js"></script>
+    <script src="chrome://resources/js/parse_html_subset.js"></script>
+    <script src="chrome://resources/js/util.js"></script>
+    <script src="chrome://version/version.js"></script>
+    <script src="chrome://version/strings.js"></script>
+  </head>
+
+  <body>
+    <div id="outer">
+      <div id="logo">
+<if expr="not is_android and not is_ios">
+        <!-- Version for themes. -->
+        <img src="chrome://theme/IDR_PRODUCT_LOGO">
+</if>
+<if expr="is_ios or is_android">
+        <img src="../../../components/resources/default_100_percent/%DISTRIBUTION%/product_logo.png">
+</if>
+        <div id="company">$i18n{company}</div>
+        <div id="copyright">$i18n{copyright}</div>
+      </div>
+      <table id="inner" cellpadding="0" cellspacing="0" border="0">
+        <tr><td class="label">$i18n{application_label}</td>
+          <td class="version" id="version">
+            <span>$i18n{version}</span>
+            (<span>$i18n{official}</span>)
+            <span>$i18n{version_modifier}</span>
+            <span>$i18n{version_bitsize}</span>
+<if expr="is_win">
+            <span>$i18n{update_cohort_name}</span>
+</if>
+          </td>
+        </tr>
+        <tr>
+          <td class="label">$i18n{revision}</td>
+          <td class="version">
+            <span>$i18n{cl}</span>
+          </td>
+        </tr>
+<if expr="not chromeos">
+        <tr>
+          <td class="label">$i18n{os_name}</td>
+          <td class="version" id="os_type">
+            <span>$i18n{os_type}</span>
+<if expr="is_android">
+            <span>$i18n{os_version}</span>
+</if>
+          </td>
+        </tr>
+</if>
+<if expr="is_android">
+        <tr>
+          <td class="label">$i18n{gms_name}</td>
+          <td class="version" id="gms_version">
+            <span>$i18n{gms_version}</span>
+          </td>
+        </tr>
+</if>
+<if expr="chromeos">
+        <tr>
+          <td class="label">$i18n{platform}</td>
+          <td class="version" id="os_type">
+            <span id="os_version"></span>
+          </td>
+        </tr>
+        <tr>
+          <td class="label">$i18n{firmware_version}</td>
+          <td class="version">
+            <span id="firmware_version"></span>
+          </td>
+        </tr>
+        <tr id="customization_id_holder" hidden>
+          <td class="label">$i18n{customization_id}</td>
+          <td class="version">
+            <span id="customization_id"></span>
+          </td>
+        </tr>
+        <tr id="arc_holder"><td class="label">$i18n{arc_label}</td>
+          <td class="version">
+            <span id="arc_version"></span>
+          </td>
+        </tr>
+</if>
+<if expr="not is_ios">
+        <tr><td class="label">JavaScript</td>
+          <td class="version" id="js_engine">
+            <span>$i18n{js_engine}</span>
+            <span>$i18n{js_version}</span>
+          </td>
+        </tr>
+</if>
+<if expr="not is_android and not is_ios">
+        <tr><td class="label">$i18n{flash_plugin}</td>
+          <td class="version" id="flash_version">$i18n{flash_version}</td>
+        </tr>
+</if>
+        <tr><td class="label">$i18n{user_agent_name}</td>
+          <td class="version" id="useragent">$i18n{useragent}</td>
+        </tr>
+        <tr><td class="label">$i18n{command_line_name}</td>
+          <td class="version" id="command_line">$i18n{command_line}</td>
+        </tr>
+<if expr="not is_ios">
+        <tr><td class="label">$i18n{executable_path_name}</td>
+          <td class="version" id="executable_path">$i18n{executable_path}</td>
+        </tr>
+        <tr><td class="label">$i18n{profile_path_name}</td>
+          <td class="version" id="profile_path">$i18n{profile_path}</td>
+        </tr>
+</if>
+        <tr id="variations-section">
+          <td class="label">$i18n{variations_name}</td>
+          <td class="version" id="variations-list"></td>
+        </tr>
+        <tr id="variations-cmd-section" hidden>
+          <td class="label">$i18n{variations_cmd_name}</td>
+          <td class="version-wide" id="variations-cmd"></td>
+        </tr>
+<if expr="is_win">
+        <tr id="linker-section">
+          <td class="label">Linker</td>
+          <td class="version" id="linker">$i18n{linker}</td>
+        </tr>
+</if>
+      </table>
+    </div>
+    <script src="chrome://resources/js/i18n_template.js"></script>
+  </body>
+</html>

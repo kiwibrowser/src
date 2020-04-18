@@ -1,0 +1,29 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// This is a generated file. Please see the "catalog_cpp_source" template in
+// src/services/catalog/public/tools/catalog.gni for more details.
+{%- set header_guard = "%s_H_"|format(path)|upper|replace("/", "_")|
+        replace(".", "_")|replace("-", "_") %}
+
+#ifndef {{header_guard}}
+#define {{header_guard}}
+
+#include <memory>
+
+namespace base {
+class Value;
+}
+
+{% for namespace in namespaces %}
+namespace {{namespace}} {
+{%- endfor %}
+
+std::unique_ptr<base::Value> {{function_name}}();
+
+{% for namespace in namespaces|reverse %}
+}  // namespace {{namespace}}
+{%- endfor %}
+
+#endif  // {{header_guard}}

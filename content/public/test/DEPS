@@ -1,0 +1,29 @@
+include_rules = [
+  "-content",
+  "+content/public",
+  "+components/download/public/common",
+  "+components/viz/common",
+  "+components/viz/service",
+  "+components/viz/test",
+  "+device/geolocation/android/geolocation_jni_registrar.h",
+  "+mojo/android/system/mojo_jni_registrar.h",
+  "+services/network/public/cpp",
+  "+services/resource_coordinator",
+  "+services/service_manager",
+  "+v8/include/v8.h",
+]
+
+# Ensure we don't leak internal content headers through public headers.
+specific_include_rules = {
+  ".*\.(cc|mm)": [
+    # Testing utilities can access anything in content/
+    "+content",
+    "+gin/v8_initializer.h",
+    "+services/network/network_context.h",
+    "+third_party/iaccessible2",
+    "+ui/base/resource/resource_bundle.h",
+  ],
+  "content_browser_test.cc": [
+    "+ui/views/test/widget_test_api.h"
+  ],
+}

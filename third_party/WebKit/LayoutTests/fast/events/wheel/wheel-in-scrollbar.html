@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<script src="../../../resources/js-test.js"></script>
+<script>
+    window.jsTestIsAsync = true;
+
+    description("Test that wheel scrolling over the page scrollbar scrolls " +
+                "the page. We also placed an overflow div below the " +
+                "scrollbar to make sure we target the page and not the div " +
+                "in that case.");
+
+    var overflowDiv;
+
+    window.onload = function() {
+        if (!window.testRunner || !window.eventSender)
+            return;
+
+        internals.settings.setScrollAnimatorEnabled(false);
+
+        overflowDiv = document.getElementById('overflowDiv');
+
+        // Move the mouse over the vertical scrollbar.
+        eventSender.mouseMoveTo(790, 300);
+
+        // Scroll down precisely by 30 px.
+        eventSender.continuousMouseScrollBy(0, -30, false, true);
+
+        shouldBe('window.scrollY', '30');
+        shouldBe('overflowDiv.scrollTop', '0');
+        finishJSTest();
+    }
+</script>
+
+<body style="margin:0">
+    <div id="overflowDiv" style="width:1000px; height:500px; overflow:scroll">
+      <div style="height: 1000px"></div>
+    </div>
+    <div style="height: 1000px"></div>
+</body>

@@ -1,0 +1,40 @@
+<html>
+<!-- 
+This test checks the visibility API when a prerendered page is displayed.
+-->
+<head>
+<title>Prerender Visibility</title>
+
+<script src="prerender_visibility_shared.js"></script>
+
+<script>
+// Checks that no visibility change events have occurred, current visibility
+// state is "prerender", and visibility state while the page was loading was
+// also "prerender".
+function DidPrerenderPass() {
+  return visibilityStates.length == 1 &&
+         hiddenValues.length == 1 &&
+         visibilityStates[0] == 'prerender' &&
+         hiddenValues[0] == true &&
+         document.visibilityState == 'prerender' &&
+         document.hidden == true;
+}
+
+// Checks that we've only had three visibility states:
+//   prerender -> hidden -> visible.
+// Also checks current visibility state.
+function DidDisplayPass() {
+  return visibilityStates.length == 3 &&
+         hiddenValues.length == 3 &&
+         visibilityStates[1] == 'hidden' &&
+         hiddenValues[1] == true &&
+         visibilityStates[2] == 'visible' &&
+         hiddenValues[2] == false &&
+         document.visibilityState == 'visible' &&
+         document.hidden == false;
+}
+</script>
+
+</head>
+<body></body>
+</html>

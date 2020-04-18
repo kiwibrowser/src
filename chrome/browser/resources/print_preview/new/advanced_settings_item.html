@@ -1,0 +1,68 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/search_highlight_style_css.html">
+<link rel="import" href="../print_preview_utils.html">
+<link rel="import" href="../data/destination.html">
+<link rel="import" href="highlight_utils.html">
+<link rel="import" href="print_preview_shared_css.html">
+<link rel="import" href="select_css.html">
+<link rel="import" href="settings_behavior.html">
+
+<dom-module id="print-preview-advanced-settings-item">
+  <style include="print-preview-shared select search-highlight-style">
+    :host {
+      display: flex;
+      position: relative;
+    }
+
+    :host > * {
+      overflow: hidden;
+      padding-bottom: 15px;
+      padding-top: 10px;
+      text-overflow: ellipsis;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    :host .label {
+      -webkit-padding-end: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      width: 250px;
+    }
+
+    :host .value {
+      width: 175px;
+    }
+
+    :host input {
+      height: 28px;
+      line-height: 24px;
+      width: 175px;
+    }
+  </style>
+  <template>
+    <label class="label searchable">[[getDisplayName_(capability)]]</label>
+    <div class="value">
+      <template is="dom-if" if="[[isCapabilityTypeSelect_(capability)]]"
+          restamp>
+        <div>
+          <select on-change="onUserInput_">
+            <template is="dom-repeat" items="[[capability.select_cap.option]]">
+              <option class="searchable" text="[[getDisplayName_(item)]]"
+                  value="[[item.value]]"
+                  selected="[[isOptionSelected_(item, currentValue_)]]">
+              </option>
+            </template>
+          </select>
+        </div>
+      </template>
+      <span hidden$="[[isCapabilityTypeSelect_(capability)]]">
+        <input type="text" on-input="onUserInput_"
+            placeholder="[[getCapabilityPlaceholder_(capability)]]">
+      </span>
+    </div>
+  </template>
+  <script src="advanced_settings_item.js"></script>
+</dom-module>

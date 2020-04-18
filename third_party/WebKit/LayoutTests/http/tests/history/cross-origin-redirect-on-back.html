@@ -1,0 +1,25 @@
+<html>
+<body>
+<script>
+if (window.testRunner) {
+    testRunner.dumpAsText();
+    testRunner.waitUntilDone();
+}
+
+window.onload = function() {
+    if (location.hash == "#back") {
+        document.body.appendChild(document.createTextNode("We pass if we don't crash."));
+        if (window.testRunner)
+            testRunner.notifyDone();
+        return;
+    }
+
+    setTimeout(function() {
+        history.replaceState({}, "", "#back");
+        history.pushState({}, "", "http://127.0.0.1:8000/resources/redirect.php?url=http://localhost:8000/history/resources/back.html");
+        location = "http://127.0.0.1:8000/history/resources/back.html";
+    }, 0);
+};
+</script>
+</body>
+</html>

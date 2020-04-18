@@ -1,0 +1,24 @@
+<!DOCTYPE HTML>
+<html>
+<body>
+<p>Tests that reparenting media elements also reparents ActiveDOMObject.</p>
+<iframe src="resources/media-frame.html"></iframe>
+<script src="resources/activedomobject-test.js"></script>
+<script>
+    function runTest()
+    {
+        window.iframe = document.querySelector('iframe').contentDocument;
+
+        log('Before Reparenting');
+        shouldBe('internals.pausableObjectCount(document)', 3);
+        shouldBe('internals.pausableObjectCount(iframe)', 3);
+
+        document.body.appendChild(window.iframe.querySelector('video'));
+
+        log('After Reparenting');
+        shouldBe('internals.pausableObjectCount(document)', 4);
+        shouldBe('internals.pausableObjectCount(iframe)', 2);
+    }
+</script>
+</body>
+</html>

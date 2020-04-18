@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<body>
+<p>
+    Check that the NavigationScheduler correctly tracks user gestures.
+</p>
+<div id='log'></div>
+<a href='about:blank' target='_blank'></a>
+<button>click me</button>
+<script>
+    if (window.testRunner) {
+        testRunner.dumpAsText();
+        testRunner.waitUntilDone();
+        testRunner.setCanOpenWindows();
+        testRunner.setPopupBlockingEnabled(true);
+    }
+
+    function popup() {
+        // Previously, this made the NavigationController create an additional
+        // user gesture.
+        window.open('javascript:', '_self', '');
+        // Consume one gesture.
+        window.open('about:blank').close();
+        var w = window.open('about:blank');
+        if (w == undefined)
+            document.querySelector('#log').innerText = 'PASS: only one window opened';
+        else
+            document.querySelector('#log').innerText = 'FAIL: could open two windows';
+        if (window.testRunner)
+            testRunner.notifyDone();
+    }
+
+    var button = document.querySelector('button');
+    button.onclick = popup;
+
+    if (window.testRunner) {
+        eventSender.mouseMoveTo(button.offsetLeft + 2, button.offsetTop + 2);
+        eventSender.mouseDown();
+        eventSender.mouseUp();
+    }
+</script>
+</body>
+</html>

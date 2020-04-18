@@ -1,0 +1,188 @@
+{% from 'templates/macros.tmpl' import license, print_if, source_files_for_generated_file %}
+{% from 'templates/fields/field.tmpl' import encode, getter_expression, setter_expression, declare_storage, fieldwise_compare, fieldwise_copy, fieldwise_diff, fieldwise_pointer_compare_inherited %}
+{% from 'templates/fields/group.tmpl' import declare_field_group_class %}
+{{license()}}
+
+{{source_files_for_generated_file(template_file, input_files)}}
+
+#ifndef THIRD_PARTY_BLINK_RENDERER_CORE_COMPUTED_STYLE_BASE_H_
+#define THIRD_PARTY_BLINK_RENDERER_CORE_COMPUTED_STYLE_BASE_H_
+
+#include "third_party/blink/renderer/core/core_export.h"
+#include "third_party/blink/renderer/core/layout/layout_theme.h"
+#include "third_party/blink/renderer/core/style/computed_style_constants.h"
+#include "third_party/blink/renderer/core/style/data_ref.h"
+#include "third_party/blink/renderer/core/style/member_copy.h"
+#include "third_party/blink/renderer/core/style/computed_style_initial_values.h"
+{% for path in include_paths %}
+#include "{{path}}"
+{% endfor %}
+
+{# Each field template has macros that we can call to generate specific
+   aspects of the field (e.g. getters, setters).
+#}
+{% import 'templates/fields/keyword.tmpl' as keyword %}
+{% import 'templates/fields/multi_keyword.tmpl' as multi_keyword %}
+{% import 'templates/fields/primitive.tmpl' as primitive %}
+{% import 'templates/fields/monotonic_flag.tmpl' as monotonic_flag %}
+{% import 'templates/fields/external.tmpl' as external %}
+{% import 'templates/fields/pointer.tmpl' as pointer %}
+{% from 'templates/fields/field.tmpl' import encode %}
+{% set field_templates = {
+     'keyword': keyword,
+     'multi_keyword': multi_keyword,
+     'primitive': primitive,
+     'monotonic_flag': monotonic_flag,
+     'external': external,
+     'pointer': pointer
+   } %}
+
+namespace blink {
+
+// Forward declaration for diff functions.
+class ComputedStyle;
+
+// The generated portion of ComputedStyle. For more info, see the header comment
+// in ComputedStyle.h.
+//
+// ComputedStyleBase is a generated class that stores data members or 'fields'
+// used in ComputedStyle. These fields can represent CSS properties or internal
+// style information.
+//
+// STORAGE:
+//
+// Fields are organised in a tree structure, where a node (called a 'group')
+// stores a set of fields and a set of pointers to child nodes (called
+// 'subgroups'). We can visualise the tree structure with ComputedStyleBase as
+// the root node:
+//
+// ComputedStyleBase (fields: display, vertical-align, ...)
+//  |- StyleSurroundData (fields: padding, border, ...)
+//  |- StyleBoxData (fields: width, height, ...)
+//  |- ...
+//  |- StyleRareNonInheritedData (fields: box-shadow, text-overflow, ...)
+//      |- StyleFlexibleBoxData (fields: flex-direction, flex-wrap, ...)
+//      |- ...
+//
+// This design saves memory by allowing multiple ComputedStyleBases to share the
+// same instance of a subgroup. For example, if a page never uses flex box
+// properties, then every ComputedStyleBase can share the same instance of
+// StyleFlexibleBoxData. Without this sharing, we would need to allocate a copy
+// of all the flex box fields for every ComputedStyleBase. Similarly, when an
+// element inherits from its parent, its ComputedStyleBase can simply share all
+// of its subgroups with the parent's.
+//
+// INTERFACE:
+//
+// The functions generated for a field is determined by its 'template'. For
+// example, a field with the 'keyword' template has only one setter, whereas an
+// 'external' field has an extra setter that takes an rvalue reference. A list
+// of the available templates can be found in CSSProperties.json5.
+class ComputedStyleBase {
+ public:
+  inline bool IndependentInheritedEqual(const ComputedStyleBase& o) const {
+    return (
+        {{fieldwise_compare(computed_style, computed_style.all_fields
+            |selectattr("is_property")
+            |selectattr("is_inherited")
+            |selectattr("is_independent")
+            |list
+          )|indent(8)}}
+    );
+  }
+
+  inline bool NonIndependentInheritedEqual(const ComputedStyleBase& o) const {
+    return (
+        {{fieldwise_compare(computed_style, computed_style.all_fields
+            |selectattr("is_property")
+            |selectattr("is_inherited")
+            |rejectattr("is_independent")
+            |list
+          )|indent(8)}}
+    );
+  }
+
+  inline bool InheritedEqual(const ComputedStyleBase& o) const {
+    return IndependentInheritedEqual(o) && NonIndependentInheritedEqual(o);
+  }
+
+  inline bool NonInheritedEqual(const ComputedStyleBase& o) const {
+    return (
+        {{fieldwise_compare(computed_style, computed_style.all_fields
+            |selectattr("is_property")
+            |rejectattr("is_inherited")
+            |list
+          )|indent(8)}}
+    );
+  }
+
+  inline bool InheritedDataShared(const ComputedStyleBase& o) const {
+    return (
+        {{fieldwise_pointer_compare_inherited(computed_style)|indent(8)}}
+    );
+  }
+
+  enum IsAtShadowBoundary {
+    kAtShadowBoundary,
+    kNotAtShadowBoundary,
+  };
+
+  void InheritFrom(const ComputedStyleBase& other,
+                                      IsAtShadowBoundary isAtShadowBoundary);
+
+  void CopyNonInheritedFromCached(
+      const ComputedStyleBase& other);
+
+  // Copies the values of any independent inherited properties from the parent
+  // style that are marked as inherited by this style.
+  void PropagateIndependentInheritedProperties(
+      const ComputedStyleBase& parentStyle);
+
+  {% for name, groups_to_diff in diff_functions_map.items() %}
+  static bool {{name}}(const ComputedStyle& a, const ComputedStyle& b);
+  {% endfor %}
+
+  // Fields.
+  // TODO(sashab): Remove initialFoo() static methods and update callers to
+  // use resetFoo(), which can be more efficient.
+
+  {% for field in computed_style.all_fields|sort(attribute='name') %}
+  // {{field.property_name}}
+  {{field_templates[field.field_template].decl_public_methods(field)|indent(2)}}
+
+  {% endfor %}
+ private:
+  {% for subgroup in computed_style.subgroups %}
+  {{declare_field_group_class(subgroup)|indent(2)}}
+
+  {% endfor %}
+
+ protected:
+  // Constructor and destructor are protected so that only the parent class ComputedStyle
+  // can instantiate this class.
+  ComputedStyleBase();
+
+  {% for field in computed_style.all_fields|sort(attribute='name') %}
+  {% if field.field_template not in ('pointer',) %}
+  // {{field.property_name}}
+  {{field_templates[field.field_template].decl_protected_methods(field)|indent(2)}}
+
+  {% endif %}
+  {% endfor %}
+
+  ~ComputedStyleBase() = default;
+
+ private:
+  // Storage.
+  {% for subgroup in computed_style.subgroups %}
+  DataRef<{{subgroup.type_name}}> {{subgroup.member_name}};
+  {% endfor %}
+
+  {% for field in computed_style.fields %}
+  {{declare_storage(field)}}
+  {% endfor %}
+};
+
+}  // namespace blink
+
+#endif  // THIRD_PARTY_BLINK_RENDERER_CORE_COMPUTED_STYLE_BASE_H_

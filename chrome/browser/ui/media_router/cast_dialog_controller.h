@@ -1,0 +1,49 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef CHROME_BROWSER_UI_MEDIA_ROUTER_CAST_DIALOG_CONTROLLER_H_
+#define CHROME_BROWSER_UI_MEDIA_ROUTER_CAST_DIALOG_CONTROLLER_H_
+
+#include "chrome/browser/ui/media_router/media_cast_mode.h"
+#include "chrome/common/media_router/media_route.h"
+#include "chrome/common/media_router/media_sink.h"
+
+namespace media_router {
+
+struct CastDialogModel;
+
+// Controller component of the Cast dialog. Responsible for handling user input,
+// updating the CastDialogModel, and notifying CastDialogView of updates.
+class CastDialogController {
+ public:
+  class Observer {
+   public:
+    virtual ~Observer() = default;
+
+    virtual void OnModelUpdated(const CastDialogModel& model) = 0;
+
+    // Observer should drop its reference to the controller when this is called.
+    virtual void OnControllerInvalidated() = 0;
+  };
+
+  virtual ~CastDialogController() = default;
+
+  // |observer| is notified upon registration, and whenever there is a change to
+  // the dialog model.
+  virtual void AddObserver(Observer* observer) = 0;
+  virtual void RemoveObserver(Observer* observer) = 0;
+
+  // Starts Casting to the given sink. No-op if |sink_id| is invalid or the sink
+  // doesn't support |cast_mode|.
+  virtual void StartCasting(const MediaSink::Id& sink_id,
+                            MediaCastMode cast_mode) = 0;
+
+  // Stops casting by terminating the route given by |route_id|. No-op if the ID
+  // is invalid.
+  virtual void StopCasting(const MediaRoute::Id& route_id) = 0;
+};
+
+}  // namespace media_router
+
+#endif  // CHROME_BROWSER_UI_MEDIA_ROUTER_CAST_DIALOG_CONTROLLER_H_

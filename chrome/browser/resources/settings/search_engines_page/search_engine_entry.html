@@ -1,0 +1,80 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_action_menu/cr_action_menu.html">
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/html/assert.html">
+<link rel="import" href="chrome://resources/html/cr/ui/focus_without_ink.html">
+<link rel="import" href="chrome://resources/html/icon.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="../controls/extension_controlled_indicator.html">
+<link rel="import" href="../focus_row_behavior.html">
+<link rel="import" href="search_engine_entry_css.html">
+<link rel="import" href="search_engines_browser_proxy.html">
+<link rel="import" href="../settings_shared_css.html">
+
+<dom-module id="settings-search-engine-entry">
+  <template>
+    <style include="settings-shared search-engine-entry">
+      :host([is-default]) .list-item {
+        font-weight: 500;
+      }
+
+      #name-column {
+        align-items: center;
+        display: flex;
+      }
+
+      #name-column,
+      #keyword-column {
+        flex: 3;
+        word-break: break-word;
+      }
+
+      #keyword-column > div,
+      .favicon-image + div {
+        -webkit-margin-end: 8px;
+      }
+
+      #url-column {
+        flex: 4;
+      }
+    </style>
+
+    <div class="list-item" focus-row-container>
+      <div id="name-column">
+        <div class="favicon-image"
+            style="background-image: [[getIconSet_(engine.iconURL)]]"></div>
+        <div>[[engine.displayName]]</div>
+      </div>
+      <div id="keyword-column"><div>[[engine.keyword]]</div></div>
+      <div id="url-column" class="text-elide">[[engine.url]]</div>
+      <paper-icon-button-light class="icon-more-vert">
+        <button on-click="onDotsTap_" title="$i18n{moreActions}"
+            focus-row-control focus-type="cr-menu-button">
+        </button>
+      </paper-icon-button-light>
+      <cr-action-menu>
+        <button slot="item" class="dropdown-item" on-click="onMakeDefaultTap_"
+            hidden$="[[!engine.canBeDefault]]" id="makeDefault">
+          $i18n{searchEnginesMakeDefault}
+        </button>
+        <button slot="item" class="dropdown-item" on-click="onEditTap_"
+            hidden$="[[!engine.canBeEdited]]" id="edit">
+          $i18n{edit}
+        </button>
+        <button slot="item" class="dropdown-item" on-click="onDeleteTap_"
+            hidden$="[[!engine.canBeRemoved]]" id="delete">
+          $i18n{searchEnginesRemoveFromList}
+        </button>
+      </cr-action-menu>
+    </div>
+    <template is="dom-if" if="[[engine.extension]]">
+      <extension-controlled-indicator
+          extension-id="[[engine.extension.id]]"
+          extension-name="[[engine.extension.name]]"
+          extension-can-be-disabled="[[engine.extension.canBeDisabled]]">
+      </extension-controlled-indicator>
+    </template>
+  </template>
+  <script src="search_engine_entry.js"></script>
+</dom-module>

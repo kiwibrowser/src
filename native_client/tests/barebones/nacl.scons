@@ -1,0 +1,83 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# Use of "-nostdlib" means these tests produce statically-linked
+# executables.  This does not work with the test runner for
+# nacl-glibc, which always runs the executables via ld.so.  However,
+# we want to keep building the tests.
+# TODO(mseaborn): To fix this, either switch these tests to
+# dynamically link against libc, or make use of ld.so optional.
+is_glibc = env.Bit('nacl_glibc')
+
+env.Replace(LIBS=[],
+            EXTRA_LIBS=[],
+            LINKFLAGS=['-nostdlib'])
+
+# This can generate references to runtime code we won't link with.
+env.FilterOut(CCFLAGS=['-fasynchronous-unwind-tables'])
+
+# This setting will affect the barebones_regs.c test
+if env.Bit('build_arm') or env.Bit('build_mips32'):
+  env.Append(CPPDEFINES='SMALL_REGS_TEST')
+
+# NOTE: the x86 linker wants _start() to be the very first function
+FAKE_STARTUP = env.ComponentObject('fake_startup', 'fake_startup.c')
+
+barebones_tests = ['addr_modes',
+                   'exit',
+                   'fib',
+                   'hello_world',
+                   'negindex',
+                   'only_bss',
+                   'regs',
+                   'reloc',
+                   'switch',
+                   'vtable',
+                   'vaarg',
+                   ]
+
+for basename in barebones_tests:
+  # TODO(kcc): the barebones tests confuse the current nacl-ified valgrind.
+  if env.IsRunningUnderValgrind(): continue
+  is_broken = is_glibc
+  # This is generating a (probably invalid) relocation on PNaCl GlibC X86-64
+  # which cannot be handled by the TLS rewrite in binutils.
+  if basename == 'reloc' and is_glibc and env.Bit('build_x86_64'):
+    continue
+  # For MIPS32, barebones_reloc requires a call to 64-bit atomics implemented
+  # in compiler-rt library, so this test has to be skipped for this arch.
+  if (basename == 'reloc' and env.Bit('build_mips32') and
+      not env.Bit('pnacl_generate_pexe')):
+    continue
+
+  src = 'barebones_' + basename + '.c'
+  nexe_name = 'barebones_' + basename
+  out = 'barebones_' + basename + '.out'
+  test = 'run_barebones_' + basename + '_test'
+  test = 'run_barebones_' + basename + '_test'
+  nexe = env.ComponentProgram(nexe_name, [FAKE_STARTUP, src])
+
+  # NOTE: we avoid using zero as the "good" exit status and just
+  #       arbitrarily picked 55. All tests are coded to follow this model.
+  node = env.CommandSelLdrTestNacl(out, nexe, exit_status='55')
+
+  env.AddNodeToTestSuite(node,
+                         ['small_tests', 'sel_ldr_tests', 'barebones_tests'],
+                         test,
+                         is_broken=is_broken)
+
+# The top_of_sandbox test does not apply to x86-32 because the bug
+# it tests for cannot happen in a segment-based sandbox, only with
+# a sandbox where some kind of address-masking is done.
+if not env.Bit('bitcode') and not env.Bit('build_x86_32'):
+  nexe = env.ComponentProgram('top_of_sandbox', ['top_of_sandbox.c'])
+  node = env.CommandSelLdrTestNacl('top_of_sandbox.out', nexe)
+  env.AddNodeToTestSuite(
+      node, ['small_tests', 'sel_ldr_tests',
+             'barebones_tests', 'nonpexe_tests'],
+      'run_top_of_sandbox_test',
+      is_broken=is_glibc)

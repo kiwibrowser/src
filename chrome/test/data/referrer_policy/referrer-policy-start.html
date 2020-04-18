@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script>
+function run() {
+  var kPolicy = 1;
+  var kRedirect = 2;
+  var kLink = 3;
+  var kTarget = 4;
+  var re = new RegExp("policy=(.*)&redirect=(.*)&link=(.*)&target=(.*)");
+  var matches = re.exec(document.location.search);
+
+  if (matches == null) {
+    document.body.innerText = "Could not parse parameters!";
+    return;
+  }
+
+  if (matches[kPolicy] != "no-meta") {
+    var meta = document.createElement("meta");
+    meta.name = "referrer";
+    meta.content = matches[kPolicy];
+    document.head.appendChild(meta);
+  }
+
+  var destination = matches[kRedirect];
+  var redirectMatches;
+
+  if (matches[kLink] == "true") {
+    var link = document.createElement("a");
+    link.innerText = "link";
+    link.target = matches[kTarget];
+    link.href = destination;
+    document.body.appendChild(link);
+  } else {
+    document.location = destination;
+  }
+}
+</script>
+</head>
+<body onload="run()">
+</body>
+</html>

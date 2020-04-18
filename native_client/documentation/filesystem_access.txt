@@ -1,0 +1,131 @@
+# Safe filesystem access
+
+## Background
+
+Native Client is a useful library for restricted code execution that is useful
+beyond the browser. There’s all sorts of cases where one might want to run
+untrusted code in a system disconnected from Chromium or PPAPI.
+
+In these cases, it is additionally useful to allow restricted filesystem
+access, but to still run untrusted code.
+
+## Constraints
+
+These constraints are NOT GUARANTEED TO BE ENFORCED BY SEL_LDR, and must
+be guaranteed by the caller:
+ * The mounted directory is assumed to not include any symlinks.
+
+These constraints will be enforced by sel_ldr:
+ * Access to filesystem within sel_ldr will behave as if as if the mounted
+   directory is root.
+
+## Requirements
+
+ * Very low overhead File I/O.
+ * Give users the ability to have selective read-only or read/write access.
+ * Give users control over the entire filesystem layout presented to the
+   untrusted application.
+
+## Feature user experience
+
+This feature adds one additional commandline argument `-m` to `sel_ldr`. `-m`
+takes a path to the directory to be used as the root by the untrusted
+application.
+
+All of the given requirements can be satisfied by this `chroot`-style
+interface:
+
+ * The only overhead for file I/O is in adding (and sanitizing) a path prefix
+   to absolute paths passed through to the host.
+ * Read-only or read/write access can be controlled using normal filesystem
+   permissions for the user running the `sel_ldr` process.
+ * Using host-side filesystem primitives such as Linux bind mounts, users can
+   map disparate paths from the host into the untrusted process's root.
+
+## Implementation
+
+For the most part, this feature is simple and relatively straightforward to
+add. When `-m` is given (even if `-a` is not), file operations will be enabled
+and the provided chroot path will be added as a path prefix to all absolute
+paths passed through to the host. Paths will be sanitized to make sure no
+escapes are made with `..` path elements.
+
+Given that strategy, the following syscall changes were straightforward:
+
+ * `open`
+ * `stat`
+ * `mkdir`
+ * `rmdir`
+ * `unlink`
+ * `truncate`
+ * `link`
+ * `rename`
+ * `chmod`
+ * `access`
+ * `utimes`
+
+### Path sanitization
+
+Path sanitization does the following:
+ * It checks that the cwd is within the mounted directory (set at
+   initialization).
+ * If the user's path is relative, it prefixes the cwd (within the mounted
+   directory) to the relative path, making the path absolute.
+ * It canonicalizes the absolute path ("..", ".", and "//" parts are handled and
+   removed).
+ * It prefixes the canonicalized path with the path to the mounted directory.
+
+As a consequence of relying on the cwd, if the cwd changes during a filename
+call on a relative path, the filename access can fail because the getcwd()-based
+path could become invalid.
+
+### Symlinks
+
+Ideally, symlinks should behave as if we had just chrooted into the path given
+to `-m` (which means they would resolve relative to the untrusted root).
+
+However, it's not straightforward to have `sel_ldr` call `chroot` itself to
+make the kernel do appropriate symlink resolution in a cross-platform way. So
+our other option to support symlinks is to do an Lstat on every path load and
+try to resolve symlinks ourselves. This would be a pretty big performance hit
+and a significant amount of complication needing auditing. We wouldn't be able
+to just pass through sanitized paths to the host's open call without making
+sure the untrusted app hadn't created a symlink pointing elsewhere to jump out
+of jail.
+
+So instead, for v1 we're just not supporting symlinks.
+
+The following syscalls relate to symlinks.
+
+ * `lstat` - identical to stat, since there should be no symlinks inside mounted
+   directory.
+ * `symlink` - always fails.
+ * `readlink` - always fails.
+
+### Current working directory
+
+Being able to read the current working directory (aside from `readlink`,
+previously discussed) is the only syscall that has a path going from the host
+back to the untrusted application. All other syscalls are one way - paths go
+from the untrusted application out to the host.
+
+This affects the following two syscalls:
+
+ * `chdir` - always adds the path prefix.
+ * `getcwd` - checks if the path is sanitized and starts with the path
+    prefix. If it doesn't start with the path prefix this syscall fails.
+
+### File descriptor syscalls
+
+These syscalls require no changes and are safe to just enable like they would
+be with `-a` when `-m` is passed:
+
+ * `getdents` - `..` might reference an inode outside of the untrusted
+   root, but that's okay because the untrusted application can't do anything
+   with it.
+ * `fstat` - no different than `stat`, which is already allowed.
+
+For both of these calls, we might need to make sure there's no file descriptors
+in the untrusted application that reference files outside of the untrusted
+root, but even if we don't there's very little the untrusted application could
+do with the data these calls return.

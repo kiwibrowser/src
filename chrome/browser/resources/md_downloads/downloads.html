@@ -1,0 +1,51 @@
+<!doctype html>
+<html dir="$i18n{textdirection}" lang="$i18n{language}" class="loading">
+<head>
+  <meta charset="utf-8">
+  <title>$i18n{title}</title>
+  <link rel="stylesheet" href="chrome://resources/css/text_defaults_md.css">
+  <style>
+    html {
+      --downloads-card-margin: 24px;
+      --downloads-card-width: 680px;
+      background: rgb(248, 249, 250);
+
+      /* Remove 300ms delay for 'click' event, when using touch interface. */
+      touch-action: manipulation;
+    }
+
+    .loading {
+      /* --google-blue-700 disguised. Replaced when downloads-toolbar loads. */
+      border-top: 56px solid rgb(51, 103, 214);
+    }
+
+    html:not(.loading),
+    body {
+      height: 100%;
+    }
+
+    body {
+      display: flex;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <downloads-manager></downloads-manager>
+<if expr="is_macosx">
+  <command id="clear-all-command" shortcut="Alt|c Alt|ç">
+  <command id="undo-command" shortcut="Meta|z">
+  <command id="find-command" shortcut="Meta|f">
+</if>
+<if expr="not is_macosx">
+  <command id="clear-all-command" shortcut="Alt|c">
+  <command id="undo-command" shortcut="Ctrl|z">
+  <command id="find-command" shortcut="Ctrl|f">
+</if>
+  <link rel="import" href="chrome://resources/html/cr.html">
+  <link rel="import" href="chrome://resources/html/polymer.html">
+  <link rel="import" href="chrome://downloads/i18n_setup.html">
+  <link rel="import" href="chrome://downloads/manager.html">
+  <script src="chrome://downloads/downloads.js"></script>
+</body>
+</html>

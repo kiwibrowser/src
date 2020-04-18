@@ -1,0 +1,30 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="checkbox_radio_css.html">
+<link rel="import" href="../data/document_info.html">
+<link rel="import" href="number_settings_section.html">
+<link rel="import" href="print_preview_shared_css.html">
+<link rel="import" href="settings_behavior.html">
+
+<dom-module id="print-preview-scaling-settings">
+  <template>
+    <style include="print-preview-shared checkbox-radio">
+    </style>
+    <print-preview-number-settings-section max-value=200 min-value=10
+        default-value="100" input-label="$i18n{scalingLabel}"
+        disabled="[[disabled]]" current-value="{{currentValue_}}"
+        input-valid="{{inputValid_}}" hint-message="$i18n{scalingInstruction}"
+        class="multirow-controls">
+      <div slot="opt-outside-content" class="checkbox"
+          hidden$="[[!settings.fitToPage.available]]">
+        <label aria-live="polite">
+          <input type="checkbox" id="fit-to-page-checkbox"
+              disabled$="[[getDisabled_(disabled, inputValid_)]]"
+              on-change="onFitToPageChange_">
+          <span>$i18n{optionFitToPage}</span>
+        </label>
+      </div>
+    </print-preview-number-settings-section>
+  </template>
+  <script src="scaling_settings.js"></script>
+</dom-module>

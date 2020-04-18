@@ -1,0 +1,57 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/policy/cr_policy_pref_indicator.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="../controls/extension_controlled_indicator.html">
+<link rel="import" href="../controls/settings_toggle_button.html">
+<link rel="import" href="../lifetime_browser_proxy.html">
+<link rel="import" href="../prefs/prefs.html">
+<link rel="import" href="../settings_shared_css.html">
+<link rel="import" href="system_page_browser_proxy.html">
+
+<dom-module id="settings-system-page">
+  <template>
+    <style include="settings-shared"></style>
+<if expr="not is_macosx">
+    <settings-toggle-button class="first"
+        pref="{{prefs.background_mode.enabled}}"
+        label="$i18n{backgroundAppsLabel}">
+    </settings-toggle-button>
+</if>
+    <settings-toggle-button id="hardwareAcceleration"
+        pref="{{prefs.hardware_acceleration_mode.enabled}}"
+        label="$i18n{hardwareAccelerationLabel}">
+      <template is="dom-if" if="[[shouldShowRestart_(
+          prefs.hardware_acceleration_mode.enabled.value)]]">
+        <paper-button on-click="onRestartTap_" slot="more-actions">
+          $i18n{restart}
+        </paper-button>
+      </template>
+    </settings-toggle-button>
+    <div id="proxy" class="settings-box" on-click="onProxyTap_"
+        actionable$="[[!isProxyEnforcedByPolicy_]]">
+      <div class="start">$i18n{proxySettingsLabel}</div>
+      <paper-icon-button-light class="icon-external"
+          hidden$="[[isProxyEnforcedByPolicy_]]">
+        <button aria-label="$i18n{proxySettingsLabel}"></button>
+      </paper-icon-button-light>
+      <template is="dom-if" if="[[isProxyEnforcedByPolicy_]]">
+        <cr-policy-pref-indicator pref="[[prefs.proxy]]"
+            icon-aria-label="$i18n{proxySettingsLabel}">
+        </cr-policy-pref-indicator>
+      </template>
+    </div>
+    <template is="dom-if" if="[[prefs.proxy.extensionId]]">
+      <div class="settings-box continuation">
+        <extension-controlled-indicator class="start"
+            extension-id="[[prefs.proxy.extensionId]]"
+            extension-name="[[prefs.proxy.controlledByName]]"
+            extension-can-be-disabled="[[prefs.proxy.extensionCanBeDisabled]]"
+            on-extension-disable="onExtensionDisable_">
+        </extension-controlled-indicator>
+      </div>
+    </template>
+  </template>
+  <script src="system_page.js"></script>
+</dom-module>

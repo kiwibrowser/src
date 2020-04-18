@@ -1,0 +1,48 @@
+<!DOCTYPE HTML>
+<body style="width:30000px;height:30000px" onload="runTest()">
+</body>
+
+<script src="../../resources/js-test.js"></script>
+<script>
+description("Verifies that document scrolling supports fractional offset.");
+
+var floatPrecision = 0.00001;
+var useIntegerScrollOffset = true;
+function checkScrollOffset(offset_x, offset_y)
+{
+    if (useIntegerScrollOffset) {
+        offset_x = Math.floor(offset_x);
+        offset_y = Math.floor(offset_y);
+    }
+    shouldBeCloseTo('document.scrollingElement.scrollTop', offset_y, floatPrecision);
+    shouldBeCloseTo('document.scrollingElement.scrollLeft', offset_x, floatPrecision);
+}
+
+function scroll()
+{
+    window.scrollTo(0, 0);
+    eventSender.gestureScrollBegin(100.1, 300.2);
+    checkScrollOffset(0, 0);
+    eventSender.gestureScrollUpdate(-20.5, -10.2);
+    checkScrollOffset(20.5, 10.2);
+    eventSender.gestureScrollUpdate(10.9, -20.9);
+    checkScrollOffset(9.6, 31.1);
+    eventSender.gestureScrollUpdate(100.4, 220.9);
+    checkScrollOffset(0.0, 0.0);
+    eventSender.gestureScrollEnd(0, 0);
+}
+
+function runTest()
+{
+    if (window.eventSender) {
+      if (internals.runtimeFlags.fractionalScrollOffsetsEnabled) {
+          debug("fractional scroll offset mode");
+          internals.settings.setPreferCompositingToLCDTextEnabled(true);
+          useIntegerScrollOffset = true;
+      }
+      scroll();
+    }
+}
+
+</script>
+</html>

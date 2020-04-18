@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<script>
+    if (window.internals) {
+        internals.settings.setViewportEnabled(true);
+        internals.settings.setViewportMetaEnabled(true);
+    }
+    if (window.testRunner) {
+        testRunner.setCanOpenWindows(true);
+        testRunner.setCloseRemainingWindowsWhenComplete(true);
+    }
+</script>
+<meta name="viewport" content="width=160">
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script>
+    var t = async_test('Makes sure that Link headers support the media attribute and respond to <meta content=viewport>');
+    addEventListener("message", t.step_func(function(event) {
+        if (event.data == "largeloaded")
+            assert_unreached("FAIL: large resource was loaded");
+        if (event.data == "smallnotloaded")
+            assert_unreached("FAIL: small resource was not loaded");
+        t.done();
+        }, false));
+    var w = window.open("resources/media-link-headers.php");
+    if (w.internals) {
+        w.internals.settings.setViewportEnabled(true);
+        w.internals.settings.setViewportMetaEnabled(true);
+    }
+</script>

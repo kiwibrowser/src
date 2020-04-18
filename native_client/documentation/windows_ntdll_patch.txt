@@ -1,0 +1,225 @@
+
+Native Client's NTDLL patch on x86-64 Windows
+=============================================
+
+Native Client currently relies on a small, process-local, in-memory
+patch to NTDLL on 64-bit versions of Windows in order to prevent a
+problem that would create a hole in Native Client's x86-64 sandbox.
+
+
+The problem
+-----------
+
+The problem arises because Windows does not have an equivalent of
+Unix's sigaltstack() system call.
+
+On Unix, a POSIX signal handler may be registered using signal() or
+sigaction().  When a process faults (e.g. as a result of a memory
+access error or an illegal instruction), the kernel passes control to
+the signal handler that is registered for the process.  Normally, the
+signal handler is run on the stack of the thread that faulted.
+However, if an "alternate signal stack" has been registered using
+sigaltstack(), the signal handler will run on that stack instead.
+
+On Windows, "vectored exception handlers" are similar to Unix signal
+handlers, except that a vectored exception handler always gets run on
+the thread's current stack.  This might have been OK, except that
+Windows has a different division of responsibility between kernel and
+userland compared with Unix.  Windows does more in userland, and this
+creates problems for NaCl.
+
+On Unix, sigaction() is a syscall that user code calls that records a
+user-code signal handler function in a kernel data structure.  If no
+signal handler is registered by user code, then when a fault occurs in
+a process, the kernel never passes control back to userland code in
+that process.
+
+On Windows, AddVectoredExceptionHandler() is provided in userland by a
+DLL rather than being provided by the kernel.
+AddVectoredExceptionHandler() adds the handler function to a list in
+userland memory.  When a fault occurs in the process, the Windows
+kernel passes control to a function called KiUserExceptionDispatcher
+in NTDLL, in userland.  KiUserExceptionDispatcher checks whether a
+handler function was registered via AddVectoredExceptionHandler() (or
+via various other mechanisms), and if so, it calls the handler;
+otherwise, it terminates the process.  The kernel therefore calls
+KiUserExceptionDispatcher regardless of whether any vectored exception
+handlers were registered.
+
+This is a problem for NaCl because when we are running sandboxed code,
+%rsp points into untrusted address space.  If sandboxed code faults on
+a bad memory access or a HLT instruction (which it is allowed to do),
+Windows calls KiUserExceptionDispatcher, which then runs on the
+untrusted stack.  Since NaCl allows multi-threading, other sandboxed
+threads can modify the untrusted stack that KiUserExceptionDispatcher
+is running on.
+
+Furthermore, KiUserExceptionDispatcher is a complex function which
+calls other NTDLL functions internally.  These functions return by
+using the RET instruction to pop a return address off the stack, which
+means that control flow is determined by values stored on the
+untrusted stack.  An attacker running as sandboxed code in another
+thread can modify the memory location containing a return address and
+so cause the NTDLL routine to jump to an address of the attacker's
+choice.  This allows the attacker to cause a jump to a
+non-bundle-aligned address, which allows the attacker to escape from
+the NaCl sandbox.
+
+
+The fix: patching NTDLL
+-----------------------
+
+Our fix is to patch the KiUserExceptionDispatcher entry point inside
+NTDLL so that this routine will safely terminate the process.
+
+Our patching is process-local: it does not affect the NTDLL.DLL that
+other processes use.  We only modify the in-memory copy of NTDLL.DLL
+that is loaded into the NaCl process.
+
+Patching is necessary because the address of KiUserExceptionDispatcher
+is fixed in the Windows kernel at boot time.  We don't have any way to
+tell the kernel to use a routine at a different address.  The kernel
+randomizes the address of NTDLL.DLL at boot time, but thereafter
+NTDLL.DLL is loaded at the same address in all processes and the
+address of KiUserExceptionDispatcher is fixed.
+
+What do we do to terminate the process safely?  While we could
+overwrite the start of KiUserExceptionDispatcher with a HLT
+instruction, this instruction will simply cause the kernel to re-run
+KiUserExceptionDispatcher again, because the kernel does not track
+whether a thread is currently handling an exception.  This would cause
+the kernel to repeatedly push a stack frame containing saved register
+state and re-call KiUserExceptionDispatcher until the thread runs out
+of stack.  Although this will eventually terminate the process, it
+would be slower than we would like.
+
+So instead, the original version of our patch overwrites the start of
+KiUserExceptionDispatcher with:
+
+  mov $0, %esp
+  hlt
+
+We set the stack pointer to zero first so that the kernel can't write
+another stack frame.  If a fault occurs when the kernel is unable to
+write a stack frame to memory, we observe that the kernel does not
+attempt to call KiUserExceptionDispatcher and instead it just
+terminates the process.
+
+
+Breakpad crash reporting
+------------------------
+
+We extended the patch to support crash reporting for crashes in
+trusted code.  (In Chrome, this uses the Breakpad crash reporting
+system.)
+
+The extended version of the patched KiUserExceptionDispatcher looks at
+a thread-local variable to check whether the fault occurred inside
+trusted code or sandboxed code.  If trusted code faulted, we know we
+are safely running on a trusted stack, and we pass control back to the
+original unpatched version of KiUserExceptionDispatcher (which
+eventually causes the Breakpad crash handler to run and report the
+crash).  Otherwise, we assume %rsp points to an unsafe untrusted
+stack, and we terminate the process using the same "mov $0, %esp; hlt"
+sequence as before.
+
+
+x86-32 Windows
+--------------
+
+The problem does not arise on 32-bit versions of Windows because of
+the way NaCl's x86-32 sandbox uses segment registers.
+
+On 32-bit Windows, when sandboxed code faults, the kernel notices that
+the %ss register contains a non-default value, and it terminates the
+process without attempting to write a stack frame or call
+KiUserExceptionDispatcher.
+
+
+Limitations
+-----------
+
+Our NTDLL patch has a couple of limitations:
+
+ * We are not using a stable interface.  KiUserExceptionDispatcher is
+   a Windows-internal interface between the Windows kernel and NTDLL,
+   and it might change in future versions of Windows.  We are relying
+   on undocumented behaviour.
+
+ * We don't control what data the Windows kernel writes to the
+   untrusted stack.  This data is momentarily visible to other
+   sandboxed threads before the process is terminated, and it will be
+   easily visible in embeddings of NaCl that support shared memory and
+   multiple processes.  We don't think the kernel writes any sensitive
+   data in this stack frame, and seems unlikely that it would do so in
+   the future, but it's still possible.
+
+
+Possible alternatives
+---------------------
+
+There are a couple of alternatives to patching NTDLL:
+
+ * Using the Windows debugging API: It is possible to catch a fault in
+   sandboxed code before KiUserExceptionDispatcher is run using the
+   Windows debugging API.  We use this API for implementing untrusted
+   hardware exception handling.
+
+   However, using this API comes at a cost: if a process has a
+   debugger attached, Windows will temporarily suspend the whole
+   process each time it creates or exits a thread.  This would slow
+   down thread creation and teardown.
+
+   In practice, we wouldn't want to completely replace the NTDLL patch
+   with use of the Windows debugging API.  For defence-in-depth, we
+   would want to use both.
+
+ * Changing the sandbox model: We could change the sandbox model so
+   that %rsp does not point into untrusted address space.  One option
+   is to use a different register as the untrusted stack pointer, and
+   disallow use of CALL, PUSH and POP.  Another option would be to
+   have %rsp point to a thread-private stack (outside of the sandbox's
+   usual address space).  Both options would be quite invasive
+   changes to the sandbox model.
+
+
+Conclusion
+----------
+
+Windows runs an internal function on the userland stack whenever a
+hardware exception occurs.  This behaviour does not appear to be
+documented anywhere, which suggests that Windows treats this use of
+the userland stack as an implementation detail rather than part of the
+interface.  For most applications, this use of the userland stack does
+not matter.  Native Client is unusual in that this stack usage creates
+a hole in NaCl's sandbox, which we have to work around.
+
+In addition to being undocumented, Windows' use of the userland stack
+can be surprising to people from a Unix background, given that Unix
+signal handlers behave differently.  However, when one considers the
+complexity of Windows' exception handling interfaces -- which include
+Structured Exception Handlers, Vectored Exception Handlers and
+UnhandledExceptionFilters -- it makes more sense that this complex
+logic would live in userland.
+
+When it comes to the kernel/userland boundary, what can be an
+implementation detail for one person can be an important interface
+detail for another.  The lesson is that these details are often
+critical for the security of a sandbox.
+
+
+References
+----------
+
+The original sandbox hole:
+https://code.google.com/p/nativeclient/issues/detail?id=1633
+(filed in April 2011 and fixed in June 2011)
+
+Breakpad crash reporting support for 64-bit Windows:
+https://code.google.com/p/nativeclient/issues/detail?id=2095
+
+Untrusted hardware exception handling for 64-bit Windows:
+https://code.google.com/p/nativeclient/issues/detail?id=2536
+
+Documentation for AddVectoredExceptionHandler():
+http://msdn.microsoft.com/en-us/library/windows/desktop/ms679274(v=vs.85).aspx

@@ -1,0 +1,69 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+Import('env')
+
+env.Append(CPPDEFINES=[['NONSFI_MODE',
+                        str(int(env.Bit('pnacl_unsandboxed') or
+                                env.Bit('nonsfi_nacl')))]])
+
+env.Append(CPPDEFINES=[['USE_NEWLIB_NONSFI_LOADER',
+                        str(int(env.Bit('use_newlib_nonsfi_loader')))]])
+
+extra_flags = []
+if env.IsRunningUnderValgrind():
+  extra_flags.extend(['-E', 'RUNNING_ON_VALGRIND=1'])
+mmap_test_nexe = env.ComponentProgram('mmap_test',
+                                      'mmap_test.cc',
+                                      EXTRA_LIBS=['${NONIRT_LIBS}',
+                                                  '${EXCEPTION_LIBS}'])
+node = env.CommandSelLdrTestNacl(
+    'mmap_test.out',
+    mmap_test_nexe,
+    args=[env.File('test_file'), env.MakeTempDir(prefix='tmp_mmap_test')],
+    # '-a' enables file access for opening the test file.
+    # '-e' enables exception handling for testing unreadable pages.
+    sel_ldr_flags=['-a', '-e'] + extra_flags)
+
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'], 'run_mmap_test')
+
+mmap_atomicity_nexe = env.ComponentProgram(
+    'mmap_atomicity', 'mmap_atomicity.c',
+    EXTRA_LIBS=['${PTHREAD_LIBS}', '${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl(
+    'mmap_atomicity_test.out', mmap_atomicity_nexe)
+# * This test is extremely slow on the memcheck bot, which eventually
+#   times out, so it is disabled there.  This may be a consequence of
+#   running under a VM, since running the test on memcheck locally is
+#   fast enough.
+is_broken = env.Bit('running_on_valgrind')
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'mmap_race_tests'],
+                       'run_mmap_atomicity_test',
+                       is_broken=is_broken)
+
+mmap_stdin_nexe = env.ComponentProgram('mmap_stdin', 'mmap_stdin.c',
+                                       EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl('mmap_stdin.out', mmap_stdin_nexe)
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'], 'run_mmap_stdin_test')
+
+mmap_prot_nexe = env.ComponentProgram('mmap_prot_test',
+                                      'mmap_prot_test.c',
+                                      EXTRA_LIBS=['platform',
+                                                  '${NONIRT_LIBS}',
+                                                  '${PTHREAD_LIBS}',
+                                                  '${EXCEPTION_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+    'mmap_prot_test.out',
+    mmap_prot_nexe,
+    args=['-t', env.MakeTempDir(prefix='tmp_mmap')],
+    # '-a' enables file access for opening the test file.
+    # '-e' enables exception handling for testing unreadable pages.
+    sel_ldr_flags=['-a', '-e'] + extra_flags)
+
+env.AddNodeToTestSuite(node, ['small_tests', 'sel_ldr_tests'],
+                       'run_mmap_prot_test')

@@ -1,0 +1,112 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_checkbox/cr_checkbox.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_dialog/cr_dialog.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_radio_button/cr_radio_button.html">
+<link rel="import" href="chrome://resources/cr_elements/shared_style_css.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/neon-animatable-behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-input/paper-input.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-radio-group/paper-radio-group.html">
+<link rel="import" href="icons.html">
+<link rel="import" href="shared_styles.html">
+
+<dom-module id="audio-settings">
+  <template>
+    <!-- TODO(michaelpg): Wrap the line below to fit within the 80-char limit.
+         See https://github.com/Polymer/polymer/pull/3668. -->
+    <style include="device-emulator-shared-styles cr-shared-style iron-flex iron-flex-alignment iron-positioning">
+    </style>
+    <cr-dialog id="editDialog">
+      <div slot="title">[[currentEditableObject.deviceName]]</div>
+      <div slot="body">
+        <form>
+          <div class="form-field-section">
+            <paper-input value="{{currentEditableObject.deviceName}}"
+                label="Device Name"></paper-input>
+            <paper-input value="{{currentEditableObject.name}}"
+                label="Tray Name"></paper-input>
+            <paper-input value="{{currentEditableObject.id}}"
+                label="ID" disabled></paper-input>
+          </div>
+          <div class="form-field-section">
+            <span class="toggle-button-label">Is Input</span>
+            <cr-checkbox
+                checked="{{currentEditableObject.isInput}}"></cr-checkbox>
+          </div>
+          <div class="form-field-section">
+            <span class="toggle-button-label">Active</span>
+            <cr-checkbox
+                checked="{{currentEditableObject.active}}"></cr-checkbox>
+          </div>
+          <div class="form-field-section">
+            <div class="form-label">Audio Type</div>
+            <paper-radio-group class="device-class-group"
+                selected="{{currentEditableObject.type}}"
+                selectable="cr-radio-button">
+              <template is="dom-repeat"
+                  items="[[nodeTypeOptions]]" as="option">
+                <cr-radio-button name="[[option.type]]">
+                  [[option.name]]
+                </cr-radio-button>
+              </template>
+            </paper-radio-group>
+          </div>
+        </form>
+      </div>
+      <div slot="button-container">
+        <paper-button class="action-button" on-click="insertEditedAudioNode">
+          Done
+        </paper-button>
+      </div>
+    </cr-dialog>
+
+    <div class="layout vertical">
+      <div class="element-label">
+        <paper-icon-button icon="device-emulator:volume-up"></paper-icon-button>
+        Audio
+      </div>
+      <table class="devices-table">
+        <tbody>
+          <tr class="table-section-header">
+            <td colspan="2">Devices</td>
+            <td class="centered-cell-label">Is Input</td>
+            <td class="centered-cell-label">Active</td>
+          </tr>
+          <template is="dom-repeat" items="[[nodes]]">
+            <tr>
+              <td class="alias-cell">[[item.deviceName]]</td>
+              <td class="icon-cell">
+                <paper-icon-button icon="device-emulator:content-copy"
+                    data-predefined="false" on-click="copyDevice">
+                </paper-icon-button>
+                <paper-icon-button icon="device-emulator:settings"
+                    on-click="showEditDialog">
+                </paper-icon-button>
+                <paper-icon-button icon="device-emulator:delete"
+                    on-click="removeAudioNode">
+                </paper-icon-button>
+              </td>
+              <td class="control-cell">
+                <cr-checkbox checked="{{item.isInput}}"
+                    on-change="insertAudioNode"></cr-checkbox>
+              </td>
+              <td class="control-cell">
+                <cr-checkbox checked="{{item.active}}"
+                    on-change="insertAudioNode"></cr-checkbox>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+      <div class="add-device-container">
+        <paper-button on-click="appendNewNode">
+          Add Node
+        </paper-button>
+      </div>
+    </div>
+  </template>
+  <script src="audio_settings.js"></script>
+</dom-module>

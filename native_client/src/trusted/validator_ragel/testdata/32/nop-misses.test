@@ -1,0 +1,116 @@
+@hex:
+  # The following are examples of input sequences that almost look like
+  # predefined nop instruction sequences, but differ by 1, just to show
+  # that we do reject them.
+  
+  # This is the correct nop case.
+  66 0f 1f 44 00 00
+@dis:
+     0:	66 0f 1f 44 00 00                            	nopw   0x0(%eax,%eax,1)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # This is an example where we have incremented the nop by 1.
+  # Spec accepts nop with any operand.
+  66 0f 1f 44 00 01
+@dis:
+     0:	66 0f 1f 44 00 01                            	nopw   0x1(%eax,%eax,1)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # This is an example where we have decremented the nop by 1.
+  66 0f 1f 43 ff ff
+@dis:
+     0:	66 0f 1f 43 ff                               	nopw   -0x1(%ebx)
+     5:	ff                                           	.byte 0xff
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  5: ('objdump failed to decode', Instruction(0x5: ff  .byte 0xff))
+----------------------------------------------------------------------
+@hex:
+  # This is an example of a different, correct, nop case.
+  66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00
+@dis:
+     0:	66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00    	data32 data32 data32 data32 nopw %cs:0x0(%eax,%eax,1)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # This is an example where we have incremented the nop by 1.
+  66 66 66 66 66 2e 0f 1f 84 00 00 00 00 01
+@dis:
+     0:	66 66 66 66 66 2e 0f 1f 84 00 00 00 00 01    	data32 data32 data32 data32 nopw %cs:0x1000000(%eax,%eax,1)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('duplicate legacy prefix', Instruction(0x0: 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 01  data32 data32 data32 data32 nopw %cs:0x1000000(%eax,%eax,1)))
+----------------------------------------------------------------------
+@hex:
+  # This is an example where we have decremented the nop by 1.
+  66 66 66 66 66 2e 0f 1f 83 ff ff ff ff ff
+@dis:
+     0:	66 66 66 66 66 2e 0f 1f 83 ff ff ff ff       	data32 data32 data32 data32 nopw %cs:-0x1(%ebx)
+     d:	ff                                           	.byte 0xff
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('duplicate legacy prefix', Instruction(0x0: 66 66 66 66 66 2e 0f 1f 83 ff ff ff ff  data32 data32 data32 data32 nopw %cs:-0x1(%ebx)))
+  d: ('objdump failed to decode', Instruction(0xd: ff  .byte 0xff))
+----------------------------------------------------------------------
+@hex:
+  # This is the list of all nops, just to see if they validate.
+  66 0f 1f 44 00 00
+  66 0f 1f 84 00 00 00 00 00
+  66 2e 0f 1f 84 00 00 00 00 00
+@dis:
+     0:	66 0f 1f 44 00 00                            	nopw   0x0(%eax,%eax,1)
+     6:	66 0f 1f 84 00 00 00 00 00                   	nopw   0x0(%eax,%eax,1)
+     f:	66 2e 0f 1f 84 00 00 00 00 00                	nopw   %cs:0x0(%eax,%eax,1)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  66 66 2e 0f 1f 84 00 00 00 00 00
+  66 66 66 2e 0f 1f 84 00 00 00 00 00
+@dis:
+     0:	66 66 2e 0f 1f 84 00 00 00 00 00             	data32 nopw %cs:0x0(%eax,%eax,1)
+     b:	66 66 66 2e 0f 1f 84 00 00 00 00 00          	data32 data32 nopw %cs:0x0(%eax,%eax,1)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  66 66 66 66 2e 0f 1f 84 00 00 00 00 00
+  66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00
+@dis:
+     0:	66 66 66 66 2e 0f 1f 84 00 00 00 00 00       	data32 data32 data32 nopw %cs:0x0(%eax,%eax,1)
+     d:	66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00    	data32 data32 data32 data32 nopw %cs:0x0(%eax,%eax,1)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  66 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00
+@dis:
+     0:	66 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 	data32 data32 data32 data32 data32 nopw %cs:0x0(%eax,%eax,1)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE

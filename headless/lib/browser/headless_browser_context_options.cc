@@ -1,0 +1,118 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "headless/lib/browser/headless_browser_context_options.h"
+
+#include <string>
+#include <utility>
+
+namespace headless {
+
+namespace {
+
+template <class T>
+const T& ReturnOverriddenValue(const base::Optional<T>& value,
+                               const T& default_value) {
+  if (value) {
+    return *value;
+  } else {
+    return default_value;
+  }
+}
+
+}  // namespace
+
+HeadlessBrowserContextOptions::HeadlessBrowserContextOptions(
+    HeadlessBrowserContextOptions&& options) = default;
+
+HeadlessBrowserContextOptions::~HeadlessBrowserContextOptions() = default;
+
+HeadlessBrowserContextOptions& HeadlessBrowserContextOptions::operator=(
+    HeadlessBrowserContextOptions&& options) = default;
+
+HeadlessBrowserContextOptions::HeadlessBrowserContextOptions(
+    HeadlessBrowser::Options* options)
+    : browser_options_(options) {}
+
+const std::string& HeadlessBrowserContextOptions::product_name_and_version()
+    const {
+  return ReturnOverriddenValue(product_name_and_version_,
+                               browser_options_->product_name_and_version);
+}
+
+const std::string& HeadlessBrowserContextOptions::accept_language() const {
+  return ReturnOverriddenValue(accept_language_,
+                               browser_options_->accept_language);
+}
+
+const std::string& HeadlessBrowserContextOptions::user_agent() const {
+  return ReturnOverriddenValue(user_agent_, browser_options_->user_agent);
+}
+
+const net::ProxyConfig* HeadlessBrowserContextOptions::proxy_config() const {
+  if (proxy_config_)
+    return proxy_config_.get();
+  return browser_options_->proxy_config.get();
+}
+
+const std::string& HeadlessBrowserContextOptions::host_resolver_rules() const {
+  return ReturnOverriddenValue(host_resolver_rules_,
+                               browser_options_->host_resolver_rules);
+}
+
+const gfx::Size& HeadlessBrowserContextOptions::window_size() const {
+  return ReturnOverriddenValue(window_size_, browser_options_->window_size);
+}
+
+const base::FilePath& HeadlessBrowserContextOptions::user_data_dir() const {
+  return ReturnOverriddenValue(user_data_dir_, browser_options_->user_data_dir);
+}
+
+bool HeadlessBrowserContextOptions::incognito_mode() const {
+  return ReturnOverriddenValue(incognito_mode_,
+                               browser_options_->incognito_mode);
+}
+
+bool HeadlessBrowserContextOptions::site_per_process() const {
+  return ReturnOverriddenValue(site_per_process_,
+                               browser_options_->site_per_process);
+}
+
+bool HeadlessBrowserContextOptions::block_new_web_contents() const {
+  return ReturnOverriddenValue(block_new_web_contents_,
+                               browser_options_->block_new_web_contents);
+}
+
+bool HeadlessBrowserContextOptions::capture_resource_metadata() const {
+  return ReturnOverriddenValue(capture_resource_metadata_,
+                               browser_options_->capture_resource_metadata);
+}
+
+bool HeadlessBrowserContextOptions::allow_cookies() const {
+  return ReturnOverriddenValue(allow_cookies_, browser_options_->allow_cookies);
+}
+
+base::RepeatingCallback<void(WebPreferences*)>
+HeadlessBrowserContextOptions::override_web_preferences_callback() const {
+  return ReturnOverriddenValue(
+      override_web_preferences_callback_,
+      browser_options_->override_web_preferences_callback);
+}
+
+const ProtocolHandlerMap& HeadlessBrowserContextOptions::protocol_handlers()
+    const {
+  return protocol_handlers_;
+}
+
+ProtocolHandlerMap HeadlessBrowserContextOptions::TakeProtocolHandlers() {
+  return std::move(protocol_handlers_);
+}
+
+gfx::FontRenderParams::Hinting
+HeadlessBrowserContextOptions::font_render_hinting() const {
+  return ReturnOverriddenValue(font_render_hinting_,
+                               browser_options_->font_render_hinting);
+}
+
+}  // namespace headless

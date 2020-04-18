@@ -1,0 +1,21 @@
+@hex:
+  # REX byte should immediately precede opcode.
+  f0 48 0f c7 4d 00
+@dis:
+     0:	f0 48 0f c7 4d 00                            	lock cmpxchg16b 0x0(%rbp)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Invalid case where REX byte goes before legacy prefix.
+  48 f0 0f c7 4d 00
+@dis:
+     0:	48                                           	rex.W
+     1:	f0 0f c7 4d 00                               	lock cmpxchg8b 0x0(%rbp)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('dangling rex prefix', Instruction(0x0: 48  rex.W))

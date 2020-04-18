@@ -1,0 +1,70 @@
+<!DOCTPYE html>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+<style>
+html, body {
+  margin: 0;
+}
+
+#container > div {
+  font-size: 10px;
+  width: 5ch;
+  border: thin solid black;
+}
+</style>
+<div id="log"></div>
+<div id="container">
+  <div id="normal-wrap">0123 456</div>
+  <div id="normal-wrap-with-overflow-space">01234 567</div>
+  <div id="pre-wrap" style="white-space: pre-wrap">0123 45678</div>
+  <div id="pre-wrap-with-overflow-space" style="white-space: pre-wrap">01234 5678</div>
+  <div id="break-word" style="word-wrap: break-word">0123456789</div>
+  <div id="pre" style="white-space:pre">a
+b<span></span>b</div>
+</div>
+<script>
+var range = document.createRange();
+
+testWhenFirstRectIsEmpty("normal-wrap", [4]);
+testWhenFirstRectIsEmpty("normal-wrap-with-overflow-space", [5]);
+testWhenFirstRectIsEmpty("pre-wrap", [3, 4, 5]);
+testWhenFirstRectIsEmpty("pre-wrap-with-overflow-space", [4, 5, 6]);
+testWhenFirstRectIsEmpty("break-word", [4, 5]);
+testWhenFirstRectIsEmpty("pre", [0, 1, 2]);
+
+function testWhenFirstRectIsEmpty(id, offsets) {
+  let element = document.getElementById(id);
+  let node = element.firstChild;
+  for (let offset of offsets) {
+    range.setStart(node, offset);
+    range.setEnd(node, offset + 1);
+    let rects = range.getClientRects();
+    let bounds = range.getBoundingClientRect();
+    if (rects.length <= 1)
+      continue;
+
+    if (!bounds.width || !bounds.height) {
+      // If all rects are empty, bounds should be equal to rects[0].
+      test(() => assert_equals_rect(bounds, rects[0]),
+        `${name}[${offset}]: ${rectToString(bounds)} should be equal to the first of ${rectsToString(rects)}`);
+    } else {
+      // Otherwise, it should be the union of rects excluding empty ones.
+      // Since we measure one character, it should have the same height as rects[0].
+      test(() => assert_equals(bounds.height, rects[0].height),
+        `${name}[${offset}]: Height of ${rectToString(bounds)} should match to the first of ${rectsToString(rects)}`);
+    }
+  }
+}
+
+function assert_equals_rect(actual, expected, description) {
+  for (let prop in expected)
+    assert_equals(actual[prop], expected[prop], description + "." + prop);
+}
+function rectsToString(rects) {
+  return "[" + Array.prototype.map.call(rects, rectToString).join() + "]";
+}
+
+function rectToString(r) {
+  return "(" + r.left + "," + r.top + "-" + r.width + "," + r.height + ")";
+}
+</script>

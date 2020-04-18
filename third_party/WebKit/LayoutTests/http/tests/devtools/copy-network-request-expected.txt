@@ -1,0 +1,73 @@
+Tests curl command generation
+
+cURL Windows: curl "http://example.org/path" --compressed
+cURL Unix: curl 'http://example.org/path' --compressed
+Powershell: Invoke-WebRequest -Uri "http://example.org/path"
+fetch: fetch("http://example.org/path", {"credentials":"omit","headers":{},"method":"GET","mode":"cors"});
+cURL Windows: curl "http://example.org/path" --data-binary "123" --compressed
+cURL Unix: curl 'http://example.org/path' --data-binary '123' --compressed
+Powershell: Invoke-WebRequest -Uri "http://example.org/path" -Method "POST" -Body "123"
+fetch: fetch("http://example.org/path", {"credentials":"omit","headers":{},"body":"123","method":"POST","mode":"cors"});
+cURL Windows: curl "http://example.org/path" -H "Content-Type: application/x-www-form-urlencoded" --data "1^&b" --compressed
+cURL Unix: curl 'http://example.org/path' -H 'Content-Type: application/x-www-form-urlencoded' --data '1&b' --compressed
+Powershell: Invoke-WebRequest -Uri "http://example.org/path" -Method "POST" -ContentType "application/x-www-form-urlencoded" -Body "1&b"
+fetch: fetch("http://example.org/path", {"credentials":"omit","headers":{},"body":"1&b","method":"POST","mode":"cors"});
+cURL Windows: curl "http://example.org/path" -H "Content-Type: application/json" --data-binary "^{^\^"a^\^":1^}" --compressed
+cURL Unix: curl 'http://example.org/path' -H 'Content-Type: application/json' --data-binary '{"a":1}' --compressed
+Powershell: Invoke-WebRequest -Uri "http://example.org/path" -Method "POST" -ContentType "application/json" -Body "{`"a`":1}"
+fetch: fetch("http://example.org/path", {"credentials":"omit","headers":{},"body":"{\"a\":1}","method":"POST","mode":"cors"});
+cURL Windows: curl "http://example.org/path" -H "Content-Type: application/binary" --data-binary ^"1234^
+
+00^^^^'^\^"^!^" --compressed
+cURL Unix: curl 'http://example.org/path' -H 'Content-Type: application/binary' --data-binary $'1234\r\n00\x02\x03\x04\x05\'"!' --compressed
+Powershell: Invoke-WebRequest -Uri "http://example.org/path" -Method "POST" -ContentType "application/binary" -Body ([System.Text.Encoding]::UTF8.GetBytes("1234$([char]13)$([char]10)00$([char]2)$([char]3)$([char]4)$([char]5)'`"!"))
+fetch: fetch("http://example.org/path", {"credentials":"omit","headers":{},"body":"1234\r\n00\u0002\u0003\u0004\u0005'\"!","method":"POST","mode":"cors"});
+cURL Windows: curl "http://example.org/path" -H "Content-Type: application/binary" --data-binary ^"1234^
+
+^00^^^^'^\^"^!^" --compressed
+cURL Unix: curl 'http://example.org/path' -H 'Content-Type: application/binary' --data-binary $'1234\r\n\x0100\x02\x03\x04\x05\'"!' --compressed
+Powershell: Invoke-WebRequest -Uri "http://example.org/path" -Method "POST" -ContentType "application/binary" -Body ([System.Text.Encoding]::UTF8.GetBytes("1234$([char]13)$([char]10)$([char]1)00$([char]2)$([char]3)$([char]4)$([char]5)'`"!"))
+fetch: fetch("http://example.org/path", {"credentials":"omit","headers":{},"body":"1234\r\n\u000100\u0002\u0003\u0004\u0005'\"!","method":"POST","mode":"cors"});
+cURL Windows: curl "http://example.org/path" -H "Content-Type: application/binary" --data-binary ^"^%^OS^%^
+
+^%^%^OS^%^%^
+
+^\^"^\^\^\^"'^$^&^!^" --compressed
+cURL Unix: curl 'http://example.org/path' -H 'Content-Type: application/binary' --data-binary $'%OS%\r\n%%OS%%\r\n"\\"\'$&!' --compressed
+Powershell: Invoke-WebRequest -Uri "http://example.org/path" -Method "POST" -ContentType "application/binary" -Body ([System.Text.Encoding]::UTF8.GetBytes("%OS%$([char]13)$([char]10)%%OS%%$([char]13)$([char]10)`"\`"'`$&!"))
+fetch: fetch("http://example.org/path", {"credentials":"omit","headers":{},"body":"%OS%\r\n%%OS%%\r\n\"\\\"'$&!","method":"POST","mode":"cors"});
+cURL Windows: curl "http://example.org/path" -H "Content-Type: application/binary" --data-binary ^"^!^@^#^$^%^^^&*()_+~`1234567890-=^[^]^{^};':^\^",./^
+
+^<^>?^
+
+qwer^
+
+t^
+
+^
+
+yuiopasdfghjklmnbvcxzQWERTYUIOPLKJHGFDSAZXCVBNM^" --compressed
+cURL Unix: curl 'http://example.org/path' -H 'Content-Type: application/binary' --data-binary $'!@#$%^&*()_+~`1234567890-=[]{};\':",./\r<>?\r\nqwer\nt\n\nyuiopasdfghjklmnbvcxzQWERTYUIOPLKJHGFDSAZXCVBNM' --compressed
+Powershell: Invoke-WebRequest -Uri "http://example.org/path" -Method "POST" -ContentType "application/binary" -Body ([System.Text.Encoding]::UTF8.GetBytes("!@#`$%^&*()_+~``1234567890-=[]{};':`",./$([char]13)<>?$([char]13)$([char]10)qwer$([char]10)t$([char]10)$([char]10)yuiopasdfghjklmnbvcxzQWERTYUIOPLKJHGFDSAZXCVBNM"))
+fetch: fetch("http://example.org/path", {"credentials":"omit","headers":{},"body":"!@#$%^&*()_+~`1234567890-=[]{};':\",./\r<>?\r\nqwer\nt\n\nyuiopasdfghjklmnbvcxzQWERTYUIOPLKJHGFDSAZXCVBNM","method":"POST","mode":"cors"});
+cURL Windows: curl "http://example.org/path" -H "Content-Type: application/binary" --data-binary "^^^^ÿ	^܀" --compressed
+cURL Unix: curl 'http://example.org/path' -H 'Content-Type: application/binary' --data-binary $'\x7f\x80\x90\xff\x09\u0700' --compressed
+Powershell: Invoke-WebRequest -Uri "http://example.org/path" -Method "POST" -ContentType "application/binary" -Body ([System.Text.Encoding]::UTF8.GetBytes("$([char]127)$([char]128)$([char]144)$([char]255)$([char]9)$([char]1792)"))
+fetch: fetch("http://example.org/path", {"credentials":"omit","headers":{},"body":"ÿ\t܀","method":"POST","mode":"cors"});
+cURL Windows: curl "http://labs.ft.com/?querystring=^\[^\]^\{^\}" --compressed
+cURL Unix: curl 'http://labs.ft.com/?querystring=\[\]\{\}' --compressed
+Powershell: Invoke-WebRequest -Uri "http://labs.ft.com/?querystring=[]{}"
+fetch: fetch("http://labs.ft.com/?querystring=[]{}", {"credentials":"omit","headers":{},"body":null,"method":"GET","mode":"cors"});
+cURL Windows: curl "http://example.org/path" -H "Content-Type: application/binary" --data-binary "^%^PATH^%^$PATH" --compressed
+cURL Unix: curl 'http://example.org/path' -H 'Content-Type: application/binary' --data-binary '%PATH%$PATH' --compressed
+Powershell: Invoke-WebRequest -Uri "http://example.org/path" -Method "POST" -ContentType "application/binary" -Body "%PATH%`$PATH"
+fetch: fetch("http://example.org/path", {"credentials":"omit","headers":{},"body":"%PATH%$PATH","method":"POST","mode":"cors"});
+cURL Windows: curl "http://example.org/path" --compressed
+cURL Unix: curl 'http://example.org/path' --compressed
+Powershell: Invoke-WebRequest -Uri "http://example.org/path" -Headers @{"version"="v"}
+fetch: fetch("http://example.org/path", {"credentials":"omit","headers":{},"method":"GET","mode":"cors"});
+cURL Windows: curl "http://example.org/path" -H "Cookie: _x=fdsfs; aA=fdsfdsf; FOO=ID=BAR:BAZ=FOO:F=d:AO=21.212.2.212-:A=dsadas8d9as8d9a8sd9sa8d9a; AAA=117" --compressed
+cURL Unix: curl 'http://example.org/path' -H 'Cookie: _x=fdsfs; aA=fdsfdsf; FOO=ID=BAR:BAZ=FOO:F=d:AO=21.212.2.212-:A=dsadas8d9as8d9a8sd9sa8d9a; AAA=117' --compressed
+Powershell: Invoke-WebRequest -Uri "http://example.org/path" -Headers @{"Cookie"="_x=fdsfs; aA=fdsfdsf; FOO=ID=BAR:BAZ=FOO:F=d:AO=21.212.2.212-:A=dsadas8d9as8d9a8sd9sa8d9a; AAA=117"}
+fetch: fetch("http://example.org/path", {"credentials":"include","headers":{},"method":"GET","mode":"cors"});
+

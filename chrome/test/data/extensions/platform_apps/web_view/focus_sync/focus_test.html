@@ -1,0 +1,51 @@
+<!--
+ * Copyright 2017 The Chromium Authors. All rights reserved.  Use of this
+ * source code is governed by a BSD-style license that can be found in the
+ * LICENSE file.
+-->
+
+<html>
+<style type="text/css">
+input {
+  background-color: rgb(200, 200, 200);
+}
+form :focus {
+  background-color: rgb(100, 100, 100);
+}
+</style>
+
+<script>
+
+function $(id) {
+  return document.getElementById(id);
+}
+
+/**
+  * checkValid returns true if the test should pass. It asserts that #text is
+  * the focused element and that #pass is not focused. It does so by matching
+  * the style properties to ensure they match with the :focus selector defined
+  * above.
+  */
+window.checkValid = function() {
+  var textColor = window.getComputedStyle($('text'),
+      null).getPropertyValue('background-color');
+  var passColor = window.getComputedStyle($('pass'),
+      null).getPropertyValue('background-color');
+  return textColor == 'rgb(100, 100, 100)' && passColor== 'rgb(200, 200, 200)';
+};
+
+window.addEventListener('DOMContentLoaded', function() {
+  $('text').focus();
+});
+
+
+</script>
+
+<body>
+  <form id="form">
+    <input id="text" type="text" placeholder="text input">
+    <input id="pass" type="password" placeholder="password">
+  </form>
+</body>
+</html>
+

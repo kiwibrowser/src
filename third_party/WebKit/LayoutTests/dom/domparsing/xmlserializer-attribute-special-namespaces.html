@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<script src="../../resources/js-test.js"></script>
+<script>
+description('Tests the serialization of special XML namespaces on attributes, as reported in <a href="http://crbug.com/395950">bug 395950</a>.');
+
+var xmlDocument  = (new DOMParser()).parseFromString('<outer />', 'text/xml');
+
+var inner1 = xmlDocument.createElementNS(null, 'inner1');
+// The xlink's namespace prefix is xlink by default, not auto-generated.
+inner1.setAttributeNS('http://www.w3.org/1999/xlink', 'href', 'http://www.google.com');
+// The xml namespace is automatically bound to the xml prefix, no definition needed.
+inner1.setAttributeNS('http://www.w3.org/XML/1998/namespace', 'attr', 'value');
+xmlDocument.firstChild.appendChild(inner1);
+
+var inner2 = xmlDocument.createElementNS(null, 'inner2');
+// The xlink's namespace prefix should not be forced to xlink.
+inner2.setAttributeNS('http://www.w3.org/1999/xlink', 'xl:href', 'http://www.google.com');
+// The xml namespace is automatically bound to the xml prefix, no definition needed.
+inner2.setAttributeNS('http://www.w3.org/XML/1998/namespace', 'xml:attr', 'value');
+xmlDocument.firstChild.appendChild(inner2);
+
+// Check the DOM construction.
+shouldBeEqualToString('xmlDocument.querySelector("inner1").getAttributeNS("http://www.w3.org/1999/xlink", "href")', 'http://www.google.com');
+shouldBeEqualToString('xmlDocument.querySelector("inner1").getAttributeNS("http://www.w3.org/XML/1998/namespace", "attr")', 'value');
+shouldBeEqualToString('xmlDocument.querySelector("inner2").getAttributeNS("http://www.w3.org/1999/xlink", "href")', 'http://www.google.com');
+shouldBeEqualToString('xmlDocument.querySelector("inner2").getAttribute("xl:href")', 'http://www.google.com');
+shouldBeEqualToString('xmlDocument.querySelector("inner2").getAttributeNS("http://www.w3.org/XML/1998/namespace", "attr")', 'value');
+shouldBeEqualToString('xmlDocument.querySelector("inner2").getAttribute("xml:attr")', 'value');
+
+var xmlString = (new XMLSerializer()).serializeToString(xmlDocument);
+
+// Check the serialization result.
+var parsedDoc = (new DOMParser()).parseFromString(xmlString, 'text/xml');
+shouldBeEqualToString('parsedDoc.querySelector("inner1").getAttributeNS("http://www.w3.org/1999/xlink", "href")', 'http://www.google.com');
+shouldBeEqualToString('parsedDoc.querySelector("inner1").getAttributeNS("http://www.w3.org/XML/1998/namespace", "attr")', 'value');
+shouldBeEqualToString('parsedDoc.querySelector("inner2").getAttributeNS("http://www.w3.org/1999/xlink", "href")', 'http://www.google.com');
+shouldBeEqualToString('parsedDoc.querySelector("inner2").getAttribute("xl:href")', 'http://www.google.com');
+shouldBeEqualToString('parsedDoc.querySelector("inner2").getAttributeNS("http://www.w3.org/XML/1998/namespace", "attr")', 'value');
+shouldBeEqualToString('parsedDoc.querySelector("inner2").getAttribute("xml:attr")', 'value');
+
+// Check that the correct xmlns definitions were emitted.
+shouldBeEqualToNumber('xmlString.indexOf("xmlns:xml")', -1);
+shouldNotBe('xmlString.indexOf("xmlns:xlink")', '-1');
+shouldNotBe('xmlString.indexOf("xmlns:xl")', '-1');
+</script>

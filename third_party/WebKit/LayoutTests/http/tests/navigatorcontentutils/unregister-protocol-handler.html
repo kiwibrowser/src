@@ -1,0 +1,113 @@
+<html>
+<head>
+<script src="/js-test-resources/js-test.js"></script>
+</head>
+<body>
+<p>This test makes sure that navigator.unregisterProtocolHandler throws the proper exceptions and has no-op default implementation.</p>
+<pre id="console"></pre>
+<script>
+if (window.internals)
+    internals.setNavigatorContentUtilsClientMock(document);
+
+if (window.navigator.unregisterProtocolHandler)
+    debug('PASS window.navigator.unregisterProtocolHandler is defined.');
+else
+    debug('FAIL window.navigator.unregisterProtocolHandler is not defined.');
+
+var invalid_schemes = ['http', 'https', 'file', 'web+'];
+invalid_schemes.forEach(function (scheme) {
+    var succeeded = false;
+    try {
+        window.navigator.unregisterProtocolHandler(scheme, "invalid scheme %s");
+    } catch (e) {
+        succeeded = 'SecurityError' == e.name;
+        errorMessage = e.message;
+    }
+
+    if (succeeded)
+        debug('PASS Invalid scheme "' + scheme + '" threw SecurityError exception: "' + errorMessage + '".');
+    else
+        debug('FAIL Invalid scheme "' + scheme + '" allowed.');
+});
+
+var valid_schemes = ['bitcoin', 'BitcoIn', 'geo', 'im', 'irc', 'Irc', 'ircs', 'magnet', 'MagneT', 'mailto', 'mms', 'news', 'nntp', 'openpgp4fpr', 'sip', 'sms', 'smsto', 'SmsTo', 'ssh', 'tel', 'urn', 'webcal', 'WebCAL', 'wtai', 'WTAI', 'xmpp'];
+valid_schemes.forEach(function (scheme) {
+    var succeeded = false;
+    try {
+        window.navigator.unregisterProtocolHandler(scheme, "valid scheme %s");
+        succeeded = true;
+    } catch (e) {
+        succeeded = false;
+    }
+
+    if (succeeded)
+        debug('PASS Valid scheme "' + scheme + '" allowed.');
+    else
+        debug('FAIL Valid scheme "' + scheme + '" failed.');
+});
+
+var invalid_schemes = ['mailto:', 'ssh:/', 'magnet:+', 'tel:sip'];
+invalid_schemes.forEach(function (scheme) {
+    var succeeded = false;
+    try {
+        window.navigator.unregisterProtocolHandler(scheme, 'invalid scheme uri=%s');
+    } catch (e) {
+        succeeded = 'SecurityError' == e.name;
+        errorMessage = e.message;
+    }
+
+    if (succeeded)
+        debug('PASS Invalid scheme "' + scheme + '" falied.');
+    else
+        debug('Fail: Invalid scheme "' + scheme + '" allowed. Threw exception: "' + errorMessage + '".');
+});
+
+var invalid_urls = ["", "%S", "http://[v8.:::]//url=%s"];
+invalid_urls.forEach(function (url) {
+   var succeeded = false;
+   try {
+        window.navigator.unregisterProtocolHandler('web+myscheme', url);
+    } catch (e) {
+        succeeded = 'SyntaxError' == e.name;
+        errorMessage = e.message;
+    }
+
+    if (succeeded)
+        debug('PASS Invalid url "' + url + '" threw SyntaxError exception.' + errorMessage + '".');
+    else
+        debug('FAIL Invalid url "' + url + '" allowed.');
+});
+
+// Test that the API throws SecurityError exception if the URL's origin differs from the document's origin.
+succeeded = false;
+var errorMessage;
+try {
+    window.navigator.unregisterProtocolHandler('web+myprotocol', "http://www.example.com/soup?url=%s");
+} catch (e) {
+    succeeded = true;
+    errorMessage = e.message;
+}
+
+if (succeeded)
+    debug('PASS URL with origin different than document origin threw SecurityError exception: "' + errorMessage + '".');
+else
+    debug('FAIL URL with origin different than document origin is allowed.');
+
+// Test that the API has default no-op implementation.
+var succeeded = true;
+try {
+    window.navigator.unregisterProtocolHandler('web+myscheme', "%s");
+} catch (e) {
+    succeeded = false;
+}
+
+if (succeeded)
+    debug('PASS Valid call succeeded.');
+else
+    debug('FAIL Invalid call did not succeed.');
+
+debug("\n");
+
+</script>
+</body>
+</html>

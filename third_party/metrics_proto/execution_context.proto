@@ -1,0 +1,79 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+option java_outer_classname = "ExecutionContextProtos";
+option java_package = "org.chromium.components.metrics";
+
+package metrics;
+
+// Enums corresponding to the Chrome execution context in which data was
+// collected.
+
+// Chrome process type. Derived from content/public/common/process_type.h.
+enum Process {
+  UNKNOWN_PROCESS = 0;
+  BROWSER_PROCESS = 1;
+  RENDERER_PROCESS = 2;
+  GPU_PROCESS = 3;
+  UTILITY_PROCESS = 4;
+  ZYGOTE_PROCESS = 5;
+  SANDBOX_HELPER_PROCESS = 6;
+  PPAPI_PLUGIN_PROCESS = 7;
+  PPAPI_BROKER_PROCESS = 8;
+}
+
+// Chrome thread. This list is not exhaustive.
+enum Thread {
+  UNKNOWN_THREAD = 0;
+
+  // Browser process threads from content/public/browser/browser_thread.h,
+  // some of which occur in other processes as well.
+  UI_THREAD = 1;
+  FILE_THREAD = 2;                // Deprecated.
+  FILE_USER_BLOCKING_THREAD = 3;  // Deprecated.
+  PROCESS_LAUNCHER_THREAD = 4;    // Deprecated.
+  CACHE_THREAD = 5;               // Deprecated.
+  IO_THREAD = 6;
+  DB_THREAD = 7;  // Deprecated.
+
+  // GPU process thread.
+  GPU_MAIN_THREAD = 8;
+
+  // Renderer process threads.
+  RENDER_THREAD = 9;
+  UTILITY_THREAD = 10;
+
+  // Compositor thread (can be in both renderer and gpu processes).
+  COMPOSITOR_THREAD = 11;
+}
+
+// Process phases, or where in the lifetime of the process it is such as
+// startup, normal operation, shutdown, etc. These don't necessarily occur in
+// the order defined here so it's fine to add new ones to further segregrate
+// the lifetime of a process.
+enum ProcessPhase {
+  // The browser's main message loop has been started.
+  // Based on histogram Startup.MessageLoopStartTime
+  MAIN_LOOP_START = 0;
+
+  // The beginning of navigation in the first web contents' main frame.
+  // Based on histogram Startup.FirstWebContents.MainNavigationStart
+  MAIN_NAVIGATION_START = 1;
+
+  // The navigation is committed (first bytes received) in the first web
+  // contents' main frame.
+  // Based on histogram Startup.FirstWebContents.MainNavigationFinished
+  MAIN_NAVIGATION_FINISHED = 2;
+
+  // First non-empty paint of the first web contents.
+  // Based on histogram Startup.FirstWebContents.NonEmptyPaint2
+  FIRST_NONEMPTY_PAINT = 3;
+
+  // Process shutdown has begun.
+  SHUTDOWN_START = 4;
+}

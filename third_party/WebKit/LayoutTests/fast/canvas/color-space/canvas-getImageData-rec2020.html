@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<body>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+<script>
+test(drawSRGBThenGetImageDataRec2020, 'tests drawing SRGB color on Rec2020 \
+canvas and getting Rec2020 image data.');
+test(putImageDataRec2020ThenGetImageDataRec2020,
+    'tests putting and getting Rec2020 image data on Rec2020 canvas.');
+test(putImageDataSRGBThenGetImageDataRec2020, 'tests putting SRGB image data \
+on Rec2020 canvas and getting Rec2020 image data.');
+
+function assert_array_approx_equals(actual, expected, epsilon)
+{
+  assert_true(actual.length === expected.length);
+  for (var i=0; i < actual.length; i++)
+    assert_approx_equals(actual[i], expected[i], epsilon);
+}
+
+function drawSRGBThenGetImageDataRec2020() {
+    var canvas = document.createElement('canvas');
+    canvas.width = 10;
+    canvas.height = 10;
+    var ctx = canvas.getContext('2d',
+        {colorSpace: 'rec2020', pixelFormat:'float16'});
+    ctx.fillStyle = 'rgb(50, 100, 150)';
+    ctx.fillRect(0, 0, 10, 10);
+    var pixel = ctx.getImageData(5, 5, 1, 1).dataUnion;
+    // Check against the same color in Rec2020. 0.01 protects the test against
+    // color conversion deviations.
+    assert_array_approx_equals(pixel, [0.07, 0.12, 0.28, 1], 0.01);
+}
+
+function putImageDataRec2020ThenGetImageDataRec2020() {
+    var canvas = document.createElement('canvas');
+    canvas.width = 10;
+    canvas.height = 10;
+    var ctx = canvas.getContext('2d',
+        {colorSpace: 'rec2020', pixelFormat:'float16'})
+    var dataRec2020 = new Float32Array(4);
+    dataRec2020[0] = 0.07;
+    dataRec2020[1] = 0.12;
+    dataRec2020[2] = 0.28;
+    dataRec2020[3] = 1;
+    var imageData = ctx.createImageData(dataRec2020, 1, 1,
+        {colorSpace: 'rec2020', storageFormat:'float32'});
+    ctx.putImageData(imageData, 5, 5);
+    var pixel = ctx.getImageData(5, 5, 1, 1).dataUnion;
+    // Check against the same color in Rec2020. 0.001 protects the test against
+    // rounding errors.
+    assert_array_approx_equals(pixel, [0.07, 0.12, 0.28, 1], 0.001);
+}
+
+function putImageDataSRGBThenGetImageDataRec2020() {
+    var canvas = document.createElement('canvas');
+    canvas.width = 10;
+    canvas.height = 10;
+    var ctx = canvas.getContext('2d',
+        {colorSpace: 'rec2020', pixelFormat:'float16'});
+    var dataSRGB = new Uint8ClampedArray(4);
+    dataSRGB[0] = 50;
+    dataSRGB[1] = 100;
+    dataSRGB[2] = 150;
+    dataSRGB[3] = 255;
+    var imageData = ctx.createImageData(dataSRGB, 1, 1,
+        {colorSpace: 'srgb', storageFormat:'uint8'});
+    ctx.putImageData(imageData, 5, 5);
+    var pixel = ctx.getImageData(5, 5, 1, 1).dataUnion;
+    // Check against the same color in Rec2020. 0.01 protects the test against
+    // color conversion deviations.
+    assert_array_approx_equals(pixel, [0.07, 0.12, 0.28, 1], 0.01);
+}
+</script>
+</body>

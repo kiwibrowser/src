@@ -1,0 +1,29 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<script src="../../../resources/js-test.js"></script>
+</head>
+<body>
+<script>
+description("Verify that multiple SpeechRecognition objects can co-exist in tests.");
+
+self.jsTestIsAsync = true;
+if (window.testRunner) {
+    testRunner.dumpAsText();
+    testRunner.waitUntilDone();
+}
+
+var objectCount = 4;
+var count = objectCount;
+
+for (var i = 0; i < objectCount; ++i) {
+    var recog = new webkitSpeechRecognition();
+    recog.onend = () => {
+        if (--count == 0)
+            setTimeout(finishJSTest);
+    };
+    recog.start();
+}
+</script>
+</body>
+</html>

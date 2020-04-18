@@ -1,0 +1,25 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# This test is specific to the x86-32 sandbox, and is not portable.
+if not env.Bit('build_x86_32') or not env.AllowInlineAssembly():
+  Return()
+
+test_prog = env.ComponentProgram(
+    'gs_segment_read_only_test', ['gs_segment_test.c'],
+    EXTRA_LIBS=['${PTHREAD_LIBS}', '${NONIRT_LIBS}'])
+
+for subtest in ('gs_segment_read_only_test',
+                'gs_segment_read_only_test_thread',
+                'gs_segment_size_test',
+                'gs_segment_size_test_thread'):
+  node = env.CommandSelLdrTestNacl('%s.out' % subtest,
+      test_prog, [subtest], declares_exit_status=True,
+      # R-DFA rejects unaligned access to %gs at validation stage
+      sel_ldr_flags=['-c'])
+  env.AddNodeToTestSuite(node, ['small_tests', 'nonpexe_tests'],
+                         'run_%s' % subtest)

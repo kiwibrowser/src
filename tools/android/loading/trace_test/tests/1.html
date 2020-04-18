@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<!--
+  Test Javascript Redirection in <head>
+
+  In <head> we have a CSS, a javascript file and a <style> tag. The javascript
+  file inserts another javascript file into head, which itself inserts a <style>
+  tag containing an inline font. The static <style> tag below has a font
+  resource. We expect the static font resource to have an initiator with a stack
+  trace incorrectly attached from the javascript.
+
+  TODO(mattcary): It also appears that if resources are found in the cache we
+  get different intiators: namely both the fonts have a parser initiator with no
+  stack. This is not exactly the problem, as occasionally the initiator sequence
+  changes, but can become consistent again by switching binaries with each run
+  (eg, out/Debug vs out/Release).
+-->
+<html>
+<head>
+<title>Test Javascript Redirection</title>
+<link rel='stylesheet' type='text/css' href='1.css'>
+<script type='text/javascript' src='1a.js'></script>
+<style>
+/* Custom font */
+@font-face {
+ font-family: 'test1';
+ font-style: normal;
+ font-weight: normal;
+ src: local('test1'), local(test1), url(1.ttf) format('truetype');
+}
+</style>
+<style>
+div {
+ background: url('1a.png')
+}
+</style>
+</head>
+<body>
+<img src='1b.png' alt=''>
+
+<div class="outside">ABCpqrst</div>
+<div class="inside">ABCpqrst</div>
+</body>
+</html>

@@ -1,0 +1,46 @@
+# The //chrome/browser/policy code is being converted into a component at
+# //components/policy. This DEPS file is temporarily restricting the include
+# rules for this code; once all the exceptions are fixed then the code will
+# be moved, and this file will be removed.
+# http://crbug.com/271392
+
+include_rules = [
+  "-chrome",
+  "-chromeos",
+  "-content",
+  "+chrome/browser/policy",
+  "+components/invalidation",
+]
+
+specific_include_rules = {
+  # These files will stay.
+  r"(cloud_policy_browsertest|"
+  r"cloud_policy_manager_browsertest|"
+  r"component_cloud_policy_browsertest|"
+  r"device_management_service_browsertest|"
+  r"machine_level_user_cloud_policy_browsertest|"
+  r"test_request_interceptor|"
+  r"policy_header_service_factory|"
+  r"policy_header_service_unittest|"
+  r"user_cloud_policy_invalidator|"
+  r"user_cloud_policy_invalidator_factory|"
+  r"user_cloud_policy_manager_factory|"
+  r"user_policy_signin_service_base|"
+  r"user_policy_signin_service|"
+  r"user_policy_signin_service_factory|"
+  r"user_policy_signin_service_mobile|"
+  r"user_policy_signin_service_unittest)"
+  r"\.(cc|h|mm)": [
+    "+chrome",
+    "+chromeos",
+    "+content/public/browser",
+    "+content/public/common",
+    "+content/public/test",
+  ],
+
+  r"(cloud_policy_invalidator_unittest|"
+  r"remote_commands_invalidator_unittest)"
+  r"\.cc": [
+    "+chrome/browser/invalidation/fake_invalidation_service.h",
+  ],
+}

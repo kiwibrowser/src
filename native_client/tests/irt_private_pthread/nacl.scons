@@ -1,0 +1,33 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# This test needs the IRT version of __aeabi_read_tp, and not the one that
+# gets linked into pexes post-translation.
+if env.Bit('bitcode'):
+  Return()
+
+# This test reports races under tsan because:
+#  * The Valgrind interceptors are not hooked up because we are not
+#    linking this test with '-Wl,-u,have_nacl_valgrind_interceptors'.
+#  * The Valgrind interceptors don't work because we use malloc() in
+#    __pthread_initialize() and the intercepted malloc() uses TLS.
+is_broken = (env.Bit('running_on_valgrind') or
+# This test is flaky on mac10.7-newlib-dbg-asan.
+# See https://code.google.com/p/nativeclient/issues/detail?id=3906
+             (env.Bit('asan') and env.Bit('host_mac')))
+
+irt_thread_test_raw = env.ComponentProgram(
+    'irt_thread_test_raw', ['irt_thread_test.c'],
+    EXTRA_LIBS=['irt_support_private'])
+
+irt_thread_test_nexe = env.ApplyTLSEdit(
+    'irt_thread_test.nexe',
+    irt_thread_test_raw)
+
+node = env.CommandSelLdrTestNacl('irt_thread_test.out', irt_thread_test_nexe)
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_irt_thread_test',
+                       is_broken=is_broken)

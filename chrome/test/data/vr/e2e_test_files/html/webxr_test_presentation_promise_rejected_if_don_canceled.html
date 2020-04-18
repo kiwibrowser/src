@@ -1,0 +1,31 @@
+<!doctype html>
+<!--
+Used to test that the promise returned by WebXR's requestSession rejects if
+the DON flow is canceled.
+-->
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="../resources/webxr_e2e.css">
+  </head>
+  <body>
+    <canvas id="webgl-canvas"></canvas>
+    <script src="../../../../../../third_party/WebKit/LayoutTests/resources/testharness.js"></script>
+    <script src="../resources/webxr_e2e.js"></script>
+    <script src="../resources/webxr_boilerplate.js"></script>
+    <script>
+      var t = async_test("Presentation promise is rejected after DON canceled");
+      function onExclusiveRequestWithDon() {
+        xrDevice.requestSession({exclusive: true}).then( (session) => {
+          t.step( () => {
+            assert_unreached("requestPresent promise resolved");
+          });
+        }, () => {
+          // Do nothing when the promise is rejected
+        }).then( () => {
+          t.done();
+        });
+      }
+      webglCanvas.onclick = onExclusiveRequestWithDon;
+    </script>
+  </body>
+</html>

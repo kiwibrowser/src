@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<style>
+.scroller {
+  height: 100px;
+  width: 100px;
+  overflow: auto;
+}
+
+.content {
+  height: 500px;
+  width: 500px;
+}
+</style>
+
+<script src='../../../resources/testharness.js'></script>
+<script src='../../../resources/testharnessreport.js'></script>
+
+<div id='inlineScroller' class='scroller' style='display: inline;'>
+  <div class='content'></div>
+</div>
+<script>
+test(function() {
+  const scroller = document.querySelector('#inlineScroller');
+  const scrollTimeline = new ScrollTimeline(
+      { scrollSource: scroller, timeRange: 100, orientation: 'block' });
+
+  assert_equals(scrollTimeline.currentTime, NaN);
+}, 'currentTime returns NaN for a display: inline scrollSource');
+</script>
+
+<div id='displayNoneScroller' class='scroller' style='display: none;'>
+  <div class='content'></div>
+</div>
+<script>
+test(function() {
+  const scroller = document.querySelector('#displayNoneScroller');
+  const scrollTimeline = new ScrollTimeline(
+      { scrollSource: scroller, timeRange: 100, orientation: 'block' });
+
+  assert_equals(scrollTimeline.currentTime, NaN);
+}, 'currentTime returns NaN for a display: none scrollSource');
+</script>
+
+<script>
+test(function() {
+  const scroller = document.createElement('div');
+  const content = document.createElement('div');
+
+  scroller.style.overflow = 'auto';
+  scroller.style.height = '100px';
+  scroller.style.width = '100px';
+  content.style.height = '250px';
+  content.style.width = '250px';
+
+  scroller.appendChild(content);
+
+  const scrollTimeline = new ScrollTimeline(
+      { scrollSource: scroller, timeRange: 100, orientation: 'block' });
+
+  assert_equals(scrollTimeline.currentTime, NaN);
+}, 'currentTime returns NaN for an unattached scrollSource');
+</script>
+
+<div id='notAScroller' class='scroller' style='overflow: visible;'>
+  <div class='content'></div>
+</div>
+<script>
+test(function() {
+  const scroller = document.querySelector('#notAScroller');
+  const scrollTimeline = new ScrollTimeline(
+      { scrollSource: scroller, timeRange: 100, orientation: 'block' });
+
+  assert_equals(scrollTimeline.currentTime, NaN);
+}, 'currentTime returns NaN when the scrollSource is not a scroller');
+</script>

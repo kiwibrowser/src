@@ -1,0 +1,58 @@
+@hex:
+  # Show that we handle the expected sandboxing instructions for maskmov.
+  
+  # Correct usage
+  89 ff \\
+  49 8d 3c 3f \\
+  0f f7 d1
+@dis:
+     0:	89 ff                                        	mov    %edi,%edi
+     2:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     6:	0f f7 d1                                     	maskmovq %mm1,%mm2
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Using anything but mov for restricting %rdi is not allowed.
+  01 ff \\
+  49 8d 3c 3f \\
+  0f f7 d1
+@dis:
+     0:	01 ff                                        	add    %edi,%edi
+     2:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     6:	0f f7 d1                                     	maskmovq %mm1,%mm2
+@rdfa_output:
+  6: unrecognized instruction
+  return code: 1
+@spec:
+  6: unrecognized instruction 'maskmovq %mm1,%mm2'
+----------------------------------------------------------------------
+@hex:
+  # Maskmovdqu is also fine
+  89 ff \\
+  49 8d 3c 3f \\
+  66 0f f7 d1
+@dis:
+     0:	89 ff                                        	mov    %edi,%edi
+     2:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     6:	66 0f f7 d1                                  	maskmovdqu %xmm1,%xmm2
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # vmaskmovdqu is also fine
+  89 ff \\
+  49 8d 3c 3f \\
+  c5 f9 f7 d1
+@dis:
+     0:	89 ff                                        	mov    %edi,%edi
+     2:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     6:	c5 f9 f7 d1                                  	vmaskmovdqu %xmm1,%xmm2
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE

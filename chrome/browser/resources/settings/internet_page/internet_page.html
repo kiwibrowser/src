@@ -1,0 +1,142 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/chromeos/network/cr_onc_types.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_expand_button/cr_expand_button.html">
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/html/web_ui_listener_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-icon/iron-icon.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/neon-animatable.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="../prefs/prefs.html">
+<link rel="import" href="../route.html">
+<link rel="import" href="../settings_page/settings_animated_pages.html">
+<link rel="import" href="../settings_page/settings_subpage.html">
+<link rel="import" href="../settings_shared_css.html">
+<link rel="import" href="internet_config.html">
+<link rel="import" href="internet_detail_page.html">
+<link rel="import" href="internet_known_networks_page.html">
+<link rel="import" href="internet_subpage.html">
+<link rel="import" href="network_summary.html">
+
+<dom-module id="settings-internet-page">
+  <template>
+    <style include="settings-shared">
+      iron-icon {
+        -webkit-margin-end: 12px;
+        -webkit-margin-start: 4px;
+        height: 24px;
+        width: 24px;
+      }
+    </style>
+    <settings-animated-pages id="pages" section="internet"
+        focus-config="[[focusConfig_]]">
+      <neon-animatable route-path="default">
+        <network-summary default-network="{{defaultNetwork}}"
+            device-states="{{deviceStates}}"
+            networking-private="[[networkingPrivate]]">
+        </network-summary>
+        <template is="dom-if" if="[[allowAddConnection_(globalPolicy_)]]">
+          <div actionable class="settings-box two-line"
+              on-click="onExpandAddConnectionsTap_">
+            <div class="start layout horizontal center">
+              <div>$i18n{internetAddConnection}</div>
+            </div>
+            <cr-expand-button alt="$i18n{internetAddConnectionExpandA11yLabel}"
+                id="expandAddConnections" expanded="{{addConnectionExpanded_}}">
+            </cr-expand-button>
+          </div>
+          <template is="dom-if" if="[[addConnectionExpanded_]]">
+            <div class="list-frame vertical-list">
+              <template is="dom-if"
+                  if="[[deviceIsEnabled_(deviceStates.WiFi)]]">
+                <div actionable class="list-item" on-click="onAddWiFiTap_">
+                  <div class="start">$i18n{internetAddWiFi}</div>
+                  <paper-icon-button-light
+                      class$="[[getAddNetworkClass_('WiFi')]]">
+                    <button aria-label="$i18n{internetAddWiFi}"></button>
+                  </paper-icon-button-light>
+                </div>
+              </template>
+              <div actionable class="list-item" on-click="onAddVPNTap_">
+                <div class="start">$i18n{internetAddVPN}</div>
+                <paper-icon-button-light
+                    class$="[[getAddNetworkClass_('VPN')]]">
+                  <button aria-label="$i18n{internetAddVPN}"></button>
+                </paper-icon-button-light>
+              </div>
+              <template is="dom-repeat" items="[[thirdPartyVpnProviders_]]">
+                <div actionable class="list-item"
+                    on-click="onAddThirdPartyVpnTap_" provider="[[item]]">
+                  <div class="start">[[getAddThirdPartyVpnLabel_(item)]]</div>
+                  <paper-icon-button-light class="icon-external">
+                    <button aria-label$="[[getAddThirdPartyVpnLabel_(item)]]">
+                    </button>
+                  </paper-icon-button-light>
+                </div>
+              </template>
+              <template is="dom-if" if="[[arcVpnProviders_.length]]">
+                <div actionable class="list-item" id="addArcVpn"
+                    on-click="onAddArcVpnTap_">
+                  <div class="start">$i18n{internetAddArcVPN}</div>
+                  <paper-icon-button-light class="icon-external">
+                    <button aria-label$="$i18n{internetAddArcVPN}"></button>
+                  </paper-icon-button-light>
+                </div>
+              </template>
+            </div>
+          </template>
+        </template>
+        <template is="dom-if" if="[[!allowAddConnection_(globalPolicy_)]]">
+          <div class="settings-box">
+            <iron-icon class="policy" icon="cr20:domain"></iron-icon>
+            <div>$i18n{internetAddConnectionNotAllowed}</div>
+          </div>
+        </template>
+      </neon-animatable>
+
+      <template is="dom-if" route-path="/networkDetail" no-search restamp>
+        <settings-subpage page-title="$i18n{internetDetailPageTitle}">
+          <settings-internet-detail-page prefs="{{prefs}}"
+              default-network="[[defaultNetwork]]"
+              global-policy="[[globalPolicy_]]"
+              networking-private="[[networkingPrivate]]">
+          </settings-internet-detail-page>
+        </settings-subpage>
+      </template>
+
+      <template is="dom-if" route-path="/knownNetworks" no-search restamp>
+        <settings-subpage page-title="$i18n{internetKnownNetworksPageTitle}">
+          <settings-internet-known-networks-page
+              network-type="[[knownNetworksType_]]"
+              networking-private="[[networkingPrivate]]">
+          </settings-internet-known-networks-page>
+        </settings-subpage>
+      </template>
+
+      <template is="dom-if" route-path="/networks" no-search restamp>
+        <settings-subpage page-title="[[getNetworksPageTitle_(subpageType_)]]"
+            show-spinner="[[showSpinner_]]">
+          <settings-internet-subpage
+              default-network="[[defaultNetwork]]"
+              device-state="[[getDeviceState_(subpageType_, deviceStates)]]"
+              tether-device-state="[[get('Tether', deviceStates)]]"
+              global-policy="[[globalPolicy_]]"
+              third-party-vpn-providers="[[thirdPartyVpnProviders_]]"
+              arc-vpn-providers="[[arcVpnProviders_]]"
+              networking-private="[[networkingPrivate]]"
+              show-spinner="{{showSpinner_}}">
+          </settings-bluetooth-subpage>
+        </settings-subpage>
+      </template>
+
+    </settings-animated-pages>
+
+    <internet-config id="configDialog"
+        networking-private="[[networkingPrivate]]"
+        global-policy="[[globalPolicy_]]">
+    </internet-config>
+
+  </template>
+  <script src="internet_page.js"></script>
+</dom-module>

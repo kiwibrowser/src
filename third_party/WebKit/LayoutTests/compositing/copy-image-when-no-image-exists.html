@@ -1,0 +1,49 @@
+<!-- This test checks copyImageAt() with position parameter 
+     that actually doesn't point to an Image(Canvas).
+     (Negative test for crbug.com/392765) -->
+<head>
+<script src="../resources/js-test.js"></script>
+<script>
+
+function main()
+{
+  if (!window.testRunner) {
+    testFailed("Requires window.testRunner");
+  } else {
+    testRunner.waitUntilDone();
+    testRunner.dumpAsText();
+    window.requestAnimationFrame(runTest);
+  }
+}
+
+function runTest() {
+  try {
+    testRunner.copyImageAtAndCapturePixelsAsyncThen(50, 50, completionCallback);
+  } catch (e) {
+    debug('error in runTest');
+    debug(e);
+    testRunner.notifyDone();
+  }
+}
+var width, height;
+function completionCallback(w, h, snapshot) {
+  try {
+    width = w;
+    height = h;
+    shouldBeEqualToNumber("width", 0);
+    shouldBeEqualToNumber("height", 0);
+  } catch (e) {
+    debug('error in completionCallback');
+    debug(e);
+    testRunner.notifyDone();
+    return;
+  }
+  testRunner.notifyDone();
+}
+
+main();
+</script>
+</head>
+<body>
+<div id="console"></div>
+</body>

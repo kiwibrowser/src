@@ -1,0 +1,26 @@
+{
+  "name": "viz",
+  // The viz service sometimes needs to do some additional work before entering
+  // the sandbox. So set sandbox_type to 'none', so that the service manager
+  // does not enter the sandbox. The viz service itself enters the sandbox at
+  // the right time. See code in GpuSandboxHelper for more details.
+  // TODO(crbug.com/708738): Revisit the implementation once sandboxing is
+  // fixed.
+  "sandbox_type": "none",
+  "display_name": "Visuals Service",
+  "interface_provider_specs": {
+    "service_manager:connector": {
+      "provides": {
+        "viz_host": [
+          "viz.mojom.VizMain"
+        ]
+      },
+      "requires": {
+        "*": [ "app" ],
+        "catalog": [ "directory" ],
+        "service_manager": [ "service_manager:all_users" ],
+        "ui": [ "ozone" ]
+      }
+    }
+  }
+}

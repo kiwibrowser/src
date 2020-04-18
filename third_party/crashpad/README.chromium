@@ -1,0 +1,41 @@
+Name: Crashpad
+Short Name: crashpad
+URL: https://crashpad.chromium.org/
+Version: unknown
+Revision: 75b672be06c5127f92aab89a2b4422d9ae6f9948
+License: Apache 2.0
+License File: crashpad/LICENSE
+Security Critical: yes
+
+Description:
+Crashpad is a crash-reporting system. It’s the successor to Breakpad.
+
+Crashpad’s authoritative upstream repository is
+https://chromium.googlesource.com/crashpad/crashpad.
+
+Because Crashpad depends on some Chromium code (notably base and build), it is
+acceptable to make changes to this in-Chromium copy of Crashpad in order to
+conform to interface changes in Chromium. These changes must be noted in the
+“local modifications” section below, and should also be reflected in the
+authoritative Crashpad repository as soon as practical.
+
+Substantive development must occur in the authoritative Crashpad repository. If
+this type of work is done in the in-Chromium copy, it will be obliterated the
+next time Crashpad is imported into Chromium.
+
+To update the in-Chromium copy of Crashpad, run update.py, located in this
+directory.
+
+To carry changes made in Chromium to Crashpad, run:
+$ cd "${THIS_DIR}"
+$ mkdir /tmp/patchdir
+$ git format-patch -1 --binary --output-directory=/tmp/patchdir/cur "${HASH}" \
+      --add-header="Message-Id: Merged from chromium ${HASH}" -- crashpad/
+$ cd "${CRASHPAD_DIR}"
+$ git am --3way --message-id -p4 /tmp/patchdir
+
+Local Modifications:
+ - codereview.settings has been excluded.
+ - thread_log_messages.cc (using ThreadLocalStorage::Slot instead of StaticSlot)
+ - Replaced std::random_shuffle with base::RandomShuffle in
+   prune_crash_reports_test.cc

@@ -1,0 +1,45 @@
+diff --git a/tools/lint/lint.py b/tools/lint/lint.py
+index c1ffd50fb2..3cf81413fe 100644
+--- a/tools/lint/lint.py
++++ b/tools/lint/lint.py
+@@ -817,6 +817,7 @@ def create_parser():
+                         help="Output markdown")
+     parser.add_argument("--repo-root", help="The WPT directory. Use this"
+                         "option if the lint script exists outside the repository")
++    parser.add_argument("--ignore-glob", help="Additional file glob to ignore.")
+     parser.add_argument("--all", action="store_true", help="If no paths are passed, try to lint the whole "
+                         "working directory, not just files that changed")
+     return parser
+@@ -838,16 +839,21 @@ def main(**kwargs):
+ 
+     paths = lint_paths(kwargs, repo_root)
+ 
+-    return lint(repo_root, paths, output_format)
++    ignore_glob = kwargs.get("ignore_glob")
+ 
++    return lint(repo_root, paths, output_format, ignore_glob)
+ 
+-def lint(repo_root, paths, output_format):
++
++def lint(repo_root, paths, output_format, ignore_glob):
+     error_count = defaultdict(int)
+     last = None
+ 
+     with open(os.path.join(repo_root, "lint.whitelist")) as f:
+         whitelist, ignored_files = parse_whitelist(f)
+ 
++    if ignore_glob:
++        ignored_files.add(ignore_glob)
++
+     output_errors = {"json": output_errors_json,
+                      "markdown": output_errors_markdown,
+                      "normal": output_errors_text}[output_format]
+diff --git a/tools/wpt/paths b/tools/wpt/paths
+index 0ef13c96e3..93c97dc02b 100644
+--- a/tools/wpt/paths
++++ b/tools/wpt/paths
+@@ -1,4 +1,3 @@
+-tools/ci/
+ tools/lint/
+ tools/manifest/
+ tools/serve/

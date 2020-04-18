@@ -1,0 +1,66 @@
+<!DOCTYPE HTML>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+
+<style>
+.hideAllContainers .container {
+    display: none;
+}
+</style>
+
+<div class="container">
+  <details id="details1">
+    <p>details1-content</p>
+  </details>
+</div>
+
+<script>
+test(function(t) {
+    var axDetails1 = accessibilityController.accessibleElementById("details1");
+    var axSummary1 = axDetails1.childAtIndex(0);
+    assert_equals(axSummary1.role, "AXRole: AXDisclosureTriangle");
+    assert_equals(axSummary1.name, "Details");
+    assert_equals(axSummary1.nameFrom, "contents");
+    assert_equals(axSummary1.description, "");
+    assert_equals(axSummary1.descriptionFrom, "");
+}, "Details element with no summary");
+</script>
+
+<div class="container">
+  <details id="details2">
+    <summary id="summary2" title="summary2-title">summary2-contents</summary>
+    <p>details2-content</p>
+  </details>
+</div>
+
+<script>
+test(function(t) {
+    var axSummary2 = accessibilityController.accessibleElementById("summary2");
+    assert_equals(axSummary2.name, "summary2-contents");
+    assert_equals(axSummary2.nameFrom, "contents");
+    assert_equals(axSummary2.description, "summary2-title");
+    assert_equals(axSummary2.descriptionFrom, "attribute");
+}, "Summary with title and contents");
+</script>
+
+<div class="container">
+  <details id="details3">
+    <summary id="summary3" aria-label="summary3-aria-label">summary3-contents</summary>
+    <p>details3-content</p>
+  </details>
+</div>
+
+<script>
+test(function(t) {
+    var axSummary3 = accessibilityController.accessibleElementById("summary3");
+    assert_equals(axSummary3.name, "summary3-aria-label");
+    assert_equals(axSummary3.nameFrom, "attribute");
+    assert_equals(axSummary3.description, "summary3-contents");
+    assert_equals(axSummary3.descriptionFrom, "contents");
+}, "Summary with aria-label and contents");
+</script>
+
+<script>
+if (window.testRunner)
+    document.body.className = "hideAllContainers";
+</script>

@@ -1,0 +1,42 @@
+<style>
+    html, body { margin:0; overflow: hidden; }
+</style>
+<script src="../../resources/js-test.js"></script>
+
+<div>
+  This tests that a usually overflow: hidden viewport should be scrollable when
+  scaled. Otherwise, you can't get to content you would have been able to get to
+  had you not been zoomed it.
+</div>
+<div id="console"></div>
+
+<div style='font-size:40px; height: 1000px;'>
+</div>
+
+<script>
+    jsTestIsAsync = true;
+
+    (function() {
+        if (!window.testRunner || !window.internals) {
+            debug("This test only works in the test runner and requires window.internals.");
+            return;
+        }
+
+        // Force a layout.
+        document.body.offsetLeft;
+
+        internals.setPageScaleFactor(2);
+
+        // Note that with ScrollTopLeftInterop enabled, document.scrollingElement is
+        // null because document.body is potentially scrollable (with overflow:hidden
+        // the  box can still be scrolled programmatically).
+        shouldBe("internals.visualViewportScrollY()", "0");
+
+        if (window.eventSender) {
+            eventSender.mouseMoveTo(100, 100);
+            eventSender.mouseScrollBy(0, -10);
+        }
+
+        shouldBecomeEqual("internals.visualViewportScrollY()", "200", finishJSTest);
+    })();
+</script>

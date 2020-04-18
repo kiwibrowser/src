@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Platform Notification Service BrowserTest service page</title>
+  </head>
+  <body>
+    <!-- This page is intended to be used by the cross-platform
+         PlatformNotificationServiceBrowserTest. -->
+    <script src="notification_test_utils.js"></script>
+    <script>
+      var messagePort = null,
+          messageStack = [],
+          expectingMessage = false;
+
+      // Requests permission to display Web Notifications. Will return the
+      // permission level to the DOM Automation Controller.
+      function RequestPermission() {
+        Notification.requestPermission(function (level) {
+          domAutomationController.send(level);
+        });
+      }
+
+      // Instantiates a new non-persistent notification with the given |title|
+      // and |options| and forwards the notification shown or error event.
+      function DisplayNonPersistentNotification(title, options) {
+        const notification = new Notification(title, options || {});
+        notification.addEventListener('show', e =>
+          domAutomationController.send('ok'));
+        notification.addEventListener('error', e =>
+          domAutomationController.send('could not show notification'));
+      }
+
+      // Instantiates a new non-persistent notification with the given |title|
+      // and |options| and then closes it.
+      // Forwards 'ok' upon receiving the 'close' event.
+      function DisplayAndCloseNonPersistentNotification(title, options) {
+        const notification = new Notification(title, options || {});
+        notification.addEventListener('show', e => {
+          notification.close();
+        });
+        notification.addEventListener('close', e => {
+          domAutomationController.send('ok');
+        });
+      }
+
+      // Renews the registered Service Worker registration for this page, then
+      // displays a notification on the activated ServiceWorkerRegistration.
+      function DisplayPersistentNotification(title, options) {
+        options = options || { body: 'Hello, world!',
+                               icon: 'icon.png' };
+
+        GetActivatedServiceWorker('platform_notification_service.js',
+                                  location.pathname)
+            .then(function (registration) {
+              return registration.showNotification(title, options);
+            }).then(function () {
+              messagePort.addEventListener('message', function (event) {
+                if (expectingMessage)
+                  domAutomationController.send(event.data);
+                else
+                  messageStack.push(event.data);
+              });
+
+              domAutomationController.send('ok');
+            }).catch(function (error) {
+              domAutomationController.send('' + error);
+            });
+      }
+
+      // Displays a persistent notification having every field in its options
+      // bag filled out with non-default values.
+      function DisplayPersistentAllOptionsNotification() {
+        DisplayPersistentNotification('Title', {
+          dir: 'rtl',
+          lang: 'nl-NL',
+          body: 'Contents',
+          tag: 'replace-id',
+          image: 'icon.png',
+          icon: 'icon.png',
+          badge: 'icon.png',
+          timestamp: 621046800000,
+          renotify: true,
+          silent: true,
+          requireInteraction: true,
+          data: [
+            { property: 'value' }
+          ],
+          actions: [
+            { action: 'actionId', title: 'actionTitle', icon: 'icon.png' }
+          ]
+        });
+      }
+
+      // Displays a persistent notification with vibrate field.
+      function DisplayPersistentNotificationVibrate() {
+        DisplayPersistentNotification('Title', {
+          body: 'Contents',
+          vibrate: [100, 200, 300]
+        });
+      }
+
+      // Displays a persistent notification with a data: URL as its image.
+      function DisplayPersistentNotificationDataUrlImage() {
+        fetch('icon.png').then(function(response) {
+          return response.blob();
+        }).then(function(blob) {
+          var reader = new FileReader();
+          reader.readAsDataURL(blob);
+          reader.onloadend = function() {
+            DisplayPersistentNotification('Data URL Title', {
+              body: 'Contents',
+              icon: reader.result
+            });
+          };
+        });
+      }
+
+      // Displays a persistent notification with a blob URL as its image.
+      function DisplayPersistentNotificationBlobImage() {
+        fetch('icon.png').then(function(response) {
+          return response.blob();
+        }).then(function(blob) {
+          DisplayPersistentNotification('Blob Title', {
+            body: 'Contents',
+            icon: URL.createObjectURL(blob)
+          });
+        });
+      }
+
+      // Displays a persistent notification with action buttons.
+      function DisplayPersistentNotificationWithActionButtons() {
+        DisplayPersistentNotification('action_button_click', {
+          body: 'Contents',
+          actions: [
+            { action: 'actionId1', title: 'actionTitle1', icon: 'icon.png' },
+            { action: 'actionId2', title: 'actionTitle2', icon: 'icon.png' }
+          ]
+        });
+      }
+
+      // Displays a persistent notification with a reply button.
+      function DisplayPersistentNotificationWithReplyButton() {
+        DisplayPersistentNotification('action_button_click', {
+          body: 'Contents',
+          actions: [
+            { action: 'actionId1', title: 'actionTitle1', icon: 'icon.png',
+              type: 'text' }
+          ]
+        });
+      }
+
+      // Gets a comma separated list of currently displayed notification titles
+      function GetDisplayedNotifications() {
+        GetActivatedServiceWorker('platform_notification_service.js',
+          location.pathname).then(function (sw) {
+            return sw.getNotifications();
+          }).then(function (notifications) {
+            var notificationResult = '';
+            for (var i = 0; i < notifications.length; ++i) {
+              notificationResult = notificationResult.concat(notifications[i].title);
+              if (i < (notifications.length -1))
+                  notificationResult = notificationResult.concat(',');
+            }
+            if (expectingMessage)
+              domAutomationController.send(notificationResult);
+            else
+              messageStack.push(notificationResult);
+
+            domAutomationController.send('ok');
+          }).catch(function (error) {
+            domAutomationController.send('' + error);
+          });
+      }
+
+      // Returns the latest received message from the worker. If no message has
+      // been received, nothing will be done. For successfully registered
+      // Service Workers this is OK, however, since the "message" event handler
+      // in DisplayPersistentNotification will take care of notifying the DOM
+      // Automation Controller instead.
+      function GetMessageFromWorker() {
+        if (!messageStack.length) {
+          expectingMessage = true;
+          return;
+        }
+
+        domAutomationController.send('' + messageStack.pop());
+      }
+    </script>
+  </body>
+</html>

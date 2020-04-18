@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<title>Verify that autoplaying Web Audio from a cross origin iframe is blocked by mediaPlaybackRequiresUserGesture</title>
+<script src='../resources/testharness.js'></script>
+<script src='../resources/testharnessreport.js'></script>
+<body></body>
+<script>
+async_test(t => {
+  window.addEventListener('message', e => {
+    switch (e.data.msg) {
+      case 'clickme':
+        if (!('eventSender' in window))
+          return;
+
+        var boundingRect = document.querySelector('iframe').getBoundingClientRect();
+        var x = boundingRect.left + boundingRect.width / 2;
+        var y = boundingRect.top + boundingRect.height / 2;
+
+        eventSender.mouseMoveTo(x, y);
+        eventSender.mouseDown();
+        eventSender.mouseUp();
+        break;
+      case 'initialState':
+      case 'initialOfflineState':
+      case 'afterResume':
+      case 'afterOscillator':
+      case 'stateOtherContextAfterClick':
+      case 'stateOtherContextAfterSecondClick':
+        assert_equals(e.data.value, 'suspended', e.data.msg);
+        break;
+      case 'stateAfterClick':
+      case 'stateCreatedAfterClick':
+        assert_equals(e.data.value, 'running', e.data.msg);
+        break;
+      case 'done':
+        t.done();
+        break;
+      default:
+        assert_unreached();
+    }
+  });
+
+  var f = document.createElement('iframe');
+  f.src = 'http://localhost:8000/webaudio/resources/autoplay-crossorigin-iframe.html';
+  document.body.appendChild(f);
+});
+</script>

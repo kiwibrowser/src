@@ -1,0 +1,26 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import(['nacl_env'])
+
+# Select the set of tests to run through inbrowser_test_runner.
+exe_list = [
+    'random_test',
+]
+# These conditionals mirror conditionals in
+# dynamic_code_loading/nacl.scons.  The dyncode tests don't work with
+# dynamic linking yet, and they don't build with non-ARM PNaCl.
+if (nacl_env.Bit('nacl_static_link') and
+    not (nacl_env.Bit('bitcode') and not nacl_env.Bit('build_arm'))):
+  exe_list.append('dynamic_load_test')
+
+  # Dynamic code modification is not implemented for ARM yet.
+  if not nacl_env.Bit('build_arm'):
+    exe_list.append('dynamic_modify_test')
+
+if nacl_env.Clone().AllowInlineAssembly():
+  exe_list.append('exception_test')
+
+nacl_env['TESTS_TO_RUN_INBROWSER'] = exe_list

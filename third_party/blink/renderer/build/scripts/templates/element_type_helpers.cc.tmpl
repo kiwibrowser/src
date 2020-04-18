@@ -1,0 +1,52 @@
+{% from "templates/macros.tmpl" import license, source_files_for_generated_file %}
+{{ license() }}
+
+{{source_files_for_generated_file(template_file, input_files)}}
+
+#include "third_party/blink/renderer/core/{{namespace|lower}}_element_type_helpers.h"
+
+#include "third_party/blink/renderer/core/dom/document.h"
+#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+#include "third_party/blink/renderer/platform/wtf/hash_map.h"
+#include "third_party/blink/renderer/platform/wtf/std_lib_extras.h"
+
+namespace blink {
+{% if namespace == "HTML" %}
+using HTMLTypeMap = HashMap<AtomicString, HTMLElementType>;
+
+HTMLTypeMap CreateHTMLTypeMap() {
+  HTMLTypeMap html_type_map;
+  html_type_map.ReserveCapacityForSize({{tags|count}});
+  static constexpr struct {
+    const char* name;
+    HTMLElementType type;
+  } kTags[] = {
+    {% for tag in tags|sort %}
+    { "{{tag.name}}", HTMLElementType::k{{tag.js_interface}} },
+    {% endfor %}
+  };
+  for (const auto& tag : kTags)
+    html_type_map.insert(tag.name, tag.type);
+  return html_type_map;
+}
+
+HTMLElementType htmlElementTypeForTag(const AtomicString& tagName) {
+  DEFINE_STATIC_LOCAL(const HTMLTypeMap, html_type_map, (CreateHTMLTypeMap()));
+
+  auto it = html_type_map.find(tagName);
+  if (it == html_type_map.end())
+    return HTMLElementType::kHTMLUnknownElement;
+
+  {% for tag in tags|sort %}
+  {% if tag.runtimeEnabled %}
+  if (tagName == "{{tag.name}}") {
+    if (!RuntimeEnabledFeatures::{{tag.runtimeEnabled}}Enabled()) {
+      return HTMLElementType::kHTMLUnknownElement;
+    }
+  }
+  {% endif %}
+  {% endfor %}
+  return it->value;
+}
+{% endif %}
+}  // namespace blink

@@ -1,0 +1,234 @@
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+################################################################################
+# This file describes instructions from AMD64 Architecture Programmer's Manual
+#                     Volume 5: 64-Bit Media and x87 Floating-Point Instructions
+#                            Chapter 2: x87 Floating-Point Instruction Reference
+################################################################################
+# File format: see def_format.py
+################################################################################
+# Note that some instructions have alternative name if prefixed with fwait.
+# Since for the purpose of validation fwait is independent instruction, all
+# special handling should happen in decoder_test.c, not at the DFA level (but
+# it's low priority, so maybe we'll drop support for it at all).
+# See http://code.google.com/p/nativeclient/issues/detail?id=3251
+######## F2XM1 #################################################################
+f2xm1, 0xd9 0xf0, CPUFeature_x87
+######## FABS ##################################################################
+fabs, 0xd9 0xe1, CPUFeature_x87
+######## FADD/FADDP/FIADD ######################################################
+fadd f7 t7, 0xd8 0xc0, CPUFeature_x87
+fadd t7 f7, 0xdc 0xc0, CPUFeature_x87
+fadd Mss, 0xd8 /0, CPUFeature_x87 att-show-name-suffix-s
+fadd Msd, 0xdc /0, CPUFeature_x87 att-show-name-suffix-l
+faddp t7 f7, 0xde 0xc0, CPUFeature_x87
+fiadd Msw, 0xde /0, CPUFeature_x87
+fiadd Msi, 0xda /0, CPUFeature_x87 att-show-name-suffix-l
+######## FBLD ##################################################################
+fbld Msb, 0xdf /4, CPUFeature_x87
+######## FBSTP #################################################################
+fbstp Msb, 0xdf /6, CPUFeature_x87
+######## FCHS ##################################################################
+fchs, 0xd9 0xe0, CPUFeature_x87
+######## FCLEX/FNCLEX ##########################################################
+fnclex, 0xdb 0xe2, CPUFeature_x87
+######## FCMOVcc ###############################################################
+fcmovb f7 t7, 0xda 0xc0, CPUFeature_CMOVx87
+fcmovbe f7 t7, 0xda 0xd0, CPUFeature_CMOVx87
+fcmove f7 t7, 0xda 0xc8, CPUFeature_CMOVx87
+fcmovnb f7 t7, 0xdb 0xc0, CPUFeature_CMOVx87
+fcmovnbe f7 t7, 0xdb 0xd0, CPUFeature_CMOVx87
+fcmovne f7 t7, 0xdb 0xc8, CPUFeature_CMOVx87
+fcmovnu f7 t7, 0xdb 0xd8, CPUFeature_CMOVx87
+fcmovu f7 t7, 0xda 0xd8, CPUFeature_CMOVx87
+######## FCOM/FCOMP/FCOMPP #####################################################
+fcom f7, 0xd8 0xd0, CPUFeature_x87
+fcom Mss, 0xd8 /2, CPUFeature_x87 att-show-name-suffix-s
+fcom Msd, 0xdc /2, CPUFeature_x87 att-show-name-suffix-l
+fcomp f7, 0xd8 0xd8, CPUFeature_x87
+fcomp Mss, 0xd8 /3, CPUFeature_x87 att-show-name-suffix-s
+fcomp Msd, 0xdc /3, CPUFeature_x87 att-show-name-suffix-l
+fcompp, 0xde 0xd9, CPUFeature_x87
+######## FCOMI/FCOMIP ##########################################################
+fcomi f7 t7, 0xdb 0xf0, CPUFeature_x87
+fcomip f7 t7, 0xdf 0xf0, CPUFeature_x87
+######## FCOS ##################################################################
+fcos, 0xd9 0xff, CPUFeature_x87
+######## FDECSTP ###############################################################
+fdecstp, 0xd9 0xf6, CPUFeature_x87
+######## FDIV/FDIVP/FIDIV ######################################################
+# "fdiv" and "fdivr" are swapped for some operands in objdump.  This is known
+# issue, but it can not be fixed because of compatibility concerns.  Here we use
+# objdump-compatible names.
+fdiv f7 t7, 0xd8 0xf0, CPUFeature_x87
+fdivr t7 f7, 0xdc 0xf8, CPUFeature_x87
+fdiv Mss, 0xd8 /6, CPUFeature_x87 att-show-name-suffix-s
+fdiv Msd, 0xdc /6, CPUFeature_x87 att-show-name-suffix-l
+fdivrp t7 f7, 0xde 0xf8, CPUFeature_x87
+fidiv Msw, 0xde /6, CPUFeature_x87
+fidiv Msi, 0xda /6, CPUFeature_x87 att-show-name-suffix-l
+######## FDIVR/FDIVRP/FIDIVR ###################################################
+# "fdivr" and "fdiv" are swapped for some operands in objdump.  This is known
+# issue, but it can not be fixed because of compatibility concerns.  Here we use
+# objdump-compatible names.
+fdivr f7 t7, 0xd8 0xf8, CPUFeature_x87
+fdiv t7 f7, 0xdc 0xf0, CPUFeature_x87
+fdivr Mss, 0xd8 /7, CPUFeature_x87 att-show-name-suffix-s
+fdivr Msd, 0xdc /7, CPUFeature_x87 att-show-name-suffix-l
+fdivp t7 f7, 0xde 0xf0, CPUFeature_x87
+fidivr Msw, 0xde /7, CPUFeature_x87
+fidivr Msi, 0xda /7, CPUFeature_x87 att-show-name-suffix-l
+######## FFREE #################################################################
+ffree f7, 0xdd 0xc0, CPUFeature_x87
+######## FICOM/FICOMP ##########################################################
+ficom Msw, 0xde /2, CPUFeature_x87
+ficom Msi, 0xda /2, CPUFeature_x87 att-show-name-suffix-l
+ficomp Msw, 0xde /3, CPUFeature_x87
+ficomp Msi, 0xda /3, CPUFeature_x87 att-show-name-suffix-l
+######## FILD ##################################################################
+fild Msw, 0xdf /0, CPUFeature_x87
+fild Msd, 0xdb /0, CPUFeature_x87 att-show-name-suffix-l
+fild Msq, 0xdf /5, CPUFeature_x87 att-show-name-suffix-ll
+######## FINCSTP ###############################################################
+fincstp, 0xd9 0xf7, CPUFeature_x87
+######## FINIT/FNINIT ##########################################################
+fninit, 0xdb 0xe3, CPUFeature_x87
+######## FIST/FISTP ############################################################
+fist Msw, 0xdf /2, CPUFeature_x87
+fist Msi, 0xdb /2, CPUFeature_x87 att-show-name-suffix-l
+fistp Msw, 0xdf /3, CPUFeature_x87
+fistp Msi, 0xdb /3, CPUFeature_x87 att-show-name-suffix-l
+fistp Msq, 0xdf /7, CPUFeature_x87 att-show-name-suffix-ll
+######## FISTTP ################################################################
+fisttp Msw, 0xdf /1, CPUFeature_x87
+fisttp Msi, 0xdb /1, CPUFeature_x87 att-show-name-suffix-l
+fisttp Msq, 0xdd /1, CPUFeature_x87 att-show-name-suffix-ll
+######## FLD ###################################################################
+fld f7, 0xd9 0xc0, CPUFeature_x87
+fld Mss, 0xd9 /0, CPUFeature_x87 att-show-name-suffix-s
+fld Msd, 0xdd /0, CPUFeature_x87 att-show-name-suffix-l
+fld Mst, 0xdb /5, CPUFeature_x87 att-show-name-suffix-t
+######## FLD1 ##################################################################
+fld1, 0xd9 0xe8, CPUFeature_x87
+######## FLDCW #################################################################
+fldcw Msw, 0xd9 /5, CPUFeature_x87
+######## FLDENV ################################################################
+fldenv Mse, 0xd9 /4, CPUFeature_x87
+fldenvs Mse, data16 0xd9 /4, CPUFeature_x87 nacl-forbidden
+fldenvs Mse, data16 rexw 0xd9 /4, amd64 CPUFeature_x87 nacl-forbidden
+######## FLDL2E ################################################################
+fldl2e, 0xd9 0xea, CPUFeature_x87
+######## FLDL2T ################################################################
+fldl2t, 0xd9 0xe9, CPUFeature_x87
+######## FLDLG2 ################################################################
+fldlg2, 0xd9 0xec, CPUFeature_x87
+######## FLDLN2 ################################################################
+fldln2, 0xd9 0xed, CPUFeature_x87
+######## FLDPI #################################################################
+fldpi, 0xd9 0xeb, CPUFeature_x87
+######## FLDZ ##################################################################
+fldz, 0xd9 0xee, CPUFeature_x87
+######## FMUL/FMULP/FIMUL ######################################################
+fmul f7 t7, 0xd8 0xc8, CPUFeature_x87
+fmul t7 f7, 0xdc 0xc8, CPUFeature_x87
+fmul Mss, 0xd8 /1, CPUFeature_x87 att-show-name-suffix-s
+fmul Msd, 0xdc /1, CPUFeature_x87 att-show-name-suffix-l
+fmulp t7 f7, 0xde 0xc8, CPUFeature_x87
+fimul Msw, 0xde /1, CPUFeature_x87
+fimul Msi, 0xda /1, CPUFeature_x87 att-show-name-suffix-l
+######## FNOP ##################################################################
+fnop, 0xd9 0xd0, CPUFeature_x87
+######## FPATAN ################################################################
+fpatan, 0xd9 0xf3, CPUFeature_x87
+######## FPREM #################################################################
+fprem, 0xd9 0xf8, CPUFeature_x87
+######## FPREM1 ################################################################
+fprem1, 0xd9 0xf5, CPUFeature_x87
+######## FPTAN #################################################################
+fptan, 0xd9 0xf2, CPUFeature_x87
+######## FRNDINT ###############################################################
+frndint, 0xd9 0xfc, CPUFeature_x87
+######## FRSTOR ################################################################
+frstor Msr, 0xdd /4, CPUFeature_x87
+frstors Msr, data16 0xdd /4, CPUFeature_x87 nacl-forbidden
+frstors Msr, data16 rexw 0xdd /4, amd64 CPUFeature_x87 nacl-forbidden
+######## FSAVE/FNSAVE ##########################################################
+fnsave Msr, 0xdd /6, CPUFeature_x87
+fnsaves Msr, data16 0xdd /6, CPUFeature_x87 nacl-forbidden
+fnsaves Msr, data16 rexw 0xdd /6, amd64 CPUFeature_x87 nacl-forbidden
+######## FSCALE ################################################################
+fscale, 0xd9 0xfd, CPUFeature_x87
+######## FSIN ##################################################################
+fsin, 0xd9 0xfe, CPUFeature_x87
+######## FSINCOS ###############################################################
+fsincos, 0xd9 0xfb, CPUFeature_x87
+######## FSQRT #################################################################
+fsqrt, 0xd9 0xfa, CPUFeature_x87
+######## FST/FSTP ##############################################################
+fst f7, 0xdd 0xd0, CPUFeature_x87
+fst Mss, 0xd9 /2, CPUFeature_x87 att-show-name-suffix-s
+fst Msd, 0xdd /2, CPUFeature_x87 att-show-name-suffix-l
+fstp f7, 0xdd 0xd8, CPUFeature_x87
+fstp Mss, 0xd9 /3, CPUFeature_x87 att-show-name-suffix-s
+fstp Msd, 0xdd /3, CPUFeature_x87 att-show-name-suffix-l
+fstp Mst, 0xdb /7, CPUFeature_x87 att-show-name-suffix-t
+######## FSTCW/FNSTCW ##########################################################
+fnstcw Msw, 0xd9 /7, CPUFeature_x87
+######## FSTENV/FNSTENV ########################################################
+fnstenv Mse, 0xd9 /6, CPUFeature_x87
+fnstenvs Mse, data16 0xd9 /6, CPUFeature_x87 nacl-forbidden
+fnstenvs Mse, data16 rexw 0xd9 /6, amd64 CPUFeature_x87 nacl-forbidden
+######## FSTSW/FNSTSW ##########################################################
+fnstsw Mw, 0xdd /7, CPUFeature_x87
+fnstsw aw, 0xdf 0xe0, CPUFeature_x87
+######## FSUB/FSUBP/FISUB ######################################################
+# "fsub" and "fsubr" are swapped for some operands in objdump.  This is known
+# issue, but it can not be fixed because of compatibility concerns.  Here we use
+# objdump-compatible names.
+fsub f7 t7, 0xd8 0xe0, CPUFeature_x87
+fsubr t7 f7, 0xdc 0xe8, CPUFeature_x87
+fsub Mss, 0xd8 /4, CPUFeature_x87 att-show-name-suffix-s
+fsub Msd, 0xdc /4, CPUFeature_x87 att-show-name-suffix-l
+fsubrp t7 f7, 0xde 0xe8, CPUFeature_x87
+fisub Msw, 0xde /4, CPUFeature_x87
+fisub Msi, 0xda /4, CPUFeature_x87 att-show-name-suffix-l
+######## FSUBR/FSUBRP/FISUBR ###################################################
+# "fsub" and "fsubr" are swapped for some operands in objdump.  This is known
+# issue, but it can not be fixed because of compatibility concerns.  Here we use
+# objdump-compatible names.
+fsubr f7 t7, 0xd8 0xe8, CPUFeature_x87
+fsub t7 f7, 0xdc 0xe0, CPUFeature_x87
+fsubr Mss, 0xd8 /5, CPUFeature_x87 att-show-name-suffix-s
+fsubr Msd, 0xdc /5, CPUFeature_x87 att-show-name-suffix-l
+fsubp t7 f7, 0xde 0xe0, CPUFeature_x87
+fisubr Msw, 0xde /5, CPUFeature_x87
+fisubr Msi, 0xda /5, CPUFeature_x87 att-show-name-suffix-l
+######## FTST ##################################################################
+ftst, 0xd9 0xe4, CPUFeature_x87
+######## FUCOM/FUCOMP/FUCOMPP ##################################################
+fucom f7, 0xdd 0xe0, CPUFeature_x87
+fucomp f7, 0xdd 0xe8, CPUFeature_x87
+fucompp, 0xda 0xe9, CPUFeature_x87
+######## FUCOMI/FUCOMIP ########################################################
+fucomi f7 t7, 0xdb 0xe8, CPUFeature_x87
+fucomip f7 t7, 0xdf 0xe8, CPUFeature_x87
+######## FWAIT #################################################################
+fwait, 0x9b, CPUFeature_x87
+######## FXAM ##################################################################
+fxam, 0xd9 0xe5, CPUFeature_x87
+######## FXCH ##################################################################
+fxch f7, 0xd9 0xc8, CPUFeature_x87
+######## FXRSTOR ###############################################################
+fxrstor Msx, 0x0f 0xae /1, norexw CPUFeature_FXSR
+fxrstor64 Msx, rexw 0x0f 0xae /1, amd64 CPUFeature_FXSR
+######## FXSAVE ################################################################
+fxsave Msx, 0x0f 0xae /0, norexw CPUFeature_FXSR
+fxsave64 Msx, rexw 0x0f 0xae /0, amd64 CPUFeature_FXSR
+######## FXTRACT ###############################################################
+fxtract, 0xd9 0xf4, CPUFeature_x87
+######## FYL2X #################################################################
+fyl2x, 0xd9 0xf1, CPUFeature_x87
+######## FYL2XP1 ###############################################################
+fyl2xp1, 0xd9 0xf9, CPUFeature_x87
+################################################################################

@@ -1,0 +1,57 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "ash/system/power/power_event_observer_test_api.h"
+
+#include "ash/system/power/power_event_observer.h"
+#include "base/time/time.h"
+#include "ui/compositor/compositor_observer.h"
+
+namespace ash {
+
+PowerEventObserverTestApi::PowerEventObserverTestApi(
+    PowerEventObserver* power_event_observer)
+    : power_event_observer_(power_event_observer) {}
+
+PowerEventObserverTestApi::~PowerEventObserverTestApi() = default;
+
+void PowerEventObserverTestApi::CompositingDidCommit(
+    ui::Compositor* compositor) {
+  if (!power_event_observer_->compositor_watcher_.get())
+    return;
+  power_event_observer_->compositor_watcher_->OnCompositingDidCommit(
+      compositor);
+}
+
+void PowerEventObserverTestApi::CompositingStarted(ui::Compositor* compositor) {
+  if (!power_event_observer_->compositor_watcher_.get())
+    return;
+  power_event_observer_->compositor_watcher_->OnCompositingStarted(
+      compositor, base::TimeTicks());
+}
+
+void PowerEventObserverTestApi::CompositingEnded(ui::Compositor* compositor) {
+  if (!power_event_observer_->compositor_watcher_.get())
+    return;
+  power_event_observer_->compositor_watcher_->OnCompositingEnded(compositor);
+}
+
+void PowerEventObserverTestApi::CompositeFrame(ui::Compositor* compositor) {
+  if (!power_event_observer_->compositor_watcher_.get())
+    return;
+  power_event_observer_->compositor_watcher_->OnCompositingDidCommit(
+      compositor);
+  power_event_observer_->compositor_watcher_->OnCompositingStarted(
+      compositor, base::TimeTicks());
+  power_event_observer_->compositor_watcher_->OnCompositingEnded(compositor);
+}
+
+bool PowerEventObserverTestApi::SimulateCompositorsReadyForSuspend() {
+  if (!power_event_observer_->compositor_watcher_.get())
+    return false;
+  power_event_observer_->OnCompositorsReadyForSuspend();
+  return true;
+}
+
+}  // namespace ash

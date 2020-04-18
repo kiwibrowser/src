@@ -1,0 +1,185 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+[
+  {
+    "namespace": "terminalPrivate",
+    "compiler_options": {
+      "implemented_in": "chrome/browser/extensions/api/terminal/terminal_private_api.h"
+    },
+    "description": "none",
+    "types": [
+      {
+        "id": "OutputType",
+        "type": "string",
+        "enum": ["stdout", "stderr", "exit"],
+        "description": "Type of the output stream from which output came. When process exits, output type will be set to exit"
+      }
+    ],
+    "functions": [
+      {
+        "name": "openTerminalProcess",
+        "type": "function",
+        "description": "Starts new process.",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "processName",
+            "description": "Name of the process to open. May be 'crosh' or 'vmshell'."
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "name": "args",
+            "optional": true,
+            "description": "Command line arguments to pass to the process."
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "optional": false,
+            "description": "Returns id of the launched process. If no process was launched returns -1.",
+            "parameters": [
+              {
+                "name": "pid",
+                "description": "Id of the launched process.",
+                "type": "integer"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "closeTerminalProcess",
+        "type": "function",
+        "description": "Closes previously opened process.",
+        "parameters": [
+          {
+            "name": "pid",
+            "type": "integer",
+            "description": "Process id of the process we want to close."
+          },
+          {
+            "name": "callback",
+            "type": "function",
+            "optional": true,
+            "description": "Function that gets called when close operation is started for the process. Returns success of the function.",
+            "parameters": [
+              {
+                "name": "success",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "sendInput",
+        "type": "function",
+        "description": "Sends input that will be routed to stdin of the process with the specified id.",
+        "parameters": [
+          {
+            "name": "pid",
+            "type": "integer",
+            "description": "The id of the process to which we want to send input."
+          },
+          {
+            "name": "input",
+            "type": "string",
+            "description": "Input we are sending to the process."
+          },
+          {
+            "name": "callback",
+            "type": "function",
+            "optional": true,
+            "description": "Callback that will be called when sendInput method ends. Returns success.",
+            "parameters": [
+              {
+                "name": "success",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "onTerminalResize",
+        "type": "function",
+        "description": "Notify the process with the id id that terminal window size has changed.",
+        "parameters": [
+          {
+            "name": "pid",
+            "type": "integer",
+            "description": "The id of the process."
+          },
+          {
+            "name": "width",
+            "type": "integer",
+            "description": "New window width (as column count)."
+          },
+          {
+            "name": "height",
+            "type": "integer",
+            "description": "New window height (as row count)."
+          },
+          {
+            "name": "callback",
+            "type": "function",
+            "optional": true,
+            "description": "Callback that will be called when sendInput method ends. Returns success.",
+            "parameters": [
+              {
+                "name": "success",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "ackOutput",
+        "type": "function",
+        "description": "Called from |onProcessOutput| when the event is dispatched to terminal extension. Observing the terminal process output will be paused after |onProcessOutput| is dispatched until this method is called.",
+        "parameters": [
+          {
+            "name": "tabId",
+            "type": "integer",
+            "description": "Tab ID from |onProcessOutput| event."
+          },
+          {
+            "name": "pid",
+            "type": "integer",
+            "description": "The id of the process to which |onProcessOutput| was dispatched."
+          }
+        ]
+      }
+    ],
+    "events": [
+      {
+        "name": "onProcessOutput",
+        "type": "function",
+        "description": "Fired when an opened process writes something to its output. Observing further process output will be blocked until |ackOutput| for the terminal is called. Internally, first event argument will be ID of the tab that contains terminal instance for which this event is intended. This argument will be stripped before passing the event to the extension.",
+        "parameters": [
+          {
+            "name": "pid",
+            "type": "integer",
+            "description": "Id of the process from which the output came."
+          },
+          {
+            "name": "type",
+            "$ref": "OutputType",
+            "description": "Type of the output stream from which output came. When process exits, output type will be set to exit"
+          },
+          {
+            "name": "text",
+            "type": "string",
+            "description": "Text that was written to the output stream."
+          }
+        ]
+      }
+    ]
+  }
+]

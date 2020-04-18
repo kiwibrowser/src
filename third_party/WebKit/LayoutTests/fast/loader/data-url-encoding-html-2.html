@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<meta charset="koi8-r">
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<body onload="doTest()">
+<iframe src="data:text/html,<meta charset='utf-8'><body>ðÒÏ×ÅÒËÁ</body>"></iframe>
+<iframe src="data:text/html,<meta charset='utf-8'><body foo='#'>ðÒÏ×ÅÒËÁ</body>"></iframe>
+<iframe src="data:text/html,<meta charset='utf-8'><body>%D0%9F%D1%80%D0%BE%D0%B2%D0%B5%D1%80%D0%BA%D0%B0</body>"></iframe>
+<script>
+function doTest() {
+  test(() => {
+    assert_equals(window.frames[0].document.body.innerHTML, "ðÒÏ×ÅÒËÁ");
+  }, "Test that data: URLs without charset are handled correctly in the first frame.");
+  test(() => {
+    assert_equals(window.frames[1].document.body.innerHTML, "ðÒÏ×ÅÒËÁ");
+  }, "Test that data: URLs without charset are handled correctly in the second frame.");
+  test(() => {
+    assert_equals(window.frames[2].document.body.innerHTML, "ðÒÏ×ÅÒËÁ");
+  }, "Test that data: URLs without charset are handled correctly in the third frame.");
+}
+</script>
+</body>

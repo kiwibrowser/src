@@ -1,0 +1,101 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// Internal, used by fileManagerPrivate's custom bindings.
+[platforms=("chromeos"),
+ implemented_in="chrome/browser/chromeos/extensions/file_manager/file_manager_private_api_functions.h"]
+namespace fileManagerPrivateInternal {
+  // Entry information that renderers need to create an Entry instance.
+  dictionary EntryDescription {
+    DOMString fileSystemName;
+    DOMString fileSystemRoot;
+    DOMString fileFullPath;
+    boolean fileIsDirectory;
+  };
+
+  callback SimpleCallback = void();
+  callback ResolveIsolatedEntriesCallback = void(EntryDescription[] entries);
+  callback GetEntryPropertiesCallback = void(
+      fileManagerPrivate.EntryProperties[] entryProperties);
+  callback AddFileWatchCallback = void(optional boolean success);
+  callback RemoveFileWatchCallback = void(optional boolean success);
+  callback GetCustomActionsCallback = void(fileSystemProvider.Action[] actions);
+  callback ComputeChecksumCallback = void(DOMString checksum);
+  callback GetMimeTypeCallback = void(DOMString result);
+  callback ExecuteTaskCallback = void(fileManagerPrivate.TaskResult result);
+  callback GetFileTasksCallback = void(fileManagerPrivate.FileTask[] tasks);
+  callback GetUrlCallback = void(DOMString url);
+  callback GetUrlCallback = void(DOMString url);
+  callback StartCopyCallback = void(long copyId);
+  callback ZipSelectionCallback = void(optional boolean success);
+  callback ValidatePathNameLengthCallback = void(boolean result);
+  callback GetDirectorySizeCallback = void(double size);
+  callback GetRecentFilesCallback = void(EntryDescription[] entries);
+
+  interface Functions {
+    static void resolveIsolatedEntries(DOMString[] urls,
+                                       ResolveIsolatedEntriesCallback callback);
+    static void getEntryProperties(
+        DOMString[] urls,
+        fileManagerPrivate.EntryPropertyName[] names,
+        GetEntryPropertiesCallback callback);
+    static void addFileWatch(
+        DOMString url,
+        AddFileWatchCallback callback);
+    static void removeFileWatch(
+        DOMString url,
+        RemoveFileWatchCallback callback);
+    static void getCustomActions(DOMString[] urls,
+                                 GetCustomActionsCallback callback);
+    static void executeCustomAction(DOMString[] urls,
+                                    DOMString actionId,
+                                    SimpleCallback callback);
+    static void computeChecksum(DOMString url,
+                                ComputeChecksumCallback callback);
+    static void getMimeType(DOMString url,
+                            GetMimeTypeCallback callback);
+    static void pinDriveFile(DOMString url,
+                             boolean pin,
+                             SimpleCallback callback);
+    static void ensureFileDownloaded(DOMString url,
+                             SimpleCallback callback);
+    static void executeTask(DOMString taskId,
+                            DOMString[] urls,
+                            ExecuteTaskCallback callback);
+    static void setDefaultTask(DOMString taskId,
+                               DOMString[] urls,
+                               DOMString[] mimeTypes,
+                               SimpleCallback callback);
+    static void getFileTasks(DOMString[] urls,
+                             GetFileTasksCallback callback);
+    static void getShareUrl(DOMString  url, GetUrlCallback callback);
+    static void getDownloadUrl(DOMString url, GetUrlCallback callback);
+    static void requestDriveShare(DOMString url,
+                                fileManagerPrivate.DriveShareType shareType,
+                                SimpleCallback callback);
+    static void setEntryTag(DOMString url,
+                            fileManagerPrivate.EntryTagVisibility visibility,
+                            DOMString key,
+                            DOMString value,
+                            SimpleCallback callback);
+    static void cancelFileTransfers(DOMString[] urls,
+                                    optional SimpleCallback callback);
+    static void startCopy(DOMString url,
+                          DOMString parentUrl,
+                          DOMString newName,
+                          StartCopyCallback callback);
+    static void zipSelection(DOMString parentUrl,
+                             DOMString[] urls,
+                             DOMString destName,
+                             ZipSelectionCallback callback);
+    static void validatePathNameLength(
+        DOMString parentUrl,
+        DOMString name,
+        ValidatePathNameLengthCallback callback);
+    static void getDirectorySize(DOMString url,
+                                 GetDirectorySizeCallback callback);
+    static void getRecentFiles(fileManagerPrivate.SourceRestriction restriction,
+                               GetRecentFilesCallback callback);
+  };
+};

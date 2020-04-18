@@ -1,0 +1,75 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(`Tests requests loaded from disk cache have correct timing\n`);
+  await TestRunner.loadModule('network_test_runner');
+  await TestRunner.loadModule('console_test_runner');
+  await TestRunner.showPanel('network');
+  await TestRunner.addScriptTag('resources/gc.js');
+  await TestRunner.evaluateInPagePromise(`
+      var scriptElement;
+      function loadScript()
+      {
+          scriptElement = document.createElement("script");
+          scriptElement.src = "resources/cached-script.php";
+          document.head.appendChild(scriptElement);
+      }
+
+      function unloadScript()
+      {
+          scriptElement.parentElement.removeChild(scriptElement);
+      }
+  `);
+
+  var timeZero = 0;
+
+  NetworkTestRunner.recordNetwork();
+  TestRunner.NetworkAgent.setCacheDisabled(true).then(step1);
+
+  function step1() {
+    ConsoleTestRunner.addConsoleSniffer(step2);
+    TestRunner.evaluateInPage('loadScript()');
+  }
+
+  function step2(event) {
+    TestRunner.evaluateInPage('unloadScript()', step3);
+  }
+
+  function step3() {
+    TestRunner.evaluateInPage('gc()', step4);
+  }
+
+  function step4() {
+    TestRunner.NetworkAgent.setCacheDisabled(true).then(step5);
+  }
+
+  function step5() {
+    var request = NetworkTestRunner.networkRequests().pop();
+    TestRunner.addResult('URL:' + request.url());
+    TestRunner.addResult('from memory cache: ' + !!request._fromMemoryCache);
+    TestRunner.addResult('from disk cache: ' + !!request._fromDiskCache);
+    TestRunner.addResult('has timing: ' + !!request._timing);
+    TestRunner.addResult('');
+    timeZero = request._timing.requestTime;
+    TestRunner.NetworkAgent.setCacheDisabled(false).then(step6);
+  }
+
+  function step6() {
+    ConsoleTestRunner.addConsoleSniffer(step7);
+    TestRunner.evaluateInPage('loadScript()');
+  }
+
+  function step7() {
+    var request = NetworkTestRunner.networkRequests().pop();
+    TestRunner.addResult('URL:' + request.url());
+    TestRunner.addResult('from memory cache: ' + !!request._fromMemoryCache);
+    TestRunner.addResult('from disk cache: ' + !!request._fromDiskCache);
+    TestRunner.addResult('has timing: ' + !!request._timing);
+    TestRunner.addResult('');
+    var time = request._timing.requestTime;
+    TestRunner.addResult('Second request starts later than first: ' + (time > timeZero));
+    TestRunner.completeTest();
+  }
+})();

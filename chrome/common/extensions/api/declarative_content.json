@@ -1,0 +1,170 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+[
+  {
+    "namespace": "declarativeContent",
+    "description": "Use the <code>chrome.declarativeContent</code> API to take actions depending on the content of a page, without requiring permission to read the page's content.",
+    "types": [
+      {
+        "id": "ImageDataType",
+        "type": "binary",
+        "isInstanceOf": "ImageData",
+        "additionalProperties": { "type": "any" },
+        "description": "See <a href=\"https://developer.mozilla.org/en-US/docs/Web/API/ImageData\">https://developer.mozilla.org/en-US/docs/Web/API/ImageData</a>.",
+        "inline_doc": true
+      },
+      {
+        "id": "PageStateMatcherInstanceType",
+        "type": "string",
+        "enum": ["declarativeContent.PageStateMatcher"]
+      },
+      {
+        "id": "ShowPageActionInstanceType",
+        "type": "string",
+        "enum": ["declarativeContent.ShowPageAction"]
+      },
+      {
+        "id": "SetIconInstanceType",
+        "type": "string",
+        "enum": ["declarativeContent.SetIcon"]
+      },
+      {
+        "id": "RequestContentScriptInstanceType",
+        "type": "string",
+        "enum": ["declarativeContent.RequestContentScript"]
+      },
+      {
+        "id": "PageStateMatcher",
+        "type": "object",
+        "description": "Matches the state of a web page by various criteria.",
+        "properties": {
+          "pageUrl": {
+            "$ref": "events.UrlFilter",
+            "description": "Matches if the condition of the UrlFilter are fulfilled for the top-level URL of the page.",
+            "optional": true
+          },
+          "css": {
+            "type": "array",
+            "optional": true,
+            "description": "Matches if all of the CSS selectors in the array match displayed elements in a frame with the same origin as the page's main frame.  All selectors in this array must be <a href=\"http://www.w3.org/TR/selectors4/#compound\">compound selectors</a> to speed up matching.  Note that listing hundreds of CSS selectors or CSS selectors that match hundreds of times per page can still slow down web sites.",
+            // TODO(jyasskin): Figure out if we want to require all
+            // the selectors to match in the same frame, or allow several
+            // frames to contribute to a match.
+            "items": { "type": "string" }
+//        },
+//          TODO: "text": {
+//            "type": "array",
+//            "optional": true,
+//            "description": "Matches if all of the regular expressions in the array match text in the page. The regular expressions use the <a href=\"https://github.com/google/re2/blob/master/doc/syntax.txt\">RE2 syntax</a>.",
+//            "items": { "type": "string" }
+          },
+          "isBookmarked": {
+            "type": "boolean",
+            "description": "Matches if the bookmarked state of the page is equal to the specified value. Requres the <a href='declare_permissions'>bookmarks permission</a>.",
+            "optional": true
+          },
+          "instanceType": {
+            "$ref": "PageStateMatcherInstanceType",
+            "nodoc": true
+          }
+        }
+      },
+      {
+        "id": "ShowPageAction",
+        "description": "Declarative event action that shows the extension's $(ref:pageAction page action) while the corresponding conditions are met.  This action can be used without <a href=\"declare_permissions#host-permissions\">host permissions</a>, but the extension must have a page action.  If the extension takes the <a href=\"activeTab.html\">activeTab</a> permission, a click on the page action will grant access to the active tab.",
+        "type": "object",
+        "properties": {
+          "instanceType": {
+            "$ref": "ShowPageActionInstanceType",
+            "nodoc": true
+          }
+        }
+      },
+      {
+        "id": "SetIcon",
+        "description": "Declarative event action that sets the n-<abbr title=\"device-independent pixel\">dip</abbr> square icon for the extension's $(ref:pageAction page action) or $(ref:browserAction browser action) while the corresponding conditions are met.  This action can be used without <a href=\"declare_permissions.html#host-permissions\">host permissions</a>, but the extension must have  page or browser action.<p>Exactly one of <code>imageData</code> or <code>path</code> must be specified.  Both are dictionaries mapping a number of pixels to an image representation. The image representation in <code>imageData</code> is an<a href=\"https://developer.mozilla.org/en-US/docs/Web/API/ImageData\">ImageData</a> object, for example from a <code>&lt;canvas></code> element, while the image representation in <code>path</code> is the path to an image file relative to the extension's manifest.  If <code>scale</code> screen pixels fit into a device-independent pixel, the <code>scale * n</code> icon will be used.  If that scale is missing, another image will be resized to the needed size.",
+        "type": "object",
+        "properties": {
+          "instanceType": {
+            "$ref": "SetIconInstanceType",
+            "nodoc": true
+          },
+          "imageData": {
+            "choices": [
+              { "$ref": "ImageDataType" },
+              {
+                "type": "object",
+                "additionalProperties": { "type": "any" }
+              }
+            ],
+            "optional": true,
+            "description": "Either an ImageData object or a dictionary {size -> ImageData} representing icon to be set. If the icon is specified as a dictionary, the actual image to be used is chosen depending on screen's pixel density. If the number of image pixels that fit into one screen space unit equals <code>scale</code>, then image with size <code>scale</code> * n will be selected, where n is the size of the icon in the UI. At least one image must be specified. Note that 'details.imageData = foo' is equivalent to 'details.imageData = {'16': foo}'"
+          }
+//          TODO: "path": {
+//            "choices": [
+//              { "type": "string" },
+//              {
+//                "type": "object",
+//                "additionalProperties": { "type": "any" }
+//              }
+//            ],
+//            "optional": true,
+//            "description": "Either a relative image path or a dictionary {size -> relative image path} pointing to icon to be set. If the icon is specified as a dictionary, the actual image to be used is chosen depending on screen's pixel density. If the number of image pixels that fit into one screen space unit equals <code>scale</code>, then image with size <code>scale</code> * n will be selected, where n is the size of the icon in the UI. At least one image must be specified. Note that 'details.path = foo' is equivalent to 'details.path = {'16': foo}'"
+//          }
+        }
+      },
+      {
+        "id": "RequestContentScript",
+        "description": "Declarative event action that injects a content script. <p><b>WARNING:</b> This action is still experimental and is not supported on stable builds of Chrome.</p>",
+        "type": "object",
+        "properties": {
+          "css": {
+            "type": "array",
+            "optional": true,
+            "description": "Names of CSS files to be injected as a part of the content script.",
+            "items": { "type": "string" }
+          },
+          "js": {
+            "type": "array",
+            "optional": true,
+            "description": "Names of Javascript files to be injected as a part of the content script.",
+            "items": { "type": "string" }
+          },
+          "allFrames": {
+            "type": "boolean",
+            "optional": true,
+            "description": "Whether the content script runs in all frames of the matching page, or only the top frame. Default is false."
+          },
+          "matchAboutBlank": {
+            "type": "boolean",
+            "optional": true,
+            "description": "Whether to insert the content script on about:blank and about:srcdoc. Default is false."
+          },
+          "instanceType": {
+            "$ref": "RequestContentScriptInstanceType",
+            "nodoc": true
+          }
+        }
+      }
+    ],
+    "functions": [
+    ],
+    "events": [
+      {
+        "name": "onPageChanged",
+        "options": {
+          "supportsListeners": false,
+          "supportsRules": true,
+          "conditions": ["declarativeContent.PageStateMatcher"],
+          "actions": [
+            "declarativeContent.RequestContentScript",
+            "declarativeContent.SetIcon",
+            "declarativeContent.ShowPageAction"
+          ]
+        }
+      }
+    ]
+  }
+]

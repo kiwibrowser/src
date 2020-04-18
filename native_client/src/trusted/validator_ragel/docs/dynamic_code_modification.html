@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+<head>
+<title>Dynamic code modification rules</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+
+<style type="text/css">
+  .hoverable {
+    color: green;
+    border-bottom: 1px dotted;
+  }
+</style>
+
+</head>
+
+<body>
+<h2>1. ia32 code modification rules</h2>
+
+<ol>
+<li>Replacement code block must be valid as per regular NaCl ia32 rules with one exception (see below).</li>
+<li>Boundaries of the instructions must not be changed.</li>
+<li>Superinstructions (<code>naclcall</code>/<code>nacljmp</code>) must not be changed.</li>
+<li>One tiny exception to the rule #1: if instruction is <b>direct</b> jump or <b>direct</b> call and it refers unaligned address outside of the [<code>dest</code>, <code>dest</code>+<code>size</code>) region then it’s allowed as long as it’s not modified.</li>
+</ol>
+<p>The exception above exist to support modifications of small pieces of code in a large code block.  If code was accepted by the <code>nacl_dyncode_create</code> then it means that all the targets in all <code>j<i>cc</i></code>, <code>jmp</code>, and <code>call</code> instructions are valid WRT their targets — and if <code>j<i>cc</i></code>, <code>jmp</code>, or <code>call</code> point to unknown (in the <code>nacl_dyncode_modify</code>) address everything is fine as long as this address is unmodified: if it was valid once it’s valid always because modifications of instruction boundaries are not allowed.</p>
+
+<hr />
+
+<h2>2. amd64 (aka x86-64, aka intel64) code modification rules</h2>
+
+<ol>
+<li>Replacement code block must be valid as per regular NaCl amd64 rules with one exception (see below).</li>
+<li>Only instructions in the following list can be modified:
+<ul>
+<li><code>mov</code></li>
+<li><code>call</code></li>
+</ul>
+<li>Instructions can only be modified by altering their <i>anyfields</i> (that is: <i class="hoverable" title="See AMD or Intel Manual for the details of x86-64 instruction encoding.">displacements</i>, <i class="hoverable" title="See AMD or Intel Manual for the details of x86-64 instruction encoding.">relative offsets</i> or <i class="hoverable" title="See AMD or Intel Manual for the details of x86-64 instruction encoding.">immediates</i>).</li>
+Note: since we don’t allow any modifications to the instructions (except for the <i>anyfields</i> which don’t affect length) instruction boundaries are automatically unchanged in this case, too.
+</li>
+<li>One tiny exception to the rule #1: if instruction is <b>direct</b> jump or <b>direct</b> call and it refers unaligned address outside of the [dest, dest+size) region then it’s allowed as long as it’s not modified.</li>
+</ol>
+<p>Rationale for the exception in x86-64 case is the same as in ia32 case.</p>
+
+<hr />
+
+<p>This logic is implemented in <code>dfa_validate_<i>xxx</i>.c</code> files. Function <code>ApplyDfaValidator_x86_<i>xx</i></code> implements initial validation (used in <code>nacl_dyncode_create</code>) while couple of functions <code>ValidatorCodeReplacement_x86_<i>xx</i></code>/<code>ValidatorCopy_x86_<i>xx</i></code> are used in <code>nacl_dyncode_modify</code> (<code>ValidatorCodeReplacement_x86_<i>xx</i></code> determines if the rules above are unbroken and <code>ValidatorCopy_x86_<i>xx</i></code> is used to process instructions one-after-another by <code>NaClCopyInstructionFunc</code>). Note: <code>ValidatorCopy_x86_<i>xx</i></code> assumes code was accepted by the <code>ValidatorCodeReplacement_x86_<i>xx</i></code> function. Result for code which is not verified by <code>ValidatorCodeReplacement_x86_<i>xx</i></code> is not defined and <code>NaClCopyInstructionFunc</code> is external function passed to <code>ValidatorCopy_x86_<i>xx</i></code> which guarantees safe replacement of a single instruction in a presence of threads.</p>
+
+</body>
+</html>

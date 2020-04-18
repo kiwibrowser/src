@@ -1,0 +1,42 @@
+@hex:
+  # And'ing rsp with negative masks is safe (because they are sign-extended to
+  # 64 bits and high 32 bits become ones).
+  48 83 e4 ff
+@dis:
+     0:	48 83 e4 ff                                  	and    $0xffffffffffffffff,%rsp
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # But for some reason it's only allowed for 1-byte immediates.
+  48 81 e4 ff ff ff ff
+@dis:
+     0:	48 81 e4 ff ff ff ff                         	and    $0xffffffffffffffff,%rsp
+@rdfa_output:
+  0: error - %spl or %sp is changed
+  return code: 1
+@spec:
+  0: ('unsupported form of "and <mask>,%rsp" instruction', Instruction(0x0: 48 81 e4 ff ff ff ff  and $0xffffffffffffffff,%rsp))
+----------------------------------------------------------------------
+@hex:
+  # And'ing with nonnegative mask destroys sandboxing.
+  48 83 e4 01
+@dis:
+     0:	48 83 e4 01                                  	and    $0x1,%rsp
+@rdfa_output:
+  0: error - %spl or %sp is changed
+  return code: 1
+@spec:
+  0: ('mask should be negative to ensure that higher bits of %rsp do not change', Instruction(0x0: 48 83 e4 01  and $0x1,%rsp))
+----------------------------------------------------------------------
+@hex:
+  48 81 e4 ff 00 00 00
+@dis:
+     0:	48 81 e4 ff 00 00 00                         	and    $0xff,%rsp
+@rdfa_output:
+  0: error - %spl or %sp is changed
+  return code: 1
+@spec:
+  0: ('unsupported form of "and <mask>,%rsp" instruction', Instruction(0x0: 48 81 e4 ff 00 00 00  and $0xff,%rsp))

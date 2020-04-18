@@ -1,0 +1,27 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// https://w3c.github.io/remote-playback/#idl-def-remoteplayback
+
+enum RemotePlaybackState {
+    "connecting",
+    "connected",
+    "disconnected"
+};
+
+callback RemotePlaybackAvailabilityCallback = void(boolean available);
+
+[
+    ActiveScriptWrappable,
+    RuntimeEnabled=RemotePlayback
+] interface RemotePlayback : EventTarget {
+    readonly attribute RemotePlaybackState state;
+    attribute EventHandler onconnecting;
+    attribute EventHandler onconnect;
+    attribute EventHandler ondisconnect;
+
+    [CallWith=ScriptState] Promise<long> watchAvailability(RemotePlaybackAvailabilityCallback callback);
+    [CallWith=ScriptState] Promise<void> cancelWatchAvailability(optional long id);
+    [CallWith=ScriptState] Promise<void> prompt();
+};

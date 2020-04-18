@@ -1,0 +1,40 @@
+<!--
+Copyright 2018 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<html>
+<head>
+<script>
+var output = [];
+var testRunner = {};
+testRunner.dumpAsText = () => {};
+testRunner.waitUntilDone = () => {};
+testRunner.setCanOpenWindows = () => {};
+testRunner.notifyDone = () => {
+  console.debug(JSON.stringify({id: 0, method: 'DONE', params: {}, result: output.join('\n')}));
+};
+DevToolsHost = {};
+DevToolsHost.sendMessageToEmbedder = (message) => {
+  const object = JSON.parse(message);
+  console.debug(object.params[0]);
+}
+
+DevToolsHost.dummyPageURL = `http://127.0.0.1:${window.location.port}/protocol/inspector-protocol-page.html`;
+
+</script>
+<script src="../../resources/inspector-protocol-test.js"></script>
+<script>
+DevToolsAPI._log = text => output.push(text);
+DevToolsAPI._fetch = url => {
+  var params = new URLSearchParams(window.location.search);
+  var testScriptURL = params.get('test');
+  if (url === testScriptURL)
+    return Promise.resolve(decodeURIComponent(params.get('script')));
+  throw new Error('Can not fetch ' + url);
+};
+
+function onmessage(json) { DevToolsAPI.dispatchMessage(json); }
+</script>
+</head>
+</html>

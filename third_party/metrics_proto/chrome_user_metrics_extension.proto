@@ -1,0 +1,89 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+option java_outer_classname = "ChromeUserMetricsExtensionProtos";
+option java_package = "org.chromium.components.metrics";
+
+package metrics;
+
+import "cast_logs.proto";
+import "histogram_event.proto";
+import "memory_leak_report.proto";
+import "omnibox_event.proto";
+import "perf_data.proto";
+import "printer_event.proto";
+import "reporting_info.proto";
+import "sampled_profile.proto";
+import "system_profile.proto";
+import "translate_event.proto";
+import "user_action_event.proto";
+
+// Next tag: 19
+message ChromeUserMetricsExtension {
+  // The product (i.e. end user application) for a given UMA log.
+  enum Product {
+    // Google Chrome product family.
+    CHROME = 0;
+
+    // UMA metrics from Android Webview.
+    ANDROID_WEBVIEW = 20;
+
+    // Cast receivers, e.g. Chromecast
+    CAST = 35;
+  }
+  // The product corresponding to this log. The field type is int32 instead of
+  // Product so that downstream users of the Chromium metrics component can
+  // introduce products without needing to make changes to the Chromium code
+  // (though they still need to add the new product to the server-side enum).
+  // Note: The default value is Chrome, so Chrome products will not transmit
+  // this field.
+  optional int32 product = 10 [default = 0];
+
+  // The id of the client install that generated these events.
+  //
+  // For Chrome clients, this id is unique to a top-level (one level above the
+  // "Default" directory) Chrome user data directory [1], and so is shared among
+  // all Chrome user profiles contained in this user data directory.
+  // An id of 0 is reserved for test data (monitoring and internal testing) and
+  // should normally be ignored in analysis of the data.
+  // [1] http://www.chromium.org/user-experience/user-data-directory
+  optional fixed64 client_id = 1;
+
+  // The session id for this user.
+  // Values such as tab ids are only meaningful within a particular session.
+  // The client keeps track of the session id and sends it with each event.
+  // The session id is simply an integer that is incremented each time the user
+  // relaunches Chrome.
+  optional int32 session_id = 2;
+
+  // Information about the user's browser and system configuration.
+  optional SystemProfileProto system_profile = 3;
+
+  // This message will log one or more of the following event types:
+  repeated UserActionEventProto user_action_event = 4;
+  repeated OmniboxEventProto omnibox_event = 5;
+  repeated HistogramEventProto histogram_event = 6;
+  repeated TranslateEventProto translate_event = 15;
+  repeated PrinterEventProto printer_event = 16;
+
+  // Deprecated: use |sampled_profile| instead.
+  repeated PerfDataProto perf_data = 8 [deprecated = true];
+
+  // A list of all collected sample-based profiles since the last UMA upload.
+  repeated SampledProfile sampled_profile = 11;
+
+  // Additional data related with Cast-enabled devices.
+  optional CastLogsProto cast_logs = 12;
+
+  // Memory leak reports generated since the last UMA upload.
+  repeated MemoryLeakReportProto memory_leak_report = 13;
+
+  // The ReportingInfo message sent in the X-Chrome-UMA-ReportingInfo header.
+  // Copied in by the receiving server.
+  optional ReportingInfo reporting_info = 17;
+}

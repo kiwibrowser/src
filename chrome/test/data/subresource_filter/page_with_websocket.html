@@ -1,0 +1,31 @@
+<script src='websocket_connection.js'></script>
+<script>
+// Listens for 'onmessage' or 'onclose' messages from the websocket, and sends
+// them to the test fixture.
+function connectionListener(e) {
+  if (e.data == 'onmessage') {
+    window.domAutomationController.send(true);
+  } else if (e.data == 'onclose') {
+    window.domAutomationController.send(false);
+  }
+}
+
+// This page has two modes, one where the websocket connection lives in the
+// document context, and one where it lives in a worker. This is encoded by the
+// presence (or absence) of an URL param named 'inWorker'.
+var url = new URL(location);
+var connectWebSocket;
+if (url.searchParams.get('inWorker')) {
+  var worker = new Worker('websocket_worker.js');
+  worker.addEventListener('message', connectionListener);
+  connectWebSocket = (url) => {
+    worker.postMessage({url: url});
+  };
+} else {
+  addEventListener('message', connectionListener);
+  var messageCallback = (data) => { self.postMessage(data, location); }
+  connectWebSocket = (url) => {
+    connectWebSocketWithMessageCallback(url, messageCallback);
+  };
+}
+</script>

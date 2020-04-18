@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<title>Test using a placeholder canvas as an image source.</title>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+
+<script>
+var t = async_test("Test that using a placeholder canvas as a source image accesses the image that was committed to the associated OffscreenCanvas.");
+var canvas = document.createElement('canvas');
+canvas.width = 100;
+canvas.height = 100;
+var offscreen = canvas.transferControlToOffscreen();
+
+var ctx = offscreen.getContext('2d');
+ctx.fillStyle = '#0f0';
+ctx.fillRect(0, 0, 100, 100);
+verifyImage(canvas, [0, 0, 0, 0], "Verify that OffscreenCanvas.commit() does not propagate the image synchronously to the placeholder canvas.");
+
+// TODO(junov): Use the Promise returned by commit to schedule after the
+// commit. (crbug.com/709484)
+setTimeout(function() {
+  setTimeout(function() {
+    var green = [0, 255, 0, 255];
+    verifyImage(canvas, green, "verify that drawImage works with placeholder canvas as a source.");
+    var testImage = new Image();
+    testImage.src = canvas.toDataURL();
+    testImage.onload = function() {
+      verifyImage(canvas, green, "verify that toDataURL works on placeholder canvas.");
+      canvas.toBlob(blob => {
+        createImageBitmap(blob).then(image => {
+          verifyImage(image, green, "verify that toBlob works on placeholder canvas.");
+          t.done();
+        })
+      });
+    }
+  }, 0);
+}, 0);
+
+function verifyImage(image, expectedColor, description) {
+  var testCanvas = document.createElement('canvas');
+  var testCtx = testCanvas.getContext('2d');
+  testCtx.drawImage(image, 0, 0);
+
+  t.step(function() {
+    var pixel = testCtx.getImageData(50, 50, 1, 1).data;
+    assert_array_equals(pixel, expectedColor, description);
+  });
+}
+</script>

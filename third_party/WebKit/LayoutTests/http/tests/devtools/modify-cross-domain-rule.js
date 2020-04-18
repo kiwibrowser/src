@@ -1,0 +1,114 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(
+      `Tests that modifying a rule in a stylesheet loaded from a different domain does not crash the renderer.\n`);
+  await TestRunner.loadModule('elements_test_runner');
+  await TestRunner.loadHTML(`
+      <div id="inspected">Text</div>
+    `);
+  await TestRunner.addStylesheetTag('http://localhost:8000/devtools/elements/styles/resources/modify-cross-domain-rule.css');
+
+  var nodeId;
+  var nodeStyles;
+  var rule;
+  var matchedStyleResult;
+
+  TestRunner.cssModel.addEventListener(SDK.CSSModel.Events.StyleSheetChanged, onStyleSheetChanged, this);
+
+  function onStyleSheetChanged(event) {
+    if (!event.data || !event.data.edit)
+      return;
+    for (var style of matchedStyleResult.nodeStyles()) {
+      if (style.parentRule)
+        style.parentRule.rebase(event.data.edit);
+      else
+        style.rebase(event.data.edit);
+    }
+  }
+
+  TestRunner.runTestSuite([
+    function testSetUp(next) {
+      ElementsTestRunner.selectNodeAndWaitForStyles('inspected', selectCallback);
+
+      function selectCallback() {
+        var idToDOMNode = TestRunner.domModel._idToDOMNode;
+        for (var id in idToDOMNode) {
+          node = idToDOMNode[id];
+          if (node.getAttribute && node.getAttribute('id') === 'inspected') {
+            nodeId = parseInt(id, 10);
+            break;
+          }
+        }
+
+        if (!nodeId) {
+          TestRunner.completeTest();
+          return;
+        }
+
+        TestRunner.cssModel.matchedStylesPromise(nodeId, false, false).then(callback);
+      }
+
+      function callback(matchedResult) {
+        if (!matchedResult) {
+          TestRunner.addResult('[!] No rules found');
+          TestRunner.completeTest();
+          return;
+        }
+
+        nodeStyles = matchedResult.nodeStyles();
+        matchedStyleResult = matchedResult;
+        next();
+      }
+    },
+
+    function testAddProperty(next) {
+      for (var i = 0; i < nodeStyles.length; ++i) {
+        var style = nodeStyles[i];
+        if (style.parentRule && style.parentRule.isRegular()) {
+          rule = style.parentRule;
+          break;
+        }
+      }
+      rule.style.appendProperty('width', '100%', callback);
+      function callback(success) {
+        TestRunner.addResult('=== Rule modified ===');
+        if (!success) {
+          TestRunner.addResult('[!] No valid rule style received');
+          TestRunner.completeTest();
+        } else {
+          dumpProperties(rule.style);
+          rule.setSelectorText('body').then(onSelectorUpdated).then(successCallback);
+        }
+      }
+
+      function onSelectorUpdated(success) {
+        if (!success) {
+          TestRunner.addResult('[!] Failed to change selector');
+          TestRunner.completeTest();
+          return;
+        }
+        return matchedStyleResult.recomputeMatchingSelectors(rule);
+      }
+
+      function successCallback() {
+        TestRunner.addResult('=== Selector changed ===');
+        TestRunner.addResult(rule.selectorText() + ' {' + rule.style.cssText + '}');
+        TestRunner.addResult(
+            'Selectors matching the (#inspected) node: ' +
+            ElementsTestRunner.matchingSelectors(matchedStyleResult, rule));
+        next();
+      }
+    }
+  ]);
+
+  function dumpProperties(style) {
+    if (!style)
+      return;
+    var allProperties = style.allProperties();
+    for (var i = 0; i < allProperties.length; ++i)
+      TestRunner.addResult(allProperties[i].text);
+  }
+})();

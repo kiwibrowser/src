@@ -1,0 +1,48 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+
+Import('env')
+
+if env.Bit('linux') and not env.Bit('android'):
+    env.Append(LIBS=['rt'])
+
+nacl_imc_inputs = [
+    'nacl_imc_common.cc',
+]
+
+if env.Bit('windows'):
+  nacl_imc_inputs += [
+    'win/nacl_imc.cc',
+    'win/nacl_shm.cc',
+  ]
+
+if env.Bit('linux'):
+  nacl_imc_inputs += [
+    'linux/nacl_imc.cc',
+    'posix/nacl_imc_posix.cc',
+  ]
+
+if env.Bit('mac'):
+  nacl_imc_inputs += [
+    'osx/nacl_imc.cc',
+    'posix/nacl_imc_posix.cc',
+  ]
+
+
+env.DualLibrary('imc', nacl_imc_inputs)
+
+
+sigpipe_test_exe = env.ComponentProgram(
+    'sigpipe_test',
+    'sigpipe_test.cc',
+    EXTRA_LIBS=['imc', 'platform', 'gio'])
+node = env.CommandTest(
+    'sigpipe_test.out',
+    command=[sigpipe_test_exe])
+env.AddNodeToTestSuite(
+    node, ['small_tests'], 'run_sigpipe_test',
+    is_broken=env.UsingEmulator())
+

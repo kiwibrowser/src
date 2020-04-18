@@ -1,0 +1,60 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/html/assert.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/html/web_ui_listener_behavior.html">
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-icon/iron-icon.html">
+<link rel="import" href="../settings_shared_css.html">
+<link rel="import" href="incompatible_application_item.html">
+<link rel="import" href="incompatible_applications_browser_proxy.html">
+
+<dom-module id="settings-incompatible-applications-page">
+  <template>
+    <style include="settings-shared">
+      #is-done-section > iron-icon {
+        --iron-icon-fill-color: var(--google-blue-500);
+      }
+    </style>
+
+    <div hidden$="[[!isDone_]]" id="is-done-section" class="settings-box first">
+      <iron-icon icon="settings:check-circle"></iron-icon>
+      <div class="middle no-min-width">
+        $i18n{incompatibleApplicationsDone}
+      </div>
+    </div>
+
+    <template is="dom-if" if="[[!isDone_]]">
+      <div class="settings-box first">
+        <iron-icon icon="cr:security"></iron-icon>
+        <div class="middle no-min-width">
+          <div hidden$="[[!hasAdminRights_]]">
+            [[subtitleText_]] $i18nRaw{incompatibleApplicationsSubpageLearnHow}
+          </div>
+          <div hidden$="[[hasAdminRights_]]">
+            [[subtitleNoAdminRightsText_]]
+          </div>
+        </div>
+      </div>
+      <div class="settings-box continuation">
+        <h2 class="secondary">[[listTitleText_]]</h2>
+      </div>
+      <div id="incompatible-applications-list" class="list-frame vertical-list">
+        <template is="dom-repeat" items="[[applications_]]" as="application">
+          <incompatible-application-item
+              hidden$="[[!hasAdminRights_]]"
+              class="incompatible-application"
+              application-name="[[application.name]]"
+              action-type="[[application.type]]"
+              action-url="[[application.url]]">
+          </incompatible-application-item>
+          <div hidden$="[[hasAdminRights_]]"
+              class="list-item incompatible-application">
+            [[application.name]]
+          </div>
+        </template>
+      </div>
+    </template>
+  </template>
+  <script src="incompatible_applications_page.js"></script>
+</dom-module>

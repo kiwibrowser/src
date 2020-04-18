@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="file:///gen/layout_test_data/mojo/public/js/mojo_bindings.js"></script>
+<script src="file:///gen/device/vr/public/mojom/vr_service.mojom.js"></script>
+<script src="../xr/resources/xr-device-mocking.js"></script>
+<script src="../xr/resources/xr-test-utils.js"></script>
+<canvas id="webgl-canvas"></canvas>
+
+<script>
+let fakeDevices = fakeXRDevices();
+
+xr_session_promise_test( (session) => new Promise((resolve, reject) => {
+  // Session must have a baseLayer or frame requests will be ignored.
+  session.baseLayer = new XRWebGLLayer(session, gl);
+
+  function onFrameBad(time, vrFrame) {
+    reject("Unregistered callback was called");
+  }
+
+  let counter = 0;
+  let handle2 = 0;
+  function onFrameGood(time, vrFrame) {
+    counter++;
+    if (counter >= 4) {
+      resolve();
+      // Intentionally don't return immediately so that session.requestAnimationFrame
+      // gets called again to make sure it doesn't cause unexpected behavior
+      // like in crbug.com/679401
+    }
+    session.requestAnimationFrame(onFrameGood);
+
+    if (handle2 != 0) {
+      // The first time we enter this callback the callback associated with
+      // handle2 will have already been queued to execute immediately after
+      // this callback returns. Ensure that cancelAnimationFrame works even in that
+      // scenario.
+      session.cancelAnimationFrame(handle2);
+      handle2 = 0;
+    }
+  }
+
+  let handle = session.requestAnimationFrame(onFrameBad);
+  session.cancelAnimationFrame(handle);
+  session.requestAnimationFrame(onFrameGood);
+  handle2 = session.requestAnimationFrame(onFrameBad);
+}), fakeDevices["FakeGooglePixelPhone"], [
+      { exclusive: true },
+      { outputContext: getOutputContext() }
+  ],
+"XRSession requestAnimationFrame callbacks can be unregistered with cancelAnimationFrame");
+
+</script>

@@ -1,0 +1,80 @@
+<!--
+  -- Copyright 2015 The Chromium Authors. All rights reserved.
+  -- Use of this source code is governed by a BSD-style license that can be
+  -- found in the LICENSE file.
+  -->
+
+<link rel="import" href="chrome://resources/polymer/v1_0/polymer/polymer.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/font-roboto/roboto.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-slider/paper-slider.html">
+<link rel="import" href="chrome-extension://hhaomjibdihmijegdhdafkllkbggdgoj/foreground/elements/files_icon_button.html">
+<link rel="import" href="repeat_button.html">
+
+<dom-module id="control-panel">
+  <link rel="import" type="css" href="control_panel.css">
+  <template>
+    <div class="controls">
+      <div class="upper-controls audio-controls">
+        <!-- Shuffle toggle button in the bottom line. -->
+        <files-icon-button toggles
+            id="shuffle"
+            class="shuffle-mode media-button toggle"
+            active="{{shuffle}}">
+        </files-icon-button>
+
+        <!-- RepeatMode toggle button in the bottom line. -->
+        <repeat-button
+            id="repeat"
+            class="repeat-mode media-button"
+            repeat-mode="{{repeatMode}}">
+        </repeat-button>
+
+        <!-- Prev button in the bottom line. -->
+        <files-icon-button
+            id="previous"
+            class="previous media-button"
+            on-click="previousClick">
+        </files-icon-button>
+
+        <!-- Play button in the bottom line. -->
+        <files-icon-button
+            id="play"
+            class="play media-button"
+            on-click="playClick">
+        </files-icon-button>
+
+        <!-- Next button in the bottom line. -->
+        <files-icon-button
+            id="next"
+            class="next media-button"
+            on-click="nextClick">
+        </files-icon-button>
+
+        <!-- Playlist button in the bottom line. -->
+        <files-icon-button toggles
+            id="playList"
+            class="playlist media-button toggle"
+            active="{{playlistExpanded}}">
+        </files-icon-button>
+      </div>
+      <div class="lower-controls time-volume-controls">
+        <!-- Play/pause button and seek slider in the bottom line. -->
+        <div class="time-container">
+          <div class="time-spacer">[[computeTimeString_(duration, duration)]]</div>
+          <div class="time">[[computeDisplayTimeString_(dragging, time, seekingTime, duration)]]</div>
+        </div>
+        <paper-slider id="timeSlider" max="[[duration]]" value="{{time::change}}"></paper-slider>
+
+        <!-- Volume button and slider in the bottom line. -->
+        <files-icon-button
+            id="volumeButton"
+            class="volume media-button"
+            on-click="volumeClick">
+        </files-icon-button>
+        <paper-slider id="volumeSlider"></paper-slider>
+      </div>
+    </div>
+  </template>
+</dom-module>
+
+<script src="control_panel.js"></script>

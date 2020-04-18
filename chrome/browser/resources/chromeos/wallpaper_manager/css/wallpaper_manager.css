@@ -1,0 +1,872 @@
+/* Copyright (c) 2013 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file. */
+
+html {
+  height: 100%;
+}
+
+body {
+  -webkit-app-region: drag;
+  background-color: rgba(20, 20, 20, 0.93);
+  color: #999;
+  font-size: 80%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Click events are not received in draggable area. Making all clickable areas
+ * not draggable to receive click events.
+ * TODO(bshe): Remove this when http://crbug.com/142275 fixed. */
+.dialog-topbar #navstrip,
+.dialog-topbar #window-close-button,
+.overlay-container .page,
+#author-website,
+/* TODO(bshe): Once http://crbug.com/369651 fixed, use .image-picker instead of
+ * #category-container. */
+#category-container,
+#surprise-me {
+  -webkit-app-region: no-drag;
+}
+
+.dialog-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.dialog-topbar {
+  -webkit-box-align: center;
+  display: -webkit-box;
+  height: 54px;
+  overflow: hidden;
+  padding: 0 15px;
+  position: relative;
+}
+
+.dialog-topbar .spacer {
+  -webkit-box-flex: 1;
+}
+
+#categories-list {
+  -webkit-box-orient: horizontal;
+  display: -webkit-box;
+  height: 54px;
+  outline: none;
+  width: 100%;
+}
+
+#categories-list > li {
+  -webkit-box-align: center;
+  border-top: 4px solid transparent;
+  color: #777;
+  display: -webkit-box;
+  height: 50px;
+  transition: border-top 130ms ease;
+  user-select: none;
+}
+
+#categories-list:not([disabled]) > li:hover {
+  border-top-color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+}
+
+#categories-list > li[selected] {
+  color: rgb(70, 78, 90);
+  cursor: default;
+}
+
+#categories-list > li > div {
+  line-height: 34px;
+  padding: 0 10px;
+}
+
+#categories-list > li[selected] > div {
+  color: #eee;
+}
+
+.close {
+  background-position: center;
+  background-repeat: no-repeat;
+  height: 14px;
+  padding: 10px;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 14px;
+}
+
+#window-close-button {
+  background-image: url(../images/ui/close-white.png);
+}
+
+#window-close-button:hover {
+  background-image: url(../images/ui/close-white-hover.png);
+}
+
+#bar {
+  background-color: #eee;
+  height: 4px;
+  position: absolute;
+  top: 0;
+  transition: left 130ms ease-in-out;
+}
+
+.dialog-main {
+  display: flex;
+  flex: 1;
+}
+
+#category-container {
+  flex: 1;
+  position: relative;
+}
+
+#spinner-container {
+  -webkit-box-align: center;
+  -webkit-box-pack: center;
+  background: url(chrome://resources/images/throbber_medium.svg) center/32px
+      no-repeat;
+  display: -webkit-box;
+  height: 287px;
+  padding-bottom: 15px;
+  padding-top: 5px;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
+#wallpaper-set-by-message {
+  -webkit-padding-end: 5px;
+  -webkit-padding-start: 15px;
+  height: 30px;
+}
+
+#wallpaper-set-by-message:empty {
+  display: none;
+}
+
+.image-picker {
+  -webkit-padding-end: 5px;
+  -webkit-padding-start: 15px;
+  display: block;
+  /* Set font size to 0 to remove the extra vertical margin between two rows of
+   * thumbnails.
+   * TODO(bshe): Find the root cause of the margin. */
+  font-size: 0;
+  height: 287px;
+  outline: none;
+  overflow-y: auto;
+  padding-bottom: 15px;
+  padding-top: 5px;
+}
+
+.image-picker .spacer {
+  display: block;
+}
+
+.image-picker.small {
+  height: 275px;
+}
+
+.image-picker > * {
+  display: inline-block;
+  margin: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.image-picker [role=listitem] {
+  -webkit-margin-end: 1px;
+  height: 68px;
+  margin-bottom: 1px;
+  position: relative;
+  width: 108px;
+}
+
+.image-picker:not([disabled]) [role=listitem]:hover {
+  outline: 3px solid #f1f1f1;
+  z-index: 1;
+}
+
+.image-picker .check {
+  background-image: url(../images/ui/check.png);
+  height: 32px;
+  left: 38px;
+  position: absolute;
+  top: 18px;
+  width: 32px;
+  z-index: 2;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #aaa;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #888;
+}
+
+/* The width and height of img tag need to be set here. Otherwise, an incorrect
+ * image size may be used during layout. Some images may be misaligned as a
+ * result. See http://code.google.com/p/chromium/issues/detail?id=148480 for
+ * screen shot. */
+.image-picker img {
+  height: 68px;
+  width: 108px;
+}
+
+.image-picker[disabled]~.bottom-bar #online-wallpaper-attribute,
+.image-picker[disabled] .check {
+  visibility: hidden;
+}
+
+.image-picker[disabled],
+.image-picker-offline img:not([offline]) {
+  -webkit-filter: grayscale(1);
+}
+
+#wallpaper-attribute {
+  -webkit-box-orient: vertical;
+  display: -webkit-box;
+}
+
+.bottom-bar {
+  -webkit-box-align: center;
+  -webkit-box-orient: horizontal;
+  -webkit-box-pack: end;
+  display: -webkit-box;
+  padding: 11px 15px 8px 15px;
+}
+
+.bottom-bar > .spacer {
+  -webkit-box-flex: 1;
+}
+
+#online-wallpaper-attribute {
+  display: -webkit-box;
+}
+
+#attribute-image {
+  -webkit-margin-end: 10px;
+  height: 34px;
+  width: 54px;
+}
+
+#author-website {
+  color: #999;
+  overflow: hidden;
+  white-space: nowrap;
+  width: 240px;
+}
+
+/* [hidden] does display:none, but its priority is too low. */
+[hidden],
+body[custom] [visibleif]:not([visibleif~='custom']),
+body:not([custom]) [visibleif~='custom'] {
+  display: none !important;
+}
+
+body[surprise-me-disabled] [visibleif]:not([visibleif~='surprise-me-disabled']),
+body:not([surprise-me-disabled]) [visibleif~='surprise-me-disabled'] {
+  display: none !important;
+}
+
+.progress-bar {
+  background-color: rgba(255, 255, 255, 0.7);
+  height: 6px;
+  position: absolute;
+  top: 62px;
+  width: 100%;
+}
+
+.progress-track {
+  background-color: rgb(66, 129, 244);
+  height: 100%;
+  transition: width 1ms linear;
+  width: 0;
+}
+
+.overlay-container {
+  -webkit-box-align: center;
+  -webkit-box-orient: vertical;
+  -webkit-box-pack: center;
+  background-color: rgba(25, 25, 25, 0.25);
+  bottom: 0;
+  display: -webkit-box;
+  left: 0;
+  overflow: auto;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 4;
+}
+
+.overlay-container .page {
+  -webkit-box-orient: vertical;
+  background: rgb(255, 255, 255);
+  border-radius: 3px;
+  box-shadow: 0 4px 23px 5px rgba(0, 0, 0, 0.2), 0 2px 6px rgba(0, 0, 0, 0.15);
+  color: #333;
+  display: -webkit-box;
+  padding: 20px;
+  position: relative;
+  width: 302px;
+}
+
+#error-container {
+  z-index: 5;
+}
+
+.overlay-container .close {
+  background-image: url(../images/ui/close-overlay.png);
+}
+
+.overlay-container .close:hover {
+  background-image: url(../images/ui/close-overlay-hover.png);
+}
+
+/* Custom wallpaper thumbnail container. */
+#add-new img {
+  content: url(../images/ui/add-wallpaper-thumbnail.png);
+}
+
+.image-picker:not([disabled]) #add-new:hover img {
+  content: url(../images/ui/add-wallpaper-thumbnail-hover.png);
+}
+
+#wallpaper-selection-container #content div {
+  margin: 20px 0 5px 0;
+}
+
+#wallpaper-selection-container #warning span {
+  line-height: 17px;
+}
+
+#wallpaper-selection-container select {
+  height: 30px;
+}
+
+#wallpaper-selection-container input[type='file']::-webkit-file-upload-button {
+  height: 30px;
+}
+
+#wallpaper-selection-container .remember-icon {
+  content: url(../images/ui/remember.png);
+}
+
+#surprise-me #checkbox {
+  background-image: url(../images/ui/checkbox_unchecked.png);
+  display: inline-block;
+  height: 17px;
+  margin-right: 4px;
+  opacity: 0.7;
+  position: relative;
+  top: 4px;
+  width: 17px;
+}
+
+#surprise-me #checkbox.checked {
+  background-image: url(../images/ui/checkbox_checked.png);
+}
+
+#top-header,
+#dialog-header,
+#no-images-message,
+#current-wallpaper-info-bar,
+#set-successfully-message {
+  display: none;
+}
+
+/**** New wallpaper picker rules **********************************************/
+
+body.v2 {
+  background-color: transparent;
+}
+
+.v2 .dialog-container {
+  background-color: #fff;
+  border-radius: 4px;
+  position: absolute;
+  width: 100%;
+}
+
+.v2 #dialog-header {
+  display: flex;
+  height: 40px;
+}
+
+.v2 .dialog-body {
+  display: flex;
+  height: 100%;
+}
+
+.v2 .dialog-topbar {
+  display: block;
+  height: 100%;
+  overflow: visible;
+  padding: unset;
+  width: 192px;
+}
+
+.v2 .dialog-topbar #bar {
+  display: none;
+}
+
+.v2 .image-picker {
+  height: 100%;
+}
+
+.v2 #categories-list {
+  display: block;
+  height: 100%;
+}
+
+.v2 #categories-list > li {
+  border-top: unset;
+  height: 32px;
+  margin-bottom: 8px;
+  margin-top: 8px;
+}
+
+.v2 #categories-list > li > div {
+  color: rgb(95, 99, 104);
+  font-family: 'Roboto';
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0 30px;
+}
+
+.v2 #categories-list > li[selected] {
+  background-color: rgb(232, 240, 254);
+  border-radius: 0 20px 20px 0;
+}
+
+.v2 #categories-list > li[selected] > div {
+  color: rgb(66, 133, 244);
+  font-weight: 700;
+}
+
+.v2 #surprise-me {
+  display: none;
+}
+
+.v2 .image-picker {
+  -webkit-padding-end: unset;
+  -webkit-padding-start: unset;
+  padding-bottom: unset;
+  padding-top: unset;
+}
+
+.v2 .image-picker [role=listitem] {
+  -webkit-margin-end: 8px;
+  background-color: rgb(241, 243, 244);
+  border-radius: 4px;
+  height: 160px;
+  margin-bottom: 8px;
+  width: 160px;
+}
+
+.v2 .image-picker [role=listitem].daily-refresh-item {
+  pointer-events: none;
+}
+
+.v2 .image-picker [role=listitem][selected]:not(.daily-refresh-item) {
+  border-radius: none;
+}
+
+.v2 .image-picker:not([disabled]) [role=listitem]:hover {
+  outline: none;
+}
+
+.v2 .image-picker img {
+  height: unset;
+  position: absolute;
+  width: unset;
+}
+
+.v2 .image-picker img:not(.slide-show) {
+  animation: fade-in 250ms;
+}
+
+.v2 .image-picker .check {
+  background-image: url(../images/ui/selected_wallpaper_checkmark.svg);
+  background-repeat: no-repeat;
+  left: 128px;
+  top: 8px;
+}
+
+.v2 .image-picker .selected-grid-border {
+  border: solid 16px #fff;
+  box-sizing: border-box;
+  height: 100%;
+  position: absolute;
+  width: 100%;
+}
+
+.v2 #window-close-button {
+  display: none;
+}
+
+.v2 #dialog-header > div {
+  -webkit-app-region: no-drag;
+  display: block;
+  height: 24px;
+  position: absolute;
+  width: 24px;
+}
+
+.v2 #minimize-button {
+  background-image: url(../images/ui/button_minimize.png);
+  right: 38px;
+}
+
+.v2 #close-button {
+  background-image: url(../images/ui/button_close.png);
+  right: 8px;
+}
+
+.v2 .bottom-bar {
+  display: none;
+}
+
+.v2 #top-header {
+  -webkit-app-region: no-drag;
+  background-color: #fff;
+  border-radius: 0 0 48px 48px;
+  display: flex;
+  height: 48px;
+  position: absolute;
+  top: 0;
+  visibility: hidden;  /* Need this for correct positioning. */
+  width: 698px;
+}
+
+.v2.preview-mode:not(.wallpaper-set-successfully) #top-header {
+  visibility: visible;
+}
+
+.v2 .top-header-contents {
+  display: none;
+  font-family: 'Roboto';
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.v2:not(.no-images) .top-header-contents {
+  display: flex;
+}
+
+.v2 .top-header-contents > div:not(.divider) {
+  padding-top: 15px;
+}
+
+.v2 .top-header-contents #cancel-preview-wallpaper {
+  -webkit-margin-start: 32px;
+  -webkit-padding-start: 32px;
+  background-image: url(../images/ui/left_arrow.svg);
+  background-repeat: no-repeat;
+  background-size: 20px 20px;
+  margin-top: 12px;
+}
+
+.v2 .top-header-contents #image-title {
+  -webkit-padding-end: 8px;
+  -webkit-padding-start: 8px;
+  color: rgb(32, 33, 36);
+  max-width: 360px;
+  overflow: hidden;
+}
+
+.v2 .top-header-contents .divider {
+  border-left: 1px solid rgb(232, 234, 237);
+  height: 34px;
+  margin-top: 8px;
+}
+
+.v2 .top-header-contents #collection-name {
+  -webkit-padding-start: 8px;
+  color: rgb(128, 134, 139);
+}
+
+.v2.custom-wallpaper .top-header-contents #collection-name {
+  color: rgb(32, 33, 36);
+}
+
+.v2 .top-header-contents .more-options {
+  display: flex;
+  position: absolute;
+  /* TODO(wzang): Change this to be RTL-friendly. */
+  right: 32px;
+}
+
+.v2 .top-header-contents .more-options > div {
+  -webkit-padding-end: 16px;
+  -webkit-padding-start: 16px;
+  color: rgb(66, 133, 244);
+  display: none;
+}
+
+.v2 .top-header-contents .more-options > div.disabled {
+  color: rgb(128, 134, 139);
+  pointer-events: none;
+}
+
+.v2 .top-header-contents .icon {
+  -webkit-padding-end: 8px;
+  background-repeat: no-repeat;
+  width: 16px;
+}
+
+.v2 .top-header-contents .center-button .icon,
+.v2 #current-wallpaper-more-options #center .icon {
+  background-image: url(../images/ui/center_layout.svg);
+}
+
+.v2 .top-header-contents .center-button.disabled .icon {
+  background-image: url(../images/ui/center_layout_disabled.svg);
+}
+
+.v2 .top-header-contents .center-cropped-button .icon,
+.v2 #current-wallpaper-more-options #center-cropped .icon {
+  background-image: url(../images/ui/center_cropped_layout.svg);
+}
+
+.v2 .top-header-contents .center-cropped-button.disabled .icon {
+  background-image: url(../images/ui/center_cropped_layout_disabled.svg);
+}
+
+.v2 .top-header-contents #confirm-preview-wallpaper {
+  -webkit-padding-start: 96px;
+}
+
+.v2.preview-mode.custom-wallpaper .more-options .custom-option,
+.v2.preview-mode:not(.custom-wallpaper) .more-options :not(.custom-option) {
+  display: flex;
+}
+
+.v2.wallpaper-set-successfully .dialog-container,
+.v2.preview-mode .dialog-container,
+.v2.custom-wallpaper .top-header-contents #image-title,
+.v2.custom-wallpaper .top-header-contents .divider {
+  display: none;
+}
+
+.v2.preview-mode .more-options .preview-option {
+  display: flex;
+}
+
+.v2 #no-images-message {
+  display: block;
+  position: absolute;
+  visibility: hidden;  /* Need this for correct positioning. */
+}
+
+.v2.no-images #no-images-message {
+  visibility: visible;
+}
+
+.v2.no-images #no-images-message .icon {
+  background-image: url(../images/ui/no_images_illustration.png);
+  background-repeat: no-repeat;
+  height: 96px;
+  width: 96px;
+}
+
+.v2.no-images #no-images-message .text {
+   padding-top: 15px;
+}
+
+.v2 .slide-show {
+  transition: opacity 1000ms;
+}
+
+.v2 .daily-refresh-banner {
+  background-color: rgba(228, 228, 228, 0.9);
+  bottom: 0;
+  height: 40px;
+  position: absolute;
+  width: 100%;
+}
+
+.v2 .daily-refresh-slider {
+  background-color: rgba(128, 134, 139, 0.4);
+  border-radius: 6px;
+  height: 12px;
+  left: 116px;
+  pointer-events: auto;
+  position: absolute;
+  top: 15px;
+  transition: 400ms;
+  width: 30px;
+}
+
+.v2 .daily-refresh-slider::before {
+  background-color: #fff;
+  border-radius: 50%;
+  content: '';
+  height: 16px;
+  left: -2px;
+  position: absolute;
+  top: -2px;
+  transition: 400ms;
+  width: 16px;
+}
+
+.v2 .daily-refresh-slider.checked  {
+  background-color: rgb(66, 133, 244, 0.6);
+}
+
+.v2 .daily-refresh-slider.checked::before {
+  background-color: rgb(66, 133, 244);
+  transform: translateX(16px);
+}
+
+.v2 #daily-refresh-label {
+  color: rgb(66, 133, 244);
+  font-family: 'Roboto';
+  font-size: 13px;
+  font-weight: 500;
+  left: 18px;
+  position: absolute;
+  top: 13px;
+}
+
+.v2 #current-wallpaper-info-bar {
+  background-color: #fff;
+  border-radius: 4px;
+  bottom: 8px;
+  box-shadow: 0 0 60px;
+  display: flex;
+  flex-direction: row;
+  font-family: 'Roboto';
+  font-weight: 500;
+  height: 128px;
+  opacity: 0;
+  position: absolute;
+  transition: opacity 250ms;
+  width: 704px;
+  z-index: -1;
+}
+
+.v2:not(.preview-animation):not(.preview-mode) #current-wallpaper-info-bar.show-info-bar {
+  opacity: 1;
+  z-index: 4;
+}
+
+.v2.preview-animation {
+  animation: fade-in 800ms;
+  animation-direction: reverse;
+}
+
+.v2 #current-wallpaper-image {
+  -webkit-margin-end: 16px;
+  -webkit-margin-start: 8px;
+  margin-bottom: 8px;
+  margin-top: 8px;
+  width: 160px;
+}
+
+.v2 #currently-set-message {
+  color: rgb(66, 133, 244);
+  font-size: 13px;
+  padding-top: 18px;
+}
+
+.v2 #current-wallpaper-title {
+  color: rgb(32, 33, 36);
+  font-size: 14px;
+  padding-top: 16px;
+}
+
+.v2 #current-wallpaper-description {
+  color: rgb(32, 33, 36);
+  font-size: 12px;
+  font-weight: 400;
+  padding-top: 14px;
+  width: 320px;
+}
+
+.v2 #current-wallpaper-description.small-font {
+  font-size: 11px;
+}
+
+.v2 #current-wallpaper-more-options {
+  -webkit-margin-end: 32px;
+  color: rgb(66, 133, 244);
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+}
+
+.v2 #current-wallpaper-more-options.online-wallpaper {
+  -webkit-margin-start: 54px;
+}
+
+.v2 #current-wallpaper-more-options > div {
+  border: 1px solid;
+  border-radius: 32px;
+  display: flex;
+  padding: 8px 4px;
+}
+
+.v2 #current-wallpaper-more-options a {
+  color: rgb(66, 133, 244);
+  text-decoration: none;
+}
+
+.v2 #current-wallpaper-more-options .text {
+  -webkit-margin-end: 16px;
+  padding-top: 1px;
+}
+
+.v2 #current-wallpaper-more-options .icon {
+  -webkit-margin-start: 16px;
+  -webkit-padding-end: 8px;
+  background-repeat: no-repeat;
+  height: 16px;
+  width: 16px;
+}
+
+.v2 #current-wallpaper-more-options #refresh .icon {
+  background-image: url(../images/ui/current_wallpaper_refresh.svg);
+}
+
+.v2 #current-wallpaper-more-options #explore .icon {
+  background-image: url(../images/ui/current_wallpaper_explore.svg);
+}
+
+.v2 #set-successfully-message {
+  background-color: #000;
+  border-radius: 18px;
+  bottom: 12px;
+  color: #fff;
+  display: block;
+  padding: 8px 28px;
+  position: absolute;
+  visibility: hidden;  /* Need this for correct positioning. */
+}
+
+.v2.wallpaper-set-successfully #set-successfully-message {
+  visibility: visible;
+}
+
+.v2 .progress-bar {
+  bottom: 0;
+  top: unset;
+}
+
+@keyframes fade-in {
+  from { filter: blur(15px);
+         opacity: 0;
+       }
+  to { filter: none;
+       opacity: 1;
+     }
+}

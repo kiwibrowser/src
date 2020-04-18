@@ -1,0 +1,28 @@
+# -*- python -*-
+# Copyright 2010 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# Divide ABI check.
+div_nexe = env.ComponentProgram('divide_by_zero',
+                                'divide_by_zero.c',
+                                EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+# On ARM we insert a trap instruction, whereas x86 faults in hardware.
+if env.Bit('build_arm'):
+  div_expected_exit_status = 'untrusted_sigill'
+else:
+  div_expected_exit_status = 'untrusted_sigfpe'
+div_node = env.CommandSelLdrTestNacl('divide_by_zero.out',
+                                     div_nexe,
+                                     exit_status=div_expected_exit_status)
+
+env.AddNodeToTestSuite(div_node,
+                       ['pnacl_abi_tests', 'small_tests'],
+                       'run_divide_by_zero_test',
+                       # The bot lucid_64-newlib-dbg-asan demonstrates a
+                       # bug wherein ASan's teardown code causes a crash of
+                       # its own when exiting after the caught crash.
+                       is_broken=env.Bit('asan'))

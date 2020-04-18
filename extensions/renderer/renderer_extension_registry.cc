@@ -1,0 +1,105 @@
+// Copyright 2015 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "extensions/renderer/renderer_extension_registry.h"
+
+#include "base/lazy_instance.h"
+#include "base/logging.h"
+#include "content/public/renderer/render_thread.h"
+
+namespace extensions {
+
+namespace {
+
+base::LazyInstance<RendererExtensionRegistry>::DestructorAtExit
+    g_renderer_extension_registry = LAZY_INSTANCE_INITIALIZER;
+
+}  // namespace
+
+RendererExtensionRegistry::RendererExtensionRegistry() {}
+
+RendererExtensionRegistry::~RendererExtensionRegistry() {}
+
+// static
+RendererExtensionRegistry* RendererExtensionRegistry::Get() {
+  return g_renderer_extension_registry.Pointer();
+}
+
+const ExtensionSet* RendererExtensionRegistry::GetMainThreadExtensionSet()
+    const {
+  // This can only be modified on the RenderThread, because
+  // GetMainThreadExtensionSet is inherently thread unsafe.
+  // Enforcing single-thread modification at least mitigates this.
+  // TODO(annekao): Remove this restriction once GetMainThreadExtensionSet is
+  // fixed.
+  DCHECK(content::RenderThread::Get());
+  base::AutoLock lock(lock_);
+  return &extensions_;
+}
+
+size_t RendererExtensionRegistry::size() const {
+  base::AutoLock lock(lock_);
+  return extensions_.size();
+}
+
+bool RendererExtensionRegistry::is_empty() const {
+  base::AutoLock lock(lock_);
+  return extensions_.is_empty();
+}
+
+bool RendererExtensionRegistry::Contains(
+    const std::string& extension_id) const {
+  base::AutoLock lock(lock_);
+  return extensions_.Contains(extension_id);
+}
+
+bool RendererExtensionRegistry::Insert(
+    const scoped_refptr<const Extension>& extension) {
+  DCHECK(content::RenderThread::Get());
+  base::AutoLock lock(lock_);
+  return extensions_.Insert(extension);
+}
+
+bool RendererExtensionRegistry::Remove(const std::string& id) {
+  DCHECK(content::RenderThread::Get());
+  base::AutoLock lock(lock_);
+  return extensions_.Remove(id);
+}
+
+std::string RendererExtensionRegistry::GetExtensionOrAppIDByURL(
+    const GURL& url) const {
+  base::AutoLock lock(lock_);
+  return extensions_.GetExtensionOrAppIDByURL(url);
+}
+
+const Extension* RendererExtensionRegistry::GetExtensionOrAppByURL(
+    const GURL& url) const {
+  base::AutoLock lock(lock_);
+  return extensions_.GetExtensionOrAppByURL(url);
+}
+
+const Extension* RendererExtensionRegistry::GetHostedAppByURL(
+    const GURL& url) const {
+  base::AutoLock lock(lock_);
+  return extensions_.GetHostedAppByURL(url);
+}
+
+const Extension* RendererExtensionRegistry::GetByID(
+    const std::string& id) const {
+  base::AutoLock lock(lock_);
+  return extensions_.GetByID(id);
+}
+
+ExtensionIdSet RendererExtensionRegistry::GetIDs() const {
+  base::AutoLock lock(lock_);
+  return extensions_.GetIDs();
+}
+
+bool RendererExtensionRegistry::ExtensionBindingsAllowed(
+    const GURL& url) const {
+  base::AutoLock lock(lock_);
+  return extensions_.ExtensionBindingsAllowed(url);
+}
+
+}  // namespace extensions

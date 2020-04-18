@@ -1,0 +1,79 @@
+@hex:
+  ae
+@dis:
+     0:	ae                                           	scas   %es:(%edi),%al
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  f3 a4
+@dis:
+     0:	f3 a4                                        	rep movsb %ds:(%esi),%es:(%edi)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  f2 a7
+@dis:
+     0:	f2 a7                                        	repnz cmpsl %es:(%edi),%ds:(%esi)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  66 ab
+@dis:
+     0:	66 ab                                        	stos   %ax,%es:(%edi)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  66 af
+@dis:
+     0:	66 af                                        	scas   %es:(%edi),%ax
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # LODS in any form is disallowed for compatibility with old validator, see
+  # https://code.google.com/p/nativeclient/issues/detail?id=2975
+  ac
+@dis:
+     0:	ac                                           	lods   %ds:(%esi),%al
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Two prefixes, disallowed for compatibility with old validator, see
+  # https://code.google.com/p/nativeclient/issues/detail?id=1950
+  f3 66 ab
+@dis:
+     0:	f3 66 ab                                     	rep stos %ax,%es:(%edi)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # same
+  66 f3 ab
+@dis:
+     0:	66 f3 ab                                     	rep stos %ax,%es:(%edi)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  SAFE

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+
+<a href="./same-page-navigate.html" id="same-page" style="position: absolute; top: 2000px">link to self</a>
+
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+
+<script>
+var same_page_navigate_test = async_test("Ensure that the scroll position is correct when we navigate to same page after scale(zoom-in/zoom-out)");
+
+same_page_navigate_test.step(function(){
+  // exit in second load, using scale to detect
+  if (internals.pageScaleFactor() == 2) {
+    assert_equals(scrollX, 0);
+    assert_equals(scrollY, 0);
+    same_page_navigate_test.done();
+    return;
+  }
+
+  internals.setPageScaleFactor(2);
+  scrollTo(0, 10000);
+
+  var atag = document.getElementById('same-page');
+  var x = (atag.offsetLeft - scrollX + 1) * 2;
+  var y = (atag.offsetTop - scrollY + 1) * 2;
+
+  // this clicks on the link which causes a reload of this page.
+  eventSender.mouseMoveTo(x, y);
+  eventSender.mouseDown();
+  eventSender.mouseUp();
+});
+</script>

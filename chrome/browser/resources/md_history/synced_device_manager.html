@@ -1,0 +1,106 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+<link rel="import" href="chrome://resources/html/cr/ui/focus_grid.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-list/iron-list.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_action_menu/cr_action_menu.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_lazy_render/cr_lazy_render.html">
+<link rel="import" href="chrome://resources/cr_elements/paper_button_style_css.html">
+<link rel="import" href="chrome://resources/cr_elements/shared_style_css.html">
+<link rel="import" href="chrome://history/shared_style.html">
+<link rel="import" href="chrome://history/synced_device_card.html">
+
+<dom-module id="history-synced-device-manager">
+  <template>
+    <style include="shared-style cr-shared-style paper-button-style">
+      :host {
+        display: block;
+        overflow: auto;
+      }
+
+      #illustration {
+        background: -webkit-image-set(
+            url(chrome://history/images/100/sign_in_promo.jpg) 1x,
+            url(chrome://history/images/200/sign_in_promo.jpg) 2x)
+                no-repeat center center;
+        height: 222px;
+        margin-top: 100px;
+        width: 574px;
+      }
+
+      #no-synced-tabs {
+        height: 100%;
+      }
+
+      #sign-in-guide {
+        align-items: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        overflow-x: hidden;
+        text-align: center;
+      }
+
+      #sign-in-promo {
+        font-size: 215%;
+        margin-top: 40px;
+      }
+
+      #sign-in-promo-desc {
+        color: var(--secondary-text-color);
+        font-size: 123%;
+        margin-top: 10px;
+      }
+
+      #sign-in-button {
+        margin: 24px 0;
+      }
+
+      #synced-device-list {
+        padding-top: var(--first-card-padding-top);
+      }
+    </style>
+    <div id="synced-device-list" hidden="[[!syncedDevices_.length]]">
+      <template is="dom-repeat" items="[[syncedDevices_]]" as="syncedDevice">
+        <history-synced-device-card device="[[syncedDevice.device]]"
+            last-update-time="[[syncedDevice.lastUpdateTime]]"
+            tabs="[[syncedDevice.tabs]]"
+            separator-indexes="[[syncedDevice.separatorIndexes]]"
+            search-term="[[searchTerm]]"
+            session-tag="[[syncedDevice.tag]]"
+            opened="{{syncedDevice.opened}}">
+        </history-synced-device-card>
+      </template>
+    </div>
+    <div id="no-synced-tabs" class="centered-message"
+        hidden="[[!showNoSyncedMessage(signInState, syncedDevices_.length,
+                                       guestSession_)]]">
+      [[noSyncedTabsMessage(fetchingSyncedTabs_, searchTerm)]]
+    </div>
+    <div id="sign-in-guide"
+        hidden="[[!showSignInGuide(signInState, guestSession_)]]">
+      <div id="illustration"></div>
+      <div id="sign-in-promo">$i18n{signInPromo}</div>
+      <div id="sign-in-promo-desc">$i18n{signInPromoDesc}</div>
+      <paper-button id="sign-in-button" class="action-button"
+          on-click="onSignInTap_">
+        $i18n{signInButton}
+      </paper-button>
+    </div>
+
+    <cr-lazy-render id="menu">
+      <template>
+        <cr-action-menu>
+          <button id="menuOpenButton" slot="item" class="dropdown-item"
+              on-click="onOpenAllTap_">
+            $i18n{openAll}
+          </button>
+          <button id="menuDeleteButton" slot="item" class="dropdown-item"
+              on-click="onDeleteSessionTap_">
+            $i18n{deleteSession}
+          </button>
+        </cr-action-menu>
+      </template>
+    </cr-lazy-render>
+  </template>
+  <script src="chrome://history/synced_device_manager.js"></script>
+</dom-module>

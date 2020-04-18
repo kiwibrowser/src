@@ -1,0 +1,13 @@
+@ECHO off
+
+REM Copyright (c) 2017 The Chromium Authors. All rights reserved.
+REM Use of this source code is governed by a BSD-style license that can be
+REM found in the LICENSE file.
+
+REM This batch file executes the commands passed to it and prints out the
+REM elapsed run time.
+
+SETLOCAL
+SET starttime=%time%
+CALL %*
+CALL python %~dp0subtract_time.py %time% %starttime%

@@ -1,0 +1,264 @@
+# -*- python -*-
+#
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+
+import os
+import platform
+
+Import('env')
+
+platform_inputs = []
+
+# On OSX and Windows, we have observed sleep returning early.  The
+# time_slop_args is used in nacl_clock_test to permit some extra slop
+# in the elapsed time (in ms).
+time_slop_args = []
+
+# On Linux the older scheduler implementation did not account properly for
+# the time process spent waiting on the futex in thread join. This affects
+# the CLOCK_PROCESS/THREAD_CPUTIME_ID clock test and we therefore disable
+# this test on older kernels.  In a coverage build, the test becomes
+# unreasonably slow.  This test seems to crash sometimes under QEMU.
+cputime_test_enabled = (not env.Bit('coverage_enabled') and
+                        not env.UsingEmulator())
+
+if env.Bit('windows'):
+  platform_inputs += [
+    'win/aligned_malloc.c',
+    'win/condition_variable.cc',
+    'win/lock.cc',
+    'win/nacl_clock.c',
+    'win/nacl_error.c',
+    'win/nacl_exit.c',
+    'win/nacl_fast_mutex.c',
+    'win/nacl_find_addrsp.c',
+    'win/nacl_host_desc.c',
+    'win/nacl_host_dir.c',
+    'win/lock_impl_win.cc',
+    'win/nacl_secure_random.c',
+    'win/nacl_semaphore.c',
+    'win/nacl_sync_win.cc',
+    'win/nacl_threads.c',
+    'win/nacl_time.c',
+    'win/nacl_timestamp.c',
+    'win/port_win.c',
+    'win/xlate_system_error.c',
+  ]
+  time_slop_args += [ '-s', '10' ]
+  # Needed for rand_s().
+  env.Append(
+        CCFLAGS = ['/D_CRT_RAND_S',
+                   '/D_UNICODE',
+                   '/DUNICODE'],
+  )
+elif env.Bit('linux'):
+  platform_inputs += [
+    'linux/nacl_clock.c',
+    'linux/nacl_host_dir.c',
+    'linux/nacl_semaphore.c',
+    ]
+  kernel_version = map(int, platform.release().split('.', 2)[:2])
+  if kernel_version < [3, 0]:
+    cputime_test_enabled = False
+elif env.Bit('mac'):
+  platform_inputs += [
+    'osx/nacl_clock.c',
+    'osx/nacl_host_dir.c',
+    'osx/nacl_semaphore.c',
+    ]
+  time_slop_args += [ '-s', '10' ]
+
+if env.Bit('posix'):
+  platform_inputs += [
+    'posix/aligned_malloc.c',
+    'posix/condition_variable.c',
+    'posix/lock.c',
+    'posix/nacl_error.c',
+    'posix/nacl_exit.c',
+    'posix/nacl_fast_mutex.c',
+    'posix/nacl_file_lock.c',  # only used on Linux, but built/tested on Posix
+    'posix/nacl_find_addrsp.c',
+    'posix/nacl_host_desc.c',
+    'posix/nacl_secure_random.c',
+    'posix/nacl_thread_id.c',
+    'posix/nacl_threads.c',
+    'posix/nacl_time.c',
+    'posix/nacl_timestamp.c',
+    ]
+
+platform_inputs += [
+    'nacl_check.c',
+    'nacl_global_secure_random.c',
+    'nacl_host_desc_common.c',
+    'nacl_interruptible_condvar.c',
+    'nacl_interruptible_mutex.c',
+    'nacl_log.c',
+    'nacl_secure_random_common.c',
+    'nacl_sync_checked.c',
+    'nacl_time_common.c',
+    'platform_init.c',
+    'refcount_base.cc',
+    ]
+
+env.DualLibrary('platform', platform_inputs)
+
+
+PORT_TEST_SOURCES = ['platform_tests.cc']
+
+if env.Bit('windows'):
+  PORT_TEST_SOURCES = [PORT_TEST_SOURCES,
+                       'win/port_win_test.c']
+  if env.Bit('build_x86_64'):
+    PORT_TEST_SOURCES = [PORT_TEST_SOURCES,
+                         'win/test_tls.S']
+
+port_test_exe = env.ComponentProgram('port_test',
+                                     PORT_TEST_SOURCES,
+                                     EXTRA_LIBS=['platform','gio'])
+
+node = env.CommandTest('port_test.out',
+                       [port_test_exe])
+
+env.AddNodeToTestSuite(node,
+                       ['small_tests'],
+                       'run_platform_tests')
+
+
+nacl_semaphore_test_exe = env.ComponentProgram('nacl_semaphore_test',
+                                               ['nacl_semaphore_test.c'],
+                                               EXTRA_LIBS=['platform',
+                                                           'gio'])
+node = env.CommandTest('nacl_semaphore_test.out',
+                       command=[nacl_semaphore_test_exe])
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_nacl_semaphore_test')
+
+
+nacl_host_dir_test_exe = env.ComponentProgram('nacl_host_dir_test',
+                                              ['nacl_host_dir_test.c'],
+                                              EXTRA_LIBS=['platform',
+                                                          'gio',
+                                                          'nrd_xfer',
+                                                          ])
+
+# For -d, env.Dir does not work.  bradnelson@ says SCons's underlay
+# works for Files, but possibly not for Dir -- and apparently it does
+# not, since the path that results is OBJ_DIR relative.
+
+node = env.CommandTest('nacl_host_dir_test.out',
+                       [nacl_host_dir_test_exe,
+                        '-f',
+                        env.File('testdata/sample_dir1_expected.txt'),
+                        '-d',
+                        env.MakeTempDir(prefix='tmp_platform')])
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_nacl_host_dir_test')
+
+
+nacl_clock_test_exe = env.ComponentProgram('nacl_clock_test',
+                                           ['nacl_clock_test.c'],
+                                           EXTRA_LIBS=['platform'])
+
+node = env.CommandTest('nacl_clock_test.out',
+                       [nacl_clock_test_exe] + time_slop_args)
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_nacl_clock_test')
+
+node = env.CommandTest('nacl_clock_cputime_test.out',
+                        [nacl_clock_test_exe, '-c'],
+                        size='large')
+
+env.AddNodeToTestSuite(node, ['large_tests'], 'run_nacl_clock_cputime_test',
+                       is_broken=not cputime_test_enabled)
+
+
+nacl_sync_test_exe = env.ComponentProgram('nacl_sync_test',
+                                          ['nacl_sync_test.c'],
+                                          EXTRA_LIBS=['platform'])
+
+for flavor in ['lock_lock', 'lock_trylock',
+               'trylock_lock', 'trylock_trylock']:
+  name = 'nacl_sync_' + flavor + '_test'
+  node = env.CommandTest(name + '.out',
+                         [nacl_sync_test_exe, '-T', flavor])
+
+  env.AddNodeToTestSuite(node, ['small_tests'], 'run_' + name)
+
+nacl_host_desc_mmap_test_exe = env.ComponentProgram(
+    'nacl_host_desc_mmap_test',
+    ['nacl_host_desc_mmap_test.c'],
+    EXTRA_LIBS=['platform',
+                'nrd_xfer'])  # nrd_xfer for NaClDescEffectorTrustedMem
+
+
+node = env.CommandTest('nacl_host_desc_mmap_test.out',
+                       [nacl_host_desc_mmap_test_exe, '-t',
+                        env.MakeTempDir(prefix='tmp_platform')])
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_nacl_host_desc_mmap_test')
+
+if env.Bit('windows'):
+  nacl_host_desc_mmap_win_test_exe = env.ComponentProgram(
+    'nacl_host_desc_mmap_win_test',
+    ['win/nacl_host_desc_mmap_win_test.c'],
+    EXTRA_LIBS=['platform',
+                'nrd_xfer'])
+
+  node = env.CommandTest('nacl_host_desc_mmap_win_test.out',
+                         [nacl_host_desc_mmap_win_test_exe,
+                          '-t', env.MakeTempDir(prefix='tmp_platform')])
+
+  env.AddNodeToTestSuite(node, ['small_tests'],
+                         'run_nacl_host_desc_mmap_win_test')
+
+nacl_host_desc_pread_pwrite_test_exe = env.ComponentProgram(
+  'nacl_host_desc_pread_pwrite_test',
+  ['nacl_host_desc_pread_pwrite_test.c'],
+  EXTRA_LIBS=['platform', 'nrd_xfer'])
+
+node = env.CommandTest('nacl_host_desc_pread_pwrite_test.out',
+                       [nacl_host_desc_pread_pwrite_test_exe,
+                        '-t', env.MakeTempDir(prefix='tmp_platform')])
+
+env.AddNodeToTestSuite(node, ['small_tests'],
+                       'run_nacl_host_desc_pread_pwrite_test')
+
+nacl_host_desc_big_file_nexe = env.ComponentProgram(
+  'nacl_host_desc_big_file_test',
+  ['nacl_host_desc_big_file_test.c'],
+  EXTRA_LIBS=['platform', 'nrd_xfer'])
+
+d = os.path.join(str(env.Dir('${TARGET_ROOT}')), 'large_temporary_files')
+try:
+  os.makedirs(d)  # if scons-out is missing, MakeTempDir would fail
+except:
+  pass  # but the directory may already exist.
+
+if env.Bit('mac') or env.Bit('windows'):
+  # OSX's HFS has no support for sparse files, so we generate a lot of
+  # disk I/O and this is expensive.  On Windows, NTFS support sparse
+  # files, but ReFs does not.  (We don't run on VFAT, so we can ignore
+  # that case.)  Whether this is an expensive test depends on the
+  # filesystem type, so we err on the side of caution.
+  test_size = 'huge'
+else:
+  # On Linux, sparse file support at the filesystem level means that
+  # the test is fast -- cost is proportional to actual number of bytes
+  # written.
+  test_size = 'small'
+
+node = env.CommandTest(
+  'nacl_host_desc_big_file_test.out',
+  [nacl_host_desc_big_file_nexe, '-t',
+   env.MakeTempDir(prefix='tmp_platform', dir=d)],
+  size=test_size)
+
+env.AddNodeToTestSuite(node,
+                       [test_size + '_tests'],
+                       'run_nacl_host_desc_big_file_test',
+                       is_broken=env.UsingEmulator())
+# Qemu appears to not honor big file support and fails the lseek w/ EINVAL
+
+env.EnsureRequiredBuildWarnings()

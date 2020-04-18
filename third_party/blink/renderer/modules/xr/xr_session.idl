@@ -1,0 +1,32 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// https://immersive-web.github.io/webxr/#xrsession-interface
+[
+    SecureContext,
+    OriginTrialEnabled=WebXR
+] interface XRSession : EventTarget {
+  readonly attribute XRDevice device;
+  readonly attribute boolean exclusive;
+  readonly attribute XRPresentationContext outputContext;
+
+  attribute double depthNear;
+  attribute double depthFar;
+
+  attribute XRLayer baseLayer;
+
+  attribute EventHandler onblur;
+  attribute EventHandler onfocus;
+  attribute EventHandler onresetpose;
+  attribute EventHandler onend;
+
+  [CallWith=ScriptState] Promise<XRFrameOfReference> requestFrameOfReference(XRFrameOfReferenceType type, [PermissiveDictionaryConversion] optional XRFrameOfReferenceOptions options);
+
+  long requestAnimationFrame(XRFrameRequestCallback callback);
+  void cancelAnimationFrame(long handle);
+
+  [MeasureAs=XRSessionGetInputSources] FrozenArray<XRInputSource> getInputSources();
+
+  [CallWith=ScriptState] Promise<void> end();
+};

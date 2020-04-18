@@ -1,0 +1,11 @@
+CONSOLE ERROR: line 15: WebSocket connection to 'ws://localhost:8880/handshake-fail-by-wrong-accept-header' failed: Error during WebSocket handshake: Incorrect 'Sec-WebSocket-Accept' header value
+Test whether WebSocket handshake fails if the server sends incorrect Sec-WebSocket-Accept header.
+
+On success, you will see a series of "PASS" messages, followed by "TEST COMPLETE".
+
+PASS onerror() was called
+PASS closeEvent.wasClean is false
+PASS successfullyParsed is true
+
+TEST COMPLETE
+

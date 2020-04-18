@@ -1,0 +1,62 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#import "ios/chrome/browser/ui/popup_menu/cells/popup_menu_footer_item.h"
+
+#if !defined(__has_feature) || !__has_feature(objc_arc)
+#error "This file requires ARC support."
+#endif
+
+namespace {
+const CGFloat kSeparatorHeight = 1;
+const CGFloat kSeparatorMargin = 12;
+}  // namespace
+
+@implementation PopupMenuFooterItem
+
+- (instancetype)initWithType:(NSInteger)type {
+  self = [super initWithType:type];
+  if (self) {
+    self.cellClass = [PopupMenuFooterCell class];
+  }
+  return self;
+}
+
+- (void)configureHeaderFooterView:(PopupMenuFooterCell*)footer
+                       withStyler:(ChromeTableViewStyler*)styler {
+  [super configureHeaderFooterView:footer withStyler:styler];
+  // By default the table view footers have a background view. Remove it so it
+  // is transparent.
+  footer.backgroundView = nil;
+}
+
+@end
+
+#pragma mark - PopupMenuFooterCell
+
+@implementation PopupMenuFooterCell
+
+- (instancetype)initWithReuseIdentifier:(NSString*)reuseIdentifier {
+  self = [super initWithReuseIdentifier:reuseIdentifier];
+  if (self) {
+    UIView* separator = [[UIView alloc] init];
+    separator.translatesAutoresizingMaskIntoConstraints = NO;
+    separator.backgroundColor = [UIColor colorWithWhite:0 alpha:0.05];
+    [self.contentView addSubview:separator];
+    [NSLayoutConstraint activateConstraints:@[
+      [separator.heightAnchor constraintEqualToConstant:kSeparatorHeight],
+      [separator.trailingAnchor
+          constraintEqualToAnchor:self.contentView.trailingAnchor
+                         constant:-kSeparatorMargin],
+      [separator.leadingAnchor
+          constraintEqualToAnchor:self.contentView.leadingAnchor
+                         constant:kSeparatorMargin],
+      [separator.centerYAnchor
+          constraintEqualToAnchor:self.contentView.centerYAnchor],
+    ]];
+  }
+  return self;
+}
+
+@end

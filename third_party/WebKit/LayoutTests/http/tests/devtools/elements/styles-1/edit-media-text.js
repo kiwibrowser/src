@@ -1,0 +1,58 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(`Tests that editing media text updates element styles.\n`);
+  await TestRunner.loadModule('elements_test_runner');
+  await TestRunner.showPanel('elements');
+  await TestRunner.loadHTML(`
+      <style>
+      @media screen and (max-device-width: 100000px) {
+          #inspected {
+              color: green;
+          }
+          #inspected {
+              color: blue;
+          }
+      }
+      @media screen and (max-device-width: 200000px) {
+          #other {
+              color: green;
+          }
+      }
+      </style>
+      <div id="inspected" style="color: red">Text</div>
+      <div id="other"></div>
+    `);
+
+  ElementsTestRunner.selectNodeAndWaitForStyles('inspected', step1);
+
+  function step1() {
+    TestRunner.addResult('=== Before media text modification ===');
+    ElementsTestRunner.dumpSelectedElementStyles(true);
+    var section = ElementsTestRunner.firstMatchedStyleSection();
+    var mediaTextElement = ElementsTestRunner.firstMediaTextElementInSection(section);
+    mediaTextElement.click();
+    mediaTextElement.textContent = 'screen and (max-device-width: 99999px)';
+    ElementsTestRunner.waitForMediaTextCommitted(step2);
+    mediaTextElement.dispatchEvent(TestRunner.createKeyEvent('Enter'));
+  }
+
+  function step2() {
+    TestRunner.addResult('=== After valid media text modification ===');
+    ElementsTestRunner.dumpSelectedElementStyles(true);
+    var section = ElementsTestRunner.firstMatchedStyleSection();
+    var mediaTextElement = ElementsTestRunner.firstMediaTextElementInSection(section);
+    mediaTextElement.click();
+    mediaTextElement.textContent = 'something is wrong here';
+    ElementsTestRunner.waitForMediaTextCommitted(step3);
+    mediaTextElement.dispatchEvent(TestRunner.createKeyEvent('Enter'));
+  }
+
+  function step3() {
+    TestRunner.addResult('=== After invalid media text modification ===');
+    ElementsTestRunner.dumpSelectedElementStyles(true);
+    TestRunner.completeTest();
+  }
+})();

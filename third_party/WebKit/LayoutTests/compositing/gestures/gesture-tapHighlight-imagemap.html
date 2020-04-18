@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../../resources/js-test.js"></script>
+</head>
+<body onload="runTest();">
+<div style="transform: translateZ(0);">
+    <div id="target" style="width: 320px; height: 240px; cursor: pointer; -webkit-tap-highlight-color: rgb(0, 255, 0)">
+        <map name="map">
+            <area shape="rect" coords="10,10,200,200" alt="Test" href="#">
+        </map>
+        <img src="resources/dice.png" usemap="#map">
+    </div>
+</div>
+<script>
+function runTest() {
+    var clientRect = document.getElementById('target').getBoundingClientRect();
+    x = (clientRect.left + clientRect.right) / 2;
+    y = (clientRect.top + clientRect.bottom) / 2;
+    if (window.testRunner) {
+        testRunner.dumpAsTextWithPixelResults();
+        testRunner.waitUntilDone();
+    }
+
+    if (window.eventSender) {
+        eventSender.gestureShowPress(x, y);
+        window.setTimeout(function() { testRunner.notifyDone(); }, 0);
+    } else {
+        debug("This test requires DumpRenderTree.");
+        debug("This test is successful if we don't cause a crash. TODO: Make link highlight work on image maps");
+    }
+}
+</script>
+</script>
+</body>
+</html>

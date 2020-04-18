@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<script src="resources/responsive-test.js"></script>
+<script>
+assertCSSResponsive({
+  property: 'background-image',
+  from: neutralKeyframe,
+  to: 'url("test://to")',
+  configurations: [{
+    state: {underlying: 'url("test://a")'},
+    expect: [
+      {at: 0.25, is: '-webkit-cross-fade(url("test://a"), url("test://to"), 0.25)'},
+      {at: 0.75, is: '-webkit-cross-fade(url("test://a"), url("test://to"), 0.75)'},
+    ],
+  }, {
+    state: {underlying: 'url("test://b"), url("test://c")'},
+    expect: [
+      {at: 0.25, is: '-webkit-cross-fade(url("test://b"), url("test://to"), 0.25), -webkit-cross-fade(url("test://c"), url("test://to"), 0.25)'},
+      {at: 0.75, is: '-webkit-cross-fade(url("test://b"), url("test://to"), 0.75), -webkit-cross-fade(url("test://c"), url("test://to"), 0.75)'},
+    ],
+  }, {
+    state: {underlying: 'none'},
+    expect: [
+      {at: 0.25, is: 'none'},
+      {at: 0.75, is: 'url("test://to")'},
+    ],
+  }],
+});
+
+assertCSSResponsive({
+  property: 'background-image',
+  from: 'inherit',
+  to: 'url("test://to")',
+  configurations: [{
+    state: {inherited: 'url("test://a")'},
+    expect: [
+      {at: 0.25, is: '-webkit-cross-fade(url("test://a"), url("test://to"), 0.25)'},
+      {at: 0.75, is: '-webkit-cross-fade(url("test://a"), url("test://to"), 0.75)'},
+    ],
+  }, {
+    state: {inherited: 'url("test://b"), url("test://c")'},
+    expect: [
+      {at: 0.25, is: '-webkit-cross-fade(url("test://b"), url("test://to"), 0.25), -webkit-cross-fade(url("test://c"), url("test://to"), 0.25)'},
+      {at: 0.75, is: '-webkit-cross-fade(url("test://b"), url("test://to"), 0.75), -webkit-cross-fade(url("test://c"), url("test://to"), 0.75)'},
+    ],
+  }, {
+    state: {inherited: 'none'},
+    expect: [
+      {at: 0.25, is: 'none'},
+      {at: 0.75, is: 'url("test://to")'},
+    ],
+  }],
+});
+</script>

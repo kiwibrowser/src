@@ -1,0 +1,33 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# Test ARM float ABI to ensure that it is the hard ABI and not soft.
+
+# Only test ARM.  Since we are only generating a .o file, do not run
+# in pexe mode, only run as a nonpexe_test.
+if ((not env.Bit('build_arm') or env.Bit('pnacl_generate_pexe'))
+    or not (env.Bit('bitcode') or env.Bit('nacl_clang'))):
+  Return()
+
+# Force native .o generation and optimization (so that checks are cleaner).
+if env.Bit('bitcode'):
+  env.PNaClForceNative()
+env.Append(CFLAGS=['-O2'])
+
+arm_float_abi_obj = env.ComponentObject('arm_float_abi_obj',
+                                        'arm_float_abi_test.c')
+
+
+# Disassemble the .o file and look for register passing.
+node = env.CommandTestFileDumpCheck('arm_float_abi_test.out',
+                                    arm_float_abi_obj,
+                                    env.File('arm_float_abi_test.c'),
+                                    '-d')
+
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'nonpexe_tests', 'toolchain_tests'],
+                       'run_arm_float_abi_test')

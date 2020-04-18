@@ -1,0 +1,29 @@
+include_rules = [
+  "+crypto",
+  "+mojo/public",
+  # For ipc_channel_nacl.cc:
+  "+native_client/src/public",
+  "+sandbox/mac/seatbelt.h",
+]
+
+specific_include_rules = {
+  "ipc_test_base\.h": [
+    "+mojo/edk/test",
+  ],
+  "ipc_mojo_(bootstrap_unittest|perftest)\.cc": [
+    "+mojo/edk/embedder",
+    "+mojo/edk/test",
+  ],
+  "ipc_.*perftest.*\.cc": [
+    "+mojo/edk/embedder",
+    "+mojo/edk/test",
+  ],
+  "run_all_(unit|perf)tests\.cc": [
+    "+mojo/edk/embedder",
+    "+mojo/edk/test",
+  ],
+  "ipc_message_protobuf_utils\.h": [
+    # Support serializing RepeatedField / RepeatedPtrField:
+    "+third_party/protobuf/src/google/protobuf/repeated_field.h",
+  ],
+}

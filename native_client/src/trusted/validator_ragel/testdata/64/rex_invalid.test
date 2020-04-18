@@ -1,0 +1,29 @@
+@hex:
+  # mov %rax,%rax
+  # test that we accept rex prefixes with bits which are not used by
+  # the command.
+  48 89 C0
+  47 89 C0
+  46 89 C0
+  45 89 C0
+  44 89 C0
+  43 89 C0
+  42 89 C0
+  41 89 C0
+  40 89 C0
+  4F 89 C0
+@dis:
+     0:	48 89 c0                                     	mov    %rax,%rax
+     3:	47 89 c0                                     	rex.RXB mov %r8d,%r8d
+     6:	46 89 c0                                     	rex.RX mov %r8d,%eax
+     9:	45 89 c0                                     	mov    %r8d,%r8d
+     c:	44 89 c0                                     	mov    %r8d,%eax
+     f:	43 89 c0                                     	rex.XB mov %eax,%r8d
+    12:	42 89 c0                                     	rex.X mov %eax,%eax
+    15:	41 89 c0                                     	mov    %eax,%r8d
+    18:	40 89 c0                                     	rex mov %eax,%eax
+    1b:	4f 89 c0                                     	rex.WRXB mov %r8,%r8
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE

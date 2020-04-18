@@ -1,0 +1,37 @@
+<!doctype html>
+<title>Whitespace in attribute values tests</title>
+<script src=../../resources/testharness.js></script>
+<script src=../../resources/testharnessreport.js></script>
+<script src=resources/whitespace-helper.js></script>
+<svg id="testcontainer">
+	<defs>
+		<marker/>
+		<stop/>
+		<filter>
+			<feTurbulence></feTurbulence>
+		</filter>
+	</defs>
+</svg>
+<div id=log></div>
+<script>
+var svg = document.querySelector("svg");
+
+// test length values
+var EPSILON = Math.pow(2, -24); // float epsilon
+var whitespace = [ "", " ", "   " ];
+var garbage = [ "a", "e", "foo", ")90" ];
+var validunits = [ "", "em", "ex", "px", "in", "cm", "mm", "pt", "pc", "%" ];
+
+testType("<integer>",
+         document.getElementsByTagName("feTurbulence")[0], // workaround for broken querySelector on camelcased elements
+		 "numOctaves",
+		 0, // expected default value (FIXME: should be 1)
+		 whitespace,
+		 [ "-47", "0", "+32", "1241245" ],
+		 validunits,
+		 garbage,
+		 function(elm, value) { assert_equals(elm.numOctaves.baseVal, parseInt(value)); },
+		 function(elm, expected) { assert_equals(elm.numOctaves.baseVal, expected); } );
+
+
+</script>

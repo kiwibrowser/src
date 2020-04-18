@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../../../../resources/js-test.js"></script>
+<style type="text/css">
+::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+}
+
+#greenbox {
+  width: 100px;
+  height: 2000px;
+  background: green;
+}
+#redbox {
+  width: 100px;
+  height: 2000px;
+  background: red;
+}
+
+</style>
+</head>
+<body style="margin:0" onload="runTest();">
+
+<div id="greenbox"></div>
+<div id="redbox"></div>
+
+<p id="description"></p>
+<div id="console"></div>
+<script type="text/javascript">
+
+function gestureScroll()
+{
+    eventSender.gestureScrollBegin("touchpad", 10, 20);
+    eventSender.gestureScrollUpdate("touchpad", 0, -1, "Page");
+    eventSender.gestureScrollUpdate("touchpad", 0, -2, "Page");
+    eventSender.gestureScrollUpdate("touchpad", 0, 1, "Page");
+    eventSender.gestureScrollEnd("touchpad", 0, 0);
+
+    // see kMinFractionToStepWhenPaging in ScrollableArea.cppP
+    // 2 is the expected number of pages scrolled (-1 + -2 + 1)
+    shouldBecomeEqual("document.scrollingElement.scrollTop >= window.innerHeight * 0.875 * 2", "true", finishJSTest, 1000);
+}
+
+jsTestIsAsync = true;
+
+function runTest()
+{
+    if (window.eventSender) {
+        description('This tests gesture scrolling by pages.');
+        gestureScroll();
+    } else {
+        debug("This test requires DumpRenderTree.  Gesture-scroll the page to validate the implementation.");
+    }
+}
+</script>
+
+</body>
+</html>

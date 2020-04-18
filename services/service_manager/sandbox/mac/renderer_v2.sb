@@ -1,0 +1,59 @@
+; Copyright 2017 The Chromium Authors. All rights reserved.
+; Use of this source code is governed by a BSD-style license that can be
+; found in the LICENSE file.
+
+; --- The contents of common.sb implicitly included here. ---
+
+; Allow cf prefs to work.
+(allow user-preference-read)
+
+; File reads.
+; Reads from the home directory.
+(allow file-read-data
+  (path (user-homedir-path "/.CFUserTextEncoding"))
+  (path (user-homedir-path "/Library/Preferences/com.apple.universalaccess.plist")))
+
+; Reads of /dev devices.
+(allow file-read-data
+  (path "/dev/autofs_nowait")
+  (path "/dev/fd"))
+
+(allow file-write-data
+  (require-all
+    (path "/dev/null")
+    (vnode-type CHARACTER-DEVICE)))
+
+; Needed for Fonts.
+(allow-font-access)
+
+; Reads from /System.
+(allow file-read-data
+  (path "/System/Library/CoreServices/CoreTypes.bundle/Contents/Library/AppExceptions.bundle/Exceptions.plist")
+  (path "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/Exceptions.plist")
+  (path "/System/Library/Preferences/Logging/Subsystems/com.apple.SkyLight.plist")
+  (subpath "/System/Library/ColorSync/Profiles")
+  (subpath "/System/Library/CoreServices/SystemAppearance.bundle")
+  (subpath "/System/Library/CoreServices/SystemVersion.bundle")
+  (subpath "/System/Library/Extensions")  ; https://crbug.com/847518
+  (subpath "/System/Library/LinguisticData"))
+
+; IOKit
+(allow iokit-open
+  (iokit-registry-entry-class "IOSurfaceRootUserClient")
+  (iokit-registry-entry-class "RootDomainUserClient"))
+
+; POSIX IPC
+(allow ipc-posix-shm-read-data
+  (ipc-posix-name "apple.cfprefs.317580v1")
+  (ipc-posix-name "apple.cfprefs.daemonv1")
+  ; crbug.com/792217
+  (ipc-posix-name "apple.shm.notification_center"))
+
+; mach IPC
+(allow mach-lookup
+  ; crbug.com/792257
+  (global-name "com.apple.distributed_notifications@Uv3")
+  (global-name "com.apple.lsd.mapdb")
+  ; crbug.com/792217
+  (global-name "com.apple.system.notification_center")
+  (global-name "com.apple.windowserver.active"))

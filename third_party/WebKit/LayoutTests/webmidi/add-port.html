@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="../http/tests/resources/permissions-helper.js"></script>
+<script>
+async_test(t => {
+  var sysexHeader = [ 0xf0, 0x00, 0x02, 0x0d, 0x7f ];
+  var sysexFooter = [ 0xf7 ];
+  var sysexPayloadToAddInputAsConnected = [ 0x00, 0x00 ];
+  var sysexPayloadToAddOutputAsConnected = [ 0x00, 0x01 ];
+  var sysexPayloadToAddInputAsOpened = [ 0x00, 0x02 ];
+  var sysexPayloadToAddOutputAsOpened = [ 0x00, 0x03 ];
+  var noteOn = [ 0x90, 0x45, 0x7f ];
+
+  function createSysex(payload) {
+    return sysexHeader.concat(payload).concat(sysexFooter);
+  }
+
+  t.step(() => {
+    Promise.all([
+        PermissionsHelper.setPermission('midi', 'granted'),
+        PermissionsHelper.setPermission('midi-sysex', 'granted')
+    ]).then(() => {
+      return navigator.requestMIDIAccess({sysex : true});
+    }).then(a => {
+      var started = false;
+      var receivedMessages = 0;
+      var receiveMessage = e => {
+        t.step(() => {
+          assert_array_equals(
+              e.data, noteOn, 'received message should be noteOn');
+        });
+        if (++receivedMessages != 2)
+          return;
+        t.done();
+      };
+
+      a.onstatechange = e => {
+        // Wait until three outputs and three inputs appear.
+        if (a.inputs.size != 3 || a.outputs.size != 3 || started)
+          return;
+        started = true;
+
+        // Set an event handler respectively for newly connected ports.
+        var inputs = a.inputs.values();
+        inputs.next();
+        inputs.next().value.onmidimessage = receiveMessage;
+        inputs.next().value.onmidimessage = receiveMessage;
+
+        // Send a message respectively, and see if it is loopbacked.
+        var outputs = a.outputs.values();
+        outputs.next();
+        outputs.next().value.send(noteOn);
+        outputs.next().value.send(noteOn);
+      };
+
+      output = a.outputs.values().next().value;
+
+      // Send sysex messages to request dynamically adding mock devices.
+      output.send(createSysex(sysexPayloadToAddInputAsConnected));
+      output.send(createSysex(sysexPayloadToAddOutputAsConnected));
+      output.send(createSysex(sysexPayloadToAddInputAsOpened));
+      output.send(createSysex(sysexPayloadToAddOutputAsOpened));
+    }).catch(e => assert_unreached(e));
+  });
+}, "Test if newly connected ports work correctly");
+</script>

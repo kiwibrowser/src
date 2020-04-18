@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="../../resources/js-test.js"></script>
+</head>
+<body onload="runTest()">
+<input type="text" id="src" value="abc">
+<input type="text" id="dst">
+<div id="console"></div>
+<script>
+description("This test verifies the order of events fired by drag-and-drop.");
+
+function runTest()
+{
+    var src = document.getElementById('src');
+    var dst = document.getElementById('dst');
+
+    ['blur', 'change', 'drop', 'focus', 'input'].forEach(function(event) {
+        src.addEventListener(event, debug.bind(null, event + ' src'));
+        dst.addEventListener(event, debug.bind(null, event + ' dst'));
+    });
+
+    src.select();
+    eventSender.mouseMoveTo(src.offsetLeft + src.offsetWidth / 2, src.offsetTop + src.offsetHeight / 2);
+    eventSender.mouseDown();
+    eventSender.leapForward(1000);
+    eventSender.mouseMoveTo(dst.offsetLeft + dst.offsetWidth / 2, dst.offsetTop + dst.offsetHeight / 2);
+    eventSender.mouseUp();
+}
+</script>
+</body>
+</html>

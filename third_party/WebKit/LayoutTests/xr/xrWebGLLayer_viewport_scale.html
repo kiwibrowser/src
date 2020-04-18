@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="file:///gen/layout_test_data/mojo/public/js/mojo_bindings.js"></script>
+<script src="file:///gen/device/vr/public/mojom/vr_service.mojom.js"></script>
+<script src="../xr/resources/xr-device-mocking.js"></script>
+<script src="../xr/resources/xr-test-utils.js"></script>
+<script src="../xr/resources/test-constants.js"></script>
+<canvas id="webgl-canvas"></canvas>
+
+<script>
+let fakeDevices = fakeXRDevices();
+
+xr_session_promise_test( (session, t) => new Promise((resolve, reject) => {
+  // Session must have a baseLayer or else frame requests will be ignored.
+  let webglLayer = new XRWebGLLayer(session, gl);
+  session.baseLayer = webglLayer;
+
+  let full_viewport;
+
+  function onFirstFrame(time, xrFrame) {
+    full_viewport = webglLayer.getViewport(xrFrame.views[0]);
+
+    webglLayer.requestViewportScaling(0.5);
+
+    let new_viewport = webglLayer.getViewport(xrFrame.views[0]);
+
+    t.step(() => {
+      // Viewport should not change within this frame!
+      assert_equals(full_viewport.x, new_viewport.x);
+      assert_equals(full_viewport.y, new_viewport.y);
+      assert_equals(full_viewport.width, new_viewport.width);
+      assert_equals(full_viewport.height, new_viewport.height);
+    });
+
+    // This should be clamped to some non-zero lower bounds.
+    webglLayer.requestViewportScaling(0.0);
+
+    session.requestAnimationFrame(onSecondFrame);
+  }
+
+  function onSecondFrame(time, xrFrame) {
+    let new_viewport = webglLayer.getViewport(xrFrame.views[0]);
+
+    t.step(() => {
+      // Viewport should never be zero width or height.
+      assert_greater_than(new_viewport.width, 0);
+      assert_greater_than(new_viewport.height, 0);
+    });
+
+    // This should be clamped to 1.0
+    webglLayer.requestViewportScaling(10.0);
+
+    session.requestAnimationFrame(onFinalFrame);
+  }
+
+  function onFinalFrame(time, xrFrame) {
+    let new_viewport = webglLayer.getViewport(xrFrame.views[0]);
+
+    t.step(() => {
+      // Should be the full viewport again.
+      assert_equals(full_viewport.x, new_viewport.x);
+      assert_equals(full_viewport.y, new_viewport.y);
+      assert_equals(full_viewport.width, new_viewport.width);
+      assert_equals(full_viewport.height, new_viewport.height);
+    });
+
+    resolve();
+  }
+
+  session.requestAnimationFrame(onFirstFrame);
+}), fakeDevices["FakeGooglePixelPhone"], [{ exclusive: true }],
+"Ensure viewport scale changes only take effect on the next frame and are properly clamped.");
+</script>

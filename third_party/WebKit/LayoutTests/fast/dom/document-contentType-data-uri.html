@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<title>document.contentType</title>
+<link rel="help" href="https://dom.spec.whatwg.org/#dom-document-contenttype">
+<script src="../../resources/js-test.js"></script>
+<body>
+<p>
+<iframe data-mt="text/html"></iframe>
+<iframe data-mt="text/xml"></iframe>
+<iframe data-mt="application/xml"></iframe>
+<iframe data-mt="image/svg+xml"></iframe>
+</p>
+<script>
+window.jsTestIsAsync = true;
+
+window.onmessage = function(e) {
+    if (e.data)
+        shouldBe('"' + e.data.obtained + '"', '"' + e.data.expected + '"');
+    else
+        testFailed("Null message payload");
+
+    if (--expectedMessagesCount == 0)
+        finishJSTest();
+};
+
+var documentContents = '<script xmlns="http://www.w3.org/1999/xhtml">' +
+    'parent.postMessage(' +
+        '{obtained: document.contentType, expected: "{0}"}, "*");' +
+    '<' + '/script>';
+
+var iframes = document.getElementsByTagName('iframe');
+for (var k = 0, f; f = iframes[k]; k++) {
+    f.src = 'data:' + f.dataset.mt + ',' +
+        encodeURIComponent(documentContents.replace('{0}', f.dataset.mt));
+}
+
+var expectedMessagesCount = iframes.length;
+
+</script>

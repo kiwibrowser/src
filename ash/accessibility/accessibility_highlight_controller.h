@@ -1,0 +1,79 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef ASH_ACCESSIBILITY_ACCESSIBILITY_HIGHLIGHT_CONTROLLER_H_
+#define ASH_ACCESSIBILITY_ACCESSIBILITY_HIGHLIGHT_CONTROLLER_H_
+
+#include "ash/ash_export.h"
+#include "base/macros.h"
+#include "ui/aura/client/cursor_client_observer.h"
+#include "ui/base/ime/input_method_observer.h"
+#include "ui/events/event_handler.h"
+#include "ui/gfx/geometry/point.h"
+#include "ui/gfx/geometry/rect.h"
+
+namespace ui {
+class KeyEvent;
+class InputMethod;
+class MouseEvent;
+class TextInputClient;
+}  // namespace ui
+
+namespace ash {
+
+// Controls visual highlights that Chrome OS can draw around the focused object,
+// the cursor, and the text caret for accessibility.
+class ASH_EXPORT AccessibilityHighlightController
+    : public ui::EventHandler,
+      public ui::InputMethodObserver,
+      public aura::client::CursorClientObserver {
+ public:
+  AccessibilityHighlightController();
+  ~AccessibilityHighlightController() override;
+
+  void HighlightFocus(bool focus);
+  void HighlightCursor(bool cursor);
+  void HighlightCaret(bool caret);
+  void SetFocusHighlightRect(const gfx::Rect& bounds_in_screen);
+
+ protected:
+  // ui::EventHandler:
+  void OnMouseEvent(ui::MouseEvent* event) override;
+  void OnKeyEvent(ui::KeyEvent* event) override;
+
+  // ui::InputMethodObserver:
+  void OnFocus() override {}
+  void OnBlur() override {}
+  void OnInputMethodDestroyed(const ui::InputMethod* input_method) override {}
+  void OnShowImeIfNeeded() override {}
+  void OnTextInputStateChanged(const ui::TextInputClient* client) override;
+  void OnCaretBoundsChanged(const ui::TextInputClient* client) override;
+
+  // aura::client::CursorClientObserver:
+  void OnCursorVisibilityChanged(bool is_visible) override;
+
+  // virtual for testing overridden.
+  virtual bool IsCursorVisible();
+
+ private:
+  bool IsCaretVisible(const gfx::Rect& caret_bounds);
+  void UpdateFocusAndCaretHighlights();
+  void UpdateCursorHighlight();
+
+  bool focus_ = false;
+  gfx::Rect focus_rect_;
+
+  bool cursor_ = false;
+  gfx::Point cursor_point_;
+
+  bool caret_ = false;
+  bool caret_visible_ = false;
+  gfx::Point caret_point_;
+
+  DISALLOW_COPY_AND_ASSIGN(AccessibilityHighlightController);
+};
+
+}  // namespace ash
+
+#endif  // ASH_ACCESSIBILITY_ACCESSIBILITY_HIGHLIGHT_CONTROLLER_H_

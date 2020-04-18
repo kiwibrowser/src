@@ -1,0 +1,36 @@
+(set-threads 3)
+(set-files 2)
+(lock 0 0)   ;;; thread 0 takes lock on file 0
+(match (locked 0 0))  ;;; thread 0 announces lock on file 0 taken
+(lock 1 0)
+(match (epsilon))
+(lock 2 0)
+(match (epsilon))
+(unlock 0 0) ;;; thread 0 unlocks lock on file 0
+(eval
+  (nth
+    (match
+      (any
+        (all (unlocked 0 0)
+             (locked 1 0))
+        (all (unlocked 0 0)
+             (locked 2 0))))
+    (quote
+      ((progn
+         (unlock 1 0)
+         (match
+           (all (unlocked 1 0)
+                (locked 2 0)))
+         (unlock 2 0)
+         (match (unlocked 2 0)))
+       (progn
+         (unlock 2 0)
+         (match
+           (all (unlocked 2 0)
+                (locked 1 0)))
+         (unlock 1 0)
+         (match (unlocked 1 0)))))))
+(lock 0 1)
+(match (locked 0 1))
+(unlock 0 1)
+(match (unlocked 0 1))

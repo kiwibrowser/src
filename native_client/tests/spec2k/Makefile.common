@@ -1,0 +1,539 @@
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+######################################################################
+# CONFIG
+######################################################################
+
+# NOTE: we assume you have a symlink "CLIENT" in this directory pointing
+#       to your .../native_client directory
+
+ifndef SCONS_BUILD_PLATFORM
+SCONS_BUILD_PLATFORM="scons_build_platform_undefined"
+endif
+
+ifndef BUILD_ARCH_SHORT
+BUILD_ARCH_SHORT="build_arch_short_undefined"
+endif
+
+TC_ROOT=../../../toolchain
+TOOLCHAIN_BASE=$(TC_ROOT)/$(SCONS_BUILD_PLATFORM)_$(BUILD_ARCH_SHORT)
+
+NNACL_GLIBC_ROOT=$(TOOLCHAIN_BASE)/nacl_$(BUILD_ARCH_SHORT)_glibc
+NNACL_NEWLIB_ROOT=$(TOOLCHAIN_BASE)/nacl_$(BUILD_ARCH_SHORT)_newlib
+
+NNACL_NEWLIB_SDK32=../../../scons-out/nacl-x86-32
+NNACL_NEWLIB_SDK64=../../../scons-out/nacl-x86-64
+
+PNACL_ROOT=$(TOOLCHAIN_BASE)/pnacl_newlib
+PNACL_TRANSLATOR_ROOT=$(TOOLCHAIN_BASE)/pnacl_translator
+ARM_ROOT=$(TOOLCHAIN_BASE)/arm_trusted
+
+CFLAGS = $(CFLAGS_EXTRA)
+
+######################################################################
+.PHONY = clean
+
+.SUFFIXES : .c .cc .o .bc
+
+######################################################################
+# Measurement tools
+
+######################################################################
+# Enable timing and size measurements by invoking the makefile with:
+# measureit=1, PERF_LOGGER=<script_path>, COMPILE_REPEATER=<script_path>
+######################################################################
+
+ifeq ($(measureit),1)
+REPETITIONS ?= 1
+# Times how long it took to translate to a file, and repeats N times
+# writing the result to $@.compile_time. Note $@ corresponds to $@ from
+# whichever Make rule that this is embedded into.
+TIME_TRANSLATE=$(COMPILE_REPEATER) $(REPETITIONS) $@
+# Calculate user+sys time for generating executable $(1) for benchmark $(2)
+# Assumes the following format for name of $(1):  $(2)."setup_identifier"
+# examples of "setup_identifier": nacl.opt.x8664, pnacl_translator.x8664, ...
+# Assumes time is logged to a file with name $(1).compile_time
+LOG_TRANSLATE_TIME=(TIME_FILE="$(1).compile_time" && \
+	 FILE_TYPE=$(subst $(2).,,$(1)) && \
+	 $(PERF_LOGGER) LogRealTime $$TIME_FILE "compiletime" $(2) $$FILE_TYPE)
+else
+# Set the various operations to nops
+TIME_TRANSLATE=
+LOG_TRANSLATE_TIME=true
+endif
+
+ifeq ($(measureit),1)
+# Check gzipped size of file $(1) for benchmark $(2)
+# Assumes the following format for name of $(1):  $(2)."setup_identifier"
+# examples of "setup_identifier": nacl.opt.x8664, opt.prelinked.bc, ...
+LOG_ZIP_SIZE=(FILE_TYPE=$(subst $(2).,,$(1)) && \
+	$(PERF_LOGGER) LogGzippedSize $(1) "transfersize" $(2) $$FILE_TYPE)
+else
+LOG_ZIP_SIZE=true
+endif
+
+ifeq ($(measureit),1)
+# Measure both translation time and size of resulting file.
+LOG_TIME_AND_SIZE=$(call LOG_TRANSLATE_TIME,$(1),$(2)) && \
+	$(call LOG_ZIP_SIZE,$(1),$(2))
+else
+LOG_TIME_AND_SIZE=true
+endif
+
+
+######################################################################
+
+clean:
+	rm -f -- *.pexe *.bc *.o *.s *.x86 *.arm  *.c~ .h~ \
+              *.html *.data \
+              $(IT) $(IT).* *.out src/*bc $(EXTRA_CLEAN)
+
+
+pnacl_bin: $(IT).pnacl.arm $(IT).pnacl.opt.arm \
+           $(IT).pnacl.x8632 $(IT).pnacl.opt.x8632 \
+	   $(IT).pnacl.x8664 $(IT).pnacl.opt.x8664
+
+nacl_bin: $(IT).nacl.x8632 $(IT).nacl.opt.x8632 \
+	  $(IT).nacl.x8664 $(IT).nacl.opt.x8664
+
+nosfi_bin: $(IT).gcc.x8632 $(IT).gcc.opt.x8632 \
+	   $(IT).gcc.arm $(IT).gcc.opt.arm
+
+nosfillvm_bin: $(IT).llvm.x8632 $(IT).llvm.opt.x8632 \
+	       $(IT).llvm.hw.arm $(IT).llvm.opt.hw.arm
+
+all: pnacl_bin nacl_bin nosfi_bin nosfillvm_bin
+
+
+######################################################################
+## NON-SANDBOXING GCC TOOLCHAINS
+######################################################################
+LOCAL_GCC=/usr/bin/gcc
+EMCCFLAGS=-s ASM_JS=1 -s TOTAL_MEMORY=268435456 $(CFLAGS_EXTRA)
+# Note: emcc should be in $PATH, or LOCAL_EMCC can be set to
+# the location of emcc.
+LOCAL_EMCC=emcc
+
+# straight x86-32 gcc
+$(IT).gcc.x8632: $(SRC) $(CPPSRC)
+	$(LOCAL_GCC) -O0 -m32 $(CFLAGS) $^ -static -lstdc++ -lm  -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+# optimized x86-32 gcc
+$(IT).gcc.opt.x8632: $(SRC) $(CPPSRC)
+	$(LOCAL_GCC) -O3 -m32 $(CFLAGS) $^ -static -lstdc++ -lm  -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+
+# straight x86-64 gcc
+$(IT).gcc.x8664: $(SRC) $(CPPSRC)
+	$(LOCAL_GCC) -O0 -m64 -DSPEC_CPU2000_LP64 $(CFLAGS) \
+	 	$^ -static -lstdc++ -lm  -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+# optimized x86-64 gcc
+$(IT).gcc.opt.x8664: $(SRC) $(CPPSRC)
+	$(LOCAL_GCC) -O3 -m64 -DSPEC_CPU2000_LP64 $(CFLAGS) \
+	 	$^ -static -lstdc++ -lm  -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+# Emscripten javascript/html generation for Asm.js
+# Sadly, we have to build two versions -- one for "ref" and one for "train" --
+# due to the way Emscripten packages data files.
+# It will actually create .emcc.ref.html and .emcc.train.html files
+$(IT).emcc.html: $(SRC) $(CPPSRC)
+	../prepare_input.py -v --config $(SPEC_COMPONENT) train
+	$(LOCAL_EMCC) -O2 -m32 $(CFLAGS) \
+		$(EMCCFLAGS) $(EMCCFLAGS_EXTRA_TRAIN) $^ \
+		-static -lstdc++ -lm -o $@.train.html
+	../fixup_asmjs.py $@.train.html
+	../prepare_input.py -v --config $(SPEC_COMPONENT) ref
+	$(LOCAL_EMCC) -O2 -m32 $(CFLAGS) \
+		$(EMCCFLAGS) $(EMCCFLAGS_EXTRA_REF) $^ \
+		-static -lstdc++ -lm  -o $@.ref.html
+	../fixup_asmjs.py $@.ref.html
+	touch $@
+
+# WebAssembly build
+# Sadly, we have to build two versions -- one for "ref" and one for "train" --
+# due to the way Emscripten packages data files.
+# It will actually create .ref.js and .train.js files.
+# Environment variable $WASM_INSTALL_DIR must point to the wasm install
+# directory in the waterfall, which is WATERFALL_DIR/src/work/wasm-install where
+# WATERFALL_DIR is the top waterfall directory. Refer to run_wasm.sh for
+# details.
+$(IT).js: $(SRC) $(CPPSRC)
+	$(WASM_INSTALL_DIR)/bin/emscripten/emcc $^ -o $(IT).train.js \
+		-s BINARYEN=1 -s 'BINARYEN_METHOD="native-wasm"' \
+		--em-config $(WASM_INSTALL_DIR)/emscripten_config_vanilla \
+		$(CFLAGS) -s TOTAL_MEMORY=268435456 \
+		-Wno-implicit-function-declaration -O2 \
+		$(shell python ../prepare_input.py --gen-emcc-embed --config \
+			$(SPEC_COMPONENT) train)
+	$(WASM_INSTALL_DIR)/bin/emscripten/emcc $^ -o $(IT).ref.js \
+		-s BINARYEN=1 -s 'BINARYEN_METHOD="native-wasm"' \
+		--em-config $(WASM_INSTALL_DIR)/emscripten_config_vanilla \
+		$(CFLAGS) -s TOTAL_MEMORY=268435456 \
+		-Wno-implicit-function-declaration -O2 \
+		$(shell python ../prepare_input.py --gen-emcc-embed --config \
+			$(SPEC_COMPONENT) ref)
+	touch $@
+
+######################################################################
+## NON-SANDBOXING LLVM TOOLCHAINS
+######################################################################
+LOCAL_LLVM=clang++
+
+# straight x86-32 llvm
+$(IT).llvm.x8632: $(SRC) $(CPPSRC)
+	$(LOCAL_LLVM) -O0 -m32 $(CFLAGS) $^ -static -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+# optimized x86-32 llvm
+$(IT).llvm.opt.x8632: $(SRC) $(CPPSRC)
+	$(LOCAL_LLVM) -O3 -m32 $(CFLAGS) $^ -static -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+
+# straight x86-64 llvm
+$(IT).llvm.x8664: $(SRC) $(CPPSRC)
+	$(LOCAL_LLVM) -O0 -m64 -DSPEC_CPU2000_LP64 $(CFLAGS) \
+	 	$^ -static -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+# optimized x86-64 llvm
+$(IT).llvm.opt.x8664: $(SRC) $(CPPSRC)
+	$(LOCAL_LLVM) -O3 -m64 -DSPEC_CPU2000_LP64 $(CFLAGS) \
+	 	$^ -static -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+# straight ARM llvm
+$(IT).llvm.hw.arm: $(SRC) $(CPPSRC)
+	$(LOCAL_LLVM) -O0 $(CFLAGS) \
+	 	$^ -static -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+# optimized ARM llvm
+$(IT).llvm.opt.hw.arm: $(SRC) $(CPPSRC)
+	$(LOCAL_LLVM) -O3 $(CFLAGS) \
+	 	$^ -static -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+######################################################################
+# EXPERIMENTAL
+# this is only for testing within an artificial CrOS hook for ARM/thumb2
+# BUG=http://code.google.com/p/chromium/issues/detail?id=61695
+# BUG=http://code.google.com/p/chromium/issues/detail?id=38909
+# BUG=http://code.google.com/p/nativeclient/issues/detail?id=135
+#########################################################################
+
+ifndef ARM_GCC
+ARM_GCC = arm-linux-gnueabi-gcc
+endif
+
+ifndef ARM_ARCH_FLAGS
+ARM_ARCH_FLAGS = -march=armv7-a -mcpu=cortex-a9 -mfpu=neon -marm
+endif
+
+ifndef ARM_LINK_FLAGS
+ARM_LINK_FLAGS = -lstdc++ -lm -static
+endif
+
+# straight arm gcc
+$(IT).gcc.arm: $(SRC) $(CPPSRC)
+	$(ARM_GCC) -O0 $(CFLAGS) $^ $(ARM_ARCH_FLAGS) $(ARM_LINK_FLAGS) -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+# optimized arm gcc
+$(IT).gcc.opt.arm: $(SRC) $(CPPSRC)
+	$(ARM_GCC) -O3 $(CFLAGS) $^ $(ARM_ARCH_FLAGS) $(ARM_LINK_FLAGS) -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+######################################################################
+## NACL-GCC TOOLCHAINS
+######################################################################
+NACL_GCC=$(NNACL_GLIBC_ROOT)/bin/x86_64-nacl-gcc
+NACL_GCC_NEWLIB32=$(NNACL_NEWLIB_ROOT)/bin/x86_64-nacl-gcc \
+		  -B $(NNACL_NEWLIB_SDK32)/lib \
+		  -I $(NNACL_NEWLIB_SDK32)/include
+NACL_GCC_NEWLIB64=$(NNACL_NEWLIB_ROOT)/bin/x86_64-nacl-gcc \
+		  -B $(NNACL_NEWLIB_SDK64)/lib \
+		  -I $(NNACL_NEWLIB_SDK64)/include
+
+# nacl x86 gcc
+$(IT).nacl.x8632: $(SRC) $(CPPSRC)
+	$(NACL_GCC_NEWLIB32) -O0 -m32 $(CFLAGS) $^ -static -lstdc++ -lm -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+# nacl optimized x86 gcc
+$(IT).nacl.opt.x8632: $(SRC) $(CPPSRC)
+	$(NACL_GCC_NEWLIB32) -O3 -m32 $(CFLAGS) $^ -static -lstdc++ -lm -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+# nacl x86 gcc, dynamic
+$(IT).nacl.dyn.x8632: $(SRC) $(CPPSRC)
+	$(NACL_GCC) -O0 -m32 $(CFLAGS) -fPIC -g $^ -lstdc++ -lm -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+# nacl optimized x86 gcc, dynamic
+$(IT).nacl.dyn.opt.x8632: $(SRC) $(CPPSRC)
+	$(NACL_GCC) -O3 -m32 $(CFLAGS) -fPIC -g $^ -lstdc++ -lm -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+# nacl x86-64 gcc
+$(IT).nacl.x8664: $(SRC) $(CPPSRC)
+	$(NACL_GCC_NEWLIB64) -O0 -m64 $(CFLAGS) $^  -static -lstdc++ -lm -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+# nacl optimized x86-64 gcc
+$(IT).nacl.opt.x8664: $(SRC) $(CPPSRC)
+	$(NACL_GCC_NEWLIB64) -O3 -m64 $(CFLAGS) $^  -static -lstdc++ -lm -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+# nacl x86-64 gcc, dynamic
+$(IT).nacl.dyn.x8664: $(SRC) $(CPPSRC)
+	$(NACL_GCC) -O0 -m64 $(CFLAGS) -fPIC -g $^ -lstdc++ -lm -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+# nacl optimized x86-64 gcc, dynamic
+$(IT).nacl.dyn.opt.x8664: $(SRC) $(CPPSRC)
+	$(NACL_GCC) -O3 -m64 $(CFLAGS) -fPIC -g $^ -lstdc++ -lm -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+######################################################################
+## BITCODE TOOLCHAINS
+######################################################################
+# BITCODE - FRONTEND
+
+ifdef NACL_ENABLE_INSECURE_ZERO_BASED_SANDBOX
+EXTRA_TRANSLATOR_FLAGS=-sfi-zero-based-sandbox
+else
+EXTRA_TRANSLATOR_FLAGS=
+endif
+
+PNACL_TRANSLATOR_FLAGS_FAST=-translate-fast
+PNACL_SZ_FLAGS=--use-sz -O2
+
+PNACL_BIN=$(PNACL_ROOT)/bin
+# Sandboxed translation uses the standalone translator install (which only
+# supports sandboxed translation). This allows it to run on the arm hardware
+# bots, which have no native toolchain build.
+PNACL_TRANSLATOR=$(TIME_TRANSLATE) $(PNACL_BIN)/pnacl-translate \
+  $(EXTRA_TRANSLATOR_FLAGS)
+PNACL_TRANSLATOR_SB=$(TIME_TRANSLATE) \
+  $(PNACL_TRANSLATOR_ROOT)/bin/pnacl-translate --pnacl-sb
+PNACL_TRANSLATOR_SB_EMU=$(PNACL_TRANSLATOR_SB) --pnacl-use-emulator \
+  $(EXTRA_TRANSLATOR_FLAGS)
+PNACL_CC=$(PNACL_BIN)/pnacl-clang
+PNACL_CXX=$(PNACL_BIN)/pnacl-clang++
+PNACL_FINALIZE=$(PNACL_BIN)/pnacl-finalize
+PNACL_FLAGS=--pnacl-driver-verbose
+
+PNACL_FLAGS_COMMON=$(PNACL_FLAGS) $(CFLAGS)
+
+%.bc: %.c
+	$(PNACL_CC) -O0 $(PNACL_FLAGS_COMMON) $< -c -o $@
+%.bc: %.cc
+	$(PNACL_CXX) -O0 $(PNACL_FLAGS_COMMON) $< -c -o $@
+
+%.o3.bc: %.c
+	$(PNACL_CC) -O3 $(PNACL_FLAGS_COMMON) $< -c -o $@
+%.o3.bc: %.cc
+	$(PNACL_CXX) -O3 $(PNACL_FLAGS_COMMON) $< -c -o $@
+
+$(IT).unopt.pexe: $(SRC:%.c=%.bc) $(CPPSRC:%.cc=%.bc)
+	$(PNACL_CXX) -O0  $(PNACL_FLAGS_COMMON) $^ -static -lm -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+$(IT).unopt.stripped.pexe: $(IT).unopt.pexe
+	$(PNACL_FINALIZE) $^ -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+$(IT).opt.pexe: $(SRC:%.c=%.o3.bc) $(CPPSRC:%.cc=%.o3.bc)
+	$(PNACL_CXX) -O3 $(PNACL_FLAGS_COMMON) $^ -static -lm -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+$(IT).opt.stripped.pexe: $(IT).opt.pexe
+	$(PNACL_FINALIZE) $^ -o $@
+	@$(call LOG_ZIP_SIZE,$@,$(IT))
+
+######################################################################
+# BITCODE - BACKEND - ARM  (sandboxed and non-sandboxed translators)
+
+$(IT).pnacl.arm: $(IT).unopt.stripped.pexe
+	$(PNACL_TRANSLATOR) $(PNACL_FLAGS) $^ -o $@ -arch arm
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl.opt.arm: $(IT).opt.stripped.pexe
+	$(PNACL_TRANSLATOR) $(PNACL_FLAGS) $^ -o $@ -arch arm
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator.arm: $(IT).unopt.stripped.pexe
+	$(PNACL_TRANSLATOR_SB_EMU) $(PNACL_FLAGS) $^ -o $@ -arch arm
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator.opt.arm: $(IT).opt.stripped.pexe
+	$(PNACL_TRANSLATOR_SB_EMU) $(PNACL_FLAGS) $^ -o $@ -arch arm
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator_fast.opt.arm: $(IT).opt.stripped.pexe
+	$(PNACL_TRANSLATOR_SB_EMU) $(PNACL_FLAGS) \
+	  $(PNACL_TRANSLATOR_FLAGS_FAST) $^ -o $@ -arch arm
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+
+# For arm translator testing, the pexes are built on x86 and copied to the
+# arm boards, but the intermediate .bc files are removed to keep the transfer
+# small. To keep make from trying to rebuild the pexe, use a phony target
+# with no dependencies
+$(IT).pnacl_translator.hw.arm:
+	$(PNACL_TRANSLATOR_SB) $(PNACL_FLAGS) $(IT).unopt.stripped.pexe \
+	 -o $@ -arch arm
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator.opt.hw.arm:
+	$(PNACL_TRANSLATOR_SB) $(PNACL_FLAGS) $(IT).opt.stripped.pexe \
+	 -o $@ -arch arm
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator.opt.hw.sz.arm:
+	$(PNACL_TRANSLATOR_SB) $(PNACL_FLAGS) $(PNACL_SZ_FLAGS) \
+	$(IT).opt.stripped.pexe -o $@ -arch arm
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator_fast.opt.hw.arm:
+	$(PNACL_TRANSLATOR_SB) $(PNACL_FLAGS) $(IT).opt.stripped.pexe \
+	 $(PNACL_TRANSLATOR_FLAGS_FAST) -o $@ -arch arm
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator_fast.opt.hw.sz.arm:
+	$(PNACL_TRANSLATOR_SB) $(PNACL_FLAGS) $(IT).opt.stripped.pexe \
+	 $(PNACL_TRANSLATOR_FLAGS_FAST) $(PNACL_SZ_FLAGS) -o $@ -arch arm
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator_1thread.opt.hw.arm:
+	$(PNACL_TRANSLATOR_SB) $(PNACL_FLAGS) $(IT).opt.stripped.pexe \
+	 -o $@ -arch arm -threads=seq
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator_fast_1thread.opt.hw.arm:
+	$(PNACL_TRANSLATOR_SB) $(PNACL_FLAGS) $(IT).opt.stripped.pexe \
+	 $(PNACL_TRANSLATOR_FLAGS_FAST) -o $@ -arch arm -threads=seq
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator_fast_1thread.opt.hw.sz.arm:
+	$(PNACL_TRANSLATOR_SB) $(PNACL_FLAGS) $(IT).opt.stripped.pexe \
+	 $(PNACL_TRANSLATOR_FLAGS_FAST) $(PNACL_SZ_FLAGS) -o $@ \
+	 -arch arm -threads=seq
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+
+.PHONY: $(IT).pnacl_translator.hw.arm
+.PHONY: $(IT).pnacl_translator.opt.hw.arm
+.PHONY: $(IT).pnacl_translator.opt.hw.sz.arm
+.PHONY: $(IT).pnacl_translator_fast.opt.hw.arm
+.PHONY: $(IT).pnacl_translator_fast.opt.hw.sz.arm
+.PHONY: $(IT).pnacl_translator_1thread.opt.hw.arm
+.PHONY: $(IT).pnacl_translator_fast_1thread.opt.hw.arm
+.PHONY: $(IT).pnacl_translator_fast_1thread.opt.hw.sz.arm
+
+######################################################################
+# BITCODE - BACKEND - X8632 (sandboxed and non-sandboxed translators)
+
+$(IT).pnacl.x8632: $(IT).unopt.stripped.pexe
+	$(PNACL_TRANSLATOR) $(PNACL_FLAGS) $^ -o $@ -arch x86-32
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl.opt.x8632: $(IT).opt.stripped.pexe
+	$(PNACL_TRANSLATOR) $(PNACL_FLAGS) $^ -o $@ -arch x86-32
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl.opt.sz.x8632: $(IT).opt.stripped.pexe
+	$(PNACL_TRANSLATOR) $(PNACL_FLAGS) $(PNACL_SZ_FLAGS) $^ \
+	-o $@ -arch x86-32
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator.x8632: $(IT).unopt.stripped.pexe
+	$(PNACL_TRANSLATOR_SB) $(PNACL_FLAGS) $^ -o $@ -arch x86-32
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator.opt.x8632: $(IT).opt.stripped.pexe
+	$(PNACL_TRANSLATOR_SB) $(PNACL_FLAGS) $^ -o $@ -arch x86-32	
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator_fast.opt.x8632: $(IT).opt.stripped.pexe
+	$(PNACL_TRANSLATOR_SB) $(PNACL_FLAGS) $(PNACL_TRANSLATOR_FLAGS_FAST) \
+	  $^ -o $@ -arch x86-32
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator_fast.opt.sz.x8632: $(IT).opt.stripped.pexe
+	$(PNACL_TRANSLATOR_SB) $(PNACL_FLAGS) $(PNACL_TRANSLATOR_FLAGS_FAST) \
+	  $(PNACL_SZ_FLAGS) $^ -o $@ -arch x86-32
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator_1thread.opt.x8632: $(IT).opt.stripped.pexe
+	$(PNACL_TRANSLATOR_SB) $(PNACL_FLAGS) $^ -o $@ -arch x86-32 \
+	  -threads=seq
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator_fast_1thread.opt.x8632: $(IT).opt.stripped.pexe
+	$(PNACL_TRANSLATOR_SB) $(PNACL_FLAGS) $(PNACL_TRANSLATOR_FLAGS_FAST) \
+	  $^ -o $@ -arch x86-32 -threads=seq
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator_fast_1thread.opt.sz.x8632: $(IT).opt.stripped.pexe
+	$(PNACL_TRANSLATOR_SB) $(PNACL_FLAGS) $(PNACL_SZ_FLAGS) \
+	  $^ -o $@ -arch x86-32 -threads=seq
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+
+######################################################################
+# BITCODE - BACKEND - X8664 (sandboxed and non-sandboxed translators)
+
+$(IT).pnacl.x8664: $(IT).unopt.stripped.pexe
+	$(PNACL_TRANSLATOR) $(PNACL_FLAGS) $^ -o $@ -arch x86-64
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl.opt.x8664: $(IT).opt.stripped.pexe
+	$(PNACL_TRANSLATOR) $(PNACL_FLAGS) $^ -o $@ -arch x86-64
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl.opt.sz.x8664: $(IT).opt.stripped.pexe
+	$(PNACL_TRANSLATOR) $(PNACL_FLAGS) $(PNACL_SZ_FLAGS) $^ \
+	-o $@ -arch x86-64
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator.x8664: $(IT).unopt.stripped.pexe
+	$(PNACL_TRANSLATOR_SB) $(PNACL_FLAGS) $^ -o $@ -arch x86-64
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator.opt.x8664: $(IT).opt.stripped.pexe
+	$(PNACL_TRANSLATOR_SB) $(PNACL_FLAGS) $^ -o $@ -arch x86-64
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator_fast.opt.x8664: $(IT).opt.stripped.pexe
+	$(PNACL_TRANSLATOR_SB) $(PNACL_FLAGS) $(PNACL_TRANSLATOR_FLAGS_FAST) \
+	  $^ -o $@ -arch x86-64
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator_fast.opt.sz.x8664: $(IT).opt.stripped.pexe
+	$(PNACL_TRANSLATOR_SB) $(PNACL_FLAGS) $(PNACL_TRANSLATOR_FLAGS_FAST) \
+	  $(PNACL_SZ_FLAGS) $^ -o $@ -arch x86-64
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator_1thread.opt.x8664: $(IT).opt.stripped.pexe
+	$(PNACL_TRANSLATOR_SB) $(PNACL_FLAGS) $^ -o $@ -arch x86-64 \
+	  -threads=seq
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator_fast_1thread.opt.x8664: $(IT).opt.stripped.pexe
+	$(PNACL_TRANSLATOR_SB) $(PNACL_FLAGS) $(PNACL_TRANSLATOR_FLAGS_FAST) \
+	  $^ -o $@ -arch x86-64 -threads=seq
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))
+
+$(IT).pnacl_translator_fast_1thread.opt.sz.x8664: $(IT).opt.stripped.pexe
+	$(PNACL_TRANSLATOR_SB) $(PNACL_FLAGS) $(PNACL_SZ_FLAGS) \
+	  $^ -o $@ -arch x86-64 -threads=seq
+	@$(call LOG_TIME_AND_SIZE,$@,$(IT))

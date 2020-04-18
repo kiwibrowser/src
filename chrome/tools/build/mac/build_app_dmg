@@ -1,0 +1,41 @@
+#!/bin/sh
+
+# Copyright (c) 2012 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Normally you don't want to build a dmg out of a debug build.
+if [ "${CONFIGURATION}" != "Release" ] ; then
+  echo "warning: building dmg in non-release mode" >&2
+fi
+
+# Make sure we got the branding passed to us
+if [ $# -ne 1 ]; then
+  echo "error: missing branding as an argument" >&2
+  exit 1
+fi
+
+# fail on anything from here out
+set -e
+
+TOP="${SRCROOT}/.."
+PKG_DMG="${SRCROOT}/installer/mac/pkg-dmg"
+BRAND_SCRIPT="${TOP}/build/branding_value.sh"
+
+BUILD_BRANDING=$1
+
+APP_NAME=$("${BRAND_SCRIPT}" "${BUILD_BRANDING}" PRODUCT_FULLNAME)
+DMG_NAME=$(echo "${APP_NAME}" | sed "s/ //g")
+
+SRC_APP_PATH="${BUILT_PRODUCTS_DIR}/${APP_NAME}.app"
+VOL_NAME="${APP_NAME}"
+DST_DMG_PATH="${BUILT_PRODUCTS_DIR}/${DMG_NAME}.dmg"
+
+# Call the real working
+"${PKG_DMG}" --source /var/empty \
+             --target "${DST_DMG_PATH}" \
+             --format UDBZ \
+             --verbosity 0 \
+             --volname "${VOL_NAME}" \
+             --tempdir "${TEMP_DIR}" \
+             --copy "${SRC_APP_PATH}/:/${APP_NAME}.app/"

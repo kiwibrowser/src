@@ -1,0 +1,46 @@
+# -*- python -*-
+# Copyright 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import os
+
+Import('env')
+
+slave_name = os.environ.get('BUILDBOT_SLAVENAME', '')
+
+# Performance tests are broken because their runtime is highly variable and
+# somewhat short, which is especially bad when running on virtual
+# machines. Fixing this issue should be part of:
+# https://code.google.com/p/nativeclient/issues/detail?id=3987
+is_broken = slave_name.startswith('vm') or slave_name.startswith('slave')
+
+# Run these tests natively to see how much overhead NaCl adds.  This
+# only works on Linux because the tests use pthreads (not available on
+# Windows) and clock_gettime(). Although Mac OS X doesn't implement
+# clock_gettime, a compatibility implementation is provided in
+# perf_test_compat_osx.cc.
+if env.Bit('windows'):
+  Return()
+
+inputs = [
+    'perf_test_runner.cc',
+    'perf_test_basics.cc',
+    'perf_test_threads.cc',
+]
+
+if env.Bit('mac'):
+  inputs += ['perf_test_compat_osx.cc']
+
+exe = env.ComponentProgram('performance_test', inputs, EXTRA_LIBS=['platform'])
+
+node = env.CommandTest(
+    'performance_test.out', [exe, env.GetPerfEnvDescription()],
+    # Don't hide output: We want the timings to be reported in the
+    # Buildbot logs so that Buildbot records the "RESULT" lines.
+    capture_output=False)
+# Disable this on Valgrind because TestThreadWakeup is very slow under
+# Valgrind, and because we don't particularly need to measure
+# performance under Valgrind.
+env.AddNodeToTestSuite(node, ['large_tests'], 'run_trusted_performance_test',
+                       is_broken=is_broken or env.Bit('running_on_valgrind'))

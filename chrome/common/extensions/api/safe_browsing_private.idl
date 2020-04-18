@@ -1,0 +1,69 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// Use the <code>chrome.safeBrowsingPrivate</code> API to observe events.
+namespace safeBrowsingPrivate {
+
+  dictionary PolicySpecifiedPasswordReuse {
+    // URL where this reuse happened.
+    DOMString url;
+
+    // The user name of the policy specified password.
+    DOMString userName;
+
+    // If this a phishing url.
+    boolean isPhishingUrl;
+  };
+
+  dictionary DangerousDownloadInfo {
+    // URL of the download.
+    DOMString url;
+
+    // File name and path of the download on user's machine.
+    DOMString fileName;
+
+    // SHA256 digest of this download.
+    DOMString downloadDigestSha256;
+
+    // User name of the profile. Empty string if user name not available.
+    DOMString userName;
+  };
+
+  dictionary InterstitialInfo {
+    // Top level URL that triggers this interstitial.
+    DOMString url;
+
+    // Human-readable string indicate why this interstitial is shown.
+    DOMString reason;
+
+    // Net error code.
+    DOMString? netErrorCode;
+
+    // User name of the profile. Empty string if user name not available.
+    DOMString userName;
+  };
+
+  interface Events {
+    // Fired when Chrome detects a reuse of a policy specified password.
+    //
+    // |reuseDetails|: Details about where the password reuse occurred.
+    static void onPolicySpecifiedPasswordReuseDetected(
+        PolicySpecifiedPasswordReuse reuseDetails);
+
+    // Fired when the user changed their policy specified password.
+    //
+    // |userName|: The user name of the policy specified password.
+    static void onPolicySpecifiedPasswordChanged(DOMString userName);
+
+    // Fired when the user opened a dangerous download.
+    static void onDangerousDownloadOpened(DangerousDownloadInfo dict);
+
+    // Fired when a security interstitial is shown to the user.
+    static void onSecurityInterstitialShown(InterstitialInfo dict);
+
+    // Fired when the user clicked-through a security interstitial.
+    static void onSecurityInterstitialProceeded(InterstitialInfo dict);
+  };
+
+};

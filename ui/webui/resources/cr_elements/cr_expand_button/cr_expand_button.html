@@ -1,0 +1,38 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_icons_css.html">
+<link rel="import" href="chrome://resources/cr_elements/shared_style_css.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+
+<dom-module id="cr-expand-button">
+  <template>
+    <style include="cr-icons cr-shared-style">
+      :host([disabled]) {
+        opacity: 0.65;
+        pointer-events: none;
+      }
+
+      paper-icon-button-light {
+        @apply --cr-paper-icon-button-margin;
+      }
+
+      #outer {
+        align-items: center;
+        display: flex;
+      }
+
+      #label {
+        flex: 1;
+      }
+    </style>
+    <div id="outer" on-tap="toggleExpand_">
+      <div id="label" on-tap="toggleExpand_"><slot></slot></div>
+      <paper-icon-button-light class$="[[iconName_(expanded)]]">
+        <button toggles active="{{expanded}}" disabled="[[disabled]]"
+            aria-label$="[[alt]]" aria-pressed$="[[getAriaPressed_(expanded)]]"
+            tabindex$="[[tabIndex]]">
+        </button>
+      </paper-icon-button-light>
+    </div>
+  </template>
+  <script src="cr_expand_button.js"></script>
+</dom-module>

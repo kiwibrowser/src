@@ -1,0 +1,23 @@
+# -*- python -*-
+# Copyright (c) 2013 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# Test whether the MIPS atomic 64-bit operations are defined.
+
+# Only test PNaCl MIPS.
+if not (env.Bit('build_mips32') and env.Bit('bitcode')):
+  Return()
+
+mips_atomic64_nexe = env.ComponentProgram('mips_atomic64', 'mips_atomic64.c')
+
+# Disassemble the .nexe file and look for function names.
+node = env.CommandTestFileDumpCheck('mips_atomic64_test.out',
+                                    mips_atomic64_nexe,
+                                    env.File('mips_atomic64.c'),
+                                    '-d')
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'toolchain_tests'],
+                       'run_mips_atomic64_test')

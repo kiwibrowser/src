@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+
+<script src="file:///gen/layout_test_data/mojo/public/js/mojo_bindings.js"></script>
+<script src="file:///gen/device/vr/public/mojom/vr_service.mojom.js"></script>
+<script src="../xr/resources/xr-device-mocking.js"></script>
+<script src="../xr/resources/xr-test-utils.js"></script>
+<canvas id="webgl-canvas"></canvas>
+
+<script>
+let fakeDevices = fakeXRDevices();
+
+xr_session_promise_test( (session) => new Promise((resolve) => {
+  // Session must have a baseLayer or frame requests will be ignored.
+  session.baseLayer = new XRWebGLLayer(session, gl);
+
+  let counter = 0;
+
+  function onFrame(time, vrFrame) {
+    // Intentionally session.requestAnimationFrame at the beginning, ensuring that
+    // there's an outstanding callback when the test completes. This is to make
+    // sure it doesn't cause any unexpected behavior like it did with
+    // crbug.com/679401
+    session.requestAnimationFrame(onFrame);
+    if (counter > 10) {
+      resolve();
+    }
+    counter++;
+  }
+
+  let handle = session.requestAnimationFrame(onFrame);
+  session.cancelAnimationFrame(0);
+  session.cancelAnimationFrame(-1);
+  session.cancelAnimationFrame(handle + 1);
+  session.cancelAnimationFrame(handle - 1);
+  session.cancelAnimationFrame(0.5);
+  session.cancelAnimationFrame(null);
+}), fakeDevices["FakeGooglePixelPhone"], [
+      { exclusive: true },
+      { outputContext: getOutputContext() }
+  ],
+"XRSession cancelAnimationFrame does not have unexpected behavior when given invalid handles");
+
+</script>

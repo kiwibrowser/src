@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2015 The Chromium Authors. All rights reserved.
+     Use of this source code is governed by a BSD-style license that can be
+     found in the LICENSE file. -->
+
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:chrome="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/card_single"
+    android:foreground="@drawable/button_borderless_compat">
+
+    <LinearLayout
+        android:id="@+id/text_layout"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_toStartOf="@+id/article_thumbnail"
+        android:layout_alignWithParentIfMissing="true"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:padding="@dimen/snippets_padding"
+        android:orientation="vertical">
+
+        <org.chromium.ui.widget.TextViewWithLeading
+            android:id="@+id/article_headline"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:textAppearance="@style/BlackTitle1"
+            chrome:leading="22sp" />
+
+        <LinearLayout
+            tools:ignore="UseCompoundDrawables"
+            android:id="@+id/publisher_bar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/snippets_publisher_margin_top"
+            android:orientation="horizontal">
+
+            <!-- The following attributes:
+                 - publisher_bar's android:layout_width="wrap_content"
+                 - article_publisher's android:layout_width="0dp"
+                 - article_publisher's android:layout_weight="1"
+                 - article_publisher's android:ellipsize="end"
+                 - article_age's android:layout_width="wrap_content"
+                 All ensure that when the publisher string is long, it starts to ellipsize before
+                 pushing the article age string and the offline icon off the screen.
+                 See: https://crbug.com/625775 and https://crbug.com/678568 -->
+            <TextView
+                android:id="@+id/article_publisher"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:drawablePadding="8dp"
+                android:maxLines="1"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:textSize="12sp"
+                android:textColor="@color/snippets_publisher_name_color"
+                android:textDirection="locale" />
+            <TextView
+                android:id="@+id/article_age"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:textSize="12sp"
+                android:textColor="@color/snippets_publisher_name_color"
+                android:textDirection="locale"/>
+
+            <!-- We can't add this ImageView as a CompoundDrawable to the TextView because we want to
+                 have different paddings between the favicon (which is a compound drawable on the
+                 TextView) and the offline icon. -->
+            <org.chromium.chrome.browser.widget.TintedImageView
+                android:id="@+id/offline_icon"
+                android:layout_width="@dimen/snippets_offline_icon_size"
+                android:layout_height="@dimen/snippets_offline_icon_size"
+                android:layout_marginStart="6dp"
+                android:alpha="0.54"
+                android:src="@drawable/offline_pin_round"
+                android:contentDescription="@string/accessibility_ntp_offline_badge"
+                android:visibility="gone"
+                chrome:chrometint="#000" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <org.chromium.chrome.browser.widget.TintedImageView
+        android:id="@+id/article_thumbnail"
+        android:layout_width="@dimen/snippets_thumbnail_size"
+        android:layout_height="@dimen/snippets_thumbnail_size"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:scaleType="centerCrop"
+        android:contentDescription="@null"
+        android:src="@null" />
+</RelativeLayout>

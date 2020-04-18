@@ -1,0 +1,164 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/chromeos/network/cr_onc_types.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_toggle/cr_toggle.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-a11y-keys/iron-a11y-keys.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="network_shared_css.html">
+<link rel="import" href="network_config_input.html">
+<link rel="import" href="network_config_select.html">
+
+<dom-module id="network-config">
+  <template>
+    <style include="network-shared iron-flex">
+    </style>
+
+    <!-- SSID (WiFi) -->
+    <template is="dom-if" if="[[isType_(NetworkType_.WI_FI, type)]]" restamp>
+      <network-config-input id="ssid" label="[[i18n('OncWiFi-SSID')]]"
+          value="{{configProperties_.WiFi.SSID}}" disabled="[[hasGuid_(guid)]]">
+      </network-config-input>
+    </template>
+
+    <!-- Security (WiFi and Ethernet) -->
+    <template is="dom-if" if="[[securityIsVisible_(type)]]" restamp>
+      <network-config-select id="security" label="[[i18n('OncWiFi-Security')]]"
+          value="{{security_}}"
+          disabled="[[!securityIsEnabled_(guid, type)]]"
+          items="[[getSecurityItems_(type)]]"
+          onc-prefix="WiFi.Security">
+      </network-config-select>
+    </template>
+
+    <!-- Passphrase (WiFi) -->
+    <template is="dom-if" if="[[configRequiresPassphrase_(type, security_)]]"
+        restamp>
+      <network-config-input label="[[i18n('OncWiFi-Passphrase')]]"
+          value="{{configProperties_.WiFi.Passphrase}}" password>
+        <iron-a11y-keys keys="enter" on-keys-pressed="connectIfConfigured_">
+        </iron-a11y-keys>
+      </network-config-input>
+    </template>
+
+    <!-- VPN -->
+    <template is="dom-if" if="[[showVpn_]]" restamp>
+      <network-config-input label="[[i18n('OncVPN-Host')]]"
+          value="{{configProperties_.VPN.Host}}">
+      </network-config-input>
+      <network-config-input label="[[i18n('OncName')]]"
+          value="{{configProperties_.Name}}" disabled="[[hasGuid_(guid)]]">
+      </network-config-input>
+      <network-config-select id="outer" label="[[i18n('OncVPN-Type')]]"
+          value="{{vpnType_}}" items="[[vpnTypeItems_]]"
+          onc-prefix="VPN.Type" disabled="[[hasGuid_(guid)]]">
+      </network-config-select>
+      <template is="dom-if" if="[[!showVpn_.OpenVPN]]">
+        <network-config-input label="[[i18n('OncVPN-L2TP-Username')]]"
+            value="{{configProperties_.VPN.L2TP.Username}}">
+        </network-config-input>
+        <network-config-input label="[[i18n('OncVPN-L2TP-Password')]]"
+            value="{{configProperties_.VPN.L2TP.Password}}" password>
+        </network-config-input>
+        <network-config-input label="[[i18n('OncVPN-IPsec-Group')]]"
+            value="{{configProperties_.VPN.IPsec.Group}}">
+        </network-config-input>
+        <template is="dom-if" if="[[!showVpn_.Cert]]">
+          <network-config-input label="[[i18n('OncVPN-IPsec-PSK')]]"
+              value="{{configProperties_.VPN.IPsec.PSK}}" password>
+          </network-config-input>
+        </template>
+      </template>
+      <template is="dom-if" if="[[showVpn_.OpenVPN]]">
+        <network-config-input label="[[i18n('OncVPN-OpenVPN-Username')]]"
+            value="{{configProperties_.VPN.OpenVPN.Username}}">
+        </network-config-input>
+        <network-config-input label="[[i18n('OncVPN-OpenVPN-Password')]]"
+            value="{{configProperties_.VPN.OpenVPN.Password}}" password>
+        </network-config-input>
+        <network-config-input label="[[i18n('OncVPN-OpenVPN-OTP')]]"
+            value="{{configProperties_.VPN.OpenVPN.OTP}}">
+        </network-config-input>
+      </template>
+      <template is="dom-if" if="[[showVpn_.Cert]]">
+        <network-config-select id="vpnServerCa"
+            label="[[i18n('OncEAP-ServerCA')]]"
+            value="{{selectedServerCaHash_}}" items="[[serverCaCerts_]]"
+            cert-list>
+        </network-config-select>
+        <network-config-select id="vpnUserCert"
+            label="[[i18n('OncEAP-UserCert')]]"
+            value="{{selectedUserCertHash_}}" items="[[userCerts_]]"
+            cert-list>
+        </network-config-select>
+      </template>
+      <div class="property-box">
+        <div id="vpnSaveCredentialsLabel" class="start">
+          [[i18n('networkConfigSaveCredentials')]]
+        </div>
+        <cr-toggle checked="{{vpnSaveCredentials_}}"
+            aria-labelledby="vpnSaveCredentialsLabel">
+        </cr-toggle>
+      </div>
+    </template>
+
+    <!-- EAP (WiFi, WiMAX, Ethernet) -->
+    <template is="dom-if" if="[[showEap_]]" restamp>
+      <network-config-select id="outer" label="[[i18n('OncEAP-Outer')]]"
+          value="{{eapProperties_.Outer}}" items="[[eapOuterItems_]]"
+          onc-prefix="EAP.Outer" hidden="[[!showEap_.Outer]]">
+      </network-config-select>
+      <network-config-select id="inner" label="[[i18n('OncEAP-Inner')]]"
+          value="{{eapProperties_.Inner}}"
+          items="[[getEapInnerItems_(eapProperties_.Outer)]]"
+          onc-prefix="EAP.Inner" hidden="[[!showEap_.Inner]]">
+      </network-config-select>
+      <network-config-select id="serverCa" label="[[i18n('OncEAP-ServerCA')]]"
+          value="{{selectedServerCaHash_}}" items="[[serverCaCerts_]]"
+          hidden="[[!showEap_.ServerCA]]" cert-list>
+      </network-config-select>
+      <network-config-input label="[[i18n('OncEAP-SubjectMatch')]]"
+          value="{{eapProperties_.SubjectMatch}}"
+          hidden="[[!showEap_.SubjectMatch]]">
+      </network-config-input>
+      <network-config-select id="userCert" label="[[i18n('OncEAP-UserCert')]]"
+          value="{{selectedUserCertHash_}}" items="[[userCerts_]]"
+          hidden="[[!showEap_.UserCert]]" cert-list>
+      </network-config-select>
+      <network-config-input label="[[i18n('OncEAP-Identity')]]"
+          value="{{eapProperties_.Identity}}" hidden="[[!showEap_.Identity]]">
+      </network-config-input>
+      <network-config-input label="[[i18n('OncEAP-Password')]]"
+          value="{{eapProperties_.Password}}" hidden="[[!showEap_.Password]]"
+          password>
+      </network-config-input>
+      <network-config-input label="[[i18n('OncEAP-AnonymousIdentity')]]"
+          value="{{eapProperties_.AnonymousIdentity}}"
+          hidden="[[!showEap_.AnonymousIdentity]]">
+      </network-config-input>
+      <div class="property-box">
+        <div id="eapSaveCredentialsLabel" class="start">
+          [[i18n('networkConfigSaveCredentials')]]
+        </div>
+        <cr-toggle checked="{{eapProperties_.SaveCredentials}}"
+            aria-labelledby="eapSaveCredentialsLabel">
+        </cr-toggle>
+      </div>
+    </template>
+
+    <!-- Share (WiFi and WiMAX) -->
+    <template is="dom-if"
+        if="[[shareIsVisible_(guid, type, networkProperties)]]" restamp>
+      <div class="property-box">
+        <div id="shareLabel" class="start">[[i18n('networkConfigShare')]]</div>
+        <cr-toggle id="share" checked="{{shareNetwork_}}"
+            disabled="[[!shareIsEnabled_(guid, configProperties_.*,
+                      security_, eapProperties_.*, shareAllowEnable)]]"
+            aria-label="[[i18n('networkConfigShare')]]">
+        </cr-toggle>
+      </div>
+    </template>
+
+  </template>
+  <script src="network_config.js"></script>
+</dom-module>

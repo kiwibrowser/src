@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<title>Element#requestFullscreen() on two elements in different iframes</title>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="../trusted-click.js"></script>
+<div id="log"></div>
+<iframe id="a" allowfullscreen></iframe>
+<iframe id="b" allowfullscreen></iframe>
+<script>
+// Adapted from https://github.com/w3c/web-platform-tests/pull/4250
+// TODO(foolip): Remove this test when the above is imported and passing.
+async_test(t => {
+  // Request fullscreen on the body elements of both iframes, but in reverse
+  // tree order.
+  const a = document.getElementById('a');
+  const b = document.getElementById('b');
+
+  // Expect first a fullscreenchange event for the second (!) request, then a
+  // fullscreenerror event for the first request. TODO(foolip): Remove the
+  // Fullscreen hierarchy restrictions. https://crbug.com/627792
+  a.contentDocument.onfullscreenchange = t.step_func_done(() => {
+    assert_equals(document.fullscreenElement, a, 'fullscreenElement');
+    assert_equals(a.contentDocument.fullscreenElement, a.contentDocument.body, 'fullscreenElement in iframe a');
+    b.contentDocument.onfullscreenerror = t.step_func(() => {
+      assert_equals(b.contentDocument.fullscreenElement, null, 'fullscreenElement in iframe b');
+    });
+  });
+  a.contentDocument.onfullscreenerror = t.unreached_func('fullscreenerror event in iframe a');
+  b.contentDocument.onfullscreenchange = t.unreached_func('fullscreenchange event in iframe b');
+
+  trusted_click(t, () => {
+    b.contentDocument.body.requestFullscreen();
+    a.contentDocument.body.requestFullscreen();
+  }, a.contentDocument.body, a.getBoundingClientRect());
+});
+</script>

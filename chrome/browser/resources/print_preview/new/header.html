@@ -1,0 +1,85 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/html/assert.html">
+<link rel="import" href="chrome://resources/html/cr.html">
+<link rel="import" href="button_css.html">
+<link rel="import" href="../data/destination.html">
+<link rel="import" href="settings_behavior.html">
+<link rel="import" href="print_preview_shared_css.html">
+<link rel="import" href="state.html">
+<link rel="import" href="strings.html">
+
+<dom-module id="print-preview-header">
+  <template>
+    <style include="print-preview-shared button">
+      :host {
+        -webkit-padding-end: 19px;
+        -webkit-padding-start: 20px;
+        background-color: #f6f6f6;
+        border-bottom: 1px solid #d2d2d2;
+        display: block;
+        padding-bottom: 20px;
+        padding-top: 6px;
+      }
+
+      .title {
+        color: black;
+        font-size: 1.25em;
+        font-weight: normal;
+        margin: 0;
+        padding-bottom: 12px;
+        padding-top: 10px;
+      }
+
+      .summary {
+        display: block;
+        min-height: 34px;
+      }
+
+      #button-strip {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-end;
+      }
+
+      #button-strip button {
+        -webkit-margin-start: 9px;
+        display: block;
+      }
+
+      #button-strip button.loading {
+        cursor: progress;
+      }
+
+      #button-strip button.default {
+        font-kerning: none;
+        font-weight: bold;
+      }
+
+      #button-strip button.default:not(:focus):not(:disabled) {
+        border-color: #808080;
+      }
+
+      #button-strip button.print:enabled {
+        background-color: rgb(77, 144, 254);
+        background-image:
+            linear-gradient(to bottom, rgb(77, 144, 254), rgb(71, 135, 237));
+        border: 1px solid rgb(48, 121, 237);
+        color: #fff;
+        text-shadow: 0 1px rgba(0,0,0,0.1);
+      }
+    </style>
+    <h1 class="title">$i18n{title}</h1>
+    <span class="summary" aria-label$="[[summaryLabel_]]"
+        inner-h-t-m-l="[[summary_]]">
+    </span>
+    <div id="button-strip">
+      <button class="cancel" on-click="onCancelClick_">$i18n{cancel}</button>
+      <button class="print default" on-click="onPrintClick_"
+          disabled$="[[!printButtonEnabled_]]">
+        [[getPrintButton_(destination.id)]]
+      </button>
+    </div>
+  </template>
+  <script src="header.js"></script>
+</dom-module>

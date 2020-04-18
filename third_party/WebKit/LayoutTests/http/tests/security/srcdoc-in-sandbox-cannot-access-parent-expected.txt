@@ -1,0 +1,3 @@
+CONSOLE ERROR: line 4: Uncaught SecurityError: Sandbox access violation: Blocked a frame at "null" from accessing a frame at "http://127.0.0.1:8000".  The frame requesting access is sandboxed and lacks the "allow-same-origin" flag.
+PASS
+

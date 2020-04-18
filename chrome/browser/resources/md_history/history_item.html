@@ -1,0 +1,221 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://history/browser_service.html">
+<link rel="import" href="chrome://history/constants.html">
+<link rel="import" href="chrome://history/searched_label.html">
+<link rel="import" href="chrome://history/shared_style.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_icons_css.html">
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/cr_elements/shared_vars_css.html">
+<link rel="import" href="chrome://resources/html/cr/ui/focus_row.html">
+<link rel="import" href="chrome://resources/html/icon.html">
+<link rel="import" href="chrome://resources/html/util.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-icon/iron-icon.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-styles/shadow.html">
+
+<!-- Lazy loaded: paper-icon-button-light. -->
+
+<dom-module id="history-item">
+  <template>
+    <style include="shared-style cr-icons">
+      :host {
+        display: block;
+        outline: none;
+        pointer-events: none;
+      }
+
+      #main-container {
+        position: relative;
+      }
+
+      :host([is-card-end]) #main-container {
+        margin-bottom: var(--card-padding-between);
+      }
+
+      :host([is-card-start][is-card-end]) #main-container {
+        border-radius: var(--cr-card-border-radius);
+      }
+
+      #date-accessed {
+        display: none;
+      }
+
+      :host([is-card-start]) #date-accessed {
+        display: block;
+      }
+
+      #item-container {
+        -webkit-padding-start: 10px;
+        align-items: center;
+        display: flex;
+        min-height: var(--item-height);
+        pointer-events: auto;
+      }
+
+      :host([is-card-start]) #item-container {
+        padding-top: var(--card-first-last-item-padding);
+      }
+
+      :host([is-card-end]) #item-container {
+        padding-bottom: var(--card-first-last-item-padding);
+      }
+
+      #title-and-domain {
+        align-items: center;
+        display: flex;
+        flex: 1;
+        height: var(--item-height);
+        overflow: hidden;
+      }
+
+      #checkbox {
+        margin: 12px;
+      }
+
+      /* #checkbox[unresolved] styling is necessary since cr-checkbox is being
+         lazy-loaded. */
+      #checkbox[unresolved] {
+        border: 2px solid var(--secondary-text-color);
+        border-radius: 2px;
+        content: '';
+        display: block;
+        height: 12px;
+        width: 12px;
+      }
+
+      #time-accessed {
+        -webkit-margin-start: 6px;
+        color: var(--history-item-time-color);
+        min-width: 96px;
+      }
+
+      #domain {
+        -webkit-margin-start: 16px;
+        color: var(--secondary-text-color);
+        flex-shrink: 0;
+      }
+
+      #menu-button-container {
+        -webkit-margin-end: 12px;
+      }
+
+      #star-container {
+        -webkit-margin-end: 4px;
+        -webkit-margin-start: 12px;
+        width: 32px;
+      }
+
+      #bookmark-star-container {
+        color: var(--interactive-color);
+        height: 32px;
+        width: 32px;
+      }
+
+      #bookmark-star-container iron-icon {
+        height: 16px;
+        width: 16px;
+      }
+
+      #time-gap-separator {
+        -webkit-border-start: 1px solid #888;
+        -webkit-margin-start: 77px;
+        height: 15px;
+      }
+
+      #background-clip {
+        /* Prevent artifacts when zoomed by overlapping the next item. */
+        bottom: -0.4px;
+        clip: rect(auto 999px auto -5px); /* Clip the top and bottom edges. */
+        left: 0;
+        position: absolute;
+        right: 0;
+        top: 0;
+        z-index: -1;
+      }
+
+      :host([is-card-end]) #background-clip {
+        bottom: 0;
+        clip: rect(auto 999px 500px -5px); /* Clip the top edge. */
+      }
+
+      #background {
+        @apply --shadow-elevation-2dp;
+        background: #fff;
+        bottom: 0;
+        left: 0;
+        position: absolute;
+        right: 0;
+        top: 0;
+      }
+
+      :host(:not([is-card-start])) #background {
+        top: -5px; /* Draw the box shadow up the full edge of the background. */
+      }
+
+      :host([is-card-start]) #background {
+        border-radius: var(--cr-card-border-radius) var(--cr-card-border-radius) 0 0;
+      }
+
+      :host([is-card-end]) #background {
+        border-radius: 0 0 var(--cr-card-border-radius) var(--cr-card-border-radius);
+      }
+
+      :host([is-card-start][is-card-end]) #background {
+        border-radius: var(--cr-card-border-radius);
+      }
+    </style>
+
+    <div id="main-container">
+      <div id="background-clip">
+        <div id="background"></div>
+      </div>
+      <div id="date-accessed" class="card-title">
+        [[cardTitle_(numberOfItems, item.dateRelativeDay, searchTerm)]]
+      </div>
+      <div id="item-container"
+          on-mousedown="onItemMousedown_"
+          on-click="onItemClick_">
+        <cr-checkbox id="checkbox" checked="[[selected]]" unresolved
+            on-mousedown="onCheckboxClick_" on-keydown="onCheckboxClick_"
+            on-change="onCheckboxChange_" class="no-label"
+            hidden="[[selectionNotAllowed_]]"
+            disabled="[[selectionNotAllowed_]]"
+            aria-label$="[[getEntrySummary_(item)]]"></cr-checkbox>
+        <span id="time-accessed">
+          [[item.readableTimestamp]]
+        </span>
+        <div class="website-icon" id="icon"></div>
+        <div id="title-and-domain">
+          <a href="[[item.url]]" id="title" class="website-title"
+              title="[[item.title]]" on-click="onLinkClick_"
+              on-contextmenu="onLinkRightClick_">
+            <history-searched-label title="[[item.title]]"
+                search-term="[[searchTerm]]"></history-searched-label>
+          </a>
+          <span id="domain">[[item.domain]]</span>
+        </div>
+        <div id="star-container">
+          <template is="dom-if" if="[[item.starred]]" notify-dom-change>
+            <paper-icon-button-light id="bookmark-star-container">
+              <button id="bookmark-star"
+                  title="$i18n{removeBookmark}" on-click="onRemoveBookmarkTap_">
+                <iron-icon icon="cr:star"></iron-icon>
+              </button>
+            </paper-icon-button-light>
+          </template>
+        </div>
+        <paper-icon-button-light id="menu-button-container"
+            class="more-vert-button">
+          <button id="menu-button"
+              title="$i18n{moreActionsButton}" on-click="onMenuButtonTap_">
+            <div></div>
+            <div></div>
+            <div></div>
+          </button>
+        </paper-icon-button-light>
+      </div>
+      <div id="time-gap-separator" hidden="[[!hasTimeGap]]"></div>
+    </div>
+  </template>
+  <script src="chrome://history/history_item.js"></script>
+</dom-module>

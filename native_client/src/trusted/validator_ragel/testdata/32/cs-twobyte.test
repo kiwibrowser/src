@@ -1,0 +1,12 @@
+@hex:
+  # We should disallow a two-byte instruction with a cs prefix.
+  0f 1f 84 00 00 00 00 00
+  2e 0f 1f 84 00 00 00 00 00
+@dis:
+     0:	0f 1f 84 00 00 00 00 00                      	nopl   0x0(%eax,%eax,1)
+     8:	2e 0f 1f 84 00 00 00 00 00                   	nopl   %cs:0x0(%eax,%eax,1)
+@rdfa_output:
+  8: unrecognized instruction
+  return code: 1
+@spec:
+  8: ('segments in memory references are not allowed', Instruction(0x8: 2e 0f 1f 84 00 00 00 00 00  nopl %cs:0x0(%eax,%eax,1)))

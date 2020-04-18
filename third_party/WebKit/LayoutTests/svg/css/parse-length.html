@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<script src="../../resources/ahem.js"></script>
+<style>
+* { font-size: 16px; }
+svg, rect { font-family: 'Ahem'; }
+div { font-size: 8px; } 
+</style>
+<html>
+<svg id="svg" width="0" height="0"></svg>
+<script src="../../resources/js-test.js"></script>
+<script>
+description("Test that 'length' presentation attribute values are parsed with CSS presentation rules.");
+
+function computedStyle(elementname, property, value) {
+  var elm = document.createElementNS('http://www.w3.org/2000/svg', elementname);
+  document.getElementById('svg').appendChild(elm);
+  elm.setAttribute(property, value);
+  var computedValue = getComputedStyle(elm).getPropertyValue(property);
+  document.getElementById('svg').removeChild(elm);
+  return computedValue;
+}
+
+function testComputed(elementname, property, value, expected) {
+  shouldBeEqualToString('computedStyle("' + elementname + '", "' + property + '", "' + value + '")', expected);
+}
+
+function negativeTest(elementname, property, value) {
+  testComputed(elementname, property, value, "auto");
+}
+
+function negativeTestZero(elementname, property, value) {
+  testComputed(elementname, property, value, "0px");
+}
+
+function testAttributeOnElement(elementname, attributename) {
+  testComputed(elementname, attributename, "  100", "100px");
+  testComputed(elementname, attributename, "100   ", "100px");
+  testComputed(elementname, attributename, "100px", "100px");
+  testComputed(elementname, attributename, "1em", "16px");
+  // testComputed(elementname, attributename, "1ex", "12.8000001907349px"); // enable this again once http://crbug.com/441840 is fixed
+  testComputed(elementname, attributename, "20%", "20%");
+  testComputed(elementname, attributename, "-200px", "-200px");
+
+  negativeTestZero(elementname, attributename, "auto", "auto");
+  negativeTestZero(elementname, attributename, "100   px");
+  negativeTestZero(elementname, attributename, "100px;");
+  negativeTestZero(elementname, attributename, "100px !important");
+  negativeTestZero(elementname, attributename, "{ 100px }");
+}
+
+var xyelements = [ "mask", "svg", "rect", "image", "foreignObject" ];
+for (var elm of xyelements) {
+  testAttributeOnElement(elm, "x");
+  testAttributeOnElement(elm, "y");
+}
+
+var rxryelements = [ "rect", "ellipse" ];
+for (var elm of rxryelements) {
+  testAttributeOnElement(elm, "rx");
+  testAttributeOnElement(elm, "ry");
+}
+
+testAttributeOnElement("circle", "r");
+</script>
+</body>
+</html>

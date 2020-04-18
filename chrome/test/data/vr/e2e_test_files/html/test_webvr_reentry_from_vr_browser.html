@@ -1,0 +1,39 @@
+<!doctype html>
+<!--
+Tests that WebVR continues to work (rAFs continue to fire) after re-entering
+presentation from the VR browser.
+-->
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="../resources/webvr_e2e.css">
+  </head>
+  <body>
+    <canvas id="webgl-canvas"></canvas>
+    <script src="../../../../../../third_party/WebKit/LayoutTests/resources/testharness.js"></script>
+    <script src="../resources/webvr_e2e.js"></script>
+    <script src="../resources/webvr_boilerplate.js"></script>
+    <script>
+      var t = async_test("rAFs continue to fire after presentation re-entry");
+
+      function stepVerifyFirstPresent() {
+        onPresentingAnimationFrameCallback = () => {
+          onPresentingAnimationFrameCallback = null;
+          finishJavaScriptStep();
+        };
+      }
+
+      function stepVerifyMagicWindow() {
+        onMagicWindowAnimationFrameCallback = () => {
+          onMagicWindowAnimationFrameCallback = null;
+          finishJavaScriptStep();
+        };
+      }
+
+      function stepVerifySecondPresent() {
+        onPresentingAnimationFrameCallback = () => {
+          t.done();
+        };
+      }
+    </script>
+  </body>
+</html>

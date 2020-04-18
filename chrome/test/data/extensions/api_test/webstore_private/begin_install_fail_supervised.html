@@ -1,0 +1,22 @@
+<!--
+ * Copyright 2016 The Chromium Authors. All rights reserved.  Use of this
+ * source code is governed by a BSD-style license that can be found in the
+ * LICENSE file.
+-->
+<script src="common.js"></script>
+<script>
+
+runTests([
+  function beginInstall() {
+    var manifest = getManifest();
+    var expectedError =
+        "Apps and extensions can only be modified by the manager ()."
+    chrome.webstorePrivate.beginInstallWithManifest3(
+        {id: extensionId, manifest: manifest},
+        callbackFail(expectedError, function(result) {
+      assertEq("blocked_by_policy", result);
+    }));
+  },
+]);
+
+</script>

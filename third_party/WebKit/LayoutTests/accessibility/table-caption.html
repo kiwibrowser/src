@@ -1,0 +1,34 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+<script src="../resources/js-test.js"></script>
+</head>
+<body id="body">
+
+<div id="content">
+
+<table id="table" border=1>
+  <caption> TableCaption </caption>
+  <tr><td>foo</td><td>bar</td></tr>
+</table>
+
+</div>
+
+<script>
+
+    description("This tests that table caption element is exposed for accessibility.");
+
+    if (window.accessibilityController) {
+        var table = accessibilityController.accessibleElementById("table");
+        shouldBe("table.childrenCount", "5");
+        window.captionText = table.childAtIndex(0).childAtIndex(0).name;
+        shouldBe("captionText", "'TableCaption'");
+        // Clear the HTML for cleaner results.
+        document.getElementById("content").innerHTML = "";
+    }
+
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,34 @@
+# -*- python -*-
+# Copyright (c) 2013 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+if not env.SupportsSeccompBpfSandbox():
+  Return()
+
+# Valgrind doesn't like the syscall checking done here.
+# The ASan runtime does extra syscalls that are not allowed.
+is_broken = env.Bit('running_on_valgrind') or env.Bit('asan')
+
+open_errno_test_exe = env.ComponentProgram('seccomp_open_errno_test',
+                                           ['open_errno_test.c'],
+                                           EXTRA_LIBS=['seccomp_bpf',
+                                                       'platform'])
+
+node = env.CommandTest('seccomp_open_errno_test.out',
+                       command=[open_errno_test_exe])
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_seccomp_open_errno_test',
+                       is_broken=is_broken)
+
+check_arch_test_exe = env.ComponentProgram('seccomp_check_arch_test',
+                                           ['check_arch_test.c'],
+                                           EXTRA_LIBS=['seccomp_bpf',
+                                                       'platform'])
+
+node = env.CommandTest('seccomp_check_arch_test.out',
+                       command=[check_arch_test_exe],
+                       exit_status='-31') # SIGSYS
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_seccomp_check_arch_test',
+                       is_broken=is_broken)

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<script src="../../../resources/js-test.js"></script>
+<script>
+if (window.internals)
+    internals.settings.setLangAttributeAwareFormControlUIEnabled(true);
+else
+    debug('Require testRunner.');
+</script>
+
+<input id="input-ar" lang="ar-eg" type="number">
+<input id="input-fr" lang="fr-fr" type="number">
+<input id="input-en" lang="en-us" type="number">
+
+<script>
+function displayValueForKeyInput(inputElement, keyInputs) {
+    inputElement.value = '';
+    inputElement.focus();
+    document.execCommand('InsertText', false, keyInputs);
+    inputElement.select();
+    return window.getSelection().toString();
+}
+
+debug('Arabic number input should accept ASCII digits and Arabic digits, and reject others.');
+var arabicInput = document.getElementById('input-ar');
+shouldBeEqualToString('displayValueForKeyInput(arabicInput, "123.4")', '123.4');
+shouldBeEqualToString('displayValueForKeyInput(arabicInput, "1.23E+19")', '1.23E+19');
+shouldBeEqualToString('displayValueForKeyInput(arabicInput, "1.23e-1")', '1.23e-1');
+shouldBeEqualToString('displayValueForKeyInput(arabicInput, "\u0661\u0669\u0660")', '\u0661\u0669\u0660');
+shouldBeEqualToString('displayValueForKeyInput(arabicInput, "acdef")', 'e');
+
+debug('');
+debug('French number input should accept ASCII digits, comma, and full stop.');
+var frenchInput = document.getElementById('input-fr');
+shouldBeEqualToString('displayValueForKeyInput(frenchInput, "1234.56")', '1234.56');
+shouldBeEqualToString('displayValueForKeyInput(frenchInput, "1234,56")', '1234.56');
+
+debug('');
+debug('English number input should accept ASCII digits and full stop, and no comma.');
+var englishInput = document.getElementById('input-en');
+shouldBeEqualToString('displayValueForKeyInput(englishInput, "1234.56")', '1234.56');
+shouldBeEqualToString('displayValueForKeyInput(englishInput, "-1234,56")', '-123456');
+shouldBeEqualToString('displayValueForKeyInput(englishInput, " abcdef ")', 'e');
+</script>
+</body>

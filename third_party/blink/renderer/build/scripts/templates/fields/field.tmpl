@@ -1,0 +1,152 @@
+{% from 'templates/macros.tmpl' import print_if %}
+
+{% macro encode(field, value) %}
+{% if field.is_bit_field -%}
+static_cast<unsigned>({{value}})
+{%- else -%}
+{{value}}
+{%- endif %}
+{% endmacro %}
+
+{% macro decode(field, value) %}
+{% if field.is_bit_field -%}
+static_cast<{{field.type_name}}>({{value}})
+{%- else -%}
+{{value}}
+{%- endif %}
+{% endmacro %}
+
+{% macro getter_expression(field) %}
+{% for group in field.group.path_without_root() -%}
+{{group.member_name}}->
+{%- endfor -%}
+{{field.name}}
+{%- endmacro %}
+
+{% macro setter_expression(field) %}
+{% for group in field.group.path_without_root() -%}
+{{group.member_name}}.Access()->
+{%- endfor -%}
+{{field.name}}
+{%- endmacro %}
+
+{% macro set_if_changed(field, value) %}
+{% if field.group.name -%}
+if (!({{getter_expression(field)}} == {{value}}))
+  {{setter_expression(field)}} = {{value}};
+{%- else -%}
+{{field.name}} = {{value}};
+{%- endif %}
+{% endmacro %}
+
+{% macro nonconst_ref(field) %}
+{% if field.is_bit_field or field.field_template == 'primitive' -%}
+{{field.type_name}}
+{%- else -%}
+{{field.type_name}}&
+{%- endif %}
+{% endmacro %}
+
+{% macro const_ref(field) %}
+{% if field.is_bit_field or field.field_template == 'primitive' -%}
+{{field.type_name}}
+{%- else -%}
+const {{field.type_name}}&
+{%- endif %}
+{% endmacro %}
+
+{% macro group_getter_expression(group) %}
+{% for group in group.path_without_root() -%}
+{{group.member_name}}{{print_if(not loop.last, "->")}}
+{%- endfor -%}
+{% endmacro %}
+
+{% macro declare_storage(field) %}
+{% if field.is_bit_field %}
+{{print_if(field.mutable, "mutable ")}}unsigned {{field.name}} : {{field.size}}; // {{field.type_name}}
+{%- elif field.field_template == 'pointer' %}
+{{field.wrapper_pointer_name}}<{{field.type_name}}> {{field.name}};
+{%- else %}
+{{field.type_name}} {{field.name}};
+{%- endif %}
+{% endmacro %}
+
+{% macro compare(is_pointer_type, expr, other_name) %}
+{% if is_pointer_type -%}
+  DataEquivalent({{expr}}, {{other_name}}.{{expr}})
+{%- else -%}
+  {{expr}} == {{other_name}}.{{expr}}
+{%- endif %}
+{% endmacro %}
+
+{# Given a group and a list of fields to compare, this generates a set of
+   equality comparisons on those fields. The generated comparisons take
+   advantage of group sharing. #}
+{% macro fieldwise_compare(group, fields_to_compare, boolean_and=None) %}
+{% set boolean_and = boolean_and or joiner('&& ') %}
+{% for subgroup in group.subgroups %}
+  {# If every field in this subgroup is to be compared, we can compare the
+     group pointer instead. #}
+  {% if subgroup.all_fields|rejectattr("custom_compare")|reject("in", fields_to_compare)|list|length == 0 -%}
+    {{boolean_and()}}{{subgroup.member_name}} == o.{{subgroup.member_name}}
+  {# Otherwise, we would have to recursively generate comparison operations
+     on fields in the subgroup. #}
+  {% elif subgroup.all_fields|rejectattr("custom_compare")|select("in", fields_to_compare)|list|length > 0 -%}
+    {{fieldwise_compare(subgroup, fields_to_compare, boolean_and)}}
+  {% endif %}
+{% endfor %}
+{% for field in group.fields|rejectattr("custom_compare")|select("in", fields_to_compare) -%}
+  {{boolean_and()}}{{compare(field.wrapper_pointer_name, getter_expression(field), "o")}}
+{% endfor %}
+{% endmacro %}
+
+{% macro fieldwise_copy(group, fields_to_copy) %}
+{% for subgroup in group.subgroups %}
+  {% if subgroup.all_fields|rejectattr("custom_copy")|reject("in", fields_to_copy)|list|length == 0 -%}
+    {{subgroup.member_name}} = other.{{subgroup.member_name}};
+  {% elif subgroup.all_fields|rejectattr("custom_copy")|select("in", fields_to_copy)|list|length > 0 -%}
+    {{fieldwise_copy(subgroup, fields_to_copy)}}
+  {% endif %}
+{% endfor %}
+{% for field in group.fields|rejectattr("custom_copy")|select("in", fields_to_copy) -%}
+  {{setter_expression(field)}} = other.{{getter_expression(field)}};
+{% endfor %}
+{% endmacro %}
+
+{% macro fieldwise_pointer_compare_inherited(group, boolean_and=None) %}
+{% set boolean_and = boolean_and or joiner('&& ') %}
+{% for subgroup in group.subgroups %}
+  {# If every field in this subgroup is inherited, we directly compare the
+     group pointer instead. #}
+  {% if subgroup.all_fields|rejectattr("is_inherited")|list|length == 0 -%}
+    {{boolean_and()}}{{subgroup.member_name}}.Get() == o.{{subgroup.member_name}}.Get()
+  {# Otherwise, we would have to recursively generate comparison operations
+     on fields in the subgroup. #}
+  {% elif subgroup.all_fields|selectattr("is_inherited")|list|length > 0 -%}
+    {{fieldwise_pointer_compare_inherited(subgroup, boolean_and)}}
+  {% endif %}
+{% endfor %}
+{% for field in group.fields if field.is_inherited -%}
+  {{boolean_and()}}{{getter_expression(field)}} == o.{{getter_expression(field)}}
+{% endfor %}
+{% endmacro %}
+
+{% macro fieldwise_diff(group_to_diff) %}
+{% for diff_group in group_to_diff.subgroups %}
+if (a.{{group_getter_expression(diff_group.group)}}.Get() != b.{{group_getter_expression(diff_group.group)}}.Get()) {
+{{fieldwise_diff(diff_group)|indent(2, true)}}
+}
+{% endfor %}
+{% for field in group_to_diff.fields %}
+if (a.{{getter_expression(field)}} != b.{{getter_expression(field)}})
+  return true;
+{% endfor %}
+{% for expression in group_to_diff.expressions %}
+if (a.{{expression}} != b.{{expression}})
+  return true;
+{% endfor %}
+{% for predicate in group_to_diff.predicates %}
+if (!{{predicate}})
+  return true;
+{% endfor %}
+{% endmacro %}

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+
+<script>
+function part1() {
+    add_result_callback(function(result) {
+        if (result.status == result.PASS)
+            window.location = window.location.toString() + '?part2';
+    });
+
+    test(function() {
+        frames['iframe'].document.body.focus();
+        frames['iframe'].document.execCommand('InsertText', false, 'c');
+
+        assert_equals(frames['iframe'].document.body.innerText, 'c',
+                      'Text should be inserted into the subframe.');
+
+        assert_false(document.queryCommandEnabled('Undo'),
+                     'Undo should not be enabled in main document by text insertion in subframe.');
+    }, 'Checks with modification in the subframe.');
+}
+
+function part2() {
+    test(function() {
+      assert_equals(frames['iframe'].document.body.innerText, '',
+                    'Subframe should not have old content after navigaiton.');
+
+      assert_false(document.queryCommandEnabled('Undo'),
+                   'Undo should not be enabled after the location changed.');
+    }, 'Checks after the subframe has navigated');
+}
+
+function runTest() {
+    if (window.location.toString().indexOf("?part2") == -1) {
+        part1();
+    } else {
+        part2();
+    }
+}
+</script>
+
+<body onload="runTest()">
+<iframe name="iframe" src="../resources/contenteditable-iframe-src.html"></iframe>
+<div id="log"></div>
+</body>

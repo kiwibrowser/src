@@ -1,0 +1,3072 @@
+                                                         -*- coding: utf-8 -*-
+Changes with Apache 2.2.25
+
+  *) SECURITY: CVE-2013-1862 (cve.mitre.org)
+     mod_rewrite: Ensure that client data written to the RewriteLog is
+     escaped to prevent terminal escape sequences from entering the
+     log file.  [Eric Covener, Jeff Trawick, Joe Orton]
+
+  *) core: Limit ap_pregsub() to 64MB and add ap_pregsub_ex() for longer
+     strings.  The default limit for ap_pregsub() can be adjusted at compile
+      time by defining AP_PREGSUB_MAXLEN.  [Stefan Fritsch, Jeff Trawick]
+
+  *) core: Support the SINGLE_LISTEN_UNSERIALIZED_ACCEPT optimization
+     on Linux kernel versions 3.x and above.  PR 55121.  [Bradley Heilbrun
+     <apache heilbrun.org>]
+
+  *) mod_setenvif: Log error on substitution overflow.
+     [Stefan Fritsch]
+
+  *) mod_ssl/proxy: enable the SNI extension for backend TLS connections
+     [Kaspar Brand]
+
+  *) mod_proxy: Use the the same hostname for SNI as for the HTTP request when
+     forwarding to SSL backends. PR 53134.
+     [Michael Weiser <michael weiser.dinsnail.net>, Ruediger Pluem]
+
+  *) mod_ssl: Quiet FIPS mode weak keys disabled and FIPS not selected emits
+     in the error log to debug level.  [William Rowe]
+
+  *) mod_ssl: Catch missing, mismatched or encrypted client cert/key pairs
+     with SSLProxyMachineCertificateFile/Path directives. PR 52212, PR 54698.
+     [Keith Burdis <keith burdis.org>, Joe Orton, Kaspar Brand]
+
+  *) mod_proxy_balancer: Added balancer parameter failontimeout to allow server
+     admin to configure an IO timeout as an error in the balancer.
+     [Daniel Ruggeri]
+
+  *) mod_authnz_ldap: Allow using exec: calls to obtain LDAP bind
+     password.  [Daniel Ruggeri]
+
+  *) htdigest: Fix buffer overflow when reading digest password file
+     with very long lines. PR 54893. [Rainer Jung]
+
+  *) mod_dav: Sending a MERGE request against a URI handled by mod_dav_svn with
+     the source href (sent as part of the request body as XML) pointing to a
+     URI that is not configured for DAV will trigger a segfault. [Ben Reser
+     <ben reser.org>]
+
+  *) mod_dav: Ensure URI is correctly uriencoded on return. PR 54611
+     [Timothy Wood <tjw omnigroup.com>]
+
+  *) mod_dav: Make sure that when we prepare an If URL for Etag comparison,
+     we compare unencoded paths. PR 53910 [Timothy Wood <tjw omnigroup.com>]
+
+  *) mod_dav: Sending an If or If-Match header with an invalid ETag doesn't
+     result in a 412 Precondition Failed for a COPY operation. PR54610
+     [Timothy Wood <tjw omnigroup.com>]
+
+  *) mod_dav: When a PROPPATCH attempts to remove a non-existent dead
+     property on a resource for which there is no dead property in the same
+     namespace httpd segfaults. PR 52559 [Diego Santa Cruz
+     <diego.santaCruz spinetix.com>]
+
+  *) mod_dav: Do not fail PROPPATCH when prop namespace is not known.
+     PR 52559 [Diego Santa Cruz <diego.santaCruz spinetix.com>]
+
+  *) mod_dav: Do not segfault on PROPFIND with a zero length DBM.
+     PR 52559 [Diego Santa Cruz <diego.santaCruz spinetix.com>]
+
+Changes with Apache 2.2.24
+
+  *) SECURITY: CVE-2012-3499 (cve.mitre.org)
+     Various XSS flaws due to unescaped hostnames and URIs HTML output in
+     mod_info, mod_status, mod_imagemap, mod_ldap, and mod_proxy_ftp.
+     [Jim Jagielski, Stefan Fritsch, Niels Heinen <heinenn google com>]
+
+  *) SECURITY: CVE-2012-4558 (cve.mitre.org)
+     XSS in mod_proxy_balancer manager interface. [Jim Jagielski,
+     Niels Heinen <heinenn google com>]
+
+  *) mod_rewrite: Stop merging RewriteBase down to subdirectories
+     unless new option 'RewriteOptions MergeBase' is configured.
+     Merging RewriteBase was unconditionally turned on in 2.2.23.
+     PR 53963. [Eric Covener]
+
+  *) mod_ssl: Send the error message for speaking http to an https port using
+     HTTP/1.0 instead of HTTP/0.9, and omit the link that may be wrong when
+     using SNI. PR 50823. [Stefan Fritsch]
+
+  *) mod_ssl: log revoked certificates at level INFO
+     instead of DEBUG. PR 52162. [Stefan Fritsch]
+
+  *) mod_proxy_ajp: Support unknown HTTP methods. PR 54416.
+     [Rainer Jung]
+
+  *) mod_dir: Add support for the value 'disabled' in FallbackResource.
+     [Vincent Deffontaines]
+
+  *) mod_ldap: Fix regression in handling "server unavailable" errors on
+     Windows.  PR 54140.  [Eric Covener]
+
+  *) mod_ssl: fix a regression with the string rendering of the "UID" RDN
+     introduced in 2.2.15. PR 54510. [Kaspar Brand]
+     
+  *) ab: add TLS1.1/TLS1.2 options to -f switch, and adapt output
+     to more accurately report the negotiated protocol. PR 53916.
+     [Nicolás Pernas Maradei <nico emutex com>, Kaspar Brand]
+
+  *) mod_cache: Explicitly allow cache implementations to cache a 206 Partial
+     Response if they so choose to do so. Previously an attempt to cache a 206
+     was arbitrarily allowed if the response contained an Expires or
+     Cache-Control header, and arbitrarily denied if both headers were missing.
+     Currently the disk and memory cache providers do not cache 206 Partial
+     Responses. [Graham Leggett]
+
+  *) core: Remove unintentional APR 1.3 dependency introduced with
+     Apache 2.2.22. [Eric Covener]
+
+  *) core: Use a TLS 1.0 close_notify alert for internal dummy connection if
+     the chosen listener is configured for https. [Joe Orton]
+
+  *) mod_ssl: Add new directive SSLCompression to disable TLS-level
+     compression. PR 53219. [Björn Jacke <bjoern j3e de>, Stefan Fritsch]
+
+Changes with Apache 2.2.23
+
+  *) SECURITY: CVE-2012-0883 (cve.mitre.org)
+     envvars: Fix insecure handling of LD_LIBRARY_PATH that could lead to the
+     current working directory to be searched for DSOs. [Stefan Fritsch]
+
+  *) SECURITY: CVE-2012-2687 (cve.mitre.org)
+     mod_negotiation: Escape filenames in variant list to prevent a
+     possible XSS for a site where untrusted users can upload files to
+     a location with MultiViews enabled. [Niels Heinen <heinenn google.com>]
+
+  *) htdbm, htpasswd: Don't crash if crypt() fails (e.g. with FIPS enabled). 
+     [Paul Wouters <pwouters redhat.com>, Joe Orton]
+
+  *) mod_ldap: Treat the "server unavailable" condition as a transient
+     error with all LDAP SDKs. [Filip Valder <filip.valder vsb.cz>]
+
+  *) core: Add filesystem paths to access denied / access failed messages.
+     [Eric Covener]
+
+  *) core: Fix error handling in ap_scan_script_header_err_brigade() if there
+     is no EOS bucket in the brigade. PR 48272. [Stefan Fritsch]
+
+  *) core: Prevent "httpd -k restart" from killing server in presence of
+     config error. [Joe Orton]
+
+  *) mod_ssl: when compiled against OpenSSL 1.0.1 or later, allow explicit
+     control of TLSv1.1 and TLSv1.2 through the SSLProtocol directive,
+     adding TLSv1.1 and TLSv1.2 support by default given 'SSLProtocol All'.
+     [Kaspar Brand, William Rowe]
+
+  *) mod_log_config: Fix %{abc}C truncating cookie values at first "=".
+     PR 53104. [Greg Ames]
+
+  *) Unix MPMs: Fix small memory leak in parent process if connect()
+     failed when waking up children.  [Joe Orton]
+
+  *) mod_proxy_ajp: Add support for 'ProxyErrorOverride on'. PR 50945.
+     [Peter Pramberger <peter pramberger.at>, Jim Jagielski]
+
+  *) Added SSLProxyMachineCertificateChainFile directive so the proxy client
+     can select the proper client certificate when using a chain and the
+     remote server only lists the root CA as allowed.
+
+  *) mpm_event, mpm_worker: Remain active amidst prevalent child process
+     resource shortages.  [Jeff Trawick]
+
+  *) mod_rewrite: Add "AllowAnyURI" option. PR 52774. [Joe Orton]
+
+  *) mod_rewrite: Fix the RewriteEngine directive to work within a
+     location. Previously, once RewriteEngine was switched on globally,
+     it was impossible to switch off. [Graham Leggett]
+
+  *) mod_proxy_balancer: Restore balancing after a failed worker has
+     recovered when using lbmethod_bybusyness.  PR 48735.  [Jeff Trawick]
+
+  *) mod_dumpio: Properly handle errors from subsequent input filters.
+     PR 52914. [Stefan Fritsch]
+
+  *) mpm_worker: Fix cases where the spawn rate wasn't reduced after child
+     process resource shortages.  [Jeff Trawick]
+
+  *) mpm_prefork: Reduce spawn rate after a child process exits due to
+     unexpected poll or accept failure.  [Jeff Trawick]
+
+  *) core: Adjust ap_scan_script_header_err*() to prevent mod_cgi and mod_cgid
+     from logging bogus data in case of errors. [Stefan Fritsch]
+
+  *) mod_disk_cache, mod_mem_cache: Decline the opportunity to cache if the
+     response is a 206 Partial Content. This stops a reverse proxied partial
+     response from becoming cached, and then being served in subsequent
+     responses. PR 49113. [Graham Leggett]
+
+  *) configure: Fix usage with external apr and apu in non-default paths
+     and recent gcc versions >= 4.6. [Jean-Frederic Clere]
+
+  *) core: Fix building against PCRE 8.30 by switching from the obsolete
+     pcre_info() to pcre_fullinfo(). PR 52623 [Ruediger Pluem, Rainer Jung]
+
+  *) mod_proxy: Add the forcerecovery balancer parameter that determines if
+     recovery for balancer workers is enforced. [Ruediger Pluem]
+
+Changes with Apache 2.2.22
+
+  *) SECURITY: CVE-2011-3368 (cve.mitre.org)
+     Reject requests where the request-URI does not match the HTTP
+     specification, preventing unexpected expansion of target URLs in
+     some reverse proxy configurations.  [Joe Orton]
+
+  *) SECURITY: CVE-2011-3607 (cve.mitre.org)
+     Fix integer overflow in ap_pregsub() which, when the mod_setenvif module
+     is enabled, could allow local users to gain privileges via a .htaccess
+     file. [Stefan Fritsch, Greg Ames]
+
+  *) SECURITY: CVE-2011-4317 (cve.mitre.org)
+     Resolve additional cases of URL rewriting with ProxyPassMatch or
+     RewriteRule, where particular request-URIs could result in undesired
+     backend network exposure in some configurations.
+     [Joe Orton]
+
+  *) SECURITY: CVE-2012-0021 (cve.mitre.org)
+     mod_log_config: Fix segfault (crash) when the '%{cookiename}C' log format
+     string is in use and a client sends a nameless, valueless cookie, causing
+     a denial of service. The issue existed since version 2.2.17. PR 52256.
+     [Rainer Canavan <rainer-apache 7val com>]
+
+  *) SECURITY: CVE-2012-0031 (cve.mitre.org)
+     Fix scoreboard issue which could allow an unprivileged child process 
+     to cause the parent to crash at shutdown rather than terminate 
+     cleanly.  [Joe Orton]
+
+  *) SECURITY: CVE-2012-0053 (cve.mitre.org)
+     Fix an issue in error responses that could expose "httpOnly" cookies
+     when no custom ErrorDocument is specified for status code 400.
+     [Eric Covener]
+
+  *) SECURITY: CVE-2012-4557 (cve.mitre.org)
+     mod_proxy_ajp: Try to prevent a single long request from marking a worker
+     in error. [Jean-Frederic Clere]
+
+  *) config: Update the default mod_ssl configuration: Disable SSLv2, only
+     allow >= 128bit ciphers, add commented example for speed optimized cipher
+     list, limit MSIE workaround to MSIE <= 5. [Kaspar Brand]
+
+  *) core: Fix segfault in ap_send_interim_response(). PR 52315.
+     [Stefan Fritsch]
+
+  *) mod_log_config: Prevent segfault. PR 50861. [Torsten F�rtsch
+     <torsten.foertsch gmx.net>]
+
+  *) mod_win32: Invert logic for env var UTF-8 fixing.
+     Now we exclude a list of vars which we know for sure they dont hold UTF-8
+     chars; all other vars will be fixed. This has the benefit that now also
+     all vars from 3rd-party modules will be fixed. PR 13029 / 34985.
+     [Guenter Knauf]
+
+  *) core: Fix hook sorting for Perl modules, a regression introduced in
+     2.2.21. PR: 45076. [Torsten Foertsch <torsten foertsch gmx net>]
+
+  *) Fix a regression introduced by the CVE-2011-3192 byterange fix in 2.2.20:
+     A range of '0-' will now return 206 instead of 200. PR 51878.
+     [Jim Jagielski]
+
+  *) Example configuration: Fix entry for MaxRanges (use "unlimited" instead
+     of "0").  [Rainer Jung]
+
+  *) mod_substitute: Fix buffer overrun.  [Ruediger Pluem, Rainer Jung]
+
+Changes with Apache 2.2.21
+
+  *) SECURITY: CVE-2011-3348 (cve.mitre.org)
+     mod_proxy_ajp: Respond with HTTP_NOT_IMPLEMENTED when the method is not
+     recognized.  [Jean-Frederic Clere]
+
+  *) Fix a regression introduced by the CVE-2011-3192 byterange fix in 2.2.20.
+     PR 51748. [<lowprio20 gmail.com>]
+
+  *) mod_filter: Instead of dropping the Accept-Ranges header when a filter
+     registered with AP_FILTER_PROTO_NO_BYTERANGE is present,
+     set the header value to "none". [Eric Covener, Ruediger Pluem]
+
+  *) mod_proxy_ajp: Ignore flushing if headers have not been sent.
+     PR 51608 [Ruediger Pluem]
+
+  *) mod_dav_fs: Fix segfault if apr DBM driver cannot be loaded. PR 51751.
+     [Stefan Fritsch]
+
+  *) mod_alias: Adjust log severity of "incomplete redirection target"
+     message. PR 44020.
+
+  *) mod_rewrite: Check validity of each internal (int:) RewriteMap even if the
+     RewriteEngine is disabled in server context, avoiding a crash while
+     referencing the invalid int: map at runtime. PR 50994.
+     [Ben Noordhuis <info noordhuis nl>]
+
+  *) core: Allow MaxRanges none|unlimited|default and set 'Accept-Ranges: none'
+     in the case Ranges are being ignored with MaxRanges none.
+     [Eric Covener]
+
+  *) mod_proxy_ajp: Respect "reuse" flag in END_REPONSE packets.
+     [Rainer Jung]
+
+Changes with Apache 2.2.20
+
+  *) SECURITY: CVE-2011-3192 (cve.mitre.org)
+     core: Fix handling of byte-range requests to use less memory, to avoid
+     denial of service. If the sum of all ranges in a request is larger than
+     the original file, ignore the ranges and send the complete file.
+     PR 51714. [Stefan Fritsch, Jim Jagielski, Ruediger Pluem, Eric Covener]
+
+  *) mod_authnz_ldap: If the LDAP server returns constraint violation,
+     don't treat this as an error but as "auth denied". [Stefan Fritsch]
+
+  *) mod_filter: Fix FilterProvider conditions of type "resp=" (response
+     headers) for CGI. [Joe Orton, Rainer Jung]
+
+  *) mod_reqtimeout: Fix a timed out connection going into the keep-alive
+     state after a timeout when discarding a request body. PR 51103.
+     [Stefan Fritsch]
+
+  *) core: Do the hook sorting earlier so that the hooks are properly sorted
+     for the pre_config hook and during parsing the config. [Stefan Fritsch]
+
+Changes with Apache 2.2.19
+
+  *) Revert ABI breakage in 2.2.18 caused by the function signature change
+     of ap_unescape_url_keep2f().  This release restores the signature from
+     2.2.17 and prior, and introduces ap_unescape_url_keep2f_ex().
+     [Eric Covener]
+
+Changes with Apache 2.2.18
+
+  *) Log an error for failures to read a chunk-size, and return 408 instead
+     413 when this is due to a read timeout.  This change also fixes some cases
+     of two error documents being sent in the response for the same scenario.
+     [Eric Covener] PR49167
+
+  *) core: Only log a 408 if it is no keepalive timeout. PR 39785
+     [Ruediger Pluem,  Mark Montague <markmont umich.edu>]
+
+  *) core: Treat timeout reading request as 408 error, not 400.
+     Log 408 errors in access log as was done in Apache 1.3.x.
+     PR 39785 [Nobutaka Mantani <nobutaka nobutaka.org>, Stefan Fritsch,
+     Dan Poirier]
+
+  *) Core HTTP: disable keepalive when the Client has sent
+     Expect: 100-continue
+     but we respond directly with a non-100 response.  Keepalive here led
+     to data from clients continuing being treated as a new request.
+     PR 47087.  [Nick Kew]
+
+  *) htpasswd: Change the default algorithm for htpasswd to MD5 on all
+     platforms. Crypt with its 8 character limit is not useful anymore;
+     improve out of disk space handling (PR 30877); print a warning if
+     a password is truncated by crypt. [Stefan Fritsch]
+
+  *) mod_win32: Added shebang check for '! so that .vbs scripts work as CGI.
+     Win32's cscript interpreter can only use a single quote as comment char.
+     [Guenter Knauf]
+
+  *) configure: Fix htpasswd/htdbm libcrypt link errors with some newer
+     linkers. [Stefan Fritsch]
+
+  *) MinGW build improvements.  PR 49535.  [John Vandenberg
+     <jayvdb gmail.com>, Jeff Trawick]
+
+  *) mod_ssl, ab: Support OpenSSL compiled without SSLv2 support.
+     [Stefan Fritsch]
+
+  *) core: AllowEncodedSlashes new option NoDecode to allow encoded slashes
+     in request URL path info but not decode them. PR 35256,
+     PR 46830.  [Dan Poirier]
+
+  *) mod_rewrite: Allow to unset environment variables. PR 50746.
+     [Rainer Jung]
+
+  *) suEXEC: Add Suexec directive to disable suEXEC without renaming the
+     binary (Suexec Off), or force startup failure if suEXEC is required
+     but not supported (Suexec On).  [Jeff Trawick]
+
+  *) mod_proxy: Put the worker in error state if the SSL handshake with the
+     backend fails. PR 50332.
+     [Daniel Ruggeri <DRuggeri primary.net>, Ruediger Pluem]
+
+  *) prefork: Update MPM state in children during a graceful restart.
+     Allow the HTTP connection handling loop to terminate early
+     during a graceful restart.  PR 41743.
+     [Andrew Punch <andrew.punch 247realmedia.com>]
+
+  *) mod_ssl: Correctly read full lines in input filter when the line is
+     incomplete during first read. PR 50481. [Ruediger Pluem]
+
+  *) mod_autoindex: Merge IndexOptions from server to directory context when
+     the directory has no mod_autoindex directives. PR 47766. [Eric Covener]
+
+  *) mod_cache: Make sure that we never allow a 304 Not Modified response
+     that we asked for to leak to the client should the 304 response be
+     uncacheable. PR45341 [Graham Leggett]
+
+  *) mod_dav: Send 400 error if malformed Content-Range header is received for
+     a put request (RFC 2616 14.16). PR 49825. [Stefan Fritsch]
+
+  *) mod_userdir: Add merging of enable, disable, and filename arguments
+     to UserDir directive, leaving enable/disable of userlists unmerged.
+     PR 44076 [Eric Covener]
+
+  *) core: Honor 'AcceptPathInfo OFF' during internal redirects,
+     such as per-directory mod_rewrite substitutions.  PR 50349.
+     [Eric Covener]
+
+  *) mod_cache: Check the request to determine whether we are allowed
+     to return cached content at all, and respect a "Cache-Control:
+     no-cache" header from a client. Previously, "no-cache" would
+     behave like "max-age=0". [Graham Leggett]
+
+  *) mod_mem_cache: Add a debug msg when a streaming response exceeds
+     MCacheMaxStreamingBuffer, since mod_cache will follow up with a scary
+     'memory allocation failed' debug message. PR 49604. [Eric Covener]
+
+  *) proxy_connect: Don't give up in the middle of a CONNECT tunnel
+     when the child process is starting to exit.  PR50220. [Eric Covener]
+
+Changes with Apache 2.2.17
+
+  *) prefork MPM: Run cleanups for final request when process exits gracefully
+     to work around a flaw in apr-util.  PR 43857.  [Tom Donovan]
+
+  *) mod_reqtimeout: Do not wrongly enforce timeouts for mod_proxy's backend
+     connections and other protocol handlers (like mod_ftp). Enforce the
+     timeout for AP_MODE_GETLINE. If there is a timeout, shorten the lingering
+     close time from 30 to 2 seconds. [Stefan Fritsch]
+
+  *) Proxy balancer: support setting error status according to HTTP response
+     code from a backend.  PR 48939.  [Daniel Ruggeri <DRuggeri primary.net>]
+
+  *) mod_authnz_ldap: If AuthLDAPCharsetConfig is set, also convert the
+     password to UTF-8. PR 45318.
+     [Johannes Müller <joh_m gmx.de>, Stefan Fritsch]
+
+  *) core: check symlink ownership if both FollowSymlinks and
+     SymlinksIfOwnerMatch are set [Nick Kew]
+
+  *) core: fix origin checking in SymlinksIfOwnerMatch
+     PR 36783 [Robert L Mathews <rob-apache.org.bugs tigertech.net>]
+
+  *) mod_headers: Enable multi-match-and-replace edit option
+     PR 46594 [Nick Kew]
+
+  *) mod_log_config: Make ${cookie}C correctly match whole cookie names
+     instead of substrings. PR 28037. [Dan Franklin <dan dan-franklin.com>,
+     Stefan Fritsch]
+
+  *) mod_dir, mod_negotiation: Pass the output filter information
+     to newly created sub requests; as these are later on used
+     as true requests with an internal redirect. This allows for
+     mod_cache et.al. to trap the results of the redirect.
+     PR 17629, 43939
+     [Dirk-Willem van Gulik, Jim Jagielski, Joe Orton, Ruediger Pluem]
+
+  *) rotatelogs: Fix possible buffer overflow if admin configures a
+     mongo log file path. [Jeff Trawick]
+
+  *) mod_ssl: Do not do overlapping memcpy. PR 45444 [Joe Orton]
+
+  *) vhost: A purely-numeric Host: header should not be treated as a port.
+     PR 44979 [Nick Kew]
+
+  *) core: (re)-introduce -T commandline option to suppress documentroot
+     check at startup.
+     PR 41887 [Jan van den Berg <janvdberg gmail.com>]
+
+Changes with Apache 2.2.16
+
+  *) SECURITY: CVE-2010-1452 (cve.mitre.org)
+     mod_dav, mod_cache: Fix Handling of requests without a path segment.
+     PR: 49246 [Mark Drayton, Jeff Trawick]
+
+  *) SECURITY: CVE-2010-2068 (cve.mitre.org)
+     mod_proxy_ajp, mod_proxy_http, mod_reqtimeout: Fix timeout detection
+     for platforms Windows, Netware and OS2.  PR: 49417. [Rainer Jung]
+
+  *) core: Filter init functions are now run strictly once per request
+     before handler invocation.  The init functions are no longer run
+     for connection filters.  PR 49328.  [Joe Orton]
+
+  *) mod_filter: enable it to act on non-200 responses.
+     PR 48377 [Nick Kew]
+
+  *) mod_ldap: LDAP caching was suppressed (and ldap-status handler returns
+     title page only) when any mod_ldap directives were used in VirtualHost
+     context.  [Eric Covener]
+
+  *) mod_ssl: Fix segfault at startup if proxy client certs are shared
+     across multiple vhosts.  PR 39915.  [Joe Orton]
+
+  *) mod_proxy_http: Log the port of the remote server in various messages.
+     PR 48812. [Igor Galić <i galic brainsware org>]
+
+  *) apxs: Fix -A and -a options to ignore whitespace in httpd.conf
+     [Philip M. Gollucci]
+
+  *) mod_dir: add FallbackResource directive, to enable admin to specify
+     an action to happen when a URL maps to no file, without resorting
+     to ErrorDocument or mod_rewrite.  PR 47184 [Nick Kew]
+
+  *) mod_rewrite: Allow to set environment variables without explicitly
+     giving a value. [Rainer Jung]
+
+
+Changes with Apache 2.2.15
+
+  *) SECURITY: CVE-2009-3555 (cve.mitre.org)
+     mod_ssl: Comprehensive fix of the TLS renegotiation prefix injection
+     attack when compiled against OpenSSL version 0.9.8m or later. Introduces
+     the 'SSLInsecureRenegotiation' directive to reopen this vulnerability
+     and offer unsafe legacy renegotiation with clients which do not yet
+     support the new secure renegotiation protocol, RFC 5746.
+     [Joe Orton, and with thanks to the OpenSSL Team]
+
+  *) SECURITY: CVE-2009-3555 (cve.mitre.org)
+     mod_ssl: A partial fix for the TLS renegotiation prefix injection attack
+     for OpenSSL versions prior to 0.9.8l; reject any client-initiated
+     renegotiations. Forcibly disable keepalive for the connection if there
+     is any buffered data readable. Any configuration which requires
+     renegotiation for per-directory/location access control is still
+     vulnerable, unless using openssl 0.9.8l or later.
+     [Joe Orton, Ruediger Pluem, Hartmut Keil <Hartmut.Keil adnovum.ch>]
+
+  *) SECURITY: CVE-2010-0408 (cve.mitre.org)
+     mod_proxy_ajp: Respond with HTTP_BAD_REQUEST when the body is not sent
+     when request headers indicate a request body is incoming; not a case of
+     HTTP_INTERNAL_SERVER_ERROR.  [Niku Toivola <niku.toivola sulake.com>]
+
+  *) SECURITY: CVE-2010-0425 (cve.mitre.org)
+     mod_isapi: Do not unload an isapi .dll module until the request
+     processing is completed, avoiding orphaned callback pointers.
+     [Brett Gervasoni <brettg senseofsecurity.com>, Jeff Trawick]
+
+  *) SECURITY: CVE-2010-0434 (cve.mitre.org)
+     Ensure each subrequest has a shallow copy of headers_in so that the
+     parent request headers are not corrupted.  Eliminates a problematic
+     optimization in the case of no request body.  PR 48359.
+     [Jake Scott, William Rowe, Ruediger Pluem]
+
+  *) mod_reqtimeout: New module to set timeouts and minimum data rates for
+     receiving requests from the client. [Stefan Fritsch]
+
+  *) mod_proxy_ajp: Really regard the operation a success, when the client
+     aborted the connection. In addition adjust the log message if the client
+     aborted the connection. [Ruediger Pluem]
+
+  *) mod_negotiation: Preserve query string over multiviews negotiation.
+     This buglet was fixed for type maps in 2.2.6, but the same issue
+     affected multiviews and was overlooked.
+     PR 33112.  [Joergen Thomsen <apache jth.net>]
+
+  *) mod_cache: Introduce the thundering herd lock, a mechanism to keep
+     the flood of requests at bay that strike a backend webserver as
+     a cached entity goes stale. [Graham Leggett]
+
+  *) mod_proxy_http: Make sure that when an ErrorDocument is served
+     from a reverse proxied URL, that the subrequest respects the status
+     of the original request. This brings the behaviour of proxy_handler
+     in line with default_handler. PR 47106. [Graham Leggett]
+
+  *) mod_log_config: Add the R option to log the handler used within the
+     request. [Christian Folini <christian.folini netnea com>]
+
+  *) mod_include: Allow fine control over the removal of Last-Modified and
+     ETag headers within the INCLUDES filter, making it possible to cache
+     responses if desired. Fix the default value of the SSIAccessEnable
+     directive. [Graham Leggett]
+
+  *) mod_ssl: Fix a potential I/O hang if a long list of trusted CAs
+     is configured for client cert auth. PR 46952.  [Joe Orton]
+
+  *) core: Fix potential memory leaks by making sure to not destroy
+     bucket brigades that have been created by earlier filters.
+     [Stefan Fritsch]
+
+  *) mod_authnz_ldap: Add AuthLDAPBindAuthoritative to allow Authentication to
+     try other providers in the case of an LDAP bind failure.
+     PR 46608.  [Justin Erenkrantz, Joe Schaefer, Tony Stevenson]
+
+  *) mod_proxy, mod_proxy_http: Support remote https proxies
+     by using HTTP CONNECT.
+     PR 19188.  [Philippe Dutrueux <lilas evidian.com>, Rainer Jung]
+
+  *) worker: Don't report server has reached MaxClients until it has.
+     Add message when server gets within MinSpareThreads of MaxClients.
+     PR 46996.  [Dan Poirier]
+
+  *) mod_ssl: When extracting certificate subject/issuer names to the
+     SSL_*_DN_* variables, handle RDNs with duplicate tags by
+     exporting multiple varialables with an "_n" integer suffix.
+     PR 45875.  [Joe Orton, Peter Sylvester <peter.sylvester edelweb.fr>]
+
+  *) mod_authnz_ldap: Failures to map a username to a DN, or to check a user
+     password now result in an informational level log entry instead of
+     warning level.  [Eric Covener]
+
+  *) core: Preserve Port information over internal redirects
+     PR 35999.  [Jonas Ringh <jonas.ringh cixit.se>]
+
+  *) mod_filter: fix FilterProvider matching where "dispatch" string
+     doesn't exist.
+     PR 48054.  [<tietew gmail.com>]
+
+  *) Build: fix --with-module to work as documented
+     PR 43881.  [Gez Saunders <gez.saunders virgin.net>]
+
+  *) mod_mime: Make RemoveType override the info from TypesConfig.
+     PR 38330.  [Stefan Fritsch]
+
+  *) mod_proxy: unable to connect to a backend is SERVICE_UNAVAILABLE,
+     rather than BAD_GATEWAY or (especially) NOT_FOUND.
+     PR 46971.  [Evan Champion <evanc nortel.com>]
+
+  *) mod_charset_lite: Honor 'CharsetOptions NoImplicitAdd'.
+     [Eric Covener]
+
+  *) mod_ldap: If LDAPSharedCacheSize is too small, try harder to purge
+     some cache entries and log a warning. Also increase the default
+     LDAPSharedCacheSize to 500000. This is a more realistic size suitable
+     for the default values of 1024 for LdapCacheEntries/LdapOpCacheEntries.
+     PR 46749.  [Stefan Fritsch]
+
+  *) mod_disk_cache, mod_mem_cache: don't cache incomplete responses,
+     per RFC 2616, 13.8.  PR15866.  [Dan Poirier]
+
+  *) mod_rewrite: Make sure that a hostname:port isn't fully qualified if
+     the request is a CONNECT request.  PR 47928.
+     [Bill Zajac <billz consultla.com>]
+
+  *) mod_cache: correctly consider s-maxage in cacheability
+     decisions.  [Dan Poirier]
+
+  *) core: Return APR_EOF if request body is shorter than the length announced
+     by the client. PR 33098.  [Stefan Fritsch]
+
+  *) mod_rewrite: Add scgi scheme detection.  [André Malo]
+
+  *) mod_mime: Detect invalid use of MultiviewsMatch inside Location and
+     LocationMatch sections.  PR 47754.  [Dan Poirier]
+
+  *) ab, mod_ssl: Restore compatibility with OpenSSL < 0.9.7g.
+     [Guenter Knauf]
+
+Changes with Apache 2.2.14
+
+  *) SECURITY: CVE-2009-2699 (cve.mitre.org)
+     Fixed in APR 1.3.9.  Faulty error handling in the Solaris pollset support
+     (Event Port backend) which could trigger hangs in the prefork and event
+     MPMs on that platform.  PR 47645.  [Jeff Trawick]
+
+  *) SECURITY: CVE-2009-3095 (cve.mitre.org)
+     mod_proxy_ftp: sanity check authn credentials.
+     [Stefan Fritsch <sf fritsch.de>, Joe Orton]
+
+  *) SECURITY: CVE-2009-3094 (cve.mitre.org)
+     mod_proxy_ftp: NULL pointer dereference on error paths.
+     [Stefan Fritsch <sf fritsch.de>, Joe Orton]
+
+  *) mod_proxy_scgi: Backport from trunk. [André Malo]
+
+  *) mod_ldap: Don't try to resolve file-based user ids to a DN when AuthLDAPURL
+     has been defined at a very high level.  PR 45946.  [Eric Covener]
+
+  *) htcacheclean: 19 ways to fail, 1 error message. Fixed. [Graham Leggett]
+
+  *) mod_ldap: Bring the LDAPCacheEntries and LDAPOpCacheEntries
+     usage() in synch with the manual and the implementation (0 and -1
+     both disable the cache). [Eric Covener]
+
+  *) mod_ssl: The error message when SSLCertificateFile is missing should
+     at least give the name or position of the problematic virtual host
+     definition. [Stefan Fritsch sf sfritsch.de]
+
+  *) htdbm: Fix possible buffer overflow if dbm database has very
+     long values.  PR 30586 [Dan Poirier]
+
+  *) Add support for HTTP PUT to ab. [Jeff Barnes <jbarnesweb yahoo.com>]
+
+  *) mod_ssl: Fix SSL_*_DN_UID variables to use the 'userID' attribute
+     type.  PR 45107.  [Michael Ströder <michael stroeder.com>,
+     Peter Sylvester <peter.sylvester edelweb.fr>]
+
+  *) mod_cache: Add CacheIgnoreURLSessionIdentifiers directive to ignore
+     defined session identifiers encoded in the URL when caching.
+     [Ruediger Pluem]
+
+  *) mod_mem_cache: fix seg fault under load due to pool concurrency problem
+     PR: 47672 [Dan Poirier <poirier pobox.com>]
+
+  *) mod_autoindex: Correctly create an empty cell if the description
+     for a file is missing. PR 47682 [Peter Poeml <poeml suse.de>]
+
+Changes with Apache 2.2.13
+
+  *) SECURITY: CVE-2009-2412 (cve.mitre.org)
+     Distributed with APR 1.3.8 and APR-util 1.3.9 to fix potential overflow
+     in pools and rmm, where size alignment was taking place.
+     [Matt Lewis <mattlewis@google.com>, Sander Striker]
+
+  *) mod_ssl, ab: improve compatibility with OpenSSL 1.0.0 betas.  Report
+     warnings compiling mod_ssl against OpenSSL to the httpd developers.
+     [Guenter Knauf]
+
+  *) mod_cgid: Do not add an empty argument when calling the CGI script.
+     PR 46380 [Ruediger Pluem]
+
+  *) Fix potential segfaults with use of the legacy ap_rputs() etc
+     interfaces, in cases where an output filter fails.  PR 36780.
+     [Joe Orton]
+
+Changes with Apache 2.2.12
+
+  *) SECURITY: CVE-2009-1891 (cve.mitre.org)
+     Fix a potential Denial-of-Service attack against mod_deflate or other
+     modules, by forcing the server to consume CPU time in compressing a
+     large file after a client disconnects.  PR 39605.
+     [Joe Orton, Ruediger Pluem]
+
+  *) SECURITY: CVE-2009-1195 (cve.mitre.org)
+     Prevent the "Includes" Option from being enabled in an .htaccess
+     file if the AllowOverride restrictions do not permit it.
+     [Jonathan Peatfield <j.s.peatfield damtp.cam.ac.uk>, Joe Orton,
+      Ruediger Pluem, Jeff Trawick]
+
+  *) SECURITY: CVE-2009-1890 (cve.mitre.org)
+     Fix a potential Denial-of-Service attack against mod_proxy in a
+     reverse proxy configuration, where a remote attacker can force a
+     proxy process to consume CPU time indefinitely.  [Nick Kew, Joe Orton]
+
+  *) SECURITY: CVE-2009-1191 (cve.mitre.org)
+     mod_proxy_ajp: Avoid delivering content from a previous request which
+     failed to send a request body. PR 46949 [Ruediger Pluem]
+
+  *) SECURITY: CVE-2009-0023, CVE-2009-1955, CVE-2009-1956 (cve.mitre.org)
+     The bundled copy of the APR-util library has been updated, fixing three
+     different security issues which may affect particular configurations
+     and third-party modules.
+
+  *) mod_headers: Make 'Header set Content-Type' effective on responses
+     that already have a Content-Type.  [Issac Goldstand]
+
+  *) mod_include: fix potential segfault when handling back references
+     on an empty SSI variable. [Ruediger Pluem, Lars Eilebrecht, Nick Kew]
+
+  *) mod_alias: check sanity in Redirect arguments.
+     PR 44729 [Sönke Tesch <st kino-fahrplan.de>, Jim Jagielski]
+
+  *) mod_proxy_http: fix Host: header for literal IPv6 addresses.
+     PR 47177 [Carlos Garcia Braschi <cgbraschi gmail.com>]
+
+  *) mod_rewrite: Remove locking for writing to the rewritelog.
+     PR 46942
+
+  *) mod_alias: Ensure Redirect emits HTTP-compliant URLs.
+     PR 44020
+
+  *) mod_proxy_http: fix case sensitivity checking transfer encoding
+     PR 47383 [Ryuzo Yamamoto <ryuzo.yamamoto gmail.com>]
+
+  *) mod_rewrite: Fix the error string returned by RewriteRule.
+     RewriteRule returned "RewriteCond: bad flag delimiters" when the 3rd
+     argument of RewriteRule was not started with "[" or not ended with "]".
+     PR 45082 [Vitaly Polonetsky <m_vitaly topixoft.com>]
+
+  *) mod_proxy: Complete ProxyPassReverse to handle balancer URL's.  Given;
+       BalancerMember balancer://alias http://example.com/foo
+       ProxyPassReverse /bash balancer://alias/bar
+     backend url http://example.com/foo/bar/that is now translated /bash/that
+     [William Rowe]
+
+  *) New piped log syntax: Use "||process args" to launch the given process
+     without invoking the shell/command interpreter.  Use "|$command line"
+     (the default behavior of "|command line" in 2.2) to invoke using shell,
+     consuming an additional shell process for the lifetime of the logging
+     pipe program but granting additional process invocation flexibility.
+     [William Rowe]
+
+  *) mod_ssl: Add server name indication support (RFC 4366) and better
+     support for name based virtual hosts with SSL. PR 34607
+     [Peter Sylvester <peter.sylvester edelweb.fr>,
+      Kaspar Brand <asfbugz velox.ch>, Guenter Knauf, Joe Orton,
+      Ruediger Pluem]
+
+  *) mod_negotiation: Escape pathes of filenames in 406 responses to avoid
+     HTML injections and HTTP response splitting.  PR 46837.
+     [Geoff Keating <geoffk apple.com>]
+
+  *) mod_include: Prevent a case of SSI timefmt-smashing with filter chains
+     including multiple INCLUDES filters. PR 39369 [Joe Orton]
+
+  *) mod_rewrite: When evaluating a proxy rule in directory context, do
+     escape the filename by default. PR 46428 [Joe Orton]
+
+  *) mod_proxy_ajp: Check more strictly that the backend follows the AJP
+     protocol. [Mladen Turk]
+
+  *) mod_ssl: Add SSLProxyCheckPeerExpire and SSLProxyCheckPeerCN directives
+     to enable stricter checking of remote server certificates.
+     [Ruediger Pluem]
+
+  *) mod_substitute: Fix a memory leak. PR 44948
+     [Dan Poirier <poirier pobox.com>]
+
+  *) mod_proxy_ajp: Forward remote port information by default.
+     [Rainer Jung]
+
+  *) mod_disk_cache/mod_mem_cache: Fix handling of CacheIgnoreHeaders
+     directive to correctly remove headers before storing them.
+     [Lars Eilebrecht]
+
+  *) mod_deflate: revert changes in 2.2.8 that caused an invalid
+     etag to be emitted for on-the-fly gzip content-encoding.
+     PR 39727 will require larger fixes and this fix was far more
+     harmful than the original code. PR 45023. [Roy T. Fielding]
+
+  *) mod_disk_cache: The module now turns off sendfile support if
+     'EnableSendfile off' is defined globally. PR 41218.
+     [Lars Eilebrecht, Issac Goldstand]
+
+  *) prefork: Fix child process hang during graceful restart/stop in
+     configurations with multiple listening sockets.  PR 42829.  [Joe Orton,
+     Jeff Trawick]
+
+  *) mod_ssl: Add SSLRenegBufferSize directive to allow changing the
+     size of the buffer used for the request-body where necessary
+     during a per-dir renegotiation.  PR 39243.  [Joe Orton]
+
+  *) mod_rewrite: Introduce DiscardPathInfo|DPI flag to stop the troublesome
+     way that per-directory rewrites append the previous notion of PATH_INFO
+     to each substitution before evaluating subsequent rules.
+     PR38642 [Eric Covener]
+
+  *) mod_authnz_ldap: Reduce number of initialization debug messages and make
+     information more clear. PR 46342 [Dan Poirier]
+
+  *) mod_cache: Introduce 'no-cache' per-request environment variable
+     to prevent the saving of an otherwise cacheable response.
+     [Eric Covener]
+
+  *) core: Translate the status line to ASCII on EBCDIC platforms in
+     ap_send_interim_response() and for locally generated "100 Continue"
+     responses.  [Eric Covener]
+
+  *) CGI: return 504 (Gateway timeout) rather than 500 when a script
+     times out before returning status line/headers.
+     PR 42190 [Nick Kew]
+
+  *) prefork: Log an error instead of segfaulting when child startup fails
+     due to pollset creation failures.  PR 46467.  [Jeff Trawick]
+
+  *) mod_ext_filter: fix error handling when the filter prog fails to start,
+     and introduce an onfail configuration option to abort the request
+     or to remove the broken filter and continue.
+     PR 41120 [Nick Kew]
+
+  *) mod_include: support generating non-ASCII characters as entities in SSI
+     PR 25202 [Nick Kew]
+
+  *) core/utils: Enhance ap_escape_html API to support escaping non-ASCII
+     chars [Nick Kew]
+
+  *) mod_rewrite: fix "B" flag breakage by reverting r589343
+     PR 45529 [Bob Ionescu <bobsiegen googlemail.com>]
+
+  *) mod_cgid: fix segfault problem on solaris.
+     PR 39332 [Masaoki Kobayashi <masaoki techfirm.co.jp>, Jeff Trawick]
+
+  *) mod_ldap: Avoid a segfault when result->rc is checked in
+     uldap_connection_init when result is NULL. This could happen if LDAP
+     initialization failed.  PR 45994. [Dan Poirier <poirier pobox.com>]
+
+  *) Set Listen protocol to "https" if port is set to 443 and no proto is
+     specified (as documented but not implemented). PR 46066
+     [Dan Poirier <poirier pobox.com>]
+
+  *) mod_cache: Correctly save Content-Encoding of cachable entity. PR 46401
+     [Dan Poirier <poirier pobox.com>]
+
+  *) Output -M and -S dumps (modules and vhosts) to stdout instead of stderr.
+     PR 42571 and PR 44266 (dup).  [Dan Poirier <poirier pobox.com>]
+
+  *) mod_cache: When an explicit Expires or Cache-Control header is set, cache
+     normally non-cacheable response statuses. PR 46346.
+     [Alex Polvi <alex polvi.net>]
+
+Changes with Apache 2.2.11
+
+  *) core: When the ap_http_header_filter processes an error bucket, cleanup
+     the passed brigade before returning AP_FILTER_ERROR down the filter
+     chain. This unambiguously ensures the same error bucket isn't revisited
+     [Ruediger Pluem]
+
+  *) core: Error responses set by filters were being coerced into 500 errors,
+     sometimes appended to the original error response. Log entry of:
+     'Handler for (null) returned invalid result code -3'
+     [Eric Covener]
+
+  *) configure: Don't reject libtool 2.x
+     PR 44817 [Arfrever Frehtes Taifersar Arahesis <Arfrever.FTA gmail.com>]
+
+  *) mod_autoindex: add configuration option to insert string
+     in HTML HEAD (IndexHeadInsert). [Nick Kew]
+
+  *) Add new LogFormat parameter, %k, which logs the number of
+     keepalive requests on this connection for this request.
+     PR 45762 [Dan Poirier <poirier pobox.com>, Jim Jagielski]
+
+  *) Export and install the mod_rewrite.h header to ensure the optional
+     rewrite_mapfunc_t and ap_register_rewrite_mapfunc functions are
+     available to third party modules. [Graham Leggett]
+
+  *) mod_cache: Convert age of cached object to seconds before comparing it to
+     age supplied by the request when checking whether to send a Warning
+     header for a stale response. PR 39713. [Owen Taylor <otaylor redhat.com>]
+
+  *) Build: Correctly set SSL_LIBS during openssl detection if pkgconfig is
+     not available. PR 46018 [Ruediger Pluem]
+
+  *) mod_proxy_ajp: Do not fail if response data is sent before all request
+     data is read. PR 45911 [Ruediger Pluem]
+
+  *) mod_proxy_balancer: Add in forced recovery for balancer members if
+     all are in error state. [Mladen Turk]
+
+  *) mod_proxy: Prevent segmentation faults by correctly adjusting the
+     lifetime of the buckets read from the proxy backend. PR 45792
+     [Ruediger Pluem]
+
+  *) mod_expires: Do not sets negative max-age / Expires header in the past.
+     PR 39774 [Jim Jagielski]
+
+  *) mod_info: Was displaying the wrong value for the KeepAliveTimeout
+     value. [Jim Jagielski]
+
+  *) mod_proxy_ajp: Fix wrongly formatted requests where client
+     sets Content-Length header, but doesn't provide a body.
+     Servlet container always expects that next packet is
+     body whenever C-L is present in the headers. This can lead
+     to wrong interpretation of the packets. In this case
+     send the empty body packet, so container can deal with
+     that. [Mladen Turk]
+
+  *) core: Add ap_timeout_parameter_parse to public API. [Ruediger Pluem]
+
+  *) mod_proxy: Add the possibility to set the worker parameters
+     connectiontimeout and ping in milliseconds. [Ruediger Pluem]
+
+  *) Worker MPM: Crosscheck that idle workers are still available before using
+     them and thus preventing an overflow of the worker queue which causes
+     a SegFault. PR 45605 [Denis Ustimenko <denusk gmail.com>]
+
+  *) Windows: Always build the odbc dbd driver on windows, to be consistent
+     with the apr-util default. [Tom Donovan]
+
+Changes with Apache 2.2.10
+
+  *) SECURITY: CVE-2008-2939 (cve.mitre.org)
+     mod_proxy_ftp: Prevent XSS attacks when using wildcards in the path of
+     the FTP URL. Discovered by Marc Bevand of Rapid7. [Ruediger Pluem]
+
+  *) Allow for smax to be 0 for balancer members so that all idle
+     connections are able to be dropped should they exceed ttl.
+     PR 43371 [Phil Endecott <spam_from_apache_bugzilla chezphil.org>,
+     Jim Jagielski]
+
+  *) mod_proxy_http: Don't trigger a retry by the client if a failure to
+     read the response line was the result of a timeout.
+     [Adam Woodworth <mirkperl gmail.com>]
+
+  *) Support chroot on Unix-family platforms
+     PR 43596 [Dimitar Pashev <mitko banksoft-bg.com>]
+
+  *) mod_ssl: implement dynamic mutex callbacks for the benefit of
+     OpenSSL.  [Sander Temme]
+
+  *) mod_proxy_balancer: Add 'bybusyness' load balance method.
+     [Joel Gluth <joelgluth yahoo.com.au>, Jim Jagielski]
+
+  *) mod_authn_alias: Detect during startup when AuthDigestProvider
+     is configured to use an incompatible provider via AuthnProviderAlias.
+     PR 45196 [Eric Covener]
+
+  *) mod_proxy: Add 'scolonpathdelim' parameter to allow for ';' to also be
+     used as a session path separator/delim  PR 45158. [Jim Jagielski]
+
+  *) mod_charset_lite: Avoid dropping error responses by handling meta buckets
+     correctly. PR 45687 [Dan Poirier <poirier pobox.com>]
+
+  *) mod_proxy_http: Introduce environment variable proxy-initial-not-pooled
+     to avoid reusing pooled connections if the client connection is an
+     initial connection. PR 37770. [Ruediger Pluem]
+
+  *) mod_rewrite: Allow Cookie option to set secure and HttpOnly flags.
+     PR 44799 [Christian Wenz <christian wenz.org>]
+
+  *) mod_ssl: Rewrite shmcb to avoid memory alignment issues.  PR 42101.
+     [Geoff Thorpe]
+
+  *) mod_proxy: Add connectiontimeout parameter for proxy workers in order to
+     be able to set the timeout for connecting to the backend separately.
+     PR 45445. [Ruediger Pluem, rahul <rahul sun.com>]
+
+  *) mod_dav_fs: Retrieve minimal system information about directory
+     entries when walking a DAV fs, resolving a performance degradation on
+     Windows.  PR 45464.  [Joe Orton, Jeff Trawick]
+
+  *) mod_cgid: Pass along empty command line arguments from an ISINDEX
+     query that has consecutive '+' characters in the QUERY_STRING,
+     matching the behavior of mod_cgi.
+     [Eric Covener]
+
+  *) mod_headers: Prevent Header edit from processing only the first header
+     of possibly multiple headers with the same name and deleting the
+     remaining ones. PR 45333.  [Ruediger Pluem]
+
+  *) mod_proxy_balancer: Move nonce field in the balancer manager page inside
+     the html form where it belongs. PR 45578. [Ruediger Pluem]
+
+  *) mod_proxy_http: Do not forward requests with 'Expect: 100-continue' to
+     known HTTP/1.0 servers. Return 'Expectation failed' (417) instead.
+     [Ruediger Pluem]
+
+  *) mod_rewrite: Preserve the query string when [proxy,noescape]. PR 45247.
+     [Tom Donovan]
+
+Changes with Apache 2.2.9
+
+  *) SECURITY: CVE-2008-2364 (cve.mitre.org)
+     mod_proxy_http: Better handling of excessive interim responses
+     from origin server to prevent potential denial of service and high
+     memory usage. Reported by Ryujiro Shibuya. [Ruediger Pluem,
+     Joe Orton, Jim Jagielski]
+
+  *) SECURITY: CVE-2007-6420 (cve.mitre.org)
+     mod_proxy_balancer: Prevent CSRF attacks against the balancer-manager
+     interface.  [Joe Orton]
+
+  *) core: Fix address-in-use startup failure on some platforms caused
+     by creating an IPv4 listener which overlaps with an existing IPv6
+     listener.  [Jeff Trawick]
+
+  *) mod_proxy: Make all proxy modules nocanon aware and do not add the
+     query string again in this case. PR 44803.
+     [Jim Jagielski, Ruediger Pluem]
+
+  *) mod_unique_id: Fix timestamp value in UNIQUE_ID.
+     PR 37064 [Kobayashi <kobayashi firstserver.co.jp>]
+
+  *) htpasswd: Fix salt generation weakness. PR 31440
+     [Andreas Krennmair <ak synflood.at>, Peter Watkins <peterw tux.org>,
+     Paul Querna]
+
+  *) core: Add the filename of the configuration file to the warning message
+     about the useless use of AllowOverride. PR 39992.
+     [Darryl Miles <darryl darrylmiles.org>]
+
+  *) scoreboard: Remove unused proxy load balancer elements from scoreboard
+     image (not scoreboard memory itself).  [Chris Darroch]
+
+  *) mod_proxy: Support environment variable interpolation in reverse
+     proxying directives. [Nick Kew]
+
+  *) suexec: When group is given as a numeric gid, validate it by looking up
+     the actual group name such that the name can be used in log entries.
+     PR 7862 [<y-koga apache.or.jp>, Leif W <warp-9.9 usa.net>]
+
+  *) Fix garbled TRACE response on EBCDIC platforms.
+     [David Jones <oscaremma gmail.com>]
+
+  *) ab: Include <limits.h> earlier if available since we may need
+     INT_MAX (defined there on Windows) for the definition of MAX_REQUESTS.
+     PR 45024 [Ruediger Pluem]
+
+  *) ab: Improve client performance by clearing connection pool instead
+     of destroying it. PR 40054 [Brad Roberts <braddr puremagic.com>]
+
+  *) ab: Don't stop sending a request if EAGAIN is returned, which
+     will only happen if both the write and subsequent wait are
+     returning EAGAIN, and count posted bytes correctly when the initial
+     write of a request is not complete. PR 10038, 38861, 39679
+     [Patrick McManus <mcmanus datapower.com>,
+      Stefan Fleiter <stefan.fleiter web.de>,
+      Davanum Srinivas, Roy T. Fielding]
+
+  *) ab: Overhaul stats collection and reporting to avoid integer
+     truncation and time divisions within the test loop, retain
+     native time resolution until output, remove unused data,
+     consistently round milliseconds, and generally avoid losing
+     accuracy of calculation due to type casts. PR 44878, 44931.
+     [Roy T. Fielding]
+
+  *) ab: Add -r option to continue after socket receive errors.
+     [Filip Hanik <devlist hanik.com>]
+
+  *) core: Do not allow Options ALL if not all options are allowed to be
+     overwritten. PR 44262 [Michał Grzędzicki <lazy iq.pl>]
+
+  *) mod_cache: Handle If-Range correctly if the cached resource was stale.
+     PR 44579 [Ruediger Pluem]
+
+  *) mod_proxy: Do not try a direct connection if the connection via a
+     remote proxy failed before and the request has a request body.
+     [Ruediger Pluem]
+
+  *) mod_proxy_ajp: Do not retry request in the case that we either failed to
+     sent a part of the request body or if the request is not idempotent.
+     PR 44334 [Ruediger Pluem]
+
+  *) mod_rewrite: Initialize hash needed by ap_register_rewrite_mapfunc early
+     enough. PR 44641 [Daniel Lescohier <daniel.lescohier cnet.com>]
+
+  *) mod_dav: Return "method not allowed" if the destination URI of a WebDAV
+     copy / move operation is no DAV resource. PR 44734 [Ruediger Pluem]
+
+  *) http_filters: Don't return 100-continue on redirects. PR 43711
+     [Ruediger Pluem]
+
+  *) mod_ssl: Fix a memory leak with connections that have zlib compression
+     turned on. PR 44975 [Joe Orton, Amund Elstad <Amund.Elstad ist.com>,
+     Dr Stephen Henson <steve openssl.org>]
+
+  *) mod_proxy: Trigger a retry by the client in the case we fail to read the
+     response line from the backend by closing the connection to the client.
+     PR 37770 [Ruediger Pluem]
+
+  *) gen_test_char: add double-quote to the list of T_HTTP_TOKEN_STOP.
+     PR 9727 [Ville Skytt <ville.skytta iki.fi>]
+
+  *) core: reinstate location walk to fix config for subrequests
+     PR 41960 [Jose Kahan <jose w3.org>]
+
+  *) rotatelogs: Log the current file size and error code/description
+     when failing to write to the log file.  [Jeff Trawick]
+
+  *) rotatelogs: Added '-f' option to force rotatelogs to create the
+     logfile as soon as started, and not wait until it reads the
+     first entry. [Jim Jagielski]
+
+  *) rotatelogs: Don't leak memory when reopening the logfile.
+     PR 40183 [Ruediger Pluem, Takashi Sato <serai lans-tv.com>]
+
+  *) rotatelogs: Improve atomicity when using -l and cleaup code.
+     PR 44004 [Rainer Jung]
+
+  *) mod_authn_dbd: Disambiguate and tidy database authentication
+     error messages.  PR 43210.  [Chris Darroch, Phil Endecott
+     <spam_from_apache_bugzilla chezphil.org>]
+
+  *) mod_headers: Add 'merge' option to avoid duplicate values within
+     the same header. [Chris Darroch]
+
+  *) mod_cgid: Explicitly set permissions of the socket (ScriptSock) shared by
+     mod_cgid and request processing threads, for OS'es such as HPUX and AIX
+     that do not use umask for AF_UNIX socket permissions.
+     [Eric Covener, Jeff Trawick]
+
+  *) mod_cgid: Don't try to restart the daemon if it fails to initialize
+     the socket.  [Jeff Trawick]
+
+  *) mod_log_config: Add format options for %p so that the actual local
+     or remote port can be logged.  PR 43415.  [Adam Hasselbalch Hansen
+     <ahh@one.com>, Ruediger Pluem, Jeff Trawick]
+
+  *) Added 'disablereuse' option for ProxyPass which, essentially,
+     disables connection pooling for the backend servers.
+     [Jim Jagielski]
+
+  *) mod_speling: remove regression from 1.3/2.0 behavior and
+     drop dependency between mod_speling and AcceptPathInfo.
+     PR 43562 [Jose Kahan <jose w3.org>]
+
+  *) mod_substitute: The default is now flattening the buckets after
+     each substitution. The newly added 'q' flag allows for the
+     quicker, more efficient bucket-splitting if the user so
+     desires. [Jim Jagielski]
+
+  *) http_filters: Don't spin if get an error when reading the
+     next chunk. PR 44381 [Ruediger Pluem]
+
+  *) ab: Do not try to read non existing response bodies of HEAD requests.
+     PR 34275 [Takashi Sato <serai lans-tv.com>]
+
+  *) ab: Use a 64 bit unsigned int instead of a signed long to count the
+     bytes transferred to avoid integer overflows. PR 44346 [Ruediger Pluem]
+
+  *) ProxyPassReverse is now balancer aware. [Jim Jagielski]
+
+  *) mod_include: Correctly handle SSI directives split over multiple filter
+     passes.  PR 44447 [Harald Niesche <harald brokenerror.de>]
+
+  *) mod_cache: Revalidate cache entities which have Cache-Control: no-cache
+     set in their response headers. PR 44511 [Ruediger Pluem]
+
+  *) mod_rewrite: Check all files used by DBM maps for freshness, mod_rewrite
+     didn't pick up on updated sdbm maps due to this.
+     PR41190 [Niklas Edmundsson]
+
+  *) mod_proxy: Lower memory consumption for short lived connections.
+     PR 44026. [Ruediger Pluem]
+
+  *) mod_proxy: Keep connections to the backend persistent in the HTTPS case.
+     [Ruediger Pluem]
+
+  *) Don't add bogus duplicate Content-Language entries
+     PR 11035 [Davi Arnaut]
+
+  *) Worker / Event MPM: Fix race condition in pool recycling that leads to
+     segmentation faults under load.  PR 44402
+     [Basant Kumar Kukreja <basant.kukreja sun.com>]
+
+  *) mod_proxy_ftp: Fix base for directory listings.
+     PR 27834 [Nick Kew]
+
+  *) mod_logio: Provide optional function to allow modules to adjust the
+     bytes_in count [Eric Covener]
+
+  *) http_filters: Don't return 100-continue on client error
+     PR 43711 [Chetan Reddy <chetanreddy gmail.com>]
+
+  *) mod_charset_lite: Add TranslateAllMimeTypes sub-option to
+     CharsetOptions, allowing the administrator to skip the
+     mimetype checking that precedes translation.
+     PR 44458 [Eric Covener]
+
+  *) mod_proxy_http: Fix processing of chunked responses if
+     Connection: Transfer-Encoding is set in the response of the proxied
+     system. PR 44311 [Ruediger Pluem]
+
+  *) mod_proxy_http: Return HTTP status codes instead of apr_status_t
+     values for errors encountered while forwarding the request body
+     PR 44165 [Eric Covener]
+
+  *) mod_rewrite: Don't canonicalise URLs with [P,NE]
+     PR 43319 [<rahul sun.com>]
+
+Changes with Apache 2.2.8
+
+  *) core: Fix regression in 2.2.7 in chunk filtering with massively
+     chunked requests.  [Ruediger Pluem, Nick Kew]
+
+  *) winnt_mpm: Resolve modperl issues by redirecting console mode stdout
+     to /Device/Nul as the server is starting up, mirroring unix MPM's.
+     PR: 43534  [Tom Donovan <Tom.Donovan acm.org>, William Rowe]
+
+  *) winnt_mpm: Restore Win32DisableAcceptEx On directive and Win9x platform
+     by recreating the bucket allocator each time the trans pool is cleared.
+     PR: 11427 #16 (follow-on)  [Tom Donovan <Tom.Donovan acm.org>]
+
+  *) mod_dav: Fix evaluation of If-Match * and If-None-Match * conditionals.
+     PR 38034 [Paritosh Shah <shah.paritosh gmail.com>]
+
+Changes with Apache 2.2.7 (not released)
+
+  *) SECURITY: CVE-2007-6421 (cve.mitre.org)
+     mod_proxy_balancer: Correctly escape the worker route and the worker
+     redirect string in the HTML output of the balancer manager.
+     Reported by SecurityReason. [Ruediger Pluem]
+
+  *) SECURITY: CVE-2007-6422 (cve.mitre.org)
+     Prevent crash in balancer manager if invalid balancer name is passed
+     as parameter. Reported by SecurityReason. [Ruediger Pluem]
+
+  *) SECURITY: CVE-2007-6388 (cve.mitre.org)
+     mod_status: Ensure refresh parameter is numeric to prevent
+     a possible XSS attack caused by redirecting to other URLs.
+     Reported by SecurityReason.  [Mark Cox, Joe Orton]
+
+  *) SECURITY: CVE-2007-5000 (cve.mitre.org)
+     mod_imagemap: Fix a cross-site scripting issue.  Reported by JPCERT.
+     [Joe Orton]
+
+  *) SECURITY: CVE-2008-0005 (cve.mitre.org)
+     Introduce the ProxyFtpDirCharset directive, allowing the administrator
+     to identify a default, or specific servers or paths which list their
+     contents in other-than ISO-8859-1 charset (e.g. utf-8). [Ruediger Pluem]
+
+  *) mod_dav: Adjust etag generation to produce identical results on 32-bit
+     and 64-bit platforms and avoid a regression with conditional PUT's on
+     lock and etag. PR 44152.
+     [Michael Clark <michael metaparadigm.com>, Ruediger Pluem]
+
+  *) mod_ssl: Fix handling of the buffered request body during a per-location
+     renegotiation, when an internal redirect occurs.  PR 43738.
+     [Joe Orton]
+
+  *) mod_ldap: Try to establish a new backend LDAP connection when the
+     Microsoft LDAP client library returns LDAP_UNAVAILABLE, e.g. after the
+     LDAP server has closed the connection due to a timeout.
+     PR 39095 [Eric Covener]
+
+  *) log.c: Ensure Win32 resurrects its lost robust logger processes.
+     [William Rowe]
+
+  *) mod_disk_cache: Delete temporary files if they cannot be renamed to their
+     final name. [Davi Arnaut <davi haxent.com.br>]
+
+  *) Add explicit charset to the output of various modules to work around
+     possible cross-site scripting flaws affecting web browsers that do not
+     derive the response character set as required by  RFC2616.  One of these
+     reported by SecurityReason [Joe Orton]
+
+  *) http_protocol: Escape request method in 405 error reporting.
+     This has no security impact since the browser cannot be tricked
+     into sending arbitrary method strings.  [Jeff Trawick]
+
+  *) mod_ssl: Fix SSL client certificate extensions parsing bug. PR 44073.
+     [yl <yl bee-ware.net>]
+
+  *) mod_proxy_ajp: Use 64K as maximum AJP packet size. This is the maximum
+     length we can squeeze inside the AJP message packet.
+     [Mladen Turk]
+
+  *) core: Lower memory consumption of ap_r* functions by reusing the brigade
+     instead of recreating it during each filter pass.
+     [Stefan Fritsch <sf sfritsch.de>]
+
+  *) core: Lower memory consumption in case that flush buckets are passed thru
+     the chunk filter as last bucket of a brigade. PR 23567.
+     [Stefan Fritsch <sf sfritsch.de>]
+
+  *) core: Fix broken chunk filtering that causes all non blocking reads to be
+     converted into blocking reads.  PR 19954, 41056.
+     [Jean-Frederic Clere, Jim Jagielski]
+
+  *) mod_rewrite: Add the novary flag to RewriteCond.
+     [Ruediger Pluem]
+
+  *) core: Change etag generation to produce identical results on
+     32-bit and 64-bit platforms.  PR 40064.  [Joe Orton]
+
+  *) http_protocol: Escape request method in 413 error reporting.
+     Determined to be not generally exploitable, but a flaw in any case.
+     PR 44014 [Victor Stinner <victor.stinner inl.fr>]
+
+  *) mod_filter: Don't segfault on (unsupported) chained FilterProvider usage.
+     PR 43956 [Nick Kew, Ruediger Pluem]
+
+  *) core: Handle unrecognised transfer-encodings.
+     PR 43882 [Nick Kew, Jeff Trawick]
+
+  *) mod_include: Add an "if" directive syntax to test whether an URL
+     is accessible, and if so, conditionally display content. This
+     allows a webmaster to hide a link to a private page when the user
+     has no access to that page. [Graham Leggett]
+
+  *) Various code cleanups. PR 38699, 39518, 42005, 42006, 42007, 42008, 42009
+     [Christophe Jaillet <christophe.jaillet wanadoo.fr>]
+
+  *) mod_proxy_http: Correctly forward unexpected interim (HTTP 1xx)
+     responses from the backend according to RFC2616.  But make it
+     configurable in case something breaks on it.
+     PR 16518 [Nick Kew]
+
+  *) mod_substitute: Added a new output filter, which performs
+     inline response content pattern matching (including regex)
+     and substitution.  [Jim Jagielski, Ruediger Pluem]
+
+  *) rotatelogs: Change command-line parsing to report more types
+     of errors.  Allow local timestamps to be used when rotating based
+     on file size.  [Jeff Trawick]
+
+  *) mod_proxy: Canonicalisation improvements. Add "nocanon" keyword to
+     ProxyPass, to suppress URI-canonicalisation in a reverse proxy. Also,
+     don't escape/unescape forward-proxied URLs.
+     PR 41798, 42592 [Nick Kew, Ruediger Pluem, Roy Fielding, Jim Jagielski]
+
+  *) mod_status: Add SeeRequestTail directive, which determines if
+     ExtendedStatus displays the 1st 63 characters of the request
+     or the last 63. Useful for those requests with large string
+     lengths and which only vary with the last several characters.
+     [Jim Jagielski]
+
+  *) mod_ssl: Prevent memory corruption of version string.
+     PR 43865, 43334 [William Rowe, Joe Orton]
+
+  *) core: Avoid some unexpected connection closes by telling the client
+     that the connection is not persistent if the MPM process handling
+     the request is already exiting when the response header is built.
+     [Jeff Trawick]
+
+  *) mod_autoindex: Generate valid XHTML output by adding the xhtml
+     namespace. PR 43649 [Jose Kahan <jose w3.org>]
+
+  *) mod_ldap: Give callers a reference to data copied into the request
+     pool instead of references directly into the cache
+     PR 43786 [Eric Covener]
+
+  *) mod_ldap: Stop passing a reference to pconf around for
+     (limited) use during request processing, avoiding possible
+     memory corruption and crashes.  [Eric Covener]
+
+  *) Event MPM: Add support for running under mod_ssl, by reverting to the
+     Worker MPM behaviors, when run under an input filter that buffers
+     its own data. [Paul Querna]
+
+  *) mod_charset_lite: Don't crash when the request has no associated
+     filename.  [Jeff Trawick]
+
+  *) Core: fix possible crash at startup in case of nonexistent DocumentRoot.
+     PR 39722 [Adrian Buckley <adrian.buckley ntlworld.com>]
+
+  *) HTTP protocol: Add "DefaultType none" option.
+     PR 13986 and PR 16139 [Nick Kew]
+
+  *) mod_rewrite: Add option to suppress URL unescaping
+     PR 34602 [Guenther Gsenger <guenther.gsenger gmail.com>]
+
+  *) mpm_winnt: Eliminate wait_for_many_objects.  Allows the clean
+     shutdown of the server when the MaxClients is higher then 257,
+     in a more responsive manner [Mladen Turk, William Rowe]
+
+  *) mod_proxy_http: Remove Warning headers with wrong date
+     PR 16138 [Nick Kew]
+
+  *) mod_proxy_http: Correctly parse all Connection headers in proxy.
+     PR 43509 [Nick Kew]
+
+  *) mod_proxy_http: add Via header correctly (if enabled) to
+     response, even where other Via headers exist.
+     PR 19439 [Nick Kew]
+
+  *) http_core: OPTIONS * no longer maps to local storage or URI
+     space. Note that unlike previous versions, OPTIONS * no
+     longer returns an Allow: header. PR 43519 [Jim Jagielski]
+
+  *) mod_proxy_http: strip hop-by-hop response headers
+     PR 43455 [Nick Kew]
+
+  *) mod_proxy: Don't by default violate RFC2616 by setting
+     Max-Forwards when the client didn't send it to us.
+     Leave that as a configuration option.
+     PR 16137 [Nick Kew]
+
+  *) scoreboard: improve error message on apr_shm_create failure
+     PR 40037 [Nick Kew]
+
+  *) proxy: Fix persistent backend connections.
+     PR 43472 [Ruediger Pluem]
+
+  *) mod_deflate: initialise inflate-out filter correctly when the
+     first brigade contains no data buckets.
+     PR 43512 [Nick Kew]
+
+  *) mod_proxy_ajp: Ignore any ajp13 flush packets received before
+     we send the response headers. See Tomcat PR 43478.
+     [Jim Jagielski]
+
+  *) mod_proxy_balancer: Do not reset lbstatus, lbfactor and lbset when
+     starting a new child.
+     PR 39907 [Vinicius Petrucci <vpetrucci gmail.com>, Ruediger Pluem]
+
+  *) mod_proxy_http: Propagate Proxy-Authorization header correctly.
+     PR 25947 [Nick Kew]
+
+  *) mod_proxy_ajp: Differentiate within AJP between GET and HEAD
+     requests. PR 43060 [Jim Jagielski]
+
+  *) Don't send spurious "100 Continue" response lines.
+     PR 38014 [Basant Kumar Kukreja <basant.kukreja sun.com>]
+
+  *) mod_proxy_ftp: Don't segfault on bad line in FTP listing
+     PR 40733 [Ulf Harnhammar <metaur telia.com>]
+
+  *) mod_proxy: escape error-notes correctly
+     PR 40952 [Thijs Kinkhorst <thijs debian.org>]
+
+  *) mod_proxy: check ProxyBlock for all blocked addresses
+     PR 36987 [Timo Viipuri <timo.viipuri f-secure.com>]
+
+  *) mod_proxy: Don't lose bytes when a response line arrives in small chunks.
+     PR 40894 [Andrew Rucker Jones <arjones simultan.dyndns.org>]
+
+Changes with Apache 2.2.6
+
+  *) SECURITY: CVE-2007-3847 (cve.mitre.org)
+     mod_proxy: Prevent reading past the end of a buffer when parsing
+     date-related headers.  PR 41144.
+     [Davi Arnaut, Nick Kew]
+
+  *) SECURITY: CVE-2007-1863 (cve.mitre.org)
+     mod_cache: Prevent a segmentation fault if attributes are listed in a
+     Cache-Control header without any value.
+     [Niklas Edmundsson <nikke acc.umu.se>]
+
+  *) SECURITY: CVE-2007-3304 (cve.mitre.org)
+     prefork, worker, event MPMs: Ensure that the parent process cannot
+     be forced to kill processes outside its process group.
+     [Joe Orton, Jim Jagielski]
+
+  *) SECURITY: CVE-2006-5752 (cve.mitre.org)
+     mod_status: Fix a possible XSS attack against a site with a public
+     server-status page and ExtendedStatus enabled, for browsers which
+     perform charset "detection".  Reported by Stefan Esser.  [Joe Orton]
+
+  *) SECURITY: CVE-2007-1862 (cve.mitre.org)
+     mod_mem_cache: Copy headers into longer lived storage; header names and
+     values could previously point to cleaned up storage.  PR 41551.
+     [Davi Arnaut <davi haxent.com.br>]
+
+  *) mod_info: mod_info outputs invalid XHTML 1.0 transitional.
+     PR 42847 [Rici Lake <rici ricilake.net>]
+
+  *) mod_ssl: Fix spurious hostname mismatch warning for valid
+     wildcard certificates.  PR 37911.  [Nick Burch <nick torchbox.com>]
+
+  *) mod_mem_cache: Increase the minimum and default value for
+     MCacheMinObjectSize from 0 to 1, as a MCacheMinObjectSize of 0 does not
+     make sense and leads to a division by zero.  PR 40576.
+     [Xuekun Hu <xuekun.hu gmail.com>]
+
+  *) mod_cache: Remove expired content from cache that cannot be revalidated.
+     PR 30370. [Ruediger Pluem]
+
+  *) mod_proxy_http: accept proxy-sendchunked/proxy-sendchunks as synonymous.
+     PR 43183 [Brian Rectanus <Brian.Rectanus breach.com>, Vincent Bray]
+
+  *) mod_proxy: Ensure that at least scheme://hostname[:port] matches between
+     worker and URL when searching for the best fitting worker for a given
+     URL.  PR 40910 [Ruediger Pluem]
+
+  *) mod_proxy: Improve network performance by setting APR_TCP_NODELAY
+     (disable Nagle algorithm) on sockets if implemented.
+     PR 42871 [Christian BOITEL <christian_boitel yahoo.fr>, Jim Jagielski]
+
+  *) core: Do not replace a Date header set by a proxied backend server.
+     PR 40232 [Ruediger Pluem]
+
+  *) mod_proxy: Add a missing assignment in an error checking code path.
+     PR 40865 [Andrew Rucker Jones <arjones simultan.dyndns.org>]
+
+  *) mod_proxy_connect: avoid segfault on DNS lookup failure.
+     PR 40756 [Trevin Beattie <tbeattie boingo.com>]
+
+  *) mod_proxy: enable Ignore Errors option on ProxyPass Status.
+     PR 43167 [Francisco Gimeno <kikov kikov.org>
+
+  *) mod_proxy_http: Don't try to read body of a HEAD request before
+     responding.  PR 41644 [Stuart Children <stuart terminus.co.uk>]
+
+  *) mod_authnz_ldap: Don't return HTTP_UNAUTHORIZED during authorization when
+     LDAP authentication is configured but we haven't seen any
+     'Require ldap-*' directives, allowing authorization to be passed to lower
+     level modules (e.g. Require valid-user)
+     PR 43281 [Eric Covener]
+
+  *) mod_proxy: don't URLencode tilde in path component
+     PR 38448 [Stijn Hoop <stijn sandcat.nl>]
+
+  *) proxy/ajp_header.c: Fixed header token string comparisons
+     Matching of header tokens failed to include the trailing NIL byte
+     and could misinterpret a longer header token for a shorter.
+     Additionally, a "Content-Type" comparison was made case insensitive.
+     [Martin Kraemer]
+
+  *) proxy/ajp_header.c: Backport of an AJP protocol fix for EBCDIC
+     On EBCDIC machines, the status_line string was incorrectly converted
+     twice. [Jean-Frederic Clere, Martin Kraemer]
+
+  *) mod_dumpio: Fix for correct dumping of traffic on EBCDIC hosts
+     Data had been incorrectly converted twice, resulting in
+     garbled log output. [Martin Kraemer]
+
+  *) mod_autoindex: Add in Type and Charset options to IndexOptions
+     directive. This allows the admin to explicitly set the
+     content-type and charset of the generated page and is therefore
+     a viable workaround for buggy browsers affected by CVE-2007-4465
+     (cve.mitre.org). [Jim Jagielski]
+
+  *) log core: ensure we use a special pool for stderr logging, so that
+     the stderr channel remains valid from the time plog is destroyed,
+     until the time the open_logs hook is called again.  [William Rowe]
+
+  *) mod_negotiation: preserve Query String in resolving a type map
+     PR 33112 [Jørgen Thomsen <apache jth.net>, Nick Kew]
+
+  *) mod_ssl: Version reporting update; displays 'compiled against'
+     Apache and build-time SSL Library versions at loglevel [info],
+     while reporting the run-time SSL Library version in the server
+     info tags.  Helps to identify a mod_ssl built against one flavor
+     of OpenSSL but running against another (also adds SSL-C version
+     number reporting.)  [William Rowe]
+
+  *) mime.types: Many updates to sync with IANA registry and common
+     unregistered types that the owners refuse to register.  Admins
+     are encouraged to update their installed mime.types file.
+     PR: 35550, 37798, 39317, 31483 [Roy T. Fielding]
+
+  *) mod_expires: don't crash on bad configuration data
+     PR 43213 [Julien Perez <julien.perez epsylonia.net>]
+
+  *) mod_dbd: Introduce configuration groups to allow inheritance by virtual
+     hosts of database configurations from the main server.  Determine the
+     minimal set of distinct configurations and share connection pools
+     whenever possible.  Allow virtual hosts to override inherited SQL
+     statements.  PR 41302.  [Chris Darroch]
+
+  *) mod_dbd: Create memory sub-pools for each DB connection and close
+     DB connections in a pool cleanup function.  Ensure prepared statements
+     are destroyed before DB connection is closed.  When using reslists,
+     prevent segfaults when child processes exit, and stop memory leakage
+     of ap_dbd_t structures.  Avoid use of global s->process->pool, which
+     isn't destroyed by exiting child processes in most multi-process MPMs.
+     PR 39985.  [Chris Darroch, Nick Kew]
+
+  *) mod_dbd: Handle error conditions in dbd_construct() properly.
+     Simplify ap_dbd_open() and use correct arguments to apr_dbd_error()
+     when non-threaded.  Register correct cleanup data in non-threaded
+     ap_dbd_acquire() and ap_dbd_cacquire().  Clean up configuration data
+     and merge function.  Use ap_log_error() wherever possible.
+     [Chris Darroch, Nick Kew]
+
+  *) mod_dbd: Stash DBD connections in request_config of initial request
+     only, or else sub-requests and internal redirections may cause
+     entire DBD pool to be stashed in a single HTTP request.  [Chris Darroch]
+
+  *) main core: Emit errors during the initial apr_app_initialize()
+     or apr_pool_create() (when apr-based error reporting is not ready).
+     [William Rowe, Jeff Trawick]
+
+  *) log core: fix the new piped logger case where we couldn't connect
+     the replacement stderr logger's stderr to the NULL stdout stream.
+     Continue in this case, since the previous alternative of no error
+     logging at all (/dev/null) is far worse. [William Rowe]
+
+  *) mpm_winnt: Prevent the parent-child pipe from leaking into other
+     spawned processes, and ensure we have a /Device/null handle for
+     stdout when running as-a-service.  [William Rowe]
+
+  *) mod_ldap: Avoid possible crashes, hangs, and busy loops due to
+     improper merging of the cache lock in vhost config
+     PR 43164 [Eric Covener]
+
+  *) ApacheMonitor: Fix Windows Vista detection. [Mladen Turk]
+
+  *) mod_deflate: fix protocol handling in deflate input filter
+     PR 23287 [Nick Kew]
+
+  *) mime.types: add Registered Javascript/ECMAScript MIME types (RFC4329)
+     PR 40299 [Dave Hodder <dmh dmh.org.uk>]
+
+  *) mod_filter: fix integer comparisons in dispatch rules
+     PR 41835 [Nick Kew]
+
+  *) mod_filter: fix merging of ! and = in FilterChain
+     PR 42186 [Issac Goldstand <margol beamartyr.net>]
+
+  *) mod_deflate: don't try to process metadata buckets as data.  what should
+     have been a 413 error was logged as a 500 and a blank screen appeared
+     at the browser.
+     [Greg Ames, Ruediger Pluem]
+
+  *) mod_cgi, mod_cgid: Fix use of CGI scripts as ErrorDocuments.
+     PR 39710.  [Paul Querna, Ruediger Pluem]
+
+  *) mod_proxy: Allow to use different values for sessionid
+     in url encoded id and cookies. PR 41897. [Jean-Frederic Clere]
+
+  *) mod_proxy: Fix the 503 returned when session route does
+     not match any of the balancer members. [Mladen Turk]
+
+  *) mod_proxy: Added ProxyPassMatch directive, which is similar
+     to ProxyPass but takes a regex local path prefix. [Jim Jagielski]
+
+  *) mod_cache: Do not set Date or Expires when they are missing from
+     the original response or are invalid.  [Justin Erenkrantz]
+
+  *) mod_cache: Correctly handle HEAD requests on expired cache content.
+     PR 41230.  [Niklas Edmundsson <nikke acc.umu.se>]
+
+  *) mod_cache: Let Cache-Control max-age set the expiration of the cached
+     representation if Expires is not set.  [Justin Erenkrantz]
+
+  *) mod_cache: Allow caching of requests with query arguments when
+     Cache-Control max-age is explicitly specified.  [Justin Erenkrantz]
+
+  *) mod_disk_cache: Allow Vary'd responses to be refreshed properly.
+     [Justin Erenkrantz]
+
+  *) mod_proxy: Print the correct error message for erroneous configured
+     ProxyPass directives. PR 40439.  [Takashi Sato <serai lans-tv.com>]
+
+  *) mod_so: Provide more helpful LoadModule feedback when an error occurs.
+     [William Rowe]
+
+  *) mod_alias: Accept path components (URL part) in Redirects. PR 35314.
+     [Nick Kew]
+
+  *) mod_headers: Allow % at the end of a Header value. PR 36609.
+     [Nick Kew, Ruediger Pluem]
+
+  *) mod_cache: Use the same cache key throughout the whole request processing
+     to handle escaped URLs correctly.  PR 41475.  [Ruediger Pluem]
+
+  *) mod_cache: Add CacheIgnoreQueryString directive. PR 41484.
+     [Fredrik Widlund <fredrik.widlund qbrick.com>]
+
+  *) mod_cache: While serving a cached entity ensure that filters that have
+     been applied to this cached entity before saving it to the cache are not
+     applied again. PR 40090.  [Ruediger Pluem]
+
+  *) mod_cache: Correctly cache objects whose URL query string has been
+     modified by mod_rewrite. PR 40805.  [Ruediger Pluem]
+
+  *) HTTP proxy ProxyErrorOverride: Leave 1xx and 3xx responses alone.  Only
+     processing of error responses (4xx, 5xx) will be altered. PR 39245.
+     [Jeff Trawick, Bart van der Schans <schans hippo.nl>]
+
+  *) htdbm: Enable crypt support on platforms with crypt() but not
+     <crypt.h>, such as z/OS.  [David Jones <oscaremma gmail.com>]
+
+  *) mod_ssl: initialize thread locks before initializing the hardware
+     acceleration library, so the latter can make use of the former.
+     PR 20951.  [<adunn at ncipher.com>]
+
+  *) ab.c: Correct behavior of HTTP request headers sent by ab
+     in presence of -H command-line overrides. PR 31268, 26554.
+     [Arvind Srinivasan <arvind.srinivasan  sun.com>]
+
+  *) ab.c: The apr_port_t type is unsigned, but ab was using a
+     signed format code in its reports. PR 42070.
+     [Takashi Sato <serai  lans-tv.com>]
+
+  *) mod_ldap: Remove the hardcoded size limit parameter for
+     ldap_search_ext_s and replace it with an APR_ defined value that
+     is set according to the LDAP SDK being used, resolving a problem
+     with SDKs that define LDAP_NO_LIMIT to something other than -1.
+     [David Jones <oscaremma gmail com>]
+
+  *) core: Correct a regression since 2.0.x in the handling of AllowOverride
+     Options. PR 41829.  [Torsten Förtsch <torsten.foertsch gmx.net>]
+
+  *) mod_proxy_http: Handle request bodies larger than 2 GB by converting
+     the Content-Length header of the request correctly. PR 40883.
+     [Ruediger Pluem, toadie <toadie643 gmail.com>]
+
+  *) mod_proxy: Fix some proxy setting inheritance problems (eg:
+     ProxyTimeout). PR 11540.  [Stuart Children <stuart terminus.co.uk>]
+
+  *) Unix MPMs: Catch SIGFPE so that exception hooks and CoreDumpDirectory
+     can work after that terminating signal.
+     [Eric Covener]
+
+  *) Win32: Makefile.win will now build with MS VC 8 (Visual Studio 2005)
+     including embedding the .manifest information into each binary.
+     [William Rowe]
+
+There was no Apache 2.2.5
+
+Changes with Apache 2.2.4
+
+  *) mod_isapi: Correctly present SERVER_PORT_SECURE.
+     PR: 40573.  [Matt Eaton <asf divinehawk.com>]
+
+  *) Allow htcacheclean, httxt2dbm, and fcgistarter to link apr/apr-util
+     statically like the older support programs.
+     [Eric Covener <covener gmail.com>]
+
+  *) core: Fix NONBLOCK status of listening sockets on restart/graceful
+     PR 37680.  [Darius Davis <darius-abz free-range.com.au>]
+
+  *) mod_deflate: Rework inflate output and deflate output filter to fix
+     several issues: Incorrect handling of flush buckets, potential memory
+     leaks, excessive memory usage in inflate output filter for large
+     compressed content. PR 39854.
+     [Ruediger Pluem, Nick Kew, Justin Erenkrantz]
+
+  *) mod_mem_cache: Memory leak fix: Unconditionally free the buffer.
+     [Davi Arnaut <davi haxent.com.br>]
+
+  *) Allow mod_dumpio to log at other than DEBUG levels via
+     the new DumpIOLogLevel directive. [Jim Jagielski]
+
+  *) rotatelogs: Improve error message for open failures.  PR 39487.
+     [Joe Orton]
+
+  *) mod_dbd: share per-request database handles across subrequests
+     and internal redirects [Chris Darroch]
+
+  *) mod_dbd: key connection pools to virtual hosts correctly even when
+     ServerName is unset/unavailable [Graham Leggett]
+
+  *) Better detection and clean up of ldap connection that has been
+     terminated by the ldap server.  PR 40878.
+     [Rob Baily <rbaily servicebench com>]
+
+  *) mod_mem_cache: Convert mod_mem_cache to use APR memory pool functions
+     by creating a root pool for object persistence across requests. This
+     also eliminates the need for custom serialization code.
+     [Davi Arnaut <davi haxent.com.br>]
+
+  *) mod_authnz_ldap: Add an AuthLDAPRemoteUserAttribute directive. If
+     set, REMOTE_USER will be set to this attribute, rather than the
+     username supplied by the user. Useful for example when you want users
+     to log in using an email address, but need to supply a userid instead
+     to the backend.  [Graham Leggett]
+
+  *) mod_cgi and mod_cgid: Don't use apr_status_t error return
+     from input filters as HTTP return value from the handler.
+     PR 31759.  [Nick Kew]
+
+  *) mod_cache: Eliminate a bogus error in the log when a filter returns
+     AP_FILTER_ERROR.  [Niklas Edmundsson <nikke acc.umu.se>]
+
+  *) core: Fix issue which could cause piped loggers to be orphaned and never
+     terminate after a graceful restart.  PR 40651.
+     [Joe Orton, Ruediger Pluem]
+
+  *) core: Fix address-in-use startup failure caused by corruption of the list
+     of listen sockets in some configurations with multiple generic Listen
+     directives.  [Jeff Trawick]
+
+  *) mod_headers: Support regexp-based editing of HTTP headers.  [Nick Kew]
+
+  *) mod_proxy: Add explicit flushing feature. When Servlet container sends
+     AJP body message with size 0, this means that Servlet container has asked
+     for an explicit flush. Create flush bucket in that case. This feature has
+     been added to the recent Tomcat versions without breaking the AJP
+     protocol.  [Mladen Turk]
+
+  *) mod_proxy_balancer: Set the new environment variable
+     BALANCER_ROUTE_CHANGED if a worker with a route different from the one
+     supplied by the client had been chosen or if the client supplied no
+     routing information for a balancer with sticky sessions.
+     [Ruediger Pluem]
+
+  *) mod_proxy_balancer: Add information about the route, the sticky session
+     and the worker used during a request as environment variables. PR 39806.
+     [Brian <brectanu gmail.com>]
+
+  *) mod_proxy: Don't try to use dead backend connection. PR 37770.
+     [Olivier BOEL <ob dorrboel.com>]
+
+  *) mod_proxy_balancer: Extract stickysession routing information contained
+     as parameter in the URL correctly. PR 40400.
+     [Ruediger Pluem, Tomokazu Harada <harada sysrdc.ns-sol.co.jp>]
+
+  *) mod_proxy_ajp: Added cping/cpong support for the AJP protocol.
+     A new worker directive ping=timeout will cause CPING packet
+     to be send expecting CPONG packet within defined timeout.
+     In case the backend is too busy this will fail instead
+     sending the full header.  [Mladen Turk]
+
+  *) mod_disk_cache: Make sure that only positive integers are accepted
+     for the CacheMaxFileSize and CacheMinFileSize parameters in the
+     config file. PR39380.  [Niklas Edmundsson <nikke acc.umu.se>]
+
+  *) mod_cache: From RFC3986 (section 6.2.3.) if a URI contains an
+     authority component and an empty path, the empty path is to be equivalent
+     to "/". It explicitly cites the following four URIs as equivalents:
+       http://example.com
+       http://example.com/
+       http://example.com:/
+       http://example.com:80/
+     [Davi Arnaut <davi haxent.com.br>]
+
+  *) mod_cache: Don't cache requests with a expires date in the past;
+     otherwise mod_cache will always try to cache the URL. This bug
+     might lead to numerous rename() errors on win32 if the URL was
+     previously cached. [Davi Arnaut <davi haxent.com.br>]
+
+  *) core: Deal with the widespread use of apr_status_t return values
+     as HTTP status codes, as documented in PR#31759 (a bug shared by
+     the default handler, mod_cgi, mod_cgid, mod_proxy, and probably
+     others). PR31759.  [Jeff Trawick, Ruediger Pluem, Joe Orton]
+
+  *) mod_ext_filter: Handle filter names which include capital letters.
+     PR 40323.  [Jeff Trawick]
+
+  *) mod_isapi: Avoid double trailing slashes in HSE_REQ_MAP_URL_TO_PATH
+     support.  Also corrects the slashes for Windows.
+     PR 15993.  [William Rowe]
+
+  *) mod_isapi: Handle "HTTP/1.1 200 OK" style status lines correctly, the
+     token parser worked while the resulting length was misinterpreted.
+     PR 29098.  [Brock Bland <bbland serena.com>]
+
+  *) mod_isapi: Return 0 (failure) for more of the various ap_pass_brigade
+     attempts to stream the response at the client.  Log these as well.
+     PR 30022, 40470.  [William Rowe, Matt Eaton <asf divinehawk.com>]
+
+  *) mod_isapi: Ensure we walk through all the methods the developer may have
+     employed to report their HTTP status result code.  PR 16637 30033 28089
+     [Matt Lewandowsky <matt iamcode.net>, William Rowe]
+
+  *) mod_echo: Fix precedence problem in if statement. PR 40658.
+     [Larry Cipriani <lvc lucent.com>]
+
+  *) mod_mime_magic: Fix precedence problem in if statement. PR 40656.
+     [Larry Cipriani <lvc lucent.com>]
+
+  *) The full server version information is now included in the error log at
+     startup as well as server status reports, irrespective of the setting
+     of the ServerTokens directive.  ap_get_server_version() is now
+     deprecated, and is replaced by ap_get_server_banner() and
+     ap_get_server_description().  [Jeff Trawick]
+
+  *) mod_proxy_balancer: Workers can now be defined as part of
+     a balancer cluster "set" in which members of a lower-numbered set
+     are preferred over higher numbered ones.  [Jim Jagielski]
+
+  *) mod_proxy_balancer: Workers can now be defined as "hot standby" which
+     will only be used if all other workers are unusable (eg: in
+     error or disabled). Also, the balancer-manager displays the election
+     count and I/O counts of all workers.  [Jim Jagielski]
+
+  *) mod_proxy_ajp: Close connection to backend if reading of request body
+     fails. PR 40310.  [Ian Abel <ianabel mxtelecom.com>]
+
+  *) mod_proxy_balancer: Retry worker chosen by route / redirect worker if
+     it is in error state before sending "Service Temporarily Unavailable".
+     PR 38962.  [Christian Boitel <cboitel lfdj.com>]
+
+Changes with Apache 2.2.3
+
+  *) SECURITY: CVE-2006-3747 (cve.mitre.org)
+     mod_rewrite: Fix an off-by-one security problem in the ldap scheme
+     handling.  For some RewriteRules this could lead to a pointer being
+     written out of bounds.  Reported by Mark Dowd of McAfee.
+     [Mark Cox]
+
+  *) Win32: Minor fixes to build more cleanly under Visual Studio 2005
+     with command line builds.  [William Rowe]
+
+  *) mod_authn_alias: Add a check to make sure that the base provider and the
+     alias names are different and also that the alias has not been registered
+     before. PR 40051. [Brad Nicholes]
+
+  *) mod_authnz_ldap: Fix a problem with invalid auth error detection for LDAP
+     client SDKs that don't support the LDAP_SECURITY_ERROR macro. PR 39529.
+     [Ray Price <dohrayme yahoo.com>, Josh Fenlason <jfenlason ptc.com>]
+
+  *) mod_cache: Do not overwrite the Content-Type in the cache, for
+     successfully revalidated cached objects. PR 39647. [Ruediger Pluem]
+
+  *) mod_speling: Add directive to deal with case corrections only
+     and ignore other misspellings [Olivier Thereaux  <ot w3.org>]
+
+  *) mod_dbd: Fix dependence on virtualhost configuration in
+     defining prepared statements (possible segfault at startup
+     in user modules such as mod_authn_dbd).  [Nick Kew]
+
+  *) Add optional 'scheme://' prefix to ServerName directive,
+     allowing correct determination of the canonical server URL
+     for use behind a proxy or offload device handling SSL; fixing
+     redirect generation in those cases. PR 33398. [Sander Temme]
+
+  *) Added server_scheme field to server_rec for above. Minor MMN bump.
+     [Sander Temme]
+
+  *) mod_cache: Make caching of reverse SSL proxies possible again. PR 39593.
+     [Ruediger Pluem, Joe Orton]
+
+  *) Worker MPM: On graceless shutdown or restart, send signals to
+     each worker thread to wake them up if they're polling on a
+     Keep-Alive connection.  PR 38737.  [Chris Darroch]
+
+  *) worker and event MPMs: fix excessive forking if fork() or child_init
+     take a long time.  PR 39275.
+     [Greg Ames, Jeff Trawick, Chris Darroch <chrisd pearsoncmg.com> ]
+
+  *) configure: Add "--with-included-apr" flag to force use of the
+     bundled version of APR at build time.  [Joe Orton]
+
+  *) Respect GracefulShutdownTimeout in the worker and event MPMs.
+     [Chris Darroch, Garrett Rooney]
+
+  *) mod_mem_cache: Set content type correctly when delivering data from
+     cache. PR 39266. [Ruediger Pluem]
+
+  *) mod_autoindex: Fix filename escaping with FancyIndexing disabled.
+     PR 38910.  [Robby Griffin <rmg terc.edu>]
+
+  *) mod_charset_lite: Bypass translation when the source and dest charsets
+     are the same. [Jeff Trawick]
+
+Changes with Apache 2.2.2
+
+  *) mod_deflate: work correctly in an internal redirect
+     [Brian J. France <list firehawksystems com>]
+
+  *) mod_proxy_balancer: Initialize members of a balancer correctly.
+     PR 38227. [James A. Robinson <jim.robinson stanford.edu>]
+
+  *) mod_proxy: Do not release connections from connection pool twice.
+     PR 38793. [Ruediger Pluem, matthias <mk-asf gigacodes.de>]
+
+  *) core: Prevent reading uninitialized memory while reading a line of
+     protocol input.  PR 39282. [Davi Arnaut <davi haxent com br>]
+
+  *) mod_dbd: Update defaults, improve error reporting.
+     [Chris Darroch <chrisd pearsoncmg com>, Nick Kew]
+
+  *) mod_dbd: Create own pool and mutex to avoid problem use of
+     process pool in request processing.
+     [Chris Darroch <chrisd pearsoncmg com>]
+
+  *) HTML-escape the Expect error message.  Not classed as security as
+     an attacker has no way to influence the Expect header a victim will
+     send to a target site.  Reported by Thiago Zaninotti
+     <thiango nstalker.com>. [Mark Cox]
+
+  *) htdbm: Fix crash processing -d option in 64-bit mode on HP-UX.
+     [Jeff Trawick]
+
+  *) htdbm: Warn the user when adding a plaintext password on a platform
+     where it wouldn't work with the server (i.e., anywhere that has
+     crypt()).  [Jeff Trawick]
+
+  *) mod_proxy: don't reuse a connection that may be to the wrong backend
+     PR 39253 [Ruediger Pluem]
+
+  *) Default handler: Don't return output filter apr_status_t values.
+     PR 31759.  [Jeff Trawick, Ruediger Pluem, Joe Orton]
+
+Changes with Apache 2.2.1
+
+  *) SECURITY: CVE-2005-3357 (cve.mitre.org)
+     mod_ssl: Fix a possible crash during access control checks if a
+     non-SSL request is processed for an SSL vhost (such as the
+     "HTTP request received on SSL port" error message when an 400
+     ErrorDocument is configured, or if using "SSLEngine optional").
+     PR 37791.  [Rüdiger Plüm, Joe Orton]
+
+  *) SECURITY: CVE-2005-3352 (cve.mitre.org)
+     mod_imagemap: Escape untrusted referer header before outputting
+     in HTML to avoid potential cross-site scripting.  Change also
+     made to ap_escape_html so we escape quotes.  Reported by JPCERT.
+     [Mark Cox]
+
+  *) mod_proxy_ajp: Flushing of the output after each AJP chunk is now
+     configurable at runtime via the 'flushpackets' and 'flushwait' worker
+     params. Minor MMN bump. [Jim Jagielski]
+
+  *) mod_proxy: Fix incorrect usage of local and shared worker init.
+     PR 38403. [Jim Jagielski]
+
+  *) mod_isapi: Fix compiler errors on Unix platforms.
+     [William Rowe]
+
+  *) mod_proxy_http: Do send keep-alive header if the client sent
+     connection: keep-alive and do not close backend connection if the client
+     sent connection: close. PR 38524. [Ruediger Pluem, Joe Orton]
+
+  *) mod_disk_cache: Return the correct error codes from bucket read
+     failures, instead of APR_EGENERAL.
+     [Brian Akins <brian.akins turner.com>]
+
+  *) Add APR/APR-Util Compiled and Runtime Version numbers to the
+     output of 'httpd -V'. [William Rowe]
+
+  *) http: If a connection is aborted while waiting for a chunked line,
+     flag the connection as errored out.  [Justin Erenkrantz]
+
+  *) core: Reject invalid Expect header immediately. PR 38123.
+     [Ruediger Pluem]
+
+  *) Fix mis-shifted 32 bit scope, masked to 64 bits as a method.
+     [Will Rowe, Joe Orton]
+
+  *) mod_proxy: Fix KeepAlives not being allowed and set to
+     backend servers. PR 38602. [Ruediger Pluem, Jim Jagielski]
+
+  *) Fix instdso.sh "sed syntax error" installation issue on some
+     platforms.  PR 38108.  [Masaoki Kobayashi <masaoki techfirm.co.jp>]
+
+  *) mod_ssl: Fix possible crashes in shmcb with gcc 4 on platforms
+     requiring word-aligned pointers.  PR 38838.  [Joe Orton]
+
+  *) mod_proxy: If we get an error reading the upstream response,
+     close the connection.  [Justin Erenkrantz, Roy T. Fielding,
+     Jim Jagielski, Ruediger Pluem]
+
+  *) mod_proxy_ajp: Support common headers of the AJP protocol in responses.
+     PR 38340. [Aleksey Pesternikov <apesternikov yahoo.com>]
+
+  *) mod_proxy_balancer: Do not overwrite the status of initialized workers
+     and respect the configured status of uninitilized workers when creating
+     a new child process. [Ruediger Pluem]
+
+  *) mod_proxy_ajp: Crosscheck the length of the body chunk with the length of
+     the ajp message to prevent mod_proxy_ajp from reading beyond the buffer
+     boundaries and thus revealing possibly sensitive memory contents to the
+     client. [Ruediger Pluem]
+
+  *) Ensure that the proper status line is written to the client, fixing
+     incorrect status lines caused by filters which modify r->status without
+     resetting r->status_line, such as the built-in byterange filter.
+     [Jeff Trawick]
+
+  *) mod_speling: Stop crashing with certain non-file requests.
+     [Jeff Trawick]
+
+  *) mod_cache: Make caching of reverse proxies possible again. PR 38017.
+     [Ruediger Pluem]
+
+  *) Modify apr[util] .h detection to avoid breakage on VPATH builds
+     using Solaris make (amoung others) and avoid breakage in ./buildconf
+     when srclib/apr[-util] are symlinks rather than directories proper.
+     [William Rowe]
+
+  *) Avoid Server-driven negotiation when a script has emitted an
+     explicit Status: header.  PR 38070.  [Nick Kew]
+
+  *) Fix to avoid feeding C99 to C++ compilers.  [Joe Orton]
+
+  *) Chunk filter: Fix chunk filter to create correct chunks in the case that
+     a flush bucket is surrounded by data buckets. [Ruediger Pluem]
+
+  *) Fix syntax error in httpd.h with strict compilers.  PR 37840.
+     [Per Olausson <pao darkheim.freeserve.co.uk>]
+
+  *) Fix recursive ErrorDocument handling.  PR 36090.
+     [Chris Darroch <chrisd pearsoncmg.com>]
+
+  *) Don't hang on error return from post_read_request.  PR 37790.
+     [Nick Kew]
+
+  *) Fix off-by-one error in proxy_balancer.  PR 37753.
+     [Kazuhiro Osawa <ko yappo ne jp>]
+
+Changes with Apache 2.2.0
+
+  *) mod_negotiation: Minor performance tweak by reusing already calculated
+     strlen.
+     [Ruediger Pluem, Christophe Jaillet <christophe.jaillet wanadoo.fr>]
+
+  *) Remove support for 'On' and 'Off' for AuthBasicProvider and
+     AuthDigestProvider.  [Joshua Slive, Justin Erenkrantz]
+
+  *) Add in new UseCanonicalPhysicalPort directive, which controls
+     whether or not Apache will ever use the actual physical port
+     when constructing the canonical port number. [Jim Jagielski]
+
+  *) mod_dav: Fix a null pointer dereference in an error code path during the
+     handling of MKCOL.
+     [Ruediger Pluem, Ghassan Misherghi <ghassanm ucdavis.edu>]
+
+  *) mod_proxy_balancer: When finding best worker, use case insensitive
+     match for scheme and host, but case sensitive for the rest of
+     the path. [Jim Jagielski, Ruediger Pluem]
+
+  *) Require use of APR >= 1.2.0 and APR-util >= 1.2.0 when configured
+     to use external copies of the libraries.  [Joe Orton]
+
+  *) Fix DESTDIR=... installation when using bundled copy of APR.
+     [Torsten Foertsch <torsten.foertsch gmx.net>]
+
+  *) mod_dav: Fix handling of unknown state tokens in If: headers.
+     PR: 37288.  [Joe Orton]
+
+  *) Strip out Experimental MPMs that have gone nowhere since 2.0
+     (perchild, threadpool, leader).  [Nick Kew]
+
+Changes with Apache 2.1.9
+
+  *) Add mod_authn_dbd (SQL-based  authentication) [Nick Kew]
+
+  *) mod_proxy_ajp: Do not spool the entire response from AJP backend before
+     sending it up the filter chain.  PR 37100.  [Ruediger Pluem]
+
+  *) mod_cache: Create new filters CACHE_OUT_SUBREQ / CACHE_SAVE_SUBREQ which
+     only differ by the type from CACHE_OUT / CACHE_SAVE to ensure that
+     subrequests to non-local resources work again.  [Ruediger Pluem]
+
+  *) mod_proxy: Do not lowercase the entire worker name of a BalancerMember
+     since this breaks case sensitive URI's.  PR 36906.  [Ruediger Pluem]
+
+  *) core: AddOutputFilterByType is ignored for proxied requests. PR 31226.
+     [Joe Orton, Ruediger Pluem]
+
+  *) mod_proxy_http: Prevent data corruption of POST request bodies when
+     client accesses proxied resources with SSL.  PR 37145.
+     [Ruediger Pluem, William Rowe]
+
+  *) mod_ssl: Fix issue which could cause spurious warnings about use
+     of name-based vhosts.  PR 37051.  [Joe Orton]
+
+  *) ab: Fix to ensure that only the expected number of requests are run.
+     PR 36966.  [Joe Orton]
+
+  *) mod_proxy_balancer: BalancerManager and proxies correctly handle
+     member workers with paths.  PR 36816. [Ruediger Pluem, Jim Jagielski]
+
+  *) mod_log_config: %{hextid}P will log the thread id in hex with APR
+     versions 1.2.0 or higher.  [Jeff Trawick]
+
+  *) httpd.exe/apachectl -V: display the DYNAMIC_MODULE_LIMIT setting, as
+     in 1.3.  [Jeff Trawick]
+
+  *) Support dbd connection tied to conn_rec in mod_dbd.  [Nick Kew]
+
+  *) Fix use of pools in mod_dbd.  [Brian J France, Nick Kew]
+
+  *) Promote modules from "experimental": mod_dbd, mod_filter,
+     mod_charset_lite.  [Nick Kew]
+
+  *) mod_proxy_ajp: mod_proxy_ajp sends empty SSL attributes for non SSL
+     connections.  PR 36883.
+     [William Barker <william.barker wilshire.com>, Ruediger Pluem]
+
+  *) Eliminated the NET_TIME filter, restructuring the timeout logic.
+     This provides a working mod_echo on all platforms, and ensures any
+     custom protocol module is at least given an initial timeout value
+     based on the <VirtualHost > context's Timeout directive.
+     [William Rowe]
+
+  *) mod_proxy: Run the request_status hook also if there are no free workers
+     or all workers are in error state.
+     [Ruediger Pluem, Brian Akins <brian.akins turner.com>]
+
+  *) mod_proxy_connect: Fix high CPU loop on systems like UnixWare which
+     trigger POLL_ERR or POLL_HUP on a terminated connection.  PR 36951.
+     [Jeff Trawick, Ruediger Pluem]
+
+  *) mod_proxy_balancer: Fix handling of sticky sessions with Tomcat.
+     PR 36507.  [Ruediger Pluem]
+
+  *) SECURITY: CVE-2005-2970 (cve.mitre.org)
+     worker MPM: Fix a memory leak which can occur after an aborted
+     connection in some limited circumstances.  [Greg Ames]
+
+  *) Doxygen fixups.  [Neale Ranns <neale ranns.org>, Ian Holsman]
+
+  *) mod_cache/mod_dir: Correct a subrequest lookup bug which was preventing
+     mod_dir from serving indexes correctly with mod_cache enabled.
+     [Colm MacCarthaigh]
+
+Changes with Apache 2.1.8
+
+  *) Fix lingering close implementation to match 1.3.x behaviour.
+     PR 35292.  [Joe Orton]
+
+  *) mod_ssl: Support limited buffering of request bodies to allow
+     per-location renegotiation to proceed.  PR 12355.  [Joe Orton]
+
+  *) Fix regression since 2.0.x in AllowOverride Options handling.
+     PR 35330.  [kabe <kabe sra-tohoku.co.jp>]
+
+  *) mod_ssl: Fix memory leak in ssl_util_algotypeof().
+     PR 25659.  [David Blake <dblake hp com>, Martin Kraemer]
+
+  *) prefork, worker and event MPMs: Support a graceful-stop procedure:
+     Server will wait until existing requests are finished or until
+     "GracefulShutdownTimeout" number of seconds before exiting.
+     [Colm MacCarthaigh, Ken Coar, Bill Stoddard]
+
+  *) prefork, worker and event MPMs: Prevent children from holding open
+     listening ports upon graceful restart or stop. PR 28167.
+     [Colm MacCarthaigh, Brian Pinkerton <bp thinkpink.com>]
+
+  *) SECURITY: CVE-2005-2700 (cve.mitre.org)
+     mod_ssl: Fix a security issue where "SSLVerifyClient" was not
+     enforced in per-location context if "SSLVerifyClient optional"
+     was configured in the vhost configuration.  [Joe Orton]
+
+  *) mod_ssl: Catch parse errors from misconfigured or malformed
+     CRLs.  PR 36438.  [Joe Orton]
+
+  *) mod_proxy/mod_proxy_balancer: lbmethods now implemented as
+     providers. Prevent problems when no Vhost containers were
+     configured with proxy balancers. [Jim Jagielski]
+
+  *) New provider function to list all available provider names in a
+     specific group and version (ap_list_provider_names). [Jim Jagielski]
+
+  *) mod_cache: Enhance CacheEnable/CacheDisable to control caching on a
+     per-protocol, per-host and per-path basis. Intended for proxy
+     configurations. [Colm MacCarthaigh]
+
+  *) mod_disk_cache: Canonicalise the storage key, for improved hit/miss
+     ratio. [Colm MacCarthaigh]
+
+  *) mod_cgid: Append .PID to the script socket filename and remove the
+     script socket on exit. [Colm MacCarthaigh, Jim Jagielski]
+
+  *) mod_cgid: run the get_suexec_identity hook within the request-handler
+     instead of within cgid. PR 36410. [Colm MacCarthaigh]
+
+  *) Linux 2.0: remove support for threaded MPM's due to linuxthreads use
+     of SIGUSR1 clashing with graceful restart signal. [Colm MacCarthaigh]
+
+Changes with Apache 2.1.7
+
+  *) SECURITY: CVE-2005-2491 (cve.mitre.org):
+     Fix integer overflows in PCRE in quantifier parsing which could
+     be triggered by a local user through use of a carefully-crafted
+     regex in an .htaccess file.  [Philip Hazel]
+
+  *) mod_proxy/mod_proxy_balancer: Provide a simple, functional
+     interface to add additional balancer lb selection methods
+     without requiring code changes to mod_proxy/mod_proxy_balancer;
+     these can be implemented via sub-modules now. [Jim Jagielski]
+
+  *) mod_cache: Fix incorrectly served 304 responses when expired cache
+     entity is valid, but cache is unwritable and headers cannot be
+     updated.  [Colm MacCarthaigh <colm stdlib.net>]
+
+  *) mod_cache: Remove entities from the cache when re-validation
+     receives a 404 or other content-no-longer-present error.
+     [Rüdiger Plüm ruediger.pluem vodafone.com]
+
+  *) mod_disk_cache: Properly remove files from cache when needed.
+     [Rüdiger Plüm ruediger.pluem vodafone.com]
+
+  *) mod_disk_cache: Support htcacheclean removing directories.
+     [Andreas Steinmetz]
+
+  *) htcacheclean: Add -t option to remove empty directories.
+     [Colm MacCarthaigh <colm stdlib.net>]
+
+  *) Remove the base href tag from mod_proxy_ftp, as it breaks relative
+     links for clients not using an Authorization header. [Graham Leggett,
+     Jon Snow <jsnow27 gatesec.net>]
+
+  *) mod_cache: Restore the HTTP status of cached responses.
+     [Hansjoerg Pehofer <hansjoerg.pehofer uibk.ac.at>]
+
+  *) mod_cache: Store varied contents all in the same prefix for a varied URI.
+     [Paul Querna]
+
+  *) mod_cache: Run the CACHE_SAVE and CACHE_OUT Filters after other content
+     filters. [Paul Querna]
+
+  *) mod_negotiation: Correctly report 404 instead of 403 for missing files.
+     [Paul Querna]
+
+  *) new hook (request_status) that gets ran in proxy_handler just before
+     the final return.  This gives modules an opportunity to do something
+     based on the proxy status. (minor MMN bump)
+     [Brian Akins <bakins turner.com>, Ian Holsman]
+
+  *) Add additional SSLSessionCache option, 'nonenotnull', which is
+     similar to 'none' (disabling any external shared cache) but forces
+     OpenSSL to provide a non-null session ID.  [Jim Jagielski]
+
+  *) Add httxt2dbm to support/ for creating RewriteMap DBM Files.
+     [Paul Querna]
+
+  *) Add SSL_COMPRESS_METHOD variable (included in +StdEnvVars) to note
+     the negotiated compression.  [Georg v. Zezschwitz <gvz 2scale.de>]
+
+  *) Fixed complaints about unpackaged files within the RPM build
+     after changes to the config files. [Graham Leggett]
+
+  *) Fix shutdown for the Worker MPM when an Accept Filter is used. Instead of
+     just closing the socket, a HTTP request is made, to make sure the child is
+     always awakened. [Paul Querna]
+
+Changes with Apache 2.1.6
+
+  *) Fix htdbm password validation for records which included comments.
+     [Eric Covener <covener gmail.com>]
+
+  *) mod_cgid: Fix buffer overflow processing ScriptSock directive.
+     [Steve Kemp <steve steve.org.uk>]
+
+Changes with Apache 2.1.5
+
+  *) mod_ssl: Setting the Protocol to 'https' can replace the use of the
+     'SSLEngine on' command. [Paul Querna]
+
+  *) core: Refactor the mapping of Accept Filters to Sockets. Add the
+     AcceptFilter and Protocol directives to aid in mapping filter types.
+     Extend the Listen directive to optionally take a protocol name.
+     [Paul Querna]
+
+  *) mod_disk_cache: Support storing multiple variations of one URL. PR 35211.
+     [Paul Querna]
+
+  *) mod_disk_cache: Atomically create the header data file. [Paul Querna]
+
+  *) mod_cache: Fix 'Vary: *' behavior to be RFC compliant. PR 16125.
+     [Paul Querna]
+
+  *) mod_cache: Rename 'generate_name' to 'ap_cache_generate_name'.
+     [Paul Querna]
+
+  *) mod_mime_magic: Handle CRLF-format magic files so that it works with
+     the default installation on Windows.  [Jeff Trawick]
+
+  *) core: Allow multiple modules to register interest in a single
+     configuration command. [Paul Querna]
+
+  *) authn_provider_alias: Adds the configuration block tag
+     <AuthnProviderAlias baseProvider Alias>
+     Authentication directives contained within this block can be
+     referenced as a new authProvider using the AuthBasicProvider or
+     AuthDigestProvider directive.  These directives will be merged in to
+     the per_dir configuration just before the base provider is called.
+     [Brad Nicholes]
+
+  *) ap_getword_conf: Fix backslashes at the end of configuration directives.
+     PR 34834. [Timo Viipuri <viipuri dlc.fi>]
+
+  *) mod_dbd: New additions: mod_dbd.c, mod_dbd.h, mod_dbd.xml
+     Provide module hooks for apr_dbd; optimise for httpd
+     threaded and non-threaded arch [Nick Kew]
+
+  *) ab: SSL support rewritten, improved, and enabled if SSL is enabled
+     during the build; -f and -Z arguments added to specify SSL protocol
+     options.  [Masaoki Kobayashi <masaoki techfirm.co.jp>]
+
+  *) mod_info: Show the Quick Handler [Paul Querna]
+
+  *) mod_ldap: Add the directive LDAPVerifyServerCert to specify
+     whether to force verification of the server certificate when
+     establishing an SSL connection to the LDAP server.
+     [Brad Nicholes]
+
+  *) mod_proxy: Run mod_rewrite before mod_proxy in the translate_name
+     hook. [Paul Querna]
+
+  *) Add AP_INIT_TAKE_ARGV for configuration commands. (minor MMN bump)
+     [Paul Querna]
+
+  *) ap_get_local_host() rewritten for APR. [Jim Jagielski]
+
+  *) Add the ap_vhost_iterate_given_conn function to expose the information
+     used in Name Based Virtual Hosting. (minor MMN bump)
+     [Paul Querna]
+
+  *) Remove the never working ap_method_list_do and ap_method_list_vdo.
+     [Paul Querna]
+
+  *) Added makefile and doc for building mod_ssl on the NetWare
+     platform. [Guenter Knauf, Brad Nicholes]
+
+  *) mod_deflate: Merge the Vary header, isntead of Setting it. Fixes
+     applications that send the Vary Header themselves, and also apply
+     mod_deflate as an output filter. [Paul Querna]
+
+  *) Change the default (when not present in the config file) setting
+     for UseCanonicalName to Off.
+     [Joshua Slive]
+
+  *) mod_userdir: The module no longer does any remapping unless the
+     UserDir directive is present in the config file.
+     [Joshua Slive]
+
+  *) Massively simplify the distributed httpd.conf by removing
+     many features and many directives that are at their default
+     setting.  Add a selection of example config excerpts for adding
+     extra features in the conf/extra/ directory.  Install the
+     distributed config and the extra config examples in the
+     conf/original/ directory during make install.
+     [Joshua Slive, Justin Erenkrantz]
+
+  *) NetWare: Reposition mod_asis, mod_actions, mod_cgi, mod_imagemap,
+     mod_userdir and mod_autoindex as shared modules rather than
+     built-in modules within the NetWare build.
+     [Brad Nicholes]
+
+  *) Rename mod_imap to mod_imagemap.
+     [Paul Querna]
+
+  *) util_ldap: Eliminate the load ordering of mod_ldap and mod_authnz_ldap
+     by changing the mod_ldap exported functions to optional functions.
+     [Brad Nicholes]
+
+Changes with Apache 2.1.4
+
+  *) Don't let a subrequest inherit headers describing the original request's
+     body.  [Greg Ames]
+
+  *) Fix Windows CompContext buff size miscalculation
+     [Allan Edwards]
+
+  *) Add ReceiveBufferSize directive to control the TCP receive buffer.
+     [Eric Covener <covener gmail.com>]
+
+  *) mod_proxy: Add proxy-sendextracrlf option to send an extra CRLF at the
+     end of the request body to work with really old HTTP servers.
+     [Justin Erenkrantz]
+
+  *) util_ldap: Keep track of the number of attributes retrieved from
+     LDAP so that all the values can be properly cached even if the
+     value is NULL. PR 33901 [Brad Nicholes]
+
+  *) mod_cache: Fix error where incoming Cache-Control would be ignored.
+     [Justin Erenkrantz]
+
+  *) mod_cache: Correctly handle originally conditional requests.
+     [Sander Striker]
+
+  *) mod_disk_cache: Correctly update cached headers on revalidated responses.
+     [Sander Striker, Justin Erenkrantz]
+
+  *) worker MPM/mod_status: Support per-worker tracking of pid and
+     generation in the scoreboard so that mod_status can accurately
+     represent workers in processes which are gracefully terminating.
+     (major MMN bump)
+     [Jeff Trawick]
+
+  *) Correctly export all mod_dav public functions.
+     [Branko Čibej <brane xbc.nu>]
+
+Changes with Apache 2.1.3
+
+  *) mod_ssl: Add ssl_ext_lookup optional function for accessing
+     certificate extensions.   [David Reid, Joe Orton]
+
+  *) Add support for use of an external PCRE library; pass the
+     --with-pcre flag to configure.  PR 27550.  [Joe Orton,
+     Andres Salomon <dilinger voxel.net>]
+
+  *) Renamed regex interfaces to be namespace-safe, and moved from
+     pcreposix.h header to ap_regex.h: regex_t->ap_regex_t,
+     regmatch_t->ap_regmatch_t; REG_*->AP_REG_*; functions
+     reg*->ap_reg*.  PR 27550.  [Andres Salomon <dilinger voxel.net>,
+     Joe Orton]
+
+  *) Only recompile buildmark.c when we have to relink httpd.
+     [Justin Erenkrantz]
+
+  *) mod_cache: Fix up handling of revalidated responses.
+     [Justin Erenkrantz]
+
+  *) mod_disk_cache: Properly load cached ETag from on-disk structures.
+     [Justin Erenkrantz]
+
+  *) mod_authnz_ldap: Added an optional second parameter to AuthLDAPURL
+     to allow it to override the connection type set in mod_ldap. This
+     parameter can be set to NONE, SSL or TLS | STARTTLS.
+     [Brad Nicholes]
+
+  *) Fix --with-apr=/usr and/or --with-apr-util=/usr.  PR 29740.
+     [Max Bowsher <maxb ukf.net>]
+
+  *) mod_proxy: Fix ProxyRemoteMatch directive.  PR 33170.
+     [Rici Lake <rici ricilake.net>]
+
+  *) mod_proxy: Fix ap_proxy_canonenc API.
+     PR 32459. [Jim Jagielski]
+
+  *) mod_cache: Add CacheStorePrivate and CacheStoreNoStore directive.
+     [Justin Erenkrantz]
+
+  *) Add --enable-pie flag to configure, to build httpd as a Position
+     Independent Executable where supported (GCC/binutils).
+     [Joe Orton]
+
+  *) proxy_balancer: Add in load-balancing via weighted traffic
+     byte count. [Jim Jagielski]
+
+  *) mod_disk_cache: Cache r->err_headers_out headers.  This allows CGI
+     scripts to be properly cached.  [Justin Erenkrantz, Sander Striker]
+
+  *) mod_ldap: Updated to use the new apr-util v1.1 apr_ldap_*_option()
+     API for the setting of server and client SSL certificates. Replaced
+     LDAPTrustedCA directive with LDAPTrustedGlobalCert and
+     LDAPTrustedClientCert directives to correctly support global certs
+     (CA certs / Netware client certs) and per connection client certs
+     as supported by Netware, OpenLDAP and Netscape/Mozilla.
+     [Graham Leggett]
+
+  *) mod_cache: Remove unimplemented CacheForceCompletion directive.
+     [Justin Erenkrantz]
+
+  *) support/check_forensic: Fix temp file usage
+     [Javier Fernandez-Sanguino Pen~a <jfs computer.org>]
+
+  *) mod_ssl: Add SSLCADNRequestFile and SSLCADNRequestPath directives
+     which can be used to configure a specific list of CA names to send
+     in a client certificate request.  PR 32848.
+     [Tim Taylor <tim.taylor dfas.mil>]
+
+  *) --with-module can now take more than one module to be statically
+     linked: --with-module=<modtype>:<modfile>,<modtype>:<modfile>,...
+     If the <modtype>-subdirectory doesn't exist it will be created and
+     populated with a standard Makefile.in.  [Erik Abele]
+
+  *) Remove some compiler warnings within the LDAP modules [Graham Leggett]
+
+  *) Add a build script to create a solaris package. [Graham Leggett]
+
+  *) ap_http_scheme() replaced with ap_http_method() - this function
+     returns the scheme (http v.s. https).
+     [William Rowe]
+
+  *) mod_proxy: Fix a request corruption problem and a buffering problem
+     which sometimes prevented proxy-sendchunks from working.
+     [Jeff Trawick]
+
+  *) Fix the RPM spec file so that an RPM build now works. An RPM
+     build now requires system installations of APR and APR-util.
+     [Graham Leggett]
+
+  *) Significantly simplify the load balancer scheduling algorithm
+     for the proxy BalancerMember weighting. loadfactors (lbfactors)
+     are now normalized with respect to each other. [Jim Jagielski]
+
+  *) mod_dumpio: Added to the available module suite; it is an
+     I/O logging/dumping module. Placed in the (new) debug module
+     subdirectory. mod_bucketeer moved to that directory as well.
+     [Jim Jagielski]
+
+  *) core: Add support for APR_TCP_DEFER_ACCEPT to defer accepting
+     of a connection until data is available.
+     [Paul Querna]
+
+Changes with Apache 2.1.2
+
+  *) mod_proxy: Respect errors reported by pre_connection hooks.
+     [Jeff Trawick]
+
+  *) core: Error out on sections that are missing an argument instead of
+     silently consuming the section. PR 25460.
+     [Geoffrey Young, Paul Querna]
+
+  *) mod_cache/mod_mem_cache/mod_disk_cache: Move out of experimental.
+
+  *) Upgraded PCRE to version 5.0. [Brian Pane]
+
+  *) mod_cgid: Catch configuration problem where two web server instances
+     share same ServerRoot but admin forgot to use ScriptSock.
+     [Jeff Trawick]
+
+  *) mod_cgi: Ensure that all stderr is logged for a script which returns
+     a Location header to generate a non-local redirect.  PR 20111.
+     [Joe Orton]
+
+  *) Added the Event MPM to more efficiently handle clients during a
+     Keep Alive request.
+     [Paul Querna, Greg Ames]
+
+Changes with Apache 2.1.1
+
+  *) mod_proxy_http: Stream content better - always flush buffered data to
+     the client before blocking waiting for new data.  PR 19954.
+     [Joe Orton]
+
+  *) mod_ssl: Add support for command-line option "-t -DDUMP_CERTS" which
+     will dump the filenames of all configured SSL certificates to stdout.
+     [Joe Orton]
+
+  *) mod_disk_cache: Remove a bunch of non-implemented garbage collection
+     and cache size directives that are now available through htcacheclean.
+     [Justin Erenkrantz]
+
+  *) Add htcacheclean to support/ for assistance with mod_disk_cache.
+     [Andreas Steinmetz]
+
+  *) mod_authnz_ldap: Added the directive "Requires ldap-filter" that
+     allows the module to authorize a user based on a complex LDAP
+     search filter.  [Brad Nicholes]
+
+  *) mod_usertrack: Run the fixups hook before other modules.
+     PR 29755.  [Paul Querna]
+
+  *) Allow mod_authnz_ldap authorization functionality to be used
+     without requiring the user to also be authenticated through
+     mod_authnz_ldap. This allows other authentication modules to
+     take advantage of LDAP authorization only [PR 28253]
+     [Jari Ahonen jah progress.com, Brad Nicholes]
+
+  *) Log the client IP address when an error occurs disabling nagle on a
+     connection, but log at a severity of debug since this error
+     generally means that the connection was dropped before data was
+     sent.  Log the client IP address when reporting errors in the core
+     output filter.  [Jeff Trawick]
+
+  *) core: Add a warning message if the request line read fails.
+     [Paul Querna]
+
+  *) mod_rewrite: Removed the MaxRedirects option in favor of the
+     core LimitInternalRecursion directive.  [André Malo]
+
+  *) mod_info: Added listing of the Request Hooks and added more build
+     information like 'httpd -V' contains. Changed output to XHTML.
+     [Paul Querna]
+
+  *) mod_info: Rewrote config tree walk using a recursive function.
+     Added ?config option. Added printout of config filename and line numbers.
+     [Rici Lake <rici ricilake.net>, Paul Querna]
+
+  *) mod_proxy: Fix type error that prevents proxy-sendchunks from working.
+     [Justin Erenkrantz]
+
+  *) mod_proxy: Fix data corruption by properly setting aside buckets.
+     [Justin Erenkrantz]
+
+  *) mod_proxy: If a request has a blank body and has a 0 Content-Length
+     headers, pass that to the proxy.  [Justin Erenkrantz]
+
+  *) Recognize QSA flag in mod_rewrite again.
+     [Jan Kratochvil <rcpt-dev.AT.httpd.apache.org jankratochvil.net>]
+
+  *) Restructured mod_auth_ldap to fit the new authentication model.
+     The module is now called authnz_ldap and has been moved out of
+     the modules/experimental area and into modules/aaa with the other
+     auth modules.  Both the authn_ldap provider and the authz_ldap
+     handler are contained within the authnz_ldap module.  The
+     authz_ldap handler introduces 3 new "requires" values for handling
+     authorization.  These handlers are ldap-user, ldap-group and
+     ldap-dn. [Brad Nicholes]
+
+  *) Fix some compiler warnings in proxy
+     [Geoffrey Young <geoff@modperlcookbook.org>]
+
+  *) mod_ssl: Add SSL_CLIENT_V_REMAIN variable, representing the
+     number of days until the client cert expires.  [Joe Orton]
+
+  *) Add test_config hook, run only if httpd is invoked using -t.
+     [Joe Orton]
+
+  *) Improve error handling for corrupted pid files.  [Jeff Trawick]
+
+  *) mod_proxy.c and proxy_util.c: Enable compiling on 2.0-HEAD
+     (for backwards compatibility):
+     Avoids mod_ssl.h (not included in 2.0-HEAD) and
+     use apr_socket_create_ex for 0.9.x
+     [Mladen Turk]
+
+  *) Added proxy_ajp.c module for proxy support to ajp:// backends.
+     [Jean Frederic Clere]
+
+  *) Fixes the build of proxy on Windows. Since the proxy_module is declared
+     as extern using AP_MODULE_DECLARE_DATA that expands to dllexport, there
+     is a LNK2001 error when building proxy_http. [Mladen Turk]
+
+  *) Remove LDAP toolkit specific code from util_ldap and mod_auth_ldap.
+     [Graham Leggett]
+
+  *) Remove deprecated/removed APR_STATUS_IS_SUCCESS().  [Justin Erenkrantz]
+
+  *) perchild MPM: Fix thread safety problem in the use of longjmp().
+     [Tsuyoshi SASAMOTO <nazonazo super.win.ne.jp>]
+
+  *) Add load balancer support to the scoreboard in preparation for
+     load balancing support in mod_proxy. [Mladen Turk]
+
+  *) mod_nw_ssl: Added the directive NWSSLUpgradeable to mod_nw_ssl to
+     allow a non-secure connection to be upgraded to secure connections
+     [Brad Nicholes]
+
+  *) core: Add Options= syntax to AllowOverride to specify which options
+     may be overridden in .htaccess files. PR 29310.
+     [Tom Alsberg <alsbergt cs.huji.ac.il>, Paul Querna]
+
+  *) ab: Handle long URLs with an error instead of an buffer overflow.
+     PR 28204. [Erik Weide <erik.weidel mplus-technologies.de>, Paul Querna]
+
+  *) mod_so, core: Add new command line options to print all loaded
+     modules. '-t -D DUMP_MODULES' and '-M' will show all static
+     and shared modules as loaded from the configuration file.
+     [Paul Querna]
+
+  *) mod_autoindex: Add ShowForbidden to IndexOptions to list files
+     that are not shown because the subrequest returned 401 or 403.
+     PR 10575.  [Paul Querna]
+
+  *) mod_headers: implement "Early" processing option in post_read_request
+     to enable Header and RequestHeader directives to be used to set up
+     testcases for pre-fixups request phases [Nick Kew]
+
+  *) mod_proxy: multiple bugfixes, principally support cookies in
+     ProxyPassReverse, and don't canonicalise URL passed to backend.
+     Documentation correspondingly updated. [Nick Kew <nick webthing.com>]
+
+  *) mod_deflate: support gzip flags in inflate_out_filter
+     [Nick Kew <nick webthing.com>]
+
+  *) Drop the ErrorHeader directive which turned out to be a misnomer.
+     Instead there's a new optional flag for the Header directive
+     ('always'), which keeps the former ErrorHeader functionality.
+     [André Malo]
+
+  *) mod_deflate: Don't deflate responses with zero length
+     e.g. proxied 304's [Allan Edwards]
+
+  *) <IfModule> now recognizes the module identifier in addition to the
+     file name. PR 29003.  [Edward Rudd <eddie omegaware.com>, André Malo]
+
+  *) mod_ssl: Add "SSLHonorCipherOrder" directive to enable the
+     OpenSSL 0.9.7 flag which uses the server's cipher order rather
+     than the client's.  PR 28665.
+     [Jim Schneider <jschneid netilla.com>]
+
+  *) mod_ssl: Drop support for the CompatEnvVars argument to
+     SSLOptions, which was never actually implemented in 2.0.
+     [Joe Orton]
+
+  *) Fix bug in mod_deflate that unconditionally sent deflate'd output
+     even when Accept-Encoding is not present.  [Justin Erenkrantz]
+
+  *) Pass environment variables through to piped loggers and start
+     them via the shell, resolving regressions since 1.3.  PR 28815
+     [Ken Coar, Jeff Trawick]
+
+  *) External rewrite map responses are no longer limited to 2048
+     bytes.  [André Malo]
+
+  *) Proxy server was deleting cookies that Apache had already
+     assigned if the origin server had set any cookies. PR 27023.
+     [Jim Jagielski]
+
+  *) Removed old and unmaintained ap_add_named_module API and changed
+     the following APIs to return an error instead of hard exiting:
+     ap_add_module, ap_add_loaded_module, ap_setup_prelinked_modules,
+     and ap_process_resource_config.  [André Malo]
+
+  *) mod_headers: Allow %% in header values to represent a literal %.
+     [André Malo]
+
+  *) mod_headers: Allow env clauses also for 'echo' and 'unset' actions.
+     [André Malo]
+
+  *) mod_headers: Allow 'echo' also for ErrorHeaders.  [André Malo]
+
+  *) mod_deflate: New option for DEFLATE output file (force-gzip),
+     new output filter 'INFLATE' for uncompressing responses.
+     [Nick Kew <Nick at WebThing dot com>, Ian Holsman]
+
+  *) Added new module mod_version, which provides version dependent
+     configuration containers.  [André Malo]
+
+  *) mod_log_config now logs all Set-Cookie headers if the %{Set-Cookie}o
+     format is used.  PR 27787.  [André Malo]
+
+  *) Allow Digest providers to return AUTH_DENIED to propagate a 401
+     status and terminate the provider chain prior to checking the password.
+     [Geoffrey Young]
+
+  *) mod_cgid: Don't allow Scriptsock to be specified inside VirtualHost;
+     Don't place script socket inside default server root instead of
+     actual server root.  PR 27886.  [Jeff Trawick]
+
+  *) mod_proxy: Fix handling of non-200 success status codes when
+     "ProxyErrorOverride On" is configured.  PR 20183.
+     [Marcus Janson <marcus.janson tre.se>, Joe Orton]
+
+  *) Threaded MPMs for Unix and Win32: Add support for ThreadStackSize
+     directive (previously NetWare-only) to override default thread
+     stack size for threads which handle client connections.  Required
+     for some third-party modules on platforms with small default
+     thread stack size.  [Jeff Trawick]
+
+  *) minor mod_auth_basic and mod_auth_digest sync.  mod_auth_basic
+     now populates r->user with the (possibly unauthenticated) user,
+     and mod_auth_digest returns 500 when a provider returns
+     AUTH_GENERAL_ERROR.
+     [Geoffrey Young]
+
+  *) The whole codebase was relicensed and is now available under
+     the Apache License, Version 2.0 (http://www.apache.org/licenses).
+     [Apache Software Foundation]
+
+  *) Delete some make-generated files in the server directory during
+     "make clean" processing.  PR 26552.  [Jeff Trawick]
+
+  *) Add core version query function (ap_get_server_revision) and
+     accompanying ap_version_t structure (minor MMN bump).
+     [André Malo]
+
+  *) mod_rewrite: EOLs sent by external rewritemaps are now consumed
+     as whole. That way, on systems with more than one EOL character
+     rewritemap programs no longer need to switch stdout to binary
+     mode. PR 25635.  [André Malo]
+
+  *) mod_rewrite: Introduce the ability to force a content handler via
+     the [handler=...] flag.  [André Malo]
+
+  *) mod_rewrite: Introduce the RewriteCond -x check, which returns
+     true if the pattern is a file with execution permissions.
+     [André Malo]
+
+  *) mod_rewrite: Allow proxying and RewriteRules in directory context
+     for subrequests.  PR 14648, 15114.  [André Malo]
+
+  *) mod_rewrite: Allow setting of any valid HTTP response code.
+     PR 25917.  [André Malo]
+
+  *) mod_rewrite: Cookie creation now works locale independent.
+     [André Malo]
+
+  *) mod_ssl: Add support for distributed session cache using 'distcache'.
+     [Geoff Thorpe <geoff geoffthorpe.net>]
+
+  *) mod_dav: Disallow requests with an unescaped hash character in
+     the Request-URI.  PR 21779.  [Amit Athavale <amit_athavale lycos.com>]
+
+  *) mod_proxy with ProxyErrorOverride On in a reverse-proxy configuration
+     attaches a body to the 302 response and a wrong Content-Length header.
+     PR: 22951 [Ermanno Scaglione scaglione ..at.. starnetone.de]
+
+  *) Bring ErrorHeader concept forward from 1.3, so that response
+     header fields can be set for return even on errors or external
+     redirects.  [Ken Coar]
+
+  *) Fix <Limit> and <LimitExcept> parsing to require a closing '>'
+     in the initial container.  PR 25414.
+     [Geoffrey Young <geoff apache.org>]
+
+  *) Clean up httpd -V output: Instead of displaying the MPM source
+     directory, display the MPM name and some MPM properties.
+     [Geoffrey Young <geoff apache.org>]
+
+  *) mod_ssl/mod_status: Re-enable support for output of SSL session
+     cache information in server-status page.  [Joe Orton]
+
+  *) mod_ssl: Remove the shmht session cache, shmcb should be used
+     instead.  [Joe Orton]
+
+  *) mod_logio: Account for some bytes handed to the network layer prior to
+     dropped connections.  [Jeff Trawick]
+
+  *) mod_autoindex: new directive IndexStyleSheet
+    [Tyler Riddle <triddle_1999 yahoo.com>, Paul Querna <chip force-elite.com>]
+
+  *) Fix uninitialized gprof directory name in prefork MPM.  PR 24450.
+     [Chris Knight <Christopher.D.Knight nasa.gov>]
+
+  *) Log an error when requests for URIs which fail to map to a valid
+     filesystem name are rejected with 403.  [Jeff Trawick]
+
+  *) Switch to APR 1.0 API.
+
+  *) Major overhaul of mod_include's filter parser. The new parser code
+     is expected to be more robust and should catch all of the edge cases
+     that were not handled by the previous one. This includes a binary
+     incompatible change of mod_include's external API.  [André Malo]
+
+  *) mod_rewrite: Allow forced mimetypes [T=...] to get expanded.
+     PR 14223.  [André Malo]
+
+  *) mod_rewrite: Fix LA-U and LA-F lookups in directory context. Previously
+     the current rewrite state was just used as lookup path, which lead to
+     strange and often useless results. Related to PR 8493.  [André Malo]
+
+  *) Change Listen directive to bind to all addresses when a hostname is
+     not specified.  [Justin Erenkrantz]
+
+  *) Correct failure with Listen directives on machines with IPv6 enabled.
+     [Colm MacCárthaigh <colm stdlib.net>, Justin Erenkrantz]
+
+  *) Fix a link failure in mod_ssl when the OpenSSL libraries contain
+     the ENGINE functions but the engine header files are missing.
+     [Cliff Woolley]
+
+  *) mod_rewrite: RewriteRules in server context using the force
+     type feature [T=...] no longer disable MultiViews.  [André Malo]
+
+  *) mod_rewrite: Allow piped rewrite logs to be relative to ServerRoot.
+     [André Malo]
+
+  *) mod_authz_groupfile: Strip trailing spaces of group names. This
+     hopefully saves some hours of searching for typos. PR 12863.
+     [André Malo]
+
+  *) mod_actions: Propagate the handler name to the action script via
+     the REDIRECT_HANDLER environment variable.  [André Malo]
+
+  *) mod_actions: Introduce the "virtual" modifier to the Action directive,
+     which allows the use of handlers for virtual locations. PR 8431.
+     [André Malo]
+
+  *) mod_speling: Recognize AcceptPathInfo setting for the particular
+     location. Default is to reject path information. PR 21059.
+     [André Malo]
+
+  *) mod_ext_filter: Add the ability to filter request bodies.
+     [Philipp Reisner <philipp.reisner linbit.com>]
+
+  *) Fix some broken log messages in WinNT MPM.
+     [Juan Rivera <Juan.Rivera citrix.com>]
+
+  *) prefork MPM: Use the right permissions for the directory created
+     for gprof support.  [Jim Carlson <jcarlson jnous.com>]
+
+  *) Fix a compile failure with recent OpenSSL and picky compilers
+     (e.g., OpenSSL 0.9.7a and xlc_r on AIX).  [Jeff Trawick]
+
+  *) OpenSSL headers should be included as "openssl/ssl.h", and not rely on
+     the INCLUDE path to be defined properly.
+     PR 11310. [Geoff Thorpe <geoff geoffthorpe.net>]
+
+  *) Modify APACHE_CHECK_SSL_TOOLKIT to detect SSL-C. [Madhusudan Mathihalli]
+
+  *) Replace the APACHE_CHECK_SSL_TOOLKIT method with a cleaner one, using
+     autoconf tools (AC_CHECK_HEADER, AC_CHECK_LIB etc).
+     [Geoff Thorpe <geoff geoffthorpe.net>]
+
+  *) change directive name from 'compressionlevel' to 'deflatecompressionlevel'
+     [Ian Holsman, André Malo]
+
+  *) mod_negotiation: quality values are now parsed independent from
+     the current locale. level values are now really parsed as integers.
+     PR 17564.  [André Malo]
+
+  *) Extend mod_negotiation to evaluate the environment variables
+     no-gzip and gzip-only-text/html the same way as mod_deflate does.
+     [André Malo]
+
+  *) mod_rewrite: Fix some problems reporting errors with mapping
+     programs (RewriteMap prg:/something).  [Jeff Trawick]
+
+  *) Return 413 if chunk-ext-header is too long rather than reading from
+     the truncated line.  PR 15857.  [Justin Erenkrantz]
+
+  *) Allow restart of httpd to occur even with syntax errors in the config
+     file.  PR 16813.  [Justin Erenkrantz]
+
+  *) Use APR_LAYOUT instead of APACHE_LAYOUT in configure.  PR 15679.
+     [Justin Erenkrantz]
+
+  *) Remove files on 'make distclean' that should be.  PR 15592.
+     [Justin Erenkrantz]
+
+  *) Allow apachectl to perform status with links and elinks as well.
+     [Justin Erenkrantz]
+
+  *) mod_log_config change optional hook to return previous handler
+     [Ian Holsman]
+
+  *) Forward port of mod_actions' ability to handle arbitrary methods
+     with the Script directive.  [André Malo]
+
+  *) Let suexec send a message to stderr, if it failed or its policy
+     was violated. This message appears in the error log and allows
+     for easier debugging. PR 5381, 7638, 8255, 10773.  [André Malo]
+
+  *) Modify buildconf to copy all required files into httpd's tree.
+     [Thom May <thom planetarytramp.net>]
+
+  *) Allow mod_dav to do weak entity comparison functions.
+     [Justin Erenkrantz]
+
+  *) Move RFC 1413 ident requests from core to new module mod_ident.
+     [André Malo]
+
+  *) Add mod_authz_owner - a forward port of "Require file-owner"
+     and "Require file-group", which was already present in version
+     1.3.21.  [André Malo]
+
+  *) Add mod_dav_lock - a generic subset of the DAV locking implementation.
+     [Justin Erenkrantz]
+
+  *) Replace some of the mutex locking in the worker MPM with
+     atomic operations for higher concurrency.  [Brian Pane]
+
+  *) Allow 'make depend' to work with non-GCC compilers.
+     [Justin Erenkrantz]
+
+  *) If an httpd.conf has commented out AddModule directives,
+     apxs -i -a will add an un-commented AddModule directive for
+     the new module, which breaks the config.
+     PR: 11212 [Joe Orton]
+
+  *) Fix mod_proxy handling of filtered input bodies.  [Justin Erenkrantz]
+
+  *) Move the check of the Expect request header field after the hook
+     for ap_post_read_request, since that is the only opportunity for
+     modules to handle Expect extensions.  [Justin Erenkrantz]
+
+  *) Rewrite of aaa modules to an authn/authz model.
+     [Dirk-Willem van Gulik, Justin Erenkrantz]
+
+  [Apache 2.1.0-dev includes those bug fixes and changes with the
+   Apache 2.0.xx tree as documented, and except as noted, below.]
+
+Changes with Apache 2.0.x and later:
+
+  *) http://svn.apache.org/viewvc/httpd/httpd/branches/2.0.x/CHANGES?view=markup

@@ -1,0 +1,176 @@
+{% from 'templates/macros.tmpl' import license, source_files_for_generated_file %}
+{% from 'core/css/properties/templates/style_builder_functions.tmpl' import set_value, convert_and_set_value %}
+
+{#
+    This file is for property handlers which use the templating engine to
+    reduce (handwritten) code duplication.
+
+    The `properties' dict can be used to access a property's parameters in
+    jinja2 templates (i.e. setter, getter, initial, type_name)
+
+    TODO(meade): Delete this file once all StyleBuilderFunction generation
+    is moved to the CSSProperty.
+#}
+
+{{source_files_for_generated_file(template_file, input_files)}}
+
+#include "third_party/blink/renderer/core/style_builder_functions.h"
+
+#include "third_party/blink/renderer/core/animation/css/css_animation_data.h"
+#include "third_party/blink/renderer/core/css/basic_shape_functions.h"
+#include "third_party/blink/renderer/core/css/css_content_distribution_value.h"
+#include "third_party/blink/renderer/core/css/css_custom_ident_value.h"
+#include "third_party/blink/renderer/core/css/css_primitive_value_mappings.h"
+#include "third_party/blink/renderer/core/css/css_uri_value.h"
+#include "third_party/blink/renderer/core/css/css_value_pair.h"
+#include "third_party/blink/renderer/core/css/resolver/style_resolver_state.h"
+#include "third_party/blink/renderer/core/css_value_keywords.h"
+#include "third_party/blink/renderer/core/style/computed_style.h"
+
+{% macro declare_initial_function(property_id) %}
+void StyleBuilderFunctions::applyInitial{{property_id}}(StyleResolverState& state)
+{%- endmacro %}
+{% macro declare_inherit_function(property_id) %}
+void StyleBuilderFunctions::applyInherit{{property_id}}(StyleResolverState& state)
+{%- endmacro %}
+{% macro declare_value_function(property_id) %}
+void StyleBuilderFunctions::applyValue{{property_id}}(StyleResolverState& state, const CSSValue& value)
+{%- endmacro %}
+{% macro set_is_inherited(property) %}
+state.Style()->{{property.is_inherited_setter}}
+{%- endmacro %}
+
+namespace blink {
+
+{% for property in properties if property.should_declare_functions
+    and not property.use_property_class_in_stylebuilder
+    and not property.style_builder_template %}
+{% if property.style_builder_generate_initial %}
+{{declare_initial_function(property.property_id)}} {
+  {% if property.svg %}
+  {{set_value(property)}}(SVGComputedStyle::{{property.initial}}());
+  {% elif property.font %}
+  {{set_value(property)}}(FontBuilder::{{property.initial}}());
+  {% else %}
+  {{set_value(property)}}(ComputedStyleInitialValues::{{property.initial}}());
+  {% endif %}
+  {% if property.independent %}
+  {{set_is_inherited(property)}}(false);
+  {% endif %}
+}
+
+{% endif %}
+{% if property.style_builder_generate_inherit %}
+{{declare_inherit_function(property.property_id)}} {
+  {% if property.svg %}
+  {{set_value(property)}}(state.ParentStyle()->SvgStyle().{{property.getter}}());
+  {% elif property.font %}
+  {{set_value(property)}}(state.ParentFontDescription().{{property.getter}}());
+  {% else %}
+  {{set_value(property)}}(state.ParentStyle()->{{property.getter}}());
+  {% endif %}
+  {% if property.independent %}
+  {{set_is_inherited(property)}}(true);
+  {% endif %}
+}
+
+{% endif %}
+{% if property.style_builder_generate_value %}
+{{declare_value_function(property.property_id)}} {
+  {{convert_and_set_value(property)}}
+  {% if property.independent %}
+  {{set_is_inherited(property)}}(false);
+  {% endif %}
+}
+
+{% endif %}
+{% endfor %}
+
+{% macro apply_grid_template(property_id, type) %}
+{{declare_initial_function(property_id)}} {
+  state.Style()->SetGridTemplate{{type}}s(ComputedStyleInitialValues::InitialGridTemplate{{type}}s());
+  state.Style()->SetNamedGrid{{type}}Lines(ComputedStyleInitialValues::InitialNamedGrid{{type}}Lines());
+  state.Style()->SetOrderedNamedGrid{{type}}Lines(ComputedStyleInitialValues::InitialOrderedNamedGrid{{type}}Lines());
+  state.Style()->SetGridAutoRepeat{{type}}s(ComputedStyleInitialValues::InitialGridAutoRepeat{{type}}s());
+  state.Style()->SetGridAutoRepeat{{type}}sInsertionPoint(ComputedStyleInitialValues::InitialGridAutoRepeat{{type}}sInsertionPoint());
+  state.Style()->SetAutoRepeatNamedGrid{{type}}Lines(ComputedStyleInitialValues::InitialNamedGrid{{type}}Lines());
+  state.Style()->SetAutoRepeatOrderedNamedGrid{{type}}Lines(ComputedStyleInitialValues::InitialOrderedNamedGrid{{type}}Lines());
+  state.Style()->SetGridAutoRepeat{{type}}sType(ComputedStyleInitialValues::InitialGridAutoRepeat{{type}}sType());
+
+}
+
+{{declare_inherit_function(property_id)}} {
+  state.Style()->SetGridTemplate{{type}}s(state.ParentStyle()->GridTemplate{{type}}s());
+  state.Style()->SetNamedGrid{{type}}Lines(state.ParentStyle()->NamedGrid{{type}}Lines());
+  state.Style()->SetOrderedNamedGrid{{type}}Lines(state.ParentStyle()->OrderedNamedGrid{{type}}Lines());
+  state.Style()->SetGridAutoRepeat{{type}}s(state.ParentStyle()->GridAutoRepeat{{type}}s());
+  state.Style()->SetGridAutoRepeat{{type}}sInsertionPoint(state.ParentStyle()->GridAutoRepeat{{type}}sInsertionPoint());
+  state.Style()->SetAutoRepeatNamedGrid{{type}}Lines(state.ParentStyle()->AutoRepeatNamedGrid{{type}}Lines());
+  state.Style()->SetAutoRepeatOrderedNamedGrid{{type}}Lines(state.ParentStyle()->AutoRepeatOrderedNamedGrid{{type}}Lines());
+  state.Style()->SetGridAutoRepeat{{type}}sType(state.ParentStyle()->GridAutoRepeat{{type}}sType());
+}
+
+{{declare_value_function(property_id)}} {
+  Vector<GridTrackSize> trackSizes;
+  Vector<GridTrackSize> autoRepeatTrackSizes;
+  NamedGridLinesMap namedGridLines;
+  OrderedNamedGridLines orderedNamedGridLines;
+  NamedGridLinesMap autoRepeatNamedGridLines;
+  OrderedNamedGridLines autoRepeatOrderedNamedGridLines;
+  AutoRepeatType autoRepeatType = ComputedStyleInitialValues::InitialGridAutoRepeatType();
+  size_t autoRepeatInsertionPoint =
+      ComputedStyleInitialValues::InitialGridAutoRepeatInsertionPoint();
+  StyleBuilderConverter::ConvertGridTrackList(
+      value, trackSizes, namedGridLines, orderedNamedGridLines,
+      autoRepeatTrackSizes, autoRepeatNamedGridLines,
+      autoRepeatOrderedNamedGridLines, autoRepeatInsertionPoint,
+      autoRepeatType, state);
+  const NamedGridAreaMap& namedGridAreas = state.Style()->NamedGridArea();
+  if (!namedGridAreas.IsEmpty()) {
+    StyleBuilderConverter::CreateImplicitNamedGridLinesFromGridArea(
+        namedGridAreas, namedGridLines, kFor{{type}}s);
+  }
+  state.Style()->SetGridTemplate{{type}}s(trackSizes);
+  state.Style()->SetNamedGrid{{type}}Lines(namedGridLines);
+  state.Style()->SetOrderedNamedGrid{{type}}Lines(orderedNamedGridLines);
+  state.Style()->SetGridAutoRepeat{{type}}s(autoRepeatTrackSizes);
+  state.Style()->SetGridAutoRepeat{{type}}sInsertionPoint(
+      autoRepeatInsertionPoint);
+  state.Style()->SetAutoRepeatNamedGrid{{type}}Lines(autoRepeatNamedGridLines);
+  state.Style()->SetAutoRepeatOrderedNamedGrid{{type}}Lines(
+      autoRepeatOrderedNamedGridLines);
+  state.Style()->SetGridAutoRepeat{{type}}sType(autoRepeatType);
+}
+{% endmacro %}
+{{apply_grid_template('CSSPropertyGridTemplateColumns', 'Column')}}
+{{apply_grid_template('CSSPropertyGridTemplateRows', 'Row')}}
+
+{% macro apply_svg_paint(property_id, paint_type) %}
+{% set property = properties_by_id[property_id] %}
+{% set visited_link_setter = 'SetVisitedLink' + paint_type %}
+{{declare_initial_function(property_id)}} {
+  if (state.ApplyPropertyToRegularStyle())
+    {{set_value(property)}}(SVGComputedStyle::Initial{{paint_type}}());
+  if (state.ApplyPropertyToVisitedLinkStyle())
+    state.Style()->AccessSVGStyle().{{visited_link_setter}}(SVGComputedStyle::Initial{{paint_type}}());
+}
+
+{{declare_inherit_function(property_id)}} {
+  const SVGComputedStyle& parent_svg_style = state.ParentStyle()->SvgStyle();
+  if (state.ApplyPropertyToRegularStyle())
+    {{set_value(property)}}(parent_svg_style.{{paint_type}}());
+  if (state.ApplyPropertyToVisitedLinkStyle())
+    state.Style()->AccessSVGStyle().{{visited_link_setter}}(parent_svg_style.{{paint_type}}());
+}
+
+{{declare_value_function(property_id)}} {
+  SVGPaint paint = StyleBuilderConverter::ConvertSVGPaint(state, value);
+  if (state.ApplyPropertyToRegularStyle())
+    {{set_value(property)}}(paint);
+  if (state.ApplyPropertyToVisitedLinkStyle())
+    state.Style()->AccessSVGStyle().{{visited_link_setter}}(paint);
+}
+{% endmacro %}
+{{apply_svg_paint('CSSPropertyFill', 'FillPaint')}}
+{{apply_svg_paint('CSSPropertyStroke', 'StrokePaint')}}
+} // namespace blink

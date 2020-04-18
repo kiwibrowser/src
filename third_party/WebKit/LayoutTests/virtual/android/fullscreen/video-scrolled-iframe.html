@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<script>
+    runPixelTests = true;
+</script>
+<script src="../../../fullscreen/full-screen-test.js"></script>
+<script>
+    var initialized = false;
+    window.onmessage = function(messageEvent) {
+        if (!initialized) {
+             window.scrollTo(0, 100);
+            // video has been loaded and messaged us.
+            // Send click to iframe (not the center since this will hit the overlay play button).
+            iframe = document.getElementById("frame");
+            x = iframe.offsetLeft + 10;
+            y = iframe.offsetTop + 10;
+            if (window.eventSender) {
+                eventSender.mouseMoveTo(x, y);
+                eventSender.mouseDown();
+                eventSender.mouseUp();
+            }
+            initialized = true;
+        } else {
+            consoleWrite(messageEvent.data);
+            endTest();
+        }
+    }
+</script>
+<iframe id="frame" src="../../../fullscreen/resources/video.html" width="320" height="240" allowfullscreen></iframe>
+<div style="height:1000px">Video inside iframe should be positioned correctly in overlay fullscreen mode.</div>

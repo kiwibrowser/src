@@ -1,0 +1,53 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+</head>
+<body>
+<script>
+
+const limit = 10;
+
+function waitAndGc() {
+  return new Promise(function(resolve, reject) {
+    setTimeout(function() {
+      gc();
+      resolve();
+    }, 0);
+  });
+}
+
+promise_test(function(t) {
+  const baseline = internals.peerConnectionCount();
+  let pc;
+  for (let count = 0; count < limit; count++) {
+    pc = new RTCPeerConnection();
+    pc.close();
+  }
+  return waitAndGc().then(function() {
+    // All the non-referenced PCs should now be collected.
+    assert_equals(internals.peerConnectionCount(), baseline + 1);
+    pc = null;
+    return waitAndGc();
+  }).then(function() {
+    gc();
+    assert_equals(internals.peerConnectionCount(), baseline);
+  });
+}, 'Closed Peerconnections are garbage collected');
+
+
+promise_test(function(t) {
+  const baseline = internals.peerConnectionCount();
+  for (let count = 0; count < limit; count++) {
+    pc = new RTCPeerConnection();
+  }
+  pc = null;
+  return waitAndGc().then(function() {
+    assert_equals(baseline + limit, internals.peerConnectionCount());
+  });
+}, 'Non-closed Peerconnections are NOT garbage collected');
+
+</script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<body>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script>
+const modifiers = /\bMac OS X\b/.test(navigator.userAgent) ? ["ctrlKey", "altKey"] : ["altKey"];
+
+function pressKey(key) {
+  eventSender.keyDown(key, modifiers);
+}
+
+const tagNames = [
+  "a", "abbr", "acronym", "address", "area", "article", "aside", "audio",
+  "b", "base", "basefont", "bdo", "bgsound", "big", "blockquote", "body", "br",
+  "canvas", "caption", "center", "cite", "code", "col", "colgroup", "datalist",
+  "dd", "del", "details", "dfn", "dir", "div", "dl", "dt",
+  "em", "embed", "fieldset", "figcaption", "figure", "font", "footer", "form",
+  "frame", "frameset",
+  "h1", "h2", "h3", "h4", "h5", "h6", "head", "header", "hgroup","hr","html",
+  "i", "iframe", "img", "ins", "kbd", "label", "layer", "li", "link", "listing",
+  "main", "map", "mark", "marquee", "menu", "meta", "meter",
+  "nav", "nobr", "noembed", "noframes", "nolayer", "noscript",
+  "object", "ol", "output", "p", "param", "plaintext", "pre", "progress", "q",
+  "rp", "rt", "ruby", "s", "samp", "script", "section", "small", "source",
+  "span", "strike", "strong", "style", "sub", "summary", "sup",
+  "table", "tbody", "td", "tfoot", "th", "thead", "title", "tr", "track", "tt",
+  "u", "ul", "var", "video", "wbr", "xmp"];
+
+tagNames.forEach((name) => {
+  test(() => {
+    var testElement = document.createElement(name);
+    document.body.appendChild(testElement);
+    var clicked = false;
+    testElement.onclick = () => { clicked = true; }
+    var focused = false;
+    testElement.onfocus = () => { focused = true; }
+
+    assert_not_equals(testElement.accessKey, undefined);
+
+    testElement.accessKey = "k";
+    assert_equals(testElement.accessKey, "k");
+
+    pressKey(testElement.accessKey);
+    assert_true(clicked, "Pressing access key should trigger click handler.");
+    assert_false(focused, "Pressing access key should not focus on the element.");
+
+    document.body.removeChild(testElement);
+  }, "Check for " + name + " tag");
+});
+</script>
+</body>

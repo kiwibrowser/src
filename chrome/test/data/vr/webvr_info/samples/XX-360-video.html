@@ -1,0 +1,314 @@
+<!doctype html>
+<!--
+Copyright 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+    <!-- Origin Trial Token, feature = WebVR (For Chrome M59+), origin = https://webvr.info, expires = 2017-10-13 -->
+    <meta http-equiv="origin-trial" data-feature="WebVR (For Chrome M59+)" data-expires="2017-10-13" content="Aqw0TUvp8CwZmgIS50pM1blhzy05y7OkBeW3AQQGjer4KuKV0p13xfrRbe2bT8B1+DgRW0O3Dda0yOjcL46GBwgAAABMeyJvcmlnaW4iOiJodHRwczovL3dlYnZyLmluZm86NDQzIiwiZmVhdHVyZSI6IldlYlZSMS4xIiwiZXhwaXJ5IjoxNTA3ODU5MDE4fQ==">
+
+    <title>XX - 360 Video</title>
+
+    <!--
+      This sample demonstrates how to render a 360 degree panoramic video in VR.
+    -->
+
+    <style>
+      #webgl-canvas {
+        box-sizing: border-box;
+        height: 100%;
+        left: 0;
+        margin: 0;
+        position: absolute;
+        top: 0;
+        width: 100%;
+      }
+    </style>
+
+    <!-- This entire block in only to facilitate dynamically enabling and
+    disabling the WebVR polyfill, and is not necessary for most WebVR apps.
+    If you want to use the polyfill in your app, just include the js file and
+    everything will work the way you want it to by default. -->
+    <script>
+      var WebVRConfig = {
+        // Prevents the polyfill from initializing automatically.
+        DEFER_INITIALIZATION: true,
+        // Ensures the polyfill is always active when initialized, even if the
+        // native API is available. This is probably NOT what most pages want.
+        POLYFILL_MODE: "ALWAYS",
+        // Polyfill optimizations
+        DIRTY_SUBMIT_FRAME_BINDINGS: true,
+        BUFFER_SCALE: 0.75,
+      };
+    </script>
+    <script src="js/third-party/webvr-polyfill.js"></script>
+    <script src="js/third-party/wglu/wglu-url.js"></script>
+    <script>
+      // Dynamically turn the polyfill on if requested by the query args.
+      if (WGLUUrl.getBool('polyfill', false)) {
+        InitializeWebVRPolyfill();
+      } else {
+        // Shim for migration from older version of WebVR. Shouldn't be necessary for very long.
+        InitializeSpecShim();
+      }
+    </script>
+    <!-- End sample polyfill enabling logic -->
+
+    <script src="js/third-party/gl-matrix-min.js"></script>
+
+    <script src="js/third-party/wglu/wglu-program.js"></script>
+    <script src="js/third-party/wglu/wglu-stats.js"></script>
+
+    <script src="js/vr-panorama.js"></script>
+    <script src="js/vr-samples-util.js"></script>
+  </head>
+  <body>
+    <canvas id="webgl-canvas"></canvas>
+    <script>
+      /* global mat4, vec3, VRPanorama, WGLUStats, VRSamplesUtil */
+      (function () {
+      "use strict";
+
+      var vrDisplay = null;
+      var frameData = null;
+      var projectionMat = mat4.create();
+      var poseMat = mat4.create();
+      var viewMat = mat4.create();
+      var vrPresentButton = null;
+
+      // ================================================================
+      // WebGL and WebAudio scene setup. This code is not WebVR specific.
+      // ================================================================
+
+      // WebGL setup.
+      var gl = null;
+      var panorama = null;
+      var stats = null;
+
+      function onContextLost( event ) {
+        event.preventDefault();
+        console.log( 'WebGL Context Lost.' );
+        gl = null;
+        panorama = null;
+        stats = null;
+      }
+
+      function onContextRestored( event ) {
+        console.log( 'WebGL Context Restored.' );
+        init(vrDisplay ? vrDisplay.capabilities.hasExternalDisplay : false);
+      }
+
+      var webglCanvas = document.getElementById("webgl-canvas");
+      webglCanvas.addEventListener( 'webglcontextlost', onContextLost, false );
+      webglCanvas.addEventListener( 'webglcontextrestored', onContextRestored, false );
+
+      function getDefaultVideo() {
+        const video = document.createElement( "video" );
+        if(video.canPlayType('video/mp4; codecs="mp4v.20.8"')) {
+          return "media/textures/vr_bench_man.mp4";
+        } else if (video.canPlayType('video/webm; codecs="vp8, vorbis"')) {
+          return "media/textures/vr_bench_man.webm";
+        } else {
+          VRSamplesUtil.addError("No supported video available", 3000);
+          return null;
+        }
+      }
+
+      function init (preserveDrawingBuffer) {
+        var glAttribs = {
+          alpha: false,
+          antialias: false,
+          preserveDrawingBuffer: preserveDrawingBuffer
+        };
+        gl = webglCanvas.getContext("webgl", glAttribs);
+        if (!gl) {
+          gl = webglCanvas.getContext("experimental-webgl", glAttribs);
+          if (!gl) {
+            VRSamplesUtil.addError("Your browser does not support WebGL.");
+            return;
+          }
+        }
+        gl.enable(gl.DEPTH_TEST);
+        gl.enable(gl.CULL_FACE);
+
+        panorama = new VRPanorama(gl);
+
+        var defaultVideo = getDefaultVideo();
+        var videoUrl = WGLUUrl.getString(
+            'videoUrl', defaultVideo);
+        panorama.setVideo(videoUrl).catch(
+            function(error) {
+              if (error instanceof MediaError && error.code === 4) {
+                panorama.setVideo(defaultVideo);
+              }
+            });
+
+        var enablePerformanceMonitoring = WGLUUrl.getBool(
+            'enablePerformanceMonitoring', false);
+        stats = new WGLUStats(gl, enablePerformanceMonitoring);
+
+        // Wait until we have a WebGL context to resize and start rendering.
+        window.addEventListener("resize", onResize, false);
+        onResize();
+        window.requestAnimationFrame(onAnimationFrame);
+      }
+
+      // ================================
+      // WebVR-specific code begins here.
+      // ================================
+
+      function onVRRequestPresent () {
+        vrDisplay.requestPresent([{ source: webglCanvas }]).then(function () {
+        }, function (err) {
+          var errMsg = "requestPresent failed.";
+          if (err && err.message) {
+            errMsg += "<br/>" + err.message
+          }
+          VRSamplesUtil.addError(errMsg, 2000);
+        });
+      }
+
+      function onVRExitPresent () {
+        if (!vrDisplay.isPresenting)
+          return;
+
+        vrDisplay.exitPresent().then(function () {
+        }, function () {
+          VRSamplesUtil.addError("exitPresent failed.", 2000);
+        });
+      }
+
+      function onVRPresentChange () {
+        onResize();
+
+        if (vrDisplay.isPresenting) {
+          if (vrDisplay.capabilities.hasExternalDisplay) {
+            VRSamplesUtil.removeButton(vrPresentButton);
+            vrPresentButton = VRSamplesUtil.addButton("Exit VR", "E", "media/icons/cardboard64.png", onVRExitPresent);
+          }
+        } else {
+          if (vrDisplay.capabilities.hasExternalDisplay) {
+            VRSamplesUtil.removeButton(vrPresentButton);
+            vrPresentButton = VRSamplesUtil.addButton("Enter VR", "E", "media/icons/cardboard64.png", onVRRequestPresent);
+          }
+        }
+      }
+
+      if (navigator.getVRDisplays) {
+        frameData = new VRFrameData();
+
+        navigator.getVRDisplays().then(function (displays) {
+          if (displays.length > 0) {
+            vrDisplay = displays[displays.length - 1];
+            vrDisplay.depthNear = 0.1;
+            vrDisplay.depthFar = 1024.0;
+
+            init(true);
+
+            if (vrDisplay.capabilities.canPresent)
+              vrPresentButton = VRSamplesUtil.addButton("Enter VR", "E", "media/icons/cardboard64.png", onVRRequestPresent);
+
+            // For the benefit of automated testing. Safe to ignore.
+            if (vrDisplay.capabilities.canPresent && WGLUUrl.getBool('canvasClickPresents', false))
+              webglCanvas.addEventListener("click", onVRRequestPresent, false);
+
+            window.addEventListener('vrdisplaypresentchange', onVRPresentChange, false);
+            window.addEventListener('vrdisplayactivate', onVRRequestPresent, false);
+            window.addEventListener('vrdisplaydeactivate', onVRExitPresent, false);
+          } else {
+            init(false);
+            VRSamplesUtil.addInfo("WebVR supported, but no VRDisplays found.", 3000);
+          }
+        }, function () {
+          VRSamplesUtil.addError("Your browser does not support WebVR. See <a href='http://webvr.info'>webvr.info</a> for assistance.");
+        });
+      } else if (navigator.getVRDevices) {
+        init(false);
+        VRSamplesUtil.addError("Your browser supports WebVR but not the latest version. See <a href='http://webvr.info'>webvr.info</a> for more info.");
+      } else {
+        init(false);
+        VRSamplesUtil.addError("Your browser does not support WebVR. See <a href='http://webvr.info'>webvr.info</a> for assistance.");
+      }
+
+      function onResize () {
+        if (vrDisplay && vrDisplay.isPresenting) {
+          var leftEye = vrDisplay.getEyeParameters("left");
+          var rightEye = vrDisplay.getEyeParameters("right");
+
+          webglCanvas.width = Math.max(leftEye.renderWidth, rightEye.renderWidth) * 2;
+          webglCanvas.height = Math.max(leftEye.renderHeight, rightEye.renderHeight);
+        } else {
+          webglCanvas.width = webglCanvas.offsetWidth * window.devicePixelRatio;
+          webglCanvas.height = webglCanvas.offsetHeight * window.devicePixelRatio;
+        }
+      }
+
+      function getPoseMatrix (out, pose) {
+        // When rendering a panorama ignore the pose position. You want the
+        // users head to stay centered at all times. This would be terrible
+        // advice for any other type of VR scene, by the way!
+        var orientation = pose.orientation;
+        if (!orientation) { orientation = [0, 0, 0, 1]; }
+        mat4.fromQuat(out, orientation);
+        mat4.invert(out, out);
+      }
+
+      function onAnimationFrame (t) {
+        // do not attempt to render if there is no available WebGL context
+        if (!gl || !stats || !panorama) {
+          return;
+        }
+        stats.begin();
+
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        if (vrDisplay) {
+          vrDisplay.requestAnimationFrame(onAnimationFrame);
+
+          vrDisplay.getFrameData(frameData);
+
+          // FYI: When rendering a panorama do NOT use view matricies directly!
+          // That will make the viewer feel like their head is trapped in a tiny
+          // ball, which is usually not the desired effect. Instead, render both
+          // eyes from a single viewpoint.
+          getPoseMatrix(viewMat, frameData.pose);
+
+          if (vrDisplay.isPresenting) {
+            gl.viewport(0, 0, webglCanvas.width * 0.5, webglCanvas.height);
+            panorama.render(frameData.leftProjectionMatrix, viewMat);
+
+            gl.viewport(webglCanvas.width * 0.5, 0, webglCanvas.width * 0.5, webglCanvas.height);
+            panorama.render(frameData.rightProjectionMatrix, viewMat);
+
+            vrDisplay.submitFrame();
+          } else {
+            gl.viewport(0, 0, webglCanvas.width, webglCanvas.height);
+            mat4.perspective(projectionMat, Math.PI*0.4, webglCanvas.width / webglCanvas.height, 0.1, 1024.0);
+            panorama.render(projectionMat, viewMat);
+            stats.renderOrtho();
+          }
+        } else {
+          window.requestAnimationFrame(onAnimationFrame);
+
+          // No VRDisplay found.
+          gl.viewport(0, 0, webglCanvas.width, webglCanvas.height);
+          mat4.perspective(projectionMat, Math.PI*0.4, webglCanvas.width / webglCanvas.height, 0.1, 1024.0);
+          mat4.identity(viewMat);
+          panorama.render(projectionMat, viewMat);
+
+          stats.renderOrtho();
+        }
+
+        stats.end();
+      }
+      })();
+    </script>
+  </body>
+</html>

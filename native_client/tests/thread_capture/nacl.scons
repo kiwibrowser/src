@@ -1,0 +1,57 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+capture_nexe = env.ComponentProgram('nacl_thread_capture_test',
+                                    'nacl_thread_capture_test.c',
+                                    EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+if 'TRUSTED_ENV' not in env or env.Bit('android'):
+  Return()
+
+trusted_env = env['TRUSTED_ENV']
+
+no_warn_trusted_env = trusted_env.Clone()
+no_warn_trusted_env.Append(CCFLAGS=['-Wno-missing-field-initializers'])
+
+test_injection_files = [
+  no_warn_trusted_env.ComponentObject(
+    'nacl_thread_capture_test_injection_test.c')]
+
+if trusted_env.Bit('linux') or trusted_env.Bit('mac'):
+  if env.Bit('build_x86_32'):
+    test_injection_files += [
+      'arch/x86_32/thread_capture_test_injection.c']
+  elif env.Bit('build_x86_64'):
+    test_injection_files += [
+      'arch/x86_64/thread_capture_test_injection.c']
+  elif env.Bit('build_arm'):
+    test_injection_files += [
+      'arch/arm/thread_capture_test_injection.c']
+  elif env.Bit('build_mips32'):
+     test_injection_files += [
+      'arch/mips/thread_capture_test_injection.c']
+  else:
+    raise Exception('Unsupported target')
+
+  custom_sel_ldr = trusted_env.ComponentProgram(
+      'thread_capture_sel_ldr',
+      test_injection_files,
+      EXTRA_LIBS=['sel_main'])
+
+  node = env.CommandSelLdrTestNacl(
+      'nacl_thread_capture_test.out',
+      capture_nexe,
+      loader=custom_sel_ldr)
+
+  # The run_nacl_thread_capture_test test failed on the asan bots, but
+  # the failure could not be reproduced on a gprecise z620.  Disable
+  # this test for now until we figure out the problem.
+  env.AddNodeToTestSuite(node,
+                         ['small_tests', 'sel_ldr_tests'],
+                         'run_nacl_thread_capture_test',
+                         is_broken=(env.Bit('running_on_valgrind') or
+                                    trusted_env.Bit('asan')))

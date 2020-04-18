@@ -1,0 +1,20 @@
+template <typename StructPtrType>
+{{struct.name}}Ptr {{struct.name}}::Clone() const {
+  return New(
+{%- for field in struct.fields %}
+      mojo::Clone({{field.name}})
+{%-   if not loop.last -%},{%- endif %}
+{%- endfor %}
+  );
+}
+
+template <typename T,
+          typename std::enable_if<std::is_same<
+              T, {{struct.name}}>::value>::type*>
+bool {{struct.name}}::Equals(const T& other_struct) const {
+{%- for field in struct.fields %}
+  if (!mojo::Equals(this->{{field.name}}, other_struct.{{field.name}}))
+    return false;
+{%- endfor %}
+  return true;
+}

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<style>
+.spacer {
+  height: 1000px;
+  width: 1000px;
+}
+#scroller, body {
+  height: 100px;
+  width: 100px;
+  overflow: scroll;
+}
+
+</style>
+<body class=scroller>
+<div id=console></div>
+
+<div id=scroller>
+    <div class=spacer></div>
+</div>
+<div class=spacer></div>
+</body>
+
+<script src="../../resources/js-test.js"></script>
+<script>
+
+description("Verifies that scrolling APIs support fractional offsets.");
+// Note we current support fractional scrolling only for the special case of
+// browser zoom.  When http://crbug.com/414283 is fixed, we should test
+// other cases like device scale.
+
+// FIXME: Make this smaller. crbug.com/414283.
+var floatPrecision = 0.01;
+
+function testScroll(scrollOffset, expectedScrollOffset) {
+
+    debug('Scrolling DIV with scrollTop/scrollLeft');
+    scroller.scrollTop = scrollOffset;
+    shouldBeCloseTo('scroller.scrollTop', expectedScrollOffset, floatPrecision);
+    scroller.scrollLeft = scrollOffset;
+    shouldBeCloseTo('scroller.scrollLeft', expectedScrollOffset, floatPrecision);
+
+    // Note that the body element is a special case - we don't attempt to
+    // test it here as it's semantics are in flux (http://goo.gl/BFHtMR).
+
+    debug('Scrolling the document with window.scroll');
+    window.scroll(0,0);
+    scrollOffset++;
+    expectedScrollOffset++;
+    window.scroll(scrollOffset, scrollOffset);
+    shouldBeCloseTo('window.scrollY', expectedScrollOffset, floatPrecision);
+    shouldBeCloseTo('window.scrollX', expectedScrollOffset, floatPrecision);
+
+    debug('Scrolling the document with window.scrollTo');
+    window.scroll(0,0);
+    window.scrollTo(scrollOffset, scrollOffset);
+    shouldBeCloseTo('window.pageYOffset', expectedScrollOffset, floatPrecision);
+    shouldBeCloseTo('window.pageXOffset', expectedScrollOffset, floatPrecision);
+
+    debug('Scrolling the document with window.scrollBy');
+    window.scroll(1,1);
+    window.scrollBy(scrollOffset - 1, scrollOffset - 1);
+    shouldBeCloseTo('window.scrollY', expectedScrollOffset, floatPrecision);
+    shouldBeCloseTo('window.scrollX', expectedScrollOffset, floatPrecision);
+
+    debug('');
+}
+
+function testPageZoom(zoom) {
+    debug('---- Testing page zoom = ' + zoom + ' ----');
+    eventSender.setPageZoomFactor(zoom);
+    testScroll(4, 4);
+    testScroll(4.5, 4.5);
+}
+
+// By default we don't yet get fractional scroll offsets with more
+// granularity than the page zoom factor.
+internals.settings.setPreferCompositingToLCDTextEnabled(false);
+testScroll(4.2, 4);
+testPageZoom(2);
+
+if (internals.runtimeFlags.fractionalScrollOffsetsEnabled) {
+    debug("Full fractional scroll offsets enabled");
+    internals.settings.setPreferCompositingToLCDTextEnabled(true);
+    testScroll(4.2, 4.2);
+    testPageZoom(2);
+}
+</script>

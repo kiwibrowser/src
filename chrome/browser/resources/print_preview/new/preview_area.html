@@ -1,0 +1,164 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/hidden_style_css.html">
+<link rel="import" href="chrome://resources/html/action_link_css.html">
+<link rel="import" href="chrome://resources/html/cr.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/html/util.html">
+<link rel="import" href="chrome://resources/html/web_ui_listener_behavior.html">
+<link rel="import" href="../native_layer.html">
+<link rel="import" href="../print_preview_utils.html">
+<link rel="import" href="../data/coordinate2d.html">
+<link rel="import" href="../data/destination.html">
+<link rel="import" href="../data/document_info.html">
+<link rel="import" href="../data/margins.html">
+<link rel="import" href="../data/printable_area.html">
+<link rel="import" href="../data/size.html">
+<link rel="import" href="margin_control_container.html">
+<link rel="import" href="model.html">
+<link rel="import" href="state.html">
+<link rel="import" href="settings_behavior.html">
+<link rel="import" href="strings.html">
+
+<dom-module id="print-preview-preview-area">
+  <template>
+    <style include="action-link cr-hidden-style">
+      @keyframes dancing-dots-jump {
+        0% { top: 0; }
+        55% { top: 0; }
+        60% { top: -10px; }
+        80% { top: 3px; }
+        90% { top: -2px; }
+        95% { top: 1px; }
+        100% { top: 0; }
+      }
+
+      :host span.jumping-dots > span {
+        animation: dancing-dots-jump 1800ms infinite;
+        padding: 1px;
+        position: relative;
+      }
+
+      :host span.jumping-dots > span:nth-child(2) {
+        animation-delay: 100ms;
+      }
+
+      :host span.jumping-dots > span:nth-child(3) {
+        animation-delay: 300ms;
+      }
+
+      :host {
+        display: block;
+        height: 100%;
+        overflow: hidden;
+        position: relative;
+        user-select: none;
+      }
+
+      .preview-area-plugin-wrapper {
+        height: 100%;
+      }
+
+      :host .preview-area-plugin {
+        border: none;
+        cursor: inherit;
+        height: 100%;
+        opacity: 1;
+        /* pluginFadeInTransitionDuration = 200ms */
+        transition: opacity 200ms linear;
+        /* pluginFadeInTransitionDelay =
+           overlayFadeOutTransitionDuration = 100ms */
+        transition-delay: 100ms;
+        width: 100%;
+      }
+
+      :host .preview-area-overlay-layer {
+        background: #e6e6e6;
+        height: 100%;
+        margin: 0;
+        opacity: 1;
+        position: absolute;
+        transition: opacity 200ms linear;
+        /* overlayFadeInTransitionDelay = pluginFadeOutTransitionDelay +
+         *     pluginFadeOutTransitionDuration = 350ms */
+        transition-delay: 350ms;
+        user-select: none;
+        width: 100%;
+        z-index: 1;
+      }
+
+      :host .preview-area-overlay-layer.invisible {
+        opacity: 0;
+        pointer-events: none;
+        /* overlayFadeOutTransitionDuration = 100ms */
+        transition: opacity 100ms linear;
+      }
+
+      :host .preview-area-messages {
+        height: 100%;
+      }
+
+      :host .preview-area-message {
+        color: #404040;
+        font-size: 1.1em;
+        position: relative;
+        text-align: center;
+        text-shadow: 0 1px 0 rgba(255, 255, 255, .5);
+        top: 50%;
+      }
+
+      :host .preview-area-no-plugin-action-area {
+        margin-top: 12px;
+      }
+
+      :host .preview-area-open-system-dialog-button-throbber {
+        vertical-align: middle;
+      }
+
+    </style>
+    <div class$="preview-area-overlay-layer [[getInvisible_(previewState)]]"
+        aria-hidden$="[[getAriaHidden_(previewState)]]">
+      <div class="preview-area-messages">
+        <div class="preview-area-message">
+          <div>
+            <span>[[currentMessage_(previewState)]]</span>
+            <span class$="preview-area-loading-message-jumping-dots
+                          [[getJumpingDots_(previewState)]]"
+                hidden$="[[!isPreviewLoading_(previewState)]]">
+                <span>.</span><span>.</span><span>.</span>
+            </span>
+            <a is="action-link" class="learn-more-link"
+                hidden$="[[!shouldShowLearnMoreLink_(previewState)]]"
+                on-click="onGcpErrorLearnMoreClick_">
+              $i18n{learnMore}
+            </a>
+          </div>
+          <div class="preview-area-action-area"
+              hidden$="[[!displaySystemDialogButton_(previewState)]]">
+            <button class="preview-area-open-system-dialog-button">
+              $i18n{launchNativeDialog}
+            </button>
+            <div
+                class="preview-area-open-system-dialog-button-throbber throbber"
+                hidden></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="preview-area-plugin-wrapper">
+      <object class="preview-area-compatibility-object-out-of-process"
+          type="application/x-google-chrome-pdf"
+          data="chrome://print/dummy.pdf"></object>
+    </div>
+    <print-preview-margin-control-container id="marginControlContainer"
+        page-size="[[documentInfo.pageSize]]" settings="{{settings}}"
+        document-margins="[[documentInfo.margins]]"
+        measurement-system="[[measurementSystem]]"
+        preview-loaded="[[previewLoaded_]]"
+        on-margin-drag-changed="onMarginDragChanged_">
+    </print-preview-margin-control-container>
+  </template>
+  <script src="preview_area.js"></script>
+  <script src="../pdf/pdf_scripting_api.js">
+  </script>
+</dom-module>

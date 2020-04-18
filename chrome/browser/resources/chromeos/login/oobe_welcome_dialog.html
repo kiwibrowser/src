@@ -1,0 +1,71 @@
+<!-- Copyright 2016 The Chromium Authors. All rights reserved.
+     Use of this source code is governed by a BSD-style license that can be
+     found in the LICENSE file. -->
+
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-styles/color.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+
+<!--
+  OOBE Welcome screen
+-->
+<dom-module id="oobe-welcome-dialog">
+  <template>
+    <link rel="stylesheet" href="oobe_dialog_host.css">
+    <link rel="stylesheet" href="oobe_flex_layout.css">
+    <link rel="stylesheet" href="oobe_welcome_dialog.css">
+    <div class="layout horizontal flex">
+      <div class="vertical-margin"></div>
+      <div class="welcome-content flex layout vertical center">
+        <h1 id="title">[[i18nDynamic(locale, 'networkScreenGreeting')]]</h1>
+        <div class="welcome-illustration" hidden="[[isInTabletMode]]">
+          <img srcset="images/welcome_illustration_1x.png 1x,
+                       images/welcome_illustration_2x.png 2x">
+        </div>
+        <div class="welcome-illustration" hidden="[[!isInTabletMode]]">
+          <img hidden="[[!isInPortraitMode]]"
+              srcset="images/welcome_illustration_tablet_mode_portraight_1x.png 1x,
+                      images/welcome_illustration_tablet_mode_portraight_2x.png 2x">
+          <img hidden="[[isInPortraitMode]]"
+              srcset="images/welcome_illustration_tablet_mode_1x.png 1x,
+                      images/welcome_illustration_tablet_mode_2x.png 2x">
+        </div>
+        <div hidden="[[!debuggingLinkVisible]]">
+          <a href="#" on-tap="onDebuggingLinkClicked_">
+            [[i18nDynamic(locale, 'debuggingFeaturesLink')]]
+          </a>
+        </div>
+        <div class="flex"></div>
+        <div id="buttons" class="layout horizontal center">
+          <oobe-welcome-secondary-button id="languageSelectionButton"
+              icon1x="oobe-welcome-32:language"
+              icon2x="oobe-welcome-64:language"
+              on-tap="onLanguageClicked_"
+              label-for-aria$="[[formatMessage_('languageButtonLabel',
+                  currentLanguage)]]">
+            <div>[[currentLanguage]]</div>
+          </oobe-welcome-secondary-button>
+          <oobe-welcome-secondary-button id="accessibilitySettingsButton"
+              icon1x="oobe-welcome-32:accessibility"
+              icon2x="oobe-welcome-64:accessibility"
+              on-tap="onAccessibilityClicked_">
+            <div>[[i18nDynamic(locale, 'accessibilityLink')]]</div>
+          </oobe-welcome-secondary-button>
+          <oobe-welcome-secondary-button id="timezoneSettingsButton"
+              icon1x="oobe-welcome-32:timezone"
+              icon2x="oobe-welcome-64:timezone"
+              on-tap="onTimezoneClicked_"
+              hidden="[[!timezoneButtonVisible]]">
+            <div>[[i18nDynamic(locale, 'timezoneButtonText')]]</div>
+          </oobe-welcome-secondary-button>
+          <div class="flex"></div>
+          <oobe-text-button id="welcomeNextButton"
+              inverse on-tap="onNextClicked_">
+            <div>[[i18nDynamic(locale, 'welcomeNextButtonText')]]</div>
+          </oobe-text-button>
+        </div>
+        <div id="bottom-margin"></div>
+      </div>
+      <div class="vertical-margin"></div>
+    </div>
+  </template>
+</dom-module>

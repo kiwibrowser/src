@@ -1,0 +1,43 @@
+// Copyright 2013 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// Control and monitor the screen locker.
+[permissions=screenlockPrivate, nodoc]
+namespace screenlockPrivate {
+  // Supported authentication types shown on the user pod.
+  // |offlinePassword|: The standard password field, which authenticates using
+  //                   the user's regular password. The $(ref:onAuthAttempted)()
+  //                   event will not be fired for this authentication type.
+  // |numericPin|: An input field for a 4 digit numeric pin code.
+  // |userClick|: Makes the user pod clickable when it is focused, and
+  //                 clicking on it attempts the authentication. If |value| is
+  //                 specified with $(ref:setAuthType)(), the text is displayed
+  //                 in the password field.
+  enum AuthType {offlinePassword, numericPin, userClick};
+
+  callback BooleanCallback = void(boolean locked);
+
+  interface Functions {
+    // Returns true if the screen is currently locked, false otherwise.
+    static void getLocked(BooleanCallback callback);
+
+    // Set <code>locked=true</code> to lock the screen,
+    // <code>locked=false</code> to unlock it.
+    static void setLocked(boolean locked);
+
+    // Accepts or rejects the current auth attempt.
+    static void acceptAuthAttempt(boolean accept);
+  };
+
+  interface Events {
+    // Fires whenever the screen is locked or unlocked.
+    static void onChanged(boolean locked);
+
+    // Fires when the user attempts to authenticate with the user's input.
+    // There will be at most one auth attempt active at any time.
+    // Call $(ref:acceptAuthAttempt)() to accept or reject this attempt.
+    // Note: Some authentication types will not have an input.
+    static void onAuthAttempted(AuthType type, DOMString input);
+  };
+};

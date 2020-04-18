@@ -1,0 +1,66 @@
+# -*- python -*-
+# Copyright 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# step_test_guest.nexe fails to link when Valgrind is enabled because
+# of a problem with the TLS ".tbss" section.
+if env.IsRunningUnderValgrind():
+  Return()
+
+if 'TRUSTED_ENV' not in env:
+  Return()
+trusted_env = env['TRUSTED_ENV']
+
+if not env.AllowInlineAssembly():
+  Return()
+
+# This test uses POSIX signal handling so does not build on Windows.
+if env.Bit('host_windows'):
+  Return()
+# This test expects that a signal handler will be able to return to
+# untrusted code, and so it does not work on Mac OS X which does not
+# restore %cs to its saved value on return from a signal handler.
+if env.Bit('host_mac'):
+  Return()
+
+if env.Bit('build_x86'):
+  step_test_guest = env.ComponentProgram(
+      'step_test_guest', ['step_test_guest.c'],
+      EXTRA_LIBS=['${NONIRT_LIBS}'],
+      EXTRA_LINKFLAGS=['-nostdlib'])
+
+  step_test_host = trusted_env.ComponentProgram(
+      'step_test_host', ['step_test_host.c'], EXTRA_LIBS=['sel'])
+
+  # We don't use AddBootstrap() to run this with nacl_bootstrap because:
+  #  * there is no need in the current x86 sandboxes;
+  #  * avoiding nacl_bootstrap means that we are testing that the
+  #    software-under-test works with a non-zero sandbox base.
+  node = env.CommandTest('signal_handler_single_step.out',
+                         [step_test_host, step_test_guest,
+                          env.GetPerfEnvDescription()],
+                         # Don't hide output: This test reports a
+                         # "RESULTS" line for Buildbot to record.
+                         capture_output=False)
+  env.AddNodeToTestSuite(node, ['large_tests'],
+                         'run_signal_handler_single_step_test',
+                         is_broken=not env.Bit('nacl_static_link'))
+
+
+regs_step_test_guest = env.ComponentProgram(
+    'regs_step_test_guest', ['regs_step_test_guest.c'],
+    EXTRA_LIBS=['${NONIRT_LIBS}', 'test_common'])
+
+regs_step_test_host = trusted_env.ComponentProgram(
+    'regs_step_test_host', ['regs_step_test_host.c'],
+    EXTRA_LIBS=['sel', 'test_common'])
+
+node = env.CommandTest(
+    'signal_handler_regs_single_step.out',
+    env.AddBootstrap(regs_step_test_host, [regs_step_test_guest]))
+env.AddNodeToTestSuite(node, ['small_tests', 'nonpexe_tests'],
+                       'run_signal_handler_regs_single_step_test',
+                       is_broken=not env.Bit('nacl_static_link'))

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<script>
+if (window.testRunner)
+    testRunner.waitUntilDone();
+
+function click(x,y) {
+    if (window.eventSender) {
+        eventSender.mouseMoveTo(x, y);
+        eventSender.mouseDown();
+        eventSender.mouseUp();
+    }
+}
+
+function animationEnded() {
+    click(50,50);
+    if (window.testRunner) {
+      testRunner.layoutAndPaintAsyncThen(function() {
+        testRunner.notifyDone();
+      });
+    }
+}
+</script>
+<svg>
+    <rect id="rect" width="100px" height="100px" fill="red">
+    <animate
+        begin="0s; rect.click"
+        dur="0.05s"
+        attributeName="fill"
+        from="red" to="green"
+        fill="freeze"
+        restart="never"
+        onend="animationEnded()"/>
+    </rect>
+</svg>

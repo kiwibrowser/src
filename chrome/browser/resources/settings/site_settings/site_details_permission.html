@@ -1,0 +1,78 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/html/md_select_css.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-icon/iron-icon.html">
+<link rel="import" href="chrome://resources/html/web_ui_listener_behavior.html">
+<link rel="import" href="../settings_shared_css.html">
+<link rel="import" href="../settings_vars_css.html">
+<link rel="import" href="constants.html">
+<link rel="import" href="site_settings_behavior.html">
+<link rel="import" href="site_settings_prefs_browser_proxy.html">
+
+<dom-module id="site-details-permission">
+  <template>
+    <style include="settings-shared md-select"></style>
+    <div id="details">
+      <div id="permissionItem"
+          class$="list-item [[permissionInfoStringClass_(site.source, category,
+                                                         site.setting)]]">
+        <div>
+          <iron-icon icon="[[icon]]">
+          </iron-icon>
+        </div>
+        <div class="middle" id="permissionHeader">
+          [[label]]
+          <div class="secondary"
+              hidden$="[[!hasPermissionInfoString_(site.source, category,
+                                                   site.setting)]]"
+              inner-h-t-m-l="[[permissionInfoString_(
+                site.source,
+                category,
+                site.setting,
+                '$i18nPolymer{siteSettingsSourceAdsBlacklist}',
+                '$i18nPolymer{siteSettingsAdsBlockSingular}',
+                '$i18nPolymer{siteSettingsSourceEmbargo}',
+                '$i18nPolymer{siteSettingsSourceInsecureOrigin}',
+                '$i18nPolymer{siteSettingsSourceKillSwitch}',
+                '$i18nPolymer{siteSettingsSourceExtensionAllow}',
+                '$i18nPolymer{siteSettingsSourceExtensionBlock}',
+                '$i18nPolymer{siteSettingsSourceExtensionAsk}',
+                '$i18nPolymer{siteSettingsSourcePolicyAllow}',
+                '$i18nPolymer{siteSettingsSourcePolicyBlock}',
+                '$i18nPolymer{siteSettingsSourcePolicyAsk}',
+                '$i18nPolymer{siteSettingsSourceDrmDisabled}')]]">
+          </div>
+        </div>
+        <div class="md-select-wrapper">
+          <select id="permission" class="md-select"
+              aria-labelledby="permissionHeader"
+              on-change="onPermissionSelectionChange_"
+              disabled$="[[!isPermissionUserControlled_(site.source, category,
+                                                        site.setting)]]">
+            <option id="default" value$="[[ContentSetting.DEFAULT]]">
+              [[defaultSettingString_(
+                  defaultSetting_,
+                  '$i18nPolymer{siteSettingsActionAskDefault}',
+                  '$i18nPolymer{siteSettingsActionAllowDefault}',
+                  '$i18nPolymer{siteSettingsActionBlockDefault}')]]
+            </option>
+            <option id="allow" value$="[[ContentSetting.ALLOW]]"
+                hidden$="[[!showAllowedSetting_(category)]]">
+              $i18n{siteSettingsActionAllow}
+            </option>
+            <option id="block" value$="[[ContentSetting.BLOCK]]">
+              $i18n{siteSettingsActionBlock}
+            </option>
+            <option id="ask" value$="[[ContentSetting.ASK]]"
+                hidden$="[[!showAskSetting_(category, site.setting,
+                                            site.source)]]">
+              $i18n{siteSettingsActionAsk}
+            </option>
+          </select>
+          <span class="md-select-underline"></span>
+        </div>
+      </div>
+    </div>
+  </template>
+  <script src="site_details_permission.js"></script>
+</dom-module>

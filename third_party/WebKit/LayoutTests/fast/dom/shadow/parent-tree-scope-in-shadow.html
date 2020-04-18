@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../../../resources/js-test.js"></script>
+</head>
+<body>
+<div id="test"></div>
+
+<script>
+  var div = document.createElement("div");
+  document.body.appendChild(div);
+
+  debug("Creating shadow dom subtrees from top to bottom.");
+  var shadow1 = div.createShadowRoot();
+  shadow1.innerHTML = "<div id='E'>/div>";
+  var e = shadow1.getElementById("E");
+  var shadow2 = e.createShadowRoot();
+  shadow2.innerHTML = "<div id='F'></div>";
+  var f = shadow2.getElementById("F");
+  var shadow3 = f.createShadowRoot();
+  shadow3.innerHTML = "<div id='G'></div>";
+
+  shouldBe("internals.parentTreeScope(shadow1)", "document");
+  shouldBe("internals.parentTreeScope(shadow2)", "shadow1");
+  shouldBe("internals.parentTreeScope(shadow3)", "shadow2");
+
+  document.body.removeChild(div);
+
+  debug("Creating multiple shadow dom subtrees from bottom to top.");
+  f = document.createElement("div");
+  shadow3 = f.createShadowRoot();
+  shadow3.innerHTML = "<div id='G'></div>";
+  e = document.createElement("div");
+  shadow2 = e.createShadowRoot();
+  shadow2.appendChild(f);
+  div = document.createElement("div");
+  shadow1 = div.createShadowRoot();
+  shadow1.appendChild(e);
+  document.body.appendChild(div);
+
+  shouldBe("internals.parentTreeScope(shadow1)", "document");
+  shouldBe("internals.parentTreeScope(shadow2)", "shadow1");
+  shouldBe("internals.parentTreeScope(shadow3)", "shadow2");
+
+  document.body.removeChild(div);
+</script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+// Copyright 2015 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// Mime handler API.
+[nodoc] namespace mimeHandlerPrivate {
+  dictionary StreamInfo {
+    // The MIME type of the intercepted URL request.
+    DOMString mimeType;
+
+    // The original URL that was intercepted.
+    DOMString originalUrl;
+
+    // The URL that the stream can be read from.
+    DOMString streamUrl;
+
+    // The ID of the tab that opened the stream. If the stream is not opened in
+    // a tab, it will be -1.
+    long tabId;
+
+    // The HTTP response headers of the intercepted request stored as a
+    // dictionary mapping header name to header value. If a header name appears
+    // multiple times, the header values are merged in the dictionary and
+    // separated by a ", ". Non-ASCII headers are dropped.
+    object responseHeaders;
+
+    // Whether the stream is embedded within another document.
+    boolean embedded;
+  };
+
+  callback AbortCallback = void ();
+  callback GetStreamDetailsCallback = void (StreamInfo streamInfo);
+
+  interface Functions {
+    // Returns the StreamInfo for the stream for this context if there is one.
+    [nocompile] static void getStreamInfo(GetStreamDetailsCallback callback);
+
+    // Aborts the stream for this context if there is one.
+    [nocompile] static void abortStream(optional AbortCallback callback);
+  };
+};

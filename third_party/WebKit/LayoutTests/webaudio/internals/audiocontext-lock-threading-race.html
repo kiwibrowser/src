@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>
+      audiocontext-lock-threading-race.html
+    </title>
+    <script src="../../resources/js-test.js"></script>
+  </head>
+  <body>
+    <script id="layout-test-code">
+      description(
+          'TSan shouldn\'t complain about threading races of AudioContext::lock().');
+      let jsTestAsync = true;
+      let ac = new window.AudioContext();
+      ac.createMediaStreamDestination();
+      setTimeout(function() {
+        gc();
+        finishJSTest();
+      }, 200);
+    </script>
+  </body>
+</html>

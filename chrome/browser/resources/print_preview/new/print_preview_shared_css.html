@@ -1,0 +1,136 @@
+<!-- Most styles copied from resources/css/widgets.css. -->
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<dom-module id="print-preview-shared">
+  <template>
+    <style>
+      h1 {
+        line-height: 1;
+        user-select: none;
+      }
+
+      /* Default state ********************************************************/
+
+      button,
+      input[type='button'],
+      select,
+      input[type='checkbox'],
+      input[type='radio'] {
+        -webkit-appearance: none;
+        background-image: linear-gradient(#ededed, #ededed 38%, #dedede);
+        border: 1px solid rgba(0, 0, 0, 0.25);
+        border-radius: 2px;
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08),
+            inset 0 1px 2px rgba(255, 255, 255, 0.75);
+        color: #444;
+        font: inherit;
+        margin: 0 1px 0 0;
+        outline: none;
+        text-shadow: 0 1px 0 rgb(240, 240, 240);
+        user-select: none;
+      }
+
+      button,
+      input[type='button'],
+      select {
+        min-height: 2em;
+        min-width: 4em;
+        padding-bottom: 1px;
+      <if expr="is_win or is_macosx">
+        /* The following platform-specific rule is necessary to get adjacent
+         * buttons, text inputs, and so forth to align on their borders while
+         * also aligning on the text's baselines. */
+        padding-bottom: 2px;
+      </if>
+        padding-top: 1px;
+      }
+
+      input[type='number'],
+      input[type='search'],
+      input[type='text'],
+      input:not([type]),
+      textarea {
+        border: 1px solid #bfbfbf;
+        border-radius: 2px;
+        box-sizing: border-box;
+        color: #444;
+        font: inherit;
+        margin: 0;
+        /* Use min-height to accommodate addditional padding for touch as
+         * needed. */
+        min-height: 2em;
+        outline: none;
+        padding: 3px;
+      <if expr="is_win or is_macosx or is_ios">
+        /* For better alignment between adjacent buttons and inputs. */
+        padding-bottom: 4px;
+      </if>
+      }
+
+      :root {
+      <if expr="not is_ios">
+        /* Hover **************************************************************/
+        --print-preview-hover: {
+          border-color: rgba(0, 0, 0, 0.3);
+          box-shadow: 0 1px 0 rgba(0, 0, 0, 0.12),
+              inset 0 1px 2px rgba(255, 255, 255, 0.95);
+          color: black;
+        };
+      </if>
+
+        /* Active *************************************************************/
+        --print-preview-active: {
+          box-shadow: none;
+          text-shadow: none;
+        };
+      }
+
+      /* Disabled *************************************************************/
+
+      :disabled:-webkit-any(
+          button,
+          input[type='button'],
+          select) {
+        background-image: linear-gradient(#f1f1f1, #f1f1f1 38%, #e6e6e6);
+        border-color: rgba(80, 80, 80, 0.2);
+        box-shadow: 0 1px 0 rgba(80, 80, 80, 0.08),
+            inset 0 1px 2px rgba(255, 255, 255, 0.75);
+        color: #aaa;
+      }
+
+      input:disabled:-webkit-any([type='search'],
+                                 [type='text'],
+                                 :not([type])) {
+        color: #999;
+      }
+
+      /* Focus ****************************************************************/
+
+      :enabled:focus:-webkit-any(
+          select,
+          input[type='checkbox'],
+          input[type='number'],
+          input[type='radio'],
+          input[type='search'],
+          input[type='text'],
+          input:not([type]),
+          button,
+          input[type='button']) {
+        /* We use border color because it follows the border radius (unlike
+         * outline). This is particularly noticeable on mac. */
+        border-color: rgb(77, 144, 254);
+        outline: none;
+        /* OVERRIDE */
+        transition: border-color 200ms;
+      }
+
+      html:not(.focus-outline-visible)
+      :enabled:focus:-webkit-any(input[type='checkbox'],
+                                 input[type='radio'],
+                                 button) {
+        border-color: rgba(0,0,0,0.25);
+      }
+
+    </style>
+  </template>
+</dom-module>

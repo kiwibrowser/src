@@ -1,0 +1,63 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+if not env.AllowInlineAssembly():
+  Return()
+
+test_args = {'sel_ldr_flags': ['-e', '-E', 'OUTSIDE_BROWSER=1'],
+             'declares_exit_status': True}
+if env.Bit('build_arm') and env.UsingEmulator():
+  test_args['sel_ldr_flags'].extend(['-E', 'UNDER_QEMU_ARM=1'])
+
+helper_files = []
+if env.Bit('build_x86'):
+  helper_files.append('direction_flag_x86.S')
+exception_test = env.ComponentProgram(
+    env.ProgramNameForNmf('exception_test'),
+    ['exception_test.c'] + helper_files,
+    EXTRA_LIBS=['${NONIRT_LIBS}', '${PTHREAD_LIBS}', '${TESTRUNNER_LIBS}',
+                '${EXCEPTION_LIBS}', 'test_common'])
+
+node = env.CommandSelLdrTestNacl(
+    'exception_test.out', exception_test, **test_args)
+env.AddNodeToTestSuite(
+    node, ['small_tests', 'exception_tests'], 'run_exception_test',
+    # TODO(mcgrathr): Broken under nacl-clang on Win32 only;
+    # see https://code.google.com/p/nativeclient/issues/detail?id=4255
+    is_broken=(env.Bit('nacl_clang') and
+               env.Bit('host_windows') and env.Bit('build_x86_32')))
+
+
+exception_crash_test = env.ComponentProgram(
+    'exception_crash_test', ['exception_crash_test.c'],
+    EXTRA_LIBS=['${NONIRT_LIBS}', '${EXCEPTION_LIBS}'])
+
+for subtest in ('test_bad_handler',
+                'test_stack_outside_sandbox',
+                'test_stack_in_rwdata',
+                'test_stack_in_rodata',
+                'test_stack_in_code',
+                'test_crash_in_syscall'):
+  node = env.CommandSelLdrTestNacl(
+      'exception_%s.out' % subtest,
+      exception_crash_test, [subtest], **test_args)
+  env.AddNodeToTestSuite(
+      node, ['small_tests', 'exception_tests'],
+      'run_exception_%s' % subtest)
+
+
+exceptions_disabled_test = env.ComponentProgram(
+    'exceptions_disabled_test',
+    ['exceptions_disabled_test.c'],
+    EXTRA_LIBS=['${NONIRT_LIBS}', '${EXCEPTION_LIBS}'])
+node = env.CommandSelLdrTestNacl(
+    'exceptions_disabled_test.out',
+    exceptions_disabled_test, [],
+    declares_exit_status=True)
+env.AddNodeToTestSuite(
+    node, ['small_tests', 'exception_tests'],
+    'run_exceptions_disabled_test')

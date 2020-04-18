@@ -1,0 +1,96 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/hidden_style_css.html">
+<link rel="import" href="chrome://resources/cr_elements/paper_tabs_style_css.html">
+<link rel="import" href="chrome://resources/html/assert.html">
+<link rel="import" href="chrome://resources/html/cr/ui/focus_without_ink.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/html/web_ui_listener_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-pages/iron-pages.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-tabs/paper-tabs.html">
+<link rel="import" href="ca_trust_edit_dialog.html">
+<link rel="import" href="certificate_delete_confirmation_dialog.html">
+<link rel="import" href="certificate_list.html">
+<link rel="import" href="certificate_manager_types.html">
+<link rel="import" href="certificate_password_decryption_dialog.html">
+<link rel="import" href="certificate_password_encryption_dialog.html">
+<link rel="import" href="certificates_browser_proxy.html">
+<link rel="import" href="certificates_error_dialog.html">
+
+<dom-module id="certificate-manager">
+  <template>
+    <style include="cr-hidden-style paper-tabs-style">
+      paper-tabs {
+        font-size: inherit;
+        height: 40px;
+        margin-bottom: 24px;
+      }
+    </style>
+
+    <template is="dom-if" if="[[showCaTrustEditDialog_]]" restamp>
+      <ca-trust-edit-dialog model="[[dialogModel_]]">
+      </ca-trust-edit-dialog>
+    </template>
+    <template is="dom-if" if="[[showDeleteConfirmationDialog_]]" restamp>
+      <certificate-delete-confirmation-dialog
+          model="[[dialogModel_]]"
+          certificate-type="[[dialogModelCertificateType_]]">
+      </certificate-delete-confirmation-dialog>
+    </template>
+    <template is="dom-if" if="[[showPasswordEncryptionDialog_]]" restamp>
+      <certificate-password-encryption-dialog
+          model="[[dialogModel_]]">
+      </certificate-password-encryption-dialog>
+    </template>
+    <template is="dom-if" if="[[showPasswordDecryptionDialog_]]" restamp>
+      <certificate-password-decryption-dialog>
+      </certificate-password-decryption-dialog>
+    </template>
+    <template is="dom-if" if="[[showErrorDialog_]]" restamp>
+      <certificates-error-dialog model="[[errorDialogModel_]]">
+      </certificates-error-dialog>
+    </template>
+
+    <paper-tabs noink selected="{{selected}}">
+      <paper-tab>[[i18n('certificateManagerYourCertificates')]]</paper-tab>
+      <paper-tab hidden="[[isKiosk_]]">[[i18n('certificateManagerServers')]]
+      </paper-tab>
+      <paper-tab hidden="[[isKiosk_]]">[[i18n('certificateManagerAuthorities')]]
+      </paper-tab>
+      <paper-tab>[[i18n('certificateManagerOthers')]]</paper-tab>
+    </paper-tabs>
+    <iron-pages selected="[[selected]]">
+      <div>
+        <certificate-list id="personalCerts"
+            certificates="[[personalCerts]]"
+            certificate-type="[[certificateTypeEnum_.PERSONAL]]">
+        </certificate-list>
+      </div>
+      <div>
+        <template is="dom-if" if="[[isTabSelected_(selected, 1)]]">
+          <certificate-list id="serverCerts"
+              certificates="[[serverCerts]]"
+              certificate-type="[[certificateTypeEnum_.SERVER]]">
+          </certificate-list>
+        </template>
+      </div>
+      <div>
+        <template is="dom-if" if="[[isTabSelected_(selected, 2)]]">
+          <certificate-list id="caCerts"
+              certificates="[[caCerts]]"
+              certificate-type="[[certificateTypeEnum_.CA]]">
+          </certificate-list>
+        </template>
+      </div>
+      <div>
+        <template is="dom-if" if="[[isTabSelected_(selected, 3)]]">
+          <certificate-list id="otherCerts"
+              certificates="[[otherCerts]]"
+              certificate-type="[[certificateTypeEnum_.OTHER]]">
+          </certificate-list>
+        </template>
+      </div>
+    </iron-pages>
+  </template>
+  <script src="certificate_manager.js"></script>
+</dom-module>

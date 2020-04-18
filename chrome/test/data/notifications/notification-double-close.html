@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Verifies that double-closing a notification doesn't crash.</title>
+    <meta charset="utf-8">
+  </head>
+  <body>
+    <script>
+      function createNotification(iconUrl, title, text, tag) {
+        var notification = new Notification(title, {
+          icon: iconUrl,
+          body: text,
+          tag: tag
+        });
+
+        notification.onshow = function() {
+          window.domAutomationController.send("0");  // success
+        };
+
+        notification.onerror = function() {
+          window.domAutomationController.send("-1");  // failure
+        };
+
+        notification.onclose = function() {
+          notification.close();
+        };
+      }
+    </script>
+  </body>
+</html>

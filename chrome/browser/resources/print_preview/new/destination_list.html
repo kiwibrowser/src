@@ -1,0 +1,103 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/hidden_style_css.html">
+<link rel="import" href="chrome://resources/html/action_link_css.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="../native_layer.html">
+<link rel="import" href="../data/destination.html">
+<link rel="import" href="destination_list_item.html">
+<link rel="import" href="print_preview_shared_css.html">
+<link rel="import" href="strings.html">
+<link rel="import" href="throbber_css.html">
+
+<dom-module id="print-preview-destination-list">
+  <template>
+    <style include="print-preview-shared action-link cr-hidden-style throbber">
+      :host {
+        display: block;
+        user-select: none;
+      }
+
+      :host > header {
+        -webkit-padding-end: 19px;
+        -webkit-padding-start: 0;
+        background-color: transparent;
+        border-bottom: 1px solid #d2d2d2;
+        padding-bottom: 8px;
+      }
+
+      :host :-webkit-any(.title, .action-link, .total) {
+        -webkit-padding-end: 8px;
+        -webkit-padding-start: 4px;
+        display: inline;
+        vertical-align: middle;
+      }
+
+      :host .throbber-container {
+        -webkit-padding-end: 16px;
+        -webkit-padding-start: 8px;
+        display: inline-block;
+        position: relative;
+        vertical-align: middle;
+      }
+
+      :host .throbber {
+        vertical-align: middle;
+      }
+
+      :host .no-destinations-message {
+        -webkit-padding-start: 18px;
+        color: #999;
+        padding-bottom: 8px;
+        padding-top: 8px;
+      }
+
+      :host .list-item {
+        -webkit-padding-end: 2px;
+        -webkit-padding-start: 18px;
+        cursor: default;
+        display: flex;
+        padding-bottom: 3px;
+        padding-top: 3px;
+      }
+
+      :not(.moving).list-item {
+        transition: background-color 150ms;
+      }
+
+      .list-item:hover,
+      .list-item:focus {
+        background-color: rgb(228, 236, 247);
+      }
+
+      .list-item:focus {
+        outline: none;
+      }
+    </style>
+    <header>
+      <h4 class="title">[[title]]</h4>
+      <span class="total" hidden$="[[!showDestinationsTotal_]]">
+        [[i18n('destinationCount', matchingDestinationsCount_)]]
+      </span>
+      <a is="action-link" class="action-link" hidden$="[[!hasActionLink]]"
+          on-click="onActionLinkClick_">
+        $i18n{manage}
+      </a>
+      <div class="throbber-container" hidden$="[[!loadingDestinations]]">
+        <div class="throbber"></div>
+      </div>
+    </header>
+    <template is="dom-repeat" items="[[destinations]]" notify-dom-change
+        on-dom-change="updateIfNeeded_">
+      <print-preview-destination-list-item class="list-item"
+          search-query="[[searchQuery]]" destination="[[item]]"
+          on-click="onDestinationSelected_">
+      </print-preview-destination-list-item>
+    </template>
+    <div class="no-destinations-message" hidden$="[[hasDestinations_]]">
+      $i18n{noDestinationsMessage}
+    </div>
+  </template>
+  <script src="destination_list.js"></script>
+</dom-module>
+

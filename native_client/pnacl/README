@@ -1,0 +1,31 @@
+This file describes the directory layout of the PNaCl toolchain.
+
+The most important thing is the user-facing toolchain programs, including
+pnacl-clang, pnacl-clang++, pnacl-translate, etc. These are located in
+the bin/ directory. The location (and existence) of everything else is subject
+to change.
+
+bin/
+  User-facing PNaCl toolchain programs (pnacl-clang, pnacl-translate, etc;
+  currently these are OS-specific wrapper scripts).
+  Standard LLVM tools such as llvm-nm, opt etc**
+  Nonstandard LLVM tools such as pnacl-llc**
+  Standard GNU binutils ELF tools
+include/
+  Headers for linking against our build of LLVM**
+lib/
+  Host libraries used by our build of LLVM**
+le32-nacl/
+  Bitcode libraries and headers for building PNaCl modules
+translator/
+  Native NaCl object files and/or libraries linked into nexes after
+  offline translation.
+
+**These are not generally needed directly by developers of PNaCl modules
+ in Chrome, but may be useful for others, e.g. those who want to build tools
+ which target PNaCl as a platform
+
+There are currently two different versions of the PNaCl toolchain: (1) the
+legacy Python-based toolchain driver which uses the pnacl- prefix for the
+individual tool names; and (2) the experimental native PNaCl Clang toolchain
+driver which uses the le32-nacl- prefix.

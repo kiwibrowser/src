@@ -1,0 +1,33 @@
+#!/usr/bin/env vpython
+# Copyright 2017 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+import argparse
+import os
+import subprocess
+import sys
+
+
+def main(args):
+  parser = argparse.ArgumentParser()
+  parser.add_argument(
+      '--gyp-condition', '-c', type=str, required=True,
+      help=('The gyp condition that acts as the switch. If the '
+            'condition is found in environment variable GYP_DEFINES, '
+            'this will execute the target script'))
+  options, script_args = parser.parse_known_args()
+
+  # Make sure that we always execute target script with python.
+  if 'python' not in script_args[0]:
+    script_args.insert(0, sys.executable)
+
+  # A typical GYP_DEFINES string looks s.t like "foo=a bar=1 baz=c". We
+  # tokenize the string before doing string matching.
+  gyp_defines = os.environ.get('GYP_DEFINES', '').split()
+  if options.gyp_condition in gyp_defines:
+    subprocess.check_call(script_args)
+  return 0
+
+
+if __name__ == '__main__':
+  main(sys.argv[1:])

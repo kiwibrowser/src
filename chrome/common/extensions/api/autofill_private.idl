@@ -1,0 +1,245 @@
+// Copyright 2015 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// Use the <code>chrome.autofillPrivate</code> API to add, remove, or update
+// autofill data from the settings UI.
+namespace autofillPrivate {
+  // Fields used as part of an address.
+  enum AddressField {
+    FULL_NAME,
+    COMPANY_NAME,
+    ADDRESS_LINES,
+    ADDRESS_LEVEL_1,
+    ADDRESS_LEVEL_2,
+    ADDRESS_LEVEL_3,
+    POSTAL_CODE,
+    SORTING_CODE,
+    COUNTRY_CODE
+  };
+
+  // Metadata about an autofill entry (address or credit card) which is used to
+  // render a summary list of all entries.
+  dictionary AutofillMetadata {
+    // Short summary of the address which is displayed in the UI; an
+    // undefined value means that this entry has just been created on the client
+    // and has not yet been given a summary.
+    DOMString summaryLabel;
+
+    // Short, secondary summary of the address which is displalyed in the UI; an
+    // undefined value means that this entry has just been created on the client
+    // and has not yet been given a summary.
+    DOMString? summarySublabel;
+
+    // Whether the entry is locally owned by Chrome (as opposed to being a
+    // profile synced down from the server). Non-local entries may not be
+    // editable.
+    boolean? isLocal;
+
+    // For credit cards, whether this is a full copy of the card
+    boolean? isCached;
+  };
+
+  // An address entry which can be saved in the autofill section of the
+  // settings UI.
+  dictionary AddressEntry {
+    // Globally unique identifier for this entry.
+    DOMString? guid;
+
+    DOMString[]? fullNames;
+
+    DOMString? companyName;
+
+    // Street address (multiple lines, newlines preserved).
+    DOMString? addressLines;
+
+    // The broadest administrative level in the address, i.e. the province
+    // within which the locality is found; for example, in the US, this would be
+    // the state; in Switzerland it would be the canton; in the UK, the post
+    // town.
+    DOMString? addressLevel1;
+
+    // The second administrative level, in addresses with two or more
+    // administrative levels; in the countries with two administrative levels,
+    // this would typically be the city, town, village, or other locality within
+    // which the relevant street address is found.
+    DOMString? addressLevel2;
+
+    // The third administrative level, in addresses with three or more
+    // administrative levels.
+    DOMString? addressLevel3;
+
+    // Postal code, post code, ZIP code, CEDEX code (if CEDEX, append "CEDEX",
+    // and the arrondissement, if relevant, to the address-level2 field).
+    DOMString? postalCode;
+
+    // A sorting code is similar to a postal code. However, whereas a postal
+    // code normally refers to a single geographical location, a sorting code
+    // often does not. Instead, a sorting code is assigned to an organization,
+    // which might be geographically distributed. The most prominent example of
+    // a sorting code system is CEDEX in France.
+    DOMString? sortingCode;
+
+    // A two-character string representing the address' country. See
+    // autofill_country.cc for a list of valid codes.
+    DOMString? countryCode;
+
+    DOMString[]? phoneNumbers;
+
+    DOMString[]? emailAddresses;
+
+    DOMString? languageCode;
+
+    AutofillMetadata? metadata;
+  };
+
+  // An entry representing a country and its code.
+  dictionary CountryEntry {
+    // The internationalized name of the country.
+    DOMString? name;
+
+    // A two-character string representing the country.
+    DOMString? countryCode;
+  };
+
+  // A component to be shown in an address editor. Different countries have
+  // different components to their addresses.
+  dictionary AddressComponent {
+    // The field type.
+    AddressField field;
+
+    // The name of the field.
+    DOMString fieldName;
+
+    // A hint for the UI regarding whether the input is likely to be long.
+    boolean isLongField;
+
+    // A placeholder for the text field to be used when the user has not yet
+    // input a value for the field.
+    DOMString? placeholder;
+  };
+
+  // A row of address components. Each component in a row should be shown in the
+  // same row in the UI. For example, city, state, and zip code are all included
+  // on the same line for US addresses.
+  dictionary AddressComponentRow {
+    AddressComponent[] row;
+  };
+
+  // The address components for a given country code. Each entry in |components|
+  // constitutes a row in the UI, while each inner array contains the list of
+  // components to use in that row. For example, city, state, and zip code are
+  // all included on the same line for US addresses. This dictionary also
+  // includes the associated language code.
+  dictionary AddressComponents {
+    // The components.
+    AddressComponentRow[] components;
+
+    // The language code.
+    DOMString languageCode;
+  };
+
+  // A credit card entry which can be saved in the autofill section of the
+  // settings UI.
+  dictionary CreditCardEntry {
+    // Globally unique identifier for this entry.
+    DOMString? guid;
+
+    // Name of the person who owns the credit card.
+    DOMString? name;
+
+    // Credit card number.
+    DOMString? cardNumber;
+
+    // Month as 2-character string ("01" = January, "12" = December).
+    DOMString? expirationMonth;
+
+    // Year as a 4-character string (as in "2015").
+    DOMString? expirationYear;
+
+    AutofillMetadata? metadata;
+  };
+
+  // Parameters to be passed to validatePhoneNumbers().
+  dictionary ValidatePhoneParams {
+    // The phone numbers to validate.
+    DOMString[] phoneNumbers;
+
+    // The index into |phoneNumbers| at which the newly-added/edited phone
+    // number resides.
+    long indexOfNewNumber;
+
+    // A two-character string representing the address' country. See
+    // autofill_country.cc for a list of valid codes.
+    DOMString countryCode;
+  };
+
+  callback GetCountryListCallback = void(CountryEntry[] countries);
+  callback GetAddressComponentsCallback = void(AddressComponents components);
+  callback GetAddressListCallback = void(AddressEntry[] entries);
+  callback ValidatePhoneNumbersCallback =
+      void(DOMString[] validatedPhoneNumbers);
+  callback GetCreditCardListCallback = void(CreditCardEntry[] entries);
+
+  interface Functions {
+    // Saves the given address. If |address| has an empty string as its ID, it
+    // will be assigned a new one and added as a new entry.
+    // |address|: The address entry to save.
+    static void saveAddress(AddressEntry address);
+
+    // Gets the list of all countries.
+    // |callback|: Callback which will be called with the countries.
+    static void getCountryList(GetCountryListCallback callback);
+
+    // Gets the address components for a given country code.
+    // |countryCode|: A two-character string representing the address' country
+    //     whose components should be returned. See autofill_country.cc for a
+    //     list of valid codes.
+    // |callback|: Callback which will be called with components.
+    static void getAddressComponents(DOMString countryCode,
+        GetAddressComponentsCallback callback);
+
+    // Gets the list of addresses.
+    // |callback|: Callback which will be called with the list of addresses.
+    static void getAddressList(GetAddressListCallback callback);
+
+    // Saves the given credit card. If |card| has an empty string as its
+    // ID, it will be assigned a new one and added as a new entry.
+    // |card|: The card entry to save.
+    static void saveCreditCard(CreditCardEntry card);
+
+    // Removes the entry (address or credit card) with the given ID.
+    // |guid|: ID of the entry to remove. 
+    static void removeEntry(DOMString guid);
+
+    // Validates a newly-added phone number and invokes the callback with a list
+    // of validated numbers. Note that if the newly-added number was invalid, it
+    // will not be returned in the list of valid numbers.
+    // |params|: The parameters to this function.
+    // |callback|: Callback which will be called with validated phone numbers.
+    static void validatePhoneNumbers(ValidatePhoneParams params,
+        ValidatePhoneNumbersCallback callback);
+
+    // Gets the list of credit cards.
+    // |callback|: Callback which will be called with the list of credit cards.
+    static void getCreditCardList(GetCreditCardListCallback callback);
+
+    // Clears the data associated with a wallet card which was saved
+    // locally so that the saved copy is masked (e.g., "Card ending
+    // in 1234").
+    // |guid|: GUID of the credit card to mask.
+    static void maskCreditCard(DOMString guid);
+  };
+
+  interface Events {
+    // Fired when the address list has changed, meaning that an entry has been
+    // added, removed, or changed.
+    // |entries| The updated list of entries.
+    static void onAddressListChanged(AddressEntry[] entries);
+
+    // Fired when the credit card list has changed, meaning that an entry has
+    // been added, removed, or changed.
+    // |entries| The updated list of entries.
+    static void onCreditCardListChanged(CreditCardEntry[] entries);
+  };
+};

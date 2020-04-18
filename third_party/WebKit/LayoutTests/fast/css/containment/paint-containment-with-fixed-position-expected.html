@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<style>
+div {
+    width: 100px;
+    height: 100px;
+    background-color: green;
+}
+</style>
+<body>
+<div></div>

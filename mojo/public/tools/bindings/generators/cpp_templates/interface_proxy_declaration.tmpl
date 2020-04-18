@@ -1,0 +1,16 @@
+{%- import "interface_macros.tmpl" as interface_macros %}
+class {{export_attribute}} {{interface.name}}Proxy
+    : public {{interface.name}} {
+ public:
+  explicit {{interface.name}}Proxy(mojo::MessageReceiverWithResponder* receiver);
+
+{%- for method in interface.methods %}
+{%-   if method.sync %}
+  bool {{method.name}}({{interface_macros.declare_sync_method_params("", method)}}) final;
+{%-   endif %}
+  void {{method.name}}({{interface_macros.declare_request_params("", method, use_once_callback)}}) final;
+{%- endfor %}
+
+ private:
+  mojo::MessageReceiverWithResponder* receiver_;
+};

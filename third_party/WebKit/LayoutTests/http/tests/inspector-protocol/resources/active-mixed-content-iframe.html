@@ -1,0 +1,1 @@
+<script src="http://example.test:8000/inspector-protocol/resources/blank.js"></script>

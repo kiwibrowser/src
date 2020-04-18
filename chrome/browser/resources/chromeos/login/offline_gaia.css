@@ -1,0 +1,158 @@
+/* Copyright 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file. */
+
+:host {
+  display: flex;
+  flex-direction: column;
+  font-size: 18px;
+  overflow: hidden;
+  position: relative;
+}
+
+#forgotPasswordDlg {
+  --cr-dialog-native: {
+    color: var(--primary-text-color);
+    font-size: 15px;
+    width: 384px;
+  }
+}
+
+/*
+ * Due to |margin-right| of e-mail section required for animations, containers
+ * store oversized items.
+ */
+#headerContainer,
+#footerContainer {
+  max-width: 640px;
+  min-width: 640px;
+}
+
+/*
+ * e-mail and password section headers have slightly different size.
+ * To make animations move same size objects, fix it here.
+ */
+#headerContainer {
+  min-height: 90px;
+}
+
+/** ******** Animations ******* */
+
+
+/*
+ * Normally, only e-mail section is animated, pushing password section to the
+ * right outside of visible area.
+ */
+
+/*
+ * Animation of e-mail parts (to the 'start' to hide, and to the 'end' to show)
+ * allows password section to either slide-in (from the right) or slide-out
+ * (to the right).
+ *
+ * --webkit-margin-start doesn't work with animations, so use conventional
+ * left/right margins.
+ */
+
+:host(:not([rtl])) .email-section {
+  /*
+   * OOBE dialog header/footer width is less than oobe-dialog width.
+   * To make sure password section is completely shifted out of visible area,
+   * we need right margin that matches dialog margins.
+   */
+  margin-left: 0;
+  margin-right: 128px; /** double dialog margin = 2 * (768 - 640) / 2 */
+}
+
+:host([rtl]) .email-section {
+  margin-left: 128px; /** double dialog margin = 2 * (768 - 640) / 2 */
+  margin-right: 0;
+}
+
+
+.section {
+  animation-duration: 700ms;
+  display: none;
+  /** For sliding to work correctly we need fixed size of moving objects. */
+  max-width: 640px;
+  min-width: 640px;
+}
+
+@keyframes show-from-left {
+  from {
+    margin-left: -768px; /** container width + double margin = 640 + 2 * 64 */
+  }
+  to {
+    margin-left: 0;
+  }
+}
+
+@keyframes show-from-right {
+  from {
+    margin-right: -768px; /** container width + double margin = 640 + 2 * 64 */
+  }
+  to {
+    margin-right: 0;
+  }
+}
+
+@keyframes hide-to-left {
+  from {
+    margin-left: 0;
+  }
+  to {
+    margin-left: -768px; /** container width + double margin = 640 + 2 * 64 */
+  }
+}
+
+@keyframes hide-to-right {
+  from {
+    margin-right: 0;
+  }
+  to {
+    margin-right: -768px; /** container width + double margin = 640 + 2 * 64 */
+  }
+}
+
+oobe-dialog[selected='emailSection'] .email-section,
+oobe-dialog[selected='passwordSection'] .password-section {
+  display: block;
+}
+
+/*
+ * When dialog first appears, no animation needed.
+ * Dialog always starts with e-mail section visible, so only "show" animation
+ * depends on |animation-in-progress| attribute.
+ */
+oobe-dialog[animation-in-progress] .email-section {
+  animation-name: show-from-left;
+}
+
+oobe-dialog[selected='passwordSection'] .email-section {
+  animation-name: hide-to-left;
+}
+
+:host([rtl]) oobe-dialog[animation-in-progress] .email-section {
+  animation-name: show-from-right;
+}
+
+:host([rtl]) oobe-dialog[selected='passwordSection'] .email-section {
+  animation-name: hide-to-right;
+}
+
+/** During animation all sections should be visible. */
+oobe-dialog[animation-in-progress] .section {
+  display: block;
+}
+
+.advanced-option-subtitle {
+  color: rgba(0, 0, 0, 0.54);
+  font: 13px Roboto, sans-serif;
+}
+
+iron-icon[icon='warning'] {
+  -webkit-margin-end: 15px;
+  -webkit-margin-start: 0;
+  color: var(--google-yellow-500);
+  margin-bottom: 0;
+  margin-top: 0;
+}

@@ -1,0 +1,36 @@
+<!doctype html>
+<!--
+Tests that screen taps aren't registered while in VR
+-->
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="../resources/webvr_e2e.css">
+  </head>
+  <body>
+    <canvas id="webgl-canvas"></canvas>
+    <script src="../../../../../../third_party/WebKit/LayoutTests/resources/testharness.js"></script>
+    <script src="../resources/webvr_e2e.js"></script>
+    <script src="../resources/webvr_boilerplate.js"></script>
+    <script>
+      var t = async_test("Screen taps not registered when in VR");
+      var numTaps = 0;
+      webglCanvas.addEventListener("click", () => {numTaps++;}, false);
+
+      function stepVerifyNoInitialTaps() {
+        t.step( () => {
+          assert_equals(numTaps, 0, "No initial taps");
+        });
+        finishJavaScriptStep();
+      }
+
+      function stepVerifyNoAdditionalTaps() {
+          t.step_func_done( () => {
+            // We expect 1 tap from entering VR
+            assert_equals(numTaps, 1,
+                "Only one tap registered after two taps given");
+          })();
+      }
+
+    </script>
+  </body>
+</html>

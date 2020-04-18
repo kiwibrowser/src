@@ -1,0 +1,13 @@
+@hex:
+  # Invalid and store, because the index isn't 32 zero extended bits.
+  66 83 e1 e0
+  49 89 44 CF 36
+  
+@dis:
+     0:	66 83 e1 e0                                  	and    $0xffe0,%cx
+     4:	49 89 44 cf 36                               	mov    %rax,0x36(%r15,%rcx,8)
+@rdfa_output:
+  4: improper memory address - bad index
+  return code: 1
+@spec:
+  4: register %rcx should be restricted, while in fact None is restricted

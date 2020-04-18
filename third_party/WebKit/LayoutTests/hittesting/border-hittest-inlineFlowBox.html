@@ -1,0 +1,58 @@
+<!doctype html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<style>
+span {
+    background-color: lightgray;
+    border-radius: 2em;
+    padding: 1em;
+    line-height: 4em;
+}
+
+label {
+    padding: 2em;
+    background-color: lightgreen;
+    border-radius: 2em;
+}
+
+div {
+    margin: 2em;
+}
+</style>
+<div>
+<span id="A">
+Two lines with <br/>a hard line break.
+</span>
+</div>
+<div>
+<span id="B">B<label id="C">C</label></span>
+</div>
+<div>
+<span id="D" style="padding: 2em;">D<label id="E" style="padding: 1em;">E</label></span>
+</div>
+<script>
+test(function(t)
+{
+    var rects = document.getElementById('A').getClientRects();
+    var elementInTopLeftCorner = document.elementFromPoint(rects[0].left, rects[0].top);
+    assert_equals(elementInTopLeftCorner.nodeName, 'DIV');
+    elementInTopLeftCorner = document.elementFromPoint(rects[1].left, rects[1].top);
+    assert_equals(elementInTopLeftCorner.nodeName, 'SPAN');
+
+    var rect = document.getElementById('B').getBoundingClientRect();
+    elementInTopLeftCorner = document.elementFromPoint(rect.left, rect.top);
+    assert_equals(elementInTopLeftCorner.nodeName, 'DIV');
+
+    rect = document.getElementById('C').getBoundingClientRect();
+    elementInTopLeftCorner = document.elementFromPoint(rect.left, rect.top);
+    assert_equals(elementInTopLeftCorner.nodeName, 'BODY');
+
+    rect = document.getElementById('D').getBoundingClientRect();
+    elementInTopLeftCorner = document.elementFromPoint(rect.left, rect.top);
+    assert_equals(elementInTopLeftCorner.nodeName, 'BODY');
+
+    rect = document.getElementById('E').getBoundingClientRect();
+    elementInTopLeftCorner = document.elementFromPoint(rect.left, rect.top);
+    assert_equals(elementInTopLeftCorner.nodeName, 'SPAN');
+}, "Test that area outside border radius is body element");
+</script>

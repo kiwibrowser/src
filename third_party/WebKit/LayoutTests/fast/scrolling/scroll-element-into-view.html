@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+
+#spacer {
+  width: 1000px;
+  height: 1000px;
+}
+#container {
+  width: 310px;
+  height: 310px;
+  overflow: scroll;
+  position: relative;
+}
+#focusable {
+  position: absolute;
+  background-color: #ace;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #aaa;
+}
+
+</style>
+</head>
+<body>
+<div id="container">
+  <div id="spacer"></div>
+  <div id="focusable" tabindex="-1"></div>
+</div>
+<script src="../../resources/js-test.js"></script>
+<script>
+
+description('Tests that scrollable areas are scrolled to the correct location '
+    + 'when an element is focused.');
+
+var container = document.querySelector('#container');
+var focusable = document.querySelector('#focusable');
+
+function runTest(elemRect, initialScroll, expectedFinalScroll) {
+  focusable.style.left = elemRect.x + 'px';
+  focusable.style.top = elemRect.y + 'px';
+  focusable.style.width = elemRect.w + 'px';
+  focusable.style.height = elemRect.h + 'px';
+
+  container.scrollLeft = initialScroll.x;
+  container.scrollTop = initialScroll.y;
+
+  focusable.focus();
+  focusable.blur();
+
+  shouldBe('container.scrollLeft', String(expectedFinalScroll.x));
+  shouldBe('container.scrollTop', String(expectedFinalScroll.y));
+};
+
+// Smaller fully offscreen element is centered when focused.
+runTest({x: 20, y: 20, w: 280, h: 280}, {x: 690, y: 690}, {x: 10, y: 10});
+runTest({x: 700, y: 700, w: 280, h: 280}, {x: 10, y: 10}, {x: 690, y: 690});
+
+// Larger fully offscreen element is centered when focused.
+runTest({x: 10, y: 10, w: 320, h: 320}, {x: 690, y: 690}, {x: 20, y: 20});
+runTest({x: 670, y: 670, w: 320, h: 320}, {x: 10, y: 10}, {x: 680, y: 680});
+
+// Smaller fully onscreen element does not scroll when focused.
+runTest({x: 10, y: 10, w: 100, h: 100}, {x: 10, y: 10}, {x: 10, y: 10});
+runTest({x: 210, y: 210, w: 100, h: 100}, {x: 10, y: 10}, {x: 10, y: 10});
+
+// Larger fully overlapping element does not scroll when focused.
+runTest({x: 10, y: 10, w: 310, h: 310}, {x: 20, y: 20}, {x: 20, y: 20});
+runTest({x: 20, y: 20, w: 310, h: 310}, {x: 20, y: 20}, {x: 20, y: 20});
+
+// Smaller overlapping element scrolls to nearest edge when focused.
+runTest({x: 20, y: 20, w: 280, h: 280}, {x: 290, y: 290}, {x: 20, y: 20});
+runTest({x: 700, y: 700, w: 280, h: 280}, {x: 410, y: 410}, {x: 680, y: 680});
+
+// Larger overlapping element scrolls to nearest edge when focused.
+runTest({x: 10, y: 10, w: 320, h: 320}, {x: 320, y: 320}, {x: 30, y: 30});
+runTest({x: 670, y: 670, w: 320, h: 320}, {x: 380, y: 380}, {x: 670, y: 670});
+
+if (window.testRunner)
+  testRunner.dumpAsText();
+
+</script>
+</body>
+<html>

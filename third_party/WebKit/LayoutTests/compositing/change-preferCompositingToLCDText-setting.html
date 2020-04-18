@@ -1,0 +1,51 @@
+<!DOCTYPE HTML>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<style>
+#scroller {
+    overflow: scroll;
+    height: 300px;
+    width: 300px;
+    background-color: rgba(255,0,0,0.5); /* Force non-promotion due to background opacity */;
+}
+
+#scrolled {
+    height: 1000px;
+    width: 250px;
+    background-color: rgba(0,128,0,0.5); /* Force non-promotion due to background opacity */;
+}
+</style>
+
+<script>
+
+var t = async_test("Check that the preferCompositingToLCDText flag results in compositing");
+
+function isUsingCompositedScrolling() {
+    var layers = JSON.parse(internals.layerTreeAsText(document));
+    var found = false;
+    layers["layers"].forEach(function(layer) {
+        if (layer.bounds[1] == 1000)
+            found = true;
+    });
+    return found;
+}
+
+window.onload = function() {
+  t.step(function() {
+    assert_not_equals(window.internals, null, 'This test requires window.internals');
+
+    internals.settings.setPreferCompositingToLCDTextEnabled(false);
+    var stateBefore = isUsingCompositedScrolling();
+    internals.settings.setPreferCompositingToLCDTextEnabled(true);
+    var stateAfter = isUsingCompositedScrolling();
+
+    assert_false(stateBefore, 'Composited scrolling began disabled');
+    assert_true(stateAfter, 'Composited scrolling became enabled');
+    t.done();
+  });
+};
+</script>
+
+<div id="scroller">
+    <div id="scrolled"></div>
+</div>

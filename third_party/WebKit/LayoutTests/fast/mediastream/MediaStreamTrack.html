@@ -1,0 +1,37 @@
+<!DOCTYPE HTML>
+<title>Tests MediaStreamTrack callbacks.</title>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script>
+  async_test(test => {
+    navigator.mediaDevices.getUserMedia({audio:true, video: true})
+      .then(test.step_func(stream => {
+        // |track| may be any of the audio or video tracks.
+        var track = stream.getTracks()[0];
+        assert_equals(track.readyState, "live");
+
+        track.onmute = test.step_func(() => {
+          assert_equals(track.readyState, "live");
+          assert_true(track.muted);
+
+          track.onunmute = test.step_func(() => {
+            assert_equals(track.readyState, "live");
+            assert_false(track.muted);
+            track.stop();
+            assert_equals(track.readyState, "ended");
+
+            // Use a timeout to detect a misfire of the ended event.
+            test.step_timeout(test.step_func_done(() => {
+              assert_equals(track.readyState, "ended");
+            }));
+          });
+
+          track.enabled = true;
+        });
+
+        track.onended = test.unreached_func("ended event should not be fired.");
+        track.enabled = false;
+      }))
+      .catch(test.unreached_func("getUserMedia failed"));
+  });
+</script>

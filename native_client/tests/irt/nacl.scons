@@ -1,0 +1,75 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+######################################################################
+# Smoke Test
+######################################################################
+nexe = env.ComponentProgram('irt_present_test',
+                            'irt_present_test.c',
+                            EXTRA_LIBS=['${NONIRT_LIBS}'],
+                            )
+
+node = env.CommandSelLdrTestNacl(
+     'irt_present_test.out',
+     nexe,
+     )
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_irt_present_test')
+
+# IRT interface prefix test
+
+nexe = env.ComponentProgram('irt_interface_prefix_test',
+                            'irt_interface_prefix_test.c',
+                            EXTRA_LIBS=['${NONIRT_LIBS}'],
+                            )
+
+node = env.CommandSelLdrTestNacl(
+     'irt_interface_prefix_test.out',
+     nexe,
+     )
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_irt_interface_prefix_test')
+
+# IRT interface dev test
+
+interface_dev_test_nexe = env.ComponentProgram('irt_interface_dev_test',
+                                               'irt_interface_dev_test.c',
+                                               EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+     'irt_interface_dev_enabled_test.out',
+     interface_dev_test_nexe,
+     osenv=['NACL_DANGEROUS_ENABLE_FILE_ACCESS=1',
+            'NACL_DANGEROUS_ENABLE_LIST_MAPPINGS=1'])
+
+env.AddNodeToTestSuite(node, ['small_tests'],
+                       'run_irt_interface_dev_enabled_test')
+
+node = env.CommandSelLdrTestNacl(
+     'irt_interface_dev_disabled_test.out',
+     interface_dev_test_nexe)
+
+env.AddNodeToTestSuite(node, ['small_tests'],
+                       'run_irt_interface_dev_disabled_test')
+
+# IRT auxv test
+if not env.Bit('nacl_glibc'):
+  nexe = env.ComponentProgram('irt_auxv_test', ['irt_auxv_test.c'],
+                              EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+  node = env.CommandSelLdrTestNacl('irt_auxv_test.out', nexe)
+
+  env.AddNodeToTestSuite(node, ['small_tests'], 'run_irt_auxv_test')
+
+# IRT Address Space test
+nexe = env.ComponentProgram('irt_code_data_alloc_test',
+                            ['irt_code_data_alloc_test.c'],
+                            EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl('irt_code_data_alloc_test.out', nexe)
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_irt_code_data_alloc_test')

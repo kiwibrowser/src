@@ -1,0 +1,21 @@
+// Copyright (c) 2013 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef CHROME_RENDERER_NET_BENCHMARKING_EXTENSION_H_
+#define CHROME_RENDERER_NET_BENCHMARKING_EXTENSION_H_
+
+namespace v8 {
+class Extension;
+}
+
+namespace extensions_v8 {
+
+class NetBenchmarkingExtension {
+ public:
+  static v8::Extension* Get();
+};
+
+}  // namespace extensions_v8
+
+#endif  // CHROME_RENDERER_NET_BENCHMARKING_EXTENSION_H_

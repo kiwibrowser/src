@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<script>
+var count = 0;
+
+if (window.testRunner) {
+    testRunner.dumpAsText();
+    testRunner.setCanOpenWindows();
+    testRunner.waitUntilDone();
+}
+
+function log(message)
+{
+    var console = document.getElementById("console");
+    console.appendChild(document.createTextNode(message + "\n"));
+}
+
+function zoomPage()
+{
+    var newwindow = window.open("resources/dice.png");
+    if (window.testRunner)
+        testRunner.useUnfortunateSynchronousResizeMode();
+    newwindow.onload = function() {
+
+        newwindow.onresize = function() {
+            var image = newwindow.document.querySelector("img");
+            if (image.clientWidth == 0) {
+              // On GTK+, sometimes the resize callback fires before the GTK
+              // window has finished resizing. If that happens, try to resize
+              // again.
+              setTimeout(function() {
+                newwindow.resizeTo(200, 200);
+              }, 0);
+              return;
+            }
+
+            if (window.eventSender) {
+                eventSender.zoomPageOut();
+                var w = Math.round(image.clientWidth);
+                var h = Math.round(image.clientHeight);
+                log("Size at zoom level" + (count) + " : "  + w + " x " + h);
+                if (++count == 6) {
+                    newwindow.onresize = undefined;
+                    testRunner.notifyDone();
+                }
+            }
+        };
+
+        newwindow.resizeTo(200, 200);
+    };
+}
+</script>
+<body onload="zoomPage()">
+<p>This tests that page zoom and image auto-sizing interact well together.  This test requires testRunner to run.  To test manually, open <a href="resources/dice.png">this image</a> in a browser window, resize the window to 200px tall and zoom out 6 times.  The image should get smaller at each step.</p>
+<pre id="console"></pre>
+</body>
+</html>

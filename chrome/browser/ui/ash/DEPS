@@ -1,0 +1,77 @@
+include_rules = [
+  # Code under //ash runs out-of-process in mash so it must be accessed via mojo
+  # interfaces in //ash/public/interfaces. See //ash/README.md.
+  "+ash/public",
+
+  # Use //ui/wm/core/window_util.h when manipulating chrome browser windows.
+  # Consult mustash-team@ if you need to manipulate non-browser windows because
+  # those are owned by the ash process under mash. See //ash/README.md.
+  "-ash/wm/window_util.h",
+
+  # ash depends on views, so code in ui/ash is allowed to depend on ui/views.
+  "+chrome/browser/ui/views",
+
+  "+components/arc",
+  "+components/drive",
+  "+components/session_manager/core",
+  "+components/user_manager",
+  "+media",
+]
+
+specific_include_rules = {
+  ".*test.*": [
+   "!ash",
+  ],
+  # AshShellInit supports CLASSIC and MUS modes so allow ash/ includes.
+  "ash_shell_init\.cc": [
+    "+ash",
+  ],
+  # IsAcceleratorDeprecated and SetupWidgetInitParamsForContainer access
+  # ash::Shell in non Mash mode only.
+  "ash_util\.cc": [
+    "+ash/accelerators/accelerator_controller.h",
+    "+ash/shell.h",
+  ],
+  # https://crbug.com/826370
+  "auto_connect_notifier\.cc": [
+    "+ash/system/network/network_icon.h",
+  ],
+  # For ash::Shell::SetIsBrowserProcessWithMash()
+  "chrome_browser_main_extra_parts_ash\.cc": [
+    "+ash/shell.h",
+  ],
+  # https://crbug.com/843332
+  "chrome_keyboard_ui\.cc": [
+    "+ash/root_window_controller.h",
+    "+ash/shell.h",
+  ],
+  # https://crbug.com/124222
+  "chrome_new_window_client\.cc": [
+    "+ash/content/keyboard_overlay/keyboard_overlay_view.h",
+  ],
+  # https://crbug.com/706246
+  "chrome_screenshot_grabber.*": [
+    "+ash/screenshot_delegate.h",
+    "+ash/shell.h",
+  ],
+  # https://crbug.com/672277
+  "chrome_shell_content_state\.h": [
+    "+ash/content/shell_content_state.h",
+  ],
+  # https://crbug.com/665064
+  "chrome_shell_delegate.*": [
+    "+ash",
+  ],
+  # https://crbug.com/672277
+  "session_util\.cc": [
+    "+ash/content/shell_content_state.h",
+  ],
+  # For ash::Shell::GetContainer (!mash)
+  "system_tray_client\.cc": [
+    "+ash/shell.h",
+  ],
+  # https://crbug.com/796366
+  "tab_scrubber\.cc": [
+    "+ash/shell.h",
+  ],
+}

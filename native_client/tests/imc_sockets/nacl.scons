@@ -1,0 +1,26 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+
+if env.Bit('host_windows'):
+  # This test will hang when the SocketAddress implementation uses
+  # string tokens instead of FDs.
+  test_args = ['DISABLE_IMC_ACCEPT_EOF_TEST=1']
+else:
+  test_args = []
+
+nexe = env.ComponentProgram('socket_transfer_test', 'socket_transfer_test.c',
+                            EXTRA_LIBS=['imc_syscalls', '${PTHREAD_LIBS}',
+                                        '${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+  'socket_transfer_test.out',
+  nexe,
+  args=test_args,
+  # Pass '-a' to enable imc_makeboundsock().
+  sel_ldr_flags=['-a'])
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_socket_transfer_test')

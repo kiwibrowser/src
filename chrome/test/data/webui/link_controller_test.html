@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="mock_controller.js"></script>
+</head>
+<body>
+<script>
+
+var mockControl, mockWindow, oldIsMac;
+var chrome = chrome || {};
+chrome.tabs = chrome.tabs || {};
+chrome.windows = chrome.windows || {};
+
+var MSG = 'MSG';
+var localStrings = {
+  getStringF: function(msg, number) {
+    assertEquals('should_open_all', msg);
+    return MSG + number;
+  }
+};
+
+var URL1 = 'http://chromium.org/';
+var URL2 = '#hash';
+var BASE = 'http://www.google.com/';
+
+function setUp() {
+  mockController = new MockController();
+  mockController.createFunctionMock(chrome.tabs, 'create');
+  mockController.createFunctionMock(chrome.windows, 'create');
+  oldIsMac = Object.getOwnPropertyDescriptor(cr, 'isMac');
+
+  mockWindow = {
+    confirm: mockController.createFunctionMock(),
+    location: {
+      get href() {
+        return BASE;
+      },
+      set href(url) {
+        assertEquals(URL1, url);
+      }
+    }
+  };
+  mockWindow.confirm.returnValue = false;
+}
+
+function tearDown() {
+  mockController.verifyMocks();
+  mockController.reset();
+  Object.defineProperty(cr, 'isMac', oldIsMac);
+}
+
+function testGetWarningMessage() {
+  var lc = new cr.LinkController(localStrings);
+  var msg = lc.getWarningMessage(10);
+  assertEquals(MSG + 10, msg);
+}
+
+function openUrlFromEventHelper(event, isMac, expectedKind) {
+  var lc = new cr.LinkController(localStrings);
+
+  Object.defineProperty(cr, 'isMac', {get: function() { return isMac }});
+
+  var mock = lc.openUrls = mockController.createFunctionMock();
+  mock.addExpectation([URL1], expectedKind);
+  lc.openUrlFromEvent(URL1, event);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+function testOpenUrlFromEventForegroundTab() {
+  var e = {
+    type: 'click',
+    button: 0,
+    shiftKey: true,
+    ctrlKey: true
+  };
+  openUrlFromEventHelper(e, false, cr.LinkKind.FOREGROUND_TAB);
+}
+
+function testOpenUrlFromEventForegroundTabMac() {
+  var e = {
+    type: 'click',
+    button: 0,
+    shiftKey: true,
+    metaKey: true
+  };
+  openUrlFromEventHelper(e, true, cr.LinkKind.FOREGROUND_TAB);
+}
+
+function testOpenUrlFromEventForegroundTabEnter() {
+  var e = {
+    type: 'keydown',
+    key: 'Enter',
+    shiftKey: true,
+    ctrlKey: true
+  };
+  openUrlFromEventHelper(e, false, cr.LinkKind.FOREGROUND_TAB);
+}
+
+function testOpenUrlFromEventForegroundTabEnterMac() {
+  var e = {
+    type: 'keydown',
+    key: 'Enter',
+    shiftKey: true,
+    metaKey: true
+  };
+  openUrlFromEventHelper(e, true, cr.LinkKind.FOREGROUND_TAB);
+}
+
+function testOpenUrlFromEventForegroundTabMiddleClick() {
+  var e = {
+    type: 'click',
+    button: 1,
+    shiftKey: true
+  };
+  openUrlFromEventHelper(e, false, cr.LinkKind.FOREGROUND_TAB);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+function testOpenUrlFromEventBackgroundTab() {
+  var e = {
+    type: 'click',
+    button: 0,
+    ctrlKey: true
+  };
+  openUrlFromEventHelper(e, false, cr.LinkKind.BACKGROUND_TAB);
+}
+
+function testOpenUrlFromEventBackgroundTabMac() {
+  var e = {
+    type: 'click',
+    button: 0,
+    metaKey: true
+  };
+  openUrlFromEventHelper(e, true, cr.LinkKind.BACKGROUND_TAB);
+}
+
+function testOpenUrlFromEventBackgroundTabEnter() {
+  var e = {
+    type: 'keydown',
+    key: 'Enter',
+    ctrlKey: true
+  };
+  openUrlFromEventHelper(e, false, cr.LinkKind.BACKGROUND_TAB);
+}
+
+function testOpenUrlFromEventBackgroundTabEnterMac() {
+  var e = {
+    type: 'keydown',
+    key: 'Enter',
+    metaKey: true
+  };
+  openUrlFromEventHelper(e, true, cr.LinkKind.BACKGROUND_TAB);
+}
+
+function testOpenUrlFromEventBackgroundTabMiddleClick() {
+  var e = {
+    type: 'click',
+    button: 1
+  };
+  openUrlFromEventHelper(e, false, cr.LinkKind.BACKGROUND_TAB);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+function testOpenUrlFromEventWindow() {
+  var e = {
+    type: 'click',
+    button: 0,
+    shiftKey: true
+  };
+  openUrlFromEventHelper(e, false, cr.LinkKind.WINDOW);
+}
+
+function testOpenUrlFromEventWindowEnter() {
+  var e = {
+    type: 'keydown',
+    key: 'Enter',
+    shiftKey: true
+  };
+  openUrlFromEventHelper(e, false, cr.LinkKind.WINDOW);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+function testOpenUrlFromEventSelf() {
+  var e = {
+    type: 'click',
+    button: 0
+  };
+  openUrlFromEventHelper(e, false, cr.LinkKind.SELF);
+}
+
+function testOpenUrlFromEventSelfEnter() {
+  var e = {
+    type: 'keydown',
+    key: 'Enter'
+  };
+  openUrlFromEventHelper(e, false, cr.LinkKind.SELF);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+function testOpenUrl() {
+  var lc = new cr.LinkController(localStrings);
+
+  var mock = mockController.createFunctionMock(lc, 'openUrls');
+  mock.addExpectation([URL1], cr.LinkKind.SELF);
+  lc.openUrl(URL1, cr.LinkKind.SELF);
+}
+
+/////////////////////////////// OpenUrls //////////////////////////////////////
+
+function testOpenUrlsTooFew() {
+  var lc = new cr.LinkController(localStrings);
+
+  lc.openUrls([], cr.LinkKind.SELF);
+}
+
+function testOpenUrlsTooMany() {
+  var lc = new cr.LinkController(localStrings);
+  lc.warningLimit = 9;
+
+  var urls = new Array(lc.warningLimit + 1);
+
+  lc.window = mockWindow;
+  lc.window.confirm.addExpectation('MSG10');
+
+  lc.openUrls(urls, cr.LinkKind.SELF);
+}
+
+function testOpenUrlsSelf() {
+  var lc = new cr.LinkController(localStrings);
+  lc.window = mockWindow;
+
+  lc.openUrls([URL1], cr.LinkKind.SELF);
+}
+
+function testOpenUrlsForegroundTab() {
+  var lc = new cr.LinkController(localStrings);
+  lc.window = mockWindow;
+
+  chrome.tabs.create.addExpectation({url: URL1, selected: true});
+  chrome.tabs.create.addExpectation({
+    url: BASE + URL2,
+    selected: false
+  });
+
+  lc.openUrls([URL1, URL2], cr.LinkKind.FOREGROUND_TAB);
+}
+
+function testOpenUrlsBackgroundTab() {
+  var lc = new cr.LinkController(localStrings);
+  lc.window = mockWindow;
+
+  chrome.tabs.create.addExpectation({url: URL1, selected: false});
+  chrome.tabs.create.addExpectation({
+    url: BASE + URL2,
+    selected: false
+  });
+
+  lc.openUrls([URL1, URL2], cr.LinkKind.BACKGROUND_TAB);
+}
+
+function testOpenUrlsWindow() {
+  var lc = new cr.LinkController(localStrings);
+  lc.window = mockWindow;
+
+  chrome.windows.create.addExpectation({
+     url: [URL1, BASE + URL2],
+     incognito: false
+  });
+
+  lc.openUrls([URL1, URL2], cr.LinkKind.WINDOW);
+}
+
+function testOpenUrlsIncognito() {
+  var lc = new cr.LinkController(localStrings);
+  lc.window = mockWindow;
+
+  chrome.windows.create.addExpectation({
+     url: [URL1, BASE + URL2],
+     incognito: true
+  });
+
+  lc.openUrls([URL1, URL2], cr.LinkKind.INCOGNITO);
+}
+
+</script>
+</body>
+</html>

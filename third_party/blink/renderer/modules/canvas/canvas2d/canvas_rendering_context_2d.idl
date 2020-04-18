@@ -1,0 +1,164 @@
+/*
+ * Copyright (C) 2006 Apple Computer, Inc.  All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY APPLE COMPUTER, INC. ``AS IS'' AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL APPLE COMPUTER, INC. OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+// http://www.whatwg.org/specs/web-apps/current-work/multipage/the-canvas-element.html#canvasrenderingcontext2d
+
+// The spec specifies:
+//    typedef (HTMLImageElement or
+//             SVGImageElement) HTMLOrSVGImageElement;
+// but there's a problem with our IDL code generator for typedef-in-typedef,
+// so we split this into two for simplicity. There's no difference from a user
+// perspective.
+// TODO(fserb): revisit this once union typedefs are finalized.
+
+typedef (CSSImageValue or
+         HTMLImageElement or
+         SVGImageElement or
+         HTMLVideoElement or
+         HTMLCanvasElement or
+         ImageBitmap or
+         OffscreenCanvas) CanvasImageSource;
+
+enum CanvasFillRule { "nonzero", "evenodd" };
+enum ImageSmoothingQuality {"low", "medium", "high"};
+
+[Exposed=Window]
+interface CanvasRenderingContext2D {
+    // back-reference to the canvas
+    readonly attribute HTMLCanvasElement canvas;
+
+    // state
+    void save(); // push state on state stack
+    void restore(); // pop state stack and restore state
+
+    // transformations (default transform is the identity matrix)
+    void scale(unrestricted double x, unrestricted double y);
+    void rotate(unrestricted double angle);
+    void translate(unrestricted double x, unrestricted double y);
+    void transform(unrestricted double a, unrestricted double b, unrestricted double c, unrestricted double d, unrestricted double e, unrestricted double f);
+    void setTransform(unrestricted double a, unrestricted double b, unrestricted double c, unrestricted double d, unrestricted double e, unrestricted double f);
+    [RaisesException] void setTransform(optional DOMMatrix2DInit transform);
+    DOMMatrix getTransform();
+    void resetTransform();
+
+    // compositing
+    attribute unrestricted double globalAlpha; // (default 1.0)
+    attribute DOMString globalCompositeOperation; // (default source-over)
+    [MeasureAs=Canvas2DFilter, SetterCallWith=ExecutionContext] attribute DOMString filter; // (default 'none')
+
+    // image smoothing
+    attribute boolean imageSmoothingEnabled; // (default True)
+    [MeasureAs=Canvas2DImageSmoothingQuality]attribute ImageSmoothingQuality imageSmoothingQuality; // (default "low")
+
+    // colors and styles (see also the CanvasDrawingStyles interface)
+    attribute (DOMString or CanvasGradient or CanvasPattern) strokeStyle; // (default black)
+    attribute (DOMString or CanvasGradient or CanvasPattern) fillStyle; // (default black)
+    CanvasGradient createLinearGradient(double x0, double y0, double x1, double y1);
+    [RaisesException] CanvasGradient createRadialGradient(double x0, double y0, double r0, double x1, double y1, double r1);
+    [CallWith=ScriptState, RaisesException] CanvasPattern? createPattern(CanvasImageSource image, [TreatNullAs=NullString] DOMString repetitionType);
+
+    // shadows
+    attribute unrestricted double shadowOffsetX;
+    attribute unrestricted double shadowOffsetY;
+    attribute unrestricted double shadowBlur;
+    attribute DOMString shadowColor;
+
+    // rects
+    void clearRect(unrestricted double x, unrestricted double y, unrestricted double width, unrestricted double height);
+    void fillRect(unrestricted double x, unrestricted double y, unrestricted double width, unrestricted double height);
+    void strokeRect(unrestricted double x, unrestricted double y, unrestricted double width, unrestricted double height);
+
+    // path API (see also CanvasPath)
+    void beginPath();
+    void fill(optional CanvasFillRule winding);
+    void fill(Path2D path, optional CanvasFillRule winding);
+    void stroke();
+    void stroke(Path2D path);
+    // Focus rings
+    void drawFocusIfNeeded(Element element);
+    void drawFocusIfNeeded(Path2D path, Element element);
+
+    [RuntimeEnabled=Canvas2dScrollPathIntoView] void scrollPathIntoView(optional Path2D path);
+    void clip(optional CanvasFillRule winding);
+    void clip(Path2D path, optional CanvasFillRule winding);
+    boolean isPointInPath(unrestricted double x, unrestricted double y, optional CanvasFillRule winding);
+    boolean isPointInPath(Path2D path, unrestricted double x, unrestricted double y, optional CanvasFillRule winding);
+    boolean isPointInStroke(unrestricted double x, unrestricted double y);
+    boolean isPointInStroke(Path2D path, unrestricted double x, unrestricted double y);
+
+    // text (see also the CanvasDrawingStyles interface)
+    void fillText(DOMString text, unrestricted double x, unrestricted double y, optional unrestricted double maxWidth);
+    void strokeText(DOMString text, unrestricted double x, unrestricted double y, optional unrestricted double maxWidth);
+    TextMetrics measureText(DOMString text);
+
+    // drawing images
+    [CallWith=ScriptState, RaisesException] void drawImage(CanvasImageSource image, unrestricted double x, unrestricted double y);
+    [CallWith=ScriptState, RaisesException] void drawImage(CanvasImageSource image, unrestricted double x, unrestricted double y, unrestricted double width, unrestricted double height);
+    [CallWith=ScriptState, RaisesException] void drawImage(CanvasImageSource image, unrestricted double sx, unrestricted double sy, unrestricted double sw, unrestricted double sh, unrestricted double dx, unrestricted double dy, unrestricted double dw, unrestricted double dh);
+
+    // hit regions
+    [RuntimeEnabled=CanvasHitRegion, RaisesException] void addHitRegion(optional HitRegionOptions options);
+    [RuntimeEnabled=CanvasHitRegion] void removeHitRegion(DOMString id);
+    [RuntimeEnabled=CanvasHitRegion] void clearHitRegions();
+
+    // pixel manipulation
+    [RaisesException] ImageData createImageData(ImageData imagedata);
+    [RaisesException] ImageData createImageData(long sw, long sh);
+    [RaisesException] ImageData getImageData(long sx, long sy, long sw, long sh);
+    [RaisesException] void putImageData(ImageData imagedata, long dx, long dy);
+    [RaisesException] void putImageData(ImageData imagedata, long dx, long dy, long dirtyX, long dirtyY, long dirtyWidth, long dirtyHeight);
+
+    // https://github.com/WICG/canvas-color-space/blob/master/CanvasColorSpaceProposal.md
+    [RuntimeEnabled=CanvasColorManagement, RaisesException] ImageData createImageData(unsigned long sw, unsigned long sh, ImageDataColorSettings imageDataColorSettings);
+    [RuntimeEnabled=CanvasColorManagement, RaisesException] ImageData createImageData(ImageDataArray data, unsigned long sw, unsigned long sh, optional ImageDataColorSettings imageDataColorSettings);
+
+    // Context state
+    // Should be merged with WebGL counterpart in CanvasRenderingContext, once no-longer experimental
+    [RuntimeEnabled=Canvas2dContextLostRestored] boolean isContextLost();
+
+    // TODO: This will have to be standardized for feature detection as part of the Canvas ColorSpace proposal.
+    [RuntimeEnabled=CanvasColorManagement, MeasureAs=GetCanvas2DContextAttributes] CanvasRenderingContext2DSettings getContextAttributes();
+
+    // FIXME: factor out to CanvasDrawingStyles
+    // line caps/joins
+    attribute unrestricted double lineWidth; // (default 1)
+    attribute DOMString lineCap; // "butt", "round", "square" (default "butt")
+    attribute DOMString lineJoin; // "round", "bevel", "miter" (default "miter")
+    attribute unrestricted double miterLimit; // (default 10)
+
+    // dashed lines
+    void setLineDash(sequence<unrestricted double> dash);
+    sequence<unrestricted double> getLineDash();
+    attribute unrestricted double lineDashOffset;
+
+    // text
+    attribute DOMString font; // (default 10px sans-serif)
+    attribute DOMString textAlign; // "start", "end", "left", "right", "center" (default: "start")
+    attribute DOMString textBaseline; // "top", "hanging", "middle", "alphabetic", "ideographic", "bottom" (default: "alphabetic")
+    [RuntimeEnabled=ExtendedTextMetrics] attribute DOMString direction; // "inherit", "rtl", "ltr" (default: "inherit")
+
+};
+
+CanvasRenderingContext2D implements CanvasPath;

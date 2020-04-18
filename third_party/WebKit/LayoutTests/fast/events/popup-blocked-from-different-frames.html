@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="../../resources/js-test.js"></script>
+        <style>
+            iframe {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                left: 0;
+                top: 0;
+                z-index: 42;
+            }
+
+            iframe.start {
+                display: none;
+            }
+        </style>
+    </head>
+    <body>
+        <iframe class="start" src="about:blank"></iframe>
+        <button id="test">Click Here</button>
+        <div id="console"></div>
+        <script>
+            var win;
+            function clickHandler1()
+            {
+                win = window.open("about:blank");
+                shouldBeNonNull("win");
+                win.close();
+                document.querySelector("iframe").setAttribute("class", "");
+            }
+
+            function clickHandler2()
+            {
+                win = window.open("about:blank");
+                shouldBeNull("win");
+            }
+
+            document.querySelector("#test").addEventListener("mousedown", clickHandler1);
+            document.querySelector("iframe").contentDocument.body.addEventListener("mouseup", clickHandler2);
+
+
+            if (window.testRunner) {
+                testRunner.dumpAsText();
+                testRunner.setCanOpenWindows();
+                testRunner.setPopupBlockingEnabled(true);
+                testRunner.setCloseRemainingWindowsWhenComplete(true);
+
+                var button = document.querySelector("#test");
+
+                eventSender.mouseMoveTo(button.offsetLeft + button.offsetWidth / 2, button.offsetTop + button.offsetHeight / 2);
+                eventSender.mouseDown();
+                eventSender.mouseUp();
+            }
+        </script>
+    </body>
+</html>

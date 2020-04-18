@@ -1,0 +1,85 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/html/cr/ui/focus_without_ink.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-icon/iron-icon.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-resizable-behavior/iron-resizable-behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/neon-animatable-behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-ripple/paper-ripple.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-spinner/paper-spinner-lite.html">
+<link rel="import" href="../icons.html">
+<link rel="import" href="../route.html">
+<link rel="import" href="settings_subpage_search.html">
+<link rel="import" href="../settings_shared_css.html">
+
+<dom-module id="settings-subpage">
+  <template>
+    <style include="settings-shared">
+      :host {
+        display: block;
+        padding-bottom: 60px;
+      }
+
+      #headerLine {
+        min-height: 40px;
+        padding-bottom: 24px;
+        padding-top: 8px;
+      }
+
+      #learnMore {
+        @apply --cr-paper-icon-button-margin;
+        align-items: center;
+        display: flex;
+        height: var(--cr-icon-ripple-size);
+        justify-content: center;
+        position: relative;  /* Needed for paper-ripple. */
+        width: var(--cr-icon-ripple-size);
+      }
+
+      paper-icon-button-light {
+        /* Centers the ripple on the icon with appropriate margin on right. */
+        -webkit-margin-end: 10px;
+        -webkit-margin-start: -10px;
+      }
+
+      paper-spinner-lite {
+        @apply --cr-icon-height-width;
+      }
+
+      h1 {
+        flex: 1;  /* Push other items to the end. */
+        @apply --cr-title-text;
+      }
+
+      settings-subpage-search {
+        /* Keep normal icon spacing from subpage-title-extra controls. */
+        -webkit-margin-start: 16px;
+      }
+    </style>
+    <div class="settings-box first" id="headerLine">
+      <paper-icon-button-light class="icon-arrow-back">
+        <button id="closeButton" on-click="onTapBack_"
+            aria-label="$i18n{back}"></button>
+      </paper-icon-button-light>
+      <h1>[[pageTitle]]</h1>
+      <slot name="subpage-title-extra"></slot>
+      <template is="dom-if" if="[[learnMoreUrl]]">
+        <a id="learnMore" aria-label="$i18n{learnMore}"
+            href="[[learnMoreUrl]]" target="_blank">
+          <iron-icon icon="settings:help-outline"></iron-icon>
+          <paper-ripple class="circle" center></paper-ripple>
+        </a>
+      </template>
+      <template is="dom-if" if="[[searchLabel]]">
+        <settings-subpage-search label="[[searchLabel]]"
+            on-search-changed="onSearchChanged_">
+        </settings-subpage-search>
+      </template>
+      <template is="dom-if" if="[[showSpinner]]">
+        <paper-spinner-lite active></paper-spinner-lite>
+      </template>
+    </div>
+    <slot></slot>
+  </template>
+  <script src="settings_subpage.js"></script>
+</dom-module>

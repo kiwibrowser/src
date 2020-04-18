@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<style>
+#container {
+    overflow: scroll;
+    width: 400px;
+    height: 300px;
+    background: linear-gradient(black, white);
+    background-attachment: local;
+}
+
+#bloat {
+    height: 1000px;
+    transform: translateZ(0);
+}
+</style>
+<div id="container">
+    <div id="bloat"></div>
+</div>
+<script>
+    if (window.testRunner) {
+        testRunner.waitUntilDone();
+        testRunner.layoutAndPaintAsyncThen(function() {
+            document.getElementById('container').scrollTop = 1000;
+            testRunner.notifyDone();
+        });
+    } else {
+        // For manual test.
+        setTimeout(function() {
+            document.getElementById('container').scrollTop = 1000;
+        }, 500);
+    }
+</script>

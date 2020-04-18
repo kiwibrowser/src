@@ -1,0 +1,34 @@
+<body>
+<script>
+if (window.testRunner) {
+    testRunner.dumpBackForwardList();
+    testRunner.dumpAsText();
+    testRunner.waitUntilDone();
+}
+
+function childLoaded() {
+    if (window.sessionStorage.getItem("dynamic-iframe") != null) {
+        setTimeout(function() {
+            location.assign("resources/go-back.html");
+        }, 0);
+    } else {
+        setTimeout(function() {
+            if (window.testRunner)
+                testRunner.notifyDone();
+        }, 0);
+    }
+}
+
+var i = document.createElement("iframe");
+i.src = "javascript:false";
+document.body.appendChild(i);
+
+if (window.sessionStorage.getItem("dynamic-iframe") == null) {
+    window.sessionStorage.setItem("dynamic-iframe", true);
+    i.src = "resources/back-to-dynamic-iframe-iframe.html#FAIL";
+} else {
+    window.sessionStorage.removeItem("dynamic-iframe");
+    i.src = "resources/back-to-dynamic-iframe-iframe.html#PASS";
+}
+</script>
+</body>

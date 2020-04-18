@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="../resources/device-orientation-helpers.js"></script>
+<script>
+'use strict';
+
+async_test(test => {
+  assertTestRunner();
+  var orientationData = generateOrientationData(1.1, 2.2, 3.3, true);
+
+  var firstListenerEvents = 0;
+  var firstListener = test.step_func(event => {
+    checkOrientation(event, orientationData);
+    window.removeEventListener('deviceorientation', firstListener);
+    if (++firstListenerEvents == 1)
+      window.addEventListener('deviceorientation', secondListener);
+  });
+
+  var secondListenerEvents = 0;
+  var secondListener = test.step_func(event => {
+    checkOrientation(event, orientationData);
+    ++secondListenerEvents;
+    assert_equals(firstListenerEvents, 1, "Too many events fired for the first listener");
+    assert_equals(secondListenerEvents, 1, "Too many events fired for the second listener");
+    test.done();
+  });
+
+  setMockOrientation(orientationData);
+  window.addEventListener('deviceorientation', firstListener);
+}, 'Tests that adding a new deviceorientation event listener from a callback works as expected.');
+</script>
+</body>
+</html>

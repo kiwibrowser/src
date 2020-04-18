@@ -1,0 +1,60 @@
+// Copyright 2015 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package sync_pb;
+
+// Sync proto to store entity metadata in model type storage.
+message EntityMetadata {
+  // A hash based on the client tag and model type.
+  // Used for various map lookups. Should always be available.
+  // Sent to the server as SyncEntity::client_defined_unique_tag.
+  optional string client_tag_hash = 1;
+
+  // The entity's server-assigned ID.
+  //
+  // Prior to the item's first commit, we leave this value as an empty string.
+  // The initial ID for a newly created item has to meet certain uniqueness
+  // requirements, and we handle those on the sync thread.
+  optional string server_id = 2;
+
+  // Whether or not the entity is deleted.
+  optional bool is_deleted = 3;
+
+  // A version number used to track in-progress commits. Each local change
+  // increments this number.
+  optional int64 sequence_number = 4;
+
+  // The sequence number of the last item known to be successfully committed.
+  optional int64 acked_sequence_number = 5;
+
+  // The server version on which this item is based.
+  //
+  // If there are no local changes, this is the version of the entity as we see
+  // it here.
+  //
+  // If there are local changes, this is the version of the entity on which
+  // those changes are based.
+  optional int64 server_version = 6 [default = -1];
+
+  // Entity creation and modification timestamps.
+  // Assigned by the client and synced by the server, though the server usually
+  // doesn't bother to inspect their values.
+  optional int64 creation_time = 7;
+  optional int64 modification_time = 8;
+
+  // A hash of the current entity specifics value. Used to detect whether
+  // entity's specifics value has changed without having to keep specifics in
+  // memory.
+  optional string specifics_hash = 9;
+
+  // A hash of the last specifics known by both the client and server. Used to
+  // detect when local commits and remote updates are just for encryption. This
+  // value will be the empty string only in the following cases: the entity is
+  // in sync with the server, has never been synced, or is deleted.
+  optional string base_specifics_hash = 10;
+}

@@ -1,0 +1,28 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// https://w3c.github.io/payment-request/#paymentrequest-interface
+// http://crbug.com/587995
+
+[
+    RuntimeEnabled=PaymentRequest,
+    Constructor(sequence<PaymentMethodData> methodData, PaymentDetailsInit details, optional PaymentOptions options),
+    ConstructorCallWith=ExecutionContext,
+    RaisesException=Constructor,
+    SecureContext,
+    Exposed=Window,
+    ActiveScriptWrappable
+] interface PaymentRequest : EventTarget {
+    [CallWith=ScriptState] Promise<PaymentResponse> show();
+    [CallWith=ScriptState] Promise<void> abort();
+    [CallWith=ScriptState] Promise<boolean> canMakePayment();
+
+    readonly attribute DOMString id;
+    [ImplementedAs=getShippingAddress] readonly attribute PaymentAddress? shippingAddress;
+    readonly attribute DOMString? shippingOption;
+    readonly attribute PaymentShippingType? shippingType;
+
+    attribute EventHandler onshippingaddresschange;
+    attribute EventHandler onshippingoptionchange;
+};

@@ -1,0 +1,44 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "services/resource_coordinator/public/cpp/memory_instrumentation/global_memory_dump.h"
+
+namespace memory_instrumentation {
+
+GlobalMemoryDump::GlobalMemoryDump(
+    std::vector<mojom::ProcessMemoryDumpPtr> process_dumps) {
+  auto it = process_dumps_.before_begin();
+  for (mojom::ProcessMemoryDumpPtr& process_dump : process_dumps) {
+    it = process_dumps_.emplace_after(it, std::move(process_dump));
+  }
+}
+GlobalMemoryDump::~GlobalMemoryDump() = default;
+
+std::unique_ptr<GlobalMemoryDump> GlobalMemoryDump::MoveFrom(
+    mojom::GlobalMemoryDumpPtr ptr) {
+  return ptr ? std::unique_ptr<GlobalMemoryDump>(
+                   new GlobalMemoryDump(std::move(ptr->process_dumps)))
+             : nullptr;
+}
+
+GlobalMemoryDump::ProcessDump::ProcessDump(
+    mojom::ProcessMemoryDumpPtr process_dump)
+    : raw_dump_(std::move(process_dump)) {}
+GlobalMemoryDump::ProcessDump::~ProcessDump() = default;
+
+base::Optional<uint64_t> GlobalMemoryDump::ProcessDump::GetMetric(
+    const std::string& dump_name,
+    const std::string& metric_name) const {
+  auto dump_it = raw_dump_->chrome_allocator_dumps.find(dump_name);
+  if (dump_it == raw_dump_->chrome_allocator_dumps.cend())
+    return base::nullopt;
+
+  auto metric_it = dump_it->second->numeric_entries.find(metric_name);
+  if (metric_it == dump_it->second->numeric_entries.cend())
+    return base::nullopt;
+
+  return base::Optional<uint64_t>(metric_it->second);
+}
+
+}  // namespace memory_instrumentation

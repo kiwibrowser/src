@@ -1,0 +1,103 @@
+<html>
+<body id="body">
+    <h1>WebRTC Pause Play test</h1>
+    <p>Status: <span id="status">not-started</span></p>
+</body>
+<script type="text/javascript" src="webrtc_test_utilities.js"></script>
+<script type="text/javascript" src="peerconnection-multiple-streams.js"></script>
+<script type="text/javascript">
+const $ = document.getElementById.bind(document);
+
+class TestRunner {
+  constructor(runtimeSeconds, pausePlayIterationDelayMillis) {
+    this.runtimeSeconds = runtimeSeconds;
+    this.pausePlayIterationDelayMillis = pausePlayIterationDelayMillis;
+    this.elements = [];
+    this.peerConnections = [];
+    this.iteration = 0;
+    this.startTime;
+  }
+
+  addPeerConnection(elementType) {
+    const element = document.createElement(elementType);
+    element.autoplay = false;
+    $('body').appendChild(element);
+    let resolution;
+    if (elementType === 'video') {
+      resolution = {w: 300, h: 225};
+    } else if (elementType === 'audio') {
+      resolution = {w: -1, h: -1};  // -1 is interpreted as disabled
+    } else {
+      failTest('elementType must be one of "audio" or "video"');
+    }
+    this.elements.push(element);
+    this.peerConnections.push(
+        new PeerConnection(element, [resolution], false));
+  }
+
+  runTest() {
+    let promises = this.peerConnections.map((conn) => conn.start());
+    Promise.all(promises)
+        .then(() => {
+          this.startTime = Date.now();
+          this.pauseAndPlayLoop();
+        })
+        .catch((e) => {failTest(e.message)});
+  }
+
+  pauseAndPlayLoop() {
+    this.iteration++;
+    this.elements.forEach((feed) => {
+      if (Math.random() >= 0.5) {
+        feed.play();
+      } else {
+        feed.pause();
+      }
+    });
+    const status = this.getStatus();
+    $('status').textContent = status
+    if (status != 'ok-done') {
+      setTimeout(
+          () => {this.pauseAndPlayLoop()}, this.pausePlayIterationDelayMillis);
+    } else {  // We're done. Pause all feeds.
+      this.elements.forEach((feed) => {
+        feed.pause();
+      });
+      reportTestSuccess();
+    }
+  }
+
+  getStatus() {
+    if (this.iteration == 0) {
+      return 'not-started';
+    }
+    this.peerConnections.forEach((conn) => conn.verifyState());
+
+    const timeSpent = Date.now() - this.startTime;
+    if (timeSpent >= this.runtimeSeconds * 1000) {
+      return 'ok-done';
+    } else {
+      return `running, iteration: ${this.iteration}`;
+    }
+  }
+}
+
+let testRunner;
+
+function runPausePlayTest(
+    runtimeSeconds, numPeerConnections, pausePlayIterationDelayMillis,
+    elementType) {
+  testRunner = new TestRunner(
+      runtimeSeconds, pausePlayIterationDelayMillis);
+  for (let i = 0; i < numPeerConnections; i++) {
+    testRunner.addPeerConnection(elementType);
+  }
+  testRunner.runTest();
+}
+
+function getStatus() {
+  return testRunner ? testRunner.getStatus() : 'not-initialized';
+}
+
+</script>
+</html>

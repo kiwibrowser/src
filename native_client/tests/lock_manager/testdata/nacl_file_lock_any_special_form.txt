@@ -1,0 +1,30 @@
+(set-threads 3)
+(set-files 1)
+(lock 0 0)
+(match (locked 0 0))
+(lock 1 0)
+(match (epsilon))
+(lock 2 0)
+(match (epsilon))
+(unlock 0 0)
+(eval
+  (nth
+    (match
+      (all
+        (unlocked 0 0)
+        (any (locked 1 0)
+             (locked 2 0))))
+    (quote
+      ((progn
+         (unlock 1 0)
+         (match (all (unlocked 1 0)
+                     (locked 2 0)))
+
+         (unlock 2 0)
+         (match (unlocked 2 0)))
+       (progn
+         (unlock 2 0)
+         (match (all (unlocked 2 0)
+                     (locked 1 0)))
+         (unlock 1 0)
+         (match (unlocked 1 0)))))))

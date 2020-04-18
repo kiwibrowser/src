@@ -1,0 +1,49 @@
+{% from 'templates/fields/field.tmpl' import encode, decode, const_ref, nonconst_ref, getter_expression, setter_expression, set_if_changed %}
+
+{% macro decl_getter_method(field) -%}
+{% if 'getter' not in field.computed_style_custom_functions %}
+{{const_ref(field)}} {{field.getter_method_name}}() const {
+  return {{decode(field, getter_expression(field))}};
+}
+{% endif %}
+{%- endmacro %}
+
+{% macro decl_setter_method(field) -%}
+{% if 'setter' not in field.computed_style_custom_functions %}
+void {{field.setter_method_name}}({{const_ref(field)}} v) {
+  {{set_if_changed(field, encode(field, "v"))|indent(2)}}
+}
+{% endif %}
+{%- endmacro %}
+
+{% macro decl_resetter_method(field) -%}
+{% if 'resetter' not in field.computed_style_custom_functions %}
+inline void {{field.resetter_method_name}}() {
+  {{setter_expression(field)}} = {{encode(field, field.default_value)}};
+}
+{% endif %}
+{%- endmacro %}
+
+{% macro decl_mutable_method(field) -%}
+{% if 'mutable' not in field.computed_style_custom_functions %}
+{{nonconst_ref(field)}} {{field.internal_mutable_method_name}}() {
+  return {{decode(field, setter_expression(field))}};
+}
+{% endif %}
+{%- endmacro %}
+
+{% macro decl_internal_getter_method(field) -%}
+{% if 'getter' in field.computed_style_custom_functions %}
+{{const_ref(field)}} {{field.internal_getter_method_name}}() const {
+  return {{decode(field, getter_expression(field))}};
+}
+{% endif %}
+{%- endmacro %}
+
+{% macro decl_internal_setter_method(field) -%}
+{% if 'setter' in field.computed_style_custom_functions %}
+void {{field.internal_setter_method_name}}({{const_ref(field)}} v) {
+  {{set_if_changed(field, encode(field, "v"))|indent(2)}}
+}
+{% endif %}
+{%- endmacro %}

@@ -1,0 +1,296 @@
+// Copyright 2015 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "third_party/blink/renderer/bindings/core/v8/rejected_promises.h"
+
+#include <memory>
+
+#include "base/memory/ptr_util.h"
+#include "third_party/blink/public/platform/platform.h"
+#include "third_party/blink/public/platform/web_thread.h"
+#include "third_party/blink/renderer/bindings/core/v8/script_value.h"
+#include "third_party/blink/renderer/bindings/core/v8/v8_binding_for_core.h"
+#include "third_party/blink/renderer/core/dom/events/event_target.h"
+#include "third_party/blink/renderer/core/events/promise_rejection_event.h"
+#include "third_party/blink/renderer/core/execution_context/execution_context.h"
+#include "third_party/blink/renderer/core/inspector/thread_debugger.h"
+#include "third_party/blink/renderer/platform/bindings/scoped_persistent.h"
+#include "third_party/blink/renderer/platform/bindings/script_state.h"
+#include "third_party/blink/renderer/platform/bindings/v8_per_isolate_data.h"
+#include "third_party/blink/renderer/platform/scheduler/public/thread_scheduler.h"
+#include "third_party/blink/renderer/platform/wtf/functional.h"
+
+namespace blink {
+
+static const unsigned kMaxReportedHandlersPendingResolution = 1000;
+
+class RejectedPromises::Message final {
+ public:
+  static std::unique_ptr<Message> Create(
+      ScriptState* script_state,
+      v8::Local<v8::Promise> promise,
+      v8::Local<v8::Value> exception,
+      const String& error_message,
+      std::unique_ptr<SourceLocation> location,
+      AccessControlStatus cors_status) {
+    return base::WrapUnique(new Message(script_state, promise, exception,
+                                        error_message, std::move(location),
+                                        cors_status));
+  }
+
+  bool IsCollected() { return collected_ || !script_state_->ContextIsValid(); }
+
+  bool HasPromise(v8::Local<v8::Value> promise) {
+    ScriptState::Scope scope(script_state_);
+    return promise == promise_.NewLocal(script_state_->GetIsolate());
+  }
+
+  void Report() {
+    if (!script_state_->ContextIsValid())
+      return;
+    // If execution termination has been triggered, quietly bail out.
+    if (script_state_->GetIsolate()->IsExecutionTerminating())
+      return;
+    ExecutionContext* execution_context = ExecutionContext::From(script_state_);
+    if (!execution_context)
+      return;
+
+    ScriptState::Scope scope(script_state_);
+    v8::Local<v8::Value> value = promise_.NewLocal(script_state_->GetIsolate());
+    v8::Local<v8::Value> reason =
+        exception_.NewLocal(script_state_->GetIsolate());
+    // Either collected or https://crbug.com/450330
+    if (value.IsEmpty() || !value->IsPromise())
+      return;
+    DCHECK(!HasHandler());
+
+    EventTarget* target = execution_context->ErrorEventTarget();
+    if (target && !execution_context->ShouldSanitizeScriptError(resource_name_,
+                                                                cors_status_)) {
+      PromiseRejectionEventInit init;
+      init.setPromise(ScriptPromise(script_state_, value));
+      init.setReason(ScriptValue(script_state_, reason));
+      init.setCancelable(true);
+      PromiseRejectionEvent* event = PromiseRejectionEvent::Create(
+          script_state_, EventTypeNames::unhandledrejection, init);
+      // Log to console if event was not canceled.
+      should_log_to_console_ =
+          target->DispatchEvent(event) == DispatchEventResult::kNotCanceled;
+    }
+
+    if (should_log_to_console_) {
+      ThreadDebugger* debugger =
+          ThreadDebugger::From(script_state_->GetIsolate());
+      if (debugger) {
+        promise_rejection_id_ = debugger->PromiseRejected(
+            script_state_->GetContext(), error_message_, reason,
+            std::move(location_));
+      }
+    }
+
+    location_.reset();
+  }
+
+  void Revoke() {
+    ExecutionContext* execution_context = ExecutionContext::From(script_state_);
+    if (!execution_context)
+      return;
+
+    ScriptState::Scope scope(script_state_);
+    v8::Local<v8::Value> value = promise_.NewLocal(script_state_->GetIsolate());
+    v8::Local<v8::Value> reason =
+        exception_.NewLocal(script_state_->GetIsolate());
+    // Either collected or https://crbug.com/450330
+    if (value.IsEmpty() || !value->IsPromise())
+      return;
+
+    EventTarget* target = execution_context->ErrorEventTarget();
+    if (target && !execution_context->ShouldSanitizeScriptError(resource_name_,
+                                                                cors_status_)) {
+      PromiseRejectionEventInit init;
+      init.setPromise(ScriptPromise(script_state_, value));
+      init.setReason(ScriptValue(script_state_, reason));
+      PromiseRejectionEvent* event = PromiseRejectionEvent::Create(
+          script_state_, EventTypeNames::rejectionhandled, init);
+      target->DispatchEvent(event);
+    }
+
+    if (should_log_to_console_ && promise_rejection_id_) {
+      ThreadDebugger* debugger =
+          ThreadDebugger::From(script_state_->GetIsolate());
+      if (debugger) {
+        debugger->PromiseRejectionRevoked(script_state_->GetContext(),
+                                          promise_rejection_id_);
+      }
+    }
+  }
+
+  void MakePromiseWeak() {
+    DCHECK(!promise_.IsEmpty());
+    DCHECK(!promise_.IsWeak());
+    promise_.SetWeak(this, &Message::DidCollectPromise);
+    exception_.SetWeak(this, &Message::DidCollectException);
+  }
+
+  void MakePromiseStrong() {
+    DCHECK(!promise_.IsEmpty());
+    DCHECK(promise_.IsWeak());
+    promise_.ClearWeak();
+    exception_.ClearWeak();
+  }
+
+  bool HasHandler() {
+    DCHECK(!IsCollected());
+    ScriptState::Scope scope(script_state_);
+    v8::Local<v8::Value> value = promise_.NewLocal(script_state_->GetIsolate());
+    return v8::Local<v8::Promise>::Cast(value)->HasHandler();
+  }
+
+  ExecutionContext* GetContext() {
+    return ExecutionContext::From(script_state_);
+  }
+
+ private:
+  Message(ScriptState* script_state,
+          v8::Local<v8::Promise> promise,
+          v8::Local<v8::Value> exception,
+          const String& error_message,
+          std::unique_ptr<SourceLocation> location,
+          AccessControlStatus cors_status)
+      : script_state_(script_state),
+        promise_(script_state->GetIsolate(), promise),
+        exception_(script_state->GetIsolate(), exception),
+        error_message_(error_message),
+        resource_name_(location->Url()),
+        location_(std::move(location)),
+        promise_rejection_id_(0),
+        collected_(false),
+        should_log_to_console_(true),
+        cors_status_(cors_status) {}
+
+  static void DidCollectPromise(const v8::WeakCallbackInfo<Message>& data) {
+    data.GetParameter()->collected_ = true;
+    data.GetParameter()->promise_.Clear();
+  }
+
+  static void DidCollectException(const v8::WeakCallbackInfo<Message>& data) {
+    data.GetParameter()->exception_.Clear();
+  }
+
+  ScriptState* script_state_;
+  ScopedPersistent<v8::Promise> promise_;
+  ScopedPersistent<v8::Value> exception_;
+  String error_message_;
+  String resource_name_;
+  std::unique_ptr<SourceLocation> location_;
+  unsigned promise_rejection_id_;
+  bool collected_;
+  bool should_log_to_console_;
+  AccessControlStatus cors_status_;
+};
+
+RejectedPromises::RejectedPromises() = default;
+
+RejectedPromises::~RejectedPromises() = default;
+
+void RejectedPromises::RejectedWithNoHandler(
+    ScriptState* script_state,
+    v8::PromiseRejectMessage data,
+    const String& error_message,
+    std::unique_ptr<SourceLocation> location,
+    AccessControlStatus cors_status) {
+  queue_.push_back(Message::Create(script_state, data.GetPromise(),
+                                   data.GetValue(), error_message,
+                                   std::move(location), cors_status));
+}
+
+void RejectedPromises::HandlerAdded(v8::PromiseRejectMessage data) {
+  // First look it up in the pending messages and fast return, it'll be covered
+  // by processQueue().
+  for (auto it = queue_.begin(); it != queue_.end(); ++it) {
+    if (!(*it)->IsCollected() && (*it)->HasPromise(data.GetPromise())) {
+      queue_.erase(it);
+      return;
+    }
+  }
+
+  // Then look it up in the reported errors.
+  for (size_t i = 0; i < reported_as_errors_.size(); ++i) {
+    std::unique_ptr<Message>& message = reported_as_errors_.at(i);
+    if (!message->IsCollected() && message->HasPromise(data.GetPromise())) {
+      message->MakePromiseStrong();
+      message->GetContext()
+          ->GetTaskRunner(TaskType::kDOMManipulation)
+          ->PostTask(FROM_HERE, WTF::Bind(&RejectedPromises::RevokeNow,
+                                          scoped_refptr<RejectedPromises>(this),
+                                          WTF::Passed(std::move(message))));
+      reported_as_errors_.EraseAt(i);
+      return;
+    }
+  }
+}
+
+void RejectedPromises::Dispose() {
+  if (queue_.IsEmpty())
+    return;
+
+  std::unique_ptr<MessageQueue> queue = std::make_unique<MessageQueue>();
+  queue->Swap(queue_);
+  ProcessQueueNow(std::move(queue));
+}
+
+void RejectedPromises::ProcessQueue() {
+  if (queue_.IsEmpty())
+    return;
+
+  std::map<ExecutionContext*, std::unique_ptr<MessageQueue>> queues;
+  while (!queue_.IsEmpty()) {
+    std::unique_ptr<Message> message = queue_.TakeFirst();
+    ExecutionContext* context = message->GetContext();
+    if (queues.find(context) == queues.end()) {
+      queues.emplace(context, std::make_unique<MessageQueue>());
+    }
+    queues[context]->emplace_back(std::move(message));
+  }
+
+  for (auto& kv : queues) {
+    std::unique_ptr<MessageQueue> queue = std::make_unique<MessageQueue>();
+    queue->Swap(*kv.second);
+    kv.first->GetTaskRunner(blink::TaskType::kDOMManipulation)
+        ->PostTask(FROM_HERE, WTF::Bind(&RejectedPromises::ProcessQueueNow,
+                                        scoped_refptr<RejectedPromises>(this),
+                                        WTF::Passed(std::move(queue))));
+  }
+}
+
+void RejectedPromises::ProcessQueueNow(std::unique_ptr<MessageQueue> queue) {
+  // Remove collected handlers.
+  for (size_t i = 0; i < reported_as_errors_.size();) {
+    if (reported_as_errors_.at(i)->IsCollected())
+      reported_as_errors_.EraseAt(i);
+    else
+      ++i;
+  }
+
+  while (!queue->IsEmpty()) {
+    std::unique_ptr<Message> message = queue->TakeFirst();
+    if (message->IsCollected())
+      continue;
+    if (!message->HasHandler()) {
+      message->Report();
+      message->MakePromiseWeak();
+      reported_as_errors_.push_back(std::move(message));
+      if (reported_as_errors_.size() > kMaxReportedHandlersPendingResolution) {
+        reported_as_errors_.EraseAt(0,
+                                    kMaxReportedHandlersPendingResolution / 10);
+      }
+    }
+  }
+}
+
+void RejectedPromises::RevokeNow(std::unique_ptr<Message> message) {
+  message->Revoke();
+}
+
+}  // namespace blink

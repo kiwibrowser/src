@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<body>
+<script src="../resources/js-test.js"></script>
+<script>
+    description("Validates the exposed Gamepad API.")
+
+    shouldBeDefined("navigator.getGamepads");
+    shouldBeDefined("GamepadEvent");
+
+    gamepads = navigator.getGamepads();
+    shouldBe("gamepads.length", "4");
+    shouldBeNull("gamepads[0]");
+    shouldBe("gamepads.item.__proto__", "Function.prototype")
+    shouldBeNull("gamepads.item(0)");
+
+    if (window.gamepadController)
+    {
+        gamepadController.connect(0);
+        gamepadController.setId(0, "MockStick 3000");
+        gamepadController.setButtonCount(0, 1);
+        gamepadController.setAxisCount(0, 1);
+
+        gamepad = navigator.getGamepads()[0];
+        shouldBeNonNull("gamepad");
+        shouldBeTrue("gamepad.connected");
+        shouldBe("gamepad.__proto__", "Gamepad.prototype");
+        shouldBe("gamepad.id.__proto__", "String.prototype");
+        shouldBe("gamepad.connected.__proto__", "Boolean.prototype");
+        shouldBe("gamepad.index.__proto__", "Number.prototype");
+        shouldBe("gamepad.timestamp.__proto__", "Number.prototype");
+        shouldBe("gamepad.axes.__proto__", "Array.prototype");
+        shouldBe("gamepad.axes[0].__proto__", "Number.prototype");
+        shouldBe("gamepad.buttons.__proto__", "Array.prototype");
+        shouldBe("gamepad.buttons[0].pressed.__proto__", "Boolean.prototype");
+        shouldBe("gamepad.buttons[0].value.__proto__", "Number.prototype");
+        shouldBe("gamepad.mapping.__proto__", "String.prototype");
+        shouldBeTrue("Object.isFrozen(gamepad.axes)");
+        shouldBeTrue("Object.isFrozen(gamepad.buttons)");
+    }
+    else
+    {
+        testFailed("no gamepadController available.");
+    }
+</script>
+</body>

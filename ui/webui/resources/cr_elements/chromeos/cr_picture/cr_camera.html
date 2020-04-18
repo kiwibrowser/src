@@ -1,0 +1,170 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/shared_style_css.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-spinner/paper-spinner-lite.html">
+<link rel="import" href="cr_png_behavior.html">
+
+<dom-module id="cr-camera">
+  <template>
+    <!-- Note: Do not include cr-shared-style, we use different
+         paper-icon-button-light styling -->
+    <style>
+      :host {
+        --cr-camera-hidden-frame-size: 406px;
+        --cr-camera-preview-frame-size: 280px;
+      }
+
+      #perspectiveBox {
+        height: var(--cr-camera-image-size, 228px);
+        margin: auto;
+        perspective: 600px;
+        width: var(--cr-camera-image-size, 228px);
+      }
+
+      #userImageStreamCrop {
+        border-top-left-radius: 2px;
+        border-top-right-radius: 2px;
+        height: 100%;
+        overflow: hidden;
+        position: relative;
+        transform: rotateY(180deg);
+        width: 100%;
+      }
+
+      #userImageStreamCrop::after {
+        border: 100px solid rgba(214, 214, 214, 0.34);
+        border-radius: 100%;
+        content: '';
+        display: block;
+        height: var(--cr-camera-hidden-frame-size);
+        margin: 50% 50%;
+        transform: translateZ(0) translateX(-50%) translateY(-50%);
+        transition: width 100ms, height 100ms;
+        transition-timing-function: ease-in;
+        width: var(--cr-camera-hidden-frame-size);
+      }
+
+      :host-context([dir=rtl]) #userImageStreamCrop::after {
+        float: left;
+      }
+
+      #userImageStreamCrop.preview::after {
+        height: var(--cr-camera-preview-frame-size);
+        transition-timing-function: ease-out;
+        width: var(--cr-camera-preview-frame-size);
+      }
+
+      :host([!videomode]) #userImageStreamCrop.capture::after {
+        background-color: white;
+        transition: background-color 50ms ease-in 100ms;
+      }
+
+      @-webkit-keyframes flash {
+        0% { background-color: rgba(255, 255, 255, 0); }
+        33% { background-color: rgba(255, 255, 255, 0.67); }
+        100% { background-color: rgba(255, 255, 255, 0); }
+      }
+
+      :host([videomode]) #userImageStreamCrop.capture::after {
+        animation-delay: 100ms;
+        animation-duration: 100ms;
+        animation-iteration-count: 10;
+        animation-name: flash;
+        animation-timing-function: ease-out;
+      }
+
+      paper-spinner-lite {
+        bottom: 0;
+        left: 0;
+        margin: auto auto;
+        position: absolute;
+        right: 0;
+        top: 0;
+      }
+
+      #cameraVideo {
+        height: var(--cr-camera-image-size, 228px);
+        object-fit: cover;
+        object-position: center;
+        position: absolute;
+        width: var(--cr-camera-image-size, 228px);
+      }
+
+      #cameraControls {
+        align-items: center;
+        background-color: var(--google-blue-500);
+        border-bottom-left-radius: 2px;
+        border-bottom-right-radius: 2px;
+        display: flex;
+        height: 32px;
+        justify-content: space-between;
+        margin: auto;
+        width: var(--cr-camera-image-size, 228px);
+      }
+
+      #cameraControls > div {
+        margin: 0 4px;
+        width: 32px;
+      }
+
+      #cameraControls > button {
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: 20px;
+        display: block;
+      }
+
+      #takePhoto {
+        background-image: url(camera_shutter_icon.svg);
+      }
+
+      :host([videomode]) #takePhoto {
+        background-image: url(videocam_shutter_icon.svg);
+      }
+
+      :host-context([dir=rtl]) #switchMode {
+        float: left;
+      }
+
+      #switchMode {
+        -webkit-margin-end: 8px;
+        background-image: url(videocam_icon.svg);
+      }
+
+      :host([videomode]) #switchMode {
+        background-image: url(camera_alt_icon.svg);
+      }
+    </style>
+    <div id="perspectiveBox">
+      <div id="userImageStreamCrop">
+        <video id="cameraVideo" autoplay hidden="[[!cameraOnline_]]"></video>
+        <paper-spinner-lite active="[[!cameraOnline_]]"></paper-spinner-lite>
+      </div>
+    </div>
+    <div id="cameraControls">
+      <div>
+        <!-- Empty div for even 'space-between' justification -->
+      </div>
+      <div>
+        <paper-icon-button-light>
+          <button id="takePhoto" tabindex="1"
+              title="[[getTakePhotoLabel_(videomode, takePhotoLabel,
+                  captureVideoLabel)]]" on-tap="takePhoto"
+              disabled="[[!cameraOnline_]]">
+          </button>
+        </paper-icon-button-light>
+      </div>
+      <div>
+        <paper-icon-button-light hidden="[[!videoModeEnabled]]">
+          <button id="switchMode" tabindex="2"
+              title="[[getSwitchModeLabel_(videomode, switchModeToCameraLabel,
+                  switchModeToVideoLabel)]]" on-tap="onTapSwitchMode_"
+              disabled="[[!cameraOnline_]]">
+          </button>
+        </paper-icon-button-light>
+      </div>
+    </div>
+  </template>
+  <script src="cr_camera.js"></script>
+</dom-module>

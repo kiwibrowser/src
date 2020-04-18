@@ -1,0 +1,165 @@
+// Copyright (c) 2013 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// Use the <code>chrome.identity</code> API to get OAuth2 access tokens.
+namespace identity {
+
+  dictionary AccountInfo {
+    // A unique identifier for the account. This ID will not change
+    // for the lifetime of the account.
+    DOMString id;
+  };
+
+  dictionary ProfileUserInfo {
+    // An email address for the user account signed into the current
+    // profile. Empty if the user is not signed in or the
+    // <code>identity.email</code> manifest permission is not
+    // specified.
+    DOMString email;
+
+    // A unique identifier for the account. This ID will not change
+    // for the lifetime of the account. Empty if the user is not
+    // signed in or (in M41+) the <code>identity.email</code>
+    // manifest permission is not specified.
+    DOMString id;
+  };
+
+  dictionary TokenDetails {
+    // Fetching a token may require the user to sign-in to Chrome, or
+    // approve the application's requested scopes. If the interactive
+    // flag is <code>true</code>, <code>getAuthToken</code> will
+    // prompt the user as necessary. When the flag is
+    // <code>false</code> or omitted, <code>getAuthToken</code> will
+    // return failure any time a prompt would be required.
+    boolean? interactive;
+
+    // The account ID whose token should be returned. If not
+    // specified, the primary account for the profile will be used.
+    //
+    // <code>account</code> is only supported when the
+    // "enable-new-profile-management" flag is set.
+    AccountInfo? account;
+
+    // A list of OAuth2 scopes to request.
+    //
+    // When the <code>scopes</code> field is present, it overrides the
+    // list of scopes specified in manifest.json.
+    DOMString[]? scopes;
+  };
+
+  dictionary InvalidTokenDetails {
+    // The specific token that should be removed from the cache.
+    DOMString token;
+  };
+
+  dictionary WebAuthFlowDetails {
+    // The URL that initiates the auth flow.
+    DOMString url;
+
+    // Whether to launch auth flow in interactive mode.
+    //
+    // Since some auth flows may immediately redirect to a result URL,
+    // <code>launchWebAuthFlow</code> hides its web view until the
+    // first navigation either redirects to the final URL, or finishes
+    // loading a page meant to be displayed.
+    //
+    // If the interactive flag is <code>true</code>, the window will
+    // be displayed when a page load completes. If the flag is
+    // <code>false</code> or omitted, <code>launchWebAuthFlow</code>
+    // will return with an error if the initial navigation does not
+    // complete the flow.
+    boolean? interactive;
+  };
+
+  callback GetAuthTokenCallback = void (optional DOMString token);
+  callback GetAccountsCallback = void (AccountInfo[] accounts);
+  callback GetProfileUserInfoCallback = void (ProfileUserInfo userInfo);
+  callback InvalidateAuthTokenCallback = void ();
+  callback LaunchWebAuthFlowCallback = void (optional DOMString responseUrl);
+
+  interface Functions {
+    // Retrieves a list of AccountInfo objects describing the accounts
+    // present on the profile.
+    //
+    // <code>getAccounts</code> is only supported on dev channel.
+    static void getAccounts(GetAccountsCallback callback);
+
+    // Gets an OAuth2 access token using the client ID and scopes
+    // specified in the <a
+    // href="app_identity.html#update_manifest"><code>oauth2</code>
+    // section of manifest.json</a>.
+    //
+    // The Identity API caches access tokens in memory, so it's ok to
+    // call <code>getAuthToken</code> non-interactively any time a token is
+    // required. The token cache automatically handles expiration.
+    //
+    // For a good user experience it is important interactive token requests are
+    // initiated by UI in your app explaining what the authorization is for.
+    // Failing to do this will cause your users to get authorization requests,
+    // or Chrome sign in screens if they are not signed in, with with no
+    // context. In particular, do not use <code>getAuthToken</code>
+    // interactively when your app is first launched.
+    //
+    // |details| : Token options.
+    // |callback| : Called with an OAuth2 access token as specified by the
+    // manifest, or undefined if there was an error.
+    static void getAuthToken(optional TokenDetails details,
+                             optional GetAuthTokenCallback callback);
+
+    // Retrieves email address and obfuscated gaia id of the user
+    // signed into a profile.
+    //
+    // This API is different from identity.getAccounts in two
+    // ways. The information returned is available offline, and it
+    // only applies to the primary account for the profile.
+    static void getProfileUserInfo(GetProfileUserInfoCallback callback);
+
+    // Removes an OAuth2 access token from the Identity API's token cache.
+    //
+    // If an access token is discovered to be invalid, it should be
+    // passed to removeCachedAuthToken to remove it from the
+    // cache. The app may then retrieve a fresh token with
+    // <code>getAuthToken</code>.
+    //
+    // |details| : Token information.
+    // |callback| : Called when the token has been removed from the cache.
+    static void removeCachedAuthToken(
+        InvalidTokenDetails details,
+        optional InvalidateAuthTokenCallback callback);
+
+    // Starts an auth flow at the specified URL.
+    //
+    // This method enables auth flows with non-Google identity
+    // providers by launching a web view and navigating it to the
+    // first URL in the provider's auth flow. When the provider
+    // redirects to a URL matching the pattern
+    // <code>https://&lt;app-id&gt;.chromiumapp.org/*</code>, the
+    // window will close, and the final redirect URL will be passed to
+    // the <var>callback</var> function.
+    //
+    // For a good user experience it is important interactive auth flows are
+    // initiated by UI in your app explaining what the authorization is for.
+    // Failing to do this will cause your users to get authorization requests
+    // with no context. In particular, do not launch an interactive auth flow
+    // when your app is first launched.
+    //
+    // |details| : WebAuth flow options.
+    // |callback| : Called with the URL redirected back to your application.
+    static void launchWebAuthFlow(WebAuthFlowDetails details,
+                                  LaunchWebAuthFlowCallback callback);
+
+    // Generates a redirect URL to be used in |launchWebAuthFlow|.
+    //
+    // The generated URLs match the pattern
+    // <code>https://&lt;app-id&gt;.chromiumapp.org/*</code>.
+    //
+    // |path| : The path appended to the end of the generated URL.
+    [nocompile] static DOMString getRedirectURL(optional DOMString path);
+  };
+
+  interface Events {
+    // Fired when signin state changes for an account on the user's profile.
+    static void onSignInChanged(AccountInfo account, boolean signedIn);
+  };
+};

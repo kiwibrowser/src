@@ -1,0 +1,84 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/web-animations.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+
+<dom-module id="viewer-toolbar-dropdown">
+  <template>
+    <style>
+      :host {
+        text-align: start;
+      }
+
+      #container {
+        position: absolute;
+        /* Controls the position of the dropdown relative to the right of the
+         * screen. Default is aligned with the right of the toolbar buttons.
+         * TODO(tsergeant): Change the layout of the dropdown so this is not
+         * required.
+         */
+        right: var(--viewer-toolbar-dropdown-right-distance, 28px);
+      }
+
+      :host-context([dir=rtl]) #container {
+        left: var(--viewer-toolbar-dropdown-right-distance, 28px);
+        right: auto;
+      }
+
+      #dropdown {
+        @apply --shadow-elevation-2dp;
+        background-color: rgb(256, 256, 256);
+        border-radius: 4px;
+        color: var(--primary-text-color);
+        overflow-y: hidden;
+        padding-bottom: 2px;
+        width: 260px;
+      }
+
+      #scroll-container {
+        max-height: 300px;
+        overflow-y: auto;
+        padding: 6px 0 4px 0;
+      }
+
+      #icon {
+        cursor: pointer;
+        display: inline-block;
+      }
+
+      :host([dropdown-open]) #icon {
+        background-color: rgb(25, 27, 29);
+        border-radius: 4px;
+      }
+
+      #arrow {
+        -webkit-margin-start: -12px;
+        -webkit-padding-end: 4px;
+      }
+
+      h1 {
+        border-bottom: 1px solid rgb(219, 219, 219);
+        font-size: 0.87rem;
+        font-weight: 500;
+        margin: 0;
+        padding: 14px 28px;
+      }
+    </style>
+    <div on-click="toggleDropdown" id="icon">
+      <paper-icon-button id="main-icon" icon="[[dropdownIcon]]"
+          aria-label$="{{header}}" title$="{{header}}">
+      </paper-icon-button>
+      <iron-icon icon="cr:arrow-drop-down" id="arrow"></iron-icon>
+    </div>
+
+    <div id="container">
+      <div id="dropdown" style="display: none">
+        <h1>{{header}}</h1>
+        <div id="scroll-container">
+          <slot></slot>
+        </div>
+      </div>
+    </div>
+  </template>
+  <script src="viewer-toolbar-dropdown.js"></script>
+</dom-module>

@@ -1,0 +1,48 @@
+include_rules = [
+  "+components/data_use_measurement/core",
+  "+components/grit/components_scaled_resources.h",
+  "+components/infobars/core",
+  "+components/keyed_service/core",
+  "+components/metrics",
+  "+components/policy",
+  "+components/security_state",
+
+  # Autofill depends on //services/identity/public/cpp for its core Google
+  # identity dependencies, but depends on this isolated file for recording
+  # some browser-specific signin metrics.
+  "+components/signin/core/browser/signin_metrics.h",
+
+  "+components/sync",
+  "+components/variations",
+  "+components/version_info",
+  "+components/webdata/common",
+  "+components/webdata_services",
+  "+crypto/random.h",
+  "+google_apis/gaia",
+  "+google_apis/google_api_keys.h",
+  "+net",
+  "+services/identity/public",
+  "+services/metrics/public",
+  "+sql",
+  "+third_party/fips181",
+  "+third_party/libaddressinput", # For address i18n.
+  "+third_party/libphonenumber",  # For phone number i18n.
+  "+third_party/re2",
+  "+ui/base",
+  "+ui/gfx",
+]
+
+specific_include_rules = {
+  "autofill_manager_unittest\.cc": [
+    "+components/ukm",
+  ],
+  "autofill_metrics_unittest\.cc": [
+    "+components/ukm",
+  ],
+  "credit_card_save_manager_unittest\.cc": [
+    "+components/ukm",
+  ],
+  "test_autofill_client\.h": [
+    "+components/ukm",
+  ],
+}

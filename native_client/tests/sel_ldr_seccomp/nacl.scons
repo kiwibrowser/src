@@ -1,0 +1,31 @@
+# -*- python -*-
+# Copyright (c) 2013 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+if 'TRUSTED_ENV' not in env:
+  Return()
+trusted_env = env['TRUSTED_ENV']
+
+if not trusted_env.SupportsSeccompBpfSandbox():
+  Return()
+
+# This test uses a nexe built by another test.  Nexes do not get
+# staged in pexe mode, so only run this test in nonpexe mode.
+if env.Bit('pnacl_generate_pexe'):
+  Return()
+
+# Valgrind doesn't like the syscall checking done here.
+if env.IsRunningUnderValgrind():
+  Return()
+
+node = env.CommandSelLdrTestNacl(
+    'sel_ldr_seccomp_test.out',
+    env.File('${STAGING_DIR}/hello_world.nexe'),
+    stdout_golden=env.File('../hello_world/hello_world.stdout'),
+    loader=trusted_env.GetSelLdrSeccomp())
+
+env.AddNodeToTestSuite(node, ['small_tests', 'nonpexe_tests'],
+                       'run_sel_ldr_seccomp_test')

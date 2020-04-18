@@ -1,0 +1,160 @@
+@hex:
+  # Load floating point value.
+  # mov %eax,%eax
+  89 C0 \\
+  # fld (%r15,%rax)
+  41 D9 04 07
+  
+  # mov %eax,%eax
+  89 C0 \\
+  # fldl (%r15,%rax)
+  41 DD 04 07
+  
+  # mov %eax,%eax
+  89 C0 \\
+  # fldt (%r15,%rax)
+  41 DB 2C 07
+@dis:
+     0:	89 c0                                        	mov    %eax,%eax
+     2:	41 d9 04 07                                  	flds   (%r15,%rax,1)
+     6:	89 c0                                        	mov    %eax,%eax
+     8:	41 dd 04 07                                  	fldl   (%r15,%rax,1)
+     c:	89 c0                                        	mov    %eax,%eax
+     e:	41 db 2c 07                                  	fldt   (%r15,%rax,1)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Load integer value.
+  # mov %eax,%eax
+  89 C0 \\
+  # fildl (%r15,%rax)
+  41 DB 04 07
+  
+  # mov %eax,%eax
+  89 C0 \\
+  # fildq (%r15,%rax)
+  41 DF 2C 07
+@dis:
+     0:	89 c0                                        	mov    %eax,%eax
+     2:	41 db 04 07                                  	fildl  (%r15,%rax,1)
+     6:	89 c0                                        	mov    %eax,%eax
+     8:	41 df 2c 07                                  	fildll (%r15,%rax,1)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Store floating point value.
+  # mov %eax,%eax
+  89 C0 \\
+  # fsts (%r15,%rax)
+  41 D9 14 07
+  
+  # mov %eax,%eax
+  89 C0 \\
+  # fstl (%r15,%rax)
+  41 DD 14 07
+  
+  # mov %eax,%eax
+  89 C0 \\
+  # fstps (%r15,%rax)
+  41 D9 1C 07
+  
+  # mov %eax,%eax
+  89 C0 \\
+  # fstpl (%r15,%rax)
+  41 DD 1C 07
+  
+  # mov %eax,%eax
+  89 C0 \\
+  # fstpt (%r15,%rax)
+  41 DB 3C 07
+@dis:
+     0:	89 c0                                        	mov    %eax,%eax
+     2:	41 d9 14 07                                  	fsts   (%r15,%rax,1)
+     6:	89 c0                                        	mov    %eax,%eax
+     8:	41 dd 14 07                                  	fstl   (%r15,%rax,1)
+     c:	89 c0                                        	mov    %eax,%eax
+     e:	41 d9 1c 07                                  	fstps  (%r15,%rax,1)
+    12:	89 c0                                        	mov    %eax,%eax
+    14:	41 dd 1c 07                                  	fstpl  (%r15,%rax,1)
+    18:	89 c0                                        	mov    %eax,%eax
+    1a:	41 db 3c 07                                  	fstpt  (%r15,%rax,1)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Store integer value
+  # mov %eax,%eax
+  89 C0 \\
+  # fists (%r15,%rax)
+  41 DF 14 07
+  
+  # mov %eax,%eax
+  89 C0 \\
+  # fistl (%r15,%rax)
+  41 DB 14 07
+  
+  # mov %eax,%eax
+  89 C0 \\
+  # fistp (%r15,%rax)
+  41 DF 1C 07
+  
+  # mov %eax,%eax
+  89 C0 \\
+  # fistpl (%r15,%rax)
+  41 DB 1C 07
+  
+  # mov %eax,%eax
+  89 C0 \\
+  # fistpq (%r15,%rax)
+  41 DF 3C 07
+@dis:
+     0:	89 c0                                        	mov    %eax,%eax
+     2:	41 df 14 07                                  	fist   (%r15,%rax,1)
+     6:	89 c0                                        	mov    %eax,%eax
+     8:	41 db 14 07                                  	fistl  (%r15,%rax,1)
+     c:	89 c0                                        	mov    %eax,%eax
+     e:	41 df 1c 07                                  	fistp  (%r15,%rax,1)
+    12:	89 c0                                        	mov    %eax,%eax
+    14:	41 db 1c 07                                  	fistpl (%r15,%rax,1)
+    18:	89 c0                                        	mov    %eax,%eax
+    1a:	41 df 3c 07                                  	fistpll (%r15,%rax,1)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Basic arithmetic
+  # fadd %st(1),%st(0)
+  D8 C1
+  # faddp %st(0),%st(1)
+  DE C1
+  
+  # mov %eax,%eax
+  89 C0 \\
+  # fadds (%r15,%rax)
+  41 D8 04 07
+  
+  # mov %eax,%eax
+  89 C0 \\
+  # faddl (%r15,%rax)
+  41 DC 04 07
+@dis:
+     0:	d8 c1                                        	fadd   %st(1),%st
+     2:	de c1                                        	faddp  %st,%st(1)
+     4:	89 c0                                        	mov    %eax,%eax
+     6:	41 d8 04 07                                  	fadds  (%r15,%rax,1)
+     a:	89 c0                                        	mov    %eax,%eax
+     c:	41 dc 04 07                                  	faddl  (%r15,%rax,1)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE

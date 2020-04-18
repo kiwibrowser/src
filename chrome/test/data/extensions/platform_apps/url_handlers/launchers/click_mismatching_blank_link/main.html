@@ -1,0 +1,12 @@
+<!--
+ * Copyright 2013 The Chromium Authors. All rights reserved.  Use of this
+ * source code is governed by a BSD-style license that can be found in the
+ * LICENSE file.
+-->
+<html>
+<body>
+<div>I'm the app's main window page. I will click the link below. It should open in a tab.</div>
+<div><a id="mismatching_link" target="_blank">Mismatching blank link</a></div>
+<script src="main.js"></script>
+</body>
+</html>

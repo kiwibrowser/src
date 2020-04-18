@@ -1,0 +1,185 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(`Tests ViewportDataGrid.\n`);
+  await TestRunner.loadModule('data_grid_test_runner');
+
+  function attach(parent, child, index) {
+    var parentName = parent === root ? 'root' : parent.data.id;
+    if (typeof index === 'number')
+      parent.insertChild(child, index);
+    else
+      parent.appendChild(child);
+    TestRunner.addResult(
+        'Attached ' + child.data.id + ' to ' + parentName + (typeof index === 'number' ? ' at ' + index : ''));
+  }
+
+  function detach(parent, child) {
+    var parentName = parent === root ? 'root' : parent.data.id;
+    TestRunner.addResult('Removing ' + child.data.id + ' from ' + parentName);
+    parent.removeChild(child);
+  }
+
+  function dumpNodes() {
+    TestRunner.addResult('');
+    TestRunner.addResult('Tree:');
+    DataGridTestRunner.dumpAndValidateDataGrid(dataGrid.rootNode());
+    TestRunner.addResult('');
+  }
+
+  function expand(node) {
+    node.expand();
+    TestRunner.addResult('Expanded node ' + node.data.id);
+  }
+
+  function collapse(node) {
+    node.collapse();
+    TestRunner.addResult('Collapsed node ' + node.data.id);
+  }
+
+  function dumpFlattenChildren() {
+    var nodes = dataGrid.rootNode().flatChildren();
+    TestRunner.addResult('Checking flatChildren():');
+    for (var node of nodes)
+      TestRunner.addResult('  ' + node.data.id);
+    TestRunner.addResult('');
+  }
+
+  function revealChildAndDumpClassAndVisibleNodes(index) {
+    root.children[index].revealAndSelect();
+    dataGrid.updateInstantly();
+
+    TestRunner.addResult(`Class list: ${dataGrid.element.classList}`);
+
+    for (var node of dataGrid._visibleNodes)
+      TestRunner.addResult(node.data.id);
+  }
+
+  var columns = [{id: 'id', title: 'ID column', width: '250px'}];
+  var dataGrid = new DataGrid.ViewportDataGrid(columns);
+  var a = new DataGrid.ViewportDataGridNode({id: 'a'});
+  var aa = new DataGrid.ViewportDataGridNode({id: 'aa'});
+  var aaa = new DataGrid.ViewportDataGridNode({id: 'aaa'});
+  var aab = new DataGrid.ViewportDataGridNode({id: 'aab'});
+  var ab = new DataGrid.ViewportDataGridNode({id: 'ab'});
+  var b = new DataGrid.ViewportDataGridNode({id: 'b'});
+
+  var root = dataGrid.rootNode();
+
+  var containerElement = document.body.createChild('div');
+  containerElement.style.position = 'absolute';
+  containerElement.style.width = '300px';
+  containerElement.style.height = '300px';
+  containerElement.style.overflow = 'hidden';
+  containerElement.appendChild(dataGrid.element);
+  dataGrid.wasShown();
+  dataGrid.element.style.width = '100%';
+  dataGrid.element.style.height = '100%';
+
+  TestRunner.addResult('Building tree.');
+
+  // Appending to detached node.
+  attach(aa, aaa);
+  aaa.dataGrid = dataGrid;
+  attach(aa, aab);
+  aab.dataGrid = dataGrid;
+
+  // Appending to tree.
+  attach(root, a);
+  // a is collapsed.
+  attach(a, aa);
+  expand(a);
+  dumpFlattenChildren();
+  attach(a, ab);
+  dumpFlattenChildren();
+  attach(root, b);
+
+  dumpNodes();
+
+  expand(a);
+  dumpNodes();
+
+  expand(aa);
+  dumpNodes();
+
+  collapse(a);
+  dumpNodes();
+
+  expand(a);
+  attach(aa, aaa);
+  dumpNodes();
+  attach(aa, aaa);
+  attach(aa, aab);
+  var aac = new DataGrid.ViewportDataGridNode({id: 'aac'});
+  attach(aa, aac);
+  dumpNodes();
+  attach(aa, aac, 0);
+  dumpNodes();
+  attach(ab, aac);
+  expand(ab);
+  aac.select();
+  dumpNodes();
+  detach(ab, aac);
+  dumpNodes();
+  attach(ab, aac);
+  aac.revealAndSelect();
+  dumpFlattenChildren();
+  TestRunner.addResult('Removed children of aa');
+  aa.removeChildren();
+  dumpFlattenChildren();
+  dumpNodes();
+  attach(ab, aac);
+  aac.revealAndSelect();
+  dumpFlattenChildren();
+  detach(a, aa);
+  dumpFlattenChildren();
+  dumpNodes();
+  detach(a, ab);
+  dumpNodes();
+  root.removeChildren();
+  dumpNodes();
+
+  // crbug.com/542553 -- the below should not produce exceptions.
+  dataGrid.setStickToBottom(true);
+  for (var i = 0; i < 500; ++i) {
+    var xn = new DataGrid.ViewportDataGridNode({id: 'x' + i});
+    root.appendChild(xn);
+    if (i + 1 === 500) {
+      dataGrid.updateInstantly();
+      xn.revealAndSelect();
+      xn.refresh();
+    }
+  }
+  root.removeChildren();
+  dataGrid.updateInstantly();
+
+  // The below should not crash either.
+  for (var i = 0; i < 40; ++i) {
+    var xn = new DataGrid.ViewportDataGridNode({id: 'x' + i});
+    root.appendChild(xn);
+  }
+  dataGrid.updateInstantly();
+  dataGrid.setStickToBottom(false);
+  var children = root.children.slice();
+  root.removeChildren();
+  // Assure wheelTarget is anything but null, otherwise it happily bypasses crashing code.
+  dataGrid._wheelTarget = children.peekLast().element;
+  for (var i = 0; i < 40; ++i) {
+    children[i].refresh();
+    root.appendChild(children[i]);
+  }
+  dataGrid.updateInstantly();
+
+  dataGrid.setStriped(true);
+  TestRunner.addResult('Scrolling to the top');
+  revealChildAndDumpClassAndVisibleNodes(0);
+  TestRunner.addResult('Scrolling 1 node down');
+  revealChildAndDumpClassAndVisibleNodes(dataGrid._visibleNodes.length);
+  TestRunner.addResult('Disabling the stripes');
+  dataGrid.setStriped(false);
+  TestRunner.addResult(`Class list: ${dataGrid.element.classList}`);
+
+  TestRunner.completeTest();
+})();

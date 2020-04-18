@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="file:///gen/layout_test_data/mojo/public/js/mojo_bindings.js"></script>
+<script src="file:///gen/device/vr/public/mojom/vr_service.mojom.js"></script>
+<script src="../xr/resources/xr-device-mocking.js"></script>
+<script src="../xr/resources/xr-test-utils.js"></script>
+<script src="../xr/resources/test-constants.js"></script>
+<canvas id="webgl-canvas"></canvas>
+
+<script>
+let fakeDevices = fakeXRDevices();
+
+xr_session_promise_test( (session, t) => new Promise((resolve) => {
+    // Session must have a baseLayer or frame requests will be ignored.
+    session.baseLayer = new XRWebGLLayer(session, gl);
+
+    // Need to have a valid pose or input updates don't process.
+    setPose(VALID_POSE);
+
+    let input_source = new MockXRInputSource();
+    input_source.pointerOrigin = "hand";
+    input_source.handedness = "right";
+
+    // Don't set a grip matrix yet
+
+    addInputSource(input_source);
+
+    // Must have a frameOfReference to get input poses. eyeLevel doesn't apply
+    // any transforms to the given matrix.
+    session.requestFrameOfReference("eyeLevel").then( (frameOfRef) => {
+
+      function CheckInvalidGrip(time, xrFrame) {
+        let source = session.getInputSources()[0];
+
+        let input_pose = xrFrame.getInputPose(source, frameOfRef);
+
+        t.step( () => {
+          // The input pose should be null when no grip matrix is provided.
+          assert_equals(source.pointerOrigin, "hand");
+          assert_equals(input_pose, null);
+        });
+
+        input_source.grip = VALID_GRIP;
+
+        session.requestAnimationFrame(CheckValidGrip);
+      }
+
+      function CheckValidGrip(time, xrFrame) {
+        let source = session.getInputSources()[0];
+
+        let input_pose = xrFrame.getInputPose(source, frameOfRef);
+
+        t.step( () => {
+          // When a grip matrix is present but no pointer offset is specified,
+          // the grip and pointer matrices should be the same.
+          assert_matrices_approx_equal(input_pose.gripMatrix, VALID_GRIP, FLOAT_EPSILON, "A");
+          assert_matrices_approx_equal(input_pose.pointerMatrix, input_pose.gripMatrix, FLOAT_EPSILON, "B");
+        });
+
+        input_source.pointerOffset = VALID_POINTER_OFFSET;
+
+        session.requestAnimationFrame(CheckValidGripAndPointer);
+      }
+
+      function CheckValidGripAndPointer(time, xrFrame) {
+        let source = session.getInputSources()[0];
+
+        let input_pose = xrFrame.getInputPose(source, frameOfRef);
+
+        t.step( () => {
+          // When a grip matrix and pointer offset are specified,
+          // pointer matrix should be grip matrix multiplied with the pointer
+          // offset.
+          assert_matrices_approx_equal(input_pose.gripMatrix, VALID_GRIP, FLOAT_EPSILON, "C");
+          assert_matrices_approx_equal(input_pose.pointerMatrix, VALID_GRIP_WITH_POINTER_OFFSET, FLOAT_EPSILON, "D");
+        });
+
+        resolve();
+      }
+
+      // Can only request input poses in an xr frame.
+      session.requestAnimationFrame(CheckInvalidGrip);
+    });
+  }), fakeDevices["FakeGooglePixelPhone"], [ { exclusive: true } ],
+"XRInputSources with a pointer origin of 'hand' properly communicate their poses");
+
+</script>

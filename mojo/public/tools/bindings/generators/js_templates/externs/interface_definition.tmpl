@@ -1,0 +1,24 @@
+/** @implements {mojo.InterfacePtr} */
+{{module.namespace}}.{{interface.name}}Ptr = class {
+{%  for method in interface.methods %}
+  /**
+{%-   for parameter in method.parameters %}
+   * @param { {{parameter.kind|closure_type_with_nullability}} } {{parameter.name|sanitize_identifier}}
+{%-   endfor -%}
+{%-   if method.response_parameters != None %}
+   * @return {Promise}
+{%-   endif %}
+   */
+   {{method.name}}(
+{%-   for parameter in method.parameters -%}
+{{parameter.name|sanitize_identifier}}{% if not loop.last %}, {% endif %}
+{%-   endfor -%}
+) {}
+{%- endfor %}
+};
+
+/**
+ * @const
+ * @type { mojo.Interface };
+ */
+{{module.namespace}}.{{interface.name}};

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="/resources/get-host-info.js"></script>
+<script>
+'use strict';
+
+if (window.location.origin != get_host_info().UNAUTHENTICATED_ORIGIN) {
+  window.location = get_host_info().UNAUTHENTICATED_ORIGIN +
+                    window.location.pathname;
+} else {
+  test(t => {
+    assert_false(window.isSecureContext);
+    assert_true(navigator.usb == undefined);
+  }, 'navigator.usb is not present in an insecure context');
+}
+</script>

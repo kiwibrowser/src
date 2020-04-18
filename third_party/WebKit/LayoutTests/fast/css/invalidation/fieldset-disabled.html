@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<script src="../../../resources/js-test.js"></script>
+<style>
+fieldset:disabled { background-color: green }
+fieldset + div { color: pink }
+</style>
+<fieldset id="fieldset">
+    <legend></legend>
+    <label for="field"></label>
+    <input type="text" name="field" id="field">
+    <div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+    </div>
+</fieldset>
+<div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+</div>
+<script>
+description("Use descendant invalidation set for :disabled fieldset.")
+
+var transparent = "rgba(0, 0, 0, 0)";
+var green = "rgb(0, 128, 0)";
+
+shouldBe("getComputedStyle(fieldset, '').backgroundColor", "transparent");
+
+fieldset.offsetTop; // Force recalc.
+fieldset.disabled = true;
+
+if (window.internals) {
+    // There are still instances of SubtreeStyleChange left when updating
+    // disabled state. This count should become lower.
+    shouldBe("internals.updateStyleAndReturnAffectedElementCount()", "2");
+}
+
+shouldBe("getComputedStyle(fieldset, '').backgroundColor", "green");
+</script>

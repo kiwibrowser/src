@@ -1,0 +1,604 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// This features file defines extension APIs implemented under src/extensions.
+// See chrome/common/extensions/api/_features.md to understand this file, as
+// well as feature.h, simple_feature.h, and feature_provider.h.
+//
+// Note that specifying "web_page", "blessed_web_page", or "all" as a context
+// type will require manually updating chrome/renderer/resources/dispatcher.cc.
+
+{
+  "alarms": {
+    "dependencies": ["permission:alarms"],
+    "contexts": ["blessed_extension"]
+  },
+  "app.runtime": [{
+    "channel": "stable",
+    "contexts": ["blessed_extension", "lock_screen_extension"],
+    "extension_types": ["platform_app"],
+    "noparent": true
+  }, {
+    "channel": "stable",
+    "component_extensions_auto_granted": false,
+    "contexts": ["blessed_extension"],
+    "extension_types": ["extension"],
+    "noparent": true,
+    "whitelist": [
+      "2FC374607C2DF285634B67C64A2E356C607091C3",  // Quickoffice
+      "3727DD3E564B6055387425027AD74C58784ACC15",  // Quickoffice internal
+      "12E618C3C6E97495AAECF2AC12DEB082353241C6"   // QO component extension
+    ]
+  }],
+  "app.window": [{
+    "channel": "stable",
+    "contexts": ["blessed_extension", "lock_screen_extension"],
+    "extension_types": ["platform_app"],
+    "noparent": true
+  }, {
+    "channel": "stable",
+    "contexts": ["blessed_extension"],
+    "extension_types": ["extension"],
+    "noparent": true,
+    "component_extensions_auto_granted": false,
+    "whitelist": [
+      "B9EF10DDFEA11EF77873CC5009809E5037FC4C7A",  // Google input tools
+      "06BE211D5F014BAB34BC22D9DDA09C63A81D828E",  // Official xkb extension
+      "F94EE6AB36D6C6588670B2B01EB65212D9C64E33"   // Open source xkb extension
+    ]
+  }],
+  "app.currentWindowInternal": {
+    "noparent": true,
+    "internal": true,
+    "channel": "stable",
+    "contexts": ["blessed_extension", "lock_screen_extension"]
+  },
+  "app.currentWindowInternal.setShape": {
+    "dependencies": ["permission:app.window.shape"],
+    "contexts": ["blessed_extension"]
+  },
+  // The API for the *embedder* of appview. Appview has both an embedder and
+  // guest API, which are different.
+  "appViewEmbedderInternal": {
+    "internal": true,
+    "contexts": ["blessed_extension"],
+    "dependencies": ["permission:appview"]
+  },
+  // Note that exposing this doesn't necessarily expose AppView,
+  // appViewEmbedderInternal is required for that.
+  // See http://crbug.com/437891.
+  "appViewGuestInternal": {
+    "internal": true,
+    "channel": "stable",
+    "contexts": ["blessed_extension"]
+  },
+  "audio": {
+    "dependencies": ["permission:audio"],
+    "contexts": ["blessed_extension"]
+  },
+  "bluetooth": [{
+    "dependencies": ["manifest:bluetooth"],
+    "contexts": ["blessed_extension"]
+  }, {
+    "channel": "stable",
+    "contexts": ["webui"],
+    "matches": [
+      "chrome://bluetooth-pairing/*",
+      "chrome://settings/*"
+    ]
+  }],
+  "bluetoothLowEnergy": {
+    "dependencies": ["manifest:bluetooth"],
+    "contexts": ["blessed_extension"],
+    "platforms": ["chromeos", "linux"]
+  },
+  "bluetoothPrivate": [{
+    "dependencies": ["permission:bluetoothPrivate"],
+    "contexts": ["blessed_extension"]
+  }, {
+    "channel": "stable",
+    "contexts": ["webui"],
+    "matches": [
+      "chrome://bluetooth-pairing/*",
+      "chrome://settings/*"
+    ]
+  }],
+  "bluetoothSocket": {
+    "dependencies": ["manifest:bluetooth"],
+    "contexts": ["blessed_extension"]
+  },
+  "cecPrivate": {
+    "dependencies": ["permission:cecPrivate"],
+    "contexts": ["blessed_extension"]
+  },
+  "clipboard": {
+    "dependencies": ["permission:clipboard"],
+    "contexts": ["blessed_extension"]
+  },
+  "clipboard.onClipboardDataChanged": {
+    "dependencies": ["permission:clipboardRead"]
+  },
+  "clipboard.setImageData": {
+    "dependencies": ["permission:clipboardWrite"]
+  },
+  "declarativeNetRequest": {
+    "dependencies": ["permission:declarativeNetRequest"],
+    "contexts": ["blessed_extension"]
+  },
+  "declarativeWebRequest": {
+    "dependencies": ["permission:declarativeWebRequest"],
+    "contexts": ["blessed_extension"]
+  },
+  "diagnostics": {
+    "dependencies": ["permission:diagnostics"],
+    "extension_types": ["platform_app"],
+    "contexts": ["blessed_extension"]
+  },
+  "displaySource": {
+    "dependencies": ["permission:displaySource"],
+    "contexts": ["blessed_extension"]
+  },
+  "dns": {
+    "dependencies": ["permission:dns"],
+    "contexts": ["blessed_extension"]
+  },
+  "documentScan": {
+    "dependencies": ["permission:documentScan"],
+    "contexts": ["blessed_extension"]
+  },
+  // This is not a real API, only here for documentation purposes.
+  // See http://crbug.com/275944 for background.
+  "extensionTypes": {
+    "internal": true,
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app", "platform_app"],
+    "contexts": ["blessed_extension"]
+  },
+  "extensionViewInternal": [
+    {
+      "internal": true,
+      "contexts": ["blessed_extension"],
+      "dependencies": ["permission:extensionview"]
+    }, {
+      "internal": true,
+      "channel": "stable",
+      "contexts": ["webui"],
+      "matches": [
+        "chrome://cast/*",
+        "chrome://media-router/*"
+      ]
+    }
+  ],
+  "events": {
+    "internal": true,
+    "channel": "stable",
+    "extension_types": ["platform_app", "extension"],
+    "contexts": "all",
+    "matches": ["<all_urls>"]
+  },
+  "feedbackPrivate": {
+    "dependencies": ["permission:feedbackPrivate"],
+    "contexts": ["blessed_extension"]
+  },
+  "feedbackPrivate.readLogSource": {
+    "platforms": ["chromeos"],
+    "session_types": ["kiosk"]
+  },
+  "fileSystem": {
+    "dependencies": ["permission:fileSystem"],
+    "contexts": ["blessed_extension"]
+  },
+  "guestViewInternal": [
+    {
+      "internal": true,
+      "channel": "stable",
+      "contexts": ["blessed_extension"]
+    }, {
+      "internal": true,
+      "channel": "stable",
+      "contexts": ["webui"],
+      "matches": [
+        "chrome://cast/*",
+        "chrome://extensions-frame/*",
+        "chrome://extensions/*",
+        "chrome://home/*",
+        "chrome://chrome-signin/*",
+        "chrome://media-router/*",
+        "chrome://mobilesetup/*",
+        "chrome://oobe/*",
+        "chrome://assistant-optin/*"
+      ]
+    }
+  ],
+  "hid": {
+    "dependencies": ["permission:hid"],
+    "contexts": ["blessed_extension"]
+  },
+  "hid.getUserSelectedDevices": {
+    "contexts": ["blessed_extension"],
+    "channel": "dev",
+    "dependencies": ["permission:hid"]
+  },
+  "idle": {
+    "dependencies": ["permission:idle"],
+    "contexts": ["blessed_extension"]
+  },
+  "lockScreen.data": {
+    "dependencies": ["permission:lockScreen"],
+    "contexts": ["blessed_extension", "lock_screen_extension"]
+  },
+  "lockScreen.data.create": {
+    "contexts": ["lock_screen_extension"]
+  },
+  "management": [{
+    "dependencies": ["permission:management"],
+    "contexts": ["blessed_extension"],
+    "default_parent": true
+  }, {
+    "channel": "stable",
+    "contexts": ["webui"],
+    "matches": [
+      "chrome://extensions/*",
+      "chrome://extensions-frame/*",
+      "chrome://chrome/extensions/*",
+      "chrome://settings/*"
+    ]
+  }],
+  "management.getPermissionWarningsByManifest": {
+    "dependencies": [],
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app", "platform_app"]
+  },
+  "management.getSelf": {
+    "dependencies": [],
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app", "platform_app"]
+  },
+  "management.uninstallSelf": {
+    "dependencies": [],
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app", "platform_app"]
+  },
+  "mediaPerceptionPrivate": {
+    "dependencies": ["permission:mediaPerceptionPrivate"],
+    "contexts": ["blessed_extension"]
+  },
+  "metricsPrivate": [{
+    "dependencies": ["permission:metricsPrivate"],
+    "contexts": ["blessed_extension"],
+    "default_parent": true
+  }, {
+    "channel": "stable",
+    "contexts": ["webui"],
+    "matches": [
+      "chrome://bookmarks/*",
+      "chrome://extensions/*",
+      "chrome://settings/*"
+    ]
+  }],
+  "metricsPrivate.getIsCrashReportingEnabled": {
+    "whitelist": [
+      // This function inherits the extension restrictions of metricsPrivate,
+      // but also requires whitelisting. New uses of this function should get
+      // /tools/metrics/OWNERS approval of the usage before adding entries
+      // below. See crbug.com/374199.
+      "2FC374607C2DF285634B67C64A2E356C607091C3",  // Quickoffice
+      "3727DD3E564B6055387425027AD74C58784ACC15",  // Quickoffice internal
+      "12E618C3C6E97495AAECF2AC12DEB082353241C6",  // QO component extension
+      "3727DD3E564B6055387425027AD74C58784ACC15",  // Editor
+      "C41AD9DCD670210295614257EF8C9945AD68D86E",  // Google Now
+      // TODO(michaelpg): Determine whether these three extensions (D5736E4,
+      // D57DE39, 3F65507) require this feature: crbug.com/652433.
+      "D5736E4B5CF695CB93A2FB57E4FDC6E5AFAB6FE2",  // http://crbug.com/312900.
+      "D57DE394F36DC1C3220E7604C575D29C51A6C495",  // http://crbug.com/319444.
+      "3F65507A3B39259B38C8173C6FFA3D12DF64CCE9",  // http://crbug.com/371562.
+      "D7986543275120831B39EF28D1327552FC343960",  // http://crbug.com/378067
+      "A291B26E088FA6BA53FFD72F0916F06EBA7C585A",  // http://crbug.com/378067
+      "07BD6A765FFC289FF755D7CAB2893A40EC337FEC",  // http://crbug.com/456214
+      "896B85CC7E913E11C34892C1425A093C0701D386",  // http://crbug.com/456214
+      "11A01C82EF355E674E4F9728A801F5C3CB40D83F",  // http://crbug.com/456214
+      "F410C88469990EE7947450311D24B8AF2ADB2595",  // http://crbug.com/456214
+      "63ED55E43214C211F82122ED56407FF1A807F2A3",  // Media Router Dev
+      "226CF815E39A363090A1E547D53063472B8279FA",  // Media Router Stable
+      // TODO (ntang) Remove the following 2 hashes by 12/31/2017.
+      "B620CF4203315F9F2E046EDED22C7571A935958D",  // http://crbug.com/510270
+      "B206D8716769728278D2D300349C6CB7D7DE2EF9",  // http://crbug.com/510270
+      "2B6C6A4A5940017146F3E58B7F90116206E84685",  // http://crbug.com/642141
+      "B6C2EFAB3EC3BF6EF03701408B6B09A67B2D0069",  // http://crbug.com/642141
+      "96FF2FFA5C9173C76D47184B3E86D267B37781DE",  // http://crbug.com/642141
+      "0136FCB13DB29FD5CD442F56E59E53B61F1DF96F"   // http://crbug.com/642141
+    ]
+  },
+  "mimeHandlerPrivate": {
+    "dependencies": ["manifest:mime_types_handler"],
+    "contexts": ["blessed_extension"]
+  },
+  "mojoPrivate": {
+    "contexts": ["blessed_extension"],
+    "channel": "stable",
+    "extension_types": ["platform_app", "extension"],
+    "whitelist": [
+      "63ED55E43214C211F82122ED56407FF1A807F2A3",   // Media Router Dev
+      "226CF815E39A363090A1E547D53063472B8279FA"    // Media Router Stable
+    ]
+  },
+  "networking.config": {
+    "dependencies": ["permission:networking.config"],
+    "contexts": ["blessed_extension"]
+  },
+  "networking.onc": {
+    "dependencies": ["permission:networking.onc"],
+    "contexts": ["blessed_extension"],
+    "source": "networkingPrivate"
+  },
+  "networkingPrivate": [{
+    "dependencies": ["permission:networkingPrivate"],
+    "contexts": ["blessed_extension"],
+    // TODO(tbarzic): networkingPrivate is being renamed to networking.onc.
+    // The goal is to eventually remove networkingPrivate API in favour of
+    // networking.onc, but until current usages are migrated to the new
+    // name, use API aliasing to expose the API under both names.
+    // (http://crbug.com/672186).
+    "alias": "networking.onc"
+  }, {
+    "channel": "stable",
+    "contexts": ["webui"],
+    "matches": [
+      "chrome://network/*",
+      "chrome://oobe/*",
+      "chrome://internet-config-dialog/*",
+      "chrome://internet-detail-dialog/*",
+      "chrome://settings/*"
+    ]
+  }],
+  "power": {
+    "dependencies": ["permission:power"],
+    "contexts": ["blessed_extension"]
+  },
+  "printerProvider": {
+    "dependencies": ["permission:printerProvider"],
+    "contexts": ["blessed_extension"]
+  },
+  "printerProviderInternal": {
+    "internal": true,
+    "dependencies": ["permission:printerProvider"],
+    "contexts": ["blessed_extension"]
+  },
+  "runtime": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app", "platform_app"],
+    "contexts": ["blessed_extension", "lock_screen_extension"]
+  },
+  "runtime.getManifest": {
+    "contexts": [
+      "blessed_extension",
+      "lock_screen_extension",
+      "unblessed_extension",
+      "content_script"
+    ]
+  },
+  "runtime.connect": {
+    // Everything except WebUI.
+    "contexts": [
+      "blessed_web_page",
+      "content_script",
+      "blessed_extension",
+      "lock_screen_extension",
+      "unblessed_extension",
+      "web_page"
+    ],
+    "matches": ["<all_urls>"]
+  },
+  "runtime.connectNative": {
+    "dependencies": ["permission:nativeMessaging"],
+    "contexts": ["blessed_extension"]
+  },
+  "runtime.getURL": {
+    "contexts": [
+      "blessed_extension",
+      "lock_screen_extension",
+      "unblessed_extension",
+      "content_script"
+    ]
+  },
+  "runtime.id": {
+    "contexts": [
+      "blessed_extension",
+      "lock_screen_extension",
+      "unblessed_extension",
+      "content_script"
+    ]
+  },
+  "runtime.lastError": {
+    "contexts": "all",
+    "extension_types": "all",
+    "matches": ["<all_urls>"]
+  },
+  "runtime.onConnect": {
+    "contexts": [
+      "blessed_extension",
+      "lock_screen_extension",
+      "unblessed_extension",
+      "content_script"
+    ]
+  },
+  "runtime.onMessage": {
+    "contexts": [
+      "blessed_extension",
+      "lock_screen_extension",
+      "unblessed_extension",
+      "content_script"
+    ]
+  },
+  "runtime.sendMessage": {
+    // Everything except WebUI.
+    "contexts": [
+      "blessed_web_page",
+      "content_script",
+      "blessed_extension",
+      "lock_screen_extension",
+      "unblessed_extension",
+      "web_page"
+    ],
+    "matches": ["<all_urls>"]
+  },
+  "runtime.sendNativeMessage": {
+    "dependencies": ["permission:nativeMessaging"],
+    "contexts": ["blessed_extension"]
+  },
+  "serial": {
+    "dependencies": ["permission:serial"],
+    "contexts": ["blessed_extension"]
+  },
+  "socket": {
+    "dependencies": ["permission:socket"],
+    "contexts": ["blessed_extension"]
+  },
+  "sockets.tcp": {
+    "dependencies": ["manifest:sockets"],
+    "contexts": ["blessed_extension"]
+  },
+  "sockets.tcpServer": {
+    "dependencies": ["manifest:sockets"],
+    "contexts": ["blessed_extension"]
+  },
+  "sockets.udp": {
+    "dependencies": ["manifest:sockets"],
+    "contexts": ["blessed_extension"]
+  },
+  "storage": {
+    "dependencies": ["permission:storage"],
+    "contexts": ["blessed_extension", "unblessed_extension", "content_script"]
+  },
+  "system.cpu": {
+    "dependencies": ["permission:system.cpu"],
+    "contexts": ["blessed_extension"]
+  },
+  "system.display": [{
+    "dependencies": ["permission:system.display"],
+    "contexts": ["blessed_extension"]
+  }, {
+    "channel": "stable",
+    "contexts": ["webui"],
+    "matches": [
+      "chrome://settings/*"
+    ]
+  }],
+  "system.memory": {
+    "dependencies": ["permission:system.memory"],
+    "contexts": ["blessed_extension"]
+  },
+  "system.network": {
+    "dependencies": ["permission:system.network"],
+    "contexts": ["blessed_extension"]
+  },
+  "system.storage": {
+    "dependencies": ["permission:system.storage"],
+    "contexts": ["blessed_extension"]
+  },
+  "system.storage.getAvailableCapacity": {
+    "channel": "dev"
+  },
+  "test": [{
+    "channel": "stable",
+    "extension_types": "all",
+    // Everything except web pages and WebUI. WebUI is declared in a separate
+    // rule to keep the "matches" property isolated.
+    "contexts": [
+      "blessed_extension",
+      "blessed_web_page",
+      "content_script",
+      "extension_service_worker",
+      "lock_screen_extension",
+      "unblessed_extension"
+    ]
+  }, {
+    "channel": "stable",
+    "contexts": ["webui"],
+    "matches": [
+      "chrome://extensions/*",
+      "chrome://extensions-frame/*",
+      "chrome://chrome/extensions/*"
+    ]
+  }],
+  "types": {
+    "internal": true,
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app", "platform_app"],
+    "contexts": ["blessed_extension"]
+  },
+  "types.private": {
+    // preferencesPrivate is the only API that uses types.private.
+    // If any other APIs need it then they'll need to be added in
+    // separate rules.
+    "dependencies": ["permission:preferencesPrivate"],
+    "contexts": ["blessed_extension"]
+  },
+  "usb": {
+    "dependencies": ["permission:usb"],
+    "contexts": ["blessed_extension"]
+  },
+  "virtualKeyboard": {
+    "dependencies": ["permission:virtualKeyboard"],
+    "contexts": ["blessed_extension"]
+  },
+  "vpnProvider": {
+    "dependencies": ["permission:vpnProvider"],
+    "contexts": ["blessed_extension"]
+  },
+  "webRequest": {
+    "dependencies": ["permission:webRequest"],
+    "contexts": ["blessed_extension"]
+  },
+  "webRequestInternal": [{
+    "internal": true,
+    "channel": "stable",
+    "contexts": ["blessed_extension"]
+  }, {
+    // webview uses webRequestInternal API.
+    "channel": "stable",
+    "internal": true,
+    "contexts": ["webui"],
+    "matches": [
+      "chrome://chrome-signin/*",
+      "chrome://home/*",
+      "chrome://media-router/*",
+      "chrome://mobilesetup/*",
+      "chrome://oobe/*",
+      "chrome://assistant-optin/*"
+    ]
+  }],
+  "webViewInternal": [{
+    "internal": true,
+    "dependencies": ["permission:webview"],
+    "contexts": ["blessed_extension"]
+  }, {
+    "internal": true,
+    "channel": "stable",
+    "contexts": ["webui"],
+    "matches": [
+      "chrome://chrome-signin/*",
+      "chrome://home/*",
+      "chrome://media-router/*",
+      "chrome://mobilesetup/*",
+      "chrome://oobe/*",
+      "chrome://assistant-optin/*"
+    ]
+  }],
+  "webViewRequest": [{
+    "dependencies": ["permission:webview"],
+    "contexts": ["blessed_extension"]
+  }, {
+    "channel": "stable",
+    "contexts": ["webui"],
+    "matches": [
+      "chrome://chrome-signin/*",
+      "chrome://home/*",
+      "chrome://media-router/*",
+      "chrome://mobilesetup/*",
+      "chrome://oobe/*",
+      "chrome://assistant-optin/*"
+    ]
+  }]
+}

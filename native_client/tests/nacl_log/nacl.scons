@@ -1,0 +1,18 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+nacl_log_nexe = env.ComponentProgram('nacl_log', 'nacl_log.c',
+                                     EXTRA_LIBS=['platform',
+                                                 'gio',
+                                                 '${PTHREAD_LIBS}',
+                                                 '${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl('nacl_log_test.out',
+                                 nacl_log_nexe,
+                                 )
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_nacl_log_test')

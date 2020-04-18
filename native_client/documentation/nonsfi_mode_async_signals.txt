@@ -1,0 +1,56 @@
+Async signals support in Non-SFI mode
+=====================================
+
+Issue: https://code.google.com/p/nativeclient/issues/detail?id=4065
+
+This provides a way to asynchronously interrupt another thread in the same
+process, in a similar fashion to POSIX signals.  Signal support is limited to
+Non-SFI mode (see nacl_irt_async_signal_handling in src/untrusted/irt/irt.h).
+
+Async signals have several differences from POSIX signals:
+
+* Synchronous signals (from hardware exceptions) are separate and their behavior
+  is not changed.  Furthermore, synchronous signals cannot be handled with this
+  interface.
+* There is a single type of signal, and only a single, global async signal
+  handler is supported.  This means that there is no support for POSIX signal
+  numbers.
+* There is no way to block signals, not even when the signal handler is running.
+* There is no equivalent to sigaltstack(), so the signal handler always runs on
+  the same stack as the thread.
+* We don't provide libc wrapper functions for this interface in libnacl at the
+  moment.  If full POSIX support is needed, it can be implemented in user code,
+  on top of the IRT interfaces provided.
+* NaCl signals are not intended to abort any in-process operations (such as
+  syscalls, IRT calls or PPAPI calls) and they will restart once the signal
+  handler returns.  There are two exceptions that will be interrupted and do
+  fail with EINTR:
+  * futex_wait_abs() with a non-NULL timeout
+  * nanosleep()
+
+Similar to POSIX signals, NaCl signals are delivered the next time the thread is
+scheduled to run but before giving the process control of execution.  This also
+means that if several signals are sent to a thread before it is scheduled to
+run, a single async signal will be delivered, and the signal handler will be run
+just once.  That also means that the signal handler can run at any point during
+the program execution, so the signal handler must be written with care to avoid
+doing unsafe operations, such as acquiring mutexes that may be held by the
+interrupted thread.  Invoking any unsafe operation from within a signal handler
+is undefined.  NaCl only guarantees that the following IRT interfaces are
+async-signal-safe and can be called from within the signal handler:
+
+* tls_get()
+* futex_wait_abs()
+* futex_wake()
+* send_async_signal()
+
+In order to deliver signals to the correct thread, a new version of the
+nacl_irt_thread IRT functions has been introduced which will assign an opaque
+thread identifier to each new thread and will populate it into the |child_tid|
+parameter.  Since the initial thread is not created using nacl_irt_thread, the
+constant NACL_IRT_MAIN_THREAD_TID can be used to refer to it.  This thread
+identifier can be used as a parameter to send_async_signal().  Providing an
+invalid thread identifier that is not NACL_IRT_MAIN_THREAD_TID, was not obtained
+from thread_create, or refers to a thread that has already exited may cause
+undefined behavior.  For example, this could include sending the signal to an
+internally-created thread, if the thread ID is reused for a new thread.

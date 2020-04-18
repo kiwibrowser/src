@@ -1,0 +1,68 @@
+This directory contains NaCl-fied versions of Valgrind (Memcheck) and
+ThreadSanitizer tools.
+
+To use them, build your program with custom flags:
+ * add -g -O0 to compilation flags
+ * add -Wl,-u,have_nacl_valgrind_interceptors -lvalgrind to linker flags
+
+Run it by prepending either memcheck.sh or tsan.sh to sel_ldr command line:
+
+memcheck.sh [tool_options] nacl-sel_ldr -Q [sel_ldr_options] file.nexe
+
+ThreadSanitizer has two modes of execution. By default it looks for data races
+in trusted code:
+
+tsan.sh [tool_options] nacl-sel_ldr -Q [sel_ldr_options] file.nexe
+
+With --nacl_untrusted tool option it looks for data races in untrusted code:
+
+tsan.sh --nacl_untrusted [tool_options] nacl-sel_ldr -Q [sel_ldr_options] file.nexe
+
+Note that both Memcheck and ThreadSanitizer are only available for 64-bit Linux
+system running an x86_64 NaCl binary.
+
+More information about these tools can be found at:
+ * http://valgrind.org/docs/manual/manual.html
+ * http://code.google.com/p/data-race-test/wiki/ThreadSanitizer
+
+Source code for the tools is available at:
+ * http://code.google.com/p/valgrind-variant
+ * http://code.google.com/p/data-race-test
+
+---
+
+A simple example.
+
+ * Create 1.c with the following contents:
+
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(void) {
+    int* arr = malloc(5 * sizeof(int));
+    printf("%d\n", arr[5]);
+    return 0;
+}
+
+ * Build it with the right options:
+
+toolchain/linux_x86/nacl_x86_glibc/bin/nacl64-gcc -o 1.nexe \
+  -Wl,-u,have_nacl_valgrind_interceptors -m64 -O0 -g 1.c  -lvalgrind
+
+ * Run:
+
+memcheck.sh toolchain/linux_x86/nacl_x86_glibc/bin/nacl64-sel_ldr -Q 1.nexe
+
+ * Note Valgrind warnings among other output:
+
+ Invalid read of size 4
+    at 0xB0002030F: main 1.c:6
+  Address 0xb0007234c is 0 bytes after a block of size 20 alloc'd
+    at 0xB00022938: _malloc_r valgrind_interceptors.c:171
+    by 0xB000202FF: main 1.c:5
+
+ * Adding --leak-check=full to memcheck options, you will also get the following
+
+ 20 bytes in 1 blocks are definitely lost in loss record 9 of 50
+    at 0xB00022938: _malloc_r valgrind_interceptors.c:171
+    by 0xB000202FF: main 1.c:5

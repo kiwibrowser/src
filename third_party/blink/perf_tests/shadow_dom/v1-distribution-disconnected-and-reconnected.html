@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script type="text/javascript" src="../resources/runner.js"></script>
+  <script type="text/javascript" src="./v1-common.js"></script>
+</head>
+<body>
+<div id="parent"></div>
+
+<script>
+const hostChildren = 100;
+
+let host;
+
+PerfTestRunner.measureTime({
+  description: `Measure distribution for a disconnected and a reconnected tree`,
+  setup: () => {
+    host = createHostTreeWithDeepComponentChild(hostChildren);
+    document.querySelector('#parent').appendChild(host);
+  },
+  run: () => {
+    for (let i = 0; i < hostChildren; ++i) {
+      const firstChild = host.firstChild;
+      firstChild.remove();
+      firstChild.shadowRoot.querySelector('slot').assignedNodes();
+      host.appendChild(firstChild);
+      firstChild.shadowRoot.querySelector('slot').assignedNodes();
+    }
+  },
+  done: () => {
+    host.remove();
+  }
+});
+</script>
+</body>
+</html>

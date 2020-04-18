@@ -1,0 +1,39 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/html/cr.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-pages/iron-pages.html">
+<link rel="import" href="button_bar.html">
+<link rel="import" href="fake_mojo_service.html">
+<link rel="import" href="i18n_setup.html">
+<link rel="import" href="setup_failed_page.html">
+<link rel="import" href="setup_succeeded_page.html">
+<link rel="import" href="start_setup_page.html">
+
+<dom-module id="multidevice-setup">
+  <template>
+    <style>
+      :host {
+        @apply(--layout-vertical);
+        @apply(--layout-start-justified);
+        padding: 60px 64px 32px 64px;
+      }
+
+      button-bar {
+        margin-top: 50px;
+      }
+    </style>
+    <iron-pages attr-for-selected="is"
+        selected="[[visiblePageName_]]"
+        selected-item="{{visiblePage_}}">
+      <setup-failed-page></setup-failed-page>
+      <setup-succeeded-page></setup-succeeded-page>
+      <start-setup-page devices="[[devices_]]"
+          selected-public-key="{{selectedPublicKey_}}">
+      </start-setup-page>
+    </iron-pages>
+    <button-bar forward-button-text="[[visiblePage_.forwardButtonText]]"
+        backward-button-text="[[visiblePage_.backwardButtonText]]">
+    </button-bar>
+  </template>
+  <script src="multidevice_setup.js"></script>
+</dom-module>

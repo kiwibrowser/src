@@ -1,0 +1,61 @@
+<!-- Copyright 2017 The Chromium Authors. All rights reserved.
+     Use of this source code is governed by a BSD-style license that can be
+     found in the LICENSE file. -->
+
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_radio_button/cr_radio_button.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-radio-group/paper-radio-group.html">
+
+<!--
+  UI for the Enrollment license type selection.
+
+  Example:
+      <enrollment-license-card> </enrollment-license-card>
+
+  Attributes:
+    'disabled'   - Whether the UI disabled. Could be used to disable the UI
+                   during blocking IO operations.
+    'selected'   - Selected license type.
+    'buttonText' - Text on the confirmation button.
+
+  Events:
+    'buttonclick' - Fired when user confirms license type selection.
+-->
+<dom-module id="enrollment-license-card">
+    <template>
+        <link rel="stylesheet" href="gaia_input_form.css">
+        <link rel="stylesheet" href="enrollment_license_card.css">
+
+        <gaia-card id="license-selection-prompt-card" class="fit">
+            <div class="header flex vertical layout end-justified">
+                <h1 class="welcome-message" style="text-transform:capitalize"
+                    i18n-content="licenseSelectionCardTitle"></h1>
+            </div>
+            <div class="footer flex vertical layout justified">
+                <div>
+                    <p class="license-card-explanation"
+                          i18n-content="licenseSelectionCardExplanation"></p>
+                    <paper-radio-group selected="{{selected}}"
+                        selectable="cr-radio-button">
+                        <template is="dom-repeat" items="[[licenses]]"
+                                  id="repeatTemplate">
+                            <cr-radio-button
+                                disabled$="[[or_(item.disabled, disabled)]]"
+                                hidden$="[[item.hidden]]" name="[[item.id]]">
+                                [[formatTitle_(item)]]
+                            </cr-radio-button>
+                        </template>
+                    </paper-radio-group>
+                </div>
+                <div class="horizontal-reverse justified layout center">
+                    <gaia-button id="submitButton" class="self-end"
+                                 disabled="[[disabled]]"
+                                 on-tap="buttonClicked_">
+                        <span>[[buttonText]]</span>
+                    </gaia-button>
+                </div>
+            </div>
+        </gaia-card>
+    </template>
+</dom-module>

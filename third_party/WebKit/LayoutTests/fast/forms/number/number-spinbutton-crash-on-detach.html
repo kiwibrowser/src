@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<body>
+<style>
+body, iframe {
+    margin: 0; 
+    padding: 0;
+    border: 0;
+}
+</style>
+<iframe src="resources/number-spinbutton-crash-on-detach-frame.html"></iframe>
+<input id="num1" type="number" value="0">
+<script>
+if (window.testRunner) {
+    testRunner.dumpAsText();
+    testRunner.waitUntilDone();
+}
+window.onload = function() {
+    var iframe = document.querySelector('iframe');
+    iframe.src = '';
+    iframe.srcdoc = '<script>gc(); alert("alert"); parent.finish();</' + 'script>';
+};
+
+function finish() {
+    document.body.innerHTML = 'PASS if not crashed.';
+    testRunner.notifyDone();
+}
+</script>

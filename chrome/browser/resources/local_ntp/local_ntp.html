@@ -1,0 +1,157 @@
+<!doctype html>
+<html>
+<!-- Copyright 2015 The Chromium Authors. All rights reserved.
+     Use of this source code is governed by a BSD-style license that can be
+     found in the LICENSE file. -->
+<head>
+  <link rel="stylesheet" href="chrome-search://local-ntp/theme.css"></link>
+  <link rel="stylesheet" href="chrome-search://local-ntp/local-ntp.css"></link>
+  <link rel="stylesheet" href="chrome-search://local-ntp/voice.css"></link>
+  <link rel="stylesheet" href="chrome-search://local-ntp/custom-backgrounds.css"></link>
+  <script src="chrome-search://local-ntp/local-ntp.js"
+      {{LOCAL_NTP_INTEGRITY}}></script>
+  <script src="chrome-search://local-ntp/voice.js"
+      {{LOCAL_NTP_VOICE_INTEGRITY}}></script>
+  <script src="chrome-search://local-ntp/custom-backgrounds.js"
+      {{LOCAL_NTP_CUSTOM_BG_INTEGRITY}}></script>
+  <meta charset="utf-8">
+  <meta name="google" value="notranslate">
+</head>
+<!-- Remember to update the test HTML files in chrome/test/data/local_ntp/
+   whenever making changes to this file.-->
+<body>
+  <!-- Container for the OneGoogleBar HTML. -->
+  <div id="one-google" class="hidden"></div>
+
+  <div id="ntp-contents">
+    <div id="logo">
+      <!-- The logo that is displayed in the absence of a doodle. -->
+      <div id="logo-default" title="Google"></div>
+      <!-- Logo displayed when theme prevents doodles. Doesn't fade. -->
+      <div id="logo-non-white" title="Google"></div>
+      <!-- A doodle, if any: its link and image. -->
+      <div id="logo-doodle">
+        <button id="logo-doodle-button">
+          <img id="logo-doodle-image"></img>
+        </button>
+        <iframe id="logo-doodle-iframe" scrolling="no"></iframe>
+        <!-- A spinner, visible on dark-themed NTPs, prompting the doodle -->
+        <button id="logo-doodle-notifier">
+          <div class="outer ball0"><div class="inner"></div></div>
+          <div class="outer ball1"><div class="inner"></div></div>
+          <div class="outer ball2"><div class="inner"></div></div>
+          <div class="outer ball3"><div class="inner"></div></div>
+        </button>
+      </div>
+    </div>
+
+    <div id="fakebox-container">
+      <div id="fakebox">
+        <div id="fakebox-text"></div>
+        <input id="fakebox-input" autocomplete="off" tabindex="-1" type="url"
+            aria-hidden="true">
+        <div id="fakebox-cursor"></div>
+        <button id="fakebox-microphone" hidden></button>
+      </div>
+    </div>
+
+    <div id="most-visited">
+      <!-- The container for the tiles. The MV iframe goes in here. -->
+      <div id="mv-tiles"></div>
+      <!-- Notification shown when a tile is blacklisted. -->
+      <div id="mv-notice-container">
+        <div id="mv-notice" class="mv-notice-hide" role="alert">
+          <span id="mv-msg"></span>
+          <!-- Links in the notification. -->
+          <span id="mv-notice-links">
+            <span id="mv-undo" class="ripple" tabindex="0" role="button"></span>
+            <span id="mv-restore" class="ripple" tabindex="0" role="button">
+            </span>
+            <div id="mv-notice-x" tabindex="0" role="button"></div>
+          </span>
+        </div>
+      </div>
+    </div>
+    <div id="attribution"><div id="attribution-text"></div></div>
+
+    <div id="edit-bg" tabindex="0" hidden>
+      <button id="edit-bg-gear"></button>
+    </div>
+
+    <div id="edit-bg-overlay">
+      <div id="edit-bg-dialog">
+        <div id="edit-bg-title"></div>
+        <div id="edit-bg-google-photos" class="bg-option" tabindex="0" hidden>
+          <div class="bg-option-img"></div>
+          <div id="edit-bg-google-photos-text" class="bg-option-text"></div>
+        </div>
+        <div id="edit-bg-default-wallpapers" class="bg-option" tabindex="0">
+          <div class="bg-option-img"></div>
+          <div id="edit-bg-default-wallpapers-text" class="bg-option-text">
+          </div>
+        </div>
+        <div id="edit-bg-upload-image" class="bg-option" tabindex="0" hidden>
+          <div class="bg-option-img"></div>
+          <div id="edit-bg-upload-image-text" class="bg-option-text"></div>
+        </div>
+        <div id="edit-bg-restore-default" class="bg-option" tabindex="0">
+          <div class="bg-option-img"></div>
+          <div id="edit-bg-restore-default-text" class="bg-option-text"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <dialog id="bg-sel-menu-overlay">
+    <div id="bg-sel-menu">
+      <div id="bg-sel-title-bar">
+      <div id="bg-sel-back"></div>
+      <div id="bg-sel-title"></div>
+      </div>
+      <div id="bg-sel-tiles"></div>
+      <div id="bg-sel-footer">
+        <label id="bg-daily-refresh" class="switch">
+          <input type="checkbox">
+          <span class="toggle"></span>
+        </label>
+        <div id="bg-sel-refresh-text"></div>
+        <div id="bg-sel-footer-done"></div>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="voice-overlay-dialog" class="overlay-dialog">
+    <div id="voice-overlay" class="overlay-hidden">
+      <button id="voice-close-button" class="close-button">&times;</button>
+      <div id="voice-outer" class="outer">
+        <div class="inner-container">
+          <div id="voice-button-container" class="button-container">
+            <!-- The audio level animation. -->
+            <span id="voice-level" class="level"></span>
+            <!-- The microphone button. -->
+            <span id="voice-button" class="button">
+              <!-- The microphone icon (in CSS). -->
+              <div class="microphone">
+                <span class="receiver"></span>
+                <div class="wrapper">
+                  <span class="stem"></span>
+                  <span class="shell"></span>
+                </div>
+              </div>
+            </span>
+          </div>
+          <div class="text-container">
+            <!-- Low confidence text underneath high confidence text. -->
+            <span id="voice-text-i" class="voice-text"></span>
+            <!-- High confidence text on top of low confidence text. -->
+            <span id="voice-text-f" class="voice-text"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="one-google-end-of-body"></div>
+</body>
+</html>

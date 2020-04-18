@@ -1,0 +1,15 @@
+@hex:
+  # Case where we should conclude that the index register rsi in the second move contains
+  # only 32 bits, and is set by the mov, so it is legal (i.e. it zero extends).
+  # That is, the two moves:
+  #     mov %esi, %esi
+  #     mov [%r15 + %rsi*1 + 0x8], %edx
+  89 f6 \\
+  41 89 54 37 08
+@dis:
+     0:	89 f6                                        	mov    %esi,%esi
+     2:	41 89 54 37 08                               	mov    %edx,0x8(%r15,%rsi,1)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE

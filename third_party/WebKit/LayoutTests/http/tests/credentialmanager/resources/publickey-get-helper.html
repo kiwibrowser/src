@@ -1,0 +1,28 @@
+<!DOCTYPE HTML>
+<script src="/gen/layout_test_data/mojo/public/js/mojo_bindings.js"></script>
+<script src="/gen/third_party/blink/public/platform/modules/credentialmanager/credential_manager.mojom.js"></script>
+<script src="/gen/third_party/blink/public/platform/modules/webauth/authenticator.mojom.js"></script>
+<script src="test-inputs.js"></script>
+<script src="mock-navigator-credentials.js"></script>
+<script>
+mockAuthenticator.setRawId(RAW_ID);
+mockAuthenticator.setId(ID);
+mockAuthenticator.setClientDataJson(CLIENT_DATA_JSON);
+mockAuthenticator.setAuthenticatorData(AUTHENTICATOR_DATA);
+mockAuthenticator.setSignature(SIGNATURE);
+mockAuthenticator.setAuthenticatorStatus(
+    webauth.mojom.AuthenticatorStatus.SUCCESS);
+let queryParams = new URLSearchParams(window.location.search);
+var relyingPartyId = queryParams.has('rpId') ? queryParams.get('rpId') : document.domain;
+var customPublicKey = {
+    challenge: CHALLENGE,
+    rpId: relyingPartyId,
+    allowCredentials: [ACCEPTABLE_CREDENTIAL]
+};
+
+let responder =  window.opener || window.parent;
+
+navigator.credentials.get({publicKey : customPublicKey})
+  .then(r => responder.postMessage("SUCCESS", "*"))
+  .catch(t => responder.postMessage(t.name, "*"));
+</script>

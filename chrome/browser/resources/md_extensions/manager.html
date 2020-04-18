@@ -1,0 +1,142 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_drawer/cr_drawer.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_lazy_render/cr_lazy_render.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_toolbar/cr_toolbar.html">
+<link rel="import" href="chrome://resources/cr_elements/hidden_style_css.html">
+<link rel="import" href="chrome://resources/html/assert.html">
+<link rel="import" href="chrome://resources/html/cr.html">
+<link rel="import" href="detail_view.html">
+<link rel="import" href="drop_overlay.html">
+<link rel="import" href="error_page.html">
+<link rel="import" href="install_warnings_dialog.html">
+<link rel="import" href="item_list.html">
+<link rel="import" href="item_util.html">
+<link rel="import" href="keyboard_shortcuts.html">
+<link rel="import" href="load_error.html">
+<link rel="import" href="navigation_helper.html">
+<link rel="import" href="options_dialog.html">
+<link rel="import" href="pack_dialog.html">
+<link rel="import" href="service.html">
+<link rel="import" href="sidebar.html">
+<link rel="import" href="toolbar.html">
+<link rel="import" href="view_manager.html">
+
+<if expr="chromeos">
+<link rel="import" href="kiosk_browser_proxy.html">
+<link rel="import" href="kiosk_dialog.html">
+</if>
+
+<dom-module id="extensions-manager">
+  <template>
+    <style include="cr-hidden-style">
+      :host {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        --cr-toolbar-field-width: 680px;
+      }
+
+      extensions-sidebar {
+        flex-basis: 256px;
+      }
+
+      #viewManager {
+        flex: 1;
+        position: relative;
+      }
+
+      extensions-item {
+        display: inline-block;
+      }
+
+      extensions-toolbar {
+        background-color: var(--md-toolbar-color);
+      }
+    </style>
+    <extensions-drop-overlay drag-enabled="[[inDevMode]]">
+    </extensions-drop-overlay>
+    <extensions-toolbar in-dev-mode="[[inDevMode]]"
+        can-load-unpacked="[[canLoadUnpacked]]"
+        is-supervised="[[isSupervised_]]"
+        dev-mode-controlled-by-policy="[[devModeControlledByPolicy]]"
+        on-pack-tap="onPackTap_" delegate="[[delegate]]"
+        on-cr-toolbar-menu-tap="onMenuButtonTap_"
+        on-search-changed="onFilterChanged_"
+<if expr="chromeos">
+        on-kiosk-tap="onKioskTap_"
+        kiosk-enabled="[[kioskEnabled_]]"
+</if>
+        >
+    </extensions-toolbar>
+    <template is="dom-if" if="[[showDrawer_]]" restamp>
+      <cr-drawer id="drawer" heading="$i18n{toolbarTitle}"
+          align="$i18n{textdirection}" on-close="onDrawerClose_">
+        <div class="drawer-content">
+          <extensions-sidebar id="sidebar" is-supervised="[[isSupervised_]]"
+              on-close-drawer="onCloseDrawer_">
+          </extensions-sidebar>
+        </div>
+      </cr-drawer>
+    </template>
+    <extensions-view-manager id="viewManager" role="main">
+      <extensions-item-list id="items-list" delegate="[[delegate]]"
+          in-dev-mode="[[inDevMode]]" filter="[[filter]]"
+          hidden$="[[!didInitPage_]]" slot="view" apps="[[apps_]]"
+          extensions="[[extensions_]]"
+          on-show-install-warnings="onShowInstallWarnings_">
+      </extensions-item-list>
+      <cr-lazy-render id="details-view">
+        <template>
+          <extensions-detail-view delegate="[[delegate]]" slot="view"
+              in-dev-mode="[[inDevMode]]"
+              incognito-available="[[incognitoAvailable_]]"
+              data="[[detailViewItem_]]">
+          </extensions-detail-view>
+        </template>
+      </cr-lazy-render>
+      <cr-lazy-render id="keyboard-shortcuts">
+        <template>
+          <extensions-keyboard-shortcuts delegate="[[delegate]]" slot="view"
+              items="[[extensions_]]">
+          </extensions-keyboard-shortcuts>
+        </template>
+      </cr-lazy-render>
+      <cr-lazy-render id="error-page">
+        <template>
+          <extensions-error-page data="[[errorPageItem_]]" slot="view"
+              delegate="[[delegate]]" slot="view">
+          </extensions-error-page>
+        </template>
+      </cr-lazy-render>
+    </extensions-view-manager>
+    <template is="dom-if" if="[[showOptionsDialog_]]" restamp>
+      <extensions-options-dialog id="options-dialog"
+          on-close="onOptionsDialogClose_">
+      </extensions-options-dialog>
+    </template>
+    <template is="dom-if" if="[[showPackDialog_]]" restamp>
+      <extensions-pack-dialog id="pack-dialog" delegate="[[delegate]]"
+          on-close="onPackDialogClose_">
+      </extensions-pack-dialog>
+    </template>
+    <template is="dom-if" if="[[showLoadErrorDialog_]]" restamp>
+      <extensions-load-error id="load-error" delegate="[[delegate]]"
+          on-close="onLoadErrorDialogClose_">
+      </extensions-load-error>
+    </template>
+<if expr="chromeos">
+    <template is="dom-if" if="[[showKioskDialog_]]" restamp>
+      <extensions-kiosk-dialog id="kiosk-dialog" on-close="onKioskDialogClose_">
+      </extensions-kiosk-dialog>
+    </template>
+</if>
+    <template is="dom-if" if="[[showInstallWarningsDialog_]]" restamp>
+      <extensions-install-warnings-dialog
+          on-close="onInstallWarningsDialogClose_"
+          install-warnings="[[installWarnings_]]">
+      </extensions-install-warnings-dialog>
+    </template>
+  </template>
+  <script src="manager.js"></script>
+</dom-module>

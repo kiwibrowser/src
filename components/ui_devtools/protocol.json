@@ -1,0 +1,643 @@
+{
+    "domains": [
+        {
+            "commands": [
+                {
+                    "description": "Enables DOM agent for the given page.",
+                    "name": "enable"
+                },
+                {
+                    "description": "Disables DOM agent for the given page.",
+                    "name": "disable"
+                },
+                {
+                    "description": "Returns the root DOM node to the caller.",
+                    "name": "getDocument",
+                    "returns": [
+                        {
+                            "$ref": "Node",
+                            "description": "Resulting node.",
+                            "name": "root"
+                        }
+                    ]
+                },
+                {
+                    "name": "highlightNode",
+                    "description": "Highlights DOM node.",
+                    "redirect": "Overlay"
+                },
+                {
+                    "name": "hideHighlight",
+                    "description": "Hides DOM node highlight."
+                },
+                {
+                    "name": "pushNodesByBackendIdsToFrontend",
+                    "parameters": [
+                        {
+                            "name": "backendNodeIds",
+                            "type": "array",
+                            "items": {
+                                "$ref": "BackendNodeId"
+                            },
+                            "description": "The array of backend node ids."
+                        }
+                    ],
+                    "returns": [
+                        {
+                            "name": "nodeIds",
+                            "type": "array",
+                            "items": {
+                                "$ref": "NodeId"
+                            },
+                            "description": "The array of ids of pushed nodes that correspond to the backend ids specified in backendNodeIds."
+                        }
+                    ],
+                    "description": "Requests that a batch of nodes is sent to the caller given their backend node ids.",
+                    "experimental": true
+                }
+            ],
+            "events": [
+                {
+                    "name": "nodeHighlightRequested",
+                    "parameters": [
+                        {
+                            "name": "nodeId",
+                            "$ref": "NodeId",
+                            "description": "Identifier of the node to highlight in DOM tree."
+                        }
+                    ],
+                    "description": "In DOM tree, highlights DOM node with given id."
+                },
+                {
+                    "name": "childNodeInserted",
+                    "parameters": [
+                        {
+                            "description": "Id of the node that has changed.",
+                            "name": "parentNodeId",
+                            "$ref": "NodeId"
+                        },
+                        {
+                            "description": "Id of the previous sibling (0 if this is at the beginning of the list).",
+                            "name": "previousNodeId",
+                            "$ref": "NodeId"
+                        },
+                        {
+                            "description": "Inserted node data.",
+                            "name": "node",
+                            "$ref": "Node"
+                        }
+                    ],
+                    "description": "Mirrors <code>DOMNodeInserted</code> event."
+                },
+                {
+                    "name": "childNodeRemoved",
+                    "parameters": [
+                        {
+                            "description": "Parent id.",
+                            "name": "parentNodeId",
+                            "$ref": "NodeId"
+                        },
+                        {
+                            "description": "Id of the node that has been removed.",
+                            "name": "nodeId",
+                            "$ref": "NodeId"
+                        }
+                    ],
+                    "description": "Mirrors <code>DOMNodeRemoved</code> event."
+                }
+            ],
+            "domain": "DOM",
+            "types": [
+                {
+                    "description": "Unique DOM node identifier.",
+                    "id": "NodeId",
+                    "type": "integer"
+                },
+                {
+                    "id": "BackendNodeId",
+                    "type": "integer",
+                    "description": "Unique DOM node identifier used to reference a node that may not have been pushed to the front-end."
+                },
+                {
+                    "description": "DOM interaction is implemented in terms of mirror objects that represent the actual DOM nodes. DOMNode is a base node mirror type.",
+                    "id": "Node",
+                    "properties": [
+                        {
+                            "$ref": "NodeId",
+                            "description": "Node identifier that is passed into the rest of the DOM messages as the <code>nodeId</code>. Backend will only push node with given <code>id</code> once. It is aware of all requested nodes and will only fire DOM events for nodes known to the client.",
+                            "name": "nodeId"
+                        },
+                        {
+                            "name": "backendNodeId",
+                            "$ref": "BackendNodeId",
+                            "description": "The BackendNodeId for this node."
+                        },
+                        {
+                            "description": "<code>Node</code>'s nodeType.",
+                            "name": "nodeType",
+                            "type": "integer"
+                        },
+                        {
+                            "description": "<code>Node</code>'s nodeName.",
+                            "name": "nodeName",
+                            "type": "string"
+                        },
+                        {
+                            "description": "Child count for <code>Container</code> nodes.",
+                            "name": "childNodeCount",
+                            "optional": true,
+                            "type": "integer"
+                        },
+                        {
+                            "description": "Child nodes of this node when requested with children.",
+                            "items": {
+                                "$ref": "Node"
+                            },
+                            "name": "children",
+                            "optional": true,
+                            "type": "array"
+                        },
+                        {
+                            "description": "Attributes of the <code>Element</code> node in the form of flat array <code>[name1, value1, name2, value2]</code>.",
+                            "items": {
+                                "type": "string"
+                            },
+                            "name": "attributes",
+                            "optional": true,
+                            "type": "array"
+                        },
+                        {
+                            "description": "<code>Attr</code>'s name.",
+                            "name": "name",
+                            "optional": true,
+                            "type": "string"
+                        },
+                        {
+                            "description": "<code>Attr</code>'s value.",
+                            "name": "value",
+                            "optional": true,
+                            "type": "string"
+                        }
+                    ],
+                    "type": "object"
+                },
+                {
+                    "id": "RGBA",
+                    "type": "object",
+                    "properties": [
+                        {
+                            "name": "r",
+                            "type": "integer",
+                            "description": "The red component, in the [0-255] range."
+                        },
+                        {
+                            "name": "g",
+                            "type": "integer",
+                            "description": "The green component, in the [0-255] range."
+                        },
+                        {
+                            "name": "b",
+                            "type": "integer",
+                            "description": "The blue component, in the [0-255] range."
+                        },
+                        {
+                            "name": "a",
+                            "type": "number",
+                            "optional": true,
+                            "description": "The alpha component, in the [0-1] range (default: 1)."
+                        }
+                    ],
+                    "description": "A structure holding an RGBA color."
+                },
+                {
+                    "id": "Mode",
+                    "type": "string",
+                    "description": "Enable or Disable the highlighting inspector."
+                },
+                {
+                    "id": "HighlightConfig",
+                    "type": "object",
+                    "properties": [
+                        {
+                            "name": "showInfo",
+                            "type": "boolean",
+                            "optional": true,
+                            "description": "Whether the node info tooltip should be shown (default: false)."
+                        },
+                        {
+                            "name": "showRulers",
+                            "type": "boolean",
+                            "optional": true,
+                            "description": "Whether the rulers should be shown (default: false)."
+                        },
+                        {
+                            "name": "showExtensionLines",
+                            "type": "boolean",
+                            "optional": true,
+                            "description": "Whether the extension lines from node to the rulers should be shown (default: false)."
+                        },
+                        {
+                            "name": "displayAsMaterial",
+                            "type": "boolean",
+                            "optional": true
+                        },
+                        {
+                            "name": "contentColor",
+                            "$ref": "DOM.RGBA",
+                            "optional": true,
+                            "description": "The content box highlight fill color (default: transparent)."
+                        },
+                        {
+                            "name": "paddingColor",
+                            "$ref": "DOM.RGBA",
+                            "optional": true,
+                            "description": "The padding highlight fill color (default: transparent)."
+                        },
+                        {
+                            "name": "borderColor",
+                            "$ref": "DOM.RGBA",
+                            "optional": true,
+                            "description": "The border highlight fill color (default: transparent)."
+                        },
+                        {
+                            "name": "marginColor",
+                            "$ref": "DOM.RGBA",
+                            "optional": true,
+                            "description": "The margin highlight fill color (default: transparent)."
+                        },
+                        {
+                            "name": "eventTargetColor",
+                            "$ref": "DOM.RGBA",
+                            "optional": true,
+                            "description": "The event target element highlight fill color (default: transparent)."
+                        },
+                        {
+                            "name": "shapeColor",
+                            "$ref": "DOM.RGBA",
+                            "optional": true,
+                            "description": "The shape outside fill color (default: transparent)."
+                        },
+                        {
+                            "name": "shapeMarginColor",
+                            "$ref": "DOM.RGBA",
+                            "optional": true,
+                            "description": "The shape margin fill color (default: transparent)."
+                        },
+                        {
+                            "name": "selectorList",
+                            "type": "string",
+                            "optional": true,
+                            "description": "Selectors to highlight relevant nodes."
+                        }
+                    ],
+                    "description": "Configuration data for the highlighting of page elements."
+                }
+            ]
+        },
+        {
+            "commands": [
+                {
+                    "description": "Enables CSS agent for the given page.",
+                    "name": "enable"
+                },
+                {
+                    "description": "Disables CSS agent for the given page.",
+                    "name": "disable"
+                },
+                {
+                    "description": "Returns requested styles for a DOM node identified by <code>nodeId</code>.",
+                    "name": "getMatchedStylesForNode",
+                    "parameters": [
+                        {
+                            "$ref": "DOM.NodeId",
+                            "name": "nodeId"
+                        }
+                    ],
+                    "returns": [
+                        {
+                            "$ref": "CSSStyle",
+                            "description": "Inline style for the specified DOM node.",
+                            "name": "inlineStyle",
+                            "optional": true
+                        }
+                    ]
+                },
+                {
+                    "description": "Applies specified style edits one after another in the given order.",
+                    "name": "setStyleTexts",
+                    "parameters": [
+                        {
+                            "items": {
+                                "$ref": "StyleDeclarationEdit"
+                            },
+                            "type": "array",
+                            "name": "edits"
+                        }
+                    ],
+                    "returns": [
+                        {
+                            "items": {
+                                "$ref": "CSSStyle"
+                            },
+                            "type": "array",
+                            "name": "styles",
+                            "description": "The resulting styles after modification."
+                        }
+                    ]
+                }
+            ],
+            "events": [
+                {
+                    "name": "styleSheetChanged",
+                    "parameters": [
+                        {
+                            "name": "styleSheetId",
+                            "$ref": "StyleSheetId"
+                        }
+                    ],
+                    "description": "Fired whenever any bounds are updated for any object."
+                }
+            ],
+            "domain": "CSS",
+            "types": [
+                {
+                     "id": "StyleSheetId",
+                     "type": "string"
+                },
+                {
+                    "description": "Text range within a resource. All numbers are zero-based.",
+                    "type": "object",
+                    "id": "SourceRange",
+                    "properties": [
+                        {
+                            "type": "integer",
+                            "name": "startLine",
+                            "description": "Start line of range."
+                        },
+                        {
+                            "type": "integer",
+                            "name": "startColumn",
+                            "description": "Start column of range (inclusive)."
+                        },
+                        {
+                            "type": "integer",
+                            "name": "endLine",
+                            "description": "End line of range"
+                        },
+                        {
+                            "type": "integer",
+                            "name": "endColumn",
+                            "description": "End column of range (exclusive)."
+                        }
+                    ]
+                },
+                {
+                    "description": "A descriptor of operation to mutate style declaration text.",
+                    "type": "object",
+                    "id": "StyleDeclarationEdit",
+                    "properties": [
+                        {
+                            "description": "The css style sheet identifier (same as NodeId for UI DevTools).",
+                            "name": "styleSheetId",
+                            "$ref": "StyleSheetId"
+                        },
+                        {
+                            "type": "string",
+                            "name": "text",
+                            "description": "New style text."
+                        }
+                    ]
+                },
+                {
+                    "id": "CSSProperty",
+                    "properties": [
+                        {
+                            "description": "The property name.",
+                            "name": "name",
+                            "type": "string"
+                        },
+                        {
+                            "description": "The property value.",
+                            "name": "value",
+                            "type": "string"
+                        },
+                        {
+                            "name": "range",
+                            "$ref": "SourceRange",
+                            "optional": true,
+                            "description": "The entire property range in the enclosing style declaration (if available)."
+                        }
+                    ],
+                    "type": "object"
+                },
+                {
+                    "description": "CSS style representation.",
+                    "id": "CSSStyle",
+                    "properties": [
+                        {
+                            "description": "The css style sheet identifier (absent for user agent stylesheet and user-specified stylesheet rules) this rule came from. For UI devtools, this is simply equivalent to the NodeId.",
+                            "optional": true,
+                            "name": "styleSheetId",
+                            "$ref": "StyleSheetId"
+                        },
+                        {
+                            "description": "CSS properties in the style.",
+                            "items": {
+                                "$ref": "CSSProperty"
+                            },
+                            "name": "cssProperties",
+                            "type": "array"
+                        },
+                        {
+                            "description": "Frontend requires us to pass this. We just pass an empty array.",
+                            "items": {
+                                "type": "string"
+                            },
+                            "name": "shorthandEntries",
+                            "type": "array"
+                        },
+                        {
+                            "description": "Style declaration range in the enclosing stylesheet (if available).",
+                            "optional": true,
+                            "name": "range",
+                            "$ref": "SourceRange"
+                        }
+                    ],
+                    "type": "object"
+                }
+            ]
+        },
+        {
+            "commands": [
+                {
+                    "description": "Enables Overlay agent for the given page.",
+                    "name": "enable"
+                },
+                {
+                    "description": "Disables Overlay agent for the given page.",
+                    "name": "disable"
+                },
+                {
+                    "name": "highlightNode",
+                    "description": "Highlights DOM node with given id.",
+                    "parameters": [
+                        {
+                            "name": "highlightConfig",
+                            "$ref": "HighlightConfig",
+                            "description": "A descriptor for the highlight appearance."
+                        },
+                        {
+                            "name": "nodeId",
+                            "$ref": "DOM.NodeId",
+                            "optional":true,
+                            "description": "Identifier of the node to highlight."
+                        }
+                    ]
+                },
+                {
+                    "name": "hideHighlight",
+                    "description": "Hides DOM node highlight."
+                },
+                {
+                    "name": "setInspectMode",
+                    "parameters": [
+                        {
+                            "description": "Set an inspection mode.",
+                            "name": "mode",
+                            "$ref": "InspectMode"
+                        },
+                        {
+                            "description": "A descriptor for the highlight appearance of hovered-over nodes. May be omitted if <code>enabled == false</code>.",
+                            "optional":true,
+                            "name": "highlightConfig",
+                            "$ref": "HighlightConfig"
+                        }
+                    ],
+                    "description": "Enters the 'inspect' mode. In this mode, elements that user is hovering over are highlighted. Backend then generates 'inspectNodeRequested' event upon element selection."
+                }
+            ],
+            "description": "This domain provides various functionality related to drawing atop the inspected page.",
+            "domain": "Overlay",
+            "dependencies": [
+                "DOM"
+            ],
+            "experimental":true,
+            "events": [
+                {
+                    "name": "nodeHighlightRequested",
+                    "description": "Fired when the node should be highlighted. This happens after call to <code>setInspectMode</code>.",
+                    "parameters": [
+                        {
+                            "name": "nodeId",
+                            "$ref": "DOM.NodeId"
+                        }
+                    ]
+                },
+                {
+                    "name": "inspectNodeRequested",
+                    "description": "Fired when the node should be inspected. This happens after call to <code>setInspectMode</code> or when user manually inspects an element.",
+                    "parameters": [
+                        {
+                            "name": "backendNodeId",
+                            "$ref": "DOM.BackendNodeId",
+                            "description": "Id of the node to inspect."
+                        }
+                    ]
+                }
+            ],
+            "types": [
+                {
+                    "id": "HighlightConfig",
+                    "type": "object",
+                    "properties": [
+                        {
+                            "name": "showInfo",
+                            "type": "boolean",
+                            "optional":true,
+                            "description": "Whether the node info tooltip should be shown (default: false)."
+                        },
+                        {
+                            "name": "showRulers",
+                            "type": "boolean",
+                            "optional":true,
+                            "description": "Whether the rulers should be shown (default: false)."
+                        },
+                        {
+                            "name": "showExtensionLines",
+                            "type": "boolean",
+                            "optional":true,
+                            "description": "Whether the extension lines from node to the rulers should be shown (default: false)."
+                        },
+                        {
+                            "name": "displayAsMaterial",
+                            "type": "boolean",
+                            "optional":true
+                        },
+                        {
+                            "name": "contentColor",
+                            "$ref": "DOM.RGBA",
+                            "optional":true,
+                            "description": "The content box highlight fill color (default: transparent)."
+                        },
+                        {
+                            "name": "paddingColor",
+                            "$ref": "DOM.RGBA",
+                            "optional":true,
+                            "description": "The padding highlight fill color (default: transparent)."
+                        },
+                        {
+                            "name": "borderColor",
+                            "$ref": "DOM.RGBA",
+                            "optional":true,
+                            "description": "The border highlight fill color (default: transparent)."
+                        },
+                        {
+                            "name": "marginColor",
+                            "$ref": "DOM.RGBA",
+                            "optional":true,
+                            "description": "The margin highlight fill color (default: transparent)."
+                        },
+                        {
+                            "name": "eventTargetColor",
+                            "$ref": "DOM.RGBA",
+                            "optional":true,
+                            "description": "The event target element highlight fill color (default: transparent)."
+                        },
+                        {
+                            "name": "shapeColor",
+                            "$ref": "DOM.RGBA",
+                            "optional":true,
+                            "description": "The shape outside fill color (default: transparent)."
+                        },
+                        {
+                            "name": "shapeMarginColor",
+                            "$ref": "DOM.RGBA",
+                            "optional":true,
+                            "description": "The shape margin fill color (default: transparent)."
+                        },
+                        {
+                            "name": "selectorList",
+                            "type": "string",
+                            "optional":true,
+                            "description": "Selectors to highlight relevant nodes."
+                        }
+                    ],
+                    "description": "Configuration data for the highlighting of page elements."
+                },
+                {
+                    "id": "InspectMode",
+                    "type": "string",
+                    "enum": [
+                        "searchForNode",
+                        "searchForUAShadowDOM",
+                        "none"
+                    ]
+                }
+            ]
+        }
+    ],
+    "version": {
+        "major": "1",
+        "minor": "0"
+    }
+}

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<body>
+<script src="../../resources/js-test.js"></script>
+<script>
+
+description('This tests that DocumentFragment implements the ParentNode interface.');
+
+var documentFragment = new DocumentFragment();
+
+shouldBe('documentFragment.children.length', '0');
+shouldBe('documentFragment.childElementCount', '0');
+shouldBeNull('documentFragment.firstElementChild');
+shouldBeNull('documentFragment.lastElementChild');
+
+documentFragment.appendChild(new Text('a'));
+shouldBe('documentFragment.children.length', '0');
+shouldBe('documentFragment.childElementCount', '0');
+shouldBeNull('documentFragment.firstElementChild');
+shouldBeNull('documentFragment.lastElementChild');
+
+var b = documentFragment.appendChild(document.createElement('b'));
+shouldBe('documentFragment.children.length', '1');
+shouldBe('documentFragment.childElementCount', '1');
+shouldBe('documentFragment.children[0]', 'b');
+shouldBe('documentFragment.firstElementChild', 'b');
+shouldBe('documentFragment.lastElementChild', 'b');
+
+documentFragment.appendChild(new Text('c'));
+shouldBe('documentFragment.children.length', '1');
+shouldBe('documentFragment.childElementCount', '1');
+shouldBe('documentFragment.children[0]', 'b');
+shouldBe('documentFragment.firstElementChild', 'b');
+shouldBe('documentFragment.lastElementChild', 'b');
+
+var d = documentFragment.appendChild(document.createElement('d'));
+shouldBe('documentFragment.children.length', '2');
+shouldBe('documentFragment.childElementCount', '2');
+shouldBe('documentFragment.children[0]', 'b');
+shouldBe('documentFragment.children[1]', 'd');
+shouldBe('documentFragment.firstElementChild', 'b');
+shouldBe('documentFragment.lastElementChild', 'd');
+
+documentFragment.appendChild(new Text('e'));
+shouldBe('documentFragment.children.length', '2');
+shouldBe('documentFragment.childElementCount', '2');
+shouldBe('documentFragment.children[0]', 'b');
+shouldBe('documentFragment.children[1]', 'd');
+shouldBe('documentFragment.firstElementChild', 'b');
+shouldBe('documentFragment.lastElementChild', 'd');
+
+</script>

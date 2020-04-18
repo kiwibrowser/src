@@ -1,0 +1,140 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/html/web_ui_listener_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="fonts_browser_proxy.html">
+<link rel="import" href="../controls/settings_slider.html">
+<link rel="import" href="../controls/settings_dropdown_menu.html">
+<link rel="import" href="../i18n_setup.html">
+<link rel="import" href="../settings_shared_css.html">
+
+<dom-module id="settings-appearance-fonts-page">
+  <template>
+    <style include="settings-shared"></style>
+    <div class="settings-box first">
+      <div class="start">$i18n{fontSize}</div>
+      <settings-slider id="sizeSlider"
+          pref="{{prefs.webkit.webprefs.default_font_size}}"
+          tick-values="[[fontSizeRange_]]"
+          label-min="$i18n{tiny}" label-max="$i18n{huge}">
+      </settings-slider>
+    </div>
+    <div class="settings-box">
+      <div class="start">$i18n{minimumFont}</div>
+      <div style="
+          font-size:[[computeMinimumFontSize_(
+              prefs.webkit.webprefs.minimum_font_size.value)]]px;
+          font-family:
+              '[[prefs.webkit.webprefs.fonts.standard.Zyyy.value]]';">
+        [[computeMinimumFontSize_(
+                prefs.webkit.webprefs.minimum_font_size.value)]]:
+        $i18n{quickBrownFox}
+      </div>
+      <settings-slider id="minimumSizeSlider"
+          pref="{{prefs.webkit.webprefs.minimum_font_size}}"
+          tick-values="[[minimumFontSizeRange_]]"
+          label-min="$i18n{tiny}" label-max="$i18n{huge}">
+      </settings-slider>
+    </div>
+    <div class="settings-box">
+      <h2>$i18n{standardFont}</h2>
+    </div>
+    <div class="list-frame">
+      <div class="list-item">
+        <settings-dropdown-menu class="start" label="$i18n{standardFont}"
+            pref="{{prefs.webkit.webprefs.fonts.standard.Zyyy}}"
+            menu-options="[[fontOptions_]]">
+        </settings-dropdown-menu>
+      </div>
+      <div class="list-item underbar"
+          style="
+              font-size:[[prefs.webkit.webprefs.default_font_size.value]]px;
+              font-family:
+                  '[[prefs.webkit.webprefs.fonts.standard.Zyyy.value]]';">
+        <span>
+          [[prefs.webkit.webprefs.default_font_size.value]]:
+          $i18n{quickBrownFox}
+        </span>
+      </div>
+    </div>
+    <div class="settings-box">
+      <h2>$i18n{serifFont}</h2>
+    </div>
+    <div class="list-frame">
+      <div class="list-item">
+        <settings-dropdown-menu class="start" label="$i18n{serifFont}"
+            pref="{{prefs.webkit.webprefs.fonts.serif.Zyyy}}"
+            menu-options="[[fontOptions_]]">
+        </settings-dropdown-menu>
+      </div>
+      <div class="list-item underbar"
+          style="
+              font-size:[[prefs.webkit.webprefs.default_font_size.value]]px;
+              font-family:
+                  '[[prefs.webkit.webprefs.fonts.serif.Zyyy.value]]';">
+        <span>
+          [[prefs.webkit.webprefs.default_font_size.value]]:
+          $i18n{quickBrownFox}
+        </span>
+      </div>
+    </div>
+    <div class="settings-box">
+      <h2>$i18n{sansSerifFont}</h2>
+    </div>
+    <div class="list-frame">
+      <div class="list-item">
+        <settings-dropdown-menu class="start" label="$i18n{sansSerifFont}"
+            pref="{{prefs.webkit.webprefs.fonts.sansserif.Zyyy}}"
+            menu-options="[[fontOptions_]]">
+        </settings-dropdown-menu>
+      </div>
+      <div class="list-item underbar"
+          style="
+              font-size:[[prefs.webkit.webprefs.default_font_size.value]]px;
+              font-family:
+                  '[[prefs.webkit.webprefs.fonts.sansserif.Zyyy.value]]';">
+        <span>
+          [[prefs.webkit.webprefs.default_font_size.value]]:
+          $i18n{quickBrownFox}
+        </span>
+      </div>
+    </div>
+    <div class="settings-box">
+      <h2>$i18n{fixedWidthFont}</h2>
+    </div>
+    <div class="list-frame">
+      <div class="list-item">
+        <settings-dropdown-menu class="start" label="$i18n{fixedWidthFont}"
+            pref="{{prefs.webkit.webprefs.fonts.fixed.Zyyy}}"
+            menu-options="[[fontOptions_]]">
+        </settings-dropdown-menu>
+      </div>
+      <div class="list-item"
+          style="
+              font-size:
+                  [[prefs.webkit.webprefs.default_fixed_font_size.value]]px;
+              font-family:
+                  '[[prefs.webkit.webprefs.fonts.fixed.Zyyy.value]]';">
+        [[prefs.webkit.webprefs.default_font_size.value]]:
+        $i18n{quickBrownFox}
+      </div>
+    </div>
+    <template is="dom-if" if="[[!isGuest_]]">
+      <div class="settings-box two-line" id="advancedButton"
+          on-click="openAdvancedExtension_" actionable>
+        <div class="start">
+          $i18n{advancedFontSettings}
+          <div class="secondary" id="advancedButtonSublabel">
+            [[advancedExtensionSublabel_]]
+          </div>
+        </div>
+        <paper-icon-button-light class="icon-external">
+          <button aria-label="$i18n{advancedFontSettings}"
+              aria-describedby="advancedButtonSublabel"></button>
+        </paper-icon-button-light>
+      </div>
+    </template>
+  </template>
+  <script src="appearance_fonts_page.js"></script>
+</dom-module>

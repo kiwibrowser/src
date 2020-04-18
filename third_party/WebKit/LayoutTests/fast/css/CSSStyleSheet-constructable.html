@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<!-- TODO(rakina): move to WPT once spec is finalized -->
+<script src = '../../resources/testharness.js'></script>
+<script src = '../../resources/testharnessreport.js'></script>
+<style>dummy {}</style>
+
+<section id="firstSection">
+  <div>
+    <span class="green"></span>
+    <span class="red"></span>
+    <span class="blue"></span>
+    <span class="white"></span>
+    <span class="yellow"></span>
+  </div>
+</section>
+<section id="secondSection"></section>
+
+<script>
+'use strict';
+const greenStyleText = ".green { color: green; }";
+const redStyleTexts = [".red { color: red; }", ".red + span + span { color: red; }"];
+const blueStyleTexts = [".blue { color: blue; }", ".blue + span + span { color: blue; }"];
+const whiteStyleText = "* { color: white; }";
+const yellowStyleText = ".yellow { color: yellow; }";
+
+const firstDiv = document.querySelector('#firstSection > div');
+const secondDiv = firstDiv.cloneNode(true);
+const shadowRoot = document.querySelector('#secondSection').attachShadow({mode: 'open'});
+shadowRoot.appendChild(secondDiv);
+
+const greenSpan = firstDiv.children[0];
+const redSpan = firstDiv.children[1];
+const blueSpan = firstDiv.children[2];
+const whiteSpan = firstDiv.children[3];
+const yellowSpan = firstDiv.children[4];
+const greenShadowSpan = secondDiv.children[0];
+const redShadowSpan = secondDiv.children[1];
+const blueShadowSpan = secondDiv.children[2];
+const whiteShadowSpan = secondDiv.children[3];
+const yellowShadowSpan = secondDiv.children[4];
+
+test(() => {
+  assert_equals(document.moreStyleSheets.length, 0);
+}, "document.moreStyleSheets should initially have length 0.");
+
+test(() => {
+  // Style sheets can be created
+  const greenStyleSheet = new CSSStyleSheet(greenStyleText);
+  const redStyleSheet = new CSSStyleSheet(redStyleTexts[0] + redStyleTexts[1], {media: "screen, print"});
+  const blueStyleSheet = new CSSStyleSheet(blueStyleTexts[0] + blueStyleTexts[1], {title: "Blue", disabled: true});
+  const whiteStyleSheet = new CSSStyleSheet(whiteStyleText, {title: "White", alternate: true});
+  const yellowStyleSheet = new CSSStyleSheet(yellowStyleText, {disabled: false});
+
+  assert_equals(greenStyleSheet.title, "");
+  assert_equals(redStyleSheet.title, "");
+  assert_equals(blueStyleSheet.title, "Blue");
+  assert_equals(whiteStyleSheet.title, "White");
+  assert_equals(yellowStyleSheet.title, "");
+
+  assert_equals(greenStyleSheet.ownerNode, null);
+  assert_equals(redStyleSheet.ownerNode, null);
+  assert_equals(blueStyleSheet.ownerNode, null);
+  assert_equals(whiteStyleSheet.ownerNode, null);
+  assert_equals(yellowStyleSheet.ownerNode, null);
+
+  assert_equals(greenStyleSheet.ownerRule, null);
+  assert_equals(redStyleSheet.ownerRule, null);
+  assert_equals(blueStyleSheet.ownerRule, null);
+  assert_equals(whiteStyleSheet.ownerRule, null);
+  assert_equals(yellowStyleSheet.ownerRule, null);
+
+  assert_equals(greenStyleSheet.media.length, 0);
+  assert_equals(redStyleSheet.media.length, 2);
+  assert_equals(redStyleSheet.media.item(0), "screen");
+  assert_equals(redStyleSheet.media.item(1), "print");
+  assert_equals(blueStyleSheet.media.length, 0);
+  assert_equals(whiteStyleSheet.media.length, 0);
+  assert_equals(yellowStyleSheet.media.length, 0);
+
+  assert_false(greenStyleSheet.disabled);
+  assert_false(redStyleSheet.disabled);
+  assert_true(blueStyleSheet.disabled);
+  assert_false(whiteStyleSheet.disabled);
+  assert_false(yellowStyleSheet.disabled);
+
+  assert_equals(greenStyleSheet.cssRules.length, 1);
+  assert_equals(redStyleSheet.cssRules.length, 2);
+  assert_equals(blueStyleSheet.cssRules.length, 2);
+  assert_equals(whiteStyleSheet.cssRules.length, 1);
+  assert_equals(yellowStyleSheet.cssRules.length, 1);
+
+  assert_equals(greenStyleSheet.cssRules[0].cssText, greenStyleText);
+  assert_equals(redStyleSheet.cssRules[0].cssText, redStyleTexts[0]);
+  assert_equals(redStyleSheet.cssRules[1].cssText, redStyleTexts[1]);
+  assert_equals(blueStyleSheet.cssRules[0].cssText, blueStyleTexts[0]);
+  assert_equals(blueStyleSheet.cssRules[1].cssText, blueStyleTexts[1]);
+  assert_equals(whiteStyleSheet.cssRules[0].cssText, whiteStyleText);
+  assert_equals(yellowStyleSheet.cssRules[0].cssText, yellowStyleText);
+
+}, 'Style sheets can be constructed using script');
+
+test(() => {
+  const greenStyleSheet = new CSSStyleSheet(greenStyleText);
+  const redStyleSheet = new CSSStyleSheet(redStyleTexts[0] + redStyleTexts[1], {media: "screen, print"});
+  const blueStyleSheet = new CSSStyleSheet(blueStyleTexts[0] + blueStyleTexts[1], {title: "Blue", disabled: true});
+  const whiteStyleSheet = new CSSStyleSheet(whiteStyleText, {title: "White", alternate: true});
+  const yellowStyleSheet = new CSSStyleSheet(yellowStyleText, {disabled: false});
+
+  // Lists of style sheets can be created, assigned and read.
+  const whiteList = new StyleSheetList([whiteStyleSheet]);
+  document.moreStyleSheets = whiteList;
+  // alternate stylesheets aren't applied when title != current preferable name
+  assert_equals(getComputedStyle(greenSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(redSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(blueSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(whiteSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(yellowSpan).color, "rgb(0, 0, 0)");
+
+  document.moreStyleSheets = new StyleSheetList([greenStyleSheet, blueStyleSheet]);
+  // disabled stylesheets aren't applied
+  assert_equals(getComputedStyle(greenSpan).color, "rgb(0, 128, 0)");
+  assert_equals(getComputedStyle(redSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(blueSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(whiteSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(yellowSpan).color, "rgb(0, 0, 0)");
+
+  const orangeList = new StyleSheetList([redStyleSheet, yellowStyleSheet]);
+  document.moreStyleSheets = orangeList;
+
+  assert_equals(getComputedStyle(greenSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(redSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(blueSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(whiteSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(yellowSpan).color, "rgb(255, 255, 0)");
+
+  document.moreStyleSheets = new StyleSheetList([redStyleSheet, yellowStyleSheet, greenStyleSheet, blueStyleSheet]);
+  assert_equals(getComputedStyle(greenSpan).color, "rgb(0, 128, 0)");
+  assert_equals(getComputedStyle(redSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(blueSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(whiteSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(yellowSpan).color, "rgb(255, 255, 0)");
+
+}, 'Constructed style sheets can be applied on document');
+
+test(() => {
+  const greenStyleSheet = new CSSStyleSheet(greenStyleText);
+  const redStyleSheet = new CSSStyleSheet(redStyleTexts[0] + redStyleTexts[1], {media: "screen, print"});
+  const blueStyleSheet = new CSSStyleSheet(blueStyleTexts[0] + blueStyleTexts[1], {title: "Blue", disabled: true});
+  const whiteStyleSheet = new CSSStyleSheet(whiteStyleText, {title: "White", alternate: true});
+  const yellowStyleSheet = new CSSStyleSheet(yellowStyleText, {disabled: false});
+
+  shadowRoot.moreStyleSheets = new StyleSheetList([whiteStyleSheet]);
+  assert_equals(getComputedStyle(greenShadowSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(redShadowSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(blueShadowSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(whiteShadowSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(yellowShadowSpan).color, "rgb(0, 0, 0)");
+
+  shadowRoot.moreStyleSheets = new StyleSheetList([greenStyleSheet, blueStyleSheet]);
+  assert_equals(getComputedStyle(greenShadowSpan).color, "rgb(0, 128, 0)");
+  assert_equals(getComputedStyle(redShadowSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(blueShadowSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(whiteShadowSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(yellowShadowSpan).color, "rgb(0, 0, 0)");
+
+  const orangeList = new StyleSheetList([redStyleSheet, yellowStyleSheet]);
+  shadowRoot.moreStyleSheets = orangeList;
+  assert_equals(getComputedStyle(greenShadowSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(redShadowSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(blueShadowSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(whiteShadowSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(yellowShadowSpan).color, "rgb(255, 255, 0)");
+
+  shadowRoot.moreStyleSheets = new StyleSheetList([redStyleSheet, yellowStyleSheet, greenStyleSheet, blueStyleSheet]);
+  assert_equals(getComputedStyle(greenShadowSpan).color, "rgb(0, 128, 0)");
+  assert_equals(getComputedStyle(redShadowSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(blueShadowSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(whiteShadowSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(yellowShadowSpan).color, "rgb(255, 255, 0)");
+}, 'Constructed style sheets can be applied on shadow root');
+
+test(() => {
+  const redStyleSheet = new CSSStyleSheet(redStyleTexts[0]);
+
+  document.moreStyleSheets = new StyleSheetList([redStyleSheet]);
+  assert_equals(getComputedStyle(greenSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(redSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(blueSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(whiteSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(yellowSpan).color, "rgb(0, 0, 0)");
+
+  redStyleSheet.insertRule(redStyleTexts[1]);
+  assert_equals(getComputedStyle(greenSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(redSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(blueSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(whiteSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(yellowSpan).color, "rgb(0, 0, 0)");
+
+  redStyleSheet.deleteRule(1);
+  assert_equals(getComputedStyle(greenSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(redSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(blueSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(whiteSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(yellowSpan).color, "rgb(0, 0, 0)");
+
+  redStyleSheet.cssRules[0].style.color = "white";
+  assert_equals(getComputedStyle(greenSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(redSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(blueSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(whiteSpan).color, "rgb(255, 255, 255)");
+  assert_equals(getComputedStyle(yellowSpan).color, "rgb(0, 0, 0)");
+}, 'Changes to constructed stylesheets through CSSOM is reflected');
+
+test(() => {
+  const redStyleSheet = new CSSStyleSheet(redStyleTexts[0]);
+  document.moreStyleSheets = new StyleSheetList([redStyleSheet]);
+  shadowRoot.moreStyleSheets = new StyleSheetList([redStyleSheet]);
+  assert_equals(getComputedStyle(greenSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(redSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(blueSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(whiteSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(yellowSpan).color, "rgb(0, 0, 0)");
+
+  assert_equals(getComputedStyle(greenShadowSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(redShadowSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(blueShadowSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(whiteShadowSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(yellowShadowSpan).color, "rgb(0, 0, 0)");
+
+  shadowRoot.moreStyleSheets[0].insertRule(redStyleTexts[1]);
+  assert_equals(getComputedStyle(greenSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(redSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(blueSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(whiteSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(yellowSpan).color, "rgb(0, 0, 0)");
+
+  assert_equals(getComputedStyle(greenShadowSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(redShadowSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(blueShadowSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(whiteShadowSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(yellowShadowSpan).color, "rgb(0, 0, 0)");
+}, 'Constructed stylesheet can be used and modified in multiple TreeScopes');
+
+test(() => {
+  var iframe = document.createElement("iframe");
+  document.body.appendChild(iframe);
+  var thirdDiv = firstDiv.cloneNode(true);
+  iframe.contentDocument.body.appendChild(thirdDiv);
+  const greenIframeSpan = thirdDiv.children[0];
+  const redIframeSpan = thirdDiv.children[1];
+  const blueIframeSpan = thirdDiv.children[2];
+  const whiteIframeSpan = thirdDiv.children[3];
+  const yellowIframeSpan = thirdDiv.children[4];
+
+  const redStyleSheet = new CSSStyleSheet(redStyleTexts[0]);
+  iframe.contentDocument.moreStyleSheets = new StyleSheetList([redStyleSheet]);
+  assert_equals(getComputedStyle(greenIframeSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(redIframeSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(blueIframeSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(whiteIframeSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(yellowIframeSpan).color, "rgb(0, 0, 0)");
+
+  document.moreStyleSheets = new StyleSheetList([redStyleSheet]);
+  document.moreStyleSheets[0].insertRule(redStyleTexts[1]);
+  assert_equals(getComputedStyle(greenSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(redSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(blueSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(whiteSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(yellowSpan).color, "rgb(0, 0, 0)");
+
+  assert_equals(getComputedStyle(greenIframeSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(redIframeSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(blueIframeSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(whiteIframeSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(yellowIframeSpan).color, "rgb(0, 0, 0)");
+
+  iframe.contentDocument.moreStyleSheets[0].cssRules[0].style.color = "white";
+  assert_equals(getComputedStyle(greenSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(redSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(blueSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(whiteSpan).color, "rgb(255, 255, 255)");
+  assert_equals(getComputedStyle(yellowSpan).color, "rgb(0, 0, 0)");
+
+  assert_equals(getComputedStyle(greenIframeSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(redIframeSpan).color, "rgb(255, 0, 0)");
+  assert_equals(getComputedStyle(blueIframeSpan).color, "rgb(0, 0, 0)");
+  assert_equals(getComputedStyle(whiteIframeSpan).color, "rgb(255, 255, 255)");
+  assert_equals(getComputedStyle(yellowIframeSpan).color, "rgb(0, 0, 0)");
+}, 'Constructed stylesheet can be used and modified in multiple Documents');
+</script>

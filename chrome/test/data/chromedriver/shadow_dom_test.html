@@ -1,0 +1,70 @@
+<html>
+<body>
+<H1>Page for Shadow DOM chromedriver tests</H1>
+The page has a shadow root that in turn contains two shadow roots. So we can check behaviour with both nested roots and younger/older sibling roots.
+Default to pushing the content off the first screen, to test that scrolling to the elements works.
+<div id="padding"></div>
+<script>
+document.getElementById('padding').style.height = window.innerHeight;
+</script>
+<div id="outerDiv">
+  <div id="innerDiv" style="border-style:solid;border-color:yellow">
+    stuff
+  </div>
+</div>
+
+<template id="parentTemplate">
+<div id="parentDiv">
+    <div style="border-style:solid;border-color:green">
+    <H3>Parent</H3>
+    <H4>Parent Contents</H4>
+    <content></content>
+    </div>
+</div>
+</template>
+<template id="olderChildTemplate">
+<div id="olderChildDiv">
+    <div style="border-style:solid;border-color:red">
+        <H3 id="olderHeading">Older Child</H3>
+        As the older child of a nested shadow root, this is the most likely to go 
+        wrong bit of the page, so we'll concentrate our tests here.
+        <H4>Older Child Contents Begin</H4>
+        <content></content>
+        <input id="olderTextBox" type="text" value="foo"/>
+        <input type="button" onClick="buttonWasClicked()" onMouseOver="buttonWasHoveredOver()" value="button" id="olderButton"/>
+    </div>
+</div>
+</template>
+<template id="youngerChildTemplate">
+<div id="youngerChildDiv">
+    <div style="border-style:solid;border-color:blue">
+        <H3>Younger Child</H3>
+        <div style="border-style:dotted;border-color:blue">
+            <H4>Younger Child Contents</H4>
+            <content></content>
+        </div>
+        <div style="border-style:dashed;border-color:blue">
+            <H4>Younger Child Shadow</H4>
+            <shadow></shadow>
+        </div>
+    </div>
+</div>
+</template>
+<script type="text/javascript">var CLOSURE_NO_DEPS=true</script>
+<script type="text/javascript" src="../../../third_party/chromevox/third_party/closure-library/closure/goog/base.js"></script>
+<script type="text/javascript">
+var parentShadowRoot = document.querySelector('#innerDiv').createShadowRoot();
+parentShadowRoot.appendChild(document.querySelector('#parentTemplate').content.cloneNode(true));
+var olderShadowRoot = parentShadowRoot.querySelector("#parentDiv").createShadowRoot();
+olderShadowRoot.appendChild(document.querySelector('#olderChildTemplate').content.cloneNode(true));
+var youngerShadowRoot = parentShadowRoot.querySelector("#parentDiv").createShadowRoot();
+youngerShadowRoot.appendChild(document.querySelector('#youngerChildTemplate').content.cloneNode(true));
+function buttonWasClicked() {
+  document.querySelector("* /deep/ #olderTextBox").value="Button Was Clicked";
+}
+function buttonWasHoveredOver() {
+  document.querySelector("* /deep/ #olderTextBox").value="Button Was Hovered Over";
+}
+</script>
+</body>
+</html>

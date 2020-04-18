@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script src="../../../resources/js-test.js"></script>
+<script src="../../forms/resources/picker-common.js"></script>
+<script src="resources/calendar-picker-common.js"></script>
+<p id="description"></p>
+<div id="console"></div>
+<input type="week" id="week1" value="2000-W13">
+
+<script>
+description('Tests if typing an arrow key dispatches |Focus| and |ActiveDescendantChanged| a11y events.');
+
+accessibilityController.setNotificationListener(function(axnode, type) {
+    if (type == 'Focus') {
+        debug('Focused');
+    } else if (type == 'ActiveDescendantChanged') {
+        testPassed('Received ActiveDescendantChanged');
+        if (++activeDescendantCounter == 2)
+            finishJSTest();
+    }
+});
+var activeDescendantCounter = 0;
+var week1 = document.getElementById('week1');
+openPicker(week1, test1);
+
+function test1() {
+    eventSender.keyDown('ArrowDown');
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+diff --git a/javascript/atoms/dom.js b/javascript/atoms/dom.js
+index f0a3b84da5..c7a1b05054 100644
+--- a/javascript/atoms/dom.js
++++ b/javascript/atoms/dom.js
+@@ -561,14 +561,8 @@ bot.dom.isShown = function(elem, opt_ignoreOpacity) {
+       do {
+         parent = bot.dom.getParentNodeInComposedDom(e);
+         if (parent instanceof ShadowRoot) {
+-          if (parent.host.shadowRoot != parent) {
+-            // There is a younger shadow root, which will take precedence over
+-            // the shadow this element is in, thus this element won't be
+-            // displayed.
+-            return false;
+-          } else {
+-            parent = parent.host;
+-          }
++          // For backward compatibility, treat all shadow roots as shown.
++          return true;
+         } else if (parent && (parent.nodeType == goog.dom.NodeType.DOCUMENT ||
+             parent.nodeType == goog.dom.NodeType.DOCUMENT_FRAGMENT)) {
+           parent = null;
+diff --git a/javascript/atoms/mouse.js b/javascript/atoms/mouse.js
+index 737ed50f62..1bc9e858f5 100644
+--- a/javascript/atoms/mouse.js
++++ b/javascript/atoms/mouse.js
+@@ -143,7 +143,7 @@ bot.Mouse.NO_BUTTON_VALUE_INDEX_ = 3;
+  *               click/    mouseup/   mouseout/  mousemove  contextmenu
+  *               dblclick  mousedown  mouseover
+  * IE_DOC_PRE9   0 0 0 X   1 4 2 X    0 0 0 0    1 4 2 0    X X 0 X
+- * WEBKIT/IE9    0 1 2 X   0 1 2 X    0 1 2 0    0 1 2 0    X X 2 X
++ * WEBKIT/IE9    0 1 2 X   0 1 2 X    0 1 2 4    0 1 2 4    X X 2 X
+  * GECKO         0 1 2 X   0 1 2 X    0 0 0 0    0 0 0 0    X X 2 X
+  * </pre>
+  * @private {!Object.<bot.events.EventType, !Array.<?number>>}
+@@ -163,8 +163,8 @@ bot.Mouse.MOUSE_BUTTON_VALUE_MAP_ = (function() {
+     buttonValueMap[bot.events.EventType.CLICK] = [0, 1, 2, null];
+     buttonValueMap[bot.events.EventType.CONTEXTMENU] = [null, null, 2, null];
+     buttonValueMap[bot.events.EventType.MOUSEUP] = [0, 1, 2, null];
+-    buttonValueMap[bot.events.EventType.MOUSEOUT] = [0, 1, 2, 0];
+-    buttonValueMap[bot.events.EventType.MOUSEMOVE] = [0, 1, 2, 0];
++    buttonValueMap[bot.events.EventType.MOUSEOUT] = [0, 1, 2, 4];
++    buttonValueMap[bot.events.EventType.MOUSEMOVE] = [0, 1, 2, 4];
+   } else {
+     buttonValueMap[bot.events.EventType.CLICK] = [0, 1, 2, null];
+     buttonValueMap[bot.events.EventType.CONTEXTMENU] = [null, null, 2, null];
+diff --git a/javascript/chrome-driver/atoms.js b/javascript/chrome-driver/atoms.js
+index 5cf4416460..b21fea617c 100644
+--- a/javascript/chrome-driver/atoms.js
++++ b/javascript/chrome-driver/atoms.js
+@@ -142,6 +142,12 @@ webdriver.chrome.scrollIntoView_ = function(elem, region, center) {
+ 
+   offset = goog.style.getClientPosition(elem);
+   var windowSize = goog.dom.getDomHelper(elem).getViewportSize();
++  // Chrome 61.0.3138 and above uses doc.documentElement, while older
++  // Chrome uses doc.body. We can't reliably detect Chrome version because
++  // userAgent string can be overridden, so just call scrollHelper on both.
++  // TBD(johnchen@chromium.org): Remove doc.body when we stop supporting
++  // Chrome 61.0.3137.
++  scrollHelper(doc.documentElement, windowSize, offset, region, center);
+   scrollHelper(doc.body, windowSize, offset, region, center);
+ };
+ 
+diff --git a/rake-tasks/crazy_fun/mappings/javascript.rb b/rake-tasks/crazy_fun/mappings/javascript.rb
+index 982d36314e..ae0c3e460b 100644
+--- a/rake-tasks/crazy_fun/mappings/javascript.rb
++++ b/rake-tasks/crazy_fun/mappings/javascript.rb
+@@ -857,6 +857,8 @@ module Javascript
+         flags.push("--jscomp_error=undefinedVars")
+         flags.push("--jscomp_error=uselessCode")
+         flags.push("--jscomp_error=visibility")
++	# Work around https://github.com/google/closure-compiler/issues/1044
++	flags.push("--use_types_for_optimization=false")
+ 
+         expanded_flags = flags.join(" ") <<
+            " --js='" <<

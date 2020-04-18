@@ -1,0 +1,53 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<script src="../../../resources/js-test.js"></script>
+<style>
+#layer {
+  position: relative;
+  left: 10px;
+}
+.composited {
+  transform: translate3d(0, 0, 0);
+}
+</style>
+</head>
+<body>
+<div id="layer" class="composited">A layer that may or may not be composited</div>
+<p id="description"></p>
+<div id="console"></div>
+
+<script src="../../../resources/js-test.js"></script>
+<script src="../../../resources/run-after-layout-and-paint.js"></script>
+<script>
+  jsTestIsAsync = true;
+  description("Make sure we don't crash when a layer with a touch event handler becomes non-composited");
+
+  var layer = document.getElementById('layer');
+  layer.addEventListener('touchstart', function() {});
+
+
+  var rects;
+  if (window.internals) {
+    // Ensure we've done a layout, updated compositing, and we have a hit rect on this composited layer.
+    internals.forceCompositingUpdate(document);
+    rects = internals.touchEventTargetLayerRects(document);
+    shouldBe("rects.length", "1");
+    shouldBeEqualToString("rects[0].layerAssociatedNode.id", "layer");
+  }
+
+  // Make the layer non-composited
+  layer.className = '';
+
+  // Verify we now have a hit rect on the document after layout and paint.
+  runAfterLayoutAndPaint(function() {
+    if (window.internals) {
+      rects = internals.touchEventTargetLayerRects(document);
+      shouldBe("rects.length", "1");
+      shouldBeEqualToString("rects[0].layerAssociatedNode.nodeName", "#document");
+    }
+    finishJSTest();
+  });
+</script>
+</body>
+</html>

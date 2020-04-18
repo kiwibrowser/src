@@ -1,0 +1,85 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# (elijahtaylor): Removing so braced groups will work for GC syscall wrapping.
+env.FilterOut(CCFLAGS=['-pedantic'])
+
+if env.Bit('nacl_clang'):
+  # Use the integrated assembler; this code can end up in the Chrome IRT, so we
+  # want it to avoid revealing the sandbox base address.
+  env.Append(CCFLAGS=['-integrated-as'])
+
+valgrind = env.ComponentObject(
+    'valgrind_annotations.o',
+    '${MAIN_DIR}/src/untrusted/valgrind/dynamic_annotations.c')
+
+nc_objs = [env.ComponentObject(module, module + '.c')
+           for module in [
+               'nc_thread',
+               'nc_mutex',
+               'nc_condvar',
+               'nc_semaphore',
+               'nc_rwlock',
+               'stack_end',
+               ]
+           ] + [valgrind]
+
+# The public library relies on the IRT for crucial system services.
+libpthread = env.ComponentLibrary('libpthread', nc_objs + ['nc_init_irt.c'])
+env.AddLibraryToSdk(libpthread)
+
+if env.Bit('nonsfi_nacl'):
+  # Specifying the target arch is necessary for using inline assembly
+  # for calling Linux syscalls in libpthread_private.
+  syscall_env = env.Clone()
+  if env.Bit('build_x86_32'):
+    syscall_env.Append(CCFLAGS=['--target=i686-unknown-nacl'])
+  elif env.Bit('build_arm'):
+    syscall_env.Append(CCFLAGS=['--target=armv7-unknown-nacl-gnueabihf',
+                                '-mfloat-abi=hard'])
+  else:
+    raise Exception('Unsupported architecture')
+  # Enable the use of inline assembly.
+  syscall_env.Append(CCFLAGS=['-fgnu-inline-asm'])
+  nc_private_objs = nc_objs + [
+      syscall_env.ComponentObject(
+          interface, '${MAIN_DIR}/src/nonsfi/linux/%s.c' % interface)
+      for interface in ['linux_futex', 'linux_pthread_private']
+      ]
+else:
+  # The private library rolls in those IRT components.
+  nc_private_objs = nc_objs + ['nc_init_private.c'] + [
+      env.ComponentObject(
+          interface,
+          '${MAIN_DIR}/src/untrusted/irt/%s.c' % interface)
+      for interface in ['irt_futex', 'irt_blockhook']
+      ]
+
+env.ComponentLibrary('libpthread_private', nc_private_objs)
+
+# install_libpthread is a no-op under --nacl_glibc, but without it
+# installs the header files from this directory into the toolchain.
+if not env.Bit('nacl_glibc'):
+  n = env.AddHeaderToSdk(['pthread.h', 'semaphore.h'], None)
+  # We need these header files to be in place before we compile anything
+  # that uses them.  In the simple case, scons figures out the dependencies
+  # itself from scanning the #include directives.  However, <pthread.h> is
+  # used by "system" headers (i.e. from libc or libstdc++ in the toolchain),
+  # and scons does not know to scan those, so it will fail to notice those
+  # dependencies.  Courtesy of the IMPLICIT_COMMAND_DEPENDENCIES feature,
+  # scons makes all compiler outputs depend on the compilers themselves.
+  # Hence, by telling it that the compilers depend on these headers being
+  # installed, we ensure that they are in place before they're used.
+  for compiler in ['${CC}', '${CXX}']:
+    # TODO(mcgrathr): This can't be the best way!  Ideally we'd just use
+    # '${CC}' directly in env.Depends and that should be fine for scons.
+    # But sometimes '${CC}' is not just '.../gcc', it's '.../gcc -m32'.
+    compiler = env.subst(compiler).split()[0]
+    env.Depends(env.WhereIs(compiler), n)
+else:
+  n = []
+env.Alias('install_libpthread', n)

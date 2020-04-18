@@ -1,0 +1,13 @@
+@hex:
+  # Invalid base in memory offset, even though index register is properly defined,
+  # because base isn't R15, RBP, or RSP.
+  83 e1 e0
+  49 89 44 CD 36
+@dis:
+     0:	83 e1 e0                                     	and    $0xffffffe0,%ecx
+     3:	49 89 44 cd 36                               	mov    %rax,0x36(%r13,%rcx,8)
+@rdfa_output:
+  3: improper memory address - bad base
+  return code: 1
+@spec:
+  3: ("memory access only is allowed with base from ['%r15', '%rbp', '%rsp', '%rip']", Instruction(0x3: 49 89 44 cd 36  mov %rax,0x36(%r13,%rcx,8)))

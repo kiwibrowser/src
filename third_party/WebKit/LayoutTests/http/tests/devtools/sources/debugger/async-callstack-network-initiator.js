@@ -1,0 +1,62 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(`Tests asynchronous call stacks printed in console for a Network.Initiator.\n`);
+  await TestRunner.loadModule('sources_test_runner');
+  await TestRunner.loadModule('console_test_runner');
+  await TestRunner.showPanel('sources');
+  await TestRunner.evaluateInPagePromise(`
+      function testFunction()
+      {
+          debugger;
+          console.clear();
+          setTimeout(timeout1, 0);
+      }
+
+      function timeout1()
+      {
+          setTimeout(timeout2, 0);
+      }
+
+      function timeout2()
+      {
+          sendXHR();
+      }
+
+      function sendXHR()
+      {
+          var xhr = new XMLHttpRequest();
+          xhr.open("POST", "/failure/foo", true /* async */);
+          xhr.send();
+      }
+  `);
+
+  var maxAsyncCallStackDepth = 8;
+  var numberOfConsoleMessages = 2;
+
+  SourcesTestRunner.setQuiet(true);
+  SourcesTestRunner.startDebuggerTest(step1);
+
+  function step1() {
+    TestRunner.DebuggerAgent.setPauseOnExceptions(SDK.DebuggerModel.PauseOnExceptionsState.DontPauseOnExceptions);
+    TestRunner.DebuggerAgent.setAsyncCallStackDepth(0);
+    SourcesTestRunner.runTestFunctionAndWaitUntilPaused(step2);
+  }
+
+  async function step2() {
+    await TestRunner.DebuggerAgent.setAsyncCallStackDepth(maxAsyncCallStackDepth);
+    ConsoleTestRunner.waitUntilNthMessageReceived(numberOfConsoleMessages, expandAndDumpConsoleMessages);
+    SourcesTestRunner.resumeExecution();
+  }
+
+  function expandAndDumpConsoleMessages() {
+    ConsoleTestRunner.expandConsoleMessages(dumpConsoleMessages);
+  }
+
+  function dumpConsoleMessages() {
+    ConsoleTestRunner.dumpConsoleMessages(false, false, TestRunner.textContentWithLineBreaks);
+    SourcesTestRunner.completeDebuggerTest();
+  }
+})();

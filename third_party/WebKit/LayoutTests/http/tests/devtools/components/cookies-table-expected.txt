@@ -1,0 +1,85 @@
+Tests inspector cookies table
+
+
+-------- RebuildTable --------
+
+
+--- Empty test ---
+
+# of node.appendChild calls: 0
+# of node.removeChildren calls: 2
+
+--- Null test ---
+
+# of node.appendChild calls: 0
+# of node.removeChildren calls: 2
+
+--- Ascending no selection test ---
+
+# of node.appendChild calls: 6
+# of node.removeChildren calls: 2
+node.appendChild call: cookieA 11
+node.appendChild call: cookieB 2
+node.appendChild call: cookieC foo
+node.appendChild call: cookieD {other}
+node.appendChild call: cookieE zz
+node.appendChild call: cookieF null
+
+--- Descending selection test ---
+
+# of node.appendChild calls: 6
+# of node.removeChildren calls: 2
+node.appendChild call: cookieF null
+node.appendChild call: cookieE zz
+node.appendChild call: cookieD {other}
+node.appendChild call: cookieC foo [selected]
+node.appendChild call: cookieB 2
+node.appendChild call: cookieA 11
+
+--- Neighbor selection test ---
+
+# of node.appendChild calls: 6
+# of node.removeChildren calls: 2
+node.appendChild call: cookieA 11 [selected]
+node.appendChild call: cookieB 2
+node.appendChild call: cookieC foo
+node.appendChild call: cookieD {other}
+node.appendChild call: cookieE zz
+node.appendChild call: cookieF null
+
+--- Previous neighbor selection test ---
+
+# of node.appendChild calls: 6
+# of node.removeChildren calls: 2
+node.appendChild call: cookieA 11
+node.appendChild call: cookieB 2
+node.appendChild call: cookieC foo
+node.appendChild call: cookieD {other}
+node.appendChild call: cookieE zz [selected]
+node.appendChild call: cookieF null
+
+--- Inactive node test ---
+
+# of node.appendChild calls: 7
+# of node.removeChildren calls: 2
+node.appendChild call: cookieA 11
+node.appendChild call: cookieB 2
+node.appendChild call: cookieC foo
+node.appendChild call: cookieD {other}
+node.appendChild call: cookieE zz
+node.appendChild call: cookieF null
+node.appendChild call: missing cookie [selected]
+
+-------- Sort cookies --------
+
+params: name desc
+cookieF,cookieE,cookieD,cookieC,cookieB,cookieA
+params: value asc
+cookieA,cookieB,cookieC,cookieF,cookieE,cookieD
+params: path desc
+cookieA,cookieE,cookieB,cookieD,cookieC,cookieF
+params: domain asc
+cookieB,cookieD,cookieC,cookieA,cookieF,cookieE
+params: null asc
+cookieA,cookieB,cookieC,cookieD,cookieE,cookieF
+

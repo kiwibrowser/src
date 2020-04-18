@@ -1,0 +1,47 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+nexe = env.ComponentProgram('longjmp', 'longjmp.c',
+                            EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl('longjmp.out', nexe)
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'toolchain_tests'],
+                       'run_longjmp_test')
+
+nexe = env.ComponentProgram('setlongjmp', 'setlongjmp.c',
+                            EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl('setlongjmp.out', nexe, exit_status=55)
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'toolchain_tests'],
+                       'run_setlongjmp_test')
+
+nexe = env.ComponentProgram(
+    'longjmp_stackslots_test', 'longjmp_stackslots_test.c',
+    EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl('longjmp_stackslots_test.out', nexe)
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'toolchain_tests'],
+                       'run_longjmp_stackslots_test')
+
+# Test that ARM setjmp/longjmp saves and restores floating point regs.
+if env.Bit('build_arm') and not env.Bit('pnacl_generate_pexe'):
+  native_env = env.Clone()
+  # PNaCl needs ARM-target-flags to understand ARM inline ASM.
+  if native_env.Bit('bitcode'):
+    native_env.AddBiasForPNaCl()
+    native_env.PNaClForceNative()
+    native_env.Append(CCFLAGS=['--target=armv7a-none-nacl-gnueabi',
+                               '-mfloat-abi=hard'])
+    # Enable the use of inline assembly.
+    native_env.Append(CCFLAGS=['-fgnu-inline-asm'])
+  nexe = native_env.ComponentProgram('longjmp_float', 'longjmp_float.c',
+                                     EXTRA_LIBS=['${NONIRT_LIBS}', 'm'])
+  node = native_env.CommandSelLdrTestNacl(
+        'longjmp_float.out',
+        nexe)
+  native_env.AddNodeToTestSuite(
+      node, ['small_tests', 'nonpexe_tests'], 'run_longjmp_float_test')

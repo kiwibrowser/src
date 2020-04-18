@@ -1,0 +1,56 @@
+# -*- python -*-
+# Copyright (c) 2014 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# The Windows coverage bot does not build sel_ldr.
+if env.UnderWindowsCoverage():
+  Return()
+
+name = 'run_py_test.out'
+irt = 'none'
+elf_ldr = 'none'
+if env.Bit('tests_use_irt'):
+  irt = env.GetIrtNexe()
+elif env.Bit('nacl_glibc'):
+  # glibc without an IRT is not a supported case.
+  # With the new glibc port, it won't work at all.
+  Return()
+
+sel_ldr = env.GetSelLdr()
+if sel_ldr is None:
+  print 'WARNING: no sel_ldr found. Skipping test %s' % name
+  Return()
+
+exe = env.ComponentProgram('run_py_app',
+                           'noop.c',
+                           EXTRA_LIBS=['${PTHREAD_LIBS}',
+                                       '${NONIRT_LIBS}'])
+exe = env.GetFinalizedPexe(exe)
+
+if env.Bit('nacl_glibc') and not env.Bit('build_x86_64'):
+  elf_ldr = env.GetElfLoaderNexe()
+
+run_py_options = [
+    '-arch', env['TARGET_FULLARCH'],
+    # Force specific IRT/sel_ldr executables so that
+    # run.py doesn't try to build it (and time out).
+    '--irt', irt,
+    '--loader', sel_ldr,
+    '--elf_loader', elf_ldr,
+    ]
+node = env.CommandTest(
+    name,
+    command=['${PYTHON}', '${SCONSTRUCT_DIR}/run.py'] + run_py_options + [exe],
+    direct_emulation=False,
+    exit_status=2,
+    size='medium')
+
+env.AddNodeToTestSuite(
+    node,
+    ['medium_tests'],
+    'run_run_py_test',
+    # Probably finds the wrong pnacl-translate on ARM HW for running pexes.
+    is_broken=env.Bit('built_elsewhere'))

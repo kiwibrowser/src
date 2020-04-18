@@ -1,0 +1,51 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_icons_css.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-input/iron-input.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-input/paper-input-container.html">
+<link rel="import" href="network_shared_css.html">
+
+<dom-module id="network-config-input">
+  <template>
+    <style include="network-shared">
+      paper-input-container {
+        --paper-input-container-color: var(--secondary-text-color);
+        --paper-input-container-focus-color: var(--secondary-text-color);
+        --paper-input-container-input-color: var(--primary-text-color);
+        flex: 1;
+      }
+
+      #iconDiv {
+        -webkit-margin-start: var(--cr-icon-button-margin-start);
+        justify-content: center;
+        width: var(--network-control-margin);
+      }
+
+      #iconDiv paper-icon-button-light {
+        margin: 0;
+      }
+    </style>
+
+    <div class="control-box">
+      <paper-input-container always-float-label>
+        <label id="label" slot="label">[[label]]</label>
+        <iron-input slot="input" bind-value="{{value}}">
+          <input tabindex="1" disabled="[[disabled]]" aria-label$="[[label]]"
+              value="{{value::input}}"
+              type="[[getInputType_(password, showPassword)]]">
+        </iron-input>
+      </paper-input-container>
+      <div id="iconDiv">
+        <template is="dom-if" if="[[password]]">
+          <paper-icon-button-light class$="[[getIconClass_(showPassword)]]">
+            <button on-tap="onShowPasswordTap_"
+                title="[[getShowPasswordTitle_(showPassword)]]">
+            </button>
+          </paper-icon-button-light>
+        </template>
+      </div>
+    </div>
+  </template>
+  <script src="network_config_input.js"></script>
+</dom-module>

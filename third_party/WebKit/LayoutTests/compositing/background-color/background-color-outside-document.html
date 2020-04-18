@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<script>
+
+if (window.internals) {
+    internals.settings.setViewportEnabled(true);
+    internals.settings.setViewportMetaEnabled(true);
+    addEventListener('load', function() {
+        internals.setPageScaleFactorLimits(0.5, 4);
+        internals.setPageScaleFactor(0.5);
+    });
+}
+if (window.testRunner) {
+    testRunner.dumpAsTextWithPixelResults();
+    testRunner.waitUntilDone();
+    addEventListener('load', function() {
+        testRunner.setCustomTextOutput(
+            "This test passes if the entire background is green " +
+            "(including the region outside the html element).");
+        testRunner.notifyDone();
+    });
+}
+
+</script>
+<meta name="viewport" content="width=device-width, minimum-scale=0.5, initial-scale=1, maximum-scale=1.25">
+<style>
+html {
+    background-color: #8f8;
+    height: 100%;
+    border: 1px solid black;
+}
+body {
+    background-color: #fcc;
+}
+#console {
+    display: none;
+}
+</style>

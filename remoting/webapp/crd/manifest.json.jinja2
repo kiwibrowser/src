@@ -1,0 +1,77 @@
+{
+  "key": "{{ MANIFEST_KEY }}",
+  "name": "__MSG_PRODUCT_NAME__",
+  "version": "{{ FULL_APP_VERSION }}",
+  "description": "__MSG_PRODUCT_DESCRIPTION__",
+  "manifest_version": 2,
+  "default_locale": "en",
+  "minimum_chrome_version": "32",
+  "app": {
+    "background": {
+      "page": "background.html"
+     }
+  },
+  "icons": {
+    "128": "chromoting128.webp",
+    "48": "chromoting48.webp",
+    "16": "chromoting16.webp"
+  },
+  "optional_permissions": [
+    "<all_urls>"
+  ],
+
+  "oauth2": {
+    "client_id": "{{ REMOTING_IDENTITY_API_CLIENT_ID }}",
+    "scopes": [
+      {% if USE_GCD %}
+      "https://www.googleapis.com/auth/clouddevices",
+      {% endif %}
+      "https://www.googleapis.com/auth/chromoting",
+      "https://www.googleapis.com/auth/googletalk",
+      "https://www.googleapis.com/auth/userinfo#email"
+    ]
+  },
+  "sandbox": {
+    "pages": [ "wcs_sandbox.html" ]
+  },
+  "permissions": [
+    "{{ OAUTH2_ACCOUNTS_HOST }}/*",
+    "{{ OAUTH2_API_BASE_URL }}/*",
+    "{{ DIRECTORY_API_BASE_URL }}/*",
+    "{{ TELEMETRY_API_BASE_URL }}/*",
+    "{{ TALK_GADGET_HOST }}/talkgadget/*",
+    "https://relay.google.com/*",
+{% if PROXY_URL != '' %}
+    "{{ PROXY_URL }}",
+{% endif %}
+    "clipboardRead",
+    "clipboardWrite",
+    "contextMenus",
+    {"fileSystem": ["write"]},
+    "fullscreen",
+    "identity",
+    "metricsPrivate",
+    "nativeMessaging",
+    "overrideEscFullscreen",
+    "storage",
+    {
+      "socket": [
+        "udp-send-to",
+        "udp-bind",
+        "udp-multicast-membership",
+        "resolve-host",
+        "network-state"
+      ]
+    }
+  ],
+  "sockets": {
+    "tcp": {
+      "connect": "{{ XMPP_SERVER }}"
+    }
+  },
+  "externally_connectable": {
+    "matches": [
+      "https://remotedesktop.google.com/*"
+    ]
+  }
+}

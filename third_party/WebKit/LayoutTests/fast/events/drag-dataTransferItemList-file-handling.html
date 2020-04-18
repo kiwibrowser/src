@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../../resources/js-test.js"></script>
+<style>
+#drag {
+    border: 1px solid black;
+    height: 200px;
+    width: 200px;
+}
+#drop {
+    border: 1px solid black;
+    height: 200px;
+    width: 200px;
+}
+</style>
+<script>
+var testFile;
+var testItem;
+function dragstart(event)
+{
+    testItem = event.dataTransfer.items.add(testFile);
+    shouldBeEqualToString('testItem.kind', 'file');
+    shouldBeEqualToString('testItem.type', 'text/plain');
+}
+
+function dragenter(event)
+{
+    event.preventDefault();
+}
+
+function dragover(event)
+{
+    event.preventDefault();
+}
+
+var testItems;
+function drop(event)
+{
+    testItems = event.dataTransfer.items;
+    shouldBe('testItems.length', '1');
+    shouldBeNull('testItems.add(testFile)'); // Read-only.
+    shouldBe('testItems.length', '1');
+    shouldBeEqualToString('testItems[0].kind', 'file');
+    shouldBeEqualToString('testItems[0].type', 'text/plain');
+    finishJSTest();
+}
+
+function runTest()
+{
+    if (!window.testRunner)
+        return;
+
+    // First, we need to generate a File object to use for our tests.
+    eventSender.beginDragWithFiles(['test.txt']);
+    var inputElement = document.getElementsByTagName('input')[0];
+    eventSender.mouseMoveTo(inputElement.offsetLeft + inputElement.offsetWidth / 2,
+                            inputElement.offsetTop + inputElement.offsetHeight / 2);
+    eventSender.mouseUp();
+    testFile = inputElement.files[0];
+
+    // Now run the actual test.
+    var dragElement = document.getElementById('drag');
+    eventSender.mouseMoveTo(dragElement.offsetLeft + dragElement.offsetWidth / 2,
+                            dragElement.offsetTop + dragElement.offsetHeight / 2);
+    eventSender.mouseDown();
+    eventSender.leapForward(100);
+    var dropElement = document.getElementById('drop');
+    eventSender.mouseMoveTo(dropElement.offsetLeft + dropElement.offsetWidth / 2,
+                            dropElement.offsetTop + dropElement.offsetHeight / 2);
+    eventSender.mouseUp();
+}
+
+</script>
+</head>
+<body>
+<p>To manually test, select a text file for the file input element, and then drag 'Drag Me' to 'Drop Here' and drop.
+<input type="file"></input>
+<div draggable="true" id="drag" ondragstart="dragstart(event)">Drag Me</div>
+<div id="drop" ondragenter="dragenter(event)" ondragover="dragover(event)" ondrop="drop(event)">Drop Here</div>
+</div>
+<div id="console"></div>
+<script>
+description("Tests DataTransferItemList file handling");
+window.jsTestIsAsync = true;
+
+window.onload = runTest;
+</script>
+</body>
+</html>

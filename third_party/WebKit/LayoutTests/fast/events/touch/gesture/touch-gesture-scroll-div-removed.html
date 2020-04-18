@@ -1,0 +1,77 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<script src="../../../../resources/js-test.js"></script>
+<style>
+#container {
+  width: 100px;
+  height: 100px;
+  position: relative;
+  overflow-y: scroll;
+  background: white;
+}
+
+::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+}
+
+.box {
+  width: 100px;
+  height: 100px;
+  background: red;
+  padding: 0px;
+  margin: 0px;
+}
+
+td {
+  padding: 0px;
+}
+</style>
+</head>
+<body style="margin:0">
+<div id="container">
+  <table border="0" cellspacing="0px" id="tablefoo">
+    <tr>
+      <td><div id="redbox" class="box" style="background-color:red;"></div></td>
+    </tr>
+    <tr>
+      <td><div id="greenbox" class="box" style="background-color:green;"></div></td>
+    </tr>
+  </table>
+</div>
+
+<p id="description"></p>
+<div id="console"></div>
+<script>
+
+if (window.testRunner)
+    testRunner.dumpAsText();
+
+function runTest()
+{
+    if (!window.eventSender) {
+        debug("This test requires DumpRenderTree.");
+        return;
+    }
+
+    description('Verifies that deleting the element being gesture-scrolled immediately before sending the scroll-end does not cause a crash. The test passes if it does not crash.');
+
+    debug("starting gesture scroll");
+    eventSender.gestureScrollBegin(10, 10);
+    eventSender.gestureScrollUpdate(0, -5);
+
+    debug("deleting the targeted element");
+    var target = document.getElementById('redbox');
+    target.parentNode.removeChild(target);
+    target = null;
+    gc();
+
+    debug("dispatching the GestureScrollEnd");
+    eventSender.gestureScrollEnd(0, 0);
+}
+
+runTest();
+</script>
+</body>
+</html>

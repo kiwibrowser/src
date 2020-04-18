@@ -1,0 +1,110 @@
+<html>
+  <head>
+    <title>Test media source playback with different containers.</title>
+  </head>
+  <body onload="runTest();">
+    <video></video>
+    <script src='eme_player_js/app_loader.js' type='text/javascript'></script>
+    <script type="text/javascript">
+      // Specify possible content for clear and encrypted streams in both MP4
+      // and WEBM format. For testing we don't care if the audio matches the
+      // video or if the length of each container is the same.
+      var VIDEO_MP4_MEDIA_TYPE = 'video/mp4; codecs="avc1.4D4041"';
+      var VIDEO_WEBM_MEDIA_TYPE = 'video/webm; codecs="vp8"';
+      var VIDEO_MP4_CLEAR_FILE = 'bear-640x360-v_frag.mp4';
+      var VIDEO_WEBM_CLEAR_FILE = 'bear-320x240-video-only.webm';
+      var VIDEO_MP4_ENCRYPTED_FILE = 'bear-640x360-v_frag-cenc.mp4';
+      var VIDEO_WEBM_ENCRYPTED_FILE = 'bear-320x240-v_enc-v.webm';
+
+      var AUDIO_MP4_MEDIA_TYPE = 'audio/mp4; codecs="mp4a.40.2"';
+      var AUDIO_WEBM_MEDIA_TYPE = 'audio/webm; codecs="vorbis"';
+      var AUDIO_MP4_CLEAR_FILE = 'bear-640x360-a_frag.mp4';
+      var AUDIO_WEBM_CLEAR_FILE = 'bear-320x240-audio-only.webm';
+      var AUDIO_MP4_ENCRYPTED_FILE = 'bear-640x360-a_frag-cenc.mp4';
+      var AUDIO_WEBM_ENCRYPTED_FILE = 'bear-a_enc-a.webm';
+
+      var media_types = [];
+      var media_files = [];
+
+      // The time in secs to play the streams.
+      var PLAY_TIME_SEC = 0.1;
+
+      var video = document.querySelector('video');
+
+      function onTimeUpdate() {
+        if (video.currentTime < PLAY_TIME_SEC)
+          return;
+
+        video.removeEventListener('timeupdate', onTimeUpdate);
+        video.removeEventListener('ended', Utils.failTest);
+        Utils.installTitleEventHandler(video, 'ended');
+
+        // Seek to end to save test execution time.
+        video.currentTime = 1000;
+      }
+
+      function addVideoStream(format) {
+        if (format == 'CLEAR_MP4') {
+          media_types = media_types.concat(VIDEO_MP4_MEDIA_TYPE);
+          media_files = media_files.concat(VIDEO_MP4_CLEAR_FILE);
+        } else if (format == 'CLEAR_WEBM') {
+          media_types = media_types.concat(VIDEO_WEBM_MEDIA_TYPE);
+          media_files = media_files.concat(VIDEO_WEBM_CLEAR_FILE);
+        } else if (format == 'ENCRYPTED_MP4') {
+          media_types = media_types.concat(VIDEO_MP4_MEDIA_TYPE);
+          media_files = media_files.concat(VIDEO_MP4_ENCRYPTED_FILE);
+        } else if (format == 'ENCRYPTED_WEBM') {
+          media_types = media_types.concat(VIDEO_WEBM_MEDIA_TYPE);
+          media_files = media_files.concat(VIDEO_WEBM_ENCRYPTED_FILE);
+        } else {
+          Utils.failTest('Unrecognized video type.');
+        }
+      }
+
+      function addAudioStream(format) {
+        if (format == 'CLEAR_MP4') {
+          media_types = media_types.concat(AUDIO_MP4_MEDIA_TYPE);
+          media_files = media_files.concat(AUDIO_MP4_CLEAR_FILE);
+        } else if (format == 'CLEAR_WEBM') {
+          media_types = media_types.concat(AUDIO_WEBM_MEDIA_TYPE);
+          media_files = media_files.concat(AUDIO_WEBM_CLEAR_FILE);
+        } else if (format == 'ENCRYPTED_MP4') {
+          media_types = media_types.concat(AUDIO_MP4_MEDIA_TYPE);
+          media_files = media_files.concat(AUDIO_MP4_ENCRYPTED_FILE);
+        } else if (format == 'ENCRYPTED_WEBM') {
+          media_types = media_types.concat(AUDIO_WEBM_MEDIA_TYPE);
+          media_files = media_files.concat(AUDIO_WEBM_ENCRYPTED_FILE);
+        } else {
+          Utils.failTest('Unrecognized audio type.');
+        }
+      }
+
+      function runTest() {
+        video.addEventListener('timeupdate', onTimeUpdate);
+        video.addEventListener('ended', Utils.failTest);
+
+        var testConfig = new TestConfig();
+        testConfig.loadQueryParams();
+        addVideoStream(testConfig.videoFormat);
+        addAudioStream(testConfig.audioFormat);
+
+        var mediaSource =
+            MediaSourceUtils.loadMediaSource(media_files, media_types);
+
+        if (testConfig.runEncrypted > 0) {
+          var emePlayer = PlayerUtils.createPlayer(video, testConfig);
+          emePlayer.registerEventListeners()
+              .then(function(player) {
+                video.src = window.URL.createObjectURL(mediaSource);
+              })
+              .catch(function(error) {
+                Utils.failTest('Unable to register EME event listeners.');
+              });
+        } else {
+          video.src = window.URL.createObjectURL(mediaSource);
+        }
+        video.play();
+      }
+      </script>
+  </body>
+</html>

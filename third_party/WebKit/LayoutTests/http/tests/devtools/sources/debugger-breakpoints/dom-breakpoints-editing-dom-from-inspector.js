@@ -1,0 +1,40 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(
+      `Tests that DOM debugger will not crash when editing DOM nodes from the Web Inspector. Chromium bug 249655\n`);
+  await TestRunner.loadModule('elements_test_runner');
+  await TestRunner.loadModule('sources_test_runner');
+  await TestRunner.showPanel('sources');
+  await TestRunner.loadHTML(`
+      <div id="rootElement" style="color: red">
+      <div id="elementToRemove"></div>
+      </div>
+    `);
+
+  SourcesTestRunner.runDebuggerTestSuite([
+    function testRemoveNode(next) {
+      TestRunner.addResult('Testing NodeRemoved DOM breakpoint.');
+      ElementsTestRunner.nodeWithId('elementToRemove', step2);
+
+      function step2(node) {
+        TestRunner.domDebuggerModel.setDOMBreakpoint(node, SDK.DOMDebuggerModel.DOMBreakpoint.Type.NodeRemoved);
+        TestRunner.addResult('Set NodeRemoved DOM breakpoint.');
+        node.removeNode(next);
+      }
+    },
+
+    function testModifyAttribute(next) {
+      TestRunner.addResult('Testing AttributeModified DOM breakpoint.');
+      ElementsTestRunner.nodeWithId('rootElement', step2);
+
+      function step2(node) {
+        TestRunner.domDebuggerModel.setDOMBreakpoint(node, SDK.DOMDebuggerModel.DOMBreakpoint.Type.AttributeModified);
+        TestRunner.addResult('Set AttributeModified DOM breakpoint.');
+        node.setAttribute('title', 'a title', next);
+      }
+    }
+  ]);
+})();

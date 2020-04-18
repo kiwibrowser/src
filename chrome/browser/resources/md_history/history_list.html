@@ -1,0 +1,97 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_lazy_render/cr_lazy_render.html">
+<link rel="import" href="chrome://resources/cr_elements/paper_button_style_css.html">
+<link rel="import" href="chrome://resources/cr_elements/shared_style_css.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-a11y-announcer/iron-a11y-announcer.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-list/iron-list.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-scroll-threshold/iron-scroll-threshold.html">
+<link rel="import" href="chrome://history/browser_service.html">
+<link rel="import" href="chrome://history/constants.html">
+<link rel="import" href="chrome://history/history_item.html">
+<link rel="import" href="chrome://history/shared_style.html">
+
+<!-- Lazy loaded: cr-dialog, cr-action-menu, paper-button. -->
+
+<dom-module id="history-list">
+  <template>
+    <style include="shared-style cr-shared-style paper-button-style">
+      :host {
+        box-sizing: border-box;
+        display: block;
+        overflow: auto;
+      }
+
+      iron-list {
+        @apply --card-sizing;
+        margin-top: var(--first-card-padding-top);
+      }
+
+      dialog [slot=body] {
+        white-space: pre-wrap;
+      }
+    </style>
+    <div id="no-results" class="centered-message"
+        hidden$="[[hasResults_(historyData_.length)]]">
+      [[noResultsMessage_(searchedTerm)]]
+    </div>
+
+    <iron-list items="[[historyData_]]" as="item" id="infinite-list"
+        hidden$="[[!hasResults_(historyData_.length)]]">
+      <template>
+        <history-item tabindex$="[[tabIndex]]"
+            item="[[item]]"
+            selected="[[item.selected]]"
+            is-card-start="[[isCardStart_(item, index, historyData_.length)]]"
+            is-card-end="[[isCardEnd_(item, index, historyData_.length)]]"
+            has-time-gap="[[needsTimeGap_(item, index, historyData_.length)]]"
+            search-term="[[searchedTerm]]"
+            number-of-items="[[historyData_.length]]"
+            index="[[index]]"
+            iron-list-tab-index="[[tabIndex]]"
+            last-focused="{{lastFocused_}}">
+        </history-item>
+      </template>
+    </iron-list>
+
+    <iron-scroll-threshold id="scroll-threshold" scroll-target="infinite-list"
+        lower-threshold="500" on-lower-threshold="onScrollToBottom_">
+    </iron-scroll-threshold>
+
+    <cr-lazy-render id="dialog">
+      <template>
+        <cr-dialog>
+          <div slot="title">$i18n{removeSelected}</div>
+          <div slot="body">$i18n{deleteWarning}</div>
+          <div slot="button-container">
+            <paper-button class="cancel-button" on-click="onDialogCancelTap_">
+              $i18n{cancel}
+            </paper-button>
+            <paper-button class="action-button" on-click="onDialogConfirmTap_">
+              $i18n{deleteConfirm}
+            </paper-button>
+          </div>
+        </cr-dialog>
+      </template>
+    </cr-lazy-render>
+
+    <cr-lazy-render id="sharedMenu">
+      <template>
+        <cr-action-menu>
+          <button id="menuMoreButton" slot="item" class="dropdown-item"
+              hidden="[[!canSearchMoreFromSite_(
+                  searchedTerm, actionMenuModel_.item.domain)]]"
+              on-click="onMoreFromSiteTap_">
+            $i18n{moreFromSite}
+          </button>
+          <button id="menuRemoveButton" slot="item" class="dropdown-item"
+              hidden="[[!canDeleteHistory_]]"
+              on-click="onRemoveFromHistoryTap_">
+            $i18n{removeFromHistory}
+          </button>
+        </cr-action-menu>
+      </template>
+    </cr-lazy-render>
+  </template>
+  <script src="chrome://history/history_list.js"></script>
+</dom-module>

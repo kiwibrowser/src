@@ -1,0 +1,69 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+/* DO NOT EDIT. Generated from {{module.path}} */
+
+{%- if variant -%}
+{%-   set variant_path = "%s-%s"|format(module.path, variant) -%}
+{%- else -%}
+{%-   set variant_path = module.path -%}
+{%- endif %}
+
+#include "{{variant_path}}_c.h"
+
+#include "base/logging.h"
+#include "base/macros.h"
+#include "testing/gtest/include/gtest/gtest.h"
+
+{% set test_class_name = namespaces_as_array|first|title %}
+
+class {{test_class_name}}StructTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+  }
+
+  void TearDown() override {
+  }
+
+  {{test_class_name}}StructTest() {}
+  ~{{test_class_name}}StructTest() override {}
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN({{test_class_name}}StructTest);
+};
+
+{%- for struct in structs %}
+{%- set struct_name = struct|get_name_for_kind %}
+
+// Test Struct {{struct_name}} setters and getters.
+TEST_F({{test_class_name}}StructTest, Test{{struct_name}}) {
+  {{struct_name}}Ptr first = {{struct_name}}_Create();
+  {{struct_name}}Ptr second = {{struct_name}}_Create();
+
+  // Copy values from |first| to |second|.
+{%- for packed_field in struct.packed.packed_fields_in_ordinal_order %}
+{%-  set kind = packed_field.field.kind %}
+{%-  if kind|is_array_kind %}
+  // TODO(mef): Test array |{{packed_field.field.name}}|.
+{%-  elif kind|is_struct_kind %}
+  // TODO(mef): Test substruct |{{packed_field.field.name}}|.
+{%-   else %}
+  {{struct_name}}_{{packed_field.field.name}}_set(second,
+  {{struct_name}}_{{packed_field.field.name}}_get(first));
+
+ {%- if kind|is_string_kind %}
+  EXPECT_STREQ(
+ {%- else %}
+  EXPECT_EQ(
+ {%- endif %}
+      {{struct_name}}_{{packed_field.field.name}}_get(first),
+      {{struct_name}}_{{packed_field.field.name}}_get(second));
+{%-   endif %}
+{%- endfor %}
+  {{struct_name}}_Destroy(first);
+  {{struct_name}}_Destroy(second);
+}
+
+{%- endfor %}
+

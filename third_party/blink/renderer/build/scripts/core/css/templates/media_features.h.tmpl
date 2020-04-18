@@ -1,0 +1,17 @@
+{% from "templates/macros.tmpl" import license, source_files_for_generated_file %}
+{{ license() }}
+
+{{source_files_for_generated_file(template_file, input_files)}}
+
+#ifndef BLINK_CORE_CSS_MEDIA_FEATURES_H_
+#define BLINK_CORE_CSS_MEDIA_FEATURES_H_
+
+#define CSS_MEDIAQUERY_NAMES_FOR_EACH_MEDIAFEATURE(macro) \
+    {% for entry in entries %}
+    {% set constant_prefix = entry | symbol %}
+    {% set method_prefix = constant_prefix | upper_first_letter %}
+    macro({{constant_prefix}}, {{method_prefix}}){% if not loop.last %} \
+    {% endif %}
+    {% endfor %}
+
+#endif  // BLINK_CORE_CSS_MEDIA_FEATURES_H_

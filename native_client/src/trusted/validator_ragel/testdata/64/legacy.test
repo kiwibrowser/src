@@ -1,0 +1,152 @@
+@hex:
+  # Legacy instructions which are invalid in 64-bit mode
+  
+  # aaa
+  37
+@dis:
+     0:	37                                           	(bad)  
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('objdump failed to decode', Instruction(0x0: 37  (bad)))
+----------------------------------------------------------------------
+@hex:
+  # aad
+  D5 0A
+@dis:
+     0:	d5                                           	(bad)  
+     1:	0a                                           	.byte 0xa
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('objdump failed to decode', Instruction(0x0: d5  (bad)))
+  1: ('objdump failed to decode', Instruction(0x1: 0a  .byte 0xa))
+----------------------------------------------------------------------
+@hex:
+  # aam
+  D4 0A
+@dis:
+     0:	d4                                           	(bad)  
+     1:	0a                                           	.byte 0xa
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('objdump failed to decode', Instruction(0x0: d4  (bad)))
+  1: ('objdump failed to decode', Instruction(0x1: 0a  .byte 0xa))
+----------------------------------------------------------------------
+@hex:
+  # aas
+  3F
+@dis:
+     0:	3f                                           	(bad)  
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('objdump failed to decode', Instruction(0x0: 3f  (bad)))
+----------------------------------------------------------------------
+@hex:
+  # bound %eax, (%eax)
+  62 00
+@dis:
+     0:	62                                           	.byte 0x62
+     1:	00                                           	.byte 0x0
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('objdump failed to decode', Instruction(0x0: 62  .byte 0x62))
+  1: ('objdump failed to decode', Instruction(0x1: 00  .byte 0x0))
+----------------------------------------------------------------------
+@hex:
+  # daa
+  27
+@dis:
+     0:	27                                           	(bad)  
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('objdump failed to decode', Instruction(0x0: 27  (bad)))
+----------------------------------------------------------------------
+@hex:
+  # das
+  2F
+@dis:
+     0:	2f                                           	(bad)  
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('objdump failed to decode', Instruction(0x0: 2f  (bad)))
+----------------------------------------------------------------------
+@hex:
+  # pusha
+  60
+@dis:
+     0:	60                                           	(bad)  
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('objdump failed to decode', Instruction(0x0: 60  (bad)))
+----------------------------------------------------------------------
+@hex:
+  # Some undocumented instructions
+  # icebp
+  F1
+@dis:
+     0:	f1                                           	icebp  
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: unrecognized instruction 'icebp'
+----------------------------------------------------------------------
+@hex:
+  # salc
+  D6
+@dis:
+     0:	d6                                           	(bad)  
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('objdump failed to decode', Instruction(0x0: d6  (bad)))
+----------------------------------------------------------------------
+@hex:
+  # xlat (%ebx,%al)
+  D7
+@dis:
+     0:	d7                                           	xlat   %ds:(%rbx)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('segments in memory references are not allowed', Instruction(0x0: d7  xlat %ds:(%rbx)))
+----------------------------------------------------------------------
+@hex:
+  # xlat (%rbx,%al)
+  48 D7
+@dis:
+     0:	48 d7                                        	rex.W xlat %ds:(%rbx)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('segments in memory references are not allowed', Instruction(0x0: 48 d7  xlat %ds:(%rbx)))
+----------------------------------------------------------------------
+@hex:
+  # Flag instructions depend on CPUFeature_LAHF.
+  9F
+  9E
+@dis:
+     0:	9f                                           	lahf   
+     1:	9e                                           	sahf   
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE

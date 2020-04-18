@@ -1,0 +1,68 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_icons_css.html">
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+
+<dom-module id="cr-toolbar-selection-overlay">
+  <template>
+    <style include="cr-icons">
+      :host {
+        -webkit-padding-start: var(--cr-toolbar-field-margin, 0);
+        display: flex;
+        height: 56px;
+      }
+
+      #overlay-content {
+        align-items: center;
+        display: flex;
+        flex: 1;
+        margin: 0 auto;
+        max-width: var(--selection-overlay-max-width, initial);
+        padding: 0 var(--selection-overlay-padding, 24px);
+      }
+
+      paper-button {
+        font-weight: 500;
+      }
+
+      paper-button[disabled] {
+        background: transparent;
+        color: inherit;
+        opacity: 0.7;
+      }
+
+      #number-selected {
+        flex: 1;
+      }
+
+      paper-icon-button-light {
+        -webkit-margin-end: 24px;
+        -webkit-margin-start: 2px;
+        height: 36px;
+        width: 36px;
+      }
+
+      button iron-icon {
+        height: 20px;
+        width: 20px;
+      }
+    </style>
+    <div id="overlay-content">
+      <paper-icon-button-light>
+        <button on-tap="onClearSelectionTap_" title="[[cancelLabel]]">
+          <iron-icon icon="cr:clear"></iron-icon>
+        </button>
+      </paper-icon-button-light>
+      <div id="number-selected">[[selectionLabel]]</div>
+      <paper-button on-tap="onClearSelectionTap_">
+        [[cancelLabel]]
+      </paper-button>
+      <paper-button id="delete" on-tap="onDeleteTap_"
+          disabled="[[deleteDisabled]]">
+        [[deleteLabel]]
+      </paper-button>
+    </div>
+  </template>
+  <script src="cr_toolbar_selection_overlay.js"></script>
+</dom-module>

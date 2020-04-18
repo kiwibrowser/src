@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<title>Prefetching double SignedHTTPExchange files must not crash</title>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="./resources/htxg-util.js"></script>
+<body>
+<script>
+function addPrefetch(url) {
+  let link = document.createElement('link');
+  link.rel = 'prefetch';
+  link.href = url;
+  document.body.appendChild(link);
+}
+promise_test(async (t) => {
+  // The timestamp of the test HTXG file is "Apr 1 2018 00:00 UTC" and valid
+  // until "Apr 8 2018 00:00 UTC".
+  await setSignedExchangeVerificationTime(new Date("Apr 1 2018 00:01 UTC"));
+  const htxg1_url =
+      'http://127.0.0.1:8000/loading/htxg/resources/htxg-location.htxg?1';
+  const htxg2_url =
+      'http://127.0.0.1:8000/loading/htxg/resources/htxg-location.htxg?2';
+  addPrefetch(htxg1_url);
+  addPrefetch(htxg2_url);
+  await new Promise(resolve => {
+    setInterval(() => {
+      const entries = performance.getEntriesByType("resource");
+      let hit_count = 0;
+      for (let i = 0; i < entries.length; ++i) {
+        const entry = entries[i];
+        if (entry.name == htxg1_url || entry.name == htxg2_url) {
+          if (++hit_count == 2)
+            resolve();
+        }
+      }
+    }, 100);
+  });
+}, 'Prefetching double SignedHTTPExchange files must not crash');
+</script>
+</body>

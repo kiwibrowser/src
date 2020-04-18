@@ -1,0 +1,40 @@
+# -*- python -*-
+# Copyright 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import os
+
+Import('env')
+
+nexe = env.ComponentProgram('untrusted_check_test',
+                            ['untrusted_check_test.c'],
+                            EXTRA_LIBS=['platform',
+                                        'gio',
+                                        '${PTHREAD_LIBS}',
+                                        '${NONIRT_LIBS}'])
+
+# The old (x86) nacl-glibc abort produces a different death signal from the
+# norm.
+if env.Bit('nacl_glibc') and env.Bit('build_x86'):
+  expected_exit_status = 'untrusted_sigsegv'
+else:
+  # Modern implementations end with calling __builtin_trap.
+  expected_exit_status = 'untrusted_builtin_trap'
+
+# Valgrind and ASan interfere with the exit status
+testing_on_asan_or_valgrind = (env.Bit('running_on_valgrind') or
+                               env.Bit('asan'))
+node = env.CommandSelLdrTestNacl(
+    'untrusted_check_test.out',
+    nexe,
+    # On Windows, PNaCl gives an absolute cygwin-style path
+    filter_regex = ('"(Fatal error in file ).*(untrusted_check_test.c)'
+                    '|(LOG_FATAL.*)'
+                    '|(Log output.*)"'),
+    filter_group_only = 'true',
+    stderr_golden = env.File('untrusted_check_test.stderr'),
+    exit_status=expected_exit_status)
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_untrusted_check_test',
+                       is_broken=testing_on_asan_or_valgrind)

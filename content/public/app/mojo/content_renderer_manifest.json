@@ -1,0 +1,97 @@
+{
+  "name": "content_renderer",
+  "display_name": "Content (renderer process)",
+  "interface_provider_specs": {
+    "service_manager:connector": {
+      "provides": {
+        "browser": [
+          "blink.mojom.LeakDetector",
+          "blink.mojom.OomIntervention",
+          "blink.mojom.WebDatabase",
+          "content.mojom.AppCacheFrontend",
+          "content.mojom.Child",
+          "content.mojom.ChildControl",
+          "content.mojom.ChildHistogramFetcher",
+          "content.mojom.ChildHistogramFetcherFactory",
+          "content.mojom.FrameFactory",
+          "content.mojom.RenderWidgetWindowTreeClientFactory",
+          "content.mojom.ResourceUsageReporter",
+          "content.mojom.SharedWorkerFactory",
+          "IPC.mojom.ChannelBootstrap",
+          "visitedlink.mojom.VisitedLinkNotificationSink",
+          "web_cache.mojom.WebCache"
+        ],
+        "service_manager:service_factory": [
+          "service_manager.mojom.ServiceFactory"
+        ]
+      },
+      "requires": {
+        "*": [ "app" ],
+        "content_browser": [
+          "dwrite_font_proxy",
+          "field_trials",
+          "font_loader",
+          "renderer"
+        ],
+        "metrics": [ "url_keyed_metrics" ],
+        "device": [
+          "device:power_monitor",
+          "device:screen_orientation",
+          "device:time_zone_monitor"
+        ],
+        "ui": [
+          "discardable_memory",
+          "gpu_client"
+        ]
+      }
+    },
+    "navigation:frame": {
+      "provides": {
+        "browser": [
+          "blink.mojom.AppBannerController",
+          "blink.mojom.EngagementClient",
+          "blink.mojom.InstallationService",
+          "blink.mojom.ManifestManager",
+          "blink.mojom.MediaDevicesListener",
+          "blink.mojom.TextSuggestionBackend",
+          "content.mojom.ImageDownloader",
+          "content.mojom.FrameInputHandler",
+          "content.mojom.FullscreenVideoElementHandler",
+          "content.mojom.MediaStreamDeviceObserver",
+          "content.mojom.Widget",
+          "viz.mojom.InputTargetClient"
+        ]
+      },
+      "requires": {
+        "content_browser": [ "renderer" ]
+      }
+    },
+    "navigation:dedicated_worker": {
+      "requires": {
+        "content_browser": [ "renderer" ]
+      }
+    },
+    "navigation:service_worker": {
+      "requires": {
+        "content_browser": [ "renderer" ]
+      }
+    },
+    "navigation:shared_worker": {
+      "requires": {
+        "content_browser": [ "renderer" ]
+      }
+    }
+  },
+  "required_files" : {
+    "v8_natives_data" : [
+      {
+        "path": "natives_blob.bin",
+        "platform": "linux"
+      },
+      {
+        "path": "assets/natives_blob.bin",
+        "platform": "android"
+      }
+    ]
+  }
+}

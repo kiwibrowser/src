@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../../../resources/js-test.js"></script>
+<script src="../resources/common.js"></script>
+<script src="../resources/picker-common.js"></script>
+</head>
+<body>
+Tests &lt;select&gt; style change when popup is visible after selection is changed
+by keyboard typeahead. The selection should not change when style changes.
+Needs run-layout-test.<br>
+<select id="select">
+  <option>A</option>
+  <option>B</option>
+  <option>C</option>
+</select>
+<pre id="output"></pre>
+<script>
+var select = document.getElementById('select');
+function openPickerErrorCallback() {
+    testFailed('picker didn\'t open')
+    finishJSTest();
+}
+openPicker(select, function() {
+    eventSender.keyDown('C', null);
+    select.offsetTop;
+    select.style.backgroundColor = 'yellow';
+    shouldBeEqualToString('internals.selectMenuListText(select)', 'C');
+    finishJSTest();
+}, openPickerErrorCallback);
+</script>
+</body>
+</html>
+

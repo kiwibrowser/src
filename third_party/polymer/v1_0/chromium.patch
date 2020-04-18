@@ -1,0 +1,141 @@
+diff --git a/components-chromium/font-roboto/roboto.html b/components-chromium/font-roboto/roboto.html
+index 7a24999..4eefcba 100644
+--- a/components-chromium/font-roboto/roboto.html
++++ b/components-chromium/font-roboto/roboto.html
+@@ -7,5 +7,4 @@ The complete set of contributors may be found at http://polymer.github.io/CONTRI
+ Code distributed by Google as part of the polymer project is also
+ subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+ -->
+-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,300,300italic,400italic,500,500italic,700,700italic">
+-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,700">
++<link rel="stylesheet" href="chrome://resources/css/roboto.css">
+diff --git a/components-chromium/paper-input/paper-input-extracted.js b/third_party/polymer/v1_0/components-chromium/paper-input/paper-input-extracted.js
+index 754820fb5d0c..3f8e640ffa71 100644
+--- a/components-chromium/paper-input/paper-input-extracted.js
++++ b/components-chromium/paper-input/paper-input-extracted.js
+@@ -7,13 +7,7 @@ Polymer({
+     ],
+ 
+     beforeRegister: function() {
+-      // We need to tell which kind of of template to stamp based on
+-      // what kind of `iron-input` we got, but because of polyfills and
+-      // custom elements differences between v0 and v1, the safest bet is
+-      // to check a particular method we know the iron-input#2.x can have.
+-      // If it doesn't have it, then it's an iron-input#1.x.
+-      var ironInput = document.createElement('iron-input');
+-      var version = typeof ironInput._initSlottedInput == 'function' ? 'v1' : 'v0';
++      var version = 'v1';  // Hard coded Polymer 2 style iron-input.
+       var template = Polymer.DomModule.import('paper-input', 'template');
+       var inputTemplate = Polymer.DomModule.import('paper-input', 'template#' + version);
+       var inputPlaceholder = template.content.querySelector('#template-placeholder');
+@@ -30,7 +24,8 @@ Polymer({
+      * @return {!HTMLElement}
+      */
+     get _focusableElement() {
+-      return Polymer.Element ? this.inputElement._inputElement : this.inputElement;
++      // TODO(hcarmona): remove this patch after polymer is v2.
++      return this.inputElement._inputElement;
+     },
+ 
+     // Note: This event is only available in the 1.0 version of this element.
+diff --git a/components-chromium/paper-input/paper-textarea-extracted.js b/components-chromium/paper-input/paper-textarea-extracted.js
+index 11bc05a37471..8d425e02c30b 100644
+--- a/components-chromium/paper-input/paper-textarea-extracted.js
++++ b/components-chromium/paper-input/paper-textarea-extracted.js
+@@ -57,8 +57,8 @@ Polymer({
+       this.$.input.textarea.selectionEnd = end;
+     },
+
+-    _ariaLabelledByChanged: function(ariaLabelledBy) {
+-      this._focusableElement.setAttribute('aria-labelledby', ariaLabelledBy);
++    _ariaLabelledByChanged: function() {
++      this._focusableElement.setAttribute('aria-label', this.label);
+     },
+
+     _ariaDescribedByChanged: function(ariaDescribedBy) {
+diff --git a/components-chromium/iron-list/iron-list-extracted.js b/components-chromium/iron-list/iron-list-extracted.js
+index 43c59653a39b..26652936735c 100644
+--- a/components-chromium/iron-list/iron-list-extracted.js
++++ b/components-chromium/iron-list/iron-list-extracted.js
+@@ -128,6 +128,14 @@
+       scrollOffset: {
+         type: Number,
+         value: 0
++      },
++
++      /**
++       * If set to true, focus on an element will be preserved after rerender.
++       */
++      preserveFocus: {
++        type: Boolean,
++        value: false
+       }
+     },
+
+@@ -791,6 +799,15 @@
+      * to `items`, splices or updates to a single item.
+      */
+     _itemsChanged: function(change) {
++      var rendering = /^items(\.splices){0,1}$/.test(change.path);
++      var lastFocusedIndex, focusedElement;
++      if (rendering && this.preserveFocus) {
++        lastFocusedIndex = this._focusedVirtualIndex;
++        focusedElement = this.querySelector('* /deep/ *:focus');
++      }
++
++      var preservingFocus = rendering && this.preserveFocus && focusedElement;
++
+       if (change.path === 'items') {
+         this._virtualStart = 0;
+         this._physicalTop = 0;
+@@ -804,7 +821,7 @@
+         this._physicalItems = this._physicalItems || [];
+         this._physicalSizes = this._physicalSizes || [];
+         this._physicalStart = 0;
+-        if (this._scrollTop > this._scrollOffset) {
++        if (this._scrollTop > this._scrollOffset && !preservingFocus) {
+           this._resetScrollPosition(0);
+         }
+         this._removeFocusedItem();
+@@ -826,6 +843,17 @@
+       } else if (change.path !== 'items.length') {
+         this._forwardItemPath(change.path, change.value);
+       }
++
++      // If the list was in focus when updated, preserve the focus on item.
++      if (preservingFocus) {
++        Polymer.dom.flush();
++        focusedElement.blur(); // paper- elements breaks when focused twice.
++        this._focusPhysicalItem(
++            Math.min(this.items.length - 1, lastFocusedIndex));
++        if (!this._isIndexVisible(this._focusedVirtualIndex)) {
++          this.scrollToIndex(this._focusedVirtualIndex);
++        }
++      }
+     },
+
+     _forwardItemPath: function(path, value) {
+diff --git a/components-chromium/paper-radio-group/paper-radio-group.html b/components-chromium/paper-radio-group/paper-radio-group.html
+index f50638bf6175..d38cde355822 100644
+--- a/components-chromium/paper-radio-group/paper-radio-group.html
++++ b/components-chromium/paper-radio-group/paper-radio-group.html
+@@ -9,7 +9,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
+ --><html><head><link rel="import" href="../polymer/polymer.html">
+ <link rel="import" href="../iron-a11y-keys-behavior/iron-a11y-keys-behavior.html">
+ <link rel="import" href="../iron-menu-behavior/iron-menubar-behavior.html">
+-<link rel="import" href="../paper-radio-button/paper-radio-button.html">
+ 
+ <!--
+ Material design: [Radio button](https://www.google.com/design/spec/components/selection-controls.html#selection-controls-radio-button)
+diff --git a/components-chromium/iron-flex-layout/iron-flex-layout.html b/components-chromium/iron-flex-layout/iron-flex-layout.html
+index 082b0c1e4af2..d985829702a2 100644
+--- a/components-chromium/iron-flex-layout/iron-flex-layout.html
++++ b/components-chromium/iron-flex-layout/iron-flex-layout.html
+@@ -409,4 +409,4 @@ A complete [guide](https://elements.polymer-project.org/guides/flex-layout) to `
+     }
+   </style>
+ </custom-style>
+-<script src="iron-flex-layout-extracted.js"></script></body></html>
+\ No newline at end of file
++</body></html>
+\ No newline at end of file

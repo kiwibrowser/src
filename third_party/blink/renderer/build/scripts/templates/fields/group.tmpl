@@ -1,0 +1,72 @@
+{% from 'templates/fields/field.tmpl' import encode, declare_storage, compare %}
+{% from 'templates/macros.tmpl' import print_if %}
+{% macro declare_field_group_class(group): -%}
+{% for subgroup in group.subgroups %}
+{{declare_field_group_class(subgroup)}}
+
+{% endfor %}
+class {{group.type_name}} : public RefCounted<{{group.type_name}}> {
+ public:
+  static scoped_refptr<{{group.type_name}}> Create() {
+    return base::AdoptRef(new {{group.type_name}});
+  }
+  scoped_refptr<{{group.type_name}}> Copy() const {
+    return base::AdoptRef(new {{group.type_name}}(*this));
+  }
+
+  bool operator==(const {{group.type_name}}& other) const {
+    return (
+    {% set boolean_and = joiner("&& ") %}
+    {% for subgroup in group.subgroups %}
+      {{boolean_and()}}{{subgroup.member_name}} == other.{{subgroup.member_name}}
+    {% endfor %}
+    {% for field in group.fields if not field.custom_compare %}
+      {{boolean_and()}}{{compare(field.wrapper_pointer_name, field.name, "other")}}
+    {% endfor %}
+    );
+  }
+  bool operator!=(const {{group.type_name}}& other) const { return !(*this == other); }
+
+  {% for subgroup in group.subgroups %}
+  DataRef<{{subgroup.type_name}}> {{subgroup.member_name}};
+  {% endfor %}
+  {% for field in group.fields %}
+  {{declare_storage(field)}}
+  {% endfor %}
+
+ private:
+  {{group.type_name}}();
+  CORE_EXPORT {{group.type_name}}(const {{group.type_name}}&);
+};
+{%- endmacro %}
+
+{% macro define_field_group_class(group): -%}
+{% for subgroup in group.subgroups %}
+{{define_field_group_class(subgroup)}}
+
+{% endfor %}
+ComputedStyleBase::{{group.type_name}}::{{group.type_name}}() {{print_if(group.fields|length > 0, ':')}}
+  {% set comma = joiner(", ") %}
+  {% for field in group.fields %}
+      {{comma()}}{{field.name}}({{encode(field, field.default_value)}})
+  {% endfor %}
+  {
+  {% for subgroup in group.subgroups %}
+    {{subgroup.member_name}}.Init();
+  {% endfor %}
+  }
+
+ComputedStyleBase::{{group.type_name}}::{{group.type_name}}(const {{group.type_name}}& other) :
+  {% set comma = joiner(", ") %}
+  {% for subgroup in group.subgroups %}
+      {{comma()}}{{subgroup.member_name}}(other.{{subgroup.member_name}})
+  {% endfor %}
+  {% for field in group.fields %}
+    {% if field.wrapper_pointer_name %}
+      {{comma()}}{{field.name}}(MemberCopy(other.{{field.name}}))
+    {% else %}
+      {{comma()}}{{field.name}}(other.{{field.name}})
+     {% endif %}
+  {% endfor %}
+  {}
+{%- endmacro %}

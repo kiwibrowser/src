@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<!--killswitch_tester.html
+Script with javascript functions for requesting notification and geolocation
+permissions.
+-->
+<script>
+function requestGeolocation() {
+  navigator.geolocation.getCurrentPosition(function(){}, geoErrorCallback);
+}
+
+function requestNotification() {
+  Notification.requestPermission(notificationCallback);
+}
+
+function geoErrorCallback(error) {
+  switch(error.code) {
+    case error.PERMISSION_DENIED:
+      sendResultToTest("denied");
+      break;
+    default:
+      sendResultToTest(error.code);
+  }
+}
+
+function notificationCallback(status) {
+  sendResultToTest(status);
+}
+
+// Sends a result back to the main test logic.
+function sendResultToTest(result) {
+  // Convert the result to a string.
+  var stringResult = "" + result;
+  if (typeof stringResult != "string")
+    stringResult = JSON.stringify(result);
+  window.domAutomationController.send(stringResult);
+}
+</script>
+<body>
+</body>
+</html>

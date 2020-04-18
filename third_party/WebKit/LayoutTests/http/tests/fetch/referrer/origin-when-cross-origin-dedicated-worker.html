@@ -1,0 +1,19 @@
+<!doctype html>
+<head>
+<title>Fetch in a dedicated worker with &quot;referrer origin-when-cross-origin&quot; policy</title>
+<script src = "/resources/testharness.js"></script>
+<script src = "/resources/testharnessreport.js"></script>
+<script src = "/serviceworker/resources/test-helpers.js"></script>
+</head>
+<body>
+<script>
+var SCRIPT =
+   '/fetch/referrer/resources/origin-when-cross-origin-dedicated-worker-js.php';
+
+async_test(t => {
+    fetch_tests_from_worker(new Worker(SCRIPT));
+    t.done();
+  });
+</script>
+</body>
+

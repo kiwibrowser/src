@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../../resources/js-test.js"></script>
+</head>
+<body>
+<script>
+description("This tests that errors from nested importScripts have the expected provenance.");
+
+self.jsTestIsAsync = true;
+
+var worker = startWorker("resources/importScripts-1.js");
+var event;
+worker.onerror = function (e) {
+    event = e;
+    shouldBeEqualToString("event.type", "error");
+    shouldBeTrue("event.filename.indexOf('invalidScript.js') >= 0");
+    finishJSTest();
+};
+</script>
+</body>
+</html>

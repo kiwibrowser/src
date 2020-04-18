@@ -1,0 +1,45 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+</head>
+<body>
+<script>
+var testRTC = async_test('Tests RTCPeerConnection [add|remove]Stream.');
+
+var pc = null;
+var options = {audio: true, video: true};
+var errorCallback = () => assert_unreached('Stream generation failed.');
+
+navigator.webkitGetUserMedia(options, (stream1) => {
+    navigator.webkitGetUserMedia(options, (stream2) => {
+        assert_false(stream1.id === stream2.id);
+
+        pc = new RTCPeerConnection();
+
+        pc.onnegotiationneeded = (event) => {
+            assert_array_equals(pc.getLocalStreams(), [stream1]);
+
+            pc.onnegotiationneeded = () => {
+                assert_unreached('onErroneousNegotiationNeeded was called.');
+            };
+
+            pc.addStream(stream1);
+            assert_equals(pc.getLocalStreams().length, 1);
+            pc.removeStream(stream2);
+            assert_equals(pc.getLocalStreams().length, 1);
+
+            pc.onnegotiationneeded = (event) => {
+                assert_equals(pc.getLocalStreams().length, 0);
+                testRTC.done();
+            };
+            pc.removeStream(stream1);
+        };
+
+        pc.addStream(stream1);
+    }, errorCallback);
+}, errorCallback);
+</script>
+</body>
+</html>

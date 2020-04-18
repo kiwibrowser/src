@@ -1,0 +1,453 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/html/web_ui_listener_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="../icons.html">
+<link rel="import" href="../route.html">
+<link rel="import" href="../settings_shared_css.html">
+<link rel="import" href="../site_settings/constants.html">
+<link rel="import" href="../site_settings/site_settings_behavior.html">
+<link rel="import" href="../site_settings/site_settings_prefs_browser_proxy.html">
+
+<dom-module id="settings-site-settings-page">
+  <template>
+    <style include="settings-shared">
+      .settings-box iron-icon + .middle {
+        -webkit-padding-start: 20px;
+      }
+    </style>
+    <template is="dom-if" if="[[enableSiteSettings_]]">
+      <div class="settings-box first line-only">
+        <h2 class="first">$i18n{siteSettingsAllSites}</h2>
+      </div>
+      <div class="settings-box first line-only" category$="[[ALL_SITES]]"
+          data-route="SITE_SETTINGS_ALL" on-click="onTapNavigate_" actionable>
+        <div class="start">$i18n{siteSettingsAllSitesDescription}</div>
+        <paper-icon-button-light class="subpage-arrow">
+          <button aria-label="$i18n{siteSettingsAllSitesDescription}"></button>
+        </paper-icon-button-light>
+      </div>
+      <div class="settings-box first line-only">
+        <h2>$i18n{siteSettingsPermissions}</h2>
+      </div>
+    </template>
+    <div id="cookies" class="settings-box two-line first"
+        category$="[[ContentSettingsTypes.COOKIES]]"
+        data-route="SITE_SETTINGS_COOKIES" on-click="onTapNavigate_" actionable>
+      <iron-icon icon="settings:cookie"></iron-icon>
+      <div class="middle">
+        $i18n{siteSettingsCookies}
+        <div class="secondary" id="cookiesSecondary">
+          [[defaultSettingLabel_(
+              default_.cookies,
+              '$i18nPolymer{siteSettingsCookiesAllowed}',
+              '$i18nPolymer{siteSettingsBlocked}',
+              '$i18nPolymer{deleteDataPostSession}')]]
+        </div>
+      </div>
+      <paper-icon-button-light class="subpage-arrow">
+        <button aria-label="$i18n{siteSettingsCookies}"
+            aria-describedby="cookiesSecondary"></button>
+      </paper-icon-button-light>
+    </div>
+    <div id="location" class="settings-box two-line"
+        category$="[[ContentSettingsTypes.GEOLOCATION]]"
+        data-route="SITE_SETTINGS_LOCATION" on-click="onTapNavigate_"
+        actionable>
+      <iron-icon icon="settings:location-on"></iron-icon>
+      <div class="middle">
+        $i18n{siteSettingsLocation}
+        <div class="secondary" id="locationSecondary">
+          [[defaultSettingLabel_(
+              default_.location,
+              '$i18nPolymer{siteSettingsAskBeforeAccessing}',
+              '$i18nPolymer{siteSettingsBlocked}')]]
+        </div>
+      </div>
+      <paper-icon-button-light class="subpage-arrow">
+        <button aria-label="$i18n{siteSettingsLocation}"
+            aria-describedby="locationSecondary"></button>
+      </paper-icon-button-light>
+    </div>
+    <div id="camera" class="settings-box two-line"
+        category$="[[ContentSettingsTypes.CAMERA]]"
+        data-route="SITE_SETTINGS_CAMERA"
+        on-click="onTapNavigate_" actionable>
+      <iron-icon icon="settings:videocam"></iron-icon>
+      <div class="middle">
+        $i18n{siteSettingsCamera}
+        <div class="secondary" id="cameraSecondary">
+          [[defaultSettingLabel_(
+              default_.mediaStreamCamera,
+              '$i18nPolymer{siteSettingsAskBeforeAccessing}',
+              '$i18nPolymer{siteSettingsBlocked}')]]
+        </div>
+      </div>
+      <paper-icon-button-light class="subpage-arrow">
+        <button aria-label="$i18n{siteSettingsCamera}"
+            aria-describedby="cameraSecondary"></button>
+      </paper-icon-button-light>
+    </div>
+    <div id="microphone" class="settings-box two-line"
+        category$="[[ContentSettingsTypes.MIC]]"
+        data-route="SITE_SETTINGS_MICROPHONE" on-click="onTapNavigate_"
+        actionable>
+      <iron-icon icon="settings:mic"></iron-icon>
+      <div class="middle">
+        $i18n{siteSettingsMic}
+        <div class="secondary" id="micSecondary">
+          [[defaultSettingLabel_(
+              default_.mediaStreamMic,
+              '$i18nPolymer{siteSettingsAskBeforeAccessing}',
+              '$i18nPolymer{siteSettingsBlocked}')]]
+        </div>
+      </div>
+      <paper-icon-button-light class="subpage-arrow">
+        <button aria-label="$i18n{siteSettingsMic}"
+            aria-describedby="micSecondary"></button>
+      </paper-icon-button-light>
+    </div>
+    <template is="dom-if" if="[[enableSensorsContentSetting_]]">
+      <div id="sensors" class="settings-box two-line"
+          category$="[[ContentSettingsTypes.SENSORS]]"
+          data-route="SITE_SETTINGS_SENSORS" on-click="onTapNavigate_"
+          actionable>
+        <iron-icon icon="settings:sensors"></iron-icon>
+        <div class="middle">
+          $i18n{siteSettingsSensors}
+          <div class="secondary" id="sensorsSecondary">
+            [[defaultSettingLabel_(
+                default_.sensors,
+                '$i18nPolymer{siteSettingsSensorsAllow}',
+                '$i18nPolymer{siteSettingsSensorsBlock}')]]
+          </div>
+        </div>
+        <button class="subpage-arrow" is="paper-icon-button-light"
+            aria-label="$i18n{siteSettingsSensors}"
+            aria-describedby="sensorsSecondary"></button>
+      </div>
+    </template>
+    <div id="notifications" class="settings-box two-line"
+        category$="[[ContentSettingsTypes.NOTIFICATIONS]]"
+        data-route="SITE_SETTINGS_NOTIFICATIONS" on-click="onTapNavigate_"
+        actionable>
+      <iron-icon icon="settings:notifications"></iron-icon>
+      <div class="middle">
+        $i18n{siteSettingsNotifications}
+        <div class="secondary" id="notificationsSecondary">
+          [[defaultSettingLabel_(
+              default_.notifications,
+              '$i18nPolymer{siteSettingsAskBeforeSending}',
+              '$i18nPolymer{siteSettingsBlocked}')]]
+        </div>
+      </div>
+      <paper-icon-button-light class="subpage-arrow">
+        <button aria-label="$i18n{siteSettingsNotifications}"
+            aria-describedby="notificationsSecondary"></button>
+      </paper-icon-button-light>
+    </div>
+    <div id="javascript" class="settings-box two-line"
+        category$="[[ContentSettingsTypes.JAVASCRIPT]]"
+        data-route="SITE_SETTINGS_JAVASCRIPT" on-click="onTapNavigate_"
+        actionable>
+      <iron-icon icon="settings:code"></iron-icon>
+      <div class="middle">
+        $i18n{siteSettingsJavascript}
+        <div class="secondary" id="javascriptSecondary">
+          [[defaultSettingLabel_(
+              default_.javascript,
+              '$i18nPolymer{siteSettingsAllowed}',
+              '$i18nPolymer{siteSettingsBlocked}')]]
+        </div>
+      </div>
+      <paper-icon-button-light class="subpage-arrow">
+        <button aria-label="$i18n{siteSettingsJavascript}"
+            aria-describedby="javascriptSecondary"></button>
+      </paper-icon-button-light>
+    </div>
+    <div id="flash" class="settings-box two-line"
+        category$="[[ContentSettingsTypes.PLUGINS]]"
+        data-route="SITE_SETTINGS_FLASH" on-click="onTapNavigate_" actionable>
+      <iron-icon icon="cr:extension"></iron-icon>
+      <div class="middle">
+        $i18n{siteSettingsFlash}
+        <div class="secondary" id="flashSecondary">
+          [[defaultSettingLabel_(
+              default_.plugins,
+              '$i18nPolymer{siteSettingsFlashAskFirst}',
+              '$i18nPolymer{siteSettingsFlashBlock}')]]
+        </div>
+      </div>
+      <paper-icon-button-light class="subpage-arrow">
+        <button aria-label="$i18n{siteSettingsFlash}"
+            aria-describedby="flashSecondary"></button>
+      </paper-icon-button-light>
+    </div>
+    <div id="images" class="settings-box two-line"
+        category$="[[ContentSettingsTypes.IMAGES]]"
+        data-route="SITE_SETTINGS_IMAGES" on-click="onTapNavigate_" actionable>
+      <iron-icon icon="settings:photo"></iron-icon>
+      <div class="middle">
+        $i18n{siteSettingsImages}
+        <div class="secondary" id="imagesSecondary">
+          [[defaultSettingLabel_(
+              default_.images,
+              '$i18nPolymer{siteSettingsShowAll}',
+              '$i18nPolymer{siteSettingsDontShowImages}')]]
+        </div>
+      </div>
+      <paper-icon-button-light class="subpage-arrow">
+        <button aria-label="$i18n{siteSettingsImages}"
+            aria-describedby="imagesSecondary"></button>
+      </paper-icon-button-light>
+    </div>
+    <div id="popups" category$="[[ContentSettingsTypes.POPUPS]]"
+        class="settings-box two-line" data-route="SITE_SETTINGS_POPUPS"
+        on-click="onTapNavigate_" actionable>
+      <iron-icon icon="cr:open-in-new"></iron-icon>
+      <div class="middle">
+        $i18n{siteSettingsPopups}
+        <div class="secondary" id="popupsSecondary">
+          [[defaultSettingLabel_(
+              default_.popups,
+              '$i18nPolymer{siteSettingsAllowed}',
+              '$i18nPolymer{siteSettingsBlocked}')]]
+        </div>
+      </div>
+      <paper-icon-button-light class="subpage-arrow">
+        <button aria-label="$i18n{siteSettingsPopups}"
+            aria-describedby="popupsSecondary"></button>
+      </paper-icon-button-light>
+    </div>
+    <template is="dom-if" if="[[enableSafeBrowsingSubresourceFilter_]]">
+      <div id="ads" class="settings-box two-line"
+          category$="[[ContentSettingsTypes.ADS]]"
+          data-route="SITE_SETTINGS_ADS" on-click="onTapNavigate_"
+          actionable>
+        <iron-icon icon="settings:ads"></iron-icon>
+        <div class="middle">
+          $i18n{siteSettingsAds}
+          <div class="secondary" id="adsSecondary">
+            [[defaultSettingLabel_(
+                default_.ads,
+                '$i18nPolymer{siteSettingsAllowed}',
+                '$i18nPolymer{siteSettingsAdsBlock}')]]
+          </div>
+        </div>
+        <paper-icon-button-light class="subpage-arrow">
+          <button aria-label="$i18n{siteSettingsAds}"
+              aria-describedby="adsSecondary"></button>
+        </paper-icon-button-light>
+      </div>
+    </template>
+    <div id="background-sync" class="settings-box two-line"
+        category$="[[ContentSettingsTypes.BACKGROUND_SYNC]]"
+        data-route="SITE_SETTINGS_BACKGROUND_SYNC" on-click="onTapNavigate_"
+        actionable>
+      <iron-icon icon="settings:sync"></iron-icon>
+      <div class="middle">
+        $i18n{siteSettingsBackgroundSync}
+        <div class="secondary" id="backgroundSyncSecondary">
+          [[defaultSettingLabel_(
+              default_.backgroundSync,
+              '$i18nPolymer{siteSettingsAllowRecentlyClosedSites}',
+              '$i18nPolymer{siteSettingsBackgroundSyncBlocked}')]]
+        </div>
+      </div>
+      <paper-icon-button-light class="subpage-arrow">
+        <button aria-label="$i18n{siteSettingsBackgroundSync}"
+            aria-describedby="backgroundSyncSecondary"></button>
+      </paper-icon-button-light>
+    </div>
+    <template is="dom-if" if="[[enableSoundContentSetting_]]">
+      <div id="sound" class="settings-box two-line"
+          category$="[[ContentSettingsTypes.SOUND]]"
+          data-route="SITE_SETTINGS_SOUND" on-click="onTapNavigate_"
+          actionable>
+          <iron-icon icon="settings:volume-up"></iron-icon>
+        <div class="middle">
+          $i18n{siteSettingsSound}
+          <div class="secondary" id="soundSecondary">
+            [[defaultSettingLabel_(
+                default_.sound,
+                '$i18nPolymer{siteSettingsSoundAllow}',
+                '$i18nPolymer{siteSettingsSoundBlock}')]]
+          </div>
+        </div>
+        <paper-icon-button-light class="subpage-arrow">
+          <button aria-label="$i18n{siteSettingsSound}"
+              aria-describedby="soundSecondary"></button>
+        </paper-icon-button-light>
+      </div>
+    </template>
+    <div id="automatic-downloads" class="settings-box two-line"
+        category$="[[ContentSettingsTypes.AUTOMATIC_DOWNLOADS]]"
+        data-route="SITE_SETTINGS_AUTOMATIC_DOWNLOADS"
+        on-click="onTapNavigate_" actionable>
+      <iron-icon icon="cr:file-download"></iron-icon>
+      <div class="middle">
+        $i18n{siteSettingsAutomaticDownloads}
+        <div class="secondary" id="automaticDownloadsSecondary">
+          [[defaultSettingLabel_(
+              default_.multipleAutomaticDownloads,
+              '$i18nPolymer{siteSettingsAutoDownloadAsk}',
+              '$i18nPolymer{siteSettingsAutoDownloadBlock}')]]
+        </div>
+      </div>
+      <paper-icon-button-light class="subpage-arrow">
+        <button aria-label="$i18n{siteSettingsAutomaticDownloads}"
+            aria-describedby="automaticDownloadsSecondary"></button>
+      </paper-icon-button-light>
+    </div>
+    <div id="unsandboxed-plugins" class="settings-box two-line"
+        category$="[[ContentSettingsTypes.UNSANDBOXED_PLUGINS]]"
+        data-route="SITE_SETTINGS_UNSANDBOXED_PLUGINS"
+        on-click="onTapNavigate_" actionable>
+      <iron-icon icon="cr:extension"></iron-icon>
+      <div class="middle">
+        $i18n{siteSettingsUnsandboxedPlugins}
+        <div class="secondary" id="unsandboxedPluginsSecondary">
+          [[defaultSettingLabel_(
+              default_.ppapiBroker,
+              '$i18nPolymer{siteSettingsUnsandboxedPluginsAsk}',
+              '$i18nPolymer{siteSettingsUnsandboxedPluginsBlock}')]]
+        </div>
+      </div>
+      <paper-icon-button-light class="subpage-arrow">
+        <button aria-label="$i18n{siteSettingsUnsandboxedPlugins}"
+            aria-describedby="unsandboxedPluginsSecondary"></button>
+      </paper-icon-button-light>
+    </div>
+    <template is="dom-if" if="[[!isGuest_]]">
+      <div id="protocol-handlers" class="settings-box two-line"
+          category$="[[ContentSettingsTypes.PROTOCOL_HANDLERS]]"
+          data-route="SITE_SETTINGS_HANDLERS"
+          on-click="onTapNavigate_" actionable>
+        <iron-icon icon="settings:protocol-handler"></iron-icon>
+        <div class="middle">
+          $i18n{siteSettingsHandlers}
+          <div class="secondary" id="handlersSecondary">
+            [[defaultSettingLabel_(
+                default_.registerProtocolHandler,
+                '$i18nPolymer{siteSettingsHandlersAsk}',
+                '$i18nPolymer{siteSettingsHandlersBlocked}')]]
+          </div>
+        </div>
+        <paper-icon-button-light class="subpage-arrow">
+          <button aria-label="$i18n{siteSettingsHandlers}"
+              aria-describedby="handlersSecondary"></button>
+        </paper-icon-button-light>
+      </div>
+    </template>
+    <div id="midi-devices" class="settings-box two-line"
+        category$="[[ContentSettingsTypes.MIDI_DEVICES]]"
+        data-route="SITE_SETTINGS_MIDI_DEVICES"
+        on-click="onTapNavigate_" actionable>
+      <iron-icon icon="settings:midi"></iron-icon>
+      <div class="middle">
+        $i18n{siteSettingsMidiDevices}
+        <div class="secondary" id="midiDevicesSecondary">
+          [[defaultSettingLabel_(
+              default_.midiSysex,
+              '$i18nPolymer{siteSettingsMidiDevicesAsk}',
+              '$i18nPolymer{siteSettingsMidiDevicesBlock}')]]
+        </div>
+      </div>
+      <paper-icon-button-light class="subpage-arrow">
+        <button aria-label="$i18n{siteSettingsMidiDevices}"
+            aria-describedby="midiDevicesSecondary"></button>
+      </paper-icon-button-light>
+    </div>
+    <div id="zoom-levels" class="settings-box"
+        category$="[[ContentSettingsTypes.ZOOM_LEVELS]]"
+        data-route="SITE_SETTINGS_ZOOM_LEVELS" on-click="onTapNavigate_"
+        actionable>
+      <iron-icon icon="settings:zoom-in"></iron-icon>
+      <div class="middle">$i18n{siteSettingsZoomLevels}</div>
+      <paper-icon-button-light class="subpage-arrow">
+        <button aria-label="$i18n{siteSettingsZoomLevels}"></button>
+      </paper-icon-button-light>
+    </div>
+    <div id="usb-devices" class="settings-box two-line"
+        category$="[[ContentSettingsTypes.USB_DEVICES]]"
+        data-route="SITE_SETTINGS_USB_DEVICES" on-click="onTapNavigate_"
+        actionable>
+      <iron-icon icon="settings:usb"></iron-icon>
+      <div class="middle">
+        $i18n{siteSettingsUsbDevices}
+        <div class="secondary" id="usbDevicesSecondary">
+          [[defaultSettingLabel_(
+              default_.usbDevices,
+              '$i18nPolymer{siteSettingsUsbDevicesAsk}',
+              '$i18nPolymer{siteSettingsUsbDevicesBlock}')]]
+        </div>
+      </div>
+      <paper-icon-button-light class="subpage-arrow">
+        <button aria-label="$i18n{siteSettingsUsbDevices}"
+            area-describedby="usbDevicesSecondary"></button>
+      </paper-icon-button-light>
+    </div>
+    <div id="pdf-documents" class="settings-box"
+        data-route="SITE_SETTINGS_PDF_DOCUMENTS" on-click="onTapNavigate_"
+        actionable>
+      <iron-icon icon="settings:pdf"></iron-icon>
+      <div class="middle">$i18n{siteSettingsPdfDocuments}</div>
+      <paper-icon-button-light class="subpage-arrow">
+        <button aria-label="$i18n{siteSettingsPdfDocuments}"></button>
+      </paper-icon-button-light>
+    </div>
+    <div id="protected-content" class="settings-box"
+        data-route="SITE_SETTINGS_PROTECTED_CONTENT" on-click="onTapNavigate_"
+        actionable>
+      <iron-icon icon="settings:protected-content"></iron-icon>
+      <div class="middle">$i18n{siteSettingsProtectedContent}</div>
+      <paper-icon-button-light class="subpage-arrow">
+        <button aria-label="$i18n{siteSettingsProtectedContent}"></button>
+      </paper-icon-button-light>
+    </div>
+    <template is="dom-if" if="[[enableClipboardContentSetting_]]">
+      <div id="clipboard" class="settings-box two-line"
+          category$="[[ContentSettingsTypes.CLIPBOARD]]"
+          data-route="SITE_SETTINGS_CLIPBOARD" on-click="onTapNavigate_"
+          actionable>
+        <iron-icon icon="settings:clipboard"></iron-icon>
+        <div class="middle">
+          $i18n{siteSettingsClipboard}
+          <div class="secondary" id="clipboardSecondary">
+            [[defaultSettingLabel_(
+                default_.clipboard,
+                '$i18nPolymer{siteSettingsAskBeforeAccessing}',
+                '$i18nPolymer{siteSettingsBlocked}')]]
+          </div>
+        </div>
+        <paper-icon-button-light class="subpage-arrow">
+          <button aria-label="$i18n{siteSettingsClipboard}"
+              aria-describedby="clipboardSecondary"></button>
+        </paper-icon-button-light>
+      </div>
+    </template>
+    <template is="dom-if" if="[[enablePaymentHandlerContentSetting_]]">
+      <div id="paymentHandler" class="settings-box two-line"
+           category$="[[ContentSettingsTypes.PAYMENT_HANDLER]]"
+           data-route="SITE_SETTINGS_PAYMENT_HANDLER" on-click="onTapNavigate_"
+           actionable>
+        <iron-icon icon="settings:payment-handler"></iron-icon>
+        <div class="middle">
+          $i18n{siteSettingsPaymentHandler}
+          <div class="secondary" id="paymentHandlerSecondary">
+            [[defaultSettingLabel_(
+                default_.paymentHandler,
+                '$i18nPolymer{siteSettingsPaymentHandlerAllow}',
+                '$i18nPolymer{siteSettingsPaymentHandlerBlock}')]]
+          </div>
+        </div>
+        <paper-icon-button-light class="subpage-arrow">
+          <button aria-label="$i18n{siteSettingsPaymentHandler}"
+              aria-describedby="paymentHandlerSecondary"></button>
+        </paper-icon-button-light>
+      </div>
+    </template>
+  </template>
+  <script src="site_settings_page.js"></script>
+</dom-module>

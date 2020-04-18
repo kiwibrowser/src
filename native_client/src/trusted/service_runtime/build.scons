@@ -1,0 +1,958 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import platform
+import os
+
+Import('env')
+
+env.Append(CPPPATH=['${TARGET_ROOT}/gen'])
+
+# normally comment out -- uncomment out to test the pedantic removal
+# check below.
+#if env.Bit('linux') or env.Bit('mac'):
+#  env.FilterOut(CCFLAGS=['-pedantic'])
+#  env.FilterOut(CCFLAGS=['-Wall'])
+
+
+GENERATED='${TARGET_ROOT}/gen/native_client/src/trusted/service_runtime'
+
+
+# ----------------------------------------------------------
+# TODO(robertm): this library is too big and needs to be split up
+#                for easier unit testing
+ldr_inputs = [
+    'dyn_array.c',
+    'elf_util.c',
+    'filename_util.cc',
+    'load_file.c',
+    'nacl_all_modules.c',
+    'nacl_app_thread.c',
+    'nacl_copy.c',
+    'nacl_desc_effector_ldr.c',
+    'nacl_error_gio.c',
+    'nacl_error_log_hook.c',
+    'nacl_globals.c',
+    'nacl_resource.c',
+    'nacl_signal_common.c',
+    'nacl_stack_safety.c',
+    'nacl_syscall_common.c',
+    'nacl_syscall_hook.c',
+    'nacl_syscall_list.c',
+    'nacl_text.c',
+    'nacl_valgrind_hooks.c',
+    'sel_addrspace.c',
+    'sel_ldr.c',
+    'sel_ldr_filename.cc',
+    'sel_ldr_standard.c',
+    'sel_main_common.c',
+    'sel_mem.c',
+    'sel_qualify.c',
+    'sel_validate_image.c',
+    'sys_clock.c',
+    'sys_exception.c',
+    'sys_fdio.c',
+    'sys_filename.c',
+    'sys_futex.c',
+    'sys_imc.c',
+    'sys_list_mappings.c',
+    'sys_memory.c',
+    'sys_parallel_io.c',
+    'sys_random.c',
+    'thread_suspension_common.c',
+    'thread_suspension_unwind.c',
+]
+
+if env.Bit('build_x86_32'):
+  ldr_inputs += [
+      'arch/x86/nacl_ldt_x86.c',
+      'arch/x86_32/nacl_app_32.c',
+      'arch/x86_32/nacl_switch_32.S',
+      'arch/x86_32/nacl_switch_all_regs_32.c',
+      'arch/x86_32/nacl_switch_all_regs_asm_32.S',
+      'arch/x86_32/nacl_switch_to_app_32.c',
+      'arch/x86_32/nacl_syscall_32.S',
+      'arch/x86_32/nacl_tls_32.c',
+      'arch/x86_32/sel_addrspace_x86_32.c',
+      'arch/x86_32/sel_ldr_x86_32.c',
+      'arch/x86_32/sel_rt_32.c',
+      'arch/x86_32/springboard.S',
+      'arch/x86_32/tramp_32.S',
+      ]
+elif env.Bit('build_x86_64'):
+  ldr_inputs += [
+      'arch/x86/nacl_ldt_x86.c',
+      'arch/x86_64/nacl_app_64.c',
+      'arch/x86_64/nacl_switch_64.S',
+      'arch/x86_64/nacl_switch_to_app_64.c',
+      'arch/x86_64/nacl_syscall_64.S',
+      'arch/x86_64/nacl_tls_64.c',
+      'arch/x86_64/sel_ldr_x86_64.c',
+      'arch/x86_64/sel_rt_64.c',
+      'arch/x86_64/tramp_64.S',
+      ]
+  if env.Bit('windows'):
+    # We assemble the .asm assembly file with the Microsoft assembler
+    # because we need to generate x86-64 Windows unwind info, which
+    # the GNU assembler we use elsewhere does not support.
+    win64_asm_env = env.Clone(ASCOM='ml64 $ASFLAGS /c /Fo$TARGET $SOURCES')
+    ldr_inputs += [
+        'arch/x86_64/sel_addrspace_win_x86_64.c',
+        'arch/x86_64/fnstcw.S',
+        'arch/x86_64/fxsaverstor.S',
+        win64_asm_env.ComponentObject('arch/x86_64/nacl_switch_unwind_win.asm')]
+  else:
+    ldr_inputs += ['arch/x86_64/sel_addrspace_posix_x86_64.c']
+  if env.Bit('x86_64_zero_based_sandbox'):
+    env.Append(CPPDEFINES=['-DNACL_X86_64_ZERO_BASED_SANDBOX=1'])
+  else:
+    env.Append(CPPDEFINES=['-DNACL_X86_64_ZERO_BASED_SANDBOX=0'])
+elif env.Bit('build_arm'):
+  ldr_inputs += [
+    'arch/arm/nacl_app.c',
+    'arch/arm/nacl_switch_to_app_arm.c',
+    'arch/arm/sel_rt.c',
+    'arch/arm/nacl_tls.c',
+    'arch/arm/sel_ldr_arm.c',
+    'arch/arm/sel_addrspace_arm.c',
+    'arch/arm/nacl_switch.S',
+    'arch/arm/nacl_syscall.S',
+    'arch/arm/tramp_arm.S',
+  ]
+elif env.Bit('build_mips32'):
+  ldr_inputs += [
+    'arch/mips/nacl_app.c',
+    'arch/mips/nacl_switch_to_app_mips.c',
+    'arch/mips/sel_rt.c',
+    'arch/mips/nacl_tls.c',
+    'arch/mips/sel_ldr_mips.c',
+    'arch/mips/sel_addrspace_mips.c',
+    'arch/mips/nacl_switch.S',
+    'arch/mips/nacl_syscall.S',
+    'arch/mips/tramp_mips.S',
+  ]
+
+if env.Bit('windows'):
+  ldr_inputs += [
+    'win/addrspace_teardown.c',
+    'win/nacl_ldt.c',
+    'win/nacl_thread_nice.c',
+    'win/sel_memory.c',
+    'win/sel_segments.c',
+  ]
+elif env.Bit('mac'):
+  # Rely on the c preprocessor to discover where the mach interface definitions
+  # are located.
+  env.Command([GENERATED + '/exc.defs'], [],
+              "echo '#include <mach/exc.defs>'" +
+              ' | ${CC} ${CCFLAGS} ${CFLAGS} -E - > ${TARGET}')
+  env.Command(
+     [GENERATED + '/nacl_exc.h', GENERATED + '/nacl_exc_server.c'],
+     ['osx/run_mig.py', GENERATED + '/exc.defs'],
+     '${PYTHON} ${SOURCES} ${TARGETS}')
+  ldr_inputs += [
+    GENERATED + '/nacl_exc_server.c',
+    'osx/crash_filter.c',
+    'osx/mach_exception_handler.c',
+    'osx/mach_thread_map.c',
+    'osx/nacl_ldt.c',
+    'osx/nacl_thread_nice.c',
+    'posix/addrspace_teardown.c',
+    'posix/sel_memory.c',
+    'posix/x86/sel_segments.c',
+  ]
+elif env.Bit('linux'):
+  ldr_inputs += [
+    'linux/nacl_bootstrap_args.c',
+    'linux/nacl_thread_nice.c',
+    'linux/r_debug.c',
+    'linux/reserved_at_zero.c',
+    'posix/addrspace_teardown.c',
+    'posix/sel_memory.c',
+  ]
+  if env.Bit('build_x86'):
+    ldr_inputs += [
+      'linux/x86/nacl_ldt.c',
+      'posix/x86/sel_segments.c',
+    ]
+  elif env.Bit('build_arm'):
+    ldr_inputs += [
+      'linux/arm/sel_segments.c',
+    ]
+  elif env.Bit('build_mips32'):
+    ldr_inputs += [
+      'linux/mips/sel_segments.c',
+    ]
+
+
+# -------------------------------------------------------------
+# Add OS and architecture specific signal handling files.
+#
+if env.Bit('windows'):
+  ldr_inputs += [
+    'win/debug_exception_handler.c',
+    'win/debug_exception_handler_standalone.c',
+    'win/nacl_signal_stack.c',
+    'win/thread_handle_map.c',
+    'win/thread_suspension.c',
+    'win/sel_addrspace_win.c',
+  ]
+  if env.Bit('build_x86_32'):
+    ldr_inputs += [
+      'win/nacl_signal_32.c',
+    ]
+  elif env.Bit('build_x86_64'):
+    ldr_inputs += [
+      'win/exception_patch/exit_fast.S',
+      'win/exception_patch/intercept.S',
+      'win/exception_patch/ntdll_patch.c',
+      'win/nacl_signal_64.c',
+    ]
+  else:
+    raise Exception("Unsupported target")
+
+if env.Bit('linux'):
+  ldr_inputs += [
+      'linux/thread_suspension.c',
+      'posix/nacl_signal_stack.c',
+      'posix/sel_addrspace_posix.c'
+      ]
+  if env.Bit('build_arm'):
+    ldr_inputs += ['linux/nacl_signal_arm.c']
+  elif env.Bit('build_mips32'):
+    ldr_inputs += ['linux/nacl_signal_mips.c']
+  elif env.Bit('build_x86_32'):
+    ldr_inputs += ['linux/nacl_signal_32.c']
+  elif env.Bit('build_x86_64'):
+    ldr_inputs += ['linux/nacl_signal_64.c']
+  else:
+    raise Exception("Unsupported target")
+
+  nacl_signal_env = env.Clone()
+  if env.Bit('build_x86_32'):
+    # nacl_signal.c needs to be compiled without the stack protector
+    # on i386.
+    # See https://code.google.com/p/nativeclient/issues/detail?id=3581.
+    nacl_signal_env.FilterOut(CCFLAGS=['-fstack-protector',
+                                       '-fstack-protector-all'])
+    nacl_signal_env.Append(CCFLAGS=['-fno-stack-protector'])
+  ldr_inputs += [nacl_signal_env.ComponentObject('linux/nacl_signal.c')]
+
+if env.Bit('mac'):
+  ldr_inputs += [
+      'osx/thread_suspension.c',
+      'posix/nacl_signal_stack.c',
+      'posix/sel_addrspace_posix.c'
+      ]
+  if env.Bit('build_x86_32'):
+    ldr_inputs += ['osx/nacl_signal_32.c']
+  elif env.Bit('build_x86_64'):
+    ldr_inputs += ['osx/nacl_signal_64.c']
+  else:
+    raise Exception("Unsupported target")
+
+if env.Bit('windows'):
+  ldr_inputs += ['win/vm_hole.c']
+else:
+  ldr_inputs += ['generic/vm_hole.c']
+
+
+syscall_gen_flags = '-a ${TARGET_ARCHITECTURE} -s ${TARGET_SUBARCH}'
+
+env.Append(SYSCALL_GEN_FLAGS=syscall_gen_flags)
+
+env.DualLibrary('sel', ldr_inputs)
+
+env.DualLibrary('sel_main_chrome', ['sel_main_chrome.c'])
+
+env.DualLibrary('sel_main', ['sel_main.c'])
+
+env.DualLibrary('env_cleanser', ['env_cleanser.c'])
+
+env.DualLibrary('nacl_error_code',
+                ['nacl_error_code.c',
+                 ])
+
+if env.Bit('windows'):
+  env.ComponentLibrary('sel_test', 'win/mmap_test_check.cc')
+elif env.Bit('mac'):
+  env.ComponentLibrary('sel_test', 'osx/mmap_test_check.cc')
+elif env.Bit('linux'):
+  env.ComponentLibrary('sel_test', 'linux/mmap_test_check.cc')
+else:
+  raise AssertionError('Unsupported host OS')
+
+
+# NOTE(robertm): these extra libs were orignially only added to the
+#                sel_ldr binary
+# TODO(robertm): see who really needs them and remove
+if env.Bit('windows'):
+  env.Append(
+      LIBS = [
+          'ws2_32',
+          'kernel32',
+          'advapi32',
+          'winmm',
+# TODO(gregoryd): ntdll.lib is required for sem_get_value implementation but
+# it is available in Windows DDK only. The DDK is not
+# in third_party, but we might need to add it if we want to use it.
+#          'ntdll',
+      ],
+  )
+
+sel_ldr_libs = ['sel',
+                'sel_main',
+                'env_cleanser',
+                'nacl_error_code',
+                'nrd_xfer',
+                'nacl_perf_counter',
+                'nacl_base',
+                'imc',
+                'nacl_fault_inject',
+                'nacl_interval',
+                'platform',
+                'platform_qual_lib',
+                'validators',
+                ]
+
+if not env.Bit('coverage_enabled') or not env.Bit('windows'):
+  sel_main_objs = [env.ComponentObject('nacl_test_injection_main.c')]
+  SEL_LDR_NODE = env.ComponentProgram('sel_ldr', sel_main_objs,
+                                      EXTRA_LIBS=['sel_main'])
+  if env.Bit('mac'):
+    # This target exists only to check that the service_runtime code
+    # can successfully be linked into a Mac OS X dynamic library.  Our
+    # assembly code needs to be PIC-friendly and linkable in this
+    # context, because it is linked into a dynamic library inside
+    # Chromium, and OS X is strict about TEXTRELs.  Without this, the
+    # standalone build won't catch some mistakes that can break the
+    # Chromium build.  Linking a dylib here works because -fPIC is the
+    # default for all C code on OS X.
+    dylib_env = env.Clone()
+    dylib_env.Append(LINKFLAGS=['-bundle'])
+    dylib_env.ComponentProgram('dummy_sel_ldr.dylib', sel_main_objs,
+                               EXTRA_LIBS=['sel_main'])
+
+  # NOTE: we do not have segments on ARM
+  if env.Bit('build_x86'):
+    env.ComponentProgram('nacl_ldt_unittest',
+                         'nacl_ldt_unittest.c',
+                         EXTRA_LIBS=['sel',
+                                     'env_cleanser',
+                                     'nacl_perf_counter',
+                                     'nacl_fault_inject',
+                                     'platform',
+                                     ])
+
+  env.SDKInstallBin('sel_ldr', SEL_LDR_NODE)
+
+if env.Bit('linux') and env.Bit('build_x86_64'):
+  sel_ldr_seccomp_node = env.ComponentProgram('sel_ldr_seccomp',
+                                              ['sel_ldr_seccomp_main.c'],
+                                              EXTRA_LIBS=['sel_main',
+                                                          'seccomp_bpf'])
+  env.SDKInstallBin('sel_ldr_seccomp', sel_ldr_seccomp_node)
+
+env.EnsureRequiredBuildWarnings()
+
+# Bootstrap loader used on Linux.
+if (env.Bit('linux') and not env.Bit('built_elsewhere')):
+  bootstrap_env = env.Clone()
+  bootstrap_env.Replace(CLANG_OPTS='')
+  bootstrap_env.FilterOut(CCFLAGS=['-fstack-protector', '-fPIC', '-fPIE',
+                                   '-pedantic', '$COVERAGE_CCFLAGS'],
+                          CFLAGS=['-Wdeclaration-after-statement'])
+  bootstrap_env.Append(CCFLAGS=['-fno-pic', '-fno-PIC', '-fno-pie', '-fno-pie',
+                                '-fno-stack-protector'])
+
+  # TODO(bbudge) Remove -Qunused-arguments when Clang supports -fno-pic.
+  if env.Bit('clang'):
+    bootstrap_env.Append(CCFLAGS=['-ffreestanding',
+                                  '-U__STDC_HOSTED__',
+                                  '-D__STDC_HOSTED__=1',
+                                  '-Qunused-arguments'])
+
+  if env.Bit('build_x86_64'):
+    ld_emul = 'elf_x86_64'
+    if env.Bit('x86_64_zero_based_sandbox'):
+      # For the zero-based 64-bit sandbox, we want to reserve 44GB of address
+      # space: 4GB for the program plus 40GB of guard pages.  Due to a binutils
+      # bug (see http://sourceware.org/bugzilla/show_bug.cgi?id=13400), the
+      # amount of address space that the linker can pre-reserve is capped
+      # at 4GB. For proper reservation, GNU ld version 2.22 or higher
+      # needs to be used.
+      #
+      # Without the bug fix, trying to reserve 44GB will result in
+      # pre-reserving the entire capped space of 4GB.  This tricks the run-time
+      # into thinking that we can mmap up to 44GB.  This is unsafe as it can
+      # overwrite the run-time program itself and/or other programs.  Because
+      # of this, we only reserve 4GB.
+      #
+      # TODO(arbenson): remove these comments and reserve 44GB once the
+      # necessary ld version becomes standard.
+      reserve_top = '0x100000000'
+      # The reserve_top value gets interpreted as a pointer in
+      # linux/nacl_bootstrap.c.  By default, mcmodel is set to small,
+      # which restricts code and data to the first 2GB.  With
+      # mcmodel set to small or medium, the reserve_top value is
+      # truncated, which produces an error.  With mcmodel set to large,
+      # there is no restriction on the code and data, so we can
+      # safely set reserve_top to 0x100000000.
+      bootstrap_env.Append(CCFLAGS=['-mcmodel=large'])
+    else:
+      reserve_top = '0x0'
+  elif env.Bit('build_x86_32'):
+    ld_emul = 'elf_i386'
+    reserve_top = '0x40000000'
+  elif env.Bit('build_arm'):
+    ld_emul = 'armelf_linux_eabi'
+    reserve_top = '0x40002000'
+  elif env.Bit('build_mips32'):
+    ld_emul = 'elf32ltsmip'
+    reserve_top = '0x40008000'
+
+  bootstrap_obj = bootstrap_env.ComponentObject('linux/nacl_bootstrap.c')
+  bootstrap_raw = bootstrap_env.Command(
+      'nacl_bootstrap_raw',
+      [bootstrap_obj],
+      ("env CXX='${CXX}' ${PYTHON} %s " +
+       '-m %s --build-id -static -z max-page-size=0x1000 ' +
+       '--defsym RESERVE_TOP=%s --script %s -o ${TARGET} ${SOURCES}') %
+      (bootstrap_env.File('linux/ld_bfd.py'), ld_emul, reserve_top,
+       bootstrap_env.File('linux/nacl_bootstrap.x')),
+      )
+
+  bootstrap_prog = bootstrap_env.Command(
+      'nacl_helper_bootstrap',
+      [bootstrap_env.File('linux/nacl_bootstrap_munge_phdr.py'),
+       bootstrap_raw],
+      '${PYTHON} ${SOURCES} ${TARGET}'
+      )
+  bootstrap_out = bootstrap_env.Install('${STAGING_DIR}', bootstrap_prog)
+
+  bootstrap_env.Alias('nacl_helper_bootstrap', bootstrap_out)
+  bootstrap_env.Requires(SEL_LDR_NODE, bootstrap_out)
+  env.SDKInstallBin('nacl_helper_bootstrap', bootstrap_prog)
+
+# ----------------------------------------------------------
+# Unit Tests
+# ----------------------------------------------------------
+
+# NOTE: uses validator
+# TODO(robertm): break this test up in smaller pieces with more managable
+#                dependencies
+gtest_env = env.MakeGTestEnv()
+
+unittest_inputs = [
+    'filename_util_test.cc',
+    'mmap_unittest.cc',
+    'unittest_main.cc',
+    'sel_memory_unittest.cc',
+    'sel_mem_test.cc',
+    'sel_ldr_test.cc',
+    'thread_suspension_test.cc',
+]
+
+if not env.Bit('coverage_enabled') or not env.Bit('windows'):
+  unit_tests_exe = gtest_env.ComponentProgram(
+      'service_runtime_tests',
+      unittest_inputs,
+      EXTRA_LIBS=['sel',
+                  'env_cleanser',
+                  'nrd_xfer',
+                  'nacl_perf_counter',
+                  'nacl_base',
+                  'imc',
+                  'nacl_fault_inject',
+                  'nacl_interval',
+                  'platform',
+                  'sel_test',
+                  ])
+
+  node = gtest_env.CommandTest(
+      'gtest_output.xml.out',
+      size='large', # This test suite is fairly slow on Windows XP.
+      command=[unit_tests_exe, '--gtest_output=xml:${TARGET}'])
+  gtest_env.AddNodeToTestSuite(node, ['small_tests'],
+      'run_service_runtime_tests')
+
+
+if not env.Bit('coverage_enabled') or not env.Bit('windows'):
+  format_string_test_exe = env.ComponentProgram(
+      'format_string_test',
+      ['format_string_test.c'],
+      EXTRA_LIBS=['sel',
+                  'env_cleanser',
+                  'nacl_perf_counter',
+                  ])
+
+  node = env.CommandTest(
+      'format_string_test.out',
+      command=[format_string_test_exe])
+  env.AddNodeToTestSuite(node, ['small_tests'], 'run_format_string_test')
+
+
+if env.Bit('build_x86_32'):
+  arch_testdata_dir = 'testdata/x86_32'
+elif env.Bit('build_x86_64'):
+  arch_testdata_dir = 'testdata/x86_64'
+else:
+  arch_testdata_dir = 'testdata/' + env['TARGET_ARCHITECTURE']
+
+untrusted_env = env.MakeUntrustedNativeEnv()
+hello_world_nexe = untrusted_env.File('$STAGING_DIR/hello_world.nexe')
+
+# Doesn't work on windows under coverage.
+# TODO(bradnelson): fix this to work on windows under coverage.
+if ((not env.Bit('windows') or not env.Bit('coverage_enabled')) and
+    env.Bit('nacl_static_link')):
+  # NOTE: uses validator
+  mmap_test_objs = [env.ComponentObject('mmap_test.c')]
+  mmap_test_exe = env.ComponentProgram(
+      'mmap_test',
+      mmap_test_objs,
+      EXTRA_LIBS=['sel',
+                  'env_cleanser',
+                  'nrd_xfer',
+                  'nacl_perf_counter',
+                  'nacl_base',
+                  'imc',
+                  'nacl_fault_inject',
+                  'nacl_interval',
+                  'platform',
+                  'sel_test',
+                  ])
+
+  mmap_test_command = env.AddBootstrap(mmap_test_exe, [hello_world_nexe])
+
+  # TODO(robertm): This test emits lots of messages to stderr
+  node = env.CommandTest (
+      "mmap_test.out",
+      command=mmap_test_command,
+      # TODO(mseaborn): Extend this test to cover the case where the
+      # dynamic code segment is present.
+      osenv='NACL_DISABLE_DYNAMIC_LOADING=1')
+  env.AddNodeToTestSuite(node, ['medium_tests'], 'run_trusted_mmap_test')
+
+
+if env.Bit('linux'):
+  nacl_bootstrap_prereservation_test_exe = env.ComponentProgram(
+      'nacl_bootstrap_prereservation_test',
+      ['linux/nacl_bootstrap_prereservation_test.c'],
+      EXTRA_LIBS=['sel'])
+
+  bootstrap, bootstrap_arg = env.GetBootstrap()
+  node = env.CommandTest(
+      'nacl_bootstrap_prereservation_test.out',
+      command=env.AddBootstrap(nacl_bootstrap_prereservation_test_exe, []))
+  env.AddNodeToTestSuite(node, ['small_tests'],
+                         'run_nacl_bootstrap_prereservation_test')
+
+
+# also seems to have issues with windows coverage or VMs
+# NOTE: uses validator
+is_broken = env.Bit('coverage_enabled') or env.Bit('running_on_vm')
+nacl_sync_cond_test_exe = env.ComponentProgram(
+    'nacl_sync_cond_test',
+    ['nacl_sync_cond_test.c'],
+    EXTRA_LIBS=['sel',
+                'env_cleanser',
+                'nrd_xfer',
+                'nacl_perf_counter',
+                'nacl_base',
+                'imc',
+                'nacl_fault_inject',
+                'nacl_interval',
+                'platform',
+                ])
+node = env.CommandTest(
+    'nacl_sync_cond_test.out',
+    command=[nacl_sync_cond_test_exe])
+env.AddNodeToTestSuite(node,
+                       ['medium_tests'],
+                       'run_nacl_sync_cond_test',
+                       is_broken=is_broken)
+
+
+env_cleanser_test_exe = env.ComponentProgram('env_cleanser_test',
+                                             ['env_cleanser_test.c'],
+                                             EXTRA_LIBS=['env_cleanser'])
+node = env.CommandTest(
+    'env_cleanser_test.out',
+    command=[env_cleanser_test_exe])
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_env_cleanser_test')
+
+# Test nacl_resource
+
+nacl_resource_test_exe = env.ComponentProgram('nacl_resource_test',
+                                              ['nacl_resource_test.c'],
+                                              EXTRA_LIBS=['sel'])
+node = env.CommandTest(
+    'nacl_resource_test.out',
+    command=[nacl_resource_test_exe])
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_nacl_resource_test')
+
+# Test nacl_signal
+if env.Bit('linux'):
+  if (not env.Bit('coverage_enabled') and
+      not env.Bit('build_arm') and
+      not env.Bit('build_mips32') and
+      not env.IsRunningUnderValgrind()):
+    nacl_signal_exe = env.ComponentProgram(
+        'nacl_signal_unittest', 'nacl_signal_unittest.c',
+        EXTRA_LIBS=['sel'])
+    node = env.CommandTest('nacl_signal_unittest.out',
+                           command=[nacl_signal_exe])
+
+    env.AddNodeToTestSuite(node, ['small_tests'], 'run_nacl_signal_test')
+
+  test_prog = env.ComponentProgram('nacl_signal_frame_test',
+                                   'nacl_signal_frame_test.c',
+                                   EXTRA_LIBS=['sel'])
+  node = env.CommandTest('nacl_signal_frame_test.out',
+                         command=[test_prog],
+                         declares_exit_status=True,
+                         using_nacl_signal_handler=True)
+  env.AddNodeToTestSuite(node, ['small_tests'], 'run_signal_frame_test')
+
+if env.Bit('windows') and env.Bit('build_x86_64'):
+  test_prog = env.ComponentProgram('patch_ntdll_test',
+                                   'win/exception_patch/ntdll_test.c',
+                                   EXTRA_LIBS=['sel',
+                                               'nacl_fault_inject',
+                                               'nacl_interval',
+                                               'platform',
+                                               ])
+  node = env.CommandTest('patch_ntdll_test.out',
+                         command=[test_prog], declares_exit_status=True)
+  env.AddNodeToTestSuite(node, ['small_tests'], 'run_patch_ntdll_test')
+
+  intercept_test_prog = env.ComponentProgram(
+      'ntdll_intercept_test', 'win/exception_patch/intercept_test.c',
+      EXTRA_LIBS=sel_ldr_libs)
+  node = env.CommandTest(
+      'ntdll_intercept_test.out',
+      command=[intercept_test_prog, 'test_intercept'],
+      exit_status='untrusted_segfault',
+      stdout_golden=env.File('win/exception_patch/intercept_test.stdout'))
+  env.AddNodeToTestSuite(node, ['small_tests'], 'run_ntdll_intercept_test')
+  node = env.CommandTest(
+      'ntdll_fallback_test.out',
+      command=[intercept_test_prog, 'test_fallback'],
+      exit_status='untrusted_segfault',
+      stdout_golden=env.File('win/exception_patch/fallback_test.stdout'))
+  env.AddNodeToTestSuite(node, ['small_tests'], 'run_ntdll_fallback_test')
+
+
+check_test_exe = env.ComponentProgram('nacl_check_test',
+                                      ['nacl_check_test.c'],
+                                      EXTRA_LIBS=['sel',
+                                                  'env_cleanser',
+                                                  'nacl_perf_counter',
+                                                  'nacl_fault_inject',
+                                                  'nacl_interval',
+                                                  'platform',
+                                                  ])
+node = env.CommandTest(
+    'check_test.out',
+    command=[check_test_exe, '-C'])
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_check_test')
+
+
+ABORT_EXIT = '17'  # magic, see nacl_check_test.c
+
+
+node = env.CommandTest(
+    'check_test_death.out',
+    command=[check_test_exe, '-c'],
+    exit_status=ABORT_EXIT)  # abort()
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_check_test_death')
+
+
+if env.Bit('debug'):
+  node = env.CommandTest(
+      'dcheck_test_death.out',
+      command=[check_test_exe, '-d'],
+      exit_status=ABORT_EXIT)  # abort()
+else:
+  node = env.CommandTest(
+      'dcheck_test_death.out',
+      command=[check_test_exe, '-d'])  # no abort()
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_dcheck_test_death')
+
+
+node = env.CommandTest(
+    'check_test_always_death.out',
+    command=[check_test_exe, '-s', '0', '-C'])  # no abort
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_check_test_always_death')
+
+
+node = env.CommandTest(
+    'check_test_always_death_abort.out',
+    command=[check_test_exe, '-s', '0', '-c'],
+    exit_status=ABORT_EXIT)  # abort
+env.AddNodeToTestSuite(
+    node,
+    ['small_tests'],
+    'run_check_test_always_death_abort')
+
+
+node = env.CommandTest(
+    'dcheck_test_never_death.out',
+    command=[check_test_exe, '-s', '0', '-d'])  # no abort
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_dcheck_test_never_death')
+
+
+node = env.CommandTest(
+    'dcheck_test_always_death.out',
+    command=[check_test_exe, '-s', '1', '-d'],
+    exit_status=ABORT_EXIT)  # abort()
+env.AddNodeToTestSuite(
+    node,
+    ['small_tests'],
+    'run_dcheck_test_always_death')
+
+
+# Mac does not support thread local storage via "__thread" so do not run this
+# test on Mac.
+# This test is thread-unsafe by design. Don't run it under Valgrind.
+if not env.Bit('mac') and not env.IsRunningUnderValgrind():
+  nacl_tls_unittest = env.ComponentProgram('nacl_tls_unittest',
+                                           ['nacl_tls_unittest.c'],
+                                           EXTRA_LIBS=['platform'])
+  node = env.CommandTest('nacl_tls_unittest.out',
+                         command=[nacl_tls_unittest])
+
+  env.AddNodeToTestSuite(node, ['small_tests'], 'run_nacl_tls_unittest')
+
+# Test that sel_ldr does not crash if the executable file cannot be opened.
+node = env.CommandSelLdrTestNacl(
+    'sel_ldr_exe_not_found.out',
+    'name_of_file_that_does_not_exist.nexe',
+    exit_status='1')
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_sel_ldr_exe_not_found_test')
+
+# Check that "-F" makes sel_ldr stop after loading the nexe but before running
+# it.
+nullptr_nexe = untrusted_env.GetTranslatedNexe(
+    untrusted_env.File('$STAGING_DIR/nullptr$PROGSUFFIX'))
+
+node = env.CommandSelLdrTestNacl(
+    'fuzz_nullptr_test.out',
+    nullptr_nexe,
+    sel_ldr_flags=['-F'])
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_fuzz_nullptr_test')
+
+if env.Bit('build_mips32'):
+  text_region_start = 0x00020000
+  # Use arbitrary non-page-aligned addresses for data and rodata.
+  rodata_region_start = 0x10020094
+  data_region_start = 0x10030098
+
+  if env.Bit('bitcode'):
+    pnacl_allow_native_flags=['--pnacl-allow-native', '-arch', 'mips32']
+    wl = "-Wn"
+  else:
+    pnacl_allow_native_flags=[]
+    wl = "-Wl"
+  untrusted_env.Append(CPPFLAGS=pnacl_allow_native_flags)
+  unaligned_data_objs = untrusted_env.ComponentObject(
+      'arch/mips/unaligned_data_test.S')
+  unaligned_data_nexe = untrusted_env.ComponentProgram(
+      'unaligned_data.nexe',
+      unaligned_data_objs,
+      LINKFLAGS=['-nostdlib',
+                 pnacl_allow_native_flags,
+                 '%s,--section-start=.text=0x%x' % (wl, text_region_start),
+                 '%s,--section-start=.rodata=0x%x' % (wl, rodata_region_start),
+                 '%s,--section-start=.data=0x%x' % (wl, data_region_start)],
+      ASFLAGS=pnacl_allow_native_flags)
+
+  rodata_region_start_irt = 0x3eef0000
+  text_region_start_irt = 0x0fc00000
+  unaligned_data_irt_nexe = untrusted_env.ComponentProgram(
+      'unaligned_data_irt.nexe',
+      unaligned_data_objs,
+      LINKFLAGS=['-nostdlib',
+                 pnacl_allow_native_flags,
+                 '-Wl,-Ttext-segment=0x%x' % text_region_start_irt,
+                 '-Wl,-Trodata-segment=0x%x' % rodata_region_start_irt],
+      ASFLAGS=pnacl_allow_native_flags)
+else:
+  unaligned_data_nexe = env.File(os.path.join(arch_testdata_dir,
+                                              'unaligned_data.nexe'))
+  unaligned_data_irt_nexe = env.File(os.path.join(arch_testdata_dir,
+                                                  'unaligned_data_irt.nexe'))
+
+node = env.CommandSelLdrTestNacl('unaligned_data.out', unaligned_data_nexe)
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_unaligned_data_test')
+
+node = env.CommandSelLdrTestNacl(
+    'unaligned_data_irt.out',
+    unaligned_data_nexe,
+    sel_ldr_flags=['-B', unaligned_data_irt_nexe]
+    )
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_unaligned_data_irt_test')
+
+# ----------------------------------------------------------
+# Small tests with canned binaries
+# ----------------------------------------------------------
+
+if env.Bit('build_x86_64'):
+  node = env.CommandSelLdrTestNacl(
+      'hello_x32.out',
+      env.File(os.path.join(arch_testdata_dir, 'hello_x32.nexe')),
+      stdout_golden=env.File(os.path.join('${MAIN_DIR}',
+                                          'tests/hello_world',
+                                          'hello_world.stdout'))
+      )
+  env.AddNodeToTestSuite(node, ['small_tests'], 'run_hello_x32_test')
+
+if env.Bit('build_x86') and env.Bit('nacl_static_link'):
+  RE_HELLO = '^(Hello, World!)$'
+  RE_IDENT = '^\[[0-9,:.]*\] (e_ident\+1 = ELF)$'
+
+  node = env.CommandSelLdrTestNacl(
+      'nacl_log.out',
+      hello_world_nexe,
+      log_golden = env.File('testdata/hello_world.log'),
+      stdout_golden = env.File('testdata/hello_world.stdout'),
+      filter_regex = '"' + RE_HELLO + '|' + RE_IDENT + '"',
+      filter_group_only = 'true',
+      )
+  env.AddNodeToTestSuite(node, ['medium_tests'],
+                         'run_service_runtime_hello_world_test')
+
+# ----------------------------------------------------------
+# Death Tests With Canned x86 Binaries
+# ----------------------------------------------------------
+ERROR_WHILE_LOADING = r'"^(?:\[[^\]]+\]\s*)?(Error while loading).*(:[^:]*)"'
+
+# TODO: Create death test nexes for arm.
+DEATH_TESTS_X86 = [ 'old_abi',  # hello_world.nexe with an old ABI version
+                    'integer_overflow_while_madvising',
+                    'negative_hole',
+                    'rodata_data_overlap',
+                    'data_not_last',
+                    'text_overlaps_rodata',
+                    'text_overlaps_data',
+                    'text_too_big' ]
+
+NOT_AVAIL_X86_32 = [ ]
+
+NOT_AVAIL_X86_64 = [ 'text_overlaps_rodata',
+                     'text_overlaps_data' ]
+
+def AddDeathTest(test, skip):
+  if not test:
+    return
+
+  if test in skip:
+    print 'SKIPPING test ', test
+    return
+
+  # Use an arch-specific golden file if there is one.
+  # We can't use the SCons File .exists() method because that will
+  # look for the file in a scons-out directory.
+  stderr_file = env.File(os.path.join(arch_testdata_dir, test + '.stderr'))
+  if not os.path.exists(str(stderr_file)):
+    stderr_file = env.File(os.path.join('testdata', test + '.stderr'))
+
+  node = env.CommandSelLdrTestNacl(
+      test  + '.out',
+      env.File(arch_testdata_dir + '/' + test + '.nexe'),
+      stderr_golden = stderr_file,
+      filter_regex = ERROR_WHILE_LOADING,
+      filter_group_only = 'true',
+      exit_status = '1')
+  env.AddNodeToTestSuite(node, ['medium_tests'],
+                         'run_' + test + '_death_test')
+
+
+if env.Bit('build_x86'):
+  if env.Bit('build_x86_32'):
+    skip = NOT_AVAIL_X86_32
+  else:
+    skip = NOT_AVAIL_X86_64
+
+  for death_test in DEATH_TESTS_X86:
+    AddDeathTest(death_test, skip)
+
+# ----------------------------------------------------------
+# More Death Tests
+# ----------------------------------------------------------
+if not env.Bit('coverage_enabled') or not env.Bit('windows'):
+  # NOTE: uses validator
+  sel_ldr_thread_death_test_exe = env.ComponentProgram(
+      'sel_ldr_thread_death_test',
+      ['sel_ldr_thread_death_test.c'],
+      EXTRA_LIBS=['sel',
+                  'env_cleanser',
+                  'nrd_xfer',
+                  'nacl_perf_counter',
+                  'nacl_base',
+                  'imc',
+                  'nacl_fault_inject',
+                  'nacl_interval',
+                  'platform',
+                  ])
+
+  # NaClAbort() behaves differently when code coverage is enabled: it
+  # calls exit() rather than abort().
+  if env.Bit('coverage_enabled'):
+    expected_exit_status = 'naclabort_coverage'
+  else:
+    expected_exit_status = 'trusted_sigabrt'
+  node = env.CommandTest(
+      'sel_ldr_thread_death_test.out',
+      command=[sel_ldr_thread_death_test_exe],
+      exit_status=expected_exit_status)
+
+  # TODO(tuduce): Make it work on windows.
+  env.AddNodeToTestSuite(node, ['medium_tests'],
+                         'run_sel_ldr_thread_death_test',
+                         is_broken=env.Bit('windows'))
+
+
+exe = env.ComponentProgram('nacl_error_gio_test',
+                           ['nacl_error_gio_test.c'],
+                           EXTRA_LIBS=sel_ldr_libs)
+
+node = env.CommandTest('nacl_error_gio_test.out',
+                       command=[exe, '-n', '1000'])
+
+env.AddNodeToTestSuite(node, ['small_tests'],
+                       'run_nacl_error_gio_test')
+
+exe = env.ComponentProgram('nacl_error_log_test',
+                            ['nacl_error_log_test.c'],
+                            EXTRA_LIBS=sel_ldr_libs + ['sel_main_chrome'])
+
+if env.Bit('coverage_enabled'):
+  expected_exit = 'naclabort_coverage'
+else:
+  expected_exit = 'trusted_sigabrt'
+
+node = env.CommandTest(
+  'nacl_error_log_test.out',
+  command=[exe],
+  exit_status=expected_exit,
+  filter_regex='"(NaClCrashLogWriter.*)|(This is a test of the emergency.*)"',
+  filter_group_only='true',
+  stdout_golden=env.File('nacl_error_log_test.stdout'))
+
+is_broken = env.Bit('host_windows') and env.Bit('coverage_enabled')
+env.AddNodeToTestSuite(node, ['small_tests'],
+                       'run_nacl_error_log_test',
+                       is_broken=is_broken)
+
+dyn_array_test_exe = env.ComponentProgram('dyn_array_test',
+                                          ['dyn_array_test.c'],
+                                          EXTRA_LIBS=sel_ldr_libs)
+
+node = env.CommandTest('dyn_array_test.out',
+                       command=[dyn_array_test_exe])
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_dyn_array_test')

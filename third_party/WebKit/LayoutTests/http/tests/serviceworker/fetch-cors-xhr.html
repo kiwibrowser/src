@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<!-- This test cannot be upstreamed to WPT because the equivalent version
+  available in Web Platform Tests is known to cause timeout errors in the
+  Chromium automated build system. They should be maintained only to preserve
+  test converage until the corresponding versions in Web Platform Tests can be
+  made to pass consistently. See
+  https://codereview.chromium.org/2805313003/ -->
+<title>Service Worker: CORS XHR of fetch()</title>
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="/resources/get-host-info.js?pipe=sub"></script>
+<script src="resources/test-helpers.js"></script>
+<body>
+<script>
+async_test(function(t) {
+    var SCOPE = 'resources/fetch-cors-xhr-iframe.html';
+    var SCRIPT = 'resources/fetch-rewrite-worker.js';
+    var host_info = get_host_info();
+
+    login(t, host_info.HTTP_ORIGIN, host_info.HTTP_REMOTE_ORIGIN)
+      .then(function() {
+          return service_worker_unregister_and_register(t, SCRIPT, SCOPE);
+        })
+      .then(function(registration) {
+          return wait_for_state(t, registration.installing, 'activated');
+        })
+      .then(function() { return with_iframe(SCOPE); })
+      .then(function(frame) {
+          return new Promise(function(resolve, reject) {
+              var channel = new MessageChannel();
+              channel.port1.onmessage = t.step_func(function(e) {
+                  assert_equals(e.data.results, 'finish');
+                  frame.remove();
+                  service_worker_unregister_and_done(t, SCOPE);
+                });
+              frame.contentWindow.postMessage({},
+                                              host_info['HTTP_ORIGIN'],
+                                              [channel.port2]);
+            });
+        })
+      .catch(unreached_rejection(t));
+  }, 'Verify CORS XHR of fetch() in a Service Worker');
+</script>
+</body>

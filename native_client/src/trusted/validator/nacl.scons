@@ -1,0 +1,35 @@
+# -*- python -*-
+# Copyright 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+if 'TRUSTED_ENV' not in env:
+  Return()
+
+# This environment variable tells the test how to invoke nacl-gcc.  It
+# is slightly hacky, but seems easier than trying to describe the test
+# fixture creation in Scons.
+if env.Bit('build_x86_32'):
+  env_vars = 'NACL_CFLAGS=-m32'
+elif env.Bit('build_x86_64'):
+  env_vars = 'NACL_CFLAGS=-m64'
+else:
+  Return()
+
+env.PrependENVPath('PATH', env['TRUSTED_ENV'].SubstList2('${STAGING_DIR}'))
+dependencies = [
+    env['TRUSTED_ENV'].File('${STAGING_DIR}/ncval_new${PROGSUFFIX}'),]
+
+node = env.CommandTest(
+    'ncval_annotate_test.out',
+    command=['${PYTHON}', env.File('ncval_annotate_test.py'), '-v'],
+    extra_deps=dependencies,
+    osenv=env_vars)
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_ncval_annotate_test',
+                       # PNaCl does not allow the inline assembly that
+                       # we use to test this.
+                       # The test also hardcodes use of nacl-gcc and doesn't
+                       # really need to run more than once anyway.
+                       is_broken=env.Bit('bitcode') or env.Bit('nacl_clang'))

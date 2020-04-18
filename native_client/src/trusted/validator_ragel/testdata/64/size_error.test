@@ -1,0 +1,33 @@
+@hex:
+  # The following checks if we catch the use of data 66/Rex.W specifying
+  # undetermined operand size.
+  
+  # The following checks that we allow Rex.w.
+  48 01 c3
+@dis:
+     0:	48 01 c3                                     	add    %rax,%rbx
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # The following checks that we allow data 16.
+  66 01 c3
+@dis:
+     0:	66 01 c3                                     	add    %ax,%bx
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # The following checks that we don't allow Rex.w and data 16
+  66 48 01 c3
+@dis:
+     0:	66 48 01 c3                                  	data32 add %rax,%rbx
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('prefix data32 is not allowed', Instruction(0x0: 66 48 01 c3  data32 add %rax,%rbx))

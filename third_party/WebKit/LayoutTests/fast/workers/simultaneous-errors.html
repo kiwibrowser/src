@@ -1,0 +1,30 @@
+<!doctype html>
+<script src="../../resources/js-test.js"></script>
+<script>
+window.jsTestIsAsync = true;
+
+var workers = 4;
+var errorsInWorker = 0;
+var promises = [];
+for (i = 0; i < workers; ++i) {
+  var worker = new Worker('resources/throw-on-message-worker.js');
+  promises.push(new Promise(function(resolve, reject) {
+      worker.onmessage = function(event) {
+          if (event.data === 'second')
+              resolve();
+          else if (event.data === 'error')
+              ++errorsInWorker;
+      }
+  }));
+  worker.postMessage('first');
+  worker.postMessage('second');
+}
+
+Promise.all(promises).then(function() {
+    if (errorsInWorker === workers)
+        testPassed('all worker errors were reported.');
+    else
+        testFailed('only ' + errorsInWorker + ' errors reported in ' + workers + ' workers');
+    finishJSTest();
+});
+</script>

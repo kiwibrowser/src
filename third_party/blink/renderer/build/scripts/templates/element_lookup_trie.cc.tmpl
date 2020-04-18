@@ -1,0 +1,24 @@
+{% from 'templates/macros.tmpl' import source_files_for_generated_file, trie_length_switch %}
+// Copyright (c) 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+{{source_files_for_generated_file(template_file, input_files)}}
+
+#include "third_party/blink/renderer/core/{{namespace|lower}}_element_lookup_trie.h"
+
+#include "third_party/blink/renderer/core/{{namespace|lower}}_names.h"
+
+namespace blink {
+
+using namespace {{namespace}}Names;
+
+const AtomicString& lookup{{namespace}}Tag(const UChar* data, unsigned length) {
+  DCHECK(data);
+  DCHECK(length);
+  {% macro trie_return_statement(tag) %}{{tag}}Tag.LocalName(){% endmacro %}
+  {{ trie_length_switch(length_tries, trie_return_statement, false) | indent(4) }}
+  return g_null_atom;
+}
+
+}  // namespace blink

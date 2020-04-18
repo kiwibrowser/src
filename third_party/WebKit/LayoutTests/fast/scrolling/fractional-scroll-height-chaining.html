@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<script src="../../resources/js-test.js"></script>
+<style>
+
+#scroller {
+    background-color: #ccc;
+    margin-top: 20px;
+    overflow: scroll;
+}
+
+#fracheight {
+    height: 1200.3px;
+}
+
+</style>
+<div id="scroller" onmousewheel="">
+  <div id="fracheight"></div>
+</div>
+<script>
+description("Verifies that main-thread scrolls chain correctly from a " +
+            "fractional-height scroller to its parent.");
+
+if (window.eventSender) {
+    internals.settings.setScrollAnimatorEnabled(false);
+    eventSender.mouseMoveTo(100, 400);
+    eventSender.mouseScrollBy(0, -1);
+    shouldBe("scrollY", "40");
+}
+else
+    debug("To run interactively, try to scroll the page with the mouse " +
+          "wheel while the pointer is inside the gray box below.")
+
+</script>

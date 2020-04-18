@@ -1,0 +1,76 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_action_menu/cr_action_menu.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_lazy_render/cr_lazy_render.html">
+<link rel="import" href="chrome://resources/cr_elements/paper_button_style_css.html">
+<link rel="import" href="chrome://resources/html/cr/ui/command.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-a11y-keys-behavior/iron-a11y-keys-behavior.html">
+<link rel="import" href="chrome://bookmarks/dialog_focus_manager.html">
+<link rel="import" href="chrome://bookmarks/edit_dialog.html">
+<link rel="import" href="chrome://bookmarks/shared_style.html">
+<link rel="import" href="chrome://bookmarks/store_client.html">
+
+<dom-module id="bookmarks-command-manager">
+  <template>
+    <style include="shared-style paper-button-style">
+      .label {
+        flex: 1;
+      }
+
+      .sublabel {
+        -webkit-margin-start: 8px;
+        color: var(--secondary-text-color);
+        text-align: end;
+        width: 3ch;
+      }
+
+      :host(:not([has-any-sublabel_])) .sublabel {
+        display: none;
+      }
+    </style>
+    <cr-lazy-render id="dropdown">
+      <template>
+        <cr-action-menu on-mousedown="onMenuMousedown_">
+          <template is="dom-repeat" items="[[menuCommands_]]" as="command">
+            <button slot="item" class="dropdown-item"
+                command$="[[command]]"
+                hidden$="[[!isCommandVisible_(command, menuIds_)]]"
+                disabled$="[[!isCommandEnabled_(command, menuIds_)]]"
+                on-click="onCommandClick_">
+              <span class="label">
+                [[getCommandLabel_(command, menuIds_)]]
+              </span>
+              <span class="sublabel">
+                [[getCommandSublabel_(command, menuIds_)]]
+              </span>
+            </button>
+            <hr hidden$="[[!showDividerAfter_(command, menuIds_)]]"
+                aria-hidden="true">
+          </template>
+        </cr-action-menu>
+      </template>
+    </cr-lazy-render>
+    <cr-lazy-render id="editDialog">
+      <template>
+        <bookmarks-edit-dialog></bookmarks-edit-dialog>
+      </template>
+    </cr-lazy-render>
+    <cr-lazy-render id="openDialog">
+      <template>
+        <cr-dialog>
+          <div slot="title">$i18n{openDialogTitle}</div>
+          <div slot="body"></div>
+          <div slot="button-container">
+            <paper-button class="cancel-button" on-click="onOpenCancelTap_">
+              $i18n{cancel}
+            </paper-button>
+            <paper-button class="action-button" on-click="onOpenConfirmTap_">
+              $i18n{openDialogConfirm}
+            </paper-button>
+          </div>
+        </cr-dialog>
+      </template>
+    </cr-lazy-render>
+  </template>
+  <script src="chrome://bookmarks/command_manager.js"></script>
+</dom-module>

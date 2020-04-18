@@ -1,0 +1,311 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+/**
+ * @fileoverview Unit test for the Braille IME.
+ */
+
+/**
+ * Mock Chrome event supporting one listener.
+ * @constructor
+ */
+function MockEvent() {}
+
+MockEvent.prototype = {
+  /** @type {Function?} */
+  listener: null,
+
+  /**
+   * @param {Function} listener
+   */
+  addListener: function(listener) {
+    assertTrue(this.listener === null);
+    this.listener = listener;
+  },
+
+  /**
+   * Dispatches an event to the listener if any.
+   * @param {...*} var_args Arguments to pass to the event listener.
+   * @return {*} Return value from listener or {@code undefined} if no
+   *     listener.
+   */
+  dispatch: function() {
+    if (this.listener) {
+      return this.listener.apply(null, arguments);
+    }
+  }
+};
+
+/**
+ * Mock port that supports the {@code onMessage} and {@code onDisconnect}
+ * events as well as {@code postMessage}.
+ * @constructor.
+ */
+function MockPort() {
+  this.onMessage = new MockEvent();
+  this.onDisconnect = new MockEvent();
+  /** @type {Array<Object>} */
+  this.messages = [];
+}
+
+MockPort.prototype = {
+  /**
+   * Stores {@code message} in this object.
+   * @param {Object} message Message to store.
+   */
+  postMessage: function(message) {
+    this.messages.push(message);
+  }
+};
+
+/**
+ * Engine ID as specified in manifest.
+ * @const {string}
+ */
+ENGINE_ID = 'braille';
+
+var localStorage;
+
+/**
+ * Test fixture for the braille IME unit test.
+ * @constructor
+ * @extends {testing.Test}
+ */
+function BrailleImeUnitTest() {
+  testing.Test.call(this);
+}
+
+BrailleImeUnitTest.prototype = {
+  __proto__: testing.Test.prototype,
+
+  /** @Override */
+  extraLibraries: [
+    'braille_ime.js'
+  ],
+
+  /** @Override */
+  setUp: function() {
+    chrome = chrome || {};
+    chrome.input = chrome.input || {};
+    chrome.input.ime = chrome.input.ime || {};
+    chrome.runtime = chrome.runtime || {};
+    localStorage = {};
+    this.lastSentKeyRequestId_ = 0;
+    this.lastHandledKeyRequestId_ = undefined;
+    this.lastHandledKeyResult_ = undefined;
+    chrome.input.ime.keyEventHandled = function(requestId, result) {
+      this.lastHandledKeyRequestId_ = Number(requestId);
+      this.lastHandledKeyResult_ = result;
+    }.bind(this);
+    this.createIme();
+  },
+
+  createIme: function() {
+    var IME_EVENTS = [ 'onActivate', 'onDeactivated', 'onFocus', 'onBlur',
+                       'onInputContextUpdate', 'onKeyEvent', 'onReset',
+                       'onMenuItemActivated' ];
+    for (var i = 0, name; name = IME_EVENTS[i]; ++i) {
+      this[name] = chrome.input.ime[name] = new MockEvent();
+
+    }
+    chrome.input.ime.setMenuItems = function(parameters) {
+      this.menuItems = parameters.items;
+    }.bind(this);
+    chrome.runtime.connect = function() {
+      this.port = new MockPort();
+      return this.port;
+    }.bind(this);
+    this.menuItems = null;
+    this.port = null;
+    this.ime = new BrailleIme();
+    this.ime.init();
+  },
+
+  activateIme: function() {
+    this.onActivate.dispatch(ENGINE_ID);
+    assertThat(this.port.messages,
+               eqJSON([{type: 'activeState', active: true}]));
+    this.port.messages.length = 0;
+  },
+
+  sendKeyEvent_: function(type, code, extra) {
+    var event = {type: type,
+                 code: code,
+                 requestId: (++this.lastSentKeyRequestId_) + ''};
+    for (var key in extra) {
+      event[key] = extra[key];
+    }
+    this.onKeyEvent.dispatch(ENGINE_ID, event);
+    if (this.lastSentKeyRequestId_ === this.lastHandledKeyRequestId_) {
+      return this.lastHandledKeyResult_;
+    }
+  },
+
+  sendKeyDown: function(code, extra) {
+    return this.sendKeyEvent_('keydown', code, extra);
+  },
+
+  sendKeyUp: function(code, extra) {
+    return this.sendKeyEvent_('keyup', code, extra);
+  },
+};
+
+TEST_F('BrailleImeUnitTest', 'KeysWhenStandardKeyboardDisabled', function() {
+  this.activateIme();
+  expectFalse(this.sendKeyDown('KeyF'));
+  expectFalse(this.sendKeyDown('KeyD'));
+  expectFalse(this.sendKeyUp('KeyD'));
+  expectFalse(this.sendKeyUp('KeyF'));
+  expectEquals(0, this.port.messages.length);
+});
+
+TEST_F('BrailleImeUnitTest', 'KeysWhenStandardKeysEnabled', function() {
+  this.activateIme();
+  assertFalse(this.menuItems[0].checked);
+  this.onMenuItemActivated.dispatch(ENGINE_ID, this.menuItems[0].id);
+  assertTrue(this.menuItems[0].checked);
+  // Type the letters 'b' and 'c' and verify the right dots get sent.
+  expectTrue(this.sendKeyDown('KeyF'));
+  expectTrue(this.sendKeyDown('KeyD'));
+  expectTrue(this.sendKeyUp('KeyD'));
+  expectTrue(this.sendKeyUp('KeyF'));
+  expectTrue(this.sendKeyDown('KeyJ'));
+  expectTrue(this.sendKeyDown('KeyF'));
+  expectTrue(this.sendKeyUp('KeyJ'));
+  expectTrue(this.sendKeyUp('KeyF'));
+
+  // Make sure that other keys are not handled, either by themselves or while
+  // one of the 'braille keys' is pressed.
+  expectFalse(this.sendKeyDown('KeyX'));
+  expectFalse(this.sendKeyUp('KeyX'));
+
+  expectTrue(this.sendKeyDown('KeyS'));  // Dot 3
+  expectFalse(this.sendKeyDown('KeyG'));  // To the right of dot 1.
+  expectTrue(this.sendKeyUp('KeyS'));
+  expectFalse(this.sendKeyUp('KeyG'));
+
+  // Keys like Ctrl L should not be handled, despite L being a dot key.
+  var ctrlFlag = {ctrlKey: true};
+  expectFalse(this.sendKeyDown('ControlLeft', ctrlFlag));
+  expectFalse(this.sendKeyDown('KeyL', ctrlFlag));
+  expectFalse(this.sendKeyUp('KeyL', ctrlFlag));
+  expectFalse(this.sendKeyUp('ControlLeft', ctrlFlag))
+
+  // Space key by itself should send a blank cell.
+  expectTrue(this.sendKeyDown('Space'));
+  expectTrue(this.sendKeyUp('Space'));
+
+  // Space and braille dots results in no event.
+  expectTrue(this.sendKeyDown('Space'));
+  expectTrue(this.sendKeyDown('KeyF'));
+  expectTrue(this.sendKeyUp('Space'));
+  expectTrue(this.sendKeyUp('KeyF'));
+  // Send the braille key first, still no event should be produced.
+  expectTrue(this.sendKeyDown('KeyF'));
+  expectTrue(this.sendKeyDown('Space'));
+  expectTrue(this.sendKeyUp('Space'));
+  expectTrue(this.sendKeyUp('KeyF'));
+
+  assertThat(this.port.messages,
+             eqJSON([{type: 'brailleDots', dots: 0x03},
+                     {type: 'brailleDots', dots: 0x09},
+                     {type: 'brailleDots', dots: 0}]));
+});
+
+TEST_F('BrailleImeUnitTest', 'TestBackspaceKey', function() {
+  this.activateIme();
+  // Enable standard keyboard feature.
+  assertFalse(this.menuItems[0].checked);
+  this.onMenuItemActivated.dispatch(ENGINE_ID, this.menuItems[0].id);
+  assertTrue(this.menuItems[0].checked);
+
+  expectEquals(undefined, this.sendKeyDown('Backspace'));
+  assertThat(this.port.messages,
+             eqJSON([{type: 'backspace',
+                      requestId: this.lastSentKeyRequestId_ + ''}]));
+  this.port.onMessage.dispatch(
+      {type: 'keyEventHandled',
+       requestId: this.lastSentKeyRequestId_ + '',
+       result: true});
+  expectEquals(this.lastSentKeyRequestId_, this.lastHandledKeyRequestId_);
+  expectTrue(this.lastHandledKeyResult_);
+});
+
+TEST_F('BrailleImeUnitTest', 'UseStandardKeyboardSettingPreserved', function() {
+  this.activateIme();
+  assertFalse(this.menuItems[0].checked);
+  this.onMenuItemActivated.dispatch(ENGINE_ID, this.menuItems[0].id);
+  assertTrue(this.menuItems[0].checked);
+  // Create a new instance and make sure the setting is still turned on.
+  this.createIme();
+  this.activateIme();
+  assertTrue(this.menuItems[0].checked);
+});
+
+TEST_F('BrailleImeUnitTest', 'ReplaceText', function() {
+  var CONTEXT_ID = 1;
+  var hasSelection = false;
+  var text = 'Hi, ';
+  chrome.input.ime.commitText = function(params) {
+    assertEquals(CONTEXT_ID, params.contextID);
+    text += params.text;
+  };
+  chrome.input.ime.deleteSurroundingText = function(params, callback) {
+    assertEquals(ENGINE_ID, params.engineID);
+    assertEquals(CONTEXT_ID, params.contextID);
+    assertEquals(0, params.offset + params.length);
+    if (hasSelection) {
+      assertEquals(0, params.length);
+      hasSelection = false;
+    } else {
+      text = text.slice(0, params.offset);
+    }
+    callback();
+  };
+  var sendReplaceText = function(deleteBefore, newText) {
+    this.port.onMessage.dispatch(
+        {type: 'replaceText', contextID: CONTEXT_ID,
+       deleteBefore: deleteBefore, newText: newText});
+  }.bind(this);
+  this.activateIme();
+  sendReplaceText(0, 'hello!');
+  assertEquals('Hi, hello!', text);
+  hasSelection = true;
+  sendReplaceText('hello!'.length, 'good bye!');
+  assertFalse(hasSelection);
+  assertEquals('Hi, good bye!', text);
+});
+
+TEST_F('BrailleImeUnitTest', 'Uncommitted', function() {
+  var CONTEXT_ID = 1;
+  var text = '';
+  chrome.input.ime.commitText = function(params) {
+    assertEquals(CONTEXT_ID, params.contextID);
+    text += params.text;
+  };
+  var sendSetUncommitted = function(text) {
+    this.port.onMessage.dispatch(
+        {type: 'setUncommitted', contextID: CONTEXT_ID, text: text});
+  }.bind(this);
+  var sendCommitUncommitted = function(contextID) {
+    this.port.onMessage.dispatch(
+        {type: 'commitUncommitted', contextID: contextID});
+  }.bind(this);
+
+  this.activateIme();
+  sendSetUncommitted('Hi');
+  assertEquals('', text);
+  sendSetUncommitted('Hello');
+  sendCommitUncommitted(CONTEXT_ID);
+  assertEquals('Hello', text);
+  sendSetUncommitted(' there!');
+  sendCommitUncommitted(CONTEXT_ID + 1);
+  assertEquals('Hello', text);
+
+  sendSetUncommitted(' you!');
+  assertFalse(this.sendKeyDown('KeyY'));
+  assertEquals('Hello you!', text);
+  assertFalse(this.sendKeyUp('KeyY'));
+  assertEquals('Hello you!', text);
+});

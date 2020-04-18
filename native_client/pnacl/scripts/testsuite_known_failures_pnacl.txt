@@ -1,0 +1,61 @@
+# Failures which are probably or potentially real bugs
+
+# library or compiler errors
+
+# newlib does not have ffsl function?
+2005-05-11-Popcount-ffs-fls
+
+# SSE tests use -msse* flags, which our le32 frontend doesn't understand.
+sse.isamax
+sse.shift
+sse.expandfft
+sse.stepfft
+
+# Assumes that pointers are 8 bytes (an x86-64 test).
+ms_struct-bitfield-1
+
+# Vectors <2 x double> aren't supported yet.
+SingleSource/Benchmarks/BenchmarkGame/partialsums
+SingleSource/UnitTests/Vector/simple
+SingleSource/UnitTests/Vector/sumarray-dbl
+
+# The following test uses packed bitfield structs which get turned into
+# operations on i128 operands, which get rejected by PNaCl's ABI checker.
+# However, clang -O3 precomputes the result at compile time, avoiding
+# the ABI checker errors.
+SingleSource/Regression/C/PR1386 O0f
+
+# The following tests use C++ exception handling, which is not yet
+# supported for PNaCl's stable ABI.  When the -lowerinvoke pass is
+# applied, the "throw" statements in these tests fail at run time.
+SingleSource/Benchmarks/Shootout-C++/EH/except
+SingleSource/Regression/C++/EH/class_hierarchy
+SingleSource/Regression/C++/EH/ctor_dtor_count
+SingleSource/Regression/C++/EH/ctor_dtor_count-2
+SingleSource/Regression/C++/EH/exception_spec_test
+SingleSource/Regression/C++/EH/function_try_block
+SingleSource/Regression/C++/EH/inlined_cleanup
+SingleSource/Regression/C++/EH/recursive-throw
+SingleSource/Regression/C++/EH/simple_rethrow
+SingleSource/Regression/C++/EH/simple_throw
+SingleSource/Regression/C++/EH/throw_rethrow_test
+
+############################################################################
+# TODO(stichnot)
+# New failures in updated LLVM test suite, still to be triaged
+############################################################################
+# timeouts on ARM
+SingleSource/Benchmarks/CoyoteBench/almabench arm
+SingleSource/Benchmarks/SmallPT/smallpt arm
+MultiSource/Benchmarks/mafft/pairlocalalign arm
+MultiSource/Benchmarks/SciMark2-C/scimark2 arm
+
+# New as of LLVM 3.5 update, followed by updating test-suite to master.
+# For all of these the native version fails, but the PNaCl version passes.
+MultiSource/Benchmarks/Prolangs-C++/office/office
+MultiSource/Benchmarks/Prolangs-C++/deriv2/deriv2
+MultiSource/Benchmarks/Prolangs-C++/deriv1/deriv1
+MultiSource/Applications/kimwitu++/kc
+MultiSource/Benchmarks/tramp3d-v4/tramp3d-v4
+MultiSource/Benchmarks/Prolangs-C++/employ/employ
+MultiSource/Benchmarks/Prolangs-C++/shapes/shapes

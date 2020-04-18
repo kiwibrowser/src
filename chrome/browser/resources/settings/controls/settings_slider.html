@@ -1,0 +1,79 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/policy/cr_policy_pref_behavior.html">
+<link rel="import" href="chrome://resources/html/assert.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-slider/paper-slider.html">
+
+<dom-module id="settings-slider">
+  <template>
+    <style>
+      :host {
+        --calculated-paper-slider-height: var(--paper-slider-height, 2px);
+        /* Counteract the margin on #sliderContainer in paper-slider.html. */
+        -webkit-margin-end:
+            calc(-15px - var(--calculated-paper-slider-height) / 2);
+        display: inline-flex;
+      }
+
+      cr-policy-pref-indicator {
+        -webkit-margin-start: var(--settings-controlled-by-spacing);
+        align-self: center;
+      }
+
+      #labels[disabled] {
+        color: var(--paper-grey-400);
+      }
+
+      div.outer {
+        align-items: stretch;
+        display: flex;
+        flex-direction: column;
+        margin: 8px 0;
+        min-width: 200px;
+      }
+
+      #labels {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        margin: -4px 16px 0 16px;
+      }
+
+      #labels > div {
+        font-size: 12px;
+      }
+
+      #label-begin {
+        -webkit-margin-end: 4px;
+      }
+
+      #label-end {
+        -webkit-margin-begin: 4px;
+      }
+
+      paper-slider {
+        /* Make the slider bar always grey. */
+        --paper-slider-active-color: var(--paper-grey-400);
+        /* Make the knob always blue. */
+        --paper-slider-knob-start-color: var(--google-blue-700);
+        --paper-slider-knob-start-border-color: var(--google-blue-700);
+        width: 100%;
+      }
+    </style>
+    <template is="dom-if" if="[[pref.controlledBy]]" restamp>
+      <cr-policy-pref-indicator pref="[[pref]]"></cr-policy-pref-indicator>
+    </template>
+    <div class="outer">
+      <paper-slider id="slider"
+          disabled$="[[disableSlider_]]" snaps
+          on-immediate-value-changed="onSliderChanged_" max="[[max]]"
+          min="[[min]]" on-up="resetTrackLock_">
+      </paper-slider>
+      <div id="labels" disabled$="[[disableSlider_]]">
+        <div id="label-begin">[[labelMin]]</div>
+        <div id="label-end">[[labelMax]]</div>
+      </div>
+    </div>
+  </template>
+  <script src="settings_slider.js"></script>
+</dom-module>

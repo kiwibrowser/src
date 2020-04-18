@@ -1,0 +1,238 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+//
+// Sync protocol datatype extension for autofill.
+
+// Update proto_value_conversions{.h,.cc,_unittest.cc} if you change
+// any fields in this file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package sync_pb;
+
+// Properties of autofill sync objects.
+
+// An AutofillProfile.
+message AutofillProfileSpecifics {
+  optional string guid = 15;
+  optional string origin = 16;
+  optional int64 use_count = 22;
+
+  // The time_t value of the last time this profile was used. This
+  // value makes sense wrt base::Time::To/FromTimeT, which measures
+  // from the Windows epoch.
+  optional int64 use_date = 23;
+
+  // Contact info.
+  repeated string name_first = 2;
+  repeated string name_middle = 3;
+  repeated string name_last = 4;
+  repeated string name_full = 21;
+  repeated string email_address = 5;
+  optional string company_name = 6;
+
+  // Address.
+  optional string address_home_line1 = 7;
+  optional string address_home_line2 = 8;
+  optional string address_home_city = 9;
+  optional string address_home_state = 10;
+  optional string address_home_zip = 11;
+  optional string address_home_country = 12;
+
+  // Additional address fields for i18n.
+  optional string address_home_street_address = 17;
+  optional string address_home_sorting_code = 18;
+  optional string address_home_dependent_locality = 19;
+  optional string address_home_language_code = 20;
+
+  // Phone.
+  repeated string phone_home_whole_number = 13;
+
+  // Validity bitfield.
+  // Each set of two bits represents the validity state of a specific part of
+  // the Autofill address. For more info please refer to autofill_profile.h.
+  optional int64 validity_state_bitfield = 24;
+
+  // Deprecated.
+  optional string label = 1 [deprecated = true];
+  optional string phone_fax_whole_number = 14 [deprecated = true];
+}
+
+message AutofillSpecifics {
+  // If any of these 3 fields are present, then all 3 should be, and it implies
+  // that this entity represents a classic autofill object.  In this case,
+  // none of the autofill++ objects below should be present.
+  optional string name = 1;
+  optional string value = 2;
+  repeated int64 usage_timestamp = 3;
+
+  // An autofill++ profile object.  If present, indicates this entity
+  // represents an AutofillProfile exclusively, and no other fields (such as
+  // name/value or credit_card) should be present.
+  optional AutofillProfileSpecifics profile = 4;
+
+  // Obsolete credit card fields.
+  // optional bytes deprecated_encrypted_credit_card = 5;
+  // optional AutofillCreditCardSpecifics deprecated_credit_card = 6;
+}
+
+message WalletMaskedCreditCard {
+  enum WalletCardStatus {
+    VALID = 0;
+    EXPIRED = 1;
+  }
+
+  enum WalletCardType {
+    UNKNOWN = 0;
+    AMEX = 1;
+    DISCOVER = 2;
+    JCB = 3;
+    MAESTRO = 4;
+    MASTER_CARD = 5;
+    SOLO = 6;
+    SWITCH = 7;
+    VISA = 8;
+    UNIONPAY = 9;
+  }
+
+  enum WalletCardClass {
+    UNKNOWN_CARD_CLASS = 0;
+    CREDIT = 1;
+    DEBIT = 2;
+    PREPAID = 3;
+  }
+
+  // Server-generated unique ID string. This is opaque to the client.
+  optional string id = 1;
+
+  // What the server thinks of this card.
+  optional WalletCardStatus status = 2;
+
+  optional string name_on_card = 3;
+
+  optional WalletCardType type = 4;
+
+  // Last 4 digits of the credit card number.
+  optional string last_four = 5;
+
+  // Month number 1-12.
+  optional int32 exp_month = 6;
+
+  // Four-digit year (e.g. 2017).
+  optional int32 exp_year = 7;
+
+  // The WalletPostalAddress.id of the billing address.
+  optional string billing_address_id = 8;
+
+  // Card class: credit, debit, or prepaid.
+  optional WalletCardClass card_class = 9;
+
+  // Issuing Bank name which is internationalized (e.g. "Chase", "工商银行")
+  optional string bank_name = 10;
+}
+
+// Different than an AutofillProfile because this represents some known address
+// on the server that is pulled down rather than synced between Chromes.
+message WalletPostalAddress {
+  optional string id = 1;
+
+  optional string recipient_name = 12;
+  optional string company_name = 2;
+
+  // This is the street address, of which there may be multiple lines. This
+  // corresponds to "address_home_line[1|2] in the AutofillProfileSpecifics
+  // message above. In some locales there may be more than two lines.
+  repeated string street_address = 3;
+
+  // Also known as "administrative area". This is normally the state or
+  // province in most countries.
+  optional string address_1 = 4;
+
+  // Also known as "locality". In the US this is the city.
+  optional string address_2 = 5;
+
+  // A sub-classification beneath the city, e.g. an inner-city district or
+  // suburb. Also known as "dependent_locality"
+  optional string address_3 = 6;
+
+  // Used in certain countries. Also known as "sub_dependent_locality".
+  optional string address_4 = 7;
+
+  optional string postal_code = 8;
+
+  // Similar to the zipcode column, but used for businesses or organizations
+  // that might not be geographically contiguous. The canonical example is
+  // CEDEX in France.
+  optional string sorting_code = 9;
+
+  optional string country_code = 10;
+  optional string language_code = 11;
+
+  // Phone number. The format is unspecified and will be explicitly ignored.
+  optional string phone_number = 13;
+}
+
+message AutofillWalletSpecifics {
+  enum WalletInfoType {
+    UNKNOWN = 0;
+    MASKED_CREDIT_CARD = 1;
+    POSTAL_ADDRESS = 2;
+  }
+
+  optional WalletInfoType type = 1;
+
+  // This field exists if and only if the "type" field equals to
+  // MASKED_CREDIT_CARD.
+  optional WalletMaskedCreditCard masked_card = 2;
+
+  // This field exists if and only if the "type" field equals to ADDRESS.
+  optional WalletPostalAddress address = 3;
+}
+
+// Wallet card and address usage information that can be synced.
+message WalletMetadataSpecifics {
+  enum Type {
+    UNKNOWN = 0;
+    CARD = 1;
+    ADDRESS = 2;
+  }
+
+  // The type of the Wallet metadata.
+  optional Type type = 1;
+
+  // Base64 encoding of the unique ID string of the corresponding Wallet data.
+  // For Wallet cards, this value is server generated and opaque to Chrome.
+  // For Wallet addresses, this is a SHA1 hash of the following fields:
+  //
+  // - First name
+  // - Middle name
+  // - Last name
+  // - Company name
+  // - Street address
+  // - Dependent locality
+  // - City
+  // - State
+  // - Zip code
+  // - Sorting code
+  // - Country
+  // - Phone number
+  // - Language code
+  optional string id = 2;
+
+  // The number of times that this Wallet card or address was used.
+  optional int64 use_count = 3;
+
+  // The last use date of this Wallet card or address. Measured in microseconds
+  // since the Windows epoch (1601).
+  optional int64 use_date = 4;
+
+  // The id of the profile/address that represents the billing address of this
+  // Wallet card.
+  optional string card_billing_address_id = 5;
+
+  // Whether this Wallet address has been converted to a local autofill profile.
+  optional bool address_has_converted = 6;
+}

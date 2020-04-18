@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<script src="../../../resources/js-test.js"></script>
+<style>
+    body {
+        height: 2000px;
+        width: 2000px;
+    }
+</style>
+
+<script>
+    window.jsTestIsAsync = true;
+
+    description("This test ensures that consecutive mouse wheel ticks scroll\
+        to the right offset. The main purpose of this test is to ensure that\
+        smooth scrolling on the compositor works as intended (tested via\
+        virtual suite virtual/threaded/).");
+
+    function testDiagonalScroll() {
+        // Reset
+        document.scrollingElement.scrollTop = 0;
+        document.scrollingElement.scrollLeft = 0;
+
+        eventSender.mouseMoveTo(20, 20);
+        // Scroll 3 ticks diagonally.
+        eventSender.mouseScrollBy(-3, -3);
+        // Undo 2 ticks in each direction.
+        eventSender.mouseScrollBy(2, 2);
+        // 40px per tick.
+        shouldBecomeEqual("document.scrollingElement.scrollTop == 40 && " +
+          "document.scrollingElement.scrollLeft == 40", "true", finishJSTest);
+    }
+
+    function runTest() {
+        if (!window.eventSender || !window.internals) {
+            finishJSTest();
+            return;
+        }
+
+        // Turn on smooth scrolling.
+        internals.settings.setScrollAnimatorEnabled(true);
+
+        eventSender.mouseMoveTo(20, 20);
+        // Scroll down 3 ticks.
+        eventSender.mouseScrollBy(0, -1);
+        eventSender.mouseScrollBy(0, -2);
+        // Scroll right 3 ticks.
+        eventSender.mouseScrollBy(-1, 0);
+        eventSender.mouseScrollBy(-2, 0);
+        // Undo 1 tick in each direction.
+        eventSender.mouseScrollBy(0, 1);
+        eventSender.mouseScrollBy(1, 0);
+
+        // 40px per tick.
+        shouldBecomeEqual("document.scrollingElement.scrollTop == 80 && " +
+          "document.scrollingElement.scrollLeft == 80", "true", testDiagonalScroll);
+    }
+</script>
+
+<body onload="runTest()"></body>

@@ -1,0 +1,81 @@
+<html manifest="resources/fail-on-update.php">
+<script src="/js-test-resources/js-test.js"></script>
+<script>
+var jsTestIsAsync = true;
+description("Test that master list entries receive errors when manifest becomes obsolete.");
+
+function setManifestState(state, callback)
+{
+    var req = new XMLHttpRequest;
+    req.open("GET", "resources/fail-on-update.php?command=" + (state));
+    req.send(null);
+    req.onload = callback;
+}
+
+var eventDetailsFromFrame = null;
+function onMessage(e) {
+    eventDetailsFromFrame = e.data;
+    checkEvents();
+};
+
+var eventDetailsFromWindow = null;
+function onObsolete(e) {
+    eventDetailsFromWindow = e;
+    checkEvents();
+}
+
+// Event order is indeterminate, so wait for both to arrive.
+function checkEvents() {
+    if (!eventDetailsFromFrame || !eventDetailsFromWindow)
+        return;
+
+    shouldBeEqualToString("eventDetailsFromWindow.type", "obsolete");
+
+    shouldBeEqualToString("eventDetailsFromFrame.type", "error");
+    shouldBeEqualToString("eventDetailsFromFrame.reason", "manifest");
+    shouldBeEqualToString("eventDetailsFromFrame.url", "");
+    shouldBe("eventDetailsFromFrame.status", "404");
+
+    finishJSTest();
+}
+
+function test()
+{
+    applicationCache.onnoupdate = function() { testFailed("Unexpected noupdate event") }
+    applicationCache.oncached = function() { testFailed("Unexpected cached event") }
+
+    setManifestState('delete', () => {
+        // The frame will be associated to a cache, but update will obsolete it.
+        var ifr = document.createElement("iframe");
+        ifr.setAttribute("src", "resources/obsolete-error-events-frame.html");
+        document.body.appendChild(ifr);
+
+        applicationCache.onobsolete = onObsolete;
+        window.onmessage = onMessage;
+    });
+}
+
+function resetManifest()
+{
+    if (applicationCache.status !== applicationCache.UNCACHED && applicationCache.status !== applicationCache.OBSOLETE) {
+        timeoutId = setTimeout(resetManifest, 100);
+        return;
+    }
+
+    setManifestState('reset', () => {
+        location.reload();
+    });
+}
+
+applicationCache.onnoupdate = applicationCache.oncached = function() {
+    clearTimeout(timeoutId);
+    test();
+};
+
+// If the manifest script happened to be in a wrong state, reset it.
+var timeoutId = setTimeout(resetManifest, 100);
+
+setTimeout(finishJSTest, 2000);
+</script>
+</body>
+</html>

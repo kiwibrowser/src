@@ -1,0 +1,42 @@
+{% from "templates/macros.tmpl" import license, source_files_for_generated_file %}
+{{ license() }}
+
+{{source_files_for_generated_file(template_file, input_files)}}
+
+#ifndef InternalSettingsGenerated_h
+#define InternalSettingsGenerated_h
+
+#include "third_party/blink/renderer/platform/bindings/script_wrappable.h"
+#include "third_party/blink/renderer/platform/heap/handle.h"
+#include "third_party/blink/renderer/platform/wtf/ref_counted.h"
+#include "base/memory/scoped_refptr.h"
+#include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
+
+namespace blink {
+
+class Page;
+
+class InternalSettingsGenerated : public ScriptWrappable {
+  DEFINE_WRAPPERTYPEINFO();
+
+ public:
+  explicit InternalSettingsGenerated(Page*);
+  virtual ~InternalSettingsGenerated();
+  void resetToConsistentState();
+  {% for setting in settings if setting.type|to_idl_type %}
+  void set{{setting.tokenized_name.to_upper_camel_case()}}({{setting.type|to_passing_type}} {{setting.name}});
+  {% endfor %}
+
+  void Trace(Visitor*) override;
+
+ private:
+  Member<Page> m_page;
+
+  {% for setting in settings if setting.type|to_idl_type %}
+  {{setting.type}} m_{{setting.name}};
+  {% endfor %}
+};
+
+} // namespace blink
+
+#endif // InternalSettingsGenerated_h

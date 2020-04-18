@@ -1,0 +1,67 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef THIRD_PARTY_BLINK_PUBLIC_PLATFORM_SCHEDULER_TEST_FAKE_RENDERER_SCHEDULER_H_
+#define THIRD_PARTY_BLINK_PUBLIC_PLATFORM_SCHEDULER_TEST_FAKE_RENDERER_SCHEDULER_H_
+
+#include "base/macros.h"
+#include "base/message_loop/message_loop.h"
+#include "base/single_thread_task_runner.h"
+#include "build/build_config.h"
+#include "third_party/blink/public/platform/scheduler/web_main_thread_scheduler.h"
+
+namespace blink {
+namespace scheduler {
+
+class FakeRendererScheduler : public WebMainThreadScheduler {
+ public:
+  FakeRendererScheduler();
+  ~FakeRendererScheduler() override;
+
+  // RendererScheduler implementation.
+  std::unique_ptr<WebThread> CreateMainThread() override;
+  scoped_refptr<base::SingleThreadTaskRunner> DefaultTaskRunner() override;
+  scoped_refptr<base::SingleThreadTaskRunner> CompositorTaskRunner() override;
+  scoped_refptr<base::SingleThreadTaskRunner> InputTaskRunner() override;
+  scoped_refptr<SingleThreadIdleTaskRunner> IdleTaskRunner() override;
+  scoped_refptr<base::SingleThreadTaskRunner> IPCTaskRunner() override;
+  std::unique_ptr<WebRenderWidgetSchedulingState>
+  NewRenderWidgetSchedulingState() override;
+  void WillBeginFrame(const viz::BeginFrameArgs& args) override;
+  void BeginFrameNotExpectedSoon() override;
+  void BeginMainFrameNotExpectedUntil(base::TimeTicks time) override;
+  void DidCommitFrameToCompositor() override;
+  void DidHandleInputEventOnCompositorThread(
+      const WebInputEvent& web_input_event,
+      InputEventState event_state) override;
+  void DidHandleInputEventOnMainThread(const WebInputEvent& web_input_event,
+                                       WebInputEventResult result) override;
+  void DidAnimateForInputOnCompositorThread() override;
+  void SetRendererHidden(bool hidden) override;
+  void SetRendererBackgrounded(bool backgrounded) override;
+  void SetSchedulerKeepActive(bool keep_active) override;
+  std::unique_ptr<RendererPauseHandle> PauseRenderer() override;
+#if defined(OS_ANDROID)
+  void PauseTimersForAndroidWebView() override;
+  void ResumeTimersForAndroidWebView() override;
+#endif
+  bool IsHighPriorityWorkAnticipated() override;
+  void Shutdown() override;
+  void SetFreezingWhenBackgroundedEnabled(bool enabled) override;
+  void SetTopLevelBlameContext(
+      base::trace_event::BlameContext* blame_context) override;
+  void SetRAILModeObserver(RAILModeObserver* observer) override;
+  void SetRendererProcessType(RendererProcessType type) override;
+  WebScopedVirtualTimePauser CreateWebScopedVirtualTimePauser(
+      const char* name,
+      WebScopedVirtualTimePauser::VirtualTaskDuration duration) override;
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(FakeRendererScheduler);
+};
+
+}  // namespace scheduler
+}  // namespace blink
+
+#endif  // THIRD_PARTY_BLINK_PUBLIC_PLATFORM_SCHEDULER_TEST_FAKE_RENDERER_SCHEDULER_H_

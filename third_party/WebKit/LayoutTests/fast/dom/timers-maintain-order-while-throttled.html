@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+
+<script src="../../resources/js-test.js"></script>
+
+<script>
+description('Checks that timers maintain their scheduled order while the page is invisible.');
+
+var jsTestIsAsync = true;
+var expectedIndices = [];
+var indices = [];
+
+function processTimer(index)
+{
+  indices.push(index);
+  if (indices.length == expectedIndices.length) {
+    debug(indices);
+    shouldBeTrue('areArraysEqual(expectedIndices, indices)');
+    finishJSTest();
+  }
+}
+
+function runTest()
+{
+  if (window.testRunner)
+    testRunner.setPageVisibility('hidden');
+
+  for (var i = 0; i < 100; i++) {
+    expectedIndices.push(i);
+    setTimeout(function(i) {
+      return function() {
+        processTimer(i);
+      }
+    }(i), 0);
+  }
+}
+</script>
+
+<body onload="runTest()">
+</body>
+</html>

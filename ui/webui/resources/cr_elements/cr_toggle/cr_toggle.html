@@ -1,0 +1,106 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-behaviors/paper-ripple-behavior.html">
+<link rel="import" href="../shared_vars_css.html">
+
+<dom-module id="cr-toggle">
+  <template>
+    <style>
+      :host {
+        cursor: pointer;
+        display: block;
+        outline: none;
+      }
+
+      :host([disabled]) {
+        cursor: initial;
+        opacity: var(--cr-disabled-opacity);
+        pointer-events: none;
+      }
+
+      button {
+        background: none;
+        border: none;
+        cursor: inherit;
+        display: block;
+        outline: inherit;
+        padding: 0;
+        position: relative;
+        width: 34px;
+        z-index: 0;
+      }
+
+      #bar {
+        background-color:
+          var(--cr-toggle-unchecked-bar-color, var(--google-grey-400));
+        border-radius: 8px;
+        height: 12px;
+        left: 3px;
+        position: absolute;
+        top: 2px;
+        transition: background-color linear 80ms;
+        width: 28px;
+        z-index: 0;
+      }
+
+      :host([checked]) #bar {
+        background-color: var(
+            --cr-toggle-checked-bar-color, var(--google-blue-600));
+        opacity: 0.5;
+      }
+
+      #knob {
+        background-color: var(--cr-toggle-unchecked-button-color, white);
+        border-radius: 50%;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+        display: block;
+        height: 16px;
+        position: relative;
+        transition: transform linear 80ms, background-color linear 80ms;
+        width: 16px;
+        z-index: 1;
+      }
+
+      :host([checked]) #knob {
+        background-color: var(
+            --cr-toggle-checked-button-color, var(--google-blue-600));
+        transform: translate3d(18px, 0, 0);
+      }
+
+      :host-context([dir=rtl]):host([checked]) #knob {
+        transform: translate3d(-18px, 0, 0);
+      }
+
+      paper-ripple {
+        --paper-ripple-opacity: 0.125;
+        color: var(--cr-toggle-unchecked-ink-color, var(--primary-text-color));
+        height: 40px;
+        left: -12px;
+        pointer-events: none;
+        top: -12px;
+        transition: color linear 80ms;
+        width: 40px;
+      }
+
+      :host-context([dir=rtl]) paper-ripple {
+        left: auto;
+        right: -12px;
+      }
+
+      :host([checked]) paper-ripple {
+        color: var(--cr-toggle-checked-ink-color, var(--primary-color));
+      }
+    </style>
+    <!-- A <button> is used (instead of a plain <div>) to avoid a corner case
+         when pointerdown is initiated in cr-toggle, but pointerup happens
+         outside the bounds of cr-toggle, which would end up firing a 'click'
+         event on the parent and unexpectedly modify the toggle's state (see
+         context at crbug.com/689158 and crbug.com/768555). The 'click'
+         event is not fired when the <button> wrapper is used. -->
+    <button tabindex="-1" on-focus="onButtonFocus_">
+      <span id="bar"></span>
+      <span id="knob"></span>
+    </button>
+  </template>
+  <script src="cr_toggle.js"></script>
+</dom-module>

@@ -1,0 +1,40 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+<script src="../resources/js-test.js"></script>
+</head>
+<body id="body">
+
+<div id="content">
+
+<table id="table" border=1>
+  <tr><th>header 1</th><th>header 2</th></tr>
+  <tr><td>foo</td><td>bar</td></tr>
+</table>
+
+</div>
+
+<script>
+
+    description("This tests that table headers are exposed for accessibility.");
+
+    if (window.accessibilityController) {
+        var table = accessibilityController.accessibleElementById("table");
+        shouldBe("table.rowCount", "2");
+        var tableheader = table.tableHeader();
+        shouldBeTrue("tableheader.isValid");
+        shouldBe("tableheader.childrenCount", "2");
+        window.firstHeaderText = tableheader.childAtIndex(0).childAtIndex(0).name;
+        shouldBe("firstHeaderText", "'header 1'");
+        window.secondHeaderText = tableheader.childAtIndex(1).childAtIndex(0).name;
+        shouldBe("secondHeaderText", "'header 2'");
+
+        // Clear the HTML for cleaner results.
+        document.getElementById("content").innerHTML = "";
+    }
+
+
+</script>
+
+</body>
+</html>

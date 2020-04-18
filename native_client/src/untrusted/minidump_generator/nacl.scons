@@ -1,0 +1,16 @@
+# -*- python -*-
+# Copyright (c) 2013 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# Allow Breakpad headers to #include other Breakpad headers.
+env.Append(CPPPATH=['${SOURCE_ROOT}/breakpad/src'])
+# Breakpad's headers do not compile with "-pedantic".
+env.FilterOut(CCFLAGS=['-pedantic'])
+
+minidump_lib = env.NaClSdkLibrary('minidump_generator',
+                                  ['build_id.cc',
+                                   'minidump_generator.cc'])
+env.AddLibraryToSdk(minidump_lib)

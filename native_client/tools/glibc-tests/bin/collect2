@@ -1,0 +1,108 @@
+#!/bin/bash
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+
+function usage() {
+cat 1>&2 <<END
+$0: Error: these variables need to be exported:
+  GLIBC_TST_STATIC_LDSCRIPT - linker script for static linking
+  GLIBC_TST_NACL_LIBDIR     - library directory
+  GLIBC_TST_NACL_LOADER     - sel_ldr
+  GLIBC_TST_COLLECT2        - real collect2 binary
+END
+}
+
+if [[ ! -x "$GLIBC_TST_COLLECT2" ]]; then
+  usage
+  exit 101
+fi
+if [[ ! -f "$GLIBC_TST_STATIC_LDSCRIPT" ]]; then
+  usage
+  exit 102
+fi
+if [[ ! -x "$GLIBC_TST_NACL_LOADER" ]]; then
+  usage
+  exit 103
+fi
+if [[ ! -d "$GLIBC_TST_NACL_LIBDIR" ]]; then
+  usage
+  exit 104
+fi
+
+# Process command-line arguments to detect -o <outfile>
+# and add -T <static-linker-script> after each -static.
+declare -a args
+is_static=no
+outfile=a.out
+is_outfile=0
+i=0
+for arg; do
+  args[$i]="$arg"
+  if [[ "$arg" == "-static" ]]; then
+    is_static=yes
+    args[$((++i))]="-T"
+    args[$((++i))]="$GLIBC_TST_STATIC_LDSCRIPT"
+  fi
+  ((i++))
+  if [ "$is_outfile" = "1" ] ; then
+    is_outfile=0
+    outfile="$arg"
+  elif [ "$arg" = "-o" ] ; then
+    is_outfile=1
+  fi
+done
+
+# Run the real collect2 binary with processed arguments.
+readonly collect2out="/tmp/$(basename "$0").$$.tmp"
+( "${GLIBC_TST_COLLECT2}" "${args[@]}" 2>&1 ||
+  ( echo "Retrying with ld.so..." && \
+    "${GLIBC_TST_COLLECT2}" "${args[@]}" \
+    "${GLIBC_TST_NACL_LIBDIR}/ld-nacl-x86-64.so.1"
+  ) 2>&1
+) | tee "$collect2out"
+
+# Detect if there was an unsupported symbol in the collect2 output.
+unsup_msg=none
+readonly unsup_msg_file="/tmp/$(basename "$0")unsup.$$.tmp"
+readonly unsup_regex="\\(sigaction\\|pthread_cancel\\|accept\\|bind\\|connect\\|ftruncate\\|getcontext\\|gethostname\\|getrlimit\\|getsockname\\|getsockopt\\|listen\\|makecontext\\|pread\\|pwrite\\|recv\\|recvfrom\\|recvmsg\\|send\\|sendmsg\\|sendto\\|setcontext\\|setrlimit\\|setsockopt\\|socketpair\\|swapcontext\\|truncate\\|wait\\|waitpid\\|alarm\\|kill\\|pthread_kill\\|fork\\|vfork\\)"
+readonly w0="warning: warning: "
+readonly w1=" is not implemented and will always fail"
+if sed 's/.*'"$w0$unsup_regex$w1/__\1__/" "$collect2out" | \
+     grep __"$unsup_regex"__ >"$unsup_msg_file"; then
+  unsup_msg="$(cat "$unsup_msg_file" | tail -1)"
+fi
+/bin/rm -f "$unsup_msg_file"
+/bin/rm -f "$collect2out"
+
+# Replace the output file with a bash script that launches the loader.
+if [ "$?" = "0" ] ; then
+  if [ "${outfile:0:1}" != "/" ] ; then
+    outfile="$PWD/$outfile"
+  fi
+  /bin/mv -f "$outfile" "$outfile.nexe"
+
+  # Generate no-op binaries if link-time warnings gave a hint that the test does
+  # not make sense in Native Client.
+  if [[ "$unsup_msg" != "none" ]]; then
+    echo "#!/bin/bash" > "$outfile"
+    echo "echo $unsup_msg $outfile EXCLUDED_IN_NACL 1>&2" >> "$outfile"
+    echo "exit 115" >> "$outfile"
+    chmod a+x "$outfile"
+    exit 0
+  fi
+
+  readonly ldso="$GLIBC_TST_NACL_LIBDIR"/runnable-ld.so
+  readonly libs="$GLIBC_TST_NACL_LIBDIR"
+
+  if [[ "$is_static" = "yes" ]]; then
+    opts="-a -c --"
+  else
+    opts="-a -c -- \"$ldso\" --library-path \"$libs\""
+  fi
+  echo "#!/bin/bash
+\"$GLIBC_TST_NACL_LOADER\" $opts \"$outfile\".nexe \"\$@\"" > "$outfile"
+  chmod a+x "$outfile"
+  exit 0
+fi

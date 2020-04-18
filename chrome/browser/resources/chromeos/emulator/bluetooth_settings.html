@@ -1,0 +1,184 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_checkbox/cr_checkbox.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_dialog/cr_dialog.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_radio_button/cr_radio_button.html">
+<link rel="import" href="chrome://resources/cr_elements/shared_style_css.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/neon-animatable-behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-input/paper-input.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-radio-group/paper-radio-group.html">
+<link rel="import" href="icons.html">
+<link rel="import" href="shared_styles.html">
+
+<dom-module id="bluetooth-settings">
+  <template>
+    <!-- TODO(michaelpg): Wrap the line below to fit within the 80-char limit.
+         See https://github.com/Polymer/polymer/pull/3668. -->
+    <style include="device-emulator-shared-styles cr-shared-style iron-flex iron-flex-alignment iron-positioning">
+    </style>
+    <cr-dialog id="editDialog">
+      <div slot="title">[[currentEditableObject.alias]]</div>
+      <div slot="body">
+        <form>
+          <div class="form-field-section">
+            <paper-input value="{{currentEditableObject.alias}}"
+                label="Alias"></paper-input>
+            <paper-input on-input="validatePath"
+                id="devicePathInput"
+                value="{{currentEditableObject.path}}"
+                label="Path" on-input="validatePath"></paper-input>
+            <paper-input value="{{currentEditableObject.name}}"
+                label="Name"></paper-input>
+            <paper-input id="deviceAddressInput" on-input="handleAddressInput"
+                value="{{currentEditableObject.address}}"
+                label="Address (xx:xx:xx:xx:xx:xx)"
+                maxlength="17"></paper-input>
+          </div>
+          <div class="form-field-section">
+            <span class="toggle-button-label">Trusted</span>
+            <cr-checkbox
+                checked="{{currentEditableObject.isTrusted}}"></cr-checkbox>
+          </div>
+          <div class="form-field-section">
+            <span class="toggle-button-label">Incoming Connnection</span>
+            <cr-checkbox
+                checked="{{currentEditableObject.incoming}}"></cr-checkbox>
+          </div>
+          <div class="form-field-section">
+            <div class="form-label">Class</div>
+            <paper-radio-group class="device-class-group"
+                selected="{{currentEditableObject.class}}"
+                selectable="cr-radio-button">
+              <template is="dom-repeat"
+                  items="[[deviceClassOptions]]" as="option">
+                <cr-radio-button name="[[option.text]]"
+                    >[[option.text]]</cr-radio-button>
+              </template>
+            </paper-radio-group>
+          </div>
+          <div class="form-field-section">
+            <label>
+              <span class="form-label">Pair Authentication</span>
+              <paper-radio-group
+                  selected="{{currentEditableObject.pairingMethod}}"
+                  selectable="cr-radio-button">
+                <template is="dom-repeat"
+                    items="[[deviceAuthenticationMethods]]" as="method">
+                  <cr-radio-button name="[[method]]"
+                      >[[method]]</cr-radio-button>
+                </template>
+              </paper-radio-group>
+            </label>
+          </div>
+          <div>
+              <div class="form-field-section"
+                  hidden$=
+                      "[[!showAuthToken(currentEditableObject.pairingMethod)]]"
+                      >
+                <paper-input value="{{currentEditableObject.pairingAuthToken}}"
+                    label="Code"></paper-input>
+              </div>
+            <div class="form-field-section">
+              <label>
+                <span class="form-label">Pairing Action</span>
+                <paper-radio-group
+                    selected="{{currentEditableObject.pairingAction}}"
+                    selectable="cr-radio-button">
+                  <template is="dom-repeat"
+                      items="[[deviceAuthenticationActions]]">
+                    <cr-radio-button name="[[item]]"
+                        >[[item]]</cr-radio-button>
+                  </template>
+                </paper-radio-group>
+              </label>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div slot="button-container">
+        <paper-button class="action-button" on-tap="onCloseTap_">
+          Close
+        </paper-button>
+      </div>
+    </cr-dialog>
+
+    <div class="layout vertical">
+      <div class="element-label">
+        <paper-icon-button icon="device-emulator:bluetooth"></paper-icon-button>
+        Bluetooth
+      </div>
+      <table class="devices-table">
+        <tbody>
+          <tr class="table-section-header">
+            <td colspan="2">Presets</td>
+            <td class="centered-cell-label">Discoverable</td>
+            <td class="centered-cell-label">Paired</td>
+          </tr>
+          <template is="dom-repeat" items="[[predefinedDevices]]">
+            <tr>
+              <td class="alias-cell">[[item.alias]]</td>
+              <td class="icon-cell">
+                <paper-icon-button icon="device-emulator:content-copy"
+                    on-click="copyDevice" data-predefined="true">
+                </paper-icon-button>
+                <paper-icon-button disabled icon="device-emulator:settings">
+                </paper-icon-button>
+                <paper-icon-button disabled icon="device-emulator:delete">
+                </paper-icon-button>
+              </td>
+              <td class="control-cell">
+                <cr-checkbox checked="{{item.discoverable}}"
+                    data-predefined="true"
+                    on-change="discoverDevice"></cr-checkbox>
+              </td>
+              <td class="control-cell">
+                <cr-checkbox on-change="pairDevice" data-predefined="true"
+                    checked="{{item.paired}}"></cr-checkbox>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+        <tbody>
+          <tr class="table-section-header">
+            <td colspan="4">Custom</td>
+          </tr>
+          <template is="dom-repeat" items="[[devices]]">
+            <tr>
+              <td class="alias-cell">[[item.alias]]</td>
+              <td class="icon-cell">
+                <paper-icon-button icon="device-emulator:content-copy"
+                    data-predefined="false" on-click="copyDevice">
+                </paper-icon-button>
+                <paper-icon-button icon="device-emulator:settings"
+                    on-click="showEditDialog">
+                </paper-icon-button>
+                <paper-icon-button icon="device-emulator:delete"
+                    on-click="deleteDevice">
+                </paper-icon-button>
+              </td>
+              <td class="control-cell">
+                <cr-checkbox checked="{{item.discoverable}}"
+                    data-predefined="false"
+                    on-change="discoverDevice"></cr-checkbox>
+              </td>
+              <td class="control-cell">
+                <cr-checkbox checked="{{item.paired}}"
+                    data-predefined="false"
+                    on-change="pairDevice"></cr-checkbox>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+      <div class="add-device-container">
+        <paper-button on-click="appendNewDevice">
+          Add Device
+        </paper-button>
+      </div>
+    </div>
+  </template>
+  <script src="bluetooth_settings.js"></script>
+</dom-module>

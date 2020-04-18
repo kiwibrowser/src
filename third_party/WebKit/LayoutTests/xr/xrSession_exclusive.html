@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="file:///gen/layout_test_data/mojo/public/js/mojo_bindings.js"></script>
+<script src="file:///gen/device/vr/public/mojom/vr_service.mojom.js"></script>
+<script src="../xr/resources/xr-device-mocking.js"></script>
+<script src="../xr/resources/xr-test-utils.js"></script>
+<script src="../xr/resources/test-constants.js"></script>
+<canvas id="webgl-canvas"></canvas>
+
+<script>
+let fakeDevices = fakeXRDevices();
+
+promise_test( (t) => {
+  setFakeDevices([fakeDevices["FakeGooglePixelPhone"]]);
+  return navigator.xr.requestDevice().then( (device) => new Promise((resolve) => {
+    runWithUserGesture( () => {
+      resolve(device.requestSession({ exclusive: true }).then( (session) => {
+        assert_true(session.exclusive);
+        assert_equals(session.device, device);
+        assert_approx_equals(session.depthNear, 0.1, FLOAT_EPSILON);
+        assert_approx_equals(session.depthFar, 1000.0, FLOAT_EPSILON);
+      }));
+    });
+  }));
+}, "supportsSession returns expected exclusive session");
+
+</script>

@@ -1,0 +1,20 @@
+@hex:
+  # Test that we allow the right encoding of the vmovq instruction
+  c5 f9 d6 c1
+@dis:
+     0:	c5 f9 d6 c1                                  	vmovq  %xmm0,%xmm1
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Test that we disallow the wrong encoding of the vmovq instruction
+  c5 fd d6 c1
+@dis:
+     0:	c5 fd d6 c1                                  	vmovq  %xmm0,%xmm1
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  SAFE

@@ -1,0 +1,186 @@
+# Memory management in Blink
+
+This document gives a high-level overview of the memory management in Blink.
+
+[TOC]
+
+## Memory allocators
+
+Blink objects are allocated by one of the following four memory allocators.
+
+### Oilpan
+
+Oilpan is a garbage collection system in Blink.
+The lifetime of objects allocated by Oilpan is automatically managed.
+The following objects are allocated by Oilpan:
+
+* Objects that inherit from GarbageCollected<T> or GarbageCollectedFinalized<T>.
+
+* HeapVector<T>, HeapHashSet<T>, HeapHashMap<T, U> etc
+
+The implementation is in platform/heap/.
+See [BlinkGCDesign.md](../platform/heap/BlinkGCDesign.md) to learn the design.
+
+### PartitionAlloc
+
+PartitionAlloc is Blink's default memory allocator.
+PartitionAlloc is highly optimized for performance and security requirements
+in Blink. All Blink objects that don't need a GC or discardable memory should be
+allocated by PartitionAlloc (instead of malloc).
+The following objects are allocated by PartitionAlloc:
+
+* Objects that have a USING_FAST_MALLOC macro.
+
+* Nodes (which will be moved to Oilpan in the near future)
+
+* LayoutObjects
+
+* Strings, Vectors, HashTables, ArrayBuffers and other primitive containers.
+
+The implementation is in /base/allocator/partition_allocator.
+See [PartitionAlloc.md](/base/allocator/partition_allocator/PartitionAlloc.md)
+to learn the design.
+
+### Discardable memory
+
+Discardable memory is a memory allocator that automatically discards
+(not-locked) objects under memory pressure. Currently SharedBuffers
+(which are mainly used as backing storage of Resource objects) are the only
+user of the discardable memory.
+
+The implementation is in src/base/memory/discardable_memory.*.
+See [this document](https://docs.google.com/document/d/1aNdOF_72_eG2KUM_z9kHdbT_fEupWhaDALaZs5D8IAg/edit)
+to learn the design.
+
+### malloc
+
+When you simply call 'new' or 'malloc', the object is allocated by malloc.
+As mentioned above, malloc is discouraged and should be replaced with
+PartitionAlloc. PartitionAlloc is faster, securer and more instrumentable
+than malloc.
+
+The actual implementation of malloc is platform-dependent.
+As of 2015 Dec, Linux uses tcmalloc. Mac and Windows use their system allocator.
+Android uses device-dependent allocators such as dlmalloc.
+
+## Basic allocation rules
+
+In summary, Blink objects (except several special objects) should be allocated
+using Oilpan or PartitionAlloc. malloc is discouraged.
+
+The following is a basic rule to determine which of Oilpan or PartitionAlloc
+you should use when allocating a new object:
+
+* Use Oilpan if you want a GC to manage the lifetime of the object.
+You need to make the object inherit from GarbageCollected<T> or
+GarbageCollectedFinalized<T>. See
+[BlinkGCAPIReference.md](../platform/heap/BlinkGCAPIReference.md) to learn
+programming with Oilpan.
+
+```c++
+class X : public GarbageCollected<X> {
+  ...;
+};
+
+void func() {
+  X* x = new X;  // This is allocated by Oilpan.
+}
+```
+
+* Use PartitionAlloc if you don't need a GC to manage the lifetime of
+the object (i.e., if RefPtr or OwnPtr is enough to manage the lifetime
+of the object). You need to add a USING_FAST_MALLOC macro to the object.
+
+```c++
+class X {
+  USING_FAST_MALLOC(X);
+  ...;
+};
+
+void func() {
+  scoped_refptr<X> x = adoptRefPtr(new X);  // This is allocated by PartitionAlloc.
+}
+```
+
+It is not a good idea to unnecessarily increase the number of objects
+managed by Oilpan. Although Oilpan implements an efficient GC, the more objects
+you allocate on Oilpan, the more pressure you put on Oilpan, leading to
+a longer pause time.
+
+Here is a guideline for when you ought to allocate an object using Oilpan,
+and when you probably shouldn't:
+
+* Use Oilpan for all script exposed objects (i.e., derives from
+ScriptWrappable).
+
+* Use Oilpan if managing its lifetime is usually simpler with Oilpan.
+But see the next bullet.
+
+* If the allocation rate of the object is very high, that may put unnecessary
+strain on the Oilpan's GC infrastructure as a whole. If so and the object can be
+allocated not using Oilpan without creating cyclic references or complex
+lifetime handling, then use PartitionAlloc. For example, we allocate Strings
+and LayoutObjects on PartitionAlloc.
+
+For objects that don't need an operator new, you need to use either of the
+following macros:
+
+* If the object is only stack allocated, use STACK_ALLOCATED().
+
+```c++
+class X {
+  STACK_ALLOCATED();
+  ...;
+};
+
+void func() {
+  X x;  // This is allowed.
+  X* x2 = new X;  // This is forbidden.
+}
+```
+
+* If the object can be allocated only as a part of object, use DISALLOW_NEW().
+
+```c++
+class X {
+  DISALLOW_NEW();
+  ...;
+};
+
+class Y {
+  USING_FAST_MALLOC(Y);
+  X m_x;  // This is allowed.
+};
+
+void func() {
+  X x;  // This is allowed.
+  X* x = new X;  // This is forbidden.
+}
+```
+
+* If the object can be allocated only as a part of object or by a placement new
+(e.g., the object is used as a value object in a container),
+use DISALLOW_NEW_EXCEPT_PLACEMENT_NEW().
+
+```c++
+class X {
+  DISALLOW_NEW_EXCEPT_PLACEMENT_NEW();
+  ...;
+};
+
+class Y {
+  USING_FAST_MALLOC(Y);
+  X m_x;  // This is allowed.
+  Vector<X> m_vector;  // This is allowed.
+};
+
+void func() {
+  X x;  // This is allowed.
+  X* x = new X;  // This is forbidden.
+}
+```
+
+Note that these macros are inherited. See a comment in wtf/Allocator.h
+for more details about the relationship between the macros and Oilpan.
+
+If you have any question, ask oilpan-reviews@chromium.org.

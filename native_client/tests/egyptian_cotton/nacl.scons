@@ -1,0 +1,147 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+egyptian_cotton_nexe = env.ComponentProgram('egyptian_cotton',
+                                            'egyptian_cotton.c',
+                                            EXTRA_LIBS=['${PTHREAD_LIBS}',
+                                                        '${NONIRT_LIBS}'])
+
+platform_limits_known = False
+
+# this test accepts the number of threads to attempt to create as an
+# argument. NACL_THREAD_MAX is 8192 for x86-32 and x86-64, and 4096
+# for the Arm.  See the header files
+# src/trusted/service_runtime/arch/{x86,arm}/sel_ldr_{x86,arm}.h for
+# the current values (and update this comment to reflect reality!).
+# On the x86_32, the actual number of threads possible is slightly
+# fewer than 8192, since the service runtime's trusted internal
+# threads use the same resource pool.  In practice, 8189 works as of
+# this writing (2010-03-10), but applications should not rely on this
+# going forward, and we only test for 8180 below.  Furthermore, there
+# may be other limitations, e.g, for x86_32, OSX may limit us to far
+# fewer than 8192 (got to 2558 in one test run, when egyptian_cotton
+# was compiled as a standalone non-NaCl program.)
+#
+# The following runs the test with different numbers of threads to be
+# spawned depending on the architecture.  For the Arm, it is 4095
+# threads.  Note that the main thread also counts as one more thread.
+#
+# BUG(bsy): With the Arm architecture under qemu, spawning more than 3
+# threads under will cause qemu to deadlock on exit, even though the
+# test passes, so this is marked as a hardware-only test.  If we were
+# to compile this using the trusted toolchain and run the resultant
+# Arm binary under qemu, qemu will segfault at 375 threads.  It is
+# unclear as of this writing (2010-03-11) whether this is a qemu bug
+# or a limitation/bug of the codesourcery pthread library.
+
+large_stack_args = ['-s', '0x400000', '-n', '4095', '-f' ]
+
+#
+# WARNING: Magic numbers ahead!
+#
+# The high_thread_count_args is used to stress test the thread library and
+# the service runtime by having the test binary (egyptian_cotton.nexe)
+# allocate a large number of concurrent threads.  This is done to ensure
+# that there are no sudden decrease in the number of threads that can be
+# created.  While limits imposed by our threading design -- 8192 for
+# x86-32, and essentially unlimited for x86-64 and arm (though there's a
+# statically sized table involved, so we chose to limit to 8192 as well) --
+# are of our design and thus easy to determine, the underlying host
+# operating system also imposes limits on the number of real underlying
+# host OS threads that can be created.  Thus, the magic numbers below are
+# *empirically* determined.  This is somewhat unfortunate, since it'd be
+# nice to have a better understanding of the source of these limits, and
+# it'd be especially nice if, for example, they could be lifted by some
+# simple configuration parameter (that do not require administrative
+# rights).  Nonetheless, we use the empirically determined values to detect
+# changes that might further reduce the thread limit in practice.  The
+# limits were obtained by simply running egyptian_cotton.nexe manually and
+# seeing where it fails, and subtracting a few, so that minor,
+# inconsequential and negligible changes to the runtime libraries etc won't
+# require updating this test.
+#
+
+if env.Bit('build_arm'):
+  # so far, only linux.
+  # The arm-hw-bot was actually clocked at successfully doing 8191,
+  # though it gets pretty resource-starved near the top and might
+  # crash if anything else is being done on the bot, and takes a
+  # really long time.  Limit to 7000 since that's more than 4096
+  # but not enough to take too long.
+  high_thread_count_nthreads = 7000
+  platform_limits_known = True
+elif env.Bit('build_mips32'):
+  # Based on MIPS Malta 74Kc board.
+  high_thread_count_nthreads = 3500
+  platform_limits_known = True
+elif env.Bit('build_x86'):
+  trusted_env = env.get('TRUSTED_ENV')
+  if trusted_env:
+    platform_limits_known = True
+    if trusted_env.Bit('linux'):
+      high_thread_count_nthreads = 8180
+    elif trusted_env.Bit('mac'):
+      # A value of 2558 worked on OS X 10.5 (Leopard).
+      # This had to be reduced to 2556 to pass on OS X 10.6 (Snow Leopard).
+      # It then had to be reduced to 2044 to pass on OS X 10.7 (Lion).
+      high_thread_count_nthreads = 2044
+      if trusted_env.Bit('asan') and trusted_env.Bit('build_x86_32'):
+        # Under ASan less address space is available.  On MacOS 10.6 on
+        # x86-32 under ASan, ~1100 threads fit (there is some
+        # non-determinism in the upper bound, perhaps due to ASLR).
+        high_thread_count_nthreads = 1100
+    elif trusted_env.Bit('windows'):
+      if trusted_env.Bit('build_x86_32'):
+        high_thread_count_nthreads = 700
+      else:
+        high_thread_count_nthreads = 900
+    else:
+      raise Exception('Unknown host OS: threading limit unknown')
+else:
+  raise Exception('Unknown target architecture -- '
+                  'architecture/host OS thread limits are unknown')
+
+if not platform_limits_known:
+  Return()
+
+# Valgrind's internal configuration variable VG_N_THREAD defaults to
+# 500 (valgrind version 3.8.1), which would be insufficient to keep
+# track of the high thread count used in the egyptian cotton test.
+# Since this test is primarily for catching regressions where we
+# reduce the maximum number of threads available to the NaCl module,
+# reducing it for the valgrind tests is reasonable -- the tests aren't
+# trying to expose thread race conditions or memory leaks.
+# VG_N_SEGMENTS can also cause trouble, due to thread stack
+# allocation.
+if env.IsRunningUnderValgrind():
+  high_thread_count_nthreads = min(high_thread_count_nthreads, 400)
+
+high_thread_count_args = ['-n', str(high_thread_count_nthreads)]
+
+if env.Bit('nacl_glibc'):
+  high_thread_count_args.append('-m')
+elif env.Bit('tests_use_irt'):
+  # With the IRT, there is less address space available for thread stacks.
+  high_thread_count_args += ['-s', str(0x2000)]
+
+tests = [ ('egyptian_cotton_test', high_thread_count_args),
+          ('thread_stack_alloc_test', large_stack_args) ]
+
+# This test does not make much sense on Valgrind, and is too slow.
+if env.IsRunningUnderValgrind():
+  tests = [t for t in tests if t[0] != 'thread_stack_alloc_test']
+
+def ThreadTestNode(name, args):
+  return env.CommandSelLdrTestNacl(name + '.out',
+                                   egyptian_cotton_nexe,
+                                   size='large',
+                                   args=args)
+
+nodes = [ ThreadTestNode(name, args) for name, args in tests ]
+
+for p, n in zip(tests, nodes):
+  env.AddNodeToTestSuite(n, ['medium_tests', 'sel_ldr_tests'], 'run_' + p[0])

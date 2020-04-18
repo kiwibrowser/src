@@ -1,0 +1,97 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+<script src="../../../../resources/js-test.js"></script>
+<style type="text/css">
+::-webkit-scrollbar {
+  background-color: #ccc;
+  height: 15px;
+  width: 15px;
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #777;
+  height: 15px;
+  width: 15px;
+}
+
+#text {
+    height: 300px;
+    width: 200px;
+}
+</style>
+</head>
+<body onload="runTest();">
+<textarea id="text">
+Attack your ankles catnip leap hiss chase the red dot, zzz run run I don't like
+that food puking eat feed me.  Attack shed everywhere sleep on your face
+scratched bat sleep on your keyboard, chase the red dot attack your ankles
+attack biting eat the grass bat.  Sunbathe chase the red dot eat the grass
+attack sleep on your face rip the couch, toss the mousie sleep in the sink lick
+climb the curtains.  I don't like that food meow climb the curtains toss the
+mousie tail flick stuck in a tree, judging you toss the mousie stretching
+hairball biting attack.  Give me fish eat judging you claw, eat biting I don't
+like that food toss the mousie catnip sleep in the sink toss the mousie purr.
+Sniff sleep on your keyboard eat the grass lick, rip the couch give me fish leap
+bat shed everywhere knock over the lamp jump on the table toss the mousie.
+</textarea>
+
+<script type="text/javascript">
+
+var textArea;
+
+function verticalScrollTest() {
+    textArea = document.getElementById('text');
+    var scrollbarX = textArea.offsetLeft + textArea.offsetWidth - 5;
+    var scrollThumbSafeOffset = 20;
+    var scrollbarY = textArea.offsetTop + scrollThumbSafeOffset;
+
+    // Ensure we use a touch with an area to test under touch adjustment
+    var touchWidth = 25;
+    var touchHeight = 25;
+
+    eventSender.gestureTapDown(
+        scrollbarX, scrollbarY, touchWidth, touchHeight);
+    shouldBe('textArea.scrollTop', '0');
+    eventSender.gestureShowPress(
+        scrollbarX, scrollbarY, touchWidth, touchHeight);
+    eventSender.gestureScrollBegin(
+        scrollbarX, scrollbarY);
+    eventSender.gestureScrollUpdate(0, 20);
+    eventSender.gestureScrollEnd(0, 0);
+    shouldBeGreaterThanOrEqual('textArea.scrollTop', '1');
+
+    // If we've got here, we've passed.
+    isSuccessfullyParsed();
+}
+
+function exitIfNecessary()
+{
+    debug('Gesture events not implemented on this platform or broken');
+    isSuccessfullyParsed();
+}
+
+function runTest()
+{
+    internals.settings.setMockScrollbarsEnabled(true);
+    if (window.eventSender) {
+        description(
+            'This tests scroll gesture events on a textarea scrollbar. ' +
+            'The textarea below should be slightly scrolled down ' +
+            'if successful.');
+
+        if (eventSender.clearTouchPoints)
+            verticalScrollTest();
+        else
+            exitIfNecessary();
+    } else {
+        debug("This test requires DumpRenderTree.");
+    }
+}
+</script>
+</body>
+</html>

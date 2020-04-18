@@ -1,0 +1,18 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+sbrk_nexe = env.ComponentProgram('sbrk_test',
+                                 ['sbrk_test.c'],
+                                 EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+    'sbrk_test.out',
+    sbrk_nexe,
+    )
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_sbrk_test')

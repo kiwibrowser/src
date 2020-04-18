@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="file:///gen/layout_test_data/mojo/public/js/mojo_bindings.js"></script>
+<script src="file:///gen/device/vr/public/mojom/vr_service.mojom.js"></script>
+<script src="../xr/resources/xr-device-mocking.js"></script>
+<script src="../xr/resources/xr-test-utils.js"></script>
+<canvas id="webgl-canvas"></canvas>
+
+<script>
+let fakeDevices = fakeXRDevices();
+
+xr_session_promise_test( (session) => new Promise((resolve) => {
+    // Session must have a baseLayer or frame requests will be ignored.
+    session.baseLayer = new XRWebGLLayer(session, gl);
+
+    function onFrame(time, xrFrame) {
+      assert_true(xrFrame instanceof XRPresentationFrame);
+      // Test does not complete until the returned promise resolves.
+      resolve();
+    }
+
+    session.requestAnimationFrame(onFrame);
+  }), fakeDevices["FakeGooglePixelPhone"], [
+      { exclusive: true },
+      { outputContext: getOutputContext() }
+  ],
+"XRSession requestAnimationFrame properly calls the provided callback");
+
+</script>

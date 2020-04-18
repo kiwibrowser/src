@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="../resources/device-orientation-helpers.js"></script>
+<script>
+'use strict';
+
+async_test(test => {
+  assertTestRunner();
+  var orientationData1 = generateOrientationData(1, 2, 3, true);
+  var orientationData2 = generateOrientationData(11, 12, 13, true);
+  var counter = 0;
+
+  var firstListener = test.step_func(event => {
+    checkOrientation(event, orientationData1);
+    ++counter;
+    proceedIfNecessary();
+  });
+
+  var secondListener = test.step_func(event => {
+    checkOrientation(event, orientationData1);
+    ++counter;
+    proceedIfNecessary();
+  });
+
+  function proceedIfNecessary() {
+    if (counter == 2) {
+      setMockOrientation(orientationData2);
+      // Note: this should not stop Device Orientation updates,
+      // because there is still one listener active.
+      window.removeEventListener('deviceorientation', secondListener);
+      setTimeout(initThirdListener, 0);
+    }
+  }
+
+  var childFrame;
+  function initThirdListener() {
+    childFrame = document.createElement('iframe');
+    document.body.appendChild(childFrame);
+    childFrame.contentWindow.addEventListener('deviceorientation', thirdListener);
+  }
+
+  var thirdListener = test.step_func(event => {
+    // Expect the cached event because Device Orientation was already active
+    // when third listener was added.
+    checkOrientation(event, orientationData1);
+    window.removeEventListener('deviceorientation', firstListener);
+    childFrame.contentWindow.removeEventListener('deviceorientation', thirdListener);
+    setTimeout(initFourthListener, 0);
+  });
+
+  function initFourthListener() {
+    window.addEventListener('deviceorientation', fourthListener);
+  }
+
+  var fourthListener = test.step_func(event => {
+    checkOrientation(event, orientationData2);
+    test.done();
+  });
+
+  setMockOrientation(orientationData1);
+  window.addEventListener('deviceorientation', firstListener);
+  window.addEventListener('deviceorientation', secondListener);
+}, 'Tests using multiple event handlers for the Device Orientation API.');
+</script>
+</body>
+</html>

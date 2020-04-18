@@ -1,0 +1,45 @@
+# -*- python -*-
+# Copyright (c) 2013 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# IRT backward compatibility test
+
+# This test uses a nexe built by another test.  Nexes do not get
+# staged in pexe mode, so only run this test in nonpexe mode.
+if env.Bit('pnacl_generate_pexe'):
+  Return()
+
+# The new glibc requires some newer IRT interfaces.
+if env.Bit('nacl_glibc') and not env.Bit('build_x86'):
+  Return()
+
+blob_env = env['NACL_IRT_ENV'].Clone()
+blob_env.Append(LINKFLAGS=['-Wl,-Trodata-segment=${IRT_BLOB_DATA_START}',
+                           '-Wl,-Ttext-segment=${IRT_BLOB_CODE_START}'])
+
+# Build custom IRT library which provides a minimal subset of old
+# interface versions.
+blob_env.Append(CPPDEFINES=[['ALLOW_DYNAMIC_LINKING',
+                             str(int(not env.Bit('nacl_static_link')))]])
+irt_comp_test_raw_library = blob_env.ComponentProgram(
+    'irt_comp_test_raw', ['irt_comp_interfaces.c'],
+    EXTRA_LIBS=['irt_support_private'])
+
+irt_comp_test_library = env.ApplyTLSEdit(
+    'irt_comp_test',
+    irt_comp_test_raw_library)
+
+# Don't provide IRT, we provide it ourselves via -B.
+env.ClearBits('tests_use_irt')
+
+node = env.CommandSelLdrTestNacl(
+    'irt_compatibility_test.out',
+    env.File('${STAGING_DIR}/hello_world.nexe'),
+    sel_ldr_flags=['-B', irt_comp_test_library],
+    stdout_golden=env.File('../hello_world/hello_world.stdout'))
+
+env.AddNodeToTestSuite(node, ['small_tests', 'nonpexe_tests'],
+                       'run_irt_compatibility_test')

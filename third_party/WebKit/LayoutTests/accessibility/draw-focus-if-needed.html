@@ -1,0 +1,57 @@
+<!DOCTYPE HTML>
+<head>
+<title>Canvas test: drawSystemFocusRing</title>
+<script src="../resources/js-test.js"></script>
+</head>
+<body style="padding: 0; margin: 0">
+<canvas id="canvas" class="output" width="300" height="350">
+    <button id="button1"></button>
+    <div id="container">
+      <button id="button2"></button>
+    </div>
+</canvas>
+<div id="console"></div>
+<script>
+if (window.testRunner)
+    testRunner.dumpAsText();
+
+if (window.accessibilityController) {
+    window.axButton1 = accessibilityController.accessibleElementById("button1");
+    window.axContainer = accessibilityController.accessibleElementById("container");
+    window.axButton2 = accessibilityController.accessibleElementById("button2");
+}
+
+var canvas = document.getElementById("canvas").getContext("2d");
+canvas.save();
+canvas.translate(50, 50);
+
+canvas.beginPath();
+canvas.rect(0, 0, 200, 100);
+canvas.fillStyle = '#ccf';
+canvas.fill();
+canvas.drawFocusIfNeeded(document.getElementById('button1'));
+
+canvas.beginPath();
+canvas.rect(0, 150, 200, 100);
+canvas.fillStyle = '#cfc';
+canvas.fill();
+canvas.drawFocusIfNeeded(document.getElementById('button2'));
+
+canvas.restore();
+
+shouldBe("axButton1.x", "50");
+shouldBe("axButton1.y", "50");
+shouldBe("axButton1.width", "200");
+shouldBe("axButton1.height", "100");
+
+shouldBe("axContainer.x", "50");
+shouldBe("axContainer.y", "200");
+shouldBe("axContainer.width", "200");
+shouldBe("axContainer.height", "100");
+
+shouldBe("axButton2.x", "50");
+shouldBe("axButton2.y", "200");
+shouldBe("axButton2.width", "200");
+shouldBe("axButton2.height", "100");
+</script>
+</body>

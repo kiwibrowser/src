@@ -1,0 +1,38 @@
+digraph files32 {
+	node [shape=tab];
+	def_files [label=<
+	  <table border="0">
+	    <tr><td align="left">general_purpose_instructions.def</td></tr>
+	    <tr><td align="left">mmx_instructions.def</td></tr>
+	    <tr><td align="left">nops.def</td></tr>
+	    <tr><td align="left">system_instructions.def</td></tr>
+	    <tr><td align="left">x87_instructions.def</td></tr>
+	    <tr><td align="left">xmm_instructions.def</td></tr></table>
+	> style="filled" fillcolor="lightgray"];
+	byte_machines_py [label="byte_machines.py" style="filled" fillcolor="lightgray"];
+	parse_instruction_rl [label="parse_instruction.rl" style="filled" fillcolor="lightgray"];
+	validator_x86_32_rl [label="validator_x86_32.rl" style="filled" fillcolor="lightgray"];
+	decoding_h [label="decoding.h" style="filled" fillcolor="lightgray"];
+	validator_internal_h [label="validator_internal.h" style="filled" fillcolor="lightgray"];
+	node [shape="invtrapezium"];
+	gen_dfa [label="gen_dfa.py" style="filled" fillcolor="gray"];
+	ragel [label="ragel & codegen.py" style="filled" fillcolor="gray"];
+	gcc [label="gcc" style="filled" fillcolor="gray"];
+	node [shape=rect];
+	validator_x86_32_c [label="validator_x86_32.c"];
+	validator_x86_32_instruction_rl [label="validator_x86_32_instruction.rl"];
+	byte_machines_rl [label="byte_machines.rl"];
+	validator_x86_32_o [label="validator_x86_32.o"];
+	def_files -> gen_dfa [color="black:black"];
+	gen_dfa -> validator_x86_32_instruction_rl [color="black:black"];
+	byte_machines_py -> byte_machines_rl [label="python" weight="0"];
+	byte_machines_rl -> ragel [color="black:black"];
+	parse_instruction_rl -> ragel [color="black:black" weight="0"];
+	validator_x86_32_rl -> ragel [color="black:black" weight="0"];
+	validator_x86_32_instruction_rl -> ragel [color="black:black"];
+	ragel -> validator_x86_32_c [color="black:black"];
+	validator_x86_32_c -> gcc [color="black:black"];
+	decoding_h -> gcc [color="black:black"];
+	validator_internal_h -> gcc [color="black:black"];
+	gcc -> validator_x86_32_o [color="black:black"];
+}

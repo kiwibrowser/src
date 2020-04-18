@@ -1,0 +1,342 @@
+<link rel="import" href="chrome://resources/cr_elements/paper_button_style_css.html">
+<link rel="import" href="chrome://resources/cr_elements/paper_input_style_css.html">
+<link rel="import" href="chrome://resources/cr_elements/search_highlight_style_css.html">
+<link rel="import" href="chrome://resources/cr_elements/shared_vars_css.html">
+<link rel="import" href="chrome://resources/cr_elements/shared_style_css.html">
+<link rel="import" href="settings_icons_css.html">
+<link rel="import" href="settings_vars_css.html">
+
+
+<!-- Common styles for Material Design settings. -->
+<dom-module id="settings-shared">
+  <template>
+    <style include="settings-icons paper-button-style paper-input-style cr-shared-style search-highlight-style">
+      /* Prevent action-links from being selected to avoid accidental
+       * selection when trying to click it. */
+      a[is=action-link] {
+        user-select: none;
+      }
+
+      /* Use <h2> as the "sub-header" mentioned in the UX design docs. */
+      h2 {
+        align-items: center;
+        align-self: flex-start;
+        color: var(--paper-grey-600);
+        display: flex;
+        font-size: inherit;
+        font-weight: 500;
+        margin: 0;
+        padding-bottom: 12px;
+        padding-top: 32px;
+      }
+
+      iron-icon {
+        flex-shrink: 0;  /* Prevent distortion of icons in cramped UI. */
+      }
+
+      iron-icon[icon='cr:check'],
+      iron-icon[icon='settings:done'] {
+       --iron-icon-fill-color: var(--google-green-500);
+      }
+
+      iron-list {
+        --iron-list-items-container: {
+          /* Text selection in an iron-list is problematic because the items are
+           * reused. The result is the selection happens somewhat arbitrarily.
+           * Add a |risk-selection| attribute to enabled selection in an
+           * iron-list. */
+          user-select: none;
+        }
+      }
+
+      iron-list[risk-selection] {
+        --iron-list-items-container: {
+          /* On short lists where selection is likely desired, we'll risk having
+           * text selection enabled. If the list is short enough that items are
+           * not actually reused, the bugs with selection are not evident. */
+          user-select: text;
+        }
+      }
+
+      .separator + paper-icon-button-light {
+        -webkit-margin-start: var(--cr-icon-ripple-margin);
+      }
+
+      neon-animatable {
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* For "Advanced" toggle button. */
+      paper-button[toggles][active] {
+        background-color: var(--paper-grey-300);
+      }
+
+      /* Special case for buttons inside of toggle-buttons. */
+      .settings-box settings-toggle-button paper-button:last-of-type {
+        -webkit-margin-end: 16px;
+      }
+
+      /* Space out multiple buttons in the same row. */
+      .settings-box paper-button + paper-button {
+        -webkit-margin-start: 16px;
+      }
+
+      span ~ a {
+        -webkit-margin-start: 4px;
+      }
+
+      a[href] {
+        color: var(--google-blue-700);
+        text-decoration: none;
+      }
+
+      /* For elements that are simple out-links but don't look like anchors. */
+      .inherit-color {
+        color: inherit !important;
+      }
+
+      .primary-toggle {
+        color: var(--paper-grey-600);
+        font-weight: 500;
+      }
+
+      .primary-toggle[checked] {
+        color: var(--google-blue-500);
+      }
+
+      controlled-radio-button,
+      cr-radio-button {
+        min-height: var(--settings-row-min-height);
+      }
+
+      paper-radio-group {
+        width: 100%;
+      }
+
+      paper-radio-group:focus {
+        background-color: var(--google-grey-300);
+        outline: none;
+      }
+
+      /* See also: .no-min-width below. */
+      .text-elide {
+        @apply --cr-text-elide;
+      }
+
+      /* By default, flexbox children have min-width calculated to be the width
+       * of the content. However, in some cases we might want to allow the
+       * width to be smaller than the content (i.e. for long text to ellipsis).
+       * In such cases this class should be applied.
+       * (See: https://bugzilla.mozilla.org/show_bug.cgi?id=1108514#c5) */
+      .no-min-width {
+        min-width: 0;
+      }
+
+      .header-aligned-button {
+        margin-top: 12px;  /* Align paper-button with <h2>. */
+      }
+
+      /* A list-frame is an outer container for list-items. It is intended to be
+       * outside of a settings-box. A list-frame is likely to follow a
+       * settings box. */
+      .list-frame {
+        @apply --settings-list-frame-padding;
+        align-items: center;
+        display: block;
+      }
+
+      /* A list-item is intended to be contained within a list-frame. The list
+       * frame will set up the initial start margin. */
+      .list-item {
+        align-items: center;
+        display: flex;
+        min-height: var(--settings-row-min-height);
+        padding: 0;
+      }
+
+      /* A thin separator line under a list item. */
+      .list-item.underbar {
+        border-bottom: var(--settings-separator-line);
+      }
+
+      .list-item.selected {
+        font-weight: 500;
+      }
+
+      /* The middle part (horizontally) of a list item. */
+      .list-item .middle {
+        flex: 1;
+        margin: 8px 16px;
+      }
+
+      /* The start (left in LTR) part (horizontally) of a list item. */
+      .list-item > .start {
+        flex: 1;
+      }
+
+      .list-item > label span[disabled] {
+        opacity: var(--settings-disabled-opacity);
+      }
+
+      /* This button has no ink ripple. */
+      .list-button[is='action-link'] {
+        align-items: center;
+        display: flex;
+        flex: 1;
+        font-weight: 500;
+        min-height: inherit;
+      }
+
+      /* A row with two lines of text. Often the lower line will be .secondary.
+       */
+      .two-line {
+        min-height: var(--settings-row-two-line-min-height);
+      }
+
+      /* A settings-box is a horizontal row of text or controls within a
+       * setting section (page or subpage). */
+      .settings-box {
+        @apply --cr-section;
+      }
+
+      .settings-box.two-line {
+        min-height: var(--settings-row-two-line-min-height);
+      }
+
+      .settings-box.three-line {
+        min-height: var(--settings-row-three-line-min-height);
+      }
+
+      /* We use an explicit tag to remove the top border, rather than a
+       * :first-of-type modifier. This is a conscious choice, please consult
+       * with dbeam@ or dschuyler@ prior to changing it. */
+      .settings-box.first,
+      .settings-box.continuation {
+        border-top: none;
+      }
+
+      h2.first {
+        padding-top: 0;
+      }
+
+      .settings-box.block {
+        display: block;
+      }
+
+      /* A start-aligned column. */
+      .single-column {
+        align-items: flex-start;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      /* A settings-box with no height other than the separator line. */
+      .settings-box.line-only {
+        min-height: 0;
+      }
+
+      /* A settings-box that is embedded in another settings-box (e.g. a control
+       * that is associated with a toggle button). */
+      .settings-box.embedded {
+        -webkit-padding-start: var(--settings-box-row-indent);
+      }
+
+      /* The lower line of text in a two-line row. */
+      .secondary {
+        @apply --cr-secondary-text;
+      }
+
+      /* The |:empty| CSS selector only works when there is no whitespace.
+       * E.g. <div>[[foo]]</div> will be |:empty| when foo == ""; and
+       * <div> [[foo]] </div> will not be |:empty| when foo == "". Ensure there
+       * is no extra whitespace when the contents of .secondary may be "".
+       */
+      .secondary:empty {
+        margin: 0;
+      }
+
+      /* The middle part (horizontally) of a row. */
+      .settings-box .middle {
+        -webkit-padding-start: 16px;
+        align-items: center;
+        flex: auto;
+      }
+
+      .settings-box .middle.two-line,
+      .settings-box .start.two-line {
+        display: flex;
+      }
+
+      /* The start (left in LTR) part (horizontally) of a row. */
+      .settings-box .start {
+        align-items: center;
+        flex: auto;
+      }
+
+      /* For grouping elements with common flex options. */
+      .settings-row {
+        align-items: center;
+        display: flex;
+        flex-direction: row;
+        max-width: 100%;
+        min-width: 0;  /* Workaround for text elision in sub-elements. */
+      }
+
+      .no-outline {
+        background: none;
+        outline: none;
+      }
+
+      /* Prevent icon-button's ripples from fighting with potential scrollbars.
+       * Also apply to all iron-lists to align the buttons across them all.*/
+      [scrollable],
+      iron-list,
+      .list-item {
+        --cr-paper-icon-button-margin: {
+          -webkit-margin-end: 0;
+          -webkit-margin-start: var(--cr-icon-button-margin-start);
+        };
+      }
+
+      /* Helper for a list frame to automatically avoid the separator line. */
+      .vertical-list > *:not(:first-of-type) {
+        border-top: var(--settings-separator-line);
+      }
+
+      /* The separator a vertical line like a horizontal rule <hr> tag, but goes
+       * the other way. An example is near the |sign out| button on the People
+       * settings. */
+      .separator {
+        -webkit-border-start: var(--settings-separator-line);
+        flex-shrink: 0;
+        /* Match paper-button's default height. */
+        height: 32px;
+        margin: 0 16px;
+      }
+
+      .favicon-image {
+        background-repeat: no-repeat;
+        background-size: contain;
+        height: 16px;
+        width: 16px;
+      }
+
+      .column-header {
+        color: var(--paper-grey-600);
+        font-weight: 500;
+      }
+
+      /* Error message that appears in a toast to indicate the success or
+       * failure of an operation. An example is when adding a printer. */
+      .error-message {
+        color: white;
+        font: 13px;
+        padding-bottom: 15px;
+        padding-top: 15px;
+        text-align: center;
+        white-space: normal;
+      }
+    </style>
+  </template>
+</dom-module>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<style>
+  body {
+    margin: 0;
+  }
+  iframe {
+    height: 900px;
+    width: 900px;
+    margin-left: 51px;
+    margin-top: 52px;
+    border: none;
+  }
+</style>
+
+<iframe id='iframe' src='resources/iframe-containing-non-fast-scrollables.html'></iframe>
+
+<script src="resources/non-fast-scrollable-region-testing.js"></script>
+<script src="../resources/run-after-layout-and-paint.js"></script>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script>
+  async_test((t) => {
+    var iframeWindow = document.querySelector("iframe").contentWindow;
+    iframeWindow.addEventListener("load", () => {
+      nonFastScrollableRects = internals.nonFastScrollableRects(document);
+      assert_equals(nonFastScrollableRects.length, 3);
+
+      var iframeElement = document.querySelector("iframe");
+      iframeElement.style.visibility = 'hidden';
+
+      runAfterLayoutAndPaint(() => {
+        nonFastScrollableRects = internals.nonFastScrollableRects(document);
+        assert_equals(nonFastScrollableRects.length, 0);
+        t.done();
+      });
+    });
+  }, "This test ensures that non-fast scrollable area is re-computed on FrameView visibility changes.");
+</script>

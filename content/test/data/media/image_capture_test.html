@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+<!-- Image Capture Browser Test -->
+</head>
+<body>
+<script type="text/javascript" src="webrtc_test_utilities.js"></script>
+<script>
+const WIDTH = 640;
+/** @const */ var CONSTRAINTS = { width: { max : WIDTH } };
+
+// Returns a Promise resolved with |object| after a delay of |delayInMs|.
+function delayedResolver(object, delayInMs) {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => { resolve(object); }, delayInMs);
+  });
+}
+
+// Runs an ImageCapture.getPhotoCapabilities() and expects it to succeed.
+function testCreateAndGetPhotoCapabilitiesSucceeds() {
+  navigator.mediaDevices.getUserMedia({"video" : CONSTRAINTS})
+      .then(stream => {
+        assertEquals('video', stream.getVideoTracks()[0].kind);
+        return new ImageCapture(stream.getVideoTracks()[0]);
+      })
+      .then(capturer => {
+        return capturer.getPhotoCapabilities();
+      })
+      .then(capabilities => {
+        // There's nothing to check here since |capabilities| vary per device.
+        reportTestSuccess();
+      })
+      .catch(err => {
+        return failTest(err.toString());
+      });
+}
+
+// Runs an ImageCapture.getPhotoSettings() and expects it to succeed.
+function testCreateAndGetPhotoSettingsSucceeds() {
+  navigator.mediaDevices.getUserMedia({"video" : CONSTRAINTS})
+      .then(stream => {
+        assertEquals('video', stream.getVideoTracks()[0].kind);
+        return new ImageCapture(stream.getVideoTracks()[0]);
+      })
+      .then(capturer => {
+        return capturer.getPhotoSettings();
+      })
+      .then(settings => {
+        // There's nothing to check here since |settings| vary per device.
+        reportTestSuccess();
+      })
+      .catch(err => {
+        return failTest(err.toString());
+      });
+}
+
+// Runs an ImageCapture.takePhoto() and expects it to succeed.
+function testCreateAndTakePhotoSucceeds() {
+  navigator.mediaDevices.getUserMedia({"video" : CONSTRAINTS})
+      .then(stream => {
+        assertEquals('video', stream.getVideoTracks()[0].kind);
+        return new ImageCapture(stream.getVideoTracks()[0]);
+      })
+      .then(capturer => {
+        return capturer.takePhoto();
+      })
+      .then(blob => {
+        assertTrue(blob.type != undefined);
+        assertNotEquals(0, blob.size);
+
+        reportTestSuccess();
+      })
+      .catch(err => {
+        return failTest(err.toString());
+      });
+}
+
+// Runs an ImageCapture.takePhoto() and expects it to get rejected.
+function testCreateAndTakePhotoIsRejected() {
+  navigator.mediaDevices.getUserMedia({"video" : CONSTRAINTS})
+      .then(stream => {
+        assertEquals('video', stream.getVideoTracks()[0].kind);
+        return new ImageCapture(stream.getVideoTracks()[0]);
+      })
+      .then(capturer => {
+        return capturer.takePhoto();
+      })
+      .then(blob => {
+        failTest('Expected promise to get rejected but it was fulfilled');
+      }, err => {
+        reportTestSuccess();
+      })
+      .catch(err => {
+        return failTest(err.toString());
+      });
+}
+
+// Runs an ImageCapture.grabFrame() and expects it to succeed.
+function testCreateAndGrabFrameSucceeds() {
+  navigator.mediaDevices.getUserMedia({"video" : CONSTRAINTS})
+      .then(stream => {
+        assertEquals('video', stream.getVideoTracks()[0].kind);
+        return new ImageCapture(stream.getVideoTracks()[0]);
+      })
+      .then(capturer => {
+        return capturer.grabFrame();
+      })
+      .then(imageBitmap => {
+        // On Android, depending on the device orientation, |imageBitmap| might
+        // appear rotated.
+        assertTrue(WIDTH == imageBitmap.width || WIDTH == imageBitmap.height);
+
+        reportTestSuccess();
+      })
+      .catch(err => {
+        return failTest(err.toString());
+      });
+}
+
+// Runs a MediaStreamTrack.getCapabilities().
+function testCreateAndGetTrackCapabilities() {
+  var imageCapturer;
+  navigator.mediaDevices.getUserMedia({"video" : CONSTRAINTS})
+      .then(stream => {
+        assertEquals('video', stream.getVideoTracks()[0].kind);
+        return new ImageCapture(stream.getVideoTracks()[0]);
+      })
+      .then(capturer => {
+        imageCapturer = capturer;
+        // TODO(mcasas): Before accesing synchronous track APIs we need a delay,
+        // use instead a round trip of capabilities: https://crbug.com/711524.
+        return capturer.getPhotoCapabilities();
+      })
+      .then(capabilities => {
+        imageCapturer.track.getCapabilities();
+        // There's nothing to check here since |capabilities| vary per device.
+        reportTestSuccess();
+      })
+      .catch(err => {
+        return failTest(err.toString());
+      });
+}
+
+// Runs an MediaStreamTrack.getSettings().
+function testCreateAndGetTrackSettings() {
+  var imageCapturer;
+  navigator.mediaDevices.getUserMedia({"video" : CONSTRAINTS})
+      .then(stream => {
+        assertEquals('video', stream.getVideoTracks()[0].kind);
+        return new ImageCapture(stream.getVideoTracks()[0]);
+      })
+      .then(capturer => {
+        imageCapturer = capturer;
+        // TODO(mcasas): Before accesing synchronous track APIs we need a delay,
+        // use instead a round trip of capabilities: https://crbug.com/711524.
+        return capturer.getPhotoCapabilities();
+      })
+      .then(capabilities => {
+        imageCapturer.track.getSettings();
+        // There's nothing to check here since |settings| vary per device.
+        reportTestSuccess();
+      })
+      .catch(err => {
+        return failTest(err.toString());
+      });
+}
+
+// Tries to read, set and read back the zoom capability if available.
+function testManipulateZoom() {
+  var newZoom = -1;
+  var imageCapturer;
+  var zoomTolerance;
+  navigator.mediaDevices.getUserMedia({"video" : CONSTRAINTS})
+      .then(stream => {
+        assertEquals('video', stream.getVideoTracks()[0].kind);
+        return new ImageCapture(stream.getVideoTracks()[0]);
+      })
+      .then(capturer => {
+        imageCapturer = capturer;
+        // TODO(mcasas): Before accesing synchronous track APIs we need a delay,
+        // use instead a round trip of capabilities: https://crbug.com/711524.
+        return capturer.getPhotoCapabilities();
+      })
+      .then(capabilities => {
+        const trackCapabilities = imageCapturer.track.getCapabilities();
+        if (trackCapabilities.zoom === undefined) {
+          console.log('zoom not supported, skipping test');
+          reportTestSuccess();
+          return;
+        }
+
+        const currentZoom = imageCapturer.track.getSettings().zoom;
+        newZoom = currentZoom + trackCapabilities.zoom.step;
+        newZoom = Math.min(newZoom, trackCapabilities.zoom.max);
+        console.log("Setting zoom from " + currentZoom + " to " + newZoom);
+        zoomTolerance = trackCapabilities.zoom.step / 10;
+
+        return imageCapturer.track.applyConstraints({advanced : [{zoom : newZoom}]});
+      })
+      .then(() => {
+        assertEquals(newZoom,
+                     imageCapturer.track.getConstraints().advanced[0].zoom);
+        assertTrue(Math.abs(newZoom - imageCapturer.track.getSettings().zoom)
+            < zoomTolerance);
+        reportTestSuccess();
+      })
+      .catch(err => {
+        return failTest(err.toString());
+      });
+}
+
+</script>
+</body>
+</html>

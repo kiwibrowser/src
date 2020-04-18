@@ -1,0 +1,77 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+
+import os
+import sys
+Import('env')
+
+
+env.ComponentLibrary(env.NaClTargetArchSuffix('ncfileutils'), ['ncfileutil.c'])
+
+env.ComponentLibrary('validation_cache', ['validation_cache.c'])
+
+env.ComponentLibrary('validators', ['validator_init.c'])
+
+if env.Bit('build_x86') or env.Bit('build_mips32'):
+  # TODO(ncbray) support ARM.  This will require making validation caching safe
+  # for ARM and embedding ARM binary chunks in the test that can trigger various
+  # validation scenarios.
+  gtest_env = env.MakeGTestEnv()
+
+  validation_cache_test_exe = gtest_env.ComponentProgram(
+      'validation_cache_test',
+      ['validation_cache_test.cc'],
+      EXTRA_LIBS=['validators', 'nrd_xfer', 'validation_cache'])
+
+  node = gtest_env.CommandTest(
+      'validation_cache_test.out',
+      command=[validation_cache_test_exe])
+
+  env.AddNodeToTestSuite(node, ['small_tests', 'validator_tests'],
+                         'run_validation_cache_test')
+
+if env.Bit('build_x86') or env.Bit('build_arm'):
+  gtest_env = env.MakeGTestEnv()
+
+  validator_debug_stub_test_exe = gtest_env.ComponentProgram(
+      'validator_debug_stub_test',
+      ['validator_debug_stub_test.cc'],
+      EXTRA_LIBS=['validators', 'nrd_xfer'])
+
+  node = gtest_env.CommandTest(
+      'validator_debug_stub_test.out',
+      command=[validator_debug_stub_test_exe])
+
+  env.AddNodeToTestSuite(node, ['small_tests', 'validator_tests'],
+                         'run_validator_debug_stub_test')
+
+if env.Bit('build_x86_64'):
+  gtest_env = env.MakeGTestEnv()
+
+  validation_disable_nontemporals_test_exe = gtest_env.ComponentProgram(
+      'validation_disable_nontemporals_test',
+      ['validation_disable_nontemporals_test.cc'],
+      EXTRA_LIBS=['validators', 'nrd_xfer'])
+
+  node = gtest_env.CommandTest(
+      'validation_disable_nontemporals_test.out',
+      command=[validation_disable_nontemporals_test_exe])
+
+  env.AddNodeToTestSuite(node, ['small_tests', 'validator_tests'],
+                         'run_disable_nontemporals_test')
+
+if env.Bit('build_x86'):
+  validation_rewrite_test_exe = gtest_env.ComponentProgram(
+      'validation_rewrite_test',
+      ['validation_rewrite_test.cc', 'validation_rewrite_test_data.S'],
+      EXTRA_LIBS=['validators', 'nrd_xfer'])
+
+  node = gtest_env.CommandTest(
+      'validation_rewrite_test.out',
+      command=[validation_rewrite_test_exe])
+
+  env.AddNodeToTestSuite(node, ['small_tests', 'validator_tests'],
+                         'run_validation_rewrite_test')

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<script src="../../../resources/js-test.js"></script>
+<style>
+body {
+    height: 1800px;
+}
+</style>
+<body>
+<script>
+window.jsTestIsAsync = true;
+
+description("This test scrolls by clicking in the scrollbar track.");
+
+// Compute ScrollableArea::pageStep.
+var pageStep = innerHeight * 0.875;
+if (navigator.userAgent.indexOf("Mac OS X") >= 0)
+    pageStep = Math.max(pageStep, innerHeight - 40);
+
+onload = function() {
+    if (!window.eventSender || !window.internals) {
+        finishJSTest();
+        return;
+    }
+
+    // Turn on smooth scrolling.
+    internals.settings.setScrollAnimatorEnabled(true);
+
+    // Click in the vertical scrollbar track, below the thumb.
+    eventSender.mouseMoveTo(790, 280);
+    eventSender.mouseDown();
+    eventSender.mouseUp();
+
+    // A second click should have no effect since we will be under the thumb
+    // by the time the animation completes.
+    eventSender.mouseDown();
+    eventSender.mouseUp();
+
+    shouldBecomeEqual("scrollY", "pageStep", function() {
+        requestAnimationFrame(function() {
+            // Make sure we stopped here.
+            shouldBe("scrollY", "pageStep");
+            finishJSTest();
+       });
+    });
+};
+</script>
+</body>

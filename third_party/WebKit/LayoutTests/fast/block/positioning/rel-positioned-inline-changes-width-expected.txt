@@ -1,0 +1,11 @@
+An abspos element should move with the edge of its inline relpos container when the latter changes width.
+
+hello world
+PASS
+hello world
+PASS
+hello world
+PASS
+hello world
+PASS
+

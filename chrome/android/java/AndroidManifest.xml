@@ -1,0 +1,1184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2015 The Chromium Authors. All rights reserved.
+     Use of this source code is governed by a BSD-style license that can be
+     found in the LICENSE file. -->
+
+<!--
+Note: This is a jinja2 template, processed at build time into the final manifest.
+
+Blocks denoted with { % block some_name % }foo{ % endblock % } can be overridden
+by a child template that "extends" this file.
+-->
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="{{ manifest_package }}"
+    tools:ignore="MissingVersion">
+    <!-- android:versionCode and android:versionName is set through gyp. See build/common.gypi -->
+
+    <uses-sdk android:minSdkVersion="{{min_sdk_version}}" android:targetSdkVersion="{{target_sdk_version}}" />
+    <uses-feature android:glEsVersion="0x00020000" />
+
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission-sdk-23 android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!--
+      Enable runtime permissions as uses-permission in tip of tree builds
+      only for ease of development on Android L and earlier. For consumer
+      channels use "runtime permission" uses-permission-sdk-23 which provides
+      permission on Android M and later without a prompt.
+    -->
+    {% if channel in ['default'] %}
+        <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+    {% endif %}
+    <uses-permission-sdk-23 android:name="android.permission.BLUETOOTH"/>
+    <uses-permission-sdk-23 android:name="android.permission.BLUETOOTH_ADMIN"/>
+    <uses-permission-sdk-23 android:name="android.permission.REORDER_TASKS"/>
+    <uses-permission-sdk-23 android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
+    <uses-permission android:name="android.permission.GET_ACCOUNTS"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.MANAGE_ACCOUNTS"/>
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+    <uses-permission android:name="android.permission.NFC"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_SYNC_SETTINGS"/>
+    <uses-permission android:name="android.permission.READ_SYNC_STATS"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.USE_CREDENTIALS"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS"/>
+    {% set enable_vr = enable_vr|default(0) %}
+    {% if enable_vr == "true" %}
+    <!-- Indicates use of Android's VR-mode, available only on Android N+. -->
+    <uses-feature android:name="android.software.vr.mode" android:required="false"/>
+    <!-- Indicates use of VR features that are available only on Daydream-ready devices. -->
+    <uses-feature android:name="android.hardware.vr.high_performance" android:required="false"/>
+    <!--
+      Indicates that we don't need Chrome to be available on devices that only support landscape
+      orientation. This is needed because we have VR specific activities that declare the
+      android:orientation attribute.
+    -->
+    <uses-feature android:name="android.hardware.screen.landscape" android:required="false"/>
+    <!-- Indicates that head tracking should be done in 6DoF, if available -->
+    <uses-feature android:name="android.hardware.vr.headtracking" android:version="1" android:required="false"/>
+    {% endif %}
+
+    <permission android:name="{{ manifest_package }}.permission.CHILD_SERVICE" android:protectionLevel="signature" />
+    <permission android:name="{{ manifest_package }}.permission.READ_WRITE_BOOKMARK_FOLDERS" android:protectionLevel="signatureOrSystem" />
+    <permission android:name="{{ manifest_package }}.TOS_ACKED" android:protectionLevel="signatureOrSystem" />
+    <!-- Only chrome can receive the messages and registration result -->
+    <permission android:name="{{ manifest_package }}.permission.C2D_MESSAGE"
+        android:protectionLevel="signature" />
+    <permission android:name="{{ manifest_package }}.permission.DEBUG"
+                android:label="Debug web pages"
+                android:permissionGroup="android.permission-group.DEVELOPMENT_TOOLS"
+                android:protectionLevel="signature" />
+
+    <uses-permission android:name="{{ manifest_package }}.permission.C2D_MESSAGE" />
+    <uses-permission android:name="{{ manifest_package }}.permission.READ_WRITE_BOOKMARK_FOLDERS" />
+    <uses-permission android:name="{{ manifest_package }}.TOS_ACKED" />
+
+    <uses-permission android:name="com.chrome.permission.DEVICE_EXTRAS" />
+    <uses-permission android:name="com.android.browser.permission.READ_HISTORY_BOOKMARKS"/>
+    <uses-permission android:name="com.android.browser.permission.WRITE_HISTORY_BOOKMARKS"/>
+    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+    <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT"/>
+
+    <uses-permission android:name="com.google.android.apps.now.CURRENT_ACCOUNT_ACCESS" />
+
+    {% block extra_uses_permissions %}
+    {% endblock %}
+
+    <!-- We may use GPS but it's not required -->
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
+    <!--
+      android.permission.RECORD_AUDIO makes this implied, however we don't
+      require a microphone.
+    -->
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <!--
+      The app is usable with keyboard/mouse. This feature is implicitly true for
+      all applications and needs to be disabled manually.
+    -->
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+
+    {% block extra_keyset_definitions %}
+    {% endblock %}
+
+    <!-- Set android:largeHeap to "true" to allow more than the default
+         Java heap limit (32Mb on Nexus S, 48Mb on Xoom). -->
+    <application android:name="{% block application_name %}org.chromium.chrome.browser.ChromeApplication{% endblock %}"
+        android:icon="@drawable/ic_launcher"
+        android:roundIcon="@drawable/ic_launcher_round"
+        android:label="@string/app_name"
+        android:largeHeap="false"
+        android:manageSpaceActivity="@string/manage_space_activity"
+        android:supportsRtl="true"
+        {% if backup_key is defined %}
+        android:allowBackup="true"
+        android:backupAgent="org.chromium.chrome.browser.ChromeBackupAgent"
+        android:fullBackupOnly="false"
+        android:restoreAnyVersion="true"
+        {% else %}
+        android:allowBackup="false"
+        {% endif %}
+        android:networkSecurityConfig="@xml/network_security_config"
+        {% block extra_application_attributes %}{% endblock %}>
+
+        <!-- Samsung MultiWindow Support -->
+        <meta-data android:name="com.samsung.android.sdk.multiwindow.enable"
+            android:value="true" />
+
+        {% if min_sdk_version|int < 24 %}
+        <meta-data android:name="com.samsung.android.sdk.multiwindow.multiinstance.enable"
+            android:value="true" />
+        <meta-data android:name="com.samsung.android.sdk.multiwindow.multiinstance.launchmode"
+            android:value="singleTask" />
+        {% endif %}
+
+        <meta-data android:name="com.samsung.android.sdk.multiwindow.penwindow.enable"
+            android:value="true"/>
+
+        {% if backup_key is defined %}
+        <!-- Backup keys are channel dependent -->
+        <meta-data android:name="com.google.android.backup.api_key"
+            android:value="{{ backup_key }}" />
+        {% endif %}
+
+        {% if channel in ['dev', 'canary', 'default'] %}
+        <meta-data android:name="com.sec.android.support.multiwindow" android:value="true" />
+        {% endif %}
+        <meta-data android:name="android.content.APP_RESTRICTIONS"
+            android:resource="@xml/app_restrictions"/>
+
+        {% if enable_arcore %}
+        <!-- ARCore APK integration -->
+        <!-- This tag indicates that this application optionally uses ARCore. -->
+        <meta-data android:name="com.google.ar.core" android:value="optional" />
+        <!-- This value referes to ARCore 1.1.
+             This value should be updated when ARCore features require
+             a newer version of the ARCore SDK. -->
+        <meta-data android:name="com.google.ar.core.min_apk_version"
+            android:value="180226000"/>
+        {% endif %}
+
+        <!-- Note: All activities directly or indirectly derived from ChromeActivity
+             must specify android:hardwareAccelerated="false".
+
+             Since this activity (shown in the launcher) and the application
+             (shown in Android's Settings/Apps list) share the same label, we
+             do not specify one here to allow it to inherit from the app. -->
+        <activity android:name="org.chromium.chrome.browser.document.ChromeLauncherActivity"
+            android:theme="@style/LauncherTheme"
+            android:relinquishTaskIdentity="true"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize|uiMode|density">
+        </activity>
+        <activity-alias android:name="com.google.android.apps.chrome.IntentDispatcher"
+            android:targetActivity="org.chromium.chrome.browser.document.ChromeLauncherActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.NOTIFICATION_PREFERENCES" />
+            </intent-filter>
+            <!-- Matches the common case of intents with no MIME type.
+                 Make sure to keep in sync with the next filter.  -->
+            <intent-filter>
+                {% block common_view_intent_shared_filter_body %}
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                {% if channel in ['stable', 'default'] %}<data android:scheme="googlechrome" />{% endif %}
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:scheme="about" />
+                <data android:scheme="javascript" />
+                {% endblock %}
+            </intent-filter>
+            <!-- Same filter as above but with MIME types.  Intents that
+                 do not specify a MIME type won't match. -->
+            <intent-filter>
+                {% block common_view_intent_shared_filter_with_mime_body %}
+                {{ self.common_view_intent_shared_filter_body() }}
+                <data android:scheme="content" />
+                <data android:mimeType="text/html"/>
+                <data android:mimeType="text/plain"/>
+                <data android:mimeType="application/xhtml+xml"/>
+                {% endblock %}
+            </intent-filter>
+            <!-- MHTML support, used for snapshots -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="file"/>
+                <data android:scheme="content"/>
+                <data android:mimeType="multipart/related"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="file"/>
+                <data android:scheme="content"/>
+                <data android:mimeType="message/rfc822"/>
+            </intent-filter>
+            <intent-filter>
+                {% block mhtml_view_intent_shared_filter_body %}
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="file"/>
+                <data android:scheme="content"/>
+                <data android:host="*" />
+                <data android:pathPattern="/.*\\.mhtml"/>
+                <data android:pathPattern="/.*\\.mht"/>
+                {% endblock %}
+            </intent-filter>
+            <!-- Same filter as above but with mimeType="*/*". Used for
+                 handling intent send by ShareIt. -->
+            <intent-filter>
+                {% block mhtml_view_intent_shared_filter_with_mime_body %}
+                {{ self.mhtml_view_intent_shared_filter_body() }}
+                <data android:mimeType="*/*"/>
+                {% endblock %}
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_SEARCH" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.speech.action.VOICE_SEARCH_RESULTS" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEARCH" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.sec.android.airview.HOVER" />
+            </intent-filter>
+            <meta-data android:name="android.app.searchable"
+                android:resource="@xml/searchable" />
+        </activity-alias>
+
+        <activity android:name="org.chromium.chrome.browser.LauncherShortcutActivity"
+            android:theme="@android:style/Theme.NoDisplay"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:exported="false" />
+
+        <!-- Upgrade related -->
+        <activity android:name="org.chromium.chrome.browser.upgrade.UpgradeActivity"
+            android:excludeFromRecents="true"
+            android:theme="@style/MainTheme"
+            android:windowSoftInputMode="adjustResize"
+            android:taskAffinity=""
+            android:launchMode="singleInstance"
+            android:persistableMode="persistNever"
+            android:autoRemoveFromRecents="false"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize"
+            android:hardwareAccelerated="false">
+        </activity>
+        <service android:name="org.chromium.chrome.browser.upgrade.UpgradeIntentService"
+            android:exported="false"/>
+        <receiver android:name="org.chromium.chrome.browser.upgrade.PackageReplacedBroadcastReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Document mode Activities. -->
+        <activity android:name="org.chromium.chrome.browser.document.DocumentActivity"
+            android:exported="false"
+            android:theme="@style/MainTheme"
+            android:taskAffinity=""
+            android:persistableMode="persistAcrossReboots"
+            android:autoRemoveFromRecents="false"
+            {{ self.chrome_activity_common() }}>
+            {{ self.extra_web_rendering_activity_definitions() }}
+        </activity>
+        <activity-alias android:name="com.google.android.apps.chrome.document.DocumentActivity"
+            android:targetActivity="org.chromium.chrome.browser.document.DocumentActivity"
+            android:exported="false"/>
+        <activity android:name="org.chromium.chrome.browser.document.IncognitoDocumentActivity"
+            android:icon="@mipmap/incognito_app_icon"
+            android:exported="false"
+            android:theme="@style/IncognitoTheme"
+            android:taskAffinity=""
+            android:persistableMode="persistNever"
+            android:autoRemoveFromRecents="false"
+            {{ self.chrome_activity_common() }}>
+            {{ self.extra_web_rendering_activity_definitions() }}
+        </activity>
+        <activity-alias android:name="com.google.android.apps.chrome.document.IncognitoDocumentActivity"
+            android:targetActivity="org.chromium.chrome.browser.document.IncognitoDocumentActivity"
+            android:exported="false"/>
+
+        <!-- Custom Tabs -->
+        <activity android:name="org.chromium.chrome.browser.customtabs.CustomTabActivity"
+            android:theme="@style/MainTheme"
+            android:exported="false"
+            {{ self.chrome_activity_common() }}
+            {{ self.supports_video_persistence() }}
+        >
+            {{ self.supports_vr() }}
+            {{ self.extra_web_rendering_activity_definitions() }}
+        </activity>
+        <activity android:name="org.chromium.chrome.browser.customtabs.SeparateTaskCustomTabActivity"
+            android:theme="@style/MainTheme"
+            android:exported="false"
+            android:taskAffinity=""
+            android:persistableMode="persistNever"
+            android:autoRemoveFromRecents="false"
+            {{ self.chrome_activity_common() }}
+            {{ self.supports_video_persistence() }}
+        >
+            {{ self.supports_vr() }}
+            {{ self.extra_web_rendering_activity_definitions() }}
+        </activity>
+        {% for i in range(10) %}
+        <activity android:name="org.chromium.chrome.browser.customtabs.SeparateTaskCustomTabActivity{{ i }}"
+            android:theme="@style/MainTheme"
+            android:icon="@mipmap/app_single_page_icon"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:persistableMode="persistNever"
+            android:taskAffinity=""
+            {{ self.chrome_activity_common() }}
+            {{ self.supports_video_persistence() }}
+        >
+            {{ self.supports_vr() }}
+            {{ self.extra_web_rendering_activity_definitions() }}
+        </activity>
+        {% endfor %}
+        {% if enable_vr == "true" %}
+        <!-- Needs to be exported for Daydream deep-links. Also note that we explicitly don't set
+             VR mode here as it actually doesn't matter for VR launches given that we set it
+             within the timeout in onCreate, and it makes launches from 2D much smoother. -->
+        <activity android:name="org.chromium.chrome.browser.vr.VrMainActivity"
+            android:theme="@style/VrSupportThemeLauncher"
+            android:exported="true"
+            android:taskAffinity=""
+            android:relinquishTaskIdentity="true"
+            android:excludeFromRecents="true"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize|uiMode|density">
+            <!-- TODO(mthiesse, b/72214458): This is a duplication of the icon metadata below.
+                 Daydream will actually ignore the metadata here, and use the metadata on the
+                 activity-alias. However, play store apk validation fails to find the icons on the
+                 alias, so we need to include them here to pass validation. -->
+            <meta-data android:name="com.google.android.vr.icon"
+                android:resource="@drawable/daydream_icon_foreground" />
+            <meta-data android:name="com.google.android.vr.icon_background"
+                android:resource="@drawable/daydream_icon_background" />
+            {{ self.supports_vr() }}
+        </activity>
+
+        <!-- The VrIntentDispatcher handles many of the same intents as the non-vr
+             IntentDispatcher, and should be kept in sync where applicable. Intents that should
+             not be handled in VR include all intents that don't launch ChromeTabbedActivity.
+             Custom Tabs are a complicated special case, which are kind of supported. -->
+        <activity-alias android:name="com.google.android.apps.chrome.VrIntentDispatcher"
+            android:targetActivity="org.chromium.chrome.browser.vr.VrMainActivity"
+            android:enabled="true"
+            android:exported="true">
+            <meta-data android:name="com.google.android.vr.icon"
+                android:resource="@drawable/daydream_icon_foreground" />
+            <meta-data android:name="com.google.android.vr.icon_background"
+                android:resource="@drawable/daydream_icon_background" />
+
+            <!-- The Intent filters must all have lower priority than the non-VR intent filters
+                 so that intents without the Daydream flag aren't erroneously routed to the
+                 VrIntentDispatcher. -->
+            <intent-filter android:priority="-1">
+                <!-- Show icon in Daydream app launcher. -->
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="com.google.intent.category.DAYDREAM" />
+            </intent-filter>
+
+            <!-- Intent filters below are copied from IntentDispatcher, but with the added
+                 Daydream flag. -->
+
+            <intent-filter android:priority="-1">
+                <category android:name="com.google.intent.category.DAYDREAM" />
+                {{ self.common_view_intent_shared_filter_body() }}
+            </intent-filter>
+            <intent-filter android:priority="-1">
+                <category android:name="com.google.intent.category.DAYDREAM" />
+                {{ self.common_view_intent_shared_filter_with_mime_body() }}
+            </intent-filter>
+            <intent-filter android:priority="-1">
+                <category android:name="com.google.intent.category.DAYDREAM" />
+                {{ self.mhtml_view_intent_shared_filter_body() }}
+            </intent-filter>
+            <intent-filter android:priority="-1">
+                <category android:name="com.google.intent.category.DAYDREAM" />
+                {{ self.mhtml_view_intent_shared_filter_with_mime_body() }}
+            </intent-filter>
+        </activity-alias>
+        <activity android:name="org.chromium.chrome.browser.vr.CustomTabVrActivity"
+            android:theme="@style/VrSupportTheme"
+            android:screenOrientation="landscape"
+            android:enableVrMode="@string/gvr_vr_mode_component"
+            android:taskAffinity=""
+            android:persistableMode="persistNever"
+            android:autoRemoveFromRecents="false"
+            {{ self.chrome_activity_common() }}
+            {{ self.supports_video_persistence() }}
+        >
+            {{ self.supports_vr() }}
+        </activity>
+        {% endif %}
+
+        <!-- ChromeTabbedActivity related -->
+        <activity android:name="org.chromium.chrome.browser.ChromeTabbedActivity"
+            android:theme="@style/TabbedModeTheme"
+            android:exported="true"
+            android:launchMode="singleTask"
+            {# We can only use blocks once in Jinja, for future substitutions we use
+            self.supports_video_persistence(). #}
+            {% block supports_video_persistence %}
+            android:supportsPictureInPicture="true"
+            android:resizeableActivity="true"
+            {% endblock %}
+            {% block chrome_activity_common %}
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize|uiMode|density"
+            android:hardwareAccelerated="false"
+            {% endblock %}
+        >
+            <!--
+              Daydream api categorizes an activity to three categories: Cardboard only, hybrid
+              or Daydream. It does so by testing if intents can be resolved by the activity
+              that requests it.
+            -->
+            {% block supports_vr %}
+            <intent-filter>
+                <action android:name="org.chromium.chrome.browser.dummy.action" />
+                <category android:name="com.google.intent.category.DAYDREAM" />
+                <category android:name="com.google.intent.category.CARDBOARD" />
+            </intent-filter>
+            {% endblock %}
+
+            {% block extra_web_rendering_activity_definitions %}
+            {% endblock %}
+        </activity>
+        <!-- TODO(crbug.com/780674): retarget .Main back to CTA for non-modern APK -->
+        <activity-alias android:name="com.google.android.apps.chrome.Main"
+            {% if min_sdk_version|int < 21 %}
+            android:targetActivity="org.chromium.chrome.browser.document.ChromeLauncherActivity"
+            {% else %}
+            android:targetActivity="org.chromium.chrome.browser.ChromeTabbedActivity"
+            {% endif %}
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.APP_BROWSER" />
+                {% if channel in ['dev', 'canary', 'default'] %}
+                <category android:name="android.intent.category.MULTIWINDOW_LAUNCHER" />
+                {% endif %}
+            </intent-filter>
+            <meta-data android:name="android.app.shortcuts"
+                android:resource="@xml/launchershortcuts" />
+            {{ self.supports_vr() }}
+            {% if min_sdk_version|int >= 21 %}
+            {{ self.extra_web_rendering_activity_definitions() }}
+            {% endif %}
+        </activity-alias>
+        <activity android:name="org.chromium.chrome.browser.ChromeTabbedActivity2"
+            android:theme="@style/TabbedModeTheme"
+            android:exported="false"
+            android:taskAffinity="{{ manifest_package }}.ChromeTabbedActivity2"
+            android:launchMode="singleTask"
+            {{ self.chrome_activity_common() }}
+            {{ self.supports_video_persistence() }}
+        >
+            {{ self.supports_vr() }}
+            {{ self.extra_web_rendering_activity_definitions() }}
+        </activity>
+        <activity android:name="org.chromium.chrome.browser.multiwindow.MultiInstanceChromeTabbedActivity"
+            android:theme="@style/TabbedModeTheme"
+            android:exported="false"
+            {{ self.chrome_activity_common() }}>
+            {{ self.extra_web_rendering_activity_definitions() }}
+        </activity>
+        <activity android:name="org.chromium.chrome.browser.FullscreenActivity"
+            android:theme="@style/MainTheme"
+            android:exported="false"
+            android:noHistory="true"
+            {{ self.chrome_activity_common() }}
+            {{ self.supports_video_persistence() }} >
+            {{ self.extra_web_rendering_activity_definitions() }}
+        </activity>
+
+        <activity android:name="org.chromium.chrome.browser.sync.ui.PassphraseActivity"
+            android:theme="@style/MainTheme"
+            android:autoRemoveFromRecents="true">
+        </activity>
+        <activity android:name="org.chromium.chrome.browser.firstrun.LightweightFirstRunActivity"
+            android:theme="@style/SimpleDialog"
+            {{ self.first_run_activity_common() }}>
+        </activity>
+        <activity android:name="org.chromium.chrome.browser.firstrun.FirstRunActivity"
+            android:theme="@style/FirstRunTheme"
+            {% block first_run_activity_common %}
+            android:label="@string/fre_activity_label"
+            android:launchMode="singleInstance"
+            android:excludeFromRecents="true"
+            android:autoRemoveFromRecents="true"
+            android:windowSoftInputMode="stateHidden|adjustPan"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize"
+            {% endblock %}>
+        </activity>
+        <activity android:name="org.chromium.chrome.browser.firstrun.TabbedModeFirstRunActivity"
+            android:theme="@style/TabbedModeFirstRunTheme"
+            {{ self.first_run_activity_common() }}>
+        </activity>
+        {% if enable_vr == "true" %}
+        <activity android:name="org.chromium.chrome.browser.vr_shell.VrFirstRunActivity"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:theme="@style/VrActivityTheme"
+            android:excludeFromRecents="true"
+            android:enableVrMode="@string/gvr_vr_mode_component"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize|uiMode">
+            {{ self.supports_vr() }}
+        </activity>
+        {% endif %}
+        <activity android:name="org.chromium.chrome.browser.signin.AccountSigninActivity"
+            android:theme="@style/DialogWhenLarge"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize">
+        </activity>
+        <activity android:name="org.chromium.chrome.browser.signin.SigninActivity"
+            android:theme="@style/DialogWhenLarge"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize"
+            android:exported="false">
+        </activity>
+        <activity android:name="org.chromium.chrome.browser.preferences.Preferences"
+            android:theme="@style/PreferencesTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize"
+            android:label="@string/preferences"
+            android:exported="false">
+        </activity>
+        <activity android:name="org.chromium.chrome.browser.preferences.website.ManageSpaceActivity"
+            android:theme="@style/PreferencesTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize"
+            android:label="@string/storage_management_activity_label"
+            android:exported="false">
+        </activity>
+        <activity android:name="org.chromium.chrome.browser.bookmarks.BookmarkActivity"
+            android:theme="@style/FullscreenWhiteActivityTheme"
+            android:exported="false"
+            android:windowSoftInputMode="stateAlwaysHidden|adjustResize"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize">
+        </activity>
+        <activity android:name="org.chromium.chrome.browser.bookmarks.BookmarkAddActivity"
+            android:theme="@style/DialogWhenLarge"
+            android:windowSoftInputMode="stateHidden"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize">
+            <intent-filter>
+                <action android:name="{{ manifest_package }}.ADDBOOKMARK" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name="org.chromium.chrome.browser.bookmarks.BookmarkEditActivity"
+            android:theme="@style/DialogWhenLarge"
+            android:windowSoftInputMode="stateHidden"
+            android:exported="false"
+            android:label="@string/edit_bookmark"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize">
+        </activity>
+        <activity android:name="org.chromium.chrome.browser.bookmarks.BookmarkAddEditFolderActivity"
+            android:theme="@style/DialogWhenLarge"
+            android:exported="false"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize">
+        </activity>
+        <activity android:name="org.chromium.chrome.browser.bookmarks.BookmarkFolderSelectActivity"
+            android:theme="@style/DialogWhenLarge"
+            android:windowSoftInputMode="stateAlwaysHidden"
+            android:label="@string/bookmark_choose_folder"
+            android:exported="false"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize">
+        </activity>
+
+        <!-- Activities for downloads. -->
+        <activity android:name="org.chromium.chrome.browser.download.DownloadActivity"
+            android:theme="@style/FullscreenWhiteActivityTheme"
+            android:windowSoftInputMode="stateAlwaysHidden|adjustResize"
+            android:exported="false"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize">
+        </activity>
+
+        <!-- Activities for history. -->
+        <activity android:name="org.chromium.chrome.browser.history.HistoryActivity"
+            android:theme="@style/FullscreenWhiteActivityTheme"
+            android:windowSoftInputMode="stateAlwaysHidden|adjustResize"
+            android:exported="false"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize">
+        </activity>
+
+        <!--
+            Activities for webapps.
+            TODO(dfalcantara): Remove the aliases for the WebappActivities once we're pretty sure
+                               that users don't have any instances of the original Activity still
+                               running.
+        -->
+        <activity android:name="org.chromium.chrome.browser.webapps.WebappLauncherActivity"
+            android:theme="@android:style/Theme.NoDisplay"
+            android:taskAffinity=""
+            android:excludeFromRecents="true">
+            <intent-filter>
+                <action android:name="com.google.android.apps.chrome.webapps.WebappManager.ACTION_START_WEBAPP" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="org.webapk.ACTION_START_WEBAPK" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity-alias android:name="com.google.android.apps.chrome.webapps.WebappManager"
+            android:targetActivity="org.chromium.chrome.browser.webapps.WebappLauncherActivity">
+        </activity-alias>
+        <activity android:name="org.chromium.chrome.browser.webapps.WebappActivity"
+            android:theme="@style/WebappTheme"
+            android:label="@string/webapp_activity_title"
+            android:launchMode="singleTop"
+            android:documentLaunchMode="intoExisting"
+            android:persistableMode="persistNever"
+            {{ self.supports_video_persistence() }}
+            {{ self.chrome_activity_common() }}
+        >
+            {{ self.supports_vr() }}
+            {{ self.extra_web_rendering_activity_definitions() }}
+        </activity>
+        <activity-alias android:name="com.google.android.apps.chrome.webapps.WebappActivity"
+            android:targetActivity="org.chromium.chrome.browser.webapps.WebappActivity"
+            android:label="@string/webapp_activity_title"
+            {{ self.supports_video_persistence() }} >
+        </activity-alias>
+        {% for i in range(10) %}
+        <activity android:name="org.chromium.chrome.browser.webapps.WebappActivity{{ i }}"
+            android:theme="@style/WebappTheme"
+            android:icon="@mipmap/app_shortcut_icon"
+            android:label="@string/webapp_activity_title"
+            android:launchMode="singleTask"
+            android:persistableMode="persistNever"
+            android:taskAffinity="{{ manifest_package }}.webapps.WebappActivity{{ i }}"
+            {{ self.supports_video_persistence() }}
+            {{ self.chrome_activity_common() }}
+        >
+           {{ self.supports_vr() }}
+           {{ self.extra_web_rendering_activity_definitions() }}
+        </activity>
+        <activity-alias android:name="com.google.android.apps.chrome.webapps.WebappActivity{{ i }}"
+            android:targetActivity="org.chromium.chrome.browser.webapps.WebappActivity{{ i }}"
+            android:icon="@mipmap/app_shortcut_icon"
+            android:label="@string/webapp_activity_title">
+        </activity-alias>
+        {% endfor %}
+        <!-- Activities for WebAPKs. -->
+        <activity android:name="org.chromium.chrome.browser.webapps.WebApkActivity"
+            android:theme="@style/WebappTheme"
+            android:label="@string/webapp_activity_title"
+            android:launchMode="singleTop"
+            android:documentLaunchMode="intoExisting"
+            android:persistableMode="persistNever"
+            {{ self.supports_video_persistence() }}
+            {{ self.chrome_activity_common() }}
+        >
+            {{ self.supports_vr() }}
+            {{ self.extra_web_rendering_activity_definitions() }}
+        </activity>
+        {% for i in range(10) %}
+        <activity android:name="org.chromium.chrome.browser.webapps.WebApkActivity{{ i }}"
+            android:theme="@style/WebappTheme"
+            android:icon="@mipmap/app_shortcut_icon"
+            android:label="@string/webapp_activity_title"
+            android:launchMode="singleTask"
+            android:persistableMode="persistNever"
+            android:taskAffinity="{{ manifest_package }}.webapps.WebApkActivity{{ i }}"
+            {{ self.supports_video_persistence() }}
+            {{ self.chrome_activity_common() }}
+        >
+            {{ self.supports_vr() }}
+            {{ self.extra_web_rendering_activity_definitions() }}
+        </activity>
+        {% endfor %}
+
+        <activity android:name="org.chromium.chrome.browser.media.remote.ExpandedControllerActivity"
+            android:theme="@style/MainTheme"
+            android:label="Chrome.ExpandedControllerActivity"
+            android:hardwareAccelerated="true"
+            android:launchMode="singleTask"
+            android:noHistory="true"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize"
+            android:excludeFromRecents="true">
+        </activity>
+
+        <!-- This activity is used to restart the main Chrome process.  Should never be exported. -->
+        <activity android:name="org.chromium.chrome.browser.BrowserRestartActivity"
+            android:launchMode="singleInstance"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true"
+            android:process=":browser_restart_process">
+        </activity>
+
+        <!-- This activity is to expose the print option via the generic Android share action. -->
+        <activity
+            android:name="org.chromium.chrome.browser.printing.PrintShareActivity"
+            android:icon="@drawable/print"
+            android:label="@string/print_share_activity_title"
+            android:enabled="false"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize" >
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+
+        <!-- Activity for dispatching intents to Instant Apps. -->
+        <activity
+            android:name="org.chromium.chrome.browser.instantapps.AuthenticatedProxyActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.NoDisplay"
+            android:noHistory="true"
+            android:excludeFromRecents="true">
+        </activity>
+
+        <activity
+            android:name="org.chromium.chrome.browser.vr_shell.VrCancelAnimationActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.NoDisplay"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
+            {% if enable_vr == "true" %}
+            android:enableVrMode="@string/gvr_vr_mode_component"
+            {% endif %}
+            >
+            {{ self.supports_vr() }}
+        </activity>
+
+        <!-- Activities for Browser Actions -->
+        <activity android:name="org.chromium.chrome.browser.browseractions.BrowserActionActivity"
+            android:theme="@style/FullscreenTransparentActivityTheme"
+            android:exported="true"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize">
+            <intent-filter>
+                <action android:name="androidx.browser.browseractions.browser_action_open" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+            </intent-filter>
+        </activity>
+
+        <service android:name="org.chromium.chrome.browser.browseractions.BrowserActionsService"
+            android:exported="false">
+        </service>
+
+        <!-- Service for decoding images in a sandboxed process. -->
+        <service
+            android:description="@string/decoder_description"
+            android:name="org.chromium.chrome.browser.photo_picker.DecoderService"
+            android:exported="false"
+            android:isolatedProcess="true"
+            android:process=":decoder_service" />
+
+        <!-- Providers for chrome data. -->
+        <provider android:name="org.chromium.chrome.browser.provider.ChromeBrowserProvider"
+            android:authorities="{{ manifest_package }}.ChromeBrowserProvider;{{ manifest_package }}.browser;{{ manifest_package }}"
+            android:exported="true">
+            <path-permission android:path="/bookmarks/search_suggest_query"
+                    android:readPermission="android.permission.GLOBAL_SEARCH" />
+        </provider>
+
+        <!-- Provider for FileProvider. -->
+        <provider android:name="org.chromium.chrome.browser.util.ChromeFileProvider"
+            android:authorities="{{ manifest_package }}.FileProvider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <provider android:name="org.chromium.chrome.browser.superviseduser.SupervisedUserContentProvider"
+            android:authorities="{{ manifest_package }}.SupervisedUserProvider"
+            android:permission="android.permission.INTERNET"
+            android:exported="true">
+        </provider>
+
+        <!-- Sync adapter for browser invalidation. -->
+        <service android:name="org.chromium.chrome.browser.invalidation.ChromeBrowserSyncAdapterService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.content.SyncAdapter" />
+            </intent-filter>
+            <meta-data android:name="android.content.SyncAdapter"
+                       android:resource="@xml/syncadapter" />
+        </service>
+
+        <!-- Broadcast receiver that will be notified of account changes -->
+        <receiver android:name="org.chromium.chrome.browser.services.AccountsChangedReceiver">
+            <intent-filter>
+                <action android:name="android.accounts.LOGIN_ACCOUNTS_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Download foreground service -->
+        <service android:name="org.chromium.chrome.browser.download.DownloadForegroundService"
+            android:exported="false">
+        </service>
+
+        <!-- Download broadcast manager service -->
+        <service android:name="org.chromium.chrome.browser.download.DownloadBroadcastManager"
+            android:exported="false">
+        </service>
+
+        <!-- Download service -->
+        <service android:name="org.chromium.chrome.browser.download.DownloadNotificationService"
+            android:exported="false">
+        </service>
+
+        <!-- Bookmarks widget -->
+        <receiver android:name="com.google.android.apps.chrome.appwidget.bookmarks.BookmarkThumbnailWidgetProvider"
+            android:label="@string/bookmark_widget_title">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name=".BOOKMARK_APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/bookmark_widget_info" />
+        </receiver>
+        <service android:name="org.chromium.chrome.browser.bookmarkswidget.BookmarkWidgetService"
+            android:permission="android.permission.BIND_REMOTEVIEWS"
+            android:exported="false" />
+        <receiver android:name="org.chromium.chrome.browser.bookmarkswidget.BookmarkWidgetProxy"
+            android:exported="false" />
+
+        <!-- Search widget -->
+        <receiver
+                android:name="org.chromium.chrome.browser.searchwidget.SearchWidgetProvider"
+                android:label="@string/search_widget_title">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="org.chromium.chrome.browser.searchwidget.START_TEXT_QUERY" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="org.chromium.chrome.browser.searchwidget.START_VOICE_QUERY" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="org.chromium.chrome.browser.searchwidget.UPDATE_ALL_WIDGETS" />
+            </intent-filter>
+            <meta-data
+                    android:name="android.appwidget.provider"
+                    android:resource="@xml/search_widget_info" />
+        </receiver>
+
+        <!-- Search Activity -->
+        <activity android:name="org.chromium.chrome.browser.searchwidget.SearchActivity"
+            android:theme="@style/SearchActivityTheme"
+            android:label="Search"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:taskAffinity=""
+            android:clearTaskOnLaunch="true"
+            android:excludeFromRecents="true"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|mcc|mnc|screenLayout|smallestScreenSize"
+            android:hardwareAccelerated="false" />
+
+        <!-- Receiver for GCM messages. -->
+        <receiver android:name="com.google.android.gms.gcm.GcmReceiver"
+            android:exported="true"
+            android:permission="com.google.android.c2dm.permission.SEND">
+            <intent-filter>
+                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+                <action android:name="com.google.android.c2dm.intent.REGISTRATION" />
+               <category android:name="{{ manifest_package }}"/>
+            </intent-filter>
+        </receiver>
+        <!-- GcmTaskService for registration for Invalidations. -->
+        <service android:name="com.google.ipc.invalidation.ticl.android2.channel.GcmRegistrationTaskService"
+            android:exported="true"
+            android:permission="com.google.android.gms.permission.BIND_NETWORK_TASK_SERVICE" >
+            <intent-filter>
+                <action android:name="com.google.android.gms.gcm.ACTION_TASK_READY"/>
+            </intent-filter>
+        </service>
+        <!-- InstanceIDListenerService for token refresh events from GCM. -->
+        <service android:name="com.google.ipc.invalidation.ticl.android2.channel.AndroidInstanceIDListenerService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.android.gms.iid.InstanceID"/>
+            </intent-filter>
+        </service>
+        <!-- GcmListenerService for messages from GCM. -->
+        <service android:name="org.chromium.chrome.browser.services.gcm.ChromeGcmListenerService"
+            android:exported="false" >
+            <intent-filter>
+              <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+            </intent-filter>
+        </service>
+        <meta-data android:name="ipc.invalidation.ticl.gcm_upstream_service_class"
+            android:value="org.chromium.chrome.browser.services.gcm.InvalidationGcmUpstreamSender" />
+        <service android:name="org.chromium.chrome.browser.services.gcm.InvalidationGcmUpstreamSender"
+            android:exported="false"/>
+
+        <!-- Notification service for sync. -->
+        <meta-data android:name="ipc.invalidation.ticl.listener_service_class"
+            android:value="org.chromium.chrome.browser.invalidation.ChromeInvalidationClientService"/>
+        <service android:name="org.chromium.chrome.browser.invalidation.ChromeInvalidationClientService"
+            android:exported="false">
+            <intent-filter>
+              <action android:name="com.google.ipc.invalidation.AUTH_TOKEN_REQUEST"/>
+            </intent-filter>
+        </service>
+        <service android:name="com.google.ipc.invalidation.ticl.android2.TiclService"
+            android:exported="false"/>
+        <service android:name="com.google.ipc.invalidation.ticl.android2.channel.AndroidMessageSenderService"
+            android:exported="false"/>
+        <receiver android:name="com.google.ipc.invalidation.ticl.android2.AndroidInternalScheduler$AlarmReceiver"
+            android:exported="false"/>
+        <receiver android:name="com.google.ipc.invalidation.external.client.contrib.AndroidListener$AlarmReceiver"
+            android:exported="false"/>
+
+        <!-- Android Notification service listener -->
+        <service android:name="org.chromium.chrome.browser.notifications.NotificationService"
+            android:exported="false"/>
+        <receiver android:name="org.chromium.chrome.browser.notifications.NotificationService$Receiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="org.chromium.chrome.browser.notifications.CLICK_NOTIFICATION" />
+                <action android:name="org.chromium.chrome.browser.notifications.CLOSE_NOTIFICATION" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Android Notification job service -->
+        <service android:name="org.chromium.chrome.browser.notifications.NotificationJobService"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE"/>
+
+        <!-- Background Task Scheduler job service -->
+        <service android:name="org.chromium.components.background_task_scheduler.BackgroundTaskJobService"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE"/>
+
+        <!-- Background Task Scheduler GCM task service -->
+        <service android:name="org.chromium.components.background_task_scheduler.BackgroundTaskGcmTaskService"
+            android:permission="com.google.android.gms.permission.BIND_NETWORK_TASK_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.gcm.ACTION_TASK_READY" />
+            </intent-filter>
+        </service>
+
+        <!-- GcmTaskService implementation to wake Chrome on scheduled events -->
+        <service android:name="org.chromium.chrome.browser.ChromeBackgroundService"
+            android:permission="com.google.android.gms.permission.BIND_NETWORK_TASK_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.gcm.ACTION_TASK_READY" />
+            </intent-filter>
+        </service>
+
+        <service android:name="org.chromium.chrome.browser.prerender.ChromePrerenderService"
+            android:exported="true"
+            tools:ignore="ExportedService" />
+        <service android:name="org.chromium.chrome.browser.customtabs.CustomTabsConnectionService"
+            android:exported="true"
+            tools:ignore="ExportedService">
+            <intent-filter>
+              <action android:name="android.support.customtabs.action.CustomTabsService" />
+            </intent-filter>
+        </service>
+        <service android:name="android.support.customtabs.PostMessageService" />
+
+        <!-- Crash reporting services. -->
+        <service android:name="org.chromium.chrome.browser.crash.ChromeMinidumpUploadJobService"
+                 android:permission="android.permission.BIND_JOB_SERVICE"
+                 android:exported="false"/>
+        <service android:name="org.chromium.chrome.browser.crash.MinidumpUploadService"
+            android:exported="false"/>
+
+        <service android:name="org.chromium.chrome.browser.omaha.OmahaClient"
+            android:exported="false"/>
+        <service android:name="org.chromium.chrome.browser.incognito.IncognitoNotificationService"
+            android:exported="false"/>
+        <service android:name="org.chromium.chrome.browser.webapps.WebApkDisclosureNotificationService"
+            android:exported="false"/>
+
+
+        <!-- The following service entries exist in order to allow us to
+             start more than one sandboxed process. -->
+
+        <!-- NOTE: If you change the value of "android:process" for the below services,
+             you also need to update kHelperProcessExecutableName in chrome_constants.cc. -->
+        {% set num_sandboxed_services = 20 %}
+        <meta-data android:name="org.chromium.content.browser.NUM_SANDBOXED_SERVICES"
+            android:value="{{ num_sandboxed_services }}"/>
+
+        {% for i in range(num_sandboxed_services) %}
+        <service android:name="org.chromium.content.app.SandboxedProcessService{{ i }}"
+            android:process=":sandboxed_process{{ i }}"
+            android:permission="{{ manifest_package }}.permission.CHILD_SERVICE"
+            android:isolatedProcess="true"
+            android:exported="{{sandboxed_service_exported|default(false)}}"
+            {% if (sandboxed_service_exported|default(false)) == 'true' %}
+            android:externalService="true"
+            tools:ignore="ExportedService"
+            android:visibleToInstantApps="true"
+            {% endif %} />
+        {% endfor %}
+
+        {% set num_privileged_services = 3 %}
+        <meta-data android:name="org.chromium.content.browser.NUM_PRIVILEGED_SERVICES"
+            android:value="{{ num_privileged_services }}"/>
+
+        {% for i in range(num_privileged_services) %}
+        {% set privileged_process_name = ':privileged_process%d' % i %}
+        <!-- TODO(tedchoc): Omit this for release builds as MultiDex is debug only. -->
+        <meta-data android:name="{{ manifest_package }}{{ privileged_process_name }}.ignore_multidex"
+android:value="true" />
+        <service android:name="org.chromium.content.app.PrivilegedProcessService{{ i }}"
+            android:process="{{ privileged_process_name }}"
+            android:permission="{{ manifest_package }}.permission.CHILD_SERVICE"
+            android:isolatedProcess="false"
+            android:exported="false" />
+        {% endfor %}
+
+        <receiver android:name="org.chromium.chrome.browser.download.DownloadBroadcastReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.DOWNLOAD_NOTIFICATION_CLICKED"/>
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name="org.chromium.chrome.browser.ntp.ContentSuggestionsNotifier$OpenUrlReceiver"
+            android:exported="false"/>
+        <receiver android:name="org.chromium.chrome.browser.ntp.ContentSuggestionsNotifier$DeleteReceiver"
+            android:exported="false"/>
+        <receiver android:name="org.chromium.chrome.browser.ntp.ContentSuggestionsNotifier$TimeoutReceiver"
+            android:exported="false"/>
+
+        <receiver android:name="org.chromium.chrome.browser.offlinepages.prefetch.PrefetchedPagesNotifier$ClickReceiver"
+            android:exported="false"/>
+        <receiver android:name="org.chromium.chrome.browser.offlinepages.prefetch.PrefetchedPagesNotifier$SettingsReceiver"
+            android:exported="false"/>
+
+        <service android:name="org.chromium.chrome.browser.media.MediaCaptureNotificationService"
+            android:exported="false"/>
+        <service android:name="org.chromium.chrome.browser.media.ui.MediaNotificationManager$PlaybackListenerService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </service>
+        <service android:name="org.chromium.chrome.browser.media.ui.MediaNotificationManager$PresentationListenerService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </service>
+        <service android:name="org.chromium.chrome.browser.media.ui.MediaNotificationManager$CastListenerService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </service>
+
+
+        <receiver android:name="org.chromium.chrome.browser.media.ui.MediaNotificationManager$PlaybackMediaButtonReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
+        <receiver android:name="org.chromium.chrome.browser.media.ui.MediaNotificationManager$PresentationMediaButtonReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
+        <receiver android:name="org.chromium.chrome.browser.media.ui.MediaNotificationManager$CastMediaButtonReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
+
+
+        <meta-data android:name="org.chromium.content.browser.SMART_CLIP_PROVIDER"
+            android:value="org.chromium.content_public.browser.SmartClipProvider"/>
+
+        {% set enable_leakcanary = enable_leakcanary|default(0) %}
+        {% if enable_leakcanary == "true" %}
+        {# Entries for LeakCanary copied from (and then tweaked):
+               //third_party/leakcanary/src/leakcanary-android/src/main/AndroidManifest.xml #}
+          <service
+              android:name="com.squareup.leakcanary.internal.HeapAnalyzerService"
+              android:process=":leakcanary"
+              android:enabled="false" />
+          <activity
+              android:theme="@style/leak_canary_LeakCanary.Base"
+              android:name="com.squareup.leakcanary.internal.DisplayLeakActivity"
+              android:process=":leakcanary2"  {# Added to avoid StrictMode violations crashing the activity #}
+              android:label="@string/app_name"  {# Changed from "string/leak_canary_display_activity_label" to help distinguaish when multiple apps include leakcanary. #}
+              android:icon="@drawable/leak_canary_icon"
+              android:taskAffinity=".com.squareup.leakcanary">  {# Added leading "." for multi-app case. #}
+            <intent-filter>
+              <action android:name="android.intent.action.MAIN" />
+              <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+          </activity>
+          <service
+              android:name="com.squareup.leakcanary.DisplayLeakService"
+              android:process=":leakcanary2"  {# Added to minimize interaction with browser process. #}
+              android:enabled="false" />
+          <activity  {# This is just a toast-like overlay, so leaving in browser process #}
+              android:theme="@style/leak_canary_Theme.Transparent"
+              android:name="com.squareup.leakcanary.internal.RequestStoragePermissionActivity"
+              android:taskAffinity="com.squareup.leakcanary"
+              android:enabled="false"
+              android:icon="@drawable/leak_canary_icon"
+              android:label="@string/leak_canary_storage_permission_activity_label" />
+        {% endif %}
+
+        {% block extra_application_definitions %}
+
+        <!-- Media route controllers to use for remote playback (cast).
+             This is here, rather than in code, since it varies between upstream and downstream,
+             yet we need this list of classes in the notification service, which belongs upstream
+             and doesn't run the downstream startup code. The Cast code will, for each media element,
+             choose the first MediaRouteController that can play it, so the order of the list can be important.
+             The most specific MediaRouteControllers should be listed first, followed by more generic ones.
+             The downstream manifest replaces this block, and hence replaces the list of media route
+             controllers with its own list. -->
+        <meta-data android:name="org.chromium.content.browser.REMOTE_MEDIA_PLAYERS"
+            android:value="org.chromium.chrome.browser.media.remote.DefaultMediaRouteController"/>
+
+        {% endblock %}
+    </application>
+</manifest>

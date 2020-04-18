@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+    <head>
+        <title>AudioTrack properties read from input stream metadata</title>
+        <script src="../../resources/testharness.js"></script>
+        <script src="../../resources/testharnessreport.js"></script>
+            </head>
+    <body>
+        <script>
+            async_test(function(t)
+            {
+                var audio = document.createElement("audio");
+                audio.src = "../content/test.webm";
+
+                audio.onloadedmetadata = t.step_func_done(function()
+                {
+                    assert_equals(audio.audioTracks.length, 1, "audioTracks.length");
+                    assert_true(audio.audioTracks[0].enabled, "audioTrack.enabled");
+                    assert_equals(audio.audioTracks[0].id, "2", "audioTrack.id");
+                    assert_equals(audio.audioTracks[0].kind, "main", "audioTrack.kind");
+                    assert_equals(audio.audioTracks[0].label, "", "audioTrack.label");
+                    assert_equals(audio.audioTracks[0].language, "", "audioTrack.language");
+                });
+            });
+        </script>
+    </body>
+</html>

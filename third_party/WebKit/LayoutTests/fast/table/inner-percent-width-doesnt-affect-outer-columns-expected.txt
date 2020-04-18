@@ -1,0 +1,2 @@
+No red should show. Yellow and blue rectangles are in proportion to their contents' intrinsic widths, not affected by yellow's percent-width bloating the inner table.
+PASS

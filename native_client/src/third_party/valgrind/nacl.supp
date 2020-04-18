@@ -1,0 +1,85 @@
+# Allocator internals.
+{
+   free4
+   Memcheck:Addr4
+   fun:*
+   fun:free
+}
+
+{
+   malloc4
+   Memcheck:Addr4
+   fun:*
+   fun:malloc
+}
+
+{
+   free1
+   Memcheck:Addr1
+   fun:*
+   fun:free
+}
+
+{
+   malloc1
+   Memcheck:Addr1
+   fun:*
+   fun:malloc
+}
+
+# Generic ld.so suppressions.
+# Default Valgrind suppressions for ld.so specify both major and minor version
+# numbers of glibc from the build machine. Because of this, we get false reports
+# when this Valgrind binary is used on a machine with a different version of
+# glibc.
+# TODO(eugenis): Somehow fix this in Valgrind.
+{
+   ld.so hack
+   Memcheck:Cond
+   obj:/lib*/ld-2.*.so*
+}
+
+# Glibc's start_thread() does stack accesses before we can report the location of
+# the thread's stack to ThreadSanitizer. Normally this is not a problem because
+# we are ignoring all memory accesses in libpthread, but in NaCl one of these
+# accesses is in the trampoline.
+# This suppression should not match any user code because there is always a
+# frame with ThreadSanitizer wrapper (tsan_start_thread in
+# valgrind_interceptors.c) between start_thread and the user-provided thread
+# function.
+{
+   glibc start_thread
+   ThreadSanitizer:Race
+   fun:*
+   fun:start_thread
+}
+
+# valgrind fails to recognize that "movaps %xmm7,(%rsp)"
+# initializes the 16 bytes at %rsp.
+# See http://code.google.com/p/nativeclient/issues/detail?id=2251
+{
+   movaps unrecognized
+   Memcheck:Cond
+   fun:infoleak_check_state
+   fun:main
+}
+
+# Suppress all errors that come from the python testing harness.
+{
+   ADDRESS_IN_RANGE/Invalid read of size 4
+   Memcheck:Addr4
+   obj:/usr/bin/python*
+}
+
+{
+   ADDRESS_IN_RANGE/Invalid read of size 4
+   Memcheck:Value4
+   obj:/usr/bin/python*
+}
+
+{
+   ADDRESS_IN_RANGE/Conditional jump or move depends on uninitialised value
+   Memcheck:Cond
+   obj:/usr/bin/python*
+}
+

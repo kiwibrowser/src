@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<script src="../resources/text-based-repaint.js"></script>
+<input id="target"size="5"  value="test test test">
+<script>
+window.testIsAsync = true;
+onload = runRepaintAndPixelTest;
+if (window.internals)
+  internals.settings.setPreferCompositingToLCDTextEnabled(false);
+
+function repaintTest() {
+  target.focus();
+  target.scrollLeft = 5;
+  requestAnimationFrame(function() {
+      target.setSelectionRange(5, 10);
+      finishRepaintTest();
+  });
+}
+</script>

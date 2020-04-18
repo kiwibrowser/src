@@ -1,0 +1,61 @@
+This directory contains two types of tests:
+
+  1) Tests for elf file layout
+
+  2) Tests copied from the scons staging directory.
+
+  3) Death tests of an old ABI
+
+The executables in this file only need to be changed when the ABI for one
+of these two cases change.
+
+The elf file layout are special (one-time) generated using
+native_client/tools/generate_bad_x86_64_nexes.py, while in
+this directory. If the pattern elf files change, these tests
+need to be upgraded by manually editing the python file above.
+Each generate specific error messages that are tested for
+specific error messages.
+
+The elf file tests are generated from
+
+   fib_scalar_base.nexe
+
+   TODO(karl): I don't know how this file was generated, and the contents of
+   native_client/tools/generate_bad_x86_64_nexes.py depends on this executable.
+
+The elf file tests are:
+
+   data_not_last.nexe
+   negative_hole.nexe
+   rodata_data_overlap.nexe
+   text_too_big.nexe
+   integer_overflow_while_madvising.nexe
+   text_overlaps_data.nexe
+   text_overlaps_rodata.nexe
+
+Note: The input fib_scalar_base.nexe is the input file for this
+python script! DO NOT replace it!!!!
+
+The scons staging test executables come from
+   native_client/scons-out/nacl-x86-64/staging
+The expectation is that there shouldn't be any validator errors etc. If this
+no longer holds for an example executable, DO NOT submit until the corresponding
+staging executable works. Then copy it over to this directory.
+
+The staging tests (for sel_ldr) are:
+
+   fib_array.nexe
+   fib_scalar.nexe
+   hello_world.nexe
+   mandel.nexe
+   nullptr.nexe
+
+   TODO(karl): There isn't a script for copying these from the
+   nacl-x86-64/staging directory. They were copied by hand. A script should
+   be added.
+
+Death tests of an old ABI are executables that no longer work, but did
+in a previous API. Currently, the consist of:
+
+   old_abi.nexe
+

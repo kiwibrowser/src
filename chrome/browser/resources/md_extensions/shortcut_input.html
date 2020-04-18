@@ -1,0 +1,59 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_icons_css.html">
+<link rel="import" href="chrome://resources/cr_elements/hidden_style_css.html">
+<link rel="import" href="chrome://resources/cr_elements/paper_input_style_css.html">
+<link rel="import" href="chrome://resources/cr_elements/shared_vars_css.html">
+<link rel="import" href="chrome://resources/html/assert.html">
+<link rel="import" href="chrome://resources/html/cr.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-input/paper-input.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-styles/color.html">
+<link rel="import" href="shortcut_util.html">
+
+<dom-module id="extensions-shortcut-input">
+  <template>
+    <style include="cr-icons cr-hidden-style paper-input-style">
+      #main {
+        position: relative;
+        width: 200px;
+      }
+
+      #input {
+        --paper-input-container: {
+          margin-bottom: 0px;
+          margin-top: 2px;  /* Offset underline spacing. */
+          padding: 0;
+          @apply --cr-primary-text;
+        };
+      }
+
+      #clearContainer {
+        bottom: -4px;
+        position: absolute;
+        right: -8px;
+      }
+
+      :host-context([dir='rtl']) #clearContainer {
+        left: -8px;
+        right: inherit;
+      }
+    </style>
+    <div id="main">
+      <paper-input id="input" placeholder="$i18n{shortcutTypeAShortcut}"
+          error-message="[[getErrorString_(error_,
+              '$i18nPolymer{shortcutIncludeStartModifier}',
+              '$i18nPolymer{shortcutTooManyModifiers}',
+              '$i18nPolymer{shortcutNeedCharacter}')]]"
+          value="[[computeText_(capturing_, shortcut, pendingShortcut_)]]"
+          no-label-float>
+      </paper-input>
+      <paper-icon-button-light class="icon-clear no-overlap" id="clearContainer"
+          hidden$="[[computeClearHidden_(capturing_, shortcut)]]">
+        <button id="clear" on-click="onClearTap_"></button>
+      </paper-icon-button-light>
+    </div>
+  </template>
+  <script src="shortcut_input.js"></script>
+</dom-module>

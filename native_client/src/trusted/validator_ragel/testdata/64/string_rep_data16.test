@@ -1,0 +1,170 @@
+@hex:
+  # Due to bug, REP(NE) is not allowed for 16-bit versions of string instructions
+  # (because there would be two non-rex prefixes: rep and data16).
+  # See http://code.google.com/p/nativeclient/issues/detail?id=1950
+  
+  # mov %edi, %edi
+  89 ff
+  # lea (%r15,%rdi,1), %rdi
+  49 8d 3c 3f
+  # rep scasw %es:(%rdi), %ax
+  66 f3 af
+@dis:
+     0:	89 ff                                        	mov    %edi,%edi
+     2:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     6:	66 f3 af                                     	repz scas %es:(%rdi),%ax
+@rdfa_output:
+  6: unrecognized instruction
+  return code: 1
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # mov %edi, %edi
+  89 ff
+  # lea (%r15,%rdi,1), %rdi
+  49 8d 3c 3f
+  # repne scasw %es:(%rdi), %ax
+  66 f2 af
+@dis:
+     0:	89 ff                                        	mov    %edi,%edi
+     2:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     6:	66 f2 af                                     	repnz scas %es:(%rdi),%ax
+@rdfa_output:
+  6: unrecognized instruction
+  return code: 1
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # mov %edi, %edi
+  89 ff
+  # lea (%r15,%rdi,1), %rdi
+  49 8d 3c 3f
+  # rep stosw %ax, %es:(%rdi)
+  66 f3 ab
+@dis:
+     0:	89 ff                                        	mov    %edi,%edi
+     2:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     6:	66 f3 ab                                     	rep stos %ax,%es:(%rdi)
+@rdfa_output:
+  6: unrecognized instruction
+  return code: 1
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # mov %esi, %esi
+  89 f6
+  # lea (%r15,%rsi,1), %rsi
+  49 8d 34 37
+  # rep lodsw %ds:(%rsi), %ax
+  66 f3 ad
+@dis:
+     0:	89 f6                                        	mov    %esi,%esi
+     2:	49 8d 34 37                                  	lea    (%r15,%rsi,1),%rsi
+     6:	66 f3 ad                                     	rep lods %ds:(%rsi),%ax
+@rdfa_output:
+  6: unrecognized instruction
+  return code: 1
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # mov %esi, %esi
+  89 f6
+  # lea (%r15,%rsi,1), %rsi
+  49 8d 34 37
+  # mov %edi, %edi
+  89 ff
+  # lea (%r15,%rdi,1), %rdi
+  49 8d 3c 3f
+  # rep movsw %ds:(%rsi), %es:(%rdi)
+  66 f3 a5
+@dis:
+     0:	89 f6                                        	mov    %esi,%esi
+     2:	49 8d 34 37                                  	lea    (%r15,%rsi,1),%rsi
+     6:	89 ff                                        	mov    %edi,%edi
+     8:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     c:	66 f3 a5                                     	rep movsw %ds:(%rsi),%es:(%rdi)
+@rdfa_output:
+  c: unrecognized instruction
+  return code: 1
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # mov %esi, %esi
+  89 f6
+  # lea (%r15,%rsi,1), %rsi
+  49 8d 34 37
+  # mov %edi, %edi
+  89 ff
+  # lea (%r15,%rdi,1), %rdi
+  49 8d 3c 3f
+  # rep cmpsw %es:(%rdi), %ds:(%rsi)
+  66 f3 a7
+@dis:
+     0:	89 f6                                        	mov    %esi,%esi
+     2:	49 8d 34 37                                  	lea    (%r15,%rsi,1),%rsi
+     6:	89 ff                                        	mov    %edi,%edi
+     8:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     c:	66 f3 a7                                     	repz cmpsw %es:(%rdi),%ds:(%rsi)
+@rdfa_output:
+  c: unrecognized instruction
+  return code: 1
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # mov %esi, %esi
+  89 f6
+  # lea (%r15,%rsi,1), %rsi
+  49 8d 34 37
+  # mov %edi, %edi
+  89 ff
+  # lea (%r15,%rdi,1), %rdi
+  49 8d 3c 3f
+  # repne cmpsw %es:(%rdi), %ds:(%rsi)
+  66 f2 a7
+@dis:
+     0:	89 f6                                        	mov    %esi,%esi
+     2:	49 8d 34 37                                  	lea    (%r15,%rsi,1),%rsi
+     6:	89 ff                                        	mov    %edi,%edi
+     8:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     c:	66 f2 a7                                     	repnz cmpsw %es:(%rdi),%ds:(%rsi)
+@rdfa_output:
+  c: unrecognized instruction
+  return code: 1
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Examples of valid string instructions.
+  
+  # DATA16, but no REP/REPNE prefix:
+  # mov %edi, %edi
+  89 ff \\
+  # lea (%r15,%rdi,1), %rdi
+  49 8d 3c 3f \\
+  # scasw %es:(%rdi), %ax
+  66 af
+  
+  # REP, but no DATA16 prefix:
+  # mov %edi, %edi
+  89 ff \\
+  # lea (%r15,%rdi,1),%rdi
+  49 8d 3c 3f \\
+  # rep stosb %al, %es:(%rdi)
+  f3 aa
+@dis:
+     0:	89 ff                                        	mov    %edi,%edi
+     2:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     6:	66 af                                        	scas   %es:(%rdi),%ax
+     8:	89 ff                                        	mov    %edi,%edi
+     a:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     e:	f3 aa                                        	rep stos %al,%es:(%rdi)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE

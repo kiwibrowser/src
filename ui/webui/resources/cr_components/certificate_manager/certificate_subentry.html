@@ -1,0 +1,67 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_action_menu/cr_action_menu.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_lazy_render/cr_lazy_render.html">
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="certificate_manager_types.html">
+<link rel="import" href="certificate_shared_css.html">
+<link rel="import" href="certificates_browser_proxy.html">
+
+<dom-module id="certificate-subentry">
+  <template>
+    <style include="certificate-shared cr-icons">
+      .name {
+        flex: auto;
+      }
+
+      .untrusted {
+        -webkit-margin-end: 16px;
+        color: var(--paper-red-700);
+        font-weight: 500;
+        text-transform: uppercase;
+      }
+
+      :host([is-last]) .list-item {
+        border-bottom: none;
+      }
+    </style>
+    <div class="list-item underbar">
+      <div class="untrusted" hidden$="[[!model.untrusted]]">
+        [[i18n('certificateManagerUntrusted')]]
+      </div>
+      <div class="name">[[model.name]]</div>
+      <paper-icon-button-light class="icon-more-vert">
+        <button id="dots" title="[[i18n('moreActions')]]" on-tap="onDotsTap_">
+        </button>
+      </paper-icon-button-light>
+      <cr-lazy-render id="menu">
+        <template>
+          <cr-action-menu>
+            <button slot="item" class="dropdown-item" id="view"
+                on-tap="onViewTap_">
+              [[i18n('certificateManagerView')]]
+            </button>
+            <button slot="item" class="dropdown-item" id="edit"
+                hidden$="[[!canEdit_(certificateType, model)]]"
+                on-tap="onEditTap_">
+              [[i18n('edit')]]
+            </button>
+            <button slot="item" class="dropdown-item" id="export"
+                hidden$="[[!canExport_(certificateType, model)]]"
+                on-tap="onExportTap_">
+              [[i18n('certificateManagerExport')]]
+            </button>
+            <button slot="item" class="dropdown-item" id="delete"
+                hidden$="[[!canDelete_(model)]]"
+                on-tap="onDeleteTap_">
+              [[i18n('certificateManagerDelete')]]
+            </button>
+          </cr-action-menu>
+        </template>
+      </cr-lazy-render>
+    <div>
+  </template>
+  <script src="certificate_subentry.js"></script>
+</dom-module>

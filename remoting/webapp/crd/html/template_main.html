@@ -1,0 +1,118 @@
+<!doctype html>
+<!--
+Copyright (c) 2012 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<html class="full-height">
+  <head>
+    <meta charset="utf-8">
+    <link rel="icon" type="image/png" href="chromoting16.webp">
+    <link rel="stylesheet" href="butter_bar.css">
+    <link rel="stylesheet" href="connection_stats.css">
+    <link rel="stylesheet" href="crd_main.css">
+    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="menu_button.css">
+    <link rel="stylesheet" href="open_sans.css">
+    <link rel="stylesheet" href="toolbar.css">
+    <link rel="stylesheet" href="window_frame.css">
+
+    <meta-include type="javascript"/>
+
+    <title i18n-content="PRODUCT_NAME"></title>
+  </head>
+
+  <body class="full-height">
+
+    <meta-include src="webapp/crd/html/window_frame.html"/>
+
+    <div class="window-body full-height">
+
+      <!-- loading-mode is initially visible, but becomes hidden as soon as an
+           AppMode is selected by remoting.init. All other divs are initially
+           hidden, but are shown appropriately when the mode changes. -->
+      <section id="loading-mode" data-ui-mode="">
+        <em>Loading&hellip;</em>
+        <div id="browser-test-deferred-init" hidden>
+        <p>
+          Running in test mode. If you are seeing this message in any other
+          context, please <a href="http://crbug.com" target="_blank">file a
+          bug</a>.
+        </p>
+        <p>
+          <button id="browser-test-continue-init">Continue</button>
+        </p>
+      </section>
+
+      <iframe id="wcs-sandbox" src="wcs_sandbox.html" hidden></iframe>
+
+      <div id="scroller">
+        <div class="inset home-screen full-height"
+             data-ui-mode="home"
+             hidden>
+
+          <meta-include src="webapp/crd/html/ui_header.html"/>
+          <meta-include src="webapp/crd/html/butter_bar.html"/>
+          <meta-include src="webapp/crd/html/ui_it2me.html"/>
+          <meta-include src="webapp/crd/html/ui_me2me.html"/>
+
+          <!-- The bottom-marker div is used to verify scroll-bar correctness
+               in browser tests; it is not rendered. -->
+          <div id="bottom-marker"></div>
+
+        </div>  <!-- inset -->
+
+        <div id="session-mode"
+             data-ui-mode="in-session home.client"
+             class="full-height"
+             hidden>
+
+          <meta-include src="webapp/crd/html/toolbar.html"/>
+          <meta-include src="webapp/base/html/client_plugin.html"/>
+
+        </div>  <!-- session-mode -->
+
+        <div id="statistics" dir="ltr" class="selectable" hidden>
+        </div>
+
+      </div>  <!-- scroller -->
+
+      <meta-include src="webapp/crd/html/dialog_auth.html"/>
+
+      <div class="dialog-screen"
+           data-ui-mode="home.host home.client home.history home.confirm-host-delete home.host-setup home.token-refresh-failed home.manage-pairings home.host-setup home.host-install"
+           hidden></div>
+
+      <div class="dialog-container"
+           data-ui-mode="home.host home.client home.history home.confirm-host-delete home.host-install home.host-setup home.token-refresh-failed home.manage-pairings"
+           hidden>
+
+        <meta-include src="webapp/crd/html/dialog_token_refresh_failed.html"/>
+        <meta-include src="webapp/crd/html/dialog_host_setup.html"/>
+        <meta-include src="webapp/crd/html/dialog_host_install.html"/>
+        <meta-include src="webapp/crd/html/dialog_host.html"/>
+
+        <div id="client-dialog"
+             class="kd-modaldialog"
+             data-ui-mode="home.client">
+
+          <meta-include src="webapp/crd/html/dialog_client_unconnected.html"/>
+          <meta-include src="webapp/crd/html/dialog_client_connecting.html"/>
+          <meta-include src="webapp/crd/html/dialog_client_host_needs_upgrade.html"/>
+          <meta-include src="webapp/crd/html/dialog_client_pin_prompt.html"/>
+          <meta-include src="webapp/crd/html/dialog_client_third_party_auth.html"/>
+          <meta-include src="webapp/crd/html/dialog_client_connect_failed.html"/>
+          <meta-include src="webapp/crd/html/dialog_client_session_finished.html"/>
+        </div>
+
+        <meta-include src="webapp/crd/html/dialog_connection_history.html"/>
+        <meta-include src="webapp/crd/html/dialog_confirm_host_delete.html"/>
+        <meta-include src="webapp/crd/html/dialog_manage_pairings.html"/>
+
+      </div>  <!-- dialog-container -->
+
+    </div>  <!-- window-body -->
+
+  </body>
+</html>

@@ -1,0 +1,91 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+option java_outer_classname = "SampledProfileProtos";
+option java_package = "org.chromium.components.metrics";
+
+package metrics;
+
+import "execution_context.proto";
+import "perf_data.proto";
+import "perf_stat.proto";
+import "call_stack_profile.proto";
+
+// Protocol buffer for collected sample-based profiling data.
+// Contains the parameters and data from a single profile collection event.
+
+// Next tag: 13
+message SampledProfile {
+  // Indicates the event that triggered this collection.
+  enum TriggerEvent {
+    UNKNOWN_TRIGGER_EVENT = 0;
+
+    // The profile was triggered by periodic sampling.  Periodically sampled
+    // profiles are collected once per uniformly sized period interval.  Within
+    // each interval, the sampled data is collected at a random time.  For
+    // example, if the interval is 60 s, then data would be collected at a
+    // random point in each of the intervals [0, 60 s), [60 s, 120 s), etc.
+    PERIODIC_COLLECTION = 1;
+
+    // The profile was collected upon resume from suspend.
+    RESUME_FROM_SUSPEND = 2;
+
+    // The profile was collected upon restoring a previous session.
+    RESTORE_SESSION = 3;
+
+    // The profile was collected at process startup.
+    PROCESS_STARTUP = 4;
+
+    // The profile was collected after jank was detected while executing a task.
+    JANKY_TASK = 5;
+
+    // The profile was collected after a thread was determined to be hung.
+    THREAD_HUNG = 6;
+  }
+  optional TriggerEvent trigger_event = 1;
+
+  // The process in which the profile was collected.
+  optional Process process = 11;
+
+  // The thread in which the profile was collected.
+  optional Thread thread = 12;
+
+  // Fields 2-3: Time durations are given in ticks, and represent system uptime
+  // rather than wall time.
+
+  // Time after system boot when the collection took place, in milliseconds.
+  optional int64 ms_after_boot = 2;
+
+  // Time after last login when the collection took place, in milliseconds.
+  optional int64 ms_after_login = 3;
+
+  // The duration for which the machine was suspended prior to collecting the
+  // sampled profile. Only set when |trigger_event| is RESUME_FROM_SUSPEND.
+  optional int64 suspend_duration_ms = 5;
+
+  // Number of milliseconds after a resume that profile was collected. Only set
+  // when |trigger_event| is RESUME_FROM_SUSPEND.
+  optional int64 ms_after_resume = 6;
+
+  // Number of tabs restored during a session restore. Only set when
+  // |trigger_event| is RESTORE_SESSION.
+  optional int32 num_tabs_restored = 7;
+
+  // Number of milliseconds after a session restore that a profile was
+  // collected. Only set when |trigger_event| is RESTORE_SESSION.
+  optional int64 ms_after_restore = 8;
+
+  // Sampled profile data collected from Linux perf tool.
+  optional PerfDataProto perf_data = 4;
+
+  // Sampled profile data collected by periodic sampling of call stacks.
+  optional CallStackProfile call_stack_profile = 9;
+
+  // Perf counter data collected using "perf stat".
+  optional PerfStatProto perf_stat = 10;
+}

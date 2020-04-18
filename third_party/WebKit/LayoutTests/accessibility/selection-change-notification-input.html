@@ -1,0 +1,61 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<script src="../resources/js-test.js"></script>
+</head>
+<body id="static_eventTarget">
+
+<input id="input" value="input">
+
+<div id="console"></div>
+<script>
+description("Tests that a 'selected text changed' notification fires on an input element when the user moves the cursor.");
+window.jsTestIsAsync = true;
+
+function runTest() {
+    // This forces building the accessibility tree, because selection change
+    // events only fire on elements that already exist.
+    accessibilityController.accessibleElementById('dummy');
+
+    var inputElement = document.getElementById('input');
+    var axRootElement = accessibilityController.rootElement;
+    var axInputElement = accessibilityController.accessibleElementById('input');
+    inputElement.focus();
+
+    var gotDocumentSelectionChanged = false;
+    var gotSelectedTextChanged = false;
+    function succeedIfDone() {
+        if (gotDocumentSelectionChanged && gotSelectedTextChanged)
+            finishJSTest();
+    }
+
+    axRootElement.addNotificationListener(function(notification) {
+        if (notification == 'DocumentSelectionChanged') {
+            debug('Got DocumentSelectionChanged notification on root element.');
+            gotDocumentSelectionChanged = true;
+            axRootElement.removeNotificationListener();
+            succeedIfDone();
+        }
+    });
+        
+    axInputElement.addNotificationListener(function(notification) {
+        if (notification == 'SelectedTextChanged') {
+            debug('Got SelectedTextChanged notification on input element.');
+            gotSelectedTextChanged = true;
+            axInputElement.removeNotificationListener();
+            succeedIfDone();
+        }
+    });
+
+    inputElement.setSelectionRange(0, 1);
+}
+
+if (window.testRunner && window.accessibilityController) {
+    testRunner.dumpAsText();
+    window.onload = runTest();
+}
+
+</script>
+
+</body>
+</html>

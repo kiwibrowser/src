@@ -1,0 +1,72 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+<meta charset="utf-8">
+<script src="../resources/js-test.js"></script>
+</head>
+<body>
+
+<p id="horizontalParagraph">
+one two אחתשתיים three four שלושהארבעה
+</p>
+
+<p id="verticalParagraph" style="-webkit-writing-mode: vertical-lr">
+one two אחתשתיים three four שלושהארבעה
+</p>
+
+<p id="description"></p>
+
+<div id="console"></div>
+
+<script>
+
+    description("Tests that we can compute the bounds of a range of text from the accessibility tree in bidirectional text.");
+
+    if (window.accessibilityController) {
+        // For several possible words in the text, get the bounds of the word in the accessibility
+        // tree, and also in the DOM, and assert that they're exactly the same.
+        function testWord(elementId, word) {
+            debug('\nTesting bounds of word ' + word + ' in ' + elementId);
+
+            var paragraph = document.getElementById(elementId);
+            var domText = paragraph.innerHTML;
+
+            // Get the bounds from the accessibility tree.
+            var axParagraph = accessibilityController.accessibleElementById(elementId);
+            var axStaticText = axParagraph.childAtIndex(0);
+            var text = axStaticText.name;
+            var wordAxIndex = text.indexOf(word);
+            eval('window.axBounds = ' + axStaticText.boundsForRange(wordAxIndex, wordAxIndex + word.length) + ';');
+
+            // Get the bounds from the DOM.
+            var domIndex = domText.indexOf(word);
+            var range = new Range();
+            range.setStart(paragraph.firstChild, domIndex);
+            range.setEnd(paragraph.firstChild, domIndex + word.length);
+            window.rangeBounds = range.getBoundingClientRect();
+
+            // Make sure they're the same.
+            shouldBeCloseTo("axBounds.x", "rangeBounds.left", 2);
+            shouldBeCloseTo("axBounds.y", "rangeBounds.top", 2);
+            shouldBeCloseTo("axBounds.width", "rangeBounds.width", 2);
+            shouldBeCloseTo("axBounds.height", "rangeBounds.height", 2);
+        }
+
+        testWord('horizontalParagraph', 'one');
+        testWord('horizontalParagraph', 'two');
+        testWord('horizontalParagraph', 'three');
+        testWord('horizontalParagraph', 'four');
+        testWord('horizontalParagraph', 'אחתשתיים');
+        testWord('horizontalParagraph', 'שלושהארבעה');
+
+        testWord('verticalParagraph', 'one');
+        testWord('verticalParagraph', 'two');
+        testWord('verticalParagraph', 'three');
+        testWord('verticalParagraph', 'four');
+        testWord('verticalParagraph', 'אחתשתיים');
+        testWord('verticalParagraph', 'שלושהארבעה');
+    }
+</script>
+
+</body>
+</html>

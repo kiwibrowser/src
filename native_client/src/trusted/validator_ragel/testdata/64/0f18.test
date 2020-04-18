@@ -1,0 +1,21 @@
+@hex:
+  # Test handling of different sizes for instruction prefetch
+  # illegal undefined sequence
+  0f 18 21
+@dis:
+     0:	0f 18 21                                     	nop/reserved (%rcx)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: unrecognized instruction 'nop/reserved (%rcx)'
+----------------------------------------------------------------------
+@hex:
+  # legal SSE prefetch instruction
+  0f 18 1c 24
+@dis:
+     0:	0f 18 1c 24                                  	prefetcht2 (%rsp)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE

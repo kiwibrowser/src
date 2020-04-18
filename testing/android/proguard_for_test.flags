@@ -1,0 +1,33 @@
+# Copyright 2016 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This file is for proguard flags which are applied to the combined test and
+# tested code. Do not put any flags in this file which might affect the
+# correctness of the .apk we are testing, since it will apply to that .apk as
+# well.
+
+# Keep all junit3 classes and tests
+-keep class junit.** { *; }
+-keep class * extends junit.** { *; }
+
+# Keep all junit4 classes and tests
+-keep class org.junit.** { *; }
+-keep class * extends org.junit.** { *; }
+-keep @**.RunWith class * { *; }
+
+# Keep all classes that are in test packages. There is no benefit in testing
+# Proguarding of test classes, but this is as close as we can get to selecting
+# all classes from the test apk.
+-keep class **.test.** { *; }
+
+# Keep all enum members since they might be reflectively called by JUnit4 runner
+-keepclassmembers enum * { *; }
+
+# Keep any annotation used by tests for instrumentation runner to list out
+# test annotation information
+-keepattributes *Annotation*
+
+# We have some "library class WebView depends on program class SslCertificate"
+# warnings, and they don't affect us.
+-dontwarn android.webkit.WebView*

@@ -1,0 +1,11 @@
+@hex:
+  # Test that we don't accept "mov %ebp, %r11d" if not followed by an "add %rbp %r15"
+  44 89 dd
+  
+@dis:
+     0:	44 89 dd                                     	mov    %r11d,%ebp
+@rdfa_output:
+  3: improper %rbp sandboxing
+  return code: 1
+@spec:
+  3: %rbp should not be restricted at the end of chunk

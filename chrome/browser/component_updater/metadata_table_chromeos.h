@@ -1,0 +1,88 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef CHROME_BROWSER_COMPONENT_UPDATER_METADATA_TABLE_CHROMEOS_H_
+#define CHROME_BROWSER_COMPONENT_UPDATER_METADATA_TABLE_CHROMEOS_H_
+
+#include <memory>
+#include <string>
+
+#include "base/gtest_prod_util.h"
+#include "base/macros.h"
+#include "base/values.h"
+
+class PrefRegistrySimple;
+class PrefService;
+
+namespace component_updater {
+
+// MetadataTable is a persistent data structure that tracks component usage
+// across profiles.
+// The instance of this Class lives on UI thread.
+class MetadataTable {
+ public:
+  ~MetadataTable();
+
+  // Create and return a MetadataTable instance.
+  static std::unique_ptr<component_updater::MetadataTable> Create(
+      PrefService* perf_service);
+
+  // Create and return a MetadataTable instance for testing purpose.
+  static std::unique_ptr<component_updater::MetadataTable> CreateForTest();
+
+  // Register a Dictionary in PrefService.
+  static void RegisterPrefs(PrefRegistrySimple* registry);
+
+  // Adds or updates a component usage item for current active user.
+  bool AddComponentForCurrentUser(const std::string& component_name);
+
+  // Deletes a component usage item for current active user.
+  bool DeleteComponentForCurrentUser(const std::string& component_name);
+
+  // Checks if component usage item exists for any user.
+  bool HasComponentForAnyUser(const std::string& component_name) const;
+
+ private:
+  FRIEND_TEST_ALL_PREFIXES(CrOSComponentInstallerMetadataTest, Add);
+  FRIEND_TEST_ALL_PREFIXES(CrOSComponentInstallerMetadataTest, Delete);
+
+  explicit MetadataTable(PrefService* pref_service);
+
+  // Constructor for testing purpose.
+  MetadataTable();
+
+  // Loads |installed_items_| from PrefService.
+  void Load();
+
+  // Stores |installed_items_| to PrefService.
+  void Store();
+
+  // Add an item to |installed_items_|.
+  void AddItem(const std::string& hashed_user_id,
+               const std::string& component_name);
+
+  // Delete an item from |installed_items_].
+  bool DeleteItem(const std::string& hashed_user_id,
+                  const std::string& component_name);
+
+  // Checks if component usage item exists for a user.
+  bool HasComponentForUser(const std::string& hashed_user_id,
+                           const std::string& component_name) const;
+
+  base::Value::ListStorage::const_iterator GetInstalledItemIndex(
+      const std::string& hashed_user_id,
+      const std::string& component_name) const;
+
+  // Information about installed items.
+  base::Value installed_items_;
+
+  // Local state PrefService.
+  PrefService* const pref_service_;
+
+  DISALLOW_COPY_AND_ASSIGN(MetadataTable);
+};
+
+}  // namespace component_updater
+
+#endif  // CHROME_BROWSER_COMPONENT_UPDATER_METADATA_TABLE_CHROMEOS_H_

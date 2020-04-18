@@ -1,0 +1,27 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# Do not run these tests with pexes, assuming they are portable, since
+# they use inline assembler.
+if env.Bit('bitcode') and env.Bit('pnacl_generate_pexe'):
+  Return()
+
+prog_env = env.Clone()
+if prog_env.Bit('bitcode'):
+  prog_env.AddBiasForPNaCl()
+
+nexe = prog_env.ComponentProgram('execute_data', ['execute_data.c'],
+                                 EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = prog_env.CommandSelLdrTestNacl(
+    'execute_data.out', nexe, declares_exit_status=True)
+
+prog_env.AddNodeToTestSuite(node, ['small_tests', 'nonpexe_tests'],
+                            'run_execute_data_test',
+                            # This test hangs on qemu-user when the fault
+                            # is caught by NaCl's signal handler.
+                            is_broken=env.UsingEmulator())

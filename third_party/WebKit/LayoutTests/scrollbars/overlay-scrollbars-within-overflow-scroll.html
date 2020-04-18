@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+
+<!--
+The scrollbar within the inner (blue) box should be visible and positioned at
+the top, even though the outer (green) box has been scrolled.
+-->
+
+<style>
+html, body { margin: 0; padding: 0; }
+#outer {
+    width: 400px;
+    height: 300px;
+    overflow-y: scroll;
+    border: 1px solid green;
+}
+#inner {
+    width: 100px;
+    height: 100px;
+    overflow-y: scroll;
+    border: 1px solid blue;
+}
+.strut { height: 500px; }
+</style>
+
+<div id="outer">
+    <div class="strut"></div>
+    <div id="inner">
+        <div class="strut"></div>
+    </div>
+</div>
+
+<script>
+if (window.internals) {
+    internals.runtimeFlags.overlayScrollbarsEnabled = true;
+    internals.settings.setMockScrollbarsEnabled(true);
+}
+const outer = document.getElementById('outer');
+outer.scrollTop = outer.scrollHeight - outer.clientHeight;
+</script>

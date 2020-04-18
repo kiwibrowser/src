@@ -1,0 +1,124 @@
+# -*- python -*-
+# Copyright 2009 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import os
+
+Import('env')
+
+# nrd_xfer.c needs no-strict-aliasing because NaClImcMsgIoVec and
+# NaClIOVec are intentionally different types (exported by different
+# layers) but have the same layout in order to avoid copies.  It also
+# needs no-missing-field-initializers because NaClInternalHeader's pad
+# size is computed (see nacl_desc_base.h) and the kNoHandles object
+# cannot be initialized with the right number of zeros w/o manually
+# computing the pad size, making the whole point of having the size be
+# computed by the compiler moot.  This assumes non-windows build uses
+# gcc.
+nrd_xfer_env = env.Clone()
+if not env.Bit('windows'):
+   nrd_xfer_env.Append(CFLAGS = ['-fno-strict-aliasing'])
+   nrd_xfer_env.Append(CCFLAGS = ['-Wno-missing-field-initializers'])
+
+nrd_xfer_obj = nrd_xfer_env.DualObject('nrd_xfer.c')
+
+nrd_lib_inputs = [
+    'nacl_desc_base.c',
+    'nacl_desc_cond.c',
+    'nacl_desc_custom.c',
+    'nacl_desc_dir.c',
+    'nacl_desc_effector_trusted_mem.c',
+    'nacl_desc_imc.c',
+    'nacl_desc_imc_shm.c',
+    'nacl_desc_invalid.c',
+    'nacl_desc_io.c',
+    'nacl_desc_mutex.c',
+    'nacl_desc_null.c',
+    'nacl_desc_quota.c',
+    'nacl_desc_quota_interface.c',
+    'nacl_desc_semaphore.c',
+    'nacl_desc_sync_socket.c',
+    'nrd_all_modules.c',
+    nrd_xfer_obj,
+]
+
+if env.Bit('windows'):
+  nrd_lib_inputs += ['win/nacl_desc.c']
+else:
+  nrd_lib_inputs += ['posix/nacl_desc.c']
+
+if env.Bit('mac'):
+  nrd_lib_inputs += [
+    'osx/nacl_desc_imc_shm_mach.c',
+  ]
+
+if env.Bit('windows'):
+  nrd_lib_inputs += [
+      'nacl_desc_conn_cap.c',
+      'nacl_desc_imc_bound_desc.c',
+      'nacl_makeboundsock.c',
+      ]
+else:
+  nrd_lib_inputs += [
+      'posix/nacl_desc_conn_cap.c',
+      'posix/nacl_desc_imc_bound_desc.c',
+      'posix/nacl_makeboundsock.c',
+      ]
+
+env.DualLibrary('nrd_xfer', nrd_lib_inputs,
+                EXTRA_LIBS=['platform',
+                            'nacl_base'])
+
+nacl_desc_quota_test_exe = env.ComponentProgram('nacl_desc_quota_test',
+                                                ['nacl_desc_quota_test.c'],
+                                                EXTRA_LIBS=['nrd_xfer',
+                                                            'nacl_base',
+                                                            'imc',
+                                                            'platform',
+                                                            'gio',])
+
+# Create a temporary file and close the handle. The nacl_desc_quota_test test
+# will remove the file.
+temp_path = env.MakeEmptyFile(prefix='tmp_desc')
+
+node = env.CommandTest('nacl_desc_quota_test.out',
+                       command=[nacl_desc_quota_test_exe,
+                                "-f",
+                                temp_path,
+                                ])
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_nacl_desc_quota_test')
+
+metadata_test_exe = env.ComponentProgram('metadata_test',
+                                         ['metadata_test.c'],
+                                         EXTRA_LIBS=['nrd_xfer',
+                                                     'nacl_base',
+                                                     'imc',
+                                                     'platform'])
+
+node = env.CommandTest('metadata_test.out',
+                       command=[metadata_test_exe, metadata_test_exe])
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_metadata_test')
+
+alloc_ctor_test_exe = env.ComponentProgram('nacl_desc_io_alloc_ctor_test',
+                                           ['nacl_desc_io_alloc_ctor_test.c'],
+                                           EXTRA_LIBS=['nrd_xfer',
+                                                       'nacl_base',
+                                                       'imc',
+                                                       'platform'])
+
+node = env.CommandTest('nacl_desc_io_alloc_ctor_test.out',
+                       command=[alloc_ctor_test_exe, '-t',
+                                env.MakeTempDir(prefix='tmp_desc')])
+
+env.AddNodeToTestSuite(node, ['small_tests'],
+                       'run_nacl_desc_io_alloc_ctor_test')
+
+
+# TODO: add comment
+if env.Bit('windows'):
+  env.Append(LIBS = [ 'ws2_32', 'advapi32' ])
+
+env.EnsureRequiredBuildWarnings()
+nrd_xfer_env.EnsureRequiredBuildWarnings()

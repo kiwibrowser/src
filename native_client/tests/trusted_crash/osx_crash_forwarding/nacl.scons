@@ -1,0 +1,76 @@
+# -*- python -*-
+# Copyright 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+
+# This tests an interface that is specific to Mac OS X and/or Mach.
+if not env.Bit('host_mac'):
+  Return()
+
+# These tests use nexes built by other tests. Nexes do not get staged in
+# pexe mode, so only run this test in nonpexe mode.
+if env.Bit('pnacl_generate_pexe'):
+  Return()
+
+if 'TRUSTED_ENV' not in env:
+  Return()
+trusted_env = env['TRUSTED_ENV']
+
+runner = trusted_env.ComponentProgram(
+    'mach_crash_forwarding_test', ['mach_crash_forwarding_test.c'],
+    EXTRA_LIBS=['sel'])
+
+def GetNexeByName(name):
+  return env.File('${STAGING_DIR}/%s${PROGSUFFIX}' %
+                  env.ProgramNameForNmf(name))
+
+# exception_test only gets built if inline assembly is allowed.
+if not env.AllowInlineAssembly():
+  Return()
+untrusted_caught_nexe = GetNexeByName('exception_test')
+untrusted_crash_nexe = GetNexeByName('crash_test')
+trusted_crash_nexe = GetNexeByName('crash_in_syscall')
+is_broken = not env.Bit('nacl_static_link')
+
+test_suites = ['small_tests', 'exception_tests', 'nonpexe_tests']
+
+node = env.CommandTest('mach_forward_untrusted_crash_test.out',
+                       [runner, 'untrusted', untrusted_crash_nexe],
+                       declares_exit_status=True)
+env.AddNodeToTestSuite(node, test_suites,
+                       'run_mach_forward_untrusted_crash_test',
+                       is_broken=is_broken)
+
+node = env.CommandTest('mach_forward_untrusted_caught_test.out',
+                       [runner, 'untrusted_caught', untrusted_caught_nexe],
+                       declares_exit_status=True)
+# For Coverage instrumented tests, we ignore mach_forward_untrusted_caught_test
+# which can produce strange result.
+# Bug=http://code.google.com/p/nativeclient/issues/detail?id=1983
+env.AddNodeToTestSuite(node, test_suites,
+                       'run_mach_forward_untrusted_caught_test',
+                       is_broken=is_broken or
+                                 trusted_env.Bit('coverage_enabled'))
+
+node = env.CommandTest('mach_forward_trusted_crash_test.out',
+                       [runner, 'trusted', trusted_crash_nexe],
+                       declares_exit_status=True)
+env.AddNodeToTestSuite(node, test_suites,
+                       'run_mach_forward_trusted_crash_test',
+                       is_broken=is_broken)
+
+node = env.CommandTest('mach_unforwarded_trusted_crash_test.out',
+                       [runner, 'unforwarded_trusted', trusted_crash_nexe],
+                       declares_exit_status=True)
+env.AddNodeToTestSuite(node, test_suites,
+                       'run_mach_unforwarded_trusted_crash_test',
+                       is_broken=is_broken)
+
+node = env.CommandTest('mach_forward_early_trusted_crash_test.out',
+                       [runner, 'early_trusted'], declares_exit_status=True)
+env.AddNodeToTestSuite(node, test_suites,
+                       'run_mach_forward_early_trusted_crash_test',
+                       is_broken=is_broken)

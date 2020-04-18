@@ -1,0 +1,213 @@
+diff --git a/libelf/elf32_updatefile.c b/libelf/elf32_updatefile.c
+index b39e284..31c4850 100644
+--- a/libelf/elf32_updatefile.c
++++ b/libelf/elf32_updatefile.c
+@@ -101,6 +101,33 @@ sort_sections (Elf_Scn **scns, Elf_ScnList *list)
+ }
+ 
+ 
++static void
++fill_mmap (char *last_position,
++	   char *shdr_start,
++	   char *shdr_end,
++	   char *scn_start,
++	   size_t offset)
++{
++  size_t written = 0;
++
++  if (last_position < shdr_start)
++    {
++      written = MIN (scn_start + offset - last_position,
++		     shdr_start - last_position);
++
++      memset (last_position, __libelf_fill_byte, written);
++    }
++
++  if (last_position + written != scn_start + offset
++      && shdr_end < scn_start + offset)
++    {
++      char *fill_start = MAX (shdr_end, scn_start);
++      memset (fill_start, __libelf_fill_byte,
++	      scn_start + offset - fill_start);
++    }
++}
++
++
+ int
+ internal_function
+ __elfw2(LIBELFBITS,updatemmap) (Elf *elf, int change_bo, size_t shnum)
+@@ -290,27 +317,6 @@ __elfw2(LIBELFBITS,updatemmap) (Elf *elf, int change_bo, size_t shnum)
+ 	  Elf_Data_List *dl = &scn->data_list;
+ 	  bool scn_changed = false;
+ 
+-	  void fill_mmap (size_t offset)
+-	  {
+-	    size_t written = 0;
+-
+-	    if (last_position < shdr_start)
+-	      {
+-		written = MIN (scn_start + offset - last_position,
+-			       shdr_start - last_position);
+-
+-		memset (last_position, __libelf_fill_byte, written);
+-	      }
+-
+-	    if (last_position + written != scn_start + offset
+-		&& shdr_end < scn_start + offset)
+-	      {
+-		char *fill_start = MAX (shdr_end, scn_start);
+-		memset (fill_start, __libelf_fill_byte,
+-			scn_start + offset - fill_start);
+-	      }
+-	  }
+-
+ 	  if (scn->data_list_rear != NULL)
+ 	    do
+ 	      {
+@@ -325,7 +331,8 @@ __elfw2(LIBELFBITS,updatemmap) (Elf *elf, int change_bo, size_t shnum)
+ 			|| ((scn->flags | dl->flags | elf->flags)
+ 			    & ELF_F_DIRTY) != 0))
+ 		  {
+-		    fill_mmap (dl->data.d.d_off);
++		    fill_mmap (last_position, shdr_start, shdr_end,
++			       scn_start, dl->data.d.d_off);
+ 		    last_position = scn_start + dl->data.d.d_off;
+ 		  }
+ 
+@@ -377,7 +384,7 @@ __elfw2(LIBELFBITS,updatemmap) (Elf *elf, int change_bo, size_t shnum)
+ 	      /* If the previous section (or the ELF/program
+ 		 header) changed we might have to fill the gap.  */
+ 	      if (scn_start > last_position && previous_scn_changed)
+-		fill_mmap (0);
++		fill_mmap (last_position, shdr_start, shdr_end, scn_start, 0);
+ 
+ 	      /* We have to trust the existing section header information.  */
+ 	      last_position = scn_start + shdr->sh_size;
+diff --git a/libelf/elf_begin.c b/libelf/elf_begin.c
+index b9d5cea..62aa54a 100644
+--- a/libelf/elf_begin.c
++++ b/libelf/elf_begin.c
+@@ -985,6 +985,22 @@ write_file (int fd, Elf_Cmd cmd)
+ }
+ 
+ 
++/* Duplicate the descriptor, with write lock if an archive.  */
++static Elf *
++lock_dup_elf (int fildes, Elf_Cmd cmd, Elf *ref)
++{
++    /* We need wrlock to dup an archive.  */
++    if (ref->kind == ELF_K_AR)
++      {
++	rwlock_unlock (ref->lock);
++	rwlock_wrlock (ref->lock);
++      }
++
++    /* Duplicate the descriptor.  */
++    return dup_elf (fildes, cmd, ref);
++}
++
++
+ /* Return a descriptor for the file belonging to FILDES.  */
+ Elf *
+ elf_begin (fildes, cmd, ref)
+@@ -1011,19 +1027,6 @@ elf_begin (fildes, cmd, ref)
+       return NULL;
+     }
+ 
+-  Elf *lock_dup_elf ()
+-  {
+-    /* We need wrlock to dup an archive.  */
+-    if (ref->kind == ELF_K_AR)
+-      {
+-	rwlock_unlock (ref->lock);
+-	rwlock_wrlock (ref->lock);
+-      }
+-
+-    /* Duplicate the descriptor.  */
+-    return dup_elf (fildes, cmd, ref);
+-  }
+-
+   switch (cmd)
+     {
+     case ELF_C_NULL:
+@@ -1044,7 +1047,7 @@ elf_begin (fildes, cmd, ref)
+     case ELF_C_READ:
+     case ELF_C_READ_MMAP:
+       if (ref != NULL)
+-	retval = lock_dup_elf ();
++	retval = lock_dup_elf (fildes, cmd, ref);
+       else
+ 	/* Create descriptor for existing file.  */
+ 	retval = read_file (fildes, 0, ~((size_t) 0), cmd, NULL);
+@@ -1065,7 +1068,7 @@ elf_begin (fildes, cmd, ref)
+ 	      retval = NULL;
+ 	    }
+ 	  else
+-	    retval = lock_dup_elf ();
++	    retval = lock_dup_elf (fildes, cmd, ref);
+ 	}
+       else
+ 	/* Create descriptor for existing file.  */
+diff --git a/libelf/elf_getarsym.c b/libelf/elf_getarsym.c
+index d0bb28a..a9bbb9d 100644
+--- a/libelf/elf_getarsym.c
++++ b/libelf/elf_getarsym.c
+@@ -196,18 +196,15 @@ elf_getarsym (elf, ptr)
+       elf->state.ar.ar_sym = (Elf_Arsym *) malloc (ar_sym_len);
+       if (elf->state.ar.ar_sym != NULL)
+ 	{
+-	  union
+-	  {
+-	    uint32_t u32[n];
+-	    uint64_t u64[n];
+-	  } *file_data;
++	  uint8_t file_data_buffer[n * sizeof(uint64_t)];
++	  void *file_data = (void *) file_data_buffer;
++	  uint64_t *file_data_u64 = (uint64_t *) file_data;
++	  uint32_t *file_data_u32 = (uint32_t *) file_data;
+ 	  char *str_data;
+ 	  size_t sz = n * w;
+ 
+ 	  if (elf->map_address == NULL)
+ 	    {
+-	      file_data = alloca (sz);
+-
+ 	      ar_sym_len += index_size - n * w;
+ 	      Elf_Arsym *newp = (Elf_Arsym *) realloc (elf->state.ar.ar_sym,
+ 						       ar_sym_len);
+@@ -241,8 +238,12 @@ elf_getarsym (elf, ptr)
+ 	    {
+ 	      file_data = (void *) (elf->map_address + off);
+ 	      if (!ALLOW_UNALIGNED
+-		  && ((uintptr_t) file_data & -(uintptr_t) n) != 0)
+-		file_data = memcpy (alloca (sz), elf->map_address + off, sz);
++		  && ((uintptr_t) file_data & -(uintptr_t) n) != 0) {
++		file_data = (void *) file_data_buffer;
++		memcpy(file_data, elf->map_address + off, sz);
++	      }
++	      file_data_u64 = (uint64_t *) file_data;
++	      file_data_u32 = (uint32_t *) file_data;
+ 	      str_data = (char *) (elf->map_address + off + sz);
+ 	    }
+ 
+@@ -253,7 +254,7 @@ elf_getarsym (elf, ptr)
+ 	      arsym[cnt].as_name = str_data;
+ 	      if (index64_p)
+ 		{
+-		  uint64_t tmp = file_data->u64[cnt];
++		  uint64_t tmp = file_data_u64[cnt];
+ 		  if (__BYTE_ORDER == __LITTLE_ENDIAN)
+ 		    tmp = bswap_64 (tmp);
+ 
+@@ -275,9 +276,9 @@ elf_getarsym (elf, ptr)
+ 		    }
+ 		}
+ 	      else if (__BYTE_ORDER == __LITTLE_ENDIAN)
+-		arsym[cnt].as_off = bswap_32 (file_data->u32[cnt]);
++		arsym[cnt].as_off = bswap_32 (file_data_u32[cnt]);
+ 	      else
+-		arsym[cnt].as_off = file_data->u32[cnt];
++		arsym[cnt].as_off = file_data_u32[cnt];
+ 
+ 	      arsym[cnt].as_hash = _dl_elf_hash (str_data);
+ 	      str_data = rawmemchr (str_data, '\0') + 1;

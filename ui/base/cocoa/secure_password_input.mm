@@ -1,0 +1,63 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#import "ui/base/cocoa/secure_password_input.h"
+
+#import <Carbon/Carbon.h>
+
+#include "base/logging.h"
+
+namespace {
+
+// Used to protect from out-of-order calls to enabling/disabling functions.
+int g_password_input_counter = 0;
+
+// SetPasswordInputEnabled() is copied from
+// enableSecureTextInput() and disableSecureTextInput() functions in
+// third_party/WebKit/WebCore/platform/SecureTextInput.cpp
+//
+// The following technote describes proper EnableSecureEventInput() usage:
+// https://developer.apple.com/library/content/technotes/tn2150/_index.html
+void SetPasswordInputEnabled(bool enabled) {
+  if (enabled) {
+    DCHECK(!IsSecureEventInputEnabled());
+    EnableSecureEventInput();
+
+    CFArrayRef inputSources = TISCreateASCIICapableInputSourceList();
+    TSMSetDocumentProperty(0, kTSMDocumentEnabledInputSourcesPropertyTag,
+                           sizeof(CFArrayRef), &inputSources);
+    CFRelease(inputSources);
+  } else {
+    DCHECK(IsSecureEventInputEnabled());
+    TSMRemoveDocumentProperty(0, kTSMDocumentEnabledInputSourcesPropertyTag);
+
+    DisableSecureEventInput();
+  }
+}
+
+}  // namespace
+
+namespace ui {
+
+ScopedPasswordInputEnabler::ScopedPasswordInputEnabler() {
+  if (!g_password_input_counter) {
+    SetPasswordInputEnabled(true);
+  }
+  ++g_password_input_counter;
+}
+
+ScopedPasswordInputEnabler::~ScopedPasswordInputEnabler() {
+  --g_password_input_counter;
+  DCHECK_LE(0, g_password_input_counter);
+  if (!g_password_input_counter) {
+    SetPasswordInputEnabled(false);
+  }
+}
+
+// static
+bool ScopedPasswordInputEnabler::IsPasswordInputEnabled() {
+  return g_password_input_counter > 0;
+}
+
+}  // namespace ui

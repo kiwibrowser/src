@@ -1,0 +1,88 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/policy/cr_policy_pref_indicator.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_toast/cr_toast.html">
+<link rel="import" href="chrome://resources/html/action_link.html">
+<link rel="import" href="chrome://resources/html/action_link_css.html">
+<link rel="import" href="chrome://resources/html/assert.html">
+<link rel="import" href="chrome://resources/html/cr/ui/focus_without_ink.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+<link rel="import" href="cups_add_printer_dialog.html">
+<link rel="import" href="cups_edit_printer_dialog.html">
+<link rel="import" href="cups_printer_shared_css.html">
+<link rel="import" href="cups_printers_list.html">
+
+<dom-module id="settings-cups-printers">
+  <template>
+    <style include="cups-printer-shared action-link">
+      #noSearchResultsMessage {
+        color: var(--md-loading-message-color);
+        font-size: 16px;
+        font-weight: 500;
+        margin-top: 80px;
+        text-align: center;
+      }
+
+      #addPrinterErrorMessage {
+        display: flex;
+        justify-content: space-around;
+      }
+
+      #addPrinterFailedMessage {
+        padding: 0 15px;
+        text-align: justify;
+      }
+    </style>
+
+    <div class="settings-box first">
+      <div class="start">
+        <span>$i18n{cupsPrintersLearnMoreLabel}</span>
+        <a href="$i18n{printingCUPSPrintLearnMoreUrl}" target="_blank">
+          $i18n{learnMore}
+        </a>
+        <div class="secondary" hidden="[[canAddPrinter_]]">
+          $i18n{requireNetworkMessage}
+        </div>
+      </div>
+      <template is="dom-if" if="[[!addPrinterButtonActive_(canAddPrinter_,
+          prefs.native_printing.user_native_printers_allowed.value)]]">
+        <cr-policy-pref-indicator
+            pref="[[prefs.native_printing.user_native_printers_allowed]]">
+        </cr-policy-pref-indicator>
+      </template>
+      <paper-button class="action-button" id="addPrinter"
+          on-click="onAddPrinterTap_"
+          disabled="[[!addPrinterButtonActive_(canAddPrinter_,
+              prefs.native_printing.user_native_printers_allowed.value)]]">
+        $i18n{addCupsPrinter}
+      </paper-button>
+    </div>
+
+    <settings-cups-add-printer-dialog id="addPrinterDialog"
+        on-close="onAddPrinterDialogClose_">
+    </settings-cups-add-printer-dialog>
+
+    <template is="dom-if" if="[[showCupsEditPrinterDialog_]]" restamp>
+      <settings-cups-edit-printer-dialog id="editPrinterDialog"
+          active-printer="{{activePrinter}}">
+      </settings-cups-edit-printer-dialog>
+    </template>
+
+    <settings-cups-printers-list printers="{{printers}}"
+        active-printer="{{activePrinter}}"
+        search-term="[[searchTerm]]">
+    </settings-cups-printers-list>
+
+    <div id="noSearchResultsMessage"
+        hidden="[[!showNoSearchResultsMessage_(searchTerm)]]">
+      $i18n{noSearchResults}
+    </div>
+
+    <cr-toast id="errorToast" duration="3000">
+      <div class="error-message" id="addPrinterDoneMessage">
+        [[addPrinterResultText_]]
+      </div>
+    </cr-toast>
+  </template>
+  <script src="cups_printers.js"></script>
+</dom-module>

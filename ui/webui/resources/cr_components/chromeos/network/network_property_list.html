@@ -1,0 +1,60 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/chromeos/network/cr_onc_types.html">
+<link rel="import" href="chrome://resources/cr_elements/policy/cr_policy_network_behavior.html">
+<link rel="import" href="chrome://resources/cr_elements/policy/cr_policy_network_indicator.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-input/iron-input.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-input/paper-input-container.html">
+<link rel="import" href="network_shared_css.html">
+
+<dom-module id="network-property-list">
+  <template>
+    <style include="network-shared iron-flex">
+      /* Property lists are embedded; remove the padding. */
+      .property-box {
+        padding: 0;
+      }
+
+      cr-policy-network-indicator {
+        -webkit-margin-start: var(--settings-controlled-by-spacing);
+      }
+    </style>
+    <template is="dom-repeat" items="[[fields]]"
+        filter="[[computeFilter_(prefix, propertyDict, editFieldTypes)]]">
+      <div class="property-box single-column two-line stretch">
+        <!-- Property label -->
+        <div class="layout horizontal center">
+          <div>[[getPropertyLabel_(item, prefix)]]</div>
+          <template is="dom-if" restamp
+              if="[[isEditTypeAny_(item, editFieldTypes)]]">
+            <cr-policy-network-indicator
+                property="[[getProperty_(item, propertyDict)]]">
+            </cr-policy-network-indicator>
+          </template>
+        </div>
+        <!-- Uneditable property value -->
+        <template is="dom-if" restamp
+            if="[[!isEditable_(item, propertyDict, editFieldTypes)]]">
+          <div class="secondary">
+            [[getPropertyValue_(item, prefix, propertyDict)]]
+          </div>
+        </template>
+        <!-- Editable String property value -->
+        <template is="dom-if" restamp
+            if="[[isEditTypeInput_(item, propertyDict, editFieldTypes)]]">
+          <paper-input-container no-label-float>
+            <iron-input slot="input"
+                bind-value="[[getPropertyValue_(item, prefix, propertyDict)]]">
+              <input id="[[item]]" on-change="onValueChange_"
+                  type="[[getEditInputType_(item, editFieldTypes)]]">
+            </iron-input>
+          </paper-input-container>
+        </template>
+        <!-- TODO(stevenjb): Support other types (number, boolean)? -->
+      </div>
+    </template>
+  </template>
+  <script src="network_property_list.js"></script>
+</dom-module>

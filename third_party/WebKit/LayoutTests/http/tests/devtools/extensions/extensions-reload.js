@@ -1,0 +1,74 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(
+      `Tests that webInspector.inspectedWindow.reload() successfully injects and preprocesses user's code upon reload\n`);
+  await TestRunner.loadModule('sources_test_runner');
+  await TestRunner.loadModule('extensions_test_runner');
+  await TestRunner.loadModule('console_test_runner');
+  await TestRunner.navigatePromise(TestRunner.url('resources/reload.html'));
+
+  TestRunner.lastMessageScriptId = function(callback) {
+    var consoleView = Console.ConsoleView.instance();
+    if (consoleView._needsFullUpdate)
+      consoleView._updateMessageList();
+    var viewMessages = consoleView._visibleViewMessages;
+    if (viewMessages.length !== 1)
+      callback(null);
+    var uiMessage = viewMessages[viewMessages.length - 1];
+    var message = uiMessage.consoleMessage();
+    if (!message.stackTrace)
+      callback(null);
+    callback(message.stackTrace.callFrames[0].scriptId);
+  }
+  TestRunner.getScriptSource = async function(scriptId, callback) {
+    var source = await TestRunner.DebuggerAgent.getScriptSource(scriptId);
+    callback(source);
+  }
+
+  await ExtensionsTestRunner.runExtensionTests([
+    function extension_testReloadInjectsCode(nextTest) {
+      var injectedValue;
+
+      function onPageWithInjectedCodeLoaded() {
+        webInspector.inspectedWindow.eval("window.bar", function(value) {
+          injectedValue = value;
+          evaluateOnFrontend("TestRunner.reloadPage(reply)", onPageWithoutInjectedCodeLoaded);
+        });
+      }
+      function onPageWithoutInjectedCodeLoaded() {
+        webInspector.inspectedWindow.eval("window.bar", function(value) {
+          output("With injected code: " + injectedValue);
+          output("Without injected code: " + value);
+          nextTest();
+        });
+      }
+      var injectedScript = "window.foo = 42;"
+      evaluateOnFrontend(`TestRunner.reloadPageWithInjectedScript("${injectedScript}", reply)`, onPageWithInjectedCodeLoaded);
+    },
+
+    function extension_testReloadInjectsCodeWithMessage(nextTest) {
+      function onPageWithInjectedCodeLoaded() {
+        evaluateOnFrontend("TestRunner.lastMessageScriptId(reply);", onScriptIdReceived);
+      }
+
+      function onScriptIdReceived(scriptId) {
+        if (!scriptId) {
+          output("Script ID unavailable");
+          nextTest();
+        } else {
+          evaluateOnFrontend("TestRunner.getScriptSource(\"" + scriptId + "\", reply);", function(source) {
+            output("Source received:");
+            output(source);
+            nextTest();
+          });
+        }
+      }
+
+      var injectedScript = "console.log(42)";
+      evaluateOnFrontend(`TestRunner.reloadPageWithInjectedScript("${injectedScript}", reply)`, onPageWithInjectedCodeLoaded);
+    }
+  ]);
+})();

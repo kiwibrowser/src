@@ -1,0 +1,98 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# TODO(bradchen):
+# - update plaform_qualify.gyp to be consistent with build.scons
+# - update sel_ldr to include blacklist check
+
+Import('env')
+
+
+pql_inputs = []
+extra_libs = []
+
+#
+# OS-specific qualification routines
+#
+if env.Bit('windows'):
+  pql_inputs += ['win/nacl_os_qualify.c',
+                 'win/nacl_dep_qualify.c']
+else:
+  pql_inputs += ['posix/nacl_dep_qualify.c']
+  if env.Bit('mac'):
+    pql_inputs += ['osx/nacl_os_qualify.c']
+  elif env.Bit('linux'):
+    pql_inputs += ['linux/nacl_os_qualify.c']
+
+# Convert a library name into a target specific libary name
+def TargetLib(env, name):
+  return name + '_' + env['TARGET_FULLARCH'].replace('-', '_')
+
+#
+# Architecture-specific qualification routines
+#
+if env.Bit('build_x86') and env.Bit('build_x86'):
+  pql_inputs += ['arch/x86/nacl_cpuwhitelist.c']
+
+  # Make sure CPUID is present and truthful
+  vcpuid_env = env.Clone()
+  if env.Bit('mac'):
+    vcpuid_env.Append(CCFLAGS = ['-mdynamic-no-pic'])
+    vcpuid_env.FilterOut(CCFLAGS = ['-fPIC'])
+  if env.Bit('linux'):
+    vcpuid_env.Append(CCFLAGS = ['-msse3'])
+  nacl_vcpuid = vcpuid_env.ComponentLibrary('vcpuid', 'arch/x86/vcpuid.c')
+  extra_libs += ['platform_qual_lib',
+                 'platform',
+                 'gio',
+                 'vcpuid']
+
+  if env.Bit('build_x86_64'):
+    # Compile x86-64 primitives for verifying NX functionality
+    pql_inputs += ['arch/x86_64/nacl_dep_qualify_arch.c']
+  elif env.Bit('build_x86_32'):
+    pql_inputs += ['arch/x86_32/nacl_dep_qualify_arch.c']
+
+  platform_qual_test = env.ComponentProgram(
+      'platform_qual_test', 'arch/x86/platform_qual_test.c',
+      # 'sel' is required for sel_memory.c and friends
+      EXTRA_LIBS=extra_libs + ['sel'])
+  node = env.CommandTest('platform_qual_test.out', [platform_qual_test])
+  env.AddNodeToTestSuite(
+      node, ['small_tests'], 'run_platform_qual_test',
+      is_broken=env.IsRunningUnderValgrind())
+
+  cpuwhitelist_test = env.ComponentProgram(
+      'cpuwhitelist_test', 'arch/x86/nacl_cpuwhitelist_test.c',
+      EXTRA_LIBS=extra_libs)
+  node = env.CommandTest('cpuwhitelist_test.out', [cpuwhitelist_test])
+  env.AddNodeToTestSuite(node, ['small_tests'], 'run_cpuwhitelist_test')
+
+
+if env.Bit('build_arm'):
+  # Compile ARM primitives for checking XN functionality
+  pql_inputs += ['arch/arm/nacl_dep_qualify_arch.c']
+  # Compile ARM primitives for checking VFP/vector features.
+  pql_inputs += ['arch/arm/nacl_qualify_fpu.c']
+  # Compile ARM primitives for checking sandboxing features.
+  pql_inputs += ['arch/arm/nacl_qualify_sandbox_instrs.c']
+  # Compile ARM primitives for checking alignment features.
+  pql_inputs += ['arch/arm/nacl_qualify_unaligned.c']
+
+if env.Bit('build_mips32'):
+  # Compile MIPS primitives for checking FPU presence and mode.
+  pql_inputs += ['arch/mips/nacl_qualify_fpu.c']
+
+# ----------------------------------------------------------
+#
+# ----------------------------------------------------------
+env.DualLibrary('platform_qual_lib', pql_inputs)
+
+
+# These tests use assembly which seem to make the coverage instrumentation
+# on windows unhappy. Disable them for now on coverage for windows.
+# TODO(bradnelson): figure out a way to get coverage working for these.
+if env.Bit('windows') and env.Bit('coverage_enabled'):
+  Return()

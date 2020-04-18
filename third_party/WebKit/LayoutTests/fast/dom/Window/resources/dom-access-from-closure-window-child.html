@@ -1,0 +1,24 @@
+<script>
+    // Capture window.window and window.opener: once this context is navigated, these properties
+    // always return null.
+    var w = window;
+    var o = opener;
+    opener.accessFrame = function()
+    {
+        function normalizeURL(url)
+        {
+            return url.substring(url.lastIndexOf("LayoutTests"));
+        }
+
+        try {
+            o.log("document.URL: " + normalizeURL(document.URL));
+            o.log("window.document.URL: " + normalizeURL(w.document.URL));
+            o.log("name: " + name);
+            o.log("window.name: " + w.name);
+        } catch (e) {
+            o.log("An exception was thrown: " + e.message);
+        }
+    }
+
+    window.location = "notify-opener-done.html";
+</script>

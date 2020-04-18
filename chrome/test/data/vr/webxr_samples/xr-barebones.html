@@ -1,0 +1,191 @@
+<!doctype html>
+<!--
+Copyright 2018 The Immersive Web Community Group
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-->
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1, user-scalable=no'>
+    <meta name='mobile-web-app-capable' content='yes'>
+    <meta name='apple-mobile-web-app-capable' content='yes'>
+
+    <title>Barebones WebXR</title>
+
+    <link href='css/common.css' rel='stylesheet'></link>
+  </head>
+  <body>
+    <header>
+      <details open>
+        <summary>Barebones WebXR</summary>
+        <p>
+          This sample demonstrates extremely simple use of WebXR with no library
+          dependencies. It doesn't render anything exciting, just clears your
+          headset's display to a slowly changing color to prove it's working.
+          <a class="back" href="./">Back</a>
+        </p>
+        <button id="xr-button" disabled>XR not found</button>
+      </details>
+    </header>
+    <main style='text-align: center;'>
+      <p>Click 'Enter XR' to see content</p> 
+    </main>
+    <script>
+      // XR globals.
+      let xrButton = document.getElementById('xr-button');
+      let xrDevice = null;
+      let xrSession = null;
+      let xrFrameOfRef = null;
+
+      // WebGL scene globals.
+      let gl = null;
+
+      // Checks to see if WebXR is available and, if so, requests an XRDevice
+      // that is connected to the system and tests it to ensure it supports the
+      // desired session options.
+      function initXR() {
+        // Is WebXR available on this UA?
+        if (navigator.xr) {
+          // Request an XRDevice connected to the system.
+          navigator.xr.requestDevice().then((device) => {
+            xrDevice = device;
+            // If the device allows creation of exclusive sessions set it as the
+            // target of the 'Enter XR' button.
+            device.supportsSession({exclusive: true}).then(() => {
+              // Updates the button to start an XR session when clicked.
+              xrButton.addEventListener('click', onButtonClicked);
+              xrButton.innerHTML = 'Enter XR';
+              xrButton.disabled = false;
+            });
+          });
+        }
+      }
+
+      // Called when the user clicks the button to enter XR. If we don't have a
+      // session already we'll request one, and if we do we'll end it.
+      function onButtonClicked() {
+        if (!xrSession) {
+          xrDevice.requestSession({exclusive: true}).then(onSessionStarted);
+        } else {
+          xrSession.end();
+        }
+      }
+
+      // Called when we've successfully acquired a XRSession. In response we
+      // will set up the necessary session state and kick off the frame loop.
+      function onSessionStarted(session) {
+        xrSession = session;
+        xrButton.innerHTML = 'Exit XR';
+
+        // Listen for the sessions 'end' event so we can respond if the user
+        // or UA ends the session for any reason.
+        session.addEventListener('end', onSessionEnded);
+
+        // Create a WebGL context to render with, initialized to be compatible
+        // with the XRDisplay we're presenting to.
+        let canvas = document.createElement('canvas');
+        gl = canvas.getContext('webgl', {
+          compatibleXRDevice: session.device
+        });
+
+        // Use the new WebGL context to create a XRWebGLLayer and set it as the
+        // sessions baseLayer. This allows any content rendered to the layer to
+        // be displayed on the XRDevice.
+        session.baseLayer = new XRWebGLLayer(session, gl);
+
+        // Get a frame of reference, which is required for querying poses. In
+        // this case an 'eyeLevel' frame of reference means that all poses will
+        // be relative to the location where the XRDevice was first detected.
+        session.requestFrameOfReference('eyeLevel').then((frameOfRef) => {
+          xrFrameOfRef = frameOfRef;
+
+          // Inform the session that we're ready to begin drawing.
+          session.requestAnimationFrame(onXRFrame);
+        });
+      }
+
+      // Called when the user clicks the 'Exit XR' button. In response we end
+      // the session.
+      function onEndSession(session) {
+        session.end();
+      }
+
+      // Called either when the user has explicitly ended the session (like in
+      // onEndSession()) or when the UA has ended the session for any reason.
+      // At this point the session object is no longer usable and should be
+      // discarded.
+      function onSessionEnded(event) {
+        xrSession = null;
+        xrButton.innerHTML = 'Enter VR';
+
+        // In this simple case discard the WebGL context too, since we're not
+        // rendering anything else to the screen with it.
+        gl = null;
+      }
+
+      // Called every time the XRSession requests that a new frame be drawn.
+      function onXRFrame(t, frame) {
+        let session = frame.session;
+
+        // Inform the session that we're ready for the next frame.
+        session.requestAnimationFrame(onXRFrame);
+
+        // Get the XRDevice pose relative to the Frame of Reference we created
+        // earlier.
+        let pose = frame.getDevicePose(xrFrameOfRef);
+
+        // Getting the pose may fail if, for example, tracking is lost. So we
+        // have to check to make sure that we got a valid pose before attempting
+        // to render with it. If not in this case we'll just leave the
+        // framebuffer cleared, so tracking loss means the scene will simply
+        // dissapear.
+        if (pose) {
+
+          // If we do have a valid pose, bind the WebGL layer's framebuffer,
+          // which is where any content to be displayed on the XRDevice must be
+          // rendered.
+          gl.bindFramebuffer(gl.FRAMEBUFFER, session.baseLayer.framebuffer);
+
+          // Update the clear color so that we can observe the color in the
+          // headset changing over time.
+          let time = Date.now();
+          gl.clearColor(Math.cos(time / 2000), Math.cos(time / 4000), Math.cos(time / 6000), 1.0);
+
+          // Clear the framebuffer
+          gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+          // Normally you'd loop through each of the views reported by the frame
+          // and draw them into the corresponding viewport here, but we're
+          // keeping this sample slim so we're not bothering to draw any
+          // geometry.
+          /*for (let view of frame.views) {
+            let viewport = session.baseLayer.getViewport(view);
+            gl.viewport(viewport.x, viewport.y,
+                        viewport.width, viewport.height);
+
+            // Draw something.
+          }*/
+        }
+      }
+
+      // Start the XR application.
+      initXR();
+    </script>
+  </body>
+</html>

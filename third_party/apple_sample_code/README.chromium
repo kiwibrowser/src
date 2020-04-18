@@ -1,0 +1,19 @@
+Name: Apple sample code
+URL: http://developer.apple.com/
+Version: unknown
+Security Critical: Yes
+License: Custom license
+
+Local changes:
+* ImageAndTextCell.h: Changed 'image' property to 'retain' mode to fix a crash.
+* ImageAndTextCell.m: Moved '@synthesize' to to the top of '@implementation' as
+                      suggested by a clang warning.
+* ImageAndTextCell.m: Switched from -[NSImage compositeToPoint:operation:] to
+                      -[NSImage drawInRect:fromRect:operation:fraction:respectFlipped:hints:]
+                      as the former is deprecated and doesn't work properly in
+                      HiDPI.
+* ImageAndTextCell.m: When compiling against OSX 10.9 SDK or older, add a
+                      typedef for NSCellHitResult. Use NSCellHitResult instead
+                      of NSUInteger in the definition for -[NSImage
+                      hitTestForEvent:inRect:ofView:]. This fixes a warning
+                      when compiling against the OSX 10.10 SDK.

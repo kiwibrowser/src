@@ -1,0 +1,15 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// https://w3c.github.io/webrtc-pc/#rtcrtpsender-interface
+[Exposed=Window]
+interface RTCRtpSender {
+    readonly attribute MediaStreamTrack? track;
+    [RuntimeEnabled=RTCRtpSenderParameters, CallWith=ScriptState] Promise<void> setParameters(optional RTCRtpParameters parameters);
+    [RuntimeEnabled=RTCRtpSenderParameters] RTCRtpParameters getParameters();
+    [Measure, CallWith=ScriptState] Promise<void> replaceTrack(MediaStreamTrack? withTrack);
+    [Measure] readonly attribute RTCDTMFSender? dtmf;
+    [CallWith=ScriptState] Promise<RTCStatsReport> getStats();
+    // TODO(hbos): Implement the rest of RTCRtpSender, https://crbug.com/700916.
+};

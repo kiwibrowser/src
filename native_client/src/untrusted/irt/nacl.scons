@@ -1,0 +1,86 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+
+Import('env')
+
+# This module shouldn't be built in an environment that uses glibc.
+if env.Bit('nacl_glibc'):
+  raise Exception('src/untrusted/irt/nacl.scons in the wrong environment?')
+
+blob_env = env.Clone()
+blob_env.Append(LINKFLAGS=['-Wl,-Trodata-segment=${IRT_BLOB_DATA_START}',
+                           '-Wl,-Ttext-segment=${IRT_BLOB_CODE_START}'])
+
+# NACL_GC_WRAP_SYSCALL uses ({...}) syntax.
+blob_env.FilterOut(CCFLAGS=['-pedantic'])
+
+irt_support_sources = [
+    'irt_entry.c',
+    'irt_entry_core.c',
+    'irt_malloc.c',
+    'irt_private_pthread.c',
+    'irt_private_tls.c',
+    'irt_interfaces.c',
+    'irt_query_list.c',
+    'irt_basic.c',
+    'irt_code_data_alloc.c',
+    'irt_fdio.c',
+    'irt_filename.c',
+    'irt_memory.c',
+    'irt_dyncode.c',
+    'irt_thread.c',
+    'irt_futex.c',
+    'irt_mutex.c',
+    'irt_cond.c',
+    'irt_sem.c',
+    'irt_tls.c',
+    'irt_blockhook.c',
+    'irt_clock.c',
+    'irt_dev_getpid.c',
+    'irt_exception_handling.c',
+    'irt_dev_list_mappings.c',
+    'irt_random.c',
+    'irt_core_resource.c',
+    'irt_pnacl_translator_common.c',
+    'irt_pnacl_translator_compile.c',
+    'irt_pnacl_translator_link.c',
+    ]
+
+# These are the objects and libraries that go into every IRT image.
+irt_support_objs = [blob_env.ComponentObject(x) for x in irt_support_sources]
+
+# We also get nc_init_private.c, nc_thread.c and nc_tsd.c via
+# #includes of .c files.
+irt_support_objs += [
+    blob_env.ComponentObject(module,
+                             '${MAIN_DIR}/src/untrusted/pthread/%s.c' % module)
+    for module in ['nc_mutex',
+                   'nc_condvar']]
+
+irt_support_objs += [
+    blob_env.ComponentObject('sys_private',
+                             '${MAIN_DIR}/src/untrusted/nacl/sys_private.c'),
+    blob_env.ComponentObject(
+        'dynamic_annotations.o',
+        '${MAIN_DIR}/src/untrusted/valgrind/dynamic_annotations.c'),
+    ]
+
+# Build a library so that irt_support_objs can be used in tests that
+# cover IRT-internal code.
+env.ComponentLibrary('libirt_support_private', irt_support_objs)
+
+irt_core_raw = blob_env.ComponentProgram(
+    'irt_core_raw', irt_support_objs, EXTRA_LIBS=['platform'])
+
+irt_core_nexe = blob_env.ApplyTLSEdit(
+    'irt_core.nexe',
+    irt_core_raw)
+
+irt_core_library = blob_env.Install('${STAGING_DIR}', irt_core_nexe)
+blob_env.Alias('irt_core', irt_core_library)
+blob_env.ComponentProgramAlias(irt_core_library)
+
+env.SDKInstallBin('irt_core.nexe', irt_core_library)

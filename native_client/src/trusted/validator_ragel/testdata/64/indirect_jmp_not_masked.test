@@ -1,0 +1,15 @@
+@hex:
+  # Model a case where an indirect jump is inproperly masked (mask wrong value).
+  83 e2 f0
+  4D 8D 0C 17
+  41 FF E1
+  
+@dis:
+     0:	83 e2 f0                                     	and    $0xfffffff0,%edx
+     3:	4d 8d 0c 17                                  	lea    (%r15,%rdx,1),%r9
+     7:	41 ff e1                                     	jmpq   *%r9
+@rdfa_output:
+  7: unrecognized instruction
+  return code: 1
+@spec:
+  7: unrecognized instruction 'jmpq *%r9'

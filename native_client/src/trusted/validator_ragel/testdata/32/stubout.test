@@ -1,0 +1,49 @@
+@hex:
+  00 00
+  c3
+@dis:
+     0:	00 00                                        	add    %al,(%eax)
+     2:	c3                                           	ret    
+@rdfa_output:
+  2: unrecognized instruction
+  return code: 1
+@spec:
+  2: unrecognized instruction 'ret'
+----------------------------------------------------------------------
+@hex:
+  01 c0
+  66 66 66 66 00 00
+@dis:
+     0:	01 c0                                        	add    %eax,%eax
+     2:	66                                           	data16
+     3:	66                                           	data16
+     4:	66                                           	data16
+     5:	66                                           	data16
+     6:	00 00                                        	add    %al,(%eax)
+@rdfa_output:
+  2: unrecognized instruction
+  return code: 1
+@spec:
+  2: ('dangling legacy prefixes', Instruction(0x2: 66  data16))
+  3: ('dangling legacy prefixes', Instruction(0x3: 66  data16))
+  4: ('dangling legacy prefixes', Instruction(0x4: 66  data16))
+  5: ('dangling legacy prefixes', Instruction(0x5: 66  data16))
+----------------------------------------------------------------------
+@hex:
+  8d 74 26 00
+  66 66 66 66 00 00
+@dis:
+     0:	8d 74 26 00                                  	lea    0x0(%esi,%eiz,1),%esi
+     4:	66                                           	data16
+     5:	66                                           	data16
+     6:	66                                           	data16
+     7:	66                                           	data16
+     8:	00 00                                        	add    %al,(%eax)
+@rdfa_output:
+  4: unrecognized instruction
+  return code: 1
+@spec:
+  4: ('dangling legacy prefixes', Instruction(0x4: 66  data16))
+  5: ('dangling legacy prefixes', Instruction(0x5: 66  data16))
+  6: ('dangling legacy prefixes', Instruction(0x6: 66  data16))
+  7: ('dangling legacy prefixes', Instruction(0x7: 66  data16))

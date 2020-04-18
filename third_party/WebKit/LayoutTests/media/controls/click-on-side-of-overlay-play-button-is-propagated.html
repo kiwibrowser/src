@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<title>Test that taps on the sides of the overlay play button are propagated.</title>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="../media-controls.js"></script>
+<div id="outer">
+<video controls width=500 preload=none src="../content/60_sec_video.webm"></video>
+</div>
+<script>
+async_test(t => {
+  const video = document.querySelector('video');
+  const outerDiv = document.getElementById('outer');
+
+  video.addEventListener('loadedmetadata', t.step_func(() => {
+    const coords = getOverlayPlayButtonEdgeCoordinates();
+    singleTapAtCoordinates(coords[0], coords[1]);
+  }), { once: true });
+
+  // The tap on the edge of the overlay play button should get propagated out to the outer div.
+  outerDiv.addEventListener('click', t.done.bind(t), { once: true });
+
+  function getOverlayPlayButtonEdgeCoordinates() {
+    const overlayPlayBtn = mediaControlsOverlayPlayButton(video);
+    const rect = overlayPlayBtn.getBoundingClientRect();
+    const x = rect.left + 5;
+    const y = rect.top + rect.height / 2;
+    return [x, y];
+  }
+
+  video.load();
+});
+</script>
+</html>

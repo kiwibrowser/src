@@ -1,0 +1,75 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(`Tests that adding a new rule can be undone.\n`);
+  await TestRunner.loadModule('elements_test_runner');
+  await TestRunner.showPanel('elements');
+  await TestRunner.loadHTML(`
+      <div class="foo" id="inspected" style="font-size: 12px">Text</div>
+      <div class="foo" id="other" style="color:red"></div>
+    `);
+
+  ElementsTestRunner.selectNodeAndWaitForStyles('inspected', step1);
+
+  var treeElement;
+
+  function step1() {
+    addNewRuleAndSelectNode('other', step2);
+  }
+
+  function step2() {
+    addNewRuleAndSelectNode('inspected', step3);
+  }
+
+  function step3() {
+    TestRunner.addResult('After adding new rule:');
+    ElementsTestRunner.dumpSelectedElementStyles(true, false, true);
+    printStyleSheetAndCall(step4);
+  }
+
+  function step4() {
+    SDK.domModelUndoStack.undo();
+    ElementsTestRunner.selectNodeAndWaitForStyles('other', step5);
+  }
+
+  function step5() {
+    TestRunner.addResult('After undo:');
+    ElementsTestRunner.dumpSelectedElementStyles(true, false, true);
+    printStyleSheetAndCall(step6);
+  }
+
+  function step6() {
+    SDK.domModelUndoStack.redo();
+    ElementsTestRunner.selectNodeAndWaitForStyles('inspected', step7);
+  }
+
+  function step7() {
+    TestRunner.addResult('After redo:');
+    ElementsTestRunner.dumpSelectedElementStyles(true, false, true);
+    printStyleSheetAndCall(step8);
+  }
+
+  function step8() {
+    TestRunner.completeTest();
+  }
+
+  function addNewRuleAndSelectNode(nodeId, next) {
+    function selectNode() {
+      ElementsTestRunner.selectNodeAndWaitForStyles(nodeId, next);
+    }
+
+    ElementsTestRunner.addNewRule('div.foo', selectNode);
+  }
+
+  async function printStyleSheetAndCall(next) {
+    var section = ElementsTestRunner.firstMatchedStyleSection();
+    var id = section.style().styleSheetId;
+    var styleSheetText = await TestRunner.CSSAgent.getStyleSheetText(id);
+    TestRunner.addResult('===== Style sheet text: =====');
+    TestRunner.addResult(styleSheetText);
+    TestRunner.addResult('=============================');
+    next();
+  }
+})();

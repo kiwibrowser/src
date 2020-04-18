@@ -1,0 +1,114 @@
+@hex:
+  # bt* with register offset and memory as second operand is illegal,
+  # because bit offset can be arbitrarily large.
+  48 0F B3 00
+@dis:
+     0:	48 0f b3 00                                  	btr    %rax,(%rax)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('bt* is only allowed with immediate as bit offset', Instruction(0x0: 48 0f b3 00  btr %rax,(%rax)))
+----------------------------------------------------------------------
+@hex:
+  48 0F AB 00
+@dis:
+     0:	48 0f ab 00                                  	bts    %rax,(%rax)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('bt* is only allowed with immediate as bit offset', Instruction(0x0: 48 0f ab 00  bts %rax,(%rax)))
+----------------------------------------------------------------------
+@hex:
+  48 0F BB 00
+@dis:
+     0:	48 0f bb 00                                  	btc    %rax,(%rax)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('bt* is only allowed with immediate as bit offset', Instruction(0x0: 48 0f bb 00  btc %rax,(%rax)))
+----------------------------------------------------------------------
+@hex:
+  0F BA 30 01
+@dis:
+     0:	0f ba 30 01                                  	btrl   $0x1,(%rax)
+@rdfa_output:
+  0: improper memory address - bad base
+  return code: 1
+@spec:
+  0: ("memory access only is allowed with base from ['%r15', '%rbp', '%rsp', '%rip']", Instruction(0x0: 0f ba 30 01  btrl $0x1,(%rax)))
+----------------------------------------------------------------------
+@hex:
+  0F BA 28 01
+@dis:
+     0:	0f ba 28 01                                  	btsl   $0x1,(%rax)
+@rdfa_output:
+  0: improper memory address - bad base
+  return code: 1
+@spec:
+  0: ("memory access only is allowed with base from ['%r15', '%rbp', '%rsp', '%rip']", Instruction(0x0: 0f ba 28 01  btsl $0x1,(%rax)))
+----------------------------------------------------------------------
+@hex:
+  0F BA 38 01
+@dis:
+     0:	0f ba 38 01                                  	btcl   $0x1,(%rax)
+@rdfa_output:
+  0: improper memory address - bad base
+  return code: 1
+@spec:
+  0: ("memory access only is allowed with base from ['%r15', '%rbp', '%rsp', '%rip']", Instruction(0x0: 0f ba 38 01  btcl $0x1,(%rax)))
+----------------------------------------------------------------------
+@hex:
+  66 41 0f a3 07
+@dis:
+     0:	66 41 0f a3 07                               	bt     %ax,(%r15)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('bt* is only allowed with immediate as bit offset', Instruction(0x0: 66 41 0f a3 07  bt %ax,(%r15)))
+----------------------------------------------------------------------
+@hex:
+  # Technically safe, but for some reason validator only allows immediate
+  # for first operand.
+  48 0f a3 c3
+@dis:
+     0:	48 0f a3 c3                                  	bt     %rax,%rbx
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('bt* is only allowed with immediate as bit offset', Instruction(0x0: 48 0f a3 c3  bt %rax,%rbx))
+----------------------------------------------------------------------
+@hex:
+  # Test legal bit commands
+  66 0F BA 24 24 01
+  0F BA 24 24 01
+  48 0F BA 24 24 01
+  0F BA 34 24 01
+  0F BA 2C 24 01
+  0F BA 3C 24 01
+@dis:
+     0:	66 0f ba 24 24 01                            	btw    $0x1,(%rsp)
+     6:	0f ba 24 24 01                               	btl    $0x1,(%rsp)
+     b:	48 0f ba 24 24 01                            	btq    $0x1,(%rsp)
+    11:	0f ba 34 24 01                               	btrl   $0x1,(%rsp)
+    16:	0f ba 2c 24 01                               	btsl   $0x1,(%rsp)
+    1b:	0f ba 3c 24 01                               	btcl   $0x1,(%rsp)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  48 0f ba e0 01
+  48 0f ba fb 01
+@dis:
+     0:	48 0f ba e0 01                               	bt     $0x1,%rax
+     5:	48 0f ba fb 01                               	btc    $0x1,%rbx
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE

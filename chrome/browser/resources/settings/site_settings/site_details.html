@@ -1,0 +1,189 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/html/action_link.html">
+<link rel="import" href="chrome://resources/html/action_link_css.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_dialog/cr_dialog.html">
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="../route.html">
+<link rel="import" href="../settings_shared_css.html">
+<link rel="import" href="constants.html">
+<link rel="import" href="site_details_permission.html">
+<link rel="import" href="site_settings_behavior.html">
+<link rel="import" href="website_usage_private_api.html">
+
+<dom-module id="site-details">
+  <template>
+    <style include="settings-shared action-link">
+      .favicon-image {
+        margin: 2px;
+      }
+
+      #storage {
+        -webkit-padding-end: 0;
+      }
+
+      /* When 'Usage' is omitted, subheadings are removed. Reduce the start
+       * padding allowed for lists without headings and add back vertical space
+       * that would normally be provided by the subheading. */
+      .list-frame.without-heading {
+        -webkit-padding-start: var(--settings-box-row-padding);
+        margin-top: 12px;
+      }
+
+      #clearAndReset {
+        margin-top: 24px;
+      }
+    </style>
+    <!-- Confirm Delete dialog -->
+    <cr-dialog id="confirmDeleteDialog" close-text="$i18n{close}">
+      <div slot="title">
+        $i18n{siteSettingsSiteResetDialogTitle}
+      </div>
+      <div slot="body">
+        $i18n{siteSettingsSiteResetConfirmation}
+      </div>
+      <div slot="button-container">
+        <paper-button class="cancel-button" on-click="onCloseDialog_">
+          $i18n{cancel}
+        </paper-button>
+        <paper-button class="action-button" on-click="onClearAndReset_">
+          $i18n{siteSettingsSiteResetAll}
+        </paper-button>
+      </div>
+    </cr-dialog>
+
+    <template is="dom-if" if="[[enableSiteSettings_]]">
+      <div id="usage">
+        <div class="settings-box first line-only">
+          <h2 class="first">$i18n{siteSettingsUsage}</h2>
+        </div>
+        <div class="list-frame">
+          <div class="list-item" id="noStorage"
+              hidden$="[[hasUsage_(storedData_)]]">
+            <div class="start">$i18n{siteSettingsUsageNone}</div>
+          </div>
+          <div class="list-item" id="storage" hidden$="[[!storedData_]]">
+            <div class="start">[[storedData_]]</div>
+            <paper-icon-button-light class="icon-delete-gray">
+              <button on-click="onConfirmClearStorage_"
+                  aria-label="$i18n{siteSettingsDelete}">
+              </button>
+            </paper-icon-button-light>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-box first">
+        <h2>$i18n{siteSettingsPermissions}</h2>
+      </div>
+    </template>
+    <div class$="list-frame [[permissionListClass_(enableSiteSettings_)]]">
+      <site-details-permission category="{{ContentSettingsTypes.GEOLOCATION}}"
+          icon="settings:location-on" id="geolocation"
+          label="$i18n{siteSettingsLocation}">
+      </site-details-permission>
+      <site-details-permission category="{{ContentSettingsTypes.CAMERA}}"
+          icon="settings:videocam" id="camera"
+          label="$i18n{siteSettingsCamera}">
+      </site-details-permission>
+      <site-details-permission category="{{ContentSettingsTypes.MIC}}"
+          icon="settings:mic" id="mic"
+          label="$i18n{siteSettingsMic}">
+      </site-details-permission>
+      <site-details-permission
+          category="{{ContentSettingsTypes.SENSORS}}"
+          icon="settings:sensors" id="sensors"
+          label="$i18n{siteSettingsSensors}"
+          hidden$="[[!enableSensorsContentSetting_]]">
+      </site-details-permission>
+      <site-details-permission category="{{ContentSettingsTypes.NOTIFICATIONS}}"
+          icon="settings:notifications" id="notifications"
+          label="$i18n{siteSettingsNotifications}">
+      </site-details-permission>
+      <site-details-permission category="{{ContentSettingsTypes.JAVASCRIPT}}"
+          icon="settings:code" id="javascript"
+          label="$i18n{siteSettingsJavascript}">
+      </site-details-permission>
+      <site-details-permission category="{{ContentSettingsTypes.PLUGINS}}"
+          icon="cr:extension" id="plugins" label="$i18n{siteSettingsFlash}">
+      </site-details-permission>
+      <site-details-permission category="{{ContentSettingsTypes.IMAGES}}"
+          icon="settings:photo" id="images" label="$i18n{siteSettingsImages}">
+      </site-details-permission>
+      <site-details-permission category="{{ContentSettingsTypes.POPUPS}}"
+          icon="cr:open-in-new" id="popups" label="$i18n{siteSettingsPopups}">
+      </site-details-permission>
+      <site-details-permission
+          category="{{ContentSettingsTypes.ADS}}"
+          icon="settings:ads" id="ads"
+          label="$i18n{siteSettingsAds}"
+          hidden$="[[!enableSafeBrowsingSubresourceFilter_]]">
+      </site-details-permission>
+      <site-details-permission
+          category="{{ContentSettingsTypes.BACKGROUND_SYNC}}"
+          icon="settings:sync" id="backgroundSync"
+          label="$i18n{siteSettingsBackgroundSync}">
+      </site-details-permission>
+      <site-details-permission category="{{ContentSettingsTypes.SOUND}}"
+          icon="settings:volume-up" id="sound"
+          label="$i18n{siteSettingsSound}"
+          hidden$="[[!enableSoundContentSetting_]]">
+      </site-details-permission>
+      <site-details-permission
+          category="{{ContentSettingsTypes.AUTOMATIC_DOWNLOADS}}"
+          icon="cr:file-download" id="automaticDownloads"
+          label="$i18n{siteSettingsAutomaticDownloads}">
+      </site-details-permission>
+      <site-details-permission
+          category="{{ContentSettingsTypes.MIDI_DEVICES}}" icon="settings:midi"
+          id="midiDevices" label="$i18n{siteSettingsMidiDevices}">
+      </site-details-permission>
+      <site-details-permission
+          category="{{ContentSettingsTypes.USB_DEVICES}}" icon="settings:usb"
+          id="usbDevices" label="$i18n{siteSettingsUsbDevices}">
+      </site-details-permission>
+      <site-details-permission
+          category="{{ContentSettingsTypes.UNSANDBOXED_PLUGINS}}"
+          icon="cr:extension" id="unsandboxedPlugins"
+          label="$i18n{siteSettingsUnsandboxedPlugins}">
+      </site-details-permission>
+<if expr="chromeos">
+      <site-details-permission
+          category="{{ContentSettingsTypes.PROTECTED_CONTENT}}"
+          icon="settings:protected-content" id="protectedContent"
+          label="$i18n{siteSettingsProtectedContentIdentifiers}">
+      </site-details-permission>
+</if>
+      <site-details-permission
+          category="{{ContentSettingsTypes.CLIPBOARD}}"
+          icon="settings:clipboard" id="clipboard"
+          label="$i18n{siteSettingsClipboard}"
+          hidden$="[[!enableClipboardContentSetting_]]">
+      </site-details-permission>
+      <site-details-permission
+          category="{{ContentSettingsTypes.PAYMENT_HANDLER}}"
+          icon="settings:payment-handler" id="paymentHandler"
+          label="$i18n{siteSettingsPaymentHandler}"
+          hidden$="[[!enablePaymentHandlerContentSetting_]]">
+      </site-details-permission>
+    </div>
+
+    <div id="clearAndReset" class="settings-box"
+        on-click="onConfirmClearSettings_" actionable>
+      <div class="start">
+        $i18n{siteSettingsReset}
+      </div>
+      <paper-icon-button-light class="subpage-arrow">
+        <button aria-label="$i18n{siteSettingsReset}"
+            aria-describedby="clearAndReset">
+        </button>
+      </paper-icon-button-light>
+    </div>
+    <website-usage-private-api id="usageApi"
+        website-data-usage="{{storedData_}}"
+        website-storage-type="{{storageType_}}">
+    </website-usage-private-api>
+  </template>
+  <script src="site_details.js"></script>
+</dom-module>

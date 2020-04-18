@@ -1,0 +1,197 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/chromeos/network/cr_onc_types.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_dialog/cr_dialog.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_toggle/cr_toggle.html">
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/cr_elements/paper_button_style_css.html">
+<link rel="import" href="chrome://resources/html/assert.html">
+<link rel="import" href="chrome://resources/html/cr/ui/focus_without_ink.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-a11y-keys/iron-a11y-keys.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-icon/iron-icon.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+<link rel="import" href="network_config_input.html">
+<link rel="import" href="network_shared_css.html">
+
+<dom-module id="network-siminfo">
+  <template>
+    <style include="network-shared iron-flex paper-button-style">
+      :host {
+        cursor: default
+      }
+
+      iron-icon {
+       -webkit-margin-end: 10px;
+      }
+
+      .dialog-error {
+        color: red;
+        font-size: 125%;
+        font-weight: 500;
+        margin-top: 10px;
+      }
+
+      .error {
+        color: red;
+        font-weight: 500;
+      }
+
+      .separator {
+        -webkit-border-start: var(--cr-separator-line);
+        -webkit-margin-end: var(--cr-section-padding);
+        -webkit-margin-start: var(--cr-section-padding);
+        flex-shrink: 0;
+        height: calc(var(--cr-section-min-height) - 9px);
+      }
+
+      cr-toggle {
+        -webkit-margin-start: var(--cr-button-edge-spacing);
+      }
+    </style>
+
+    <!-- SIM missing UI -->
+    <div class="property-box two-line"
+        hidden$="[[networkProperties.Cellular.SIMPresent]]">
+      <div class="start layout horizontal center">
+        <iron-icon icon="cr:sim-card-alert"></iron-icon>
+        <div class="error">[[i18n('networkSimCardMissing')]]</div>
+      </div>
+    </div>
+
+    <!-- SIM locked -->
+    <div class="property-box two-line"
+        hidden$="[[!showSimLocked_(networkProperties)]]">
+      <div class="start layout horizontal center">
+        <iron-icon icon="cr:sim-lock"></iron-icon>
+        <div class="error">[[i18n('networkSimCardLocked')]]</div>
+      </div>
+      <div class="separator"></div>
+      <paper-button id="unlockPinButton" on-tap="onUnlockPinTap_">
+        [[i18n('networkSimUnlock')]]
+      </paper-button>
+    </div>
+
+    <!-- SIM unlocked -->
+    <div class="property-box two-line"
+        hidden$="[[!showSimUnlocked_(networkProperties)]]">
+      <div id="simLockToggleLabel" class="start">
+        [[i18n('networkSimLockEnable')]]
+      </div>
+      <paper-button id="changePinButton" on-tap="onChangePinTap_"
+          hidden$="[[!networkProperties.Cellular.SIMLockStatus.LockEnabled]]">
+        [[i18n('networkSimChangePin')]]
+      </paper-button>
+      <cr-toggle id="simLockButton"
+          on-change="onSimLockEnabledChange_" checked="{{lockEnabled_}}"
+          aria-labelledby="simLockToggleLabel">
+      </cr-toggle>
+    </div>
+
+    <!-- Enter PIN dialog -->
+    <cr-dialog id="enterPinDialog" close-text="[[i18n('close')]]"
+        on-cancel="onEnterPinDialogCancel_"
+        on-close="onEnterPinDialogClose_">
+      <div slot="title">[[i18n('networkSimEnterPinTitle')]]</div>
+      <div slot="body">
+        <network-config-input id="enterPin" password
+            label="[[i18n('networkSimEnterPin')]]">
+          <iron-a11y-keys keys="enter" on-keys-pressed="sendEnterPin_">
+          </iron-a11y-keys>
+        </network-config-input>
+        <div class="dialog-error">
+          [[getErrorMsg_(error_, networkProperties)]]
+        </div>
+      </div>
+      <div slot="button-container">
+        <paper-button on-tap="sendEnterPin_" disabled="[[inProgress_]]">
+          [[i18n('networkSimEnter')]]
+        </paper-button>
+      </div>
+    </cr-dialog>
+
+    <!-- Change PIN dialog -->
+    <cr-dialog id="changePinDialog" close-text="[[i18n('close')]]"
+        on-close="onChangePinDialogClose_">
+      <div slot="title">[[i18n('networkSimChangePinTitle')]]</div>
+      <div slot="body">
+        <network-config-input id="changePinOld" password
+            label="[[i18n('networkSimEnterOldPin')]]">
+        </network-config-input>
+        <network-config-input id="changePinNew1" password
+            label="[[i18n('networkSimEnterNewPin')]]">
+        </network-config-input>
+        <network-config-input id="changePinNew2" password
+            label="[[i18n('networkSimReEnterNewPin')]]">
+          <iron-a11y-keys keys="enter" on-keys-pressed="sendChangePin_">
+          </iron-a11y-keys>
+        </network-config-input>
+        <div class="dialog-error">
+          [[getErrorMsg_(error_, networkProperties)]]
+        </div>
+      </div>
+      <div slot="button-container">
+        <paper-button class="action-button" on-tap="sendChangePin_"
+            disabled="[[inProgress_]]">
+          [[i18n('networkSimChange')]]
+        </paper-button>
+      </div>
+    </cr-dialog>
+
+    <!-- Unlock PIN dialog -->
+    <cr-dialog id="unlockPinDialog" close-text="[[i18n('close')]]"
+        on-close="onUnlockPinDialogClose_">
+      <div slot="title">[[i18n('networkSimLockedTitle')]]</div>
+      <div slot="body">
+        <network-config-input id="unlockPin" password
+            label="[[i18n('networkSimEnterPin')]]">
+          <iron-a11y-keys keys="enter" on-keys-pressed="sendUnlockPin_">
+          </iron-a11y-keys>
+        </network-config-input>
+        <div class="dialog-error">
+          [[getErrorMsg_(error_, networkProperties)]]
+        </div>
+      </div>
+      <div slot="button-container">
+        <paper-button on-tap="sendUnlockPin_" disabled="[[inProgress_]]">
+          [[i18n('networkSimUnlock')]]
+        </paper-button>
+      </div>
+    </cr-dialog>
+
+    <!-- Unlock PUK dialog -->
+    <cr-dialog id="unlockPukDialog" close-text="[[i18n('close')]]"
+        on-close="onUnlockPinDialogClose_">
+      <div slot="title">[[i18n('networkSimLockedTitle')]]</div>
+      <div slot="body">
+        <div>
+          Enter the 8-digit PIN Unblocking Key provided by your carrier
+        </div>
+        <network-config-input id="unlockPuk" password
+            label="[[i18n('networkSimEnterPuk')]]">
+        </network-config-input>
+        <network-config-input id="unlockPin1" password
+            label="[[i18n('networkSimEnterNewPin')]]">
+        </network-config-input>
+        <network-config-input id="unlockPin2" password
+            label="[[i18n('networkSimReEnterNewPin')]]">
+          <iron-a11y-keys keys="enter" on-keys-pressed="sendUnlockPuk_">
+          </iron-a11y-keys>
+        </network-config-input>
+        <div class="dialog-error">
+          [[i18n('networkSimLockedWarning')]]
+        </div>
+        <div class="dialog-error">
+          [[getErrorMsg_(error_, networkProperties)]]
+        </div>
+      </div>
+      <div slot="button-container">
+        <paper-button on-tap="sendUnlockPuk_" disabled="[[inProgress_]]">
+          [[i18n('networkSimUnlock')]]
+        </paper-button>
+      </div>
+    </cr-dialog>
+  </template>
+  <script src="network_siminfo.js"></script>
+</dom-module>

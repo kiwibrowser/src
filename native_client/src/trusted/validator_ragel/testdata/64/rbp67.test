@@ -1,0 +1,17 @@
+@hex:
+  # Mark Dowd example (hello_rbp.c)
+  # Issue 390
+  
+  # mov    $0x12345678,%eax
+  b8 78 56 34 12
+  
+  # addr32 mov %rax,0x63e470(%ebp,%eiz,1)
+  67 48 89 84 25 70 e4 63 00
+@dis:
+     0:	b8 78 56 34 12                               	mov    $0x12345678,%eax
+     5:	67 48 89 84 25 70 e4 63 00                   	mov    %rax,0x63e470(%ebp,%eiz,1)
+@rdfa_output:
+  5: unrecognized instruction
+  return code: 1
+@spec:
+  5: ('addr prefix is not allowed', Instruction(0x5: 67 48 89 84 25 70 e4 63 00  mov %rax,0x63e470(%ebp,%eiz,1)))

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<style>
+#box {
+  width: 100px;
+  height: 100px;
+  background-color: #00ff00;
+}
+</style>
+
+<div id="box"></div>
+
+<script id="visual_update"  type="text/worklet">
+registerAnimator("test_animator", class {
+  animate(currentTime, effect) {
+    effect.localTime = 500;
+  }
+});
+</script>
+
+<script src="resources/animation-worklet-tests.js"></script>
+<script>
+if (window.testRunner)
+  testRunner.waitUntilDone();
+
+runInAnimationWorklet(
+  document.getElementById('visual_update').textContent
+).then(()=>{
+  console.log('aw');
+  const keyframes = [
+    { transform: 'translateX(0)' },
+    { transform: 'translateX(200px)' }
+  ];
+
+  const options_before = {
+    duration: 1000
+  };
+
+  const options_after = {
+    duration: 2000
+  };
+
+  const box = document.getElementById('box');
+  const effect = new KeyframeEffect(box, keyframes, options_before);
+  const animation = new WorkletAnimation('test_animator', effect, document.timeline, {});
+  animation.play();
+
+  waitTwoAnimationFrames(_ => {
+    effect.updateTiming(options_after);
+    waitTwoAnimationFrames(_ => {
+      box.style.opacity = 0.8;
+      // TODO(crbug.com/829926): The same issue that is affecting
+      // worklet-animation-cancel is at play here. Change opacity to force a
+      // new animation frame and commit to get updated result.
+      waitTwoAnimationFrames(_ => {
+        if (window.testRunner)
+          testRunner.notifyDone();
+      });
+    });
+  });
+});
+</script>

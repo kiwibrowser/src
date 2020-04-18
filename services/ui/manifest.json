@@ -1,0 +1,90 @@
+{
+  "name": "ui",
+  "sandbox_type": "none",
+  "display_name": "UI Service",
+  "interface_provider_specs": {
+    "service_manager:connector": {
+      "provides": {
+        // A collection of interfaces needed by a generic client of mus.
+        // Additional interfaces may be requested a-la-carte.
+        // NOTE: when adding a new interface chances are you will want to add it
+        // to window_manager as well.
+        "app": [
+          "discardable_memory.mojom.DiscardableSharedMemoryManager",
+          "ui.mojom.Clipboard",
+          "ui.mojom.Gpu",
+          "ui.mojom.IMEDriver",
+          "ui.mojom.InputDeviceServer",
+          "ui.mojom.ScreenProvider",
+          "ui.mojom.WindowTreeFactory"
+        ],
+        "arc_manager" : [
+          "ui.mojom.Arc"
+        ],
+        "video_detector": [
+          "ui.mojom.VideoDetector"
+        ],
+        // Interfaces provided by mus-gpu for mus-ws.
+        "ozone": [
+          "ui.ozone.mojom.DeviceCursor",
+          "ui.ozone.mojom.DrmDevice"
+        ],
+        "test": [
+          "ui.mojom.EventInjector",
+          "ui.mojom.WindowServerTest"
+        ],
+        "discardable_memory": [
+          "discardable_memory.mojom.DiscardableSharedMemoryManager"
+        ],
+        "display_controller": [
+          "display.mojom.DisplayController"
+        ],
+        "display_output_protection": [
+          "display.mojom.OutputProtection"
+        ],
+        "display_dev": [
+          "display.mojom.DevDisplayController"
+        ],
+        "gpu_client": [
+          "ui.mojom.Gpu"
+        ],
+        "ime_registrar": [
+          "ui.mojom.IMERegistrar"
+        ],
+        "input_device_controller": [
+          "ui.mojom.InputDeviceController"
+        ],
+        "privileged": [
+          // Injecting events is security-sensitive.
+          "ui.mojom.EventInjector"
+        ],
+        "window_manager": [
+          "discardable_memory.mojom.DiscardableSharedMemoryManager",
+          "display.mojom.DisplayController",
+          "display.mojom.NativeDisplayDelegate",
+          "ui.mojom.AccessibilityManager",
+          "ui.mojom.Clipboard",
+          "ui.mojom.EventInjector",
+          "ui.mojom.Gpu",
+          "ui.mojom.IMEDriver",
+          "ui.mojom.InputDeviceController",
+          "ui.mojom.InputDeviceServer",
+          "ui.mojom.ScreenProvider",
+          "ui.mojom.TouchDeviceServer",
+          "ui.mojom.UserActivityMonitor",
+          "ui.mojom.WindowManagerWindowTreeFactory"
+        ],
+        "window_tree_host_factory": [
+          "ui.mojom.WindowTreeHostFactory"
+        ]
+      },
+      "requires": {
+        "*": [ "app" ],
+        "catalog": [ "directory" ],
+        "service_manager": [ "service_manager:singleton" ],
+        "ui": [ "ozone" ],
+        "viz": [ "viz_host" ]
+      }
+    }
+  }
+}

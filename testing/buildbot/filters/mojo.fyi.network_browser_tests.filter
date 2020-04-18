@@ -1,0 +1,247 @@
+# NOTE: if adding an exclusion for an existing failure (e.g. additional test for
+# feature X that is already not working), please add it beside the existing
+# failures. Otherwise please reach out to network-service-dev@.
+
+# These tests currently fail when run with --enable-features=NetworkService
+# See https://crbug.com/769401
+
+# Uncategorized timeouts or test failures.
+-DisabledSignInIsolationBrowserTest.SyntheticTrial
+-DomainReliabilityBrowserTest.Upload
+-EnabledSignInIsolationBrowserTest.SyntheticTrial
+-ExtensionUnloadBrowserTest.UnloadWithContentScripts
+-NetInternalsTest.netInternalsSessionBandwidthSucceed
+-NewlibPackagedAppTest.SuccessfulLoad
+-PolicyTest.DefaultCookiesSetting
+-PreviewsOptimizationGuideBrowserTest.NoScriptPreviewsEnabledByWhitelist
+-ProxySettingsApiTest.ProxyEventsInvalidProxy
+-RegisterProtocolHandlerBrowserTest.CustomHandler
+-SSLUITest.TestBadHTTPSDownload/0
+-SSLUITest.TestBadHTTPSDownload/1
+-SubresourceFilterBrowserTest.FailedProvisionalLoadInMainframe
+-WebstoreInstallerBrowserTest.SimultaneousInstall
+-WebViewTest.WebViewInBackgroundPage
+
+# Move ChromeExpectCTReporter to services/network
+# https://crbug.com/844032
+-ExpectCTBrowserTest.TestDynamicExpectCTHeaderProcessing
+-ExpectCTBrowserTest.TestDynamicExpectCTReporting
+
+# Add a testing method to call AddHPKP in NetworkContext.
+# https://crbug.com/844034
+-PKPModelClientTest.PKPBypass/0
+-PKPModelClientTest.PKPBypass/1
+-PKPModelClientTest.PKPEnforced/0
+-PKPModelClientTest.PKPEnforced/1
+
+# Need a way to call SetEnablePublicKeyPinningBypassForLocalTrustAnchors on
+# TransportSecurityState to trigger sending a report.
+-ProfileBrowserTest.SendHPKPReport
+-ProfileBrowserTest.SendHPKPReportServerHangs
+
+# https://crbug.com/721398
+-WebViewTest.ClearDataCache
+
+# Non-navigation downloads don't go through RequestLimiter (
+# https://crbug.com/843631). Once that's fixed, WebContentsDelegate::CanDownload
+# will be called for other downloads and that'll fix the test.
+-WebViewTest.DownloadPermission
+
+# Need a test interface API that allows us to check on the CT status.
+# Then in ssl_browsertest.cc we can use that instead of the direct
+# call to the transport_security_state()
+-SSLUITest.CertificateTransparencyEnforcementDisabledForUrls/0
+-SSLUITest.CertificateTransparencyEnforcementDisabledForUrls/1
+
+# Redirects to chrome-extension:// should be blocked unless the resource is
+# webaccessible.  https://crbug.com/821586
+-ProcessManagerBrowserTest.ServerRedirectToNonWebAccessibleResource
+-ProcessManagerBrowserTest.CrossExtensionEmbeddingOfWebAccessibleResources
+
+# Need support for blocking cookies via content settings:
+# https://crbug.com/789632.
+-ClientHintsBrowserTest.ClientHintsLifetimeNotAttachedCookiesBlocked
+-ClientHintsBrowserTest.ClientHintsNoLifetimeCookiesNotAllowed
+-ContentSettingsTest.AllowCookiesForASessionUsingExceptions
+-ContentSettingsTest.RedirectCrossOrigin
+-ContentSettingsTest.RedirectLoopCookies
+
+# http://crbug.com/816684 Track Page Load Metrics.
+-AdsPageLoadMetricsObserverBrowserTest.OriginStatusMetricEmbedded
+-AdsPageLoadMetricsObserverBrowserTest.OriginStatusMetricEmbeddedEmpty
+-AdsPageLoadMetricsObserverBrowserTest.OriginStatusMetricSame
+-AdsPageLoadMetricsObserverBrowserTest.OriginStatusMetricCross
+-AdsPageLoadMetricsObserverBrowserTest.DocOverwritesNavigation
+-AdsPageLoadMetricsObserverBrowserTest.SubresourceFilter
+-PageLoadMetricsBrowserTest.LoadingMetrics
+-PageLoadMetricsBrowserTest.LoadingMetricsFailed
+-PageLoadMetricsBrowserTest.PayloadSize
+-PageLoadMetricsBrowserTest.PayloadSizeChildFrame
+
+# https://crbug.com/810329 DnsProbe browsertests that rely on delaying requests:
+-DnsProbeBrowserTest.NxdomainProbeResultWithWorkingSlowCorrections
+# Addendum to the above: These three were previously marked as flaky. After
+# resolving https://crbug.com/810329, they will need to be monitored to see
+# if flake is still an issue.
+-DnsProbeBrowserTest.CorrectionsLoadStoppedSlowProbe
+-DnsProbeBrowserTest.CorrectionsLoadStopped
+-DnsProbeBrowserTest.NoInternetProbeResultWithSlowBrokenCorrections
+
+# crbug.com/776589 Intercepting requests with net::URLRequestFilter.
+-ContinueWhereILeftOffTest.CookiesClearedOnExit
+-DownloadExtensionTest.DownloadExtensionTest_Download_FileSystemURL
+-PolicyTest.CertificateTransparencyEnforcementDisabledForUrls/0
+-PolicyTest.CertificateTransparencyEnforcementDisabledForUrls/1
+-PolicyTest.ExtensionInstallSources
+-PolicyTest.ForceGoogleSafeSearch
+
+# https://bugs.chromium.org/p/chromium/issues/detail?id=789670
+-DiceBrowserTest.Reauth
+-DiceBrowserTest.Signin
+-DiceBrowserTest.SignoutAllAccounts
+-DiceBrowserTest.SignoutMainAccount
+-DiceBrowserTest.SignoutSecondaryAccount
+-DiceFixAuthErrorsBrowserTest.ReauthFixAuthError
+-DiceFixAuthErrorsBrowserTest.SigninAccountMismatch
+-DicePrepareMigrationBrowserTest.EnableSyncAfterToken
+-DicePrepareMigrationBrowserTest.EnableSyncBeforeToken
+-DicePrepareMigrationBrowserTest.Signout
+-ChromeResourceDispatcherHostDelegateBrowserTest.MirrorRequestHeader
+
+# crbug.com/778793
+# Started failing in r514649.
+-PreviewsNoScriptBrowserTest.NoScriptPreviewsEnabled
+# Added in r519342.
+-PreviewsNoScriptBrowserTest.NoScriptPreviewsEnabledHttpRedirectToHttps
+-PreviewsNoScriptBrowserTest.NoScriptPreviewsEnabledButNoTransformDirective
+
+# crbug.com/778814 Null NavigationData is given to NavigationURLLoaderDelegate::OnResponseStarted() as parameter.
+-ChromeResourceDispatcherHostDelegateBrowserTest.NavigationDataProcessed
+
+# crbug.com/778860 SecurityStyleExplanations::info_explanations is empty.
+-BrowserTestNonsecureURLRequest.DidChangeVisibleSecurityStateObserverObsoleteTLSSettings
+
+# These rely on proxy configuration and PAC execution being configured on the
+# legacy in-process URLRequestContext. They should be removed or updated to
+# use Mojo APIs instead.
+-HangingPacRequestProxyScriptBrowserTest.Shutdown
+-IOThreadBrowserTestWithHangingPacRequest.Shutdown
+-ProxySettingsApiTest.ProxyEventsParseError
+
+# SetURLRequestContextForNSSHttpIO / SetGlobalCertNetFetcher are not called
+# in the network process.
+-SSLUITest.TestHTTPSOCSPRevoked/0
+-SSLUITest.TestHTTPSOCSPRevoked/1
+
+# http://crbug.com/721414
+# TODO(rockot): add support for webRequest API.
+-ExtensionWebRequestApiTest.WebRequestBlocking
+-ExtensionWebRequestApiTest.WebRequestDeclarative2
+-ExtensionWebRequestApiTest.WebRequestDiceHeaderProtection
+-ExtensionWebRequestApiTest.WebRequestTypes
+-ExtensionWebRequestApiTest.WebRequestTestOSDD
+# http://crbug.com/841002
+-ExtensionWebRequestApiTest.WebRequestURLLoaderInterception
+-ExtensionWebRequestApiTest.WebRequestClientsGoogleComProtection
+# Note WebRequestUnloadImmediately is disabled on Linux
+-ExtensionWebRequestApiTest.WebRequestUnloadImmediately
+# http://crbug.com/841827
+-BackgroundXhrTest.HttpAuth
+-BackgroundXhrTest.TlsClientAuth
+
+# https://crbug.com/721400
+# WebSocket with the network service
+-DeclarativeNetRequestResourceTypeBrowserTest.Test2/1
+-DeclarativeNetRequestResourceTypeBrowserTest.Test2/0
+-ExtensionWebRequestApiTest.WebSocketRequestAuthRequired
+-ExtensionWebRequestApiTest.WebSocketRequest
+
+# http://crbug.com/705114
+# Remove streams concept from code and replace with data pipe passing.
+-MimeHandlerViewTests/MimeHandlerViewTest.Abort/0
+-MimeHandlerViewTests/MimeHandlerViewTest.Abort/1
+
+# http://crbug.com/784576
+# Convert ExtensionRequestLimitingThrottle into a URLLoaderThrottle.
+-ExtensionRequestLimitingThrottleBrowserTest.DoNotThrottleCachedResponse
+-ExtensionRequestLimitingThrottleBrowserTest.DoNotThrottleCachedResponse_NonRedirectCached
+-ExtensionRequestLimitingThrottleBrowserTest.DoNotThrottleCachedResponse_Redirect
+-ExtensionRequestLimitingThrottleBrowserTest.ThrottleRequest
+-ExtensionRequestLimitingThrottleBrowserTest.ThrottleRequest_Redirect
+-ExtensionRequestLimitingThrottleBrowserTest.ThrottleRequest_RedirectCached
+-ExtensionRequestLimitingThrottleCommandLineBrowserTest.ThrottleRequestDisabled
+
+# Switch test from using a custom net::URLRequestFileJob to using a test
+# URLLoaderFactory via SetNetworkFactoryForTesting.
+-ErrorPageSniffTest.SniffSmallHttpErrorResponseAsDownload
+
+# http://crbug.com/809583
+# Switch Predictor from using ResourceThrottle and ResourceDispatcherHost to
+# using WebContentsObserver and NavigationHandle.
+-PredictorBrowserTest.CrossSiteNoReferrerNoPredictionAfterOneNavigation
+-PredictorBrowserTest.CrossSiteRedirectNoPredictionWithPath
+-PredictorBrowserTest.CrossSiteRedirectPredictionWithNoPath
+-PredictorBrowserTest.CrossSiteRedirectPredictionWithNoPathDifferentHostName
+-PredictorBrowserTest.CrossSiteSimplePredictionAfterOneNavigation
+-PredictorBrowserTest.CrossSiteSimplePredictionAfterOneNavigationNoInterceptor
+-PredictorBrowserTest.CrossSiteSimplePredictionAfterTwoNavigations
+-PredictorBrowserTest.CrossSiteSimplePredictionAfterTwoNavigations2
+-PredictorBrowserTest.CrossSiteTwoRedirectsPredictionWithNoPath
+-PredictorBrowserTest.CrossSiteUseOneSocket
+-PredictorBrowserTest.CrossSiteUseThreeSockets
+-PredictorBrowserTest.DoNotEvictRecentlyUsed
+-PredictorBrowserTest.DontPredictBasedOnSubresources
+-PredictorBrowserTest.ForgetBadPrediction
+-PredictorBrowserTest.PreconnectAndFetchCORS
+-PredictorBrowserTest.PreconnectAndFetchNonCORS
+-PredictorBrowserTest.PredictBasedOnSubframeRedirect
+-PredictorBrowserTest.RendererInitiatedNavigationPreconnect
+-PredictorBrowserTest.SubframeCrossSitePrediction
+-PredictorBrowserTest.SubframeInitiatesPreconnects
+-PredictorBrowserTest.SubframeLearning
+
+# Support URLLoaderFactories from embedder in shared workers.
+# https://crbug.com/839982
+-ExtensionApiTestWithSwitch.ExtensionDebugger
+
+# https://crbug.com/832749
+# Add DMServer header
+-ChromeResourceDispatcherHostDelegateBrowserTest.PolicyHeader
+-ChromeResourceDispatcherHostDelegateBrowserTest.PolicyHeaderForRedirect
+
+# download_to_file is only used by PNaCl at this point and it will be removed
+# soon as it has almost zero usage. At that point these tests should be deleted.
+# http://crbug.com/791702
+-OutOfProcessPPAPITest.FileRef1
+-OutOfProcessPPAPITest.FileRef2
+-OutOfProcessPPAPITest.URLLoader1
+-PPAPINaClNewlibTest.FileRef1
+-PPAPINaClNewlibTest.FileRef2
+-PPAPINaClNewlibTest.URLLoader1
+-PPAPINaClPNaClNonSfiTest.FileRef1
+-PPAPINaClPNaClNonSfiTest.FileRef2
+-PPAPINaClPNaClNonSfiTest.URLLoader1
+
+# Requires a replacement for ChromeNetworkDelegate.
+# http://crbug.com/841309
+-VariationsHttpHeadersBrowserTest.TestStrippingHeadersFromResourceRequest
+-VariationsHttpHeadersBrowserTest.TestStrippingHeadersFromInternalRequest
+
+# Fails because of missing support to navigate to filesystem: URLs.
+# https://crbug.com/797292
+-ProcessManagerBrowserTest.NestedURLDownloadsToExtensionAllowed
+
+# Tests check state of NQE in the browser process, but need to be updated to
+# watch NQE in the renderer process.
+# https://crbug.com/819244
+-IOThreadEctCommandLineBrowserTest.ForceECTFromCommandLine
+-IOThreadEctFieldTrialAndCommandLineBrowserTest.ECTFromCommandLineOverridesFieldTrial
+-IOThreadEctFieldTrialBrowserTest.ForceECTUsingFieldTrial
+
+# Fails on Windows. It's passing on Linux but this feature needs to be converted
+# to work with network service.
+-ConditionalCacheCountingHelperBrowserTest.Count
+
+# NOTE: if adding an exclusion for an existing failure (e.g. additional test for
+# feature X that is already not working), please add it beside the existing
+# failures. Otherwise please reach out to network-service-dev@.

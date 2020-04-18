@@ -1,0 +1,58 @@
+<!doctype html>
+<!--
+Tests that the provided WebXR device has the expected capabilities
+-->
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="../resources/webxr_e2e.css">
+  </head>
+  <body>
+    <canvas id="webgl-canvas"></canvas>
+    <script src="../../../../../../third_party/WebKit/LayoutTests/resources/testharness.js"></script>
+    <script src="../resources/webxr_e2e.js"></script>
+    <script src="../resources/webxr_boilerplate.js"></script>
+    <script>
+      var expectations = {
+        "Daydream": {
+          "exclusive": true,
+          "non-exclusive": true,
+        }
+      };
+      var t = async_test("XRDevice capabilities match expectations");
+
+      function stepCheckCapabilities(device) {
+        if (!(device in expectations)) {
+          t.step_func_done( () => {
+            assert_unreached("Given device " + device + " not in expectations");
+          })();
+          return;
+        }
+
+        let expected = expectations[device];
+        var supportsNonExclusive;
+        var supportsExclusive;
+        var ctx = webglCanvas.getContext("xrpresent");
+        xrDevice.supportsSession(
+            {exclusive: false, outputContext: ctx}).then( () => {
+          supportsNonExclusive = true;
+        }, () => {
+          supportsNonExclusive = false;
+        }).then( () => {
+          xrDevice.supportsSession({exclusive: true}).then( () => {
+            supportsExclusive = true;
+          }, () => {
+            supportsExclusive = false;
+          }).then( () => {
+            t.step( () => {
+              assert_equals(supportsNonExclusive, expected["non-exclusive"],
+                  'Device supports non-exclusive sessions');
+              assert_equals(supportsExclusive, expected["exclusive"],
+                  'Device supports exclusive sessions');
+            });
+            t.done();
+          });
+        });
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,166 @@
+# -*- python -*-
+# Copyright 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# This test does not make any sense for pure pnacl.
+if env.Bit('bitcode') and env.Bit('pnacl_generate_pexe'):
+  Return()
+
+# This test is disabled for MIPS because we do not have a MIPS-enabled nacl-gcc
+# to test PNaCl against.
+if env.Bit('build_mips32'):
+  Return()
+
+# If this test is failing on the bots, you can find the seed
+# from the output of the bot. Look for "--seed=".
+# To reproduce the exact problem, set settings['seed'] below
+# to the fixed seed you found on the bot.
+
+#
+# Calling Convention Test
+#
+# The "generate.py" script generates 4 modules (module0.c ... module3.c).
+# Each module has functions, and calls to other functions in other modules.
+# Each function has multiple fixed and variable arguments.
+# This tests (by brute force) the correctness of the calling convention.
+#
+# To test toolchain compatibility, some of the modules are built
+# using PNaCl, and some with NNaCl.
+#
+# Note: having random tests has been a little controversial,
+# we are also intentionally hiding the randomness from scons, c.f.:
+#  http://codereview.chromium.org/7215028
+
+base_env = env.Clone()
+callingconv_h = base_env.File('callingconv.h').srcnode()
+extra_cflags = [ '-Wno-long-long', '-I' + callingconv_h.dir.abspath ]
+
+base_settings = {
+  'num_functions'    : 200,
+  'calls_per_func'   : 4,
+  'max_args_per_func': 16,
+  # Note: 'seed' is intentionally not mentioned here which results in
+  #       generate.py picking one (see above)
+  # Having a seed here would make the commandline flags random,
+  # which would force scons to always rebuild.
+}
+
+def AddTest(env, test_variant, envlist, settings):
+  envlist = list(envlist)
+  settings = dict(settings)
+  # Add custom CFLAGS: this must be done here, since PNaClGetNNaClEnv
+  # wipes CFLAGS.
+  for e in envlist:
+    e.Append(CFLAGS = extra_cflags)
+    # This can generate references to runtime code we won't link with
+    # (__aeabi_unwind_cpp_pr0, etc.) when using PNaCl as the linker.
+    e.FilterOut(CCFLAGS=['-fasynchronous-unwind-tables'])
+
+  # Create two modules for each environment,
+  # so that we test toolchain self-interaction.
+  envlist = envlist + envlist
+  num_modules = len(envlist)
+  settings['num_modules'] = num_modules
+  module_filenames = [ 'module%d_%s.c' % (i, test_variant)
+                       for i in xrange(num_modules) ]
+
+  # Generate the module source files (module0.c, module1.c, ...).
+  settings_args = ['--%s=%s' % (k,str(v)) for k,v in settings.iteritems()]
+  base_env = env.Clone()
+  base_env['GENERATOR_SETTINGS'] = ' '.join(settings_args)
+
+  if not env.Bit('built_elsewhere'):
+    # On the QEMU bot, generate the golden file and c files.
+    nodes = base_env.Command(
+        [test_variant + '.golden'] + module_filenames,
+        base_env.File('generate.py'),
+        Action('${PYTHON} ${SOURCE} ${GENERATOR_SETTINGS} -- ${TARGETS}'))
+  else:
+    # On the hardware bot, do not regenerate the files.
+    nodes = []
+    nodes.append(base_env.File(test_variant + '.golden'))
+    nodes.extend([ base_env.File(module_filenames[i])
+                   for i in xrange(num_modules) ])
+
+  # Create the module objects
+  modules = []
+  for i in xrange(num_modules):
+    obj = envlist[i].ComponentObject(nodes[i+1])
+    envlist[i].Depends(obj, callingconv_h)
+    modules.append(obj)
+
+  # Compile callingconv.c
+  callingconv = link_env.ComponentObject(
+      test_variant,
+      'callingconv.c')
+  link_env.Depends(callingconv, callingconv_h)
+
+  prog = link_env.ComponentProgram(test_variant,
+                                   [callingconv] + modules,
+                                   EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+  node = link_env.CommandSelLdrTestNacl(
+      test_variant + '.out',
+      prog,
+      stdout_golden=nodes[0])
+
+  env.AddNodeToTestSuite(node, ['medium_tests', 'nonpexe_tests'],
+                         'run_' + test_variant + '_test')
+
+
+if env.Bit('bitcode'):
+  # For PNaCl, we do a mixed test and a self-consistency test.
+  # The mixed test checks self-consistency as well, but it is currently
+  # broken on several platforms, so we check it separately as well
+  # (where it is not broken).
+
+  # (1) Self-consistency.
+  settings = dict(base_settings)
+  envlist = [base_env]
+  link_env = base_env
+  AddTest(base_env, 'callingconv_self', envlist, settings)
+
+  # (2) Cross-check.
+  if env.Bit('build_arm'):
+    # Constant pool items are sometimes too far away with nacl-gcc.
+    # BUG: http://code.google.com/p/nativeclient/issues/detail?id=3205
+    settings['allow_double'] = 0
+    settings['allow_float'] = 0
+
+  envlist = []
+  pnacl_env = base_env.Clone()
+  pnacl_env.PNaClForceNative()
+  # PNaCl only uses the standard ABI if given special flags.
+  if env.Bit('build_arm'):
+    pnacl_env.Append(CCFLAGS=[
+        '--target=armv7a-unknown-nacl-gnueabi',
+        '-mfloat-abi=hard',
+        ])
+  elif env.Bit('build_x86_32'):
+    pnacl_env.Append(CCFLAGS=['--target=i686-unknown-nacl'])
+  elif env.Bit('build_x86_64'):
+    pnacl_env.Append(CCFLAGS=['--target=x86_64-unknown-nacl'])
+  else:
+    raise Exception('Unknown architecture')
+
+  envlist.append(pnacl_env)
+
+  native_env = base_env.PNaClGetNNaClEnv()
+  envlist.append(native_env)
+  link_env = pnacl_env
+
+  AddTest(base_env, 'callingconv', envlist, settings)
+else:
+  # For NNaCl toolchain, just test self-consistency.
+  settings = dict(base_settings)
+  link_env = base_env
+  envlist = [base_env]
+  if env.Bit('build_arm'):
+    # Constant pool items sometimes too far away:
+    # BUG: http://code.google.com/p/nativeclient/issues/detail?id=3205
+    settings['allow_double'] = 0
+    settings['allow_float'] = 0
+  AddTest(base_env, 'callingconv', envlist, settings)

@@ -1,0 +1,53 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// Internal message types that should not be seen outside the protocol
+// directory.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package remoting;
+
+// Next Id: 13
+message FrameStatsMessage {
+  // Frame ID.
+  optional uint32 frame_id = 1;
+
+  // Frame size.
+  optional int32 frame_size = 2;
+
+  // Id of the last event that was injected before this frame was captured.
+  optional int64 latest_event_timestamp = 3;
+
+  // Time from when the last event was injected until capturing has started.
+  optional int32 capture_pending_time_ms = 4;
+
+  // Time in milliseconds spent in capturing this video frame.
+  optional int32 capture_time_ms = 5;
+
+  // Total overhead time for IPC and threading when capturing frames.
+  optional int32 capture_overhead_time_ms = 6;
+
+  // Time between when the frame was captured and when encoding started.
+  optional int32 encode_pending_time_ms = 7;
+
+  // Time in milliseconds spent in encoding this video frame.
+  optional int32 encode_time_ms = 8;
+
+  // Time for which the frame is blocked until it's sent to the client.
+  optional int32 send_pending_time_ms = 9;
+
+  // Current network RTT estimate.
+  optional int32 rtt_estimate_ms = 10;
+
+  // Current bandwidth estimate in kb/s.
+  optional int32 bandwidth_estimate_kbps = 11;
+
+  // The capturer Id to indicate the implementation of ScreenCapturer that
+  // generates this frame.
+  optional uint32 capturer_id = 12;
+}
+

@@ -1,0 +1,113 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "device/bluetooth/test/fake_bluetooth_adapter_winrt.h"
+
+#include <utility>
+
+#include "base/bind.h"
+#include "base/strings/strcat.h"
+#include "base/strings/string_number_conversions.h"
+#include "base/strings/string_piece.h"
+#include "base/strings/string_split.h"
+#include "base/task_runner_util.h"
+#include "base/threading/sequenced_task_runner_handle.h"
+#include "base/win/async_operation.h"
+#include "device/bluetooth/test/bluetooth_test.h"
+
+namespace device {
+
+namespace {
+
+// In order to avoid a name clash with device::BluetoothAdapter we need this
+// auxiliary namespace.
+namespace uwp {
+using ABI::Windows::Devices::Bluetooth::BluetoothAdapter;
+}  // namespace uwp
+using ABI::Windows::Devices::Bluetooth::IBluetoothAdapter;
+using ABI::Windows::Devices::Radios::Radio;
+using ABI::Windows::Foundation::IAsyncOperation;
+using Microsoft::WRL::ComPtr;
+using Microsoft::WRL::Make;
+
+}  // namespace
+
+FakeBluetoothAdapterWinrt::FakeBluetoothAdapterWinrt(
+    base::StringPiece address) {
+  const bool result = base::HexStringToUInt64(
+      base::StrCat(base::SplitStringPiece(address, ":", base::TRIM_WHITESPACE,
+                                          base::SPLIT_WANT_ALL)),
+      &raw_address_);
+  DCHECK(result);
+}
+
+FakeBluetoothAdapterWinrt::~FakeBluetoothAdapterWinrt() = default;
+
+HRESULT FakeBluetoothAdapterWinrt::get_DeviceId(HSTRING* value) {
+  // The actual device id does not matter for testing, as long as this method
+  // returns a success code.
+  return S_OK;
+}
+
+HRESULT FakeBluetoothAdapterWinrt::get_BluetoothAddress(UINT64* value) {
+  *value = raw_address_;
+  return S_OK;
+}
+
+HRESULT FakeBluetoothAdapterWinrt::get_IsClassicSupported(boolean* value) {
+  return E_NOTIMPL;
+}
+
+HRESULT FakeBluetoothAdapterWinrt::get_IsLowEnergySupported(boolean* value) {
+  return E_NOTIMPL;
+}
+
+HRESULT FakeBluetoothAdapterWinrt::get_IsPeripheralRoleSupported(
+    boolean* value) {
+  return E_NOTIMPL;
+}
+
+HRESULT FakeBluetoothAdapterWinrt::get_IsCentralRoleSupported(boolean* value) {
+  return E_NOTIMPL;
+}
+
+HRESULT FakeBluetoothAdapterWinrt::get_IsAdvertisementOffloadSupported(
+    boolean* value) {
+  return E_NOTIMPL;
+}
+
+HRESULT FakeBluetoothAdapterWinrt::GetRadioAsync(
+    IAsyncOperation<Radio*>** operation) {
+  return E_NOTIMPL;
+}
+
+FakeBluetoothAdapterStaticsWinrt::FakeBluetoothAdapterStaticsWinrt(
+    ComPtr<IBluetoothAdapter> default_adapter)
+    : default_adapter_(std::move(default_adapter)) {}
+
+FakeBluetoothAdapterStaticsWinrt::~FakeBluetoothAdapterStaticsWinrt() = default;
+
+HRESULT FakeBluetoothAdapterStaticsWinrt::GetDeviceSelector(HSTRING* result) {
+  return E_NOTIMPL;
+}
+
+HRESULT FakeBluetoothAdapterStaticsWinrt::FromIdAsync(
+    HSTRING device_id,
+    IAsyncOperation<uwp::BluetoothAdapter*>** operation) {
+  return E_NOTIMPL;
+}
+
+HRESULT FakeBluetoothAdapterStaticsWinrt::GetDefaultAsync(
+    IAsyncOperation<uwp::BluetoothAdapter*>** operation) {
+  // Here we mimick production code and do not return an error code if no
+  // default adapter is present. Just as production code, the async operation
+  // completes successfully and returns a nullptr as adapter in this case.
+  auto async_op = Make<base::win::AsyncOperation<uwp::BluetoothAdapter*>>();
+  base::SequencedTaskRunnerHandle::Get()->PostTask(
+      FROM_HERE, base::BindOnce(async_op->callback(), default_adapter_));
+  *operation = async_op.Detach();
+  return S_OK;
+}
+
+}  // namespace device

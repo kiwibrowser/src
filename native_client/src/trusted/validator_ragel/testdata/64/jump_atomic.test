@@ -1,0 +1,19 @@
+@hex:
+  # Models a jump to the begining of an atomic instruction sequence.
+  # jmp 0x2
+  EB 00
+  # and %edx, 0xe0
+  83 e2 e0 \\
+  # add %rdx, %r15
+  4c 01 fa \\
+  # jmp %rdx
+  ff e2
+@dis:
+     0:	eb 00                                        	jmp    0x2
+     2:	83 e2 e0                                     	and    $0xffffffe0,%edx
+     5:	4c 01 fa                                     	add    %r15,%rdx
+     8:	ff e2                                        	jmpq   *%rdx
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE

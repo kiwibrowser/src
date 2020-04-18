@@ -1,0 +1,37 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(
+      `Tests that debugger StepOut will skip inlined scripts created by document.write().\n`);
+  await TestRunner.loadModule('sources_test_runner');
+  await TestRunner.showPanel('sources');
+
+  var numberOfStepOut = 5;
+  await SourcesTestRunner.startDebuggerTestPromise(true);
+  await TestRunner.navigatePromise(
+      'resources/debugger-step-out-document-write.html');
+  SourcesTestRunner.showScriptSource(
+      'debugger-step-out-document-write.html', step2);
+
+  async function step2(sourceFrame) {
+    TestRunner.addResult('Script source was shown.');
+    SourcesTestRunner.setBreakpoint(sourceFrame, 3, '', true);
+    SourcesTestRunner.setBreakpoint(sourceFrame, 11, '', true);
+    SourcesTestRunner.waitUntilPaused(step3);
+    TestRunner.reloadPage(completeTest);
+  }
+
+  function step3() {
+    var actions = ['Print'];  // First pause on breakpoint.
+    for (var i = 0; i < numberOfStepOut; ++i)
+      actions.push('StepOut', 'Print');
+    actions.push('Resume');
+    SourcesTestRunner.waitUntilPausedAndPerformSteppingActions(actions);
+  }
+
+  function completeTest() {
+    SourcesTestRunner.completeDebuggerTest();
+  }
+})();

@@ -1,0 +1,32 @@
+<!doctype html>
+<!--
+Used to test that the promise returned by WebXR's requestSession does not get
+resolved or rejected while the DON flow is active.
+-->
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="../resources/webxr_e2e.css">
+  </head>
+  <body>
+    <canvas id="webgl-canvas"></canvas>
+    <script src="../../../../../../third_party/WebKit/LayoutTests/resources/testharness.js"></script>
+    <script src="../resources/webxr_e2e.js"></script>
+    <script src="../resources/webxr_boilerplate.js"></script>
+    <script>
+      var t = async_test("Presentation promise is unresolved during DON flow");
+      function onExclusiveRequestWithDon() {
+        xrDevice.requestSession({exclusive: true}).then( (session) => {
+          t.step( () => {
+            assert_unreached("requestSession promise resolved");
+          });
+        }, () => {
+          t.step( () => {
+            assert_unreached("requestSession promise rejected");
+          });
+        });
+        window.setTimeout( () => {t.done();}, 2000);
+      }
+      webglCanvas.onclick = onExclusiveRequestWithDon;
+    </script>
+  </body>
+</html>

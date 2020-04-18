@@ -1,0 +1,62 @@
+// Copyright 2015 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// https://w3c.github.io/mediacapture-main/#idl-def-mediatrackconstraintset
+
+typedef (long or ConstrainLongRange) ConstrainLong;
+typedef (double or ConstrainDoubleRange) ConstrainDouble;
+typedef (boolean or ConstrainBooleanParameters) ConstrainBoolean;
+typedef (DOMString or sequence<DOMString> or ConstrainDOMStringParameters) ConstrainDOMString;
+typedef (sequence<Point2D> or ConstrainPoint2DParameters) ConstrainPoint2D;
+
+dictionary MediaTrackConstraintSet {
+    ConstrainLong width;
+    ConstrainLong height;
+    ConstrainDouble aspectRatio;
+    ConstrainDouble frameRate;
+    ConstrainDOMString facingMode;
+    ConstrainDouble volume;
+    ConstrainLong sampleRate;
+    ConstrainLong sampleSize;
+    ConstrainBoolean echoCancellation;
+    // See http://crbug.com/846270.
+    [OriginTrialEnabled=ExperimentalHardwareEchoCancellation] ConstrainDOMString echoCancellationType;
+    ConstrainBoolean autoGainControl;
+    ConstrainBoolean noiseSuppression;
+    ConstrainDouble latency;
+    ConstrainLong channelCount;
+    ConstrainDOMString deviceId;
+    ConstrainDOMString groupId;
+    // Media Capture Depth Stream Extensions
+    // https://w3c.github.io/mediacapture-depth/#mediatrackconstraints
+    // TODO(aleksandar.stojiljkovic): videoKind, depthNear, depthFar,
+    // focalLengthX and focalLengthY attributes should be declared as partial
+    // dictionary but IDL parser can't support it yet. http://crbug.com/579896.
+    [RuntimeEnabled=MediaCaptureDepthVideoKind] ConstrainDOMString videoKind;
+    [RuntimeEnabled=MediaCaptureDepth] ConstrainDouble depthNear;
+    [RuntimeEnabled=MediaCaptureDepth] ConstrainDouble depthFar;
+    [RuntimeEnabled=MediaCaptureDepth] ConstrainDouble focalLengthX;
+    [RuntimeEnabled=MediaCaptureDepth] ConstrainDouble focalLengthY;
+    // W3C Image Capture API
+    // https://w3c.github.io/mediacapture-image/#mediatrackconstraintset-section
+    // TODO(mcasas) move out when partial dictionaries are supported
+    // http://crbug.com/579896.
+    ConstrainDOMString whiteBalanceMode;
+    ConstrainDOMString exposureMode;
+    ConstrainDOMString focusMode;
+    ConstrainPoint2D   pointsOfInterest;
+    ConstrainDouble    exposureCompensation;
+    ConstrainDouble    colorTemperature;
+    ConstrainDouble    iso;
+    ConstrainDouble    brightness;
+    ConstrainDouble    contrast;
+    ConstrainDouble    saturation;
+    ConstrainDouble    sharpness;
+    ConstrainDouble    zoom;
+    ConstrainBoolean   torch;
+    // The "mandatory" and "_optional" members are retained for conformance
+    // with https://www.w3.org/TR/2013/WD-mediacapture-streams-20130903/
+    Dictionary mandatory;
+    sequence<Dictionary> _optional;
+};

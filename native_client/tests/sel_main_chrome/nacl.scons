@@ -1,0 +1,108 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+if 'TRUSTED_ENV' not in env:
+  Return()
+trusted_env = env['TRUSTED_ENV']
+
+test_guest_obj = env.ComponentObject('sel_main_chrome_guest.c')
+test_guest = env.ComponentProgram('sel_main_chrome_guest',
+                                  [test_guest_obj],
+                                  EXTRA_LIBS=['${NONIRT_LIBS}'])
+test_guest = env.GetTranslatedNexe(test_guest)
+
+sel_main_chrome_test = trusted_env.ComponentProgram(
+    'sel_main_chrome_test', ['sel_main_chrome_test.cc'],
+    EXTRA_LIBS=['sel_main_chrome'])
+
+env_vars = ['NACLVERBOSITY=1']
+# The check for no-execute page protection does not work under
+# qemu-arm (which does not implement no-execute page protection).
+if env.Bit('build_arm') and env.UsingEmulator():
+  env_vars.append('NACL_DANGEROUS_SKIP_QUALIFICATION_TEST=1')
+
+# This test runs the platform qualification test, which checks for DEP
+# enforcement.  Valgrind's dynamic rewriting interferes with or
+# disables DEP somehow, so we must disable the platform qualification
+# tests.
+if env.IsRunningUnderValgrind():
+  env_vars.append('NACL_DANGEROUS_SKIP_QUALIFICATION_TEST=1')
+
+test_command_args = [env.GetIrtNexe(), test_guest]
+
+node = env.CommandTest(
+    'sel_main_chrome_test.out',
+    env.AddBootstrap(sel_main_chrome_test, test_command_args), osenv=env_vars,
+    stdout_golden=env.File('sel_main_chrome_guest.stdout'))
+env.AddNodeToTestSuite(node, ['small_tests', 'nonpexe_tests'],
+                       'run_sel_main_chrome_test',
+                       is_broken=not env.Bit('nacl_static_link'))
+
+# Also test with validation cache and mmap info for main nexe.
+node = env.CommandTest(
+    'sel_main_chrome_vcache_test.out',
+    env.AddBootstrap(sel_main_chrome_test,
+                     ['--test_validation_cache'] + test_command_args),
+    osenv=env_vars,
+    filter_regex='"(NaClElfFileMapSegment: EXERCISING MMAP LOAD PATH)"',
+    filter_group_only='true',
+    stderr_golden=env.File('../mmap_main_nexe/mmap_main_nexe_rpc.stderr'))
+env.AddNodeToTestSuite(node, ['small_tests', 'nonpexe_tests'],
+                       'run_sel_main_chrome_vcache_test',
+                       is_broken=not env.Bit('nacl_static_link'))
+
+# Disable the seg_gap tests for MIPS, since its SFI is based on data section
+# starting at 256 MB, so even nexes that do not use IRT have a gap.
+if env.Bit('build_mips32'):
+  Return()
+
+# Test 'irt_load_optional' can help skip loading the IRT if a nexe is built
+# without IRT support (a sufficient segment gap).
+# Also test that 'irt_load_optional' *can* load the IRT for a nexe that
+# *is* built with a segment gap and can work with the IRT.
+node = env.CommandTest(
+    'sel_main_chrome_irt_optional_with_seg_gap_test.out',
+    env.AddBootstrap(sel_main_chrome_test,
+                     ['--irt_load_optional'] + test_command_args),
+    osenv=env_vars,
+    stdout_golden=env.File('sel_main_chrome_guest.stdout'))
+env.AddNodeToTestSuite(node, ['small_tests', 'nonpexe_tests'],
+                       'run_sel_main_chrome_irt_optional_with_seg_gap_test',
+                       is_broken=not env.Bit('nacl_static_link'))
+
+# Only the PNaCl drivers have a flag for conveniently building with
+# no segment gap. The PNaCl sandboxed linker, though, does not allow
+# customizing link options so skip for that.
+# If the program is linked without the segment gap but not private libs,
+# it should crash. Just skip in this case, since it's more of a build
+# setup mistake.
+if (env.Bit('bitcode') and
+    not env.Bit('use_sandboxed_translator') and
+    not env.Bit('tests_use_irt')):
+  nogap_env = env.Clone()
+  if env.Bit('pnacl_generate_pexe'):
+    nogap_env.Append(TRANSLATEFLAGS=['--noirt'])
+  else:
+    nogap_env.Append(LINKFLAGS=['-Wt,--noirt', '--pnacl-allow-native'])
+  no_segment_gap_test_guest = nogap_env.ComponentProgram(
+      'nogap_sel_main_chrome_guest',
+      [test_guest_obj],
+      EXTRA_LIBS=['${NONIRT_LIBS}'])
+  no_segment_gap_test_guest = nogap_env.GetTranslatedNexe(
+      no_segment_gap_test_guest)
+  node = env.CommandTest(
+      'sel_main_chrome_irt_optional_no_seg_gap_test.out',
+      env.AddBootstrap(sel_main_chrome_test,
+                       ['--irt_load_optional', env.GetIrtNexe(),
+                        no_segment_gap_test_guest]),
+      osenv=env_vars,
+      filter_regex='"(Skipped NaClLoadIrt, irt_load_optional)"',
+      filter_group_only='true',
+      stderr_golden=env.File('nogap_sel_main_chrome_guest.stderr'))
+  env.AddNodeToTestSuite(node, ['small_tests', 'nonpexe_tests'],
+                         'run_sel_main_chrome_irt_optional_no_seg_gap_test',
+                         is_broken=not env.Bit('nacl_static_link'))

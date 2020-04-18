@@ -1,0 +1,63 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/shared_vars_css.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-a11y-announcer/iron-a11y-announcer.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-list/iron-list.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-styles/shadow.html">
+<link rel="import" href="chrome://bookmarks/command_manager.html">
+<link rel="import" href="chrome://bookmarks/item.html">
+<link rel="import" href="chrome://bookmarks/shared_style.html">
+<link rel="import" href="chrome://bookmarks/store_client.html">
+<link rel="import" href="chrome://bookmarks/util.html">
+<link rel="import" href="chrome://resources/html/list_property_update_behavior.html">
+
+<dom-module id="bookmarks-list">
+  <template>
+    <style include="shared-style">
+      :host {
+        min-width: 300px;
+        overflow-y: auto;
+        padding: 24px var(--card-padding-side) 24px
+            calc(var(--card-padding-side) - var(--splitter-width));
+      }
+
+      #list {
+        @apply --shadow-elevation-2dp;
+        background-color: #fff;
+        border-radius: var(--cr-card-border-radius);
+        margin: 0 auto;
+        max-width: var(--card-max-width);
+        padding: 8px 0;
+      }
+
+      .centered-message {
+        align-items: center;
+        color: #6e6e6e;
+        cursor: default;
+        display: flex;
+        font-size: 14px;
+        font-weight: 500;
+        height: 100%;
+        justify-content: center;
+        user-select: none;
+        white-space: nowrap;
+      }
+    </style>
+    <iron-list id="list"
+        items="[[displayedList_]]"
+        hidden$="[[isEmptyList_(displayedList_.length)]]"
+        role="group"
+        aria-label="$i18n{listAxLabel}">
+      <template>
+        <bookmarks-item item-id="[[item.id]]" draggable="true"
+            tabindex$="[[tabIndex]]" iron-list-tab-index="[[tabIndex]]">
+        </bookmarks-item>
+      </template>
+    </iron-list>
+    <div id="message" class="centered-message"
+        hidden$="[[!isEmptyList_(displayedList_.length)]]">
+      [[emptyListMessage_(searchTerm_)]]
+    </div>
+  </template>
+  <script src="chrome://bookmarks/list.js"></script>
+</dom-module>

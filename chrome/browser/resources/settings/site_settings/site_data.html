@@ -1,0 +1,97 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/html/assert.html">
+<link rel="import" href="chrome://resources/html/cr/ui/focus_without_ink.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/html/list_property_update_behavior.html">
+<link rel="import" href="chrome://resources/html/web_ui_listener_behavior.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_dialog/cr_dialog.html">
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-icon/iron-icon.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-list/iron-list.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-spinner/paper-spinner-lite.html">
+<link rel="import" href="../global_scroll_target_behavior.html">
+<link rel="import" href="../settings_page/settings_subpage_search.html">
+<link rel="import" href="../settings_shared_css.html">
+<link rel="import" href="cookie_info.html">
+<link rel="import" href="local_data_browser_proxy.html">
+<link rel="import" href="site_settings_behavior.html">
+
+<dom-module id="site-data">
+  <template>
+    <style include="settings-shared">
+      [first] {
+        border-top: none;
+      }
+
+      paper-spinner-lite {
+        @apply --cr-icon-height-width;
+        opacity: 0;
+        transition-delay: 1s;
+      }
+
+      paper-spinner-lite[active] {
+        opacity: 1;
+      }
+
+      #removeShowingSites {
+        -webkit-margin-start: auto;
+      }
+
+      .separator {
+        -webkit-padding-start: 0;
+      }
+    </style>
+    <div class="settings-box continuation">
+      <paper-spinner-lite active="[[isLoading_]]"></paper-spinner-lite>
+      <paper-button class="secondary-button"
+          disabled$="[[isLoading_]]" id="removeShowingSites"
+          on-click="onRemoveShowingSitesTap_" hidden$="[[!sites.length]]">
+        [[computeRemoveLabel_(filter)]]
+      </paper-button>
+    </div>
+    <iron-list id="list" items="[[sites]]" preserve-focus
+        scroll-target="[[subpageScrollTarget]]">
+      <template>
+        <div class="settings-box two-line site-item" first$="[[!index]]"
+            on-click="onSiteTap_" actionable>
+          <div class="favicon-image"
+              style$="background-image: [[favicon_(item.site)]]">
+          </div>
+          <div class="middle">
+            [[item.site]]
+            <div class="secondary">[[item.localData]]</div>
+          </div>
+          <paper-icon-button-light class="subpage-arrow">
+            <button aria-label$="[[item.site]]"></button>
+          </paper-icon-button-light>
+          <div class="separator"></div>
+          <paper-icon-button-light class="icon-delete-gray">
+            <button title$="[[i18n('siteSettingsCookieRemoveSite', item.site)]]"
+                on-click="onRemoveSiteTap_">
+            </button>
+          </paper-icon-button-light>
+        </div>
+      </template>
+    </iron-list>
+
+    <!-- Confirm Delete dialog -->
+    <cr-dialog id="confirmDeleteDialog" close-text="$i18n{close}"
+        on-close="onConfirmDeleteDialogClosed_">
+      <div slot="title">
+        $i18n{siteSettingsCookieRemoveDialogTitle}
+      </div>
+      <div slot="body">$i18n{siteSettingsCookieRemoveMultipleConfirmation}</div>
+      <div slot="button-container">
+        <paper-button class="cancel-button" on-click="onCloseDialog_">
+          $i18n{cancel}
+        </paper-button>
+        <paper-button class="action-button" on-click="onConfirmDelete_">
+          $i18n{siteSettingsCookiesClearAll}
+        </paper-button>
+      </div>
+    </cr-dialog>
+  </template>
+  <script src="site_data.js"></script>
+</dom-module>

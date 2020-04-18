@@ -1,0 +1,87 @@
+diff -ur qemu-2.3.0/linux-user/elfload.c qemu-2.3.0.patched/linux-user/elfload.c
+--- qemu-2.3.0/linux-user/elfload.c	2015-04-27 07:08:25.000000000 -0700
++++ qemu-2.3.0.patched/linux-user/elfload.c	2015-04-28 12:02:11.459311636 -0700
+@@ -1304,7 +1304,7 @@
+ #ifdef USE_ELF_CORE_DUMP
+ static int elf_core_dump(int, const CPUArchState *);
+ #endif /* USE_ELF_CORE_DUMP */
+-static void load_symbols(struct elfhdr *hdr, int fd, abi_ulong load_bias);
++void load_symbols(struct elfhdr *hdr, int fd, abi_ulong load_bias);
+ 
+ /* Verify the portions of EHDR within E_IDENT for the target.
+    This can be performed before bswapping the entire header.  */
+@@ -2062,7 +2062,7 @@
+ }
+ 
+ /* Best attempt to load symbols from this ELF object. */
+-static void load_symbols(struct elfhdr *hdr, int fd, abi_ulong load_bias)
++void load_symbols(struct elfhdr *hdr, int fd, abi_ulong load_bias)
+ {
+     int i, shnum, nsyms, sym_idx = 0, str_idx = 0;
+     struct elf_shdr *shdr;
+Only in qemu-2.3.0.patched/linux-user: elfload.c.orig
+diff -ur qemu-2.3.0/linux-user/main.c qemu-2.3.0.patched/linux-user/main.c
+--- qemu-2.3.0/linux-user/main.c	2015-04-27 07:08:25.000000000 -0700
++++ qemu-2.3.0.patched/linux-user/main.c	2015-04-28 12:02:11.459311636 -0700
+@@ -3650,6 +3650,38 @@
+     exit(0);
+ }
+ 
++// @LOCAL-MOD-START
++// zero initialized and zero terminated
++#define NACL_ELF_MAX 10
++struct syminfo* extra_syminfo[NACL_ELF_MAX + 1];
++#include "elf.h"
++void load_symbols(struct elf32_hdr *hdr, int fd, abi_ulong load_bias);
++
++static void handle_arg_nacl_extra_elf(const char *arg) {
++  int i;
++  for (i=0; i< NACL_ELF_MAX; ++i) {
++    if (extra_syminfo[i] == 0) break;
++  }
++
++  if (i >= NACL_ELF_MAX) {
++    printf("ERROR: too many extra symbol files\n");
++  }
++
++  printf("adding symbols from %s\n", arg);
++
++  struct elf32_hdr elf_ex;
++  int fd;
++  fd = open(arg, O_RDONLY);
++  if (fd <= 0) {
++    printf("ERROR: opening secondary exe %s\n", filename);
++    return;
++  }
++  
++  read(fd, &elf_ex, sizeof elf_ex);
++  load_symbols(&elf_ex, fd, 0);
++}
++
++  
+ struct qemu_argument {
+     const char *argv;
+     const char *env;
+@@ -3699,6 +3731,8 @@
+      "",           "Seed for pseudo-random number generator"},
+     {"version",    "QEMU_VERSION",     false, handle_arg_version,
+      "",           "display version information and exit"},
++    {"nacl_extra_elf",    "",     true, handle_arg_nacl_extra_elf,
++     "",           ""},
+     {NULL, NULL, false, NULL, NULL, NULL}
+ };
+ 
+@@ -3883,6 +3917,12 @@
+ 
+     optind = parse_args(argc, argv);
+ 
++    // @LOCALMOD-START
++    if (qemu_loglevel_mask(CPU_LOG_EXEC)) {
++      printf("qemu with NACL mods\n");
++    }
++    // @LOCALMOD-END
++    
+     /* Zero out regs */
+     memset(regs, 0, sizeof(struct target_pt_regs));
+ 
+Only in qemu-2.3.0.patched/linux-user: main.c.orig

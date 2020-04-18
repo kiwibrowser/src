@@ -1,0 +1,97 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// Include test fixture.
+GEN_INCLUDE(['walker_unittest_base.js']);
+
+/**
+ * Test fixture.
+ * @constructor
+ * @extends {CvoxWalkerTestBase}
+ */
+function CvoxObjectWalkerUnitTest() {}
+
+CvoxObjectWalkerUnitTest.prototype = {
+  __proto__: CvoxWalkerUnitTestBase.prototype,
+
+  /** @override */
+  closureModuleDeps: CvoxWalkerUnitTestBase.prototype.closureModuleDeps.concat(
+      'cvox.ObjectWalker'),
+
+  /** @override */
+  newWalker: function() {
+    return new cvox.ObjectWalker();
+  },
+
+  /**
+   * Set up for simple html tests.
+   * @private
+   */
+  setUpSimpleHtml_: function() {
+    this.loadDoc(function() {/*!
+      <div id="a">
+        <p id="b">b</p>
+        <p id="c">c</p>
+      </div>
+    */});
+  }
+};
+
+CvoxWalkerUnitTestBase.addCommonTests('CvoxObjectWalkerUnitTest');
+
+TEST_F('CvoxObjectWalkerUnitTest', 'testSimpleForwardSync', function() {
+  this.setUpSimpleHtml_();
+
+  // invalid selection
+  var sel = cvox.CursorSelection.fromNode($('a'));
+  var ret = this.go(sel, 'sync', {selParentNodeId: 'b', selReversed: false});
+
+  // valid selection
+  var ret2 = this.walker.sync(ret);
+  assertTrue(ret2.equals(ret));
+});
+
+TEST_F('CvoxObjectWalkerUnitTest', 'testSimpleReversedSync', function() {
+  this.setUpSimpleHtml_();
+
+  // invalid selection
+  var sel = cvox.CursorSelection.fromNode($('a'));
+  sel.setReversed(true);
+  var ret = this.go(sel, 'sync', {selParentNodeId: 'c', selReversed: true});
+
+  // valid selection
+  var ret2 = this.walker.sync(ret);
+  assertTrue(ret2.equals(ret));
+});
+
+TEST_F('CvoxObjectWalkerUnitTest', 'testSimpleForwardNext', function() {
+  this.setUpSimpleHtml_();
+
+  var sel = cvox.CursorSelection.fromNode($('a'));
+  sel = this.walker.sync(sel);
+  var ret = this.go(sel, 'next', {selParentNodeId: 'c', selReversed: false});
+});
+
+TEST_F('CvoxObjectWalkerUnitTest', 'testSimpleReversedNext', function() {
+  this.setUpSimpleHtml_();
+
+  var sel = cvox.CursorSelection.fromNode($('a'));
+  sel = this.walker.sync(sel.setReversed(true));
+  var ret = this.go(sel, 'next', {selParentNodeId: 'b', selReversed: true});
+});
+
+/** tests for unbroken anchor link descriptions. */
+TEST_F('CvoxObjectWalkerUnitTest', 'testAnchorLinkDescriptions', function() {
+  this.loadDoc(function() {/*!
+    <a href='a1.html' id='a1'>
+      This link <em>has</em> a few <strong>complications.</strong>
+    </a>
+  */});
+
+  var sel = this.walker.sync(
+      cvox.CursorSelection.fromNode($('a1')));
+  assertEquals('A', sel.start.node.tagName);
+  assertEquals('This link has a few complications.',
+               this.walker.getDescription(sel, sel)[0].text);
+});

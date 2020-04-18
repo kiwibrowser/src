@@ -1,0 +1,14 @@
+# -*- python -*-
+# Copyright 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# We are testing a GNU C extension which is disallowed by "-pedantic" mode.
+env.FilterOut(CCFLAGS=['-pedantic'])
+
+prog = env.ComponentProgram('computed_goto', 'computed_goto.c',
+                            EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl('computed_goto_test.out', prog)
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_computed_goto_test')

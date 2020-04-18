@@ -1,0 +1,29 @@
+# -*- python -*-
+# Copyright (c) 2013 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# This is a regression test for bugs in x86-64 stack unwinding in the
+# PNaCl toolchain's version of libgcc_eh, which is used for C++
+# exception handling.
+# See https://code.google.com/p/nativeclient/issues/detail?id=1933
+# and https://code.google.com/p/nativeclient/issues/detail?id=3486
+#
+# The test could be extended to test x86-32 and ARM, but currently it
+# only has assembly code for x86-64.
+if not env.Bit('build_x86_64'):
+  Return()
+
+if env.Bit('bitcode'):
+  Return()
+
+nexe = env.ComponentProgram(
+    'unwind_restores_regs',
+    ['unwind_restores_regs.cc', 'try_block_x86_64.S'],
+    EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl('unwind_restores_regs.out', nexe)
+env.AddNodeToTestSuite(
+    node, ['small_tests', 'toolchain_tests', 'eh_tests', 'nonpexe_tests'],
+    'run_unwind_restores_regs_test')

@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+<head>
+<title>getUserMedia: test that mediaDevices.getUserMedia is present</title>
+<link rel="author" title="Dr Alex Gouaillard" href="mailto:agouaillard@gmail.com"/>
+<link rel="help" href="https://w3c.github.io/mediacapture-main/#mediadevices-interface-extensions">
+<meta name='assert' content='Check that the mediaDevices.getUserMedia() method is present.'/>
+</head>
+<body>
+<h1 class="instructions">Description</h1>
+<p class="instructions">This test checks for the presence of the
+<code>navigator.mediaDevices.getUserMedia</code> method.</p>
+<div id='log'></div>
+<script src=/resources/testharness.js></script>
+<script src=/resources/testharnessreport.js></script>
+<script>
+test(function () {
+  assert_true(undefined !== navigator.mediaDevices.getUserMedia, "navigator.mediaDevices.getUserMedia exists.");
+  // TODO: do some stuff with it
+  assert_true(undefined !== navigator.mediaDevices.getSupportedConstraints, "navigator.mediaDevices.getSupportedConstraints exists.");
+  var list = navigator.mediaDevices.getSupportedConstraints();
+  // TODO: we are supposed to check that all values returned can be used in a constraint ....
+  // NOTE: the current list of attributes that may or may not be here
+  // ...   FF for example has many no tin that list, should we fail if an attribute is present but not listed in the specs?
+  //   list.width
+  //   list.height
+  //   list.aspectRatio
+  //   list.frameRate
+  //   list.facingMode
+  //   list.volume
+  //   list.sampleRate
+  //   list.sampleSize
+  //   list.echoCancellation
+  //   list.latency
+  //   list.channelCount
+  //   list.deviceId
+  //   list.groupId
+  }, "mediaDevices.getUserMedia() is present on navigator");
+
+promise_test(t => {
+  return navigator.mediaDevices.enumerateDevices()
+    .then(t.step_func(async devices => {
+      for (var i in devices) {
+        await navigator.mediaDevices.getUserMedia(
+          {video: {groupId: {exact: devices[i].groupId}}})
+            .then(
+              t.step_func(stream => {
+                var found_device = devices.find(element => {
+                  return element.deviceId ==
+                           stream.getTracks()[0].getSettings().deviceId;
+                });
+                assert_true(undefined !== found_device);
+                assert_equals(found_device.kind, "videoinput");
+                assert_equals(found_device.groupId, devices[i].groupId);
+              }),
+              t.step_func(error => {
+                assert_equals(error.name, "OverconstrainedError");
+                assert_equals(error.constraint, "groupId");
+                var found_device = devices.find(element => {
+                  return element.kind == "videoinput" &&
+                        element.groupId == devices[i].groupId});
+                assert_true(undefined === found_device);
+              }));
+      }
+    }));
+}, 'groupId is correctly supported by getUserMedia() for video devices');
+</script>
+</body>
+</html>

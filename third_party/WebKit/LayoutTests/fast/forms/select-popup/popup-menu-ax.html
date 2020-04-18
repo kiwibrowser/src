@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script src="../../../resources/js-test.js"></script>
+<script src="../../forms/resources/picker-common.js"></script>
+<p id="description"></p>
+<div id="console"></div>
+<select id="menu">
+  <option>foo</option>
+  <option selected>bar</option>
+  <option>qux</option>
+  <option>baz</option>
+</select>
+
+<script>
+description('Tests if typing an arrow key dispatches a |MenuListItemSelected| a11y event.');
+
+accessibilityController.setNotificationListener(function(axnode, type) {
+    if (type == 'MenuListItemSelected') {
+        testPassed('Received MenuListItemSelected');
+        finishJSTest();
+    }
+});
+var menu = document.getElementById('menu');
+openPicker(menu, test1, function () {
+    testFailed('picker didn\'t open')
+    finishJSTest();
+});
+
+function test1() {
+    eventSender.keyDown('ArrowDown');
+}
+
+</script>
+</body>
+</html>

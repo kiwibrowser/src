@@ -1,0 +1,168 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+/**
+ * Test fixture for paragraph_utils.js.
+ * @constructor
+ * @extends {testing.Test}
+ */
+function SelectToSpeakParagraphUnitTest () {
+  testing.Test.call(this);
+}
+
+SelectToSpeakParagraphUnitTest.prototype = {
+  __proto__: testing.Test.prototype,
+
+  /** @override */
+  extraLibraries: [
+    'test_support.js',
+    'paragraph_utils.js'
+  ]
+};
+
+TEST_F('SelectToSpeakParagraphUnitTest', 'GetFirstBlockAncestor', function() {
+  let root = {role: 'rootWebArea'};
+  let paragraph = {role: 'paragraph', parent: root, root: root};
+  let text1 = {role: 'staticText', parent: paragraph, display: 'block',
+      root: root};
+  let text2 = {role: 'staticText', parent: root, root: root};
+  let text3 = {role: 'inlineTextBox', parent: text1, root: root};
+  let div = {role: 'genericContainer', parent: paragraph, display: 'block',
+      root: root};
+  let text4 = {role: 'staticText', parent: div, root: root};
+  assertEquals(paragraph, getFirstBlockAncestor(text1));
+  assertEquals(root, getFirstBlockAncestor(text2));
+  assertEquals(paragraph, getFirstBlockAncestor(text3));
+  assertEquals(div, getFirstBlockAncestor(text4));
+});
+
+TEST_F('SelectToSpeakParagraphUnitTest', 'InSameParagraph', function() {
+  let root = {role: 'rootWebArea'};
+  let paragraph1 = {role: 'paragraph', display: 'block', parent: 'rootWebArea',
+      root: root};
+  let text1 = {role: 'staticText', parent: paragraph1, root: root};
+  let text2 = {role: 'staticText', parent: paragraph1, root: root};
+  let paragraph2 = {role: 'paragraph', display: 'block', parent: 'rootWebArea',
+      root: root};
+  let text3 = {role: 'staticText', parent: paragraph2, root: root};
+  assertTrue(inSameParagraph(text1, text2));
+  assertFalse(inSameParagraph(text1, text3));
+});
+
+TEST_F('SelectToSpeakParagraphUnitTest', 'BlockDivBreaksSameParagraph',
+    function() {
+  let root = {role: 'rootWebArea'};
+  let paragraph1 = {role: 'paragraph', display: 'block', parent: 'rootWebArea',
+      root: root};
+  let text1 = {role: 'staticText', parent: paragraph1, root: root};
+  let text2 = {role: 'image', parent: paragraph1, display: 'block', root: root};
+  let text3 = {role: 'image', parent: paragraph1, display: 'inline', root: root};
+  let text4 = {role: 'staticText', parent: paragraph1, root: root};
+  assertFalse(inSameParagraph(text1, text2));
+  assertFalse(inSameParagraph(text2, text3));
+  assertTrue(inSameParagraph(text3, text4));
+});
+
+TEST_F('SelectToSpeakParagraphUnitTest', 'IsWhitespace', function() {
+  assertTrue(isWhitespace(''));
+  assertTrue(isWhitespace(' '));
+  assertTrue(isWhitespace(' \n \t '));
+  assertFalse(isWhitespace('cats'));
+  assertFalse(isWhitespace(' cats '));
+});
+
+TEST_F('SelectToSpeakParagraphUnitTest', 'GetStartCharIndexInParent',
+    function() {
+  let staticText = {role: 'staticText', name: 'My name is Bond, James Bond'};
+  let inline1 = {role: 'inlineTextBox', name: 'My name is ', indexInParent: 0,
+                 parent: staticText};
+  let inline2 = {role: 'inlineTextBox', name: 'Bond, ', indexInParent: 1,
+                 parent: staticText};
+  let inline3 = {role: 'inlineTextBox', name: 'James Bond', indexInParent: 2,
+                 parent: staticText};
+  staticText.children = [inline1, inline2, inline3];
+  assertEquals(getStartCharIndexInParent(inline1), 0);
+  assertEquals(getStartCharIndexInParent(inline2), 11);
+  assertEquals(getStartCharIndexInParent(inline3), 17);
+});
+
+TEST_F('SelectToSpeakParagraphUnitTest', 'FindInlineTextNodeByCharIndex',
+    function() {
+  let staticText = {role: 'staticText', name: 'My name is Bond, James Bond'};
+  let inline1 = {role: 'inlineTextBox', name: 'My name is '};
+  let inline2 = {role: 'inlineTextBox', name: 'Bond, '};
+  let inline3 = {role: 'inlineTextBox', name: 'James Bond'};
+  staticText.children = [inline1, inline2, inline3];
+  assertEquals(findInlineTextNodeByCharacterIndex(staticText, 0), inline1);
+  assertEquals(findInlineTextNodeByCharacterIndex(staticText, 10), inline1);
+  assertEquals(findInlineTextNodeByCharacterIndex(staticText, 11), inline2);
+  assertEquals(findInlineTextNodeByCharacterIndex(staticText, 16), inline2);
+  assertEquals(findInlineTextNodeByCharacterIndex(staticText, 17), inline3);
+  assertEquals(findInlineTextNodeByCharacterIndex(staticText, 50), inline3);
+  staticText.children = [];
+  assertEquals(findInlineTextNodeByCharacterIndex(staticText, 10), null);
+});
+
+TEST_F('SelectToSpeakParagraphUnitTest', 'BuildNodeGroupStopsAtNewParagraph',
+    function() {
+  let root = {role: 'rootWebArea'};
+  let paragraph1 = {role: 'paragraph', display: 'block', parent: root,
+      root: root};
+  let text1 = {role: 'staticText', parent: paragraph1, name: 'text1',
+      root: root};
+  let text2 = {role: 'staticText', parent: paragraph1, name: 'text2',
+      root: root};
+  let paragraph2 = {role: 'paragraph', display: 'block', parent: root,
+      root: root};
+  let text3 = {role: 'staticText', parent: paragraph2, name: 'text3',
+      root: root};
+  let result = buildNodeGroup([text1, text2, text3], 0);
+  assertEquals('text1 text2 ', result.text);
+  assertEquals(1, result.endIndex);
+  assertEquals(2, result.nodes.length);
+  assertEquals(0, result.nodes[0].startChar);
+  assertEquals(text1, result.nodes[0].node);
+  assertEquals(6, result.nodes[1].startChar);
+  assertEquals(text2, result.nodes[1].node);
+  assertEquals(paragraph1, result.blockParent);
+});
+
+TEST_F('SelectToSpeakParagraphUnitTest', 'BuildNodeGroupIncludesLinks',
+    function() {
+  let root = {role: 'rootWebArea'};
+  let paragraph1 = {role: 'paragraph', display: 'block', parent: root,
+      root: root};
+  let text1 = {role: 'staticText', parent: paragraph1, name: 'text1',
+      root: root};
+  // Whitespace-only nodes should be ignored.
+  let text2 = {role: 'staticText', parent: paragraph1, name: '\n',
+      root: root};
+  let link = {role: 'link', parent: paragraph1, root: root};
+  let linkText = {role: 'staticText', parent: link, name: 'linkText',
+      root: root};
+  let result = buildNodeGroup([text1, text2, linkText], 0);
+  assertEquals('text1 linkText ', result.text);
+  assertEquals(2, result.endIndex);
+  assertEquals(2, result.nodes.length);
+  assertEquals(0, result.nodes[0].startChar);
+  assertEquals(text1, result.nodes[0].node);
+  assertEquals(6, result.nodes[1].startChar);
+  assertEquals(linkText, result.nodes[1].node);
+  assertEquals(paragraph1, result.blockParent);
+});
+
+TEST_F('SelectToSpeakParagraphUnitTest', 'BuildNodeGroupNativeTextBox',
+    function() {
+  let root = {role: 'desktop'};
+  let parent = {role: 'pane', parent: root, root: root};
+  let searchBar = {role: 'textField', name: 'Address and search bar',
+      value: 'http://www.google.com', children: []};
+  let result = buildNodeGroup([searchBar], 0);
+  assertEquals('http://www.google.com ', result.text);
+
+  // If there is no value, it should use the name.
+  searchBar.value = '';
+  result = buildNodeGroup([searchBar], 0);
+  assertEquals('Address and search bar ', result.text);
+});

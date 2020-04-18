@@ -1,0 +1,39 @@
+include_rules = [
+  # Only public interfaces allowed. See //ash/README.md
+  "+ash/public/cpp",
+  "+components/chrome_apps",
+  "+components/crx_file",
+  "+components/strings/grit/components_strings.h",
+  "+components/user_manager",
+  "+extensions/strings/grit/extensions_strings.h",
+  "+ui/base",
+  "+components/arc",
+  "+components/vector_icons",
+  "+services/network/public/mojom",
+
+  # For access to testing command line switches.
+  "+ppapi/shared_impl",
+]
+specific_include_rules = {
+  "bookmark_app_helper\.cc": [
+    # TODO(mash): Remove. http://crbug.com/678705
+    "+ash/shell.h",
+  ],
+  "display_info_provider_chromeos(|_unittest)\.cc": [
+    # TODO(mash): Remove. http://crbug.com/678705
+    "+ash/display",
+    "+ash/shell.h",
+    "+ash/test",
+    "+ash/touch",
+    "+ash/wm/tablet_mode/tablet_mode_controller.h",
+  ],
+  "extension_protocols_unittest\.cc": [
+    "+services/network/test",
+  ],
+  "zipfile_installer_unittest.cc": [
+    "+services/data_decoder",
+  ],
+  "test_extension_system.cc": [
+    "+services/data_decoder",
+  ],
+}

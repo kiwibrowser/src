@@ -1,0 +1,51 @@
+@hex:
+  # Tests that push operand sizes work correctly.
+  
+  # The following tests the default size (which is 4 bytes).
+  68 03 04 05 06
+@dis:
+     0:	68 03 04 05 06                               	pushq  $0x6050403
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # The following tests that rex.w doesn't affect the size.
+  48 68 03 04 05 06
+  90
+  90
+  90
+  90
+@dis:
+     0:	48 68 03 04 05 06                            	rex.W pushq $0x6050403
+     6:	90                                           	nop
+     7:	90                                           	nop
+     8:	90                                           	nop
+     9:	90                                           	nop
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # The following tests that data66 defines the size as 2 bytes.
+  # pushw $0x0403
+  66 68 03 04
+@dis:
+     0:	66 68 03 04                                  	pushw  $0x403
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # The following shows that we don't allow rex.w and a data 66 prefix.
+  66 48 68 03 04 90 90
+@dis:
+     0:	66 48 68 03 04 90 90                         	data32 rex.W pushq $0xffffffff90900403
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('prefix data32 is not allowed', Instruction(0x0: 66 48 68 03 04 90 90  data32 pushq $0xffffffff90900403))

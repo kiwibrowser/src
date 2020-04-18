@@ -1,0 +1,29 @@
+@hex:
+  e3 fe
+@dis:
+     0:	e3 fe                                        	jrcxz  0x0
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  e3 ff
+@dis:
+     0:	e3 ff                                        	jrcxz  0x1
+@rdfa_output:
+  0: bad jump target
+  return code: 1
+@spec:
+  0: jump into a middle of instruction (0x1)
+----------------------------------------------------------------------
+@hex:
+  # Since jecxz truncates rip to 32 bits, it's unsafe.
+  67 e3 fd
+@dis:
+     0:	67 e3 fd                                     	jecxz  0x0
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('disallowed form of jcxz instruction', Instruction(0x0: 67 e3 fd  jecxz 0x0))

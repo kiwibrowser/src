@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<title>Test "-webkit-box-reflect" property on a video element.</title>
+<script src="../../resources/run-after-layout-and-paint.js"></script>
+<style>
+video {
+    -webkit-box-reflect: below 0px;
+    border: 3px solid red;
+}
+</style>
+<video></video>
+<script>
+testRunner.dumpAsTextWithPixelResults();
+testRunner.waitUntilDone();
+
+var video = document.querySelector('video');
+video.onseeked = function() {
+    video.onseeked = null;
+    runAfterLayoutAndPaint(function() {}, true);
+};
+
+video.src = '../../media/content/test.ogv';
+video.currentTime = 1;
+</script>

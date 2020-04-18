@@ -1,0 +1,262 @@
+<h1>Transitioning from Chrome apps on Windows, Mac, and Linux</h1>
+
+<p>Chrome packaged and hosted apps will be discontinued on Windows, Mac,
+and Linux over the course of now and early 2018.
+For more information, refer to the August 2016
+<a href="https://blog.chromium.org/2016/08/from-chrome-apps-to-web.html">Chromium blog post</a>.
+This transition does not apply to Chrome OS,
+where Chrome packaged and hosted apps will remain supported and maintained for the foreseeable future.</p>
+
+<p>To transition away from a Chrome packaged or hosted app on Windows, Mac, and Linux,
+the following options are available. <p>
+
+<h2 id="apps">Chrome packaged apps</h2>
+
+<p>Recommended migration options for packaged apps are listed
+in order from simplest to most complicated.</p>
+
+<h3 id="build-app">Build a web app</h3>
+
+<p>Building a web app on top of the web platform is the ideal way
+to reach users across platforms.</p>
+
+<p>We are investigating ways to improve the migration path to the web for developers that depend on exclusive Chrome App APIs
+- in particular the Sockets, HID, fileSystem and Serial APIs.
+If there are web platform features you need that are only available in select browsers,
+you can use feature detection to gracefully degrade or include explanatory text
+when your app is run in a browser that doesn’t support a particular API.
+If there are gaps in the web platform for your application, please
+<a href="https://docs.google.com/a/google.com/forms/d/e/1FAIpQLSenHdpA8_eqKiVOrWDjWe_KTfJmoSBEqFIh6SMwQ-NRDJnx1Q/viewform?c=0&w=1">let us know</a>.<p/>
+
+<p>An experimental tool that can help migrate simple Chrome Apps to
+<a href="https://developers.google.com/web/progressive-web-apps/">Progressive Web Apps</a>
+is <a href="https://github.com/chromium/caterpillar">Caterpillar</a>.
+This tool can insert JavaScript to substitute Chrome Apps APIs you might be using.
+It is currently limited to handling only certain types of apps.
+In particular,
+apps that contain processing in background pages will not be converted.</p>
+
+<p>In the future,
+Progressive Web Apps (PWAs) will become installable on desktop platforms.
+Users will be able to install web apps to the desktop
+and launch them via icons and shortcuts,
+similar to the way that Chrome Apps can be installed today.
+This functionality is expected to launch sometime during 2018.</p>
+
+
+<h3 id="extension-web-page">Build an extension-enhanced web page</h3>
+
+<p>If there is a capability that your Chrome App has
+that the regular web platform can’t provide, it might be available as an
+<a href="https://developer.chrome.com/extensions/api_index">extension API</a>.
+In this case, you can continue using a
+<a href="https://developer.chrome.com/extensions/messaging#external-webpage">regular web app together with an externally connectable extension your web app can send messages to</a>.
+Building a web app is typically preferable to this,
+because this approach forces users to install an extension
+that is only useful on your site and can cause increased friction.</p>
+
+<p>As Chrome extensions can’t be run on other browsers,
+you should detect when required functionality isn’t available and
+provide explanatory text for users on these other browsers.</p>
+
+<h3 id="extension">Build an extension</h3>
+
+<p>Depending on the user experience you want to provide,
+it might make sense to convert your app over to an extension.
+For example you could provide a
+<a href="https://developer.chrome.com/extensions/browserAction">browser action</a>
+button which shows a small popup window for your user interface,
+or navigates to a page your extension provides.
+For some apps,
+this might be a good enough user experience to be a viable solution.</p>
+
+<p>Note there are significant costs to this approach.
+Users that do not use Chrome will not be supported,
+and there will be significant friction for your users to install your extension.</p>
+
+<h2 id="app-faqs">FAQs</h2>
+
+<h3 id="users"><strong>Q: My Chrome App has many users.
+What’s the best way to migrate them to my new web app and
+deprecate my Chrome App?</strong></h3>
+
+<p>You will still be able to publish updates to your Chrome App
+until the runtime is removed in early 2018.
+We recommend updating your app to include a message indicating
+that your app has been discontinued,
+and that users should visit your website going forward (see example below).
+You can also include an “uninstall” button that calls the
+<a href="https://developer.chrome.com/extensions/management#method-uninstallSelf">uninstallSelf function</a>.</p>
+
+<img src="{{static}}/images/photo.png" width="598" height="468" alt="Uninstall message."/>
+
+<h3 id="launcher"><strong>Q: I want to continue to have a UI affordance
+that enables users to launch my app from the taskbar/dock/app shelf.
+What should I do?</strong></h3>
+
+<p>This is still possible with web apps, but it is up to the user.
+On all desktop platforms except Mac, users can
+<a href="https://support.google.com/chrome_webstore/answer/3060053?hl=en">add ‘bookmark apps’ to their shelf / desktop</a>,
+which optionally run your web app in its own window.</p>
+
+<p>In the future,
+Progressive Web Apps (PWAs) will become installable on desktop platforms.
+Users will be able to install web apps to the desktop and launch them via icons and shortcuts, similar to the way that Chrome Apps can be installed today.
+This functionality is expected to launch sometime during 2018.</p>
+
+<h3 id="window"><strong>Q: I want my app to run in its own window, not in a tab.
+Is this something I can do with a web app?</strong></h3>
+
+<p>Yes, but it is up to the user. On desktop platforms other than OS X,
+users can add ‘bookmark apps’ to their shelf / desktop,
+which optionally run your web app in its own window.</p>
+
+<h3 id="shortcuts"><strong>Q: My app supports keyboard shortcuts.
+Can the web support this also?</strong></h3>
+
+<p>Web apps can support keyboard shortcuts by listening to the various key events
+(e.g. <a href="https://developer.mozilla.org/en-US/docs/Web/Events/keydown">keydown</a>),
+but the shortcuts you can support are limited. For example,
+you cannot intercept Ctrl+N, Ctrl+T etc. as these are used by the browser.
+Or, these might be shortcuts that are handled by the operating system
+(e.g. Alt+Tab on Windows).</p>
+
+<p>Work <a href="https://github.com/jondahlke/system-keyboard-lock/">has begun</a>
+to allow developers to intercept these additional shortcuts on the web,
+but this is not yet ready for use.</p>
+
+<p>The <a href="https://developer.chrome.com/extensions/commands">Extension Commands API</a>
+supports richer keyboard shortcuts which operate across the entire browser,
+which may enable new capabilities if transitioning to an extension is possible.</p>
+
+<h3 id="offline"><strong>Q: My app needs to run when the user is offline.
+Can I do that with a web app?</strong></h3>
+
+<p>Yes,
+you can <a href="https://developers.google.com/web/fundamentals/getting-started/your-first-offline-web-app/">use service workers to make your site run offline</a>.</p>
+
+<h3 id="gcm"><strong>Q: My app uses the chrome.gcm API to receive push messages
+from the cloud. Can the open web do that?</strong></h3>
+
+<p>Yes, the
+<a href="https://developers.google.com/web/fundamentals/engage-and-retain/push-notifications/">Push API and Notifications API</a>
+provide the ability to show your user push notifications even when the page is closed.</p>
+
+<h3 id="show"><strong>Q: My app needs to be able to show notifications
+to the user even when it has no windows open. Can I do that with the open web?</strong></h3>
+
+<p>Yes, the
+<a href="https://developers.google.com/web/fundamentals/engage-and-retain/push-notifications/">Push API and Notifications API</a> provide this functionality.</p>
+
+<h3 id="bluetooth"><strong>Q: My app uses chrome.bluetooth/chrome.usb
+to talk to a Bluetooth/USB device. Can this be done on the open web?</strong></h3>
+
+<p>There are now proposals for new
+<a href="https://developers.google.com/web/updates/2015/07/interact-with-ble-devices-on-the-web">Web Bluetooth</a>
+and
+<a href="https://wicg.github.io/webusb/">WebUSB</a> standards,
+designed to allow this functionality.
+A subset of the Web Bluetooth API is now enabled in Chrome on Android, Chrome OS, and Mac.</p>
+
+<h3 id="filesystem"><strong>Q: My app uses the chrome.fileSystem API to read
+and write user-specified files and / or directories.
+Can this be done on the open web?</strong></h3>
+
+<p>In general, no.
+The open web can read single files that the user opens,
+but cannot retain access to those files, write to those files,
+or have any access to directories.</p>
+
+<p>If it is critical for your app to read and write directories
+(e.g. it is a text editor with a folder view),
+you will need to either have a
+<a href="https://developer.chrome.com/extensions/nativeMessaging">native helper app and extension combo</a>,
+or create a native app.</p>
+
+<h3 id="sockets"><strong>Q: My app uses the chrome sockets API to do networking.
+Can this be done with the open web?</strong></h3>
+
+<p>You might be able to do what you need with
+<a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API">WebSockets</a>.
+However, to use this, you will likely need to change the remote end of your connection.
+If that isn’t possible
+(e.g. you’re connecting over an established protocol like IRC or SSH),
+you’ll need some sort of native component.</p>
+
+<h2 id="hosted-apps">Chrome hosted apps</h2>
+
+<h2 id="hosted-faqs">FAQs</h2>
+
+<h3 id="notifications"><strong>Q: My hosted app uses the notifications permission.
+How do I do that on the web?</strong></h3>
+
+<p>As of Chrome 42, you can send
+<a href="https://developers.google.com/web/fundamentals/engage-and-retain/push-notifications/?hl=en">push notifications via your web application</a>.
+Check out this
+<a href="https://developers.google.com/web/fundamentals/getting-started/push-notifications/">codelab</a>
+to get started.</p>
+
+<h3 id="persistent"><strong>Q: My hosted app uses the unlimitedStorage permission.
+How do I do that on the web? </strong></h3>
+
+<p>The unlimitedStorage permission ensured that data you store was ‘Persistent’,
+which means it can only be cleared manually by the user.</p>
+
+<p>The recommended alternative is to use
+<a href="https://developers.google.com/web/updates/2016/06/persistent-storage?hl=en">Persistent Storage</a>
+in your web app.
+As of Chrome 52, Persistent Storage is available as an
+<a href="https://github.com/jpchase/OriginTrials/blob/gh-pages/developer-guide.md#how-do-i-enable-an-experimental-feature-on-my-origin">Origin Trial</a>.
+To use this API in Chrome Stable,
+you will need to request a token and insert it in your web application.</p>
+
+<h3 id="geolocation"><strong>Q: My hosted app uses the geolocation permission.
+How do I do that on the web? </strong></h3>
+
+<p>The <a href="https://dev.w3.org/geo/api/spec-source.html">HTML5 geolocation API</a>
+can be used in web apps to locate a user’s position.</p>
+
+<p>Note: As of Chrome 50,
+the Geolocation API will only work on secure contexts such as HTTPS.
+If your site is hosted on an non-secure origin (such as HTTP),
+the requests to get the user’s location will no longer function.</p>
+
+<h3 id="background"><strong>Q: My hosted app uses the background permission.
+How do I do that on the web? </strong></h3>
+
+<p>To ensure minimal power consumption we have been careful
+about introducing a generic method for sites to run in the background
+on user’s devices.</p>
+
+<p>As of Chrome 49,
+sites can ensure actions taken by the user are synced to the server using the
+<a href="https://developers.google.com/web/updates/2015/12/background-sync?hl=en">Background Sync API</a>.
+This API allows sites to run some limited code in the background
+when the device re-connects to the internet,
+even if the tab has since been closed.
+Note that this API doesn’t allow for the service worker
+to be woken up periodically.</p>
+
+<p>In the future,
+we hope to introduce a quota-limited ability for sites to wake up their service worker
+by sending a push message but without being required to show the user a notification.
+You can follow the progress of this work by starring
+<a href="https://bugs.chromium.org/p/chromium/issues/detail?id=617971&desc=2">this issue</a>
+in the Chromium Issues Tracker.</p>
+
+<h3 id="clipboard-write"><strong>Q: My hosted app uses the clipboardWrite permission.
+How do I do that on the web? </strong></h3>
+
+<p>As of Chrome 43,
+websites are now able to programmatically
+<a href="https://developers.google.com/web/updates/2015/04/cut-and-copy-commands">trigger cut and copy</a>.</p>
+
+<h3 id="clipboard-read"><strong>Q: My hosted app uses the clipboardRead permission.
+How do I do that on the web? </strong></h3>
+
+<p>We are currently working on bringing the ability to read the clipboard
+to the web and you can star
+<a href="https://bugs.chromium.org/p/chromium/issues/detail?id=593475">this issue</a>
+to be kept up to date.
+Until then you may consider building an extension with the clipboardRead permission
+to provide the functionality to your web app.</p>

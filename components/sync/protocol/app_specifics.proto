@@ -1,0 +1,100 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+//
+// Sync protocol datatype extension for apps.
+
+// Update proto_value_conversions{.h,.cc,_unittest.cc} if you change
+// any fields in this file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package sync_pb;
+
+import "extension_specifics.proto";
+
+// Settings related to push notifications for apps.
+message AppNotificationSettings {
+  // DEPRECATED: Use oauth_client_id below.
+  // Whether or not the user has setup notifications at least once.
+  // The value for this field will start out false and will be set
+  // to true when the user accepts receiving notifications for the
+  // first time and then it will always remain true.
+  optional bool initial_setup_done = 1;
+
+  // Whether or not the user has disabled notifications.
+  optional bool disabled = 2;
+
+  // OAuth2 client id to which the user granted the notification permission.
+  // This field will start out empty.
+  // It will be set when the user accepts receiving notifications.
+  // This field is used when the user revokes the notifications permission.
+  // Note that it is never cleared after it was set once. Hence, the presence
+  // of this field can be used to determine if the user has setup notifications
+  // at least once for the given app.
+  optional string oauth_client_id = 3;
+}
+
+// Information about a linked app icon.
+message LinkedAppIconInfo {
+  // The URL of the app icon.
+  optional string url = 1;
+
+  // The size of the app icon in DIPs.
+  optional uint32 size = 2;
+}
+
+// Properties of app sync objects.
+//
+// For now, an app is just an extension.  We keep the two data types
+// separate for future-proofing purposes.
+message AppSpecifics {
+  // Extension data.
+  optional ExtensionSpecifics extension = 1;
+
+  // Notification settings.
+  optional AppNotificationSettings notification_settings = 2;
+
+  // This controls where on a page this application icon will appear.
+  optional string app_launch_ordinal = 3;
+
+  // This specifics which page the application icon will appear on in the NTP.
+  // This values only provide the order within the application pages, not within
+  // all of the panels in the NTP.
+  optional string page_ordinal = 4;
+
+  // The possible launch types for an app.
+  // This enum should be kept in sync with extensions::LaunchType.
+  enum LaunchType {
+    PINNED = 0;
+    REGULAR = 1;
+    FULLSCREEN = 2;
+    WINDOW = 3;
+  }
+
+  // This describes how the extension should be launched.
+  optional LaunchType launch_type = 5;
+
+  // This is the url of a bookmark app. If this exists, the app is a bookmark
+  // app.
+  optional string bookmark_app_url = 6;
+
+  // This is the description of a bookmark app.
+  optional string bookmark_app_description = 7;
+
+  // This is the color to use when generating bookmark app icons. The string is
+  // in #rrggbb or #rgb syntax, e.g. #d8d8d8.
+  optional string bookmark_app_icon_color = 8;
+
+  // This is information about linked icons (that is, icons that are downloaded
+  // from outside the app's bundle of files.
+  repeated LinkedAppIconInfo linked_app_icons = 9;
+
+  // This is the scope of the bookmark app.
+  optional string bookmark_app_scope = 10;
+
+  // This is the SkColor used for the browser frame for this bookmark app.
+  optional uint32 bookmark_app_theme_color = 11;
+}

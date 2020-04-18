@@ -1,0 +1,30 @@
+@hex:
+  # Test handling of different sizes for instruction bswap.
+  0f c8
+@dis:
+     0:	0f c8                                        	bswap  %eax
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  48 0f c8
+@dis:
+     0:	48 0f c8                                     	bswap  %rax
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Bad case, we should not parse 16-bit operands 
+  # (because bswap's behavior is undefined)
+  66 0f c8
+@dis:
+     0:	66 0f c8                                     	bswap  %ax
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('bswap is only allowed with 32-bit and 64-bit operands', Instruction(0x0: 66 0f c8  bswap %ax))

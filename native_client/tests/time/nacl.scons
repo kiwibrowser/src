@@ -1,0 +1,20 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+time_check = env.File('${SCONSTRUCT_DIR}/tools/time_check.py')
+
+nexe = env.ComponentProgram('gettimeofday_test',
+                            'gettimeofday_test.c',
+                            EXTRA_LIBS=['${PTHREAD_LIBS}', '${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+  'gettimeofday_test.out',
+  nexe,
+  wrapper_program_prefix = ['${PYTHON}', time_check, '-S',
+                            '-r', '"time\sis\s(\d*\.\d*)\sseconds"',
+                            '--'])
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_gettimeofday_test')

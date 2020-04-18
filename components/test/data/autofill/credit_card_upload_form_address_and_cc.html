@@ -1,0 +1,100 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<!--
+Copyright 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<html>
+<head>
+<title>Credit Card Upload Test - Form with address and credit card</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+</head>
+<body>
+  <form id="checkout" name="checkout" action="/credit_card_upload_done.html" method="post">
+    <div>Name: <input type="text" name="name_address" autocomplete="name"></div>
+    <div>Address: <input type="text" name="address" autocomplete="address-line1"></div>
+    <div>City: <input type="text" name="city" autocomplete="address-level2"></div>
+    <div>State: <input type="text" name="state" autocomplete="address-level1"></div>
+    <div>Zip: <input type="text" name="zip" autocomplete="postal-code"></div>
+    <div>Country: <input type="text" name="country" autocomplete="country-name"></div>
+    <hr>
+    <div>Name on card: <input type="text" name="name_cc" autocomplete="cc-name"></div>
+    <div>Credit card number: <input type="text" name="cc_number" autocomplete="cc-number"></div>
+    <div>Expiry Date:
+    <input type="text" name="cc_month_exp" placeholder="MM" autocomplete="cc-exp-month">
+    /
+    <input type="text" name="cc_year_exp" placeholder="YYYY" autocomplete="cc-exp-year"></div>
+    <div>CVC: <input name="cc_cvc" autocomplete="cc-csc"></div>
+    <hr>
+    <button id="fill_form" type="button">Fill entire form with default (MasterCard) values</button>
+    <button id="fill_invalid_cvc" type="button">Fill the CVC field with an invalid value</button>
+    <button id="fill_card_only" type="button">Fill the credit card number and expiration fields only</button>
+    <button id="clear_cvc" type="button">Clear the CVC field</button>
+    <button id="clear_name" type="button">Clear the name fields</button>
+    <button id="clear_address" type="button">Clear the address fields</button>
+    <button id="submit" type="submit">Submit</button>
+  </form>
+<script type="text/javascript">
+  function getNextYear() {
+    var nextYear = new Date();
+    nextYear.setFullYear(nextYear.getFullYear() + 1);
+    return nextYear.getFullYear();
+  }
+
+  document.getElementById("fill_form").addEventListener(
+      "click",
+      function() {
+        document.getElementsByName("name_address")[0].value = "John Smith";
+        document.getElementsByName("address")[0].value = "123 Testing St.";
+        document.getElementsByName("city")[0].value = "Mountain View";
+        document.getElementsByName("state")[0].value = "California";
+        document.getElementsByName("zip")[0].value = "94043";
+        document.getElementsByName("country")[0].value = "US";
+        document.getElementsByName("name_cc")[0].value = "John Smith";
+        document.getElementsByName("cc_number")[0].value = "5454545454545454";
+        document.getElementsByName("cc_month_exp")[0].value = "12";
+        document.getElementsByName("cc_year_exp")[0].value = getNextYear();
+        document.getElementsByName("cc_cvc")[0].value = "123";
+      });
+
+  document.getElementById("fill_invalid_cvc").addEventListener(
+      "click",
+      function() {
+        document.getElementsByName("cc_cvc")[0].value = "12345";
+      });
+
+  document.getElementById("fill_card_only").addEventListener(
+      "click",
+      function() {
+        document.getElementsByName("cc_number")[0].value = "5454545454545454";
+        document.getElementsByName("cc_month_exp")[0].value = "12";
+        document.getElementsByName("cc_year_exp")[0].value = getNextYear();
+      });
+
+  document.getElementById("clear_cvc").addEventListener(
+      "click",
+      function() {
+        document.getElementsByName("cc_cvc")[0].value = "";
+      });
+
+  document.getElementById("clear_name").addEventListener(
+      "click",
+      function() {
+        document.getElementsByName("name_address")[0].value = "";
+        document.getElementsByName("name_cc")[0].value = "";
+      });
+
+  document.getElementById("clear_address").addEventListener(
+      "click",
+      function() {
+        document.getElementsByName("name_address")[0].value = "";
+        document.getElementsByName("address")[0].value = "";
+        document.getElementsByName("city")[0].value = "";
+        document.getElementsByName("state")[0].value = "";
+        document.getElementsByName("zip")[0].value = "";
+        document.getElementsByName("country")[0].value = "";
+      });
+</script>
+</body>
+</html>

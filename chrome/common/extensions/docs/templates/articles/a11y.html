@@ -1,0 +1,470 @@
+<h1>Accessibility (a11y)</h1>
+
+
+<p>
+When you design an extension,
+try to make it as accessible as possible
+to people with disabilities such as
+visual impairment, hearing loss, and limited dexterity.
+</p>
+
+<p>
+Everyone &mdash; not just people with special needs &mdash;
+can benefit from the alternative access modes
+that accessible extensions provide.
+For example, keyboard shortcuts are important
+for blind people and people with limited dexterity,
+but they also help power users get things done
+more quickly without using a mouse.
+Captions and transcripts give deaf people access to audio content,
+but they are also useful to language learners.
+</p>
+
+<p>
+People can interact with your extension in a variety of ways.
+They might use a standard monitor, keyboard, and mouse,
+or they might use a screen magnifier and just a keyboard.
+Another possibility is a <em>screen reader</em>,
+an assistive application tool that interprets
+what's displayed onscreen
+for a blind or visually impaired user.
+A screen reader might speak out loud or produce Braille output.
+</p>
+
+<p>
+Although you can't predict what tools people will use,
+by following a few simple guidelines
+you can write an extension that is
+more likely to be accessible to more people.
+The guidelines on this page aren't going to
+make your extension accessible for absolutely everyone,
+but they're a good starting point.
+</p>
+
+
+<h2 id="controls">Use accessible UI controls</h2>
+
+<p>
+First, use UI controls that support accessibility.
+The easiest way to get an accessible control is to use a
+standard HTML control.
+If you need to build a custom control,
+keep in mind that it's much easier
+to make the control accessible from the beginning
+than to go back and add accessibility support later.
+</p>
+
+<h3 id="htmlcontrols">Standard controls</h3>
+
+<p>
+Try to use standard HTML UI controls whenever possible.
+Standard HTML controls (shown in the following figure)
+are keyboard accessible, scale easily,
+and are generally understood by screen readers.
+</p>
+
+<img src="{{static}}/images/a11y/standard-html-controls.png"
+ width="550" height="350"
+ alt="Screenshots and code for button, checkbox, radio, text, select/option, and link">
+
+
+<h3 id="aria">ARIA in custom controls</h3>
+
+<p>
+ARIA is a specification for making UI controls accessible to screen readers
+by means of a standard set of DOM attributes.
+These attributes provide clues to the screen reader
+about the function and current state of controls on a web page.
+ARIA is a
+<a href="https://www.w3.org/WAI/intro/aria">work in progress at the W3C</a>.
+</p>
+
+<p>
+Adding ARIA support to custom controls in your extension
+involves modifying DOM elements to add attributes
+Google Chrome uses
+to raise events during user interaction.
+Screen readers respond to these events
+and describe the function of the control.
+The DOM attributes specified by ARIA are classified into
+<em>roles</em>, <em>states</em>, and <em>properties</em>.
+</p>
+
+<p>
+The ARIA attribute <em>role</em>
+is an indication of the control type
+and describes the way the control should behave.
+It is expressed with the DOM attribute <code>role</code>,
+with a value set to one of the pre-defined ARIA role strings.
+Because ARIA roles are static,
+the role attribute should not change its value.
+</p>
+
+<p>
+The <a href="https://www.w3.org/WAI/PF/aria/roles">ARIA Role Specification</a>
+holds detailed information on how to pick the correct role.
+For example, if your extension includes a toolbar,
+set the <code>role</code> attribute of the toolbar's DOM element as follows:
+</p>
+
+<pre>
+&lt;div role="toolbar"&gt;
+</pre>
+
+<p>
+ARIA attributes are also used to describe
+the current state and properties of controls of a particular role.
+A <em>state</em> is dynamic and should be updated during user interaction.
+For example, a control with the role "checkbox"
+could be in the states "checked" or "unchecked".
+A <em>property</em> is not generally dynamic,
+but is similar to a state
+in that it expresses specific information about a control.
+For more information on ARIA states and properties,
+refer to the
+<a href="https://www.w3.org/TR/wai-aria/#introstates">W3C States and Properties specification</a>.
+</p>
+
+
+<p class="note">
+<b>Note:</b>
+You don't have to use
+all of the states and properties available for a particular role.
+</p>
+
+<p>
+Here's an example of adding
+the ARIA property <code>aria-activedescendant</code>
+to the example toolbar control:
+</p>
+
+<pre>
+&lt;div role="toolbar" tabindex="0" aria-activedescendant="button1"&gt;
+</pre>
+
+<p>
+The
+<a href="https://www.w3.org/WAI/PF/aria/states_and_properties#aria-activedescendant"><code>aria-activedescendant</code></a>
+property specifies which child of the toolbar receives focus
+when the toolbar receives focus.
+In this example, the toolbar's first button
+(which has the <code>id</code> "button1")
+is the child that gets focus.
+The code <code>tabindex="0"</code>
+specifies that the toolbar
+receives focus in document order.
+</p>
+
+<p>
+Here's the complete specification for the example toolbar:
+</p>
+
+<pre>
+&lt;div role="toolbar" tabindex="0" aria-activedescendant="button1"&gt;
+  &lt;img src="buttoncut.png" role="button" alt="cut" id="button1"&gt;
+  &lt;img src="buttoncopy.png" role="button" alt="copy" id="button2"&gt;
+  &lt;img src="buttonpaste.png" role="button" alt="paste" id="button3"&gt;
+&lt;/div&gt;
+</pre>
+
+<p>
+Once ARIA roles, states, and properties are added to the DOM of a control,
+Google Chrome raises the appropriate events to the screen reader.
+Because ARIA support is still a work in progress,
+Google Chrome might not raise an event for every ARIA property,
+and screen readers might not recognize all of the events being raised.
+You can find more information on ARIA support in Google Chrome in the
+<a href="https://www.chromium.org/developers/design-documents/accessibility#TOC-WAI-ARIA-Support">Chromium Accessibility Design Document</a>.
+</p>
+
+<p>
+For a quick tutorial on adding ARIA controls to custom controls, see
+<a href="https://www.w3.org/2010/Talks/www2010-dsr-diy-aria/">Dave Raggett's presentation from WWW2010</a>.
+
+<h3 id="focus">Focus in custom controls</h3>
+
+<p>
+Make sure that operation and navigation controls of your extension
+can receive keyboard focus.
+Operation controls might include
+buttons, trees, and list boxes.
+Navigation controls might include tabs and menu bars.
+</p>
+
+<p>
+By default, the only elements in the HTML DOM
+that can receive keyboard focus
+are anchors, buttons, and form controls.
+However, setting the HTML attribute <code>tabIndex</code> to <code>0</code>
+places DOM elements in the default tab sequence,
+enabling them to receive keyboard focus.
+For example:
+</p>
+
+<pre>
+<em>element</em>.tabIndex = 0
+</pre>
+
+<p>
+Setting <code>tabIndex = -1</code> removes the element from the tab sequence
+but still allows the element to receive keyboard focus programmatically.
+Here's an example of setting keyboard focus:
+</p>
+
+<pre>
+<em>element</em>.focus();
+</pre>
+
+<p>
+Ensuring that your custom UI controls include keyboard support
+is important not only for users who don't use the mouse
+but also because screen readers use keyboard focus
+to determine which control to describe.
+</p>
+
+<h2 id="keyboard"> Support keyboard access </h2>
+
+<p>
+People should be able to use your extension
+even if they can't or don't want to use a mouse.
+</p>
+
+<h3 id="navigation"> Navigation </h3>
+
+<p>
+Check that the user can navigate between
+the different parts of your extension
+without using the mouse.
+Also check that any popups on page actions or browser actions
+are keyboard navigable.
+</p>
+
+<p id="builtin">
+On Windows, you can use <b>Shift+Alt+T</b>
+to switch the keyboard focus to the toolbar,
+which lets you navigate to the icons of page actions and browser actions.
+The help topic
+<a href="https://support.google.com/chrome/answer/157179">Keyboard and mouse shortcuts</a>
+lists all of Google Chrome's keyboard shortcuts;
+details about toolbar navigation
+are in the section <b>Google Chrome feature shortcuts</b>.
+</p>
+
+<p class="note">
+<b>Note:</b>
+The Windows version of Google Chrome 6 was the first
+to support keyboard navigation to the toolbar.
+Support is also planned for Linux.
+On Mac OS X,
+access to the toolbar is provided through VoiceOver,
+Apple's screenreader.
+</p>
+
+<p>
+Make sure that it's easy to see
+which part of the interface has keyboard focus.
+Usually a focus outline moves around the interface,
+but if you’re using CSS heavily this outline might be suppressed
+or the contrast might be reduced.
+Two examples of focus outline follow.
+</p>
+
+<img src="{{static}}/images/a11y/focus-outline-2.png"
+  width="200" height="75"
+  alt="A focus outline on a Search button">
+<br />
+<img src="{{static}}/images/a11y/focus-outline.png"
+  width="400" height="40"
+  alt="A focus outline on one of a series of links">
+
+
+<h3 id="shortcuts"> Shortcuts </h3>
+
+<p>
+Although the most common keyboard navigation strategy involves
+using the Tab key to move focus through the extension interface,
+that's not always the easiest or most efficient way
+to use the interface.
+You can make keyboard navigation easier
+by providing explicit keyboard shortcuts.
+</p>
+
+<p>
+To implement shortcuts,
+connect keyboard event listeners to your controls.
+A good reference is the DHTML Style Guide Working Group’s
+<a href="http://dev.aol.com/dhtml_style_guide">guidelines for keyboard shortcuts</a>.
+</p>
+
+<p>
+A good way to ensure discoverability of keyboard shortcuts
+is to list them somewhere.
+{{?is_apps}}
+  Your application's options page
+{{:is_apps}}
+  Your extension's
+  <a href="options">Options page</a>
+{{/is_apps}}
+might be a good place to do this.
+</p>
+
+<p>
+For the example toolbar,
+a simple JavaScript keyboard handler could look like the following.
+Note how the ARIA property <code>aria-activedescendant</code>
+is updated in response to user input
+to reflect the current active toolbar button.
+</p>
+
+<pre>
+&lt;head&gt;
+&lt;script&gt;
+ function optionKeyEvent(event) {
+  var tb = event.target;
+  var buttonid;
+
+  ENTER_KEYCODE = 13;
+  RIGHT_KEYCODE = 39;
+  LEFT_KEYCODE = 37;
+  // Partial sample code for processing arrow keys.
+  if (event.type == "keydown") {
+    // Implement circular keyboard navigation within the toolbar buttons
+    if (event.keyCode == ENTER_KEYCODE) {
+      ExecuteButtonAction(getCurrentButtonID());
+      <em>// getCurrentButtonID defined elsewhere </em>
+    } else if (event.keyCode == event.RIGHT_KEYCODE) {
+      // Change the active toolbar button to the one to the right (circular).
+      var buttonid = getNextButtonID();
+      <em>// getNextButtonID defined elsewhere </em>
+      tb.setAttribute("aria-activedescendant", buttonid);
+    } else if (event.keyCode == event.LEFT_KEYCODE) {
+      // Change the active toolbar button to the one to the left (circular).
+      var buttonid = getPrevButtonID();
+      <em>// getPrevButtonID defined elsewhere </em>
+      tb.setAttribute("aria-activedescendant", buttonid);
+    } else {
+      return true;
+    }
+    return false;
+  }
+}
+&lt;/script&gt;
+
+&lt;div role="toolbar" tabindex="0" aria-activedescendant="button1" id="tb1"
+     onkeydown="return optionKeyEvent(event);"
+     onkeypress="return optionKeyEvent(event);"&gt;
+  &lt;img src="buttoncut" role="button" alt="cut" id="button1"&gt;
+  &lt;img src="buttoncopy" role="button" alt="copy" id="button1"&gt;
+  &lt;img src="buttonpaste" role="button" alt="paste" id="button1"&gt;
+&lt;/div&gt;
+</pre>
+
+
+<h2 id="more"> Provide accessible content </h2>
+
+
+<p>
+The remaining guidelines might be familiar
+because they reflect good practices for all web content,
+not just extensions.
+</p>
+
+<h3 id="text">Text</h3>
+
+<p>
+Evaluate your use of text in your extension.
+Many people might find it helpful
+if you provide a way to increase the text size within your extension.
+If you are using keyboard shortcuts,
+make sure that they don't interfere with
+the zoom shortcuts built into Google Chrome.
+</p>
+
+<p>
+As an indicator of the flexibility of your UI,
+apply the <a href="https://www.w3.org/TR/2008/REC-WCAG20-20081211/#visual-audio-contrast-scale">200% test</a>.
+If you increase the text size or page zoom 200%,
+is your extension still usable?
+</p>
+
+<p>
+Also, avoid baking text into images:
+users cannot modify the size of text displayed as an image,
+and screenreaders cannot interpret images.
+Consider using a web font instead,
+such as one of the fonts collected in the
+<a href="https://developers.google.com/fonts/">Google Font API</a>.
+Text styled in a web font is searchable,
+scales to different sizes,
+and is accessible to people using screen readers.
+</p>
+
+<h3 id="colors">Colors</h3>
+
+<p>
+Check that there is sufficient contrast between
+background color and foreground/text color in your extension.
+<a href="https://snook.ca/technical/colour_contrast/colour.html">This contrast checking tool</a>
+checks whether your background and foreground colors
+provide appropriate contrast.
+If you’re developing in a Windows environment,
+you can also enable High Contrast Mode
+to check the contrast of your extension.
+When evaluating contrast,
+verify that every part of your extension that relies on
+color or graphics to convey information is clearly visible.
+For specific images, you can use a tool such as the
+<a href="http://www.vischeck.com/vischeck/">Vischeck simulation tool</a>
+to see what an image looks like in various forms of color deficiency.
+</p>
+
+<p>
+You might consider offering different color themes,
+or giving the user the ability to customize the color scheme
+for better contrast.
+</p>
+
+<h3 id="sound">Sound</h3>
+
+<p>
+If your extension relies upon sound or video to convey information,
+ensure that captions or a transcript are available.
+See the
+<a href="https://dcmp.org/learn/213">Described and Captioned Media Program guidelines</a>
+for more information on captions.
+</p>
+
+<h3 id="images">Images</h3>
+
+<p>
+Provide informative alt text for your images.
+For example:
+</p>
+
+<pre>
+&lt;img src="img.jpg" alt="The logo for the extension"&gt;
+</pre>
+
+<p>
+Use the alt text to state the purpose of the image
+rather than as a literal description of the contents of an image.
+Spacer images or purely decorative images
+should have blank ("") alt text
+or be removed from the HTML entirely and placed in the CSS.
+</p>
+
+<p>
+If you must use text in an image,
+include the image text in the alt text.
+A good resource to refer to is the
+<a href="https://webaim.org/techniques/alttext/">WebAIM article on appropriate alt text</a>.
+
+<h2 id="examples">Examples</h2>
+
+<p>
+For an example that implements keyboard navigation and ARIA properties, see
+<a href="https://chromium.googlesource.com/chromium/src/+/master/chrome/common/extensions/docs/examples/extensions/news_a11y/">examples/extensions/news_a11y</a>
+(compare it to
+<a href="https://chromium.googlesource.com/chromium/src/+/master/chrome/common/extensions/docs/examples/extensions/news/">examples/extensions/news</a>).
+For more examples and for help in viewing the source code,
+see <a href="sampleshtml">Samples</a>.

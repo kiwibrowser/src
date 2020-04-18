@@ -1,0 +1,126 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/html/web_ui_listener_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/neon-animatable.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="device_page_browser_proxy.html">
+<link rel="import" href="display.html">
+<link rel="import" href="keyboard.html">
+<link rel="import" href="pointers.html">
+<link rel="import" href="power.html">
+<link rel="import" href="storage.html">
+<link rel="import" href="stylus.html">
+<link rel="import" href="../prefs/prefs.html">
+<link rel="import" href="../route.html">
+<link rel="import" href="../settings_page/settings_animated_pages.html">
+<link rel="import" href="../settings_page/settings_subpage.html">
+<link rel="import" href="../settings_shared_css.html">
+
+<dom-module id="settings-device-page">
+  <template>
+    <style include="settings-shared"></style>
+    <settings-animated-pages id="pages" section="device"
+        focus-config="[[focusConfig_]]">
+      <neon-animatable id="main" route-path="default">
+        <div id="pointersRow" class="settings-box first"
+            on-click="onPointersTap_" actionable>
+          <div class="start">
+            [[getPointersTitle_(hasMouse_, hasTouchpad_)]]
+          </div>
+          <paper-icon-button-light class="subpage-arrow">
+            <button
+                aria-label$="[[getPointersTitle_(hasMouse_, hasTouchpad_)]]">
+            </button>
+          </paper-icon-button-light>
+        </div>
+        <div id="keyboardRow" class="settings-box" on-click="onKeyboardTap_"
+            actionable>
+          <div class="start">$i18n{keyboardTitle}</div>
+          <paper-icon-button-light class="subpage-arrow">
+            <button aria-label="$i18n{keyboardTitle}"></button>
+          </paper-icon-button-light>
+        </div>
+        <template is="dom-if" if="[[hasStylus_]]">
+          <div id="stylusRow" class="settings-box" on-click="onStylusTap_"
+              actionable>
+            <div class="start">$i18n{stylusTitle}</div>
+            <paper-icon-button-light class="subpage-arrow">
+              <button aria-label="$i18n{stylusTitle}"></button>
+            </paper-icon-button-light>
+          </div>
+        </template>
+        <div id="displayRow" class="settings-box" on-click="onDisplayTap_"
+            actionable>
+          <div class="start">$i18n{displayTitle}</div>
+          <paper-icon-button-light class="subpage-arrow">
+            <button aria-label="$i18n{displayTitle}"></button>
+          </paper-icon-button-light>
+        </div>
+        <div id="storageRow" class="settings-box" on-click="onStorageTap_"
+            actionable>
+          <div class="start">$i18n{storageTitle}</div>
+          <paper-icon-button-light class="subpage-arrow">
+            <button aria-label="$i18n{storageTitle}"></button>
+          </paper-icon-button-light>
+        </div>
+        <template is="dom-if" if="[[enablePowerSettings_]]">
+          <div id="powerRow" class="settings-box" on-click="onPowerTap_"
+              actionable>
+            <div class="start">$i18n{powerTitle}</div>
+            <paper-icon-button-light class="subpage-arrow">
+              <button aria-label="$i18n{powerTitle}"></button>
+            </paper-icon-button-light>
+          </div>
+        </template>
+      </neon-animatable>
+      <template is="dom-if" route-path="/pointer-overlay">
+        <settings-subpage
+            associated-control="[[$$('#pointersRow')]]"
+            page-title="[[getPointersTitle_(hasMouse_, hasTouchpad_)]]">
+          <settings-pointers prefs="{{prefs}}"
+              has-mouse="[[hasMouse_]]" has-touchpad="[[hasTouchpad_]]">
+          </settings-pointers>
+        </settings-subpage>
+      </template>
+      <template is="dom-if" route-path="/keyboard-overlay">
+        <settings-subpage
+            associated-control="[[$$('#keyboardRow')]]"
+            page-title="$i18n{keyboardTitle}">
+          <settings-keyboard prefs="{{prefs}}"></settings-keyboard>
+        </settings-subpage>
+      </template>
+      <template is="dom-if" route-path="/stylus" no-search$="[[!hasStylus_]]">
+        <settings-subpage
+            associated-control="[[$$('#stylusRow')]]"
+            page-title="$i18n{stylusTitle}">
+          <settings-stylus prefs="{{prefs}}"></settings-stylus>
+        </settings-subpage>
+      </template>
+      <template is="dom-if" route-path="/display">
+        <settings-subpage
+            associated-control="[[$$('#displayRow')]]"
+            page-title="$i18n{displayTitle}">
+          <settings-display prefs="{{prefs}}"></settings-display>
+        </settings-subpage>
+      </template>
+      <template is="dom-if" route-path="/storage">
+        <settings-subpage
+            associated-control="[[$$('#storageRow')]]"
+            page-title="$i18n{storageTitle}">
+          <settings-storage></settings-storage>
+        </settings-subpage>
+      </template>
+      <template is="dom-if" route-path="/power"
+          no-search$="[[!enablePowerSettings_]]">
+        <settings-subpage
+            associated-control="[[$$('#powerRow')]]"
+            page-title="$i18n{powerTitle}">
+          <settings-power enable-power-settings="[[enablePowerSettings_]]">
+          </settings-power>
+        </settings-subpage>
+      </template>
+    </settings-animated-pages>
+  </template>
+  <script src="device_page.js"></script>
+</dom-module>

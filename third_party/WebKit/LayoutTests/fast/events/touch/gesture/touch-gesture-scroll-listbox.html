@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="../../../../resources/js-test.js"></script>
+        <script src="resources/gesture-helpers.js"></script>
+
+    </head>
+
+    <body style="margin:0" onload="runTest()">
+      <div id="container" style="height: 500px; overflow-x: scroll; overflow-y: scroll">
+          <select id="box" style="width=200px" size="5">
+              <option>Option 1</option>
+              <option>Option 2</option>
+              <option>Option 3</option>
+              <option>Option 4</option>
+              <option>Option 5</option>
+              <option>Option 6</option>
+              <option>Option 7</option>
+              <option>Option 8</option>
+              <option>Option 9</option>
+              <option>Option 10</option>
+              <option>Option 11</option>
+          </select>
+          <div style="background: green; height: 1000px; width: 1000px"></div>
+      </div>
+
+      <p id="description"></p>
+      <div id="console"></div>
+
+      <script type="text/javascript">
+        var gestureX = 30;
+        var gestureY = 30;
+        var itemHeight;
+        var box;
+        var container;
+        var fullyScrolled;
+
+        function resetScroll()
+        {
+          container.scrollTop = 0;
+          box.scrollTop = 0;
+          container.scrollLeft = 0;
+          box.scrollLeft = 0;
+        }
+
+        // Fling to scroll the inner text a little but not all the way
+        function testFlingGestures()
+        {
+            debug("===Testing fling gestures===");
+            resetScroll();
+            shouldBe('box.scrollTop', '0');
+            shouldBe('container.scrollTop', '0');
+
+            eventSender.gestureScrollBegin(gestureX, gestureY);
+            eventSender.gestureScrollUpdate(0, -itemHeight);
+            eventSender.gestureScrollUpdate(0, -itemHeight);
+            eventSender.gestureScrollUpdate(0, -10);
+            eventSender.gestureScrollEnd(0, 0);
+
+            debug("Flinging the list box should scroll the list, the scrolls should be locked to item boundaries");
+            shouldBe('box.scrollTop', '2*itemHeight+10');
+            shouldBe('container.scrollTop', '0');
+
+            resetScroll();
+
+            eventSender.gestureScrollBegin(gestureX, gestureY);
+            eventSender.gestureScrollUpdate(0, -fullyScrolled);
+            eventSender.gestureScrollUpdate(0, -300);
+            eventSender.gestureScrollUpdate(0, -100);
+            eventSender.gestureScrollUpdate(0, -100);
+            eventSender.gestureScrollEnd(0, 0);
+
+            debug("Flinging the list past the end shouldn't scroll containing div");
+            shouldBe('box.scrollTop', 'fullyScrolled');
+            shouldBe('container.scrollTop', '0');
+
+            eventSender.gestureScrollBegin(gestureX, gestureY);
+            eventSender.gestureScrollUpdate(0, -30);
+            eventSender.gestureScrollUpdate(0, -30);
+            eventSender.gestureScrollEnd(0, 0);
+
+            debug("Flinging fully scrolled list should fling containing div");
+            shouldBe('box.scrollTop', 'fullyScrolled');
+            shouldBe('container.scrollTop', '60');
+        }
+
+        function testGestureScroll()
+        {
+            debug("===Testing gesture scroll===");
+
+            resetScroll();
+            shouldBe('box.scrollTop', '0');
+            shouldBe('container.scrollTop', '0');
+
+            eventSender.gestureScrollBegin(gestureX, gestureY);
+            eventSender.gestureScrollUpdate(0, -(itemHeight-3));
+            eventSender.gestureScrollUpdate(0, -3);
+            eventSender.gestureScrollUpdate(0, -(itemHeight-3));
+            eventSender.gestureScrollUpdate(0, -3);
+            eventSender.gestureScrollUpdate(0, -(itemHeight-3));
+            eventSender.gestureScrollUpdate(0, -3);
+            eventSender.gestureScrollUpdate(0, -6);
+            eventSender.gestureScrollEnd(0, 0);
+
+            debug("Gesture scrolling list should scroll the list, the scrolls should lock to item boundaries");
+            shouldBe('box.scrollTop', '3*itemHeight+6');
+            shouldBe('container.scrollTop', '0');
+
+            resetScroll();
+            shouldBe('box.scrollTop', '0');
+            shouldBe('container.scrollTop', '0');
+
+            eventSender.gestureScrollBegin(gestureX, gestureY);
+            eventSender.gestureScrollUpdate(0, -fullyScrolled);
+            eventSender.gestureScrollUpdate(0, -50);
+            eventSender.gestureScrollEnd(0, 0);
+
+            debug("Gesture scrolling list past the end shouldn't scroll container div");
+            shouldBe('box.scrollTop', 'fullyScrolled');
+            shouldBe('container.scrollTop', '0');
+
+            eventSender.gestureScrollBegin(gestureX, gestureY);
+            eventSender.gestureScrollUpdate(0, -fullyScrolled);
+            eventSender.gestureScrollUpdate(0, -50);
+            eventSender.gestureScrollEnd(0, 0);
+
+            debug("Gesture scrolling list past the end should scroll container div when starting at scroll extent");
+            shouldBe('box.scrollTop', 'fullyScrolled');
+            shouldBe('container.scrollTop', 'fullyScrolled + 50');
+
+        }
+
+        function testHorizontalScroll()
+        {
+            debug("===Testing horizontal scroll===");
+
+            resetScroll();
+            shouldBe('box.scrollLeft', '0');
+            shouldBe('container.scrollLeft', '0');
+
+            eventSender.gestureScrollBegin(gestureX, gestureY);
+            eventSender.gestureScrollUpdate(-30, 0);
+            eventSender.gestureScrollUpdate(-30, 0);
+            eventSender.gestureScrollEnd(0, 0);
+
+            debug("Horizontal scrolls should not affect listbox");
+            shouldBe('box.scrollLeft', '0');
+            shouldBe('container.scrollLeft', '60');
+        }
+
+        if (window.testRunner)
+            testRunner.waitUntilDone();
+
+        function runTest()
+        {
+            box = document.getElementById("box");
+            container = document.getElementById("container");
+            itemHeight = box.clientHeight / box.size;
+
+            fullyScrolled = box.scrollHeight - box.clientHeight;
+
+            if (window.eventSender) {
+                description('This tests that an input text field can be properly scrolled with touch gestures');
+
+                if (checkTestDependencies() && eventSender.gestureScrollUpdate) {
+                    testFlingGestures();
+                    testGestureScroll();
+                    testHorizontalScroll();
+                    testRunner.notifyDone();
+                } else
+                    exitIfNecessary();
+            } else {
+                debug("This test requires DumpRenderTree.  Gesture-scroll the page to validate the implementation.");
+            }
+        }
+      </script>
+    </body>
+</html>

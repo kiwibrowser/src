@@ -1,0 +1,64 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/policy/cr_policy_pref_indicator.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/neon-animatable.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+<link rel="import" href="../i18n_setup.html">
+<link rel="import" href="../prefs/prefs_behavior.html">
+<link rel="import" href="../settings_page/settings_animated_pages.html">
+<link rel="import" href="../settings_page/settings_subpage.html">
+<link rel="import" href="../settings_shared_css.html">
+<link rel="import" href="crostini_browser_proxy.html">
+<link rel="import" href="crostini_subpage.html">
+
+<dom-module id="settings-crostini-page">
+  <template>
+    <style include="settings-shared"></style>
+
+    <settings-animated-pages id="pages" section="crostini"
+        focus-config="[[focusConfig_]]">
+      <neon-animatable route-path="default">
+        <div id="crostini" class="settings-box two-line first"
+            actionable$="[[prefs.crostini.enabled.value]]"
+            on-click="onSubpageTap_">
+          <div class="start">
+            $i18n{crostiniPageLabel}
+            <div class="secondary" id="secondaryText">
+                $i18n{crostiniSubtext}
+            </div>
+          </div>
+          <cr-policy-pref-indicator pref="[[prefs.crostini.enabled]]"
+              icon-aria-label="$i18n{crostiniPageTitle}">
+          </cr-policy-pref-indicator>
+          <template is="dom-if" if="[[prefs.crostini.enabled.value]]">
+            <paper-icon-button-light class="subpage-arrow">
+              <button aria-label="$i18n{crostiniPageTitle}"
+                  aria-describedby="secondaryText">
+              </button>
+            </paper-icon-button-light>
+          </template>
+          <template is="dom-if" if="[[!prefs.crostini.enabled.value]]">
+            <div class="separator"></div>
+            <paper-button id="enable" on-click="onEnableTap_"
+                aria-label="$i18n{crostiniPageTitle}"
+                aria-describedby="secondaryText">
+              $i18n{crostiniEnable}
+            </paper-button>
+          </template>
+        </div>
+      </neon-animatable>
+
+      <template is="dom-if" route-path="/crostini/details">
+        <settings-subpage
+            associated-control="[[$$('#crostini')]]"
+            page-title="$i18n{crostiniPageLabel}">
+          <settings-crostini-subpage prefs="{{prefs}}">
+          </settings-crostini-subpage>
+        </settings-subpage>
+      </template>
+    </settings-animated-pages>
+
+  </template>
+  <script src="crostini_page.js"></script>
+</dom-module>

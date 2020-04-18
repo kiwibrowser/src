@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<style>
+#test {
+    font-size: 5vh;
+    width: 50vw;
+}
+#testpseudo:after {
+    margin-left: 20vmin;
+    content: '';
+}
+</style>
+<script src="../../resources/js-test.js"></script>
+
+This test of viewport units and resizing depends on window.resizeTo.
+
+<div id="test"></div>
+<div id="testpseudo"></div>
+<div id="host"></div>
+
+<script>
+if (window.testRunner) {
+    testRunner.useUnfortunateSynchronousResizeMode();
+    testRunner.dumpAsText();
+}
+
+var sizes = [[800, 600], [900, 600], [900, 640], [500, 640], [800, 600]]
+var root = host.createShadowRoot();
+testshadow = document.createElement("div");
+testshadow.id = "testshadow";
+root.innerHTML = "<style> #testshadow { border: 10vmax solid green; } </style>";
+root.appendChild(testshadow);
+
+for (var i = 0; i < sizes.length; ++i) {
+    var width = sizes[i][0];
+    var height = sizes[i][1];
+    var min = Math.min(width, height);
+    var max = Math.max(width, height);
+    window.resizeTo(width, height);
+    shouldBe("window.innerWidth", "" + width);
+    shouldBe("window.innerHeight", "" + height);
+    shouldBe("getComputedStyle(test).fontSize", "'" + height/20 + "px'");
+    shouldBe("getComputedStyle(test).width", "'" + width/2 + "px'");
+    shouldBe("getComputedStyle(testpseudo, ':after').marginLeft", "'" + min/5 + "px'");
+    shouldBe("getComputedStyle(testshadow).borderRightWidth", "'" + max/10 + "px'");
+}
+</script>

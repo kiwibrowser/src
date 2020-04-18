@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<meta charset=utf-8>
+<title>Web Locks API: WebIDL tests</title>
+<link rel=help href="https://github.com/inexorabletash/web-locks">
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="/w3c/resources/webidl2.js"></script>
+<script src="/w3c/resources/idlharness.js"></script>
+<script src="/resources/get-host-info.js"></script>
+<script>
+'use strict';
+
+// TODO(jsbell): When migrated to WPT: remove block, rename with .https infix.
+if (location.origin != get_host_info().AUTHENTICATED_ORIGIN) {
+  location = get_host_info().AUTHENTICATED_ORIGIN + location.pathname;
+  throw new Error('Reloading with appropriate origin for desired context...');
+}
+
+promise_test(async t => {
+  const response = await fetch('interfaces.idl');
+  const idls = await response.text();
+
+  const idl_array = new IdlArray();
+
+  idl_array.add_untested_idls('interface Navigator {};');
+  idl_array.add_untested_idls('interface WorkerNavigator {};');
+
+  idl_array.add_idls(idls);
+
+  let lock;
+  await navigator.locks.request('name', l => { lock = l; });
+
+  idl_array.add_objects({
+    LockManager: [navigator.locks],
+    Lock: [lock],
+  });
+
+  idl_array.test();
+});
+</script>

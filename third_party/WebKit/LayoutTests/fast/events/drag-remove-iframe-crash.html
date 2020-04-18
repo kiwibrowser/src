@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<iframe id=innerFrame src=resources/drag-inside-iframe.html onload="run_test()"></iframe>
+<script>
+
+function onDragStart() {
+  innerFrame.parentElement.removeChild(innerFrame);
+  t.done();
+}
+var t = async_test("Remove iframe when start dragging should not crash")
+
+function run_test() {
+  internals.settings.setTouchDragDropEnabled(true);
+  if (window.eventSender)
+    eventSender.gestureLongPress(50, 50);
+}
+</script>

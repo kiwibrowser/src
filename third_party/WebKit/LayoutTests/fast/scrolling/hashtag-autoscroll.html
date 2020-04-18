@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<div style="overflow-x:hidden">
+    <div id="click" ><a href="#anchor">Click me should jump to the anchor</a></div>
+    <div style="height: 2000px"></div>
+    <a id="anchor"></a>
+    <p>Text</p>
+    <div style="height: 2000px"></div>
+</div>
+<script>
+test(function() {
+    if (!window.eventSender)
+        return;
+    var click = document.getElementById("click");
+    var x = click.offsetLeft + 5;
+    var y = click.offsetTop + 5;
+    eventSender.mouseMoveTo(x, y);
+    eventSender.mouseDown();
+    eventSender.mouseUp();
+    assert_not_equals(window.scrollY, 0);
+}, "Tests that when the anchor's layoutbox is empty, we can still jump to it by hashtag");
+</script>

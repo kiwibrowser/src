@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<div id="element"></div>
+
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script>
+test(function () {
+  if (!window.internals)
+    assert_unreached('This test requires window.internals.');
+
+  assert_greater_than(internals.updateStyleAndReturnAffectedElementCount(), 1);
+
+  element.style.top = "0px";
+  assert_equals(internals.updateStyleAndReturnAffectedElementCount(), 1);
+
+  for (var i = 0; i < 100; i ++) {
+    element.style.top = "0px";
+    assert_equals(internals.updateStyleAndReturnAffectedElementCount(), 0);
+  }
+}, "Check that a no-op inline style change doesn't result in a recalc");
+</script>

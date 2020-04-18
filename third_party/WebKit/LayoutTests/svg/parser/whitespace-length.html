@@ -1,0 +1,38 @@
+<!doctype html> 
+<title>Whitespace in attribute values tests</title>
+<script src=../../resources/testharness.js></script>
+<script src=../../resources/testharnessreport.js></script>
+<script src=resources/whitespace-helper.js></script>
+<svg id="testcontainer">
+	<defs>
+		<marker/>
+		<stop/>
+		<filter>
+			<feTurbulence></feTurbulence>
+		</filter>
+	</defs>
+</svg>
+<div id=log></div>
+<script>
+var svg = document.querySelector("svg");
+
+// test length values
+var EPSILON = Math.pow(2, -24); // float epsilon
+var whitespace = [ "", " ", "   ", "\r\n\t ", "\f" ];
+var garbage = [ "a", "e", "foo", ")90" ];
+var validunits = [ "", "em", "ex", "px", "in", "cm", "mm", "pt", "pc", "%" ];
+
+testType("<length>",
+		 svg,
+		 "x",
+		 0, // expected default value
+		 whitespace,
+		 [ "-47", ".1", "0.35", "1e-10", "+32", "+17E-1", "17e+2" ], // valid
+		 [], // invalid (split out the next line to whitespace-length-invalid.html because trybots were too slow )
+		     // [ Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, "fnord", "E", "e", "e+", "E-", "-", "+", "-.", ".-", ".", "+.", ".E0", "e1" ],
+		 validunits,
+		 garbage,
+		 function(elm, value) { assert_approx_equals(elm.x.baseVal.valueInSpecifiedUnits, parseFloat(value), EPSILON); },
+		 function(elm, expected) { assert_approx_equals(elm.x.baseVal.value, expected, EPSILON); } );
+
+</script>

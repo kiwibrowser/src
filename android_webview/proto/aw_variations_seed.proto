@@ -1,0 +1,29 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+package org.chromium.android_webview.proto;
+
+option optimize_for = LITE_RUNTIME; // TODO(crbug/800281): Remove this after proto 4.0
+option java_package = "org.chromium.android_webview.proto";
+
+// WebView uses AwVariationsSeed to serialize a downloaded seed, along with the
+// required HTTP header metadata, to a file. WebView must save seeds this way
+// because it doesn't persist preferences.
+//
+// Next tag: 6
+message AwVariationsSeed {
+  // Whether seed_data is compressed. Comes from HTTP header "X-Seed-Signature".
+  optional string signature = 1;
+  // 2-letter country code. Comes from HTTP header "X-Country".
+  optional string country = 2;
+  // Date the seed was downloaded. Comes from HTTP header "Date"; see RFC 2616,
+  // sections 3.3.1 and 14.18 for the format.
+  optional string date = 3;
+  // Whether seed_data is compressed. Comes from HTTP header "IM".
+  optional bool is_gzip_compressed = 4;
+  // The download body, itself a serialized VariationsSeed proto.
+  optional bytes seed_data = 5;
+}

@@ -1,0 +1,274 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/html/web_ui_listener_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="../controls/settings_slider.html">
+<link rel="import" href="../controls/settings_toggle_button.html">
+<link rel="import" href="../i18n_setup.html">
+<link rel="import" href="../route.html">
+<link rel="import" href="../settings_shared_css.html">
+<link rel="import" href="../settings_vars_css.html">
+<link rel="import" href="tts_subpage.html">
+
+<dom-module id="settings-manage-a11y-page">
+  <template>
+    <style include="settings-shared">
+      h2 {
+        -webkit-padding-start: var(--settings-box-row-padding);
+      }
+
+      .sub-item {
+        -webkit-margin-start: var(--settings-indent-width);
+      }
+
+      h2 ~ .settings-box,
+      h2 ~ settings-toggle-button,
+      iron-collapse .settings-box,
+      iron-collapse settings-toggle-button {
+        -webkit-margin-end: var(--settings-box-row-padding);
+        -webkit-margin-start: var(--settings-box-row-indent);
+        -webkit-padding-end: 0;
+        -webkit-padding-start: 0;
+      }
+    </style>
+    <div class="settings-box row first">
+      <span>
+        $i18n{a11yExplanation}
+        <a href="$i18nRaw{a11yLearnMoreUrl}" target="_blank">
+          $i18n{learnMore}
+        </a>
+      </span>
+    </div>
+
+    <h2>$i18n{textToSpeechHeading}</h2>
+    <settings-toggle-button class="first"
+        pref="{{prefs.settings.accessibility}}"
+        label="$i18n{chromeVoxLabel}">
+    </settings-toggle-button>
+    <iron-collapse opened="[[prefs.settings.accessibility.value]]">
+      <div class="settings-box"
+          on-click="onChromeVoxSettingsTap_" actionable>
+        <div class="start">$i18n{chromeVoxOptionsLabel}</div>
+        <paper-icon-button-light class="icon-external">
+          <button aria-label="$i18n{chromeVoxOptionsLabel}"></button>
+        </paper-icon-button-light>
+      </div>
+    </iron-collapse>
+    <settings-toggle-button
+        pref="{{prefs.settings.a11y.select_to_speak}}"
+        label="$i18n{selectToSpeakTitle}"
+        sub-label="[[getSelectToSpeakDescription_(
+            prefs.settings.a11y.select_to_speak.value, hasKeyboard_,
+            '$i18nPolymer{selectToSpeakDisabledDescription}',
+            '$i18nPolymer{selectToSpeakDescription}',
+            '$i18nPolymer{selectToSpeakDescriptionWithoutKeyboard}')]]">
+    </settings-toggle-button>
+    <iron-collapse opened="[[prefs.settings.a11y.select_to_speak.value]]">
+      <div class="settings-box"
+          on-click="onSelectToSpeakSettingsTap_" actionable>
+        <div class="start">$i18n{selectToSpeakOptionsLabel}</div>
+        <paper-icon-button-light class="icon-external">
+          <button aria-label="$i18n{selectToSpeakOptionsLabel}"></button>
+        </paper-icon-button-light>
+      </div>
+    </iron-collapse>
+    <template is="dom-if" if="[[showExperimentalFeatures_]]">
+      <div class="settings-box two-line" on-click="onManageTtsSettingsTap_"
+          actionable>
+        <div class="start">
+          $i18n{manageTtsSettings}
+          <div class="secondary" id="appearanceSettingsSecondary">
+            $i18n{ttsSettingsLinkDescription}
+          </div>
+        </div>
+        <paper-icon-button-light class="subpage-arrow">
+          <button aria-label="$i18n{manageTtsSettings}"
+              aria-describedby="appearanceSettingsSecondary"></button>
+        </paper-icon-button-light>
+      </div>
+    </template>
+
+    <h2>$i18n{displayHeading}</h2>
+    <settings-toggle-button class="first"
+        pref="{{prefs.settings.a11y.high_contrast_enabled}}"
+        label="$i18n{highContrastLabel}">
+    </settings-toggle-button>
+    <settings-toggle-button class="continuation"
+        pref="{{prefs.settings.a11y.screen_magnifier}}"
+        label="$i18n{screenMagnifierLabel}"
+        disabled="[[prefs.ash.docked_magnifier.enabled.value]]">
+    </settings-toggle-button>
+    <div class="settings-box continuation">
+      <div class="start sub-item">$i18n{screenMagnifierZoomLabel}</div>
+      <settings-dropdown-menu label="$i18n{screenMagnifierZoomLabel}"
+          pref="{{prefs.settings.a11y.screen_magnifier_scale}}"
+          menu-options="[[screenMagnifierZoomOptions_]]"
+          disabled="[[!prefs.settings.a11y.screen_magnifier.value]]">
+      </settings-dropdown-menu>
+    </div>
+    <template is="dom-if" if="[[dockedMagnifierFeatureEnabled_]]" restamp>
+      <settings-toggle-button class="continuation"
+          pref="{{prefs.ash.docked_magnifier.enabled}}"
+          label="$i18n{dockedMagnifierLabel}"
+          disabled="[[prefs.settings.a11y.screen_magnifier.value]]">
+      </settings-toggle-button>
+      <div class="settings-box continuation">
+        <div class="start sub-item">$i18n{dockedMagnifierZoomLabel}</div>
+        <settings-dropdown-menu label="$i18n{dockedMagnifierZoomLabel}"
+            pref="{{prefs.ash.docked_magnifier.scale}}"
+            menu-options="[[screenMagnifierZoomOptions_]]"
+            disabled="[[!prefs.ash.docked_magnifier.enabled.value]]">
+        </settings-dropdown-menu>
+      </div>
+    </template>
+    <div class="settings-box two-line" on-click="onDisplayTap_" actionable>
+      <div class="start">
+        $i18n{displaySettingsTitle}
+        <div class="secondary" id="displaySettingsSecondary">
+          $i18n{displaySettingsDescription}
+        </div>
+      </div>
+      <paper-icon-button-light class="subpage-arrow">
+        <button aria-label="$i18n{displaySettingsTitle}"
+            aria-describedby="displaySettingsSecondary"></button>
+      </paper-icon-button-light>
+    </div>
+    <div class="settings-box two-line" on-click="onAppearanceTap_" actionable>
+      <div class="start">
+        $i18n{appearanceSettingsTitle}
+        <div class="secondary" id="appearanceSettingsSecondary">
+          $i18n{appearanceSettingsDescription}
+        </div>
+      </div>
+      <paper-icon-button-light class="subpage-arrow">
+        <button aria-label="$i18n{appearanceSettingsTitle}"
+            aria-describedby="appearanceSettingsSecondary"></button>
+      </paper-icon-button-light>
+    </div>
+
+    <template is="dom-if" if="[[!showExperimentalFeatures_]]">
+      <h2>$i18n{keyboardHeading}</h2>
+    </template>
+    <template is="dom-if" if="[[showExperimentalFeatures_]]">
+      <h2>$i18n{keyboardAndTextInputHeading}</h2>
+    </template>
+    <settings-toggle-button class="first"
+        pref="{{prefs.settings.a11y.sticky_keys_enabled}}"
+        label="$i18n{stickyKeysLabel}">
+    </settings-toggle-button>
+    <settings-toggle-button class="continuation"
+        pref="{{prefs.settings.a11y.virtual_keyboard}}"
+        label="$i18n{onScreenKeyboardLabel}">
+    </settings-toggle-button>
+    <template is="dom-if" if="[[showExperimentalFeatures_]]">
+      <settings-toggle-button class="continuation"
+          pref="{{prefs.settings.a11y.dictation}}"
+          label="$i18n{dictationLabel}">
+      </settings-toggle-button>
+    </template>
+    <settings-toggle-button class="continuation"
+        pref="{{prefs.settings.a11y.focus_highlight}}"
+        label="$i18n{focusHighlightLabel}">
+    </settings-toggle-button>
+    <settings-toggle-button class="continuation"
+        pref="{{prefs.settings.a11y.caret_highlight}}"
+        label="$i18n{caretHighlightLabel}">
+    </settings-toggle-button>
+    <template is="dom-if" if="[[showExperimentalFeatures_]]">
+      <settings-toggle-button
+          pref="{{prefs.settings.a11y.switch_access}}"
+          label="$i18n{switchAccessLabel}">
+      </settings-toggle-button>
+      <iron-collapse opened="[[prefs.settings.a11y.switch_access.value]]">
+        <div class="settings-box" actionable
+            on-click="onSwitchAccessSettingsTap_">
+          <div class="start">$i18n{switchAccessOptionsLabel}</div>
+          <paper-icon-button-light class="icon-external">
+            <button aria-label="$i18n{switchAccessOptionsLabel}"></button>
+          </paper-icon-button-light>
+        </div>
+      </iron-collapse>
+    </template>
+    <div class="settings-box two-line" on-click="onKeyboardTap_" actionable>
+      <div class="start">
+        $i18n{keyboardSettingsTitle}
+        <div class="secondary" id="keyboardSettingsSecondary">
+          $i18n{keyboardSettingsDescription}
+        </div>
+      </div>
+      <paper-icon-button-light class="subpage-arrow">
+        <button aria-label="$i18n{keyboardSettingsTitle}"
+            aria-describedby="keyboardSettingsSecondary"></button>
+      </paper-icon-button-light>
+    </div>
+
+    <h2>$i18n{mouseAndTouchpadHeading}</h2>
+    <settings-toggle-button class="first"
+        pref="{{prefs.settings.a11y.autoclick}}"
+        label="$i18n{clickOnStopLabel}">
+    </settings-toggle-button>
+    <div class="settings-box continuation">
+      <div class="start sub-item">$i18n{delayBeforeClickLabel}</div>
+      <settings-dropdown-menu label="$i18n{delayBeforeClickLabel}"
+          pref="{{prefs.settings.a11y.autoclick_delay_ms}}"
+          menu-options="[[autoClickDelayOptions_]]"
+          disabled="[[!prefs.settings.a11y.autoclick.value]]">
+      </settings-dropdown-menu>
+    </div>
+    <settings-toggle-button class="continuation"
+        pref="{{prefs.settings.a11y.large_cursor_enabled}}"
+        label="$i18n{largeMouseCursorLabel}">
+    </settings-toggle-button>
+    <div class="settings-box continuation"
+        hidden$="[[!prefs.settings.a11y.large_cursor_enabled.value]]">
+      <div class="start sub-item">$i18n{largeMouseCursorSizeLabel}</div>
+      <settings-slider
+          pref="{{prefs.settings.a11y.large_cursor_dip_size}}"
+          min="25" max="64"
+          label-min="$i18n{largeMouseCursorSizeDefaultLabel}"
+          label-max="$i18n{largeMouseCursorSizeLargeLabel}">
+      </settings-slider>
+    </div>
+    <settings-toggle-button class="continuation"
+        pref="{{prefs.settings.a11y.cursor_highlight}}"
+        label="$i18n{cursorHighlightLabel}">
+    </settings-toggle-button>
+    <div class="settings-box two-line" on-click="onMouseTap_" actionable>
+      <div class="start">
+        $i18n{mouseSettingsTitle}
+        <div class="secondary" id="mouseSettingsSecondary">
+          $i18n{mouseSettingsDescription}
+        </div>
+        </div>
+        <paper-icon-button-light class="subpage-arrow">
+          <button aria-label="$i18n{mouseSettingsTitle}"
+              aria-describedby="mouseSettingsSecondary"></button>
+        </paper-icon-button-light>
+    </div>
+
+    <h2>$i18n{audioHeading}</h2>
+    <settings-toggle-button class="first"
+        pref="{{prefs.settings.a11y.mono_audio}}"
+        label="$i18n{monoAudioLabel}">
+    </settings-toggle-button>
+
+    <template is="dom-if" if="[[!isGuest_]]">
+      <a class="settings-box two-line inherit-color no-outline" tabindex="-1"
+          target="_blank"
+          href="https://chrome.google.com/webstore/category/collection/accessibility">
+        <div class="start">
+          $i18n{additionalFeaturesTitle}
+          <div class="secondary" id="moreFeaturesSecondary">
+            $i18n{a11yWebStore}
+          </div>
+        </div>
+        <paper-icon-button-light class="icon-external">
+          <button actionable aria-label="$i18n{additionalFeaturesTitle}"
+              aria-describedby="moreFeaturesSecondary"></button>
+        </paper-icon-button-light>
+      </a>
+    </template>
+  </template>
+  <script src="manage_a11y_page.js"></script>
+</dom-module>

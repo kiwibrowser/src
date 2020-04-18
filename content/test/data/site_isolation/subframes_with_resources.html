@@ -1,0 +1,25 @@
+<p> Load a bunch of frames containing videos.
+<script>
+var url = new URL(location);
+var urls  = url.searchParams.get('urls').split(',');
+var numFrames = urls.length;
+var numSubresources = parseInt(url.searchParams.get('numSubresources'), 10);
+function createFrames() {
+  for (var i = 0; i < numFrames; i++) {
+    var frame = document.createElement('iframe');
+    frame.src =
+        "/cross-site/example.com/site_isolation/subframe_resources.html?url=" +
+        urls[i] + "&numSubresources=" + numSubresources;
+    document.body.appendChild(frame);
+  }
+}
+
+// Wait for |numFrame| messages. Each message is received when a given frame
+// finishes (errors/completes) all of its subresources.
+var numMessages = 0;
+window.addEventListener('message', function(e) {
+  numMessages++;
+  if (numMessages == numFrames)
+    window.domAutomationController.send(true);
+});
+</script>

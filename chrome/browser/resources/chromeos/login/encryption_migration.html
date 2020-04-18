@@ -1,0 +1,138 @@
+<!-- Copyright 2017 The Chromium Authors. All rights reserved.
+     Use of this source code is governed by a BSD-style license that can be
+     found in the LICENSE file. -->
+
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-progress/paper-progress.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-styles/color.html">
+<link rel="import" href="chrome://oobe/custom_elements.html">
+
+<dom-module id="encryption-migration">
+  <template>
+    <link rel="stylesheet" href="encryption_migration.css">
+    <link rel="stylesheet" href="oobe_dialog_parameters.css">
+    <link rel="stylesheet" href="oobe_flex_layout.css">
+    <template is="dom-if" if="[[isInitial_(uiState)]]">
+      <oobe-dialog tabindex="0" has-buttons></oobe-dialog>
+    </template>
+    <template is="dom-if" if="[[isMigratingMinimal_(uiState)]]">
+      <oobe-dialog tabindex="0" has-buttons>
+        <div class="footer layout vertical">
+          <throbber-notice text="$i18n{gaiaLoading}"></throbber-notice>
+        </div>
+      </oobe-dialog>
+    </template>
+    <template is="dom-if" if="[[isReady_(uiState)]]">
+      <oobe-dialog tabindex="0" has-buttons>
+        <iron-icon class="oobe-icon warning-icon"></iron-icon>
+        <div class="header">
+          <h1 class="title">$i18n{migrationReadyTitle}</h1>
+          <div class="subtitle">$i18n{migrationReadyDescription}</div>
+        </div>
+        <template is="dom-if" if="[[isEnoughBattery]]">
+          <div class="footer layout vertical center">
+            <img srcset="images/security_update_1x.png 1x,
+                         images/security_update_2x.png 2x">
+          </div>
+        </template>
+        <template is="dom-if" if="[[!isEnoughBattery]]">
+          <div class="footer layout vertical" aria-live="polite">
+            <div class="warning">
+              [[computeBatteryWarningLabel_(batteryPercent)]]
+            </div>
+            <template is="dom-if" if="[[isCharging]]">
+              <div>$i18n{migrationChargingLabel}</div>
+            </template>
+            <template is="dom-if" if="[[!isCharging]]">
+              <div>$i18n{migrationAskChargeMessage}</div>
+            </template>
+            <div>
+              [[computeNecessaryBatteryLevelLabel_(necessaryBatteryPercent)]]
+            </div>
+          </div>
+        </template>
+        </div>
+        <template is="dom-if" if="[[!isResuming]]">
+          <div class="bottom-buttons flex layout horizontal">
+            <div class="flex"></div>
+            <oobe-text-button border on-tap="onSkip_"
+                hidden="[[isSkipHidden_()]]">
+              <div>$i18n{migrationButtonSkip}</div>
+            </oobe-text-button>
+            <oobe-text-button inverse on-tap="onUpgrade_"
+                disabled="[[isUpdateDisabled_(isEnoughBattery, isSkipped)]]">
+              <div>$i18n{migrationButtonUpdate}</div>
+            </oobe-text-button>
+          </div>
+        </template>
+      </oobe-dialog>
+    </template>
+    <template is="dom-if" if="[[isMigrating_(uiState)]]">
+      <oobe-dialog tabindex="0">
+        <iron-icon class="oobe-icon chrome-logo"></iron-icon>
+        <div class="header">
+          <h1 class="title">$i18n{migrationMigratingTitle}</h1>
+          <div class="subtitle">$i18n{migrationMigratingDescription}</div>
+        </div>
+        <div class="footer flex layout vertical">
+          <paper-progress value="[[progress]]" max="1" step="0.001"
+              indeterminate="[[isProgressIndeterminate_(progress)]]">
+          </paper-progress>
+          <template is="dom-if" if="[[!isProgressIndeterminate_(progress)]]">
+            <div aria-live="polite">[[computeProgressLabel_(progress)]]</div>
+          </template>
+        </div>
+      </oobe-dialog>
+    </template>
+    <template is="dom-if" if="[[isMigrationFailed_(uiState)]]">
+      <oobe-dialog tabindex="0" has-buttons>
+        <iron-icon icon="cr:warning" class="oobe-icon warning"></iron-icon>
+        <div class="header">
+          <h1 class="title">$i18n{migrationFailedTitle}</h1>
+          <div class="subtitle">$i18n{migrationFailedSubtitle}</div>
+        </div>
+        <div class="footer"><div>$i18n{migrationFailedMessage}</div></div>
+        <div class="bottom-buttons flex layout horizontal">
+          <div class="flex"></div>
+<if expr="_google_chrome">
+          <oobe-text-button border on-tap="onReportAnIssue_">
+            <div>$i18n{migrationButtonReportAnIssue}</div>
+          </oobe-text-button>
+</if>
+          <oobe-text-button inverse on-tap="onRestartOnFailure_">
+            <div>$i18n{migrationButtonRestart}</div>
+          </oobe-text-button>
+        </div>
+      </oobe-dialog>
+    </template>
+    <template is="dom-if" if="[[isNotEnoughSpace_(uiState)]]">
+      <oobe-dialog tabindex="0" has-buttons>
+        <iron-icon class="oobe-icon chrome-logo"></iron-icon>
+        <div class="header">
+          <h1 class="title">$i18n{migrationReadyTitle}</h1>
+          <div class="subtitle">$i18n{migrationReadyDescription}</div>
+        </div>
+        <div class="footer layout vertical" aria-live="polite">
+          <div class="warning">$i18n{migrationNospaceWarningLabel}</div>
+          <div>$i18n{migrationAskFreeSpaceMessage}</div>
+          <div>[[computeAvailableSpaceLabel_(availableSpaceInString)]]</div>
+          <div>[[computeNecessarySpaceLabel_(necessarySpaceInString)]]</div>
+        </div>
+        <div class="bottom-buttons flex layout horizontal">
+          <div class="flex"></div>
+          <template is="dom-if" if="[[!isResuming]]">
+            <oobe-text-button inverse on-tap="onSkip_">
+              <div>$i18n{migrationButtonContinue}</div>
+            </oobe-text-button>
+          </template>
+          <template is="dom-if" if="[[isResuming]]">
+            <oobe-text-button inverse on-tap="onRestartOnLowStorage_">
+              <div>$i18n{migrationButtonRestart}</div>
+            </oobe-text-button>
+          </template>
+        </div>
+      </oobe-dialog>
+    </template>
+  </template>
+</dom-module>

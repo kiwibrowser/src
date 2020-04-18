@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../resources/js-test.js"></script>
+</head>
+<body>
+<script>
+description("Tests navigator.requestMIDIAccess fails in a detached frame.");
+
+window.jsTestIsAsync = true;
+iframe = document.createElement('iframe');
+document.body.appendChild(iframe);
+contentNavigator = iframe.contentWindow.navigator;
+document.body.removeChild(iframe);
+
+// set testRunner configuration so that requestMIDIAccess returns "AbortError".
+contentNavigator.requestMIDIAccess().then(function() {
+    testFailed("requestMIDIAccess() does not fail unexpectedly.");
+    finishJSTest();
+}, function(error) {
+    window.errorName = error.name;
+    shouldBeEqualToString("errorName", 'AbortError');
+    testPassed("requestMIDIAccess() fail as expected.");
+    finishJSTest();
+});
+
+</script>
+</body>
+</html>

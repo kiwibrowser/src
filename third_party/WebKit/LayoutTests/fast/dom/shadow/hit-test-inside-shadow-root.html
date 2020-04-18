@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<sub id="sub">
+</sub>
+<del id="del">
+    <i id="italic"></i>
+</del>
+<div id="div"></div>
+<script>
+    text = document.createTextNode('Text'); 
+    italic.appendChild(text); 
+
+    shadow = sub.createShadowRoot(); 
+    shadow.appendChild(del); 
+
+    // Take the text node out of the document
+    section = document.createElement('div'); 
+    section.appendChild(sub); 
+    div.appendChild(text); 
+</script>
+<p>crbug.com/491844 Moving a node from inside a shadow-root to a detached tree should not crash when we hit-test it. Hover over 'Text' to test. </p>
+<div id="result">Test passes if it does not crash.</div>
+<script>
+if (window.testRunner) {
+    testRunner.dumpAsText();
+    eventSender.mouseMoveTo(10, 10);
+    eventSender.mouseDown();
+    eventSender.mouseUp();
+}
+</script>

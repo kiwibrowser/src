@@ -1,0 +1,110 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/html/cr.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_drawer/cr_drawer.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_toolbar/cr_toolbar.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-icon/iron-icon.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/neon-animated-pages.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/web-animations.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-item/paper-icon-item.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-listbox/paper-listbox.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-styles/shadow.html">
+<link rel="import" href="audio_settings.html">
+<link rel="import" href="battery_settings.html">
+<link rel="import" href="bluetooth_settings.html">
+<link rel="import" href="icons.html">
+<link rel="import" href="input_device_settings.html">
+<link rel="import" href="shared_styles.html">
+
+<dom-module id="device-emulator-pages">
+  <template>
+    <!-- TODO(michaelpg): Wrap the line below to fit within the 80-char limit.
+         See https://github.com/Polymer/polymer/pull/3668. -->
+    <style include="device-emulator-shared-styles iron-flex iron-flex-alignment iron-positioning">
+      :host {
+        display: flex;
+        flex-direction: column;
+      }
+
+      neon-animated-pages {
+        max-width: 70%;
+        min-width: 70%;
+      }
+
+      neon-animated-pages > * {
+        @apply(--shadow-elevation-2dp);
+        background-color: white;
+        display: block;
+        margin: 20px;
+        padding: 0 20px 20px 20px;
+        position: relative !important;
+      }
+
+      cr-toolbar {
+        --iron-icon-fill-color: white;
+        background-color: var(--google-blue-700);
+        color: white;
+        min-height: 56px;
+        z-index: 2;
+      }
+
+      #container {
+        align-items: center;
+        background-color: lightgray;
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        overflow: overlay;
+        position: relative;
+      }
+    </style>
+
+    <cr-toolbar page-name="Device Emulator"
+        clear-label="clear"
+        search-prompt="Search not working..."
+        on-cr-toolbar-menu-tap="onMenuButtonTap_"
+        menu-label="Device Emulator"
+        role="banner"
+        show-menu>
+    </cr-toolbar>
+    <cr-drawer id="drawer" heading="Device Emulator">
+      <div class="drawer-content">
+        <paper-listbox class="layout vertical" selected="{{selectedPage}}">
+          <paper-icon-item>
+            <iron-icon icon="device-emulator:volume-up" item-icon></iron-icon>
+            Audio
+          </paper-icon-item>
+          <paper-icon-item>
+            <iron-icon icon="device-emulator:battery-charging-full" item-icon>
+            </iron-icon>
+            Battery/Power
+          </paper-icon-item>
+          <paper-icon-item>
+            <iron-icon icon="device-emulator:bluetooth" item-icon></iron-icon>
+            Bluetooth
+          </paper-icon-item>
+          <paper-icon-item>
+            <iron-icon icon="device-emulator:mouse" item-icon></iron-icon>
+            Input Devices
+          </paper-icon-item>
+        </paper-listbox>
+      </div>
+    </cr-drawer>
+    <div id="container" class="no-outline">
+      <neon-animated-pages  selected="[[selectedPage]]"
+          entry-animation="fade-in-animation"
+          exit-animation="fade-out-animation">
+        <audio-settings id="audioSettings"></audio-settings>
+        <battery-settings id="batterySettings"></battery-settings>
+        <bluetooth-settings id="bluetoothSettings"></bluetooth-settings>
+        <input-device-settings id="inputDeviceSettings">
+        </input-device-settings>
+      </neon-animated-pages>
+    </div>
+  </template>
+  <script src="device_emulator_pages.js"></script>
+</dom-module>

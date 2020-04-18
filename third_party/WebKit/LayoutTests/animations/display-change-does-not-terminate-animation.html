@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style type="text/css">
+    #target {
+      position: relative;
+      height: 50px;
+      width: 50px;
+      background-color: blue;
+    }
+    .animated {
+      animation: test 10s linear;
+      animation: test 10s linear;
+    }
+    @keyframes test {
+        from { left: 100px; }
+        to   { left: 200px; }
+    }
+    @keyframes test {
+        from { left: 100px; }
+        to   { left: 200px; }
+    }
+  </style>
+  <script type="text/javascript">
+    if (window.testRunner) {
+      testRunner.dumpAsText();
+      testRunner.waitUntilDone();
+    }
+
+    function log(message) {
+      var div = document.createElement('div');
+      div.textContent = message;
+      document.getElementById('log').appendChild(div);
+    }
+
+    var target;
+    function go() {
+      target = document.getElementById('target');
+      target.addEventListener('animationstart', onStart);
+      target.classList.add('animated');
+    }
+
+    function onStart(e) {
+      log('INFO: Start event fired');
+      target.removeEventListener('animationstart', onStart);
+      target.addEventListener('animationstart', onRestart);
+      setTimeout(setDisplay.bind(null, 0), 20);
+    }
+
+    function checkLeftValue(previousValue, isLast) {
+      var currentValue = getComputedStyle(target).left;
+      var pass = parseFloat(previousValue) <= parseFloat(currentValue);
+      log((pass ? 'PASS' : 'FAIL') + ': Left property was ' + (pass ? 'not ' : '') + 'reset' +
+          (pass ? '' : ' (saw change from ' + previousValue + ' to ' + currentValue + ')'));
+      if (isLast && window.testRunner) {
+        testRunner.notifyDone();
+      }
+    }
+
+    var values = [
+      'inline',
+      'block',
+      'inline-block',
+      'inline-table',
+      'list-item',
+      'run-in',
+      'table',
+      'table-caption',
+      'table-column-group',
+      'table-header-group',
+      'table-footer-group',
+      'table-row-group',
+      'table-cell',
+      'table-column',
+      'table-row'
+    ];
+    function setDisplay(index) {
+      log('INFO: Setting display to ' + values[index]);
+      var isLast = index === values.length - 1;
+      setTimeout(checkLeftValue.bind(null, getComputedStyle(target).left, isLast), 0);
+      target.style.display = values[index];
+      if (!isLast) {
+        setTimeout(setDisplay.bind(null, index + 1, true), 20);
+      }
+    }
+
+    function onRestart(e) {
+      // Clear log to avoid flakiness in failure output.
+      document.getElementById('log').innerHTML = '';
+      log('FAIL: Start event fired again');
+      if (window.testRunner) {
+        testRunner.notifyDone();
+      }
+    }
+  </script>
+</head>
+<body onload="go()">
+  <p>
+    Tests that changing the display property of a running animation to a value
+    other than 'none' does not cause it to terminate or re-start.
+  </p>
+  <div id="target">target</div>
+  <div id="log"></div>
+</body>
+</html>

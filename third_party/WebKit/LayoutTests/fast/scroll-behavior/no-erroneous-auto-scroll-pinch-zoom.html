@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<style>
+  #content {
+    width: 1000px;
+    height: 1000px;
+  }
+</style>
+<script src="../../resources/js-test.js"></script>
+
+<div id="content">
+  <span id="select">This text is selected.</span>
+</div>
+
+<script type="text/javascript">
+  var scrollTopBefore;
+
+  jsTestIsAsync = true;
+  description("This is a test for http://crbug.com/516245. It ensures that pinch-zooming and selecting doesn't autoscroll the page. To manually test, on Mac, pinch-zoom in and select text below. The page should not autoscroll.");
+
+  function finishTest() {
+    eventSender.mouseUp();
+
+    if (document.scrollingElement.scrollTop == scrollTopBefore) {
+      testPassed("Scroll offset did not change when text selected.");
+    } else {
+      testFailed("Scroll offset changed when text selected.");
+    }
+    document.getElementById('content').style.display = 'none';
+    finishJSTest();
+  }
+
+  function MouseWheelHandler(e) {
+    return false;
+  }
+
+  window.onload = function () {
+    var element = document.getElementById('select');
+    // The autoscroll bug happens when there is a mousewheel event listener on
+    // the page.
+    element.addEventListener("mousewheel", MouseWheelHandler, false);
+
+    if (window.internals && internals.magnifyScaleAroundAnchor(2.5, 0, 30.2)) {
+      element.scrollIntoView();
+      scrollTopBefore = document.scrollingElement.scrollTop;
+
+      var y = element.offsetHeight / 2;
+      var endX = element.offsetWidth + 100;
+      eventSender.dragMode = false;
+      eventSender.mouseMoveTo(element.offsetLeft, y);
+      eventSender.mouseDown();
+      eventSender.mouseMoveTo(endX - 30, y);
+      eventSender.mouseMoveTo(endX, y);
+      // Wait for the autoscroll timer to fire.
+      window.requestAnimationFrame(finishTest);
+    }
+  }
+</script>

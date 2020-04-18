@@ -1,0 +1,68 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/shared_style_css.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-list/iron-list.html">
+<link rel="import" href="../settings_vars_css.html">
+<link rel="import" href="search_engine_entry.html">
+
+<dom-module id="settings-search-engines-list">
+  <template>
+    <style include="settings-shared">
+      #headers {
+        display: flex;
+        padding: 10px 0;
+      }
+
+      #headers .name,
+      #headers .keyword {
+        flex: 3;
+      }
+
+      #headers .url {
+        flex: 4;
+      }
+
+      #outer {
+        @apply --settings-list-frame-padding;
+      }
+
+      settings-search-engine-entry {
+        border-top: var(--settings-separator-line);
+      }
+
+      :host([fixed-height]) #container {
+        /* Max items we show before scrolling is 6. Adding a 7th item to the
+         * list will add a scroll bar to the container. */
+        max-height: calc((var(--settings-row-min-height) +
+                          var(--settings-separator-height)) * 6);
+      }
+
+      .icon-placeholder {
+        -webkit-margin-end: 0;
+        -webkit-margin-start: var(--cr-icon-button-margin-start);
+        width: var(--cr-icon-ripple-size);
+      }
+    </style>
+    <div id="outer">
+      <div id="headers" class="column-header">
+        <div class="name">$i18n{searchEnginesSearchEngine}</div>
+        <div class="keyword">$i18n{searchEnginesKeyword}</div>
+        <div class="url">$i18n{searchEnginesQueryURL}</div>
+        <div class="icon-placeholder"></div>
+      </div>
+      <div id="container" class="scroll-container"
+          scrollable$="[[fixedHeight]]">
+        <iron-list items="[[engines]]" scroll-target="[[scrollTarget]]"
+            scroll-offset="[[scrollOffset]]" preserve-focus risk-selection>
+          <template>
+            <settings-search-engine-entry engine="[[item]]"
+                tabindex$="[[tabIndex]]" iron-list-tab-index="[[tabIndex]]"
+                last-focused="{{lastFocused_}}">
+            </settings-search-engine-entry>
+          </template>
+        </iron-list>
+      </div>
+    </div>
+  </template>
+  <script src="search_engines_list.js"></script>
+</dom-module>

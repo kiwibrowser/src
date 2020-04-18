@@ -1,0 +1,43 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+<script src="../resources/js-test.js"></script>
+</head>
+<body id="body">
+
+<div role="listbox">
+<div role="option" tabindex="-1">option 1</div>
+<div role="option" aria-label="label 2">option 2</div>
+</div>
+
+<p id="description"></p>
+<div id="console"></div>
+
+<script>
+
+    description("This tests that the aria 'option' role works as expected. That is, it becomes a static text element with no children.");
+
+    if (window.accessibilityController) {
+
+          var body = document.getElementById("body");
+          body.focus();
+
+          var listBox = accessibilityController.focusedElement.childAtIndex(0);
+          var firstChild = listBox.childAtIndex(0);
+          var secondChild = listBox.childAtIndex(1);
+          debug("firstChild.role is " + firstChild.role);
+          shouldBe("firstChild.name", "'option 1'");
+
+          debug("secondChild.role is " + secondChild.role);
+          shouldBe("secondChild.name", "'label 2'");
+
+          shouldBe("firstChild.childrenCount", "0");
+          shouldBe("secondChild.childrenCount", "0");
+
+          shouldBe("firstChild.isFocusable", "true");
+    }
+
+</script>
+
+</body>
+</html>

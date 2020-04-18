@@ -1,0 +1,15 @@
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script>
+test(function () {
+    testRunner.addOriginAccessWhitelistEntry(location.origin, location.protocol, '', false);
+    testRunner.addOriginAccessWhitelistEntry(location.origin, 'blob', '', false);
+}, 'testRunner.addOriginAccessWhitelistEntry is required for this test');
+
+test(function () {
+    var blobUrl = URL.createObjectURL(new Blob());
+    assert_throws('SecurityError', function () {
+        history.pushState(null, null, blobUrl);
+    });
+}, 'pushState to blob:-URL should fail with SecurityError (even with whitelisted origins)');
+</script>

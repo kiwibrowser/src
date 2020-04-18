@@ -1,0 +1,81 @@
+NaCl File Lock Tests
+
+The nacl_file_lock_test test driver implements an interpreter for a
+test language to allow simple, easy to read test programs to drive
+tests.  The test language is based on Lisp, primarily because it's
+easy to parse.  (See nacl_sexp.[ch] for the parser.)
+
+File Locking Test Framework
+
+The test framework allows us to write tests that tell worker threads
+to perform actions and for the main thread to look for events that
+should occur as a result.  Architecturally, the worker threads accept
+work orders from the main thread and post events as the work is done,
+and the main thread sends work requests to the worker threads and uses
+"matcher" functions to recognize whether an expected set of events
+occurred.
+
+Event matching functions succeed and return information used by the
+(match ...) function, which ensures that all events that occurred are
+accounted for, i.e., no unexpected event occurred.  Event matchers can
+be composed with (all ...) and (any ...) functions.  In the former
+case, (all ...) is used when several events should occur as a result
+of an action, e.g., unlock succeeding and another thread immediately
+acquiring the lock; the order in which the events occur does not
+matter.  In the latter case, (any ...) is used when, for example,
+unlocking a file could result in one of several sets of events because
+there are multiple worker threads waiting for the lock and any of them
+might succeed.  The return value of all matchers is a list of two
+integers, with the index (0-based) of the matcher that succeeded as
+the first element, and the bitmask of the position in the event queue
+of the events "consumed" by the match as the second element.  The
+(match ...) function consumes the bitmask and returns the index.  It
+is only the (any ...) function where the index matters, since it is
+the only matcher that permits alternation.  The index is typically
+used with the (nth ...) function to pick the next step(s) to execute
+in the test.
+
+At the language level, we have these domain-specific functions:
+
+  ;;; Initialization
+
+  (set-threads <num-threads>)
+  (set-files <num-files>)
+
+  ;;; Commands
+
+  (lock <thread-num> <file-num>)   ;;; thread <thread-num> locks <file-num>
+  (unlock <thread-num> <file-num>) ;;; thread <thread-num> unlocks <file-num>
+
+  ;;; Wait for events to occur (with timeout).  If <matcher> matched
+  ;;; all events in the event set, remove events and succeed,
+  ;;; proceeding to the next function.  Otherwise the test fails.  If
+  ;;; the matcher is (any ...), the index of the successful matcher is
+  ;;; returned.
+  (match <matcher>)
+
+  ;;; Event Matchers
+
+  ;;; Matches the event <thread-num> locked <file-num>
+  (locked <thread-num> <file-num>)
+
+  ;;; Matches the event <thread-num> unlocked <file-num>
+  (unlocked <thread-num> <file-num>)
+
+  ;;; Matches when no event occurs (up to timeout)
+  (epsilon)
+
+  ;;; Matches if any of the matchers in the list match
+  (any <matcher1> <matcher2>...)
+
+  ;;; Matches if all matchers in the list match
+  (all <matcher1> <matcher2>...)
+
+
+Additionally, some basic, standard Lisp functions / special forms are
+included:
+
+  (quote <s-expression>)
+  (eval <s-expression>)
+  (nth <num> (<s-expression1> <s-expression2>...))
+  (progn <s-expression>...)

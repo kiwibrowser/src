@@ -1,0 +1,2 @@
+Custom-Scrollbar needs layout when scrollbar thickness changed. The test passed if chrome did not crash.
+

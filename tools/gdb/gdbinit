@@ -1,0 +1,41 @@
+# This is gdbinit for source level debugging with -fdebug-prefix-map compile
+# option.
+
+python
+
+import os
+
+def get_current_debug_file_directories():
+  dir = gdb.execute("show debug-file-directory", to_string=True)
+  dir = dir[len('The directory where separate debug symbols are searched for is "'):-len('".')-1]
+  return set(dir.split(":"))
+
+
+def add_debug_file_directory(dir):
+  # gdb has no function to add debug-file-directory, simulates that by using
+  # `show debug-file-directory` and `set debug-file-directory <directories>`.
+  current_dirs = get_current_debug_file_directories()
+  current_dirs.add(dir)
+  gdb.execute("set debug-file-directory %s" % ":".join(current_dirs),
+              to_string=True)
+
+
+def newobj_handler(event):
+  compile_dir = os.path.dirname(event.new_objfile.filename)
+  if not compile_dir:
+    return
+
+  # Add source path
+  gdb.execute("dir %s" % compile_dir)
+
+  # Need to tell the location of .dwo files.
+  # https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
+  # https://crbug.com/603286#c35
+  add_debug_file_directory(compile_dir)
+
+
+# Event hook for newly loaded objfiles.
+# https://sourceware.org/gdb/onlinedocs/gdb/Events-In-Python.html
+gdb.events.new_objfile.connect(newobj_handler)
+
+end

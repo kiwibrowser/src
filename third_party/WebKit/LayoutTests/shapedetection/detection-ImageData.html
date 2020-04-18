@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="file:///gen/layout_test_data/mojo/public/js/mojo_bindings.js"></script>
+<script src="file:///gen/mojo/public/mojom/base/big_buffer.mojom.js"></script>
+<script src="file:///gen/services/shape_detection/public/mojom/barcodedetection.mojom.js"></script>
+<script src="file:///gen/services/shape_detection/public/mojom/facedetection.mojom.js"></script>
+<script src="file:///gen/services/shape_detection/public/mojom/facedetection_provider.mojom.js"></script>
+<script src="file:///gen/services/shape_detection/public/mojom/textdetection.mojom.js"></script>
+<script src="resources/big-buffer-helpers.js"></script>
+<script src="resources/mock-barcodedetection.js"></script>
+<script src="resources/mock-facedetection.js"></script>
+<script src="resources/mock-textdetection.js"></script>
+<script>
+
+var createTestForImageData = function(createDetector, mock,
+                                      detectionResultTest) {
+  async_test(async function(t) {
+
+    var img = new Image();
+    img.onload = async function() {
+
+      var canvas = document.createElement("canvas");;
+      canvas.getContext("2d").drawImage(img, 0, 0);
+
+      var detector = createDetector();
+      try {
+        var detectionResult = await detector.detect(canvas.getContext("2d")
+            .getImageData(0, 0, canvas.width, canvas.height));
+        detectionResultTest(detectionResult, mock);
+        t.done();
+      } catch (error) {
+        assert_unreached("Error during detect(canvas): " + error);
+      }
+    }
+
+    img.src = "../media/content/greenbox.png";
+  });
+};
+
+function FaceDetectorDetectionResultTest(detectionResult, mock) {
+  const imageReceivedByMock = mock.getFrameData();
+  assert_equals(imageReceivedByMock.byteLength, 180000,"Image length");
+  const GREEN_PIXEL = 0xFF00FF00;
+  assert_equals(imageReceivedByMock[0], GREEN_PIXEL, "Pixel color");
+  assert_equals(detectionResult.length, 3, "Number of faces");
+}
+
+function BarcodeDetectorDetectionResultTest(detectionResult, mock) {
+  assert_equals(detectionResult.length, 2, "Number of barcodes");
+  assert_equals(detectionResult[0].rawValue, "cats", "barcode 1");
+  assert_equals(detectionResult[1].rawValue, "dogs", "barcode 2");
+}
+
+function TextDetectorDetectionResultTest(detectionResult, mock) {
+  assert_equals(detectionResult.length, 2, "Number of textBlocks");
+  assert_equals(detectionResult[0].rawValue, "cats", "textBlock 1");
+  assert_equals(detectionResult[1].rawValue, "dogs", "textBlock 2");
+}
+
+// These tests verify that a Detector's detect() works on an ImageBitmap. Use
+// the mock mojo server implemented in mock-{barcode,face}detection.js.
+generate_tests(createTestForImageData, [
+  [
+    "Face - detect(ImageData)",
+    () => { return new FaceDetector(); },
+    mockFaceDetectionProvider,
+    FaceDetectorDetectionResultTest
+  ],
+  [
+    "Barcode - detect(ImageData)",
+    () => { return new BarcodeDetector(); },
+    mockBarcodeDetection,
+    BarcodeDetectorDetectionResultTest
+  ],
+  [
+    "Text - detect(ImageData)",
+    () => { return new TextDetector(); },
+    mockTextDetection,
+    TextDetectorDetectionResultTest
+  ]
+]);
+
+</script>

@@ -1,0 +1,196 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# All tests below involve native assembler
+
+HALT_SLED_SIZE=32
+
+# Valgrind gets confused by these tests
+
+if env.IsRunningUnderValgrind():
+  Return()
+
+# glibc linker script enforces gap; test needs to be updated to use
+# custom linker script in this case.
+if env.Bit('nacl_glibc'):
+  Return()
+
+# TODO(dschuff): either re-enable this test after we have fully transitioned
+# to new-style layout and ironed out any potential gold issues, or remove
+# all pnacl-specific stuff below and in the asm files.
+#
+# It is unlikely that we will re-enable these tests under the PNaCl
+# toolchain, because they depend on invoking "ld" directly, which is not
+# really a supported use of the PNaCl toolchain.  These tests are too
+# dependent on the layout that the linker happens to produce, so the tests
+# are likely to break or become ineffective if the linker is changed.
+if env.Bit('bitcode'):
+  Return()
+
+# TODO(petarj): Enable these tests when llvm integrated assembler can handle
+# expressions from nacl_text_pad_test.S.
+if env.Bit('build_mips32') and env.Bit('nacl_clang'):
+  Return()
+
+# ----------------------------------------------------------
+# Tests that require a NaCl module
+# ----------------------------------------------------------
+
+if env.Bit('build_x86_32'):
+  nacl_text_pad_asm = 'arch/x86_32/nacl_text_pad_test.S'
+elif env.Bit('build_x86_64'):
+  nacl_text_pad_asm = 'arch/x86_64/nacl_text_pad_test.S'
+elif env.Bit('build_arm'):
+  nacl_text_pad_asm = 'arch/arm/nacl_text_pad_test.S'
+elif env.Bit('build_mips32'):
+  nacl_text_pad_asm = 'arch/mips/nacl_text_pad_test.S'
+else:
+  raise Exception('unknown architecture')
+
+def NewAsmEnv(env, defines, rodata_address, rwdata_address):
+  asm_env = env.Clone()
+  # NOTE(robertm): convert this to pure C code so that most of this
+  # special handling can be eliminated
+  link_cmd = ('${LD} -static -e _start ${TEXT_START} ${RO_START} ${RW_START}' +
+                ' -o ${TARGET} ${SOURCES}')
+
+  if env.Bit('build_x86_32'):
+    link_cmd += ' -melf_i386_nacl'
+  elif env.Bit('build_x86_64'):
+    link_cmd += ' -melf_x86_64_nacl'
+  elif env.Bit('build_arm'):
+    link_cmd += ' -marmelf_nacl'
+  elif env.Bit('build_mips32'):
+    link_cmd += ' -mmipselelf_nacl'
+  else:
+    raise Exception('unknown architecture')
+
+  asm_env['LINKCOM'] = link_cmd
+
+  asm_env.Append(CPPDEFINES = [
+                     ['NACL_BUILD_ARCH', '${BUILD_ARCHITECTURE}' ],
+                     ['NACL_BUILD_SUBARCH', '${BUILD_SUBARCH}' ],
+                 ])
+
+  asm_env.Append(CPPDEFINES=defines)
+
+  asm_env['TEXT_START'] = '--section-start .text=0x%x' % 0x20000
+  if rodata_address:
+    asm_env['RO_START'] = '-Trodata-segment=0x%x' % rodata_address
+  if rwdata_address:
+    asm_env['RW_START'] = '--section-start .data=0x%x' % rwdata_address
+
+  return asm_env
+
+
+ALLOCATION_SIZE   = 0x10000
+START_OF_TEXT     = 0x20000
+TEXT_SIZE_BOUND   = 0x10000  # estimate of test code size
+RODATA_SIZE_BOUND = 0x10000
+RWDATA_SIZE       = 0x4  # if we have rwdata, we must use exactly one word!
+
+
+def EndOfText(text_end_modulus):
+  return START_OF_TEXT + text_end_modulus
+
+
+def RoundUpToAllocSize(size):
+  return (size + ALLOCATION_SIZE - 1) & ~(ALLOCATION_SIZE - 1)
+
+
+def TextGap(text_end):
+  end_of_text = EndOfText(text_end)
+  rounded_end_of_text = RoundUpToAllocSize(end_of_text)
+  text_gap = rounded_end_of_text - end_of_text
+  return text_gap
+
+
+def NaturalRodataStart(text_end):
+  extra = 0
+  text_gap = TextGap(text_end)
+  if text_gap < HALT_SLED_SIZE:
+    extra = ALLOCATION_SIZE
+  return RoundUpToAllocSize(START_OF_TEXT + TEXT_SIZE_BOUND + extra)
+
+
+def ExpectedBreak(text_end, rodata_addr, rwdata_addr, rwdata_size):
+  # The new linker always pads the text segment out to a page boundary.
+  text_end = RoundUpToAllocSize(text_end)
+  if rwdata_addr is None:
+    if rodata_addr is None:
+      break_addr = NaturalRodataStart(text_end)
+    else:
+      break_addr = RoundUpToAllocSize(rodata_addr + RODATA_SIZE_BOUND)
+  else:
+    break_addr = rwdata_addr + rwdata_size
+  return break_addr
+
+test_specs = [ (0x10000,       'no'),
+               (0x10000 - 32, 'small'),
+               ( 0x8000,      'large'),
+               (0x10000 - 28, 'too_small') ]
+
+rwdata_address = None  # none for now
+
+for text_end, variant in test_specs:
+  for rodata_address, name_modifier in [ (None, ''),
+                                         (0, '_ro'),
+                                         (0x100000, '_ro_dyn') ]:
+
+    if rodata_address is None and env.UsesAbiNote():
+      # This toolchain always produces some rodata.
+      rodata_address = 0
+
+    # rodata_address is None when no .rodata section should appear
+    # in the generated nexe, and is 0 when it should appear in the
+    # natural location (as defined by the linker script); when it
+    # has a non-zero numeric value, then the .rodata section is
+    # forced to start at that address.
+    if rodata_address == 0:
+      rodata_address = NaturalRodataStart(text_end)
+    # rodata_address is None or a non-zero integer
+
+    break_address = ExpectedBreak(text_end,
+                                  rodata_address,
+                                  rwdata_address,
+                                  RWDATA_SIZE)
+
+    defines=[]
+    for (symbol, value) in [('TEXT_EXTEND', text_end),
+                            ('EXPECTED_BREAK', break_address),
+                            ('EXPECTED_RODATA', rodata_address),
+                            ('EXPECTED_RWDATA', rwdata_address)]:
+      if value is not None:
+        defines += [[symbol, str(value)]]
+
+    asm_env = NewAsmEnv(env, defines, rodata_address, rwdata_address)
+
+    base_name = 'nacl_text_' + variant + '_pad' + name_modifier + '_test'
+    obj = asm_env.ComponentObject(base_name + '.o', nacl_text_pad_asm)
+
+    nexe = asm_env.ComponentProgram(base_name, [obj])
+
+    if (rodata_address is not None and
+        rodata_address <= START_OF_TEXT + ALLOCATION_SIZE):
+      # With the new linker, the code segment is padded out to
+      # ALLOCATION_SIZE with nops, so the rodata segment starts immediately
+      # thereafter with no space for a halt sled.  Ensure sel_ldr catches
+      # that case.  NaClAbort() behaves differently when code coverage is
+      # enabled: it calls exit() rather than abort().
+      if 'TRUSTED_ENV' in env and env['TRUSTED_ENV'].Bit('coverage_enabled'):
+        expected_exit_status = 'naclabort_coverage'
+      else:
+        expected_exit_status = 'trusted_sigabrt'
+    else:
+      expected_exit_status = 0
+
+    node = env.CommandSelLdrTestNacl(base_name + '.out', nexe,
+                                     exit_status=expected_exit_status)
+
+    env.AddNodeToTestSuite(node,
+                           ['small_tests', 'sel_ldr_sled_tests'],
+                           'run_' + base_name)

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Fullscreen and Mouse Lock Scripts</title>
+<style type="text/css">
+  #HTMLCursor {
+      border: solid black 1px;
+      background: yellow;
+      display: inline;
+      position: absolute;
+      pointer-events: none;
+      z-index: 1;
+  }
+</style>
+<script type="text/javascript">
+
+function enterFullscreen() {
+  console.log("enterFullscreen()");
+  document.getElementById('container').webkitRequestFullScreen(
+    Element.ALLOW_KEYBOARD_INPUT);
+}
+
+function exitFullscreen() {
+  console.log("exitFullscreen()");
+  document.webkitCancelFullScreen();
+}
+
+// Wait for notification from JS, then notify test of success or failure
+// callback that the click has registered and the mouse lock state has changed.
+function lockMouse1(callback) {
+  console.log("lockMouse1()");
+  var target = document.getElementById("lockTarget1");
+
+  function failure() {
+    console.log("lock failed");
+    if (callback) {
+      callback("failure");
+    }
+  };
+  function possibleSuccess() {
+    if (document.pointerLockElement == target) {
+      console.log("lock success");
+      if (callback)
+        callback("success");
+    } else {
+      failure();
+    }
+  };
+  document.onpointerlockchange = possibleSuccess;
+  document.onpointerlockerror = failure;
+  target.requestPointerLock();
+}
+
+// In the PyAuto test the fullscreen is initiated, accepted and enters into a
+// wait state reading the value of lock_result. One of the two asynchronous
+// functions in the JS will be executed. The PyAuto code waits for lock_result
+// to return "success" or "failure". Sample PyAuto code:
+// lock_result = self._driver.execute_script('lockMouse1AndSetLockResult()')
+function lockMouseAndSetLockResult(targetId) {
+  var target = document.getElementById(targetId);
+  lock_result = "";
+
+  function failure() {
+    console.log("lock failed");
+    lock_result = "failure"
+  };
+  function possibleSuccess() {
+    if (document.pointerLockElement == target) {
+      console.log("lock success");
+      lock_result = "success"
+    } else {
+      failure();
+    }
+  };
+  document.onpointerlockchange = possibleSuccess;
+  document.onpointerlockerror = failure;
+  target.requestPointerLock();
+}
+
+function lockMouse1AndSetLockResult() {
+  console.log("lockMouse1AndSetLockResult()");
+  lockMouseAndSetLockResult("lockTarget1");
+}
+
+// When mouse lock is initiated and accepted, PyAuto test will wait for the
+// lock_result to return "success" or "failure" to initiate the next action.
+function lockMouse2() {
+  console.log("lockMouse2()");
+  lockMouseAndSetLockResult("lockTarget2");
+}
+
+function delayedLockMouse1() {
+  console.log("delayedLockMouse1()");
+  window.setTimeout(lockMouse1, 1010);
+  // Delay must be over 1 second or the click that initiated the delayed action
+  // may still be considered active and treat this as a user gesture.
+  // We want to test a lock not associated with a user gesture.
+}
+
+function spamLockMouse2() {
+  console.log("spamLockMouse2()")
+  window.setInterval(lockMouse2, 111);
+}
+
+function unlockMouse() {
+  console.log("unlockMouse()");
+  document.exitPointerLock();
+}
+
+function enterFullscreenAndLockMouse1() {
+  console.log("enterFullscreenAndLockMouse1()");
+  enterFullscreen();
+  lockMouse1();
+}
+
+function lockMouse1AndEnterFullscreen() {
+  console.log("lockMouse1AndEnterFullscreen()");
+  lockMouse1();
+  enterFullscreen();
+}
+
+function moveHTMLCursorTo(x, y) {
+  HTMLCursor.style.left = x + "px";;
+  HTMLCursor.style.top = y + "px";
+}
+
+function moveHTMLCursorToCenter() {
+  moveHTMLCursorTo(window.innerWidth / 2, window.innerHeight / 2);
+}
+
+function moveHTMLCursorBy(x, y) {
+  moveHTMLCursorTo(
+      HTMLCursor.getBoundingClientRect().left + parseInt(x),
+      HTMLCursor.getBoundingClientRect().top + parseInt(y));
+}
+
+var polyFillMouseEventMovementFromVenderPrefix = function (e) {
+  e.movementX = (e.movementX !== undefined ? e.movementX :
+                (e.mozMovementX !== undefined ? e.mozMovementX :
+                (e.oMovementX !== undefined ? e.oMovementX :
+                 e.msMovementY)));
+  e.movementY = (e.movementY !== undefined ? e.movementY :
+                (e.mozMovementY !== undefined ? e.mozMovementY :
+                (e.oMovementY !== undefined ? e.oMovementY :
+                 e.msMovementY)));
+}
+
+var clicked_elem_ID = ""
+function clickElement(id) {
+  clicked_elem_ID = id;
+}
+
+function init() {
+  moveHTMLCursorToCenter();
+
+  document.addEventListener("mousemove",
+                            polyFillMouseEventMovementFromVenderPrefix);
+  document.addEventListener("mousemove", function (e) {
+    if (e.movementX !== undefined) {
+      moveHTMLCursorBy(e.movementX, e.movementY);
+      displaytext.innerHTML =
+        "Document mousemove listener:<br>" +
+        "<ul>" +
+        "<li>Raw screen position: " + e.screenX + ", " + e.screenY + "</li>" +
+        "<li>HTMLCursor: "
+        + HTMLCursor.getBoundingClientRect().left + ", "
+        + HTMLCursor.getBoundingClientRect().top + "</li>" +
+        "<li>Movement: " + e.movementX + ", " + e.movementY + "</li>" +
+        "</ul>";
+    } else {
+      displaytext.innerHTML =
+        "<b>You must enable pointer lock in about:flags</b>";
+    }
+  });
+
+  document.addEventListener("keypress", function (e) {
+    switch (String.fromCharCode(e.charCode)) {
+    case "f": enterFullscreen(); break;
+    case "x": exitFullscreen(); break;
+    case "1": lockMouse1(); break;
+    case "2": lockMouse2(); break;
+    case "d": delayedLockMouse1(); break;
+    case "u": unlockMouse(); break;
+    case "b": enterFullscreenAndLockMouse1(); break;
+    case "B": lockMouse1AndEnterFullscreen(); break;
+    default: moveHTMLCursorToCenter(); break;
+    }
+  });
+}
+
+</script>
+</head>
+<body onload="init()"
+  title="This tooltip should not be shown if the mouse is locked.">
+  <div id="container">
+    <button id="enterFullscreen" onclick="enterFullscreen();">
+      enterFullscreen() [f]
+    </button><br>
+    <button id="exitFullscreen" onclick="exitFullscreen();">
+      exitFullscreen() [x]
+    </button><br>
+    <button id="lockMouse1" onclick="lockMouse1();">
+      lockMouse1() [1]
+    </button><br>
+    <button id="lockMouse2" onclick="lockMouse2();">
+      lockMouse2() [2]
+    </button><br>
+    <button id="delayedLockMouse1" onclick="delayedLockMouse1();">
+      delayedLockMouse1() [d]
+    </button><br>
+    <button id="spamLockMouse2" onclick="spamLockMouse2();">
+      spamLockMouse2()
+    </button><br>
+    <button id="unlockMouse" onclick="unlockMouse();">
+      unlockMouse() [u]
+    </button><br>
+    <button id="enterFullscreenAndLockMouse1"
+      onclick="enterFullscreenAndLockMouse1()">
+      enterFullscreenAndLockMouse1() [b]
+    </button><br>
+    <button id="lockMouse1AndEnterFullscreen"
+      onclick="lockMouse1AndEnterFullscreen()">
+      lockMouse1AndEnterFullscreen() [B]
+    </button><br>
+    <div id="lockTarget1">lockTarget1</div>
+    <div id="lockTarget2">lockTarget2</div>
+    <form name="HTMLCursor" id="HTMLCursor">HTMLCursor</form>
+    <form name="displaytext">...</form>
+    <p>The <a href="#anchor" name="anchor" id="anchor"
+      onclick="clickElement(this.id);">
+      anchor link
+    </a>
+    navigates to an anchor on this page. The browser should not exit tab
+    fullscreen or mouse lock.</p>
+  </div>
+  <p>This text is outside of the container that is made fullscreen. This text
+  should not be visible when fullscreen.</p>
+</body>
+</html>

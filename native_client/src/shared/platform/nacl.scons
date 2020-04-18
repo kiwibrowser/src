@@ -1,0 +1,26 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+env.Append(CCFLAGS=['-Wno-long-long'])
+
+platform_inputs = [
+    'nacl_check.c',
+    'nacl_log.c',
+    'posix/condition_variable.c',
+    'posix/lock.c',
+    'posix/nacl_error.c',
+    'posix/nacl_exit.c',
+    'posix/nacl_thread_id.c',
+    'posix/nacl_threads.c',
+    'posix/nacl_timestamp.c',
+    'nacl_sync_checked.c',
+    'refcount_base.cc',
+    ]
+
+libplatform = env.NaClSdkLibrary('libplatform',
+                                 platform_inputs,
+                                 LIBS=['pthread', 'gio'])
+

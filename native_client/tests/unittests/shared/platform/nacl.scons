@@ -1,0 +1,18 @@
+# -*- python -*-
+# Copyright 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+
+Import('env')
+
+atomic_ops_test_nexe = env.ComponentProgram(
+    'atomic_ops_test_nexe',
+    'atomic_ops_test.c',
+    EXTRA_LIBS=['platform', 'gio', '${PTHREAD_LIBS}', '${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl('atomic_ops_test.out',
+                                 atomic_ops_test_nexe,
+                                 args=['25'],
+                                 size='medium')
+
+env.AddNodeToTestSuite(node, ['medium_tests'], 'run_atomic_ops_nexe_test')

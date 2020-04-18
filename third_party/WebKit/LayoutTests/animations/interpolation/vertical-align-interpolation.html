@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<meta charset="UTF-8">
+<style>
+.parent {
+  vertical-align: 100px;
+}
+.target {
+  width: 100px;
+  height: 100px;
+  background-color: black;
+  display: inline-block;
+  vertical-align: 10px;
+}
+.expected {
+  background-color: green;
+}
+</style>
+<body>
+<script src="resources/interpolation-test.js"></script>
+<script>
+assertInterpolation({
+  property: 'vertical-align',
+  from: neutralKeyframe,
+  to: '40px',
+}, [
+  {at: -0.5, is: '-5px'},
+  {at: 0, is: '10px'},
+  {at: 0.3, is: '19px'},
+  {at: 0.6, is: '28px'},
+  {at: 1, is: '40px'},
+  {at: 1.5, is: '55px'},
+]);
+
+assertNoInterpolation({
+  property: 'vertical-align',
+  from: 'initial',
+  to: '40px',
+});
+
+assertInterpolation({
+  property: 'vertical-align',
+  from: 'inherit',
+  to: '40px',
+}, [
+  {at: -0.5, is: '130px'},
+  {at: 0, is: '100px'},
+  {at: 0.3, is: '82px'},
+  {at: 0.6, is: '64px'},
+  {at: 1, is: '40px'},
+  {at: 1.5, is: '10px'},
+]);
+
+assertNoInterpolation({
+  property: 'vertical-align',
+  from: 'unset',
+  to: '40px',
+});
+
+assertInterpolation({
+  property: 'vertical-align',
+  from: '0px',
+  to: '100px'
+}, [
+  {at: -0.5, is: '-50px'},
+  {at: 0, is: '0px'},
+  {at: 0.3, is: '30px'},
+  {at: 0.6, is: '60px'},
+  {at: 1, is: '100px'},
+  {at: 1.5, is: '150px'}
+]);
+
+assertInterpolation({
+  property: 'vertical-align',
+  from: '40px',
+  to: '40%'
+}, [
+  {at: -0.5, is: 'calc(60px - 20%)'},
+  {at: 0, is: '40px'},
+  {at: 0.3, is: 'calc(28px + 12%)'},
+  {at: 1, is: '40%'},
+  {at: 1.5, is: 'calc(-20px + 60%)'}
+]);
+
+assertNoInterpolation({
+  property: 'vertical-align',
+  from: 'super',
+  to: '40%'
+});
+</script>
+</body>

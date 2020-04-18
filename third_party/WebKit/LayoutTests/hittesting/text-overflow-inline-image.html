@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<style>
+  #containingBlock {
+    height: 200px;
+    font-size: 140px;
+    position: relative;
+    border: 1px solid black;
+  }
+</style>
+<div id="containingBlock">
+    <img id="image" src="../paint/invalidation/resources/bluesquare.png">
+</div>
+<a id="target" href="#">this is a link</a>
+<div id="result"></div>
+<script>
+// Tests 
+function test() {
+  var finished = false;
+  target.onclick = function() {
+    var result = document.getElementById("result");
+    result.innerHTML += "clicked<br>";
+    if (window.testRunner && finished) {
+        testRunner.dumpAsText();
+        testRunner.notifyDone();
+    }
+  };
+  if (window.testRunner) {
+    testRunner.waitUntilDone();
+  }
+
+  let x = image.offsetLeft + 10;
+  let y = image.offsetTop + image.offsetHeight;
+
+  if (window.eventSender) {
+    // No click - still inside containingBlock.
+    eventSender.mouseMoveTo(x, y - 10);
+    eventSender.mouseDown();
+    eventSender.mouseUp();
+
+    // Click - over the link. Still inside the height of the inline
+    // image, but outside of containingBlock.
+    eventSender.mouseMoveTo(x, y + 15);
+    finished = true;
+    eventSender.mouseDown();
+    eventSender.mouseUp();
+  }
+}
+window.onload = test;
+</script>

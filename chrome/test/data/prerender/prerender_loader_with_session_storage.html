@@ -1,0 +1,26 @@
+<html>
+<head>
+<title>Preloader</title>
+<script src="prerender_events_common.js"></script>
+</head>
+<body>
+<script>
+  function loader() {
+    var storage = window.sessionStorage;
+    var oldCounter = 0;
+    if (storage.counter) {
+      oldCounter = parseInt(storage.counter);
+    } else {
+      AddPrerender('REPLACE_WITH_PRERENDER_URL', 0);
+    }
+    storage.counter = oldCounter + 1;
+  }
+
+  function DidBackToOriginalPagePass() {
+    return window.sessionStorage.counter == '2';
+  }
+
+  window.onload = loader;
+</script>
+</body>
+</html>

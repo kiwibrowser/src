@@ -1,0 +1,51 @@
+<!DOCTYPE HTML>
+<html>
+<body>
+<script src="../resources/js-test.js"></script>
+
+<select id="menulist">
+  <option id="item0">Alicia</option>
+  <option id="item1">Peter</option>
+  <option id="item2">Kalinda</option>
+</select>
+
+<div id="console"></div>
+<script>
+description("This test makes sure menu lists fire events on both the option that lost selection and the one that gained selection.");
+window.jsTestIsAsync = true;
+
+if (window.testRunner && window.accessibilityController) {
+    testRunner.dumpAsText();
+
+    var menulist = document.getElementById("menulist");
+    menulist.selectedIndex = 0;
+
+    var axMenuList = accessibilityController.accessibleElementById("menulist");
+    var axMenuListPopup = axMenuList.childAtIndex(0);
+    shouldBe("axMenuListPopup.role", "\"AXRole: AXMenuListPopup\"");
+    var axMenuListOption = axMenuListPopup.childAtIndex(0);
+    shouldBe("axMenuListOption.role", "\"AXRole: AXMenuListOption\"");
+
+    window.setTimeout(function() {
+
+    // Explore the whole accessibility tree. State change events won't fire on accessible objects that haven't
+    // been created yet.
+    accessibilityController.accessibleElementById('foo');
+
+    accessibilityController.addNotificationListener(function(element, notification) {
+        if (element.name == axMenuListOption.name) {
+            window.element = element;
+            shouldBe("element.isEqual(axMenuListOption)", "true");
+            shouldBe("element.parentElement().isEqual(axMenuListPopup)", "true");
+            finishJSTest();
+        }
+    });
+
+    menulist.selectedIndex = 1;
+    }, 0);
+}
+
+</script>
+
+</body>
+</html>

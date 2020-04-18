@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<script src="../../../../resources/testharness.js"></script>
+<script src="../../../../resources/testharnessreport.js"></script>
+<script src="../../serviceworker/resources/test-helpers.js"></script>
+<script src="../../resources/get-host-info.js"></script>
+<body>
+<script>
+var ORIGIN = get_host_info()['HTTP_ORIGIN'];
+var IFRAME_BASE_URL = ORIGIN + '/local/serviceworker/resources/fetch-request-body-file-iframe.html';
+var SCOPE = ORIGIN + '/local/serviceworker/resources/fetch-request-body-file-test.php';
+
+function register() {
+  return new Promise(function(resolve, reject) {
+      with_iframe(IFRAME_BASE_URL + '?register')
+        .then(function(frame) {
+            var channel = new MessageChannel;
+            channel.port1.onmessage = function(msg) {
+                if (msg.data.msg == 'registered') {
+                  frame.remove();
+                  resolve();
+                } else {
+                  reject(msg.data.msg);
+                }
+              };
+            frame.contentWindow.postMessage({}, "*", [channel.port2]);
+          });
+    });
+}
+
+function unregister_and_done(t) {
+  return new Promise(function(resolve, reject) {
+      with_iframe(IFRAME_BASE_URL + '?unregister')
+        .then(function(frame) {
+            var channel = new MessageChannel;
+            channel.port1.onmessage = function(msg) {
+                if (msg.data.msg == 'unregistered') {
+                  frame.remove();
+                  t.done();
+                } else {
+                  reject(msg.data.msg);
+                }
+              };
+            frame.contentWindow.postMessage({}, "*", [channel.port2]);
+          });
+    });
+}
+
+function get_boundary(headers) {
+  var reg = new RegExp('multipart\/form-data; boundary=(.*)');
+  for (var i = 0; i < headers.length; ++i) {
+    if (headers[i][0] != 'content-type') {
+      continue;
+    }
+    var regResult = reg.exec(headers[i][1]);
+    if (!regResult) {
+      continue;
+    }
+    return regResult[1];
+  }
+  return '';
+}
+
+function send_post_frame_promise(action) {
+  return new Promise(function(resolve) {
+      var frame_name = 'frame_name';
+      var frame = document.createElement('iframe');
+      frame.name = frame_name;
+      document.body.appendChild(frame);
+      var form = document.createElement('form');
+      form.target = frame_name;
+      form.enctype = 'multipart/form-data';
+      form.action = SCOPE + '?' + action;
+      form.method = 'post';
+      var input1 = document.createElement('input');
+      input1.type = 'text';
+      input1.value = 'testValue1';
+      input1.name = 'testName1'
+      form.appendChild(input1);
+      var input2 = document.createElement('input');
+      input2.type = 'text';
+      input2.value = 'testValue2';
+      input2.name = 'testName2'
+      form.appendChild(input2);
+      var input3 = document.createElement('input');
+      input3.type = 'file';
+      input3.name = 'testFile'
+      form.appendChild(input3);
+      document.body.appendChild(form);
+      eventSender.beginDragWithFiles(
+        ["../resources/file-for-drag-to-send.txt"]);
+      eventSender.mouseMoveTo(input3.offsetLeft + input3.offsetWidth / 2,
+                              input3.offsetTop + input3.offsetHeight / 2);
+      eventSender.mouseUp();
+      frame.onload = function() {
+        document.body.removeChild(form);
+        resolve(frame);
+      };
+      form.submit();
+    });
+}
+
+function create_expected_body(boundary) {
+  return '--' + boundary + '\r\n' +
+         'Content-Disposition: form-data; name="testName1"\r\n' +
+         '\r\n' +
+         'testValue1\r\n' +
+         '--' + boundary + '\r\n' +
+         'Content-Disposition: form-data; name="testName2"\r\n' +
+         '\r\n' +
+         'testValue2\r\n' +
+         '--' + boundary + '\r\n' +
+         'Content-Disposition: form-data; name="testFile"; filename="file-for-drag-to-send.txt"\r\n' +
+         'Content-Type: text/plain\r\n' +
+         '\r\n' +
+         '1234567890\r\n' +
+         '--' + boundary + '--\r\n';
+}
+
+function as_text_test_frame_check(frame) {
+  var data = JSON.parse(frame.contentDocument.body.textContent);
+  frame.remove();
+  assert_equals(data.method, 'POST');
+  var boundary = get_boundary(data.headers);
+  var expected_body = create_expected_body(boundary);
+  assert_equals(data.body, expected_body);
+}
+
+function as_blob_test_frame_check(frame) {
+  var data = JSON.parse(frame.contentDocument.body.textContent);
+  frame.remove();
+  assert_equals(data.method, 'POST');
+  var boundary = get_boundary(data.headers);
+  var expected_body = create_expected_body(boundary);
+  assert_equals(data.body_size, expected_body.length);
+}
+
+function network_fallback_test_frame_check(frame) {
+  const expected =
+    'testName1=testValue1&' +
+    'testName2=testValue2&' +
+    'testFile=file-for-drag-to-send.txt:text/plain:1234567890'
+  assert_equals(frame.contentDocument.body.textContent, expected);
+}
+
+async_test(function(t) {
+    register()
+      .then(function() { return send_post_frame_promise('asText'); })
+      .then(as_text_test_frame_check)
+      .then(function() { return send_post_frame_promise('asBlob'); })
+      .then(as_blob_test_frame_check)
+      .then(function() { return send_post_frame_promise('NetworkFallback'); })
+      .then(network_fallback_test_frame_check)
+      .then(function() { return unregister_and_done(t); })
+      .catch(unreached_rejection(t));
+  }, 'Service Worker fetch request body with file.');
+</script>
+</body>

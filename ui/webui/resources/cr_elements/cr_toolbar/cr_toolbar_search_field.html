@@ -1,0 +1,163 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_search_field/cr_search_field_behavior.html">
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/cr_elements/shared_style_css.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-spinner/paper-spinner-lite.html">
+
+<dom-module id="cr-toolbar-search-field">
+  <template>
+    <style include="cr-shared-style">
+      :host {
+        align-items: center;
+        display: flex;
+        height: 40px;
+        transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+            width 150ms cubic-bezier(0.4, 0, 0.2, 1);
+        width: 44px;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      paper-icon-button-light,
+      paper-icon-button {
+        height: 32px;
+        margin: 6px;
+        min-width: 32px;
+        padding: 6px;
+        width: 32px;
+      }
+
+      #icon {
+        transition: margin 150ms, opacity 200ms;
+      }
+
+      #prompt {
+        opacity: 0;
+      }
+
+      paper-spinner-lite {
+        @apply --cr-icon-height-width;
+        --paper-spinner-color: white;
+        margin: 0 6px;
+        opacity: 0;
+        padding: 6px;
+        position: absolute;
+      }
+
+      paper-spinner-lite[active] {
+        opacity: 1;
+      }
+
+      #prompt,
+      paper-spinner-lite {
+        transition: opacity 200ms;
+      }
+
+      /* Input field. */
+      #searchTerm {
+        -webkit-font-smoothing: antialiased;
+        -webkit-margin-start: 2px;
+        flex: 1;
+        line-height: 185%;
+        position: relative;
+      }
+
+      label {
+        bottom: 0;
+        cursor: text;
+        left: 0;
+        overflow: hidden;
+        position: absolute;
+        right: 0;
+        top: 0;
+        white-space: nowrap;
+      }
+
+      :host([has-search-text]) label {
+        visibility: hidden;
+      }
+
+      input {
+        -webkit-appearance: none;
+        background: transparent;
+        border: none;
+        color: white;
+        font: inherit;
+        outline: none;
+        padding: 0;
+        position: relative;
+        width: 100%;
+      }
+
+      input[type='search']::-webkit-search-decoration,
+      input[type='search']::-webkit-search-cancel-button,
+      input[type='search']::-webkit-search-results-button {
+        -webkit-appearance: none;
+      }
+
+      /** Wide layout. */
+      :host(:not([narrow])) {
+        -webkit-padding-end: 0;
+        background: rgba(0, 0, 0, 0.22);
+        border-radius: 2px;
+        cursor: text;
+        width: var(--cr-toolbar-field-width, 680px);
+      }
+
+      :host(:not([narrow]):not([showing-search])) #icon,
+      :host(:not([narrow])) #prompt {
+        opacity: 0.7;
+      }
+
+      :host([narrow]:not([showing-search])) #searchTerm {
+        display: none;
+      }
+
+      /* Search open. */
+      :host([showing-search][spinner-active]) #icon {
+        opacity: 0;
+      }
+
+      :host([narrow][showing-search]) {
+        width: 100%;
+      }
+
+      :host([narrow][showing-search]) #icon,
+      :host([narrow][showing-search]) paper-spinner-lite {
+        -webkit-margin-start: 18px;  /* Line up with Menu icon. */
+      }
+    </style>
+    <template is="dom-if" id="spinnerTemplate">
+      <paper-spinner-lite active="[[isSpinnerShown_]]">
+      </paper-spinner-lite>
+    </template>
+    <paper-icon-button id="icon" icon="cr:search" title="[[label]]"
+        tabindex$="[[computeIconTabIndex_(narrow)]]"
+        aria-hidden$="[[computeIconAriaHidden_(narrow)]]">
+    </paper-icon-button>
+    <div id="searchTerm">
+      <label id="prompt" for="searchInput" aria-hidden="true">[[label]]</label>
+      <input id="searchInput"
+          aria-labelledby="prompt"
+          type="search"
+          on-input="onSearchTermInput"
+          on-search="onSearchTermSearch"
+          on-keydown="onSearchTermKeydown_"
+          on-focus="onInputFocus_"
+          on-blur="onInputBlur_"
+          incremental
+          autofocus>
+    </div>
+    <template is="dom-if" if="[[hasSearchText]]">
+      <paper-icon-button-light class="icon-cancel-toolbar">
+        <button id="clearSearch" title="[[clearLabel]]" on-tap="clearSearch_">
+        </button>
+      </paper-icon-button-light>
+    </template>
+  </template>
+  <script src="cr_toolbar_search_field.js"></script>
+</dom-module>

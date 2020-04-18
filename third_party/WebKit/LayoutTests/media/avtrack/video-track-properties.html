@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+    <head>
+        <title>VideoTrack properties read from input stream metadata</title>
+        <script src="../../resources/testharness.js"></script>
+        <script src="../../resources/testharnessreport.js"></script>
+            </head>
+    <body>
+        <script>
+            async_test(function(t)
+            {
+                var video = document.createElement("video");
+                video.src = "../content/test.webm";
+
+                video.onloadedmetadata = t.step_func_done(function()
+                {
+                    assert_equals(video.videoTracks.length, 1, "videoTracks.length");
+                    assert_true(video.videoTracks[0].selected, "videoTrack.selected");
+                    assert_equals(video.videoTracks[0].id, "1", "videoTrack.id");
+                    assert_equals(video.videoTracks[0].kind, "main", "videoTrack.kind");
+                    assert_equals(video.videoTracks[0].label, "", "videoTrack.label");
+                    assert_equals(video.videoTracks[0].language, "", "videoTrack.language");
+                });
+            });
+        </script>
+    </body>
+</html>

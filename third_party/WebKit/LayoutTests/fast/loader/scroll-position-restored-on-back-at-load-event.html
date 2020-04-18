@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="../../resources/js-test.js"></script>
+    <script>
+    description('Test ensures that scrollingElement.scrollTop/Left properties are available by the time DOMContentLoaded event fires.');
+    // Navigation steps:
+    // 1- page gets first loaded and scrolled.
+    // 2- loaded page away and then 'back'.
+    // Test: ensure that by the time DOMContenLoaded fires (after a back navigation), scrollingElement.scrollTop/Left are set.
+
+    function init(evt) {
+        if (window.name == 'second/load') {
+            shouldBe('document.scrollingElement.scrollTop', '2000');
+            shouldBe('document.scrollingElement.scrollLeft', '1000');
+            window.name = "";
+
+            if (window.testRunner)
+                finishJSTest();
+        } else {
+            window.scrollTo(1000, 2000);
+
+            window.name = "second/load";
+        }
+    }
+    function onLoad() {
+        setTimeout('window.location = "../../resources/back.html"', 0);
+    }
+
+    window.addEventListener('DOMContentLoaded', init, true);
+    window.onunload = function() {}  // prevent caching
+
+    var jsTestIsAsync = true;
+    </script>
+    <body onload="onLoad()">
+        <div id="overflow" style='width: 9999px; height:9999px; float:left;'></div>
+        <h1 id='console'/>
+    </body>
+</html>

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<script>
+    window.targetScaleFactor = 2;
+</script>
+<script src="resources/srcset-helper.js"></script>
+<script src="../../resources/js-test.js"></script>
+<script>
+    var imgWidth;
+    addEventListener("load", function() {
+        imgWidth = document.getElementById("foo").clientWidth;
+        var expected = 33554432; // blink::intMaxForLayoutUnit
+        if (sessionStorage.useZoomForDsfEnabled === 'true')
+          expected = Math.round(expected / window.devicePixelRatio);
+        shouldBe('imgWidth', '' + expected);
+    }, false);
+</script>
+<div>
+    This test passes if the image is displayed with infinite dimensions.
+</div>
+<img id="foo" srcset="resources/blue-100-px-square.png 0x">

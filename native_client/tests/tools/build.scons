@@ -1,0 +1,24 @@
+# -*- python -*-
+# Copyright 2008 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+
+Import('env')
+
+# Currently, this test only makes sense for non-Windows, since SIGPIPE
+# does not make sense in Windows.
+if env.Bit('windows'):
+  Return()
+# Don't run this test under valgrind -- it will fail with a different exit code.
+if env.IsRunningUnderValgrind():
+  Return()
+
+sigpipe_tool_test_exe = env.ComponentProgram('sigpipe_tool_test',
+                                             ['sigpipe_tool_test.c'])
+node = env.CommandTest(
+    'sigpipe_tool_test.out',
+    [sigpipe_tool_test_exe],
+    exit_status='sigpipe')
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_tool_tests')

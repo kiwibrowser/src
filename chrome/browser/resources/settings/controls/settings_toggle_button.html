@@ -1,0 +1,75 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/shared_vars_css.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_toggle/cr_toggle.html">
+<link rel="import" href="chrome://resources/cr_elements/policy/cr_policy_pref_indicator.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="settings_boolean_control_behavior.html">
+<link rel="import" href="../settings_shared_css.html">
+
+<dom-module id="settings-toggle-button">
+  <template>
+    <style include="settings-shared iron-flex">
+      :host {
+        @apply --cr-section;
+      }
+
+      :host(.first),
+      :host(.continuation) {
+        border-top: none;
+      }
+
+      :host(.three-line) {
+        min-height: var(--settings-row-three-line-min-height);
+      }
+
+      :host([elide-label]),
+      :host([elide-label]) #outerRow,
+      :host([elide-label]) #outerRow > div.flex {
+        min-width: 0;
+      }
+
+      :host([elide-label]) .label {
+        @apply --cr-text-elide;
+      }
+
+      #outerRow {
+        align-items: center;
+        display: flex;
+        min-height: var(--settings-row-two-line-min-height);
+        width: 100%;
+      }
+
+      #outerRow[noSubLabel] {
+        min-height: var(--settings-row-min-height);
+      }
+
+      #labelWrapper,
+      ::slotted([slot='more-actions']) {
+        -webkit-margin-end: var(--settings-control-label-spacing);
+      }
+
+      cr-policy-pref-indicator {
+        -webkit-margin-end: var(--settings-controlled-by-spacing);
+      }
+    </style>
+    <div id="outerRow" noSubLabel$="[[!subLabel]]">
+      <div class="flex" id="labelWrapper" hidden$="[[!label]]">
+        <div id="label" class="label">[[label]]</div>
+        <div id="subLabel" class="secondary label">[[subLabel]]</div>
+      </div>
+      <slot name="more-actions"></slot>
+      <template is="dom-if" if="[[hasPrefPolicyIndicator(pref.*)]]">
+        <cr-policy-pref-indicator pref="[[pref]]" icon-aria-label="[[label]]">
+        </cr-policy-pref-indicator>
+      </template>
+      <cr-toggle id="control" checked="{{checked}}"
+          on-change="onChange_"
+          aria-label$="[[getAriaLabel_(label, ariaLabel)]]"
+          aria-describedby="subLabel"
+          disabled="[[controlDisabled(disabled, pref)]]">
+      </cr-toggle>
+    </div>
+  </template>
+  <script src="settings_toggle_button.js"></script>
+</dom-module>

@@ -1,0 +1,64 @@
+{% from 'dictionary_impl_common.cpp.tmpl' import dictionary_setter_impl with context %}
+{% filter format_blink_cpp_source_code %}
+
+{% include 'copyright_block.txt' %}
+#ifndef {{cpp_class}}_h
+#define {{cpp_class}}_h
+
+{% for filename in header_includes %}
+#include "{{filename}}"
+{% endfor %}
+
+namespace blink {
+
+{% for decl in header_forward_decls %}
+class {{decl}};
+{% endfor %}
+
+{# FIXME: Add "final" if this class doesn\'t have subclasses #}
+class {{exported}}{{cpp_class}}{% if parent_cpp_class %} : public {{parent_cpp_class}}{% endif %} {
+  DISALLOW_NEW_EXCEPT_PLACEMENT_NEW();
+ public:
+  {{cpp_class}}();
+  virtual ~{{cpp_class}}();
+  {{cpp_class}}(const {{cpp_class}}&);
+  {{cpp_class}}& operator=(const {{cpp_class}}&);
+
+  {% for member in members %}
+  bool {{member.has_method_name}}() const { return {{member.has_method_expression}}; }
+  {{member.rvalue_cpp_type}} {{member.getter_name}}() const {
+    {% if member.nullable_indicator_name %}
+    DCHECK({{member.nullable_indicator_name}});
+    {% endif %}
+    return {{member.getter_expression}};
+  }
+  {{member.setter_inline}}void {{member.setter_name}}({{member.rvalue_cpp_type}});
+  {% if member.null_setter_name %}
+  {{member.setter_inline}}void {{member.null_setter_name}}();
+  {% endif %}
+
+  {% endfor %}
+  v8::Local<v8::Value> ToV8Impl(v8::Local<v8::Object>, v8::Isolate*) const override;
+  void Trace(blink::Visitor*) override;
+
+ private:
+  {% for member in members if member.nullable_indicator_name %}
+  bool {{member.nullable_indicator_name}} = false;
+  {% endfor %}
+
+  {% for member in members %}
+  {{member.member_cpp_type}} {{member.cpp_name}}_;
+  {% endfor %}
+
+  friend class V8{{cpp_class}};
+};
+
+{% for member in members if member.setter_inline %}
+{{dictionary_setter_impl(member)}}
+{% endfor %}
+
+}  // namespace blink
+
+#endif  // {{cpp_class}}_h
+
+{% endfilter %}{# format_blink_cpp_source_code #}

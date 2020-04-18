@@ -1,0 +1,33 @@
+<script src="../resources/js-test.js"></script>
+<p>Test changing focus inside plugin onfocus event</p>
+<input id="input1" type="text" onfocus="i1Focus()" onblur="i1Blur()"></input>
+<input id="input2" type="text" onfocus="i2Focus()" onblur="i2Blur()"></input>
+<input id="input3" type="text" onfocus="i3Focus()" onblur="i3Blur()"></input>
+<embed id="plugin" type="application/x-blink-test-plugin" onfocus="pFocus()" onblur="pBlur()"></embed>
+<script>
+function i1Focus() { debug('i1focus'); }
+function i1Blur() { debug('i1blur'); }
+function i2Focus() { debug('i2focus'); }
+function i2Blur() { debug('i2blur'); }
+function i3Focus() { debug('i3focus'); } 
+function i3Blur() { debug('i3blur'); }
+function pFocus() {
+  debug('pfocus-change-2');
+  document.getElementById('input2').focus();
+}
+function pBlur() { debug('pblur'); }
+
+if (testRunner)
+  testRunner.waitUntilDone();
+
+document.getElementById('input1').focus();
+document.getElementById('plugin').focus();
+document.getElementById('input3').focus();
+
+setTimeout(
+    function() {
+      if (testRunner)
+        testRunner.notifyDone();
+    },
+    0);
+</script>

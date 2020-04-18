@@ -1,0 +1,812 @@
+@hex:
+  # Originally these tests came from
+  # https://github.com/mseaborn/x86-decoder/blob/x86-64/validator_test.py
+  
+  # Check some simple allowed instructions.
+  90
+  f4
+  48 c7 c0 78 56 34 12
+  48 b8 78 56 34 12 78 56 34 12
+@dis:
+     0:	90                                           	nop
+     1:	f4                                           	hlt    
+     2:	48 c7 c0 78 56 34 12                         	mov    $0x12345678,%rax
+     9:	48 b8 78 56 34 12 78 56 34 12                	movabs $0x1234567812345678,%rax
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Check a disallowed instruction.
+  cd 80
+@dis:
+     0:	cd 80                                        	int    $0x80
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: unrecognized instruction 'int $0x80'
+----------------------------------------------------------------------
+@hex:
+  c3
+@dis:
+     0:	c3                                           	retq   
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: unrecognized instruction 'retq'
+----------------------------------------------------------------------
+@hex:
+  0f 05
+@dis:
+     0:	0f 05                                        	syscall 
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: unrecognized instruction 'syscall'
+----------------------------------------------------------------------
+@hex:
+  # Instruction crossing bundle boundary.
+  48 b8 78 56 34 12 78 56 34 12
+  48 b8 78 56 34 12 78 56 34 12
+  48 b8 78 56 34 12 78 56 34 12
+  48 b8 78 56 34 12 78 56 34 12
+@dis:
+     0:	48 b8 78 56 34 12 78 56 34 12                	movabs $0x1234567812345678,%rax
+     a:	48 b8 78 56 34 12 78 56 34 12                	movabs $0x1234567812345678,%rax
+    14:	48 b8 78 56 34 12 78 56 34 12                	movabs $0x1234567812345678,%rax
+    1e:	48 b8 78 56 34 12 78 56 34 12                	movabs $0x1234567812345678,%rax
+@rdfa_output:
+  1e: unrecognized instruction
+  20: direct jump out of range
+  24: direct jump out of range
+  return code: 1
+@spec:
+  1e: instruction crosses bundle boundary
+----------------------------------------------------------------------
+@hex:
+  # Forwards and backwards jumps.
+  # nop
+  90
+  # jmp .+6
+  eb 04
+  # jmp .+0
+  eb fe
+  # jmp .-2
+  eb fc
+  # jmp .-4
+  eb fa
+@dis:
+     0:	90                                           	nop
+     1:	eb 04                                        	jmp    0x7
+     3:	eb fe                                        	jmp    0x3
+     5:	eb fc                                        	jmp    0x3
+     7:	eb fa                                        	jmp    0x3
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Out-of-range unaligned jump.
+  # jmp .-1
+  eb fd
+@dis:
+     0:	eb fd                                        	jmp    0xffffffff
+@rdfa_output:
+  0: direct jump out of range
+  return code: 1
+@spec:
+  0: jump into a middle of instruction (0xffffffff)
+----------------------------------------------------------------------
+@hex:
+  # Out-of-range unaligned jump.
+  # jmp .+33
+  eb 1f
+@dis:
+     0:	eb 1f                                        	jmp    0x21
+@rdfa_output:
+  0: direct jump out of range
+  return code: 1
+@spec:
+  0: jump into a middle of instruction (0x21)
+----------------------------------------------------------------------
+@hex:
+  # Jump into instruction.
+  # mov $0x1234567812345678, %rax
+  48 b8 78 56 34 12 78 56 34 12
+  # jmp .-5
+  eb f9
+@dis:
+     0:	48 b8 78 56 34 12 78 56 34 12                	movabs $0x1234567812345678,%rax
+     a:	eb f9                                        	jmp    0x5
+@rdfa_output:
+  a: bad jump target
+  return code: 1
+@spec:
+  a: jump into a middle of instruction (0x5)
+----------------------------------------------------------------------
+@hex:
+  # Unmasked indirect jumps are disallowed.
+  ff e0
+@dis:
+     0:	ff e0                                        	jmpq   *%rax
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: unrecognized instruction 'jmpq *%rax'
+----------------------------------------------------------------------
+@hex:
+  ff 20
+@dis:
+     0:	ff 20                                        	jmpq   *(%rax)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: unrecognized instruction 'jmpq *(%rax)'
+----------------------------------------------------------------------
+@hex:
+  ff d0
+@dis:
+     0:	ff d0                                        	callq  *%rax
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: unrecognized instruction 'callq *%rax'
+----------------------------------------------------------------------
+@hex:
+  ff 10
+@dis:
+     0:	ff 10                                        	callq  *(%rax)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: unrecognized instruction 'callq *(%rax)'
+----------------------------------------------------------------------
+@hex:
+  # Masking instructions on their own are allowed.
+  # and $~31, %eax
+  83 e0 e0
+  # and $~31, %ebx
+  83 e3 e0
+  # and $~31, %rax
+  48 83 e0 e0
+  # and $~31, %rbx
+  48 83 e3 e0
+@dis:
+     0:	83 e0 e0                                     	and    $0xffffffe0,%eax
+     3:	83 e3 e0                                     	and    $0xffffffe0,%ebx
+     6:	48 83 e0 e0                                  	and    $0xffffffffffffffe0,%rax
+     a:	48 83 e3 e0                                  	and    $0xffffffffffffffe0,%rbx
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # and $~31, %eax
+  83 e0 e0
+  # add %r15, %rax
+  4c 01 f8
+  
+  # and $~31, %ebx
+  83 e3 e0
+  # add %r15, %rbx
+  4c 01 fb
+@dis:
+     0:	83 e0 e0                                     	and    $0xffffffe0,%eax
+     3:	4c 01 f8                                     	add    %r15,%rax
+     6:	83 e3 e0                                     	and    $0xffffffe0,%ebx
+     9:	4c 01 fb                                     	add    %r15,%rbx
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Masked indirect jumps are allowed.
+  # and $~31, %eax
+  83 e0 e0 \\
+  # add %r15, %rax
+  4c 01 f8 \\
+  # jmp *%rax
+  ff e0
+@dis:
+     0:	83 e0 e0                                     	and    $0xffffffe0,%eax
+     3:	4c 01 f8                                     	add    %r15,%rax
+     6:	ff e0                                        	jmpq   *%rax
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # and $~31, %ebx
+  83 e3 e0 \\
+  # add %r15, %rbx
+  4c 01 fb \\
+  # call *%rbx
+  ff d3
+@dis:
+     0:	83 e3 e0                                     	and    $0xffffffe0,%ebx
+     3:	4c 01 fb                                     	add    %r15,%rbx
+     6:	ff d3                                        	callq  *%rbx
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # The registers must match up for the mask and the jump.
+  # and $~31, %ebx
+  83 e3 e0
+  # add %r15, %rax
+  4c 01 f8
+  # jmp *%rax
+  ff e0
+@dis:
+     0:	83 e3 e0                                     	and    $0xffffffe0,%ebx
+     3:	4c 01 f8                                     	add    %r15,%rax
+     6:	ff e0                                        	jmpq   *%rax
+@rdfa_output:
+  6: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('nacljump64/naclcall64: registers do not match (%rbx, %rax, %rax)', [Instruction(0x0: 83 e3 e0  and $0xffffffe0,%ebx), Instruction(0x3: 4c 01 f8  add %r15,%rax), Instruction(0x6: ff e0  jmpq *%rax)])
+  6: unrecognized instruction 'jmpq *%rax'
+----------------------------------------------------------------------
+@hex:
+  # and $~31, %eax
+  83 e0 e0
+  # add %r15, %rbx
+  4c 01 fb
+  # jmp *%rax
+  ff e0
+@dis:
+     0:	83 e0 e0                                     	and    $0xffffffe0,%eax
+     3:	4c 01 fb                                     	add    %r15,%rbx
+     6:	ff e0                                        	jmpq   *%rax
+@rdfa_output:
+  6: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('nacljump64/naclcall64: registers do not match (%rax, %rbx, %rax)', [Instruction(0x0: 83 e0 e0  and $0xffffffe0,%eax), Instruction(0x3: 4c 01 fb  add %r15,%rbx), Instruction(0x6: ff e0  jmpq *%rax)])
+  6: unrecognized instruction 'jmpq *%rax'
+----------------------------------------------------------------------
+@hex:
+  # and $~31, %eax
+  83 e0 e0
+  # add %r15, %rax
+  4c 01 f8
+  # jmp *%rbx
+  ff e3
+@dis:
+     0:	83 e0 e0                                     	and    $0xffffffe0,%eax
+     3:	4c 01 f8                                     	add    %r15,%rax
+     6:	ff e3                                        	jmpq   *%rbx
+@rdfa_output:
+  6: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('nacljump64/naclcall64: registers do not match (%rax, %rax, %rbx)', [Instruction(0x0: 83 e0 e0  and $0xffffffe0,%eax), Instruction(0x3: 4c 01 f8  add %r15,%rax), Instruction(0x6: ff e3  jmpq *%rbx)])
+  6: unrecognized instruction 'jmpq *%rbx'
+----------------------------------------------------------------------
+@hex:
+  # and $~31, %eax
+  83 e0 e0
+  # add %r15, %rbx
+  4c 01 fb
+  # jmp *%rbx
+  ff e3
+@dis:
+     0:	83 e0 e0                                     	and    $0xffffffe0,%eax
+     3:	4c 01 fb                                     	add    %r15,%rbx
+     6:	ff e3                                        	jmpq   *%rbx
+@rdfa_output:
+  6: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('nacljump64/naclcall64: registers do not match (%rax, %rbx, %rbx)', [Instruction(0x0: 83 e0 e0  and $0xffffffe0,%eax), Instruction(0x3: 4c 01 fb  add %r15,%rbx), Instruction(0x6: ff e3  jmpq *%rbx)])
+  6: unrecognized instruction 'jmpq *%rbx'
+----------------------------------------------------------------------
+@hex:
+  # The mask and the jump must be adjacent.
+  # and $~31, %eax
+  83 e0 e0
+  # nop
+  90
+  # add %r15, %rax
+  4c 01 f8
+  # jmp *%rax
+  ff e0
+@dis:
+     0:	83 e0 e0                                     	and    $0xffffffe0,%eax
+     3:	90                                           	nop
+     4:	4c 01 f8                                     	add    %r15,%rax
+     7:	ff e0                                        	jmpq   *%rax
+@rdfa_output:
+  7: unrecognized instruction
+  return code: 1
+@spec:
+  7: unrecognized instruction 'jmpq *%rax'
+----------------------------------------------------------------------
+@hex:
+  # and $~31, %eax
+  83 e0 e0
+  # add %r15, %rax
+  4c 01 f8
+  # nop
+  90
+  # jmp *%rax
+  ff e0
+@dis:
+     0:	83 e0 e0                                     	and    $0xffffffe0,%eax
+     3:	4c 01 f8                                     	add    %r15,%rax
+     6:	90                                           	nop
+     7:	ff e0                                        	jmpq   *%rax
+@rdfa_output:
+  7: unrecognized instruction
+  return code: 1
+@spec:
+  7: unrecognized instruction 'jmpq *%rax'
+----------------------------------------------------------------------
+@hex:
+  # Jumping into the middle of the superinstruction must be rejected.
+  # and $~31, %eax
+  83 e0 e0
+  # add %r15, %rax
+  4c 01 f8
+  # jmp *%rax
+  ff e0
+  # jmp .-2
+  eb fc
+@dis:
+     0:	83 e0 e0                                     	and    $0xffffffe0,%eax
+     3:	4c 01 f8                                     	add    %r15,%rax
+     6:	ff e0                                        	jmpq   *%rax
+     8:	eb fc                                        	jmp    0x6
+@rdfa_output:
+  8: bad jump target
+  return code: 1
+@spec:
+  8: jump into a middle of instruction (0x6)
+----------------------------------------------------------------------
+@hex:
+  # and $~31, %eax
+  83 e0 e0
+  # add %r15, %rax
+  4c 01 f8
+  # jmp *%rax
+  ff e0
+  # jmp .-5
+  eb f9
+@dis:
+     0:	83 e0 e0                                     	and    $0xffffffe0,%eax
+     3:	4c 01 f8                                     	add    %r15,%rax
+     6:	ff e0                                        	jmpq   *%rax
+     8:	eb f9                                        	jmp    0x3
+@rdfa_output:
+  8: bad jump target
+  return code: 1
+@spec:
+  8: jump into a middle of instruction (0x3)
+----------------------------------------------------------------------
+@hex:
+  # Read-only access to special registers is allowed.
+  50
+  55
+  54
+  41 57
+  48 89 e0
+@dis:
+     0:	50                                           	push   %rax
+     1:	55                                           	push   %rbp
+     2:	54                                           	push   %rsp
+     3:	41 57                                        	push   %r15
+     5:	48 89 e0                                     	mov    %rsp,%rax
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Write access to regular registers is allowed.
+  58
+@dis:
+     0:	58                                           	pop    %rax
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Write access to special registers is not allowed.
+  5d
+@dis:
+     0:	5d                                           	pop    %rbp
+@rdfa_output:
+  0: error - %bpl or %bp is changed
+  return code: 1
+@spec:
+  0: ('changes to rbp are not allowed', Instruction(0x0: 5d  pop %rbp))
+----------------------------------------------------------------------
+@hex:
+  5c
+@dis:
+     0:	5c                                           	pop    %rsp
+@rdfa_output:
+  0: error - %spl or %sp is changed
+  return code: 1
+@spec:
+  0: ('changes to rsp are not allowed', Instruction(0x0: 5c  pop %rsp))
+----------------------------------------------------------------------
+@hex:
+  41 5f
+@dis:
+     0:	41 5f                                        	pop    %r15
+@rdfa_output:
+  0: error - %r15 is changed
+  return code: 1
+@spec:
+  0: ('changes to r15 are not allowed', Instruction(0x0: 41 5f  pop %r15))
+----------------------------------------------------------------------
+@hex:
+  # Memory accesses.
+  # mov %eax, %eax
+  89 c0 \\
+  # mov (%r15, %rax), %ebx
+  41 8b 1c 07
+@dis:
+     0:	89 c0                                        	mov    %eax,%eax
+     2:	41 8b 1c 07                                  	mov    (%r15,%rax,1),%ebx
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Test for a top-bit-set register.
+  # mov %r12d, %r12d
+  45 89 e4 \\
+  # mov (%r15, %r12), %ebx
+  43 8b 1c 27
+@dis:
+     0:	45 89 e4                                     	mov    %r12d,%r12d
+     3:	43 8b 1c 27                                  	mov    (%r15,%r12,1),%ebx
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Check %edi and %esi because the first 'mov' also begins superinstructions.
+  # mov %edi, %edi
+  89 ff \\
+  # mov (%r15, %rdi), %ebx
+  41 8b 1c 3f
+@dis:
+     0:	89 ff                                        	mov    %edi,%edi
+     2:	41 8b 1c 3f                                  	mov    (%r15,%rdi,1),%ebx
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # mov %esi, %esi
+  89 f6 \\
+  # mov (%r15, %rsi), %ebx
+  41 8b 1c 37
+@dis:
+     0:	89 f6                                        	mov    %esi,%esi
+     2:	41 8b 1c 37                                  	mov    (%r15,%rsi,1),%ebx
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Check mask on its own.
+  # mov %eax, %eax
+  89 c0
+@dis:
+     0:	89 c0                                        	mov    %eax,%eax
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # mov (%r15, %rax), %ebx
+  41 8b 1c 07
+@dis:
+     0:	41 8b 1c 07                                  	mov    (%r15,%rax,1),%ebx
+@rdfa_output:
+  0: improper memory address - bad index
+  return code: 1
+@spec:
+  0: register %rax should be restricted, while in fact None is restricted
+----------------------------------------------------------------------
+@hex:
+  # mov %eax, %eax
+  89 c0
+  # mov (%r15, %rax), %ebx
+  41 8b 1c 07
+  # jmp .-4
+  eb fa
+@dis:
+     0:	89 c0                                        	mov    %eax,%eax
+     2:	41 8b 1c 07                                  	mov    (%r15,%rax,1),%ebx
+     6:	eb fa                                        	jmp    0x2
+@rdfa_output:
+  6: bad jump target
+  return code: 1
+@spec:
+  6: jump into a middle of instruction (0x2)
+----------------------------------------------------------------------
+@hex:
+  # Check that post-conditions do not leak from a superinstruction.  In the
+  # PyDFA validator, to share DFT states, the first instruction of the
+  # nacljmp, "and $~31, %eax", records a post-condition, just as when it is
+  # used on its own.  Although the code below is safe, we don't really want
+  # the post-condition to leak through.
+  # and $~31, %eax
+  83 e0 e0
+  # add %r15, %rax
+  4c 01 f8
+  # jmp *%rax
+  ff e0
+  # %rax should not be regarded as zero-extended here.
+  # mov (%r15, %rax), %ebx
+  41 8b 1c 07
+@dis:
+     0:	83 e0 e0                                     	and    $0xffffffe0,%eax
+     3:	4c 01 f8                                     	add    %r15,%rax
+     6:	ff e0                                        	jmpq   *%rax
+     8:	41 8b 1c 07                                  	mov    (%r15,%rax,1),%ebx
+@rdfa_output:
+  8: improper memory address - bad index
+  return code: 1
+@spec:
+  8: register %rax should be restricted, while in fact None is restricted
+----------------------------------------------------------------------
+@hex:
+  # mov %edi, %edi
+  89 ff
+  # lea (%r15, %rdi), %rdi
+  49 8d 3c 3f
+  # rep stos %al, %es:(%rdi)
+  f3 aa
+  # %rdi should not be regarded as zero-extended here.
+  # mov (%r15, %rdi), %ebx
+  41 8b 1c 3f
+@dis:
+     0:	89 ff                                        	mov    %edi,%edi
+     2:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     6:	f3 aa                                        	rep stos %al,%es:(%rdi)
+     8:	41 8b 1c 3f                                  	mov    (%r15,%rdi,1),%ebx
+@rdfa_output:
+  8: improper memory address - bad index
+  return code: 1
+@spec:
+  8: register %rdi should be restricted, while in fact None is restricted
+----------------------------------------------------------------------
+@hex:
+  # mov %esi, %esi
+  89 f6
+  # lea (%r15, %rsi), %rsi
+  49 8d 34 37
+  # mov %edi, %edi
+  89 ff
+  # lea (%r15, %rdi), %rdi
+  49 8d 3c 3f
+  # rep movsb %ds:(%rsi), %es:(%rdi)
+  f3 a4
+  # %rsi should not be regarded as zero-extended here.
+  # mov (%r15, %rsi), %ebx
+  41 8b 1c 37
+@dis:
+     0:	89 f6                                        	mov    %esi,%esi
+     2:	49 8d 34 37                                  	lea    (%r15,%rsi,1),%rsi
+     6:	89 ff                                        	mov    %edi,%edi
+     8:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     c:	f3 a4                                        	rep movsb %ds:(%rsi),%es:(%rdi)
+     e:	41 8b 1c 37                                  	mov    (%r15,%rsi,1),%ebx
+@rdfa_output:
+  e: improper memory address - bad index
+  return code: 1
+@spec:
+  e: register %rsi should be restricted, while in fact None is restricted
+----------------------------------------------------------------------
+@hex:
+  # Non-%r15-based memory accesses.
+  # mov 0x1234(%rip), %eax
+  8b 05 34 12 00 00
+  # mov 0x1234(%rsp), %eax
+  8b 84 24 34 12 00 00
+  # mov 0x1234(%rbp), %eax
+  8b 85 34 12 00 00
+@dis:
+     0:	8b 05 34 12 00 00                            	mov    0x1234(%rip),%eax        # 0x123a
+     6:	8b 84 24 34 12 00 00                         	mov    0x1234(%rsp),%eax
+     d:	8b 85 34 12 00 00                            	mov    0x1234(%rbp),%eax
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # mov 0x1234(%rsp, %rbx), %eax
+  8b 84 1c 34 12 00 00
+@dis:
+     0:	8b 84 1c 34 12 00 00                         	mov    0x1234(%rsp,%rbx,1),%eax
+@rdfa_output:
+  0: improper memory address - bad index
+  return code: 1
+@spec:
+  0: register %rbx should be restricted, while in fact None is restricted
+----------------------------------------------------------------------
+@hex:
+  # mov 0x1234(%rbp, %rbx), %eax
+  8b 84 1d 34 12 00 00
+@dis:
+     0:	8b 84 1d 34 12 00 00                         	mov    0x1234(%rbp,%rbx,1),%eax
+@rdfa_output:
+  0: improper memory address - bad index
+  return code: 1
+@spec:
+  0: register %rbx should be restricted, while in fact None is restricted
+----------------------------------------------------------------------
+@hex:
+  # mov %ebx, %ebx
+  89 db \\
+  # mov 0x1234(%rsp, %rbx), %eax
+  8b 84 1c 34 12 00 00
+@dis:
+     0:	89 db                                        	mov    %ebx,%ebx
+     2:	8b 84 1c 34 12 00 00                         	mov    0x1234(%rsp,%rbx,1),%eax
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # mov %ebx, %ebx
+  89 db \\
+  # mov 0x1234(%rbp, %rbx), %eax
+  8b 84 1d 34 12 00 00
+@dis:
+     0:	89 db                                        	mov    %ebx,%ebx
+     2:	8b 84 1d 34 12 00 00                         	mov    0x1234(%rbp,%rbx,1),%eax
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # 'lea' is not a memory access.
+  # lea (%rbx, %rcx, 4), %rax
+  48 8d 04 8b
+@dis:
+     0:	48 8d 04 8b                                  	lea    (%rbx,%rcx,4),%rax
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Stack operations.
+  # mov %rsp, %rbp
+  48 89 e5
+  # mov %rbp, %rsp
+  48 89 ec
+@dis:
+     0:	48 89 e5                                     	mov    %rsp,%rbp
+     3:	48 89 ec                                     	mov    %rbp,%rsp
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # add $8, %ebp
+  83 c5 08 \\
+  # add %r15, %rbp
+  4c 01 fd
+@dis:
+     0:	83 c5 08                                     	add    $0x8,%ebp
+     3:	4c 01 fd                                     	add    %r15,%rbp
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # add $8, %ebp
+  83 c5 08
+  # add %r15, %rbp
+  4c 01 fd
+  # jmp .-3
+  eb fb
+@dis:
+     0:	83 c5 08                                     	add    $0x8,%ebp
+     3:	4c 01 fd                                     	add    %r15,%rbp
+     6:	eb fb                                        	jmp    0x3
+@rdfa_output:
+  6: bad jump target
+  return code: 1
+@spec:
+  6: jump into a middle of instruction (0x3)
+----------------------------------------------------------------------
+@hex:
+  # A stack fixup on its own is not allowed.
+  # add %r15, %rbp
+  4c 01 fd
+@dis:
+     0:	4c 01 fd                                     	add    %r15,%rbp
+@rdfa_output:
+  0: improper %rbp sandboxing
+  return code: 1
+@spec:
+  0: register %rbp should be restricted, while in fact None is restricted
+----------------------------------------------------------------------
+@hex:
+  # add %r15, %rsp
+  4c 01 fc
+@dis:
+     0:	4c 01 fc                                     	add    %r15,%rsp
+@rdfa_output:
+  0: improper %rsp sandboxing
+  return code: 1
+@spec:
+  0: register %rsp should be restricted, while in fact None is restricted
+----------------------------------------------------------------------
+@hex:
+  # add %r15, %r15
+  4d 01 ff
+@dis:
+     0:	4d 01 ff                                     	add    %r15,%r15
+@rdfa_output:
+  0: error - %r15 is changed
+  return code: 1
+@spec:
+  0: ('changes to r15 are not allowed', Instruction(0x0: 4d 01 ff  add %r15,%r15))
+----------------------------------------------------------------------
+@hex:
+  # Sandboxing is not required on prefetch instructions.
+  # prefetchnta (%rax)
+  0f 18 00
+@dis:
+     0:	0f 18 00                                     	prefetchnta (%rax)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Segment register manipulations are forbidden
+  48 8e c0
+@dis:
+     0:	48 8e c0                                     	mov    %rax,%es
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('access to segment registers is not allowed', Instruction(0x0: 48 8e c0  mov %rax,%es))
+----------------------------------------------------------------------
+@hex:
+  48 8c c0
+@dis:
+     0:	48 8c c0                                     	mov    %es,%rax
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('access to segment registers is not allowed', Instruction(0x0: 48 8c c0  mov %es,%rax))

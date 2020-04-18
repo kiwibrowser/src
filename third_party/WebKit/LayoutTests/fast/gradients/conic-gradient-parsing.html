@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="../../css-parser/resources/property-parsing-test.js"></script>
+
+<body>
+<script>
+  function assert_computed_style(property, value, expectedValue) {
+    if (expectedValue === undefined)
+      expectedValue = value;
+
+    test(function() {
+      var div = document.createElement('div');
+      div.setAttribute("style", property + ": " + value);
+      document.head.appendChild(div);
+      var computedStyleValue = getComputedStyle(div)[property];
+      div.remove();
+      assert_equals(computedStyleValue, expectedValue);
+    }, "Computed style after parsing style='" + property + ": " + value + "'");
+  }
+
+  var tests = [
+    { style: "conic-gradient(black)"                                       , computed: "none" },
+    { style: "conic-gradient(black 0%)"                                    , computed: "none" },
+    { style: "conic-gradient(black 0%, 25%)"                               , computed: "none" },
+    { style: "conic-gradient(black 0px, white)"                            , computed: "none" },
+    { style: "conic-gradient(black, , white)"                              , computed: "none" },
+    { style: "conic-gradient(0%, black, white)"                            , computed: "none" },
+    { style: "conic-gradient(center, black, white)"                        , computed: "none" },
+    { style: "conic-gradient(top left, black, white)"                      , computed: "none" },
+    { style: "conic-gradient(at bottom bottom, black, white)"              , computed: "none" },
+    { style: "conic-gradient(at left left, black, white)"                  , computed: "none" },
+    { style: "conic-gradient(from 0deg at left 10% top, black, white)"     , computed: "none" },
+    { style: "conic-gradient(at top left black, white)"                    , computed: "none" },
+    { style: "conic-gradient(black 0%, 10%, 10%, green .5turn, 50%, white)", computed: "none" },
+    { style: "conic-gradient(from 0 black, white)"                         , computed: "none" },
+    { style: "conic-gradient(from 0 at top left black, white)"             , computed: "none" },
+    { style: "conic-gradient(from 0, at top left, black, white)"           , computed: "none" },
+    { style: "conic-gradient(at top left from 0, black, white)"            , computed: "none" },
+    { style: "conic-gradient(black 10% 20% 30%, white)"                    , computed: "none" },
+    { style: "conic-gradient(black, 30% 50%, white)"                       , computed: "none" },
+    { style: "conic-gradient(black, white calc(360deg / 10 + 50%)"         , computed: "none" },
+
+    { style: "conic-gradient(black, white)"           , computed: "conic-gradient(black, white)" },
+    { style: "conic-gradient(black 0, white)"         , computed: "conic-gradient(black 0deg, white)" },
+    { style: "conic-gradient(black 0%, white)"        , computed: "conic-gradient(black 0%, white)" },
+    { style: "conic-gradient(black 0deg, white)"      , computed: "conic-gradient(black 0deg, white)" },
+    { style: "conic-gradient(black 0grad, white)"     , computed: "conic-gradient(black 0grad, white)" },
+    { style: "conic-gradient(black 0rad, white)"      , computed: "conic-gradient(black 0rad, white)" },
+    { style: "conic-gradient(black 0turn, white)"     , computed: "conic-gradient(black 0turn, white)" },
+    { style: "conic-gradient(black, white 50%)"       , computed: "conic-gradient(black, white 50%)" },
+    { style: "conic-gradient(black 10%, white 50%)"   , computed: "conic-gradient(black 10%, white 50%)" },
+    { style: "conic-gradient(black 10%, white 180deg)", computed: "conic-gradient(black 10%, white 180deg)" },
+
+    { style: "conic-gradient(black 10% 20%, white)"                          , computed: "conic-gradient(black 10% 20%, white)" },
+    { style: "conic-gradient(black, white 270deg 360deg)"                    , computed: "conic-gradient(black, white 270deg 360deg)" },
+    { style: "conic-gradient(black 10% 20%, white 270deg 360deg)"            , computed: "conic-gradient(black 10% 20%, white 270deg 360deg)" },
+    { style: "conic-gradient(blue 10%, blue 20%, white)"                     , computed: "conic-gradient(blue 10% 20%, white)" },
+    { style: "conic-gradient(blue 10%, blue 20%, blue 30%, white)"           , computed: "conic-gradient(blue 10% 20%, blue 30%, white)" },
+    { style: "conic-gradient(blue 10%, blue 20%, blue 30%, blue 40%, white)" , computed: "conic-gradient(blue 10% 20%, blue 30% 40%, white)" },
+    { style: "conic-gradient(blue 10%, blue 20%, white 270deg, white 360deg)", computed: "conic-gradient(blue 10% 20%, white 270deg 360deg)" },
+    { style: "conic-gradient(blue 10%, blue 20% 30%, white)"                 , computed: "conic-gradient(blue 10% 20%, blue 30%, white)" },
+    { style: "conic-gradient(blue, blue, blue, white)"                       , computed: "conic-gradient(blue, blue, blue, white)" },
+
+    { style: "conic-gradient(at top left, black, white)"     , computed: "conic-gradient(at left top, black, white)" },
+    { style: "conic-gradient(at bottom right, black, white)" , computed: "conic-gradient(at right bottom, black, white)" },
+    { style: "conic-gradient(at center, black, white)"       , computed: "conic-gradient(at center center, black, white)" },
+    { style: "conic-gradient(at center center, black, white)", computed: "conic-gradient(at center center, black, white)" },
+
+    { style: "conic-gradient(from 0, black, white)"              , computed: "conic-gradient(from 0deg, black, white)" },
+    { style: "conic-gradient(from 10deg, black, white)"          , computed: "conic-gradient(from 10deg, black, white)" },
+    { style: "conic-gradient(from 10deg at center, black, white)", computed: "conic-gradient(from 10deg at center center, black, white)" },
+
+    { style: "conic-gradient(black 0%, 10%, green .5turn, 50%, white)", computed: "conic-gradient(black 0%, 10%, green 0.5turn, 50%, white)" },
+    { style: "conic-gradient(black 0deg, 0%, green .5turn, 50%, white 1turn)", computed: "conic-gradient(black 0deg, 0%, green 0.5turn, 50%, white 1turn)" },
+
+    // Examples from https://drafts.csswg.org/css-images-4/#conic-gradient-examples
+    { style: "conic-gradient(#f06, gold)"                     , computed: "conic-gradient(rgb(255, 0, 102), gold)" },
+    { style: "conic-gradient(at 50% 50%, #f06, gold)"         , computed: "conic-gradient(at 50% 50%, rgb(255, 0, 102), gold)" },
+    { style: "conic-gradient(from 0deg, #f06, gold)"          , computed: "conic-gradient(from 0deg, rgb(255, 0, 102), gold)" },
+    { style: "conic-gradient(from 0deg at center, #f06, gold)", computed: "conic-gradient(from 0deg at center center, rgb(255, 0, 102), gold)" },
+    { style: "conic-gradient(#f06 0%, gold 100%)"             , computed: "conic-gradient(rgb(255, 0, 102) 0%, gold 100%)" },
+    { style: "conic-gradient(#f06 0deg, gold 1turn)"          , computed: "conic-gradient(rgb(255, 0, 102) 0deg, gold 1turn)" },
+
+    { style: "conic-gradient(white -50%, black 150%)"      , computed: "conic-gradient(white -50%, black 150%)" },
+    { style: "conic-gradient(white -180deg, black 540deg)" , computed: "conic-gradient(white -180deg, black 540deg)" },
+    { style: "conic-gradient(hsl(0,0%,75%), hsl(0,0%,25%))", computed: "conic-gradient(rgb(191, 191, 191), rgb(64, 64, 64))" },
+
+    { style: "conic-gradient(from 45deg, white, black, white)"                            , computed: "conic-gradient(from 45deg, white, black, white)" },
+    { style: "conic-gradient(hsl(0,0%,87.5%), white 45deg, black 225deg, hsl(0,0%,87.5%))", computed: "conic-gradient(rgb(223, 223, 223), white 45deg, black 225deg, rgb(223, 223, 223))" },
+
+    { style: "conic-gradient(white 45deg, black 225deg, white 405deg)"   , computed: "conic-gradient(white 45deg, black 225deg, white 405deg)" },
+    { style: "conic-gradient(red, yellow, lime, aqua, blue, magenta, red", computed: "conic-gradient(red, yellow, lime, aqua, blue, magenta, red)" },
+    { style: "conic-gradient(gold, #f06 20deg)"                          , computed: "conic-gradient(gold, rgb(255, 0, 102) 20deg)" },
+    { style: "conic-gradient(gold calc(100% / 2), #f06 calc(360deg * 4 / 5))"                    , computed: "conic-gradient(gold calc(50%), rgb(255, 0, 102) calc(288deg))" },
+  ];
+
+  test(function() {
+    tests.forEach(function(test) {
+      assert_computed_style('background-image', test.style, test.computed);
+    });
+  }, "conic-gradient parsing");
+
+  test(function() {
+    tests.forEach(function(test) {
+      assert_computed_style('background-image', 'repeating-' + test.style,
+        test.computed == 'none' ? test.computed : 'repeating-' + test.computed);
+    });
+  }, "repeating-conic-gradient parsing");
+</script>
+</body>

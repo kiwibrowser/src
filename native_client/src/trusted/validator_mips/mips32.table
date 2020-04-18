@@ -1,0 +1,825 @@
+# MIPS32 Instruction Encodings
+#
+# This table is derived from the "MIPS® Architecture For Programmers
+# Volume II-A: The MIPS32® Instruction Set".
+
+# This file defines the Native Client "instruction classes" assigned to every
+# possible MIPS32 instruction encoding. It is organized into a series of tables,
+# and directly parallels the MIPS Architecture Reference Manual cited above.
+#
+# Each table consists of
+# - A name,
+# - A citation in the Architecture Reference Manual,
+# - One or more columns defining bitfields to match, and
+# - One or more rows describing patterns in those bitfields.
+#
+# A leading tilde (~) negates a pattern.  A hyphen (-) is short for a string of
+# don't-care bits (x).  A double-quote (") indicates that a pattern is the same
+# as the row above it.
+#
+# Each row may specify a terminal instruction class ("=InstClass"), or forward
+# the reader to a different table ("->table_name").
+#
+# If an encoding is not valid in every MIPS32 architecture rev, the instruction
+# class may indicate the rev or feature that makes the encoding valid in
+# parentheses.
+
+
+-- MIPS32 (See Table A.2)
+opcode(31:26)
+000000  ->special
+000001  ->regimm
+000010  =JmpImm          #  j
+000011  =JalImm          #  jal
+000100  =Branch          #  beq
+000101  =Branch          #  bne
+000110  ->branch_1       #  blez
+000111  ->branch_1       #  bgtz
+001000  =Arithm2         #  addi
+001001  =Arithm2         #  addiu
+001010  =Arithm2         #  slti
+001011  =Arithm2         #  sltiu
+001100  =Arithm2         #  andi
+001101  =Arithm2         #  ori
+001110  =Arithm2         #  xori
+001111  ->arithm2_1      #  lui
+010000  ->cop0
+010001  ->cop1
+010010  ->cop2
+010011  ->cop1x
+010100  =Branch          #  beql
+010101  =Branch          #  bnel
+010110  ->branch_1       #  blezl
+010111  ->branch_1       #  bgtzl
+011000  =Forbidden
+011001  =Forbidden
+011010  =Forbidden
+011011  =Forbidden
+011100  ->special2
+011101  =Forbidden       #  jalx
+011110  =Forbidden
+011111  ->special3
+100000  =Load            #  lb
+100001  =Load            #  lh
+100010  =Load            #  lwl
+100011  =LoadWord        #  lw
+100100  =Load            #  lbu
+100101  =Load            #  lhu
+100110  =Load            #  lwr
+100111  =Forbidden
+101000  =Store           #  sb
+101001  =Store           #  sh
+101010  =Store           #  swl
+101011  =Store           #  sw
+101100  =Forbidden
+101101  =Forbidden
+101110  =Store           #  swr
+101111  =Forbidden       #  cache
+110000  =Load            #  ll
+110001  =FPLoadStore     #  lwc1
+110010  =FPLoadStore     #  lwc2
+110011  =Forbidden       #  pref
+110100  =Forbidden
+110101  =FPLoadStore     #  ldc1
+110110  =FPLoadStore     #  ldc2
+110111  =Forbidden
+111000  =StoreConditional #  sc
+111001  =FPLoadStore     #  swc1
+111010  =FPLoadStore     #  swc2
+111011  =Forbidden
+111100  =Forbidden
+111101  =FPLoadStore     #  sdc1
+111110  =FPLoadStore     #  sdc2
+111111  =Forbidden
+
+
+-- special (See Table A.3)
+function(5:0)
+000000  ->arithm3_1      #  sll
+000001  ->movci
+000010  ->srl
+000011  ->arithm3_1      #  sra
+000100  ->arithm3_2      #  sllv
+000101  =Forbidden
+000110  ->srlv
+000111  ->arithm3_2      #  srav
+001000  ->jr             #  jr
+001001  ->jalr           #  jalr
+001010  ->arithm3_2      #  movz
+001011  ->arithm3_2      #  movn
+001100  =Forbidden       #  syscall
+001101  =NaClHalt        #  break
+001110  =Forbidden
+001111  ->sync           #  sync
+010000  ->mfhi           #  mfhi
+010001  ->mthi           #  mthi
+010010  ->mfhi           #  mflo
+010011  ->mthi           #  mtlo
+010100  =Forbidden
+010101  =Forbidden
+010110  =Forbidden
+010111  =Forbidden
+011000  ->mult           # mult
+011001  ->mult           # multu
+011010  ->mult           # div
+011011  ->mult           # divu
+011100  =Forbidden
+011101  =Forbidden
+011110  =Forbidden
+011111  =Forbidden
+100000  ->arithm3_3      #  add
+100001  ->arithm3_3      #  addu
+100010  ->arithm3_3      #  sub
+100011  ->arithm3_3      #  subu
+100100  ->arithm3_3      #  and
+100101  ->arithm3_3      #  or
+100110  ->arithm3_3      #  xor
+100111  ->arithm3_3      #  nor
+101000  =Forbidden
+101001  =Forbidden
+101010  ->arithm3_3      #  slt
+101011  ->arithm3_3      #  sltu
+101100  =Forbidden
+101101  =Forbidden
+101110  =Forbidden
+101111  =Forbidden
+110000  =Safe            #  tge
+110001  =Safe            #  tgeu
+110010  =Safe            #  tlt
+110011  =Safe            #  tltu
+110100  =Safe            #  teq
+110101  =Forbidden
+110110  =Safe            #  tne
+110111  =Forbidden
+111000  =Forbidden
+111001  =Forbidden
+111010  =Forbidden
+111011  =Forbidden
+111100  =Forbidden
+111101  =Forbidden
+111110  =Forbidden
+111111  =Forbidden
+
+
+-- regimm (See Table A.4)
+rt(20:16)
+00000  =Branch           #  bltz
+00001  =Branch           #  bgez
+00010  =Branch           #  bltzl
+00011  =Branch           #  bgezl
+00100  =Forbidden
+00101  =Forbidden
+00110  =Forbidden
+00111  =Forbidden
+01000  =Safe             #  tgei
+01001  =Safe             #  tgeiu
+01010  =Safe             #  tlti
+01011  =Safe             #  tltiu
+01100  =Safe             #  teqi
+01101  =Forbidden
+01110  =Safe             #  tnei
+01111  =Forbidden
+10000  =BranchAndLink    #  bltzal
+10001  =BranchAndLink    #  bgezal
+10010  =BranchAndLink    #  bltzall
+10011  =BranchAndLink    #  bgezall
+10100  =Forbidden
+10101  =Forbidden
+10110  =Forbidden
+10111  =Forbidden
+11000  =Forbidden
+11001  =Forbidden
+11010  =Forbidden
+11011  =Forbidden
+11100  =Forbidden
+11101  =Forbidden
+11110  =Forbidden
+11111  =Forbidden        #  synci
+
+
+-- special2 (See Table A.5)
+function(5:0)
+000000  ->mult           #  madd
+000001  ->mult           #  maddu
+000010  ->arithm3_2      #  mul
+000011  =Forbidden
+000100  ->mult           #  msub
+000101  ->mult           #  msubu
+000110  =Forbidden
+000111  =Forbidden
+001000  =Forbidden
+001001  =Forbidden
+001010  =Forbidden
+001011  =Forbidden
+001100  =Forbidden
+001101  =Forbidden
+001110  =Forbidden
+001111  =Forbidden
+010000  =Forbidden
+010001  =Forbidden
+010010  =Forbidden
+010011  =Forbidden
+010100  =Forbidden
+010101  =Forbidden
+010110  =Forbidden
+010111  =Forbidden
+011000  =Forbidden
+011001  =Forbidden
+011010  =Forbidden
+011011  =Forbidden
+011100  =Forbidden
+011101  =Forbidden
+011110  =Forbidden
+011111  =Forbidden
+100000  ->arithm3_2      #  clz
+100001  ->arithm3_2      #  clo
+100010  =Forbidden
+100011  =Forbidden
+100100  =Forbidden
+100101  =Forbidden
+100110  =Forbidden
+100111  =Forbidden
+101000  =Forbidden
+101001  =Forbidden
+101010  =Forbidden
+101011  =Forbidden
+101100  =Forbidden
+101101  =Forbidden
+101110  =Forbidden
+101111  =Forbidden
+110000  =Forbidden
+110001  =Forbidden
+110010  =Forbidden
+110011  =Forbidden
+110100  =Forbidden
+110101  =Forbidden
+110110  =Forbidden
+110111  =Forbidden
+111000  =Forbidden
+111001  =Forbidden
+111010  =Forbidden
+111011  =Forbidden
+111100  =Forbidden
+111101  =Forbidden
+111110  =Forbidden
+111111  =Forbidden       #  sdbbp
+
+
+-- special3 (See Table A.6)
+function(5:0)
+000000  =ExtIns          #  ext
+000001  =Forbidden
+000010  =Forbidden
+000011  =Forbidden
+000100  =ExtIns          #  ins
+000101  =Forbidden
+000110  =Forbidden
+000111  =Forbidden
+001000  =Forbidden
+001001  =Forbidden
+001010  =Forbidden
+001011  =Forbidden
+001100  =Forbidden
+001101  =Forbidden
+001110  =Forbidden
+001111  =Forbidden
+010000  =Forbidden
+010001  =Forbidden
+010010  =Forbidden
+010011  =Forbidden
+010100  =Forbidden
+010101  =Forbidden
+010110  =Forbidden
+010111  =Forbidden
+011000  =Forbidden
+011001  =Forbidden
+011010  =Forbidden
+011011  =Forbidden
+011100  =Forbidden
+011101  =Forbidden
+011110  =Forbidden
+011111  =Forbidden
+100000  ->bshfl
+100001  =Forbidden
+100010  =Forbidden
+100011  =Forbidden
+100100  =Forbidden
+100101  =Forbidden
+100110  =Forbidden
+100111  =Forbidden
+101000  =Forbidden
+101001  =Forbidden
+101010  =Forbidden
+101011  =Forbidden
+101100  =Forbidden
+101101  =Forbidden
+101110  =Forbidden
+101111  =Forbidden
+110000  =Forbidden
+110001  =Forbidden
+110010  =Forbidden
+110011  =Forbidden
+110100  =Forbidden
+110101  =Forbidden
+110110  =Forbidden
+110111  =Forbidden
+111000  =Forbidden
+111001  =Forbidden
+111010  =Forbidden
+111011  =Forbidden       #  rdhwr
+111100  =Forbidden
+111101  =Forbidden
+111110  =Forbidden
+111111  =Forbidden
+
+
+-- movci (See Table A.7)
+pat0(17:16) pat1(10:6)
+00          00000      =Arithm3        #  movf
+01          00000      =Arithm3        #  movt
+1x          00000      =Forbidden
+xx          ~00000     =Forbidden
+
+
+-- srl (See Table A.8)
+pat0(25:22) R(21)
+0000        0     =Arithm3          #  srl
+0000        1     =Arithm3          #  rotr
+~0000       x     =Forbidden
+
+
+-- srlv (See Table A.9)
+pat0(10:7) R(6)
+0000       0    =Arithm3             #  srlv
+0000       1    =Arithm3             #  rotrv
+~0000      x    =Forbidden
+
+
+-- bshfl (See Table A.10)
+sa(10:6)
+00000  =Forbidden
+00001  =Forbidden
+00010  ->arithm3_1       #  wsbh
+00011  =Forbidden
+00100  =Forbidden
+00101  =Forbidden
+00110  =Forbidden
+00111  =Forbidden
+01000  =Forbidden
+01001  =Forbidden
+01010  =Forbidden
+01011  =Forbidden
+01100  =Forbidden
+01101  =Forbidden
+01110  =Forbidden
+01111  =Forbidden
+10000  ->arithm3_1       #  seb
+10001  =Forbidden
+10010  =Forbidden
+10011  =Forbidden
+10100  =Forbidden
+10101  =Forbidden
+10110  =Forbidden
+10111  =Forbidden
+11000  ->arithm3_1       #  seh
+11001  =Forbidden
+11010  =Forbidden
+11011  =Forbidden
+11100  =Forbidden
+11101  =Forbidden
+11110  =Forbidden
+11111  =Forbidden
+
+
+-- cop0 (See Table A.11)
+rs(25:21)
+00000  =Forbidden        #  mfc0
+00001  =Forbidden
+00010  =Forbidden
+00011  =Forbidden
+00100  =Forbidden        #  mtc0
+00101  =Forbidden
+00110  =Forbidden
+00111  =Forbidden
+01000  =Forbidden
+01001  =Forbidden
+01010  =Forbidden        #  rdpgpr
+01011  ->mfmc0
+01100  =Forbidden
+01101  =Forbidden
+01110  =Forbidden        #  wrpgpr
+01111  =Forbidden
+10000  ->c0
+10001  =Forbidden
+10010  =Forbidden
+10011  =Forbidden
+10100  =Forbidden
+10101  =Forbidden
+10110  =Forbidden
+10111  =Forbidden
+11000  =Forbidden
+11001  =Forbidden
+11010  =Forbidden
+11011  =Forbidden
+11100  =Forbidden
+11101  =Forbidden
+11110  =Forbidden
+11111  =Forbidden
+
+
+-- c0 (See Table A.12)
+function(5:0)
+000000  =Forbidden
+000001  =Forbidden       #  tlbr
+000010  =Forbidden       #  tlbwi
+000011  =Forbidden
+000100  =Forbidden
+000101  =Forbidden
+000110  =Forbidden       #  tlbwr
+000111  =Forbidden
+001000  =Forbidden       #  tlbp
+001001  =Forbidden
+001010  =Forbidden
+001011  =Forbidden
+001100  =Forbidden
+001101  =Forbidden
+001110  =Forbidden
+001111  =Forbidden
+010000  =Forbidden
+010001  =Forbidden
+010010  =Forbidden
+010011  =Forbidden
+010100  =Forbidden
+010101  =Forbidden
+010110  =Forbidden
+010111  =Forbidden
+011000  =Forbidden       #  eret
+011001  =Forbidden
+011010  =Forbidden
+011011  =Forbidden
+011100  =Forbidden
+011101  =Forbidden
+011110  =Forbidden
+011111  =Forbidden       #  deret
+100000  =Forbidden       #  wait
+100001  =Forbidden
+100010  =Forbidden
+100011  =Forbidden
+100100  =Forbidden
+100101  =Forbidden
+100110  =Forbidden
+100111  =Forbidden
+101000  =Forbidden
+101001  =Forbidden
+101010  =Forbidden
+101011  =Forbidden
+101100  =Forbidden
+101101  =Forbidden
+101110  =Forbidden
+101111  =Forbidden
+110000  =Forbidden
+110001  =Forbidden
+110010  =Forbidden
+110011  =Forbidden
+110100  =Forbidden
+110101  =Forbidden
+110110  =Forbidden
+110111  =Forbidden
+111000  =Forbidden
+111001  =Forbidden
+111010  =Forbidden
+111011  =Forbidden
+111100  =Forbidden
+111101  =Forbidden
+111110  =Forbidden
+111111  =Forbidden
+ 
+
+-- cop1 (See Table A.13)
+rs(25:21)
+00000  ->mfc1            #  mfc1
+00001  =Forbidden
+00010  =Forbidden        #  cfc1
+00011  ->mfc1            #  mfhc1
+00100  ->mtc1            #  mtc1
+00101  =Forbidden
+00110  =Forbidden        #  ctc1
+00111  ->mtc1            #  mthc1
+01000  ->bc1
+01001  =Forbidden
+01010  =Forbidden
+01011  =Forbidden
+01100  =Forbidden
+01101  =Forbidden
+01110  =Forbidden
+01111  =Forbidden
+10000  ->c1              #  S
+10001  ->c1              #  D
+10010  =Forbidden
+10011  =Forbidden
+10100  ->c1              #  W
+10101  ->c1              #  L
+10110  ->c1              #  PS
+10111  ->c1
+11000  ->c1
+11001  ->c1
+11010  ->c1
+11011  ->c1
+11100  ->c1
+11101  ->c1
+11110  ->c1
+11111  ->c1
+
+
+-- c1 (See Table A.14, A.15, A.16, A.17)
+function(5:0)
+000000  =Safe            #  add.fmt
+000001  =Safe            #  sub.fmt
+000010  =Safe            #  mul.fmt
+000011  =Safe            #  div.fmt
+000100  ->fp             #  sqrt.fmt
+000101  ->fp             #  abs.fmt
+000110  ->fp             #  mov.fmt
+000111  ->fp             #  neg.fmt
+001000  ->fp             #  round.l.fmt
+001001  ->fp             #  trunc.l.fmt
+001010  ->fp             #  ceil.l.fmt
+001011  ->fp             #  floor.l.fmt
+001100  ->fp             #  round.w.fmt
+001101  ->fp             #  trunc.w.fmt
+001110  ->fp             #  ceil.w.fmt
+001111  ->fp             #  floor.w.fmt
+010000  =Forbidden
+010001  ->movcf
+010010  =Safe            #  movz.fmt
+010011  =Safe            #  movn.fmt
+010100  =Forbidden
+010101  ->fp             #  recip.fmt
+010110  ->fp             #  rsqrt.fmt
+010111  =Forbidden
+011000  =Forbidden
+011001  =Forbidden
+011010  =Forbidden
+011011  =Forbidden
+011100  =Forbidden
+011101  =Forbidden
+011110  =Forbidden
+011111  =Forbidden
+100000  ->fp             #  cvt.s.fmt
+100001  ->fp             #  cvt.d.fmt
+100010  =Forbidden
+100011  =Forbidden
+100100  ->fp             #  cvt.w.fmt
+100101  ->fp             #  cvt.l.fmt
+100110  =Safe            #  cvt.ps.fmt
+100111  =Forbidden
+101000  ->fp             #  cvt.s.pl
+101001  =Forbidden
+101010  =Forbidden
+101011  =Forbidden
+101100  =Safe            #  pll.ps
+101101  =Safe            #  plu.ps
+101110  =Safe            #  pul.ps
+101111  =Safe            #  puu.ps
+110000  ->c_cond_fmt     #  c.f.fmt
+110001  ->c_cond_fmt     #  c.un.fmt
+110010  ->c_cond_fmt     #  c.eq.fmt
+110011  ->c_cond_fmt     #  c.ueq.fmt
+110100  ->c_cond_fmt     #  c.olt.fmt
+110101  ->c_cond_fmt     #  c.ult.fmt
+110110  ->c_cond_fmt     #  c.ole.fmt
+110111  ->c_cond_fmt     #  c.ule.fmt
+111000  ->c_cond_fmt     #  c.sf.fmt
+111001  ->c_cond_fmt     #  c.ngle.fmt
+111010  ->c_cond_fmt     #  c.seq.fmt
+111011  ->c_cond_fmt     #  c.ngl.fmt
+111100  ->c_cond_fmt     #  c.lt.fmt
+111101  ->c_cond_fmt     #  c.nge.fmt
+111110  ->c_cond_fmt     #  c.le.fmt
+111111  ->c_cond_fmt     #  c.ngt.fmt
+
+
+-- movcf (See Table A.18)
+tf(17:16)
+00  =Safe                 #  movf.fmt
+01  =Safe                 #  movt.fmt
+1x  =Forbidden
+
+
+-- cop2 (See Table A.19)
+rs(25:21)
+00000  =Forbidden        #  mfc2
+00001  =Forbidden
+00010  =Forbidden        #  cfc2
+00011  =Forbidden        #  mfhc2
+00100  =Forbidden        #  mtc2
+00101  =Forbidden
+00110  =Forbidden        #  ctc2
+00111  =Forbidden        #  mthc2
+01000  ->bc2
+01001  =Forbidden
+01010  =Forbidden
+01011  =Forbidden
+01100  =Forbidden
+01101  =Forbidden
+01110  =Forbidden
+01111  =Forbidden
+10000  =Forbidden
+10001  =Forbidden
+10010  =Forbidden
+10011  =Forbidden
+10100  =Forbidden
+10101  =Forbidden
+10110  =Forbidden
+10111  =Forbidden
+11000  =Forbidden
+11001  =Forbidden
+11010  =Forbidden
+11011  =Forbidden
+11100  =Forbidden
+11101  =Forbidden
+11110  =Forbidden
+11111  =Forbidden
+
+
+-- cop1x (See Table A.20)
+function(5:0)
+000000  =Forbidden       #  lwxc1
+000001  =Forbidden       #  ldxc1
+000010  =Forbidden
+000011  =Forbidden
+000100  =Forbidden
+000101  =Forbidden       #  luxc1
+000110  =Forbidden
+000111  =Forbidden
+001000  =Forbidden       #  swxc1
+001001  =Forbidden       #  sdxc1
+001010  =Forbidden
+001011  =Forbidden
+001100  =Forbidden
+001101  =Forbidden       #  suxc1
+001110  =Forbidden
+001111  =Forbidden       #  prefx
+010000  =Forbidden
+010001  =Forbidden
+010010  =Forbidden
+010011  =Forbidden
+010100  =Forbidden
+010101  =Forbidden
+010110  =Forbidden
+010111  =Forbidden
+011000  =Forbidden
+011001  =Forbidden
+011010  =Forbidden
+011011  =Forbidden
+011100  =Forbidden
+011101  =Forbidden
+011110  =Safe            #  alnv.ps
+011111  =Forbidden
+100000  =Safe            #  madd.s
+100001  =Safe            #  madd.d
+100010  =Forbidden
+100011  =Forbidden
+100100  =Forbidden
+100101  =Forbidden
+100110  =Safe            #  madd.ps
+100111  =Forbidden
+101000  =Safe            #  msub.s
+101001  =Safe            #  msub.d
+101010  =Forbidden
+101011  =Forbidden
+101100  =Forbidden
+101101  =Forbidden
+101110  =Safe            #  msub.ps
+101111  =Forbidden
+110000  =Safe            #  nmadd.s
+110001  =Safe            #  nmadd.d
+110010  =Forbidden
+110011  =Forbidden
+110100  =Forbidden
+110101  =Forbidden
+110110  =Safe            #  nmadd.ps
+110111  =Forbidden
+111000  =Safe            #  nmsub.s
+111001  =Safe            #  nmsub.d
+111010  =Forbidden
+111011  =Forbidden
+111100  =Forbidden
+111101  =Forbidden
+111110  =Safe            #  nmsub.ps
+111111  =Forbidden
+
+
+-- branch_1 (blez, bgtz, blezl, bgtzl)
+pat0(20:16)
+00000   =Branch
+~00000  =Forbidden
+
+
+-- arithm2_1 (lui)
+pat0(25:21)
+00000   =Arithm2
+~00000  =Forbidden
+
+
+-- arithm3_1 (sll, sra, wsbh, seb, seh)
+pat0(25:21)
+00000   =Arithm3
+~00000  =Forbidden
+
+
+-- arithm3_2 (sllv, srav, movz, movn, mul, clz, clo)
+pat0(10:6)
+00000   =Arithm3
+~00000  =Forbidden
+
+
+-- jr (jr)
+rs(25:21) pat1(20:6)
+xxxxx     000000000000000  =JmpReg          #  jr
+xxxxx    ~000000000000000  =Forbidden
+
+
+-- jalr (jalr)
+rt(20:16) hint(10:6)
+00000     00000  =JalReg
+~00000    ~00000  =Forbidden
+
+
+-- sync (sync)
+pat0(25:6)
+00000000000000000000   =Safe
+~00000000000000000000  =Forbidden
+
+
+-- mfhi (mfhi, mflo)
+pat0(25:16) pat1(10:6)
+0000000000  00000      =Arithm3
+~0000000000 ~00000     =Forbidden
+
+
+-- mthi (mthi, mtlo)
+pat0(20:6)
+000000000000000   =Safe
+~000000000000000  =Forbidden
+
+
+-- mult (mult, multu, div, divu, madd, maddu, msub, msubu)
+pat0(15:6)
+0000000000   =Safe
+~0000000000  =Forbidden
+
+
+-- arithm3_3 (add, addu, sub, subu, and, or, xor, nor, slt, sltu)
+pat0(10:6)
+00000   =Arithm3
+~00000  =Forbidden
+
+
+-- mfmc0 (di, ei)
+pat0(15:6)  sc(5) pat2(4:0)
+0110000000  0     00000     =Forbidden    #  di
+0110000000  1     00000     =Forbidden    #  ei
+~0110000000 x     00000     =Forbidden
+xxxxxxxxxx  x     ~00000    =Forbidden
+
+
+-- mfc1 (mfc1, mfhc1)
+pat0(10:0)
+00000000000   =Arithm2
+~00000000000  =Forbidden
+
+
+-- mtc1 (mtc1, mthc1)
+pat0(10:0)
+00000000000   =Safe
+~00000000000  =Forbidden
+
+
+-- bc1 (bc1f, bc1t, bc1fl, bc1tl)
+nd_tf(17:16)
+00  =Branch              #  bc1f
+01  =Branch              #  bc1t
+10  =Branch              #  bc1fl
+11  =Branch              #  bc1tl
+
+
+-- fp (sqrt.fmt, abs.fmt, mov.fmt, neg.fmt, round.l.fmt, trunc.l.fmt, ceil.l.fmt, floor.l.fmt, round.w.fmt, trunc.w.fmt, ceil.w.fmt, floor.w.fmt, recip.fmt, rsqrt.fmt, cvt.s.fmt, cvt.d.fmt, cvt.w.fmt, cvt.l.fmt, cvt.s.pl)
+pat0(20:16)
+00000   =Safe
+~00000  =Forbidden
+
+
+-- bc2 (bc2f, bc2t, bc2fl, bc2tl)
+nd_tf(17:16)
+00  =Forbidden           #  bc2f
+01  =Forbidden           #  bc2t
+10  =Forbidden           #  bc2fl
+11  =Forbidden           #  bc2tl
+
+
+-- c_cond_fmt (c.cond.fmt)
+pat0(7:6)
+00   =Safe
+~00  =Forbidden
+

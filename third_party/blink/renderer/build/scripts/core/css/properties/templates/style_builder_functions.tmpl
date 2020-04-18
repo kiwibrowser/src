@@ -1,0 +1,207 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+{% macro declare_initial(prefix = None) %}
+void {{prefix ~ '::' if prefix}}ApplyInitial(StyleResolverState& state) const{{' override' if not prefix}}
+{%- endmacro %}
+{% macro declare_inherit(prefix = None) %}
+void {{prefix ~ '::' if prefix}}ApplyInherit(StyleResolverState& state) const{{' override' if not prefix}}
+{%- endmacro %}
+{% macro declare_value(prefix = None) %}
+void {{prefix ~ '::' if prefix}}ApplyValue(StyleResolverState& state, const CSSValue& value) const{{' override' if not prefix}}
+{%- endmacro %}
+
+{% macro set_value(property) %}
+  {% if property.svg %}
+state.Style()->AccessSVGStyle().{{property.setter}}
+  {%- elif property.font %}
+state.GetFontBuilder().{{property.setter}}
+  {%- else %}
+state.Style()->{{property.setter}}
+  {%- endif %}
+{% endmacro %}
+
+{% macro convert_and_set_value(property) %}
+  {% if property.converter == 'CSSPrimitiveValue' %}
+{{set_value(property)}}(ToCSSPrimitiveValue(value).ConvertTo<{{property.type_name}}>());
+  {%- elif property.converter == 'CSSIdentifierValue' %}
+{{set_value(property)}}(ToCSSIdentifierValue(value).ConvertTo<blink::{{property.type_name}}>());
+  {%- elif property.converter %}
+{{set_value(property)}}(StyleBuilderConverter::{{property.converter}}(state, value));
+  {%- endif %}
+{% endmacro %}
+
+{% macro style_builder_functions(property) %}
+  {% if property.should_implement_apply_functions_in_cpp %}
+    {# declaration only #}
+  {{declare_initial()}};
+  {{declare_inherit()}};
+  {{declare_value()}};
+  {% else %}
+    {# full implementation #}
+    {% if not property.style_builder_template %}
+      {% if property.style_builder_generate_initial %}
+  {{declare_initial()}} {
+        {% if property.svg %}
+    {{set_value(property)}}(SVGComputedStyle::{{property.initial}}());
+        {% elif property.font %}
+    {{set_value(property)}}(FontBuilder::{{property.initial}}());
+        {% else %}
+    {{set_value(property)}}(ComputedStyleInitialValues::{{property.initial}}());
+        {% endif %}
+        {% if property.independent %}
+    state.Style()->{{property.is_inherited_setter}}(false);
+        {% endif %}
+  }
+      {% endif %}
+      {% if property.style_builder_generate_inherit %}
+  {{declare_inherit()}} {
+        {% if property.svg %}
+    {{set_value(property)}}(state.ParentStyle()->SvgStyle().{{property.getter}}());
+        {% elif property.font %}
+    {{set_value(property)}}(state.ParentFontDescription().{{property.getter}}());
+        {% else %}
+    {{set_value(property)}}(state.ParentStyle()->{{property.getter}}());
+        {% endif %}
+        {% if property.independent %}
+    state.Style()->{{property.is_inherited_setter}}(true);
+        {% endif %}
+  }
+      {% endif %}
+      {% if property.style_builder_generate_value %}
+  {{declare_value()}} {
+    {{convert_and_set_value(property)}}
+          {% if property.independent %}
+    state.Style()->{{property.is_inherited_setter}}(false);
+          {% endif %}
+  }
+      {% endif %}
+    {% elif property.style_builder_template == "auto" %}
+      {% set auto_getter = property.style_builder_template_args['auto_getter'] or
+                         'HasAuto' + property.name_for_methods %}
+      {% set auto_setter = property.style_builder_template_args['auto_setter'] or
+                         'SetHasAuto' + property.name_for_methods %}
+  {{declare_initial()}} {
+    state.Style()->{{auto_setter}}();
+  }
+  {{declare_inherit()}} {
+    if (state.ParentStyle()->{{auto_getter}}())
+      state.Style()->{{auto_setter}}();
+    else
+      {{set_value(property)}}(state.ParentStyle()->{{property.getter}}());
+  }
+  {{declare_value()}} {
+    if (value.IsIdentifierValue() &&
+        ToCSSIdentifierValue(value).GetValueID() == CSSValueAuto)
+      state.Style()->{{auto_setter}}();
+    else
+      {{convert_and_set_value(property)}}
+  }
+    {% elif property.style_builder_template in ['border_image', 'mask_box'] %}
+    {% set is_mask_box = property.style_builder_template == 'mask_box' %}
+    {% set modifier_type = property.style_builder_template_args['modifier_type'] %}
+    {% set getter = 'MaskBoxImage' if is_mask_box else 'BorderImage' %}
+    {% set setter = 'Set' + getter %}
+  {{declare_initial()}} {
+    const NinePieceImage& currentImage = state.Style()->{{getter}}();
+    {# Check for equality in case we can bail out before creating a new NinePieceImage. #}
+      {% if modifier_type == 'Outset' %}
+    if (StyleBuildingUtils::borderImageLengthMatchesAllSides(currentImage.Outset(),
+                                         BorderImageLength(Length(0, kFixed))))
+      return;
+      {% elif modifier_type == 'Repeat' %}
+    if (currentImage.HorizontalRule() == kStretchImageRule &&
+        currentImage.VerticalRule() == kStretchImageRule)
+      return;
+      {% elif modifier_type == 'Slice' and is_mask_box %}
+    // Masks have a different initial value for slices. Preserve the value of 0
+    // for backwards compatibility.
+    if (currentImage.Fill() == true &&
+        StyleBuildingUtils::lengthMatchesAllSides(currentImage.ImageSlices(), Length(0, kFixed)))
+      return;
+      {% elif modifier_type == 'Slice' and not is_mask_box %}
+    if (currentImage.Fill() == false &&
+        StyleBuildingUtils::lengthMatchesAllSides(currentImage.ImageSlices(), Length(100, kPercent)))
+      return;
+      {% elif modifier_type == 'Width' and is_mask_box %}
+    // Masks have a different initial value for widths. Preserve the value of
+    // 'auto' for backwards compatibility.
+    if (StyleBuildingUtils::borderImageLengthMatchesAllSides(currentImage.BorderSlices(),
+                                         BorderImageLength(Length(kAuto))))
+      return;
+      {% elif modifier_type == 'Width' and not is_mask_box %}
+    if (StyleBuildingUtils::borderImageLengthMatchesAllSides(currentImage.BorderSlices(),
+                                         BorderImageLength(1.0)))
+      return;
+      {% endif %}
+    NinePieceImage image(currentImage);
+      {% if modifier_type == 'Outset' %}
+    image.SetOutset(Length(0, kFixed));
+      {% elif modifier_type == 'Repeat' %}
+    image.SetHorizontalRule(kStretchImageRule);
+    image.SetVerticalRule(kStretchImageRule);
+      {% elif modifier_type == 'Slice' and is_mask_box %}
+    image.SetImageSlices(LengthBox({{ (['Length(0, kFixed)']*4) | join(', ') }}));
+    image.SetFill(true);
+      {% elif modifier_type == 'Slice' and not is_mask_box %}
+    image.SetImageSlices(LengthBox({{ (['Length(100, kPercent)']*4) | join(', ') }}));
+    image.SetFill(false);
+      {% elif modifier_type == 'Width' %}
+    image.SetBorderSlices({{ 'Length(kAuto)' if is_mask_box else '1.0' }});
+      {% endif %}
+    state.Style()->{{setter}}(image);
+  }
+  {{declare_inherit()}} {
+    NinePieceImage image(state.Style()->{{getter}}());
+      {% if modifier_type == 'Outset' %}
+    image.CopyOutsetFrom(state.ParentStyle()->{{getter}}());
+      {% elif modifier_type == 'Repeat' %}
+    image.CopyRepeatFrom(state.ParentStyle()->{{getter}}());
+      {% elif modifier_type == 'Slice' %}
+    image.CopyImageSlicesFrom(state.ParentStyle()->{{getter}}());
+      {% elif modifier_type == 'Width' %}
+    image.CopyBorderSlicesFrom(state.ParentStyle()->{{getter}}());
+      {% endif %}
+    state.Style()->{{setter}}(image);
+  }
+  {{declare_value()}} {
+    NinePieceImage image(state.Style()->{{getter}}());
+      {% if modifier_type == 'Outset' %}
+    image.SetOutset(CSSToStyleMap::MapNinePieceImageQuad(state, value));
+      {% elif modifier_type == 'Repeat' %}
+    CSSToStyleMap::MapNinePieceImageRepeat(state, value, image);
+      {% elif modifier_type == 'Slice' %}
+    CSSToStyleMap::MapNinePieceImageSlice(state, value, image);
+      {% elif modifier_type == 'Width' %}
+    image.SetBorderSlices(CSSToStyleMap::MapNinePieceImageQuad(state, value));
+      {% endif %}
+    state.Style()->{{setter}}(image);
+  }
+    {% elif property.style_builder_template in ['animation', 'transition'] %}
+    {% set attribute = property.style_builder_template_args['attribute'] %}
+    {% set animation = 'Animation' if property.style_builder_template == 'animation' else 'Transition' %}
+    {% set vector = attribute + "List()" %}
+  {{declare_initial()}} {
+    CSS{{animation}}Data& data = state.Style()->Access{{animation}}s();
+    data.{{vector}}.clear();
+    data.{{vector}}.push_back(CSS{{animation}}Data::Initial{{attribute}}());
+  }
+
+  {{declare_inherit()}} {
+    const CSS{{animation}}Data* parentData = state.ParentStyle()->{{animation}}s();
+    if (!parentData)
+      ApplyInitial{{property_id}}(state);
+    else
+      state.Style()->Access{{animation}}s().{{vector}} = parentData->{{vector}};
+  }
+
+  {{declare_value()}} {
+    CSS{{animation}}Data& data = state.Style()->Access{{animation}}s();
+    data.{{vector}}.clear();
+    for (auto& listValue : ToCSSValueList(value))
+      data.{{vector}}.push_back(CSSToStyleMap::MapAnimation{{attribute}}(*listValue));
+  }
+    {% endif %}
+  {%- endif %}
+{%- endmacro %}

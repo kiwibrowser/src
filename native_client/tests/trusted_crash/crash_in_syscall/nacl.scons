@@ -1,0 +1,50 @@
+# -*- python -*-
+# Copyright 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+
+test_prog = env.ComponentProgram('test_guest', ['test_guest.c'],
+                                 EXTRA_LIBS=['${NONIRT_LIBS}',
+                                             '${EXCEPTION_LIBS}'])
+test_prog = env.GetTranslatedNexe(test_prog)
+
+# This test covers how NaCl interacts with host-OS-specific
+# interfaces, and it is only implemented for Windows and Linux.  On
+# Windows, it tests interaction with Windows'
+# SetUnhandledExceptionFilter() API.  On Linux, it tests interaction
+# with signal handling.
+if not (env.Bit('host_windows') or env.Bit('host_linux')):
+  Return()
+
+if 'TRUSTED_ENV' not in env:
+  Return()
+trusted_env = env['TRUSTED_ENV']
+
+extra_libs = []
+if trusted_env.Bit('windows'):
+  extra_libs.append('dbghelp.lib')
+runner = trusted_env.ComponentProgram(
+    'test_host', ['test_host.c'],
+    EXTRA_LIBS=['sel'] + extra_libs)
+
+crash_types = [
+    ('run_crash_in_syscall_test', 'NACL_TEST_CRASH_MEMORY'),
+    ('run_log_fatal_in_syscall_test', 'NACL_TEST_CRASH_LOG_FATAL'),
+    ('run_check_failure_in_syscall_test', 'NACL_TEST_CRASH_CHECK_FAILURE'),
+    ('run_jump_to_zero_in_syscall_test', 'NACL_TEST_CRASH_JUMP_TO_ZERO'),
+    ('run_jump_into_sandbox_in_syscall_crash_test',
+     'NACL_TEST_CRASH_JUMP_INTO_SANDBOX'),
+    ]
+for name, arg in crash_types:
+  node = env.CommandTest(
+      '%s.out' % name, env.AddBootstrap(runner, [test_prog, arg]),
+      declares_exit_status=True)
+  # The test is disabled under code coverage because NaClAbort() does
+  # not call abort() in coverage mode, so the crash test does not pass.
+  env.AddNodeToTestSuite(
+      node, ['small_tests', 'exception_tests'], name,
+      is_broken=(not env.Bit('nacl_static_link') or
+                 trusted_env.Bit('coverage_enabled')))

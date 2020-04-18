@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="../../../resources/js-test.js"></script>
+    </head>
+    <body>
+        <p>
+            Tests that window.devicePixelRatio is updated on zoom.
+        </p>
+        <script>
+            // eventSender.zoomPageOut/In zooms with a fixed factor of 1.2 instead
+            // of the zoom levels of the actual browser.
+            var ZOOM_MULTIPLIER = 1.2;
+
+            function round(n)
+            {
+                return Math.round(n * 100) / 100;
+            }
+
+            var expectedRatio = window.devicePixelRatio;
+            if (window.eventSender) {
+                for (var i = 0; i < 5; i++) {
+                    eventSender.zoomPageOut();
+                    expectedRatio /= ZOOM_MULTIPLIER;
+                    shouldBe('round(window.devicePixelRatio)', String(round(expectedRatio)));
+                }
+                for (var i = 0; i < 10; i++) {
+                    eventSender.zoomPageIn();
+                    expectedRatio *= ZOOM_MULTIPLIER;
+                    shouldBe('round(window.devicePixelRatio)', String(round(expectedRatio)));
+                }
+            }
+        </script>
+    </body>
+</html>

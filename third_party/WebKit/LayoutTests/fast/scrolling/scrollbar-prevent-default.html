@@ -1,0 +1,76 @@
+<head>
+    <script src="../../resources/js-test.js"></script>
+    <script src="../../resources/run-after-layout-and-paint.js"></script>
+    <style>
+        body {
+            height: 200vh;
+            width: 200vw;
+            margin: 0;
+        }
+        #subframe {
+            width: 100px;
+            height: 100px;
+            background-color: black;
+            overflow: scroll;
+        }
+        #subframe-content {
+            width: 200px;
+            height: 200px;
+            background-color: black;
+        }
+    </style>
+</head>
+<body>
+    <div id="subframe">
+        <div id="subframe-content"></div>
+    </div>
+    <pre id="console"></pre>
+</body>
+<script>
+    jsTestIsAsync = true;
+
+    description('This tests that scrollbars always receive events even when there is an element underneath the scrollbar which swallows the event. In this case an event handler is added to the window which swallows the event but this may also happen with elements underneath of overlay scrollbars.');
+    if (window.testRunner)
+        testRunner.dumpAsText();
+    if (window.internals) {
+        internals.settings.setMockScrollbarsEnabled(true)
+        internals.settings.setScrollAnimatorEnabled(false);
+    }
+
+    var receivedMousedownEvent = false;
+
+    document.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        receivedMousedownEvent = true;
+    });
+
+    function testFrameScrollbar() {
+        // Test the frame scrollbar.
+        window.scrollTo(0, 10);
+        if (window.eventSender) {
+            eventSender.mouseMoveTo(window.innerWidth - 5, 1);
+            eventSender.mouseDown();
+            eventSender.mouseUp();
+        }
+        shouldBe('receivedMousedownEvent', 'true');
+        shouldBe('window.scrollY', '0');
+        testDivScrollbar();
+    }
+
+    function testDivScrollbar() {
+        // Test a div scrollbar.
+        receivedMousedownEvent = false;
+        var subframe = document.getElementById('subframe');
+        subframe.scrollTop = 10;
+        if (window.eventSender) {
+            eventSender.mouseMoveTo(100 - 5, 1);
+            eventSender.mouseDown();
+            eventSender.mouseUp();
+        }
+        shouldBe('receivedMousedownEvent', 'true');
+        shouldBe('subframe.scrollTop', '0');
+        finishJSTest();
+    }
+
+    runAfterLayoutAndPaint(testFrameScrollbar);
+</script>

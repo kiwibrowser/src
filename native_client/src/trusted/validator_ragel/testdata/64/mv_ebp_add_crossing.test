@@ -1,0 +1,49 @@
+@hex:
+  # Show that atomic sequences can't cross block boundaries.
+  # Example:
+  #   mov %ebp, %r11d
+  #   add %rbp, %r15"
+  # where add is in new block.
+  90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90
+  90 90 90 90 90 90 90 90 90 90 90 90 90
+  44 89 dd 4c 01 fd
+  
+@dis:
+     0:	90                                           	nop
+     1:	90                                           	nop
+     2:	90                                           	nop
+     3:	90                                           	nop
+     4:	90                                           	nop
+     5:	90                                           	nop
+     6:	90                                           	nop
+     7:	90                                           	nop
+     8:	90                                           	nop
+     9:	90                                           	nop
+     a:	90                                           	nop
+     b:	90                                           	nop
+     c:	90                                           	nop
+     d:	90                                           	nop
+     e:	90                                           	nop
+     f:	90                                           	nop
+    10:	90                                           	nop
+    11:	90                                           	nop
+    12:	90                                           	nop
+    13:	90                                           	nop
+    14:	90                                           	nop
+    15:	90                                           	nop
+    16:	90                                           	nop
+    17:	90                                           	nop
+    18:	90                                           	nop
+    19:	90                                           	nop
+    1a:	90                                           	nop
+    1b:	90                                           	nop
+    1c:	90                                           	nop
+    1d:	44 89 dd                                     	mov    %r11d,%ebp
+    20:	4c 01 fd                                     	add    %r15,%rbp
+@rdfa_output:
+  20: improper %rbp sandboxing
+  20: improper %rbp sandboxing
+  return code: 1
+@spec:
+  20: %rbp should not be restricted at the end of bundle
+  20: register %rbp should be restricted, while in fact None is restricted

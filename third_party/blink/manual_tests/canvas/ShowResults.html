@@ -1,0 +1,174 @@
+<!doctype html>
+<style>
+body {
+  background: #9BC86A;
+  font: 24px 'Arial';
+  padding: 32px;
+}
+
+#all {
+  max-width: 1000px;
+  margin:0 auto;
+  position:relative;
+}
+
+.f {
+  padding: 16px 32px;
+  text-align: right;
+  font-size: 18px;
+}
+.f a { color: #444 }
+
+table {
+  border-spacing: 1;
+  border-collapse: collapse;
+  background:white;
+  border-radius:6px;
+  overflow:hidden;
+  width:100%;
+}
+
+td,th {
+  padding-left:32px
+}
+
+thead tr {
+  height: 72px;
+  background:#FFED86;
+  font-variant: small-caps;
+
+}
+
+tbody tr {
+  height:60px;
+  border-bottom:1px solid #E3F1D5;
+}
+tbody tr:last-child  {
+  border:0;
+}
+
+
+tfoot tr {
+  height: 72px;
+  background:#FFED86;
+}
+tfoot tr td:nth-child(2) {
+  font-weight: bold;
+}
+
+td {
+  width: 22%;
+  text-align: center;
+}
+
+td:nth-child(1) {
+  width: 34%;
+  text-align: left;
+}
+
+tbody td:nth-child(3), tfoot td:nth-child(3) {
+  color: #999;
+}
+
+</style>
+<div id="all">
+  <h2>Canvas performance tests</h2>
+<div class=f><a id='baseline' href="">Set as new baseline</a>
+</div>
+<div id="i"></div>
+<div class="f"><a href='RunAllTests.html'>Rerun all tests</a>
+</div>
+</div>
+
+<script src="./utils.js"></script>
+<script>
+  document.getElementById("baseline").addEventListener("click", (ev) => {
+    perf.saveBaseline();
+  });
+
+  function sdiff(a, ca, b, cb) {
+    diff = a - b;
+    conf = Math.sqrt(ca*ca + cb*cb);
+
+    let color = "#090";
+    if (Math.abs(diff) <= conf) {
+      color = "#999";
+    } else if (diff > 0) {
+      color = "#900";
+    }
+
+    return `<span style='color:${color}'>${perf.ntoserr(diff, conf)}</span>`;
+  }
+
+  function getURL(n) {
+    const ns = n.split(" ");
+    if (ns.length == 1) return n + ".html";
+    return ns[0] + ".html?scroll";
+  }
+
+  function draw() {
+    const res = perf.getResults();
+    const baseline = perf.getBaseline();
+    console.log(baseline);
+
+    let total = 0;
+    let tconf = 0.0;
+    let totalbaseline = 0;
+    let tconfbaseline = 0;
+    const table = document.createElement("table");
+
+    const head = table.createTHead();
+    const hr = head.insertRow();
+    hr.insertCell().innerHTML = "experiment";
+    hr.insertCell().innerHTML = "time";
+    hr.insertCell().innerHTML = "baseline";
+    hr.insertCell().innerHTML = "diff";
+
+    const body = table.createTBody();
+    let has_baseline = false;
+
+    for (let i = 0; i < res.length; ++i) {
+      const p = res[i];
+      const row = body.insertRow();
+      const n = p[0];
+
+      row.insertCell().innerHTML = `<a href="${getURL(n)}">${n}</a>`;
+      row.insertCell().innerHTML = perf.ntoserr(p[1], p[2]);
+      total += p[1];
+      tconf += p[2]*p[2];
+
+      const bl = baseline[p[0]];
+      if (bl) {
+        has_baseline = true;
+        totalbaseline += bl[0];
+        tconfbaseline += bl[1]*bl[1];
+        row.insertCell().innerHTML = perf.ntoserr(bl[0], bl[1]);
+        row.insertCell().innerHTML = sdiff(p[1], p[2], bl[0], bl[1]);
+      } else {
+        row.insertCell();
+        row.insertCell();
+      }
+    }
+    tconf = Math.sqrt(tconf);
+    tconfbaseline = Math.sqrt(tconfbaseline);
+
+    const footer = table.createTFoot().insertRow();
+    footer.insertCell().innerHTML = "full run";
+    footer.insertCell().innerHTML = perf.ntoserr(total, tconf);
+    if (has_baseline) {
+      footer.insertCell().innerHTML = perf.ntoserr(totalbaseline, tconfbaseline);
+      footer.insertCell().innerHTML = sdiff(total, tconf, totalbaseline, tconfbaseline);
+    } else {
+      footer.insertCell();
+      footer.insertCell();
+    }
+
+    const i = document.getElementById("i");
+    i.innerHTML = "";
+    i.appendChild(table);
+  }
+
+  draw();
+
+
+</script>

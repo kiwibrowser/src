@@ -1,0 +1,1 @@
+document.notifyLoaded("ExternalAsync", document);

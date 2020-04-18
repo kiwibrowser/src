@@ -1,0 +1,73 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_toolbar/cr_toolbar.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_toolbar/cr_toolbar_selection_overlay.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="chrome://bookmarks/shared_style.html">
+
+<dom-module id="bookmarks-toolbar">
+  <template>
+    <style include="shared-style">
+      :host {
+        background: var(--md-toolbar-color);
+        transition: background-color 150ms;
+      }
+
+      :host([show-selection-overlay]) {
+        background: var(--interactive-color);
+      }
+
+      paper-icon-button-light.more-actions {
+        margin: 4px;
+      }
+
+      paper-icon-button-light.more-vert-button div {
+        border-color: white;
+      }
+
+      cr-toolbar,
+      cr-toolbar-selection-overlay {
+        color: #fff;
+        flex: 1;
+      }
+
+      cr-toolbar {
+        --cr-toolbar-field-margin:
+            calc(var(--sidebar-width) + var(--splitter-width));
+      }
+
+      :host(:not([narrow_])) cr-toolbar-selection-overlay {
+        --selection-overlay-padding: var(--card-padding-side);
+        --cr-toolbar-field-margin: var(--sidebar-width);
+        --selection-overlay-max-width: var(--card-max-width);
+      }
+    </style>
+    <cr-toolbar page-name="$i18n{title}"
+        clear-label="$i18n{clearSearch}"
+        search-prompt="$i18n{searchPrompt}"
+        hidden$="[[showSelectionOverlay]]"
+        narrow="{{narrow_}}"
+        on-search-changed="onSearchChanged_">
+      <paper-icon-button-light class="more-actions more-vert-button">
+        <button id="menuButton"
+            title="$i18n{organizeButtonTitle}"
+            on-click="onMenuButtonOpenTap_"
+            aria-haspopup="menu">
+          <div></div>
+          <div></div>
+          <div></div>
+        </button>
+      </paper-icon-button-light>
+    </cr-toolbar>
+    <template is="dom-if" if="[[showSelectionOverlay]]">
+      <cr-toolbar-selection-overlay delete-label="$i18n{delete}"
+          cancel-label="$i18n{cancel}"
+          selection-label="[[getItemsSelectedString_(selectedItems_.size)]]"
+          delete-disabled="[[!canDeleteSelection_(selectedItems_)]]"
+          on-delete-selected-items="onDeleteSelectionTap_"
+          on-clear-selected-items="onClearSelectionTap_">
+      </cr-toolbar-selection-overlay>
+    </template>
+  </template>
+  <script src="chrome://bookmarks/toolbar.js"></script>
+</dom-module>

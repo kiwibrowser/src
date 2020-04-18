@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../../../resources/js-test.js"></script>
+<script src="../resources/multiple-fields-ax-aria-attributes.js"></script>
+</head>
+<body>
+<input id=test type="time" step="0.001" value="12:34:56.789">
+<script>
+description('This test checks aria-help attribute of fields in multiple fields time input UI.');
+
+function enableAccessibility()
+{
+    if (!window.accessibilityController) {
+        debug("Please run inside DumpRenderTree.");
+        return;
+    }
+}
+
+function keyDown(key, modifiers)
+{
+    if (!window.eventSender)
+        return;
+    eventSender.keyDown(key, modifiers);
+}
+
+var testInput = document.getElementById("test");
+
+enableAccessibility();
+testInput.focus();
+
+debug('Non-empty value');
+testInput.focus();
+checkFocusedElementAXAttributes('Hours, AXValueDescription: 12, intValue:12, range:1-12');
+keyDown('\t');
+checkFocusedElementAXAttributes('Minutes, AXValueDescription: 34, intValue:34, range:0-59');
+keyDown('\t');
+checkFocusedElementAXAttributes('Seconds, AXValueDescription: 56, intValue:56, range:0-59');
+keyDown('\t');
+checkFocusedElementAXAttributes('Milliseconds, AXValueDescription: 789, intValue:789, range:0-999');
+keyDown('\t');
+checkFocusedElementAXAttributes('AM/PM, AXValueDescription: PM, intValue:2, range:1-2');
+
+debug('Empty value');
+keyDown('Backspace');
+checkFocusedElementAXAttributes('AM/PM, AXValueDescription: --, intValue:0, range:1-2');
+keyDown('\t', ['shiftKey']);
+keyDown('Backspace');
+checkFocusedElementAXAttributes('Milliseconds, AXValueDescription: ---, intValue:0, range:0-999');
+keyDown('\t', ['shiftKey']);
+keyDown('Backspace');
+checkFocusedElementAXAttributes('Seconds, AXValueDescription: --, intValue:0, range:0-59');
+keyDown('\t', ['shiftKey']);
+keyDown('Backspace');
+checkFocusedElementAXAttributes('Minutes, AXValueDescription: --, intValue:0, range:0-59');
+keyDown('\t', ['shiftKey']);
+keyDown('Backspace');
+checkFocusedElementAXAttributes('Hours, AXValueDescription: --, intValue:0, range:1-12');
+
+debug('');
+testInput.parentNode.removeChild(testInput);
+</script>
+</body>
+</html>

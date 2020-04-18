@@ -1,0 +1,82 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef COMPONENTS_SUBRESOURCE_FILTER_TOOLS_FILTER_TOOL_H_
+#define COMPONENTS_SUBRESOURCE_FILTER_TOOLS_FILTER_TOOL_H_
+
+#include <istream>
+#include <ostream>
+#include <string>
+
+#include "base/macros.h"
+#include "base/memory/scoped_refptr.h"
+#include "base/strings/string_piece.h"
+#include "components/subresource_filter/core/common/memory_mapped_ruleset.h"
+
+namespace url_pattern_index {
+namespace flat {
+struct UrlRule;
+}
+}  // namespace url_pattern_index
+
+namespace subresource_filter {
+
+// FilterTool provides utility functions for matching a given ruleset against
+// requests and writes the results to an output stream.
+class FilterTool {
+ public:
+  // |output| must outlive this object.
+  FilterTool(
+      scoped_refptr<const subresource_filter::MemoryMappedRuleset> ruleset,
+      std::ostream* output);
+  ~FilterTool();
+
+  // Checks the ruleset for a request with document origin |document_origin|,
+  // sub-resource request |url|, and |type|. If a blacklist rule matches the
+  // request, it is considered the match. If multiple blacklist rules match,
+  // one is arbitrarily chosen as the match. If a blacklist rule matches and a
+  // whitelist rule matches, a whitelist rule is the match. The output is
+  // written to |output_| in a space- delimited line. The first column is
+  // either BLOCKED or ALLOWED. The second is any matching rule. The following
+  // columns are the input arguments.
+  void Match(const std::string& document_origin,
+             const std::string& url,
+             const std::string& type);
+
+  // Like Match, but for multiple requests. The requests are provided in
+  // |request_stream| in form: "document_origin url type\n".
+  void MatchBatch(std::istream* request_stream);
+
+  // Like Match, but instead of writing the result of each request, it writes
+  // the set of matched rules to |output_|. Use |min_match_count| to filter the
+  // list of written rules to those that were matched at least |min_match_count|
+  // times.
+  void MatchRules(std::istream* request_stream, int min_match_count);
+
+ private:
+  void PrintResult(bool blocked,
+                   const url_pattern_index::flat::UrlRule* rule,
+                   base::StringPiece document_origin,
+                   base::StringPiece url,
+                   base::StringPiece type);
+
+  const url_pattern_index::flat::UrlRule* MatchImpl(
+      base::StringPiece document_origin,
+      base::StringPiece url,
+      base::StringPiece type,
+      bool* blocked);
+
+  void MatchBatchImpl(std::istream* request_stream,
+                      bool print_each_request,
+                      int min_match_count);
+
+  scoped_refptr<const subresource_filter::MemoryMappedRuleset> ruleset_;
+  std::ostream* output_;
+
+  DISALLOW_COPY_AND_ASSIGN(FilterTool);
+};
+
+}  // namespace subresource_filter
+
+#endif  // COMPONENTS_SUBRESOURCE_FILTER_TOOLS_FILTER_TOOL_H_

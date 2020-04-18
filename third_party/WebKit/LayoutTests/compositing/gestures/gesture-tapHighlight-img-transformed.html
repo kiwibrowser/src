@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="resources/link-highlight-helper.js"></script>
+<link rel="stylesheet" type="text/css" href="resources/link-highlight-style.css">
+</head>
+<body onload="runTest();" style="overflow: hidden">
+  <div style="transform: translatez(0) translatey(100px) translatex(300px);">
+    <a href="" class="opaqueHighlight">
+      <img width="320" height="240" id="targetLink" src="resources/dice.png">
+    </a>
+</div>
+<script>
+function runTest() {
+    useMockHighlight();
+    var clientRect = document.getElementById('targetLink').getBoundingClientRect();
+    x = (clientRect.left + clientRect.right) / 2;
+    y = (clientRect.top + clientRect.bottom) / 2;
+
+    if (window.testRunner) {
+        testRunner.dumpAsTextWithPixelResults();
+        testRunner.waitUntilDone();
+    }
+
+    if (window.eventSender) {
+        eventSender.gestureShowPress(x, y);
+        window.setTimeout(function() { testRunner.notifyDone(); }, 0);
+    } else {
+        debug("This test requires DumpRenderTree.");
+        debug("This test is successful if the image below is covered in a green rectangle.");
+    }
+}
+</script>
+</script>
+</body>
+</html>

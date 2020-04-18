@@ -1,0 +1,96 @@
+<!DOCTYPE HTML>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+
+<style>
+.hideAllContainers .container { display: none; }
+</style>
+
+<div class="container">
+    <ul id="future_parent" aria-owns="future_child"></ul>
+</div>
+
+<script>
+test(function(t)
+{
+    var axFutureParent = accessibilityController.accessibleElementById("future_parent");
+    assert_equals(axFutureParent.childrenCount, 0);
+    var futureParent = document.getElementById("future_parent");
+    var child = document.createElement("li");
+    child.id = "future_child";
+    assert_equals(axFutureParent.childrenCount, 0);
+
+    futureParent.parentElement.appendChild(child);
+    assert_equals(axFutureParent.childrenCount, 1);
+
+    child.id = "";
+    assert_equals(axFutureParent.childrenCount, 0);
+
+    child.id = "future_child";
+    assert_equals(axFutureParent.childrenCount, 1);
+
+    futureParent.setAttribute("aria-owns", "");
+    assert_equals(axFutureParent.childrenCount, 0);
+
+    futureParent.setAttribute("aria-owns", "future_child");
+    assert_equals(axFutureParent.childrenCount, 1);
+}, "Aria-owns is dynamically recomputed.");
+</script>
+
+<div class="container">
+  <div id="source1" aria-owns="target1"></div>
+  <div id="target"></div>
+</div>
+
+<script>
+test(function(t) {
+  var source1 = document.getElementById("source1");
+  var target = document.getElementById("target");
+  var axSource1 = accessibilityController.accessibleElementById("source1");
+
+  assert_equals(axSource1.childrenCount, 0);
+
+  target.id = "target1";
+  assert_equals(axSource1.childrenCount, 1);
+
+  target.id = "target";
+  assert_equals(axSource1.childrenCount, 0);
+}, "Aria-owns is dynamically recomputed (2).");
+</script>
+
+<div class="container">
+    <div id="logical_parent" role="group" aria-owns="logical_1 logical_2 logical_3 logical_4">
+        <div id="logical_3">3</div>
+        <div id="logical_4">4</div>
+        <div id="logical_2">2</div>
+        <div id="logical_1">1</div>
+    </div>
+</div>
+
+<script>
+test(function(t)
+{
+    var axLogicalParent = accessibilityController.accessibleElementById("logical_parent");
+
+    assert_equals(axLogicalParent.childrenCount, 4);
+    assert_equals(axLogicalParent.childAtIndex(0).childAtIndex(0).name, "1");
+    assert_equals(axLogicalParent.childAtIndex(1).childAtIndex(0).name, "2");
+    assert_equals(axLogicalParent.childAtIndex(2).childAtIndex(0).name, "3");
+    assert_equals(axLogicalParent.childAtIndex(3).childAtIndex(0).name, "4");
+
+    document.getElementById("logical_parent").setAttribute(
+        "aria-owns",
+        "logical_2 logical_4 logical_1 logical_3");
+
+    assert_equals(axLogicalParent.childrenCount, 4);
+    assert_equals(axLogicalParent.childAtIndex(0).childAtIndex(0).name, "2");
+    assert_equals(axLogicalParent.childAtIndex(1).childAtIndex(0).name, "4");
+    assert_equals(axLogicalParent.childAtIndex(2).childAtIndex(0).name, "1");
+    assert_equals(axLogicalParent.childAtIndex(3).childAtIndex(0).name, "3");
+}, "A parent can use aria-owns to reorder its children into a more logical AX ordering.");
+</script>
+
+<script>
+if (window.testRunner)
+    document.body.className = "hideAllContainers";
+</script>

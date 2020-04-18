@@ -1,0 +1,44 @@
+From 6e08f30068d6c4dea0d704c6658a238fbbfe2ec7 Mon Sep 17 00:00:00 2001
+From: Victor Costan <pwnall@chromium.org>
+Date: Wed, 18 Apr 2018 02:19:08 -0700
+Subject: [PATCH] Handle TRUE and FALSE in DEFAULT expression for ALTER TABLE.
+
+sqlite 3.23 recognizes TRUE and FALSE as aliases for 0 and 1. This is
+done by creating TK_TRUEFALSE expression nodes for these constants.
+Unfortunately, the ALTER TABLE code path (sqlite3AlterFinishAddColumn ->
+-> sqlite3ValueFromExpr -> valueFromExpr) does not handle the
+TK_TRUEFALSE case. This fixes the bug.
+
+The problem can be seen by running the following commands in a SQLite
+shell:
+> CREATE TABLE tbl (id INTEGER NOT NULL DEFAULT 0,
+                    flag BOOL NOT NULL DEFAULT FALSE);
+> ALTER TABLE tbl ADD COLUMN flag2 BOOL NOT NULL DEFAULT FALSE;
+
+When the bug is present, the shell produces the error message below:
+Error: Cannot add a column with non-constant default
+
+This is a backport of https://www.sqlite.org/src/info/594ebc69557095c9
+---
+ third_party/sqlite/src/src/vdbemem.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/third_party/sqlite/src/src/vdbemem.c b/third_party/sqlite/src/src/vdbemem.c
+index bb934a8186d0..5c6dda17b6d5 100644
+--- a/third_party/sqlite/src/src/vdbemem.c
++++ b/third_party/sqlite/src/src/vdbemem.c
+@@ -1484,6 +1484,11 @@ static int valueFromExpr(
+     rc = valueFromFunction(db, pExpr, enc, affinity, &pVal, pCtx);
+   }
+ #endif
++  else if( op==TK_TRUEFALSE ){
++     pVal = valueNew(db, pCtx);
++     pVal->flags = MEM_Int;
++     pVal->u.i = pExpr->u.zToken[4]==0;
++  }
+ 
+   *ppVal = pVal;
+   return rc;
+-- 
+2.16.0
+

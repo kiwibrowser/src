@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Android Web Notifications Instrumentation test-page</title>
+  </head>
+  <body>
+    <!-- This page is used by the NotificationPlatformBridgeTest instrumentation
+         test suite on Android. -->
+    <script src="notification_test_utils.js"></script>
+    <script>
+      function showNotification(title, options) {
+        GetActivatedServiceWorker('android_test_worker.js', location.pathname)
+            .then(registration => {
+                messagePort.addEventListener('message', function replyListener(event) {
+                  if (event.data.startsWith('reply: ')) {
+                    messagePort.removeEventListener('message', replyListener);
+                    sendToTest(event.data);
+                  }
+                });
+                return registration.showNotification(title, options);
+            })
+            .catch(sendToTest);
+      }
+
+      // NotificationPlatformBridgeTest observes changes to the tab title as an
+      // asynchronous response mechanism from JavaScript to Java.
+      var errorCounter = 0;
+      function sendToTest(message) {
+        // Duplicate messages cannot be detected by the test, don't send them.
+        if (message == document.title) {
+          console.log('Duplicate message: ' + message);
+          message =
+              'Error ' + errorCounter + ' - duplicate message: ' + message;
+          errorCounter++;
+        }
+        document.title = message;
+      }
+    </script>
+  </body>
+</html>

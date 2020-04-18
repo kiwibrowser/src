@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<script src="/js-test-resources/js-test.js"></script>
+<style>
+@font-face {
+    font-family: ahem;
+    src: url(http://localhost:8080/css/resources/cors-ahem.php);
+}
+</style>
+
+<div style="font-family: ahem;">This fetches ahem font.<div>
+
+<script>
+if (window.testRunner)
+    testRunner.waitUntilDone();
+
+var entry;
+if (location.hash == '#check') {
+    document.fonts.ready.then(function() {
+        setTimeout(function() {
+            entry = performance.getEntriesByName('http://localhost:8080/css/resources/cors-ahem.php')[0];
+            shouldBeTrue('entry.domainLookupStart > 0');
+            if (window.testRunner)
+                testRunner.notifyDone();
+        }, 10);
+    });
+} else {
+    document.fonts.ready.then(function() {
+        setTimeout(function() {
+            location.hash = 'check';
+            location.reload();
+        }, 10);
+    });
+}
+</script>

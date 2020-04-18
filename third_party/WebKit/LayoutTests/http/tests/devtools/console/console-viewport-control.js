@@ -1,0 +1,217 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(`Verifies viewport correctly shows and hides messages while logging and scrolling.\n`);
+  await TestRunner.loadModule('console_test_runner');
+  await TestRunner.showPanel('console');
+  await TestRunner.evaluateInPagePromise(`
+      function addMessages(count)
+      {
+          for (var i = 0; i < count; ++i)
+              console.log("Message #" + i);
+      }
+
+      function addRepeatingMessages(count)
+      {
+          for (var i = 0; i < count; ++i)
+              console.log("Repeating message");
+      }
+
+      //# sourceURL=console-viewport-control.js
+    `);
+
+  ConsoleTestRunner.fixConsoleViewportDimensions(600, 200);
+  var consoleView = Console.ConsoleView.instance();
+  var viewport = consoleView._viewport;
+  const smallCount = 3;
+
+  // Measure visible/active ranges.
+  await logMessages(100);
+  viewport.forceScrollItemToBeFirst(50);
+  var {first, last, count} = ConsoleTestRunner.visibleIndices();
+  var visibleCount = count;
+  var maxActiveCount = viewport._lastActiveIndex - viewport._firstActiveIndex + 1;
+  // Use this because # of active messages below visible area may be different
+  // # of active messages above visible area.
+  var minActiveCount = 2 * (first - viewport._firstActiveIndex - 1) + visibleCount;
+  var activeCountAbove = first - viewport._firstActiveIndex;
+  var activeCountBelow = viewport._lastActiveIndex - last;
+  TestRunner.addResult(`activeCountAbove: ${activeCountAbove}, activeCountBelow: ${activeCountBelow}`);
+  TestRunner.addResult(`smallCount: ${smallCount}, visibleCount: ${visibleCount}, maxActiveCount: ${maxActiveCount}`);
+
+  var wasAddedToDOM = new Set();
+  var wasRemovedFromDOM = new Set();
+  function onWasShown() {
+    wasAddedToDOM.add(this);
+  }
+  function onWillHide() {
+    wasRemovedFromDOM.add(this);
+  }
+  TestRunner.addSniffer(Console.ConsoleViewMessage.prototype, 'wasShown', onWasShown, true);
+  TestRunner.addSniffer(Console.ConsoleViewMessage.prototype, 'willHide', onWillHide, true);
+
+  function resetShowHideCounts() {
+    wasAddedToDOM.clear();
+    wasRemovedFromDOM.clear();
+  }
+
+  function logMessages(count, repeating) {
+    TestRunner.addResult('Logging ' + count + ' messages');
+    return new Promise(resolve => {
+      var awaitingMessagesCount = count;
+      function messageAdded() {
+        if (!--awaitingMessagesCount) {
+          viewport.invalidate();
+          resolve();
+        } else {
+          ConsoleTestRunner.addConsoleSniffer(messageAdded, false);
+        }
+      }
+      ConsoleTestRunner.addConsoleSniffer(messageAdded, false);
+      if (!repeating)
+        TestRunner.evaluateInPage(String.sprintf('addMessages(%d)', count));
+      else
+        TestRunner.evaluateInPage(String.sprintf('addRepeatingMessages(%d)', count));
+    });
+  }
+
+  function reset() {
+    Console.ConsoleView.clearConsole();
+    resetShowHideCounts();
+  }
+
+  function assertDOMCount(expectMessage, count) {
+    var actual = 0;
+    for (var message of consoleView._visibleViewMessages) {
+      if (message._element && message._element.isConnected)
+        actual++;
+    }
+    var result = `Are there ${expectMessage} items in DOM? `;
+    result += (actual === count ? 'true' : `FAIL: expected ${count}, actual ${actual}`);
+    TestRunner.addResult(result);
+  }
+
+  function assertVisibleCount(expectMessage, count) {
+    var actualVisible = ConsoleTestRunner.visibleIndices().count;
+    var result = `Are there ${expectMessage} items visible? `;
+    result += (actualVisible === count ? 'true' : `FAIL: expected ${count}, actualVisible ${actualVisible}`);
+    TestRunner.addResult(result);
+  }
+
+  function assertSomeAddedRemoved(added, removed) {
+    var actualAdded = wasAddedToDOM.size > 0;
+    var actualRemoved = wasRemovedFromDOM.size > 0;
+
+    var result = `Were ${added ? 'some' : 'no'} items added? `;
+    result += (actualAdded === added ? 'true' : `FAIL: expected ${added}, actualAdded ${actualAdded}`);
+    result += `\nWere ${removed ? 'some' : 'no'} items removed? `;
+    result += (actualRemoved === removed ? 'true' : `FAIL: expected ${removed}, actualRemoved ${actualRemoved}`);
+    TestRunner.addResult(result);
+  }
+
+  function assertCountAddedRemoved(messageAdded, added, mesasgeRemoved, removed) {
+    var addedSize = wasAddedToDOM.size;
+    var removedSize = wasRemovedFromDOM.size;
+
+    var result = `Were ${messageAdded} items added? `;
+    result += (addedSize === added ? 'true' : `FAIL: expected ${added}, addedSize ${addedSize}`);
+    result += `\nWere ${mesasgeRemoved} items removed? `;
+    result += (removedSize === removed ? 'true' : `FAIL: expected ${removed}, removedSize ${removedSize}`);
+    TestRunner.addResult(result);
+  }
+
+  TestRunner.runTestSuite([
+    async function addSmallCount(next) {
+      reset();
+      await logMessages(smallCount, false);
+      viewport.forceScrollItemToBeFirst(0);
+      assertDOMCount('smallCount', smallCount);
+      assertVisibleCount('smallCount', smallCount);
+      next();
+    },
+
+    async function addMoreThanVisibleCount(next) {
+      reset();
+      await logMessages(visibleCount + 1, false);
+      viewport.forceScrollItemToBeFirst(0);
+      assertDOMCount('visibleCount + 1', visibleCount + 1);
+      assertVisibleCount('visibleCount', visibleCount);
+      next();
+    },
+
+    async function addMaxActiveCount(next) {
+      reset();
+      await logMessages(maxActiveCount, false);
+      viewport.forceScrollItemToBeFirst(0);
+      assertDOMCount('maxActiveCount', maxActiveCount);
+      assertVisibleCount('visibleCount', visibleCount);
+      next();
+    },
+
+    async function addMoreThanMaxActiveCount(next) {
+      reset();
+      await logMessages(maxActiveCount + smallCount, false);
+      viewport.forceScrollItemToBeFirst(0);
+      assertDOMCount('maxActiveCount', maxActiveCount);
+      assertVisibleCount('visibleCount', visibleCount);
+      next();
+    },
+
+    async function scrollToBottomInPartialActiveWindow(next) {
+      reset();
+      // Few enough messages so that they all fit in DOM.
+      var visiblePlusHalfExtraRows = visibleCount + Math.floor((minActiveCount - visibleCount) / 2) - 1;
+      await logMessages(visiblePlusHalfExtraRows, false);
+      viewport.forceScrollItemToBeFirst(0);
+      resetShowHideCounts();
+      viewport.element.scrollTop = 1000000;
+      viewport.refresh();
+      assertSomeAddedRemoved(false, false);
+      assertDOMCount('visiblePlusHalfExtraRows', visiblePlusHalfExtraRows);
+      next();
+    },
+
+    async function scrollToBottomInMoreThanActiveWindow(next) {
+      reset();
+      await logMessages(maxActiveCount + 1, false);
+      viewport.forceScrollItemToBeFirst(0);
+      resetShowHideCounts();
+      viewport.element.scrollTop = 1000000;
+      viewport.refresh();
+      assertSomeAddedRemoved(true, true);
+      next();
+    },
+
+    async function shouldNotReconnectExistingElementsToDOM(next) {
+      reset();
+      await logMessages(smallCount, false);
+      await logMessages(smallCount, false);
+      assertCountAddedRemoved('smallCount * 2', smallCount * 2, '0', 0);
+      next();
+    },
+
+    async function logRepeatingMessages(next) {
+      reset();
+      await logMessages(visibleCount, true);
+      assertCountAddedRemoved('1', 1, '0', 0);
+      assertDOMCount('1', 1);
+      assertVisibleCount('1', 1);
+      next();
+    },
+
+    async function reorderingMessages(next) {
+      reset();
+      await logMessages(smallCount, false);
+      resetShowHideCounts();
+      TestRunner.addResult('Swapping messages 0 and 1');
+      var temp = consoleView._visibleViewMessages[0];
+      consoleView._visibleViewMessages[0] = consoleView._visibleViewMessages[1];
+      consoleView._visibleViewMessages[1] = temp;
+      viewport.invalidate();
+      assertSomeAddedRemoved(false, false);
+      next();
+    }
+  ]);
+})();

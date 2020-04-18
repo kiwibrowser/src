@@ -1,0 +1,56 @@
+# -*- python -*-
+# Copyright 2016 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import os
+
+Import('env')
+
+# The "-m" flag is not supported on Windows.
+if env.Bit('host_windows') or env.Bit('nacl_glibc'):
+  Return()
+
+env = env.Clone()
+
+# Create a temporary directory and populate it with some files.
+# Layout:
+#
+# | tempDir (MOUNTED DIRECTORY)
+#   >   tempFile
+#   >   tempSymlink
+#   |   tempSubDir
+#     >   tempSubFile
+# | inaccessibleDir (INACCESSIBLE)
+# | inaccessibleFile (INACCESSIBLE)
+
+temp_dir_path = env.MakeTempDir(prefix='temp_dir')
+temp_file_path = env.MakeEmptyFile(prefix='temp_file', dir=temp_dir_path)
+temp_symlink_path = os.path.join(temp_dir_path, 'temp_symlink')
+os.symlink(temp_file_path, temp_symlink_path)
+temp_sub_dir_path = env.MakeTempDir(prefix='temp_sub_dir', dir=temp_dir_path)
+temp_sub_dir_file_path = env.MakeEmptyFile(prefix='temp_sub_file',
+                                           dir=temp_sub_dir_path)
+inaccessible_dir_path = env.MakeTempDir(prefix='temp_inaccessible_dir')
+inaccessible_file_path = env.MakeEmptyFile(prefix='temp_inaccessible_file')
+
+temp_directory_files = [temp_dir_path, temp_file_path, temp_symlink_path,
+                        temp_sub_dir_path, temp_sub_dir_file_path,
+                        inaccessible_dir_path, inaccessible_file_path]
+
+# Only grab the suffix of the file path
+temp_directory_files = [os.path.basename(f) for f in temp_directory_files]
+mounted_directory = temp_dir_path
+
+limited_file_access_nexe = env.ComponentProgram('limited_file_access',
+                                                'limited_file_access.cc',
+                                                EXTRA_LIBS=['${PTHREAD_LIBS}',
+                                                            '${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+    'limited_file_access_test.out',
+    limited_file_access_nexe,
+    args=temp_directory_files,
+    sel_ldr_flags=['-m', mounted_directory])
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_limited_file_access_test')

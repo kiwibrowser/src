@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<body>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+<div id="container"></div>
+<iframe name="t"></iframe>
+<script>
+let container = document.querySelector('#container');
+
+function populateForm(opt_contentHtml) {
+  if (!opt_contentHtml)
+    opt_contentHtml = '';
+  container.innerHTML = `<form action="about:blank" target="t">${opt_contentHtml}</form>`;
+  return container.firstChild;
+}
+
+test(() => {
+  let didCallHandler = false;
+  let form = populateForm('<input type=submit>');
+  form.addEventListener('formdata', (e) => {
+    didCallHandler = true;
+  });
+  document.querySelector('input[type=submit]').click();
+  assert_true(didCallHandler);
+}, 'Register a "formdata" event handler via addEventListener().');
+
+test(() => {
+  let didCallHandler = false;
+  let form = populateForm();
+  form.onformdata = (e) => {
+    didCallHandler = true;
+  };
+  form.submit();
+  assert_true(didCallHandler);
+}, 'Register a "formdata" event handler via onformdata IDL attribute.');
+
+let didCallAttributeHandler = false;
+test(() => {
+  let form = populateForm();
+  form.setAttribute('onformdata', 'didCallAttributeHandler = true;');
+  new FormData(form);
+  assert_true(didCallAttributeHandler);
+}, 'Register a "formdata" event handler via onformdata content attribute.');
+
+test(() => {
+  let didCallHandler = false;
+  let wasCancelable = true;
+  let form = populateForm();
+  document.addEventListener('formdata', (e) => {
+    didCallHandler = true;
+    wasCancelable = e.cancelable;
+  });
+  new FormData(form);
+  assert_true(didCallHandler);
+  assert_false(wasCancelable);
+}, '"formdata" event bubbles, and is not cancelable.');
+
+test(() => {
+  let didCallHandler = false;
+  let form = populateForm();
+  container.innerHTML = '<div></div>';
+  let orphanRoot = container.firstChild;
+  orphanRoot.appendChild(form);
+  orphanRoot.remove();
+  orphanRoot.addEventListener('formdata', (e) => {
+    didCallHandler = true;
+  });
+  new FormData(form);
+  assert_true(didCallHandler);
+}, '"formdata" event bubbles in an orphan tree.');
+
+test(() => {
+  let wasFormDataEmpty1 = false;
+  let wasFormDataEmpty2 = true;
+  let form = populateForm('<input name=n1 value=v1>');
+  form.addEventListener('formdata', (e) => {
+    wasFormDataEmpty1 = e.formData.entries().next().done;
+    e.formData.append('h1', 'vh1');
+    e.formData.append('h2', 'vh2');
+  });
+  form.addEventListener('formdata', (e) => {
+    if (e.formData.get('h1') == 'vh1' && e.formData.get('h2') == 'vh2')
+      wasFormDataEmpty2 = false;
+  });
+  form.submit();
+  assert_true(wasFormDataEmpty1);
+  assert_false(wasFormDataEmpty2);
+}, '"formData" IDL attribute should be empty in the first event handler, ' +
+       'and the second handler can read entries set by the first handler.');
+
+test(() => {
+  let form = populateForm('<input name=n1 value=v1>');
+  form.addEventListener('formdata', (e) => {
+    e.formData.append('h1', 'vh1');
+  });
+  let formData = new FormData(form);
+  assert_equals(formData.get('h1'), 'vh1');
+  assert_equals(formData.get('n1'), 'v1');
+}, 'Newly created FormData contains entries added to "formData" IDL attribute of FormDataEvent.');
+
+let t1 = async_test('Entries added to "formData" IDL attribute should be submitted.');
+t1.step(() => {
+  let form = populateForm('<input name=n1 value=v1>');
+  form.addEventListener('formdata', (e) => {
+    e.formData.append('h1', 'vh1');
+  });
+  let iframe = document.querySelector('iframe');
+  iframe.onload = t1.step_func_done(() => {
+    assert_true(iframe.contentWindow.location.search.indexOf('h1=vh1&n1=v1') != -1);
+  });
+  container.firstChild.submit();
+});
+
+let t2 = async_test('Form submission is aborted if "formData" event handler disconnects the form.');
+t2.step(() => {
+  let form = document.createElement('form');
+  document.body.appendChild(form);
+  form.action = 'about:blank';
+  form.target = 'iframe2';
+  form.onformdata = (e) => { e.target.remove(); };
+  form.innerHTML = '<input name=n1 value=v1>';
+  let iframe = document.createElement('iframe');
+  iframe.setAttribute('name', 'iframe2');
+  let wasLoaded = false;
+  document.body.appendChild(iframe);
+  // Request to load "about:blank", and immediately submit the form to
+  // the same frame. If the form submission is aborted, the first request
+  // will be completed.
+  iframe.onload = t2.step_func_done(() => {
+    wasLoaded = true;
+    assert_true(iframe.contentWindow.location.search.indexOf('n1=v1') == -1);
+  });
+  iframe.src = 'about:blank';
+  assert_false(wasLoaded, 'Make sure the first loading is ongoing.');
+  form.submit();
+});
+</script>
+</body>

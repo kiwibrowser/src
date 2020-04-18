@@ -1,0 +1,74 @@
+/*
+ * Copyright (C) 2008 Apple Inc.  All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1.  Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ * 2.  Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ * 3.  Neither the name of Apple Computer, Inc. ("Apple") nor the names of
+ *     its contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY APPLE AND ITS CONTRIBUTORS "AS IS" AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL APPLE OR ITS CONTRIBUTORS BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+// https://html.spec.whatwg.org/multipage/browsers.html#location
+
+[
+    CheckSecurity=Receiver,
+    Unforgeable
+] interface Location {
+    // |assign| is *NOT* cross-origin accessible in the spec, but it needs
+    // the Incumbent realm when navigating the page.  See the below link.
+    // https://html.spec.whatwg.org/multipage/browsers.html#location-object-navigate
+    // Unfortunately, Blink does not support the Incumbent realm so far, and
+    // we need a hack of assignOriginSafeMethodGetter to simulate the Incumbent
+    // realm.  Thus, we have [CrossOrigin] here just for the hack although
+    // |assign| itself is not cross-origin accessible.
+    // TODO(yukishiino): Remove [CrossOrigin] once we support the Incumbent
+    // realm correctly.
+    [CallWith=(CurrentWindow,EnteredWindow), CrossOrigin, RaisesException] void assign(USVString url);
+
+    // |replace|, and *writing* |href| do not require a security check, as they
+    // *change* the page, and thus these do not change any property of an
+    // *existing* document at a different origin.
+    // However, *reading* |href|, or accessing any component, is a security
+    // problem, since that allows tracking navigation.
+    // https://html.spec.whatwg.org/multipage/browsers.html#crossoriginproperties-(-o-)
+    [CallWith=(CurrentWindow,EnteredWindow), CrossOrigin, RaisesException] void replace(USVString url);
+    [CallWith=CurrentWindow] void reload();
+
+    // TODO(foolip): |ancestorOrigins| should have [Unforgeable, SameObject].
+    readonly attribute DOMStringList ancestorOrigins;
+
+    [Affects=Nothing, SetterCallWith=(CurrentWindow,EnteredWindow), CrossOrigin=Setter, RaisesException=Setter] attribute URLString href;
+    // TODO(yukishiino): Use [Unforgeable] stringifier instead of toString.
+    DOMString toString();
+    [MeasureAs=LocationOrigin] readonly attribute USVString origin;
+
+    [SetterCallWith=(CurrentWindow,EnteredWindow), RaisesException=Setter] attribute USVString protocol;
+    [SetterCallWith=(CurrentWindow,EnteredWindow), RaisesException=Setter] attribute USVString host;
+    [SetterCallWith=(CurrentWindow,EnteredWindow), RaisesException=Setter] attribute USVString hostname;
+    [SetterCallWith=(CurrentWindow,EnteredWindow), RaisesException=Setter] attribute USVString port;
+    [SetterCallWith=(CurrentWindow,EnteredWindow), RaisesException=Setter] attribute USVString pathname;
+    [SetterCallWith=(CurrentWindow,EnteredWindow), RaisesException=Setter] attribute USVString search;
+    [SetterCallWith=(CurrentWindow,EnteredWindow), RaisesException=Setter] attribute USVString hash;
+
+    // TODO(foolip): Location does not have a valueOf() override in the spec.
+    // See the comment in Location.h for the purpose of this.
+    [NotEnumerable, CallWith=ThisValue] any valueOf();
+};

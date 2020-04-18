@@ -1,0 +1,60 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+trusted_env = env.get('TRUSTED_ENV')
+if trusted_env is None:
+  Return()
+
+crash_test_nexe = env.ComponentProgram(
+    env.ProgramNameForNmf('crash_test'),
+    'crash_test.c', EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+crash_in_syscall_nexe = env.ComponentProgram(
+    env.ProgramNameForNmf('crash_in_syscall'),
+    'crash_in_syscall.c', EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+nodes = []
+
+# Test that crashes in untrusted code are recognised as such.
+nodes.append(env.CommandSelLdrTestNacl(
+        'untrusted_crash_test.out',
+        crash_test_nexe,
+        sel_ldr_flags=['-S'],
+        exit_status='untrusted_segfault',
+        using_nacl_signal_handler=True))
+
+# Test that crashes in trusted code are recognised as such.
+# This test covers crashes that occur outside of a syscall handler,
+# before the NaClApp is set up.
+nodes.append(env.CommandSelLdrTestNacl(
+        'trusted_crash_test.out',
+        crash_test_nexe,
+        sel_ldr_flags=['-S'],
+        osenv='NACL_CRASH_TEST=1',
+        exit_status='trusted_segfault',
+        using_nacl_signal_handler=True))
+
+# This tests a crash that occurs inside a syscall handler.
+nodes.append(env.CommandSelLdrTestNacl(
+        'crash_in_syscall_test.out',
+        crash_in_syscall_nexe,
+        sel_ldr_flags=['-S'],
+        # Ultimately this should be recognised as a crash caused by
+        # untrusted code.
+        # See http://code.google.com/p/nativeclient/issues/detail?id=579
+        exit_status='trusted_segfault',
+        using_nacl_signal_handler=True))
+
+# For both Valgrind and Coverage instrumented tests, we ignore signal handler
+# tests which can produce strange or flaky results.
+# Bug=http://code.google.com/p/nativeclient/issues/detail?id=1983
+#
+is_broken = (env.IsRunningUnderValgrind() or
+             trusted_env.Bit('coverage_enabled') or
+             env.Bit('host_windows'))
+env.AddNodeToTestSuite(nodes, ['small_tests'], 'run_signal_handler_test',
+                       is_broken=is_broken)

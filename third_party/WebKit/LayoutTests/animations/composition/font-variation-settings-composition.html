@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<meta charset="UTF-8">
+<body>
+<script src="../interpolation/resources/interpolation-test.js"></script>
+<script>
+assertComposition({
+  property: 'font-variation-settings',
+  underlying: '"'test' 50"',
+  addFrom: '"'test' 100"',
+  addTo: '"'test' 200"',
+}, [
+  {at: -0.3, is: "'test' 120"},
+  {at: 0, is: "'test' 150"},
+  {at: 0.5, is: "'test' 200"},
+  {at: 1, is: "'test' 250"},
+  {at: 1.5, is: "'test' 300"},
+]);
+
+assertComposition({
+  property: 'font-variation-settings',
+  underlying: '"'test' 50"',
+  addFrom: '"'test' 100"',
+  replaceTo: '"'test' 200"',
+}, [
+  {at: -0.3, is: "'test' 135"},
+  {at: 0, is: "'test' 150"},
+  {at: 0.5, is: "'test' 175"},
+  {at: 1, is: "'test' 200"},
+  {at: 1.5, is: "'test' 225"},
+]);
+
+assertComposition({
+  property: 'font-variation-settings',
+  underlying: '"'test' 100"',
+  addFrom: ''normal'',
+  replaceTo: '"'test' 200"',
+}, [
+  {at: -0.3, is: 'normal'},
+  {at: 0, is: 'normal'},
+  {at: 0.5, is: "'test' 200"},
+  {at: 1, is: "'test' 200"},
+  {at: 1.5, is: "'test' 200"},
+]);
+
+assertComposition({
+  property: 'font-variation-settings',
+  underlying: '"'test' 100"',
+  addFrom: ''normal'',
+  addTo: '"'test' 200"',
+}, [
+  {at: -0.3, is: 'normal'},
+  {at: 0, is: 'normal'},
+  {at: 0.5, is: "'test' 300"},
+  {at: 1, is: "'test' 300"},
+  {at: 1.5, is: "'test' 300"},
+]);
+
+assertComposition({
+  property: 'font-variation-settings',
+  underlying: '"'aaaa' 100, 'bbbb' 200"',
+  addFrom: '"'aaaa' 20, 'bbbb' 50"',
+  addTo: '"'aaaa' 30, 'bbbb' 100"',
+}, [
+  {at: -0.3, is: "'aaaa' 117, 'bbbb' 235"},
+  {at: 0, is: "'aaaa' 120, 'bbbb' 250"},
+  {at: 0.5, is: "'aaaa' 125, 'bbbb' 275"},
+  {at: 1, is: "'aaaa' 230, 'bbbb' 300"},
+  {at: 1.5, is: "'aaaa' 235, 'bbbb' 325"},
+]);
+
+assertComposition({
+  property: 'font-variation-settings',
+  underlying: '"'test' 100"',
+  addFrom: '"'aaaa' 20, 'bbbb' 50"',
+  addTo: '"'aaaa' 30, 'bbbb' 100"',
+}, [
+  {at: -0.3, is: "'aaaa' 17, 'bbbb' 35"},
+  {at: 0, is: "'aaaa' 20, 'bbbb' 50"},
+  {at: 0.5, is: "'aaaa' 25, 'bbbb' 75"},
+  {at: 1, is: "'aaaa' 30, 'bbbb' 100"},
+  {at: 1.5, is: "'aaaa' 35, 'bbbb' 125"},
+]);
+</script>
+</body>

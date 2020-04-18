@@ -1,0 +1,102 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+//
+// Various user consent types used when reporting consent.
+
+// If you change or add any fields in this file, update proto_visitors.h and
+// potentially proto_enum_conversions.{h, cc}.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package sync_pb;
+
+message UserConsentTypes {
+  // The status of a particular User Consent. The status describes the state
+  // of the consent as it is: given, not_given.
+  enum ConsentStatus {
+    // The status is unspecified e.g. because the user was not asked to
+    // consent yet or an error happened or the decision was delayed.
+    CONSENT_STATUS_UNSPECIFIED = 0;
+    // The consent is not given. This means the user either revoked the
+    // consent or did not grant it in the first place.
+    NOT_GIVEN = 1;
+    // The consent is given. This means the user did grant the consent.
+    GIVEN = 2;
+  }
+
+  // ===========================================================================
+  // Keep sorted alphabetically.
+  // Don't forget to update proto_visitors.h and potentially
+  // proto_enum_conversions.{h, cc}. Never TBR proto changes, because they need
+  // to be manually imported on the Sync server.
+  // ===========================================================================
+
+  // The user consent for the ARC Backup And Restore feature. The consent
+  // status is determined by the corresponding setting on the ARC setup dialog.
+  message ArcBackupAndRestoreConsent {
+    // Ids of the strings of the setting text presented to the user.
+    repeated int32 description_grd_ids = 1;
+
+    // Id of the string of the UI element the user clicked when consenting.
+    optional int32 confirmation_grd_id = 2;
+
+    optional ConsentStatus status = 3;
+  }
+
+  // The user consent for the Google Location Service. The consent status is
+  // determined by the corresponding setting on the ARC setup dialog.
+  message ArcGoogleLocationServiceConsent {
+    // Ids of the strings of the setting text presented to the user.
+    repeated int32 description_grd_ids = 1;
+
+    // Id of the string of the UI element the user clicked when consenting.
+    optional int32 confirmation_grd_id = 2;
+
+    optional ConsentStatus status = 3;
+  }
+
+  // The user consent for Metrics and Usage reporting on Android for Chrome OS.
+  message ArcMetricsAndUsageConsent {
+    // Ids of the strings of the setting text presented to the user.
+    repeated int32 description_grd_ids = 1;
+
+    // Id of the string of the UI element the user clicked when consenting.
+    optional int32 confirmation_grd_id = 2;
+
+    optional ConsentStatus status = 3;
+  }
+
+  // The user consent for the Play terms of service is determined by the user
+  // action on the ARC setup dialog that presents the Play Terms of Service.
+  message ArcPlayTermsOfServiceConsent {
+    // The length of the UTF-8 encoded string of the Play Terms of Service
+    // text. The length is given in number of bytes.
+    optional int32 play_terms_of_service_text_length = 1;
+    // The SHA1 hash of UTF-8 encoded string of the Play Terms of Service
+    // displayed to the user.
+    optional bytes play_terms_of_service_hash = 2;
+    // Id of the string of the UI element the user clicked when consenting.
+    optional int32 confirmation_grd_id = 3;
+    // The status of the Play Terms of Service consent. This specifies whether
+    // the consent was given or not given/revoked.
+    optional ConsentStatus status = 4;
+  }
+
+  // The User Consent for Chrome Sync is determined by the user action on the
+  // corresponding Sync Consent dialog.
+  message SyncConsent {
+    // Ids of the strings of the sync consent text presented to the user.
+    repeated int32 description_grd_ids = 1;
+
+    // Id of the string of the UI element the user clicked in order to confirm
+    // and close the sync consent dialog.
+    optional int32 confirmation_grd_id = 2;
+
+    // The status of the sync consent. This specifies whether the consent was
+    // given or not given/revoked.
+    optional ConsentStatus status = 3;
+  }
+}

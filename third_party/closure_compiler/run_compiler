@@ -1,0 +1,22 @@
+#!/bin/bash
+# Copyright 2016 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+set -e
+
+readonly SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+cd "$SCRIPT_DIR/../.."  # src/.
+
+export GYP_GENERATORS="ninja"
+
+tools/gyp/gyp --no-circular-check third_party/closure_compiler/compiled_resources2.gyp
+
+os_name=`uname -s`
+cores_count=1
+case "$os_name" in
+  "Darwin") cores_count=`sysctl -n hw.ncpu` ;;
+  "Linux") cores_count=`nproc` ;;
+esac
+
+ninja -C out/Default -j $cores_count $@

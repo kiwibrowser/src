@@ -1,0 +1,268 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+[
+  {
+    "namespace": "accessibilityPrivate",
+    "compiler_options": {
+      "implemented_in": "chrome/browser/accessibility/accessibility_extension_api.h"
+    },
+    "description": "none",
+    "types": [
+      {
+        "id": "AlertInfo",
+        "type": "object",
+        "description": "Information about an alert",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "The message the alert is showing."
+          }
+        }
+      },
+      {
+        "id": "ScreenRect",
+        "type": "object",
+        "description": "Bounding rectangle in global screen coordinates.",
+        "properties": {
+          "left": {"type": "integer", "description": "Left coordinate in global screen coordinates."},
+          "top": {"type": "integer", "description": "Top coordinate in global screen coordinates."},
+          "width": {"type": "integer", "description": "Width in pixels."},
+          "height": {"type": "integer", "description": "Height in pixels."}
+        }
+      },
+      {
+        "id": "Gesture",
+        "type": "string",
+        "enum": [ "click", "swipeLeft1", "swipeUp1", "swipeRight1", "swipeDown1", "swipeLeft2", "swipeUp2", "swipeRight2", "swipeDown2", "swipeLeft3", "swipeUp3", "swipeRight3", "swipeDown3", "swipeLeft4", "swipeUp4", "swipeRight4", "swipeDown4" ],
+        "description": "Accessibility gestures fired by the touch exploration controller."
+      },
+      {
+        "id": "SyntheticKeyboardEventType",
+        "type": "string",
+        "description": "The event to send",
+        "enum": ["keyup", "keydown"]
+      },
+      {
+        "id": "SyntheticKeyboardModifiers",
+        "type": "object",
+        "properties": {
+          "ctrl": {
+            "type": "boolean",
+            "description": "Control modifier.",
+            "optional": true
+          },
+          "alt": {
+            "type": "boolean",
+            "description": "alt modifier.",
+            "optional": true
+          },
+          "search": {
+            "type": "boolean",
+            "description": "search modifier.",
+            "optional": true
+          },
+          "shift": {
+            "type": "boolean",
+            "description": "shift modifier.",
+            "optional": true
+          }
+        }
+      },
+      {
+        "id": "SyntheticKeyboardEvent",
+        "type": "object",
+        "properties": {
+          "type": {"$ref": "SyntheticKeyboardEventType"},
+          "keyCode": {"type": "integer", "description": "Virtual key code, which is independent of the keyboard layout or modifier state."},
+          "modifiers": {
+            "$ref": "SyntheticKeyboardModifiers",
+            "optional": true,
+            "description": "Contains all active modifiers."
+          }
+        }
+      },
+      {
+        "id": "SelectToSpeakState",
+        "type": "string",
+        "description": "The state of the Select-to-Speak extension",
+        "enum": ["selecting", "speaking", "inactive"]
+      }
+    ],
+    "functions": [
+      {
+        "name": "setNativeAccessibilityEnabled",
+        "type": "function",
+        "description": "Enables or disables native accessibility support. Once disabled, it is up to the calling extension to provide accessibility for web contents.",
+        "parameters": [
+          {
+            "type": "boolean",
+            "name": "enabled",
+            "description": "True if native accessibility support should be enabled."
+          }
+        ]
+      },
+      {
+        "name": "setFocusRing",
+        "type": "function",
+        "description": "Sets the bounds of the accessibility focus ring.",
+        "parameters": [
+          {
+            "name": "rects",
+            "type": "array",
+            "items": { "$ref": "ScreenRect" },
+            "description": "Array of rectangles to draw the accessibility focus ring around."
+          },
+          {
+            "name": "color",
+            "type": "string",
+            "description": "CSS-style hex color string beginning with # like #FF9982 or #EEE.",
+            "optional": true
+          }
+        ]
+      },
+      {
+        "name": "setHighlights",
+        "type": "function",
+        "description": "Sets the bounds of the accessibility highlight.",
+        "parameters": [
+          {
+            "name": "rects",
+            "type": "array",
+            "items": { "$ref": "ScreenRect" },
+            "description": "Array of rectangles to draw the highlight around."
+          },
+          {
+            "name": "color",
+            "type": "string",
+            "description": "CSS-style hex color string beginning with # like #FF9982 or #EEE."
+          }
+        ]
+      },
+      {
+        "name": "setKeyboardListener",
+        "type": "function",
+        "description": "Sets the calling extension as a listener of all keyboard events optionally allowing the calling extension to capture/swallow the key event via DOM apis. Returns false via callback when unable to set the listener.",
+        "parameters": [
+          {
+            "type": "boolean",
+            "name": "enabled",
+            "description": "True if the caller wants to listen to key events; false to stop listening to events. Note that there is only ever one extension listening to key events."
+          },
+          {
+            "type": "boolean",
+
+            "name": "capture",
+            "description": "True if key events should be swallowed natively and not propagated if preventDefault() gets called by the extension's background page."
+          }
+        ]
+      },
+      {
+        "name": "darkenScreen",
+        "type": "function",
+        "description": "Darkens or undarkens the screen.",
+        "parameters": [
+          {
+            "type": "boolean",
+            "name": "enabled",
+            "description": "True to darken screen; false to undarken screen."
+          }
+        ]
+      },
+      {
+        "name": "setSwitchAccessKeys",
+        "type": "function",
+        "description": "Change the keyboard keys captured by Switch Access.",
+        "parameters": [
+          {
+            "name": "key_codes",
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 48, // '0' key
+              "maximum": 90  // 'z' key
+            },
+            "description": "The key codes for the keys that will be captured."
+          }
+        ],
+        "platforms": ["chromeos"]
+      },
+      {
+        "name": "setNativeChromeVoxArcSupportForCurrentApp",
+        "type": "function",
+        "description": "Sets current ARC app to use native ARC support.",
+        "parameters": [
+          {
+            "name": "enabled",
+            "type": "boolean",
+            "description": "True for ChromeVox (native), false for TalkBack."
+          }
+        ],
+        "platforms": ["chromeos"]
+      },
+      {
+        "name": "sendSyntheticKeyEvent",
+        "type": "function",
+        "description": "Sends a fabricated key event.",
+        "parameters": [
+          {
+            "name": "keyEvent",
+            "$ref": "SyntheticKeyboardEvent",
+            "description": "The event to send."
+          }
+        ],
+        "platforms": ["chromeos"]
+      },
+      {
+        "name": "onSelectToSpeakStateChanged",
+        "type": "function",
+        "description": "Called by the Select-to-Speak extension when Select-to-Speak has changed states, between selecting with the mouse, speaking, and inactive.",
+        "parameters": [
+          {
+            "name": "state",
+            "$ref": "SelectToSpeakState"
+          }
+        ],
+        "platforms": ["chromeos"]
+      }
+    ],
+    "events": [
+      {
+        "name": "onIntroduceChromeVox",
+        "type": "function",
+        "description": "Fired whenever ChromeVox should output introduction."
+      },
+      {
+        "name": "onAccessibilityGesture",
+        "type": "function",
+        "description": "Fired when an accessibility gesture is detected by the touch exploration controller.",
+        "parameters": [
+          {
+            "name": "gesture",
+            "$ref": "Gesture"
+          }
+        ]
+      },
+      {
+        "name": "onTwoFingerTouchStart",
+        "type": "function",
+        "description": "Fired when we first detect two fingers are held down, which can be used to toggle spoken feedback on some touch-only devices.",
+        "parameters": []
+      },
+      {
+        "name": "onTwoFingerTouchStop",
+        "type": "function",
+        "description": "Fired when the user is no longer holding down two fingers (including releasing one, holding down three, or moving them).",
+        "parameters": []
+      },
+      {
+        "name": "onSelectToSpeakStateChangeRequested",
+        "type": "function",
+        "description": "Called when Chrome OS wants to change the Select-to-Speak state, between selecting with the mouse, speaking, and inactive.",
+        "parameters": [],
+        "platforms": ["chromeos"]
+      }
+    ]
+  }
+]

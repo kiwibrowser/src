@@ -1,0 +1,61 @@
+# -*- python -*-
+# Copyright 2010 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+debug_sources = [
+  'abi.cc',
+  'debug_stub.cc',
+  'nacl_debug.cc',
+  'packet.cc',
+  'session.cc',
+  'target.cc',
+  'thread_common.cc',
+  'transport_common.cc',
+  'transport_ipc.cc',
+  'util.cc',
+  ]
+
+if env.Bit('windows'):
+  debug_sources += [
+    'win/debug_stub_win.cc',
+    'win/platform_impl.cc',
+    'win/thread_impl.cc',
+  ]
+else:
+  debug_sources += [
+    'posix/debug_stub_posix.cc',
+    'posix/platform_impl.cc',
+    'posix/thread_impl.cc',
+  ]
+
+rsp_test_sources = [
+  'abi_test.cc',
+  'packet_test.cc',
+  'session_test.cc',
+  'util_test.cc',
+  'test.cc'
+  ]
+
+
+env.DualLibrary('debug_stub', debug_sources)
+
+gdb_rsp_test_exe = env.ComponentProgram(
+    'gdb_rsp_unittest', rsp_test_sources, EXTRA_LIBS=['debug_stub'])
+
+node = env.CommandTest('gdb_rsp_unittest.out', command=[gdb_rsp_test_exe])
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_gdb_rsp_tests')
+
+if not env.Bit('windows'):
+  gtest_env = env.MakeGTestEnv()
+
+  transport_ipc_test_exe = gtest_env.ComponentProgram(
+      'transport_ipc_unittest',
+      'transport_ipc_test.cc',
+      EXTRA_LIBS=['debug_stub'])
+
+  node = gtest_env.CommandTest('transport_ipc_unittest.out',
+                               command=[transport_ipc_test_exe])
+  env.AddNodeToTestSuite(node, ['small_tests'], 'run_transport_ipc_test')

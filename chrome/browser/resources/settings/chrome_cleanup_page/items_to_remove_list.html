@@ -1,0 +1,51 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/shared_vars_css.html">
+<link rel="import" href="chrome://resources/html/util.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-styles/color.html">
+<link rel="import" href="../settings_shared_css.html">
+<link rel="import" href="chrome_cleanup_proxy.html">
+
+<dom-module id="items-to-remove-list">
+  <template>
+    <style include="settings-shared">
+      :host {
+        display: block;
+        margin: 0;
+        padding: 0 var(--settings-box-row-padding);
+        word-break: break-all;
+      }
+
+      #more-items-link {
+        color: var(--google-blue-500);
+        cursor: pointer;
+      }
+
+      #remaining-list {
+        margin-top: -13px;
+      }
+    </style>
+    <div id="title" class="secondary">[[title]]</div>
+    <ul class="secondary">
+      <template is="dom-repeat" items="[[initialItems_]]">
+        <li class="visible-item">[[item]]</li>
+      </template>
+      <li id="more-items-link" hidden="[[expanded_]]" on-click="expandList_">
+        [[moreItemsLinkText_]]
+      </li>
+    </ul>
+    <!-- Remaining items are kept in a separate <ul> element so that screen
+         readers don't get confused when the list is expanded. If new items are
+         simply added to the first <ul> element, the first new item (which will
+         replace the "N more" link), will be skipped by the reader. As a
+         consequence, visual impaired users will only have a chance to inspect
+         that item if they move up on the list, which can't be considered an
+         expected action. -->
+    <ul id="remaining-list" hidden="[[!expanded_]]" class="secondary">
+      <template is="dom-repeat" items="[[remainingItems_]]">
+        <li class$="[[remainingItemsClass_(expanded_)]]">[[item]]</li>
+      </template>
+    </ul>
+  </template>
+  <script src="items_to_remove_list.js"></script>
+</dom-module>

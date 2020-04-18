@@ -1,0 +1,65 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef CONTENT_BROWSER_BROWSER_MAIN_RUNNER_IMPL_H_
+#define CONTENT_BROWSER_BROWSER_MAIN_RUNNER_IMPL_H_
+
+#include <memory>
+
+#include "base/macros.h"
+#include "build/build_config.h"
+#include "content/public/browser/browser_main_runner.h"
+
+#if defined(OS_WIN)
+namespace ui {
+class ScopedOleInitializer;
+}
+#endif
+
+namespace content {
+
+class BrowserProcessSubThread;
+class BrowserMainLoop;
+class NotificationServiceImpl;
+
+class BrowserMainRunnerImpl : public BrowserMainRunner {
+ public:
+  static BrowserMainRunnerImpl* Create();
+
+  BrowserMainRunnerImpl();
+  ~BrowserMainRunnerImpl() override;
+
+  // BrowserMainRunner:
+  int Initialize(const MainFunctionParams& parameters) override;
+#if defined(OS_ANDROID)
+  void SynchronouslyFlushStartupTasks() override;
+#endif
+  int Run() override;
+  void Shutdown() override;
+
+  // Initialize all necessary browser state with a |service_manager_thread|
+  // on which ServiceManager is currently running.
+  int Initialize(
+      const MainFunctionParams& parameters,
+      std::unique_ptr<BrowserProcessSubThread> service_manager_thread);
+
+ private:
+  // True if we have started to initialize the runner.
+  bool initialization_started_;
+
+  // True if the runner has been shut down.
+  bool is_shutdown_;
+
+  std::unique_ptr<NotificationServiceImpl> notification_service_;
+  std::unique_ptr<BrowserMainLoop> main_loop_;
+#if defined(OS_WIN)
+  std::unique_ptr<ui::ScopedOleInitializer> ole_initializer_;
+#endif
+
+  DISALLOW_COPY_AND_ASSIGN(BrowserMainRunnerImpl);
+};
+
+}  // namespace content
+
+#endif  // CONTENT_BROWSER_BROWSER_MAIN_RUNNER_IMPL_H_

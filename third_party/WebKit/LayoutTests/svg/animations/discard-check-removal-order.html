@@ -1,0 +1,40 @@
+<!DOCTYPE HTML>
+<html>
+<body onload="startTest()">
+  This tests for the remove order of discard elements.<br/>
+  <div id="removeOrder"></div>
+  <svg id="svg" width="400" height="400" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <rect id="rect" width="100" height="100" fill="green" />
+    <animate id="animate" xlink:href="#rect" attributeName="x" from="0" to="300" begin="0s" dur="10s" />
+    <discard xlink:href="#animate" begin="0s" />
+    <discard xlink:href="#rect" begin="0s" />
+  </svg>
+  <script>
+    var removedNodes = new Array();
+    var callback = function(mutations) {
+      mutations.forEach( function(mutation) {
+        var nodeList = mutation.removedNodes;
+        for (var i = 0; i < nodeList.length; ++i) {
+          removedNodes.push(nodeList[i].nodeName);
+        }
+      });
+    };
+    var observer = new MutationObserver(callback);
+    var target = document.getElementById("svg");
+    options = { 'childList': true, 'subtree': true }
+    observer.observe(target, options);
+
+    function startTest() {
+      if (window.testRunner)
+        testRunner.waitUntilDone();
+      setTimeout(function() {
+        document.getElementById('removeOrder').textContent = 'Discard node removal order: ' + removedNodes.toString();
+        if (window.testRunner) {
+          testRunner.dumpAsText();
+          testRunner.notifyDone();
+        }
+      }, 10);
+    }
+  </script>
+</body>
+</html>

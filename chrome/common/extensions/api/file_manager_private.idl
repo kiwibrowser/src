@@ -1,0 +1,1109 @@
+// Copyright 2013 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// fileManagerPrivate API.
+// This is a private API used by the file browser of ChromeOS.
+[platforms=("chromeos"),
+ implemented_in="chrome/browser/chromeos/extensions/file_manager/file_manager_private_api_functions.h"]
+namespace fileManagerPrivate {
+// Type of the mounted volume.
+enum VolumeType { drive, downloads, removable, archive, provided, mtp,
+                  media_view, crostini, android_files, testing };
+
+// Device type. Available if this is removable volume.
+enum DeviceType { usb, sd, optical, mobile, unknown };
+
+// Additional data about mount, for example, that the filesystem is not
+// supported.
+enum MountCondition { unknown, unsupported };
+
+// Additional information of the context the volume was mounted.
+enum MountContext { user, auto };
+
+// Is the event raised for mounting or unmounting.
+enum MountCompletedEventType { mount, unmount };
+
+// Event type that tells listeners if mount was successful or an error
+// occurred. It also specifies the error.
+enum MountCompletedStatus {
+  success,
+  error_unknown,
+  error_internal,
+  error_invalid_argument,
+  error_invalid_path,
+  error_path_already_mounted,
+  error_path_not_mounted,
+  error_directory_creation_failed,
+  error_invalid_mount_options,
+  error_invalid_unmount_options,
+  error_insufficient_permissions,
+  error_mount_program_not_found,
+  error_mount_program_failed,
+  error_invalid_device_path,
+  error_unknown_filesystem,
+  error_unsupported_filesystem,
+  error_invalid_archive,
+  error_authentication,
+  error_path_unmounted
+};
+
+// File transfer progress state.
+enum TransferState { in_progress, completed, failed };
+
+// Defines file transfer direction.
+enum TransferType { upload, download };
+
+// The type of the progress event.
+enum CopyProgressStatusType {
+  // "begin_copy_entry" is fired for each entry (file or directory) before
+  // starting the copy operation.
+  begin_copy_entry,
+
+  // "end_copy_entry" is fired for each entry (file or directory) after ending
+  // the copy operation.
+  end_copy_entry,
+
+  // "progress" is fired periodically to report progress of a file copy (not
+  // directory).
+  progress,
+
+  // "success" is fired after all entries are copied.
+  success,
+
+  // "error" is fired when an error occurs.
+  error
+};
+
+// Specifies type of event that is raised.
+enum FileWatchEventType { changed, error };
+
+// Specifies type of change in file watch event.
+enum ChangeType { add_or_update, delete };
+
+// The type of entry that is needed. Default to ALL.
+enum SearchType { EXCLUDE_DIRECTORIES, SHARED_WITH_ME, OFFLINE, ALL };
+
+// Zooming mode.
+enum ZoomOperationType { in, out, reset };
+
+// Specifies how to open inspector.
+enum InspectionType {
+  // Open inspector for foreground page.
+  normal,
+  // Open inspector for foreground page and bring focus to the console.
+  console,
+  // Open inspector for foreground page in inspect element mode.
+  element,
+  // Open inspector for background page.
+  background
+};
+
+// Device event type.
+enum DeviceEventType {
+  // If the device is disabled by preference.
+  disabled,
+  // Device is removed.
+  removed,
+  // Device is hard unplugged.
+  hard_unplugged,
+  // Format started.
+  format_start,
+  // Format succeeded.
+  format_success,
+  // Format failed.
+  format_fail,
+  // Rename started.
+  rename_start,
+  // Rename succeeded.
+  rename_success,
+  // Rename failed.
+  rename_fail
+};
+
+// Drive sync error type.
+// Keep it synced with DriveSyncErrorType in operation_observer.h.
+enum DriveSyncErrorType {
+  // Request to delete a file without permission.
+  delete_without_permission,
+  // Google Drive is temporarily unavailable.
+  service_unavailable,
+  // There is no server space to sync a file.
+  no_server_space,
+  // Miscellaneous errors other than listed above.
+  misc
+};
+
+// Result of task execution.
+enum TaskResult {
+  // The task execution succeeded and a new window/tab was opened.
+  opened,
+  // The task execution succeeded and the message was sent to the proper
+  // extension.
+  message_sent,
+  // The task execution failed.
+  failed,
+  // No URL is specified.
+  empty
+};
+
+// Drive share type.
+enum DriveShareType {
+  can_edit,
+  can_comment,
+  can_view
+};
+
+// Names of properies for getEntryProperties().
+enum EntryPropertyName {
+  size,
+  modificationTime,
+  modificationByMeTime,
+  thumbnailUrl,
+  croppedThumbnailUrl,
+  imageWidth,
+  imageHeight,
+  imageRotation,
+  pinned,
+  present,
+  hosted,
+  availableOffline,
+  availableWhenMetered,
+  dirty,
+  customIconUrl,
+  contentMimeType,
+  sharedWithMe,
+  shared,
+  starred,
+  externalFileUrl,
+  alternateUrl,
+  shareUrl
+};
+
+// Entry property visibility for setEntryTag();
+enum EntryTagVisibility {
+  private,
+  public
+};
+
+// Source of the volume data.
+enum Source {
+  file,
+  device,
+  network,
+  system
+};
+
+// File handler verbs used to describe the action that an extension performs
+// over a file or directory.
+enum Verb {
+  open_with,
+  add_to,
+  pack_with,
+  share_with
+};
+
+// Recent file sources allowed in getRecentFiles().
+enum SourceRestriction {
+  // Allows any source.
+  any_source,
+
+  // Allows source with native local file system only.
+  native_source,
+
+  // Allows native source and Drive source.
+  native_or_drive_source
+};
+
+// A file task represents an action that the file manager can perform over the
+// currently selected files. See
+// chrome/browser/chromeos/extensions/file_manager/file_tasks.h for details
+// about how file tasks are handled.
+dictionary FileTask {
+  // The unique identifier of the task.
+  DOMString taskId;
+
+  // Task title (ex. App name).
+  DOMString title;
+
+  // The verb that will be used to indicate the action a task performs over
+  // a file (ex. "open_with").
+  Verb? verb;
+
+  // Task icon url (from chrome://extension-icon/...)
+  DOMString iconUrl;
+
+  // True if this task is a default task for the selected files.
+  boolean isDefault;
+
+  // True if this task is from generic file handler. Generic file handler is a
+  // file handler which handles any type of files (e.g. extensions: ["*"],
+  // types: ["*/*"]). Partial wild card (e.g. types: ["image/*"]) is not
+  // generic file handler.
+  boolean isGenericFileHandler;
+};
+
+// Additional entry properties.
+dictionary EntryProperties {
+  // Size of this file.
+  double? size;
+
+  // Timestamp of entry update time, in milliseconds past the epoch.
+  double? modificationTime;
+
+  // Timestamp of entry update time by me, in milliseconds past the epoch.
+  double? modificationByMeTime;
+
+  // URL to the Drive thumbnail image for this file.
+  DOMString? thumbnailUrl;
+
+  // URL to the Drive cropped thumbnail image for this file.
+  DOMString? croppedThumbnailUrl;
+
+  // Width, if the entry is an image.
+  long? imageWidth;
+
+  // Height, if the entry is an image.
+  long? imageHeight;
+
+  // Rotation in clockwise degrees, if the entry is an image.
+  long? imageRotation;
+
+  // True if the file is pinned in cache.
+  boolean? pinned;
+
+  // True if the file is present in cache.
+  boolean? present;
+
+  // True if the file is hosted on a server instead of local.
+  boolean? hosted;
+
+  // True if the file is available offline.
+  boolean? availableOffline;
+
+  // True if the file is available on metered connection.
+  boolean? availableWhenMetered;
+
+  // True if the file has local change (has not been fully synced to the cloud).
+  boolean? dirty;
+
+  // URL to the custom icon for this file.
+  DOMString? customIconUrl;
+
+  // Drive MIME type for this file.
+  DOMString? contentMimeType;
+
+  // True if the entry is labeled as shared-with-me.
+  boolean? sharedWithMe;
+
+  // True if the entry is labeled as shared (either from me to others or to me
+  // by others.)
+  boolean? shared;
+
+  // True if the entry is starred by the user.
+  boolean? starred;
+
+  // externalfile:// URL to open the file in browser.
+  DOMString? externalFileUrl;
+
+  // https:// URL to open the file or folder in the Drive website.
+  DOMString? alternateUrl;
+
+  // https:// URL to open the file or folder in the Drive website with the
+  // sharing dialog open.
+  DOMString? shareUrl;
+};
+
+// Information about total and remaining size on the mount point.
+dictionary MountPointSizeStats {
+  // Approximate total available size on the mount point.
+  double totalSize;
+
+  // Approximate remaining available size on the mount point.
+  double remainingSize;
+};
+
+// Information about a profile.
+dictionary ProfileInfo {
+  // Profile ID. This is currently e-mail address of the profile.
+  DOMString profileId;
+
+  // The name of the profile for display purpose.
+  DOMString displayName;
+
+  // True if the profile is the one running the current file manager instance.
+  // TODO(hirono): Remove the property because of the design change of
+  // multi-profile suuport.
+  boolean isCurrentProfile;
+};
+
+// Represents an icon in multiple dimensions. All are optional.
+dictionary IconSet {
+  DOMString? icon16x16Url;
+  DOMString? icon32x32Url;
+};
+
+// Mounted disk volume metadata.
+dictionary VolumeMetadata {
+  // ID of the disk volume.
+  DOMString volumeId;
+
+  // Id the provided file system (for provided file systems).
+  DOMString? fileSystemId;
+
+  // ID of the provider, if the volume is backed by FSP.
+  DOMString? providerId;
+
+  // Source of the volume's data.
+  Source source;
+
+  // Label of the volume (if available).
+  DOMString? volumeLabel;
+
+  // Description of the profile where the volume belongs.
+  // TODO(hirono): Remove the property because of the design change of
+  // multi-profile support.
+  ProfileInfo profile;
+
+  // The path to the mounted device, archive file or network resource.
+  DOMString? sourcePath;
+
+  // Type of the mounted volume.
+  VolumeType volumeType;
+
+  // Device type. Available if this is removable volume.
+  DeviceType? deviceType;
+
+  // Path to identify the device. This is consistent with DeviceEvent's
+  // devicePath.
+  DOMString? devicePath;
+
+  // Whether the device is parent or not (i.e. sdb rather than sdb1).
+  boolean? isParentDevice;
+
+  // Flag that specifies if volume is mounted in read-only mode.
+  boolean isReadOnly;
+
+  // Flag that specifies if the device is write-protected.
+  // Valid only for the volumes of removable device partitions.
+  boolean isReadOnlyRemovableDevice;
+
+  // Flag that specifies whether the volume contains media.
+  boolean hasMedia;
+
+  // Flag that specifies whether the volume is configurable.
+  boolean configurable;
+
+  // Flag that specifies whether the volume is watchable.
+  boolean watchable;
+
+  // Additional data about mount, for example, that the filesystem is not
+  // supported.
+  MountCondition? mountCondition;
+
+  // Context in which the volume has been mounted.
+  MountContext? mountContext;
+
+  // File system type indentifier.
+  DOMString? diskFileSystemType;
+
+  // Icons for the volume.
+  IconSet iconSet;
+};
+
+// Payload data for mount event.
+dictionary MountCompletedEvent {
+  // Is the event raised for mounting or unmounting.
+  MountCompletedEventType eventType;
+
+  // Event type that tells listeners if mount was successful or an error
+  // occurred. It also specifies the error.
+  MountCompletedStatus status;
+
+  // Metadata of the mounted volume.
+  VolumeMetadata volumeMetadata;
+
+  // Whether the volume event should be notified or not.
+  boolean shouldNotify;
+};
+
+// Payload data for file transfer status updates.
+dictionary FileTransferStatus {
+  // URL of file that is being transfered.
+  DOMString fileUrl;
+
+  // File transfer progress state.
+  TransferState transferState;
+
+  // Defines file transfer direction.
+  TransferType transferType;
+
+  // Approximated completed portion of the transfer operation.
+  double processed;
+
+  // Approximated total size of transfer operation.
+  double total;
+
+  // Total number of jobs.
+  long num_total_jobs;
+};
+
+// Error during the drive sync.
+dictionary DriveSyncErrorEvent {
+  // Error type.
+  DriveSyncErrorType type;
+
+  // File URL of the entry that the error happens to.
+  DOMString fileUrl;
+};
+
+// Payload data for copy status progress updates.
+dictionary CopyProgressStatus {
+  // The type of the progress event.
+  CopyProgressStatusType type;
+
+  // URL for the entry currently being copied. This field is particularly useful
+  // when a directory copy is initiated with startCopy(). The field tells what
+  // file/directory in that directory is now being copied.
+  DOMString? sourceUrl;
+
+  // URL for the entry currently being created. This field is particularly
+  // useful when a directory copy is initiated with startCopy(). The field tells
+  // what file/directory in that directory is being created. Available only for
+  // end_copy_entry and success.
+  DOMString? destinationUrl;
+
+  // Number of processed bytes for the file currently being copied. Available
+  // only for "progress" event. To show the progress bar, a caller needs to
+  // pre-compute the size of files being copied for the file (not directory).
+  double? size;
+
+  // DOMError's name. Available only for ERROR event.
+  DOMString? error;
+};
+
+// Detailed information of change.
+dictionary FileChange {
+  // URL of changed file (or directory).
+  DOMString url;
+
+  // Type of change, which may be multiple.
+  ChangeType[] changes;
+};
+
+// Directory change notification details.
+dictionary FileWatchEvent {
+  // Specifies type of event that is raised.
+  FileWatchEventType eventType;
+
+  // An Entry object which represents a changed directory. The conversion into a
+  // kind of FileEntry object is done in
+  // file_browser_handler_custom_bindings.cc. For filesystem API's Entry
+  // interface, see <a
+  // href='http://www.w3.org/TR/file-system-api/#the-entry-interface'>The Entry
+  // interface</a>.
+  [instanceOf=Entry] object entry;
+
+  // Detailed change information of change. It would be null if the detailed
+  // information is not available.
+  FileChange[]? changedFiles;
+};
+
+dictionary Preferences {
+  boolean driveEnabled;
+  boolean cellularDisabled;
+  boolean hostedFilesDisabled;
+  boolean searchSuggestEnabled;
+  boolean use24hourClock;
+  boolean allowRedeemOffers;
+  DOMString timezone;
+};
+
+dictionary PreferencesChange {
+  boolean? cellularDisabled;
+  boolean? hostedFilesDisabled;
+};
+
+dictionary SearchParams {
+  // Search query.
+  DOMString query;
+
+  // ID of the search feed that should be fetched next. Value passed here should
+  // be gotten from previous searchDrive call. It can be empty for the initial
+  // search request.
+  DOMString nextFeed;
+};
+
+dictionary SearchMetadataParams {
+  // Search query. It can be empty. Any filename matches to an empty query.
+  DOMString query;
+
+  // The type of entry that is needed. Default to ALL.
+  SearchType types;
+
+  // Maximum number of results.
+  long maxResults;
+};
+
+// Entry and Drive-related properties representing a search result.
+dictionary SearchResult {
+  // A dictionary object which represents a Drive file. This will be converted
+  // into a kind of FileEntry object. See
+  // file_browser_handler_custom_bindings.cc for details. For filesystem API's
+  // Entry interface, see <a
+  // href='http://www.w3.org/TR/file-system-api/#the-entry-interface'>The Entry
+  // interface</a>.
+  [instanceOf=Entry] object entry;
+
+  // The base name of a Drive file that matched the search query. The matched
+  // sub strings are highlighted with <b> element. Meta characters are escaped
+  // like &lt;.
+  DOMString highlightedBaseName;
+};
+
+dictionary DriveConnectionState {
+  DOMString type;
+
+  // Reasons of offline.
+  DOMString? reason;
+
+  // Whether the device has a cellular network access or not. i.e. the |type|
+  // can be 'metered' or not.
+  boolean hasCellularNetworkAccess;
+};
+
+// Device event dispatched to listeners of onDeviceChaged.  See also
+// DeviceEventType to know when the event dispatched.
+dictionary DeviceEvent {
+  // Event type of the device event.
+  DeviceEventType type;
+  // Device path to identify the device.
+  DOMString devicePath;
+};
+
+// Describes an installed provider.
+dictionary Provider {
+  // ID of the provider.
+  DOMString providerId;
+
+  // Set of icons for the provider.
+  IconSet iconSet;
+
+  // Name of the provider.
+  DOMString name;
+
+  // Whether supports configuration dialog.
+  boolean configurable;
+
+  // Whether supports watching entries.
+  boolean watchable;
+
+  // Whether supports mounting multiple instances.
+  boolean multipleMounts;
+
+  // Source of file systems' data.
+  manifestTypes.FileSystemProviderSource source;
+};
+
+// Callback that does not take arguments.
+callback SimpleCallback = void();
+
+// |result| Boolean result returned by the invoked function.
+callback BooleanCallback = void(boolean result);
+
+// |result| Result of the task execution.
+callback ExecuteTaskCallback = void(TaskResult result);
+
+// |tasks| The list of matched file entries for this task.
+callback GetFileTasksCallback = void(FileTask[] tasks);
+
+// |result| Mime type of the file.
+callback GetMimeTypeCallback = void(DOMString result);
+
+// |result| Hash containing the string assets.
+callback GetStringsCallback = void(object result);
+
+// |success| True when file watch is successfully added.
+callback AddFileWatchCallback = void(optional boolean success);
+
+// |success| True when file watch is successfully removed.
+callback RemoveFileWatchCallback = void(optional boolean success);
+
+// |entryProperties| A dictionary containing properties of the requested
+// entries.
+callback GetEntryPropertiesCallback =
+    void(EntryProperties[] entryProperties);
+
+// |sourcePath| Source path of the mount.
+callback AddMountCallback = void(DOMString sourcePath);
+
+callback MarkCacheAsMountedCallback = void();
+
+// |volumeMetadataList| The list of VolumeMetadata representing mounted volumes.
+callback GetVolumeMetadataListCallback =
+    void(VolumeMetadata[] volumeMetadataList);
+
+// |fileTransferCancelStatuses| The list of FileTransferCancelStatus.
+callback CancelFileTransfersCallback =
+    void(FileTransferCancelStatus[] fileTransferCancelStatuses);
+
+// |copyId| ID of the copy task. Can be used to identify the progress, and to
+// cancel the task.
+callback StartCopyCallback = void(long copyId);
+
+// |sizeStats| Name/value pairs of size stats. Will be undefined if stats could
+// not be determined.
+callback GetSizeStatsCallback = void(optional MountPointSizeStats sizeStats);
+
+callback GetPreferencesCallback = void(Preferences result);
+
+// |entries|
+// |nextFeed| ID of the feed that contains next chunk of the search result.
+//     Should be sent to the next searchDrive request to perform
+//     incremental search.
+callback SearchDriveCallback =
+    void([instanceOf=Entry] object[] entries, DOMString nextFeed);
+
+callback SearchDriveMetadataCallback = void(SearchResult[] results);
+
+// |urls| The map of hash and array of FileEntry's URL. The array can be empty
+// if the corresponding file is not found.
+callback SearchFilesByHashesCallback = void(object urls);
+
+callback ZipSelectionCallback = void(optional boolean success);
+
+callback GetDriveConnectionStateCallback = void(DriveConnectionState result);
+
+// |result| true if the length is in the valid range, false otherwise.
+callback ValidatePathNameLengthCallback = void(boolean result);
+
+// |accessToken| OAuth2 access token, or an empty string if failed to fetch.
+callback RequestAccessTokenCallback = void(DOMString accessToken);
+
+// |accessToken| OAuth2 access token, or an empty string if failed to fetch.
+callback RequestWebStoreAccessTokenCallback = void(DOMString accessToken);
+
+// |url| Result url.
+callback GetUrlCallback = void(DOMString url);
+
+// |profiles| List of profile information.
+// |runningProfile| ID of the profile that runs the application instance.
+// |showingProfile| ID of the profile that shows the application window.
+callback GetProfilesCallback = void(ProfileInfo[] profiles,
+                                    DOMString runningProfile,
+                                    DOMString displayProfile);
+
+// |entries| External entries.
+callback ResolveEntriesCallback =
+    void([instanceOf=Entry] object[] entries);
+
+// |checksum| Result checksum.
+callback ComputeChecksumCallback = void(DOMString checksum);
+
+// |extensions| List of providers.
+callback GetProvidersCallback = void(Provider[] extensions);
+
+// |actions| List of actions.
+callback GetCustomActionsCallback = void(fileSystemProvider.Action[] actions);
+
+// |size| result size.
+callback GetDirectorySizeCallback = void(double size);
+
+// |entries| Recently modified entries.
+callback GetRecentFilesCallback = void([instanceOf=Entry] object[] entries);
+
+interface Functions {
+  // Logout the current user for navigating to the re-authentication screen for
+  // the Google account.
+  static void logoutUserForReauthentication();
+
+  // Cancels file selection.
+  static void cancelDialog();
+
+  // Executes file browser task over selected files.
+  // |taskId| The unique identifier of task to execute.
+  // |entries| Array of entries
+  // |callback|
+  [nocompile]
+  static void executeTask(DOMString taskId,
+                          [instanceof=Entry] object[] entries,
+                          ExecuteTaskCallback callback);
+
+  // Sets the default task for the supplied MIME types and path extensions.
+  // Lists of MIME types and URLs may contain duplicates. Additionally, the
+  // list of MIME types can be empty.
+  // |taskId| The unique identifier of task to mark as default.
+  // |entries| Array of selected entries to extract path extensions from.
+  // |mimeTypes| Array of selected file MIME types.
+  // |callback|
+  [nocompile]
+  static void setDefaultTask(DOMString taskId,
+                             [instanceof=Entry] object[] entries,
+                             DOMString[] mimeTypes,
+                             SimpleCallback callback);
+
+  // Gets the list of tasks that can be performed over selected files.
+  // |entries| Array of selected entries
+  // |callback|
+  [nocompile]
+  static void getFileTasks([instanceof=Entry] object[] entries,
+                           GetFileTasksCallback callback);
+
+  // Gets the MIME type of a file.
+  // |entry| Entry to be checked.
+  // |callback|
+  [nocompile]
+  static void getMimeType([instanceof=Entry] object entry,
+                          GetMimeTypeCallback callback);
+
+  // Gets localized strings and initialization data.
+  // |callback|
+  static void getStrings(GetStringsCallback callback);
+
+  // Adds file watch.
+  // |entry| Entry to watch
+  // |callback|
+  [nocompile]
+  static void addFileWatch([instanceof=Entry] object entry,
+                           AddFileWatchCallback callback);
+
+  // Removes file watch.
+  // |entry| Watched entry
+  // |callback|
+  [nocompile]
+  static void removeFileWatch([instanceof=Entry] object entry,
+                              RemoveFileWatchCallback callback);
+
+  // Enables the extenal file scheme necessary to initiate drags to the browser
+  // window for files on the external backend.
+  static void enableExternalFileScheme();
+
+  // Requests granting R/W permissions for the passed entries. It's a best
+  // effort operation. Some files may not be granted access if the url is
+  // invalid or not backed by the external file system.
+  // |entryUrls| Urls for the entries to be accessed.
+  // |callback|
+  static void grantAccess(DOMString[] entryUrls, SimpleCallback callback);
+
+  // Selects multiple files.
+  // |selectedPaths| Array of selected paths
+  // |shouldReturnLocalPath| true if paths need to be resolved to local paths.
+  // |callback|
+  static void selectFiles(DOMString[] selectedPaths,
+                          boolean shouldReturnLocalPath,
+                          SimpleCallback callback);
+
+  // Selects a file.
+  // |selectedPath| A selected path
+  // |index| Index of Filter
+  // |forOpening| true if paths are selected for opening. false if for saving.
+  // |shouldReturnLocalPath| true if paths need to be resolved to local paths.
+  // |callback|
+  static void selectFile(DOMString selectedPath,
+                         long index,
+                         boolean forOpening,
+                         boolean shouldReturnLocalPath,
+                         SimpleCallback callback);
+
+  // Requests additional properties for files.
+  // |entries| list of entries
+  // |names| list of requested properties by their names.
+  // |callback| Completion callback. May return less than requested properties
+  //     if some are not available. In the same time, it can return properties
+  //     which were not requested (if it's cheap to compute them).
+  [nocompile]
+  static void getEntryProperties(
+      [instanceOf=Entry] object[] entries,
+      EntryPropertyName[] names,
+      GetEntryPropertiesCallback callback);
+
+  // Pins/unpins a Drive file in the cache.
+  // |entry| Entry to pin/unpin.
+  // |pin| Pass true to pin the file.
+  // |callback| Completion callback. $(ref:runtime.lastError) will be set if
+  //     there was an error.
+  [nocompile]
+  static void pinDriveFile([instanceof=Entry] object entry,
+                           boolean pin,
+                           SimpleCallback callback);
+
+  // If |entry| is a Drive file, ensures the file is downloaded to the cache.
+  // Otherwise, finishes immediately in success. For example, when the file is
+  // under Downloads, MTP, removeable media, or provided by extensions for
+  // other cloud storage services than Google Drive, this does nothing.
+  // This is a workaround to avoid intermittent and duplicated downloading of
+  // a Drive file by current implementation of Drive integration when an
+  // extension reads a file sequentially but intermittently.
+  // |entry| A regular file entry to be read.
+  // |callback| Callback called after having the file in cache.
+  //     $(ref:runtime.lastError) will be set if there was an error.
+  [nocompile]
+  static void ensureFileDownloaded([instanceof=Entry] object entry,
+                           SimpleCallback callback);
+
+  // Resolves entries in the isolated file system and returns corresponding
+  // entries in the external file system mounted to Chrome OS file manager
+  // backend. If resolving entry fails, the entry will be just ignored and the
+  // corresponding entry does not appear in the result.
+  [nocompile]
+  static void resolveIsolatedEntries(
+      [instanceOf=Entry] object[] entries,
+      ResolveEntriesCallback callback);
+
+  // Mount a resource or a file.
+  // |source| Mount point source. For compressed files it is relative file path
+  //     within external file system
+  // |callback|
+  static void addMount(DOMString source, AddMountCallback callback);
+
+  // Unmounts a mounted resource.
+  // |volumeId| An ID of the volume.
+  static void removeMount(DOMString volumeId);
+
+  // Marks a cache file of Drive as mounted or unmounted.
+  // Does nothing if the file is not under Drive directory.
+  // |sourcePath| Mounted source file. Relative file path within external file
+  //     system.
+  // |isMounted| Mark as mounted if true. Mark as unmounted otherwise.
+  // |callback| Completion callback. $(ref:runtime.lastError) will be set if
+  //     there was an error.
+  static void markCacheAsMounted(DOMString sourcePath, boolean isMounted,
+      MarkCacheAsMountedCallback callback);
+
+  // Get the list of mounted volumes.
+  // |callback|
+  static void getVolumeMetadataList(GetVolumeMetadataListCallback callback);
+
+  // Cancels ongoing file transfers for selected files.
+  // |entries| Array of files for which ongoing transfer should be canceled.
+  // |callback| Completion callback of the cancel.
+  [nocompile]
+  static void cancelFileTransfers([instanceof=Entry] object[] entries,
+                                  SimpleCallback callback);
+
+  // Cancels all ongoing file transfers.
+  // |callback| Completion callback of the cancel.
+  static void cancelAllFileTransfers(SimpleCallback callback);
+
+  // Starts to copy an entry. If the source is a directory, the copy is done
+  // recursively.
+  // |entry| Entry of the source entry to be copied.
+  // |parentEntry| Entry for the destination (parent) directory.
+  // |newName| Name of the new entry. It must not contain '/'.
+  // |callback| Completion callback.
+  [nocompile]
+  static void startCopy([instanceof=Entry] object entry,
+                        [instanceof=DirectoryEntry] object parentEntry,
+                        DOMString newName,
+                        StartCopyCallback callback);
+
+  // Cancels the running copy task.
+  // |copyId| ID of the copy task to be cancelled.
+  // |callback| Completion callback of the cancel.
+  static void cancelCopy(long copyId, SimpleCallback callback);
+
+  // Retrieves total and remaining size of a mount point.
+  // |volumeId| ID of the volume to be checked.
+  // |callback|
+  static void getSizeStats(DOMString volumeId, GetSizeStatsCallback callback);
+
+  // Formats a mounted volume.
+  // |volumeId| ID of the volume to be formatted.
+  static void formatVolume(DOMString volumeId);
+
+  // Renames a mounted volume.
+  // |volumeId| ID of the volume to be renamed.
+  // |newName| New name of the target volume.
+  static void renameVolume(DOMString volumeId, DOMString newName);
+
+  // Retrieves file manager preferences.
+  // |callback|
+  static void getPreferences(GetPreferencesCallback callback);
+
+  // Sets file manager preferences.
+  // |changeInfo|
+  static void setPreferences(PreferencesChange changeInfo);
+
+  // Performs drive content search.
+  // |searchParams|
+  // |callback|
+  static void searchDrive(SearchParams searchParams,
+                          SearchDriveCallback callback);
+
+  // Performs drive metadata search.
+  // |searchParams|
+  // |callback|
+  static void searchDriveMetadata(SearchMetadataParams searchParams,
+                                  SearchDriveMetadataCallback callback);
+
+  // Search files in the volume having |volumeId| by using |hashList|.
+  // sub-directories) the given |targetDirectoryUrl|.
+  static void searchFilesByHashes(DOMString volumeId,
+                                  DOMString[] hashList,
+                                  SearchFilesByHashesCallback callback);
+
+  // Create a zip file for the selected files.
+  // |parentEntry| Entry of the directory containing the selected files.
+  // |entries| Entries of the selected files. The files must be under the
+  //     directory specified by |parentEntry|.
+  // |destName| Name of the destination zip file. The zip file will be created
+  //     under the directory specified by |parentEntry|.
+  // |callback|
+  [nocompile]
+  static void zipSelection([instanceof=Entry] object[] entries,
+                           [instanceof=DirectoryEntry] object parentEntry,
+                           DOMString destName,
+                           ZipSelectionCallback callback);
+
+  // Retrieves the state of the current drive connection.
+  // |callback|
+  static void getDriveConnectionState(GetDriveConnectionStateCallback callback);
+
+  // Checks whether the path name length fits in the limit of the filesystem.
+  // |parentEntry| The entry of the parent directory entry.
+  // |name| The name of the file.
+  // |callback| Called back when the check is finished.
+  [nocompile]
+  static void validatePathNameLength(
+      [instanceof=DirectoryEntry] object parentEntry,
+      DOMString name,
+      ValidatePathNameLengthCallback callback);
+
+  // Changes the zoom factor of the Files app.
+  // |operation| Zooming mode.
+  static void zoom(ZoomOperationType operation);
+
+  // Requests a Drive API OAuth2 access token.
+  // |refresh| Whether the token should be refetched instead of using the cached
+  //     one.
+  // |callback|
+  static void requestAccessToken(boolean refresh,
+                                 RequestAccessTokenCallback callback);
+
+  // Requests a Webstore API OAuth2 access token.
+  // |callback|
+  static void requestWebStoreAccessToken(
+      RequestWebStoreAccessTokenCallback callback);
+
+  // Requests a share dialog url for the specified file.
+  // |entry| The entry to share.
+  // |callback|
+  [nocompile]
+  static void getShareUrl([instanceof=Entry] object entry,
+                          GetUrlCallback callback);
+
+  // Requests a download url to download the file contents.
+  // |entry| The entry to download.
+  // |callback|
+  [nocompile]
+  static void getDownloadUrl([instanceof=Entry] object entry,
+                             GetUrlCallback callback);
+
+  // Requests to share drive files.
+  // |entry| Entry to be shared.
+  // |shareType| Type of access that is getting granted.
+  [nocompile]
+  static void requestDriveShare([instanceof=Entry] object entry,
+                                DriveShareType shareType,
+                                SimpleCallback callback);
+
+  // Obtains a list of profiles that are logged-in.
+  static void getProfiles(GetProfilesCallback callback);
+
+  // Opens inspector window.
+  // |type| InspectionType which specifies how to open inspector.
+  static void openInspector(InspectionType type);
+
+  // Opens page in Settings window.
+  // |sub_page| Name of a sub_page to show.
+  static void openSettingsSubpage(DOMString sub_page);
+
+  // Computes an MD5 checksum for the given file.
+  // |entry| The entry of the file to checksum.
+  // |callback|
+  [nocompile]
+  static void computeChecksum([instanceof=Entry] object entry,
+                              ComputeChecksumCallback callback);
+
+  // Is UMA enabled?
+  static void isUMAEnabled(BooleanCallback callback);
+
+  // Sets a tag on a file or a directory. Only Drive files are supported.
+  [nocompile]
+  static void setEntryTag([instanceof=Entry] object entry,
+                          EntryTagVisibility visibility,
+                          DOMString key,
+                          DOMString value,
+                          SimpleCallback callback);
+
+  // Returns if Piex loader is enabled.
+  static void isPiexLoaderEnabled(BooleanCallback callback);
+
+  // Returns list of available providers.
+  static void getProviders(GetProvidersCallback callback);
+
+  // Requests adding a new provided file system. If not possible, then an error
+  // via chrome.runtime.lastError is returned.
+  static void addProvidedFileSystem(DOMString provider_id,
+                                    SimpleCallback callback);
+
+  // Requests configuring an existing volume. If not possible, then returns
+  // an error via chrome.runtime.lastError.
+  static void configureVolume(DOMString volumeId, SimpleCallback callback);
+
+  // Requests list of custom actions for the specified entries. If not possible,
+  // then an error via chrome.runtime.lastError is returned.
+  [nocompile]
+  static void getCustomActions([instanceof=Entry] object[] entries,
+                               GetCustomActionsCallback callback);
+
+  // Executes a custom action for a set of entries. If not possible, then an
+  // error via chrome.runtime.lastError is returned.
+  [nocompile]
+  static void executeCustomAction([instanceof=Entry] object[] entries,
+                                  DOMString actionId,
+                                  SimpleCallback callback);
+
+  // Get the total size of a directory.
+  // |entry| Entry of the target directory.
+  // |callback|
+  [nocompile]
+  static void getDirectorySize([instanceof=DirectoryEntry] object entry,
+                               GetDirectorySizeCallback callback);
+
+  // Gets recently modified files across file systems.
+  // |restriction| Flag to restrict sources of recent files.
+  // |callback|
+  [nocompile]
+  static void getRecentFiles(SourceRestriction restriction,
+                             GetRecentFilesCallback callback);
+
+  // Returns true if crostini is enabled.
+  // |callback|
+  static void isCrostiniEnabled(BooleanCallback callback);
+
+  // Starts and mounts crostini container.
+  // |callback|
+  static void mountCrostiniContainer(SimpleCallback callback);
+};
+
+interface Events {
+  static void onMountCompleted(MountCompletedEvent event);
+
+  static void onFileTransfersUpdated(FileTransferStatus event);
+
+  static void onCopyProgress(long copyId, CopyProgressStatus status);
+
+  static void onDirectoryChanged(FileWatchEvent event);
+
+  static void onPreferencesChanged();
+
+  static void onDriveConnectionStatusChanged();
+
+  static void onDeviceChanged(DeviceEvent event);
+
+  static void onDriveSyncError(DriveSyncErrorEvent event);
+
+  static void onAppsUpdated();
+};
+};

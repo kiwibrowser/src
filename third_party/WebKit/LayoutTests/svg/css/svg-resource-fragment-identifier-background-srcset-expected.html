@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<style>
+  div {
+      width: 100px;
+      height: 100px;
+      background: green;
+  }
+</style>
+<div></div>
+<script>
+  if (window.testRunner) {
+      testRunner.waitUntilDone();
+      testRunner.setBackingScaleFactor(2, function() { testRunner.notifyDone(); });
+  }
+</script>

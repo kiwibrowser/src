@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<style>
+div {
+  will-change: transform;
+  background-color: lightgray;
+  height: 50px;
+  border: 1px solid black;
+}
+#first {
+  background-color: yellow;
+  position: relative;
+  margin-top: 100.3px;
+}
+</style>
+<div id="first"></div>
+<div></div>
+<div></div>
+<script src="../resources/text-based-repaint.js"></script>
+<script>
+// Disable under-invalidation checking which would force full layer
+// invalidation on subpixel accumulation change.
+if (window.internals)
+  internals.runtimeFlags.paintUnderInvalidationCheckingEnabled = false;
+function repaintTest() {
+  first.style.marginTop = '110.1px';
+}
+onload = runRepaintAndPixelTest;
+</script>

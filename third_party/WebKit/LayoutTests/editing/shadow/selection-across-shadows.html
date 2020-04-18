@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<style>* { font-family: monospace; }</style>
+<div id="host1">[<span id="one">One</span>]</div>
+<div id="host2">[<span id="two">Two</span>]</div>
+<script>
+function doDrag(start, end) {
+    if (!window.eventSender)
+        return;
+    eventSender.mouseMoveTo(start.offsetLeft + (start.offsetWidth / 2), start.offsetTop + 3);
+    eventSender.mouseDown();
+    eventSender.mouseMoveTo(end.offsetLeft + (end.offsetWidth / 2), end.offsetTop + 3);
+    eventSender.mouseUp();
+}
+var host1 = document.querySelector('#host1');
+host1.createShadowRoot().innerHTML = '[<content select="#one"></content>]';
+var host2 = document.querySelector('#host2');
+host2.createShadowRoot().innerHTML = '[<content select="#two"></content>]';
+var one = document.querySelector('#one');
+var two = document.querySelector('#two');
+doDrag(two, one);
+</script>

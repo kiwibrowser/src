@@ -1,0 +1,30 @@
+# -*- python -*-
+# Copyright (c) 2013 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# This is MIPS specific test.
+if not env.Bit('build_mips32') or env.Bit('pnacl_generate_pexe'):
+  Return()
+
+text_segment_start = 0x00020000
+# Arbitrary address below NACL_DATA_SEGMENT_START, but above the end of text
+# section.
+rodata_segment_start = 0x00120000
+
+nexe = env.ComponentProgram(
+    'data_below_data_start',
+    ['data_below_data_start.c'],
+    EXTRA_LIBS=['${NONIRT_LIBS}'],
+    EXTRA_LINKFLAGS=[['-arch', 'mips32', '--pnacl-allow-native']
+                     if env.Bit('bitcode') else [],
+                     '-Wl,-Ttext-segment=0x%x' % text_segment_start,
+                     '-Wl,-Trodata-segment=0x%x' % rodata_segment_start])
+
+node = env.CommandSelLdrTestNacl('data_below_data_start.out', nexe,
+                                 exit_status=1)
+
+env.AddNodeToTestSuite(node, ['small_tests', 'nonpexe_tests'],
+                       'run_data_below_data_start_test')

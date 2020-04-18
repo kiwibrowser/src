@@ -1,0 +1,78 @@
+# NOTE: if adding an exclusion for an existing failure (e.g. additional test for
+# feature X that is already not working), please add it beside the existing
+# failures. Otherwise please reach out to network-service-dev@.
+
+# https://crbug.com/715640
+-ServiceWorkerBrowserTest.ImportsBustMemcache
+-ServiceWorkerBrowserTest.Reload
+-ServiceWorkerBrowserTest.ResponseFromHTTPSServiceWorkerIsMarkedAsSecure
+-ServiceWorkerNavigationPreloadTest.CanceledByInterceptor
+-ServiceWorkerNavigationPreloadTest.RespondWithNavigationPreloadWithMimeSniffing
+-ServiceWorkerV8CodeCacheForCacheStorageTest.V8CacheOnCacheStorage
+-ServiceWorkerVersionBrowserTest.ServiceWorkerScriptHeader
+
+# ServiceWorker restart needs to read installed scripts.
+# https://crbug.com/756312
+-ServiceWorkerVersionBrowserV8CacheTest.Restart
+
+# https://crbug.com/721398
+-ClearSiteDataThrottleBrowserTest.CacheIntegrationTest
+-ClearSiteDataThrottleBrowserTest.CookiesIntegrationTest
+-ClearSiteDataThrottleBrowserTest.Credentials
+-ClearSiteDataThrottleBrowserTest.CredentialsOnRedirect
+-ClearSiteDataThrottleBrowserTest.RedirectNavigation
+-ClearSiteDataThrottleBrowserTest.RedirectResourceLoad
+-ClearSiteDataThrottleBrowserTest.SecureAndInsecureResourceLoad
+-ClearSiteDataThrottleBrowserTest.ServiceWorker
+-ClearSiteDataThrottleBrowserTest.StorageServiceWorkersIntegrationTest
+-ClearSiteDataThrottleBrowserTest.Types
+
+# https://crbug.com/820060
+-PreviewsStateBrowserTest.ShouldEnableLoFiModeNavigateBackThenForward
+-PreviewsStateBrowserTest.ShouldEnableLoFiModeOff
+-PreviewsStateBrowserTest.ShouldEnableLoFiModeOn
+-PreviewsStateBrowserTest.ShouldEnableLoFiModeReload
+-PreviewsStateBrowserTest.ShouldEnableLoFiModeReloadDisableLoFi
+
+# https://crbug.com/837666
+-NavigationHandleImplBrowserTest.RedirectToRendererDebugUrl
+
+-AsyncResourceHandlerBrowserTest/AsyncResourceHandlerBrowserTest.UploadProgress*
+-WebContentsImplBrowserTest.DownloadImage_Deny_FileImage
+
+# services/network/url_loader.cc should handle failure in
+# URLLoaderImpl::OnResponseBodyStreamRead(). Note this is flaky, so it will pass
+# sometimes.
+-SRC_ClearKey/EncryptedMediaTest.FrameSizeChangeVideo/0
+
+# Cross-origin request to file:// URL should be blocked. crbug.com/759230
+-BrowserSideNavigationBrowserDisableWebSecurityTest.ValidateBaseUrlForDataUrl
+
+# Cross-origin read blocking (CORB) needs to be implemented in the network
+# service.
+# https://crbug.com/786505 (cross site document blocking)
+# https://crbug.com/792546 (cross site document blocking in network service)
+-CrossSiteDocumentBlockingBaseTest.BlockDocumentsByDefault
+-CrossSiteDocumentBlockingTest.BlockDocuments
+-CrossSiteDocumentBlockingTest.BlockHeaders
+-CrossSiteDocumentBlockingTest.BlockRequestFromErrorPage
+-CrossSiteDocumentBlockingIsolatedOriginTest.BlockDocumentsFromIsolatedOrigin
+-CrossSiteDocumentBlockingTest.RangeRequest
+-CrossSiteDocumentBlockingServiceWorkerTest.NoNetwork
+-CrossSiteDocumentBlockingServiceWorkerTest.NetworkToServiceWorkerResponse
+
+# Flakes on Android.
+# https://crbug.com/827318
+-RenderThreadImplBrowserTest.NonResourceDispatchIPCTasksDontGoThroughScheduler
+
+# Network service path needs some way to update the per-WebContents load state.
+# https://crbug.com/819663.
+-WebContentsImplBrowserTest.UpdateLoadState
+
+# Previously Fails because of missing support to navigate to filesystem URLs,
+# https://crbug.com/797292. Still failing, cause unknown.
+-BlockedSchemeNavigationBrowserTest.WindowOpenRedirectAndBack/1
+
+# NOTE: if adding an exclusion for an existing failure (e.g. additional test for
+# feature X that is already not working), please add it beside the existing
+# failures. Otherwise please reach out to network-service-dev@.

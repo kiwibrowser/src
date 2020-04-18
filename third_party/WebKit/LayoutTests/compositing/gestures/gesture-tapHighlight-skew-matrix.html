@@ -1,0 +1,34 @@
+
+<!DOCTYPE html>
+<script src="resources/link-highlight-helper.js"></script>
+<link rel="stylesheet" type="text/css" href="resources/link-highlight-style.css">
+<body onload="runTest()">
+<div id=parent style="overflow: scroll; will-change: transform"> 
+  <div class="target" style="position: relative; transform: skew(-15deg);"></div>               
+  <a href="test" id="targetLink"  class="opaqueHighlight">
+    <div style="width: 1000px; height: 500px; background: lightgray" ></div>
+  </a>
+  </div>
+</div>
+This test passes if the entire gray rectangle changes color to green.
+</body>
+<script>
+function runTest() {
+    useMockHighlight();
+    var clientRect = document.getElementById('targetLink').getBoundingClientRect();
+    x = (clientRect.left + clientRect.right) / 2;
+    y = (clientRect.top + clientRect.bottom) / 2;
+    if (window.testRunner) {
+        testRunner.dumpAsTextWithPixelResults();
+        testRunner.waitUntilDone();
+    }
+    if (window.eventSender) {
+        eventSender.gestureShowPress(x, y);
+        window.setTimeout(function() { testRunner.notifyDone(); }, 0);
+    } else {
+        debug("This test requires DumpRenderTree.");
+    }
+}
+</script>
+</body>
+</html>

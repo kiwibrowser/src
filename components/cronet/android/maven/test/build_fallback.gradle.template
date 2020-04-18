@@ -1,0 +1,63 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 26
+
+    def cronet_dir = "../../../../../../components/cronet/android"
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            testProguardFiles "$cronet_dir/maven/test/proguard.cfg"
+        }
+        debug {
+            minifyEnabled true
+            testProguardFiles "$cronet_dir/maven/test/proguard.cfg"
+        }
+    }
+
+    // Cronet jars contain Java 8 bytecodes.
+    compileOptions {
+        sourceCompatibility 1.8
+        targetCompatibility 1.8
+    }
+
+    defaultConfig {
+        applicationId "org.chromium.cronet_sample_apk"
+        minSdkVersion 16
+        targetSdkVersion 23
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
+    }
+
+    sourceSets {
+        main {
+            manifest.srcFile "$cronet_dir/sample/AndroidManifest.xml"
+            java.srcDirs = [ "$cronet_dir/sample/src" ]
+            res.srcDirs = [ "$cronet_dir/sample/res" ]
+        }
+        androidTest {
+            manifest.srcFile "$cronet_dir/sample/javatests/AndroidManifest.xml"
+            java.srcDirs = [ "$cronet_dir/sample/javatests/src" ]
+        }
+    }
+}
+
+repositories {
+    jcenter()
+    maven {
+        url 'https://maven.google.com'
+    }
+    maven {
+        url '../..'
+    }
+}
+
+dependencies {
+    androidTestImplementation 'com.android.support.test:runner:1.0.1'
+    androidTestImplementation 'com.android.support.test:rules:1.0.1'
+    implementation 'com.android.support:appcompat-v7:25.4.0'
+    implementation 'org.chromium.net:cronet-fallback:@MAJOR@.@BUILD@.@PATCH@'
+    androidTestUtil 'com.android.support.test:orchestrator:1.0.1'
+}

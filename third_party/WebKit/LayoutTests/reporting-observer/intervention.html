@@ -1,0 +1,33 @@
+<!doctype html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="resources/intervention.js"></script>
+
+<div id="target" style="padding: 10px; background-color: blue;">
+  <p>Testing intervention reports and ReportingObserver</p>
+</div>
+
+<script>
+async_test(function(test) {
+  var observer = new ReportingObserver(function(reports, observer) {
+    test.step(function() {
+      assert_equals(reports.length, 1);
+
+      // Ensure that the contents of the report are valid.
+      assert_equals(reports[0].type, "intervention");
+      assert_true(reports[0].url.endsWith(
+          "reporting-observer/intervention.html"));
+      assert_true(reports[0].body.sourceFile.endsWith(
+          "reporting-observer/resources/intervention.js"));
+      assert_equals(typeof reports[0].body.lineNumber, "number");
+      assert_equals(typeof reports[0].body.columnNumber, "number");
+      assert_equals(typeof reports[0].body.message, "string");
+    });
+
+    test.done();
+  });
+  observer.observe();
+
+  causeIntervention();
+}, "Intervention report");
+</script>

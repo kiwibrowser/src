@@ -1,0 +1,81 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import os
+
+Import('env')
+
+if env.UnderWindowsCoverage():
+  Return()
+
+redir_test_nexe = env.ComponentProgram('redir_test', 'redir_test.c',
+                                       EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+# windows builds swallow stdout and stderr, so we cannot check
+# against the golden files when stdout and stderr are not redirected
+# to files.
+if not env.Bit('host_windows'):
+  node = env.CommandSelLdrTestNacl(
+      'redir_test_basic.out',
+      redir_test_nexe,
+      stdout_golden=env.File('redir_test.stdout'),
+      stderr_golden=env.File('redir_test.stderr'),
+      filter_regex="'^REALOUTPUT'",
+      )
+
+  env.AddNodeToTestSuite(node,
+                         ['small_tests', 'sel_ldr_tests'],
+                         'run_redir_basic_test')
+
+# we immediately close to ensure that python is not holding on to a
+# file handle, so that on Windows, the Cleanup use of unlink will not
+# fail due to us still having an open file handle.
+outfile = env.MakeEmptyFile(prefix='tmp_redir')
+errfile = env.MakeEmptyFile(prefix='tmp_redir')
+
+node = env.CommandSelLdrTestNacl(
+    'redir_test.out',
+    redir_test_nexe,
+    filter_regex="'^REALOUTPUT'",
+    osenv=['NACL_EXE_STDOUT=%s' % outfile,
+           'NACL_EXE_STDERR=%s' % errfile])
+
+# Valgrind doesn't yet work.
+# TODO(sehr): https://code.google.com/p/nativeclient/issues/detail?id=3158
+testing_on_valgrind = env.Bit('running_on_valgrind')
+
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_redir_test',
+                       is_broken=testing_on_valgrind)
+
+tests_disabled = (env.Bit('do_not_run_tests') or env.GetSelLdr() is None or
+                  testing_on_valgrind)
+
+test_node = env.AutoDepsCommand(
+    'redir_test_output_compare',
+    ['${PYTHON}',
+     env.File('${SCONSTRUCT_DIR}/tools/file_cmp_test.py'),
+     outfile,
+     env.File('redir_test.stdout')],
+    [node, env.File(outfile)],
+    disabled=tests_disabled)
+
+env.AddNodeToTestSuite(test_node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_redir_test')
+
+test_node = env.AutoDepsCommand(
+    'redir_test_error_compare',
+    ['${PYTHON}',
+     env.File('${SCONSTRUCT_DIR}/tools/file_cmp_test.py'),
+     errfile,
+     env.File('redir_test.stderr')],
+    [node, env.File(errfile)],
+    disabled=tests_disabled )
+
+env.AddNodeToTestSuite(test_node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_redir_test')

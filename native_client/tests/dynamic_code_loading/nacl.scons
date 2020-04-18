@@ -1,0 +1,182 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# Do not run these tests with pexes, assuming they are portable.
+if env.Bit('bitcode') and env.Bit('pnacl_generate_pexe'):
+  Return()
+
+# The test works with PNaCl-ARM but not with PNaCl-x86, because the
+# assembler #defines __arm__ rather than __i386__ or __x86_64__ even
+# when we are targetting x86.
+# http://code.google.com/p/nativeclient/issues/detail?id=2368
+# TODO(dschuff): re-enable this test in a sensible way after we fully switch
+# to the new layout, or remove all the pnacl-specific stuff here.
+if env.Bit('bitcode'):
+  Return()
+
+# TODO(petarj): Enable this for MIPS32 once we have appropriate support for it.
+if env.Bit('build_mips32'):
+  Return()
+
+# These tests assume they can allocate address ranges from the dynamic
+# code area themselves.  However, this does not work when ld.so
+# assumes it can do the same.
+# TODO(mseaborn): To fix this, ld.so will need an interface, like
+# mmap() or brk(), for reserving space in the dynamic code area.
+# See http://code.google.com/p/nativeclient/issues/detail?id=1112
+is_broken = not env.Bit('nacl_static_link')
+
+# there is fair amount of assembly code in these tests
+asm_env = env.Clone()
+if env.Bit('bitcode'):
+  asm_env.PNaClForceNative()
+  asm_env.AddBiasForPNaCl()
+if env.Bit('bitcode'):
+  # NOTE: we cannot use PNaClForceNative here as we want the
+  #       the .c files to actually go to bc files - but this is not
+  #       completely understood.
+  env.AddBiasForPNaCl()
+  env.Append(LINKFLAGS=['--pnacl-allow-native'])
+
+# When using the IRT, this value must be at least IRT_DATA_REGION_START.
+# Otherwise, it can be smaller.
+code_segment_end = '${IRT_DATA_REGION_START}'
+# This leaves a gap between the code and data segments.  When using
+# dynamic linking, the dynamic linker is responsible for reserving
+# this space rather than the executable.
+if env.Bit('nacl_static_link'):
+  env.Append(LINKFLAGS='-Wl,-Trodata-segment=' + code_segment_end)
+env.Append(CPPDEFINES=[['DYNAMIC_CODE_SEGMENT_END', code_segment_end]])
+
+def GetTemplate(env):
+  if env.Bit('build_arm'):
+    return 'templates_arm.S'
+  else:
+    return 'templates_x86.S'
+
+template_obj = asm_env.ComponentObject(GetTemplate(env))
+
+dynamic_load_test_nexe = env.ComponentProgram(
+    env.ProgramNameForNmf('dynamic_load_test'),
+    ['dynamic_load_test.c',
+     'dynamic_load_test_threaded.c',
+     'dynamic_delete_test_threaded.c',
+     template_obj],
+    EXTRA_LIBS=['${NONIRT_LIBS}', '${DYNCODE_LIBS}',
+                '${PTHREAD_LIBS}', '${TESTRUNNER_LIBS}'])
+
+dynamic_modify_test_nexe = env.ComponentProgram(
+    env.ProgramNameForNmf('dynamic_modify_test'),
+    ['dynamic_modify_test.c', template_obj],
+    EXTRA_LIBS=['${NONIRT_LIBS}', '${DYNCODE_LIBS}', '${TESTRUNNER_LIBS}'])
+
+write_to_dyncode_nexe = env.ComponentProgram(
+    'write_to_dyncode',
+    ['write_to_dyncode.c'],
+    EXTRA_LIBS=['${NONIRT_LIBS}', '${DYNCODE_LIBS}'])
+
+dyncode_disabled_test_nexe = env.ComponentProgram(
+    'dyncode_disabled_test',
+    ['dyncode_disabled_test.c'],
+    EXTRA_LIBS=['${DYNCODE_LIBS}', '${NONIRT_LIBS}'])
+
+dyncode_syscall_disabled_test_nexe = env.ComponentProgram(
+    env.ProgramNameForNmf('dyncode_syscall_disabled_test'),
+    ['dyncode_syscall_disabled.c', template_obj],
+    EXTRA_LIBS=['${NONIRT_LIBS}', '${DYNCODE_LIBS}', '${TESTRUNNER_LIBS}'])
+
+debug_mode_test_nexe = env.ComponentProgram('debug_mode_test',
+                                            ['debug_mode_test.c',
+                                             template_obj],
+                                            EXTRA_LIBS=['${DYNCODE_LIBS}',
+                                                        '${NONIRT_LIBS}'])
+
+dyncode_demand_alloc_test_nexe = env.ComponentProgram(
+    'dyncode_demand_alloc_test',
+    ['dyncode_demand_alloc_test.c'],
+    EXTRA_LIBS=['${DYNCODE_LIBS}', '${NONIRT_LIBS}'])
+
+test_suites = ['small_tests', 'sel_ldr_tests', 'dynamic_load_tests',
+               'nonpexe_tests']
+
+sel_ldr_flags = ['-E', 'OUTSIDE_BROWSER=1']
+if env.Bit('build_arm') and env.UsingEmulator():
+  sel_ldr_flags.extend(['-E', 'UNDER_QEMU_ARM=1'])
+if env.IsRunningUnderValgrind():
+  sel_ldr_flags.extend(['-E', 'RUNNING_ON_VALGRIND=1'])
+
+node = env.CommandSelLdrTestNacl('dynamic_load_test.out',
+                                 dynamic_load_test_nexe,
+                                 sel_ldr_flags=sel_ldr_flags)
+env.AddNodeToTestSuite(node, test_suites, 'run_dynamic_load_test',
+                       is_broken=is_broken or
+# This test is flaky on mac10.7-newlib-dbg-asan.
+# See https://code.google.com/p/nativeclient/issues/detail?id=3906
+                                 (env.Bit('asan') and env.Bit('host_mac')))
+
+node = env.CommandSelLdrTestNacl(
+    'write_to_dyncode_before_alloc.out',
+    write_to_dyncode_nexe,
+    ['0'], # alloc_dest_first argument
+    exit_status='untrusted_segfault',
+    stdout_golden=env.File('write_to_dyncode.stdout'))
+env.AddNodeToTestSuite(node, test_suites,
+                       'run_write_to_dyncode_before_alloc_test',
+                       is_broken=is_broken)
+
+node = env.CommandSelLdrTestNacl(
+    'write_to_dyncode_after_alloc.out',
+    write_to_dyncode_nexe,
+    ['1'], # alloc_dest_first argument
+    exit_status='untrusted_segfault',
+    stdout_golden=env.File('write_to_dyncode.stdout'))
+env.AddNodeToTestSuite(node, test_suites,
+                       'run_write_to_dyncode_after_alloc_test',
+                       is_broken=is_broken)
+
+node = env.CommandSelLdrTestNacl(
+    'debug_mode_test.out',
+    debug_mode_test_nexe,
+    # NOTE: the data we are loading does not pass the validator
+    sel_ldr_flags=["-c"])
+env.AddNodeToTestSuite(node, test_suites, 'run_dyncode_debug_mode_test',
+                       is_broken=is_broken)
+
+# This tests, from untrusted code, that dyncode pages are inaccessible
+# before they are allocated.
+node = env.CommandSelLdrTestNacl(
+    'dyncode_demand_alloc_test.out',
+    dyncode_demand_alloc_test_nexe, declares_exit_status=True)
+env.AddNodeToTestSuite(node, test_suites, 'run_dyncode_demand_alloc_test',
+                       is_broken=is_broken)
+
+# The IRT itself counts as dynamic code loading, so we cannot disable
+# dynamic loading when using the IRT.
+if not env.Bit('tests_use_irt'):
+  node = env.CommandSelLdrTestNacl(
+      'dyncode_disabled_test.out',
+      dyncode_disabled_test_nexe,
+      osenv='NACL_DISABLE_DYNAMIC_LOADING=1')
+  env.AddNodeToTestSuite(node, test_suites, 'run_dyncode_disabled_test',
+                         is_broken=is_broken)
+
+node = env.CommandSelLdrTestNacl(
+    'dyncode_syscall_disabled_test.out',
+    dyncode_syscall_disabled_test_nexe,
+    osenv='NACL_DISABLE_DYNCODE_SYSCALLS=1')
+env.AddNodeToTestSuite(node, test_suites, 'run_dyncode_syscall_disabled_test',
+                       is_broken=is_broken)
+
+node = env.CommandSelLdrTestNacl('dynamic_modify_test.out',
+                                 dynamic_modify_test_nexe,
+                                 sel_ldr_flags=['-E', 'OUTSIDE_BROWSER=1'])
+# This test fails under Valgrind presumably because Valgrind cannot
+# handle dynamic code modifications that occur via our doubly-mapped
+# shared memory segment.  It does not know to flush its code
+# translation cache.
+env.AddNodeToTestSuite(node, test_suites, 'run_dynamic_modify_test',
+                       is_broken=is_broken or env.IsRunningUnderValgrind())

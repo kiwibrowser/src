@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../../../resources/js-test.js"></script>
+</head>
+<body>
+    <span id="duplicateId1"></span>
+    <span id="duplicateId1"></span>
+    <span id="duplicateId2"></span>
+    <span id="duplicateId2"></span>
+    <div id="scopeDiv">
+        <span id="duplicateId1"></span>
+        <span id="duplicateId1"></span>
+        <span id="duplicateId1"></span>
+        <span id="duplicateId1"></span>
+    </div>
+    <script>
+        description("Test that CSS selector queries on duplicate Ids respect scope.");
+
+        shouldBe("document.querySelectorAll('#duplicateId1').length", "6");
+        shouldBe("document.querySelectorAll('#duplicateId2').length", "2");
+
+        scopeDiv = document.getElementById("scopeDiv");
+        shouldBe("scopeDiv.querySelectorAll('#duplicateId1').length", "4");
+        shouldBeNull("scopeDiv.querySelector('#duplicateId2')");
+        shouldBe("scopeDiv.querySelectorAll('#duplicateId2').length", "0");
+    </script>
+</body>
+</html>

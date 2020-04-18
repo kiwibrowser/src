@@ -1,0 +1,302 @@
+From 7d1a25b7b37ad6fa8e11c2e2ff00bd4997266bb2 Mon Sep 17 00:00:00 2001
+From: Scott Hess <shess@chromium.org>
+Date: Thu, 2 Mar 2017 15:23:09 -0800
+Subject: [PATCH 09/10] Allow auto-vacuum to work with chunks.
+
+SQLITE_FCNTL_CHUNK_SIZE can advise the VFS to resize files in quantum
+amounts, to reduce fragmentation from tiny appends.  This change allows
+a new PRAGMA auto_vacuum_slack_pages to provide auto_vacuum with a hint
+to only rearrange pages when an entire quantum can be released.
+
+When rebasing this patch, first ignore the conflicts in src/pragma.h,
+and fix all the other conflicts. Then run the commands below (in
+third_party/sqlite) to re-generate src/pragma.h.
+tclsh src/tool/mkpragmatab.tcl
+find src/ -type f -iname "*.h" -exec \
+    $GNU_SED --in-place 's/[[:space:]]\+$//' {} \+
+
+BUG=698010
+---
+ third_party/sqlite/src/src/btree.c          | 56 +++++++++++-
+ third_party/sqlite/src/src/btree.h          |  2 +
+ third_party/sqlite/src/src/btreeInt.h       |  1 +
+ third_party/sqlite/src/src/pragma.c         | 21 +++++
+ third_party/sqlite/src/src/pragma.h         | 98 +++++++++++----------
+ third_party/sqlite/src/tool/mkpragmatab.tcl |  4 +
+ 6 files changed, 135 insertions(+), 47 deletions(-)
+
+diff --git a/third_party/sqlite/src/src/btree.c b/third_party/sqlite/src/src/btree.c
+index f4a70af79618..10cd9ad7b23c 100644
+--- a/third_party/sqlite/src/src/btree.c
++++ b/third_party/sqlite/src/src/btree.c
+@@ -2972,6 +2972,46 @@ static void setDefaultSyncFlag(BtShared *pBt, u8 safety_level){
+ # define setDefaultSyncFlag(pBt,safety_level)
+ #endif
+ 
++/*
++** Change the 'auto-vacuum-slack-pages' property of the database. If auto vacuum
++** is enabled, this is the number of chunks of slack to allow before
++** automatically running an incremental vacuum.
++*/
++int sqlite3BtreeSetAutoVacuumSlackPages(Btree *p, int autoVacuumSlack){
++#ifdef SQLITE_OMIT_AUTOVACUUM
++  return SQLITE_READONLY;
++#else
++  BtShared *pBt = p->pBt;
++  int rc = SQLITE_OK;
++  u8 avs = (u8)autoVacuumSlack;
++  if( autoVacuumSlack>avs ){
++    avs = 0xFF;
++  }
++
++  sqlite3BtreeEnter(p);
++  pBt->autoVacuumSlack = avs;
++  sqlite3BtreeLeave(p);
++  return rc;
++#endif
++}
++
++/*
++** Return the value of the 'auto-vacuum-slack-pages' property.
++*/
++int sqlite3BtreeGetAutoVacuumSlackPages(Btree *p){
++#ifdef SQLITE_OMIT_AUTOVACUUM
++  return 0;
++#else
++  int rc = 0;
++  sqlite3BtreeEnter(p);
++  if( p->pBt->autoVacuum!=0 ){
++    rc = p->pBt->autoVacuumSlack;
++  }
++  sqlite3BtreeLeave(p);
++  return rc;
++#endif
++}
++
+ /*
+ ** Get a reference to pPage1 of the database file.  This will
+ ** also acquire a readlock on that file.
+@@ -3802,13 +3842,27 @@ int sqlite3BtreeIncrVacuum(Btree *p){
+ */
+ static int autoVacuumCommit(BtShared *pBt){
+   int rc = SQLITE_OK;
++  int bShouldVacuum = pBt->autoVacuum && !pBt->incrVacuum;
+   Pager *pPager = pBt->pPager;
+   VVA_ONLY( int nRef = sqlite3PagerRefcount(pPager); )
+ 
+   assert( sqlite3_mutex_held(pBt->mutex) );
+   invalidateAllOverflowCache(pBt);
+   assert(pBt->autoVacuum);
+-  if( !pBt->incrVacuum ){
++  if( bShouldVacuum && pBt->autoVacuumSlack ){
++    Pgno nOrig;        /* Database size before freeing */
++    Pgno nFree;        /* Number of pages on the freelist initially */
++
++    nOrig = btreePagecount(pBt);
++    nFree = get4byte(&pBt->pPage1->aData[36]);
++    bShouldVacuum =
++        (nOrig-nFree-1)/pBt->autoVacuumSlack < (nOrig-1)/pBt->autoVacuumSlack;
++    /* TODO: When integrating this test with the following code, contrive to
++    ** trim to the integral chunk boundary, rather than trimming the entire free
++    ** list.
++    */
++  }
++  if( bShouldVacuum ){
+     Pgno nFin;         /* Number of pages in database after autovacuuming */
+     Pgno nFree;        /* Number of pages on the freelist initially */
+     Pgno iFree;        /* The next page to be freed */
+diff --git a/third_party/sqlite/src/src/btree.h b/third_party/sqlite/src/src/btree.h
+index d67517a50d55..17124db45720 100644
+--- a/third_party/sqlite/src/src/btree.h
++++ b/third_party/sqlite/src/src/btree.h
+@@ -78,6 +78,8 @@ int sqlite3BtreeGetOptimalReserve(Btree*);
+ int sqlite3BtreeGetReserveNoMutex(Btree *p);
+ int sqlite3BtreeSetAutoVacuum(Btree *, int);
+ int sqlite3BtreeGetAutoVacuum(Btree *);
++int sqlite3BtreeSetAutoVacuumSlackPages(Btree *, int);
++int sqlite3BtreeGetAutoVacuumSlackPages(Btree *);
+ int sqlite3BtreeBeginTrans(Btree*,int);
+ int sqlite3BtreeCommitPhaseOne(Btree*, const char *zMaster);
+ int sqlite3BtreeCommitPhaseTwo(Btree*, int);
+diff --git a/third_party/sqlite/src/src/btreeInt.h b/third_party/sqlite/src/src/btreeInt.h
+index 8fe8e280fe5f..88f3b437b8ea 100644
+--- a/third_party/sqlite/src/src/btreeInt.h
++++ b/third_party/sqlite/src/src/btreeInt.h
+@@ -412,6 +412,7 @@ struct BtShared {
+   u8 openFlags;         /* Flags to sqlite3BtreeOpen() */
+ #ifndef SQLITE_OMIT_AUTOVACUUM
+   u8 autoVacuum;        /* True if auto-vacuum is enabled */
++  u8 autoVacuumSlack;   /* Optional pages of slack for auto-vacuum */
+   u8 incrVacuum;        /* True if incr-vacuum is enabled */
+   u8 bDoTruncate;       /* True to truncate db on commit */
+ #endif
+diff --git a/third_party/sqlite/src/src/pragma.c b/third_party/sqlite/src/src/pragma.c
+index 773ab7c9c2f1..50ee3b985c8f 100644
+--- a/third_party/sqlite/src/src/pragma.c
++++ b/third_party/sqlite/src/src/pragma.c
+@@ -756,6 +756,27 @@ void sqlite3Pragma(
+   }
+ #endif
+ 
++  /*
++  **  PRAGMA [schema.]auto_vacuum_slack_pages(N)
++  **
++  ** Control chunk size of auto-vacuum.
++  */
++#ifndef SQLITE_OMIT_AUTOVACUUM
++  case PragTyp_AUTO_VACUUM_SLACK_PAGES: {
++    Btree *pBt = pDb->pBt;
++    assert( pBt!=0 );
++    if( !zRight ){
++      returnSingleInt(v, sqlite3BtreeGetAutoVacuumSlackPages(pBt));
++    }else{
++      int nPages = 8;
++      if( sqlite3GetInt32(zRight, &nPages) ){
++        sqlite3BtreeSetAutoVacuumSlackPages(pBt, nPages);
++      }
++    }
++    break;
++  }
++#endif
++
+ #ifndef SQLITE_OMIT_PAGER_PRAGMAS
+   /*
+   **  PRAGMA [schema.]cache_size
+diff --git a/third_party/sqlite/src/src/pragma.h b/third_party/sqlite/src/src/pragma.h
+index 2c44bc1d0a75..aa0deec75146 100644
+--- a/third_party/sqlite/src/src/pragma.h
++++ b/third_party/sqlite/src/src/pragma.h
+@@ -7,51 +7,52 @@
+ /* The various pragma types */
+ #define PragTyp_HEADER_VALUE                   0
+ #define PragTyp_AUTO_VACUUM                    1
+-#define PragTyp_FLAG                           2
+-#define PragTyp_BUSY_TIMEOUT                   3
+-#define PragTyp_CACHE_SIZE                     4
+-#define PragTyp_CACHE_SPILL                    5
+-#define PragTyp_CASE_SENSITIVE_LIKE            6
+-#define PragTyp_COLLATION_LIST                 7
+-#define PragTyp_COMPILE_OPTIONS                8
+-#define PragTyp_DATA_STORE_DIRECTORY           9
+-#define PragTyp_DATABASE_LIST                 10
+-#define PragTyp_DEFAULT_CACHE_SIZE            11
+-#define PragTyp_ENCODING                      12
+-#define PragTyp_FOREIGN_KEY_CHECK             13
+-#define PragTyp_FOREIGN_KEY_LIST              14
+-#define PragTyp_FUNCTION_LIST                 15
+-#define PragTyp_INCREMENTAL_VACUUM            16
+-#define PragTyp_INDEX_INFO                    17
+-#define PragTyp_INDEX_LIST                    18
+-#define PragTyp_INTEGRITY_CHECK               19
+-#define PragTyp_JOURNAL_MODE                  20
+-#define PragTyp_JOURNAL_SIZE_LIMIT            21
+-#define PragTyp_LOCK_PROXY_FILE               22
+-#define PragTyp_LOCKING_MODE                  23
+-#define PragTyp_PAGE_COUNT                    24
+-#define PragTyp_MMAP_SIZE                     25
+-#define PragTyp_MODULE_LIST                   26
+-#define PragTyp_OPTIMIZE                      27
+-#define PragTyp_PAGE_SIZE                     28
+-#define PragTyp_PRAGMA_LIST                   29
+-#define PragTyp_SECURE_DELETE                 30
+-#define PragTyp_SHRINK_MEMORY                 31
+-#define PragTyp_SOFT_HEAP_LIMIT               32
+-#define PragTyp_SYNCHRONOUS                   33
+-#define PragTyp_TABLE_INFO                    34
+-#define PragTyp_TEMP_STORE                    35
+-#define PragTyp_TEMP_STORE_DIRECTORY          36
+-#define PragTyp_THREADS                       37
+-#define PragTyp_WAL_AUTOCHECKPOINT            38
+-#define PragTyp_WAL_CHECKPOINT                39
+-#define PragTyp_ACTIVATE_EXTENSIONS           40
+-#define PragTyp_HEXKEY                        41
+-#define PragTyp_KEY                           42
+-#define PragTyp_REKEY                         43
+-#define PragTyp_LOCK_STATUS                   44
+-#define PragTyp_PARSER_TRACE                  45
+-#define PragTyp_STATS                         46
++#define PragTyp_AUTO_VACUUM_SLACK_PAGES        2
++#define PragTyp_FLAG                           3
++#define PragTyp_BUSY_TIMEOUT                   4
++#define PragTyp_CACHE_SIZE                     5
++#define PragTyp_CACHE_SPILL                    6
++#define PragTyp_CASE_SENSITIVE_LIKE            7
++#define PragTyp_COLLATION_LIST                 8
++#define PragTyp_COMPILE_OPTIONS                9
++#define PragTyp_DATA_STORE_DIRECTORY          10
++#define PragTyp_DATABASE_LIST                 11
++#define PragTyp_DEFAULT_CACHE_SIZE            12
++#define PragTyp_ENCODING                      13
++#define PragTyp_FOREIGN_KEY_CHECK             14
++#define PragTyp_FOREIGN_KEY_LIST              15
++#define PragTyp_FUNCTION_LIST                 16
++#define PragTyp_INCREMENTAL_VACUUM            17
++#define PragTyp_INDEX_INFO                    18
++#define PragTyp_INDEX_LIST                    19
++#define PragTyp_INTEGRITY_CHECK               20
++#define PragTyp_JOURNAL_MODE                  21
++#define PragTyp_JOURNAL_SIZE_LIMIT            22
++#define PragTyp_LOCK_PROXY_FILE               23
++#define PragTyp_LOCKING_MODE                  24
++#define PragTyp_PAGE_COUNT                    25
++#define PragTyp_MMAP_SIZE                     26
++#define PragTyp_MODULE_LIST                   27
++#define PragTyp_OPTIMIZE                      28
++#define PragTyp_PAGE_SIZE                     29
++#define PragTyp_PRAGMA_LIST                   30
++#define PragTyp_SECURE_DELETE                 31
++#define PragTyp_SHRINK_MEMORY                 32
++#define PragTyp_SOFT_HEAP_LIMIT               33
++#define PragTyp_SYNCHRONOUS                   34
++#define PragTyp_TABLE_INFO                    35
++#define PragTyp_TEMP_STORE                    36
++#define PragTyp_TEMP_STORE_DIRECTORY          37
++#define PragTyp_THREADS                       38
++#define PragTyp_WAL_AUTOCHECKPOINT            39
++#define PragTyp_WAL_CHECKPOINT                40
++#define PragTyp_ACTIVATE_EXTENSIONS           41
++#define PragTyp_HEXKEY                        42
++#define PragTyp_KEY                           43
++#define PragTyp_REKEY                         44
++#define PragTyp_LOCK_STATUS                   45
++#define PragTyp_PARSER_TRACE                  46
++#define PragTyp_STATS                         47
+ 
+ /* Property flags associated with various pragma. */
+ #define PragFlg_NeedSchema 0x01 /* Force schema load before running */
+@@ -152,6 +153,11 @@ static const PragmaName aPragmaName[] = {
+   /* ePragFlg:  */ PragFlg_NeedSchema|PragFlg_Result0|PragFlg_SchemaReq|PragFlg_NoColumns1,
+   /* ColNames:  */ 0, 0,
+   /* iArg:      */ 0 },
++ {/* zName:     */ "auto_vacuum_slack_pages",
++  /* ePragTyp:  */ PragTyp_AUTO_VACUUM_SLACK_PAGES,
++  /* ePragFlg:  */ PragFlg_NeedSchema|PragFlg_Result0|PragFlg_SchemaReq|PragFlg_NoColumns1,
++  /* ColNames:  */ 0, 0,
++  /* iArg:      */ 0 },
+ #endif
+ #if !defined(SQLITE_OMIT_FLAG_PRAGMAS)
+ #if !defined(SQLITE_OMIT_AUTOMATIC_INDEX)
+@@ -646,4 +652,4 @@ static const PragmaName aPragmaName[] = {
+   /* iArg:      */ SQLITE_WriteSchema },
+ #endif
+ };
+-/* Number of pragmas: 60 on by default, 77 total. */
++/* Number of pragmas: 61 on by default, 78 total. */
+diff --git a/third_party/sqlite/src/tool/mkpragmatab.tcl b/third_party/sqlite/src/tool/mkpragmatab.tcl
+index f788eef425fc..0565c6699c20 100644
+--- a/third_party/sqlite/src/tool/mkpragmatab.tcl
++++ b/third_party/sqlite/src/tool/mkpragmatab.tcl
+@@ -382,6 +382,10 @@ set pragma_def {
+ 
+   NAME: optimize
+   FLAG: Result1 NeedSchema
++
++  NAME: auto_vacuum_slack_pages
++  FLAG: NeedSchema Result0 SchemaReq NoColumns1
++  IF:   !defined(SQLITE_OMIT_AUTOVACUUM)
+ }
+ 
+ # Open the output file
+-- 
+2.16.0
+

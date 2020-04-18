@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+<body>
+
+<h2>Overview</h2>
+
+<p>
+gen_dfa.py takes instruction definitions (def-files) and produces ragel definition of one of the four automata (32- or 64-bit validator or decoder) based on command line arguments. Decoder automata extract information necessary to produce disassembler listing, while validator automata only parse what is necessary for the purpose of validation (they ignore most operands, etc).
+</p>
+
+<p>
+Tests located  in gen_dfa_test.py can serve as illustration of how gen_dfa processes instructions.
+</p>
+
+<p>
+Def file format is based on the format used in AMD instruction manual, but deviates from it in some details and supports additional features (to either resolve ambiguity and informal nature of the manual or to provide nacl-specific information). Def format is described in comments to file def_format.py.
+</p>
+
+<p>
+Internally instructions are represented as instances if Instruction class. Although technically being mutable, by convention instructions always are copied when changes had to be done.
+</p>
+
+<p>
+Instruction instances originate from lines of def file, but besides three columns specified in the file (instruction name and operands, opcode, attributes), they also carry additional information like sets of optional and required legacy prefixes and whether certain bits of REX prefix are relevant.
+</p>
+
+<p>
+After parsing, instructions undergo several splitting phases. Each splitter receives one instruction and produces one or more specific forms of given instruction. There are following splitters:
+<ul>
+  <li>SplitRM (whether instruction would use ModR/M byte to access register or memory)</li>
+  <li>SplitByteNonByte (whether instruction would deal with byte-sized operands or larger ones)</li>
+  <li>SplitVYZ (split between 16/32/64-bit operand sizes)</li>
+  <li>SplitL (split between xmm and ymm versions of the instruction)</li>
+</ul>
+In some cases splits are done manually and def files already contain several specific forms of the instruction (for example, it is necessary when instruction is only allowed in NaCl for specific operand sizes). When splitter is applied to specific form of the instruction, it returns one-element list containing the instruction itself.
+</p>
+
+<p>
+When all splits are done, instructions are printed as ragel regular expressions annotated with actions. On the top level they are all combined with '|' (language union).
+</p>
+
+
+<h2>Operand properties</h2>
+
+<p>
+In def format, operand is defined by two properties: 'type' and 'size'. 'Type' specifies where operand is encoded in the instruction (and in some cases what is this operand, whether it is general purpose register or MMX register, for instance), while 'size' is primarily used to distinguish between 8/16/32/64-bit general purpose registers as well as MMX/XMM/YMM registers.
+</p>
+
+<p>
+'Type' and 'size' are only present in the input format. In the automata gen_dfa produces, for each operand there are instead pair of actions corresponding to it's 'source' and 'format'. 'Source' is basically a rule that determines how operand 'name' can be extracted from instruction encoding, and 'format' is a rule that determines how specific name should be interpreted (in particular, printed by the disassembler). 'Source' is uniquely determined by operand 'type', and 'format' depends on both operand 'type' and 'size'.
+</p>
+
+<p>
+Example: 16-bit push instruction has single operand with 'type' r (REGISTER_IN_OPCODE) and 'size' w (16-bit word). Gen_dfa determines that it's 'source' is 'from_opcode' and it's 'format' is '16bit'. So it annotates the automaton with two actions: operand0_16bit and operand0_from_opcode. operand0_from_opcode action looks into three least significant bits of the opcode byte and sets them as operand0 'name'. Suppose we are parsing instruction 'push ax'. Least significant bits of the opcode would therefore be 000 and 'name' would be 0 (actually 'name' is an enum, and in this particular case it's value would be NC_REG_RAX=0). But, in order to display it as '%ax', disassembler needs to know it's format ('16bit'). Were it '8bit', for instance, '%al' would be displayed instead.
+</p>
+
+<p>
+Operand 'name' is implemented as enum, so it can hold register names, but there is not enough room for arbitrary immediates or memory references. So another level of indirection is introduced: when operand 'name' is IMM, it means that actual integer value of the operand should be looked up in instruction.imm[0] (IMM2 refers to instruction.imm[1]). Similarly, 'name' RM means that actual operand is address in memory and specifics (base, index, offset) can be found in instruction.rm.disp_type, instruction.rm.offset, rm.scale, etc. This instruction.rm field is filled in with actions responsible for ModRM and SIB bytes (these actions are independent of which operand is memory access, so this indirection comes in handy here).
+</p>
+
+<p>
+Furthermore, since there could be two memory accesses in a string instruction movs, and instruction only has a single field rm, special 'names' are introduced for es:di and ds:si (and for ds:bx along the way).
+</p>
+
+</body>
+</html>

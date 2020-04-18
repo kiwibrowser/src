@@ -1,0 +1,30 @@
+<html>
+<body>
+    <input id='text' type='text'></input>
+
+    <script src="../../resources/js-test.js"></script>
+    <script>
+        // Do initialization work in an inner function to avoid references to
+        // objects remaining live on this function's stack frame.
+        // (http://crbug.com/595672/).
+        var markedRangeResultGC, selectedRangeResultGC,
+            firstRectForCharacterRangeGC;
+        (function() {
+            var input = document.getElementById('text');
+            input.focus();
+            textInputController.setMarkedText("hello", 0, 5);
+            markedRangeResultGC = internals.observeGC(
+                textInputController.markedRange());
+            selectedRangeResultGC = internals.observeGC(
+                textInputController.selectedRange());
+            firstRectForCharacterRangeGC = internals.observeGC(
+                textInputController.firstRectForCharacterRange(0, 0));
+        })();
+
+        gc();
+        shouldBeTrue('markedRangeResultGC.wasCollected');
+        shouldBeTrue('selectedRangeResultGC.wasCollected');
+        shouldBeTrue('firstRectForCharacterRangeGC.wasCollected');
+    </script>
+</body>
+</html>

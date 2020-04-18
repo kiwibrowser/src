@@ -1,0 +1,50 @@
+# -*- python -*-
+# Copyright 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+if not env.AllowInlineAssembly():
+  Return()
+
+if env.UnderWindowsCoverage():
+  Return()
+
+test_prog = env.ComponentProgram(
+    'debugger_test', 'debugger_test.c',
+    EXTRA_LIBS=['${PTHREAD_LIBS}', '${NONIRT_LIBS}'])
+
+sel_ldr_command = ['-v']
+if env.Bit('tests_use_irt'):
+  sel_ldr_command += ['-B', env.GetIrtNexe()]
+sel_ldr_command += ['-f', test_prog]
+sel_ldr_command = env.AddBootstrap(env.GetSelLdr(), sel_ldr_command)
+if env.GetEmulator():
+  # Run sel_ldr through qemu-arm.  Add "-Q" to disable the platform
+  # qualification tests because they fail under qemu-arm.
+  sel_ldr_command = [env.GetEmulator()] + sel_ldr_command + ['-Q']
+
+is_broken = not env.Bit('nacl_static_link') or env.GetSelLdr() is None
+
+if env.Bit('build_arm') or env.Bit('build_mips32'):
+  # Use the system's 'nm' tool.  The NaCl toolchain will not be
+  # available on the ARM hardware bots, but they will be running Linux
+  # with a normal GNU toolchain available.
+  nm_tool = 'nm'
+else:
+  # Use the NaCl toolchain's 'nm' tool since it is not available
+  # natively on Windows and Mac.
+  nm_tool = '${NM}'
+
+node = env.CommandTest(
+    'debug_stub_test.out',
+    command=(['${PYTHON}', env.File('debug_stub_test.py'), '-v']
+             + ['--', env.get('TARGET_FULLARCH'), nm_tool] + sel_ldr_command),
+    extra_deps=[env.File('gdb_rsp.py')],
+    # Don't run the host Python through qemu-arm.
+    direct_emulation=False,
+    size='medium')
+env.AddNodeToTestSuite(node, ['medium_tests', 'nonpexe_tests'],
+                       'run_debug_stub_test', is_broken=is_broken)
+env.TestBindsFixedTcpPort(node)

@@ -1,0 +1,161 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+{% from 'core/css/properties/templates/style_builder_functions.tmpl' import declare_initial, declare_inherit, declare_value, set_value %}
+{% from 'templates/macros.tmpl' import source_files_for_generated_file %}
+{{source_files_for_generated_file(template_file, input_files)}}
+
+#include "third_party/blink/renderer/core/css/properties/{{property.namespace_group.lower()}}s/{{property_filename}}.h"
+
+{% for include in includes %}
+#include "{{include}}"
+{% endfor %}
+
+namespace blink {
+namespace CSSLonghand {
+
+{% if property.style_builder_template in ['background_layer', 'mask_layer'] %}
+{% set layer_type = 'Background' if property.style_builder_template == 'background_layer' else 'Mask' %}
+{% set fill_type = property.style_builder_template_args['fill_type'] %}
+{% set fill_type_getter = property.style_builder_template_args['fill_type_getter'] or fill_type %}
+{{declare_initial(property.upper_camel_name)}} {
+  FillLayer* currChild = &state.Style()->Access{{layer_type}}Layers();
+  currChild->Set{{fill_type}}(FillLayer::InitialFill{{fill_type}}(EFillLayerType::k{{layer_type}}));
+  for (currChild = currChild->Next(); currChild; currChild = currChild->Next())
+    currChild->Clear{{fill_type}}();
+}
+
+{{declare_inherit(property.upper_camel_name)}} {
+  FillLayer* currChild = &state.Style()->Access{{layer_type}}Layers();
+  FillLayer* prevChild = 0;
+  const FillLayer* currParent = &state.ParentStyle()->{{layer_type}}Layers();
+  while (currParent && currParent->Is{{fill_type}}Set()) {
+    if (!currChild)
+      currChild = prevChild->EnsureNext();
+    currChild->Set{{fill_type}}(currParent->{{fill_type_getter}}());
+    {% if fill_type == "PositionX" %}
+    if (currParent->IsBackgroundXOriginSet())
+      currChild->SetBackgroundXOrigin(currParent->BackgroundXOrigin());
+    {% endif %}
+    {% if fill_type == "PositionY" %}
+    if (currParent->IsBackgroundYOriginSet())
+      currChild->SetBackgroundYOrigin(currParent->BackgroundYOrigin());
+    {% endif %}
+    prevChild = currChild;
+    currChild = prevChild->Next();
+    currParent = currParent->Next();
+  }
+
+  while (currChild) {
+    // Reset any remaining layers to not have the property set.
+    currChild->Clear{{fill_type}}();
+    currChild = currChild->Next();
+  }
+}
+
+{{declare_value(property.upper_camel_name)}} {
+  FillLayer* currChild = &state.Style()->Access{{layer_type}}Layers();
+  FillLayer* prevChild = 0;
+  if (value.IsValueList() && !value.IsImageSetValue()) {
+    // Walk each value and put it into a layer, creating new layers as needed.
+    const CSSValueList& valueList = ToCSSValueList(value);
+    for (unsigned int i = 0; i < valueList.length(); i++) {
+      if (!currChild)
+        currChild = prevChild->EnsureNext();
+      CSSToStyleMap::MapFill{{fill_type}}(state, currChild, valueList.Item(i));
+      prevChild = currChild;
+      currChild = currChild->Next();
+    }
+  } else {
+    CSSToStyleMap::MapFill{{fill_type}}(state, currChild, value);
+    currChild = currChild->Next();
+  }
+  while (currChild) {
+    // Reset all remaining layers to not have the property set.
+    currChild->Clear{{fill_type}}();
+    currChild = currChild->Next();
+  }
+}
+{% elif property.style_builder_template == 'color' %}
+{% set initial_color = property.style_builder_template_args['initial_color'] or 'StyleColor::CurrentColor' %}
+{% set visited_link_setter = 'SetVisitedLink' + property.name_for_methods %}
+{{declare_initial(property.upper_camel_name)}} {
+  StyleColor color = {{initial_color}}();
+  if (state.ApplyPropertyToRegularStyle())
+    {{set_value(property)}}(color);
+  if (state.ApplyPropertyToVisitedLinkStyle())
+    state.Style()->{{visited_link_setter}}(color);
+}
+
+{{declare_inherit(property.upper_camel_name)}} {
+  // Visited link style can never explicitly inherit from parent visited link
+  // style so no separate getters are needed.
+  StyleColor color = state.ParentStyle()->{{property.getter}}();
+  if (state.ApplyPropertyToRegularStyle())
+    {{set_value(property)}}(color);
+  if (state.ApplyPropertyToVisitedLinkStyle())
+    state.Style()->{{visited_link_setter}}(color);
+}
+
+{{declare_value(property.upper_camel_name)}} {
+  if (state.ApplyPropertyToRegularStyle())
+    {{set_value(property)}}(StyleBuilderConverter::{{property.converter}}(state, value));
+  if (state.ApplyPropertyToVisitedLinkStyle()) {
+    state.Style()->{{visited_link_setter}}(
+        StyleBuilderConverter::{{property.converter}}(state, value, true));
+  }
+}
+{% elif property.style_builder_template == 'counter' %}
+{% set action = property.style_builder_template_args['action'] %}
+{{declare_initial(property.upper_camel_name)}} {
+  state.Style()->Clear{{action}}Directives();
+}
+
+{{declare_inherit(property.upper_camel_name)}} {
+  const CounterDirectiveMap* parentMap = state.ParentStyle()->GetCounterDirectives();
+  if (!parentMap)
+    return;
+
+  CounterDirectiveMap& map = state.Style()->AccessCounterDirectives();
+  DCHECK(!parentMap->IsEmpty());
+
+  typedef CounterDirectiveMap::const_iterator Iterator;
+  Iterator end = parentMap->end();
+  for (Iterator it = parentMap->begin(); it != end; ++it) {
+    CounterDirectives& directives = map.insert(it->key, CounterDirectives()).stored_value->value;
+    directives.Inherit{{action}}(it->value);
+  }
+}
+
+{{declare_value(property.upper_camel_name)}} {
+  state.Style()->Clear{{action}}Directives();
+
+  if (!value.IsValueList()) {
+    DCHECK(value.IsIdentifierValue());
+    DCHECK_EQ(ToCSSIdentifierValue(value).GetValueID(), CSSValueNone);
+    return;
+  }
+
+  CounterDirectiveMap& map = state.Style()->AccessCounterDirectives();
+
+  const CSSValueList& list = ToCSSValueList(value);
+
+  for (size_t i = 0; i < list.length(); ++i) {
+    const CSSValuePair& pair = ToCSSValuePair(list.Item(i));
+    AtomicString identifier(ToCSSCustomIdentValue(pair.First()).Value());
+    int counter_value = ToCSSPrimitiveValue(pair.Second()).GetIntValue();
+    CounterDirectives& directives =
+        map.insert(identifier, CounterDirectives()).stored_value->value;
+    {% if action == 'Reset' %}
+    directives.SetResetValue(counter_value);
+    {% else %}
+    directives.AddIncrementValue(counter_value);
+    {% endif %}
+  }
+  DCHECK(!map.IsEmpty());
+}
+{% endif %}
+
+}  // namespace CSSLonghand
+}  // namespace blink

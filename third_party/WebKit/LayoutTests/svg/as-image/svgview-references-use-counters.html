@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<script src="../../resources/js-test.js"></script>
+<script src="../../resources/run-after-layout-and-paint.js"></script>
+<style>
+    object {
+        width: 100px;
+        height: 100px;
+    }
+</style>
+<body>
+</body>
+<script>
+    var SVGSVGElementFragmentSVGView = 1036; // From UseCounter.h
+    var SVGSVGElementFragmentSVGViewElement = 1037; // From UseCounter.h
+    window.jsTestIsAsync = true;
+
+    var obj = document.createElement('object');
+    obj.data = "resources/svglogo.svg";
+    document.body.appendChild(obj);
+
+    obj.onload = function() {
+        runAfterLayoutAndPaint(function() {
+            shouldBeFalse("internals.isUseCounted(document.querySelector('object').contentDocument, SVGSVGElementFragmentSVGView)");
+            shouldBeFalse("internals.isUseCounted(document.querySelector('object').contentDocument, SVGSVGElementFragmentSVGViewElement)");
+
+            var obj = document.createElement('object');
+            obj.data = "resources/svglogo.svg#svgView(viewBox(0,0,150,150))";
+            document.body.appendChild(obj);
+
+            obj.onload = function() {
+                runAfterLayoutAndPaint(function() {
+                    shouldBeTrue("internals.isUseCounted(document.querySelector('object').contentDocument, SVGSVGElementFragmentSVGView)");
+                    shouldBeFalse("internals.isUseCounted(document.querySelector('object').contentDocument, SVGSVGElementFragmentSVGViewElement)");
+
+                    var obj = document.createElement('object');
+                    obj.data = "resources/svglogo-viewbox.svg#original";
+                    document.body.appendChild(obj);
+
+                    obj.onload = function() {
+                        runAfterLayoutAndPaint(function() {
+                            shouldBeTrue("internals.isUseCounted(document.querySelector('object').contentDocument, SVGSVGElementFragmentSVGView)");
+                            shouldBeTrue("internals.isUseCounted(document.querySelector('object').contentDocument, SVGSVGElementFragmentSVGViewElement)");
+                            finishJSTest();
+                        });
+                    };
+                });
+            };
+        });
+    };
+</script>
+

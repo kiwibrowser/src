@@ -1,0 +1,36 @@
+{% from 'templates/macros.tmpl' import license, source_files_for_generated_file %}
+{{license()}}
+
+{{source_files_for_generated_file(template_file, input_files)}}
+
+{% if suffix == 'Modules' %}
+#include "third_party/blink/renderer/modules/event_modules_factory.h"
+{% else %}
+#include "third_party/blink/renderer/core/events/event_factory.h"
+{% endif %}
+
+#include "third_party/blink/renderer/core/frame/deprecation.h"
+{% for header_path in include_header_paths %}
+#include "{{header_path}}"
+{% endfor %}
+#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+
+namespace blink {
+
+Event* Event{{suffix}}Factory::Create(ExecutionContext* executionContext, const String& type) {
+  {% for event in events if event|script_name|create_event_whitelist or event|script_name|create_event_measure_whitelist %}
+  {% if event|script_name|create_event_whitelist or event|script_name|create_event_measure_whitelist %}
+  if (DeprecatedEqualIgnoringCase(type, "{{event|script_name}}"){% if event.RuntimeEnabled %} && RuntimeEnabledFeatures::{{event.RuntimeEnabled}}(){% endif %}) {
+  {% else %}
+  if (type == "{{event|script_name}}"{% if event.RuntimeEnabled %} && RuntimeEnabledFeatures::{{event.RuntimeEnabled}}(){% endif %}) {
+  {% endif %}
+    {% if not event|script_name|create_event_whitelist %}
+    UseCounter::Count(executionContext, WebFeature::k{{event|script_name|measure_name}});
+    {% endif %}
+    return {{event|cpp_name}}::Create();
+  }
+  {% endfor %}
+  return nullptr;
+}
+
+} // namespace blink

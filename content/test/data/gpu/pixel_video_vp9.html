@@ -1,0 +1,50 @@
+<!DOCTYPE HTML>
+
+<!-- READ BEFORE UPDATING:
+If this test is updated make sure to increment the "revision" value of the
+associated test in content/test/gpu/page_sets/pixel_tests.py. This will ensure
+that the baseline images are regenerated on the next run.
+-->
+
+<html>
+<head>
+<title>VP9 Video test</title>
+<style type="text/css">
+.nomargin {
+  margin: 0px auto;
+}
+</style>
+<script>
+var g_swapsBeforeAck = 15;
+var video;
+
+function main()
+{
+  video = document.getElementById("video");
+  if (video.readyState >= 4) {
+    waitForFinish();
+  } else {
+    video.addEventListener('canplaythrough', waitForFinish, true);
+  }
+}
+
+function waitForFinish()
+{
+  console.log("readyState" + video.readyState);
+  if (g_swapsBeforeAck == 0) {
+    domAutomationController.send("SUCCESS");
+  } else {
+    g_swapsBeforeAck--;
+    window.requestAnimationFrame(waitForFinish);
+  }
+}
+</script>
+</head>
+<body onload="main()">
+<div id="container" style="position:absolute; top:0px; left:0px">
+<video class="nomargin" id="video">
+<source src="/media/test/data/bear-vp9.webm" type="video/webm">
+</video>
+</div>
+</body>
+</html>

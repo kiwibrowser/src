@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="file:///gen/layout_test_data/mojo/public/js/mojo_bindings.js"></script>
+<script src="file:///gen/device/vr/public/mojom/vr_service.mojom.js"></script>
+<script src="../xr/resources/xr-device-mocking.js"></script>
+<script src="../xr/resources/xr-test-utils.js"></script>
+<script src="../xr/resources/test-constants.js"></script>
+<canvas id="webgl-canvas"></canvas>
+
+<script>
+let fakeDevices = fakeXRDevices();
+
+xr_session_promise_test( (session, t) => new Promise((resolve) => {
+    // Session must have a baseLayer or frame requests will be ignored.
+    session.baseLayer = new XRWebGLLayer(session, gl);
+
+    // Need to have a valid pose or input updates don't process.
+    setPose(VALID_POSE);
+
+    let input_sources = session.getInputSources();
+
+    t.step( () => {
+      assert_equals(input_sources.length, 0);
+    });
+
+    let input_source_1 = new MockXRInputSource();
+    input_source_1.pointerOrigin = "hand";
+    input_source_1.handedness = "right";
+
+    addInputSource(input_source_1);
+
+    session.requestAnimationFrame((time, xrFrame) => {
+      let input_sources = session.getInputSources();
+
+      t.step( () => {
+        assert_equals(input_sources.length, 1);
+        assert_equals(input_sources[0].pointerOrigin, "hand");
+        assert_equals(input_sources[0].handedness, "right");
+      });
+
+      let input_source_2 = new MockXRInputSource();
+      input_source_2.pointerOrigin = "head";
+      input_source_2.emulatedPosition = "true";
+      addInputSource(input_source_2);
+
+      session.requestAnimationFrame((time, xrFrame) => {
+        let input_sources = session.getInputSources();
+
+        t.step( () => {
+          assert_equals(input_sources.length, 2);
+          assert_equals(input_sources[1].pointerOrigin, "head");
+          assert_equals(input_sources[1].handedness, "");
+        });
+
+        removeInputSource(input_source_1);
+
+        session.requestAnimationFrame((time, xrFrame) => {
+          let input_sources = session.getInputSources();
+
+          t.step( () => {
+            assert_equals(input_sources.length, 1);
+            assert_equals(input_sources[0].pointerOrigin, "head");
+            assert_equals(input_sources[0].handedness, "");
+          });
+
+          resolve();
+        });
+      });
+    });
+  }), fakeDevices["FakeGooglePixelPhone"], [ { exclusive: true } ],
+"XRInputSources can be properly added and removed from the session");
+
+</script>

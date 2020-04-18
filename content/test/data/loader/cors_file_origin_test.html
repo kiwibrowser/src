@@ -1,0 +1,28 @@
+<html>
+<script>
+const queryMap = {};
+for (const item of location.search.substr(1).split('&')) {
+  const [key, value] = item.split('=');
+  queryMap[key] = value;
+}
+
+const test_origin = 'http://127.0.0.1:' + queryMap.port;
+const test_url = test_origin + '/test?allow=' + queryMap.allow;
+
+function finish(result) { document.title = result; }
+
+const xhr = new XMLHttpRequest();
+xhr.open('GET', test_url);
+xhr.setRequestHeader('X-NotSimple', 'true');
+xhr.addEventListener('readystatechange', e => {
+  if (xhr.readyState != xhr.DONE)
+    return;
+  if (xhr.status != 200)
+    return finish('FAIL');
+  if (xhr.response != queryMap.origin)
+    return finish('FAIL: request origin does not match');
+  finish('PASS');
+});
+xhr.send();
+</script>
+</html>

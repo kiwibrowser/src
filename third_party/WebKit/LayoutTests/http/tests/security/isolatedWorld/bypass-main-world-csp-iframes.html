@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Security-Policy" content="frame-src 'none'">
+<script>
+    if (window.testRunner) {
+        testRunner.dumpAsText();
+        testRunner.waitUntilDone();
+    }
+
+    tests = 6;
+    window.addEventListener("message", function(message) {
+        tests -= 1;
+        test();
+    }, false);
+
+    function setup() {
+        var iframe = document.getElementById('testiframe');
+        iframe.onload = function () {
+            window.postMessage("next", "*");
+        };
+        test();
+    }
+
+    function test() {
+        function setIframeSrc(isolated, num) {
+            var iframe = document.getElementById('testiframe');
+            iframe.src = "resources/iframe.php?test=" + num;
+        }
+
+        alert("Running test #" + tests + "\n");
+        switch (tests) {
+            case 6:
+                setIframeSrc(false, tests);
+                break;
+            case 5:
+                testRunner.evaluateScriptInIsolatedWorld(1, String(eval("setIframeSrc")) + "\nsetIframeSrc(true, " + tests + ");");
+                break;
+            case 4:
+                alert("Starting to bypass main world's CSP:");
+                testRunner.setIsolatedWorldContentSecurityPolicy(1, "frame-src 'none'");
+                testRunner.evaluateScriptInIsolatedWorld(1, String(eval("setIframeSrc")) + "\nsetIframeSrc(true, " + tests + ");");
+                break;
+            case 3:
+                // Main world, then isolated world -> should load
+                setIframeSrc(false, tests);
+                testRunner.evaluateScriptInIsolatedWorld(1, String(eval("setIframeSrc")) + "\nsetIframeSrc(true, " + tests + ".5);");
+                break;
+            case 2:
+                // Isolated world, then main world -> should block
+                testRunner.evaluateScriptInIsolatedWorld(1, String(eval("setIframeSrc")) + "\nsetIframeSrc(true, " + tests + ");");
+                setIframeSrc(false, tests + 0.5);
+                break;
+            case 1:
+                setIframeSrc(false, tests);
+                break;
+            case 0:
+                testRunner.setIsolatedWorldContentSecurityPolicy(1, '');
+                testRunner.notifyDone();
+                break;
+        }
+    }
+</script>
+</head>
+<body onload='setup();'>
+    <p>
+        <iframe id="testiframe"></iframe>
+        This test ensures that iframes loaded from isolated worlds marked with
+        their own Content Security Policy aren't affected by the page's content
+        security policy. Extensions, for example, should be able to load any
+        resource they like.
+    </p>
+</body>
+</html>

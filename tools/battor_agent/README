@@ -1,0 +1,25 @@
+BattOr Agent
+============
+
+The BattOr Agent is a C++ library that acts as a means of
+communicating with a BattOr. BattOrs is an external USB device,
+typically connected to the host, that's capable of recording
+accurate, high-frequency (2000Hz) power samples.
+
+The BattOr Agent accepts five high-level tracing commands:
+
+- **StartTracing**, which tells the BattOr to start collecting power
+samples.
+- **StopTracing**, which tells the BattOr to stop collecting power
+samples and return its trace log.
+- **SupportsExplicitClockSync**, which returns whether the BattOr is
+able to record clock sync markers in its own trace log.
+- **RecordClockSyncMarker**, which writes the specified string into the
+BattOr trace log. Because this string is accompanied by a BattOr tracing
+timestamp, we can use this as a way of correlating the BattOr timeline
+and the host computer's timeline.
+- **IssueClockSyncMarker**, which tells the BattOr to issue clock sync
+markers to all other tracing agents that it's connected to.
+
+For those calling the agent from non-C++ code, we also provide a thin
+binary wrapper around the C++ library.

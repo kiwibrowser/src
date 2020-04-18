@@ -1,0 +1,38 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(`This test checks that style sheets hosted inside shadow roots could be inspected.\n`);
+  await TestRunner.loadModule('elements_test_runner');
+  await TestRunner.showPanel('elements');
+  await TestRunner.loadHTML(`
+      <div id="host"></div>
+      <template id="tmpl">
+          <style> .red { color: red; } </style>
+          <div id="inner" class="red">hi!</div>
+      </template>
+    `);
+  await TestRunner.evaluateInPagePromise(`
+      function createShadowRoot()
+      {
+          var template = document.querySelector('#tmpl');
+          var root = document.querySelector('#host').createShadowRoot();
+          root.appendChild(template.content.cloneNode(true));
+      }
+  `);
+
+  TestRunner.runTestSuite([
+    function testInit(next) {
+      TestRunner.evaluateInPage('createShadowRoot()', callback);
+      function callback() {
+        ElementsTestRunner.selectNodeAndWaitForStyles('inner', next);
+      }
+    },
+
+    function testDumpStyles(next) {
+      ElementsTestRunner.dumpSelectedElementStyles(true);
+      next();
+    }
+  ]);
+})();

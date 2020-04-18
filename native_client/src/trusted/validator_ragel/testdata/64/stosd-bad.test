@@ -1,0 +1,16 @@
+@hex:
+  # Show an example of an invalid (implicit) reference to a segment register
+  # (in this case missing a 32-bit zero extending operation before the LEA):
+  #
+  #   lea %rdi, [%r15+%rdi*1]
+  #   stosd
+  49 8d 3c 3f
+  ab
+@dis:
+     0:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     4:	ab                                           	stos   %eax,%es:(%rdi)
+@rdfa_output:
+  4: unrecognized instruction
+  return code: 1
+@spec:
+  4: ('segments in memory references are not allowed', Instruction(0x4: ab  stos %eax,%es:(%rdi)))

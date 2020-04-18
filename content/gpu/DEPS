@@ -1,0 +1,29 @@
+include_rules = [
+  "+components/tracing",
+  "+components/viz",
+  "+content/child",
+  "+content/public/gpu",
+  "+libEGL",
+  "+libGLESv2",
+  "+services/service_manager",
+  "+services/shape_detection",
+  "+services/ui/common",
+  "+services/viz/privileged/interfaces",
+  "+services/viz/service",
+  "+sandbox",
+  "+skia",
+]
+
+# TODO(crbug.com/734668): Dependencies on ozone should be removed, as content
+# embedded in mus won't be able to talk to the native ozone.
+specific_include_rules = {
+  "gpu_child_thread\.cc": [
+    "+ui/ozone/public/ozone_platform.h",
+  ],
+  "gpu_main\.cc": [
+    "+ui/ozone/public/ozone_platform.h",
+  ],
+  "in_process_gpu_thread\.cc": [
+    "+ui/ozone/public/ozone_platform.h",
+  ]
+}

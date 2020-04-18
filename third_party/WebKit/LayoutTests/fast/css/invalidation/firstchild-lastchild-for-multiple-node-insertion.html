@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+<style>
+div {
+  color: black;
+}
+span:first-child {
+  color: blue;
+}
+span:last-child {
+  color: red;
+}
+</style>
+<div id="target"><span>first-initially</span><span>last-initially</span></div>
+<script>
+test(() => {
+  let target = document.querySelector('#target');
+  let first = target.firstChild;
+  assert_equals(getComputedStyle(first).color, 'rgb(0, 0, 255)');
+  target.insertAdjacentHTML('afterbegin', '\n<span>foo</span><span>bar</span>');
+  assert_equals(getComputedStyle(target.firstElementChild).color, 'rgb(0, 0, 255)');
+  assert_equals(getComputedStyle(first).color, 'rgb(0, 0, 0)');
+}, 'Adding multiple nodes at once should invalidate :first-child correctly.');
+
+test(() => {
+  let target = document.querySelector('#target');
+  let last = target.lastChild;
+  assert_equals(getComputedStyle(last).color, 'rgb(255, 0, 0)');
+  target.insertAdjacentHTML('beforeend', '\n<span>foo</span><span>bar</span>');
+  assert_equals(getComputedStyle(target.lastChild).color, 'rgb(255, 0, 0)');
+  assert_equals(getComputedStyle(last).color, 'rgb(0, 0, 0)');
+}, 'Adding multiple nodes at once should invalidate :last-child correctly.');
+</script>

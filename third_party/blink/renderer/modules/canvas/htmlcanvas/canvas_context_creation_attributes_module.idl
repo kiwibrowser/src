@@ -1,0 +1,52 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// The spec for HTMLCanvasElement.getContext() defines the context
+// creation attributes as type "any". In order to eliminate custom
+// bindings for getContext(), we define a dictionary that contains the
+// union of all of the context types' attributes. Note that it is not
+// possible to use a union type for this purpose because two dictionary
+// types are not distinguishable.
+//
+// Fortunately, there aren't any context creation attributes which are
+// defined with different default values in different context
+// specifications. (The "alpha" value, in particular, has a default
+// value of true for both the Canvas2D and WebGL specifications.)
+//
+// The PermissiveDictionaryConversion extended attribute ignores
+// non-object types (like 'true' and 'false') passed to getContext() for
+// the attributes instead of raising TypeError, following the behavior
+// of the previous custom binding.
+//
+// N.B.: Web IDL doesn't support multiple inheritance of dictionaries.
+
+enum CanvasPixelFormat {
+    "8-8-8-8", // default
+    "10-10-10-2",
+    "12-12-12-12",
+    "float16",
+};
+
+[PermissiveDictionaryConversion]
+dictionary CanvasContextCreationAttributesModule {
+    // This is an experimental feature, but it is not hidden behind a flag in
+    // the bindings because origin trial bindings don't work in extensions.
+    // The trial's runtime flag is instead checked inside
+    // HTMLCanvasElement.getContext().
+    boolean lowLatency = false;
+
+    // Canvas 2D attributes
+    boolean alpha = true;  // Also used for WebGL.
+    [RuntimeEnabled=CanvasColorManagement] CanvasColorSpace colorSpace = "srgb";
+    [RuntimeEnabled=CanvasColorManagement] CanvasPixelFormat pixelFormat = "8-8-8-8";
+
+    // WebGL attributes
+    boolean depth = true;
+    boolean stencil = false;
+    boolean antialias = true;
+    boolean premultipliedAlpha = true;
+    boolean preserveDrawingBuffer = false;
+    boolean failIfMajorPerformanceCaveat = false;
+    [OriginTrialEnabled=WebXR] XRDevice compatibleXRDevice = null;
+};

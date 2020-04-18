@@ -1,0 +1,46 @@
+<html>
+<head>
+    <script>
+        if (window.testRunner) {
+           testRunner.dumpAsText();
+           testRunner.setCanOpenWindows();
+           testRunner.waitUntilDone();
+        }
+
+        var xmlWindow;
+
+        function print(str)
+        {
+            document.getElementById('output').textContent = str;
+            xmlWindow.close();
+            testRunner.notifyDone();
+        }
+
+        function checkWhiteSpaces()
+        {
+            var sourcePretty = xmlWindow.document.getElementsByClassName("pretty-print")[0];
+
+            if (!sourcePretty || !sourcePretty.innerText) {
+                requestAnimationFrame(checkWhiteSpaces);
+                return;
+            }
+
+            if (sourcePretty.innerText.includes(" bar "))
+                print('SUCCESS');
+            else
+                print('FAIL');
+        }
+
+        function onload()
+        {
+            xmlWindow = window.open('resources/leading-and-trailing-whitespaces.xml', "XMLViewerTestWindow");
+            xmlWindow.onload = checkWhiteSpaces;
+        }
+
+    </script>
+</head>
+<body onload="onload();">
+    <p>Tests leading and trailing whitespaces in xml viewer.</p>
+    <div id='output'></div>
+</body>
+</html>

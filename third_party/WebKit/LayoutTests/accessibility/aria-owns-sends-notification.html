@@ -1,0 +1,85 @@
+<!DOCTYPE HTML>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+
+<div id="container1">
+    <ul id="future_parent" aria-owns="future_child"></ul>
+</div>
+
+<script>
+async_test(function(t) {
+    var axFutureParent = accessibilityController.accessibleElementById("future_parent");
+    assert_equals(axFutureParent.childrenCount, 0);
+    var listener = function(notification) {
+      assert_equals(notification, "ChildrenChanged");
+      assert_equals(axFutureParent.childrenCount, 1);
+
+      document.getElementById("container1").style.display = "none";
+      axFutureParent.removeNotificationListener(listener);
+      t.done();
+    };
+    axFutureParent.addNotificationListener(listener);
+    var futureParent = document.getElementById("future_parent");
+    var child = document.createElement("li");
+    child.id = "future_child";
+    futureParent.parentElement.appendChild(child);
+}, "A children changed notification is fired when an aria-owned child gets added to the tree.");
+</script>
+
+<div id="container2">
+    <ul id="list1">
+    </ul>
+    <ul id="list2">
+      <li id="item1">Item 1</li>
+    </ul>
+</div>
+
+<script>
+async_test(function(t) {
+    var axList1 = accessibilityController.accessibleElementById("list1");
+    assert_equals(axList1.childrenCount, 0);
+    var listener = function(notification) {
+      assert_equals(notification, "ChildrenChanged");
+      assert_equals(axList1.childrenCount, 1);
+
+      axList1.removeNotificationListener(listener);
+      document.getElementById("container2").style.display = "none";
+      t.done();
+    };
+    axList1.addNotificationListener(listener);
+
+    var list1 = document.getElementById("list1");
+    list1.setAttribute("aria-owns", "item1");
+}, "A children changed notification is fired when an aria-owned attribute is added to an element that causes it to reparent another element to become its child.");
+</script>
+
+<div id="container3">
+    <ul id="newlist1" aria-label="newlist1">
+    </ul>
+    <ul id="newlist2" aria-label="newlist2">
+      <li id="newitem1">New Item 1</li>
+    </ul>
+</div>
+
+<script>
+async_test(function(t) {
+    var axList1 = accessibilityController.accessibleElementById("newlist1");
+    assert_equals(axList1.childrenCount, 0);
+    var axList2 = accessibilityController.accessibleElementById("newlist2");
+    assert_equals(axList2.childrenCount, 1);
+    var listener = function(notification) {
+      assert_equals(notification, "ChildrenChanged");
+      assert_equals(axList2.childrenCount, 0);
+
+      axList2.removeNotificationListener(listener);
+      document.getElementById("container3").style.display = "none";
+      t.done();
+    };
+    axList2.addNotificationListener(listener);
+
+    var list1 = document.getElementById("newlist1");
+    list1.setAttribute("aria-owns", "newitem1");
+    assert_equals(axList1.childrenCount, 1);
+    assert_equals(axList2.childrenCount, 0);
+}, "A children changed notification is fired on the old parent when one of its children gets reparented to another element due to aria-owns.");
+</script>

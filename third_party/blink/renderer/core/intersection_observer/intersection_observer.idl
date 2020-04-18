@@ -1,0 +1,27 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// https://wicg.github.io/IntersectionObserver/#intersection-observer-callback
+
+callback IntersectionObserverCallback = void (sequence<IntersectionObserverEntry> entries, IntersectionObserver observer);
+
+// https://wicg.github.io/IntersectionObserver/#intersection-observer-interface
+
+[
+    ActiveScriptWrappable,
+    Constructor(IntersectionObserverCallback callback, optional IntersectionObserverInit options),
+    ConstructorCallWith=ScriptState,
+    MeasureAs=IntersectionObserver_Constructor,
+    RaisesException=Constructor
+] interface IntersectionObserver {
+    readonly attribute Element? root;
+    readonly attribute DOMString rootMargin;
+    // https://github.com/WICG/IntersectionObserver/issues/114
+    readonly attribute FrozenArray<double> thresholds;
+    [RuntimeEnabled=IntersectionObserverV2] readonly attribute boolean trackVisibility;
+    [RaisesException] void observe(Element target);
+    [RaisesException] void unobserve(Element target);
+    [RaisesException] void disconnect();
+    [RaisesException] sequence<IntersectionObserverEntry> takeRecords();
+};

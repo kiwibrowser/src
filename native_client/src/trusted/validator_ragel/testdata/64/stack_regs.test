@@ -1,0 +1,92 @@
+@hex:
+  87 e5
+@dis:
+     0:	87 e5                                        	xchg   %esp,%ebp
+@rdfa_output:
+  0: improper %rsp sandboxing
+  2: improper %rbp sandboxing
+  return code: 1
+@spec:
+  0: ('non-zero-extending changes to ebp and esp are not allowed', Instruction(0x0: 87 e5  xchg %esp,%ebp))
+----------------------------------------------------------------------
+@hex:
+  48 87 e5
+@dis:
+     0:	48 87 e5                                     	xchg   %rsp,%rbp
+@rdfa_output:
+  0: error - %bpl or %bp is changed
+  0: error - %spl or %sp is changed
+  return code: 1
+@spec:
+  0: ('changes to rsp are not allowed', Instruction(0x0: 48 87 e5  xchg %rsp,%rbp))
+----------------------------------------------------------------------
+@hex:
+  8d 65 00 \\
+  4c 01 fc
+@dis:
+     0:	8d 65 00                                     	lea    0x0(%rbp),%esp
+     3:	4c 01 fc                                     	add    %r15,%rsp
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Wrong order (shoule be (%rbp, %r15) according to ABI)
+  31 e5
+  49 8d 2c 2f
+@dis:
+     0:	31 e5                                        	xor    %esp,%ebp
+     2:	49 8d 2c 2f                                  	lea    (%r15,%rbp,1),%rbp
+@rdfa_output:
+  2: improper %rbp sandboxing
+  2: error - %bpl or %bp is changed
+  return code: 1
+@spec:
+  2: ('changes to rbp are not allowed', Instruction(0x2: 49 8d 2c 2f  lea (%r15,%rbp,1),%rbp))
+----------------------------------------------------------------------
+@hex:
+  31 ec \\
+  4a 8d 24 3c
+@dis:
+     0:	31 ec                                        	xor    %ebp,%esp
+     2:	4a 8d 24 3c                                  	lea    (%rsp,%r15,1),%rsp
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  31 e5 \\
+  4a 8d 6c 3d 00
+@dis:
+     0:	31 e5                                        	xor    %esp,%ebp
+     2:	4a 8d 6c 3d 00                               	lea    0x0(%rbp,%r15,1),%rbp
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  89 c0
+  49 8d 24 07
+@dis:
+     0:	89 c0                                        	mov    %eax,%eax
+     2:	49 8d 24 07                                  	lea    (%r15,%rax,1),%rsp
+@rdfa_output:
+  2: error - %spl or %sp is changed
+  return code: 1
+@spec:
+  2: ('changes to rsp are not allowed', Instruction(0x2: 49 8d 24 07  lea (%r15,%rax,1),%rsp))
+----------------------------------------------------------------------
+@hex:
+  89 c0
+  4a 8d 24 38
+@dis:
+     0:	89 c0                                        	mov    %eax,%eax
+     2:	4a 8d 24 38                                  	lea    (%rax,%r15,1),%rsp
+@rdfa_output:
+  2: error - %spl or %sp is changed
+  return code: 1
+@spec:
+  2: ('changes to rsp are not allowed', Instruction(0x2: 4a 8d 24 38  lea (%rax,%r15,1),%rsp))

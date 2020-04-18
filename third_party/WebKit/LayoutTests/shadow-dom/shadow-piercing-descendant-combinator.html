@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="resources/shadow-dom.js"></script>
+<body>
+
+  <div id="testroot">
+    <div id="openhost">
+      <template data-mode="open">
+        <div id="inner-open"></div>
+      </template>
+    </div>
+    <div id="closedhost">
+      <template data-mode="closed">
+        <div id="inner-closed"></div>
+      </template>
+    </div>
+    <div id="v0host">
+      <template data-mode="v0">
+        <div id="inner-v0"></div>
+      </template>
+    </div>
+    <div id="nestedhost">
+      <template data-mode="open" data-expose-as="nestedRoot">
+        <div id="inner-div">
+          <div>
+            <template data-mode="open">
+              <div id="inner-nested-open"></div>
+            </template>
+          </div>
+          <div>
+            <template data-mode="closed">
+              <div id="inner-nested-closed"></div>
+            </template>
+          </div>
+          <div>
+            <template data-mode="v0">
+              <div id="inner-nested-v0"></div>
+            </template>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <div id="testroot2">
+    <template data-mode="open">
+      <div id="div1">
+        <template data-mode="open">
+          <div id="div2">
+            <template data-mode="open">
+              <div id="div3">
+                <template data-mode="open" data-expose-as="deepestRoot">
+                  <div id="div4">
+                  </div>
+                </template>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+    </template>
+  </div>
+
+</body>
+<script>
+'use strict';
+
+convertTemplatesToShadowRootsWithin(testroot);
+test(() => {
+  assert_equals(document.querySelectorAll('body >>> #inner-open').length, 1);
+  assert_equals(document.querySelectorAll('body >>> #inner-closed').length, 0);
+  assert_equals(document.querySelectorAll('body >>> #inner-v0').length, 0);
+  assert_equals(document.querySelectorAll('body >>> #inner-nested-open').length, 1);
+  assert_equals(document.querySelectorAll('body >>> #inner-nested-closed').length, 0);
+  assert_equals(document.querySelectorAll('body >>> #inner-nested-v0').length, 0);
+}, '>>> should match only through open shadow roots.');
+
+test(() => {
+  let innerDiv = nestedRoot.querySelector('#inner-div');
+  assert_equals(innerDiv.querySelectorAll('body >>> #inner-nested-open').length, 0);
+  assert_equals(innerDiv.querySelectorAll('body >>> #inner-nested-closed').length, 0);
+  assert_equals(innerDiv.querySelectorAll('body >>> #inner-nested-v0').length, 0);
+  assert_equals(innerDiv.querySelectorAll('#inner-div >>> #inner-nested-open').length, 1);
+  assert_equals(innerDiv.querySelectorAll('#inner-div >>> #inner-nested-closed').length, 0);
+  assert_equals(innerDiv.querySelectorAll('#inner-div >>> #inner-nested-v0').length, 0);
+}, 'leftmost compound should match an element in the same node tree as context object.');
+
+test(() => {
+  assert_equals(document.querySelector('#testroot >>> #openhost').id, 'openhost');
+  assert_equals(document.querySelector('#testroot >>> #closedhost').id, 'closedhost');
+  assert_equals(document.querySelector('#testroot >>> #v0host').id, 'v0host');
+}, '>>> should match without piercing through shadow roots.');
+
+test(() => {
+  convertTemplatesToShadowRootsWithin(testroot2);
+  let div4 = deepestRoot.querySelector('#div4');
+
+  assert_equals(document.querySelector('body >>> #div1 >>> #div2 >>> #div3 >>> #div4'), div4);
+  assert_equals(document.querySelector('body >>> #div1 >>> #div2 >>> #div4'), div4);
+  assert_equals(document.querySelector('body >>> #div1 >>> #div3 >>> #div4'), div4);
+  assert_equals(document.querySelector('body >>> #div1 >>> #div4'), div4);
+  assert_equals(document.querySelector('body >>> #div2 >>> #div4'), div4);
+  assert_equals(document.querySelector('#div1 >>> #div2 >>> #div3 >>> #div4'), null,
+      'leftmost compound should match an element in the same node tree as context object.');
+}, 'Multiple >>>s in a selector should work.');
+</script>

@@ -1,0 +1,37 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(`Tests that page navigation initiated by JS is correctly reported.\n`);
+  await TestRunner.loadModule('network_test_runner');
+  await TestRunner.showPanel('network');
+  await TestRunner.navigatePromise('resources/initiator.html');
+  TestRunner.runWhenPageLoads(step1);
+  TestRunner.resourceTreeModel.addEventListener(SDK.ResourceTreeModel.Events.Load, TestRunner.pageLoaded);
+  await TestRunner.evaluateInPage('navigateFromScript()');
+
+  function dumpInitiator(request) {
+    var initiator = request.initiator();
+    TestRunner.addResult(request.url() + ': ' + initiator.type);
+    if (initiator.url)
+      TestRunner.addResult('    ' + initiator.url + ' ' + initiator.lineNumber);
+    var stackTrace = initiator.stack;
+    if (!stackTrace)
+      return;
+    for (var i = 0; i < stackTrace.callFrames.length; ++i) {
+      var frame = stackTrace.callFrames[i];
+      if (frame.lineNumber) {
+        TestRunner.addResult('    ' + frame.functionName + ' ' + frame.url + ' ' + frame.lineNumber);
+        return;
+      }
+    }
+  }
+
+  function step1() {
+    var results = NetworkTestRunner.findRequestsByURLPattern(/\?foo/);
+    TestRunner.assertEquals(1, results.length);
+    dumpInitiator(results[0]);
+    TestRunner.completeTest();
+  }
+})();

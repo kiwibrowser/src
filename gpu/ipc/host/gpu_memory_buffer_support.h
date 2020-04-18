@@ -1,0 +1,58 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef GPU_IPC_HOST_GPU_MEMORY_BUFFER_SUPPORT_H_
+#define GPU_IPC_HOST_GPU_MEMORY_BUFFER_SUPPORT_H_
+
+#include <utility>
+#include <vector>
+
+#include "base/containers/hash_tables.h"
+#include "base/hash.h"
+#include "ui/gfx/buffer_types.h"
+
+namespace gpu {
+
+using GpuMemoryBufferConfigurationKey =
+    std::pair<gfx::BufferFormat, gfx::BufferUsage>;
+using GpuMemoryBufferConfigurationSet =
+    base::hash_set<GpuMemoryBufferConfigurationKey>;
+
+}  // namespace gpu
+
+namespace BASE_HASH_NAMESPACE {
+
+template <>
+struct hash<gpu::GpuMemoryBufferConfigurationKey> {
+  size_t operator()(const gpu::GpuMemoryBufferConfigurationKey& key) const {
+    return base::HashInts(static_cast<int>(key.first),
+                          static_cast<int>(key.second));
+  }
+};
+
+}  // namespace BASE_HASH_NAMESPACE
+
+namespace gpu {
+
+class GpuMemoryBufferSupport;
+
+bool AreNativeGpuMemoryBuffersEnabled();
+
+// Returns the set of supported configurations.
+GpuMemoryBufferConfigurationSet GetNativeGpuMemoryBufferConfigurations(
+    GpuMemoryBufferSupport* support);
+
+// Returns true of the OpenGL target to use for the combination of format/usage
+// is not GL_TEXTURE_2D but a platform specific texture target.
+bool GetImageNeedsPlatformSpecificTextureTarget(gfx::BufferFormat format,
+                                                gfx::BufferUsage usage);
+
+// Populate a list of buffer usage/format for which a per platform specific
+// texture target must be used instead of GL_TEXTURE_2D.
+std::vector<gfx::BufferUsageAndFormat>
+CreateBufferUsageAndFormatExceptionList();
+
+}  // namespace gpu
+
+#endif  // GPU_IPC_HOST_GPU_MEMORY_BUFFER_SUPPORT_H_

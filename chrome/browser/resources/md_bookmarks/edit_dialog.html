@@ -1,0 +1,45 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/html/assert.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_dialog/cr_dialog.html">
+<link rel="import" href="chrome://resources/cr_elements/paper_button_style_css.html">
+<link rel="import" href="chrome://resources/cr_elements/shared_style_css.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-input/paper-input.html">
+<link rel="import" href="chrome://bookmarks/dialog_focus_manager.html">
+
+<dom-module id="bookmarks-edit-dialog">
+  <template>
+    <style include="cr-shared-style paper-button-style"></style>
+    <cr-dialog id="dialog">
+      <div slot="title">
+        [[getDialogTitle_(isFolder_, isEdit_)]]
+      </div>
+      <div slot="body">
+        <paper-input always-float-label id="name"
+            label="$i18n{editDialogNameInput}"
+            value="{{titleValue_}}"
+            autofocus>
+        </paper-input>
+        <paper-input always-float-label id="url"
+            type="url"
+            label="$i18n{editDialogUrlInput}"
+            error-message="$i18n{editDialogInvalidUrl}"
+            value="{{urlValue_}}"
+            hidden$="[[isFolder_]]"
+            required>
+        </paper-input>
+      </div>
+      <div slot="button-container">
+        <paper-button class="cancel-button" on-click="onCancelButtonTap_">
+          $i18n{cancel}
+        </paper-button>
+        <paper-button id="saveButton" class="action-button"
+            on-click="onSaveButtonTap_">
+          $i18n{saveEdit}
+        </paper-button>
+      </div>
+    </cr-dialog>
+  </template>
+  <script src="chrome://bookmarks/edit_dialog.js"></script>
+</dom-module>

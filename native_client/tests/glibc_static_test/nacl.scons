@@ -1,0 +1,56 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# PNaCl does not support static GlibC executables.
+if env.Bit('bitcode'):
+  Return()
+
+# This is a simple smoke test for using nacl-glibc with static
+# linking.  It is also possible to run *all* the Scons-based tests
+# with static linking using the option nacl_static_link=1.
+if not env.Bit('nacl_glibc'):
+  Return()
+
+# Valgrind is not supported for statically linked GLibC.
+if env.IsRunningUnderValgrind():
+  Return()
+
+# TODO(mseaborn): Make nacl-glibc-based static linking work with just
+# "-static", without specifying a linker script.
+# See http://code.google.com/p/nativeclient/issues/detail?id=1298
+def GetLinkerScriptBaseName(env):
+  if env.Bit('build_x86_64'):
+    return 'elf64_nacl'
+  else:
+    return 'elf_nacl'
+
+# If we are already using static linking, adding these options again
+# does not work.
+if not env.Bit('nacl_static_link'):
+  env.Append(LINKFLAGS=['-static'])
+  if not env.Bit('bitcode') and env.Bit('build_x86'):
+    # Currently nacl-gcc with -static passes [crt* object files]
+    # [user object file] [some libs] -lgcc -lgcc_eh [crt* object files] to
+    # the linker but the last -lgcc_eh requires -lc.
+    env.Append(
+        LINKFLAGS=[
+            '-T', 'ldscripts/%s.x.static' % GetLinkerScriptBaseName(env),
+            '-lc']
+        )
+nexe = env.ComponentProgram('glibc_static_hello', 'glibc_static_hello.c')
+
+# nacl-glibc's static linker scripts are not IRT-compatible yet.
+# See http://code.google.com/p/nativeclient/issues/detail?id=2573
+is_broken = env.Bit('tests_use_irt') and env.Bit('build_x86')
+
+node = env.CommandSelLdrTestNacl(
+    'glibc_static_hello.out',
+    nexe,
+    stdout_golden=env.File('glibc_static_hello.stdout'),
+    glibc_static=True)
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_glibc_static_hello_test',
+                       is_broken=is_broken)

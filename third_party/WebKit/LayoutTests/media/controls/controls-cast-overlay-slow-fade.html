@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<title>Test that the overlay cast button fades at the right time (neither too soon nor too late).</title>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="../media-controls.js"></script>
+<video loop></video>
+<script>
+async_test(function(t) {
+    // The cast button should be visible for at least |controlsMouseMovementTimeoutMs|.
+    // Allow 500ms margin at either side.
+    var hideTimeoutLowerBound = controlsMouseMovementTimeoutMs - 500;
+
+    var video = document.querySelector("video");
+    video.src = "../content/test.ogv";
+
+    video.onplaying = t.step_func(function() {
+        setTimeout(t.step_func(function() {
+            // Cast button should be visible
+            assert_true(isControlVisible(overlayCastButton(video)), "button should exist");
+        }), hideTimeoutLowerBound);
+
+        runAfterHideMediaControlsTimerFired(t.step_func_done(function() {
+            // Cast button should be gone
+            assert_false(isControlVisible(overlayCastButton(video)), "button should not exist");
+        }), video);
+    });
+
+    internals.mediaPlayerRemoteRouteAvailabilityChanged(video, true);
+    video.play();
+});
+</script>

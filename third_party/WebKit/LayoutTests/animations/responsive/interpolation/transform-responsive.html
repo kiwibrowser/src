@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<script src="resources/responsive-test.js"></script>
+<script>
+assertCSSResponsive({
+  property: 'transform',
+  from: 'translateX(10em)',
+  to: 'translateX(100px)',
+  configurations: [{
+    state: {'font-size': '2px'},
+    expect: [
+      {at: 0.25, is: 'translateX(40px)'},
+      {at: 0.75, is: 'translateX(80px)'},
+    ],
+  }, {
+    state: {'font-size' '6px'},
+    expect: [
+      {at: 0.25, is: 'translateX(70px)'},
+      {at: 0.75, is: 'translateX(90px)'},
+    ],
+  }],
+});
+
+assertCSSResponsive({
+  property: 'transform',
+  from: 'inherit',
+  to: 'translateX(100px)',
+  configurations: [{
+    state: {inherited: 'translateX(20px)'},
+    expect: [
+      {at: 0.25, is: 'translateX(40px)'},
+      {at: 0.75, is: 'translateX(80px)'},
+    ],
+  }, {
+    state: {inherited: 'translateY(20px)'},
+    expect: [
+      {at: 0.25, is: 'translate(25px, 15px)'},
+      {at: 0.75, is: 'translate(75px, 5px)'},
+    ],
+  }],
+});
+</script>

@@ -1,0 +1,17 @@
+@hex:
+  # Bad example of using lea solution (instead of add) to update rbp.
+  # That is, we add a (non-zero) constant to the address of the lea.
+  # base register r15.
+  #    mov %ebp, %ecx
+  #    lea %rbp, [%rbp+%r15*1+0x1]
+  89 cd
+  4a 8d 6c 3d 01
+@dis:
+     0:	89 cd                                        	mov    %ecx,%ebp
+     2:	4a 8d 6c 3d 01                               	lea    0x1(%rbp,%r15,1),%rbp
+@rdfa_output:
+  2: improper %rbp sandboxing
+  2: error - %bpl or %bp is changed
+  return code: 1
+@spec:
+  2: ('changes to rbp are not allowed', Instruction(0x2: 4a 8d 6c 3d 01  lea 0x1(%rbp,%r15,1),%rbp))

@@ -1,0 +1,29 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# Do not run any of the compiles below when in built_elsewhere mode
+# because we cannot assume having a working compiler.
+if env.Bit('built_elsewhere'):
+  Return()
+
+nacl_fi_lib_inputs = [
+  'fault_injection.c',
+  'test_injection.c',
+]
+
+env.DualLibrary('nacl_fault_inject', nacl_fi_lib_inputs,
+                EXTRA_LIBS=['platform'])
+
+nacl_fi_test_exe = env.ComponentProgram('nacl_fi_test',
+                                        ['nacl_fi_test.c'],
+                                        EXTRA_LIBS=['nacl_fault_inject',
+                                                    'platform'])
+
+node = env.CommandTest(
+    'nacl_fi_test.out',
+    command=[nacl_fi_test_exe])
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_nacl_fi_test')

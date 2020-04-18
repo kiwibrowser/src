@@ -1,0 +1,108 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-styles/color.html">
+<link rel="import" href="../shared_vars_css.html">
+
+<!-- Common radio-button styling for Material Design WebUI. -->
+<dom-module id="cr-radio-button-style">
+  <template>
+    <style>
+      :host {
+        --cr-radio-button-ink-size: 40px;
+        --cr-radio-button-size: 16px;
+        --cr-radio-button-checked-color: var(--google-blue-600);
+
+        --ink-to-circle: calc((var(--cr-radio-button-ink-size) -
+                               var(--cr-radio-button-size)) / 2);
+        align-items: center;
+        display: flex;
+        flex-shrink: 0;
+        outline: none;
+      }
+
+      :host([disabled]) {
+        opacity: var(--cr-disabled-opacity);
+        /* Disable pointer events for this whole element, as outer on-tap gets
+         * triggered when clicking/tapping anywhere in :host. */
+        pointer-events: none;
+      }
+
+      :host(:not([disabled])) {
+        cursor: pointer;
+      }
+
+      #labelWrapper {
+        -webkit-margin-start: var(--cr-radio-button-label-spacing, 20px);
+        flex: 1;
+
+        @apply --cr-radio-button-label;
+      }
+
+      #label {
+        color: inherit;
+      }
+
+      .disc-border,
+      .disc,
+      .disc-wrapper,
+      paper-ripple {
+        border-radius: 50%;
+      }
+
+      .disc-wrapper {
+        height: var(--cr-radio-button-size);
+        position: relative;
+        width: var(--cr-radio-button-size);
+      }
+
+      .disc-border,
+      .disc {
+        box-sizing: border-box;
+        height: var(--cr-radio-button-size);
+        width: var(--cr-radio-button-size);
+      }
+
+      .disc-border {
+        border: 2px solid var(--google-grey-700);
+      }
+
+      :host([checked]) .disc-border {
+        border-color: var(--cr-radio-button-checked-color);
+      }
+
+      .disc {
+        background-color: transparent;
+        position: absolute;
+        top: 0;
+        transform: scale(0);
+        transition: border-color 200ms, transform 200ms;
+      }
+
+      :host([checked]) .disc {
+        background-color: var(--cr-radio-button-checked-color);
+        transform: scale(0.5);
+      }
+
+      paper-ripple {
+        --paper-ripple-opacity: 0.1;
+        color: var(--google-grey-900);
+        height: var(--cr-radio-button-ink-size);
+        left: calc(-1 * var(--ink-to-circle));
+        pointer-events: none;
+        position: absolute;
+        top: calc(-1 * var(--ink-to-circle));
+        transition: color linear 80ms;
+        width: var(--cr-radio-button-ink-size);
+      }
+
+      :host-context([dir=rtl]) paper-ripple {
+        left: auto;
+        right: calc(-1 * var(--ink-to-circle));
+      }
+
+      :host([checked]) paper-ripple {
+        color: var(--google-blue-600);
+      }
+    </style>
+  </template>
+</dom-module>

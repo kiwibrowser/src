@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="resources/fake-vr-displays.js"></script>
+<script src="file:///gen/layout_test_data/mojo/public/js/mojo_bindings.js"></script>
+<script src="file:///gen/device/vr/public/mojom/vr_service.mojom.js"></script>
+<script src="resources/mock-vr-service.js"></script>
+<canvas id="webgl-canvas"></canvas>
+<script src="resources/presentation-setup.js"></script>
+<script>
+let fakeDisplays = fakeVRDisplays();
+
+vr_test( (t, mockService) => {
+  let watcherDone = new Event("watcherdone");
+  let eventWatcher = new EventWatcher(t, window, ["vrdisplayconnect",
+                                                  "watcherdone"]);
+  eventWatcher.wait_for(["vrdisplayconnect", /*Initial mock display connected*/
+                         "vrdisplayconnect", /*Display added w/ addVRDisplay*/
+                         "watcherdone"])
+    .then( () => {
+      t.done();
+    });
+  return navigator.getVRDisplays().then( (displays) => {
+    var display = displays[0];
+
+    t.step( () => {
+      assert_equals(displays.length, 1);
+    }, "Starting with a single display");
+    mockService.addVRDisplay(fakeDisplays["FakeMagicWindowOnly"]);
+
+    setTimeout( () => {
+      navigator.getVRDisplays().then( (displays) => {
+        t.step( () => {
+          assert_equals(displays.length, 2);
+          assert_equals(displays[1].displayName, "FakeVRDisplay");
+        }, "Check added display");
+        window.dispatchEvent(watcherDone);
+      }, (err) => {
+        t.step( () => {
+          assert_unreached(err);
+        }, "second getVRDisplays rejected");
+      });
+    }, 100);
+  }, (err) => {
+    t.step( () => {
+      assert_unreached(err);
+    }, "getVRDisplays rejected");
+    t.done();
+  });
+}, [fakeDisplays["Pixel"]],
+"Test vrdisplayconnect fires once when new display connected");
+
+</script>

@@ -1,0 +1,44 @@
+{% from 'templates/macros.tmpl' import license, source_files_for_generated_file %}
+{{license()}}
+
+{{source_files_for_generated_file(template_file, input_files)}}
+
+#ifndef BLINK_PLATFORM_TESTING_RUNTIME_ENABLED_FEATURES_TEST_HELPERS_H_
+#define BLINK_PLATFORM_TESTING_RUNTIME_ENABLED_FEATURES_TEST_HELPERS_H_
+
+#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+#include "third_party/blink/renderer/platform/wtf/assertions.h"
+
+namespace blink {
+
+template <bool (&getter)(), void (&setter)(bool)>
+class ScopedRuntimeEnabledFeatureForTest {
+ public:
+  ScopedRuntimeEnabledFeatureForTest(bool enabled)
+      : enabled_(enabled), original_(getter()) {
+    setter(enabled);
+  }
+
+  ~ScopedRuntimeEnabledFeatureForTest() {
+    CHECK_EQ(enabled_, getter());
+    setter(original_);
+  }
+
+ private:
+  bool enabled_;
+  bool original_;
+};
+
+{% for feature in features %}
+typedef ScopedRuntimeEnabledFeatureForTest<
+{% if feature.origin_trial_feature_name %}
+    RuntimeEnabledFeatures::{{feature.name}}EnabledByRuntimeFlag,
+{% else %}
+    RuntimeEnabledFeatures::{{feature.name}}Enabled,
+{% endif %}
+    RuntimeEnabledFeatures::Set{{feature.name}}Enabled>
+    Scoped{{feature.name}}ForTest;
+{% endfor %}
+} // namespace blink
+
+#endif  // BLINK_PLATFORM_TESTING_RUNTIME_ENABLED_FEATURES_TEST_HELPERS_H_

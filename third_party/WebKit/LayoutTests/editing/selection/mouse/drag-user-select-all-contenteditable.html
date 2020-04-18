@@ -1,0 +1,22 @@
+<!doctype HTML>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+<script src="../../assert_selection.js"></script>
+<div id="log"></div>
+<script>
+test(function(){
+    assert_true(window.hasOwnProperty('eventSender'), 'this test requires window.eventSender');
+    assert_selection(
+        '<div contenteditable="true" style="-webkit-user-select:all">foo<span id="span">bar</span>baz</div>',
+        selection => {
+            var span = selection.document.getElementById('span');
+            eventSender.dragMode = false;
+            eventSender.mouseMoveTo(selection.document.offsetLeft + span.offsetLeft, selection.document.offsetTop + span.offsetTop + 5);
+            eventSender.mouseDown();
+            eventSender.leapForward(100);
+            eventSender.mouseMoveTo(selection.document.offsetLeft + span.offsetLeft + span.offsetWidth, selection.document.offsetTop + span.offsetTop + 5);
+        },
+        '<div contenteditable="true" style="-webkit-user-select:all">foo<span id="span">^bar|</span>baz</div>');
+    },
+'User can select partially in -webkit-user-select:all contenteditable element');
+</script>

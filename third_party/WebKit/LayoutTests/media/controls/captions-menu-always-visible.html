@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<title>Captions menu always visible</title>
+<script src="../media-controls.js"></script>
+<style>
+  .container {
+    overflow: hidden;
+  }
+  video {
+    position: relative;
+    left: 200px;
+    width: 100px;
+  }
+</style>
+<video controls muted controlslist=nofullscreen></video>
+<script>
+  if (window.testRunner)
+    testRunner.waitUntilDone();
+
+  var video = document.querySelector('video');
+  enableTestMode(video);
+  video.src = '../content/test.ogv';
+  video.addTextTrack('captions', 'foo');
+  video.addTextTrack('captions', 'bar');
+
+  video.addEventListener('loadedmetadata', () => {
+    var coords =
+        mediaControlsButtonCoordinates(video, "toggle-closed-captions-button");
+    clickAtCoordinates(coords[0], coords[1]);
+
+    // Disabling pointer events on the text track menu to avoid a flakyness with
+    // :hover sometimes applying.
+    textTrackMenu(video).style = 'pointer-events: none;';
+
+    testRunner.layoutAndPaintAsyncThen(() => {
+      testRunner.notifyDone();
+    });
+  });
+</script>

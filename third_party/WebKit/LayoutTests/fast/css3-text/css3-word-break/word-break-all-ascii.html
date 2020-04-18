@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<style>
+#break-test {
+  word-break:break-all;
+  font:50px/1 Ahem;
+  width:3em;
+}
+#result {
+  font:15px/1 monospace;
+  white-space:pre;
+}
+</style>
+<div id="result"></div>
+<div id="break-test"></div>
+<script>
+var beginChar = 33;
+var endChar = 127;
+var breakTest = document.getElementById("break-test");
+var breakTestFontsize = parseFloat(getComputedStyle(breakTest).fontSize);
+var nbsp = String.fromCharCode(0xA0);
+nbsp = nbsp + nbsp;
+
+class BreakTest {
+  constructor(ch0, ch1) {
+    this.element = document.createElement('div');
+    this.element.textContent = nbsp + String.fromCharCode(ch0) + String.fromCharCode(ch1);
+    breakTest.appendChild(this.element);
+  }
+
+  canBreak() {
+    return this.element.offsetHeight / breakTestFontsize > 1.9;
+  }
+
+  static GetLineBreakMatrix() {
+    var matrix = [];
+    for (var last = beginChar; last < endChar; last++) {
+      var canBreakBefore = [];
+      for (var current = beginChar; current < endChar; current++)
+        canBreakBefore.push(new BreakTest(last, current));
+      matrix.push(canBreakBefore);
+    }
+    return matrix;
+  }
+}
+
+var matrix = BreakTest.GetLineBreakMatrix();
+
+var header = [];
+for (var i = 0; i < matrix.length; i++)
+  header.push(String.fromCharCode(beginChar + i));
+var rows = ["  " + header.join("")];
+for (var i = 0; i < matrix.length; i++) {
+  rows.push(String.fromCharCode(beginChar + i) + " " + matrix[i].map(function (breakTest) {
+    return breakTest.canBreak() ? "/" : "X";
+  }).join(""));
+}
+result.textContent = rows.join("\n");
+
+breakTest.remove();
+if (window.testRunner)
+    testRunner.dumpAsText();
+</script>

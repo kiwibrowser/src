@@ -1,0 +1,84 @@
+// Copyright 2015 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package content;
+
+// Stores information about a Web Notification. This message is the protocol
+// buffer meant to serialize the content::NotificationDatabaseData structure.
+//
+// Next tag: 14
+message NotificationDatabaseDataProto {
+  enum ClosedReason {
+    USER = 0;
+    DEVELOPER = 1;
+    UNKNOWN = 2;
+  }
+
+  // DEPRECATED: Use |notification_id| instead.
+  optional int64 persistent_notification_id = 1;
+
+  optional string notification_id = 5;
+
+  optional string origin = 2;
+  optional int64 service_worker_registration_id = 3;
+  optional bool replaced_existing_notification = 6;
+  optional int32 num_clicks = 7;
+  optional int32 num_action_button_clicks = 8;
+  optional int64 creation_time_millis = 9;
+  optional int64 time_until_first_click_millis = 10;
+  optional int64 time_until_last_click_millis = 11;
+  optional int64 time_until_close_millis = 12;
+  optional ClosedReason closed_reason = 13;
+
+  // A notification action, corresponds to content::PlatformNotificationAction.
+  //
+  // Next tag: 6
+  message NotificationAction {
+    // Corresponds to PlatformNotificationActionType.
+    enum Type {
+      BUTTON = 0;
+      TEXT = 1;
+    }
+
+    optional string action = 1;
+    optional string title = 2;
+    optional string icon = 3;
+    optional Type type = 4;
+    optional string placeholder = 5;
+  }
+
+  // Actual data payload of the notification. This message is the protocol
+  // buffer meant to serialize the content::PlatformNotificationData structure.
+  //
+  // Next tag: 16
+  message NotificationData {
+    enum Direction {
+      LEFT_TO_RIGHT = 0;
+      RIGHT_TO_LEFT = 1;
+      AUTO = 2;
+    }
+
+    optional string title = 1;
+    optional Direction direction = 2;
+    optional string lang = 3;
+    optional string body = 4;
+    optional string tag = 5;
+    optional string image = 15;
+    optional string icon = 6;
+    optional string badge = 14;
+    repeated int32 vibration_pattern = 9 [packed=true];
+    optional int64 timestamp = 12;
+    optional bool renotify = 13;
+    optional bool silent = 7;
+    optional bool require_interaction = 11;
+    optional bytes data = 8;
+    repeated NotificationAction actions = 10;
+  }
+
+  optional NotificationData notification_data = 4;
+}

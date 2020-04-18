@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    #container {
+      width: 200px;
+      height: 200px;
+      overflow: scroll;
+    }
+
+    #content {
+      width: 7500px;
+      height: 7500px;
+      background-color: blue;
+    }
+  </style>
+  <script src="../../resources/js-test.js"></script>
+  <script type="text/javascript">
+    jsTestIsAsync = true;
+    description("This test checks that a smooth scroll finishes even when composited scrolling " +
+                "is lost during the animation.");
+
+    function startSmoothScroll() {
+        var scrollToOptions = {behavior: "smooth", top: 6000};
+        document.getElementById("container").scrollTo(scrollToOptions);
+        window.requestAnimationFrame(preventCompositedScrolling);
+    }
+
+    function preventCompositedScrolling() {
+        document.getElementById("container").style.borderRadius = "4px";
+        window.requestAnimationFrame(waitForSmoothScrollEnd);
+    }
+
+    function waitForSmoothScrollEnd() {
+        if (document.getElementById("container").scrollTop == 6000) {
+            testPassed("Scroll destination reached.");
+            finishJSTest();
+        } else {
+            window.requestAnimationFrame(waitForSmoothScrollEnd);
+        }
+    }
+
+    window.onload = function() {
+        if (window.internals) {
+            internals.settings.setPreferCompositingToLCDTextEnabled(true);
+        }
+
+        window.requestAnimationFrame(startSmoothScroll);
+    }
+  </script>
+</head>
+
+<body>
+  <div id="container">
+    <div id="content"></div>
+  </div>
+</body>
+</html>

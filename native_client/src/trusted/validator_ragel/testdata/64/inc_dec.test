@@ -1,0 +1,20 @@
+@hex:
+  # Check that inc and dec are considered zero-extending instructions.
+  # inc %ecx
+  ff c1 \\
+  # and (%rsp, %rcx, 1), %esi
+  23 34 0c
+  
+  # dec %ecx
+  ff c9 \\
+  # and (%rsp, %rcx, 1), %esi
+  23 34 0c
+@dis:
+     0:	ff c1                                        	inc    %ecx
+     2:	23 34 0c                                     	and    (%rsp,%rcx,1),%esi
+     5:	ff c9                                        	dec    %ecx
+     7:	23 34 0c                                     	and    (%rsp,%rcx,1),%esi
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE

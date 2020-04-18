@@ -1,0 +1,19 @@
+;;
+;; Copyright (c) 2012 The Chromium Authors. All rights reserved.
+;; Use of this source code is governed by a BSD-style license that can be
+;; found in the LICENSE file.
+;;
+
+; TODO(viettrungluu): Confirm that the exceptions below are needed.
+
+; *** The contents of common.sb are implicitly included here. ***
+
+; Needed for Fonts.
+(allow file-read* (subpath "/System/Library/Fonts"))
+(allow file-read* (subpath "/Library/Fonts"))
+(allow mach-lookup (global-name "com.apple.FontObjectsServer"))
+(allow mach-lookup (global-name "com.apple.FontServer"))
+(allow mach-lookup (global-name "com.apple.fonts"))
+
+; https://crbug.com/11269
+(allow file-read* (subpath (user-homedir-path "/Library/Fonts")))

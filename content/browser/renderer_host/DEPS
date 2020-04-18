@@ -1,0 +1,66 @@
+include_rules = [
+  "+cc/switches.h", # For cc command line switches.
+  "+components/viz/common",
+  "+components/viz/host",
+  "+components/viz/service",
+  "+services/ui/public",
+  "+third_party/blink/public/platform/web_gesture_curve.h",
+  "+third_party/zlib",
+  "+ui/events/gestures/blink/web_gesture_curve_impl.h",
+  "+ui/latency",
+
+  # The renderer_host files should only call upwards in the layering via the
+  # delegate interfaces.
+  "-content/browser/frame_host",
+  "-content/browser/web_contents",
+  "-content/public/browser/web_contents.h",
+  "-content/public/browser/web_contents_delegate.h",
+  "-content/public/browser/web_contents_view.h",
+]
+
+specific_include_rules = {
+  ".*_(unit|browser)test\.(cc|mm)": [
+    "+components/rappor/test_rappor_service.h",
+    "+content/browser/frame_host",
+    "+content/browser/web_contents",
+    "+content/public/browser/web_contents.h",
+    "+content/public/browser/web_contents_view.h",
+  ],
+  "render_process_host_impl\.cc": [
+    "+content/browser/frame_host/render_frame_message_filter.h",
+    # TODO(crbug.com/734668): Dependencies on ozone should be removed, as content
+    # embedded in mus won't be able to talk to the native ozone.
+    "+ui/ozone/public/ozone_switches.h",
+  ],
+  "render_widget_host_view_cocoa\.mm": [
+    "+content/browser/frame_host",
+    "+content/public/browser/web_contents.h",
+  ],
+  "render_widget_host_view_mac\.mm": [
+    "+content/browser/frame_host",
+    "+content/public/browser/web_contents.h",
+  ],
+  # TODO(nasko): Remove these exceptions once we've untangled the dependency
+  # of RenderViewHost on the FrameTree.
+  "render_view_host_impl\.(cc|h)": [
+    "+content/browser/frame_host/frame_tree.h",
+  ],
+  "render_widget_host_view_aura\.cc": [
+    "+content/browser/frame_host",
+  ],
+  "render_widget_host_view_event_handler\.cc": [
+    "+content/browser/frame_host",
+  ],
+  # RenderWidgetHostViewGuest dependency is needed to allow for routing mouse
+  # events to the correct owner RenderWidgetHostViewBase. It should be removed
+  # when all inner WebContents are based on OOPIF structure (as opposed to
+  # BrowserPlugin).
+  # TODO(kenrb, wjmaclean): Remove this when RenderWidgetHostViewGuest is
+  # deleted. See https://crbug.com/533069.
+  "render_widget_host_input_event_router.cc": [
+    "+content/browser/frame_host/render_widget_host_view_guest.h",
+  ],
+  "render_widget_host_view_base\.cc": [
+    "+content/browser/frame_host/render_widget_host_view_guest.h",
+  ],
+}

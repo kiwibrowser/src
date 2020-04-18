@@ -1,0 +1,7 @@
+function doSomething()
+{
+    debugger;
+}
+
+doSomething();
+

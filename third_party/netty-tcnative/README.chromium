@@ -1,0 +1,35 @@
+Name: Tomcat Native Fork for Netty
+Short Name: netty-tcnative
+URL: https://github.com/netty/netty-tcnative.git
+Version: 2.0.0.Final
+Date: March 9, 2017
+Revision: 28d9d70090f1b18927f4554621648cc1922d6e05
+License: Apache 2.0
+License File: NOT_SHIPPED
+Security Critical: no
+The library is not security critical because it is used for tests only.
+Do not link it into production code.
+
+Description:
+    netty-tcnative is a fork of Tomcat Native. It includes a set of changes contributed
+    by Twitter, Inc, such as:
+
+    Simplified distribution and linkage of native library
+    Complete mavenization of the project
+    Improved OpenSSL support
+
+Local Modifications:
+
+diff --git a/c/sslcontext.c b/c/sslcontext.c
+index 5668298..25bfb6e 100644
+--- a/c/sslcontext.c
++++ b/c/sslcontext.c
+@@ -1178,7 +1178,7 @@ static int SSL_cert_verify(X509_STORE_CTX *ctx, void *arg) {
+     tcn_ssl_ctxt_t *c = SSL_get_app_data2(ssl);
+     TCN_ASSERT(c != NULL);
+     tcn_ssl_verify_config_t* verify_config = SSL_get_app_data4(ssl);
+-    TCN_ASSERT(verify_confg != NULL);
++    TCN_ASSERT(verify_config != NULL);
+
+     // Get a stack of all certs in the chain
+     STACK_OF(X509) *sk = ctx->untrusted;

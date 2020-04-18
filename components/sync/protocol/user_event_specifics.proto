@@ -1,0 +1,265 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+//
+// Sync protocol datatype extension for user events.
+
+// Update proto_value_conversions{.h,.cc,_unittest.cc} if you change
+// any fields in this file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package sync_pb;
+
+import "user_consent_types.proto";
+
+message UserEventSpecifics {
+  // Time of event, as measured by client in microseconds since Windows epoch.
+  optional int64 event_time_usec = 1;
+
+  // The |global_id| field of the associated navigation, if there is one.
+  optional int64 navigation_id = 2;
+
+  // On startup we generate a new random id to identify which FieldTrialEvents
+  // other events belonged to.
+  optional fixed64 session_id = 3;
+
+  // 4-7 reserved for future scalars.
+
+  // Used for testing and debugging EventLog system.
+  message Test {}
+
+  // Reports field trial membership for the subset of trials that have been
+  // registered as important to other event types.
+  message FieldTrial { repeated fixed32 variation_ids = 1; }
+
+  // Language detection output.
+  message LanguageDetection {
+    message Language {
+      // ISO 639 language code will be used.
+      optional string language_code = 1;
+      // Whether the detected language is reliable, note this is determined by
+      // the CLD3.
+      optional bool is_reliable = 2;
+    }
+    // Top n languages. Typically we just log the top language, but for page
+    // that we're not confident about, we may log up to 3 top languages in
+    // descending order.
+    repeated Language detected_languages = 1;
+    // Adopted language code is the code of final determined language.
+    // It will be stored only if it's different from the first detected
+    // language.
+    optional string adopted_language_code = 2;
+  }
+
+  // User translated a page or interacted with translate suggestion.
+  message Translation {
+    // Source language of the translation.
+    optional string from_language_code = 1;
+    // Target language of the translation.
+    optional string to_language_code = 2;
+    enum Interaction {
+      UNKNOWN = 0;
+      ACCEPT = 1;
+      DECLINE = 2;
+      // This happens when user scroll or click outside the UI without
+      // translation.
+      IGNORED = 3;
+      // This happens when user choose to close the translation window without
+      // translation.
+      DISMISSED = 4;
+      // User manually entered either language.
+      // In this case, from_language_code and to_language_code will be user
+      // chosen values.
+      MANUAL = 5;
+      // User choose to revert the translation, in this case, from_language_code
+      // and to_language_code will be previous chosen values.
+      TRANSLATION_REVERTED = 6;
+      // Automatically triggered translation.
+      // User sets always translate in user settings.
+      AUTO_TRANSLATION_BY_PREF = 7;
+      // User navigated through a click from a translated page.
+      AUTO_TRANSLATION_BY_LINK = 8;
+      // Failed to initialize the translate script, this can happen for iOS due
+      // to CSPs.
+      INITIALIZATION_ERROR = 9;
+    }
+    optional Interaction interaction = 3;
+  }
+
+  // User consented to the usage of a feature or denied/revoked a consent.
+  // Next id: 13
+  message UserConsent {
+    // =========================================================================
+    // Fields common to all Chrome User Consents.
+    // =========================================================================
+
+    // The UI language Chrome is using, represented as the IETF language tag
+    // defined in BCP 47. The region subtag is not included when it adds no
+    // distinguishing information to the language tag (e.g. both "en-US"
+    // and "fr" are correct here).
+    optional string locale = 4;
+
+    // The local time on the client when the user consent was recorded. The time
+    // as measured by client is given in microseconds since Windows epoch. This
+    // is needed since user consent recording may happen when a client is
+    // offline.
+    optional int64 client_consent_time_usec = 12;
+
+    // =========================================================================
+    // The specific consent type. Add new User Consent types to
+    // user_consent_types.proto.
+    // =========================================================================
+
+    oneof consent {
+      UserConsentTypes.SyncConsent sync_consent = 7;
+
+      UserConsentTypes.ArcBackupAndRestoreConsent
+          arc_backup_and_restore_consent = 8;
+
+      UserConsentTypes.ArcGoogleLocationServiceConsent
+          arc_location_service_consent = 9;
+
+      UserConsentTypes.ArcPlayTermsOfServiceConsent
+          arc_play_terms_of_service_consent = 10;
+
+      UserConsentTypes.ArcMetricsAndUsageConsent arc_metrics_and_usage_consent =
+          11;
+    }
+
+    // =========================================================================
+    // Client only fields. TODO(markusheintz): Refactor the code so that these
+    // fields can be moved out of this message.
+    // =========================================================================
+
+    // The account ID of the user who gave the consent. This field is used
+    // by UserEventService to distinguish consents from different users,
+    // as UserConsent does not get deleted when a user signs out. However,
+    // it should be cleared before being sent over the wire, as the UserEvent
+    // is sent over an authenticated channel, so this information would be
+    // redundant.
+    //
+    // For semantics and usage of the |account_id| in the signin codebase,
+    // see SigninManagerBase::GetAuthenticatedAccountId()
+    // or AccountInfo::account_id.
+    optional string account_id = 6;
+
+    // =========================================================================
+    // Deprecated fields. Please do not use them !
+    // =========================================================================
+    // TODO (markusheintz): Deprecate them completely once there few clients with <= M67.
+
+    // Which feature does the consent apply to?
+    enum Feature {
+      FEATURE_UNSPECIFIED = 0;
+      CHROME_SYNC = 1;
+      PLAY_STORE = 2;
+      BACKUP_AND_RESTORE = 3;
+      GOOGLE_LOCATION_SERVICE = 4;
+    }
+    optional Feature feature = 1 [deprecated = true];
+    // Ids of the strings of the consent text presented to the user.
+    repeated int32 description_grd_ids = 2 [deprecated = true];
+    // Id of the string of the UI element the user clicked when consenting.
+    optional int32 confirmation_grd_id = 3 [deprecated = true];
+    // Was the consent for |feature| given or not given (denied/revoked)?
+    optional UserConsentTypes.ConsentStatus status = 5 [deprecated = true];
+  }
+
+  // User reused their GAIA password on another website.
+  message GaiaPasswordReuse {
+    // Logged when we detect a password re-use event on a non-GAIA site.
+    // If the user hasn’t enabled SafeBrowsing, this will be the last event.
+    message PasswordReuseDetected {
+      message SafeBrowsingStatus {
+        // Is SafeBrowsing enabled?
+        optional bool enabled = 1;
+        // If SafeBrowsing is enabled, is the user opted-in to extended
+        // reporting or Scout?
+        enum ReportingPopulation {
+          REPORTING_POPULATION_UNSPECIFIED = 0;
+          NONE = 1;
+          EXTENDED_REPORTING = 2;
+          SCOUT = 3;
+        }
+        optional ReportingPopulation safe_browsing_reporting_population = 2;
+      }
+      optional SafeBrowsingStatus status = 1;
+    }
+    optional PasswordReuseDetected reuse_detected = 1;
+
+    message PasswordReuseLookup {
+      enum LookupResult {
+        UNSPECIFIED = 0;
+        // URL did match the password reuse whitelist.
+        // No further action required related to this re-use event.
+        WHITELIST_HIT = 1;
+        // The URL exists in the client’s cache.
+        // No further action required related to this re-use event.
+        // This event also logs the ReputationVerdict.
+        CACHE_HIT = 2;
+        // A valid response received from the SafeBrowsing service.
+        // This event also logs the ReputationVerdict.
+        REQUEST_SUCCESS = 3;
+        // Unable to get a valid response from the SafeBrowsing service.
+        REQUEST_FAILURE = 4;
+        // We won't be able to compute reputation for the URL e.g. local IP
+        // address, localhost, not-yet-assigned by ICANN gTLD, etc.
+        URL_UNSUPPORTED = 5;
+        // URL did match enterprise whitelist.
+        // No further action required related to this re-use event.
+        ENTERPRISE_WHITELIST_HIT = 6;
+        // Password reuse lookup is turned off by enterprise policy.
+        // No further action required related to this re-use event.
+        TURNED_OFF_BY_POLICY = 7;
+      }
+      optional LookupResult lookup_result = 1;
+
+      // The following two are only present for CACHE_HIT and REQUEST_SUCCESS.
+      // The verdict received from the Reputation service. This is set only
+      // if the user has SafeBrowsing enabled and we fetch the verdict from the
+      // cache or by sending a verdict request.
+      enum ReputationVerdict {
+        VERDICT_UNSPECIFIED = 0;
+        SAFE = 1;
+        LOW_REPUTATION = 2;
+        PHISHING = 3;
+      }
+      optional ReputationVerdict verdict = 2;
+      // PhishGuard token that identifies the verdict on the server.
+      optional bytes verdict_token = 3;
+    }
+    // Logged when we try to detect whether the password was reused on a
+    // Phishing or a Low-reputation site.
+    optional PasswordReuseLookup reuse_lookup = 2;
+
+    // Logged when the user interacts with the dialog shown to encourage
+    // password change if the site is Phishing or Low-reputation.
+    message PasswordReuseDialogInteraction {
+      enum InteractionResult {
+        UNSPECIFIED = 0;
+        // The user took the action suggested by the warning prompt.
+        WARNING_ACTION_TAKEN = 1;
+        // The user clicked ignore in the warning prompt.
+        WARNING_ACTION_IGNORED = 2;
+        // The warning UI was ignored, i.e. not interacted with by the user.
+        // This could happen if the user navigates away from the page.
+        WARNING_UI_IGNORED = 3;
+      }
+      optional InteractionResult interaction_result = 1;
+    }
+    optional PasswordReuseDialogInteraction dialog_interaction = 3;
+  }
+
+  oneof event {
+    Test test_event = 8;
+    FieldTrial field_trial_event = 9;
+    LanguageDetection language_detection_event = 10;
+    Translation translation_event = 11;
+    UserConsent user_consent = 12;
+    // Happens when a user types their Google account password on another site.
+    GaiaPasswordReuse gaia_password_reuse_event = 104;
+  }
+}

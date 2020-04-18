@@ -1,0 +1,19 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// https://wicg.github.io/budget-api/#budget-service-interface
+
+enum OperationType {
+    "silent-push"
+};
+
+[
+    RuntimeEnabled=Budget,
+    SecureContext,
+    Exposed=(Window,Worker)
+] interface BudgetService {
+    [OriginTrialEnabled=BudgetQuery, CallWith=ScriptState, MeasureAs=BudgetAPIGetCost] Promise<double> getCost(OperationType operation);
+    [OriginTrialEnabled=BudgetQuery, CallWith=ScriptState, MeasureAs=BudgetAPIGetBudget] Promise<sequence<BudgetState>> getBudget();
+    [CallWith=ScriptState] Promise<boolean> reserve(OperationType operation);
+};

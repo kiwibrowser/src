@@ -1,0 +1,48 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This tests ensures that the pnacl translators do not regress in their
+# ability to handle large programs.
+#
+# Note this test is compile only - nothing is run.
+# You can try it manually, like so:
+# ./scons bitcode=1 platform=xxx large_code --verbose
+#
+# We would like to ensure that each platform can translate programs of a
+# minimum size, MIN_SIZE but to better guard against upstream llvm regressions
+# we increase this number on certain archs.
+#
+# We might also be able to restrict the space available to the translators
+# artificially using setrlimit - at least on linux - and then use a smaller
+# MIN_SIZE.
+
+Import('env')
+
+# This test makes only sense for pnacl's sandboxed translators
+# be we also enable it for non-sandboxed translators
+if not env.Bit('bitcode'):
+  Return()
+
+MIN_SIZE = 3500
+
+if env.Bit('build_arm'):
+  # TODO(dschuff): enable arm support and pick proper MIN_SIZE
+  # http://code.google.com/p/nativeclient/issues/detail?id=2649
+  Return()
+else:
+  # TODO(robertm): increase MIN_SIZE of x86-64
+  # http://code.google.com/p/nativeclient/issues/detail?id=2649
+  pass
+
+# generate a synthetic piece of code base on a numerical argument
+# which is roughly porportional to the code size.
+src = env.Command('large_code.c',
+                  env.File('${SCONSTRUCT_DIR}/tools/synthesize_code.py'),
+                  Action('${PYTHON} ${SOURCE} %d > ${TARGETS}' % MIN_SIZE))
+# Make the obj file generation explicit to work around potential
+# scons dependency problems
+obj = env.ComponentObject(src)
+
+env.ComponentProgram('large_code', obj)

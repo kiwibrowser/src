@@ -1,0 +1,28 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="checkbox_radio_css.html">
+<link rel="import" href="number_settings_section.html">
+<link rel="import" href="print_preview_shared_css.html">
+<link rel="import" href="settings_behavior.html">
+
+<dom-module id="print-preview-copies-settings">
+  <template>
+    <style include="print-preview-shared checkbox-radio input">
+    </style>
+    <print-preview-number-settings-section max-value="999" min-value=1
+        default-value="1" input-label="$i18n{copiesLabel}"
+        disabled="[[disabled]]" current-value="{{currentValue_}}"
+        input-valid="{{inputValid_}}" hint-message="$i18n{copiesInstruction}">
+      <div slot="opt-inside-content" class="checkbox" aria-live="polite"
+          hidden$="[[collateHidden_(currentValue_, inputValid_)]]">
+        <label>
+          <input id="collate" type="checkbox" on-change="onCollateChange_"
+              disabled$="[[getDisabled(state)]]"
+              aria-labelledby="copies-collate-label">
+          <span id="copies-collate-label">$i18n{optionCollate}</span>
+        </label>
+      </div>
+    </print-preview-number-settings-section>
+  </template>
+  <script src="copies_settings.js"></script>
+</dom-module>

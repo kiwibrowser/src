@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="file:///gen/layout_test_data/mojo/public/js/mojo_bindings.js"></script>
+<script src="file:///gen/device/vr/public/mojom/vr_service.mojom.js"></script>
+<script src="../xr/resources/xr-device-mocking.js"></script>
+<script src="../xr/resources/xr-test-utils.js"></script>
+<script src="../xr/resources/test-constants.js"></script>
+<canvas id="webgl-canvas"></canvas>
+
+<script>
+let fakeDevices = fakeXRDevices();
+
+promise_test( (t) => {
+  setFakeDevices([fakeDevices["FakeGooglePixelPhone"]]);
+  return navigator.xr.requestDevice().then( (device) => new Promise((resolve) => {
+    runWithUserGesture( () => {
+      resolve(device.requestSession({ exclusive: true })
+        .then( (session) => new Promise((resolve) => {
+          runWithUserGesture( () => {
+            // Requesting a second exclusive session from a device that already
+            // has an active exclusive session should fail. Exclusive sessions
+            // are, well... exclusive!
+            resolve(promise_rejects(
+              t,
+              "InvalidStateError",
+              device.requestSession({ exclusive: true })
+            ).then( () => {
+                // End the exclusive session and try again. Now the exclusive
+                // session creation should succeed.
+                return session.end().then( () => new Promise((resolve) => {
+                  runWithUserGesture( () => {
+                    resolve(device.requestSession({ exclusive: true }));
+                  });
+                }));
+              }));
+          });
+      })));
+    });
+  }));
+}, "requestSession prevents creation of multiple simultaneous exclusive sessions");
+
+</script>

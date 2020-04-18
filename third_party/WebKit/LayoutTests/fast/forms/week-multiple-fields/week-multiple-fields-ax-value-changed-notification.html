@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../../../resources/js-test.js"></script>
+</head>
+<body>
+<input id="test" type="week" value="2012-W10">
+<script>
+description('This test checks value changed accessibility notifications.');
+
+var testInput = document.getElementById("test");
+
+if (!window.accessibilityController || !window.eventSender)
+    debug("Please run inside DRT or WRT.");
+else {
+    accessibilityController.addNotificationListener(function (element, notification) {
+        if (notification == 'Focus' || notification == 'ValueChanged') {
+            debug(notification + ' ' + element.description + '=' + element.valueDescription);
+        }
+    });
+
+    testInput.focus();
+    eventSender.keyDown('\t');
+    eventSender.keyDown('4');
+    eventSender.keyDown('ArrowUp');
+
+    window.jsTestIsAsync = true;
+
+    window.setTimeout(function() {
+        debug('');
+        testInput.remove();
+        finishJSTest();
+    }, 1);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+This directory is for features that are intended for reuse. Example use cases:
+-code that is shared by Chrome on iOS and other Chrome platforms (since the iOS
+  port doesn't use src/chrome)
+-code that is shared between multiple embedders of content (e.g., Android
+  WebView and Chrome)
+-code that is shared between Blink and the browser process (since code in the
+  browser doesn't use Blink, while Blink doesn't include content or chrome to
+  avoid circular dependencies)
+
+In general, if some code is used by a directory "foo" and things above "foo" in
+the dependency tree, the code should probably live in "foo".
+
+By default, components can depend only on the lower layers of the Chromium
+codebase (e.g. base/, net/, etc.). Individual components may additionally allow
+dependencies on the content API and IPC; however, if such a component is used
+by Chrome for iOS (which does not use the content API or IPC), the component
+will have to be in the form of a layered component
+(http://www.chromium.org/developers/design-documents/layered-components-design).
+
+Components that have bits of code that need to live in different
+processes (e.g. some code in the browser process, some in the renderer
+process, etc.) should separate the code into different subdirectories.
+Hence for a component named 'foo' you might end up with a structure
+like the following (assuming that foo is not used by iOS and thus does not
+need to be a layered component):
+
+components/foo          - DEPS, OWNERS, foo.gypi
+components/foo/browser  - code that needs the browser process
+components/foo/common   - for e.g. IPC constants and such
+components/foo/renderer - code that needs renderer process
+
+These subdirectories should have DEPS files with the relevant
+restrictions in place, i.e. only components/*/browser should
+be allowed to #include from content/public/browser.
+
+Note that there may also be an 'android' subdir, with a Java source
+code structure underneath it where the package name is
+org.chromium.components.foo, and with subdirs after 'foo'
+to illustrate process, e.g. 'browser' or 'renderer':
+
+components/foo/android/OWNERS, DEPS
+components/foo/android/java/src/org/chromium/components/foo/browser/
+components/foo/android/javatests/src/org/chromium/components/foo/browser/
+
+Code in a component should be placed in a namespace corresponding to
+the name of the component; e.g. for a component living in
+//components/foo, code in that component should be in the foo::
+namespace.

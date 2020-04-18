@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="file:///gen/layout_test_data/mojo/public/js/mojo_bindings.js"></script>
+<script src="file:///gen/media/capture/mojom/image_capture.mojom.js"></script>
+<script src="resources/mock-imagecapture.js"></script>
+<body>
+<canvas id='canvas' width=10 height=10/>
+</body>
+<script>
+
+const fillLightModeNames = ['off', 'auto', 'flash'];
+
+// This test verifies that ImageCapture can call getPhotoSettings(), with a
+// mock Mojo interface implementation.
+promise_test(async function() {
+  let canvas = document.getElementById('canvas');
+  let context = canvas.getContext('2d');
+  context.fillStyle = 'red';
+  context.fillRect(0, 0, 10, 10);
+  let stream = canvas.captureStream();
+
+  let mockState = mockImageCapture.state();
+  let capturer = new ImageCapture(stream.getVideoTracks()[0]);
+  let settings = await capturer.getPhotoSettings();
+  assert_equals(settings.imageWidth, mockState.width.current, 'width');
+  assert_equals(settings.imageHeight, mockState.height.current, 'height');
+  // TODO(mcasas): check the remaining two entries https://crbug.com/732521.
+
+}, 'exercises ImageCapture.getPhotoSettings()');
+
+</script>

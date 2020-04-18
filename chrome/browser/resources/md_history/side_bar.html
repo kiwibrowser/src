@@ -1,0 +1,125 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-a11y-keys-behavior/iron-a11y-keys-behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-selector/iron-selector.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-ripple/paper-ripple.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-styles/color.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-styles/typography.html">
+<link rel="import" href="chrome://history/browser_service.html">
+<link rel="import" href="chrome://history/shared_style.html">
+
+<dom-module id="history-side-bar">
+  <template>
+    <style include="shared-style">
+      :host {
+        display: flex;
+        height: 100%;
+        overflow-x: hidden;
+        overflow-y: auto;
+        width: var(--side-bar-width);
+      }
+
+      div.separator {
+        background-color: var(--separator-color);
+        flex-shrink: 0;
+        height: 1px;
+        margin: 8px 0;
+      }
+
+      #clear-browsing-data {
+        justify-content: space-between;
+      }
+
+      #clear-browsing-data iron-icon {
+        -webkit-margin-end: 20px;
+        color: var(--paper-grey-400);
+        height: 20px;
+        margin-bottom: 10px;
+        margin-top: 10px;
+        width: 20px;
+      }
+
+      iron-selector {
+        background-color: transparent;
+        color: var(--sidebar-unselected-color);
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        padding-top: 8px;
+        user-select: none;
+      }
+
+      iron-selector > a {
+        /* Ensure the focus outline appears correctly (crbug.com/655503). */
+        -webkit-margin-end: 4px;
+        -webkit-padding-start: 24px;
+        align-items: center;
+        box-sizing: border-box;
+        color: inherit;
+        cursor: pointer;
+        display: flex;
+        font-weight: 500;
+        min-height: 40px;
+        position: relative;
+        text-decoration: none;
+      }
+
+      iron-selector > a.iron-selected {
+        color: var(--link-color);
+      }
+
+      iron-selector > a[disabled] {
+        opacity: 0.65;
+        pointer-events: none;
+      }
+
+      #spacer {
+        flex: 1;
+      }
+
+      #footer {
+        color: var(--sidebar-footer-text-color);
+        width: var(--side-bar-width);
+      }
+
+      #footer-text {
+        -webkit-padding-end: 16px;
+        -webkit-padding-start: 24px;
+        margin: 24px 0;
+      }
+
+      #footer a {
+        text-decoration: none;
+      }
+    </style>
+
+    <iron-selector id="menu" selected="{{selectedPage}}"
+        selectable=".page-item" attr-for-selected="path"
+        on-iron-activate="onSelectorActivate_">
+      <a href="/" class="page-item" path="history" on-click="onItemClick_">
+        $i18n{historyMenuItem}
+        <paper-ripple></paper-ripple>
+      </a>
+      <a href="/syncedTabs" class="page-item" path="syncedTabs"
+          on-click="onItemClick_">
+        $i18n{openTabsMenuItem}
+        <paper-ripple></paper-ripple>
+      </a>
+      <div class="separator"></div>
+      <a id="clear-browsing-data"
+          href="chrome://settings/clearBrowserData"
+          on-click="onClearBrowsingDataTap_"
+          disabled$="[[guestSession_]]"
+          tabindex$="[[computeClearBrowsingDataTabIndex_(guestSession_)]]">
+        $i18n{clearBrowsingData}
+        <iron-icon icon="cr:open-in-new"></iron-icon>
+        <paper-ripple id="cbd-ripple"></paper-ripple>
+      </a>
+      <div id="spacer"></div>
+      <div id="footer" hidden="[[!showFooter]]">
+        <div class="separator"></div>
+        <div id="footer-text">$i18nRaw{sidebarFooter}</div>
+      </div>
+    </iron-selector>
+  </template>
+  <script src="chrome://history/side_bar.js"></script>
+</dom-module>

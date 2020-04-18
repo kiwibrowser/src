@@ -1,0 +1,113 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_lazy_render/cr_lazy_render.html">
+<link rel="import" href="chrome://resources/html/assert.html">
+<link rel="import" href="chrome://resources/html/cr/ui/focus_without_ink.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/neon-animatable.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="../i18n_setup.html">
+<link rel="import" href="reset_profile_dialog.html">
+<link rel="import" href="../route.html">
+<link rel="import" href="../settings_page/settings_animated_pages.html">
+<link rel="import" href="../settings_shared_css.html">
+
+<if expr="chromeos">
+<link rel="import" href="powerwash_dialog.html">
+</if>
+
+<if expr="_google_chrome and is_win">
+<link rel="import" href="../chrome_cleanup_page/chrome_cleanup_page.html">
+<link rel="import" href="../incompatible_applications_page/incompatible_applications_page.html">
+</if>
+
+<dom-module id="settings-reset-page">
+  <template>
+    <style include="settings-shared"></style>
+    <settings-animated-pages id="reset-pages" section="reset">
+      <neon-animatable route-path="default">
+        <div class="settings-box first" id="resetProfile"
+            on-click="onShowResetProfileDialog_" actionable>
+          <div id="resetProfileTrigger" class="start">$i18n{resetTrigger}</div>
+          <paper-icon-button-light class="subpage-arrow">
+            <button id="resetProfileArrow" aria-label="$i18n{resetTrigger}"
+                aria-describedby="resetProfileTrigger"></button>
+          </paper-icon-button-light>
+        </div>
+        <!-- Keep a single instance of reset-profile-dialog on purpose, to
+          preserve state across show/hide operations. -->
+        <cr-lazy-render id="resetProfileDialog">
+          <template>
+            <settings-reset-profile-dialog
+                on-close="onResetProfileDialogClose_">
+            </settings-reset-profile-dialog>
+          </template>
+        </cr-lazy-render>
+<if expr="chromeos">
+        <div class="settings-box two-line" id="powerwash" actionable
+            on-click="onShowPowerwashDialog_" hidden="[[!allowPowerwash_]]">
+          <div class="start">
+            $i18n{powerwashTitle}
+            <div class="secondary" id="powerwashSecondary">
+              $i18n{powerwashDescription}
+            </div>
+          </div>
+          <paper-icon-button-light class="subpage-arrow">
+            <button id="powerwashArrow" aria-label="$i18n{powerwashTitle}"
+                aria-describedby="powerwashSecondary"></button>
+          </paper-icon-button-light>
+        </div>
+        <template is="dom-if" if="[[showPowerwashDialog_]]" restamp>
+          <settings-powerwash-dialog on-close="onPowerwashDialogClose_">
+          </settings-powerwash-dialog>
+        </template>
+</if>
+<if expr="_google_chrome and is_win">
+        <div class="settings-box" id="chromeCleanupSubpageTrigger"
+            on-click="onChromeCleanupTap_" actionable>
+          <div class="start">$i18n{resetCleanupComputerTrigger}</div>
+          <paper-icon-button-light class="subpage-arrow">
+            <button id="chromeCleanupArrow"
+                aria-label="$i18n{resetCleanupComputerTrigger}"></button>
+          </paper-icon-button-light>
+        </div>
+        <template is="dom-if" if="[[showIncompatibleApplications_]]" restamp>
+          <div class="settings-box"
+              id="incompatibleApplicationsSubpageTrigger"
+              on-click="onIncompatibleApplicationsTap_" actionable>
+            <div class="start">
+              $i18n{incompatibleApplicationsResetCardTitle}
+            </div>
+            <paper-icon-button-light class="subpage-arrow">
+              <button
+                  aria-label="$i18n{incompatibleApplicationsResetCardTitle}"
+                  aria-describedby="incompatibleApplicationsSecondary"></button>
+            </paper-icon-button-light>
+          </div>
+        </template>
+</if>
+      </neon-animatable>
+<if expr="_google_chrome and is_win">
+      <template is="dom-if" route-path="/cleanup">
+        <settings-subpage id="chromeCleanupSubpage"
+            associated-control="[[$$('#chromeCleanupSubpageTrigger')]]"
+            page-title="$i18n{resetCleanupComputerTrigger}"
+            learn-more-url="$i18n{chromeCleanupLearnMoreUrl}">
+          <settings-chrome-cleanup-page prefs="[[prefs]]">
+          </settings-chrome-cleanup-page>
+        </settings-subpage>
+      </template>
+      <template is="dom-if" if="[[showIncompatibleApplications_]]">
+        <template is="dom-if" route-path="/incompatibleApplications">
+          <settings-subpage id="incompatibleApplicationsSubpage"
+              associated-control="[[$$('#incompatibleApplicationsSubpageTrigger')]]"
+              page-title="$i18n{incompatibleApplicationsResetCardTitle}">
+            <settings-incompatible-applications-page>
+            </settings-incompatible-applications-page>
+          </settings-subpage>
+        </template>
+      </template>
+</if>
+    </settings-animated-pages>
+  </template>
+  <script src="reset_page.js"></script>
+</dom-module>

@@ -1,0 +1,32 @@
+<html>
+<head>
+    <script>
+        function loaded()
+        {
+            document.getElementsByTagName('h4')[0].innerHTML = document.domain;
+        }
+
+        function startTest(event)
+        {
+            // A manual click should navigate.
+            if (window.eventSender) {
+                var button = document.getElementById("b");
+                eventSender.mouseMoveTo(button.offsetLeft + event.data.x + 4, button.offsetTop + event.data.y + 4);
+                eventSender.mouseDown();
+                eventSender.mouseUp();
+            }
+        }
+
+        function performTest()
+        {
+            parent.location = "http://localhost:8000/security/frameNavigation/resources/navigation-changed-iframe.html";
+        }
+
+        window.addEventListener("message", startTest, false);
+    </script>
+</head>
+<body onload="loaded();">
+    <h4>DOMAIN</h4>
+    <button id="b" onclick="performTest();">Perform Test</button>
+</body>
+</html>

@@ -1,0 +1,87 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef DEVICE_GAMEPAD_GAMEPAD_STANDARD_MAPPINGS_H_
+#define DEVICE_GAMEPAD_GAMEPAD_STANDARD_MAPPINGS_H_
+
+#include "base/strings/string_piece.h"
+#include "device/gamepad/public/cpp/gamepad.h"
+
+namespace device {
+
+// For a connected gamepad, specify the type of bus through which it is
+// connected. This allows for specialized mappings depending on how the device
+// is connected. For instance, a gamepad may require different mappers for USB
+// and Bluetooth.
+enum GamepadBusType {
+  GAMEPAD_BUS_UNKNOWN,
+  GAMEPAD_BUS_USB,
+  GAMEPAD_BUS_BLUETOOTH
+};
+
+typedef void (*GamepadStandardMappingFunction)(const Gamepad& original,
+                                               Gamepad* mapped);
+
+GamepadStandardMappingFunction GetGamepadStandardMappingFunction(
+    const base::StringPiece& vendor_id,
+    const base::StringPiece& product_id,
+    const base::StringPiece& version_number,
+    GamepadBusType bus_type);
+
+// This defines our canonical mapping order for gamepad-like devices. If these
+// items cannot all be satisfied, it is a case-by-case judgement as to whether
+// it is better to leave the device unmapped, or to partially map it. In
+// general, err towards leaving it *unmapped* so that content can handle
+// appropriately.
+
+// A Java counterpart will be generated for this enum.
+// GENERATED_JAVA_ENUM_PACKAGE: org.chromium.device.gamepad
+// GENERATED_JAVA_PREFIX_TO_STRIP: BUTTON_INDEX_
+enum CanonicalButtonIndex {
+  BUTTON_INDEX_PRIMARY,
+  BUTTON_INDEX_SECONDARY,
+  BUTTON_INDEX_TERTIARY,
+  BUTTON_INDEX_QUATERNARY,
+  BUTTON_INDEX_LEFT_SHOULDER,
+  BUTTON_INDEX_RIGHT_SHOULDER,
+  BUTTON_INDEX_LEFT_TRIGGER,
+  BUTTON_INDEX_RIGHT_TRIGGER,
+  BUTTON_INDEX_BACK_SELECT,
+  BUTTON_INDEX_START,
+  BUTTON_INDEX_LEFT_THUMBSTICK,
+  BUTTON_INDEX_RIGHT_THUMBSTICK,
+  BUTTON_INDEX_DPAD_UP,
+  BUTTON_INDEX_DPAD_DOWN,
+  BUTTON_INDEX_DPAD_LEFT,
+  BUTTON_INDEX_DPAD_RIGHT,
+  BUTTON_INDEX_META,
+  BUTTON_INDEX_COUNT
+};
+
+// A Java counterpart will be generated for this enum.
+// GENERATED_JAVA_ENUM_PACKAGE: org.chromium.device.gamepad
+// GENERATED_JAVA_PREFIX_TO_STRIP: AXIS_INDEX_
+enum CanonicalAxisIndex {
+  AXIS_INDEX_LEFT_STICK_X,
+  AXIS_INDEX_LEFT_STICK_Y,
+  AXIS_INDEX_RIGHT_STICK_X,
+  AXIS_INDEX_RIGHT_STICK_Y,
+  AXIS_INDEX_COUNT
+};
+
+// Matches XInput's trigger deadzone
+const float kDefaultButtonPressedThreshold = 30.f / 255.f;
+
+// Common mapping functions
+GamepadButton AxisToButton(float input);
+GamepadButton AxisNegativeAsButton(float input);
+GamepadButton AxisPositiveAsButton(float input);
+GamepadButton ButtonFromButtonAndAxis(GamepadButton button, float axis);
+GamepadButton NullButton();
+void DpadFromAxis(Gamepad* mapped, float dir);
+float RenormalizeAndClampAxis(float value, float min, float max);
+
+}  // namespace device
+
+#endif  // DEVICE_GAMEPAD_GAMEPAD_STANDARD_MAPPINGS_H_

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../../resources/js-test.js"></script>
+</head>
+<body onLoad="runTest();">
+<iframe id="nestingFrame" src="resources/1-nested-frame-noncomposited-expected.html" style="position: relative; left: 10px; top: 10px; width: 450px; height: 150px;"></iframe>
+<div style="position: relative; left: 10px; top: 20px; transform: translateZ(0);">
+This test is successful if "Target Link" is covered by a green box with square corners,
+and the inner frame is partially scrolled.
+</div>
+<script>
+function runTest() {
+    var nestingFrame = document.getElementById('nestingFrame');
+    var targetFrame = nestingFrame.contentDocument.getElementById('targetFrame');
+    targetFrame.contentWindow.scrollTo(0, 20);
+
+    if (window.testRunner)
+        testRunner.dumpAsTextWithPixelResults();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+import os
+
+# This directory contains untrusted C and ASM source for low-level
+# CPU-specific libraries implicitly supplied by the compiler driver.
+# Unlike most untrusted SDK code, conditional compilation may be
+# freely used, as the target will never be PNaCl.
+
+# PNaCl does not support the fini/init mechanism.
+# Instead the more modern .init_array and .fini_array approach should be used
+
+if env.Bit('bitcode'):
+  Return()
+
+def GetPlatformSuffix(env):
+  platform = env.get('TARGET_FULLARCH')
+  assert platform in ['x86-32', 'x86-64', 'arm', 'mips32']
+  # we do not like hyphens in file names
+  return platform.replace('-', '_')
+
+platform = GetPlatformSuffix(env)
+
+# This is a dummy linker script (a source file), not an actual object file.
+crt1 = env.InstallAs('crt1.o', 'crt1.x')
+env.AddObjectToSdk([crt1])
+
+# TODO(mcgrathr): The multilib in the gcc driver logic defeats -Bx/ under -m32.
+# Figure out a way to make -B really override everything else.
+if platform == 'x86_32':
+  env.Install(os.path.join('${LIB_DIR}', '32'), crt1)
+
+bookends = [env.ComponentObject('crti', ['crti_%s.S' % platform]),
+            env.ComponentObject('crtn', ['crtn_%s.S' % platform])]
+
+env.AddObjectToSdk(bookends)

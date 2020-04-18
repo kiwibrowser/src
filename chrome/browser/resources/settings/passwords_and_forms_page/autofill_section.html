@@ -1,0 +1,224 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_action_menu/cr_action_menu.html">
+<link rel="import" href="chrome://resources/cr_elements/policy/cr_policy_indicator.html">
+<link rel="import" href="chrome://resources/html/action_link.html">
+<link rel="import" href="chrome://resources/html/action_link_css.html">
+<link rel="import" href="chrome://resources/html/assert.html">
+<link rel="import" href="chrome://resources/html/cr/ui/focus_without_ink.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="../i18n_setup.html">
+<link rel="import" href="../settings_shared_css.html">
+<link rel="import" href="../controls/extension_controlled_indicator.html">
+<link rel="import" href="../controls/settings_toggle_button.html">
+<link rel="import" href="../prefs/prefs.html">
+<link rel="import" href="address_edit_dialog.html">
+<link rel="import" href="credit_card_edit_dialog.html">
+<link rel="import" href="passwords_shared_css.html">
+
+<dom-module id="settings-autofill-section">
+  <template>
+    <style include="settings-shared passwords-shared action-link">
+      .type-column {
+        align-items: center;
+        flex: 2;
+      }
+
+      .expiration-column {
+        align-items: center;
+        display: flex;
+        flex: 1;
+      }
+
+      .expiration-date {
+        flex: 1;
+      }
+
+      .payments-label {
+        -webkit-margin-start: 16px;
+        color: var(--paper-grey-600);
+      }
+
+      #addressList .start {
+        display: flex;
+        overflow: hidden;
+      }
+
+      #addressSummary {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      .ellipses {
+        flex: 1;
+        max-width: fit-content;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      cr-policy-indicator {
+        padding-right: 20px;
+        width: 20px;
+      }
+    </style>
+    <settings-toggle-button id="autofillToggle"
+        class="first"
+        aria-label="$i18n{autofill}" no-extension-indicator
+        label="$i18n{autofillFormsLabel}"
+        pref="{{prefs.autofill.enabled}}">
+    </settings-toggle-button>
+    <template is="dom-if" if="[[prefs.autofill.enabled.extensionId]]">
+      <div class="settings-box continuation">
+        <extension-controlled-indicator class="start"
+            id="autofillExtensionIndicator"
+            extension-id="[[prefs.autofill.enabled.extensionId]]"
+            extension-name="[[prefs.autofill.enabled.controlledByName]]"
+            extension-can-be-disabled="[[
+                prefs.autofill.enabled.extensionCanBeDisabled]]">
+        </extension-controlled-indicator>
+      </div>
+    </template>
+    <div class="settings-box continuation">
+      <h2 class="start">$i18n{addresses}</h2>
+      <paper-button id="addAddress"
+          class="secondary-button header-aligned-button"
+          on-click="onAddAddressTap_">
+        $i18n{add}
+      </paper-button>
+    </div>
+    <div class="list-frame">
+      <div id="addressList" class="vertical-list">
+        <template is="dom-repeat" items="[[addresses]]">
+          <div class="list-item">
+            <div class="start">
+              <span id="addressSummary">
+                <span class="ellipses">
+                  [[item.metadata.summaryLabel]]
+                </span>
+                <span class="ellipses">
+                  [[item.metadata.summarySublabel]]
+                </span>
+              </span>
+              <span class="payments-label" hidden$="[[item.metadata.isLocal]]">
+                $i18n{googlePayments}
+              </span>
+            </div>
+            <template is="dom-if" if="[[item.metadata.isLocal]]">
+              <paper-icon-button-light class="icon-more-vert">
+                <button id="addressMenu"
+                    on-click="onAddressMenuTap_" title="$i18n{moreActions}">
+                </button>
+              </paper-icon-button-light>
+            </template>
+            <template is="dom-if" if="[[!item.metadata.isLocal]]">
+              <paper-icon-button-light actionable class="icon-external">
+                <button on-click="onRemoteEditAddressTap_"></button>
+              </paper-icon-button-light>
+            </template>
+          </div>
+        </template>
+      </div>
+      <div id="noAddressesLabel" class="list-item"
+          hidden$="[[hasSome_(addresses)]]">
+        $i18n{noAddressesFound}
+      </div>
+    </div>
+    <cr-action-menu id="addressSharedMenu">
+      <button id="menuEditAddress" slot="item" class="dropdown-item"
+          on-click="onMenuEditAddressTap_">$i18n{edit}</button>
+      <button id="menuRemoveAddress" slot="item" class="dropdown-item"
+          on-click="onMenuRemoveAddressTap_">$i18n{removeAddress}</button>
+    </cr-action-menu>
+    <template is="dom-if" if="[[showAddressDialog_]]" restamp>
+      <settings-address-edit-dialog address="[[activeAddress]]"
+          on-close="onAddressDialogClosed_">
+      </settings-address-edit-dialog>
+    </template>
+    <div class="settings-box first">
+      <h2 class="start">$i18n{creditCards}</h2>
+      <paper-button id="addCreditCard"
+          class="secondary-button header-aligned-button"
+          on-click="onAddCreditCardTap_"
+          hidden$="[[isDisabled_(prefs.autofill.credit_card_enabled)]]">
+        $i18n{add}
+      </paper-button>
+    </div>
+    <div class="list-frame">
+      <template is="dom-if"
+          if="[[!isDisabled_(prefs.autofill.credit_card_enabled)]]">
+        <div id="creditCardsHeading" class="list-item column-header"
+            hidden$="[[!hasSome_(creditCards)]]">
+          <div class="type-column">$i18n{creditCardType}</div>
+          <div class="expiration-column">$i18n{creditCardExpiration}</div>
+        </div>
+        <div id="creditCardList" class="vertical-list list-with-header">
+          <template is="dom-repeat" items="[[creditCards]]">
+            <div class="list-item">
+              <div class="type-column">
+                <span id="creditCardLabel">[[item.metadata.summaryLabel]]</span>
+                <span class="payments-label"
+                    hidden$="[[item.metadata.isLocal]]">
+                  <span hidden$="[[item.metadata.isCached]]">
+                    $i18n{googlePayments}
+                  </span>
+                  <span hidden$="[[!item.metadata.isCached]]">
+                    $i18n{googlePaymentsCached}
+                  </span>
+                </span>
+              </div>
+              <div class="expiration-column">
+                <div id="creditCardExpiration"
+                    class="expiration-date">[[expiration_(item)]]</div>
+                <template is="dom-if" if="[[showDots_(item.metadata)]]">
+                  <paper-icon-button-light class="icon-more-vert">
+                    <button id="creditCardMenu" title="$i18n{moreActions}"
+                        on-click="onCreditCardMenuTap_">
+                    </button>
+                  </paper-icon-button-light>
+                </template>
+                <template is="dom-if" if="[[!showDots_(item.metadata)]]">
+                  <paper-icon-button-light actionable class="icon-external">
+                    <button id="remoteCreditCardLink"
+                        on-click="onRemoteEditCreditCardTap_">
+                    </button>
+                  </paper-icon-button-light>
+                </template>
+              </div>
+            </div>
+          </template>
+        </div>
+        <div id="noCreditCardsLabel" class="list-item"
+            hidden$="[[hasSome_(creditCards)]]">
+          $i18n{noCreditCardsFound}
+        </div>
+      </template>
+      <div id="CreditCardsDisabledLabel" class="list-item"
+          hidden$="[[!isDisabled_(prefs.autofill.credit_card_enabled)]]">
+        <cr-policy-indicator indicator-type="userPolicy"
+            icon-aria-label="$i18n{noCreditCardsPolicy}"></cr-policy-indicator>
+        $i18n{noCreditCardsPolicy}
+      </div>
+    </div>
+    <cr-action-menu id="creditCardSharedMenu">
+      <button id="menuEditCreditCard" slot="item" class="dropdown-item"
+          on-click="onMenuEditCreditCardTap_">$i18n{edit}</button>
+      <button id="menuRemoveCreditCard" slot="item" class="dropdown-item"
+          hidden$="[[!activeCreditCard.metadata.isLocal]]"
+          on-click="onMenuRemoveCreditCardTap_">$i18n{removeCreditCard}</button>
+      <button id="menuClearCreditCard" slot="item" class="dropdown-item"
+          on-click="onMenuClearCreditCardTap_"
+          hidden$="[[!activeCreditCard.metadata.isCached]]">
+        $i18n{clearCreditCard}
+      </button>
+    </cr-action-menu>
+    <template is="dom-if" if="[[showCreditCardDialog_]]" restamp>
+      <settings-credit-card-edit-dialog credit-card="[[activeCreditCard]]"
+          on-close="onCreditCardDialogClosed_">
+      </settings-credit-card-edit-dialog>
+    </template>
+  </template>
+  <script src="autofill_section.js"></script>
+</dom-module>

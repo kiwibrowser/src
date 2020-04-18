@@ -1,0 +1,55 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# Do not run these tests with pexes, assuming they are portable, since
+# they use inline assembler.
+if env.Bit('bitcode') and env.Bit('pnacl_generate_pexe'):
+  Return()
+
+# env's BUILD_ARCH, BUILD_SUBARCH controls what assembly files to use.
+def GetAssemblerFile(env):
+  if env.Bit('build_x86_32'):
+    return 'sandboxed_x86_32.S'
+  elif env.Bit('build_x86_64'):
+    return 'sandboxed_x86_64.S'
+  elif env.Bit('build_arm'):
+    return 'sandboxed_arm.S'
+  elif env.Bit('build_mips32'):
+    return 'sandboxed_mips.S'
+  else:
+    raise Exception('unknown architecture')
+
+asm_env = env.Clone()
+use_obj_env = env.Clone()
+
+if asm_env.Bit('bitcode'):
+  asm_env.PNaClForceNative()
+  # Allow use of native object file
+  use_obj_env.Append(LINKFLAGS=['--pnacl-allow-native'])
+
+asm_obj = asm_env.ComponentObject(GetAssemblerFile(env))
+
+syscall_return_sandboxing_nexe = use_obj_env.ComponentProgram(
+                                   'syscall_return_sandboxing',
+                                   ['syscall_return_sandboxing.c', asm_obj],
+                                   EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl(
+    'syscall_return_sandboxing.out',
+    syscall_return_sandboxing_nexe)
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests', 'nonpexe_tests'],
+                       'run_syscall_return_sandboxing_test')
+
+thread_create_bad_address_nexe = env.ComponentProgram(
+    'thread_create_bad_address',
+    env.RawSyscallObjects(['thread_create_bad_address.c']),
+    EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl(
+    'thread_create_bad_address.out',
+    thread_create_bad_address_nexe)
+env.AddNodeToTestSuite(node, ['small_tests', 'nonpexe_tests'],
+                       'run_thread_create_bad_address_test')

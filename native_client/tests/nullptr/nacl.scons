@@ -1,0 +1,19 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+nexe = env.ComponentProgram('nullptr',
+                            'nullptr.c',
+                            EXTRA_LIBS=['${NONIRT_LIBS}'],
+                            )
+
+node = env.CommandSelLdrTestNacl('nullptr.out',
+                                 nexe,
+                                 exit_status='untrusted_segfault')
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_nullptr_test',
+                       is_broken=env.UsingEmulator())
+

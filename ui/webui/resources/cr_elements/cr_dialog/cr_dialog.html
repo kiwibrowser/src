@@ -1,0 +1,179 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/hidden_style_css.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_icons_css.html">
+<link rel="import" href="chrome://resources/html/assert.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-styles/default-theme.html">
+
+<dom-module id="cr-dialog">
+  <template>
+    <style include="cr-hidden-style cr-icons">
+      dialog {
+        --scroll-border: 1px solid var(--paper-grey-300);
+        border: 0;
+        border-radius: 8px;
+        bottom: 50%;
+        box-shadow: 0 0 16px rgba(0, 0, 0, 0.12),
+                    0 16px 16px rgba(0, 0, 0, 0.24);
+        color: inherit;
+        overflow-y: hidden;
+        padding: 0;
+        top: 50%;
+        width: 512px;
+        @apply --cr-dialog-native;
+      }
+
+      dialog[open] #content-wrapper {
+        /* Keep max-height within viewport, and flex content accordingly. */
+        display: flex;
+        flex-direction: column;
+        max-height: 100vh;
+        overflow: auto;
+        @apply --cr-dialog-wrapper;
+      }
+
+      /* When needing to flex, force .body-container alone to shrink. */
+      .top-container,
+      :host ::slotted([slot=button-container]),
+      :host ::slotted([slot=footer]) {
+        flex-shrink: 0;
+      }
+
+      dialog::backdrop {
+        background-color: rgba(0, 0, 0, 0.6);
+        bottom: 0;
+        left: 0;
+        position: fixed;
+        right: 0;
+        top: 0;
+      }
+
+      /**
+       * When using mixins, avoid using padding shorthand. Using both the
+       * shorthand and top/bottom/start/end can lead to style override issues.
+       * This is only noticable when the |optimize_webui=true| build arguement
+       * is used.
+       *
+       * See https://crbug.com/846254 and associated CL for more information.
+       */
+      :host ::slotted([slot=body]) {
+        -webkit-padding-end: 20px;
+        -webkit-padding-start: 20px;
+        padding-bottom: 0;
+        padding-top: 0;
+        @apply --cr-dialog-body;
+      }
+
+      :host ::slotted([slot=title]) {
+        -webkit-padding-end: 20px;
+        -webkit-padding-start: 20px;
+        flex: 1;
+        font-size: calc(15 / 13 * 100%);
+        line-height: 1;
+        padding-bottom: 16px;
+        padding-top: 16px;
+        @apply --cr-dialog-title;
+      }
+
+      :host ::slotted([slot=button-container]) {
+        display: flex;
+        justify-content: flex-end;
+        padding: 16px;
+        @apply --cr-dialog-button-container;
+      }
+
+      :host ::slotted([slot=footer]) {
+        border-bottom-left-radius: inherit;
+        border-bottom-right-radius: inherit;
+        border-top: 1px solid var(--divider-color);
+        margin: 0;
+        padding: 16px 20px;
+      }
+
+      .body-container {
+        /* Prevent layout moving when border does appear. */
+        border-bottom: 1px solid transparent;
+        border-top: 1px solid transparent;
+
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        min-height: 1.375rem; /* Minimum reasonably usable height. */
+        overflow: auto;
+
+        @apply --cr-dialog-body-container;
+      }
+
+      .body-container.bottom-scrollable {
+        border-bottom: var(--scroll-border);
+      }
+
+      .body-container.top-scrollable {
+        border-top: var(--scroll-border);
+      }
+
+      .top-container {
+        align-items: flex-start;
+        display: flex;
+        min-height: var(--cr-dialog-top-container-min-height, 31px);
+      }
+
+      .title-container {
+        display: flex;
+        flex: 1;
+        outline: none;
+      }
+
+      #closeContainer {
+        --layout-inline: {
+          display: flex;
+        };
+
+        -webkit-margin-end: 4px;
+        align-self: flex-start;
+        margin-top: 4px;
+
+        @apply --cr-dialog-close-image;
+      }
+
+      #closeContainer:hover {
+        @apply --cr-dialog-close-image-hover;
+      }
+
+      #closeContainer:active {
+        @apply --cr-dialog-close-image-active;
+      }
+
+      #closeContainer paper-ripple {
+        @apply --cr-dialog-close-ripple;
+      }
+    </style>
+    <dialog id="dialog">
+      <!-- This wrapper is necessary, such that the "pulse" animation is not
+        erroneously played when the user clicks on the outer-most scrollbar. -->
+      <div id="content-wrapper">
+        <div class="top-container">
+          <div class="title-container" tabindex="-1">
+            <slot name="title"></slot>
+          </div>
+          <paper-icon-button-light id="closeContainer" class="icon-clear"
+              hidden$="[[!showCloseButton]]">
+            <button id="close" aria-label$="[[closeText]]"
+                on-tap="cancel" on-keypress="onCloseKeypress_">
+            </button>
+          </paper-icon-button-light>
+        </div>
+        <slot name="header"></slot>
+        <div class="body-container">
+          <span id="bodyTopMarker"></span>
+          <slot name="body"></slot>
+          <span id="bodyBottomMarker"></span>
+        </div>
+        <slot name="button-container"></slot>
+        <slot name="footer"></slot>
+      </div>
+    </dialog>
+  </template>
+  <script src="cr_dialog.js"></script>
+</dom-module>

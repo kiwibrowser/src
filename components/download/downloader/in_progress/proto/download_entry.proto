@@ -1,0 +1,84 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package metadata_pb;
+
+import "download_source.proto";
+
+message HttpRequestHeader {
+  optional string key = 1;
+  optional string value = 2;
+}
+
+// Slice information for parallel downloading.
+message ReceivedSlice {
+  optional int64 offset = 1;
+  optional int64 received_bytes = 2;
+  optional bool finished = 3;
+}
+
+// Stores various in-progress metadata related to a download.
+message DownloadEntry {
+  optional string guid = 1;
+  optional string request_origin = 2;
+  optional DownloadSource download_source = 3;
+  optional int64 ukm_download_id = 4;
+  optional int64 bytes_wasted = 5;
+  optional bool fetch_error_body = 6;
+  repeated HttpRequestHeader request_headers = 7;
+}
+
+// Contains a list of entries.
+message DownloadEntries {
+  repeated DownloadEntry entries = 1;
+}
+
+// Information for ukm reporting
+message UkmInfo {
+  optional DownloadSource download_source = 1;
+  optional int64 ukm_download_id = 2;
+}
+
+// Information about an in progress download.
+message InProgressInfo {
+  repeated string url_chain = 1;
+  optional bool fetch_error_body = 2;
+  repeated HttpRequestHeader request_headers = 3;
+  optional string etag = 4;
+  optional string last_modified = 5;
+  optional int64 total_bytes = 6;
+  optional bytes current_path = 7;  // Serialized pickles to support string16
+  optional bytes target_path = 8;   // Serialized pickles to support string16
+  optional int64 received_bytes = 9;
+  optional int64 end_time = 10;
+  repeated ReceivedSlice received_slices = 11;
+  optional string hash = 12;
+  optional bool transient = 13;
+  optional int32 state = 14;
+  optional int32 danger_type = 15;
+  optional int32 interrupt_reason = 16;
+  optional bool paused = 17;
+  optional bool metered = 18;
+  optional string request_origin = 19;
+  optional int64 bytes_wasted = 20;
+}
+
+// Stores various in-progress metadata related to a download.
+// WIP and will replace DownloadEntry.
+message DownloadInfo {
+  optional string guid = 1;
+  optional UkmInfo ukm_info = 2;
+  optional InProgressInfo in_progress_info = 3;
+}
+
+// database entry for download information.
+message DownloadDBEntry {
+  optional string id = 1;
+  // Add field for offline page download.
+  oneof entry { DownloadInfo download_info = 2; }
+}

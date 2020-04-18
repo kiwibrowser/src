@@ -1,0 +1,52 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef COMPONENTS_PASSWORD_MANAGER_CORE_COMMON_PASSWORD_MANAGER_UI_H_
+#define COMPONENTS_PASSWORD_MANAGER_CORE_COMMON_PASSWORD_MANAGER_UI_H_
+
+
+namespace password_manager {
+
+namespace ui {
+
+// The current state of the password manager's UI.
+enum State {
+  // The password manager has nothing to do with the current site.
+  INACTIVE_STATE,
+
+  // A password is pending.
+  PENDING_PASSWORD_STATE,
+
+  // A password has been saved and we wish to display UI confirming the save
+  // to the user.
+  CONFIRMATION_STATE,
+
+  // A password has been autofilled, or has just been saved. The icon needs
+  // to be visible, in the management state.
+  MANAGE_STATE,
+
+  // The site has asked user to choose a credential.
+  CREDENTIAL_REQUEST_STATE,
+
+  // The user was auto signed in to the site. The icon and the auto-signin toast
+  // should be visible.
+  AUTO_SIGNIN_STATE,
+
+  // The user submitted a form that we consider to be a change password form.
+  // Chrome needs to ask the user to confirm password updating.
+  PENDING_PASSWORD_UPDATE_STATE,
+
+  // The user was prompted to sign in to Chrome after saving a password.
+  CHROME_SIGN_IN_PROMO_STATE,
+
+  // The user was prompted with the Desktop to Mobile promotion after saving
+  // a password.
+  CHROME_DESKTOP_IOS_PROMO_STATE,
+};
+
+}  // namespace ui
+
+}  // namespace password_manager
+
+#endif  // COMPONENTS_PASSWORD_MANAGER_CORE_COMMON_PASSWORD_MANAGER_UI_H_

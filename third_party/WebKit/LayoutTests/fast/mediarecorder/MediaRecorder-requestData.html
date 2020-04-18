@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<script src=../../resources/testharness.js></script>
+<script src=../../resources/testharnessreport.js></script>
+<script>
+
+// This test verifies we can successfully create a MediaRecorder and
+// get data from a MediaStream with it.
+
+var checkStreamTracks = function(stream, has_video, has_audio) {
+  if (has_video) {
+    assert_equals(stream.getVideoTracks().length, 1);
+    assert_equals(stream.getVideoTracks()[0].readyState, 'live');
+  } else {
+    assert_equals(stream.getVideoTracks().length, 0);
+  }
+
+  if (has_audio) {
+    assert_equals(stream.getAudioTracks().length, 1);
+    assert_equals(stream.getAudioTracks()[0].readyState, 'live');
+  } else {
+    assert_equals(stream.getAudioTracks().length, 0);
+  }
+};
+
+var makeAsyncTest = function(value, expected) {
+  async_test(function(test) {
+    const recorderOnDataAvailable = test.step_func_done(function(event) {
+      assert_equals(event.data.size, 0, 'Recorded data size should be == 0');
+      assert_equals(event.data.type, "video/webm");
+      assert_not_equals(event.timecode, NaN, 'timecode');
+    });
+
+    const recorderOnStop =
+        test.step_func(function() { assert_unreached('Recording stopped.'); });
+
+    const recorderOnError =
+        test.step_func(function() { assert_unreached('Recording error.'); });
+
+    const gotStream = test.step_func(function(stream) {
+      checkStreamTracks(stream, value['video'], value['audio']);
+
+      var recorder = new MediaRecorder(stream);
+
+      assert_throws("InvalidStateError", function() { recorder.requestData(); },
+                    "recorder throws InvalidStateError if requestData() " +
+                    "while  state is not 'recording'");
+
+      recorder.ondataavailable = recorderOnDataAvailable;
+      recorder.onstop = recorderOnStop;
+      recorder.onerror = recorderOnError;
+      recorder.start();
+
+      assert_equals(recorder.state, "recording");
+      recorder.requestData();
+    });
+
+    const onError = test.unreached_func('Error creating MediaStream.');
+    navigator.webkitGetUserMedia(value, gotStream, onError);
+  });
+};
+
+generate_tests(makeAsyncTest,
+               [["video-only",  {video: true,  audio: false}],
+                ["audio-only",  {video: false, audio: true}],
+                ["audio-video", {video: true,  audio: true}]]);
+
+</script>

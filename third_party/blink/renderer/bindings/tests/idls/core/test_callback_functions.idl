@@ -1,0 +1,33 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+callback VoidCallbackFunction = void ();
+callback AnyCallbackFunctionOptionalAnyArg = any (optional any optionalAnyArg);
+callback LongCallbackFunction = long (long num1, long num2);
+
+// Following callback functions are to be generated as expected.
+callback VoidCallbackFunctionInterfaceArg = void (HTMLDivElement divElement);
+callback VoidCallbackFunctionDictionaryArg = void (TestDictionary arg);
+callback VoidCallbackFunctionTestInterfaceSequenceArg = void (sequence<TestInterface> arg);
+callback StringSequenceCallbackFunctionLongSequenceArg = sequence<DOMString> (sequence<long> arg);
+callback VoidCallbackFunctionEnumArg = void (TestEnum arg);
+callback VoidCallbackFunctionTypedef = void (String arg);
+
+interface TestCallbackFunctions {
+    // Extended attributes
+    [CustomElementCallbacks] readonly attribute long customElementsCallbacksReadonlyAttribute;
+
+    // Methods
+    VoidCallbackFunction returnCallbackFunctionMethod();
+    AnyCallbackFunctionOptionalAnyArg returnCallbackFunctionMethod2();
+
+    void voidMethodCallbackFunctionInArg(VoidCallbackFunction voidCallbackFunctionArg);
+    void voidMethodCallbackFunctionInArg2(AnyCallbackFunctionOptionalAnyArg anyCallbackFunctionOptionalAnyArgArg);
+    void voidMethodCallbackFunctionWithReturnValueInArg(LongCallbackFunction longCallbackFunctionArg);
+
+    void voidMethodOptionalCallbackFunctionInArg(optional VoidCallbackFunction voidCallbackFunctionArg);
+    void voidMethodNullableCallbackFunctionInArg(VoidCallbackFunction? voidCallbackFunctionArg);
+    // Extended attributes
+    [CustomElementCallbacks] void customElementCallbacksMethod();
+};

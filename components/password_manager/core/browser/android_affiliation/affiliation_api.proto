@@ -1,0 +1,46 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+package affiliation_pb;
+
+option optimize_for = LITE_RUNTIME;
+
+// A collection of facets affiliated with each other, i.e. an equivalence class.
+message Affiliation {
+  repeated Facet facet = 1;
+}
+
+message Facet {
+  // The URI of the facet.
+  optional string id = 1;
+  optional BrandingInfo branding_info = 2;
+}
+
+message BrandingInfo {
+  optional string name = 1;
+  optional string icon_url = 2;
+}
+
+// Specifies what additional information to return with the response.
+message LookupAffiliationMask {
+  // Whether or not to fill |branding_info| for returned Facets.
+  optional bool branding_info = 1;
+  // The locale to use for |branding_info.name| for returned Facets.
+  optional string locale = 2;
+}
+
+// Encapsulates a lookup request to the Affiliation API.
+message LookupAffiliationRequest {
+  // The facet URIs to query.
+  repeated string facet = 1;
+  optional LookupAffiliationMask mask = 2;
+}
+
+// Encapsulates a lookup response from the the Affiliation API.
+message LookupAffiliationResponse {
+  // For each queried facet, the corresponding equivalence class, if any.
+  repeated Affiliation affiliation = 1;
+}

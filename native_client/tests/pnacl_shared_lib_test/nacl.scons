@@ -1,0 +1,99 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+
+# This tests translation of dynamic (shared) .pexe files.
+# We compare
+#  (1) translation based on metadata for dependencies, vs
+#  (2) linking to the actual .so files that the .nexe would have normally
+#      linked against.
+# We test that pnacl with (1) has the same behavior as nacl-gcc with (2).
+
+Import('env')
+
+if env.Bit('nacl_static_link'):
+  Return()
+
+# TODO(jvoung): For pnacl, with pnacl_generate_pexe, make sure
+# we translate the pso to a .so too, since the commandline ld.so
+# does not have a callback to invoke the translator, as it does in the browser.
+# Ideally we would be able to control the order so that we know
+# the pexe could be translated independently of the pso.
+if env.Bit('pnacl_generate_pexe'):
+  # We can still test with the direct bc -> nexe path for now.
+  Return()
+
+# General dependency graph for each of these tests.
+#
+# main -> {lib1, lib3}
+#           |     ^
+#           |    /
+#           v   /
+#         {lib2}
+#
+# If we don't have this DAG of dependencies it seems to work on PNaCl.
+#
+# e.g., if we just have main -> lib1 -> lib2 -> lib3.
+
+
+#### Test different linkage types for exported data.
+
+# Linkage attributes: "normal", common, tls, and weak.
+# *) We do not intend to support common, so do not test that.
+#    It's not required by ISO C and it's not supported in C++ either.
+# *) TODO(jvoung): test weak also.  Note that weak cannot be combined with TLS.
+for is_tls in [False, True]:
+  new_env = env.Clone()
+  test_name = 'shared_lib_data'
+  lib_basename = 'data'
+  if is_tls:
+    new_env.Append(CPPDEFINES=['TEST_TLS'])
+    test_name += '_tls'
+    lib_basename += '_tls'
+  env_shared = new_env.Clone(COMPONENT_STATIC=False)
+
+  # We may want to rename this / tweak it though later, because
+  # NaClSharedLibrary currently forces a ".so" as the suffix, even
+  # if we are building a ".pso".
+  obj3 = env_shared.ComponentObject(lib_basename + '3', 'lib_data3.c')
+  lib_data3 = env_shared.NaClSharedLibrary(lib_basename + '3',
+                                           [obj3])
+  obj2 = env_shared.ComponentObject(lib_basename + '2', 'lib_data2.c')
+  lib_data2 = env_shared.NaClSharedLibrary(lib_basename + '2',
+                                           [obj2],
+                                           EXTRA_LIBS=[lib_data3])
+  obj1 = env_shared.ComponentObject(lib_basename + '1', 'lib_data1.c')
+  lib_data1 = env_shared.NaClSharedLibrary(lib_basename + '1',
+                                           [obj1],
+                                           EXTRA_LIBS=[lib_data2])
+  # Main object does not need env_shared for fPIC.
+  main_obj = new_env.ComponentObject(test_name, 'main_data.c')
+  test_prog = new_env.ComponentProgram(test_name,
+                                       [main_obj],
+                                       EXTRA_LIBS=[lib_data1,
+                                                   lib_data3,
+                                                   'pthread',
+                                                   ])
+  node = new_env.CommandSelLdrTestNacl(
+      test_name + '.out',
+      test_prog,
+      exit_status=55,
+      )
+  new_env.AddNodeToTestSuite(node,
+                             ['small_tests', 'toolchain_tests'],
+                             'run_%s_test' % test_name)
+
+
+# TODO(jvoung): Test PLT generation for calls through function pointers,
+# when there is no normal function call.
+# My current example seems to not-break, unlike the bigger example
+# that I have.  More investigation needed.
+
+
+
+
+
+# TODO(jvoung): Test interpositioning (order of DT_NEEDED matters).
+# E.g., try to shadow a definition in libc with our own shared library.

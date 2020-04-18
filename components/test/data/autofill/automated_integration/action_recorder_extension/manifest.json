@@ -1,0 +1,49 @@
+{
+  "manifest_version": 2,
+
+  "name": "Action Recorder Extension",
+  "description": "Extension to record user actions and generate autofill tests from them",
+  "version": "1.0.0",
+  "minimum_chrome_version": "50",
+
+  "icons": {
+    "16": "icons/icon_idle16.png",
+    "48": "icons/icon_idle48.png",
+    "128": "icons/icon_idle128.png"
+  },
+
+  "browser_action": {
+    "default_icon": {
+      "16": "icons/icon_idle16.png",
+      "32": "icons/icon_idle32.png"
+    },
+    "default_title": "Action Recorder",
+    "default_popup": "popup/popup.html"
+  },
+  "background": {
+    "scripts": [
+      "background/sites_to_visit.js",
+      "background/field_types.js",
+      "background/indented_string_factory.js",
+      "background/actions.js",
+      "background/action_set.js",
+      "background/action_recorder.js"
+    ],
+    "persistent": true
+  },
+  "content_scripts": [{
+    "js": [
+      "content/x_path_tools.js",
+      "content/action_handler.js"
+    ],
+    "matches": ["<all_urls>"],
+    "all_frames": true
+  }],
+  "permissions": [
+    "clipboardWrite",
+    "tabs",
+    "notifications",
+    "contextMenus",
+    "webNavigation"
+  ]
+}

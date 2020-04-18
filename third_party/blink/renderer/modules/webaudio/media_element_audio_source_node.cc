@@ -1,0 +1,292 @@
+/*
+ * Copyright (C) 2011, Google Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1.  Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2.  Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY APPLE INC. AND ITS CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL APPLE INC. OR ITS CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+ * DAMAGE.
+ */
+
+#include "third_party/blink/renderer/modules/webaudio/media_element_audio_source_node.h"
+
+#include "third_party/blink/public/platform/task_type.h"
+#include "third_party/blink/renderer/bindings/core/v8/exception_state.h"
+#include "third_party/blink/renderer/core/html/media/html_media_element.h"
+#include "third_party/blink/renderer/core/inspector/console_message.h"
+#include "third_party/blink/renderer/modules/webaudio/audio_node_output.h"
+#include "third_party/blink/renderer/modules/webaudio/base_audio_context.h"
+#include "third_party/blink/renderer/modules/webaudio/media_element_audio_source_options.h"
+#include "third_party/blink/renderer/platform/audio/audio_utilities.h"
+#include "third_party/blink/renderer/platform/cross_thread_functional.h"
+#include "third_party/blink/renderer/platform/weborigin/security_origin.h"
+#include "third_party/blink/renderer/platform/wtf/locker.h"
+
+namespace blink {
+
+MediaElementAudioSourceHandler::MediaElementAudioSourceHandler(
+    AudioNode& node,
+    HTMLMediaElement& media_element)
+    : AudioHandler(kNodeTypeMediaElementAudioSource,
+                   node,
+                   node.context()->sampleRate()),
+      media_element_(media_element),
+      source_number_of_channels_(0),
+      source_sample_rate_(0),
+      is_origin_tainted_(false) {
+  DCHECK(IsMainThread());
+  // Default to stereo. This could change depending on what the media element
+  // .src is set to.
+  AddOutput(2);
+
+  if (Context()->GetExecutionContext()) {
+    task_runner_ = Context()->GetExecutionContext()->GetTaskRunner(
+        TaskType::kMediaElementEvent);
+  }
+
+  Initialize();
+}
+
+scoped_refptr<MediaElementAudioSourceHandler>
+MediaElementAudioSourceHandler::Create(AudioNode& node,
+                                       HTMLMediaElement& media_element) {
+  return base::AdoptRef(
+      new MediaElementAudioSourceHandler(node, media_element));
+}
+
+MediaElementAudioSourceHandler::~MediaElementAudioSourceHandler() {
+  Uninitialize();
+}
+
+HTMLMediaElement* MediaElementAudioSourceHandler::MediaElement() const {
+  return media_element_.Get();
+}
+
+void MediaElementAudioSourceHandler::Dispose() {
+  media_element_->SetAudioSourceNode(nullptr);
+  AudioHandler::Dispose();
+}
+
+void MediaElementAudioSourceHandler::SetFormat(size_t number_of_channels,
+                                               float source_sample_rate) {
+  bool is_tainted = WouldTaintOrigin();
+
+  if (is_tainted) {
+    PrintCORSMessage(MediaElement()->currentSrc().GetString());
+  }
+
+  if (number_of_channels != source_number_of_channels_ ||
+      source_sample_rate != source_sample_rate_) {
+    if (!number_of_channels ||
+        number_of_channels > BaseAudioContext::MaxNumberOfChannels() ||
+        !AudioUtilities::IsValidAudioBufferSampleRate(source_sample_rate)) {
+      // process() will generate silence for these uninitialized values.
+      DLOG(ERROR) << "setFormat(" << number_of_channels << ", "
+                  << source_sample_rate << ") - unhandled format change";
+      // Synchronize with process().
+      Locker<MediaElementAudioSourceHandler> locker(*this);
+      source_number_of_channels_ = 0;
+      source_sample_rate_ = 0;
+      is_origin_tainted_ = is_tainted;
+      return;
+    }
+
+    // Synchronize with process() to protect |source_number_of_channels_|,
+    // |source_sample_rate_|, |multi_channel_resampler_|. and
+    // |is_origin_tainted_|.
+    Locker<MediaElementAudioSourceHandler> locker(*this);
+
+    is_origin_tainted_ = is_tainted;
+    source_number_of_channels_ = number_of_channels;
+    source_sample_rate_ = source_sample_rate;
+
+    if (source_sample_rate != Context()->sampleRate()) {
+      double scale_factor = source_sample_rate / Context()->sampleRate();
+      multi_channel_resampler_ = std::make_unique<MultiChannelResampler>(
+          scale_factor, number_of_channels);
+    } else {
+      // Bypass resampling.
+      multi_channel_resampler_.reset();
+    }
+
+    {
+      // The context must be locked when changing the number of output channels.
+      BaseAudioContext::GraphAutoLocker context_locker(Context());
+
+      // Do any necesssary re-configuration to the output's number of channels.
+      Output(0).SetNumberOfChannels(number_of_channels);
+    }
+  }
+}
+
+bool MediaElementAudioSourceHandler::WouldTaintOrigin() {
+  // If we're cross-origin and allowed access vie CORS, we're not tainted.
+  if (MediaElement()->GetWebMediaPlayer()->DidPassCORSAccessCheck()) {
+    return false;
+  }
+
+  // Handles the case where the url is a redirect to another site that we're not
+  // allowed to access.
+  if (!MediaElement()->HasSingleSecurityOrigin()) {
+    return true;
+  }
+
+  // Test to see if the current media URL taint the origin of the audio context?
+  return Context()->WouldTaintOrigin(MediaElement()->currentSrc());
+}
+
+void MediaElementAudioSourceHandler::PrintCORSMessage(const String& message) {
+  if (Context()->GetExecutionContext()) {
+    Context()->GetExecutionContext()->AddConsoleMessage(
+        ConsoleMessage::Create(kSecurityMessageSource, kInfoMessageLevel,
+                               "MediaElementAudioSource outputs zeroes due to "
+                               "CORS access restrictions for " +
+                                   message));
+  }
+}
+
+void MediaElementAudioSourceHandler::Process(size_t number_of_frames) {
+  AudioBus* output_bus = Output(0).Bus();
+
+  // Use a tryLock() to avoid contention in the real-time audio thread.
+  // If we fail to acquire the lock then the HTMLMediaElement must be in the
+  // middle of reconfiguring its playback engine, so we output silence in this
+  // case.
+  MutexTryLocker try_locker(process_lock_);
+  if (try_locker.Locked()) {
+    if (!MediaElement() || !source_sample_rate_) {
+      output_bus->Zero();
+      return;
+    }
+
+    // TODO(crbug.com/811516): Although OnSetFormat() requested the output bus
+    // channels, the actual channel count might have not been changed yet.
+    // Output silence for such case until the channel count is resolved.
+    if (source_number_of_channels_ != output_bus->NumberOfChannels()) {
+      output_bus->Zero();
+      return;
+    }
+
+    AudioSourceProvider& provider = MediaElement()->GetAudioSourceProvider();
+    // Grab data from the provider so that the element continues to make
+    // progress, even if we're going to output silence anyway.
+    if (multi_channel_resampler_.get()) {
+      DCHECK_NE(source_sample_rate_, Context()->sampleRate());
+      multi_channel_resampler_->Process(&provider, output_bus,
+                                        number_of_frames);
+    } else {
+      // Bypass the resampler completely if the source is at the context's
+      // sample-rate.
+      DCHECK_EQ(source_sample_rate_, Context()->sampleRate());
+      provider.ProvideInput(output_bus, number_of_frames);
+    }
+    // Output silence if we don't have access to the element.
+    if (is_origin_tainted_) {
+      output_bus->Zero();
+    }
+  } else {
+    // We failed to acquire the lock.
+    output_bus->Zero();
+  }
+}
+
+void MediaElementAudioSourceHandler::lock() {
+  process_lock_.lock();
+}
+
+void MediaElementAudioSourceHandler::unlock() {
+  process_lock_.unlock();
+}
+
+// ----------------------------------------------------------------
+
+MediaElementAudioSourceNode::MediaElementAudioSourceNode(
+    BaseAudioContext& context,
+    HTMLMediaElement& media_element)
+    : AudioNode(context) {
+  SetHandler(MediaElementAudioSourceHandler::Create(*this, media_element));
+}
+
+MediaElementAudioSourceNode* MediaElementAudioSourceNode::Create(
+    BaseAudioContext& context,
+    HTMLMediaElement& media_element,
+    ExceptionState& exception_state) {
+  DCHECK(IsMainThread());
+
+  if (context.IsContextClosed()) {
+    context.ThrowExceptionForClosedState(exception_state);
+    return nullptr;
+  }
+
+  // First check if this media element already has a source node.
+  if (media_element.AudioSourceNode()) {
+    exception_state.ThrowDOMException(kInvalidStateError,
+                                      "HTMLMediaElement already connected "
+                                      "previously to a different "
+                                      "MediaElementSourceNode.");
+    return nullptr;
+  }
+
+  MediaElementAudioSourceNode* node =
+      new MediaElementAudioSourceNode(context, media_element);
+
+  if (node) {
+    media_element.SetAudioSourceNode(node);
+    // context keeps reference until node is disconnected
+    context.NotifySourceNodeStartedProcessing(node);
+  }
+
+  return node;
+}
+
+MediaElementAudioSourceNode* MediaElementAudioSourceNode::Create(
+    BaseAudioContext* context,
+    const MediaElementAudioSourceOptions& options,
+    ExceptionState& exception_state) {
+  return Create(*context, *options.mediaElement(), exception_state);
+}
+
+void MediaElementAudioSourceNode::Trace(blink::Visitor* visitor) {
+  AudioSourceProviderClient::Trace(visitor);
+  AudioNode::Trace(visitor);
+}
+
+MediaElementAudioSourceHandler&
+MediaElementAudioSourceNode::GetMediaElementAudioSourceHandler() const {
+  return static_cast<MediaElementAudioSourceHandler&>(Handler());
+}
+
+HTMLMediaElement* MediaElementAudioSourceNode::mediaElement() const {
+  return GetMediaElementAudioSourceHandler().MediaElement();
+}
+
+void MediaElementAudioSourceNode::SetFormat(size_t number_of_channels,
+                                            float sample_rate) {
+  GetMediaElementAudioSourceHandler().SetFormat(number_of_channels,
+                                                sample_rate);
+}
+
+void MediaElementAudioSourceNode::lock() {
+  GetMediaElementAudioSourceHandler().lock();
+}
+
+void MediaElementAudioSourceNode::unlock() {
+  GetMediaElementAudioSourceHandler().unlock();
+}
+
+}  // namespace blink

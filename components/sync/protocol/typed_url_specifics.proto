@@ -1,0 +1,40 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+//
+// Sync protocol datatype extension for typed urls.
+
+// Update proto_value_conversions{.h,.cc,_unittest.cc} if you change
+// any fields in this file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package sync_pb;
+
+// Properties of typed_url sync objects - fields correspond to similarly named
+// fields in history::URLRow.
+message TypedUrlSpecifics {
+  // Actual URL that was typed.
+  optional string url = 1;
+  // Title of the page corresponding to this URL.
+  optional string title = 2;
+  // The number of times this URL was typed. Deprecated since we no longer sync
+  // this information (it's inferred by the history code from the transition
+  // type for each visit).
+  // optional int32 typed_count = 3; (deprecated)
+  // True if the URL should be used for auto-complete.
+  optional bool hidden = 4;
+  // The number of visits (includes page reloads).
+  // repeated int64 visit = 5; (deprecated)
+  // The number of explicit navigations to this URL (excludes page reloads) -
+  // deprecated as we no longer sync this (history code infers this from the
+  // |visits| array).
+  // optional int32 visited_count = 6; (deprecated)
+  // Timestamps for all visits to this URL.
+  repeated int64 visits = 7 [packed = true];
+  // The PageTransition::Type for each of the visits in the |visit| array. Both
+  // arrays must be the same length.
+  repeated int32 visit_transitions = 8 [packed = true];
+}

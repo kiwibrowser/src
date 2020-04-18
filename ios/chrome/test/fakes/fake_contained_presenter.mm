@@ -1,0 +1,46 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#import "ios/chrome/test/fakes/fake_contained_presenter.h"
+
+#include "base/logging.h"
+#import "ios/chrome/browser/ui/presenters/contained_presenter_delegate.h"
+
+#if !defined(__has_feature) || !__has_feature(objc_arc)
+#error "This file requires ARC support."
+#endif
+
+@implementation FakeContainedPresenter
+@synthesize baseViewController = _baseViewController;
+@synthesize presentedViewController = _presentedViewController;
+@synthesize delegate = _delegate;
+@synthesize lastPresentationWasAnimated = _lastPresentationWasAnimated;
+
+- (void)prepareForPresentation {
+  DCHECK(self.presentedViewController);
+  DCHECK(self.baseViewController);
+
+  [self.baseViewController addChildViewController:self.presentedViewController];
+  [self.baseViewController.view addSubview:self.presentedViewController.view];
+
+  [self.presentedViewController.view updateConstraints];
+  [self.presentedViewController.view layoutIfNeeded];
+
+  [self.presentedViewController
+      didMoveToParentViewController:self.baseViewController];
+}
+
+- (void)presentAnimated:(BOOL)animated {
+  self.lastPresentationWasAnimated = animated;
+}
+
+- (void)dismissAnimated:(BOOL)animated {
+  DCHECK(self.presentedViewController);
+  [self.presentedViewController willMoveToParentViewController:nil];
+  [self.presentedViewController.view removeFromSuperview];
+  [self.presentedViewController removeFromParentViewController];
+  [self.delegate containedPresenterDidDismiss:self];
+}
+
+@end

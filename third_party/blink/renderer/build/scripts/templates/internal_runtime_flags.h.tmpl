@@ -1,0 +1,48 @@
+{% from 'templates/macros.tmpl' import license, source_files_for_generated_file %}
+{{license()}}
+
+{{source_files_for_generated_file(template_file, input_files)}}
+
+#ifndef InternalRuntimeFlags_h
+#define InternalRuntimeFlags_h
+
+#include "third_party/blink/renderer/platform/bindings/script_wrappable.h"
+#include "third_party/blink/renderer/platform/heap/handle.h"
+#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+#include "base/memory/scoped_refptr.h"
+#include "third_party/blink/renderer/platform/wtf/ref_counted.h"
+
+namespace blink {
+
+class InternalRuntimeFlags : public ScriptWrappable {
+  DEFINE_WRAPPERTYPEINFO();
+ public:
+  static InternalRuntimeFlags* create() {
+    return new InternalRuntimeFlags;
+  }
+
+  // These are reset between layout tests from Internals::resetToConsistentState
+  // using RuntimeEnabledFeatures::Backup.
+  {% for feature in standard_features if feature.settable_from_internals %}
+  void set{{feature.name}}Enabled(bool isEnabled) {
+    RuntimeEnabledFeatures::Set{{feature.name}}Enabled(isEnabled);
+  }
+  {% endfor %}
+
+  {% for feature in standard_features %}
+  bool {{feature.tokenized_name.to_lower_camel_case()}}Enabled() {
+    {% if feature.origin_trial_feature_name %}
+    return RuntimeEnabledFeatures::{{feature.name}}EnabledByRuntimeFlag();
+    {% else %}
+    return RuntimeEnabledFeatures::{{feature.name}}Enabled();
+    {% endif %}
+  }
+  {% endfor %}
+
+ private:
+  InternalRuntimeFlags() {}
+};
+
+} // namespace blink
+
+#endif // InternalRuntimeFlags_h

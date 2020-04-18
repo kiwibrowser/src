@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+  <!-- Copyright 2014 The Chromium Authors. All rights reserved.
+
+       Use of this source code is governed by a BSD-style license that can be
+       found in the LICENSE file.
+   -->
+  <!-- package name must be unique so suffix with "tests" so package loader
+       doesn't ignore this. -->
+  <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+      package="org.chromium.net.tests">
+    <uses-sdk android:minSdkVersion="14" android:targetSdkVersion="23" />
+    <uses-permission android:name="android.permission.RUN_INSTRUMENTATION" />
+    <!-- We add an application tag here just so that we can indicate that this
+         package needs to link against the android.test library, which is
+         needed when building test cases. -->
+    <application>
+        <uses-library android:name="android.test.runner" />
+    </application>
+    <instrumentation android:name="org.chromium.base.test.BaseChromiumAndroidJUnitRunner"
+        android:targetPackage="org.chromium.net"
+        android:label="Tests for org.chromium.net"
+        chromium-junit4="true">
+        <!-- Meta data used for BaseChromiumAndroidJUnitRunner to scan only
+             one package path for potential tests -->
+        <meta-data android:name="org.chromium.base.test.BaseChromiumAndroidJUnitRunner.TestListPackage"
+            android:value="org.chromium" />
+    </instrumentation>
+</manifest>

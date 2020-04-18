@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="file:///gen/layout_test_data/mojo/public/js/mojo_bindings.js"></script>
+<script src="file:///gen/device/vr/public/mojom/vr_service.mojom.js"></script>
+<script src="../xr/resources/xr-device-mocking.js"></script>
+<script src="../xr/resources/xr-test-utils.js"></script>
+<script src="../xr/resources/test-constants.js"></script>
+<canvas id="webgl-canvas"></canvas>
+
+<script>
+let fakeDevices = fakeXRDevices();
+let watcherDone = new Event("watcherdone");
+
+xr_session_promise_test( (session, t) => {
+    let eventWatcher = new EventWatcher(t, session, ["selectstart", "selectend", "select", "watcherdone"]);
+    let eventPromise = eventWatcher.wait_for(["selectstart", "selectend", "select", "watcherdone"]);
+
+    // Need to have a valid pose or input event's don't process.
+    setPose(VALID_POSE);
+
+    function onSessionSelectStart(event) {
+      t.step( () => {
+        let input_sources = session.getInputSources();
+        assert_equals(event.frame.session, session);
+        assert_equals(event.inputSource, input_sources[0]);
+      });
+    }
+
+    function onSessionSelectEnd(event) {
+      t.step( () => {
+        let input_sources = session.getInputSources();
+        assert_equals(event.frame.session, session);
+        assert_equals(event.inputSource, input_sources[0]);
+      });
+    }
+
+    function onSessionSelect(event) {
+      t.step( () => {
+        let input_sources = session.getInputSources();
+        assert_equals(event.frame.session, session);
+        assert_equals(event.inputSource, input_sources[0]);
+      });
+      session.dispatchEvent(watcherDone);
+    }
+    session.addEventListener("selectstart", onSessionSelectStart, false);
+    session.addEventListener("selectend", onSessionSelectEnd, false);
+    session.addEventListener("select", onSessionSelect, false);
+
+    // Session must have a baseLayer or frame requests will be ignored.
+    session.baseLayer = new XRWebGLLayer(session, gl);
+
+    let input_source = new MockXRInputSource();
+
+    addInputSource(input_source);
+
+    // Press the primary input button and then release it a short time later.
+    session.requestAnimationFrame((time, xrFrame) => {
+      input_source.primaryInputPressed = true;
+      input_source.primaryInputPressed = false;
+
+      session.requestAnimationFrame((time, xrFrame) => {
+        // Need to process one more frame to allow select to propegate.
+      });
+    });
+
+    return eventPromise;
+  }, fakeDevices["FakeGooglePixelPhone"], [ { exclusive: true } ],
+"Ensures that an XRInputSources primary input being pressed and released in the space of a single frame properly fires off the right events");
+
+</script>

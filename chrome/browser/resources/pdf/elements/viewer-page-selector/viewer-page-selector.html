@@ -1,0 +1,82 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-input/iron-input.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-input/paper-input-container.html">
+
+<dom-module id="viewer-page-selector">
+  <template>
+    <style>
+      :host {
+        color: #fff;
+        font-size: 1.23rem;
+      }
+
+      :host ::selection {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      #pageselector {
+        --container: { display: none; };
+        --paper-input-container-underline: var(--container);
+        --paper-input-container-underline-focus: var(--container);
+        padding: 0;
+        width: 1ch;
+      }
+
+      #input {
+        -webkit-margin-start: -3px;
+        color: #fff;
+        height: 100%;
+        line-height: 18px;
+        padding: 3px;
+        text-align: end;
+        vertical-align: baseline;
+      }
+
+      #input:focus,
+      #input:hover {
+        background-color: rgba(0, 0, 0, 0.5);
+        border-radius: 2px;
+      }
+
+      #slash {
+        padding: 0 3px;
+      }
+
+      #pagelength-spacer {
+        -webkit-margin-start: -2px;
+        padding-bottom: 1px;
+        text-align: start;
+      }
+
+      #pageselector,
+      #slash,
+      #pagelength-spacer {
+        display: inline-block;
+        margin-bottom: 2px;
+        vertical-align: middle;
+      }
+
+      #input,
+      #slash,
+      #pagelength {
+        font-size: 0.81rem;
+      }
+
+      iron-input input {
+        @apply --paper-input-container-shared-input-style;
+      }
+    </style>
+    <paper-input-container id="pageselector" no-label-float>
+      <iron-input slot="input" bind-value="[[pageNo]]" allowed-pattern="\d">
+        <input id="input" prevent-invalid-input value="{{value::input}}"
+            on-mouseup="select" on-change="pageNoCommitted"
+            aria-label$="{{strings.labelPageNumber}}">
+      </iron-input>
+    </paper-input-container>
+    <span id="slash"> / </span>
+    <span id="pagelength-spacer">
+      <span id="pagelength">{{docLength}}</span>
+    </span>
+  </template>
+  <script src="viewer-page-selector.js"></script>
+</dom-module>

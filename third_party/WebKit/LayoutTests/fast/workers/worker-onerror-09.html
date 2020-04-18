@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script>
+        window.isOnErrorTest = true;
+    </script>
+    <script src="../../resources/js-test.js"></script>
+    <script src="resources/onerror-test.js"></script>
+</head>
+<body>
+    <!-- This script's body will be used to build a Blob URL to use as a Worker. -->
+    <script id="workerCode" type="text/plain">
+        var not_a_sequence = 3;
+        postMessage(2, not_a_sequence);
+    </script>
+    <script>
+        description("This tests that unhandled exceptions in postMessage() are delivered to 'worker.onerror'.");
+
+        checkErrorEventInHandler({
+            message: "Uncaught TypeError: Failed to execute 'postMessage' on 'DedicatedWorkerGlobalScope': The provided value cannot be converted to a sequence.",
+            filename: "[blob: URL]",
+            lineno: 3,
+            colno: 9,
+        });
+    </script>
+</body>
+</html>

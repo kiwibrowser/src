@@ -1,0 +1,48 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef CHROME_BROWSER_METRICS_DESKTOP_SESSION_DURATION_DESKTOP_PROFILE_SESSION_DURATIONS_SERVICE_FACTORY_H_
+#define CHROME_BROWSER_METRICS_DESKTOP_SESSION_DURATION_DESKTOP_PROFILE_SESSION_DURATIONS_SERVICE_FACTORY_H_
+
+#include "base/memory/singleton.h"
+#include "chrome/browser/signin/gaia_cookie_manager_service_factory.h"
+#include "components/keyed_service/content/browser_context_keyed_service_factory.h"
+
+namespace metrics {
+
+class DesktopProfileSessionDurationsService;
+
+// Singleton that owns all DesktopProfileSessionDurationsServices and associates
+// them with BrowserContexts. Listens for the BrowserContext's destruction
+// notification and cleans up the associated
+// DesktopProfileSessionDurationsServices.
+class DesktopProfileSessionDurationsServiceFactory
+    : public BrowserContextKeyedServiceFactory {
+ public:
+  // Creates the service if it doesn't exist already for the given
+  // BrowserContext.
+  static DesktopProfileSessionDurationsService* GetForBrowserContext(
+      content::BrowserContext* context);
+
+  static DesktopProfileSessionDurationsServiceFactory* GetInstance();
+
+ private:
+  friend struct base::DefaultSingletonTraits<
+      DesktopProfileSessionDurationsServiceFactory>;
+
+  DesktopProfileSessionDurationsServiceFactory();
+  ~DesktopProfileSessionDurationsServiceFactory() override;
+
+  // BrowserContextKeyedServiceFactory:
+  KeyedService* BuildServiceInstanceFor(
+      content::BrowserContext* context) const override;
+  content::BrowserContext* GetBrowserContextToUse(
+      content::BrowserContext* context) const override;
+
+  DISALLOW_COPY_AND_ASSIGN(DesktopProfileSessionDurationsServiceFactory);
+};
+
+}  // namespace metrics
+
+#endif  // CHROME_BROWSER_METRICS_DESKTOP_SESSION_DURATION_DESKTOP_PROFILE_SESSION_DURATIONS_SERVICE_FACTORY_H_

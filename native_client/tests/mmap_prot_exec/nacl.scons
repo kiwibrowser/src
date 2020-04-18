@@ -1,0 +1,96 @@
+# -*- python -*-
+# Copyright (c) 2013 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+if 'TRUSTED_ENV' not in env:
+  Return()
+
+nexe_command_line = []
+
+if env.Bit('host_mac'):
+  nexe_command_line += ['-m']
+
+if env.Bit('tests_use_irt'):
+  nexe_command_line += ['-i']
+
+if not env.SetNonStableBitcodeIfAllowed():
+  Return()
+if env.Bit('bitcode'):
+  # mmap_prot_exec.c has an external reference to "etext", a symbol
+  # defined by the native linker, which is disallowed by PNaCl's ABI.
+  env.Append(LINKFLAGS=['--pnacl-disable-abi-check'])
+
+nexe = env.ComponentProgram('mmap_prot_exec',
+                            'mmap_prot_exec.c',
+                            EXTRA_LIBS=['platform',
+                                        '${NONIRT_LIBS}',
+                                        '${PTHREAD_LIBS}'])
+
+# Fault injection is used to bypass safety checks, since this test as
+# untrusted code cannot actually obtain "blessed" descriptors that are
+# marked safe-for-mmap.  The encoded fault-injection control string
+# says that the failure control at the call-site marked with
+# "MMAP_BYPASS_DESCRIPTOR_SAFETY_CHECK" is global (not per-thread),
+# and that the first time the program (rather than thread) encounter
+# the call-site it should "pass", e.g., let the normal code run;
+# subsequently, however, it will "fail" 100 times, with the error
+# value specified at the NACL_FI macro, without actually invoking the
+# wrapped function, which is the NaClDescIsSafeForMmap predicate.
+#
+# See native_client/src/trusted/fault_injection/fault_injection.h for
+# details of how fault injection works.
+node = env.CommandSelLdrTestNacl(
+    'mmap_prot_exec.out',
+    nexe,
+    nexe_command_line + ['-t', env.MakeTempDir(prefix='tmp_mmap_prot')],
+    sel_ldr_flags=['-a'],
+    osenv=['NACL_FAULT_INJECTION=' +
+           'MMAP_BYPASS_DESCRIPTOR_SAFETY_CHECK=GPF/100:' +
+           'MMAP_FORCE_MMAP_VALIDATION_FAIL=GF:' +
+           'MMAP_STUBOUT_EMULATION=GF'])
+
+# This test is marked broken for glibc since there is no coordination
+# between the addresses at which the test will try to mmap in code and
+# where runnable-ld.so or dlopen may have already map in shared
+# library code.  The test could, in principle, just try a variety of
+# locations in user-level code, but the test failures will be
+# unpredictable, making the use of deterministic fault injection
+# impossible.
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_mmap_prot_exec_test',
+                       is_broken=env.Bit('nacl_glibc'))
+
+disabled_syscall_node = env.CommandSelLdrTestNacl(
+    'mmap_prot_exec_disabled.out',
+    nexe,
+    nexe_command_line + ['-t', env.MakeTempDir(prefix='tmp_mmap_prot'), '-d'],
+    sel_ldr_flags=['-a'],
+    osenv=['NACL_FAULT_INJECTION=' +
+           'MMAP_BYPASS_DESCRIPTOR_SAFETY_CHECK=GP1F/100:' +
+           'MMAP_FORCE_MMAP_VALIDATION_FAIL=GF:' +
+           'MMAP_STUBOUT_EMULATION=GF',
+           'NACL_DISABLE_DYNCODE_SYSCALLS=1'])
+
+env.AddNodeToTestSuite(disabled_syscall_node, ['small_tests'],
+                       'run_mmap_prot_exec_disabled_test',
+                       is_broken=env.Bit('nacl_glibc'))
+
+if (env.Bit('tests_use_irt') and env.Bit('nacl_static_link') and
+    not env.Bit('bitcode')):
+  nexe = env.ComponentProgram('mmap_code_data_alloc_test',
+                              'mmap_code_data_alloc_test.c')
+  asm_env = env.Clone()
+  if env.Bit('bitcode'):
+    asm_env.PNaClForceNative()
+    asm_env.AddBiasForPNaCl()
+  objfile = asm_env.ComponentObject('exec_data', 'exec_data.S')
+  datafile = asm_env.Command(
+    'exec_data', objfile,
+    '${OBJCOPY} -j .text -O binary ${SOURCES} ${TARGET}')
+  node = env.CommandSelLdrTestNacl('mmap_code_data_alloc_test.out',
+                                   nexe, [datafile],
+                                   sel_ldr_flags=['-a'])
+  env.AddNodeToTestSuite(node, ['small_tests'],
+                         'run_mmap_code_data_alloc_test')

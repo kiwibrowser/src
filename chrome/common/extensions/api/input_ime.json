@@ -1,0 +1,891 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+[
+  {
+    "namespace": "input.ime",
+    "description": "Use the <code>chrome.input.ime</code> API to implement a custom IME for Chrome OS. This allows your extension to handle keystrokes, set the composition, and manage the candidate window.",
+    "types": [
+      {
+        "id": "KeyboardEventType",
+        "type": "string",
+        "enum": ["keyup", "keydown"]
+      },
+      {
+        "id": "KeyboardEvent",
+        "type": "object",
+        "description": "See http://www.w3.org/TR/DOM-Level-3-Events/#events-KeyboardEvent",
+        "properties": {
+          "type": {"$ref": "KeyboardEventType", "description": "One of keyup or keydown."},
+          "requestId": {"type": "string", "description": "The ID of the request."},
+          "extensionId": {"type": "string", "optional": true, "description": "The extension ID of the sender of this keyevent."},
+          "key": {"type": "string", "description": "Value of the key being pressed"},
+          "code": {"type": "string", "description": "Value of the physical key being pressed. The value is not affected by current keyboard layout or modifier state."},
+          "keyCode": {"type": "integer", "optional": true, "description": "The deprecated HTML keyCode, which is system- and implementation-dependent numerical code signifying the unmodified identifier associated with the key pressed."},
+          "altKey": {"type": "boolean", "optional": true, "description": "Whether or not the ALT key is pressed."},
+          "ctrlKey": {"type": "boolean", "optional": true, "description": "Whether or not the CTRL key is pressed."},
+          "shiftKey": {"type": "boolean", "optional": true, "description": "Whether or not the SHIFT key is pressed."},
+          "capsLock": {"type": "boolean", "optional": true, "description": "Whether or not the CAPS_LOCK is enabled."}
+        }
+      },
+      {
+        "id": "InputContextType",
+        "type": "string",
+        "description": "Type of value this text field edits, (Text, Number, URL, etc)",
+        "enum": ["text", "search", "tel", "url", "email", "number", "password"]
+      },
+      {
+        "id": "InputContext",
+        "type": "object",
+        "description": "Describes an input Context",
+        "properties": {
+          "contextID": {"type": "integer", "description": "This is used to specify targets of text field operations.  This ID becomes invalid as soon as onBlur is called."},
+          "type": {"$ref": "InputContextType", "description": "Type of value this text field edits, (Text, Number, URL, etc)"},
+          "autoCorrect": {"type": "boolean", "description": "Whether the text field wants auto-correct."},
+          "autoComplete": {"type": "boolean", "description": "Whether the text field wants auto-complete."},
+          "spellCheck": {"type": "boolean", "description": "Whether the text field wants spell-check."},
+          "shouldDoLearning": {"type": "boolean", "description": "Whether text entered into the text field should be used to improve typing suggestions for the user."}
+        }
+      },
+      {
+        "id": "MenuItemStyle",
+        "type": "string",
+        "description": "The type of menu item. Radio buttons between separators are considered grouped.",
+        "enum": ["check", "radio", "separator"]
+      },
+      {
+        "id": "MenuItem",
+        "type": "object",
+        "description": "A menu item used by an input method to interact with the user from the language menu.",
+        "properties": {
+          "id": {"type": "string", "description": "String that will be passed to callbacks referencing this MenuItem."},
+          "label": {"type": "string", "optional": true, "description": "Text displayed in the menu for this item."},
+          "style": {
+            "$ref": "MenuItemStyle",
+            "optional": true,
+            "description": "The type of menu item."
+          },
+          "visible": {"type": "boolean", "optional": true, "description": "Indicates this item is visible."},
+          "checked": {"type": "boolean", "optional": true, "description": "Indicates this item should be drawn with a check."},
+          "enabled": {"type": "boolean", "optional": true, "description": "Indicates this item is enabled."}
+        }
+      },
+      {
+        "id": "UnderlineStyle",
+        "type": "string",
+        "description": "The type of the underline to modify this segment.",
+        "enum": ["underline", "doubleUnderline", "noUnderline"]
+      },
+      {
+        "id": "WindowPosition",
+        "type": "string",
+        "description": "Where to display the candidate window. If set to 'cursor', the window follows the cursor. If set to 'composition', the window is locked to the beginning of the composition.",
+        "enum": ["cursor", "composition"]
+      },
+      {
+        "id": "ScreenType",
+        "type": "string",
+        "enum": ["normal", "login", "lock", "secondary-login"],
+        "description": "The screen type under which the IME is activated."
+      },
+      {
+        "id": "CallbackStyle",
+        "type": "string",
+        "enum": ["async"]
+      },
+      {
+        "id": "MouseButton",
+        "type": "string",
+        "description": "Which mouse buttons was clicked.",
+        "enum": ["left", "middle", "right"]
+      },
+      {
+        "id": "WindowType",
+        "type": "string",
+        "description": "The IME window types.",
+        "platforms": ["win", "linux"],
+        "enum": ["normal", "followCursor"]
+      },
+      {
+        "id": "Bounds",
+        "type": "object",
+        "description": "Describes the screen coordinates of a rect.",
+        "platforms": ["win", "linux"],
+        "properties": {
+          "left": {"type": "integer", "description": "The left of the bounds."},
+          "top": {"type": "integer", "description": "The top of the bounds."},
+          "width": {"type": "integer", "description": "The width of the bounds." },
+          "height": {"type": "integer", "description": "The height of the bounds ."}
+        }
+      },
+      {
+        "id": "CreateWindowOptions",
+        "type": "object",
+        "description": "The options to create an IME window",
+        "platforms": ["win", "linux"],
+        "properties": {
+          "windowType": {"$ref": "WindowType"},
+          "url": {"type": "string", "optional": true},
+          "bounds": {"$ref": "Bounds", "optional": true}
+        }
+      }
+    ],
+    "functions": [
+      {
+        "name": "setComposition",
+        "type": "function",
+        "description": "Set the current composition. If this extension does not own the active IME, this fails.",
+        "platforms": ["chromeos", "win", "linux"],
+        "parameters": [
+          {
+            "name": "parameters",
+            "type": "object",
+            "properties": {
+              "contextID": {
+                "description": "ID of the context where the composition text will be set",
+                "type": "integer"
+              },
+              "text": {
+                "description": "Text to set",
+                "type": "string"
+              },
+              "selectionStart": {
+                "description": "Position in the text that the selection starts at.",
+                "optional": true,
+                "type": "integer"
+              },
+              "selectionEnd": {
+                "description": "Position in the text that the selection ends at.",
+                "optional": true,
+                "type": "integer"
+              },
+              "cursor": {
+                "description": "Position in the text of the cursor.",
+                "type": "integer"
+              },
+              "segments": {
+                "description": "List of segments and their associated types.",
+                "type": "array",
+                "optional": true,
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "start": {
+                      "description": "Index of the character to start this segment at",
+                      "type": "integer"
+                    },
+                    "end": {
+                      "description": "Index of the character to end this segment after.",
+                      "type": "integer"
+                    },
+                    "style": {
+                      "$ref": "UnderlineStyle",
+                      "description": "The type of the underline to modify this segment."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "optional": true,
+            "description": "Called when the operation completes with a boolean indicating if the text was accepted or not. On failure, chrome.runtime.lastError is set.",
+            "parameters": [
+              {
+                "name": "success",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "clearComposition",
+        "type": "function",
+        "description": "Clear the current composition. If this extension does not own the active IME, this fails.",
+        "platforms": ["chromeos"],
+        "parameters": [
+          {
+            "name": "parameters",
+            "type": "object",
+            "properties": {
+              "contextID": {
+                "description": "ID of the context where the composition will be cleared",
+                "type": "integer"
+              }
+            }
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "optional": true,
+            "description": "Called when the operation completes with a boolean indicating if the text was accepted or not. On failure, chrome.runtime.lastError is set.",
+            "parameters": [
+              {
+                "name": "success",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "commitText",
+        "type": "function",
+        "description": "Commits the provided text to the current input.",
+        "platforms": ["chromeos", "win", "linux"],
+        "parameters": [
+          {
+            "name": "parameters",
+            "type": "object",
+            "properties": {
+              "contextID": {
+                "description": "ID of the context where the text will be committed",
+                "type": "integer"
+              },
+              "text": {
+                "description": "The text to commit",
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "optional": true,
+            "description": "Called when the operation completes with a boolean indicating if the text was accepted or not. On failure, chrome.runtime.lastError is set.",
+            "parameters": [
+              {
+                "name": "success",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "sendKeyEvents",
+        "type": "function",
+        "description": "Sends the key events.  This function is expected to be used by virtual keyboards.  When key(s) on a virtual keyboard is pressed by a user, this function is used to propagate that event to the system.",
+        "platforms": ["chromeos", "win", "linux"],
+        "parameters": [
+          {
+            "name": "parameters",
+            "type": "object",
+            "properties": {
+              "contextID": {
+                "description": "ID of the context where the key events will be sent, or zero to send key events to non-input field.",
+                "type": "integer"
+              },
+              "keyData": {
+                "type": "array",
+                "description": "Data on the key event.",
+                "items": {
+                  "$ref": "KeyboardEvent"
+                }
+              }
+            }
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "optional": true,
+            "description": "Called when the operation completes.",
+            "parameters": []
+          }
+        ]
+      },
+      {
+        "name": "hideInputView",
+        "type": "function",
+        "description": "Hides the input view window, which is popped up automatically by system. If the input view window is already hidden, this function will do nothing.",
+        "platforms": ["chromeos"],
+        "parameters": []
+      },
+      {
+        "name": "setCandidateWindowProperties",
+        "type": "function",
+        "description": "Sets the properties of the candidate window. This fails if the extension doesn't own the active IME",
+        "platforms": ["chromeos"],
+        "parameters": [
+          {
+            "name": "parameters",
+            "type": "object",
+            "properties": {
+              "engineID": {
+                "description": "ID of the engine to set properties on.",
+                "type": "string"
+              },
+              "properties": {
+                "type": "object",
+                "properties": {
+                  "visible": {
+                    "type": "boolean",
+                    "optional": true,
+                    "description": "True to show the Candidate window, false to hide it."
+                  },
+                  "cursorVisible": {
+                    "type": "boolean",
+                    "optional": true,
+                    "description": "True to show the cursor, false to hide it."
+                  },
+                  "vertical": {
+                    "type": "boolean",
+                    "optional": true,
+                    "description": "True if the candidate window should be rendered vertical, false to make it horizontal."
+                  },
+                  "pageSize": {
+                    "type": "integer",
+                    "optional": true,
+                    "description": "The number of candidates to display per page."
+                  },
+                  "auxiliaryText": {
+                    "type": "string",
+                    "optional": true,
+                    "description": "Text that is shown at the bottom of the candidate window."
+                  },
+                  "auxiliaryTextVisible": {
+                    "type": "boolean",
+                    "optional": true,
+                    "description": "True to display the auxiliary text, false to hide it."
+                  },
+                  "windowPosition": {
+                    "$ref": "WindowPosition",
+                    "description": "Where to display the candidate window.",
+                    "optional": true
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "optional": true,
+            "description": "Called when the operation completes.",
+            "parameters": [
+              {
+                "name": "success",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "setCandidates",
+        "type": "function",
+        "description": "Sets the current candidate list. This fails if this extension doesn't own the active IME",
+        "platforms": ["chromeos"],
+        "parameters": [
+          {
+            "name": "parameters",
+            "type": "object",
+            "properties": {
+              "contextID": {
+                "description": "ID of the context that owns the candidate window.",
+                "type": "integer"
+              },
+              "candidates": {
+                "description": "List of candidates to show in the candidate window",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "candidate": {"type": "string", "description": "The candidate"},
+                    "id": {"type": "integer", "description": "The candidate's id"},
+                    "parentId": {"type": "integer", "optional": true, "description": "The id to add these candidates under"},
+                    "label": {"type": "string", "optional": true, "description": "Short string displayed to next to the candidate, often the shortcut key or index"},
+                    "annotation": {"type": "string", "optional": true, "description": "Additional text describing the candidate"},
+                    "usage": {
+                      "type": "object",
+                      "optional": true,
+                      "description": "The usage or detail description of word.",
+                      "properties": {
+                        "title": { "type": "string", "description": "The title string of details description."},
+                        "body": { "type": "string", "description": "The body string of detail description."}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "optional": true,
+            "description": "Called when the operation completes.",
+            "parameters": [
+              {
+                "name": "success",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "setCursorPosition",
+        "type": "function",
+        "description": "Set the position of the cursor in the candidate window. This is a no-op if this extension does not own the active IME.",
+        "platforms": ["chromeos"],
+        "parameters": [
+          {
+            "name": "parameters",
+            "type": "object",
+            "properties": {
+              "contextID": {
+                "description": "ID of the context that owns the candidate window.",
+                "type": "integer"
+              },
+              "candidateID": {
+                "description": "ID of the candidate to select.",
+                "type": "integer"
+              }
+            }
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "optional": true,
+            "description": "Called when the operation completes",
+            "parameters": [
+              {
+                "name": "success",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "setMenuItems",
+        "type": "function",
+        "description": "Adds the provided menu items to the language menu when this IME is active.",
+        "platforms": ["chromeos"],
+        "parameters": [
+          {
+            "name": "parameters",
+            "type": "object",
+            "properties": {
+              "engineID": {
+                "description": "ID of the engine to use",
+                "type": "string"
+              },
+              "items": {
+                "description": "MenuItems to add. They will be added in the order they exist in the array.",
+                "type": "array",
+                "items": {
+                  "$ref": "MenuItem"
+                }
+              }
+            }
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "optional": true,
+            "description": "",
+            "parameters": []
+          }
+        ]
+      },
+      {
+        "name": "updateMenuItems",
+        "type": "function",
+        "description": "Updates the state of the MenuItems specified",
+        "platforms": ["chromeos"],
+        "parameters": [
+          {
+            "name": "parameters",
+            "type": "object",
+            "properties": {
+              "engineID": {
+                "description": "ID of the engine to use",
+                "type": "string"
+              },
+              "items": {
+                "description": "Array of MenuItems to update",
+                "type": "array",
+                "items": {
+                  "$ref": "MenuItem"
+                }
+              }
+            }
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "optional": true,
+            "description": "Called when the operation completes",
+            "parameters": []
+          }
+        ]
+      },
+      {
+        "name": "deleteSurroundingText",
+        "type": "function",
+        "description": "Deletes the text around the caret.",
+        "platforms": ["chromeos"],
+        "parameters": [
+          {
+            "name": "parameters",
+            "type": "object",
+            "properties": {
+              "engineID": {
+                "type": "string",
+                "description": "ID of the engine receiving the event."
+              },
+              "contextID": {
+                "type": "integer",
+                "description": "ID of the context where the surrounding text will be deleted."
+              },
+              "offset": {
+                "type": "integer",
+                "description": "The offset from the caret position where deletion will start. This value can be negative."
+              },
+              "length": {
+                "type": "integer",
+                "description": "The number of characters to be deleted",
+                "minimum": 0
+              }
+            }
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "optional": true,
+            "description": "Called when the operation completes.",
+            "parameters": []
+          }
+        ]
+      },
+      {
+        "name": "keyEventHandled",
+        "type": "function",
+        "description": "Indicates that the key event received by onKeyEvent is handled.  This should only be called if the onKeyEvent listener is asynchronous.",
+        "platforms": ["chromeos", "win", "linux"],
+        "parameters": [
+          {"type": "string", "name": "requestId", "description": "Request id of the event that was handled.  This should come from keyEvent.requestId"},
+          {"type": "boolean", "name": "response", "description": "True if the keystroke was handled, false if not"}
+        ]
+      },
+      {
+        "name": "createWindow",
+        "type": "function",
+        "description": "Creates IME window.",
+        "platforms": ["win", "linux"],
+        "parameters": [
+          {
+            "$ref": "CreateWindowOptions",
+            "name": "options",
+            "description": "The options of the newly created IME window."
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "description": "Called when the operation completes.",
+            "parameters": [
+              {
+                "name": "windowObject",
+                "type": "object",
+                "isInstanceOf": "Window",
+                "description": "The JavaScript 'window' object of the newly created IME window. It contains the additional 'id' property for the parameters of the other functions like showWindow/hideWindow."
+              }
+            ]
+           }
+         ]
+      },
+      {
+        "name": "showWindow",
+        "type": "function",
+        "description": "Shows the IME window. This makes the hidden window visible.",
+        "platforms": ["win", "linux"],
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "windowId",
+            "description": "The ID of the IME window."
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "optional": true,
+            "description": "Called when the operation completes.",
+            "parameters": []
+           }
+         ]
+      },
+      {
+        "name": "hideWindow",
+        "type": "function",
+        "description": "Hides the IME window. This doesn't close the window. Instead, it makes the window invisible. The extension can cache the window and show/hide it for better performance.",
+        "platforms": ["win", "linux"],
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "windowId",
+            "description": "The ID of the IME window."
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "optional": true,
+            "description": "Called when the operation completes.",
+            "parameters": []
+           }
+         ]
+      },
+      {
+        "name": "activate",
+        "type": "function",
+        "description": "Activates the IME extension so that it can receive events.",
+        "platforms": ["win", "linux"],
+        "parameters": [
+          {
+            "type": "function",
+            "name": "callback",
+            "optional": true,
+            "description": "Called when the operation completes.",
+            "parameters": []
+          }
+        ]
+      },
+      {
+        "name": "deactivate",
+        "type": "function",
+        "description": "Deactivates the IME extension so that it cannot receive events.",
+        "platforms": ["win", "linux"],
+        "parameters": [
+          {
+            "type": "function",
+            "name": "callback",
+            "optional": true,
+            "description": "Called when the operation completes.",
+            "parameters": []
+          }
+        ]
+      }
+    ],
+    "events": [
+      {
+        "name": "onActivate",
+        "type": "function",
+        "description": "This event is sent when an IME is activated. It signals that the IME will be receiving onKeyPress events.",
+        "platforms": ["chromeos", "win", "linux"],
+        "parameters": [
+          {
+            "type": "string",
+            "name": "engineID",
+            "description": "ID of the engine receiving the event"
+          },
+          {
+            "name": "screen",
+            "$ref": "ScreenType",
+            "description": "The screen type under which the IME is activated."
+          }
+        ]
+      },
+      {
+        "name": "onDeactivated",
+        "type": "function",
+        "description": "This event is sent when an IME is deactivated. It signals that the IME will no longer be receiving onKeyPress events.",
+        "platforms": ["chromeos", "win", "linux"],
+        "parameters": [
+          {
+            "type": "string",
+            "name": "engineID",
+            "description": "ID of the engine receiving the event"
+          }
+        ]
+      },
+      {
+        "name": "onFocus",
+        "type": "function",
+        "description": "This event is sent when focus enters a text box. It is sent to all extensions that are listening to this event, and enabled by the user.",
+        "platforms": ["chromeos", "win", "linux"],
+        "parameters": [
+          {
+            "$ref": "InputContext",
+            "name": "context",
+            "description": "Describes the text field that has acquired focus."
+          }
+        ]
+      },
+      {
+        "name": "onBlur",
+        "type": "function",
+        "description": "This event is sent when focus leaves a text box. It is sent to all extensions that are listening to this event, and enabled by the user.",
+        "platforms": ["chromeos", "win", "linux"],
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "contextID",
+            "description": "The ID of the text field that has lost focus. The ID is invalid after this call"
+          }
+        ]
+      },
+      {
+        "name": "onInputContextUpdate",
+        "type": "function",
+        "description": "This event is sent when the properties of the current InputContext change, such as the the type. It is sent to all extensions that are listening to this event, and enabled by the user.",
+        "platforms": ["chromeos"],
+        "parameters": [
+          {
+            "$ref": "InputContext",
+            "name": "context",
+            "description": "An InputContext object describing the text field that has changed."
+          }
+        ]
+      },
+      {
+        "name": "onKeyEvent",
+        "type": "function",
+        "description": "Fired when a key event is sent from the operating system. The event will be sent to the extension if this extension owns the active IME.",
+        "platforms": ["chromeos", "win", "linux"],
+        "options": {
+          "supportsFilters": false,
+          "supportsListeners": true,
+          "supportsRules": false,
+          "maxListeners": 1
+        },
+        "parameters": [
+          {
+            "type": "string",
+            "name": "engineID",
+            "description": "ID of the engine receiving the event"
+          },
+          {
+            "$ref": "KeyboardEvent",
+            "name": "keyData",
+            "description": "Data on the key event"
+          }
+        ],
+        "extraParameters": [
+          {
+            "type": "array",
+            "optional": true,
+            "name": "extraInfoSpec",
+            "description": "Array of extra information that specifies how the callback is invoked.",
+            "items": {
+              "$ref": "CallbackStyle"
+            }
+          }
+        ],
+        "returns": {
+          "type": "boolean",
+          "description": "True if the keystroke was handled, false if not.  This function should always return a value if |async| is not specified.",
+          "optional": true
+        }
+      },
+      {
+        "name": "onCandidateClicked",
+        "type": "function",
+        "description": "This event is sent if this extension owns the active IME.",
+        "platforms": ["chromeos"],
+        "parameters": [
+          {
+            "type": "string",
+            "name": "engineID",
+            "description": "ID of the engine receiving the event"
+          },
+          {
+            "type": "integer",
+            "name": "candidateID",
+            "description": "ID of the candidate that was clicked."
+          },
+          {
+            "name": "button",
+            "$ref": "MouseButton",
+            "description": "Which mouse buttons was clicked."
+          }
+        ]
+      },
+      {
+        "name": "onMenuItemActivated",
+        "type": "function",
+        "description": "Called when the user selects a menu item",
+        "platforms": ["chromeos"],
+        "parameters": [
+          {
+            "type": "string",
+            "name": "engineID",
+            "description": "ID of the engine receiving the event"
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "description": "Name of the MenuItem which was activated"
+          }
+        ]
+      },
+      {
+        "name": "onSurroundingTextChanged",
+        "type": "function",
+        "description": "Called when the editable string around caret is changed or when the caret position is moved. The text length is limited to 100 characters for each back and forth direction.",
+        "platforms": ["chromeos"],
+        "parameters": [
+          {
+            "type": "string",
+            "name": "engineID",
+            "description": "ID of the engine receiving the event"
+          },
+          {
+            "type": "object",
+            "name": "surroundingInfo",
+            "description": "The surrounding information.",
+            "properties": {
+              "text": {
+                "type": "string",
+                "description": "The text around the cursor. This is only a subset of all text in the input field."
+              },
+              "focus": {
+                "type": "integer",
+                "description": "The ending position of the selection. This value indicates caret position if there is no selection."
+              },
+              "anchor": {
+                "type": "integer",
+                "description": "The beginning position of the selection. This value indicates caret position if there is no selection."
+              },
+              "offset": {
+                "type": "integer",
+                "description": "The offset position of <code>text</code>. Since <code>text</code> only includes a subset of text around the cursor, offset indicates the absolute position of the first character of <code>text</code>."
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "onReset",
+        "type": "function",
+        "description": "This event is sent when chrome terminates ongoing text input session.",
+        "platforms": ["chromeos", "win", "linux"],
+        "parameters": [
+          {
+            "type": "string",
+            "name": "engineID",
+            "description": "ID of the engine receiving the event"
+          }
+        ]
+      },
+      {
+        "name": "onCompositionBoundsChanged",
+        "type": "function",
+        "description": "Triggered when the bounds of the IME composition text or cursor are changed. The IME composition text is the instance of text produced in the input method editor.",
+        "platforms": ["win", "linux"],
+        "parameters": [
+          {
+            "type": "array",
+            "name": "boundsList",
+            "description": "List of bounds information for each character on IME composition text. If there's no composition text in the editor, this array contains the bound information of the cursor.",
+            "items": { "$ref": "Bounds" }
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,50 @@
+<html>
+<head>
+<script src="../../../resources/js-test.js"></script>
+<script src="resources/window-property-collector.js"></script>
+<script>
+var jsTestIsAsync = true;
+
+var frame;
+var childWindow;
+var propertiesToVerify = [];
+
+function insertExpectedResult(path, expected)
+{
+    if (path.length < 2)
+        return;
+    var propertyDir = path.slice(0, -1).join('.');
+    var cachedPropertyDir = "cached_" + propertyDir.replace('.', '_');
+    window[cachedPropertyDir] = eval("childWindow." + propertyDir);
+    propertiesToVerify.push({
+        'property': ["window", cachedPropertyDir, path[path.length - 1]].join("."),
+        'expected': expected,
+    });
+}
+
+function runTest()
+{
+    frame = document.getElementById("test_frame");
+    description("Tests access of cached DOMWindow properties after the associated frame is navigated. Test should not crash and properties should be set to sane defaults.");
+    childWindow = frame.contentWindow;
+    // Have expected results assume that the frame hasn't been closed (=> window.closed = false.)
+    collectProperties(document.getElementById("src_frame").contentWindow, false);
+    frame.onload = testFrameLoaded;
+    frame.src = 'data:text/plain,';
+}
+
+function testFrameLoaded()
+{
+    if (frame) {
+        for (var i = 0; i < propertiesToVerify.length; ++i)
+            shouldBe(propertiesToVerify[i].property, propertiesToVerify[i].expected);
+        finishJSTest();
+    }
+}
+</script>
+</head>
+<body onload="runTest()">
+<iframe id="src_frame"></iframe>
+<iframe id="test_frame"></iframe>
+</body>
+</html>

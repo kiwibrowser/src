@@ -1,0 +1,27 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+
+import glob
+import os
+import sys
+
+Import('env')
+
+#
+#
+# Build x86 only pieces
+#
+#
+if not env.Bit('build_x86'): Return()
+
+# The following are copycode routines for x86-32 and x86-64.
+# TODO(karl): Break this up so that we don't need to load
+# non-shared code in library.
+env.ComponentLibrary(env.NaClTargetArchSuffix('nccopy'), [
+    'nccopycode.c',
+    'nccopycode_stores.S',
+    ])
+

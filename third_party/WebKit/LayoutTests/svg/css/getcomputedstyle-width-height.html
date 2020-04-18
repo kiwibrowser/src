@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<title>getComputedStyle() for 'width' and 'height' properties on SVG elements</title>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<svg height="0">
+  <rect/>
+  <rect width="100" height="200"/>
+  <rect style="width: 40%; height: auto"/>
+  <rect style="width: auto; height: 20px"/>
+  <rect style="width: 20px; height: 40%"/>
+
+  <g><rect width="100" height="100"/></g>
+  <g width="100" height="42px"><rect width="100" height="100"/></g>
+  <g style="width: 10%; height: auto"><rect width="100" height="100"/></g>
+  <g style="width: auto; height: 20px"><rect width="100" height="100"/></g>
+  <g style="width: 20px; height: 10%"><rect width="100" height="100"/></g>
+
+  <image/>
+  <image width="100"/>
+  <image height="200"/>
+  <image style="width: 25%; height: auto"/>
+  <image style="width: auto; height: 230px"/>
+  <image style="width: 230px; height: 25%"/>
+
+  <foreignObject>Some content</foreignObject>
+  <foreignObject width="100">Some content</foreignObject>
+  <foreignObject height="200">Some content</foreignObject>
+  <foreignObject style="width: 50%; height: auto">Some content</foreignObject>
+  <foreignObject style="width: auto; height: 75px">Some content</foreignObject>
+  <foreignObject style="width: 75px; height: 50%">Some content</foreignObject>
+
+  <text>Text1</text>
+  <text width="100px" height="42">Text2</text>
+  <text style="width: 30%; height: auto">Text3</text>
+  <text style="width: auto; height: 20px">Text3</text>
+  <text style="width: 20px; height: 30%">Text3</text>
+</svg>
+<script>
+[
+  {
+    element: 'rect',
+    expected: [
+      { width: 'auto', height: 'auto', description: 'initial' },
+      { width: '100px', height: '200px', description: 'presentation attribute (width & height)' },
+      { width: '40%', height: 'auto', description: 'inline style (percentage, auto)' },
+      { width: 'auto', height: '20px', description: 'inline style (auto, pixels)' },
+      { width: '20px', height: '40%', description: 'inline style (pixels, percentage)' },
+    ]
+  },
+  {
+    element: 'g',
+    expected: [
+      { width: 'auto', height: 'auto', description: 'initial' },
+      { width: 'auto', height: 'auto', description: 'initial (w/ dummy attribute)' },
+      { width: '10%', height: 'auto', description: 'inline style (percentage, auto)' },
+      { width: 'auto', height: '20px', description: 'inline style (auto, pixels)' },
+      { width: '20px', height: '10%', description: 'inline style (pixels, percentage)' },
+    ]
+  },
+  {
+    element: 'image',
+    expected: [
+      { width: 'auto', height: 'auto', description: 'initial' },
+      { width: '100px', height: 'auto', description: 'presentation attribute (width)' },
+      { width: 'auto', height: '200px', description: 'presentation attribute (height)' },
+      { width: '25%', height: 'auto', description: 'inline style (percentage, auto)' },
+      { width: 'auto', height: '230px', description: 'inline style (auto, pixels)' },
+      { width: '230px', height: '25%', description: 'inline style (pixels, percentage)' },
+    ]
+  },
+  {
+    element: 'foreignObject',
+    expected: [
+      { width: 'auto', height: 'auto', description: 'initial' },
+      { width: '100px', height: 'auto', description: 'presentation attribute (width)' },
+      { width: 'auto', height: '200px', description: 'presentation attribute (height)' },
+      { width: '50%', height: 'auto', description: 'inline style (percentage, auto)' },
+      { width: 'auto', height: '75px', description: 'inline style (auto, pixels)' },
+      { width: '75px', height: '50%', description: 'inline style (pixels, percentage)' },
+    ]
+  },
+  {
+    element: 'text',
+    expected: [
+      { width: 'auto', height: 'auto', description: 'initial' },
+      { width: 'auto', height: 'auto', description: 'initial (w/ dummy attribute)' },
+      { width: '30%', height: 'auto', description: 'inline style (percentage, auto)' },
+      { width: 'auto', height: '20px', description: 'inline style (auto, pixels)' },
+      { width: '20px', height: '30%', description: 'inline style (pixels, percentage)' },
+    ]
+  },
+].forEach(function(entry) {
+  let element_set = document.querySelectorAll(entry.element);
+  entry.expected.forEach(function(expected_element, index) {
+    test(function() {
+      let style = getComputedStyle(element_set[index], null);
+      assert_equals(style.width, expected_element.width, 'width');
+      assert_equals(style.height, expected_element.height, 'height');
+    }, document.title + ', <' + entry.element + '> ' + expected_element.description);
+  });
+});
+</script>

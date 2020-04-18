@@ -1,0 +1,30 @@
+# -*- python -*-
+# Copyright 2008 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+
+Import('env')
+
+nacl_thread_create_joinable_test_exe = env.ComponentProgram(
+    'nacl_thread_create_joinable_test',
+    'nacl_thread_create_joinable_test.c',
+    EXTRA_LIBS=['platform',
+                'gio'])
+node = env.CommandTest(
+    'nacl_thread_create_joinable_test.out',
+    command=[nacl_thread_create_joinable_test_exe])
+env.AddNodeToTestSuite(node,
+                       ['small_tests'],
+                       'run_nacl_thread_create_joinable_test')
+
+atomic_ops_test_exe = env.ComponentProgram(
+    'atomic_ops_test',
+    'atomic_ops_test.c',
+    EXTRA_LIBS=['platform', 'gio'])
+node = env.CommandTest(
+    'atomic_ops_test.out',
+    command=[atomic_ops_test_exe, '25'],
+    size='medium')
+
+env.AddNodeToTestSuite(node, ['medium_tests'], 'run_atomic_ops_test')

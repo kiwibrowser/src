@@ -1,0 +1,135 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import os
+Import('env')
+
+if env.Bit('linux'):
+
+  # Defines common arch-independent validator directory.
+  COMMON_VAL_DIR = '${MAIN_DIR}/src/trusted/validator'
+
+  # Defines this source directory.
+  GEN_SRC_DIR = '${MAIN_DIR}/src/trusted/validator_mips/gen'
+
+  # Defines the full file name for a generated file.
+  def _gen_file(filename):
+    return '%s/%s' % (GEN_SRC_DIR, filename)
+
+  # Defines the full file name for a file inside common validator directory.
+  def _val_dir(filename):
+    return '%s/%s' % (COMMON_VAL_DIR, filename)
+
+  # Android compiler cannot compile NDK C++ headers with these.
+  if not env.Bit('android'):
+    env.Append(
+        CXXFLAGS='-Weffc++ -Woverloaded-virtual -fno-rtti -fomit-frame-pointer',
+        )
+
+  GEN_LIST = [_gen_file('decode.cc')]
+
+  generate = False
+  gen_env = env.Clone()
+  if 'mipsvalgen' in COMMAND_LINE_TARGETS: generate = True
+  if 'mipsvalclean' in COMMAND_LINE_TARGETS: generate = True
+
+  if generate:
+    gen_env.AlwaysBuild(gen_env.Alias('mipsvalgen', GEN_LIST))
+    gen_env.AlwaysBuild(
+      gen_env.Alias('mipsvalclean', action=[Delete(x) for x in GEN_LIST]))
+
+  def _generate_source(filename):
+    env.Command(target=filename,
+                source=['mips-opt.table',
+                        'dgen/generate_decoder.py',
+                        'dgen/dgen_core.py',
+                        'dgen/dgen_input.py',
+                        'dgen/dgen_opt.py',
+                        'dgen/dgen_output.py'],
+               action=['${SOURCES[1].abspath} ${SOURCES[0].abspath} '
+                           '${TARGET.abspath}'])
+
+  for f in GEN_LIST:
+    _generate_source(f)
+
+  env.ComponentLibrary('mips_validator_core',
+                       ['address_set.cc',
+                        'validator.cc',
+                        'gen/decode.cc'])
+
+  env.ComponentLibrary('ncvalidate_mips',
+                       ['ncvalidate.cc'],
+                       LIBS=['mips_validator_core',
+                             '${OPTIONAL_COVERAGE_LIBS}'])
+
+  ncval = env.ComponentProgram(
+      'mips-ncval-core',
+      ['ncval.cc'],
+      EXTRA_LIBS=['mips_validator_core',
+                  env.NaClTargetArchSuffix('ncfileutils'),
+                  '${OPTIONAL_COVERAGE_LIBS}'])
+
+  env.SDKInstallBin('ncval', ncval, target='mips32')
+
+  gtest_env = env.MakeGTestEnv()
+
+  address_exe = gtest_env.ComponentProgram('mips_address_set_test_binary',
+                       ['address_set_test.cc'],
+                       EXTRA_LIBS=['mips_validator_core', 'gtest',
+                                   '${OPTIONAL_COVERAGE_LIBS}'])
+
+  address_set_test = gtest_env.CommandTest('mips_address_set_test.out',
+                                           command=[address_exe])
+
+  gtest_env.AddNodeToTestSuite(address_set_test,
+                               ['small_tests'],
+                               'run_mips_address_set_test')
+
+  validator_tests = {
+    'test_forbidden_instructions': 1,
+    'test_sp_updates': 1,
+    'test_stores': 1,
+    'test_loads': 1,
+    'test_jmp_reg': 1,
+    'test_jmp_imm': 1,
+    'test_read_only_regs': 1,
+    'test_invalid_dest': 1,
+    'test_unpredicted': 1,
+    'test_tp_access': 1,
+  }
+
+  if env.Bit('build_mips32'):
+    for test, exit_status in validator_tests.iteritems():
+      if test == 'test_invalid_dest':
+        text_section_start = '-Wl,--section-start,.text=0x0FFFA000'
+      else:
+        text_section_start = '-Wl,--section-start,.text=0x00020000'
+      nexe = env.ComponentProgram(
+          'testdata/%s.nexe' % test,
+          'testdata/%s.S' % test,
+          LINKFLAGS=['-nostdlib', text_section_start],
+          ASFLAGS=['-static'])
+      node = env.CommandTest(
+          '%s_actual_mips.out' % test,
+          [ncval, env.File(nexe)],
+          exit_status=str(exit_status),
+          filter_regex="'^ncval'",
+          stderr_golden=env.File('testdata/%s.err' % test))
+
+      env.AddNodeToTestSuite(node, ['small_tests', 'validator_tests'],
+                             'run_mips_' + test)
+
+  # Do NOT name this program 'validator_tests' because this is the same name as
+  # a test suite, and scons will run that test suite if it ever builds
+  # a program of the same name.
+  validator_tests_exe = gtest_env.ComponentProgram('mips_validator_tests',
+                                 ['validator_tests.cc'],
+                                 EXTRA_LIBS=['mips_validator_core'])
+
+  test_node = gtest_env.CommandTest(
+      'mips_validator_tests.out',
+      command=[validator_tests_exe])
+  gtest_env.AddNodeToTestSuite(test_node, ['small_tests'],
+      'run_mips_validator_tests')

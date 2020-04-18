@@ -1,0 +1,24 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(`Tests disabling cache from inspector and seeing that preloads are not evicted from memory cache.\n`);
+  await TestRunner.loadModule('network_test_runner');
+  await TestRunner.loadModule('console_test_runner');
+  await TestRunner.showPanel('network');
+
+  await TestRunner.navigatePromise('resources/network-disable-cache-preloads.php');
+  await TestRunner.NetworkAgent.setCacheDisabled(true);
+  TestRunner.reloadPage(step2);
+
+  function step2(msg) {
+    ConsoleTestRunner.addConsoleSniffer(done);
+    TestRunner.evaluateInPage('scheduleScriptLoad()');
+  }
+
+  function done(msg) {
+    ConsoleTestRunner.dumpConsoleMessages();
+    TestRunner.completeTest();
+  }
+})();

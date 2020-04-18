@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+
+<div id="container">
+  <table role="presentation">
+    <tr>
+      <td>A</td><td>B</td>
+    </tr>
+    <tr>
+      <td>C</td><td>D</td>
+    </tr>
+  </table>
+</div>
+
+<script>
+test(() => {
+  var axTableContainer = accessibilityController.accessibleElementById('container');
+  assert_equals(axTableContainer.childrenCount, 4);
+  var axTextContainer1 = axTableContainer.childAtIndex(0);
+  assert_equals(axTextContainer1.role, "AXRole: AXGenericContainer");
+  var axText1 = axTextContainer1.childAtIndex(0);
+  assert_equals(axText1.role, "AXRole: AXStaticText");
+  assert_equals(axText1.name, "A");
+  var axTextContainer2 = axTableContainer.childAtIndex(1);
+  assert_equals(axTextContainer2.role, "AXRole: AXGenericContainer");
+  var axText2 = axTextContainer2.childAtIndex(0);
+  assert_equals(axText2.role, "AXRole: AXStaticText");
+  assert_equals(axText2.name, "B");
+}, "ARIA presentation role on table element has no rows or cells.");
+
+if (window.testRunner)
+    document.getElementById("container").style.display = "none";
+</script>

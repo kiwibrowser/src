@@ -1,0 +1,15 @@
+; Copyright 2017 The Chromium Authors. All rights reserved.
+; Use of this source code is governed by a BSD-style license that can be
+; found in the LICENSE file.
+
+; *** The contents of common.sb are implicitly included here. ***
+
+; Allow preloading of the CDM using seatbelt extension.
+(allow file-read* (extension "com.apple.app-sandbox.read"))
+
+; Allow to read framework and CDM resources files for CDM host verification
+(define bundle-version-path "BUNDLE_VERSION_PATH")
+(allow file-read* (subpath (param bundle-version-path)))
+
+; mach IPC
+(allow mach-lookup (global-name "com.apple.windowserver.active"))

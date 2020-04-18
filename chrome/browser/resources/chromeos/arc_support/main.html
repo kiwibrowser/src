@@ -1,0 +1,247 @@
+<!doctype html>
+<html>
+<head>
+  <title i18n-content="appWindow"></title>
+  <link rel="stylesheet" href="chrome://resources/css/roboto.css">
+  <link rel="stylesheet" href="chrome://resources/css/bubble.css">
+  <link rel="stylesheet" href="chrome://resources/css/bubble_button.css">
+  <link rel="stylesheet" href="chrome://resources/css/controlled_indicator.css">
+  <link rel="stylesheet" href="chrome://resources/css/overlay.css">
+  <link rel="import" href="chrome://resources/html/polymer.html">
+  <link rel="import" href="chrome://resources/cr_elements/cr_checkbox/cr_checkbox.html">
+  <link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+  <link rel="import" href="chrome://resources/polymer/v1_0/iron-flex-layout/iron-flex-layout-classes.html">
+  <style is="custom-style" include="iron-flex iron-flex-alignment">
+    paper-button {
+      border-radius: 4px;
+      border-style: solid;
+      border-width: 2px;
+      height: 32px; /* = 28px + 2 * 2px border */
+      margin: 0;
+      padding: 0;
+    }
+    paper-button.blue {
+      border-color: transparent;
+    }
+    paper-button.white {
+      border-color: rgba(0, 0, 0, 0.1);
+    }
+    paper-button[focused] {
+      border-color: rgba(66, 133, 244, 0.4); /* #4284f4 */
+    }
+    paper-button .container {
+      align-items: center;
+      align-self: stretch;
+      border-radius: 2px;
+      display: flex;
+      font: Roboto, sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      justify-content: center;
+      padding: 0 16px;
+      text-transform: none;
+    }
+    paper-button.white .container {
+      background-color: white;
+      color: rgba(0, 0, 0, 0.54);
+    }
+    paper-button.blue .container {
+      background-color: rgb(66, 133, 244); /* #4285f4 */
+      color: white;
+    }
+  </style>
+  <link rel="stylesheet" href="main.css">
+  <link rel="stylesheet" href="progressbar.css">
+  <script src="chrome://resources/js/load_time_data.js"></script>
+  <script src="chrome://resources/js/util.js"></script>
+  <script src="chrome://resources/js/i18n_template_no_process.js"></script>
+  <script src="chrome://resources/js/cr.js"></script>
+  <script src="chrome://resources/js/event_tracker.js"></script>
+  <script src="chrome://resources/js/cr/ui.js"></script>
+  <script src="chrome://resources/js/cr/ui/bubble.js"></script>
+  <script src="chrome://resources/js/cr/ui/bubble_button.js"></script>
+  <script src="chrome://resources/js/cr/ui/controlled_indicator.js"></script>
+  <script src="chrome://resources/js/cr/ui/overlay.js"></script>
+  <script src="chrome://resources/js/cr/ui/focus_manager.js"></script>
+  <script src="arc_optin_focus_manager.js"></script>
+  <script src="progressbar.js"></script>
+</head>
+<body>
+  <div id="terms" class="section">
+    <div class="header">
+      <img class="icon-header" src="icon/playstore.svg" aria-hidden="true">
+    </div>
+    <div class="scrollable" id="terms-of-service-loading">
+      <div class="content">
+        <p class="title" id="greetingTitle" i18n-content="greetingHeader"
+            aria-hidden="true"></p>
+        <p class="subtitle" i18n-content="progressTermsLoading"
+            aria-live="polite"></p>
+        <div class="progress-container">
+          <div class="progress-primary"></div>
+          <div class="progress-secondary"></div>
+        </div>
+      </div>
+    </div>
+    <div class="scrollable" id="terms-of-service-content" hidden>
+      <div class="content section-flex">
+        <p class="title" id="greetingTitle" i18n-content="greetingHeader"
+            aria-live="polite"></p>
+        <p class="subtitle" i18n-content="greetingDescription">
+        </p>
+        <div class ="section-flex" id="service-container">
+          <div class="section-terms" id="terms-container">
+            <webview id="terms-view"></webview>
+          </div>
+          <div>
+            <label class="layout horizontal section-checkbox-container">
+              <a class="checkbox-text" id="privacy-policy-link"
+                  href="#" i18n-content="privacyPolicyLink"></a>
+            </label>
+          </div>
+          <div id="metrics-preference">
+            <label class="layout horizontal section-checkbox-container">
+              <cr-checkbox class="checkbox-option">
+                <p class="checkbox-text"></p>
+              </cr-checkbox>
+              <p class="content-text"></p>
+            </label>
+          </div>
+          <div id="backup-restore-preference">
+            <label class="layout horizontal section-checkbox-container">
+              <cr-checkbox class="checkbox-option">
+                <p class="checkbox-text"
+                    i18n-values=".innerHTML:textBackupRestore"></p>
+              </cr-checkbox>
+            </label>
+          </div>
+          <div id="location-service-preference">
+            <label class="layout horizontal section-checkbox-container">
+              <cr-checkbox class="checkbox-option">
+                <p class="checkbox-text"
+                    i18n-values=".innerHTML:textLocationService"></p>
+              </cr-checkbox>
+            </label>
+          </div>
+          <div id="pai-service-descirption">
+            <label class="layout horizontal section-checkbox-container">
+                <p class="content-text"
+                    i18n-values=".innerHTML:textPaiService"></p>
+            </label>
+          </div>
+          <div id="google-service-confirmation">
+            <label class="layout horizontal section-checkbox-container">
+              <p class="content-text"
+                    i18n-values=".innerHTML:textGoogleServiceConfirmation">
+              </p>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="layout horizontal center end-justified section-buttons">
+        <div class="flex"></div>
+        <paper-button class="white" id="button-cancel">
+          <div class="container flex" i18n-content="buttonCancel">
+          </div>
+        </paper-button>
+        <paper-button class="blue" id="button-next">
+          <div class="container flex" i18n-content="buttonNext">
+          </div>
+        </paper-button>
+        <paper-button class="blue" id="button-agree">
+          <div class="container flex" i18n-content="buttonAgree">
+          </div>
+        </paper-button>
+      </div>
+    </div>
+  </div>
+  <div id="active-directory-auth" class="section" hidden>
+    <div class="section-active-directory-auth">
+      <img class="icon-header" src="icon/playstore.svg" aria-hidden="true">
+      <div class="scrollable">
+        <p class="text-active-directory-auth-title"
+            i18n-content="activeDirectoryAuthTitle"></p>
+        <p class="text-active-directory-auth-subtitle"
+            i18n-content="activeDirectoryAuthDesc"></p>
+        <div class="section-active-directory-auth-view"
+            id="active-directory-auth-container">
+          <webview id="active-directory-auth-view"></webview>
+        </div>
+        <div class="section-active-directory-auth-buttons">
+          <paper-button class="button-active-directory-auth"
+              id="button-active-directory-auth-cancel"
+              i18n-content="buttonCancel">
+          </paper-button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="arc-loading" class="section" hidden>
+    <div class="header">
+      <img class="icon-header" src="icon/playstore.svg" aria-hidden="true">
+    </div>
+    <div class="scrollable">
+      <div class="content">
+        <p class="title" id="greetingTitle"
+            i18n-content="initializingHeader"></p>
+        <p class="subtitle" i18n-content="progressAndroidLoading"
+            aria-live="polite">
+        </p>
+        <div class="progress-container">
+          <div class="progress-primary"></div>
+          <div class="progress-secondary"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="error" class="section" hidden>
+    <div class="header">
+      <img class="icon-header" src="icon/playstore.svg" aria-hidden="true">
+    </div>
+    <div class="scrollable">
+      <div class="content section-flex">
+        <p class="title" i18n-content="greetingHeader"></p>
+        <p class="subtitle" id="error-message" aria-live="polite"></p>
+        <img class="error-image" src="images/error_image.png"
+          aria-hidden="true">
+      </div>
+      <div class="layout horizontal center end-justified section-buttons">
+        <div class="flex"></div>
+        <paper-button class="white" id="button-send-feedback">
+          <div class="container flex" i18n-content="buttonSendFeedback">
+          </div>
+        </paper-button>
+        <paper-button class="blue" id="button-retry">
+          <div class="container flex" i18n-content="buttonRetry">
+          </div>
+        </paper-button>
+      </div>
+    </div>
+  </div>
+  <div id="overlay-container" class="overlay" hidden>
+    <div class="page" id="overlay-page">
+      <div id="close-button" class="close-button"></div>
+      <div class="content-area">
+        <span id="overlay-text-content"></span>
+        <div id="overlay-url-container">
+          <webview id="overlay-url"></webview>
+          <div id="overlay-url-loading">
+            <p i18n-content="overlayLoading"></p>
+          </div>
+        </div>
+      </div>
+      <div class="action-area">
+        <div class="action-area-right">
+          <div class="button-strip">
+            <paper-button class ="blue" id="overlay-close">
+              <div class="container flex" i18n-content="overlayClose">
+              </div>
+            </paper-button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <a href="#" class="invisible-link"></a>
+  </div>
+</body>
+</html>

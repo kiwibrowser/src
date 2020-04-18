@@ -1,0 +1,157 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+</head>
+<body>
+<script>
+
+// If a constraint is specified, it should come back in getConstraints().
+promise_test(function() {
+  return navigator.mediaDevices.getUserMedia({audio: { echoCancellation: { exact: true}, autoGainControl: { exact: true }, noiseSuppression: { exact: true }}})
+      .then(function(s) {
+    constraints = s.getAudioTracks()[0].getConstraints();
+    assert_equals(Object.keys(constraints).length, 3);
+    assert_true(constraints.hasOwnProperty('echoCancellation'));
+    assert_true(constraints.echoCancellation.exact);
+    assert_true(constraints.hasOwnProperty('autoGainControl'));
+    assert_true(constraints.autoGainControl.exact);
+    assert_true(constraints.hasOwnProperty('noiseSuppression'));
+    assert_true(constraints.noiseSuppression.exact);
+  });
+}, 'A set constraint is returned on getConstraints');
+
+promise_test(function() {
+  return navigator.mediaDevices.getUserMedia({audio: { echoCancellation: { exact: true}, notKnownName: { exact: true }}})
+      .then(function(s) {
+    constraints = s.getAudioTracks()[0].getConstraints();
+    assert_equals(Object.keys(constraints).length, 1);
+    assert_false(constraints.hasOwnProperty('notKnownName'));
+  });
+}, 'An unknown constraint is NOT returned on getConstraints');
+
+function constraintElementsEqual(a, b) {
+  if (a === b)
+    return true;
+  if (!(a instanceof Object))
+    return false;
+  if (!(b instanceof Object))
+    return false;
+  if (Object.keys(a).length != Object.keys(b).length)
+    return false;
+  for (var p in a) {
+    if (!a.hasOwnProperty(p))
+      continue;  // Skip prototypes and such things.
+    if (!b.hasOwnProperty(p))
+      return false;
+    if (a[p] instanceof Object && b[p] instanceof Object) {
+      if (!constraintElementsEqual(a[p], b[p]))
+         return false;
+      continue;
+    }
+    if (a[p] !== b[p]) return false;  // Simple types.
+  }
+  return true;
+}
+
+promise_test(function() {
+  // We construct a constraint set that covers all defined constraints.
+  // All these constraints make sense for video.
+  const complexConstraintSet = {
+    width: { min: 30, max: 480 },
+    height: { min: 30, max: 480, exact: 350 },
+    aspectRatio: 1.3333333,
+    frameRate: { min: 0 },
+    facingMode: "user"
+  };
+  // These constraints are syntactically valid, but may cause rejection.
+  // They are included in an "advanced" constraint.
+  const ignorableConstraintSet = {
+    volume: { ideal: 1.0 },
+    sampleRate: { ideal: 42 },
+    sampleSize: { ideal: 3 },
+    echoCancellation: { ideal: false },
+    autoGainControl: { ideal: false },
+    noiseSuppression: { ideal: false },
+    latency: { ideal: 0.22 },
+    channelCount: { ideal: 2 },
+    deviceId: { ideal: ["foo", "fooz"] },
+    groupId: { ideal: ["bar", "baz"] }
+  };
+  let complexConstraints = complexConstraintSet;
+  complexConstraints.advanced = [ ignorableConstraintSet ];
+
+  return navigator.mediaDevices.getUserMedia({video: complexConstraints})
+      .then(function(s) {
+    constraints = s.getVideoTracks()[0].getConstraints();
+    assert_true(constraintElementsEqual(constraints, complexConstraints),
+      "Unexpected result: In: " + JSON.stringify(complexConstraints, null, 2) +
+      " Out: " + JSON.stringify(constraints, null, 2));
+  });
+}, 'All valid keys are returned for complex constraints');
+
+// Syntax tests for constraints.
+// These work by putting the constraints into an advanced constraint
+// (so that they can be ignored), calling getUserMedia, and then
+// inspecting the constraints.
+// In advanced constraints, naked values mean "exact", and "exact" values
+// are thus unwrapped, which is the opposite behavior from the "basic"
+// constraint set (outside advanced).
+
+function constraintSyntaxTestWithChange(name, constraints, expected_result) {
+  promise_test(function() {
+    return navigator.mediaDevices.getUserMedia(
+        {'video': { 'advanced': [ constraints ]}})
+      .then(function(s) {
+          var constraints_out = s.getVideoTracks()[0].getConstraints().advanced[0];
+          assert_true(constraintElementsEqual(expected_result, constraints_out),
+              "Unexpected result: Expected: " +
+              JSON.stringify(expected_result, null, 2) +
+              " Out: " + JSON.stringify(constraints_out, null, 2));
+        })
+   }, name);
+}
+
+function constraintSyntaxTest(name, constraints) {
+  constraintSyntaxTestWithChange(name, constraints, constraints);
+}
+
+constraintSyntaxTest('Simple integer', { height: 42 });
+constraintSyntaxTest('Ideal integer', { height: { ideal: 42 }});
+constraintSyntaxTest('Min/max integer', { height: { min: 42, max: 43 }});
+constraintSyntaxTestWithChange('Exact unwrapped integer',
+    { height: { exact: 42 } }, { height: 42 });
+
+constraintSyntaxTest('Simple double', { aspectRatio: 1.5 });
+constraintSyntaxTest('Ideal double', { aspectRatio: { ideal: 1.5 }});
+constraintSyntaxTest('Min/max double', { aspectRatio: { min: 1.5, max: 2.0 }});
+constraintSyntaxTestWithChange('Exact unwrapped double',
+    { aspectRatio: { exact: 1.5 } }, { aspectRatio: 1.5 });
+
+constraintSyntaxTest('Simple String', { facingMode: "user1" });
+constraintSyntaxTest('Ideal String', { facingMode: { ideal: "user2" }});
+constraintSyntaxTest('Multiple String in Brackets', { facingMode: { ideal: ["user3", "left3"]}});
+constraintSyntaxTest('Multiple Bracketed Naked String', { facingMode: ["user4", "left4"] });
+constraintSyntaxTestWithChange('Single Bracketed string unwrapped',
+    { 'facingMode': ["user5"]}, { facingMode: "user5" });
+constraintSyntaxTest('Both Ideal and Exact string', { facingMode: { ideal: "user6", exact: "left6" }});
+
+constraintSyntaxTest('echoCancellation with simple boolean value', { echoCancellation: true });
+constraintSyntaxTest('echoCancellation with ideal boolean value', { echoCancellation: { ideal: true }});
+constraintSyntaxTestWithChange('echoCancellation with exact unwrapped boolean value',
+    { echoCancellation: { exact: true } }, { echoCancellation: true });
+
+constraintSyntaxTest('autoGainControl with simple boolean value', { autoGainControl: true });
+constraintSyntaxTest('autoGainControl with ideal boolean value', { autoGainControl: { ideal: true }});
+constraintSyntaxTestWithChange('autoGainControl with exact unwrapped boolean value',
+    { autoGainControl: { exact: true } }, { autoGainControl: true });
+
+constraintSyntaxTest('noiseSuppression with simple boolean value', { noiseSuppression: true });
+constraintSyntaxTest('noiseSuppression with ideal boolean value', { noiseSuppression: { ideal: true }});
+constraintSyntaxTestWithChange('noiseSuppression with exact unwrapped boolean value',
+    { noiseSuppression: { exact: true } }, { noiseSuppression: true });
+
+</script>
+</body>
+</html>

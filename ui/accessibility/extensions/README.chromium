@@ -1,0 +1,73 @@
+This directory contains accessibility extensions developed by the
+Chrome team, not included with Chrome by default, but available via a
+one-click install from the Settings page.
+
+To build:
+
+build/gyp_chromium ui/accessibility/extensions/accessibility_extensions.gyp
+ninja -C out/Release accessibility_extensions
+
+The built extensions will be in:
+
+out/Release/ui/accessibility/extensions
+
+#
+# Instructions for publishing to the web store:
+#
+
+# The AXS_CHROME_APPS_CLIENT_SECRET env var should contain the
+# client secret.
+
+export AXS_CHROME_APPS_CLIENT_SECRET=<client secret>
+
+# Now increment the version number of all extensions! The web store requires an
+# updated version number to publish.
+
+emacs ui/accessibility/extensions/alt/manifest.json
+emacs ui/accessibility/extensions/animation/manifest.json
+emacs ui/accessibility/extensions/caretbrowsing/manifest.json
+emacs ui/accessibility/extensions/colorenhancer/manifest.json
+emacs ui/accessibility/extensions/highcontrast/manifest.json
+emacs ui/accessibility/extensions/longdesc/manifest.json
+
+# Now do a clean build of the extensions to be totally safe:
+
+rm -rf out/Release/ui/accessibility/extensions/
+build/gyp_chromium ui/accessibility/extensions/accessibility_extensions.gyp
+ninja -C out/Release accessibility_extensions
+
+# Run these commands to publish the extensions. It will open your web browser
+# to login. Be sure to choose the axs-chrome+apps account.
+# Optional: you can pass multiple <extension_id>:<path> arguments at the same
+# time. Feel free to do that if updating all of them at once.
+
+chrome/browser/resources/chromeos/chromevox/tools/publish_webstore_extension.py \
+  --client_secret $AXS_CHROME_APPS_CLIENT_SECRET \
+  hinbolcnfifkhlcehoakdledkfjiaeeg:out/Release/ui/accessibility/extensions/alt \
+  --publish
+
+chrome/browser/resources/chromeos/chromevox/tools/publish_webstore_extension.py \
+  --client_secret $AXS_CHROME_APPS_CLIENT_SECRET \
+  ncigbofjfbodhkaffojakplpmnleeoee:out/Release/ui/accessibility/extensions/animation \
+  --publish
+
+chrome/browser/resources/chromeos/chromevox/tools/publish_webstore_extension.py \
+  --client_secret $AXS_CHROME_APPS_CLIENT_SECRET \
+  fklpgenihifpccgiifchnihilipmbffg:out/Release/ui/accessibility/extensions/caretbrowsing \
+  --publish
+
+chrome/browser/resources/chromeos/chromevox/tools/publish_webstore_extension.py \
+  --client_secret $AXS_CHROME_APPS_CLIENT_SECRET \
+  ipkjmjaledkapilfdigkgfmpekpfnkih:out/Release/ui/accessibility/extensions/colorenhancer \
+  --publish
+
+chrome/browser/resources/chromeos/chromevox/tools/publish_webstore_extension.py \
+  --client_secret $AXS_CHROME_APPS_CLIENT_SECRET \
+  djcfdncoelnlbldjfhinnjlhdjlikmph:out/Release/ui/accessibility/extensions/highcontrast \
+  --publish
+
+chrome/browser/resources/chromeos/chromevox/tools/publish_webstore_extension.py \
+  --client_secret $AXS_CHROME_APPS_CLIENT_SECRET \
+  ohbmencljkleiedahijfkagnmmhbilgp:out/Release/ui/accessibility/extensions/longdesc \
+  --publish
+

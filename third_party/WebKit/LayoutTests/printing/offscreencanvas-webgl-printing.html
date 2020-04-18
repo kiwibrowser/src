@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<canvas id='c'></canvas>
+<script>
+var can = document.getElementById('c');
+can.width = can.height = 100;
+var ctx = can.transferControlToOffscreen().getContext("webgl");
+ctx.clearColor(0, 1, 0, 1);
+ctx.clear(ctx.COLOR_BUFFER_BIT);
+if (window.testRunner) {
+  testRunner.setPrinting();
+  testRunner.waitUntilDone();
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+    	// The setTimeout is a synchronization barrier that guarantees
+    	// the commit will be processed by the event loop before the test
+    	// is done.
+      testRunner.notifyDone();
+    });
+  });
+}
+</script>

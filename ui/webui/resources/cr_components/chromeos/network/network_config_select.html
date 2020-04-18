@@ -1,0 +1,51 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+<link rel="import" href="chrome://resources/html/md_select_css.html">
+<link rel="import" href="network_shared_css.html">
+
+<dom-module id="network-config-select">
+  <template>
+    <style include="network-shared md-select">
+      #label {
+        color: var(--secondary-text-color);
+      }
+
+      .md-select {
+        color: var(--primary-text-color);
+        width: 100%;
+      }
+
+      .md-select-wrapper {
+        -webkit-margin-start: calc(var(--md-select-side-padding) * -1);
+      }
+
+      .md-select-underline {
+        -webkit-margin-end: var(--cr-icon-button-margin-start);
+      }
+
+      .control-box {
+        -webkit-padding-end: calc(var(--network-control-margin) - 12px);
+        align-items: stretch;
+        flex-direction: column;
+        justify-content: center;
+      }
+    </style>
+
+    <div class="control-box">
+      <div id="label">[[label]]</div>
+      <div class="md-select-wrapper">
+        <select class="md-select" disabled="[[disabled]]"
+            value="{{value::change}}" aria-label$="[[label]]">
+          <template is="dom-repeat" items="[[items]]">
+            <option value="[[getItemValue_(item)]]"
+                disabled="[[!getItemEnabled_(item)]]">
+              [[getItemLabel_(item, oncPrefix)]]
+            </option>
+          </template>
+        </select>
+        <span class="md-select-underline"></span>
+      </div>
+    </div>
+
+  </template>
+  <script src="network_config_select.js"></script>
+</dom-module>

@@ -1,0 +1,89 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// Include test fixture.
+GEN_INCLUDE(['walker_unittest_base.js']);
+
+/**
+ * Test fixture.
+ * @constructor
+ * @extends {CvoxWalkerTestBase}
+ */
+function CvoxGroupWalkerUnitTest() {}
+
+CvoxGroupWalkerUnitTest.prototype = {
+  __proto__: CvoxWalkerUnitTestBase.prototype,
+
+  /** @override */
+  closureModuleDeps: CvoxWalkerUnitTestBase.prototype.closureModuleDeps.concat(
+      'cvox.GroupWalker'),
+
+  /** @override */
+  newWalker: function() {
+    return new cvox.GroupWalker();
+  },
+
+  /**
+   * Set up for simple html tests.
+   * @private
+   */
+  setUpSimpleHtml_: function() {
+    this.loadDoc(function() {/*!
+      <div id="asdf">
+        <p id="a">a</p>
+        <ul id="b">
+          <li>cat</li>
+          <li>in</li>
+          <li>hat</li>
+        </ul>
+        <p id="c">c</p>
+      </div>
+     */});
+  }
+};
+
+CvoxWalkerUnitTestBase.addCommonTests('CvoxGroupWalkerUnitTest');
+
+TEST_F('CvoxGroupWalkerUnitTest', 'testSimpleForwardSync', function() {
+  this.setUpSimpleHtml_();
+
+  // invalid selection
+  var sel = cvox.CursorSelection.fromNode($('asdf'));
+  var ret = this.go(sel, 'sync', {selNodeId: 'a', selReversed: false});
+
+  // valid selection
+  var ret2 = this.walker.sync(ret);
+  assertTrue(ret2.equals(ret));
+});
+
+TEST_F('CvoxGroupWalkerUnitTest', 'testSimpleReversedSync', function() {
+  this.setUpSimpleHtml_();
+
+  // invalid selection
+  var sel = cvox.CursorSelection.fromNode($('asdf'));
+  sel.setReversed(true);
+  var ret = this.go(sel, 'sync', {selNodeId: 'c', selReversed: true});
+
+  // valid selection
+  var ret2 = this.walker.sync(ret);
+  assertTrue(ret2.equals(ret));
+});
+
+TEST_F('CvoxGroupWalkerUnitTest', 'testSimpleForwardNext', function() {
+  this.setUpSimpleHtml_();
+
+  // invalid selection
+  var sel = cvox.CursorSelection.fromNode($('asdf'));
+  sel = this.walker.sync(sel);
+  var ret = this.go(sel, 'next', {selNodeId: 'b', selReversed: false});
+});
+
+TEST_F('CvoxGroupWalkerUnitTest', 'testSimpleReversedNext', function() {
+  this.setUpSimpleHtml_();
+
+  // invalid selection
+  var sel = cvox.CursorSelection.fromNode($('asdf'));
+  sel = this.walker.sync(sel.setReversed(true));
+  var ret = this.go(sel, 'next', {selNodeId: 'b', selReversed: true});
+});

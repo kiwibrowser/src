@@ -1,0 +1,50 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_action_menu/cr_action_menu.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_lazy_render/cr_lazy_render.html">
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/html/icon.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="startup_urls_page_browser_proxy.html">
+<link rel="import" href="../focus_row_behavior.html">
+<link rel="import" href="../settings_shared_css.html">
+
+<dom-module id="settings-startup-url-entry">
+  <template>
+    <style include="settings-shared">
+      .hide-overflow {
+        overflow: hidden;
+      }
+    </style>
+    <div class="list-item" focus-row-container>
+      <div class="favicon-image"
+          style="background-image: [[getIconSet_(model.url)]]">
+      </div>
+      <div class="middle hide-overflow">
+        <div class="text-elide">[[model.title]]</div>
+        <div class="text-elide secondary">[[model.url]]</div>
+      </div>
+      <template is="dom-if" if="[[editable]]">
+        <paper-icon-button-light class="icon-more-vert">
+          <button id="dots" on-click="onDotsTap_" title="$i18n{moreActions}"
+              focus-row-control focus-type="menu">
+          </button>
+        </paper-icon-button-light>
+        <cr-lazy-render id="menu">
+          <template>
+            <cr-action-menu>
+              <button slot="item" class="dropdown-item" on-click="onEditTap_">
+                $i18n{edit}
+              </button>
+              <button slot="item" class="dropdown-item" id="remove"
+                  on-click="onRemoveTap_">
+                $i18n{onStartupRemove}
+              </button>
+            </cr-action-menu>
+          </template>
+        </cr-lazy-render>
+      </template>
+    </div>
+  </template>
+  <script src="startup_url_entry.js"></script>
+</dom-module>

@@ -1,0 +1,35 @@
+<!doctype html>
+<script src="/js-test-resources/js-test.js"></script>
+<body onload="openXHR();">
+<!-- This embed is necessary to cause the synchronous invocation of onload -->
+<embed type="text/html; charset=utf-8">
+<script>
+window.jsTestIsAsync = true;
+description('XMLHttpRequest doesn\'t crash even when open() is invoked ' +
+            'synchronously to handling of a redirect response to a ' +
+            'cross-origin request.');
+
+var xhr = new XMLHttpRequest;
+var count = 10;  // The crash doesn't always happen. Repeat to capture it.
+
+function openXHR() {
+  xhr.open('GET', '/');
+  openAndSendCrossOriginSimpleXHRExpectingRedirect();
+}
+
+function openAndSendCrossOriginSimpleXHRExpectingRedirect() {
+  xhr.open("GET", "http://localhost:8000/xmlhttprequest/resources/redirect.php?url=/");
+  xhr.send();
+}
+
+xhr.onerror = function() {
+  --count;
+  if (count <= 0) {
+    setTimeout(finishJSTest, 0);
+  } else {
+    openAndSendCrossOriginSimpleXHRExpectingRedirect();
+  }
+}
+
+openAndSendCrossOriginSimpleXHRExpectingRedirect();
+</script>

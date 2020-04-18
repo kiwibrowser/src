@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style type="text/css">
+div {
+    line-height: 50px;
+}
+#outerdiv {
+    overflow:auto;
+    border: 2px solid #000FFF;
+}
+#innerdiv {
+    overflow:auto;
+    border: 2px solid #000000;
+    width: 121%;
+    padding: 5px;
+}
+</style>
+<script src="../../resources/js-test.js"></script>
+<script src="./resources/middleClickAutoscroll.js"></script>
+<script>
+function start()
+{
+  outerdiv = $('outerdiv');
+
+  testPanScroll({
+    'clickOrDrag': 'drag',
+    'endX': 225,
+    'endY': 75,
+    'finishTest': function() {
+      shouldNotBe('outerdiv.scrollLeft', '0');
+      shouldBeZero('outerdiv.scrollTop');
+    },
+    'scrollable': outerdiv,
+    'startX': 150,
+    'startY': 150,
+  });
+}
+</script>
+</head>
+<body onload="start()">
+<div id="outerdiv">
+    <p>Top of outer div.</p>
+    <div id="innerdiv">
+        <p>Inner div.</p>
+    </div>
+    <p>Bottom of outer div.</p>
+</div>
+<p>Test for <a href="http://crbug.com/232965">bug 232965</a> This tests that vertical pan scrolling does not propagate from the inner div to the outer div when the outer div has no vertical overflow.</p>
+<div id="console"></div>
+</body>
+</html>

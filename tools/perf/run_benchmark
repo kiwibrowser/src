@@ -1,0 +1,27 @@
+#!/usr/bin/env vpython
+# Copyright 2013 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import sys
+
+from core import path_util
+from core import trybot_command
+sys.path.insert(1, path_util.GetTelemetryDir())
+
+from telemetry import benchmark_runner
+
+from chrome_telemetry_build import chromium_config
+
+
+def main():
+  config = chromium_config.ChromiumConfig(
+      benchmark_dirs=[path_util.GetPerfBenchmarksDir(),
+                      path_util.GetPerfContribDir()],
+      top_level_dir=path_util.GetPerfDir(),
+      expectations_file=path_util.GetExpectationsPath())
+  return benchmark_runner.main(config, [trybot_command.Trybot])
+
+
+if __name__ == '__main__':
+  sys.exit(main())

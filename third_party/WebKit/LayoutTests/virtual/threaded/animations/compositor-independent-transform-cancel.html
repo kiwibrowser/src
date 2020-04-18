@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+
+<div id="parent"></div>
+<script>
+var keyframeValueMap = {
+  translate: '10px 10px 10px',
+  scale: '1 2 3',
+  rotate: '45deg',
+  transform: 'translate(10px, 20px)',
+  opacity: '1',
+};
+
+/* Test that animation on compositableProperty on compositor is cancelled when 
+   cancelProperty is applied (not animated) to the element */
+function assertAnimationComposited(compositableProperty, cancelProperty, isStillComposited) {
+  var element = document.createElement('div');
+  document.getElementById('parent').appendChild(element);
+
+  var keyframe = {};
+  keyframe[compositableProperty] = keyframeValueMap[compositableProperty];
+
+  var animation = element.animate([keyframe, keyframe], {
+    duration: 4000,
+    iterations: Infinity
+  });
+
+  var description = "Compositor Animation on " + compositableProperty + (isStillComposited ? " is not " : " is ") + "cancelled by " + cancelProperty;
+  var asyncHandle = async_test(description);
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+
+      asyncHandle.step(function() {
+        assert_true(internals.isCompositedAnimation(animation), compositableProperty + " animation should be composited");
+      });
+      element.style[cancelProperty] = keyframeValueMap[cancelProperty];
+
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+
+          asyncHandle.step(function() {
+            assert_equals(internals.isCompositedAnimation(animation), isStillComposited, description)
+          });
+
+          animation.cancel();
+          asyncHandle.done();
+        });
+      });
+    });
+  });
+}
+
+assertAnimationComposited('transform', 'transform', true);
+assertAnimationComposited('translate', 'translate', true);
+assertAnimationComposited('rotate', 'rotate', true);
+assertAnimationComposited('scale', 'scale', true);
+
+assertAnimationComposited('transform', 'translate', false);
+assertAnimationComposited('transform', 'rotate', false);
+assertAnimationComposited('transform', 'scale', false);
+
+assertAnimationComposited('translate', 'transform', false);
+assertAnimationComposited('translate', 'rotate', false);
+assertAnimationComposited('translate', 'scale', false);
+
+assertAnimationComposited('rotate', 'transform', false);
+assertAnimationComposited('rotate', 'scale', false);
+assertAnimationComposited('rotate', 'translate', false);
+
+assertAnimationComposited('scale', 'transform', false);
+assertAnimationComposited('scale', 'rotate', false);
+assertAnimationComposited('scale', 'translate', false);
+
+assertAnimationComposited('opacity', 'transform', true);
+assertAnimationComposited('opacity', 'translate', true);
+assertAnimationComposited('opacity', 'rotate', true);
+assertAnimationComposited('opacity', 'scale', true);
+</script>

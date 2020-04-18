@@ -1,0 +1,44 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// https://github.com/WICG/async-cookies-api/blob/gh-pages/explainer.md
+
+[
+  Exposed=(ServiceWorker,Window),
+  RuntimeEnabled=AsyncCookies
+] interface CookieStore : EventTarget {
+  // https://github.com/WICG/async-cookies-api/blob/gh-pages/explainer.md#reading
+  [CallWith=ScriptState, Measure, RaisesException] Promise<CookieList?> getAll(
+      USVString name, optional CookieStoreGetOptions options);
+  [CallWith=ScriptState, Measure, RaisesException] Promise<CookieList?> getAll(
+      optional CookieStoreGetOptions options);
+  [CallWith=ScriptState, Measure, RaisesException] Promise<CookieListItem?> get(
+      USVString name, optional CookieStoreGetOptions options);
+  [CallWith=ScriptState, Measure, RaisesException] Promise<CookieListItem?> get(
+      optional CookieStoreGetOptions options);
+  [CallWith=ScriptState, Measure, RaisesException] Promise<boolean> has(
+      USVString name, optional CookieStoreGetOptions options);
+  [CallWith=ScriptState, Measure, RaisesException] Promise<boolean> has(
+      optional CookieStoreGetOptions options);
+
+  // https://github.com/WICG/async-cookies-api/blob/gh-pages/explainer.md#writing
+  [CallWith=ScriptState, Measure, RaisesException] Promise<void> set(
+      USVString name, USVString value, optional CookieStoreSetOptions options);
+  [CallWith=ScriptState, Measure, RaisesException] Promise<void> set(
+      CookieStoreSetOptions options);
+
+  [CallWith=ScriptState, ImplementedAs=Delete, Measure, RaisesException]
+  Promise<void> delete(USVString name, optional CookieStoreSetOptions options);
+  [CallWith=ScriptState, ImplementedAs=Delete, Measure, RaisesException]
+  Promise<void> delete(CookieStoreSetOptions options);
+
+  [Exposed=ServiceWorker, CallWith=ScriptState, Measure, RaisesException]
+  Promise<void> subscribeToChanges(
+      sequence<CookieStoreGetOptions> subscriptions);
+
+  [Exposed=ServiceWorker, CallWith=ScriptState, Measure, RaisesException]
+  Promise<sequence<CookieStoreGetOptions>> getChangeSubscriptions();
+
+  [Exposed=Window] attribute EventHandler onchange;
+};

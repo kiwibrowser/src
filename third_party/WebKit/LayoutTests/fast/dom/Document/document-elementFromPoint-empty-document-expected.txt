@@ -1,0 +1,10 @@
+Document.elementFromPoint() against empty document shouldn't crash.
+
+On success, you will see a series of "PASS" messages, followed by "TEST COMPLETE".
+
+
+PASS unless crash
+PASS successfullyParsed is true
+
+TEST COMPLETE
+

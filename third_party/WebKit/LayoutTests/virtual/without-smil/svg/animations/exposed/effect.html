@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="../../../../../resources/js-test.js"></script>
+  <script>
+    'use strict';
+
+    function checkWidth() {
+      var rect = document.getElementById('rect');
+
+      shouldBe('rect.width.animVal.value', '100');
+      shouldBe('rect.height.animVal.value', '200');
+      shouldBe('rect["transform"].animVal.numberOfItems', '1');
+      shouldBe('rect["transform"].animVal.getItem(0).angle', '300');
+
+      if (window.testRunner) {
+        testRunner.dumpAsText();
+        testRunner.notifyDone();
+      }
+    }
+
+    jsTestIsAsync = true;
+    requestAnimationFrame(checkWidth);
+    if (window.testRunner) {
+      testRunner.waitUntilDone();
+    }
+  </script>
+</head>
+<body>
+  <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <discard>
+      <rect id="rect" width="100" height="200" fill="#123456" transform="rotate(300)">
+        <set attributeName="width" to="400"/>
+        <animate attributeName="height" from="500" to="500" dur="1min"/>
+        <animateTransform attributeName="transform" type="rotate" from="600" to="600" dur="1min"/>
+        <animateColor attributeName="fill" from="blue" to="blue" dur="1min"/>
+        <animateMotion from="100" to="100" dur="1min">
+          <mpath xlink:href="#motionPath" />
+        </animateMotion>
+      </rect>
+    </discard>
+    <path id="motionPath" d="m0,0 h200 v300 z" stroke-width="5" stroke="green"/>
+  </svg>
+  <p id="description"></p>
+  <div id="console"></div>
+</body>
+</html>

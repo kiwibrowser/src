@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<div id='container'>
+    <div id='element'></div>
+</div>
+<script>
+
+var container = document.getElementById('container');
+var element = document.getElementById('element');
+
+test(function() {
+    var keyframes = [
+        {opacity: 'inherit'},
+        {opacity: '0.5'}
+    ];
+
+    container.style.opacity = 1;
+    var player = element.animate(keyframes, 10);
+
+    player.pause();
+    player.currentTime = 5;
+    container.style.opacity = 0.25;
+    assert_equals(getComputedStyle(element).opacity, '0.375');
+}, 'Opacity responsive to inherited opacity changes');
+
+</script>

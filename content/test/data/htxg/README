@@ -1,0 +1,124 @@
+The certificate message files (*.msg) and the signed exchange files (*.htxg) in
+this directory are generated using the following commands.
+
+gen-certurl and gen-signedexchange are available in webpackage repository [1].
+We're using a fork of this repository [2] that implements the "Implementation
+Checkpoints" of the signed-exchange spec [3].
+
+ [1] https://github.com/WICG/webpackage
+ [2] https://github.com/nyaxt/webpackage
+ [3] https://jyasskin.github.io/webpackage/implementation-draft/draft-yasskin-httpbis-origin-signed-exchanges-impl.html
+
+# Install gen-certurl command
+go get github.com/nyaxt/webpackage/go/signedexchange/cmd/gen-certurl
+
+# Install gen-signedexchange command
+go get github.com/nyaxt/webpackage/go/signedexchange/cmd/gen-signedexchange
+
+
+# Get the private key of "*.example.org".
+sed -ne '/-BEGIN PRIVATE KEY-/,/-END PRIVATE KEY-/p' \
+  ../../../../net/data/ssl/certificates/wildcard.pem \
+  > /tmp/wildcard_example.org.private.pem
+
+# Get the public key of "*.example.org".
+sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' \
+  ../../../../net/data/ssl/certificates/wildcard.pem \
+  > /tmp/wildcard_example.org.public.pem
+
+# Generate the certificate message file of "*.example.org".
+gen-certurl  \
+  /tmp/wildcard_example.org.public.pem > wildcard_example.org.public.pem.msg
+
+# Get the public key of "127.0.0.1".
+sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' \
+  ../../../../net/data/ssl/certificates/ok_cert.pem \
+  > /tmp/127.0.0.1.public.pem
+
+# Generate the certificate message file of"127.0.0.1".
+gen-certurl /tmp/127.0.0.1.public.pem > 127.0.0.1.public.pem.msg
+
+# Generate the signed exchange file.
+gen-signedexchange \
+  -uri https://test.example.org/test/ \
+  -status 200 \
+  -content test.html \
+  -certificate /tmp/wildcard_example.org.public.pem \
+  -certUrl https://cert.example.org/cert.msg \
+  -validityUrl https://cert.example.org/resource.validity.msg \
+  -privateKey /tmp/wildcard_example.org.private.pem \
+  -date 2018-03-12T05:53:20Z \
+  -o test.example.org_test.htxg \
+  -miRecordSize 100
+
+# Generate the signed exchange file with invalid URL.
+gen-signedexchange \
+  -uri https://test.example.com/test/ \
+  -status 200 \
+  -content test.html \
+  -certificate /tmp/wildcard_example.org.public.pem \
+  -certUrl https://cert.example.org/cert.msg \
+  -validityUrl https://cert.example.org/resource.validity.msg \
+  -privateKey /tmp/wildcard_example.org.private.pem \
+  -date 2018-03-12T05:53:20Z \
+  -o test.example.com_invalid_test.htxg \
+  -miRecordSize 100
+
+# Generate the signed exchange for a plain text file.
+gen-signedexchange \
+  -uri https://test.example.org/hello.txt \
+  -status 200 \
+  -content hello.txt \
+  -certificate /tmp/wildcard_example.org.public.pem \
+  -certUrl https://cert.example.org/cert.msg \
+  -validityUrl https://cert.example.org/resource.validity.msg \
+  -privateKey /tmp/wildcard_example.org.private.pem \
+  -responseHeader 'Content-Type: text/plain; charset=iso-8859-1' \
+  -date 2018-03-12T05:53:20Z \
+  -o test.example.org_hello.txt.htxg
+
+# Generate a "secp256r1 (== prime256v1) ecdsa with sha256" key/cert pair
+openssl ecparam -out prime256v1.key -name prime256v1 -genkey
+
+openssl req -new -sha256 -key prime256v1.key -out prime256v1-sha256.csr \
+  --subj '/CN=test.example.org/O=Test/C=US'
+
+openssl x509 -req -days 360 -in prime256v1-sha256.csr \
+  -CA ../../../../net/data/ssl/certificates/root_ca_cert.pem \
+  -out prime256v1-sha256.crt -set_serial 1
+
+# Generate a "secp384r1 ecdsa with sha256" key/cert pair for negative test
+openssl ecparam -out secp384r1.key -name secp384r1 -genkey
+
+openssl req -new -sha256 -key secp384r1.key -out secp384r1-sha256.csr \
+  --subj '/CN=test.example.org/O=Test/C=US'
+
+openssl x509 -req -days 360 -in secp384r1-sha256.csr \
+  -CA ../../../../net/data/ssl/certificates/root_ca_cert.pem \
+  -out secp384r1-sha256.crt -set_serial 1
+
+# Generate test signatures in signed_exchange_signature_verifier_unittest.cc
+./gen-signedexchange \
+  -uri https://test.example.org/test/ \
+  -content test.html \
+  -certificate ./prime256v1-sha256.crt \
+  -privateKey ./prime256v1.key \
+  -date 2018-02-06T04:45:41Z
+
+./gen-signedexchange \
+  -uri https://test.example.org/test/ \
+  -content test.html \
+  -certificate ./secp384r1-sha256.crt \
+  -privateKey ./secp384r1.key \
+  -date 2018-02-06T04:45:41Z
+
+# Install gen-certurl command from the original WICG repository [1].
+# (Note: this overwrites gen-certurl fetched from [2] in the above.)
+go get github.com/WICG/webpackage/go/signedexchange/cmd/gen-certurl
+
+# Currently OCSP and SCT are just dummy data.
+echo -n OCSP >/tmp/ocsp; echo -n SCT >/tmp/sct
+
+# Generate the certificate chain CBOR for "*.example.org".
+gen-certurl -pem /tmp/wildcard_example.org.public.pem \
+ -ocsp /tmp/ocsp -sct /tmp/sct > wildcard_example.org.public.pem.cbor

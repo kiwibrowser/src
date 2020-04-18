@@ -1,0 +1,69 @@
+#!/bin/bash
+
+# Copyright (c) 2012 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+set -e
+
+LOGOUT_MSG="
+Name: Please log out to update
+Priority: Medium
+OnlyAdminUsers: False
+DontShowAfterReboot: true
+DisplayIf: /opt/google/chrome-remote-desktop/is-remoting-session
+Description: Chrome Remote Desktop has been updated. Please save your work and log out in order to apply this update. Your virtual desktop will be restarted automatically.
+"
+
+NOTIFIER_DIR="/var/lib/update-notifier/user.d"
+VAR_DIR="/var/lib/chrome-remote-desktop"
+HASHES_FILE="$VAR_DIR/hashes"
+USER_SESSION_PATH="/opt/google/chrome-remote-desktop/user-session"
+CRD_GROUP="chrome-remote-desktop"
+
+case "$1" in
+  "configure")
+    # Create CRD group if it doesn't already exist
+    if ! getent group "$CRD_GROUP" > /dev/null 2>&1; then
+      addgroup --system "$CRD_GROUP"
+    fi
+    # dpkg supports "stat overrides", which allow the administrator to specify
+    # the ownership and permissions that should be used when a given filesystem
+    # object is installed. If such an override is set, we shouldn't change the
+    # owner and permissions here.
+    if ! dpkg-statoverride --list "$USER_SESSION_PATH" > /dev/null 2>&1; then
+      chown root:"$CRD_GROUP" "$USER_SESSION_PATH"
+      chmod u=srwx,g=rx,o=r "$USER_SESSION_PATH"
+    fi
+    # Kill host processes. The wrapper script will restart them.
+    # TODO(lambroslambrou): Remove the '-9' when the underlying problem with
+    # hosts not responding to SIGTERM has been fixed - http://crbug.com/420090
+    echo "Shutting down Chrome Remote Desktop hosts (they will restart automatically)..."
+    killall -9 -q chrome-remote-desktop-host || true
+    # If any files have changed that require the user to restart their virtual
+    # desktops (eg, the wrapper script itself) then notify them but don't do
+    # anything that would result in them losing state.
+    if [ -f "$HASHES_FILE" ]; then
+      if [ -d "$NOTIFIER_DIR" ]; then
+        if ! md5sum --status -c "$HASHES_FILE" 2>/dev/null; then
+          echo "Sending logout notification messages to virtual desktops."
+          echo "$LOGOUT_MSG" > "$NOTIFIER_DIR/chrome-remote-desktop-logout"
+        fi
+      fi
+      rm "$HASHES_FILE"
+      rmdir --ignore-fail-on-non-empty "$VAR_DIR"
+    fi
+    ;;
+esac
+
+# Create defaults file.
+DEFAULTS_FILE="/etc/default/chrome-remote-desktop"
+if [ ! -e "$DEFAULTS_FILE" ]; then
+  echo 'repo_add_once="true"' > "$DEFAULTS_FILE"
+  echo 'repo_reenable_on_distupgrade="true"' >> "$DEFAULTS_FILE"
+fi
+
+# Run the cron job immediately to perform repository configuration.
+nohup sh /etc/cron.daily/chrome-remote-desktop > /dev/null 2>&1 &
+
+#DEBHELPER#

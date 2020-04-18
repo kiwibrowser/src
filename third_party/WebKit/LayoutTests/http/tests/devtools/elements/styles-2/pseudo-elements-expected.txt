@@ -1,0 +1,137 @@
+Tests that pseudo elements and their styles are handled properly.
+
+
+Running: dumpOriginalTree
+Original elements tree:
+- <div id="container">
+    - <div id="inspected">
+          ::before
+          "Text"
+          ::after
+      </div>
+    - <div id="empty">
+          ::before
+          ::after
+      </div>
+  </div>
+
+Running: dumpNormalNodeStyles
+[expanded] 
+element.style { ()
+
+[expanded] 
+[$div$] { (user agent stylesheet)
+    display: block;
+
+======== Pseudo ::before element ========
+[expanded] 
+[$#inspected:before, $].some-other-selector { (<style>…</style>)
+    content: "BEFORE";
+
+======== Pseudo ::after element ========
+[expanded] 
+[$#inspected:after$] { (<style>…</style>)
+    content: "AFTER";
+
+
+Running: dumpBeforeStyles
+[expanded] 
+[$#inspected:before, $].some-other-selector { (<style>…</style>)
+    content: "BEFORE";
+
+
+Running: dumpAfterStyles
+[expanded] 
+[$#inspected:after$] { (<style>…</style>)
+    content: "AFTER";
+
+
+Running: removeAfter
+- <div id="container">
+    - <div id="inspected">
+          ::before
+          "Text"
+      </div>
+    - <div id="empty">
+          ::before
+          ::after
+      </div>
+  </div>
+
+Running: removeBefore
+- <div id="container">
+      <div id="inspected">Text</div>
+    - <div id="empty">
+          ::before
+          ::after
+      </div>
+  </div>
+
+Running: addAfter
+- <div id="container">
+    + <div id="inspected">…</div>
+    - <div id="empty">
+          ::before
+          ::after
+      </div>
+  </div>
+== Expanding: ==
+- <div id="container">
+    - <div id="inspected">
+          "Text"
+          ::after
+      </div>
+    - <div id="empty">
+          ::before
+          ::after
+      </div>
+  </div>
+
+Running: addBefore
+- <div id="container">
+    - <div id="inspected">
+          ::before
+          "Text"
+          ::after
+      </div>
+    - <div id="empty">
+          ::before
+          ::after
+      </div>
+  </div>
+
+Running: modifyTextContent
+- <div id="container">
+    - <div id="inspected">
+          ::before
+          "bar"
+          ::after
+      </div>
+    - <div id="empty">
+          ::before
+          ::after
+      </div>
+  </div>
+
+Running: clearTextContent
+- <div id="container">
+    - <div id="inspected">
+          ::before
+          ::after
+      </div>
+    - <div id="empty">
+          ::before
+          ::after
+      </div>
+  </div>
+
+Running: removeNodeAndCheckPseudoElementsUnbound
+- <div id="container">
+    - <div id="empty">
+          ::before
+          ::after
+      </div>
+  </div>
+inspected:before DOMNode in DOMAgent: false
+inspected:after DOMNode in DOMAgent: false
+

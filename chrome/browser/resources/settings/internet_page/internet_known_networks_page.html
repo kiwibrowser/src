@@ -1,0 +1,104 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_action_menu/cr_action_menu.html">
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/cr_elements/policy/cr_policy_network_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="../settings_shared_css.html">
+
+<dom-module id="settings-internet-known-networks-page">
+  <template>
+    <style include="internet-shared iron-flex">
+      cr-policy-indicator {
+        -webkit-margin-start: var(--settings-controlled-by-spacing);
+      }
+    </style>
+
+    <div class="settings-box first">
+      <div>$i18n{knownNetworksMessage}</div>
+    </div>
+
+    <div class="settings-box">
+      <div class="secondary">$i18n{knownNetworksPreferred}</div>
+    </div>
+    <div class="list-frame vertical-list">
+      <div class="list-item" hidden$="[[havePreferred_(networkStateList_)]]">
+        $i18n{internetNoNetworks}
+      </div>
+      <template is="dom-repeat" items="[[networkStateList_]]"
+          filter="networkIsPreferred_">
+        <div class="list-item">
+          <div actionable class="flex layout horizontal center"
+              on-click="fireShowDetails_">
+            <div class="flex">[[item.Name]]</div>
+            <template is="dom-if" if="[[isPolicySource(item.Source))]]">
+              <cr-policy-indicator on-click="doNothing_"
+                  indicator-type="[[getIndicatorTypeForSource(item.Source)]]">
+              </cr-policy-indicator>
+            </template>
+            <paper-icon-button-light class="subpage-arrow">
+              <button actionable on-click="fireShowDetails_"
+                  tabindex$="[[tabindex]]" aria-label$="[[item.Name]]">
+              </button>
+            </paper-icon-button-light>
+          </div>
+          <div class="separator"></div>
+          <paper-icon-button-light class="icon-more-vert">
+            <button preferred tabindex$="[[tabindex]]"
+                on-click="onMenuButtonTap_" title="$i18n{moreActions}">
+            </button>
+          </paper-icon-button-light>
+        </div>
+      </template>
+    </div>
+
+    <div class="settings-box">
+      <div class="secondary">$i18n{knownNetworksAll}</div>
+    </div>
+    <div class="list-frame vertical-list"
+        hidden$="[[!haveNotPreferred_(networkStateList_)]]">
+      <template is="dom-repeat" items="[[networkStateList_]]"
+          filter="networkIsNotPreferred_">
+        <div class="list-item">
+          <div actionable class="flex layout horizontal center"
+              on-click="fireShowDetails_">
+            <div class="flex">[[item.Name]]</div>
+            <template is="dom-if" if="[[isPolicySource(item.Source))]]">
+              <cr-policy-indicator on-click="doNothing_"
+                  indicator-type="[[getIndicatorTypeForSource(item.Source)]]">
+              </cr-policy-indicator>
+            </template>
+            <paper-icon-button-light class="subpage-arrow">
+              <button actionable on-click="fireShowDetails_"
+                  tabindex$="[[tabindex]]" aria-label$="[[item.Name]]">
+              </button>
+            </paper-icon-button-light>
+          </div>
+          <div class="separator"></div>
+          <paper-icon-button-light class="icon-more-vert">
+            <button tabindex$="[[tabindex]]" on-click="onMenuButtonTap_"
+                title="$i18n{moreActions}">
+            </button>
+          </paper-icon-button-light>
+        </div>
+      </template>
+    </div>
+
+    <cr-action-menu id="dotsMenu">
+      <button slot="item" class="dropdown-item" hidden="[[!showAddPreferred_]]"
+          on-click="onAddPreferredTap_">
+        $i18n{knownNetworksMenuAddPreferred}
+      </button>
+      <button slot="item" class="dropdown-item"
+          hidden="[[!showRemovePreferred_]]" on-click="onRemovePreferredTap_">
+        $i18n{knownNetworksMenuRemovePreferred}
+      </button>
+      <button slot="item" class="dropdown-item" disabled="[[!enableForget_]]"
+          on-click="onForgetTap_">
+        $i18n{knownNetworksMenuForget}
+      </button>
+    </cr-action-menu>
+
+  </template>
+  <script src="internet_known_networks_page.js"></script>
+</dom-module>

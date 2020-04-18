@@ -1,0 +1,44 @@
+<html>
+<head>
+<script src="../../../resources/run-after-layout-and-paint.js"></script>
+<style>
+    body {
+        height: 5000px;
+        background-color: red;
+        overflow: hidden;
+    }
+
+    #trigger {
+        transform:translateZ(0);
+    }
+
+    #overlap {
+        width: 1000px;
+        height: 1000px;
+        background-color: green;
+        position: fixed;
+        left: 0px;
+        top: 0px;
+    }
+</style>
+</head>
+<script>
+    function doTest() {
+        if (window.testRunner) {
+            testRunner.dumpAsTextWithPixelResults();
+            testRunner.waitUntilDone();
+        }
+        window.scrollTo(0, 2000);
+        runAfterLayoutAndPaint(function() {
+            window.scrollTo(0, 1800);
+            if (window.testRunner)
+                testRunner.notifyDone();
+        });
+    }
+    window.addEventListener("load", doTest, false);
+</script>
+<body>
+    <div id="trigger"></div>
+    <div id="overlap"></div>
+</body>
+</html>

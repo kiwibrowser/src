@@ -1,0 +1,36 @@
+<html>
+<body>
+<p>Test behavior of sync XHR during unload</p>
+<script>
+var consoleMessages = document.createElement("ul");
+document.body.appendChild(consoleMessages);
+
+if (window.testRunner) {
+    testRunner.waitUntilDone();
+    testRunner.dumpAsText();
+}
+
+function subframeLoaded()
+{
+    document.getElementById('ifr').contentWindow.location.assign("data:text/html,DONE");
+}
+
+function completed(msg)
+{
+    log(msg);
+    if (window.testRunner)
+        testRunner.notifyDone();
+}
+
+function log(message)
+{
+    var item = document.createElement("li");
+    item.appendChild(document.createTextNode(message));
+    consoleMessages.appendChild(item);
+}
+</script>
+<div id="framediv">
+<iframe id="ifr" name="ifr" src="resources/xmlhttprequest-in-unload-sync.html"></iframe>
+</div>
+</body>
+</html>

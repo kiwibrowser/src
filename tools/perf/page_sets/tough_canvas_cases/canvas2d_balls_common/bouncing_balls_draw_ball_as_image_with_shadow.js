@@ -1,0 +1,24 @@
+// Copyright 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+var ballImage;
+var ballRadius;
+
+function drawBallInit(diameter) {
+  ballRadius = diameter / 2;
+  ballImage = document.getElementById('ballImage');
+}
+
+function drawBall(x, y, angle) {
+  canvasContext.save();
+  canvasContext.shadowColor = 'black';
+  canvasContext.shadowOffsetX = -ballRadius;
+  canvasContext.shadowOffsetY = ballRadius;
+  canvasContext.shadowBlur = ballRadius;
+  canvasContext.translate(x, y);
+  canvasContext.rotate(angle);
+  canvasContext.drawImage(ballImage, -ballRadius, -ballRadius, ballDiameter,
+      ballDiameter);
+  canvasContext.restore();
+}

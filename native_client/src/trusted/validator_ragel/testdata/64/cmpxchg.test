@@ -1,0 +1,21 @@
+@hex:
+  # mov %ebx, %ebx
+  # cmpxchg %eax, %nacl:(%r15, %rbx)
+  89 DB 41 0F B1 04 1F
+  # mov %ebx, %ebx
+  # cmpxchg8b %nacl:(%r15, %rbx)
+  89 DB 41 0F C7 0C 1F
+  # mov %ebx, %ebx
+  # cmpxchg16b %nacl:(%r15, %rbx)
+  89 DB 49 0F C7 0C 1F
+@dis:
+     0:	89 db                                        	mov    %ebx,%ebx
+     2:	41 0f b1 04 1f                               	cmpxchg %eax,(%r15,%rbx,1)
+     7:	89 db                                        	mov    %ebx,%ebx
+     9:	41 0f c7 0c 1f                               	cmpxchg8b (%r15,%rbx,1)
+     e:	89 db                                        	mov    %ebx,%ebx
+    10:	49 0f c7 0c 1f                               	cmpxchg16b (%r15,%rbx,1)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE

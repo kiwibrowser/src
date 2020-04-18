@@ -1,0 +1,72 @@
+# -*- python -*-
+# Copyright (c) 2013 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import os
+Import('env')
+
+# Preserve debugging info (which is not ABI-stable under PNaCl).
+if not env.SetNonStableBitcodeIfAllowed() or not env.Bit('pnacl_generate_pexe'):
+  Return()
+
+if env.Bit('bitcode'):
+  # With the PNaCl toolchain, special flags are required to get a build ID.
+  env.Append(LINKFLAGS=['--pnacl-allow-nexe-build-id'])
+  env.Append(TRANSLATEFLAGS=['--build-id'])
+
+env['COMPONENT_STATIC'] = env.Bit('nacl_static_link')
+env.ComponentLibrary('minidump_test_lib', 'minidump_test_lib.c')
+nexe = env.ComponentProgram(
+    'minidump_test', 'minidump_test.c',
+    EXTRA_LIBS=['minidump_test_lib', 'minidump_generator',
+                '${NONIRT_LIBS}', '${EXCEPTION_LIBS}', '${PTHREAD_LIBS}'])
+
+for crash_in_lib in [0, 1]:
+  for modules_live in [0, 1]:
+    name = 'minidump'
+    if crash_in_lib:
+      name += '_crash_in_lib'
+    if modules_live:
+      name += '_modules_live'
+    name += '_test'
+    output_dump_file = env.File(name + '.dmp')
+    nodes = [
+        env.CommandSelLdrTestNacl(
+            name + '.out', nexe,
+            [output_dump_file.abspath, str(crash_in_lib), str(modules_live)],
+            declares_exit_status=True,
+            sel_ldr_flags=['-e', # Enable exception handling for catching crash
+                           '-a', # Enable file access for writing minidump file
+                          ]),
+    ]
+    env.SideEffect(output_dump_file, nodes[0])
+    breakpad_tools_dir = env.get('BREAKPAD_TOOLS_DIR')
+    if breakpad_tools_dir is not None:
+      # Check that the minidump can be decoded.
+      minidump_dump = breakpad_tools_dir.File('src/processor/minidump_dump')
+      if not os.path.exists(minidump_dump.abspath):
+        raise Exception('minidump_dump not available, '
+            'but breakpad_tools_dir=%s specified' % breakpad_tools_dir)
+      nodes.append(env.AutoDepsCommand(
+          [name + '.dump', name + '.dump_errors'],
+          [minidump_dump, output_dump_file,
+          '>${TARGETS[0]}', '2>${TARGETS[1]}']))
+      # Check that a stack trace can be extracted from the minidump.
+      # TODO(bradnelson): Check the trace is actually right.
+      minidump_stackwalk = breakpad_tools_dir.File(
+          'src/processor/minidump_stackwalk')
+      if not os.path.exists(minidump_dump.abspath):
+        raise Exception('minidump_stackwalk not available, '
+                    'but breakpad_tools_dir=%s specified' % breakpad_tools_dir)
+      nodes.append(env.AutoDepsCommand(
+          [name + '.stackwalk', name + '.stackwalk_errors'],
+          [minidump_stackwalk, output_dump_file,
+          '>${TARGETS[0]}', '2>${TARGETS[1]}']))
+    env.AddNodeToTestSuite(
+        nodes,
+        ['small_tests', 'exception_tests', 'nonpexe_tests'],
+        'run_' + name,
+        # Nexe build IDs are not available under the
+        # sandboxed PNaCl translator.
+        is_broken=(env.Bit('use_sandboxed_translator')))

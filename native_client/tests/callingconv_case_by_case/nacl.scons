@@ -1,0 +1,138 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# This test does not make any sense for pure pnacl
+if env.Bit('bitcode') and env.Bit('pnacl_generate_pexe'):
+  Return()
+
+# This test is disabled for MIPS because we do not have a MIPS-enabled nacl-gcc
+# to test PNaCl against.
+if env.Bit('build_mips32'):
+  Return()
+
+if env.Bit('bitcode'):
+  # Disabling the PNaCl ABI checker is necessary for the
+  # PNaCl-calling-PNaCl case below because the test uses the __m128
+  # type, which the checker rejects.
+  env.Append(LINKFLAGS=['--pnacl-disable-abi-check'])
+
+# Case-by-case calling Convention Test for PNaCl and nacl-gcc compatibility.
+
+# We make 4 modules.
+# CC1 emits MODULE0 and CC2 MODULE1, CC2 emits MODULE2 and CC1 MODULE3
+# For the call test:
+# MODULE0(cc1) -> MODULE0(cc1) -> MODULE1(cc2) -> MODULE2(cc2) -> MODULE3(cc1).
+# For the return test, the dataflow is reversed.
+
+# List of (4 envs for the modules, link_env, test_name_suffix)
+# to apply to each source. The 4 envs may have different flags.
+test_configurations = []
+
+def AddCommonFlags(envlist):
+  for (i, e) in enumerate(envlist):
+    # Add -Wno-long-long because we use c99 long long constants in C++ code.
+    # GCC warns/errors about kPTR_EMPTYSTRUCT_PTR as an unused variable.
+    e.Append(CCFLAGS=['-DMODULE' + str(i), '-Wno-long-long',
+                      '-Wno-unused-variable'])
+
+def MakeSelfTestEnv(base_env, extra_flags):
+  """ Make a list of four (nearly identical) envs which use the same CC
+  for compiling the four modules to test self-consistency.  """
+  base_env = base_env.Clone()
+  base_env.Append(CCFLAGS=extra_flags)
+  # Same CC for all, but assign different module defines later.
+  envlist = [base_env.Clone() for dummy_count in xrange(4)]
+  AddCommonFlags(envlist)
+  link_env = base_env
+  return (envlist, link_env)
+
+def MakeCrossEnvs(base_env, gcc_flags, clang_flags):
+  """ Make a list of four (nearly identical) envs, some of which use nacl-clang
+  and some use pnacl, for compiling the four modules to test consistency.
+  """
+  envlist = []
+  # For module0
+  cc1_env = base_env.Clone()
+  cc1_env.PNaClForceNative()
+  cc1_env.Append(CCFLAGS=clang_flags)
+  envlist.append(cc1_env)
+  # For module1
+  cc2_env = base_env.PNaClGetNNaClEnv()
+  cc2_env.Append(CCFLAGS=gcc_flags)
+  # GCC's C++ EH support requires GCC's runtime, which we don't link with.
+  cc2_env.Append(CXXFLAGS=['-fno-exceptions'])
+  # This can generate references to runtime code we won't link with.
+  cc2_env.FilterOut(CCFLAGS=['-fasynchronous-unwind-tables'])
+  envlist.append(cc2_env)
+
+  envlist.append(cc2_env.Clone()) # For module2
+  envlist.append(cc1_env.Clone()) # For module3
+  link_env = cc1_env # To allow linking native objects (from ForceNative).
+  AddCommonFlags(envlist)
+  return (envlist, link_env)
+
+
+if not env.Bit('bitcode'):
+  # For gcc, only do a self-consistency test.
+  if env.Bit('build_x86'):
+    # Assume for nacl-gcc the bots have at least SSE2.
+    extra_flags = ['-msse2']
+  else:
+    extra_flags = []
+  envlist, link_env = MakeSelfTestEnv(env, extra_flags)
+  test_configurations.append((envlist, link_env, ''))
+else:
+  # For PNaCl, do a self-consistency + a cross toolchain check.
+  envlist, link_env = MakeSelfTestEnv(env, [])
+  test_configurations.append((envlist, link_env, '_self'))
+  if env.Bit('build_arm'):
+    pnacl_flags=['--target=armv7a-unknown-nacl-gnueabi','-mfloat-abi=hard']
+    envlist, link_env = MakeCrossEnvs(
+        env,
+        gcc_flags=[],
+        clang_flags = pnacl_flags if env.Bit('bitcode') else [])
+    test_configurations.append((envlist, link_env, ''))
+  elif env.Bit('build_x86_32'):
+    native_flags=['-msse2']
+    pnacl_flags=['--target=i686-unknown-nacl']
+    envlist, link_env = MakeCrossEnvs(
+        env,
+        gcc_flags=native_flags,
+        clang_flags = pnacl_flags if env.Bit('bitcode') else native_flags)
+    test_configurations.append((envlist, link_env, ''))
+  elif env.Bit('build_x86_64'):
+    native_flags = ['-msse2']
+    pnacl_flags = ['--target=x86_64-unknown-nacl']
+    envlist, link_env = MakeCrossEnvs(
+        env,
+        gcc_flags=native_flags,
+        clang_flags=pnacl_flags if env.Bit('bitcode') else native_flags)
+    test_configurations.append((envlist, link_env, ''))
+  else:
+    raise Exception("Unknown target architecture!")
+
+
+######################################################################
+
+for test_source in ['return_structs.cc',
+                    'call_structs.cc']:
+  test_name = test_source.split('.')[0]
+  for (envlist, link_env, test_suffix) in test_configurations:
+    objfiles = []
+    test_full_name = test_name + test_suffix
+    for (i, e) in enumerate(envlist):
+      obj = e.ComponentObject(test_full_name + '.' + str(i),
+                              test_source)
+      objfiles.append(obj)
+    prog = link_env.ComponentProgram(test_full_name,
+                                     objfiles,
+                                     EXTRA_LIBS=['${NONIRT_LIBS}'])
+    node = env.CommandSelLdrTestNacl(test_full_name + '.out',
+                                     prog)
+    env.AddNodeToTestSuite(node, ['small_tests', 'toolchain_tests',
+                                  'nonpexe_tests'],
+                           'run_' + test_full_name + '_test')

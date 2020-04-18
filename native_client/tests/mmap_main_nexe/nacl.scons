@@ -1,0 +1,38 @@
+# -*- python -*-
+# Copyright (c) 2013 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+if 'TRUSTED_ENV' not in env:
+  Return()
+trusted_env = env['TRUSTED_ENV']
+
+# This test uses a nexe built by another test.  Nexes do not get
+# staged in pexe mode, so only run this test in nonpexe mode.
+if env.Bit('pnacl_generate_pexe'):
+  Return()
+
+# The log message that this test looks for is in
+# src/trusted/service_runtime/elf_util.c.
+node = env.CommandSelLdrTestNacl(
+    'mmap_main_nexe_test.out',
+    env.File('${STAGING_DIR}/hello_world.nexe'),
+    osenv=['NACL_FAULT_INJECTION=' +
+           'ELF_LOAD_BYPASS_DESCRIPTOR_SAFETY_CHECK=GF1/999:' +
+           'ELF_LOAD_FORCE_VALIDATION_STATUS=GF0',
+           'NACLVERBOSITY=1'],
+    filter_regex='"(NaClElfFileMapSegment: EXERCISING MMAP LOAD PATH)"',
+    filter_group_only='true',
+    stderr_golden=env.File('mmap_main_nexe.stderr'))
+
+# This test is broken on the memcheck bots, where Valgrind dies with an
+# assertion failure:
+#
+# valgrind: m_debuginfo/readelf.c:1445
+# (vgModuleLocal_read_elf_debug_info): Assertion 'rw_svma_limit != 0'
+# failed.
+env.AddNodeToTestSuite(node, ['small_tests', 'nonpexe_tests'],
+                       'run_mmap_main_nexe_test',
+                       is_broken=env.Bit('running_on_valgrind'))

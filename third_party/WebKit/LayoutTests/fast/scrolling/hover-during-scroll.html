@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+div {
+    line-height: 50px;
+}
+
+.hoverme {
+    background-color: lightblue;
+}
+
+</style>
+<script src="../../resources/js-test.js"></script>
+</head>
+<body onload="runtest()" style="margin:0">
+
+<script type="text/javascript">
+
+function centerOfDivAtIndex(n)
+{
+    return elementHeight * n + elementHeight / 2;
+}
+
+function scrolledWhileCursorNotVisible()
+{
+    // The delay is necessary to guarantee that the fake mouse move
+    // event timer has fired. We have to wait the full length of time
+    // since the cursor is not visible and so we do not expect the
+    // hover effect to be invoked.
+    if (Date.now() - startTime < fakeMouseMoveTimerDelay) {
+        window.setTimeout(scrolledWhileCursorNotVisible, 10);
+        return;
+    }
+
+    shouldBeEqualToString("array[0].innerHTML", textWhenWasHovered);
+    shouldBeEqualToString("array[1].innerHTML", textWhenWasHovered);
+    shouldBeEqualToString("array[2].innerHTML", textWhenHovered);
+    shouldBeEqualToString("array[3].innerHTML", textWhenNotHovered);
+    shouldBeEqualToString("array[4].innerHTML", textWhenNotHovered);
+    shouldBe("document.scrollingElement.scrollTop", "100");
+
+    testRunner.notifyDone();
+}
+
+function scrolledWhileCursorVisible()
+{
+    var elementHovered = array[2].innerHTML == textWhenHovered;
+    if (!elementHovered) {
+        window.setTimeout(scrolledWhileCursorVisible, 10);
+        return;
+    }
+
+    shouldBeEqualToString("array[0].innerHTML", textWhenWasHovered);
+    shouldBeEqualToString("array[1].innerHTML", textWhenWasHovered);
+    shouldBeEqualToString("array[2].innerHTML", textWhenHovered);
+    shouldBeEqualToString("array[3].innerHTML", textWhenNotHovered);
+
+    debug("Mouse is not visible, scrolling page so the mouse ends up on the fourth div.");
+    shouldBe("document.scrollingElement.scrollTop", "50");
+    internals.setIsCursorVisible(document, false);
+    startTime = Date.now();
+    eventSender.continuousMouseScrollBy(0, -elementHeight);
+    shouldBecomeEqual('document.scrollingElement.scrollTop == elementHeight*2', 'true', scrolledWhileCursorNotVisible);
+}
+
+var array;
+var numHoverElements = 30;
+var elementHeight = 50;
+var fakeMouseMoveTimerDelay = 500;
+var textWhenNotHovered = "hover over me";
+var textWhenHovered = "currently hovered";
+var textWhenWasHovered = "was hovered";
+var startTime;
+
+function runtest()
+{
+    buildPage();
+
+    array = document.getElementsByClassName('hoverme');
+
+    for (var i = 0; i < array.length; i++) {
+        array[i].addEventListener('mouseover', function(e) {
+             this.innerHTML = textWhenHovered;
+             this.style.backgroundColor = "yellow";
+        });
+        array[i].addEventListener('mouseout', function(e) {
+             this.innerHTML = textWhenWasHovered;
+             this.style.backgroundColor = "green";
+        });
+    }
+
+    if (!window.testRunner || !window.eventSender)
+        return;
+
+    if (!window.internals || !internals.setIsCursorVisible) {
+        debug("internals.setIsCursorVisible is required to run this test.");
+        return;
+    }
+
+    testRunner.waitUntilDone();
+
+    debug("Mouse is visible, moving it over the first div.");
+    internals.setIsCursorVisible(document, true);
+    eventSender.mouseMoveTo(42, centerOfDivAtIndex(0));
+    shouldBeEqualToString("array[0].innerHTML", textWhenHovered);
+    shouldBeEqualToString("array[1].innerHTML", textWhenNotHovered);
+
+    debug("Mouse is visible, moving it over the second div.");
+    eventSender.mouseMoveTo(53, centerOfDivAtIndex(1));
+    shouldBeEqualToString("array[0].innerHTML", textWhenWasHovered);
+    shouldBeEqualToString("array[1].innerHTML", textWhenHovered);
+    shouldBeEqualToString("array[2].innerHTML", textWhenNotHovered);
+
+    debug("Mouse is visible, scrolling page so the mouse ends up on the third div.");
+    shouldBe("document.scrollingElement.scrollTop", "0");
+    startTime = Date.now();
+    eventSender.continuousMouseScrollBy(0, -elementHeight);
+    shouldBecomeEqual('document.scrollingElement.scrollTop == elementHeight', 'true', scrolledWhileCursorVisible);
+}
+
+function buildPage()
+{
+    var table = document.getElementById('table_to_fill');
+    var i;
+    for (i = 0; i < numHoverElements; i++) {
+        var p = document.createElement('tr');
+        p.innerHTML = '<tr><td><div class="hoverme">' + textWhenNotHovered + '</div></td></tr>';
+        table.appendChild(p);
+    }
+}
+</script>
+
+<table id="table_to_fill" width="100%" cellpadding="0px" cellspacing="0px" border="0px">
+<tr><td><div class="hoverme">hover over me</div></td></tr>
+</table>
+
+<p>Test for <a href="http://crbug.com/153784">http://crbug.com/153784</a>. New hover effects should not be invoked during scroll if the mouse cursor is not visible.</p>
+
+<div id="console"></div>
+</body>
+</html>

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<script src="../resources/run-after-layout-and-paint.js"></script>
+<script src="./resources/test-runner-paint-worklet.js"></script>
+<style>
+html, body { margin: 0; padding: 0; }
+.container {
+  width: 200px;
+  height: 200px;
+}
+
+#canvas-shadow {
+  background-image: paint(shadow);
+}
+</style>
+<body>
+<div id="canvas-shadow" class="container"></div>
+
+<script id="code" type="text/worklet">
+registerPaint('shadow', class {
+    paint(ctx) {
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = 'red';
+        ctx.fillRect(20, 20, 50, 50);
+    }
+});
+</script>
+
+<script>
+    document.body.style.zoom = "200%"
+    importPaintWorkletAndTerminateTestAfterAsyncPaint(document.getElementById('code').textContent);
+</script>
+</body>
+</html>

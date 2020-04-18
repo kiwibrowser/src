@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script>
+var t = async_test("We should scan external css for @imports and preload them");
+if (window.internals) {
+  internals.settings.setCSSExternalScannerPreload(true);
+}
+
+// Note: this test will be flaky under the document.write evaluator.
+var link = "<link rel='stylesheet' type='text/css' href='../resources/css_with_import.css'><\/link>";
+var declareBoundedStart = "<script>var boundedStart = window.performance.now();<\/script>";
+var slowScript = "<script src='../resources/slow-script.pl?delay=1000'><\/script>";
+document.write(slowScript + declareBoundedStart + link);
+</script>
+<script>
+window.addEventListener("load", t.step_func(function() {
+  var entries = performance.getEntriesByType("resource");
+  entries.forEach(function(entry) {
+    if (entry.name.indexOf("dummy.css") != -1) {
+      assert_less_than(entry.startTime, boundedStart);
+      t.done();
+    }
+  });
+}));
+</script>

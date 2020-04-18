@@ -1,0 +1,31 @@
+# -*- python -*-
+# Copyright (c) 2014 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# This component implements NaCl IRT interfaces in terms of POSIX APIs.
+if not env.Bit('posix') and not env.Bit('nonsfi_nacl'):
+  Return()
+
+# Since we are only targeting Unix, not Windows/MSVC, we can use C99
+# language features.
+env.FilterOut(CFLAGS='-Wdeclaration-after-statement')
+# Complaints about unused function arguments are too noisy.
+env.Append(CCFLAGS='-Wno-unused-parameter')
+if env.Bit('bitcode') and not env.Bit('pnacl_generate_pexe'):
+  # Enable the use of inline assembly.
+  env.Append(CCFLAGS='-fgnu-inline-asm')
+# TODO(mseaborn): We can enforce -Wstrict-prototypes after the uses of
+# DEFINE_STUB/USE_STUB are gone.
+env.FilterOut(CFLAGS='-Wstrict-prototypes')
+
+irt_query_list_o = env.ComponentObject(
+    'irt_query_list', ['$MAIN_DIR/src/untrusted/irt/irt_query_list.c'])
+env.ComponentLibrary('irt_nonsfi', ['irt_interfaces.c', 'irt_icache.c',
+                                    irt_query_list_o])
+
+# For testing purposes, we split irt_random from libirt_nonsfi.a,
+# which will be linked into the random_test.
+env.ComponentLibrary('nacl_random_private', ['irt_random.c'])

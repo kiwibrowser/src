@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<p>Tests that promise rejection events are received for cross origin CORS scripts</p>
+<script>
+if (window.testRunner) {
+    testRunner.dumpAsText();
+    testRunner.waitUntilDone();
+}
+
+addEventListener('unhandledrejection', function(e) {
+    console.log('PASS: received unhandledrejection event');
+    if (e.reason == 42)
+        console.log('PASS: received expected reason');
+    else
+        console.log('FAIL: received unexpected reason: ' + e.reason);
+    if (window.testRunner)
+        testRunner.notifyDone();
+});
+</script>
+<script src='http://localhost:8000/security/resources/promise-access-control.php?allow=true' crossorigin='anonymous'></script>

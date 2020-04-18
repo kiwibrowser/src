@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="/js-test-resources/js-test.js"></script>
+</head>
+<body>
+<script>
+description("Test that disabling web security permits cross-origin XMLHttpRequest requests from a Worker.");
+
+window.jsTestIsAsync = true;
+
+if (window.testRunner) {
+    testRunner.waitUntilDone();
+    testRunner.dumpAsText();
+    testRunner.setCanOpenWindows();
+    testRunner.setCloseRemainingWindowsWhenComplete(true);
+    testRunner.overridePreference("WebKitWebSecurityEnabled", false);
+}
+
+window.addEventListener("message", function (e) {
+    finishJSTest();
+}, false);
+
+window.open("resources/frame-with-insecure-xhr.html");
+</script>
+</body>
+</html>

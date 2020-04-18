@@ -1,0 +1,27 @@
+# -*- python -*-
+# Copyright (c) 2013 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+env.Append(CPPDEFINES=[['NONSFI_MODE',
+                        str(int(env.Bit('pnacl_unsandboxed') or
+                                env.Bit('nonsfi_nacl')))]])
+
+nexe = env.ComponentProgram('pwrite_test',
+                            'pwrite_test.c',
+                            EXTRA_LIBS=['${NONIRT_LIBS}',
+                                        '${PTHREAD_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+  'pwrite_test.out',
+  nexe,
+  ['-t', env.MakeTempDir(prefix='tmp_pwrite_test')],
+  sel_ldr_flags=['-a'])
+
+# nacl_glibc requires using IRT, and this test is using the
+# sys_private library, which will not work with glibc.
+env.AddNodeToTestSuite(node, ['small_tests'],
+                       'run_pwrite_test',
+                       is_broken=env.Bit('nacl_glibc'))

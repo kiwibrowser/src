@@ -1,0 +1,32 @@
+@hex:
+  # Loop instructions are disallowed in 32-bit mode for no reason, see
+  # https://code.google.com/p/nativeclient/issues/detail?id=3550
+  e1 00
+@dis:
+     0:	e1 00                                        	loope  0x2
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  e1 ff
+@dis:
+     0:	e1 ff                                        	loope  0x1
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: jump into a middle of instruction (0x1)
+----------------------------------------------------------------------
+@hex:
+  # But even if they were allowed, they should not accept branch prefixes.
+  3e e1 00
+@dis:
+     0:	3e e1 00                                     	loope,pt 0x3
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('branch hints are not allowed with loop instruction', Instruction(0x0: 3e e1 00  loope,pt 0x3))

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>
+      Subscribing with applicationServerKey should succeed only when the
+      applicationServerKey is valid.
+    </title>
+    <script src="resources/push-constants.js"></script>
+    <script src="resources/test-helpers.js"></script>
+    <script src="../resources/testharness.js"></script>
+    <script src="../resources/testharnessreport.js"></script>
+    <script src="../resources/testharness-helpers.js"></script>
+    <script src="../serviceworker/resources/test-helpers.js"></script>
+  </head>
+  <body>
+    <script>
+      // Subscribe should succeed given a valid numeric sender ID.
+      promise_test(function(test) {
+        return registerAndSubscribePushWithString(test, '0123456789')
+            .then(function(pushSubscription) {
+              assert_true(
+                  pushSubscription.endpoint.includes('LayoutTestEndpoint'));
+            });
+      }, 'Subscribing with a valid numeric sender ID should succeed');
+
+      // Subscribe should succeed given a valid p256 key.
+      promise_test(function(test) {
+        return registerAndSubscribePush(test, new Uint8Array(PUBLIC_KEY))
+            .then(function(pushSubscription) {
+              assert_true(
+                  pushSubscription.endpoint.includes('StandardizedEndpoint'));
+            });
+      }, 'Subscribing with a valid p256 applicationServerKey should succeed');
+
+      // Subscribe should fail given a non-numeric sender ID.
+      promise_test(function(test) {
+        return registerAndSubscribePushWithString(test, '01234a56789')
+            .then(function(pushSubscription) {
+              assert_unreached('Subscribe should have failed.');
+            })
+            .catch (function(e) {
+              assert_true(e.message.includes(
+                  'The provided applicationServerKey is not valid.'));
+            });
+       }, 'Subscribing with a non-numeric sender ID should fail');
+
+      // Subscribe should fail given an empty applicationServerKey.
+      promise_test(function(test) {
+        return registerAndSubscribePushWithString(test, '')
+            .then(function(pushSubscription) {
+              assert_unreached('Subscribe should have failed.');
+            })
+            .catch (function(e) {
+              assert_true(e.message.includes(
+                  'The provided applicationServerKey is not valid.'));
+            });
+      }, 'Subscribing with an empty applicationServerKey should fail');
+
+      // Subscribe should fail given a too long applicationServerKey.
+      promise_test(function(test) {
+        const longKey = new Uint8Array(300);
+        return registerAndSubscribePush(test, longKey)
+            .then(function(pushSubscription) {
+              assert_unreached('Subscribe should have failed.');
+            })
+            .catch (function(e) {
+              assert_true(e.message.includes(
+                  'The provided applicationServerKey is not valid.'));
+            });
+      }, 'Subscribing with a too long applicationServerKey should fail');
+    </script>
+  </body>
+</html>

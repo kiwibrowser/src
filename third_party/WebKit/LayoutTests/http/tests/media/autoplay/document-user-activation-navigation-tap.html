@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<title>Test document user gesture autoplay policy across navigation after tapping</title>
+<body>
+  <div id='target'>target</div>
+</body>
+<script>
+  testRunner.waitUntilDone();
+  internals.settings.setAutoplayPolicy('document-user-activation-required');
+  var bounds = document.querySelector('#target').getBoundingClientRect();
+  var x = bounds.left + bounds.width / 2;
+  var y = bounds.top + bounds.height / 2;
+  // TODO(beccahughes): for some reasons, using pointerActanionSequence fails.
+  eventSender.gestureTap(x, y);
+
+  document.location.href = 'resources/test-autoplay.html';
+</script>

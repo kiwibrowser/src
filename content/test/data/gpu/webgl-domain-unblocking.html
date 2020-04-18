@@ -1,0 +1,42 @@
+<html>
+<head>
+<script type="text/javascript">
+var gl;
+var contextLostReceived = false;
+
+function sendToAutomationController(msg) {
+  if (window.domAutomationController) {
+    window.domAutomationController.send(msg);
+  }
+  console.log(msg);
+}
+
+function init()
+{
+  var canvas = document.getElementById('c');
+  canvas.addEventListener('webglcontextlost', function(e) {
+    e.preventDefault();
+    // Make 100% sure that we can't fetch a WebGL context at this point.
+    var c2 = document.getElementById('c2');
+    if (c2.getContext('webgl') != null) {
+      sendToAutomationController("FAILED");
+      console.log('TEST FAILED - WebGL should have been blocked');
+    }
+    window.contextLostReceived = true;
+  }, false);
+  gl = canvas.getContext('webgl');
+  if (gl) {
+    sendToAutomationController("SUCCESS");
+  } else {
+    sendToAutomationController("FAILED");
+    console.log('TEST FAILED - WebGL should not have been blocked yet');
+  }
+  sendToAutomationController("LOADED");
+}
+</script>
+</head>
+<body bgcolor="lightgray" onload="init()">
+<canvas id="c" width="400" height="300" style="border-width: 1px; border-style: solid;"></canvas>
+<canvas id="c2" width="400" height="300" style="border-width: 1px; border-style: solid;"></canvas>
+</body>
+</html>

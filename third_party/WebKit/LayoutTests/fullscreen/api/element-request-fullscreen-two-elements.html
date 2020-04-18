@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<title>Element#requestFullscreen() on two elements in the same document</title>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="../trusted-click.js"></script>
+<div id="log"></div>
+<div id="a"></div>
+<div id="b"></div>
+<script>
+// Adapted from https://github.com/w3c/web-platform-tests/pull/4250
+// TODO(foolip): Remove this test when the above is imported and passing.
+async_test(t => {
+  // Request fullscreen on both elements, but in reverse tree order.
+  const a = document.getElementById('a');
+  const b = document.getElementById('b');
+
+  // Expect first a fullscreenchange event for the first request, then a
+  // fullscreenerror event for the second request. TODO(foolip): Remove the
+  // Fullscreen hierarchy restrictions. https://crbug.com/627792
+  document.onfullscreenchange = t.step_func(() => {
+    assert_equals(document.fullscreenElement, b);
+    document.onfullscreenerror = t.step_func_done();
+  });
+
+  trusted_click(t, () => {
+    b.requestFullscreen();
+    a.requestFullscreen();
+  }, document.body);
+});
+</script>

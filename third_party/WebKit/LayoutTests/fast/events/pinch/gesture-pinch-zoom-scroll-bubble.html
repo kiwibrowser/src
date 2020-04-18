@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+<script src="../../../resources/wait-for-compositor-commit.js"></script>
+<div style="margin: 0px 0; width: 100px; height: 1000px; background-color: blue;"></div>
+<script>
+
+var EPSILON = 0.001;
+var MOUSE_INPUT = 2;  // Gesture source type from synthetic_gesture_params.h
+
+var t = async_test("Scrolling with a scaled visual viewport");
+
+function waitForVisualViewportOffset(x, y) {
+  return new Promise(function(resolve, reject) {
+    function pollForOffset(frames) {
+      if (Math.abs(window.visualViewport.offsetLeft - x) <= EPSILON &&
+          Math.abs(window.visualViewport.offsetTop - y) <= EPSILON) {
+        resolve();
+      } else if (frames > 500) {
+        reject();
+      } else {
+        window.requestAnimationFrame(pollForOffset.bind(this, frames + 1));
+      }
+    }
+    pollForOffset(0);
+  });
+}
+
+function testVerticalScroll() {
+  // Do a purely vertical scroll. This will scroll contents only.
+  chrome.gpuBenchmarking.smoothScrollBy(
+    2,
+    t.step_func(function () {
+      waitForVisualViewportOffset(200, 251).then(
+          t.step_func(testHorizontalScroll),
+          t.step_func_done(function() {
+        assert_unreached('Timeout waiting for vertical scroll');
+      }));
+    }),
+    undefined /* start_x */,
+    undefined /* start_y */,
+    MOUSE_INPUT,
+    'down',
+    undefined /* speed */);
+}
+
+function testHorizontalScroll() {
+  // Do a purely horizontal scroll. This will change the visual viewport offset
+  // only.
+  chrome.gpuBenchmarking.smoothScrollBy(
+    2,
+    t.step_func(function () {
+      waitForVisualViewportOffset(201, 251).then(
+          t.step_func(testDiagonalScroll),
+          t.step_func_done(function() {
+        assert_unreached('Timeout waiting for horizontal scroll');
+      }));
+    }),
+    undefined /* start_x */,
+    undefined /* start_y */,
+    MOUSE_INPUT,
+    'right',
+    undefined /* speed */);
+}
+
+function testDiagonalScroll() {
+  // Do a diagonal scroll. This will scroll the contents, and then bubble the
+  // result up to the visual viewport, where it will change the pinch
+  // virtual viewport offset.
+  chrome.gpuBenchmarking.smoothScrollBy(
+    4,
+    t.step_func(function () {
+      waitForVisualViewportOffset(199, 249).then(
+          t.done.bind(t),
+          t.step_func_done(function() {
+        assert_unreached('Timeout waiting for diagonal scroll');
+      }));
+    }),
+    undefined /* start_x */,
+    undefined /* start_y */,
+    MOUSE_INPUT,
+    'upleft',
+    undefined /* speed */);
+}
+
+// TODO: This test just verifies that scrollX and scrollY end up with the right
+// values after a scroll. It does not verify whether these values are coming
+// from content scroll or from viewport moving. This should be added.
+if (window.chrome && chrome.gpuBenchmarking && window.internals) {
+  window.onload = t.step_func(function() {
+    chrome.gpuBenchmarking.pinchBy(2.0, 400, 500, t.step_func(function() {
+      assert_approx_equals(
+          window.visualViewport.scale, 2.0, EPSILON);
+      assert_approx_equals(window.visualViewport.offsetLeft, 200, EPSILON);
+      assert_approx_equals(window.visualViewport.offsetTop, 250, EPSILON);
+      // We're already within |EPSILON| of the desired offset, but we'll set it
+      // here to avoid rounding issues later in the test.
+      window.internals.setVisualViewportOffset(200, 250);
+      waitForCompositorCommit().then(testVerticalScroll);
+    }), undefined /* speed */, MOUSE_INPUT);
+  });
+} else {
+  t.step(function() {
+    assert_unreached(
+        'This test requires chrome.gpuBenchmarking.pinchBy and internals');
+  });
+  t.done();
+}
+
+</script>

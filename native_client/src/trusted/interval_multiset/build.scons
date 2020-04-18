@@ -1,0 +1,75 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+nacl_interval_lib_inputs = [
+    'nacl_interval_multiset_delete.c',
+    'nacl_interval_multiset_factory.c',
+    'nacl_interval_list.c',
+    'nacl_interval_range_tree.c',
+]
+
+env.DualLibrary('nacl_interval', nacl_interval_lib_inputs)
+
+nacl_interval_test_exe = env.ComponentProgram('nacl_interval_test',
+                                              ['nacl_interval_test.c'],
+                                              EXTRA_LIBS=['nacl_interval',
+                                                          'platform'])
+
+node = env.CommandTest(
+    'nacl_interval_list_test.out',
+    command=[nacl_interval_test_exe,
+             '-k', 'NaClIntervalListMultiset',
+             '-i', env.File('testdata/nacl_interval_test.stdin')])
+env.AddNodeToTestSuite(node, ['small_tests', 'mmap_race_tests'],
+                       'run_nacl_interval_list_test')
+
+node = env.CommandTest(
+    'nacl_interval_tree_test.out',
+    command=[nacl_interval_test_exe,
+             '-k', 'NaClIntervalRangeTree',
+             '-i', env.File('testdata/nacl_interval_test.stdin')])
+env.AddNodeToTestSuite(node, ['small_tests', 'mmap_race_tests'],
+                       'run_nacl_interval_tree_test')
+
+# nacl_interval_random_test.stdin was generated via
+# $ nacl_interval_test -c 409600 -o testdata/nacl_interval_random_test.stdin
+# and serves as a regression test.
+
+node = env.CommandTest(
+    'nacl_interval_list_random_test.out',
+    command=[nacl_interval_test_exe,
+             '-k', 'NaClIntervalListMultiset',
+             '-i', env.File('testdata/nacl_interval_random_test.stdin')])
+env.AddNodeToTestSuite(node, ['small_tests', 'mmap_race_tests'],
+                       'run_nacl_interval_list_random_test')
+
+node = env.CommandTest(
+    'nacl_interval_tree_random_test.out',
+    command=[nacl_interval_test_exe,
+             '-k', 'NaClIntervalRangeTree',
+             '-i', env.File('testdata/nacl_interval_random_test.stdin')])
+env.AddNodeToTestSuite(node, ['small_tests', 'mmap_race_tests'],
+                       'run_nacl_interval_tree_random_test')
+
+node = env.CommandTest(
+    'nacl_interval_multi_test.out',
+    command=[nacl_interval_test_exe,
+             '-k', 'NaClIntervalListMultiset',
+             '-k', 'NaClIntervalRangeTree',
+             '-c', '50000'])
+env.AddNodeToTestSuite(node, ['small_tests', 'mmap_race_tests'],
+                       'run_nacl_interval_multi_test')
+
+node = env.CommandTest(
+    'nacl_interval_multi_reg_test.out',
+    command=[nacl_interval_test_exe,
+             '-k', 'NaClIntervalListMultiset',
+             '-k', 'NaClIntervalRangeTree',
+             '-c', '1000000'],
+    size='large')
+env.AddNodeToTestSuite(node, ['large_tests', 'mmap_race_tests'],
+                       'run_nacl_interval_multi_reg_test')

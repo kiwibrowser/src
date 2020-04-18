@@ -1,0 +1,31 @@
+<!DOCTYPE HTML>
+<link rel="help" href="http://url.spec.whatwg.org/#dom-url-protocol">
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script>
+
+test(function() {
+    var url = new URL('http://www.domain.com');
+    assert_equals(url.protocol, 'http:');
+
+    url.protocol = 'https';
+    assert_equals(url.protocol, 'https:');
+
+    url.protocol = 'https:';
+    assert_equals(url.protocol, 'https:');
+
+    url.protocol = 'invalid/protocol';
+    assert_equals(url.protocol, 'https:');
+}, 'protocol property');
+
+test(function() {
+    var url = new URL('http://www.domain.com');
+    url.href = 'invalid';
+    assert_equals(url.protocol, ':');
+
+    url.protocol = 'http';
+    assert_equals(url.protocol, ':');
+    assert_equals(url.href, 'invalid');
+}, 'protocol property invalid URL');
+
+</script>

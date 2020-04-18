@@ -1,0 +1,31 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(`Verify that iframe's main resource is reported only once.\n`);
+  await TestRunner.loadModule('application_test_runner');
+  await TestRunner.showPanel('resources');
+  await TestRunner.evaluateInPageAsync(`
+      (function createIframe() {
+          var iframe = document.createElement('iframe');
+          iframe.setAttribute('src', '${TestRunner.url('resources/dummy-iframe.html')}');
+          document.body.appendChild(iframe);
+          return new Promise(x => iframe.onload = x);
+      })();
+  `);
+
+  var resourceTreeModel = new SDK.ResourceTreeModel(TestRunner.mainTarget);
+  var resources = [];
+  resourceTreeModel.addEventListener(SDK.ResourceTreeModel.Events.ResourceAdded, event => resources.push(event.data));
+  resourceTreeModel.addEventListener(SDK.ResourceTreeModel.Events.CachedResourcesLoaded, function() {
+    resources.sort((a, b) => {
+      if (a.url === b.url)
+        return 0;
+      return a.url < b.url ? -1 : 1;
+    });
+    TestRunner.addResult('Reported resources:');
+    TestRunner.addResult(resources.map(r => '  ' + r.url).join('\n'));
+    TestRunner.completeTest();
+  });
+})();

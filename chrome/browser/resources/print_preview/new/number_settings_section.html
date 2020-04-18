@@ -1,0 +1,50 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="input_css.html">
+<link rel="import" href="input_behavior.html">
+<link rel="import" href="print_preview_shared_css.html">
+<link rel="import" href="settings_section.html">
+
+<dom-module id="print-preview-number-settings-section">
+  <template>
+    <style include="print-preview-shared input">
+      input[type='number'] {
+        -webkit-margin-end: 16px;
+        margin-bottom: 2.5px;
+        margin-top: 2.5px;
+      }
+
+      :host(.multirow-controls) [slot='title'] {
+        --settings-section-title-style: {
+          padding-top: 7px;
+          align-self: flex-start;
+        }
+      }
+
+      :host .input-wrapper {
+        align-items: center;
+        display: flex;
+        width: 100%;
+      }
+    </style>
+    <print-preview-settings-section
+        class="input-settings-section multirow-controls">
+      <span slot="title" id="section-title">[[inputLabel]]</span>
+      <div slot="controls">
+        <slot name="opt-outside-content"></slot>
+        <span class="input-wrapper">
+          <input id="userValue" class="user-value" type="number"
+              max="[[maxValue]]" min="[[minValue]]" data-timeout-delay="250"
+              disabled$="[[getDisabled_(inputValid, disabled)]]"
+              on-blur="onBlur_" aria-labelled-by="section-title">
+          <slot name="opt-inside-content"></slot>
+        </span>
+        <span class="hint" aria-live="polite"
+            hidden$="[[hintHidden_(inputString_, inputValid)]]">
+          [[hintMessage]]
+        </span>
+      </div>
+    </print-preview-settings-section>
+  </template>
+  <script src="number_settings_section.js"></script>
+</dom-module>

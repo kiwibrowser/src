@@ -1,0 +1,61 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="/create_profile.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/neon-animatable.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/neon-animated-pages.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/web-animations.html">
+
+<dom-module id="user-manager-pages">
+  <template>
+    <style>
+      neon-animated-pages {
+        height: 100%;
+      }
+
+      neon-animatable {
+        display: flex;
+        justify-content: center;
+      }
+
+      /* neon-animated-pages does not automatically hide what's under content */
+      neon-animatable:not(.iron-selected) ::slotted(*) {
+        display: none !important;
+      }
+    </style>
+    <neon-animated-pages id="animatedPages" attr-for-selected="id"
+        selected="[[selectedPage_]]" entry-animation="fade-in-animation"
+        exit-animation="fade-out-animation">
+      <neon-animatable id="create-user-page" on-keydown="stopPropagation_">
+        <!-- Keep the page alive while visiting the Learn More page. -->
+        <template is="dom-if"
+            if="[[isPresentIn_(selectedPage_,
+                               'create-user-page',
+                               'supervised-learn-more-page')]]" restamp>
+          <create-profile></create-profile>
+        </template>
+      </neon-animatable>
+      <neon-animatable id="user-pods-page">
+          <slot></slot>
+      </neon-animatable>
+      <neon-animatable id="supervised-learn-more-page"
+          on-keydown="stopPropagation_">
+        <template is="dom-if"
+            if="[[isPresentIn_(selectedPage_, 'supervised-learn-more-page')]]">
+          <supervised-user-learn-more></supervised-user-learn-more>
+        </template>
+      </neon-animatable>
+      <neon-animatable id="supervised-create-confirm-page"
+          on-keydown="stopPropagation_">
+        <template is="dom-if"
+            if="[[isPresentIn_(selectedPage_,
+                               'supervised-create-confirm-page')]]">
+          <supervised-user-create-confirm profile-info="[[pageData_]]">
+          </supervised-user-create-confirm>
+        </template>
+      </neon-animatable>
+    </neon-animated-pages>
+  </template>
+  <script src="user_manager_pages.js"></script>
+</dom-module>

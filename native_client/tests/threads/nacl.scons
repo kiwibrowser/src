@@ -1,0 +1,271 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# NOTE: the arm emulator does not handle atomic ops properly
+# NOTE: the default setting of 10k rounds is too slow on ARM
+EXTRA_ARGS = ['100']
+
+if env.IsRunningUnderValgrind():
+  EXTRA_ARGS = ['20']
+
+valgrind = env.ComponentObject(
+    'valgrind_annotations.o',
+    '${MAIN_DIR}/src/untrusted/valgrind/dynamic_annotations.c')
+
+# The clock_gettime function is provided in librt in the glibc-based
+# toolchain, whereas in the newlib-based toolchain it is in libc.
+# This is because the clock_gettime etc functions were part of the
+# "Advanced Real Time" portion of POSIX, and on normal glibc-based
+# systems the Advanced Real Time functions are all in the rt library.
+# In newlib, there is no librt, and everything got put into libc
+# instead.
+if env.Bit('nacl_glibc'):
+  env.Append(LIBS=['-lrt'])
+
+thread_test_nexe = env.ComponentProgram(
+    'thread_test',
+    ['thread_test.c'] + valgrind,
+    EXTRA_LIBS=['${PTHREAD_LIBS}', '${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+    'thread_test.out',
+    thread_test_nexe,
+    args=EXTRA_ARGS,
+    # TODO: investigate why this is slow on old linux system
+    size='large',
+    )
+# NOTE: this should be a pretty slow test, but its been sped up
+# to not tickle bug 853
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_thread_test',
+# TODO(khim): reenable it when cause of failure on 32bit Windows glibc
+# will be found.
+# See: http://code.google.com/p/nativeclient/issues/detail?id=1690
+                       is_broken=('TRUSTED_ENV' in env and
+                                  env['TRUSTED_ENV'].Bit('windows') and
+                                  env.Bit('build_x86_32') and
+                                  env.Bit('nacl_glibc')) or
+# This test is flaky on mac10.7-newlib-dbg-asan.
+# See https://code.google.com/p/nativeclient/issues/detail?id=3906
+                                 (env.Bit('asan') and env.Bit('host_mac')))
+
+
+simple_thread_test_nexe = env.ComponentProgram(
+    'simple_thread_test',
+    'simple_thread_test.c',
+    EXTRA_LIBS=['${PTHREAD_LIBS}', '${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+    'simple_thread_test.out',
+    simple_thread_test_nexe,
+    size='small',
+    )
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_simple_thread_test')
+
+race_test_nexe = env.ComponentProgram(
+    'race_test',
+    ['race_test.c'] + valgrind,
+    EXTRA_LIBS=['${PTHREAD_LIBS}', '${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+    'race_test.out',
+    race_test_nexe,
+    size='small',
+    )
+env.AddNodeToTestSuite(node, ['small_tests', 'tsan_bot_tests'], 'run_race_test',
+# This test is flaky on mac10.7-newlib-dbg-asan.
+# See https://code.google.com/p/nativeclient/issues/detail?id=3906
+                       is_broken=(env.Bit('asan') and env.Bit('host_mac')))
+
+main_thread_pthread_exit_test_nexe = env.ComponentProgram(
+    'main_thread_pthread_exit_test',
+    'main_thread_pthread_exit_test.c',
+    EXTRA_LIBS=['${PTHREAD_LIBS}', '${NONIRT_LIBS}'],
+    )
+
+main_thread_pthread_exit_test2_nexe = env.ComponentProgram(
+    'main_thread_pthread_exit_test2',
+    'main_thread_pthread_exit_test2.c',
+    EXTRA_LIBS=['${PTHREAD_LIBS}', '${NONIRT_LIBS}'],
+    )
+
+node = env.CommandSelLdrTestNacl(
+    'main_thread_pthread_exit_test.out',
+    main_thread_pthread_exit_test_nexe,
+    size='small',
+    )
+
+node2 = env.CommandSelLdrTestNacl(
+    'main_thread_pthread_exit_test2.out',
+    main_thread_pthread_exit_test2_nexe,
+    size='small',
+    )
+
+# This test fails with nacl-glibc when statically linked.
+# This is a bug in upstream glibc:
+# see http://sourceware.org/bugzilla/show_bug.cgi?id=12310
+if not (env.Bit('nacl_glibc') and env.Bit('nacl_static_link')):
+  env.AddNodeToTestSuite(node,
+                         ['small_tests'],
+                         'run_main_thread_pthread_exit_test',)
+# This test additionally doesn't work with newlib.
+  env.AddNodeToTestSuite(node2, ['small_tests'],
+                         'run_main_thread_pthread_exit_test2',
+                         is_broken=not env.Bit('nacl_glibc'))
+
+exit_with_thread_nexe = env.ComponentProgram(
+    'exit_with_thread',
+    'exit_with_thread.c',
+    EXTRA_LIBS=['${PTHREAD_LIBS}', '${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl('exit_with_thread.out',
+                                 exit_with_thread_nexe)
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_exit_with_thread_test')
+
+cond_wait_test_nexe = env.ComponentProgram(
+    'cond_wait_test',
+    'cond_wait_test.cc',
+    EXTRA_LIBS=['${PTHREAD_LIBS}', '${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+    'cond_wait_test.out',
+    cond_wait_test_nexe,
+    size='small',
+    )
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_cond_wait_test')
+
+mutex_timedlock_test_nexe = env.ComponentProgram(
+    'mutex_timedlock_test',
+    ['mutex_timedlock.c'],
+    EXTRA_LIBS=['${PTHREAD_LIBS}', '${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+    'mutex_timedlock_test.out',
+    mutex_timedlock_test_nexe
+    )
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_mutex_timedlock_test',
+                       is_broken=env.IsRunningUnderValgrind())
+
+rwlock_test_nexe = env.ComponentProgram(
+    'rwlock_test',
+    ['rwlock_test.c'],
+    EXTRA_LIBS=['${PTHREAD_LIBS}', '${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+    'rwlock_test.out',
+    rwlock_test_nexe
+    )
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_rwlock_test',
+                       is_broken=env.IsRunningUnderValgrind())
+
+thread_stack_test_nexe = env.ComponentProgram('thread_stack_test',
+                                              'thread_stack_test.c',
+                                              EXTRA_LIBS=['${PTHREAD_LIBS}',
+                                                          '${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+    'thread_stack_test.out',
+    thread_stack_test_nexe,
+    size='small',
+    )
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_thread_stack_test')
+
+if not env.Bit('tests_use_irt'):
+  second_tls_test_nexe = env.ComponentProgram(
+      'second_tls_test',
+      env.RawSyscallObjects(['second_tls_test.c']),
+      EXTRA_LIBS=['${PTHREAD_LIBS}', '${NONIRT_LIBS}'])
+
+  node = env.CommandSelLdrTestNacl('second_tls_test.out',
+                                   second_tls_test_nexe)
+  env.AddNodeToTestSuite(node, ['small_tests'], 'run_second_tls_test',
+  # This test is flaky on mac10.7-newlib-dbg-asan.
+  # See https://code.google.com/p/nativeclient/issues/detail?id=3906
+                         is_broken=(env.Bit('asan') and env.Bit('host_mac')))
+
+many_threads_sequential_nexe = env.ComponentProgram(
+    'many_threads_sequential',
+    'many_threads_sequential.c',
+    EXTRA_LIBS=['${PTHREAD_LIBS}', '${NONIRT_LIBS}'])
+
+second_tls_create_test_nexe = env.ComponentProgram(
+    'second_tls_create_test', ['second_tls_create_test.c'],
+    EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl('second_tls_create_test.out',
+                                 second_tls_create_test_nexe)
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_second_tls_create_test')
+
+# This test should, in principle, be flaky, because of race conditions
+# in NaCl's thread exit/join.  See:
+# http://code.google.com/p/nativeclient/issues/detail?id=1027 (trusted stacks)
+# http://code.google.com/p/nativeclient/issues/detail?id=1028 (newlib)
+# http://code.google.com/p/nativeclient/issues/detail?id=2136 (TLS indexes)
+# If we find this test fails in practice, it should be disabled until
+# the races are fixed.
+node = env.CommandSelLdrTestNacl('many_threads_sequential_test.out',
+                                 many_threads_sequential_nexe)
+# This test is too slow under Valgrind.
+env.AddNodeToTestSuite(node,
+                       ['small_tests'],
+                       'run_many_threads_sequential_test',
+                       is_broken = env.IsRunningUnderValgrind() or
+# This test is flaky on mac10.7-newlib-dbg-asan.
+# See https://code.google.com/p/nativeclient/issues/detail?id=3906
+                                   (env.Bit('asan') and env.Bit('host_mac')))
+
+mutex_leak_nexe = env.ComponentProgram('mutex_leak', ['mutex_leak.c'],
+                                       EXTRA_LIBS=['${PTHREAD_LIBS}',
+                                                   '${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl('mutex_leak.out', mutex_leak_nexe)
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_mutex_leak_test')
+
+
+if env.Bit('nacl_glibc'):
+  env.Append(LINKFLAGS=['-lrt'])
+
+cond_timedwait_nexe = env.ComponentProgram('cond_timedwait',
+                                           ['cond_timedwait.c'],
+                                           EXTRA_LIBS=['${PTHREAD_LIBS}',
+                                                       '${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl('cond_timedwait_test.out',
+                                 cond_timedwait_nexe)
+
+# Do not run under valgrind.  The CPU time usage limits for
+# determining success/failure when running under valgrind is large and
+# rather than trying to adjust the experimentally determined
+# thresholds to take it into account, we just don't run the test.
+
+# NB: The largest acceptable CPU usage in the normal case is when we
+# are running ARM code under QEMU; since we wouldn't have ARM tests
+# except when running on ARM hardware (which is used/tested far less
+# frequently than via QEMU), the threshold is adjusted to take that
+# into account.
+#
+# Do not run on Windows.  The clock() function on Windows return the
+# wall-clock time and not the CPU time used.  Since this test is a
+# Native Client module that uses clock to estimate the amount of CPU
+# time used in order to fail the test, the time estimate is going to
+# be wrong for Windows -- it will always estimate that 100% of the CPU
+# was used.  BUG(bsy):
+# http://code.google.com/p/nativeclient/issues/detail?id=2805
+trusted_env = env.get('TRUSTED_ENV')
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_cond_timedwait_test',
+                       is_broken=(env.Bit('running_on_valgrind') or
+                                  (trusted_env is not None and
+                                   trusted_env.Bit('windows'))))
+
+# This tests an interface that is provided by nacl-newlib but not nacl-glibc.
+if not env.Bit('nacl_glibc'):
+  stack_end_test_nexe = env.ComponentProgram(
+      'stack_end_test', ['stack_end_test.c'],
+      EXTRA_LIBS=['${PTHREAD_LIBS}', '${NONIRT_LIBS}'])
+
+  node = env.CommandSelLdrTestNacl('stack_end_test.out',
+                                   stack_end_test_nexe)
+  env.AddNodeToTestSuite(node, ['small_tests'], 'run_stack_end_test')

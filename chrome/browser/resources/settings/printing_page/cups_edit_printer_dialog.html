@@ -1,0 +1,155 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-input/paper-input.html">
+<link rel="import" href="cups_add_printer_dialog_util.html">
+<link rel="import" href="cups_printer_shared_css.html">
+<link rel="import" href="cups_printers_browser_proxy.html">
+<link rel="import" href="cups_set_manufacturer_model_behavior.html">
+
+<dom-module id="settings-cups-edit-printer-dialog">
+  <template>
+    <style include="cups-printer-shared">
+      #existingUserPPD {
+        padding-top: 10px;
+      }
+    </style>
+    <add-printer-dialog>
+      <div slot="dialog-title">$i18n{editPrinterDialogTitle}</div>
+      <div slot="dialog-body">
+        <div class="settings-box first two-line">
+          <div class="start">
+            <div class="label">$i18n{printerName}</div>
+            <div class="secondary">
+              <paper-input class="printer-name-input" no-label-float autofocus
+                  value="{{activePrinter.printerName}}">
+              </paper-input>
+            </div>
+          </div>
+        </div>
+        <div class="settings-box two-line">
+          <div class="start">
+            <div class="label">$i18n{printerAddress}</div>
+            <div class="secondary">
+              <paper-input no-label-float
+                  value="{{activePrinter.printerAddress}}"
+                  disabled="[[!networkProtocolActive_]]">
+              </paper-input>
+            </div>
+          </div>
+        </div>
+        <div class="settings-box two-line">
+          <div class="start">
+            <div id="printerProtocol" class="label">$i18n{printerProtocol}</div>
+            <div class="secondary">
+              <div class="md-select-wrapper">
+                <select class="md-select" aria-labelledby="printerProtocol"
+                    value="[[activePrinter.printerProtocol]]"
+                    on-change="onProtocolChange_"
+                    disabled="[[!networkProtocolActive_]]">
+                  <option value="ipp" disabled="[[!networkProtocolActive_]]">
+                    $i18n{printerProtocolIpp}
+                  </option>
+                  <option value="ipps" disabled="[[!networkProtocolActive_]]">
+                    $i18n{printerProtocolIpps}
+                  </option>
+                  <option value="http" disabled="[[!networkProtocolActive_]]">
+                    $i18n{printerProtocolHttp}
+                  </option>
+                  <option value="https" disabled="[[!networkProtocolActive_]]">
+                    $i18n{printerProtocolHttps}
+                  </option>
+                  <option value="socket" disabled="[[!networkProtocolActive_]]">
+                    $i18n{printerProtocolAppSocket}
+                  </option>
+                  <option value="lpd" disabled="[[!networkProtocolActive_]]">
+                    $i18n{printerProtocolLpd}
+                  </option>
+                  <option value="usb" disabled="[[networkProtocolActive_]]">
+                    $i18n{printerProtocolUsb}
+                  </option>
+                  <option value="ippusb" disabled="[[networkProtocolActive_]]">
+                    $i18n{printerProtocolIppUsb}
+                  </option>
+                </select>
+                <span class="md-select-underline"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="settings-box two-line">
+          <div class="start">
+            <div class="label">$i18n{printerQueue}</div>
+            <div class="secondary">
+              <paper-input no-label-float
+                  value="{{activePrinter.printerQueue}}"
+                  disabled="[[!networkProtocolActive_]]">
+              </paper-input>
+            </div>
+          </div>
+        </div>
+        <div class="settings-box two-line">
+          <div class="start">
+            <div class="label">$i18n{printerURI}</div>
+            <div class="secondary">
+              <paper-input no-label-float disabled
+                  value="[[getPrinterURI_(activePrinter)]]">
+              </paper-input>
+            </div>
+          </div>
+        </div>
+        <div class="settings-box two-line">
+          <div class="start">
+            <div class="label">$i18n{printerManufacturer}</div>
+            <div class="secondary">
+              <drop-down-search-box items="[[manufacturerList]]"
+                  selected-item="{{activePrinter.ppdManufacturer}}">
+              </drop-down-search-box>
+            </div>
+          </div>
+        </div>
+        <div class="settings-box two-line">
+          <div class="start">
+            <div class="label">$i18n{printerModel}</div>
+            <div class="secondary">
+              <drop-down-search-box items="[[modelList]]"
+                  selected-item="{{activePrinter.ppdModel}}">
+              </drop-down-search-box>
+            </div>
+          </div>
+        </div>
+        <div class="settings-box two-line last">
+          <div class="start">
+            <div class="label">$i18n{selectDriver}</div>
+            <div class="secondary">
+              <paper-input class="browse-file-input" no-label-float readonly
+                  value="[[newUserPPD_]]"
+                  error-message="$i18n{selectDriverErrorMessage}"
+                  invalid="[[invalidPPD_]]">
+                <paper-button class="browse-button" slot="suffix"
+                    on-click="onBrowseFile_">
+                  $i18n{selectDriverButtonText}
+                </paper-button>
+              </paper-input>
+            </div>
+            <template is="dom-if" if="[[existingUserPPDMessage_]]">
+              <div class="secondary" id="existingUserPPD">
+                [[existingUserPPDMessage_]]
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+      <div slot="dialog-buttons">
+        <paper-button class="cancel-button secondary-button"
+            on-click="onCancelTap_">
+          $i18n{cancel}
+        </paper-button>
+        <paper-button class="action-button" on-click="onSaveTap_">
+          $i18n{editPrinterButtonText}
+        </paper-button>
+      </div>
+    </add-printer-dialog>
+  </template>
+  <script src="cups_edit_printer_dialog.js"></script>
+</dom-module>

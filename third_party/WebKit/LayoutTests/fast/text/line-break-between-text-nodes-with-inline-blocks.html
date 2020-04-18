@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<!-- This is a regression test for http://crbug.com/305904 -->
+<head>
+<script>
+    if (window.testRunner) {
+        testRunner.dumpAsText();
+        testRunner.waitUntilDone();
+        testRunner.useUnfortunateSynchronousResizeMode();
+    }
+
+    window.onload = function() {
+        document.body.offsetTop;
+        b.style.display = "inline-block";
+
+        document.body.offsetTop;
+        a.removeChild(c);
+
+        document.body.offsetTop;
+        window.resizeTo(42, window.outerHeight);
+
+        document.getElementById("results").innerText = "Test passes if no crash."
+        if (window.testRunner) {
+            testRunner.notifyDone();
+        }
+    }
+</script>
+</head>
+<div style="width: 0px;">foo<span id="a">
+        <span id="b"></span><span>bar</span><span id="c"></span>
+    </span>
+    <span style="display:inline-block;"></span>
+</div>
+<div><pre id="results"></pre></div>
+</html>

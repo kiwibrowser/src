@@ -1,0 +1,151 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// The <code>chrome.declarativeNetRequest</code> API is used to intercept and
+// perform actions on a network request by specifying declarative rules.
+namespace declarativeNetRequest {
+  // This describes the resource type of the network request.
+  enum ResourceType {
+    main_frame,
+    sub_frame,
+    stylesheet,
+    script,
+    image,
+    font,
+    object,
+    xmlhttprequest,
+    ping,
+    csp_report,
+    media,
+    websocket,
+    other
+  };
+
+  // This describes whether the request is first or third party to the frame in
+  // which it originated. A request is said to be first party if it has the same
+  // domain (eTLD+1) as the frame in which the request originated.
+  enum DomainType {
+    // The network request is first party to the frame in which it originated.
+    firstParty,
+    // The network request is third party to the frame in which it originated.
+    thirdParty
+  };
+
+  // Describes the kind of action to take if a given RuleCondition matches.
+  enum RuleActionType {
+    // Block the network request.
+    blacklist,
+    // Redirect the network request.
+    redirect,
+    // Whitelist the network request. The request won't be blocked even if there
+    // is a blocking rule which matches it.
+    whitelist
+  };
+
+  dictionary RuleCondition {
+
+    // The pattern which is matched against the network request url.
+    // Supported constructs:
+    // '*'  : Wildcard: Matches any number of characters.
+    // '|'  : Left/right anchor: If used at either end of the pattern, specifies
+    //        the beginning/end of the url respectively.
+    // '||' : Domain name anchor: If used at the beginning of the pattern,
+    //        specifies the start of a (sub-)domain of the URL.
+    // '^'  : Separator character: This matches anything except a letter, a
+    //        digit or one of the following: _ - . %. The end of the address is
+    //        also accepted as a separator.
+    // Therefore urlFilter is composed of the following parts:
+    // (optional Left/Domain name anchor) + pattern + (optional Right anchor)
+    // If omitted, all urls are matched. An empty string is not allowed.
+    DOMString? urlFilter;
+
+    // Whether the |urlFilter| is case sensitive. Default is false.
+    boolean? isUrlFilterCaseSensitive;
+
+    // The rule will only match network requests originating from the list of
+    // |domains|. If the list is omitted, the rule is applied to requests from
+    // all domains. An empty list is not allowed.
+    // Note: sub-domains like "a.example.com" are also allowed.
+    DOMString[]? domains;
+
+    // The rule will not match network requests originating from the list of
+    // |excludedDomains|. If the list is empty or omitted, no domains are
+    // excluded. This takes precedence over |domains|.
+    // Note: sub-domains like "a.example.com" are also allowed.
+    DOMString[]? excludedDomains;
+
+    // List of resource types which the rule can match. An empty list is not
+    // allowed.
+    ResourceType[]? resourceTypes;
+
+    // List of resource types which the rule won't match. Only one of
+    // |resourceTypes| and |excludedResourceTypes| should be specified. If
+    // neither of them are specified, all resource types except "main_frame"
+    // are blocked.
+    ResourceType[]? excludedResourceTypes;
+
+    // Specifies whether the network request is firstParty or thirdParty to the
+    // domain from which it originated. If omitted, all requests are accepted.
+    DomainType? domainType;
+  };
+
+  dictionary RuleAction {
+    // The type of action to perform.
+    RuleActionType type;
+
+    // The redirect url. Only valid if |type| == 'redirect'.
+    DOMString? redirectUrl;
+  };
+
+  dictionary Rule {
+    // An id which uniquely identifies a rule. Mandatory and should be >= 1.
+    long id;
+
+    // Rule priority. Mandatory for redirect rules and should be >= 1.
+    long? priority;
+
+    // The condition which if satisfied causes the |action| to trigger.
+    RuleCondition condition;
+
+    // The action to take if this rule is matched.
+    RuleAction action;
+  };
+
+  callback EmptyCallback = void();
+  callback GetWhitelistedPagesCallback = void(DOMString[] result);
+
+  interface Functions {
+    // Adds |page_patterns| to the set of whitelisted pages. Requests from these
+    // pages are not intercepted by the extension. These are persisted across
+    // browser sessions.
+    // Note: MAX_NUMBER_OF_WHITELISTED_PAGES is the maximum number of
+    // whitelisted page an extension can add. Also, adding page patterns is
+    // atomic. In case of an error, no page pattern is added.
+    // |page_patterns| : Array of match patterns which are to be added to the
+    // whitelist.
+    // |callback|: Called after the |page_patterns| have been added.
+    // chrome.runtime.lastError will be set in case of an error, for example if
+    // an invalid page pattern is specified or the extension exceeded the
+    // maximum page patterns limit.
+    static void addWhitelistedPages(DOMString[] page_patterns, optional EmptyCallback callback);
+
+    // Removes |page_patterns| from the set of whitelisted pages.
+    // Note: Removing page patterns is atomic. In case of an error, no page
+    // pattern is removed.
+    // |page_patterns| : Array of match patterns which are to be removed from
+    // the whitelist.
+    // |callback|: Called after the |page_patterns| have been removed.
+    // chrome.runtime.lastError will be set in case of an error.
+    static void removeWhitelistedPages(DOMString[] page_patterns, optional EmptyCallback callback);
+
+    // Returns the current set of whitelisted pages.
+    // |callback|: Called with the set of currently whitelisted pages.
+    static void getWhitelistedPages(GetWhitelistedPagesCallback callback);
+  };
+
+  interface Properties {
+    // The maximum number of whitelisted pages that an extension can add.
+    [value=100] static long MAX_NUMBER_OF_WHITELISTED_PAGES();
+  };
+};

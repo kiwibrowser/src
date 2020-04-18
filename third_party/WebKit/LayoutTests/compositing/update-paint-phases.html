@@ -1,0 +1,51 @@
+<!DOCTYPE HTML>
+<style>
+.scroller {
+    width: 100px;
+    height: 100px;
+    border: 1px solid black;
+    overflow: scroll;
+}
+
+.scrolled {
+    width: 40px;
+    height: 40px;
+    background: green;
+}
+
+.neg-zorder {
+    position: relative;
+    z-index: -1;
+    transform: translateZ(0);
+    background: blue;
+}
+</style>
+<script>
+    if (window.internals) {
+        internals.settings.setPreferCompositingToLCDTextEnabled(true);
+    }
+</script>
+<div class="scroller">
+    <div class="scrolled neg-zorder" id="to-modify"></div>
+    <div class="scrolled"></div>
+    <div class="scrolled"></div>
+    <div class="scrolled"></div>
+</div>
+<script>
+    if (window.testRunner)
+        testRunner.dumpAsText();
+
+    if (window.internals) {
+        internals.forceCompositingUpdate(document);
+        internals.startTrackingRepaints(document);
+    }
+
+    document.querySelector('style').appendChild(document.createTextNode('#to-modify { display: none }'));
+
+    if (window.internals) {
+        var layerTree = document.createElement('pre');
+        layerTree.innerHTML = internals.layerTreeAsText(document, internals.LAYER_TREE_INCLUDES_PAINTING_PHASES); 
+        internals.stopTrackingRepaints(document);
+        document.body.appendChild(layerTree);
+    }
+</script>

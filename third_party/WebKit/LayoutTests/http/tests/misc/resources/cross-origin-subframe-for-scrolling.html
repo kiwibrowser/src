@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<div style="height: 300px"></div>
+
+<script>
+var port;
+var frame_id;
+
+window.onload = (() => {
+  if (!window.eventSender || !window.internals) {
+  	debug("This test requires window.eventSender.");
+  	return;
+  }
+  internals.settings.setScrollAnimatorEnabled(true);
+});
+
+function handleMessage(event) {
+  if (event.data.hasOwnProperty('scrollBy')) {
+    port = event.source;
+    frame_id = event.data.frame_id;
+    eventSender.mouseMoveTo(event.data.left + 5, event.data.top + 5);
+    eventSender.mouseScrollBy(0, event.data.scrollBy);
+  }
+}
+
+window.onscroll = (() => {
+  if (port) {
+    port.postMessage({scrolled: frame_id, scrollTop: document.documentElement.scrollTop}, "*");
+  }
+});
+
+window.addEventListener("message", handleMessage);
+</script>

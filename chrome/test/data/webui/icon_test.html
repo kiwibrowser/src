@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script>
+
+// Test the case where a non-favicon URL is passed.
+function testGetFavicon_NonFavicon() {
+  var url = 'http://foo.com';
+  var expectedDesktop = '-webkit-image-set(' +
+      'url("chrome://favicon/size/16@1x/http://foo.com") 1x, ' +
+      'url("chrome://favicon/size/16@2x/http://foo.com") 2x)';
+  var expectedOther = '-webkit-image-set(' +
+      'url("chrome://favicon/size/16@1x/http://foo.com") ' +
+      window.devicePixelRatio + 'x)';
+
+  var isDesktop = cr.isMac || cr.isChromeOS || cr.isWindows || cr.isLinux;
+  var expected = isDesktop ? expectedDesktop : expectedOther;
+  assertEquals(expected, cr.icon.getFavicon(url));
+}
+
+// Test the case where the favicon URL is passed.
+function testGetFavicon_IconUrl() {
+  var url = 'http://foo.com/foo.ico';
+  var expectedDesktop = '-webkit-image-set(' +
+      'url("chrome://favicon/size/16@1x/iconurl/http://foo.com/foo.ico") 1x, ' +
+      'url("chrome://favicon/size/16@2x/iconurl/http://foo.com/foo.ico") 2x)';
+  var expectedOther = '-webkit-image-set(' +
+      'url("chrome://favicon/size/16@1x/iconurl/http://foo.com/foo.ico") ' +
+      window.devicePixelRatio + 'x)';
+
+  var isDesktop = cr.isMac || cr.isChromeOS || cr.isWindows || cr.isLinux;
+  var expected = isDesktop ? expectedDesktop : expectedOther;
+  assertEquals(expected, cr.icon.getFavicon(url));
+}
+
+</script>
+</body>
+</html>

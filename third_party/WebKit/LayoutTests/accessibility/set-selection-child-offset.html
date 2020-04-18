@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+
+<div role="region">
+    <span role="presentation" id="span1">this is a<a id="link" href="#1">test</a></span>
+    <span role="presentation" id="span2">of selection</span>
+</div>
+
+<script>
+    var sel = null;
+    function updateSelectedRangeFromPage() {
+        sel = window.getSelection().getRangeAt(0);
+    }
+
+    // The accessibility tree contains a region with 3 children, select each.
+    test(function()
+    {
+        assert_not_equals(window.accessibilityController, undefined, 'This test requires accessibilityController');
+
+        var axRegion = accessibilityController.accessibleElementById("link").parentElement();
+        assert_equals(axRegion.role, "AXRole: AXRegion");
+
+        // An insertion point before the first child.
+        axRegion.setSelection(axRegion, 0, axRegion, 0);
+        updateSelectedRangeFromPage();
+        assert_equals(sel.toString(), "");
+        assert_true(sel.collapsed);
+        assert_equals(sel.startContainer.constructor, Text);
+        assert_equals(sel.startOffset, 0);
+        assert_equals(sel.startContainer.textContent, "this is a");
+
+        // A straight-forward selection of the first child.
+        axRegion.setSelection(axRegion, 0, axRegion, 1);
+        updateSelectedRangeFromPage();
+        assert_equals(sel.toString(), "this is a");
+        assert_false(sel.collapsed);
+        assert_equals(sel.startContainer.constructor, Text);
+        assert_equals(sel.endContainer.constructor, Text);
+        assert_equals(sel.startOffset, 0);
+        assert_equals(sel.startContainer.textContent, "this is a");
+        assert_equals(sel.endOffset, 9);
+        assert_equals(sel.endContainer.textContent, "this is a");
+
+        // Another insertion point after the first child, before the second.
+        axRegion.setSelection(axRegion, 1, axRegion, 1);
+        updateSelectedRangeFromPage();
+        assert_equals(sel.toString(), "");
+        assert_true(sel.collapsed);
+        assert_equals(sel.startContainer.constructor, Text);
+        assert_equals(sel.startOffset, 9);
+        assert_equals(sel.startContainer.textContent, "this is a");
+
+        // Select the second child.
+        axRegion.setSelection(axRegion, 1, axRegion, 3);
+        updateSelectedRangeFromPage();
+        assert_equals(sel.toString(), "test\n");
+        assert_false(sel.collapsed);
+        assert_equals(sel.startContainer.constructor, Text);
+        assert_equals(sel.endContainer.constructor, Text);
+        assert_equals(sel.startOffset, 0);
+        assert_equals(sel.startContainer.textContent, "test");
+        assert_equals(sel.startContainer.compareDocumentPosition(sel.endContainer), 4 /* before */);
+        assert_equals(sel.endOffset, 1);
+        assert_equals(sel.endContainer.textContent, "\n    ");
+
+        // Next, another insertion point between second and third child.
+        axRegion.setSelection(axRegion, 3, axRegion, 3);
+        updateSelectedRangeFromPage();
+        assert_equals(sel.toString(), "");
+        assert_true(sel.collapsed);
+        assert_equals(sel.startContainer.constructor, Text);
+        assert_equals(sel.startOffset, 1);
+        assert_equals(sel.startContainer.textContent, "\n    ");
+
+        // Select the third child.
+        axRegion.setSelection(axRegion, 3, axRegion, 4);
+        updateSelectedRangeFromPage();
+        assert_equals(sel.toString(), "of selection");
+        assert_false(sel.collapsed);
+        assert_equals(sel.startContainer.constructor, Text);
+        assert_equals(sel.endContainer.constructor, Text);
+        assert_equals(sel.startOffset, 0);
+        assert_equals(sel.startContainer.textContent, "of selection");
+        assert_equals(sel.endOffset, 12);
+        assert_equals(sel.endContainer.textContent, "of selection");
+
+        // Select the first and second children.
+        axRegion.setSelection(axRegion, 0, axRegion, 3);
+        updateSelectedRangeFromPage();
+        assert_equals(sel.toString(), "this is atest\n");
+        assert_false(sel.collapsed);
+        assert_equals(sel.startContainer.constructor, Text);
+        assert_equals(sel.endContainer.constructor, Text);
+        assert_equals(sel.startOffset, 0);
+        assert_equals(sel.startContainer.textContent, "this is a");
+        assert_equals(sel.endOffset, 1);
+        assert_equals(sel.endContainer.textContent, "\n    ");
+
+        // Select the second and third children.
+        axRegion.setSelection(axRegion, 1, axRegion, 4);
+        updateSelectedRangeFromPage();
+        assert_equals(sel.toString(), "test\n    of selection");
+        assert_false(sel.collapsed);
+        assert_equals(sel.startContainer.constructor, Text);
+        assert_equals(sel.endContainer.constructor, Text);
+        assert_equals(sel.startOffset, 0);
+        assert_equals(sel.startContainer.textContent, "test");
+        assert_equals(sel.endOffset, 12);
+        assert_equals(sel.endContainer.textContent, "of selection");
+
+        // Select everything.
+        axRegion.setSelection(axRegion, 0, axRegion, 4);
+        updateSelectedRangeFromPage();
+        assert_equals(sel.toString(), "this is atest\n    of selection");
+        assert_false(sel.collapsed);
+        assert_equals(sel.startContainer.constructor, Text);
+        assert_equals(sel.endContainer.constructor, Text);
+        assert_equals(sel.startOffset, 0);
+        assert_equals(sel.startContainer.textContent, "this is a");
+        assert_equals(sel.endOffset, 12);
+        assert_equals(sel.endContainer.textContent, "of selection");
+
+        // Last, the insertion point after third child.
+        axRegion.setSelection(axRegion, 4, axRegion, 4);
+        updateSelectedRangeFromPage();
+        assert_equals(sel.toString(), "");
+        assert_true(sel.collapsed);
+        assert_equals(sel.startContainer.constructor, Text);
+        assert_equals(sel.startOffset, 12);
+        assert_equals(sel.startContainer.textContent, "of selection");
+    }, "Select child node at index.");
+</script>

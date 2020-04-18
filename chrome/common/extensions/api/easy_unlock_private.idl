@@ -1,0 +1,90 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// <code>chrome.easyUnlockPrivate</code> API that provides hooks to Chrome to
+// be used by Easy Unlock component app.
+namespace easyUnlockPrivate {
+  enum ConnectionStatus {DISCONNECTED, IN_PROGRESS, CONNECTED};
+
+  // A range.
+  dictionary Range {
+    long start;
+    long end;
+  };
+
+  // A rectangle, in screen coordinates, measured in device-independent pixels.
+  dictionary Rect {
+    long left;
+    long top;
+    long width;
+    long height;
+  };
+
+  // An empty callback used purely for signalling success vs. failure.
+  callback EmptyCallback = void();
+
+  // Callback for the getStrings() method.
+  callback GetStringsCallback = void(object strings);
+
+  // Callback for the |FindSetupConnectionCallback| method.
+  // |connectionId|: The identifier of the connection found. To be used in
+  // future calls refering to this connection.
+  callback FindSetupConnectionCallback = void(long connectionId);
+
+  interface Functions {
+    // Gets localized strings required to render the API.
+    //
+    // |callback| : Called with a dictionary mapping names to resource strings.
+    // TODO(isherman): This is essentially copied from identity_private.idl.
+    //                 Perhaps this should be extracted to a common API instead?
+    static void getStrings(GetStringsCallback callback);
+
+    // Shows an error bubble with the given |message|, anchored to an edge of
+    // the given |anchorRect| -- typically the right edge, but possibly a
+    // different edge if there is not space for the bubble to the right of the
+    // anchor rectangle. If the |link_range| is non-empty, renders the text
+    // within the |message| that is contained in the |link_range| as a link with
+    // the given |link_target| URL.
+    static void showErrorBubble(DOMString message,
+                                Range link_range,
+                                DOMString link_target,
+                                Rect anchorRect);
+
+    // Hides the currently visible error bubble, if there is one.
+    static void hideErrorBubble();
+
+    // Finds and connects the remote BLE device that is advertising:
+    // |setupServiceUUID|. Returns when a connection is found or |timeOut|
+    // seconds have elapsed.
+    static void findSetupConnection(DOMString setupServiceUuid,
+                                    long timeOut,
+                                    FindSetupConnectionCallback callback);
+
+    // Disconnects the connection with |connectionId|. 
+    static void setupConnectionDisconnect(long connectionId, 
+                                          optional EmptyCallback callback);
+
+    // Sends |data| through the connection with |connnectionId|.
+    static void setupConnectionSend(long connectionId,
+                                    ArrayBuffer data,
+                                    optional EmptyCallback callback);
+  };
+
+  interface Events {
+    // Event fired when |connectionId| change status.
+    static void onConnectionStatusChanged(long connectionId,
+                                          ConnectionStatus oldStatus,
+                                          ConnectionStatus newStatus);
+
+    // Event fired when |connectionId| receives |data|.
+    static void onDataReceived(long connectionId,
+                               ArrayBuffer data);
+
+    // Event fired when |connectionId| sends |data|. |success| is true
+    // if the send operation was successful.
+    static void onSendCompleted(long connectionId,
+                                ArrayBuffer data,
+                                boolean success);
+  };
+};

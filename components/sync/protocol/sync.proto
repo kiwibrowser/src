@@ -1,0 +1,1047 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+//
+// Sync protocol for communication between sync client and server.
+
+// Update proto_value_conversions{.h,.cc,_unittest.cc} if you change
+// any fields in this file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package sync_pb;
+
+import "app_list_specifics.proto";
+import "app_notification_specifics.proto";
+import "app_setting_specifics.proto";
+import "app_specifics.proto";
+import "arc_package_specifics.proto";
+import "article_specifics.proto";
+import "autofill_specifics.proto";
+import "bookmark_specifics.proto";
+import "client_commands.proto";
+import "client_debug_info.proto";
+import "device_info_specifics.proto";
+import "dictionary_specifics.proto";
+import "encryption.proto";
+import "experiments_specifics.proto";
+import "extension_setting_specifics.proto";
+import "extension_specifics.proto";
+import "favicon_image_specifics.proto";
+import "favicon_tracking_specifics.proto";
+import "get_updates_caller_info.proto";
+import "history_delete_directive_specifics.proto";
+import "managed_user_setting_specifics.proto";
+import "managed_user_shared_setting_specifics.proto";
+import "managed_user_specifics.proto";
+import "managed_user_whitelist_specifics.proto";
+import "mountain_share_specifics.proto";
+import "nigori_specifics.proto";
+import "password_specifics.proto";
+import "preference_specifics.proto";
+import "printer_specifics.proto";
+import "priority_preference_specifics.proto";
+import "reading_list_specifics.proto";
+import "search_engine_specifics.proto";
+import "session_specifics.proto";
+import "sync_enums.proto";
+import "synced_notification_app_info_specifics.proto";
+import "synced_notification_specifics.proto";
+import "theme_specifics.proto";
+import "typed_url_specifics.proto";
+import "unique_position.proto";
+import "user_consent_specifics.proto";
+import "user_event_specifics.proto";
+import "wifi_credential_specifics.proto";
+
+// Used for inspecting how long we spent performing operations in different
+// backends. All times must be in millis.
+message ProfilingData {
+  optional int64 meta_data_write_time = 1;
+  optional int64 file_data_write_time = 2;
+  optional int64 user_lookup_time = 3;
+  optional int64 meta_data_read_time = 4;
+  optional int64 file_data_read_time = 5;
+  optional int64 total_request_time = 6;
+}
+
+message EntitySpecifics {
+  // If a datatype is encrypted, this field will contain the encrypted
+  // original EntitySpecifics. The extension for the datatype will continue
+  // to exist, but contain only the default values.
+  // Note that currently passwords employ their own legacy encryption scheme and
+  // do not use this field.
+  optional EncryptedData encrypted = 1;
+
+  // To add new datatype-specific fields to the protocol, extend
+  // EntitySpecifics.  First, pick a non-colliding tag number by
+  // picking a Cr-Commit-Position of one of your past commits
+  // to src.chromium.org.  Then, in a different protocol buffer
+  // definition, define your message type, and add an optional field
+  // to the list below using the unique tag value you selected.
+  //
+  //  optional MyDatatypeSpecifics my_datatype = 32222;
+  //
+  // where:
+  //   - 32222 is the non-colliding tag number you picked earlier.
+  //   - MyDatatypeSpecifics is the type (probably a message type defined
+  //     in your new .proto file) that you want to associate with each
+  //     object of the new datatype.
+  //   - my_datatype is the field identifier you'll use to access the
+  //     datatype specifics from the code.
+  //
+  // Server implementations are obligated to preserve the contents of
+  // EntitySpecifics when it contains unrecognized fields.  In this
+  // way, it is possible to add new datatype fields without having
+  // to update the server.
+  //
+  // Note: The tag selection process is based on legacy versions of the
+  // protocol which used protobuf extensions. We have kept the process
+  // consistent as the old values cannot change.  The 5+ digit nature of the
+  // tags also makes them recognizable (individually and collectively) from
+  // noise in logs and debugging contexts, and creating a divergent subset of
+  // tags would only make things a bit more confusing.
+
+  optional AutofillSpecifics autofill = 31729;
+  optional BookmarkSpecifics bookmark = 32904;
+  optional PreferenceSpecifics preference = 37702;
+  optional TypedUrlSpecifics typed_url = 40781;
+  optional ThemeSpecifics theme = 41210;
+  optional AppNotification app_notification = 45184;
+  optional PasswordSpecifics password = 45873;
+  optional NigoriSpecifics nigori = 47745;
+  optional ExtensionSpecifics extension = 48119;
+  optional AppSpecifics app = 48364;
+  optional SessionSpecifics session = 50119;
+  optional AutofillProfileSpecifics autofill_profile = 63951;
+  optional SearchEngineSpecifics search_engine = 88610;
+  optional ExtensionSettingSpecifics extension_setting = 96159;
+  optional AppSettingSpecifics app_setting = 103656;
+  optional HistoryDeleteDirectiveSpecifics history_delete_directive = 150251;
+  optional SyncedNotificationSpecifics synced_notification = 153108;
+  optional SyncedNotificationAppInfoSpecifics synced_notification_app_info =
+      235816;
+  optional DeviceInfoSpecifics device_info = 154522;
+  optional ExperimentsSpecifics experiments = 161496;
+  optional PriorityPreferenceSpecifics priority_preference = 163425;
+  optional DictionarySpecifics dictionary = 170540;
+  optional FaviconTrackingSpecifics favicon_tracking = 181534;
+  optional FaviconImageSpecifics favicon_image = 182019;
+  optional ManagedUserSettingSpecifics managed_user_setting = 186662;
+  optional ManagedUserSpecifics managed_user = 194582;
+  optional ManagedUserSharedSettingSpecifics managed_user_shared_setting =
+      202026;
+  optional ManagedUserWhitelistSpecifics managed_user_whitelist = 306060;
+  optional ArticleSpecifics article = 223759;
+  optional AppListSpecifics app_list = 229170;
+  optional WifiCredentialSpecifics wifi_credential = 218175;
+  optional AutofillWalletSpecifics autofill_wallet = 306270;
+  optional WalletMetadataSpecifics wallet_metadata = 330441;
+  optional ArcPackageSpecifics arc_package = 340906;
+  optional PrinterSpecifics printer = 410745;
+  optional ReadingListSpecifics reading_list = 411028;
+  optional UserEventSpecifics user_event = 455206;
+  optional UserConsentSpecifics user_consent = 556014;
+  optional MountainShareSpecifics mountain_share = 545005;
+}
+
+message SyncEntity {
+  // This item's identifier.  In a commit of a new item, this will be a
+  // client-generated ID.  If the commit succeeds, the server will generate
+  // a globally unique ID and return it to the committing client in the
+  // CommitResponse.EntryResponse.  In the context of a GetUpdatesResponse,
+  // |id_string| is always the server generated ID.  The original
+  // client-generated ID is preserved in the |originator_client_id| field.
+  // Present in both GetUpdatesResponse and CommitMessage.
+  optional string id_string = 1;
+
+  // An id referencing this item's parent in the hierarchy.  In a
+  // CommitMessage, it is accepted for this to be a client-generated temporary
+  // ID if there was a new created item with that ID appearing earlier
+  // in the message.  In all other situations, it is a server ID.
+  // Present in both GetUpdatesResponse and CommitMessage.
+  optional string parent_id_string = 2;
+
+  // old_parent_id is only set in commits and indicates the old server
+  // parent(s) to remove. When omitted, the old parent is the same as
+  // the new.
+  // Present only in CommitMessage.
+  optional string old_parent_id = 3;
+
+  // The version of this item -- a monotonically increasing value that is
+  // maintained by for each item.  If zero in a CommitMessage, the server
+  // will interpret this entity as a newly-created item and generate a
+  // new server ID and an initial version number.  If nonzero in a
+  // CommitMessage, this item is treated as an update to an existing item, and
+  // the server will use |id_string| to locate the item.  Then, if the item's
+  // current version on the server does not match |version|, the commit will
+  // fail for that item.  The server will not update it, and will return
+  // a result code of CONFLICT.  In a GetUpdatesResponse, |version| is
+  // always positive and indentifies the revision of the item data being sent
+  // to the client.
+  // Present in both GetUpdatesResponse and CommitMessage.
+  // WARNING: This field used to be required before M60. Any client before this
+  // will fail to deserialize if this field is missing.
+  optional int64 version = 4;
+
+  // Last modification time (in java time milliseconds)
+  // Present in both GetUpdatesResponse and CommitMessage.
+  optional int64 mtime = 5;
+
+  // Creation time.
+  // Present in both GetUpdatesResponse and CommitMessage.
+  optional int64 ctime = 6;
+
+  // The name of this item.
+  // Historical note:
+  //   Since November 2010, this value is no different from non_unique_name.
+  //   Before then, server implementations would maintain a unique-within-parent
+  //   value separate from its base, "non-unique" value.  Clients had not
+  //   depended on the uniqueness of the property since November 2009; it was
+  //   removed from Chromium by http://codereview.chromium.org/371029 .
+  // Present in both GetUpdatesResponse and CommitMessage.
+  // WARNING: This field used to be required before M60. Any client before this
+  // will fail to deserialize if this field is missing.
+  optional string name = 7;
+
+  // The name of this item.  Same as |name|.
+  // |non_unique_name| should take precedence over the |name| value if both
+  // are supplied.  For efficiency, clients and servers should avoid setting
+  // this redundant value.
+  // Present in both GetUpdatesResponse and CommitMessage.
+  optional string non_unique_name = 8;
+
+  // A value from a monotonically increasing sequence that indicates when
+  // this item was last updated on the server. This is now equivalent
+  // to version. This is now deprecated in favor of version.
+  // Present only in GetUpdatesResponse.
+  optional int64 sync_timestamp = 9;
+
+  // If present, this tag identifies this item as being a uniquely
+  // instanced item.  The server ensures that there is never more
+  // than one entity in a user's store with the same tag value.
+  // This value is used to identify and find e.g. the "Google Chrome" settings
+  // folder without relying on it existing at a particular path, or having
+  // a particular name, in the data store.
+  //
+  // This variant of the tag is created by the server, so clients can't create
+  // an item with a tag using this field.
+  //
+  // Use client_defined_unique_tag if you want to create one from the client.
+  //
+  // An item can't have both a client_defined_unique_tag and
+  // a server_defined_unique_tag.
+  //
+  // Present only in GetUpdatesResponse.
+  optional string server_defined_unique_tag = 10;
+
+  // If this group is present, it implies that this SyncEntity corresponds to
+  // a bookmark or a bookmark folder.
+  //
+  // This group is deprecated; clients should use the bookmark EntitySpecifics
+  // protocol buffer extension instead.
+  optional group BookmarkData = 11 {
+    // We use a required field to differentiate between a bookmark and a
+    // bookmark folder.
+    // Present in both GetUpdatesMessage and CommitMessage.
+    required bool bookmark_folder = 12;
+
+    // For bookmark objects, contains the bookmark's URL.
+    // Present in both GetUpdatesResponse and CommitMessage.
+    optional string bookmark_url = 13;
+
+    // For bookmark objects, contains the bookmark's favicon. The favicon is
+    // represented as a 16X16 PNG image.
+    // Present in both GetUpdatesResponse and CommitMessage.
+    optional bytes bookmark_favicon = 14;
+  }
+
+  // Supplies a numeric position for this item, relative to other items with the
+  // same parent.  Deprecated in M26, though clients are still required to set
+  // it.
+  //
+  // Present in both GetUpdatesResponse and CommitMessage.
+  //
+  // At one point this was used as an alternative / supplement to
+  // the deprecated |insert_after_item_id|, but now it, too, has been
+  // deprecated.
+  //
+  // In order to maintain compatibility with older clients, newer clients should
+  // still set this field.  Its value should be based on the first 8 bytes of
+  // this item's |unique_position|.
+  //
+  // Nerwer clients must also support the receipt of items that contain
+  // |position_in_parent| but no |unique_position|.  They should locally convert
+  // the given int64 position to a UniquePosition.
+  //
+  // The conversion from int64 to UniquePosition is as follows:
+  // The int64 value will have its sign bit flipped then placed in big endian
+  // order as the first 8 bytes of the UniquePosition.  The subsequent bytes of
+  // the UniquePosition will consist of the item's unique suffix.
+  //
+  // Conversion from UniquePosition to int64 reverses this process: the first 8
+  // bytes of the position are to be interpreted as a big endian int64 value
+  // with its sign bit flipped.
+  optional int64 position_in_parent = 15;
+
+  // Contains the ID of the element (under the same parent) after which this
+  // element resides. An empty string indicates that the element is the first
+  // element in the parent.  This value is used during commits to specify
+  // a relative position for a position change.  In the context of
+  // a GetUpdatesMessage, |position_in_parent| is used instead to
+  // communicate position.
+  //
+  // Present only in CommitMessage.
+  //
+  // This is deprecated.  Clients are allowed to omit this as long as they
+  // include |position_in_parent| instead.
+  optional string insert_after_item_id = 16;
+
+  // Arbitrary key/value pairs associated with this item.
+  // Present in both GetUpdatesResponse and CommitMessage.
+  // Deprecated.
+  // optional ExtendedAttributes extended_attributes = 17;
+
+  // If true, indicates that this item has been (or should be) deleted.
+  // Present in both GetUpdatesResponse and CommitMessage.
+  optional bool deleted = 18 [default = false];
+
+  // A GUID that identifies the the sync client who initially committed
+  // this entity.  This value corresponds to |cache_guid| in CommitMessage.
+  // This field, along with |originator_client_item_id|, can be used to
+  // reunite the original with its official committed version in the case
+  // where a client does not receive or process the commit response for
+  // some reason.
+  //
+  // Present only in GetUpdatesResponse.
+  //
+  // This field is also used in determining the unique identifier used in
+  // bookmarks' unique_position field.
+  optional string originator_cache_guid = 19;
+
+  // The local item id of this entry from the client that initially
+  // committed this entity. Typically a negative integer.
+  // Present only in GetUpdatesResponse.
+  //
+  // This field is also used in determinging the unique identifier used in
+  // bookmarks' unique_position field.
+  optional string originator_client_item_id = 20;
+
+  // Extensible container for datatype-specific data.
+  // This became available in version 23 of the protocol.
+  optional EntitySpecifics specifics = 21;
+
+  // Indicate whether this is a folder or not. Available in version 23+.
+  optional bool folder = 22 [default = false];
+
+  // A client defined unique hash for this entity.
+  // Similar to server_defined_unique_tag.
+  //
+  // When initially committing an entity, a client can request that the entity
+  // is unique per that account. To do so, the client should specify a
+  // client_defined_unique_tag. At most one entity per tag value may exist.
+  // per account. The server will enforce uniqueness on this tag
+  // and fail attempts to create duplicates of this tag.
+  // Will be returned in any updates for this entity.
+  //
+  // The difference between server_defined_unique_tag and
+  // client_defined_unique_tag is the creator of the entity. Server defined
+  // tags are entities created by the server at account creation,
+  // while client defined tags are entities created by the client at any time.
+  //
+  // During GetUpdates, a sync entity update will come back with ONE of:
+  // a) Originator and cache id - If client committed the item as non "unique"
+  // b) Server tag - If server committed the item as unique
+  // c) Client tag - If client committed the item as unique
+  //
+  // May be present in CommitMessages for the initial creation of an entity.
+  // If present in Commit updates for the entity, it will be ignored.
+  //
+  // Available in version 24+.
+  //
+  // May be returned in GetUpdatesMessage and sent up in CommitMessage.
+  //
+  optional string client_defined_unique_tag = 23;
+
+  // This positioning system had a relatively short life.  It was made obsolete
+  // by |unique_position| before either the client or server made much of an
+  // attempt to support it.  In fact, no client ever read or set this field.
+  //
+  // Deprecated in M26.
+  optional bytes ordinal_in_parent = 24;
+
+  // This is the fourth attempt at positioning.
+  //
+  // This field is present in both GetUpdatesResponse and CommitMessage, if the
+  // item's type requires it and the client that wrote the item supports it (M26
+  // or higher).  Clients must also be prepared to handle updates from clients
+  // that do not set this field.  See the comments on
+  // |server_position_in_parent| for more information on how this is handled.
+  //
+  // This field will not be set for items whose type ignores positioning.
+  // Clients should not attempt to read this field on the receipt of an item of
+  // a type that ignores positioning.
+  //
+  // Refer to its definition in unique_position.proto for more information about
+  // its internal representation.
+  optional UniquePosition unique_position = 25;
+
+  // This used to be a list of sync attachment IDs, but it was never launched
+  // and the code has been removed as of M66.
+  repeated DeprecatedMessage attachment_id = 26 [deprecated = true];
+};
+
+// This message contains diagnostic information used to correlate
+// commit-related traffic with extensions-related mutations to the
+// data models in chromium.  It plays no functional role in
+// processing this CommitMessage.
+message ChromiumExtensionsActivity {
+  // The human-readable ID identifying the extension responsible
+  // for the traffic reported in this ChromiumExtensionsActivity.
+  optional string extension_id = 1;
+
+  // How many times the extension successfully invoked a write
+  // operation through the bookmarks API since the last CommitMessage.
+  optional uint32 bookmark_writes_since_last_commit = 2;
+};
+
+// Client specific configuration information.
+message ClientConfigParams {
+  // The set of data types this client has enabled. Note that this does not
+  // include proxy types, as they do not have protocol field numbers and are
+  // placeholder types that implicitly enable protocol types.
+  repeated int32 enabled_type_ids = 1;
+
+  // Whether the PROXY_TABS proxy datatype is enabled on this client.
+  optional bool tabs_datatype_enabled = 2;
+
+  // Whether the account(s) present in the content area's cookie jar match the
+  // chrome account. If multiple accounts are present in the cookie jar, a
+  // mismatch implies all of them are different from the chrome account.
+  optional bool cookie_jar_mismatch = 3;
+};
+
+message CommitMessage {
+  repeated SyncEntity entries = 1;
+
+  // A GUID that identifies the committing sync client.  This value will be
+  // returned as originator_cache_guid for any new items.
+  optional string cache_guid = 2;
+
+  repeated ChromiumExtensionsActivity extensions_activity = 3;
+
+  // The configuration of this client at commit time. Used by the server to
+  // make commit-time decisions about how to process datatypes that might
+  // involve server-side interaction, and e.g require explicit user intent for
+  // syncing a particular data type regardless of whether a commit for that
+  // datatype is currently being sent up.
+  optional ClientConfigParams config_params = 4;
+
+  // Set of optional per-client datatype contexts.
+  repeated DataTypeContext client_contexts = 5;
+
+  // This field need to be 256 bytes if set. This attempts to mitigate CRIME
+  // attacks when sync communicate from client to server with compression. So if
+  // compression is used, this need to set a 256 random ASCII bytes. If no
+  // compression, this field should not be set. The server can ignore the
+  // padding.
+  optional string padding = 6;
+};
+
+// This message communicates additional per-type information related to
+// requests with origin GU_TRIGGER.  This message is not relevant when any
+// other origin value is used.
+// Introduced in M29.
+message GetUpdateTriggers {
+  // An opaque-to-the-client string of bytes, received through a notification,
+  // that the server may interpret as a hint about the location of the latest
+  // version of the data for this type.
+  //
+  // Note that this will eventually replace the 'optional' field of the same
+  // name defined in the progress marker, but the client and server should
+  // support both until it's safe to deprecate the old one.
+  //
+  // This field was introduced in M29.
+  repeated string notification_hint = 1;
+
+  // This flag is set if the client was forced to drop hints because the number
+  // of queued hints exceeded its limit.  The oldest hints will be discarded
+  // first.  Introduced in M29.
+  optional bool client_dropped_hints = 2;
+
+  // This flag is set when the client suspects that its list of invalidation
+  // hints may be incomplete.  This may be the case if:
+  // - The client is syncing for the first time.
+  // - The client has just restarted and it was unable to keep track of
+  //   invalidations that were received prior to the restart.
+  // - The client's connection to the invalidation server is currently or
+  //   was recently broken.
+  //
+  // It's difficult to provide more details here.  This is implemented by
+  // setting the flag to false whenever anything that might adversely affect
+  // notifications happens (eg. a crash, restart on a platform that doesn't
+  // support invalidation ack-tracking, transient invalidation error) and is
+  // unset only after we've experienced one successful sync cycle while
+  // notifications were enabled.
+  //
+  // This flag was introduced in M29.
+  optional bool invalidations_out_of_sync = 3;
+
+  // This counts the number of times the syncer has been asked to commit
+  // changes for this type since the last successful sync cycle.  The number of
+  // nudges may not be related to the actual number of items modified.  It
+  // often correlates with the number of user actions, but that's not always
+  // the case.
+  // Introduced in M29.
+  optional int64 local_modification_nudges = 4;
+
+  // This counts the number of times the syncer has been explicitly asked to
+  // fetch updates for this type since the last successful sync cycle.  These
+  // explicit refresh requests should be relatively rare on most platforms, and
+  // associated with user actions.  For example, at the time of this writing
+  // the most common (only?) source of refresh requests is when a user opens
+  // the new tab page on a platform that does not support sessions
+  // invalidations.
+  // Introduced in M29.
+  optional int64 datatype_refresh_nudges = 5;
+
+  // This flag is set if the invalidation server reports that it may have
+  // dropped some invalidations at some point.  Introduced in M33.
+  optional bool server_dropped_hints = 6;
+
+  // This flag is set if this GetUpdate request is due at least in part due
+  // to the fact that this type has not finished initial sync yet, and the
+  // client would like to initialize itself with the server data.
+  //
+  // Only some types support performing an initial sync as part of a normal
+  // GetUpdate request.  Many types must be in configure mode when fetching
+  // initial sync data.
+  //
+  // Introduced in M38.
+  optional bool initial_sync_in_progress = 7;
+
+  // This flag is set if this GetUpdate request is due to client receiving
+  // conflict response from server, so client needs to sync and then resolve
+  // conflict locally, and then commit again.
+  //
+  // Introduced in M42.
+  optional bool sync_for_resolve_conflict_in_progress = 8;
+}
+
+message GarbageCollectionDirective {
+  enum Type {
+    UNKNOWN = 0;
+    VERSION_WATERMARK = 1;
+    AGE_WATERMARK = 2;
+    MAX_ITEM_COUNT = 3;
+  }
+
+  optional Type type = 1 [default = UNKNOWN];
+
+  // This field specifies the watermark for the versions which should get
+  // garbage collected.  The client should purge all sync entities with a
+  // version smaller than version_watermark locally.
+  optional int64 version_watermark = 2;
+
+  // This field specifies the watermark in terms of age in days.  The client
+  // should purge all sync entities which are older than this specific value
+  // based on last modified time.
+  optional int32 age_watermark_in_days = 3;
+
+  // This field specifies the max number of items that the client should keep
+  // for a specific datatype.  If the number of items exceeds this limit, the
+  // client should purge the extra sync entities based on the LRU rule.
+  optional int32 max_number_of_items = 4;
+}
+
+message DataTypeProgressMarker {
+  // An integer identifying the data type whose progress is tracked by this
+  // marker.  The legitimate values of this field correspond to the protobuf
+  // field numbers of all EntitySpecifics fields supported by the server.
+  // These values are externally declared in per-datatype .proto files.
+  optional int32 data_type_id = 1;
+
+  // An opaque-to-the-client sequence of bytes that the server may interpret
+  // as an indicator of the client's knowledge state.  If this is empty or
+  // omitted by the client, it indicates that the client is initiating a
+  // a first-time sync of this datatype.  Otherwise, clients must supply a
+  // value previously returned by the server in an earlier GetUpdatesResponse.
+  // These values are not comparable or generable on the client.
+  //
+  // The opaque semantics of this field are to afford server implementations
+  // some flexibility in implementing progress tracking.  For instance,
+  // a server implementation built on top of a distributed storage service --
+  // or multiple heterogenous such services -- might need to supply a vector
+  // of totally ordered monotonic update timestamps, rather than a single
+  // monotonically increasing value.  Other optimizations may also be
+  // possible if the server is allowed to embed arbitrary information in
+  // the progress token.
+  //
+  // Server implementations should keep the size of these tokens relatively
+  // small, on the order of tens of bytes, and they should remain small
+  // regardless of the number of items synchronized.  (A possible bad server
+  // implementation would be for progress_token to contain a list of all the
+  // items ever sent to the client.  Servers shouldn't do this.)
+  optional bytes token = 2;
+
+  // Clients that previously downloaded updates synced using the timestamp based
+  // progress tracking mechanism, but which wish to switch over to the opaque
+  // token mechanism can set this field in a GetUpdatesMessage.  The server
+  // will perform a get updates operation as normal from the indicated
+  // timestamp, and return only an opaque progress token.
+  optional int64 timestamp_token_for_migration = 3;
+
+  // An opaque-to-the-client string of bytes, received through a notification,
+  // that the server may interpret as a hint about the location of the latest
+  // version of the data for this type.
+  //
+  // Deprecated in M29.  We should use the repeated field version in the
+  // PerClientTypeState instead.
+  optional string notification_hint = 4;
+
+  // This field will be included only in GetUpdates with origin GU_TRIGGER.
+  optional GetUpdateTriggers get_update_triggers = 5;
+
+  // The garbage collection directive for this data type.  The client should
+  // purge items locally based on this directive.  Since this directive is
+  // designed to be sent from server only, the client should persist it locally
+  // as needed and avoid sending it to the server.
+  optional GarbageCollectionDirective gc_directive = 6;
+}
+
+message GetUpdatesMessage {
+  // Indicates the client's current progress in downloading updates.  A
+  // from_timestamp value of zero means that the client is requesting a first-
+  // time sync.  After that point, clients should fill in this value with the
+  // value returned in the last-seen GetUpdatesResponse.new_timestamp.
+  //
+  // from_timestamp has been deprecated; clients should use
+  // |from_progress_marker| instead, which allows more flexibility.
+  optional int64 from_timestamp = 1;
+
+  // Indicates the reason for the GetUpdatesMessage.
+  // This was *mostly* deprecated in M29.  GetUpdatesOrigin is the new way to
+  // encode the reason for the GetUpdates request, but some parts of the server
+  // still rely on this field.  It also still contains the
+  // "notifications_enabled" flag which needs to be moved elsewhere before this
+  // can be fully removed. See https://crbug.com/510165.
+  optional GetUpdatesCallerInfo caller_info = 2;
+
+  // Indicates whether related folders should be fetched.
+  optional bool fetch_folders = 3 [default = true];
+
+  // The presence of an individual EntitySpecifics field indicates that the
+  // client requests sync object types associated with that field.  This
+  // determination depends only on the presence of the field, not its
+  // contents -- thus clients should send empty messages as the field value.
+  // For backwards compatibility only bookmark objects will be sent to the
+  // client should requested_types not be present.
+  //
+  // requested_types may contain multiple EntitySpecifics fields -- in this
+  // event, the server will return items of all the indicated types.
+  //
+  // requested_types has been deprecated; clients should use
+  // |from_progress_marker| instead, which allows more flexibility.
+  optional EntitySpecifics requested_types = 4;
+
+  // Client-requested limit on the maximum number of updates to return at once.
+  // The server may opt to return fewer updates than this amount, but it should
+  // not return more.
+  optional int32 batch_size = 5;
+
+  // Per-datatype progress marker.  If present, the server will ignore
+  // the values of requested_types and from_timestamp, using this instead.
+  //
+  // With the exception of certain configuration or initial sync requests, the
+  // client should include one instance of this field for each enabled data
+  // type.
+  repeated DataTypeProgressMarker from_progress_marker = 6;
+
+  // Indicates whether the response should be sent in chunks.  This may be
+  // needed for devices with limited memory resources.  If true, the response
+  // will include one or more ClientToServerResponses, with the frist one
+  // containing GetUpdatesMetadataResponse, and the remaining ones, if any,
+  // containing GetUpdatesStreamingResponse.  These ClientToServerResponses are
+  // delimited by a length prefix, which is encoded as a varint.
+  optional bool streaming = 7 [default = false];
+
+  // Whether the client needs the server to provide an encryption key for this
+  // account.
+  // Note: this should typically only be set on the first GetUpdates a client
+  // requests. Clients are expected to persist the encryption key from then on.
+  // The allowed frequency for requesting encryption keys is much lower than
+  // other datatypes, so repeated usage will likely result in throttling.
+  optional bool need_encryption_key = 8 [default = false];
+
+  // Whether to create the mobile bookmarks folder if it's not
+  // already created.  Should be set to true only by mobile clients.
+  optional bool create_mobile_bookmarks_folder = 1000 [default = false];
+
+  // This value is an updated version of the GetUpdatesCallerInfo's
+  // GetUpdatesSource.  It describes the reason for the GetUpdate request.
+  // Introduced in M29.
+  optional SyncEnums.GetUpdatesOrigin get_updates_origin = 9;
+
+  // Whether this GU also serves as a retry GU. Any GU that happens after
+  // retry timer timeout is a retry GU effectively.
+  optional bool is_retry = 10 [default = false];
+
+  // Set of optional per-client datatype contexts.
+  repeated DataTypeContext client_contexts = 11;
+};
+
+message AuthenticateMessage {
+  required string auth_token = 1;
+};
+
+// Message from a client asking the server to clear its data.
+//
+// A client makes a ClearServerData request when it transitions to passphrase
+// encryption to ensure the server deletes any plaintext data that may have been
+// synced previously.
+message ClearServerDataMessage {
+  // No arguments needed as the store birthday and user identifier are part of
+  // an enclosing message.
+};
+
+// Response to a ClearServerData request.
+message ClearServerDataResponse {
+  // No result fields necessary. Success/failure is indicated in
+  // ClientToServerResponse.
+};
+
+// The client must preserve, store, and resend the chip bag with
+// every request.  The server depends on the chip bag in order
+// to precisely choreograph a client-server state machines.
+//
+// Because the client stores and sends this data on every request,
+// the contents of the chip bag should be kept relatively small.
+//
+// If the server does not return a chip bag, the client must assume
+// that there has been no change to the chip bag.  The client must
+// resend the bag of chips it had prior on the next request.
+//
+// The client must make the chip bag durable if and only if it
+// processes the response from the server.
+message ChipBag {
+  // Server chips are deliberately oqaque, allowing the server
+  // to encapsulate its state machine logic.
+  optional bytes server_chips = 1;
+}
+
+// Information about the syncer's state.
+message ClientStatus {
+  // Flag to indicate if the client has detected hierarchy conflcits.  The flag
+  // is left unset if update application has not been attempted yet.
+  //
+  // The server should attempt to resolve any hierarchy conflicts when this flag
+  // is set.  The client may not assume that any particular action will be
+  // taken.  There is no guarantee the problem will be addressed in a reasonable
+  // amount of time.
+  optional bool hierarchy_conflict_detected = 1;
+}
+
+// A single datatype's sync context. Allows the datatype to pass along
+// datatype specific information with its own server backend.
+message DataTypeContext {
+  // The type this context is associated with.
+  optional int32 data_type_id = 1;
+  // The context for the datatype.
+  optional bytes context = 2;
+  // The version of the context.
+  optional int64 version = 3;
+}
+
+message ClientToServerMessage {
+  // |share| field is only used on the server for logging and can sometimes
+  // contain empty string. It is still useful for logging username when it can't
+  // be derived from access token in case of auth error.
+  required string share = 1;
+
+  optional int32 protocol_version = 2 [default = 52];
+  enum Contents {
+    COMMIT = 1;
+    GET_UPDATES = 2;
+    AUTHENTICATE = 3;
+    DEPRECATED_4 = 4;
+    CLEAR_SERVER_DATA = 5;
+  }
+
+  // Each ClientToServerMessage contains one request defined by the
+  // message_contents. Each type has a corresponding message field that will be
+  // present iff the message is of that type. E.g. a commit message will have a
+  // message_contents of COMMIT and its commit field will be present.
+  required Contents message_contents = 3;
+  optional CommitMessage commit = 4;
+  optional GetUpdatesMessage get_updates = 5;
+  optional AuthenticateMessage authenticate = 6;
+
+  optional DeprecatedMessage deprecated_field_9 = 9 [deprecated = true];
+
+  optional string store_birthday = 7;  // Opaque store ID; if it changes, duck!
+  // The client sets this if it detects a sync issue. The server will tell it
+  // if it should perform a refresh.
+  optional bool sync_problem_detected = 8 [default = false];
+
+  // Client side state information for debugging purpose.
+  // This is only sent on the first getupdates of every sync cycle,
+  // as an optimization to save bandwidth.
+  optional DebugInfo debug_info = 10;
+
+  // Per-client state for use by the server. Sent with every message sent to the
+  // server.
+  optional ChipBag bag_of_chips = 11;
+
+  // Google API key.
+  optional string api_key = 12;
+
+  // Client's self-reported state.
+  // The client should set this on every message sent to the server, though its
+  // member fields may often be unset.
+  optional ClientStatus client_status = 13;
+
+  // The ID that our invalidation client used to identify itself to the server.
+  // Sending the ID here allows the server to not send notifications of our own
+  // changes to our invalidator.
+  optional string invalidator_client_id = 14;
+
+  // Identifies this ClientToServerMessage as a clear server data request. This
+  // field is present when message_contents is CLEAR_SERVER_DATA.
+  optional ClearServerDataMessage clear_server_data = 15;
+};
+
+// This request allows the client to convert a specific crash identifier
+// into more general information (e.g. hash of the crashing call stack)
+// suitable for upload in an (authenticated) DebugInfo event.
+message GetCrashInfoRequest {
+  // Id of the uploaded crash.
+  optional string crash_id = 1;
+
+  // Time that the crash occurred.
+  optional int64 crash_time_millis = 2;
+}
+
+// Proto to be written in its entirety to the debug info log.
+message GetCrashInfoResponse {
+  // Hash of the crashing call stack.
+  optional string stack_id = 1;
+
+  // Time of the crash, potentially rounded to remove
+  // significant bits.
+  optional int64 crash_time_millis = 2;
+}
+
+message CommitResponse {
+  enum ResponseType {
+    SUCCESS = 1;
+    CONFLICT = 2;  // You're out of date; update and check your data
+    // TODO(ncarter): What's the difference between RETRY and TRANSIENT_ERROR?
+    RETRY = 3;            // Someone has a conflicting, non-expired session open
+    INVALID_MESSAGE = 4;  // What the client sent was invalid, and trying again
+                          // won't help.
+    OVER_QUOTA = 5;  // This operation would put you, or you are, over quota
+    TRANSIENT_ERROR = 6;  // Something went wrong; try again in a bit
+  }
+  repeated group EntryResponse = 1 {
+    required ResponseType response_type = 2;
+
+    // Sync servers may also return a new ID for an existing item, indicating
+    // a new entry's been created to hold the data the client's sending up.
+    optional string id_string = 3;
+
+    // should be filled if our parent was assigned a new ID.
+    optional string parent_id_string = 4;
+
+    // This value is the same as the position_in_parent value returned within
+    // the SyncEntity message in GetUpdatesResponse.  There was a time when the
+    // client would attempt to honor this position, but nowadays the server
+    // should ensure it is no different from the position_in_parent sent up in
+    // the commit request and the client should not read it.
+    optional int64 position_in_parent = 5;
+
+    // The item's current version.
+    optional int64 version = 6;
+
+    // Allows the server to move-aside an entry as it's being committed.
+    // This name is the same as the name field returned within the SyncEntity
+    // message in GetUpdatesResponse.
+    optional string name = 7;
+
+    // This name is the same as the non_unique_name field returned within the
+    // SyncEntity message in GetUpdatesResponse.
+    optional string non_unique_name = 8;
+
+    optional string error_message = 9;
+
+    // Last modification time (in java time milliseconds).  Allows the server
+    // to override the client-supplied mtime during a commit operation.
+    optional int64 mtime = 10;
+  }
+};
+
+message GetUpdatesResponse {
+  // New sync entries that the client should apply.
+  repeated SyncEntity entries = 1;
+
+  // If there are more changes on the server that weren't processed during this
+  // GetUpdates request, the client should send another GetUpdates request and
+  // use new_timestamp as the from_timestamp value within GetUpdatesMessage.
+  //
+  // This field has been deprecated and will be returned only to clients
+  // that set the also-deprecated |from_timestamp| field in the update request.
+  // Clients should use |from_progress_marker| and |new_progress_marker|
+  // instead.
+  optional int64 new_timestamp = 2;
+
+  // DEPRECATED FIELD - server does not set this anymore.
+  optional int64 deprecated_newest_timestamp = 3;
+
+  // Approximate count of changes remaining - use this for UI feedback.
+  // If present and zero, this estimate is firm: the server has no changes
+  // after the current batch.
+  optional int64 changes_remaining = 4;
+
+  // Opaque, per-datatype timestamp-like tokens.  A client should use this
+  // field in lieu of new_timestamp, which is deprecated in newer versions
+  // of the protocol.  Clients should retain and persist the values returned
+  // in this field, and present them back to the server to indicate the
+  // starting point for future update requests.
+  //
+  // This will be sent only if the client provided |from_progress_marker|
+  // in the update request.
+  //
+  // The server may provide a new progress marker even if this is the end of
+  // the batch, or if there were no new updates on the server; and the client
+  // must save these.  If the server does not provide a |new_progress_marker|
+  // value for a particular datatype, when the request provided a
+  // |from_progress_marker| value for that datatype, the client should
+  // interpret this to mean "no change from the previous state" and retain its
+  // previous progress-marker value for that datatype.
+  //
+  // Progress markers in the context of a response will never have the
+  // |timestamp_token_for_migration| field set.
+  repeated DataTypeProgressMarker new_progress_marker = 5;
+
+  // The current encryption keys associated with this account. Will be set if
+  // the GetUpdatesMessage in the request had need_encryption_key == true or
+  // the server has updated the set of encryption keys (e.g. due to a key
+  // rotation).
+  repeated bytes encryption_keys = 6;
+
+  // Set of optional datatype contexts server mutations.
+  repeated DataTypeContext context_mutations = 7;
+};
+
+// The metadata response for GetUpdatesMessage.  This response is sent when
+// streaming is set to true in the request.  It is prefixed with a length
+// delimiter, which is encoded in varint.
+message GetUpdatesMetadataResponse {
+  // Approximate count of changes remaining.  Detailed comment is available in
+  // GetUpdatesResponse.
+  optional int64 changes_remaining = 1;
+
+  // Opaque, per-datatype timestamp-like tokens.  Detailed comment is available
+  // in GetUpdatesResponse.
+  repeated DataTypeProgressMarker new_progress_marker = 2;
+};
+
+// The streaming response message for GetUpdatesMessage.  This message is sent
+// when streaming is set to true in the request.  There may be multiple
+// GetUpdatesStreamingResponse messages in a response.  This type of messages
+// is preceded by GetUpdatesMetadataResponse.  It is prefixed with a length
+// delimiter, which is encoded in varint.
+message GetUpdatesStreamingResponse {
+  // New sync entries that the client should apply.
+  repeated SyncEntity entries = 1;
+};
+
+// A user-identifying struct.  For a given Google account the email and display
+// name can change, but obfuscated_id should be constant.
+// The obfuscated id is optional because at least one planned use of the proto
+// (sharing) does not require it.
+message UserIdentification {
+  required string email = 1;          // the user's full primary email address.
+  optional string display_name = 2;   // the user's display name.
+  optional string obfuscated_id = 3;  // an obfuscated, opaque user id.
+};
+
+message AuthenticateResponse {
+  // Optional only for backward compatibility.
+  optional UserIdentification user = 1;
+};
+
+message ClientToServerResponse {
+  optional CommitResponse commit = 1;
+  optional GetUpdatesResponse get_updates = 2;
+  optional AuthenticateResponse authenticate = 3;
+
+  // Up until protocol_version 24, the default was SUCCESS which made it
+  // impossible to add new enum values since older clients would parse any
+  // out-of-range value as SUCCESS. Starting with 25, unless explicitly set,
+  // the error_code will be UNKNOWN so that clients know when they're
+  // out-of-date. Note also that when using protocol_version < 25,
+  // TRANSIENT_ERROR is not supported. Instead, the server sends back a HTTP
+  // 400 error code. This is deprecated now.
+  optional SyncEnums.ErrorType error_code = 4 [default = UNKNOWN];
+  optional string error_message = 5;
+
+  // Opaque store ID; if it changes, the contents of the client's cache
+  // is meaningless to this server.  This happens most typically when
+  // you switch from one storage backend instance (say, a test instance)
+  // to another (say, the official instance).
+  optional string store_birthday = 6;
+
+  optional ClientCommand client_command = 7;
+  optional ProfilingData profiling_data = 8;
+  optional DeprecatedMessage deprecated_field_9 = 9 [deprecated = true];
+  optional GetUpdatesMetadataResponse stream_metadata = 10;
+  // If GetUpdatesStreamingResponse is contained in the ClientToServerResponse,
+  // none of the other fields (error_code and etc) will be set.
+  optional GetUpdatesStreamingResponse stream_data = 11;
+
+  // The data types whose storage has been migrated.  Present when the value of
+  // error_code is MIGRATION_DONE.
+  repeated int32 migrated_data_type_id = 12;
+
+  message Error {
+    optional SyncEnums.ErrorType error_type = 1 [default = UNKNOWN];
+    optional string error_description = 2;
+    optional string url = 3;
+    optional SyncEnums.Action action = 4 [default = UNKNOWN_ACTION];
+
+    // Currently meaningful if |error_type| is throttled or partial_failure.
+    // In the throttled case, if this field is absent then the whole client
+    // (all datatypes) is throttled.
+    // In the partial_failure case, this field denotes partial failures. The
+    // client should retry those datatypes with exponential backoff.
+    repeated int32 error_data_type_ids = 5;
+  }
+  optional Error error = 13;
+
+  // The new per-client state for this client. If set, should be persisted and
+  // sent with any subsequent ClientToServerMessages.
+  optional ChipBag new_bag_of_chips = 14;
+
+  // Present if this ClientToServerResponse is in response to a ClearServerData
+  // request.
+  optional ClearServerDataResponse clear_server_data = 15;
+};
+
+// A message to notify the server of certain sync events. Idempotent. Send these
+// to the /event endpoint.
+message EventRequest {
+  optional SyncDisabledEvent sync_disabled = 1;
+};
+
+message EventResponse {};
+
+// A message indicating that the sync engine has been disabled on a client.
+message SyncDisabledEvent {
+  // The GUID that identifies the sync client.
+  optional string cache_guid = 1;
+
+  // The store birthday that the client was using before disabling sync.
+  optional string store_birthday = 2;
+};

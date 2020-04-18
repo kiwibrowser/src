@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<body>
+<script>
+  testRunner.dumpFrameLoadCallbacks();
+
+  async_test(t => {
+    fetch("https://hsts-example.test:8443/security/resources/hsts.php?as-fetch")
+      .then(t.step_func(_ => {
+        var i = document.createElement('iframe');
+
+        // Note: HTTP, not HTTPS:
+        i.src = "http://hsts-example.test:8443/security/resources/hsts.php";
+        window.onmessage = t.unreached_func("No message should be received from the frame.");
+
+        // Give the message a chance to get through.
+        document.body.appendChild(i);
+        requestAnimationFrame(_ => t.done());
+      }));
+  }, "HSTS does not bypass MIX.");
+</script>

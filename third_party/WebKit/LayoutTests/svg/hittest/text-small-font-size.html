@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<title>Hit-test of &lt;text> does not hit-test the "background" (w/ small font size)</title>
+<script src="../../resources/ahem.js"></script>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<style>
+body {
+  margin: 0;
+  padding: 0;
+}
+g text:hover {
+  fill: red;
+  cursor: crosshair;
+}
+</style>
+<svg font-family="Ahem" font-size="1.6" fill="blue" width="600" height="300">
+  <g transform="matrix(50,0,0,50,-400,-800)">
+    <text x="9.4" y="17.80">SELECT</text>
+  </g>
+</svg>
+<script>
+test(function() {
+  var textElement = document.querySelector('text');
+  // Should hit <text>.
+  [
+    { x: 71, y: 28 },
+    { x: 71, y: 105 },
+    { x: 540, y: 105 },
+    { x: 540, y: 28 },
+  ].forEach(function(point) {
+    assert_equals(document.elementFromPoint(point.x, point.y), textElement, point.x + ',' + point.y);
+  });
+
+  var svgRoot = document.querySelector('svg');
+  // Should not hit <text>.
+  [
+    { x: 69, y: 26 },
+    { x: 69, y: 105 },
+    { x: 69, y: 107 },
+    { x: 300, y: 26 },
+    { x: 300, y: 107 },
+    { x: 550, y: 26 },
+    { x: 550, y: 105 },
+    { x: 550, y: 107 },
+  ].forEach(function(point) {
+    assert_equals(document.elementFromPoint(point.x, point.y), svgRoot, point.x + ',' + point.y);
+  });
+});
+</script>

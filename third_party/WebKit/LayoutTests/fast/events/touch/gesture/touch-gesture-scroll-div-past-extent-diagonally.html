@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../../../../resources/js-test.js"></script>
+<script src="resources/gesture-helpers.js"></script>
+<style type="text/css">
+
+::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+}
+
+#contents {
+  width:500px;
+  height:150px;
+  border-right:700px solid black;
+  background:red;
+}
+
+#horizontal {
+  width:600px;
+  height:600px;
+  overflow:scroll;
+  background:green;
+}
+
+#vertical {
+  height:300px;
+  overflow:scroll;
+}
+
+</style>
+</head>
+<body style="margin:0" onload="runTest();">
+
+<div id="vertical">
+  <div id="horizontal">
+    <div id="contents"></div>
+  </div>
+</div>
+
+<p id="description"></p>
+<div id="console"></div>
+<script type="text/javascript">
+
+if (window.testRunner)
+    testRunner.waitUntilDone();
+
+function runTest()
+{
+    if (window.eventSender) {
+        description('This tests that a gesture scroll isn\'t propagated from an ' +
+            'inner div to an outer div when the inner div has ' +
+            'remaining scroll offset on one axis but not on the other, unless ' +
+            'the outer div starts at its scroll extent');
+        if (checkTestDependencies()) {
+            eventSender.gestureScrollBegin(10, 10);
+            eventSender.gestureScrollUpdate(-15, -20);
+            eventSender.gestureScrollEnd(0, 0);
+            shouldBe("horizontal.scrollLeft", "15");
+            shouldBe("vertical.scrollTop", "0");
+
+            // Scroll to extents.
+            eventSender.gestureScrollBegin(10, 10);
+            eventSender.gestureScrollUpdate(-1000, -1000);
+            eventSender.gestureScrollEnd(0, 0);
+            shouldBe("horizontal.scrollLeft", "600");
+            shouldBe("vertical.scrollTop", "0");
+
+            eventSender.gestureScrollBegin(10, 10);
+            eventSender.gestureScrollUpdate(-15, -20);
+            eventSender.gestureScrollEnd(0, 0);
+            shouldBe("horizontal.scrollLeft", "600");
+            shouldBe("vertical.scrollTop", "20");
+
+            if (window.testRunner)
+              testRunner.notifyDone();
+        } else {
+            exitIfNecessary();
+        }
+    } else {
+        debug("This test requires DumpRenderTree.  Gesture-scroll the page diagonally to validate the implementation.");
+    }
+}
+</script>
+
+</body>
+</html>

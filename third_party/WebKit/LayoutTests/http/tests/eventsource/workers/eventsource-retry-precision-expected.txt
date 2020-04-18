@@ -1,0 +1,12 @@
+[Worker] Test EventSource retry time precision.
+
+On success, you will see a series of "PASS" messages, followed by "TEST COMPLETE".
+
+
+Starting worker: ../script-tests/eventsource-retry-precision.js
+PASS [Worker] did not immediately reconnect
+[Worker] DONE
+PASS successfullyParsed is true
+
+TEST COMPLETE
+

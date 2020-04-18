@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<script src="../../resources/js-test.js"></script>
+<style>
+div { all: initial; }
+div { all: initial; color: red; }
+div { color: red; all: initial; }
+div { all: initial !important; color: red; }
+div { all: initial; color: red !important; }
+
+div { all: inherit; }
+div { all: inherit; color: red; }
+div { color: red; all: inherit; }
+div { all: inherit !important; color: red; }
+div { all: inherit; color: red !important; }
+
+div { all: red; all: none; all: 10px; all: auto; all: url(about:blank); }
+
+div { direction: ltr; all: initial; direction: rtl; }
+div { direction: ltr; unicode-bidi: bidi-override; all: initial !important; }
+div { direction: ltr; all: initial; color: red; }
+
+div { all: initial; font-size: 10px; }
+
+div { all: initial; width: inherit; }
+
+div { all: unset; }
+div { all: unset; color: red; }
+</style>
+<script>
+description('Test for crbug.com/172051: all shorthand property.');
+
+function contains(cssText, property) {
+   return cssText.indexOf(property) == 0 || cssText.indexOf(' ' + property) != -1;
+}
+
+var cssRules = document.styleSheets[1].cssRules;
+
+shouldBe('cssRules.length', '18');
+shouldBe('cssRules[0].cssText', '"div { all: initial; }"');
+shouldNotBe('cssRules[1].cssText', '"div { all: initial; color: red; }"');
+shouldBeTrue('contains(cssRules[1].cssText, "color: red;")');
+shouldBeTrue('contains(cssRules[1].cssText, "background: initial;")');
+shouldBeFalse('contains(cssRules[1].cssText, "direction: ")');
+shouldBeFalse('contains(cssRules[1].cssText, "unicode-bidi: ")');
+shouldBe('cssRules[2].cssText', '"div { all: initial; }"');
+shouldBe('cssRules[3].cssText', '"div { all: initial !important; }"');
+shouldNotBe('cssRules[4].cssText', '"div { all: initial; color: red !important; }"');
+shouldBeTrue('contains(cssRules[4].cssText, "color: red !important;")');
+shouldBeTrue('contains(cssRules[4].cssText, "background: initial;")');
+shouldBeFalse('contains(cssRules[4].cssText, "direction: ")');
+shouldBeFalse('contains(cssRules[4].cssText, "unicode-bidi: ")');
+
+shouldBe('cssRules[5].cssText', '"div { all: inherit; }"');
+shouldNotBe('cssRules[6].cssText', '"div { all: inherit; color: red; }"');
+shouldBeTrue('contains(cssRules[6].cssText, "color: red;")');
+shouldBeFalse('contains(cssRules[6].cssText, "direction: ")');
+shouldBeFalse('contains(cssRules[6].cssText, "unicode-bidi: ")');
+shouldBe('cssRules[7].cssText', '"div { all: inherit; }"');
+shouldBe('cssRules[8].cssText', '"div { all: inherit !important; }"');
+shouldNotBe('cssRules[9].cssText', '"div { all: inherit; color: red !important; }"');
+shouldBeTrue('contains(cssRules[9].cssText, "color: red !important")');
+shouldBeTrue('contains(cssRules[9].cssText, "background: inherit;")');
+shouldBeFalse('contains(cssRules[9].cssText, "direction: ")');
+shouldBeFalse('contains(cssRules[9].cssText, "unicode-bidi: ")');
+
+shouldBe('cssRules[10].cssText', '"div { }"');
+
+shouldBe('cssRules[11].cssText', '"div { all: initial; direction: rtl; }"');
+
+shouldBe('cssRules[12].cssText', '"div { direction: ltr; unicode-bidi: bidi-override; all: initial !important; }"');
+
+shouldBeFalse('contains(cssRules[13].cssText, "all: initial;")');
+shouldBeFalse('contains(cssRules[13].cssText, "-internal-")');
+shouldBeTrue('contains(cssRules[13].cssText, "direction: ltr;")');
+shouldBeTrue('contains(cssRules[13].cssText, "color: red;")');
+
+shouldBeFalse('contains(cssRules[14].cssText, "all: initial;")');
+shouldBeFalse('contains(cssRules[14].cssText, "-internal-")');
+shouldBeFalse('contains(cssRules[14].cssText, "font: initial;")');
+shouldBeTrue('contains(cssRules[14].cssText, "font-family: initial;")');
+
+shouldBeFalse('contains(cssRules[15].cssText, "all: initial;")');
+shouldBeFalse('contains(cssRules[15].cssText, "-internal-")');
+shouldBeFalse('contains(cssRules[14].cssText, "font: initial;")');
+shouldBeTrue('contains(cssRules[14].cssText, "marker: initial;")');
+shouldBeTrue('contains(cssRules[15].cssText, "width: inherit;")');
+shouldBeTrue('contains(cssRules[15].cssText, "min-width: initial;")');
+shouldBeTrue('contains(cssRules[15].cssText, "max-width: initial;")');
+shouldBeFalse('contains(cssRules[15].cssText, "marker-start: initial;")');
+shouldBeFalse('contains(cssRules[15].cssText, "marker-mid: initial;")');
+shouldBeFalse('contains(cssRules[15].cssText, "marker-end: initial;")');
+
+shouldBe('cssRules[16].cssText', '"div { all: unset; }"');
+shouldBeFalse('contains(cssRules[17].cssText, "all: unset;")');
+shouldBeTrue('contains(cssRules[17].cssText, "color: red;")');
+shouldBeTrue('contains(cssRules[17].cssText, "display: unset;")');
+</script>

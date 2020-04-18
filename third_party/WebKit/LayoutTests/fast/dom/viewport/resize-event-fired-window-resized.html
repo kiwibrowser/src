@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+<script>
+  var numCallsScroll = 0;
+  var numCallsResize = 0;
+
+  var t = async_test('verify that the resize events get fired when the window is resized.');
+
+  window.onload = t.step_func(function() {
+    testRunner.useUnfortunateSynchronousResizeMode();
+
+    // Turn off smooth scrolling.
+    internals.settings.setScrollAnimatorEnabled(false);
+
+    window.visualViewport.addEventListener('scroll', function(e) {
+      numCallsScroll++;
+    });
+
+    window.visualViewport.addEventListener('resize', function(e) {
+      numCallsResize++;
+    });
+
+    window.resizeTo(window.outerWidth - 24, window.outerHeight - 24);
+    requestAnimationFrame(function() {
+      t.step(function() {
+        assert_equals(numCallsScroll, 0, "resize 1 doesn't fire scroll event");
+        assert_equals(numCallsResize, 1, "resize 1 fires resize event");
+      });
+      window.resizeTo(window.outerWidth + 24, window.outerHeight + 24);
+      requestAnimationFrame(function() {
+        t.step(function() {
+          assert_equals(numCallsScroll, 0, "resize 2 doesn't fire scroll event");
+          assert_equals(numCallsResize, 2, "resize 2 fires resize event");
+          t.done();
+        });
+      });
+    });
+  });
+</script>

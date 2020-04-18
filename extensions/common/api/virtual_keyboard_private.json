@@ -1,0 +1,299 @@
+// Copyright 2013 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+[
+  {
+    "namespace": "virtualKeyboardPrivate",
+    "compiler_options": {
+      "implemented_in": "extensions/browser/api/virtual_keyboard_private/virtual_keyboard_private_api.h"
+    },
+    "platforms": ["chromeos"],
+    "description": "none",
+    "types": [
+      {
+        "id": "VirtualKeyboardEventType",
+        "type": "string",
+        "description": "One of keyup or keydown.",
+        "enum": ["keyup", "keydown"]
+      },
+      {
+        "id": "VirtualKeyboardEvent",
+        "type": "object",
+        "properties": {
+          "type": {"$ref": "VirtualKeyboardEventType"},
+          "charValue": {"type": "integer", "description": "Unicode value of the key."},
+          "keyCode": {"type": "integer", "description": "Virtual key code, which is independent of the keyboard layout or modifier state."},
+          "keyName": {"type": "string", "description": "Name of the key, which is independent of modifier state."},
+          "modifiers": {"type": "integer", "optional": true, "description": "Flag for modifiers that are active. None = 0, Shift = 2, Control = 4, Alt = 8."}
+        }
+      },
+      {
+        "id": "KeyboardMode",
+        "type": "string",
+        "enum": [ "FULL_WIDTH", "FLOATING", "FULLSCREEN" ],
+        "description": "The value of the virtual keyboard mode to set to."
+      },
+      {
+        "id": "KeyboardState",
+        "type": "string",
+        "enum": [ "ENABLED", "DISABLED", "AUTO"],
+        "description": "The value of the virtual keyboard state to change to."
+      },
+      {
+        "id": "Bounds",
+        "type": "object",
+        "properties": {
+          "left": {"type": "integer", "description": "The position of the virtual keyboard window's left edge."},
+          "top": {"type": "integer", "description": "The position of the virtual keyboard window's top edge."},
+          "width": {"type": "integer", "description": "The width of the virtual keyboard window."},
+          "height": {"type": "integer", "description": "The height of the virtual keyboard window."}
+        }
+      },
+      {
+        "id": "KeyboardConfig",
+        "type": "object",
+        "properties": {
+          "layout": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Virtual keyboard layout string."
+          },
+          "hotrodmode": {
+            "type": "boolean",
+            "description": "Virtual keyboard is in hotrod mode."
+          },
+          "a11ymode": {
+            "type": "boolean",
+            "description": "True if accessibility virtual keyboard is enabled."
+          },
+          "features": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "List of experimental feature flags."
+          }
+        }
+      },
+      {
+        "id": "ContainerBehaviorOptions",
+        "type": "object",
+        "properties": {
+          "mode": {
+            "$ref": "KeyboardMode",
+            "name": "mode",
+            "description": "The value of the virtual keyboard mode to set to."
+          },
+          "bounds": {
+            "$ref": "Bounds",
+            "description": "The bounds of the virtual keyboard after changing mode",
+            "optional": true
+          }
+        }
+      }
+    ],
+    "functions": [
+      {
+        "name": "insertText",
+        "type": "function",
+        "description": "Inserts text into the currently focused text field.",
+        "parameters": [
+          { "name": "text",
+            "type": "string",
+            "description": "The text that will be inserted."
+          },
+          { "type": "function",
+            "name": "callback",
+            "optional": true,
+            "description": "Called when the insertion is completed.",
+            "parameters": []
+          }
+        ]
+      },
+      {
+        "name": "sendKeyEvent",
+        "type": "function",
+        "description": "Sends a fabricated key event to the focused input field.",
+        "parameters": [
+          { "name": "keyEvent",
+            "$ref": "VirtualKeyboardEvent",
+            "description": ""
+          },
+          { "name": "callback",
+            "type": "function",
+            "optional": true,
+            "description": "Called after processing the event.",
+            "parameters": []
+          }
+        ]
+      },
+      {
+        "name": "hideKeyboard",
+        "type": "function",
+        "description": "Hides the virtual keyboard.",
+        "parameters": [
+          { "type": "function",
+            "name": "callback",
+            "optional": true,
+            "description": "Called when the keyboard is hidden.",
+            "parameters": []
+          }
+        ]
+      },
+      {
+        "name": "setHotrodKeyboard",
+        "type": "function",
+        "description": "Sets the state of the hotrod virtual keyboard. This API should only be used by hotrod.",
+        "parameters": [
+          {
+            "type": "boolean",
+            "name": "enable"
+          }
+        ]
+      },
+      {
+        "name": "lockKeyboard",
+        "type": "function",
+        "description": "Sets the lock state of the virtual keyboard. A locked keyboard remains visible even after a text area loses input focus.",
+        "parameters": [
+          {
+            "type": "boolean",
+            "name": "lock"
+          }
+        ]
+      },
+      {
+        "name": "keyboardLoaded",
+        "type": "function",
+        "description": "Inform the system that the keyboard has loaded.",
+        "parameters": [
+          { "type": "function",
+            "name": "callback",
+            "optional": true,
+            "description": "Called when load acknowledgement is complete.",
+            "parameters": []
+          }
+        ]
+      },
+      {
+        "name": "getKeyboardConfig",
+        "type": "function",
+        "description": "Gets the virtual keyboard configuration.",
+        "parameters": [
+          {
+            "type": "function",
+            "name": "callback",
+            "description": "Called when querying virtual keyboard configuration is complete.",
+            "parameters": [
+              {
+                "$ref": "KeyboardConfig",
+                "name": "config"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "openSettings",
+        "type": "function",
+        "description": "Opens chrome://settings/languages page.",
+        "parameters": [
+        ]
+      },
+      {
+        "name": "setMode",
+        "type": "function",
+        "description": "Sets the virtual keyboard container mode.",
+        "parameters": [
+          {
+            "$ref": "KeyboardMode",
+            "name": "mode",
+            "description": "The value of the virtual keyboard mode to set to."
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "optional": true,
+            "description": "Called when container mode is ready to change.",
+            "parameters": []
+          }
+        ],
+        "deprecated": "Please use $(ref:setContainerBehavior)"
+      },
+      {
+        "name": "setContainerBehavior",
+        "type": "function",
+        "description": "Sets the virtual keyboard container behavior",
+        "parameters": [
+          {
+            "$ref": "ContainerBehaviorOptions",
+            "name": "options",
+            "description": "Optional parameters for new container behavior."
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "optional": true,
+            "description": "Called when container mode is ready to chagne.",
+            "parameters": []
+          }
+        ]
+      },
+      {
+        "name": "setDraggableArea",
+        "type": "function",
+        "description": "Sets the virtual keyboard draggable area bounds.",
+        "parameters": [
+          {
+            "$ref": "Bounds",
+            "name": "bounds",
+            "description": "The value of draggable rect area of floating keyboard."
+          }
+        ]
+      },
+      {
+        "name": "setKeyboardState",
+        "type": "function",
+        "description": "Requests the virtual keyboard to change state.",
+        "parameters": [
+          {
+            "$ref": "KeyboardState",
+            "name": "state",
+            "description": "The value of the virtual keyboard state to change to."
+          }
+        ]
+      }
+
+    ],
+    "events": [
+      {
+        "name": "onBoundsChanged",
+        "type": "function",
+        "description": "This event is sent when virtual keyboard bounds changed and overscroll/resize is enabled.",
+        "parameters": [
+          {
+            "name": "bounds",
+            "description": "The virtual keyboard bounds",
+            "$ref": "Bounds"
+          }
+        ]
+      },
+      {
+        "name": "onKeyboardClosed",
+        "type": "function",
+        "description": "Fired when the virtual keyboard window has been closed. For example, this can happen when turning off on-screen keyboard or exiting tablet mode."
+      },
+      {
+        "name": "onKeyboardConfigChanged",
+        "type": "function",
+        "description": "Fired when a configuration for virtual keyboard IME has changed, e.g. auto complete disabled.",
+        "parameters": [
+          {
+            "name": "config",
+            "description": "The virtual keyboard config",
+            "$ref": "KeyboardConfig"
+          }
+        ]
+      }
+    ]
+  }
+]

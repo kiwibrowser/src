@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<body>
+<p>MediaQueryListener should be triggered in the isolated world that created the MediaQueryListener.</p>
+<div id="result"></div>
+<script>
+if (window.testRunner) {
+    testRunner.dumpAsText();
+    testRunner.waitUntilDone();
+}
+
+testRunner.evaluateScriptInIsolatedWorld(1,
+    'var query = window.matchMedia("(-webkit-min-device-pixel-ratio: 3)");'+
+    'query.expando = "nyan";'+
+    'query.addListener(function (query) {'+
+    '    document.querySelector("#result").innerHTML = query.expando === "nyan" ? "PASS" : "FAIL";'+
+    '});');
+
+internals.settings.setMediaTypeOverride("print");
+setTimeout(function () { testRunner.notifyDone(); }, 0);
+</script>
+</body>
+</html>
+

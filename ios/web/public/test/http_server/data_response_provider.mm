@@ -1,0 +1,45 @@
+// Copyright 2015 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#import "ios/web/public/test/http_server/data_response_provider.h"
+
+#include <memory>
+
+#include "base/strings/sys_string_conversions.h"
+
+#if !defined(__has_feature) || !__has_feature(objc_arc)
+#error "This file requires ARC support."
+#endif
+
+namespace web {
+
+std::unique_ptr<net::test_server::HttpResponse>
+DataResponseProvider::GetEmbeddedTestServerResponse(const Request& request) {
+  std::string response_body;
+  scoped_refptr<net::HttpResponseHeaders> response_headers;
+  GetResponseHeadersAndBody(request, &response_headers, &response_body);
+
+  std::unique_ptr<net::test_server::BasicHttpResponse> data_response =
+      std::make_unique<net::test_server::BasicHttpResponse>();
+
+  data_response->set_code(
+      static_cast<net::HttpStatusCode>(response_headers->response_code()));
+  data_response->set_content(response_body);
+
+  size_t iter = 0;
+  std::string name;
+  std::string value;
+  while (response_headers->EnumerateHeaderLines(&iter, &name, &value)) {
+    // TODO(crbug.com/435350): Extract out other names that can't be set by
+    // using the |setValue:forAdditionalHeader:| API such as "ETag" etc.
+    if (name == "Content-type") {
+      data_response->set_content_type(value);
+      continue;
+    }
+    data_response->AddCustomHeader(name, value);
+  }
+  return std::move(data_response);
+}
+
+}  // namespace web

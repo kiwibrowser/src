@@ -1,0 +1,20 @@
+
+This file describes the coding conventions for syscall wrappers residing in
+this directory.  Syscall wrappers are written in two layers, each with a
+distinct convention.  Implementing the wrappers for a new syscall to be invoked
+by the C name "foo" consists of creating two files.
+
+The first is the "low-level" syscall wrapper that causes transfer to the
+trampoline entry points.  This is written in gnu assembly, in a file called
+nacl_foo.S.  That assembly file defines one global symbol, __nacl_foo.
+Syscalls typically have one return value, and if this value is a small negative
+number, it reflects an error.  No errno handling is done in the low-level
+syscall wrappers.
+
+The second is the C level wrapper, which performs the errno handling.  This
+file is written in C, and called foo.c.  Again, it defines one entry point,
+foo.  These wrappers typically return 0 or a valid pointer as an indication of
+success.  A return value of -1 indicates error, with errno set appropriately.
+
+If the syscall does not return, or the C level call does not reflect errors by
+setting errno, then it may be defined directly in the nacl_foo.S file.

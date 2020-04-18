@@ -1,0 +1,58 @@
+Name: Apache2 (+ PHP)
+Short Name: httpd
+URL: http://www.apache.org
+Version: 2.2.25
+Security Critical: no
+License: Apache Version 2.0
+License File: NOT_SHIPPED
+
+Description:
+
+This is a checked-in copy of Apache 2.2.25 for Win 32.
+
+It is used by the Blink layout tests.
+
+To recreate this directory (assuming an msys bash shell; adjust your
+checkout path from /d/src/checkout/src as needed):
+
+  % cd /d/src/checkout/src/third_party
+  % mv apache-win32 apache-win32.bak
+  % curl -o httpd.msi https://archive.apache.org/dist/httpd/binaries/win32/httpd-2.2.25-win32-x86-openssl-0.9.8y.msi
+  % curl -o httpd.msi.sha1 https://archive.apache.org/dist/httpd/binaries/win32/httpd-2.2.25-win32-x86-openssl-0.9.8y.msi.sha1
+  % cat httpd.msi.sha1; sha1sum httpd.msi
+
+Manually verify that the SHA-1 hash of httpd.msi matches the one distributed in httpd.msi.sha1
+
+  % rm httpd.msi.sha1
+  % cmd
+  > start /wait msiexec /i httpd.msi /q INSTALLDIR=d:\src\checkout\src\third_party\apache-win32
+  > exit
+  # stop running apache processes if the installer started them.
+  % cp -p apache-win32.bak/README.chromium apache-win32
+  % cp -p apache-win32.bak/remove_files_not_needed_for_chromium.sh apache-win32
+  % mkdir php
+  % curl -o php/php.zip http://windows.php.net/downloads/releases/archives/php-5.4.24-Win32-VC9-x86.zip
+  % (cd php && unzip php/php.zip)
+  % cp -p php/php5ts.dll apache-win32/bin
+  % cp -p php/php5apache2_2.dll apache-win32/modules
+  % (cd apache-win32 && ./remove_files_not_needed_for_chromium.sh)
+
+
+To upload the large files (executables, DLLs) to google storage (contact
+chrome-infrastructure-team@ in order to get permission to write to the
+chrome-apache-win32 Google Cloud Storage bucket):
+
+  % find apache-win32/bin -name '*.exe' -o -name '*.dll' -o -name '*.so' | upload_to_google_storage.py --bucket chromium-apache-win32 -
+  % find apache-win32/modules -name '*.so'  | upload_to_google_storage.py --bucket chromium-apache-win32 -
+
+To prune the files that were uploaded so that we can check in the rest:
+
+  % find apache-win32/bin -name '*.exe' -o -name '*.dll' -o -name '*.so' | xargs rm
+  % find apache-win32/modules -name '*.so' | xargs rm
+  % git add apache-win32
+
+And, to clean up the temp files used in the above:
+
+  % rm -fr httpd.msi php apache-win32.bak
+
+You might need to uninstall apache via the control panel as well.

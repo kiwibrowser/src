@@ -1,0 +1,19 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+
+Import('env')
+
+gtest_env = env.MakeGTestEnv()
+
+kernel_version_test_exe = gtest_env.ComponentProgram(
+    'kernel_version_test',
+    'kernel_version_test.cc',
+    EXTRA_LIBS = ['platform', 'gio'])
+
+node = gtest_env.CommandTest(
+    'kernel_version_test.out',
+    command=[kernel_version_test_exe])
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_kernel_version_test')

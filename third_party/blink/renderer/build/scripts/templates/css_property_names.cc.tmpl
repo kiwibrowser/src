@@ -1,0 +1,49 @@
+%{
+// Copyright (c) 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "third_party/blink/renderer/core/{{file_basename}}.h"
+
+#include <string.h>
+#include "third_party/blink/renderer/core/css/hash_tools.h"
+#include "third_party/blink/renderer/platform/wtf/ascii_ctype.h"
+#include "third_party/blink/renderer/platform/wtf/text/atomic_string.h"
+#include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
+
+#ifdef _MSC_VER
+// Disable the warnings from casting a 64-bit pointer to 32-bit long
+// warning C4302: 'type cast': truncation from 'char (*)[28]' to 'long'
+// warning C4311: 'type cast': pointer truncation from 'char (*)[18]' to 'long'
+#pragma warning(disable : 4302 4311)
+#endif
+
+namespace blink {
+%}
+%struct-type
+struct Property;
+%omit-struct-type
+%language=C++
+%readonly-tables
+%global-table
+%compare-strncmp
+%define class-name {{class_name}}Hash
+%define lookup-function-name findPropertyImpl
+%define hash-function-name property_hash_function
+%define slot-name name_offset
+%define word-array-name property_word_list
+%enum
+%%
+{{property_to_enum_map}}
+%%
+
+const Property* FindProperty(const char* str, unsigned int len) {
+  return {{class_name}}Hash::findPropertyImpl(str, len);
+}
+
+CSSPropertyID cssPropertyID(const String& string)
+{
+    return resolveCSSPropertyID(unresolvedCSSPropertyID(string));
+}
+
+}  // namespace blink

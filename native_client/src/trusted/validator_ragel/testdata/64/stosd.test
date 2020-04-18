@@ -1,0 +1,16 @@
+@hex:
+  # Show an example of a valid (implicit) reference to a segment register.
+  #   mov %edi, %edi
+  #   lea %rdi, [%r15+%rdi*1]
+  #   stosd
+  89 ff \\
+  49 8d 3c 3f \\
+  ab
+@dis:
+     0:	89 ff                                        	mov    %edi,%edi
+     2:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     6:	ab                                           	stos   %eax,%es:(%rdi)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE

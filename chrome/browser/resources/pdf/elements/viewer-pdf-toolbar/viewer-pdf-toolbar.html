@@ -1,0 +1,165 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/animations/slide-up-animation.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/animations/transform-animation.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/web-animations.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-progress/paper-progress.html">
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="../icons.html">
+<link rel="import" href="../viewer-bookmarks-content/viewer-bookmarks-content.html">
+<link rel="import" href="../viewer-page-selector/viewer-page-selector.html">
+<link rel="import" href="../viewer-toolbar-dropdown/viewer-toolbar-dropdown.html">
+
+<dom-module id="viewer-pdf-toolbar">
+  <template>
+    <style>
+      :host ::selection {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      /* We introduce a wrapper aligner element to help with laying out the main
+       * toolbar content without changing the bottom-aligned progress bar. */
+      #aligner {
+        align-items: center;
+        display: flex;
+        padding: 0 8px;
+        width: 100%;
+      }
+
+      #title {
+        flex: 5;
+        font-size: 0.87rem;
+        font-weight: 500;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      #pageselector-container {
+        text-align: center;
+        /* The container resizes according to the width of the toolbar. On small
+         * screens with large numbers of pages, overflow page numbers without
+         * wrapping. */
+        white-space: nowrap;
+      }
+
+      #buttons {
+        flex: 5;
+        text-align: end;
+        user-select: none;
+      }
+
+      paper-icon-button {
+        -webkit-margin-end: 12px;
+      }
+
+      viewer-toolbar-dropdown {
+        -webkit-margin-end: 4px;
+      }
+
+      paper-progress {
+        --paper-progress-active-color: var(--google-blue-300);
+        --paper-progress-container-color: transparent;
+        --paper-progress-height: 3px;
+        transition: opacity 150ms;
+        width: 100%;
+      }
+
+      #toolbar {
+        @apply --shadow-elevation-2dp;
+        background-color: rgb(50, 54, 57);
+        color: rgb(241, 241, 241);
+        display: flex;
+        height: 48px;
+        padding: 0 16px;
+      }
+
+      #progress-container {
+        bottom: 0;
+        left: 0;
+        margin: 0;
+        position: absolute;
+        right: 0;
+        top: auto;
+        width: auto;
+      }
+
+      .invisible {
+        visibility: hidden;
+      }
+
+      @media(max-width: 675px) {
+        #bookmarks,
+        #rotate-left {
+          display: none;
+        }
+
+        #pageselector-container {
+          flex: 2;
+        }
+      }
+
+      @media(max-width: 450px) {
+        #rotate-right {
+          display: none;
+        }
+      }
+
+      @media(max-width: 400px) {
+        #buttons,
+        #pageselector-container {
+          display: none;
+        }
+      }
+    </style>
+    <div id="toolbar">
+      <div id="aligner">
+        <span id="title" title="{{docTitle}}">
+          <span>{{docTitle}}</span>
+        </span>
+
+        <div id="pageselector-container">
+          <viewer-page-selector id="pageselector" class="invisible"
+              doc-length="{{docLength}}" page-no="{{pageNo}}"
+              strings="{{strings}}">
+          </viewer-page-selector>
+        </div>
+
+        <div id="buttons" class="invisible">
+          <paper-icon-button id="rotate-right" icon="pdf:rotate-right"
+              on-click="rotateRight"
+              aria-label$="{{strings.tooltipRotateCW}}"
+              title$="{{strings.tooltipRotateCW}}">
+          </paper-icon-button>
+
+          <paper-icon-button id="download" icon="cr:file-download"
+              on-click="download"
+              aria-label$="{{strings.tooltipDownload}}"
+              title$="{{strings.tooltipDownload}}">
+          </paper-icon-button>
+
+          <paper-icon-button id="print" icon="cr:print"
+              on-click="print"
+              aria-label$="{{strings.tooltipPrint}}"
+              title$="{{strings.tooltipPrint}}">
+          </paper-icon-button>
+
+          <viewer-toolbar-dropdown id="bookmarks"
+                                   metrics-id="bookmarks"
+                                   hidden$="[[!bookmarks.length]]"
+                                   open-icon="pdf:bookmark"
+                                   closed-icon="pdf:bookmark-border"
+                                   header="{{strings.bookmarks}}">
+              <viewer-bookmarks-content bookmarks="{{bookmarks}}">
+              </viewer-bookmarks-content>
+          </viewer-toolbar-dropdown>
+        </div>
+      </div>
+      <div id="progress-container">
+        <paper-progress id="progress" value="{{loadProgress}}"></paper-progress>
+      </div>
+    </div>
+  </template>
+  <script src="viewer-pdf-toolbar.js"></script>
+</dom-module>

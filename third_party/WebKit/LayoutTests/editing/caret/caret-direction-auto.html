@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<script src="../../resources/js-test.js"></script>
+<textarea id="textarea" dir="auto" style="font-size: 20px; width: 20ex; border: solid thin black; padding: 10px;">&#x05d0;!</textarea>
+<script>
+description('Tests various scenarios for caret position when direction is auto');
+
+var text = document.getElementById('textarea');
+var beforeCaretPos, afterCaretPos;
+text.focus();
+shouldBeEqualToString('textarea.value', 'א!');
+
+debug('1. Caret is at right if text is in LTR direction');
+beforeCaretPos = textInputController.firstRectForCharacterRange(0, 3);
+testRunner.execCommand('MoveToEndOfLine');
+document.execCommand('InsertLineBreak');
+document.execCommand('InsertText', false, 'hello');
+afterCaretPos = textInputController.firstRectForCharacterRange(4, 5);
+shouldBeEqualToString('textarea.value', 'א!\nhello');
+debug('Compares lines if they are different');
+shouldNotBe('beforeCaretPos[1]', 'afterCaretPos[1]');
+debug('New text is in LTR direction, start of caret will differ');
+shouldBeGreaterThan('beforeCaretPos[0]', 'afterCaretPos[0]');
+
+debug('2. Addition of RTL text in middle of LTR text, caret moves to the left of the line.');
+beforeCaretPos = afterCaretPos;
+document.execCommand('InsertText', false, '\u05d0\u05d0');
+afterCaretPos = textInputController.firstRectForCharacterRange(4, 7);
+shouldBeEqualToString('textarea.value', 'א!\nhelloאא');
+debug('RTL text added will be move caret to start of position where hello begins');
+shouldBe('beforeCaretPos[0]', 'afterCaretPos[0]+afterCaretPos[2]');
+
+debug('3. Adding LTR text after RTL should move caret towards right.');
+beforeCaretPos = afterCaretPos;
+document.execCommand('InsertText', false, 'bye');
+afterCaretPos = textInputController.firstRectForCharacterRange(4, 10);
+shouldBeEqualToString('textarea.value', 'א!\nhelloאאbye');
+debug('Start position of caret is same');
+shouldBe('beforeCaretPos[0]+beforeCaretPos[2]', 'afterCaretPos[0]');
+debug('But end position differs');
+shouldNotBe('beforeCaretPos[0]+beforeCaretPos[2]', 'afterCaretPos[0]+afterCaretPos[2]');
+
+debug('4. Adding space, caret should move caret');
+beforeCaretPos = afterCaretPos;
+document.execCommand('InsertText', false, ' ');
+afterCaretPos = textInputController.firstRectForCharacterRange(4, 11);
+shouldBeEqualToString('textarea.value', 'א!\nhelloאאbye ');
+shouldBeGreaterThan('afterCaretPos[0]+afterCaretPos[2]', 'beforeCaretPos[0]+beforeCaretPos[2]');
+
+</script>

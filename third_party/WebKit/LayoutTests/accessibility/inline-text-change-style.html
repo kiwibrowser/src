@@ -1,0 +1,48 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+<script src="../resources/js-test.js"></script>
+</head>
+<body>
+
+<p id="p" style="width: 10em;">
+  This paragraph contains two lines of text.
+</p>
+
+<p id="description"></p>
+<pre id="tree"></pre>
+<div id="console"></div>
+
+<script>
+
+    description("Tests that accessible inline text boxes update when the static text style changes.");
+
+    if (window.accessibilityController) {
+        testRunner.waitUntilDone();
+        window.jsTestIsAsync = true;
+
+        window.axParagraph = accessibilityController.accessibleElementById('p');
+        window.axStaticText = axParagraph.childAtIndex(0);
+        shouldBe("axStaticText.childrenCount", "2");
+
+        window.axInlineBefore0 = axStaticText.childAtIndex(0);
+        shouldBe("axInlineBefore0.name",  "'This paragraph contains '");
+        window.axInlineBefore1 = axStaticText.childAtIndex(1);
+        shouldBe("axInlineBefore1.name", "'two lines of text.'");
+
+        // Modify the text.
+        document.getElementById("p").style.width = "100em";
+
+        // Wait for a notification on the element before checking the new state.
+        axStaticText.addNotificationListener(function(notification) {
+            // Make sure the inline text boxes changed.
+            shouldBe("axStaticText.childrenCount", "1");
+            window.axInlineAfter0 = axStaticText.childAtIndex(0);
+            shouldBe("axInlineAfter0.name",  "'This paragraph contains two lines of text.'");
+            finishJSTest();
+        });
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,38 @@
+# -*- python -*-
+# Copyright (c) 2014 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# Some of the inline assembly constraints in this test aren't supported by
+# the old version of GCC that the nacl-glibc toolchain uses, so we disable
+# the test for that case.
+if (env.Bit('build_x86') and env.AllowInlineAssembly() and
+    not env.Bit('nacl_glibc')):
+  rewrite_nontemporals_nexe = env.ComponentProgram(
+      'rewrite_nontemporals_test', ['rewrite_nontemporals.c'],
+      EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+  node = env.CommandSelLdrTestNacl(
+      'rewrite_nontemporals_test.out',
+      rewrite_nontemporals_nexe)
+
+  env.AddNodeToTestSuite(node,
+                         ['small_tests', 'nonpexe_tests'],
+                         'run_rewrite_nontemporals_test')
+
+
+# The following test is specific to the x86_64 sandbox, and is not portable.
+if env.Bit('build_x86_64') and env.AllowInlineAssembly():
+  lahf_sahf_nexe = env.ComponentProgram(
+      'lahf_sahf_test', ['lahf_sahf_test.c'],
+      EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+  node = env.CommandSelLdrTestNacl(
+      'lahf_sahf_test.out',
+      lahf_sahf_nexe)
+
+  env.AddNodeToTestSuite(node,
+                         ['small_tests', 'nonpexe_tests'],
+                         'run_lahf_sahf_test')

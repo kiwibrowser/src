@@ -1,0 +1,1133 @@
+// Copyright 2013 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package enterprise_management;
+
+message DevicePolicyRefreshRateProto {
+  // In milliseconds.
+  optional int64 device_policy_refresh_rate = 1;
+}
+
+message UserWhitelistProto {
+  // If a UserWhitelistProto is included in the ChromeDeviceSettingsProto but
+  // the user_whitelist field is empty then no user can sign-in.
+  repeated string user_whitelist = 1;
+}
+
+message AllowNewUsersProto {
+  // Determines whether we allow arbitrary users to log into the device.
+  // This interacts with the UserWhitelistProto as follows:
+  // allow_new_users | user_whitelist     | anyone can log in
+  //-----------------+--------------------+------------------
+  //  present, true  | not present        | Yes
+  //-----------------+--------------------+------------------
+  //  present, true  | present            | Yes
+  //-----------------+--------------------+------------------
+  //  present, false | not present        | (Broken) Yes
+  //-----------------+--------------------+------------------
+  //  present, false | present            | No, W/L enforced
+  //-----------------+--------------------+------------------
+  //  not present    | not present        | Yes
+  //-----------------+--------------------+------------------
+  //  not present    | present, empty     | Yes
+  //-----------------+--------------------+------------------
+  //  not present    | present, non-empty | No, W/L enforced
+  //-----------------+--------------------+------------------
+  optional bool allow_new_users = 1 [default = true];
+}
+
+message GuestModeEnabledProto {
+  // Determines if guests are allowed to log in to the device.
+  optional bool guest_mode_enabled = 1 [default = true];
+}
+
+message ShowUserNamesOnSigninProto {
+  // Determines if we show pods for existing users on the sign in screen.
+  optional bool show_user_names = 1 [default = true];
+}
+
+message DataRoamingEnabledProto {
+  // Determines if cellular data roaming is enabled.
+  optional bool data_roaming_enabled = 1 [default = false];
+}
+
+message OBSOLETE_DeviceProxySettingsProto {
+  // One of "direct", "auto_detect", "pac_script", "fixed_servers", "system"
+  optional string OBSOLETE_proxy_mode = 1 [deprecated = true];
+  optional string OBSOLETE_proxy_server = 2 [deprecated = true];
+  optional string OBSOLETE_proxy_pac_url = 3 [deprecated = true];
+  optional string OBSOLETE_proxy_bypass_list = 4 [deprecated = true];
+}
+
+// This is used by chromeos, make sure to do cleanup there before marking it as
+// obsolette.
+message CameraEnabledProto {
+  optional bool camera_enabled = 1;
+}
+
+message MetricsEnabledProto {
+  optional bool metrics_enabled = 1;
+}
+
+message ReleaseChannelProto {
+  // One of "stable-channel", "beta-channel", or "dev-channel"
+  optional string release_channel = 1;
+
+  // If |release_channel_delegated| is set to true and the |release_channel|
+  // field is not set or left empty, the user can select the channel. If the
+  // |release_channel| is specified it will always override users choice!
+  optional bool release_channel_delegated = 2;
+}
+
+message DeviceOpenNetworkConfigurationProto {
+  // The network configuration blob. This is a JSON string as specified by ONC.
+  optional string open_network_configuration = 1;
+}
+
+message NetworkHostnameProto {
+  // The device hostname template. It might contain following
+  // patterns that would be substituted by the device:
+  // ASSET_ID, SERIAL_NUM, MAC_ADDR, and string after substitution should
+  // be a valid hostname.
+  optional string device_hostname_template = 1;
+}
+
+// Policies to turn on portions of the device status reports.
+message DeviceReportingProto {
+  optional bool report_version_info = 1 [default = true];
+  optional bool report_activity_times = 2 [default = true];
+  optional bool report_boot_mode = 3 [default = true];
+  optional bool report_location = 4 [default = false];
+  optional bool report_network_interfaces = 5 [default = true];
+  optional bool report_users = 6 [default = true];
+  optional bool report_hardware_status = 7 [default = true];
+  optional bool report_session_status = 8 [default = true];
+  optional bool report_os_update_status = 10 [default = false];
+  optional bool report_running_kiosk_app = 11 [default = false];
+
+  // Frequency to report device status, default to 3 hours.
+  optional int64 device_status_frequency = 9 [default = 10800000];
+}
+
+message EphemeralUsersEnabledProto {
+  // Determines whether users should be treated as ephemeral. In ephemeral users
+  // mode, no cryptohome is created for the user, but a tmpfs mount is used
+  // instead such that upon logout all user state is discarded.
+  optional bool ephemeral_users_enabled = 1;
+}
+
+// Details of an extension to install as part of the AppPack.
+message OBSOLETE_AppPackEntryProto {
+  optional string OBSOLETE_extension_id = 1 [deprecated = true];
+  optional string OBSOLETE_update_url = 2 [deprecated = true];
+
+  // This field was added but never used and there are no plans to support it
+  // eventually either.
+  optional bool OBSOLETE_online_only = 3 [deprecated = true];
+}
+
+message OBSOLETE_AppPackProto {
+  // List of extensions to install as part of the AppPack.
+  repeated OBSOLETE_AppPackEntryProto app_pack = 1 [deprecated = true];
+}
+
+// This is a special policy for kiosk/retail mode that specifies what apps
+// should be pinned to the launcher. For regular accounts, pinned apps are
+// controlled through user policy.
+message OBSOLETE_PinnedAppsProto {
+  // App IDs for the apps to pin.
+  repeated string OBSOLETE_app_id = 1 [deprecated = true];
+}
+
+message OBSOLETE_ForcedLogoutTimeoutsProto {
+  // All timeouts are specified in milliseconds.
+
+  // Specifies the timeout before an idle user session is terminated.
+  // If this field is omitted or set to 0, no logout on idle will be performed.
+  optional int64 OBSOLETE_idle_logout_timeout = 1 [deprecated = true];
+
+  // Specifies the duration of a warning countdown before the user is logged out
+  // because of idleness as specified by the |idle_logout_timeout| value.
+  // This field is only used if |idle_logout_timeout| != 0 is specified.
+  optional int64 OBSOLETE_idle_logout_warning_duration = 2 [deprecated = true];
+}
+
+message OBSOLETE_ScreenSaverProto {
+  // Specifies the extension ID which is to be used as a screen saver on the
+  // login screen if no user activity is present. Only respected if the device
+  // is in RETAIL mode.
+  optional string OBSOLETE_screen_saver_extension_id = 1 [deprecated = true];
+
+  // Specifies the timeout before the screen saver is activated. If this field
+  // is omitted or set to 0, no screen-saver will be started.
+  // Measured in milliseconds.
+  optional int64 OBSOLETE_screen_saver_timeout = 2 [deprecated = true];
+}
+
+// Enterprise controls for auto-update behavior of Chrome OS.
+message AutoUpdateSettingsProto {
+  // True if we don't want the device to auto-update (target_version_prefix is
+  // ignored in this case).
+  optional bool update_disabled = 1;
+
+  // Specifies the prefix of the target version we want the device to
+  // update to, if it's on an older version. If the device is already on
+  // a version with the given prefix, then there's no effect. If the device is
+  // on a higher version, the behavior depends on |rollback_to_target_version|.
+  // The format of this version can be one of the following:
+  // ---------------------------------------------------------------------
+  // "" (or not set at all): update to latest version available.
+  // 1412.: update to any minor version of 1412 (e.g. 1412.24.34 or 1412.60.2)
+  // 1412.2.: update to any minor version of 1412.2 (e.g. 1412.2.34 or 1412.2.2)
+  // 1412.24.34: update to this specific version only
+  // ---------------------------------------------------------------------
+  optional string target_version_prefix = 2;
+
+  // The Chrome browser version (e.g. "17.*") corresponding to the
+  // target_version_prefix above. The target_version_prefix is the internal OS
+  // version that external users normally are not aware of. This display_name
+  // can be used by the devices to display a message to end-users about the auto
+  // update setting.
+  optional string target_version_display_name = 3;
+
+  // Specifies the number of seconds up to which a device may randomly
+  // delay its download of an update from the time the update was first pushed
+  // out to the server. The device may wait a portion of this time in terms
+  // of wall-clock-time and the remaining portion in terms of the number of
+  // update checks. In any case, the scatter is upper bounded by a constant
+  // amount of time so that a device does not ever get stuck waiting to download
+  // an update forever.
+  optional int64 scatter_factor_in_seconds = 4;
+
+  // Enumerates network connection types.
+  enum ConnectionType {
+    CONNECTION_TYPE_ETHERNET = 0;
+    CONNECTION_TYPE_WIFI = 1;
+    CONNECTION_TYPE_WIMAX = 2;
+    CONNECTION_TYPE_BLUETOOTH = 3;
+    CONNECTION_TYPE_CELLULAR = 4;
+  }
+
+  // The types of connections that are OK to use for OS updates. OS updates
+  // potentially put heavy strain on the connection due to their size and may
+  // incur additional cost. Therefore, they are by default not enabled for
+  // connection types that are considered expensive, which include WiMax,
+  // Bluetooth and Cellular at the moment.
+  repeated ConnectionType allowed_connection_types = 5;
+
+  // This has been replaced by |reboot_after_update| below.
+  optional bool OBSOLETE_reboot_after_update = 6 [deprecated = true];
+
+  // True if AU payloads can be downloaded via HTTP. False otherwise.
+  optional bool http_downloads_enabled = 7 [default = false];
+
+  // True if the device should reboot automatically when an update has been
+  // applied and a reboot is required to complete the update process.
+  //
+  // Note: Currently, automatic reboots are only enabled while the login screen
+  // is being shown or a kiosk app session is in progress. This will change in
+  // the future and the policy will always apply, regardless of whether a
+  // session of any particular type is in progress or not.
+  optional bool reboot_after_update = 8;
+
+  // True if AU payloads may be shared with and consumed from other devices
+  // on the LAN, using p2p. False otherwise.
+  optional bool p2p_enabled = 9 [default = false];
+
+  // The possible types of rollback.
+  enum RollbackToTargetVersion {
+    // No value set. Default is ROLLBACK_DISABLED.
+    ROLLBACK_UNSPECIFIED = 0;
+    // No rollback should happen if |target_version_prefix| specifies an older
+    // version than the currently installed Chrome OS version.
+    ROLLBACK_DISABLED = 1;
+    // If |target_version_prefix| specifies an older version than the currently
+    // installed Chrome OS version, the device should roll back to a Chrome OS
+    // version starting with |target_version_prefix|.
+    ROLLBACK_WITH_FULL_POWERWASH = 2;
+  }
+
+  // Specifies what should happen if |target_version_prefix| specifies an older
+  // version than the currently installed Chrome OS version.
+  optional RollbackToTargetVersion rollback_to_target_version = 10
+      [default = ROLLBACK_DISABLED];
+
+  // Specifies the number of Chrome milestones rollback should be allowed,
+  // starting from the stable version at any time. Setting this policy prevents
+  // firmware and kernel rollback protection to apply for at least this number
+  // of milestones.
+  optional int32 rollback_allowed_milestones = 11 [default = 0];
+}
+
+message OBSOLETE_StartUpUrlsProto {
+  // Specifies the URLs to be loaded on login to the anonymous account used if
+  // the device is in RETAIL mode.
+  repeated string OBSOLETE_start_up_urls = 1 [deprecated = true];
+}
+
+message SystemTimezoneProto {
+  // Specifies an owner-determined timezone that applies to the login screen and
+  // all users. Valid values are listed in "timezone_settings.cc". Additionally,
+  // timezones from the "IANA Time Zone Database" (e.g. listed on wikipedia)
+  // that are equivalent to one of the timezones in "timezone_settings.cc" are
+  // valid. In case of an invalid value, the setting is still activated with a
+  // fallback timezone (currently "GMT"). In case of an empty string or if no
+  // value is provided, the timezone device setting is inactive. In that case,
+  // the currently active timezone will remain in use however users can change
+  // the timezone and the change is persistent. Thus a change by one user
+  // affects the login-screen and all other users.
+  optional string timezone = 1;
+
+  // This allows domain administrators to control the timezone settings for
+  // their devices.
+  enum AutomaticTimezoneDetectionType {
+    USERS_DECIDE = 0;
+    DISABLED = 1;
+    IP_ONLY = 2;
+    SEND_WIFI_ACCESS_POINTS = 3;
+    SEND_ALL_LOCATION_INFO = 4;
+  };
+
+  optional AutomaticTimezoneDetectionType timezone_detection_type = 2;
+}
+
+message SystemUse24HourClockProto {
+  // Specifies an owner-determined clock format that applies to the login
+  // screen and is used as a default for all user sessions. Users can still
+  // override the format to use for their account.
+  //
+  // True and false select a 24 and 12 hour clock format, respectively. The
+  // default format for the case the setting is not present is 24 hour clock.
+  optional bool use_24hour_clock = 1;
+}
+
+// Parameters for Kiosk App device-local accounts.
+message KioskAppInfoProto {
+  // Indicates the Kiosk App for the corresponding device-local account. The
+  // string value should be a valid 32-character Chrome App identifier and
+  // specifies the Kiosk App to download and run.
+  optional string app_id = 1;
+
+  // Optional extension update URL to download the Kiosk App package from. If
+  // not specified, the app will be downloaded from the standard Chrome Web
+  // Store update URL.
+  optional string update_url = 2;
+}
+
+// Describes which Android application is to be launched.
+message AndroidKioskAppInfoProto {
+  // Package name (must be present).
+  // In the event this is the only field that is specified, runtime may use
+  // PackageManager.getLaunchIntentForPackage() to start the app. See
+  // https://developer.android.com/reference/android/content/pm/PackageManager.html
+  // Example of the package name: "com.android.camera". Do not include "app:"
+  // prefix in the package name.
+  optional string package_name = 1;
+
+  // Class name (optional). If present, class name is to be combined with
+  // package name to form a ComponentName. See
+  // https://developer.android.com/reference/android/content/ComponentName.html
+  optional string class_name = 2;
+
+  // Action (optional). The third parameter required for creating an Intent.
+  // If omitted, runtime may choose a reasonable default action
+  // (e.g. android.intent.action.MAIN).
+  // If package and action are specified, but not the class name, runtime may
+  // use PackageManager.queryIntentActivity() to find out the class name.
+  optional string action = 3;
+
+  // Display name (optional).
+  // User-friendly app name that should be used in Chrome UI where kiosk app
+  // name is shown. Chrome side could override the string with an updated
+  // value that it will get from Google Play when the app will be installed.
+  optional string display_name = 4;
+}
+
+// Describes a single device-local account.
+message DeviceLocalAccountInfoProto {
+  // Deprecated: Account identifier for a public session device-local account.
+  // Old code didn't have the |type| field, so it can't handle new types of
+  // device-local accounts gracefully (i.e. ignoring unsupported types). New
+  // code should instead set type to ACCOUNT_TYPE_PUBLIC_SESSION and write the
+  // identifier to the |account_id| field below. If the |type| field is present,
+  // |deprecated_public_session_id| will be ignored.
+  optional string deprecated_public_session_id = 1;
+
+  // Identifier for the device-local account. This is an opaque identifier that
+  // is used to distinguish different device-local accounts configured. All
+  // configured accounts on a device must have unique identifiers.
+  optional string account_id = 2;
+
+  // Indicates the type of device-local account.
+  enum AccountType {
+    // A login-less, policy-configured browsing session.
+    ACCOUNT_TYPE_PUBLIC_SESSION = 0;
+    // An account that serves as a container for a single full-screen
+    // Chrome app.
+    ACCOUNT_TYPE_KIOSK_APP = 1;
+    // An account that serves as a container for a single full-screen
+    // Android app.
+    ACCOUNT_TYPE_KIOSK_ANDROID_APP = 2;
+  };
+
+  // The account type.
+  optional AccountType type = 3;
+
+  // Kiosk App parameters, relevant if |type| is ACCOUNT_TYPE_KIOSK_APP.
+  optional KioskAppInfoProto kiosk_app = 4;
+
+  // Kiosk App parameters, relevant if |type| is ACCOUNT_TYPE_KIOSK_ANDROID_APP
+  optional AndroidKioskAppInfoProto android_kiosk_app = 5;
+}
+
+message DeviceLocalAccountsProto {
+  // The list of device-local accounts (i.e. accounts without an associated
+  // cloud-backed profile) that are available on the device.
+  repeated DeviceLocalAccountInfoProto account = 1;
+
+  // The identifier of the device-local account to which the device
+  // should be logged in automatically.  Should be equal to one of the
+  // ids in DeviceLocalAccountInfoProto.
+  optional string auto_login_id = 2;
+
+  // The amount of time, in milliseconds, that should elapse at the signin
+  // screen without user interaction before automatically logging in.
+  optional int64 auto_login_delay = 3;
+
+  // Whether the keyboard shortcut to prevent zero-delay auto-login should be
+  // enabled or not. By default, the user has 3 seconds to press a shortcut
+  // to prevent auto-login, which is useful to sign-in to a regular user session
+  // and configure the machine. If this policy is set to false then this
+  // shortcut is disabled and there is no way to skip auto-login.
+  optional bool enable_auto_login_bailout = 4 [default = true];
+
+  // Whether network configuration should be offered or not when the device
+  // does not have access to the Internet. If the policy is omitted or set to
+  // true, the network configuration will be offered. Otherwise, only an error
+  // message is displayed.
+  // Note: If both this policy and enable_auto_login_bailout policy above is
+  // set to false, there are chances that the device might become totally
+  // unusable when there is no Internet access and has to go through the
+  // recovery process.
+  // If the device is offline at startup then the network configuration screen
+  // is always shown, before auto-login kicks in.
+  optional bool prompt_for_network_when_offline = 5 [default = true];
+}
+
+message AllowRedeemChromeOsRegistrationOffersProto {
+  // Chrome OS Registration service provides way for chromeos device users
+  // to redeem electronic offers provided by service provider.
+  // This value determines if users are allowed to redeem offers through
+  // Chrome OS Registration service.
+  optional bool allow_redeem_offers = 1 [default = true];
+}
+
+message StartUpFlagsProto {
+  // Specifies the flags that should be applied to Google Chrome when it starts.
+  // The specified flags are applied on the login screen only. Flags set via
+  // this policy do not propagate into user sessions.
+  repeated string flags = 1;
+}
+
+message UptimeLimitProto {
+  // This has been replaced by |uptime_limit| below.
+  optional int64 OBSOLETE_uptime_limit = 1 [deprecated = true];
+
+  // Sets the length of device uptime after which an automatic reboot is
+  // scheduled. An automatic reboot is scheduled at the selected time but may be
+  // delayed on the device by up to 24 hours, e.g. if a user is currently using
+  // the device or an app/extension has requested reboots to be inhibited
+  // temporarily. The policy value should be specified in seconds.
+  //
+  // Note: Currently, automatic reboots are only enabled while the login screen
+  // is being shown or a kiosk app session is in progress. This will change in
+  // the future and the policy will always apply, regardless of whether a
+  // session of any particular type is in progress or not.
+  optional int64 uptime_limit = 2;
+}
+
+message VariationsParameterProto {
+  // The string for the restrict parameter to be appended to the Variations URL
+  // when pinging the Variations server.
+  optional string parameter = 1;
+}
+
+message AttestationSettingsProto {
+  // Attestation involves proving that a cryptographic key is protected by a
+  // legitimate Chrome OS TPM and reporting the operating mode of the platform.
+  // This setting enables enterprise attestation features at a device level.  If
+  // this is enabled a machine key will be generated and certified by the Chrome
+  // OS CA.  If this setting is disabled, even users with attestation settings
+  // enabled will not be able to use those features on the device.
+  optional bool attestation_enabled = 1 [default = false];
+
+  // Chrome OS devices can use remote attestation (Verified Access) to get a
+  // certificate issued by the Chrome OS CA that asserts the device is eligible
+  // to play protected content.  This process involves sending hardware
+  // endorsement information to the Chrome OS CA which uniquely identifies the
+  // device.  This setting allows this feature to be disabled for the device
+  // regardless of any user-specific settings.
+  optional bool content_protection_enabled = 2 [default = true];
+}
+
+message AccessibilitySettingsProto {
+  // Sets the default state of the large cursor accessibility feature on the
+  // login screen. If this policy is set to true, the large cursor will be
+  // enabled when the login screen is shown. If this policy is set to false, the
+  // large cursor will be disabled when the login screen is shown. Users can
+  // temporarily override this setting by enabling or disabling the large
+  // cursor. However, the user's choice is not persistent and the default is
+  // restored whenever the login screen is shown anew or the user remains idle
+  // on the login screen for a minute. If this policy is left unset, the large
+  // cursor is disabled when the login screen is first shown. Users can enable
+  // or disable the large cursor anytime and its status on the login screen is
+  // persisted between users.
+  optional bool login_screen_default_large_cursor_enabled = 1;
+
+  // Sets the default state of the spoken feedback accessibility feature on the
+  // login screen. If this policy is set to true, spoken feedback will be
+  // enabled when the login screen is shown. If this policy is set to false,
+  // spoken feedback will be disabled when the login screen is shown. Users can
+  // temporarily override this setting by enabling or disabling spoken feedback.
+  // However, the user's choice is not persistent and the default is restored
+  // whenever the login screen is shown anew or the user remains idle on the
+  // login screen for a minute. If this policy is left unset, spoken feedback is
+  // disabled when the login screen is first shown. Users can enable or disable
+  // spoken feedback anytime and its status on the login screen is persisted
+  // between users.
+  optional bool login_screen_default_spoken_feedback_enabled = 2;
+
+  // Sets the default state of the high contrast mode accessibility feature on
+  // the login screen. If this policy is set to true, high contrast mode will be
+  // enabled when the login screen is shown. If this policy is set to false,
+  // high contrast mode will be disabled when the login screen is shown. Users
+  // can temporarily override this setting by enabling or disabling high
+  // contrast mode. However, the user's choice is not persistent and the default
+  // is restored whenever the login screen is shown anew or the user remains
+  // idle on the login screen for a minute. If this policy is left unset, high
+  // contrast mode is disabled when the login screen is first shown. Users can
+  // enable or disable high contrast mode anytime and its status on the login
+  // screen is persisted between users.
+  optional bool login_screen_default_high_contrast_enabled = 3;
+
+  // Enumerates the screen magnifier types.
+  enum ScreenMagnifierType {
+    // Screen magnifier disabled.
+    SCREEN_MAGNIFIER_TYPE_NONE = 0;
+    // Full-screen magnifier enabled.
+    SCREEN_MAGNIFIER_TYPE_FULL = 1;
+  };
+
+  // Sets the default type of screen magnifier that is enabled on the login
+  // screen. If this policy is set, it controls the type of screen magnifier
+  // that is enabled when the login screen is shown. Users can temporarily
+  // override this setting by enabling or disabling the screen magnifier.
+  // However, the user's choice is not persistent and the default is restored
+  // whenever the login screen is shown anew or the user remains idle on the
+  // login screen for a minute. If this policy is left unset, the screen
+  // magnifier is disabled when the login screen is first shown. Users can
+  // enable or disable the screen magnifier anytime and its status on the login
+  // screen is persisted between users.
+  optional ScreenMagnifierType login_screen_default_screen_magnifier_type = 4;
+
+  // Sets the default state of the on-screen keyboard accessibility feature on
+  // the login screen. If this policy is set to true, the on-screen keyboard
+  // will be enabled when the login screen is shown. If this policy is set to
+  // false, the on-screen keyboard will be disabled when the login screen is
+  // shown. Users can temporarily override this setting by enabling or disabling
+  // the on-screen keyboard. However, the user's choice is not persistent and
+  // the default is restored whenever the login screen is shown anew or the user
+  // remains idle on the login screen for a minute. If this policy is left
+  // unset, the on-screen keyboard is disabled when the login screen is first
+  // shown. Users can enable or disable the on-screen keyboard anytime and its
+  // status on the login screen is persisted between users.
+  optional bool login_screen_default_virtual_keyboard_enabled = 5;
+}
+
+message SupervisedUsersSettingsProto {
+  // Defines whether supervised users can be created on the device.
+  optional bool supervised_users_enabled = 1;
+}
+
+message LoginScreenPowerManagementProto {
+  // Configures power management on the login screen. The policy should be
+  // specified as a string that expresses the individual settings in JSON
+  // format, conforming to the following schema:
+  // {
+  //   "type": "object",
+  //   "properties": {
+  //     "AC": {
+  //       "description": "Power management settings applicable only when
+  //                       running on AC power",
+  //       "type": "object",
+  //       "properties": {
+  //         "Delays": {
+  //           "type": "object",
+  //           "properties": {
+  //             "ScreenDim": {
+  //               "description": "The length of time without user input after
+  //                               which the screen is dimmed, in milliseconds",
+  //               "type": "integer",
+  //               "minimum": 0
+  //             },
+  //             "ScreenOff": {
+  //               "description": "The length of time without user input after
+  //                               which the screen is turned off, in
+  //                               milliseconds",
+  //               "type": "integer",
+  //               "minimum": 0
+  //             },
+  //             "Idle": {
+  //               "description": "The length of time without user input after
+  //                               which the idle action is taken, in
+  //                               milliseconds",
+  //               "type": "integer",
+  //               "minimum": 0
+  //             }
+  //           }
+  //         },
+  //         "IdleAction": {
+  //           "description": "Action to take when the idle delay is reached",
+  //           "enum": [ "Suspend", "Shutdown", "DoNothing" ]
+  //         }
+  //       }
+  //     },
+  //     "Battery": {
+  //       "description": "Power management settings applicable only when
+  //                       running on battery power",
+  //       "type": "object",
+  //       "properties": {
+  //         "Delays": {
+  //           "type": "object",
+  //           "properties": {
+  //             "ScreenDim": {
+  //               "description": "The length of time without user input after
+  //                               which the screen is dimmed, in milliseconds",
+  //               "type": "integer",
+  //               "minimum": 0
+  //             },
+  //             "ScreenOff": {
+  //               "description": "The length of time without user input after
+  //                               which the screen is turned off, in
+  //                               milliseconds",
+  //               "type": "integer",
+  //               "minimum": 0
+  //             },
+  //             "Idle": {
+  //               "description": "The length of time without user input after
+  //                               which the idle action is taken, in
+  //                               milliseconds",
+  //               "type": "integer",
+  //               "minimum": 0
+  //             }
+  //           }
+  //         },
+  //         "IdleAction": {
+  //           "description": "Action to take when the idle delay is reached",
+  //           "enum": [ "Suspend", "Shutdown", "DoNothing" ]
+  //         }
+  //       }
+  //     },
+  //     "LidCloseAction": {
+  //       "description": "Action to take when the lid is closed",
+  //       "enum": [ "Suspend", "Shutdown", "DoNothing" ]
+  //     },
+  //     "UserActivityScreenDimDelayScale": {
+  //       "description": "Percentage by which the screen dim delay is scaled
+  //                       when user activity is observed while the screen is
+  //                       dimmed or soon after the screen has been turned off",
+  //       "type": "integer",
+  //       "minimum": 0
+  //     }
+  //   }
+  // }
+  optional string login_screen_power_management = 1;
+}
+
+message AutoCleanupSettigsProto {
+  // Deprecated.  There is only one disk-full cleanup strategy: LRU.
+  optional string clean_up_strategy = 1;
+}
+
+// Settings that control low-level functions of the system.
+message SystemSettingsProto {
+  // Whether developer mode is allowed on the device. If the device owner sets
+  // this flag to true, the system will refuse to boot and show an error screen
+  // when the developer switch is turned on.
+  optional bool block_devmode = 1;
+}
+
+// Settings that control login for SAML users.
+message SAMLSettingsProto {
+  // Whether cookies set by a SAML IdP should be transferred to users' profiles
+  // every time a user authenticates via SAML during login. If false, cookies
+  // are transferred during each user's first login only.
+  optional bool transfer_saml_cookies = 1;
+}
+
+message RebootOnShutdownProto {
+  // Determines whether the device automatically reboots whenever the user shuts
+  // it down. If this flag is set to true, shutdown is forbidden and UI elements
+  // trigger a device reboot instead of a power off. This policy affects
+  // shutdowns triggered from the UI only. If the user shuts down the device
+  // using the power button, it will not automatically reboot, even if the
+  // policy is enabled.
+  optional bool reboot_on_shutdown = 1 [default = false];
+}
+
+// Settings that control whether a device would send heartbeat messages to GCM,
+// and how frequently to send these.
+message DeviceHeartbeatSettingsProto {
+  // Whether the device should send heartbeat messages. The default is false.
+  optional bool heartbeat_enabled = 1 [default = false];
+
+  // How frequently devices send heartbeats back to server. The unit is in
+  // milliseconds. The default is 2 minutes.
+  optional int64 heartbeat_frequency = 2 [default = 120000];
+}
+
+message ExtensionCacheSizeProto {
+  // Specifies the maximum extension cache size, in bytes. The default is 256
+  // MiB. The minimum allowed value is 1 MiB, smaller values will get ignored.
+  optional int64 extension_cache_size = 1;
+}
+
+message LoginScreenDomainAutoCompleteProto {
+  // If this policy is not configured or set to a blank string,
+  // no autocomplete option during user sign-in flow will be shown.
+  // If this policy is set to a string representing a domain name, an
+  // autocomplete option during user sign-in will be shown allowing the user
+  // to type in only their user name without the domain name extension. The user
+  // will be able to overwrite this domain name extension.
+  optional string login_screen_domain_auto_complete = 1;
+}
+
+// Settings that control whether a device would send system logs to the server.
+message DeviceLogUploadSettingsProto {
+  // Whether the device should send system logs. The default is false.
+  optional bool system_log_upload_enabled = 1 [default = false];
+}
+
+// This setting is controlled by the device policy DisplayRotationDefault.
+// If the policy is set and therefore display_rotation_default contains a value,
+// all displays will be rotated clockwise to the specified orientation at
+// reboot, when first connected, or when the setting is changed.
+// If the optional field |Rotation display_rotation_default = 1| is not present,
+// no changes are done to the rotation.
+message DisplayRotationDefaultProto {
+  // This enum corresponds to gfx::Display::Rotation in ui/gfx/display.h.
+  enum Rotation {
+    ROTATE_0 = 0;
+    ROTATE_90 = 1;
+    ROTATE_180 = 2;
+    ROTATE_270 = 3;
+  };
+  optional Rotation display_rotation_default = 1;
+}
+
+// Settings that control whether to allow Chrome to be pinned to a specific
+// version according to the auto-launched kiosk app’s requirement.
+message AllowKioskAppControlChromeVersionProto {
+  optional bool allow_kiosk_app_control_chrome_version = 1 [default = false];
+}
+
+// Settings that control the flow of the login authentication to be either via
+// GAIA (default), or via an interstitial screen that can redirect to a SAML IdP
+// endpoint or return back to the default GAIA flow.
+message LoginAuthenticationBehaviorProto {
+  enum LoginBehavior {
+    GAIA = 0;
+    SAML_INTERSTITIAL = 1;
+  };
+
+  optional LoginBehavior login_authentication_behavior = 1 [default = GAIA];
+}
+
+// Identifiers of a USB device or device family.
+message UsbDeviceIdProto {
+  // USB Vendor Identifier (aka idVendor).
+  optional int32 vendor_id = 1;
+  // USB Product Identifier (aka idProduct).
+  optional int32 product_id = 2;
+}
+
+// This setting contains the list of USB devices to detach from the kernel
+// drivers in order to use them in web applications.
+// The list is used by the permission_broker daemon.
+message UsbDetachableWhitelistProto {
+  repeated UsbDeviceIdProto id = 1;
+}
+
+message AllowBluetoothProto {
+  // Policy which controls whether Bluetooth is available.
+  optional bool allow_bluetooth = 1 [default = true];
+}
+
+// Settings that control whether a device can download hardware configuration
+// files from the Quirks Server.
+message DeviceQuirksDownloadEnabledProto {
+  optional bool quirks_download_enabled = 1;
+}
+
+// A list of security origins for SAML login pages that are allowed to
+// access the webcam.  No login pages will be allowed to access the
+// webcam if the list is empty.
+message LoginVideoCaptureAllowedUrlsProto {
+  repeated string urls = 1;
+}
+
+message NetworkThrottlingEnabledProto {
+  optional bool enabled = 1 [default = false];
+  optional int32 upload_rate_kbits = 2 [default = 0];
+  optional int32 download_rate_kbits = 3 [default = 0];
+}
+
+// A list of apps to install from the webstore on the login page. It is a list
+// of strings, each string contains an extension ID and an update URL, delimited
+// by a semicolon.
+message DeviceLoginScreenAppInstallListProto {
+  repeated string device_login_screen_app_install_list = 1;
+}
+
+// A list of allowed locales on the login screen.
+message LoginScreenLocalesProto {
+  repeated string login_screen_locales = 1;
+}
+
+// A list of allowed input methods on the login screen.
+message LoginScreenInputMethodsProto {
+  repeated string login_screen_input_methods = 1;
+}
+
+// The url and hash that specified in JSON format that can be used to set the
+// device-level wallpaper on the login screen before any user logs in.
+message DeviceWallpaperImageProto {
+  optional string device_wallpaper_image = 1;
+}
+
+// Migration strategy for the case when ARC(N+) needs the ext4 encryption while
+// the device used ecryptfs in the past.
+message DeviceEcryptfsMigrationStrategyProto {
+  enum MigrationStrategy {
+    // Default value, unspecified.
+    UNSET = 0;
+    // ARC is not allowed, no data migration needed.
+    DISALLOW_ARC = 1;
+    // The data migration is allowed, opening the possibility to use ARC.
+    ALLOW_MIGRATION = 2;
+  };
+
+  optional MigrationStrategy migration_strategy = 1;
+}
+
+// This setting controls how the on-board secure element hardware can be used
+// to provide a second-factor authentication in addition to the TPM
+// functionality.
+message DeviceSecondFactorAuthenticationProto {
+  enum U2fMode {
+    // Default value, unspecified.
+    UNSET = 0;
+    // Feature disabled.
+    DISABLED = 1;
+    // U2F as defined by the FIDO Alliance specification:
+    // https://fidoalliance.org/specs/fido-u2f-v1.1-id-20160915.zip
+    U2F = 2;
+    // U2F plus extensions for individual attestation certificate.
+    U2F_EXTENDED = 3;
+  };
+
+  optional U2fMode mode = 1;
+}
+
+message CastReceiverNameProto {
+  // The name advertised as a Google Cast destination by the device,
+  // up to 24 characters. If the name is empty, the device name will
+  // be used.
+  optional string name = 1;
+}
+
+// Day of the week and time settings for DeviceOffHoursIntervalProto.
+message WeeklyTimeProto {
+  enum DayOfWeek {
+    DAY_OF_WEEK_UNSPECIFIED = 0;
+    MONDAY = 1;
+    TUESDAY = 2;
+    WEDNESDAY = 3;
+    THURSDAY = 4;
+    FRIDAY = 5;
+    SATURDAY = 6;
+    SUNDAY = 7;
+  }
+  // Day of week.
+  optional DayOfWeek day_of_week = 1;
+  // Time of day in milliseconds from beginning of the day
+  // in timezone that is defined in DeviceOffHoursProto.
+  optional int32 time = 2;
+}
+
+// Start and end interval settings for DeviceOffHoursProto.
+message DeviceOffHoursIntervalProto {
+  optional WeeklyTimeProto start = 1;
+  optional WeeklyTimeProto end = 2;
+}
+
+// Allow less restricted using of Chromebooks that are managed by school,
+// while the device is not at school ("OffHours").
+message DeviceOffHoursProto {
+  // List of intervals when ignored policies are not applied.
+  repeated DeviceOffHoursIntervalProto intervals = 1;
+  // Timezone in the same format as SystemTimezoneProto.timezone.
+  // If timezone isn't set then "GMT" will be used
+  optional string timezone = 2;
+  // List of policy proto tags which settings are ignored during OffHours
+  // mode. List contains policy proto tags from ChromeDeviceSettingsProto
+  // (i.e. proto tag = 1 means device_policy_refresh_rate policy).
+  // Proto tags are used because they are consistent identifiers.
+  // During OffHoursMode default settings of ignored policies are used.
+  repeated int32 ignored_policy_proto_tags = 3;
+}
+// The url and hash that specified in JSON format that can be used to retrieve
+// the device-level printers configuration file.
+message DeviceNativePrintersProto {
+  // External policy blob encoded as JSON.
+  optional string external_policy = 1;
+}
+
+// The policy which determines the type of access restriction that is applied to
+// the devicel-level printers list.
+message DeviceNativePrintersAccessModeProto {
+  enum AccessMode {
+    ACCESS_MODE_BLACKLIST = 0;  // Use NatvePrintersBlacklistProto.
+    ACCESS_MODE_WHITELIST = 1;  // Use NaviePrintersWhitelistProto.
+    ACCESS_MODE_ALL = 2;        // Allow access to all specified printers.
+  }
+
+  // The type of access which is applied to the device-level printer list.
+  optional AccessMode access_mode = 1;
+}
+
+// A collection of ids defining the printers which are explicitly disallowed for
+// the device.
+message DeviceNativePrintersBlacklistProto {
+  // A collection of ids for which are explicitly disallowed.
+  repeated string blacklist = 1;
+}
+
+// A collection of ids defining the printers which are explicitly allowed for
+// the device.
+message DeviceNativePrintersWhitelistProto {
+  // A collection of ids for the list of printers which are accessible.
+  repeated string whitelist = 1;
+}
+
+// Settings to control the behavior of the TPM firmware update functionality.
+message TPMFirmwareUpdateSettingsProto {
+  // Whether the user is allowed to invoke the update via powerwash. This flow
+  // performs a powerwash operation (which implies a TPM clear), followed by
+  // installation of the TPM firmware update. As a result of the powerwash, all
+  // writable data on the device will be cleared.
+  optional bool allow_user_initiated_powerwash = 1;
+
+  // Whether the user is allowed to invoke a variant of the update flow that
+  // clears the TPM to install the firmware update, but preserves device-wide
+  // state (including enrollment). User data will not be preserved in this flow.
+  optional bool allow_user_initiated_preserve_device_state = 2;
+}
+
+// Settings to control the minimum version that is allowed to sign in / stay
+// in session.
+message MinimumRequiredVersionProto {
+  // Value is chrome_version string, e.g. 61.0.3163.120
+  // The client will use prefix matching to compare its version against the
+  // value of this field.
+  optional string chrome_version = 1;
+}
+
+// Specifies a list of rules to automatically select certificates on SAML IdP
+// pages on the sign-in screen.
+message DeviceLoginScreenAutoSelectCertificateForUrls {
+  // Each entry is one rule, which must be a stringified JSON dictionary.
+  // Each dictionary must have the form { "pattern": "$URL_PATTERN", "filter" :
+  // $FILTER }. $FILTER restricts from which client certificates the browser
+  // will automatically select. Independent of the filter, only certificates
+  // will be selected that match the server's certificate request. If $FILTER
+  // has the form { "ISSUER": { "CN": "$ISSUER_CN" } }, additionally only client
+  // certificates are selected that are issued by a certificate with the
+  // CommonName $ISSUER_CN. If $FILTER is the empty dictionary {}, the selection
+  // of client certificates is not additionally restricted.
+  repeated string login_screen_auto_select_certificate_rules = 1;
+};
+
+// Setting that controls whether unaffiliated users are allowed to use ARC
+// (true by default)
+message UnaffiliatedArcAllowedProto {
+  optional bool unaffiliated_arc_allowed = 1;
+}
+
+// Allowed encryption types for requesting Kerberos tickets from Active
+// Directory servers. Applies to Active Directory management mode only.
+message DeviceKerberosEncryptionTypesProto {
+  enum Types {
+    ENC_TYPES_ALL = 0;     // AES + RC4_HMAC.
+    ENC_TYPES_STRONG = 1;  // AES only.
+    ENC_TYPES_LEGACY = 2;  // RC4_HMAC only.
+    // Next ID to use: 3
+  }
+
+  optional Types types = 1 [default = ENC_TYPES_STRONG];
+}
+
+// Specifies how user policy from device GPOs interacts with user policy from
+// user GPOs. In 'MERGE' mode, device GPOs take preference in case of conflicts.
+// Applies to Active Directory management mode only.
+message DeviceUserPolicyLoopbackProcessingModeProto {
+  enum Mode {
+    USER_POLICY_MODE_DEFAULT = 0;  // Only take user policy from user GPOs.
+    USER_POLICY_MODE_MERGE = 1;    // Merge device GPOs on top of user GPOs.
+    USER_POLICY_MODE_REPLACE = 2;  // Only take user policy from device GPOs.
+    // Next ID to use: 3
+  }
+
+  optional Mode mode = 1 [default = USER_POLICY_MODE_DEFAULT];
+}
+
+// Specifies a list of origins. Each of the specified origins will run in its
+// own process on the sign-in screen.
+message DeviceLoginScreenIsolateOriginsProto {
+  // A comma-separated list of the origins to be run in a separate process on
+  // the sign-in screen.
+  // If the value of this policy does not match the value of the user policy
+  // IsolateOrigins, the chrome process will be restarted on user sign-in to
+  // apply the value specified by the user policy.
+  optional string isolate_origins = 1;
+}
+
+// Specifies if each site should run in its own process on the sign-in screen.
+message DeviceLoginScreenSitePerProcessProto {
+  // If true, each site will run in its own process on the sign-in screen.
+  // If the value of this policy does not match the value of the user policy
+  // SitePerProcess, the chrome process will be restarted on user sign-in to
+  // apply the value specified by the user policy.
+  optional bool site_per_process = 1;
+}
+
+// Setting to control if running virtual machines on Chrome OS is allowed.
+message VirtualMachinesAllowedProto {
+  optional bool virtual_machines_allowed = 1 [default = true];
+}
+
+// Specifies if and how often Active Directory machine (computer) account
+// passwords are changed in the AuthPolicy daemon in Chrome OS.
+// Applies to Active Directory management mode only.
+message DeviceMachinePasswordChangeRateProto {
+  optional int32 rate_days = 1;
+}
+
+// Setting to control the authentication type for newly added users which log in
+// via SAML.
+message SamlLoginAuthenticationTypeProto {
+  enum Type {
+    TYPE_DEFAULT = 0;             // Implementation-defined default config.
+    TYPE_CLIENT_CERTIFICATE = 1;  // Client certificate authentication.
+    // Next ID to use: 2
+  }
+
+  optional Type saml_login_authentication_type = 1 [default = TYPE_DEFAULT];
+}
+
+message ChromeDeviceSettingsProto {
+  reserved 61;
+  optional DevicePolicyRefreshRateProto device_policy_refresh_rate = 1;
+  optional UserWhitelistProto user_whitelist = 2;
+  optional GuestModeEnabledProto guest_mode_enabled = 3;
+  optional OBSOLETE_DeviceProxySettingsProto device_proxy_settings = 4
+      [deprecated = true];
+  optional CameraEnabledProto camera_enabled = 5;
+  optional ShowUserNamesOnSigninProto show_user_names = 6;
+  optional DataRoamingEnabledProto data_roaming_enabled = 7;
+  optional AllowNewUsersProto allow_new_users = 8;
+  optional MetricsEnabledProto metrics_enabled = 9;
+  optional ReleaseChannelProto release_channel = 10;
+  optional DeviceOpenNetworkConfigurationProto open_network_configuration = 11;
+  optional DeviceReportingProto device_reporting = 12;
+  optional EphemeralUsersEnabledProto ephemeral_users_enabled = 13;
+  optional OBSOLETE_AppPackProto app_pack = 14 [deprecated = true];
+  optional OBSOLETE_ForcedLogoutTimeoutsProto forced_logout_timeouts = 15
+      [deprecated = true];
+  optional OBSOLETE_ScreenSaverProto login_screen_saver = 16
+      [deprecated = true];
+  optional AutoUpdateSettingsProto auto_update_settings = 17;
+  optional OBSOLETE_StartUpUrlsProto start_up_urls = 18 [deprecated = true];
+  optional OBSOLETE_PinnedAppsProto pinned_apps = 19 [deprecated = true];
+  optional SystemTimezoneProto system_timezone = 20;
+  optional DeviceLocalAccountsProto device_local_accounts = 21;
+  optional AllowRedeemChromeOsRegistrationOffersProto allow_redeem_offers = 22;
+  optional StartUpFlagsProto start_up_flags = 23;
+  optional UptimeLimitProto uptime_limit = 24;
+  optional VariationsParameterProto variations_parameter = 25;
+  optional AttestationSettingsProto attestation_settings = 26;
+  optional AccessibilitySettingsProto accessibility_settings = 27;
+  optional SupervisedUsersSettingsProto supervised_users_settings = 28;
+  optional LoginScreenPowerManagementProto login_screen_power_management = 29;
+  optional SystemUse24HourClockProto use_24hour_clock = 30;
+  optional AutoCleanupSettigsProto auto_clean_up_settings = 31;
+  optional SystemSettingsProto system_settings = 32;
+  optional SAMLSettingsProto saml_settings = 33;
+  optional RebootOnShutdownProto reboot_on_shutdown = 34;
+  optional DeviceHeartbeatSettingsProto device_heartbeat_settings = 35;
+  optional ExtensionCacheSizeProto extension_cache_size = 36;
+  optional LoginScreenDomainAutoCompleteProto
+      login_screen_domain_auto_complete = 37;
+  optional DeviceLogUploadSettingsProto device_log_upload_settings = 38;
+  optional DisplayRotationDefaultProto display_rotation_default = 39;
+  optional AllowKioskAppControlChromeVersionProto
+      allow_kiosk_app_control_chrome_version = 40;
+  optional LoginAuthenticationBehaviorProto login_authentication_behavior = 41;
+  optional UsbDetachableWhitelistProto usb_detachable_whitelist = 42;
+  optional AllowBluetoothProto allow_bluetooth = 43;
+  optional DeviceQuirksDownloadEnabledProto quirks_download_enabled = 44;
+  optional LoginVideoCaptureAllowedUrlsProto login_video_capture_allowed_urls =
+      45;
+  optional DeviceLoginScreenAppInstallListProto
+      device_login_screen_app_install_list = 46;
+  optional NetworkThrottlingEnabledProto network_throttling = 47;
+  optional DeviceWallpaperImageProto device_wallpaper_image = 48;
+  optional LoginScreenLocalesProto login_screen_locales = 49;
+  optional LoginScreenInputMethodsProto login_screen_input_methods = 50;
+  optional DeviceEcryptfsMigrationStrategyProto
+      device_ecryptfs_migration_strategy = 51;
+  optional DeviceSecondFactorAuthenticationProto
+      device_second_factor_authentication = 52;
+  optional CastReceiverNameProto cast_receiver_name = 53;
+  optional DeviceOffHoursProto device_off_hours = 54;
+  optional DeviceNativePrintersProto native_device_printers = 55;
+  optional DeviceNativePrintersAccessModeProto
+      native_device_printers_access_mode = 56;
+  optional DeviceNativePrintersBlacklistProto native_device_printers_blacklist =
+      57;
+  optional DeviceNativePrintersWhitelistProto native_device_printers_whitelist =
+      58;
+  optional TPMFirmwareUpdateSettingsProto tpm_firmware_update_settings = 59;
+  optional MinimumRequiredVersionProto minimum_required_version = 60;
+  optional DeviceLoginScreenAutoSelectCertificateForUrls
+      device_login_screen_auto_select_certificate_for_urls = 62;
+  optional UnaffiliatedArcAllowedProto unaffiliated_arc_allowed = 63;
+  optional NetworkHostnameProto network_hostname = 64;
+  optional DeviceKerberosEncryptionTypesProto device_kerberos_encryption_types =
+      65;
+  optional DeviceUserPolicyLoopbackProcessingModeProto
+      device_user_policy_loopback_processing_mode = 66;
+  optional DeviceLoginScreenIsolateOriginsProto
+      device_login_screen_isolate_origins = 67;
+  optional DeviceLoginScreenSitePerProcessProto
+      device_login_screen_site_per_process = 68;
+  optional VirtualMachinesAllowedProto virtual_machines_allowed = 69;
+  optional DeviceMachinePasswordChangeRateProto
+      device_machine_password_change_rate = 70;
+  optional SamlLoginAuthenticationTypeProto saml_login_authentication_type = 71;
+}

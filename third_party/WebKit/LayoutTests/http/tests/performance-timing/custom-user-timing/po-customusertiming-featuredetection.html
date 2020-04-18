@@ -1,0 +1,24 @@
+<!DOCTYPE HTML>
+<meta charset=utf-8>
+<title>Custom User Timing: L3 API returns a mark/measure object</title>
+<script src="../../../../resources/testharness.js"></script>
+<script src="../../../../resources/testharnessreport.js"></script>
+<script src="performanceobservers.js"></script>
+<p>Custom User Timing: L3 API returns a mark/measure object</p>
+<div id="log"></div>
+<script>
+  async_test(function (t) {
+    self.performance.clearMeasures();
+    const measure = self.performance.measure("measure1",
+        { startTime: 12, endTime:23 });
+    assert_equals(measure.startTime, 12);
+    t.done();
+  }, "L3 measure API returns a measure object.");
+
+  async_test(function (t) {
+    self.performance.clearMarks();
+    const mark = self.performance.mark("mark1", { startTime: 34 });
+    assert_equals(mark.startTime, 34);
+    t.done();
+  }, "L3 mark API returns a mark object.");
+</script>

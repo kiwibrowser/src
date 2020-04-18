@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Picture-in-Picture Window Size Test</title>
+</head>
+<body>
+  <video controls preload=auto src='../bigbuck.webm'></video>
+</body>
+<script>
+  const video = document.querySelector('video');
+  let pipWindow = null;
+  let sizeCountUpdates = 0;
+
+  // This video is created here in order to be used in
+  // `secondPictureInPicture()`. Unfortunately, the `requestPictureInPicture()`
+  // method has to be called during a user activation event handler so it's not
+  // possible to load the video on-demand.
+  const secondVideo = document.createElement('video');
+  secondVideo.src = '../bigbuck.webm';
+  secondVideo.load();
+
+  function updateTitle() {
+    // TODO(mlamouri): ideally, we should send the actual size but it will be
+    // flaky and require some minutia so starting with the basics.
+    sizeCountUpdates++;
+    document.title = sizeCountUpdates;
+  }
+
+  function enterPictureInPicture() {
+    enterPictureInPictureInternal();
+  }
+
+  function isInPictureInPicture() {
+    window.domAutomationController.send(document.pictureInPictureElement == video);
+  }
+
+  function enterPictureInPictureInternal() {
+    video.requestPictureInPicture().then(win => {
+      pipWindow = win;
+      updateTitle();
+      pipWindow.addEventListener('resize', updateTitle);
+
+      video.addEventListener('leavepictureinpicture', () => {
+        document.title = 'left';
+      }, { once: true });
+    });
+  }
+
+  function secondPictureInPicture() {
+    secondVideo.requestPictureInPicture();
+  }
+</script>
+</html>

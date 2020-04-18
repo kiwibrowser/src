@@ -1,0 +1,87 @@
+// Copyright 2013 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef UI_MESSAGE_CENTER_FAKE_MESSAGE_CENTER_H_
+#define UI_MESSAGE_CENTER_FAKE_MESSAGE_CENTER_H_
+
+#include <stddef.h>
+
+#include "base/macros.h"
+#include "ui/message_center/message_center.h"
+#include "ui/message_center/message_center_types.h"
+
+namespace message_center {
+
+// MessageCenter implementation of doing nothing. Useful for tests.
+class FakeMessageCenter : public MessageCenter {
+ public:
+  FakeMessageCenter();
+  ~FakeMessageCenter() override;
+
+  // Overridden from FakeMessageCenter.
+  void AddObserver(MessageCenterObserver* observer) override;
+  void RemoveObserver(MessageCenterObserver* observer) override;
+  void AddNotificationBlocker(NotificationBlocker* blocker) override;
+  void RemoveNotificationBlocker(NotificationBlocker* blocker) override;
+  size_t NotificationCount() const override;
+  bool HasPopupNotifications() const override;
+  bool IsQuietMode() const override;
+  Notification* FindVisibleNotificationById(const std::string& id) override;
+  NotificationList::Notifications FindNotificationsByAppId(
+      const std::string& app_id) override;
+  const NotificationList::Notifications& GetVisibleNotifications() override;
+  NotificationList::PopupNotifications GetPopupNotifications() override;
+  void AddNotification(std::unique_ptr<Notification> notification) override;
+  void UpdateNotification(
+      const std::string& old_id,
+      std::unique_ptr<Notification> new_notification) override;
+
+  void RemoveNotification(const std::string& id, bool by_user) override;
+  void RemoveNotificationsForNotifierId(const NotifierId& notifier_id) override;
+  void RemoveAllNotifications(bool by_user, RemoveType type) override;
+  void SetNotificationIcon(const std::string& notification_id,
+                           const gfx::Image& image) override;
+
+  void SetNotificationImage(const std::string& notification_id,
+                            const gfx::Image& image) override;
+
+  void SetNotificationButtonIcon(const std::string& notification_id,
+                                 int button_index,
+                                 const gfx::Image& image) override;
+  void ClickOnNotification(const std::string& id) override;
+  void ClickOnNotificationButton(const std::string& id,
+                                 int button_index) override;
+  void ClickOnNotificationButtonWithReply(const std::string& id,
+                                          int button_index,
+                                          const base::string16& reply) override;
+  void ClickOnSettingsButton(const std::string& id) override;
+  void DisableNotification(const std::string& id) override;
+  void MarkSinglePopupAsShown(const std::string& id,
+                              bool mark_notification_as_read) override;
+  void DisplayedNotification(const std::string& id,
+                             const DisplaySource source) override;
+  void SetQuietMode(bool in_quiet_mode) override;
+  void EnterQuietModeWithExpire(const base::TimeDelta& expires_in) override;
+  void SetVisibility(Visibility visible) override;
+  bool IsMessageCenterVisible() const override;
+  void SetHasMessageCenterView(bool has_message_center_view) override;
+  bool HasMessageCenterView() const override;
+  void RestartPopupTimers() override;
+  void PausePopupTimers() override;
+  const base::string16& GetSystemNotificationAppName() const override;
+  void SetSystemNotificationAppName(const base::string16& name) override;
+
+ protected:
+  void DisableTimersForTest() override;
+
+ private:
+  const NotificationList::Notifications empty_notifications_;
+  bool has_message_center_view_ = true;
+
+  DISALLOW_COPY_AND_ASSIGN(FakeMessageCenter);
+};
+
+}  // namespace message_center
+
+#endif  // UI_MESSAGE_CENTER_FAKE_MESSAGE_CENTER_H_

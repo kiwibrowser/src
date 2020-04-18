@@ -1,0 +1,66 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef CONTENT_BROWSER_COCOA_SYSTEM_HOTKEY_MAP_H_
+#define CONTENT_BROWSER_COCOA_SYSTEM_HOTKEY_MAP_H_
+
+#import <Cocoa/Cocoa.h>
+#include <vector>
+
+#include "base/gtest_prod_util.h"
+#include "base/macros.h"
+#include "content/common/content_export.h"
+
+namespace content {
+
+struct SystemHotkey;
+
+// Maintains a listing of all OSX system hotkeys. e.g. (cmd + `) These hotkeys
+// should have higher priority than web content, so NSEvents that correspond to
+// a system hotkey should not be passed to the renderer.
+class CONTENT_EXPORT SystemHotkeyMap {
+ public:
+  SystemHotkeyMap();
+  ~SystemHotkeyMap();
+
+  // Converts the plist stored in |data| into an NSDictionary. Returns nil on
+  // error.
+  static NSDictionary* DictionaryFromData(NSData* data);
+
+  // Parses the property list data commonly stored at
+  // ~/Library/Preferences/com.apple.symbolichotkeys.plist
+  // Returns false on encountering an irrecoverable error.
+  // Can be called multiple times. Only the results from the most recent
+  // invocation are stored.
+  bool ParseDictionary(NSDictionary* dictionary);
+
+  // Whether the event corresponds to a hotkey that has been reserved by the
+  // system.
+  bool IsEventReserved(NSEvent* event) const;
+
+ private:
+  FRIEND_TEST_ALL_PREFIXES(SystemHotkeyMapTest, Parse);
+  FRIEND_TEST_ALL_PREFIXES(SystemHotkeyMapTest, ParseCustomEntries);
+  FRIEND_TEST_ALL_PREFIXES(SystemHotkeyMapTest, ParseMouse);
+
+  // Whether the hotkey has been reserved by the user.
+  bool IsHotkeyReserved(unsigned short key_code, NSUInteger modifiers) const;
+
+  // Create at least one record of a hotkey that is reserved by the user.
+  // Certain system hotkeys automatically reserve multiple key combinations.
+  void ReserveHotkey(unsigned short key_code,
+                     NSUInteger modifiers,
+                     NSString* system_effect);
+
+  // Create a record of a hotkey that is reserved by the user.
+  void ReserveHotkey(unsigned short key_code, NSUInteger modifiers);
+
+  std::vector<SystemHotkey> system_hotkeys_;
+
+  DISALLOW_COPY_AND_ASSIGN(SystemHotkeyMap);
+};
+
+}  // namespace content
+
+#endif  // CONTENT_BROWSER_COCOA_SYSTEM_HOTKEY_MAP_H_

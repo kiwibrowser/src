@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="../resources/js-test.js"></script>
+  </head>
+  <body>
+
+    <input type="text" id="input" value="Line 1">
+
+    <script>
+        description("This tests that text selection is reported correctly for text input elements.");
+
+        if (window.accessibilityController) {
+
+            var input = document.getElementById('input');
+            input.focus();
+            var inputAccessible =
+                accessibilityController.accessibleElementById('input');
+
+            // Select the entire contents.
+            input.select();
+            shouldBeZero("inputAccessible.selectionStart");
+            shouldBeEqualToNumber("inputAccessible.selectionEnd", 6);
+            shouldBeEqualToNumber("inputAccessible.selectionStartLineNumber", 0);
+            shouldBeEqualToNumber("inputAccessible.selectionEndLineNumber", 0);
+
+            // Select all possible text ranges.
+            for (var start = 0; start < 7; ++start) {
+                for (var end = start + 1; end < 7; ++end) {
+                    input.setSelectionRange(start, end);
+                    shouldBeEqualToNumber("inputAccessible.selectionStart", start);
+                    shouldBeEqualToNumber("inputAccessible.selectionEnd", end);
+                    shouldBeZero("inputAccessible.selectionStartLineNumber");
+                    shouldBeZero("inputAccessible.selectionEndLineNumber");
+                }
+            }
+
+        }
+    </script>
+
+  </body>
+</html>

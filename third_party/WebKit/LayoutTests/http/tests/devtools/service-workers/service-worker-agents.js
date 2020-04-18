@@ -1,0 +1,53 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(`Tests the way service workers don't enable DOM agent and does enable Debugger agent.\n`);
+  await TestRunner.loadModule('application_test_runner');
+    // Note: every test that uses a storage API must manually clean-up state from previous tests.
+  await ApplicationTestRunner.resetState();
+
+  await TestRunner.showPanel('resources');
+
+  var scriptURL = 'http://127.0.0.1:8000/devtools/service-workers/resources/service-worker-empty.js';
+  var scope = 'http://127.0.0.1:8000/devtools/service-workers/resources/scope1/';
+
+  TestRunner.addSniffer(SDK.MainConnection.prototype, 'sendMessage', function(messageString) {
+    var message = JSON.parse(messageString);
+    if (!messageString.includes('Target.sendMessageToTarget'))
+      return;
+    if (messageString.includes('DOM.'))
+      TestRunner.addResult('DOM-related command should NOT be issued: ' + messageString);
+    if (messageString.includes('CSS.'))
+      TestRunner.addResult('CSS-related command should NOT be issued: ' + messageString);
+    if (messageString.includes('Debugger.enable')) {
+      TestRunner.addResult(
+          'Debugger-related command should be issued: ' + JSON.stringify(inlineMessages(message), null, 4));
+    }
+  }, true);
+
+  ApplicationTestRunner.waitForServiceWorker(step1);
+  ApplicationTestRunner.registerServiceWorker(scriptURL, scope);
+
+  function step1(target) {
+    TestRunner.addResult('Suspending targets.');
+    SDK.targetManager.suspendAllTargets();
+    TestRunner.addResult('Resuming targets.');
+    SDK.targetManager.resumeAllTargets();
+    TestRunner.completeTest();
+  }
+
+  function inlineMessages(obj) {
+    for (var key in obj) {
+      if (key === 'message' && typeof obj[key] === 'string') {
+        obj[key] = JSON.parse(obj[key]);
+        inlineMessages(obj[key]);
+      } else if (key === 'id' || key.endsWith('Id'))
+        obj[key] = '<id>';
+      if (typeof obj[key] === 'object')
+        inlineMessages(obj[key]);
+    }
+    return obj;
+  }
+})();

@@ -1,0 +1,118 @@
+<html>
+<head>
+<script src="../../../resources/js-test.js"></script>
+</head>
+<body>
+<div id="description">Test that user gesture is kept when postMessage() to self or across frames.</div>
+<div id="div1" onclick="clickHandler()">Click me</div>
+<iframe id="subframe" src="resources/window-postmessage-user-gesture-frame.html" onload="startTest()"></iframe>
+<div id="console"></div>
+<script>
+window.jsTestIsAsync = true;
+
+if (window.testRunner) {
+    testRunner.setCloseRemainingWindowsWhenComplete(true);
+    testRunner.setCanOpenWindows();
+    testRunner.setPopupBlockingEnabled(true);
+}
+
+var testSelf = true;
+var consumeInFrame = false; // where to consume user gesture: self or frame
+var needClickDiv = false;
+var message;
+
+function onMessageSelf(event) {
+    message.count++;
+    if (message.count < message.bounceTotal)
+        window.postMessage({}, "*"); // stack postMessages at once
+
+    // Keep trying to consume user gesture after consumeIndex
+    if (message.count >= message.consumeIndex && window.open("about:blank", Math.random()))
+        message.consumeCount++; // Log the times of which the user gesture is consumed
+
+    if (message.count >= message.bounceTotal) {
+        if (message.consumeCount == 1)
+            testPassed("Stack postMessages on self window and the user gesture is only consumed once");
+        else
+            testFailed("Stack postMessages on self window and the user gesture is consumed " + message.consumeCount + " times");
+
+        testSelf = false;
+        window.onmessage = onMessageFrame;
+        message = null;
+        // Can not clickDiv() because current (consumed) user gesture token will be used.
+        needClickDiv = true;
+    }
+}
+
+function onMessageFrame(event) {
+    var msg = event.data;
+    msg.count++;
+
+    if (!msg.consumeInFrame &&
+        msg.count >= msg.consumeIndex &&
+        window.open("about:blank", Math.random()))
+        msg.consumeCount++;
+
+    if (msg.count < msg.bounceTotal)
+        document.getElementById("subframe").contentWindow.postMessage(msg, "*");
+    else {
+        if (msg.consumeCount == 1)
+            testPassed("Bounce postMessages between self and frame window and" +
+                " the user gesture is only consumed once " +
+                (consumeInFrame ? "in frame" : "in self window"));
+        else
+            testFailed("Bounce postMessages between self and frame window and" +
+                " the user gesture is consumed " + msg.consumeCount + " times "+
+                (consumeInFrame ? "in frame" : "in self window"));
+
+        if (!consumeInFrame) {
+            consumeInFrame = true;
+            needClickDiv = true;
+        } else
+            finishJSTest();
+    }
+}
+
+function clickHandler() {
+    if (testSelf)
+        window.postMessage({}, "*");
+    else
+        document.getElementById("subframe").contentWindow.postMessage({
+            count: 0,
+            bounceTotal: 60,
+            consumeIndex: 50,     // Consume user gesture from the 50th bounce
+            consumeCount: 0,
+            consumeInFrame: consumeInFrame
+        }, "*");
+}
+
+function clickDiv() {
+    var div1 = document.getElementById("div1");
+    if (window.eventSender) {
+        eventSender.mouseMoveTo(div1.offsetLeft + 10, div1.offsetTop + 5);
+        eventSender.mouseDown();
+        eventSender.mouseUp();
+    }
+}
+
+function startTest() {
+    window.onmessage = onMessageSelf;
+    message = {
+        count: 0,
+        bounceTotal: 60,
+        consumeIndex: 50,
+        consumeCount: 0
+    };
+    needClickDiv = true;
+
+    window.setInterval(function() {
+        if (needClickDiv) {
+            needClickDiv = false;
+            clickDiv();
+        }
+    }, 20);
+}
+
+</script>
+</body>
+</html>

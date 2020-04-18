@@ -1,0 +1,95 @@
+# -*- python -*-
+# Copyright 2009 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+
+Import('env')
+
+# Do not run any of the compiles below when in built_elsewhere mode
+# because we cannot assume having a working compiler.
+if env.Bit('built_elsewhere'):
+  Return()
+
+nacl_base_lib_inputs = [
+  'nacl_refcount.c',
+]
+
+env.DualLibrary('nacl_base', nacl_base_lib_inputs,
+                EXTRA_LIBS=['platform'])
+
+nacl_base_test_exe = env.ComponentProgram('nacl_base_test',
+                                          ['nacl_base_test.c'])
+
+node = env.CommandTest(
+    'nacl_base_test.out',
+    command=[nacl_base_test_exe])
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_nacl_base_test')
+
+def FailsGood(exit_status):
+  if exit_status:
+    return 0
+  else:
+    return 1
+
+# Compile-time failures in nacl_macros.h only work for gcc right now.
+if not env.Bit('windows'):
+  #
+  # fail_compile_c_env is a special build environment that succeeds
+  # iff there was a compile-time failure -- i.e., the various
+  # assertion macros made gcc notice that there was a problem.  Since
+  # the assertion macros should work for both C and C++ compiles (or
+  # there are two versions of the macros), we also build using
+  # fail_compile_cxx_env.  These environments and tests detect false
+  # negatives.  Because the macros could fail by generating build
+  # failures when none should occur (false positives), we also have
+  # the _ok tests, even those such false positives ought to be quickly
+  # detected in normal use.
+  #
+  fail_compile_c_env = env.Clone()
+  fail_compile_c_env['CCCOM'] = Action(fail_compile_c_env['CCCOM'],
+                                       exitstatfunc=FailsGood)
+
+  fail_compile_cxx_env = env.Clone()
+  fail_compile_cxx_env['CCCOM'] = Action(fail_compile_cxx_env['CXXCOM'],
+                                         exitstatfunc=FailsGood)
+
+  for build_env, name_modifier in [ (fail_compile_c_env, '_c'),
+                                    (fail_compile_cxx_env, '_cxx') ]:
+    for test_base in ['nacl_base_assert_is_array',
+                      'nacl_base_assert_is_pointer',
+                      'nacl_base_array_size']:
+      for env_to_use, ok in [(env, '_ok'), (build_env, '')]:
+
+        obj = env_to_use.ComponentObject(test_base + ok +
+                                         name_modifier + '_test',
+                                         [test_base + ok + '_test.c'])
+        env_to_use.AlwaysBuild(obj)
+        env_to_use.Alias('small_tests', obj)
+        env_to_use.Alias('compile_tests', obj)
+
+nacl_min_max_test_exe = env.ComponentProgram('nacl_min_max_test',
+                                             ['nacl_min_max_test.c'])
+
+node = env.CommandTest(
+    'nacl_min_max_test.out',
+    command=[nacl_min_max_test_exe])
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_nacl_min_max_test')
+
+# build nacl_min_max_test.c as a C++ program to make sure that there
+# aren't weird operator precedence issues that would cause the min/max
+# macros to behave differently
+nacl_min_max_env = env.Clone()
+nacl_min_max_env['CCCOM'] = Action(nacl_min_max_env['CXXCOM'])
+if nacl_min_max_env.Bit('clang'):
+    nacl_min_max_env.Append(CXXFLAGS='-Wno-deprecated')
+nacl_min_max_cpp_test_obj = nacl_min_max_env.ComponentObject(
+    'nacl_min_max_cpp_test',
+    ['nacl_min_max_test.c'])
+nacl_min_max_cpp_test_exe = nacl_min_max_env.ComponentProgram(
+    'nacl_min_max_cpp_test',
+    nacl_min_max_cpp_test_obj)
+node = env.CommandTest(
+    'nacl_min_max_cpp_test.out',
+    command=[nacl_min_max_cpp_test_exe])
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_nacl_min_max_cpp_test')

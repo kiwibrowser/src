@@ -1,0 +1,170 @@
+; Copyright 2017 The Chromium Authors. All rights reserved.
+; Use of this source code is governed by a BSD-style license that can be
+; found in the LICENSE file.
+(version 1)
+
+; Helper function to check if a param is set to true.
+(define (param-true? str) (string=? (param str) "TRUE"))
+
+; Helper function to determine if a parameter is defined or not.
+(define (param-defined? str) (string? (param str)))
+
+; Define constants for all of the parameter strings passed in.
+(define browser-pid "BROWSER_PID")
+(define bundle-id "BUNDLE_ID")
+(define bundle-path "BUNDLE_PATH")
+(define component-path "COMPONENT_PATH")
+(define current-pid "CURRENT_PID")
+(define disable-sandbox-denial-logging "DISABLE_SANDBOX_DENIAL_LOGGING")
+(define enable-logging "ENABLE_LOGGING")
+(define executable-path "EXECUTABLE_PATH")
+(define homedir-as-literal "USER_HOMEDIR_AS_LITERAL")
+(define log-file-path "LOG_FILE_PATH")
+(define os-version (string->number (param "OS_VERSION")))
+
+; Backwards compatibility for 10.9
+(if (not (defined? 'path))
+  (define path literal))
+(if (not (defined? 'iokit-registry-entry-class))
+  (define iokit-registry-entry-class iokit-user-client-class))
+
+; --enable-sandbox-logging causes the sandbox to log failures to the syslog.
+(if (param-true? disable-sandbox-denial-logging)
+  (deny default (with no-log))
+  (deny default))
+
+(if (param-true? enable-logging) (debug deny))
+
+; Allow sending signals to self - https://crbug.com/20370
+(allow signal (target self))
+
+; Consumes a subpath and appends it to the user's homedir path.
+(define (user-homedir-path subpath)
+  (string-append (param homedir-as-literal) subpath))
+
+; A function that specific profiles (i.e. renderer) can call to allow
+; font rendering.
+(define (allow-font-access)
+  (begin
+    (allow file-read-data
+      (subpath "/Library/Fonts")
+      (subpath "/System/Library/Fonts")
+      (subpath (user-homedir-path "/Library/Fonts")))
+    (allow mach-lookup
+      (global-name "com.apple.fonts")
+      ; crbug.com/756145, crbug.com/786615
+      (global-name "com.apple.FontObjectsServer"))
+    (if (< os-version 1012)
+      (allow mach-lookup (global-name "com.apple.FontServer")))
+    ; To allow accessing downloaded and other hidden fonts in
+    ; /System/Library/Asssets/com_apple_MobileAsset_Font*.
+    ; (https://crbug.com/662686)
+    (allow file-read* (extension "com.apple.app-sandbox.read"))))
+
+; Allow logging for all processes.
+(allow file-write*
+  (require-all
+    (path (param log-file-path))
+    (vnode-type REGULAR-FILE)))
+
+; Allow component builds to work.
+(if (param-defined? component-path)
+  (allow file-read* (subpath (param component-path))))
+
+(allow process-exec (path (param executable-path)))
+(allow file-read* (path (param executable-path)))
+
+(allow mach-lookup (global-name (string-append (param bundle-id)
+                                               ".rohitfork."
+                                               (param browser-pid))))
+
+; Allow realpath() to work.
+(allow file-read-metadata (subpath "/"))
+
+; All processes can read the bundle contents.
+(allow file-read* (subpath (param bundle-path)))
+
+; Allow reads of system libraries and frameworks.
+(allow file-read-data
+  (subpath "/System/Library/Frameworks")
+  (subpath "/System/Library/PrivateFrameworks")
+  (subpath "/usr/lib"))
+
+; Reads from /etc.
+; This is read by CFPrefs calling getpwuid in a loop. libinfo then fails to
+; contact any of the opendirectoryd mach services, and falls back to
+; the /etc/passwd file for the user info. The access is OK because
+; no actual password hashes are in /etc/passwd anymore.
+(allow file-read-data (path "/private/etc/passwd"))
+
+; Access to /dev.
+(allow file-ioctl file-read-data file-write-data
+  (require-all
+    (path "/dev/dtracehelper")
+    (vnode-type CHARACTER-DEVICE)))
+
+(allow file-read-data
+  (path "/dev/null")
+  (path "/dev/random")
+  (path "/dev/urandom"))
+
+(if (= os-version 1013)
+  (begin (allow file-read* (subpath "/private/var/db/timezone"))
+         (allow file-read-data (subpath "/usr/share/zoneinfo.default"))))
+
+(if (< os-version 1013)
+  (allow file-read-data (subpath "/usr/share/zoneinfo")))
+
+; Reads from /Library.
+(allow file-read-data
+  (path "/Library/Preferences/.GlobalPreferences.plist"))
+
+; Reads from /System.
+(allow file-read-data
+  (path "/System/Library/CoreServices/checkfixlist")
+  (path "/System/Library/CoreServices/SystemVersion.plist"))
+
+; Reads from /usr.
+(allow file-read-data
+  (subpath "/usr/share/icu")
+  (subpath "/usr/share/locale"))
+
+; Access to the home directory.
+(allow file-read-data
+  (path (user-homedir-path "/Library/Preferences/.GlobalPreferences.plist"))
+  (regex (user-homedir-path #"/Library/Preferences/ByHost/.GlobalPreferences.*")))
+
+; Mach IPC needed by all Chromium Helper instances.
+(allow mach-lookup
+  ; crbug.com/792229
+  (global-name "com.apple.logd")
+  (global-name "com.apple.system.logger")
+  ; crbug.com/792228
+  (global-name "com.apple.system.opendirectoryd.libinfo"))
+
+; sysctls permitted.
+(if (= os-version 1009)
+  (allow sysctl-read)
+  ; else
+  (allow sysctl-read
+    (sysctl-name "hw.activecpu")
+    (sysctl-name "hw.busfrequency_compat")
+    (sysctl-name "hw.byteorder")
+    (sysctl-name "hw.cachelinesize_compat")
+    (sysctl-name "hw.cpufrequency_compat")
+    (sysctl-name "hw.cputype")
+    (sysctl-name "hw.machine")
+    (sysctl-name "hw.ncpu")
+    (sysctl-name "hw.pagesize_compat")
+    (sysctl-name "hw.physicalcpu_max")
+    (sysctl-name "hw.tbfrequency_compat")
+    (sysctl-name "hw.vectorunit")
+    (sysctl-name "kern.hostname")
+    (sysctl-name "kern.maxfilesperproc")
+    (sysctl-name "kern.osrelease")
+    (sysctl-name "kern.ostype")
+    (sysctl-name "kern.osversion")
+    (sysctl-name (string-append "kern.proc.pid." (param current-pid)))
+    (sysctl-name "kern.usrstack64")
+    (sysctl-name "kern.version")
+    (sysctl-name "sysctl.proc_cputype")))

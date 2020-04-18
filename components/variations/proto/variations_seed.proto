@@ -1,0 +1,26 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package variations;
+
+import "study.proto";
+
+// The VariationsSeed is a protobuf response from the server that contains the
+// list of studies and a serial number to uniquely identify its contents. The
+// serial number allows the client to easily determine if the list of
+// experiments has changed from the previous VariationsSeed seen by the client.
+//
+// Next tag: 4
+message VariationsSeed {
+  optional string serial_number = 1;
+  repeated Study study = 2;
+
+  // Lowercase ISO 3166-1 alpha-2 country code of the client, according to IP
+  // address. Deprecated.
+  optional string country_code = 3 [deprecated = true];
+}

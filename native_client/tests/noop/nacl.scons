@@ -1,0 +1,37 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+noop_nexe = env.ComponentProgram('noop',
+                                 'noop.c',
+                                 EXTRA_LIBS=['${PTHREAD_LIBS}',
+                                             '${NONIRT_LIBS}'],
+                                 )
+
+node = env.CommandSelLdrTestNacl(
+    'noop_test.out',
+    noop_nexe,
+    stdout_golden=env.File('noop.stdout'),
+    )
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_noop_test')
+
+
+noop2_nexe = env.ComponentProgram('noop2',
+                                  'noop2.c',
+                                  EXTRA_LIBS=['${PTHREAD_LIBS}',
+                                              '${NONIRT_LIBS}'],
+                                  )
+node = env.CommandSelLdrTestNacl(
+    'noop2_test.out',
+    noop2_nexe,
+    stdout_golden=env.File('noop.stdout'),
+    exit_status='2',
+    )
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_noop2_test')

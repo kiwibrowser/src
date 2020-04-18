@@ -1,0 +1,23 @@
+# -*- python -*-
+# Copyright 2010 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# See http://code.google.com/p/nativeclient/wiki/ValgrindMemcheck
+# for details.
+
+Import('env')
+
+# we do not have proper arm or mips support and definitely no bitcode support
+# BUG= http://code.google.com/p/nativeclient/issues/detail?id=2357
+if env.Bit('build_arm') or env.Bit('build_mips32') or env.Bit('bitcode'):
+  Return()
+
+libvalgrind = env.NaClSdkLibrary('libvalgrind', 'valgrind_interceptors.c')
+env.AddHeaderToSdk(['dynamic_annotations.h'])
+
+# With newlib, dynamic annotations are built into libpthread.
+# With glibc, they are in a separate library.
+if env.Bit('nacl_glibc'):
+  libdynamic_annotations = env.NaClSdkLibrary('libdynamic_annotations',
+                                              'dynamic_annotations.c')

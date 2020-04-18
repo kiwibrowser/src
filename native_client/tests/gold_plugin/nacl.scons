@@ -1,0 +1,23 @@
+# -*- python -*-
+# Copyright (c) 2014 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Basic sanity check for PNaCl host binaries and gold plugin.
+
+Import('env')
+
+if (not env.Bit('bitcode') or env.Bit('pnacl_generate_pexe') or
+    env.Bit('built_elsewhere')):
+  Return()
+
+plugin_test = env.CommandTest(
+    'gold_plugin_test.out',
+    ['${PYTHON}', env.File('gold_plugin_test.py'),
+     '-d', env.Dir('.'),
+     '-t', env.GetToolchainDir()],
+    direct_emulation=False)
+
+env.AddNodeToTestSuite(plugin_test,
+                       ['small_tests', 'toolchain_tests', 'nonpexe_tests'],
+                       'run_gold_plugin_test')

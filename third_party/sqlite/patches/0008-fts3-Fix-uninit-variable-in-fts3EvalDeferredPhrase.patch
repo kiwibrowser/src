@@ -1,0 +1,33 @@
+From 1b1d1f62ba0fa78cddc2567eaa3b25fe6660b537 Mon Sep 17 00:00:00 2001
+From: Scott Hess <shess@chromium.org>
+Date: Thu, 12 Feb 2015 15:01:26 -0800
+Subject: [PATCH 08/10] [fts3] Fix uninit variable in fts3EvalDeferredPhrase.
+
+Chromium compiles with SQLITE_DISABLE_FTS4_DEFERRED since fts4 is
+disabled.  That compiles away sqlite3Fts3DeferredTokenList() which
+otherwise initialized pList and nList in fts3EvalDeferredPhrase().
+
+BUG=458266
+R=thakis@chromium.org
+---
+ third_party/sqlite/src/ext/fts3/fts3.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/third_party/sqlite/src/ext/fts3/fts3.c b/third_party/sqlite/src/ext/fts3/fts3.c
+index 4fbbf4f1580e..85315c63eec0 100644
+--- a/third_party/sqlite/src/ext/fts3/fts3.c
++++ b/third_party/sqlite/src/ext/fts3/fts3.c
+@@ -4187,8 +4187,8 @@ static int fts3EvalDeferredPhrase(Fts3Cursor *pCsr, Fts3Phrase *pPhrase){
+     Fts3DeferredToken *pDeferred = pToken->pDeferred;
+ 
+     if( pDeferred ){
+-      char *pList;
+-      int nList;
++      char *pList = 0;
++      int nList = 0;
+       int rc = sqlite3Fts3DeferredTokenList(pDeferred, &pList, &nList);
+       if( rc!=SQLITE_OK ) return rc;
+ 
+-- 
+2.16.0
+

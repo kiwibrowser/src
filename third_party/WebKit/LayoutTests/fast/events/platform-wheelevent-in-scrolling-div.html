@@ -1,0 +1,50 @@
+<html>
+    <head>
+        <script src="../../resources/js-test.js"></script>
+        <script>
+            window.jsTestIsAsync = true;
+            var expectedScrollTop = 5;
+            var expectedScrollLeft = 3;
+            var event;
+            var div;
+
+            function runTest()
+            {
+                var overflowElement = document.getElementById("overflow");
+                if (overflowElement)
+                    overflowElement.addEventListener("mousewheel", mousewheelHandler, false);
+
+                if (window.eventSender) {
+                    eventSender.mouseMoveTo(100, 110);
+                    eventSender.mouseScrollBy(-window.expectedScrollLeft, -window.expectedScrollTop);
+                }
+
+                div = document.getElementById("overflow");
+                // Note that there are 40 pixels per wheel tick.
+                shouldBecomeEqual("div.scrollTop == expectedScrollTop*40 && " +
+                    "div.scrollLeft == expectedScrollLeft*40", "true", finishJSTest);
+            }
+
+            function mousewheelHandler(e)
+            {
+                event = e;
+                shouldBe("event.wheelDeltaY", "window.expectedScrollTop*-120");
+                shouldBe("event.wheelDeltaX", "window.expectedScrollLeft*-120");
+
+                if (e.wheelDeltaY)
+                    shouldBe("event.wheelDelta", "window.expectedScrollTop*-120");
+                else
+                    shouldBe("event.wheelDelta", "window.expectedScrollLeft*-120");
+            }
+        </script>
+    </head>
+
+    <body style="margin:0" onload="runTest()">
+        <div id="overflow" style="border:2px solid black;overflow:auto;height:200px;width:200px;">
+            <div style="background-color:red;height:200px;width:400px;"></div>
+            <div style="background-color:green;height:200px;width:400px;"></div>
+            <div style="background-color:red;height:200px;width:400px;"></div>
+        </div>
+        <div id="console"></div>
+    </body>
+</html>

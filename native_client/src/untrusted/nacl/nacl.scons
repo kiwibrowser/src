@@ -1,0 +1,329 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+
+Import('env')
+
+# NACL_GC_WRAP_SYSCALL uses ({...}) syntax.
+env.FilterOut(CCFLAGS=['-pedantic'])
+if env.Bit('bitcode'):
+  # silence a warning when compiling malloc.c with clang
+  env.Append(CCFLAGS=['-Wno-self-assign'])
+if env.Bit('nacl_clang'):
+  # Use the integrated assembler; this code can end up in the Chrome IRT, so we
+  # want it to avoid revealing the sandbox base address.
+  env.Append(CCFLAGS=['-integrated-as'])
+# Sources are split into essentially one function per file to be in
+# alignment with the linker, which resolves symbols by including entire
+# object files.  Placing multiple definitions in one file may result in
+# object code bloat or possibly multiple definitions.
+
+SRCS_NEWLIB_SYSCALL =  [
+    'abort.c',
+    'access.c',
+    'chdir.c',
+    'chmod.c',
+    'clock.c',
+    'clock_getres.c',
+    'clock_gettime.c',
+    'close.c',
+    'dup.c',
+    '_exit.c',
+    'eaccess.c',
+    'fchdir.c',
+    'fchmod.c',
+    'fdatasync.c',
+    'fstat.c',
+    'fsync.c',
+    'ftruncate.c',
+    'getcwd.c',
+    'getcwd_without_malloc.c',
+    'getdents.c',
+    'gethostname.c',
+    'getpagesize.c',
+    'getpid.c',
+    'gettimeofday.c',
+    'htonl.c',
+    'htons.c',
+    'isatty.c',
+    'link.c',
+    'lock.c',
+    'lseek.c',
+    'lstat.c',
+    'mkdir.c',
+    'mmap.c',
+    'mprotect.c',
+    'munmap.c',
+    'nanosleep.c',
+    'nacl_ext_supply.c',
+    'nacl_interface_query.c',
+    'nacl_irt_fdio.c',
+    'nacl_irt_filename.c',
+    'ntohl.c',
+    'ntohs.c',
+    'open.c',
+    'random.c',
+    'read.c',
+    'readlink.c',
+    'rename.c',
+    'rmdir.c',
+    'sbrk.c',
+    'sched_yield.c',
+    'sigblock.c',
+    'siggetmask.c',
+    'sigmask.c',
+    'sigprocmask.c',
+    'sigsetmask.c',
+    'srandom.c',
+    'stat.c',
+    'symlink.c',
+    'sysconf.c',
+    'truncate.c',
+    'uname.c',
+    'unlink.c',
+    'utime.c',
+    'utimes.c',
+    'write.c',
+]
+
+SRCS_NEWLIB_STUBS = [
+    'stubs/_execve.c',
+    'stubs/accept.c',
+    'stubs/addmntent.c',
+    'stubs/bind.c',
+    'stubs/chown.c',
+    'stubs/closelog.c',
+    'stubs/connect.c',
+    'stubs/endgrent.c',
+    'stubs/endmntent.c',
+    'stubs/endpwent.c',
+    'stubs/environ.c',
+    'stubs/execvpe.c',
+    'stubs/fchown.c',
+    'stubs/fcntl.c',
+    'stubs/fork.c',
+    'stubs/freeaddrinfo.c',
+    'stubs/fstatvfs.c',
+    'stubs/gai_strerror.c',
+    'stubs/get_current_dir_name.c',
+    'stubs/getaddrinfo.c',
+    'stubs/getdtablesize.c',
+    'stubs/getegid.c',
+    'stubs/geteuid.c',
+    'stubs/getgid.c',
+    'stubs/getgrent.c',
+    'stubs/getgrgid.c',
+    'stubs/getgrgid_r.c',
+    'stubs/getgrnam.c',
+    'stubs/getgroups.c',
+    'stubs/gethostbyaddr.c',
+    'stubs/gethostbyname.c',
+    'stubs/getlogin.c',
+    'stubs/getmntent.c',
+    'stubs/getnameinfo.c',
+    'stubs/getpeername.c',
+    'stubs/getpgrp.c',
+    'stubs/getppid.c',
+    'stubs/getpwent.c',
+    'stubs/getpwnam.c',
+    'stubs/getpwnam_r.c',
+    'stubs/getpwuid.c',
+    'stubs/getpwuid_r.c',
+    'stubs/getrlimit.c',
+    'stubs/getrusage.c',
+    'stubs/getservbyname.c',
+    'stubs/getservbyport.c',
+    'stubs/getsockname.c',
+    'stubs/getsockopt.c',
+    'stubs/getuid.c',
+    'stubs/getwd.c',
+    'stubs/hasmntopt.c',
+    'stubs/if_freenameindex.c',
+    'stubs/if_indextoname.c',
+    'stubs/if_nameindex.c',
+    'stubs/if_nametoindex.c',
+    'stubs/inet_ntoa.c',
+    'stubs/inet_ntop.c',
+    'stubs/initgroups.c',
+    'stubs/ioctl.c',
+    'stubs/issetugid.c',
+    'stubs/kill.c',
+    'stubs/lchown.c',
+    'stubs/listen.c',
+    'stubs/llseek.c',
+    'stubs/major.c',
+    'stubs/makedev.c',
+    'stubs/minor.c',
+    'stubs/mkfifo.c',
+    'stubs/mknod.c',
+    'stubs/msync.c',
+    'stubs/openlog.c',
+    'stubs/pipe.c',
+    'stubs/poll.c',
+    'stubs/pselect.c',
+    'stubs/pthread_sigmask.c',
+    'stubs/readv.c',
+    'stubs/recv.c',
+    'stubs/recvfrom.c',
+    'stubs/recvmsg.c',
+    'stubs/sched_get_priority_max.c',
+    'stubs/sched_get_priority_min.c',
+    'stubs/sched_setparam.c',
+    'stubs/sched_setscheduler.c',
+    'stubs/select.c',
+    'stubs/send.c',
+    'stubs/sendmsg.c',
+    'stubs/sendto.c',
+    'stubs/setegid.c',
+    'stubs/seteuid.c',
+    'stubs/setgid.c',
+    'stubs/setgrent.c',
+    'stubs/setgroups.c',
+    'stubs/setmntent.c',
+    'stubs/setpgid.c',
+    'stubs/setpwent.c',
+    'stubs/setrlimit.c',
+    'stubs/setsid.c',
+    'stubs/setsockopt.c',
+    'stubs/settimeofday.c',
+    'stubs/setuid.c',
+    'stubs/shutdown.c',
+    'stubs/sigaction.c',
+    'stubs/signal.c',
+    'stubs/sigsuspend.c',
+    'stubs/sigvec.c',
+    'stubs/socket.c',
+    'stubs/socketpair.c',
+    'stubs/statvfs.c',
+    'stubs/syslog.c',
+    'stubs/tcdrain.c',
+    'stubs/tcflow.c',
+    'stubs/tcflush.c',
+    'stubs/tcgetattr.c',
+    'stubs/tcsendbreak.c',
+    'stubs/tcsetattr.c',
+    'stubs/times.c',
+    'stubs/ttyname.c',
+    'stubs/ttyname_r.c',
+    'stubs/umask.c',
+    'stubs/vfork.c',
+    'stubs/wait.c',
+    'stubs/waitpid.c',
+]
+
+SRCS_NEWLIB_MISC = [
+    'malloc.c',        # malloc wrapper
+    'stacktrace.c',    # stack tracing for use with "-finstrument"
+    'start.c',         # contains _start, preventing us from making this a .so
+    'nacl_add_tp.c',
+    'nacl_read_tp.c',
+    'pthread_initialize_minimal.c',
+    'pthread_stubs.c', # weak version of __pthread_initialize
+    'tls.c',
+]
+
+
+# used by both glibc and newlib
+SRCS_NACL_EXTENSIONS = [
+    'gc_hooks.c',
+    'nacl_irt.c',
+    'nacl_irt_init.c',
+    'nacl_tls_get.c',
+    'nacl_tls_init.c',
+    'nacl_random.c',
+    ]
+
+if env.Bit('nacl_glibc'):
+  # For nacl-glibc, the standard interfaces are provided by glibc, so
+  # we do not build them here.
+  sources = SRCS_NACL_EXTENSIONS
+else:
+  sources = (SRCS_NACL_EXTENSIONS +
+             SRCS_NEWLIB_SYSCALL +
+             SRCS_NEWLIB_STUBS +
+             SRCS_NEWLIB_MISC)
+  if env.Bit('build_arm') and not env.Bit('bitcode'):
+    sources.append('aeabi_read_tp.S')
+
+# Do not make a shared version of libnacl.
+libnacl = env.ComponentLibrary('libnacl', sources)
+
+env.AddLibraryToSdk(libnacl)
+header_install = env.AddHeaderToSdk([
+    'nacl_random.h', 'nacl_startup.h', 'nacl_thread.h'])
+env.Requires('libnacl', header_install)
+
+libnacl_dyncode = env.NaClSdkLibrary('libnacl_dyncode', ['dyncode.c'])
+env.AddLibraryToSdk(libnacl_dyncode)
+env.AddHeaderToSdk(['nacl_dyncode.h'])
+env.ComponentLibrary('libnacl_dyncode_private', ['dyncode_private.c'])
+
+if not env.Bit('nacl_glibc'):
+  # Supplemental newlib headers. Required to support functions that libnacl
+  # implements, but newlib doesn't include. These could instead be added
+  # to newlib directly, but maintaining them here allows them to be changed
+  # in sync with the implementation.
+  env.AddHeaderToSdk(['include/sys/utsname.h'], subdir='sys')
+
+libnacl_exception = env.NaClSdkLibrary('libnacl_exception',
+                                       ['nacl_exception.c'])
+env.AddLibraryToSdk(libnacl_exception)
+env.ComponentLibrary('libnacl_exception_private', ['nacl_exception_private.c'])
+
+libnacl_list_mappings = env.NaClSdkLibrary(
+    'libnacl_list_mappings', ['list_mappings.c'])
+env.AddLibraryToSdk(libnacl_list_mappings)
+env.AddHeaderToSdk(['nacl_list_mappings.h'])
+env.ComponentLibrary(
+    'libnacl_list_mappings_private', ['list_mappings_private.c'])
+
+if not env.Bit('nonsfi_nacl'):
+  env.ComponentLibrary(
+      'libnacl_random_private',
+      [env.ComponentObject('irt_random',
+                           '${MAIN_DIR}/src/untrusted/irt/irt_random.c')])
+
+
+imc_syscalls = [
+    'imc_accept.c',
+    'imc_connect.c',
+    'imc_makeboundsock.c',
+    'imc_mem_obj_create.c',
+    'imc_recvmsg.c',
+    'imc_sendmsg.c',
+    'imc_socketpair.c',
+    ]
+
+libimc_syscalls = env.NaClSdkLibrary('libimc_syscalls', imc_syscalls)
+
+sys_private = [
+    'null.c',
+    'sysbrk.c',
+    ]
+
+if not env.Bit('nacl_glibc'):
+  sys_private.append(env.ComponentObject(
+      'private_blockhook', '${MAIN_DIR}/src/untrusted/irt/irt_blockhook.c'))
+  # We must combine these all into a single .o file so that there is no
+  # danger of some of this code not being brought in from the archive, and
+  # later getting the IRT-based versions from libnacl instead.
+  #
+  # For example, suppose mmap() were in a separate mmap.o file in
+  # libnacl_sys_private.o.  If your test calls only malloc() (defined in
+  # -lc) and malloc() is the only caller of mmap(), then when processing
+  # -lsys_private (before -lc) the linker will omit mmap.o, and only when
+  # processing -lc (which implicitly includes -lnacl) will it try to pull
+  # in some definition of mmap()--so it will get the libnacl one instead of
+  # the libnacl_sys_private one.  Putting everything important into a
+  # single .o file avoids this scenario.
+  private_combine = [env.ComponentObject(module, '%s.c' % module)
+                     for module in ['gc_hooks_private',
+                                    'sys_private']]
+  sys_private.append(env.Command('combined_private${OBJSUFFIX}',
+                                 private_combine,
+                                 '${LD} -relocatable -o ${TARGET} ${SOURCES}'))
+
+if not env.Bit('nonsfi_nacl'):
+  env.ComponentLibrary('libnacl_sys_private', sys_private)

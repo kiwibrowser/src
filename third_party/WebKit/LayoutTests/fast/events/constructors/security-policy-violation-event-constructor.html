@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../../../resources/js-test.js"></script>
+</head>
+<body>
+<script>
+
+description("This tests the constructor for the SecurityPolicyViolationEvent DOM class.");
+
+var testObject = {nyannyan: 123};
+var testDiv = document.createElement("div");
+
+// No initializer is passed.
+shouldBeTrue("new SecurityPolicyViolationEvent('eventType').bubbles");
+shouldBeFalse("new SecurityPolicyViolationEvent('eventType').cancelable");
+shouldBeEmptyString("new SecurityPolicyViolationEvent('eventType').documentURI");
+shouldBeEmptyString("new SecurityPolicyViolationEvent('eventType').referrer");
+shouldBeEmptyString("new SecurityPolicyViolationEvent('eventType').blockedURI");
+shouldBeEmptyString("new SecurityPolicyViolationEvent('eventType').violatedDirective");
+shouldBeEmptyString("new SecurityPolicyViolationEvent('eventType').effectiveDirective");
+shouldBeEmptyString("new SecurityPolicyViolationEvent('eventType').originalPolicy");
+shouldBeEmptyString("new SecurityPolicyViolationEvent('eventType').sourceFile");
+shouldBeEqualToString("new SecurityPolicyViolationEvent('eventType').disposition", "enforce");
+shouldBe("new SecurityPolicyViolationEvent('eventType').lineNumber", "0");
+shouldBe("new SecurityPolicyViolationEvent('eventType').columnNumber", "0");
+shouldBe("new SecurityPolicyViolationEvent('eventType').statusCode", "0");
+
+// bubbles is always true.
+shouldBeTrue("new SecurityPolicyViolationEvent('eventType', { bubbles: false }).bubbles");
+shouldBeTrue("new SecurityPolicyViolationEvent('eventType', { bubbles: true }).bubbles");
+
+// cancelable is always false.
+shouldBeFalse("new SecurityPolicyViolationEvent('eventType', { cancelable: false }).cancelable");
+shouldBeFalse("new SecurityPolicyViolationEvent('eventType', { cancelable: true }).cancelable");
+
+// String members are passed.
+["documentURI", "referrer", "blockedURI", "violatedDirective", "effectiveDirective", "originalPolicy", "sourceFile"].forEach(function(member) {
+    shouldBeEqualToString("new SecurityPolicyViolationEvent('eventType', { " + member + ": 'foo' })." + member, "foo");
+});
+
+// Enum members throw on unknown initializer values.
+shouldThrow("new SecurityPolicyViolationEvent('eventType', { disposition: 'foo' }).disposition");
+
+// Number members are passed.
+["lineNumber", "columnNumber", "statusCode"].forEach(function(member) {
+    shouldBe("new SecurityPolicyViolationEvent('eventType', { " + member + ": 42 })." + member, "42");
+});
+</script>
+</body>
+</html>

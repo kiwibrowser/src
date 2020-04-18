@@ -1,0 +1,70 @@
+<!-- Copyright 2016 The Chromium Authors. All rights reserved.
+  -- Use of this source code is governed by a BSD-style license that can be
+  -- found in the LICENSE file.
+-->
+
+<link rel="import" href="chrome://resources/polymer/v1_0/polymer/polymer.html">
+<link rel="import" href="files_metadata_entry.html">
+
+<dom-module id="files-metadata-box">
+  <template>
+    <style>
+      div {
+        margin: 0;
+        padding: 0;
+      }
+
+      div[hidden] {
+        display: none;
+      }
+
+      #box {
+        display: block;
+        margin: 0;
+        overflow: auto;
+        padding: 0;
+        width: 320px;
+      }
+
+      .category {
+        color: #E6E6E6;
+        font-size: 108%;
+        font-weight: 500;
+        margin: 12px 32px;
+        vertical-align: bottom;
+      }
+
+      hr {
+        border-color: white;
+        margin-top: 31px;
+        opacity: 0.24;
+      }
+    </style>
+    <div id="box">
+      <div class="category" i18n-content="METADATA_BOX_GENERAL_INFO"></div>
+      <files-metadata-entry i18n-values="key:METADATA_BOX_FILE_SIZE" value="[[size]]" loading="[[isSizeLoading]]"></files-metadata-entry>
+      <files-metadata-entry i18n-values="key:METADATA_BOX_MODIFICATION_TIME" value="[[modificationTime]]"></files-metadata-entry>
+      <files-metadata-entry i18n-values="key:METADATA_BOX_MEDIA_MIME_TYPE" value="[[mediaMimeType]]"></files-metadata-entry>
+
+      <div hidden="[[!hasFileSpecificInfo_]]">
+        <hr>
+        <div class="category" hidden="[[!isImage_(type)]]" i18n-content="METADATA_BOX_IMAGE_INFO"></div>
+        <div class="category" hidden="[[!isAudio_(type)]]" i18n-content="METADATA_BOX_AUDIO_INFO"></div>
+        <div class="category" hidden="[[!isVideo_(type)]]" i18n-content="METADATA_BOX_VIDEO_INFO"></div>
+        <files-metadata-entry i18n-values="key:METADATA_BOX_DIMENSION" value="[[dimension_(imageWidth, imageHeight)]]"></files-metadata-entry>
+        <files-metadata-entry i18n-values="key:METADATA_BOX_ALBUM_TITLE" value="[[mediaAlbum]]"></files-metadata-entry>
+        <files-metadata-entry i18n-values="key:METADATA_BOX_MEDIA_TITLE" value="[[mediaTitle]]"></files-metadata-entry>
+        <files-metadata-entry i18n-values="key:METADATA_BOX_MEDIA_ARTIST" value="[[mediaArtist]]"></files-metadata-entry>
+        <files-metadata-entry i18n-values="key:METADATA_BOX_DURATION" value="[[time2string_(mediaDuration)]]"></files-metadata-entry>
+        <files-metadata-entry i18n-values="key:METADATA_BOX_GENRE" value="[[mediaGenre]]"></files-metadata-entry>
+        <files-metadata-entry i18n-values="key:METADATA_BOX_TRACK" value="[[mediaTrack]]"></files-metadata-entry>
+        <files-metadata-entry i18n-values="key:METADATA_BOX_EXIF_DEVICE_MODEL" value="[[deviceModel_(ifd)]]"></files-metadata-entry>
+        <files-metadata-entry i18n-values="key:METADATA_BOX_EXIF_DEVICE_SETTINGS" value="[[deviceSettings_(ifd)]]"></files-metadata-entry>
+        <files-metadata-entry i18n-values="key:METADATA_BOX_EXIF_GEOGRAPHY" value="[[geography_(ifd)]]"></files-metadata-entry>
+        <files-metadata-entry i18n-values="key:METADATA_BOX_YEAR_RECORDED" value="[[mediaYearRecorded]]"></files-metadata-entry>
+      </div>
+    </div>
+  </template>
+</dom-module>
+
+<script src="files_metadata_box.js"></script>

@@ -1,0 +1,45 @@
+<!DOCTYPE HTML>
+<script src="../resources/gc.js"></script>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="../http/tests/resources/permissions-helper.js"></script>
+<script src="resources/aom-helper.js"></script>
+
+<!--
+
+Accessibility Object Model
+Explainer: https://github.com/WICG/aom/blob/gh-pages/explainer.md
+Spec: https://wicg.github.io/aom/spec/
+
+-->
+<script>
+test(function(t) {
+    assert_true(internals.runtimeFlags.accessibilityObjectModelEnabled);
+}, "Make sure that Accessibility Object Model is enabled");
+</script>
+
+<button id="context_menu_target">Context Menu Target</button>
+
+<script>
+async_test(function(t) {
+  enableAccessibilityEventsPermission().then(function() {
+    var target = document.getElementById("context_menu_target");
+    var axTarget = accessibilityController.accessibleElementById("context_menu_target");
+
+    var gotDOMEvent = false;
+    target.addEventListener("contextmenu", function(event) {
+      event.preventDefault();
+      gotDOMEvent = true;
+    });
+    var gotAccessibleEvent = false;
+    target.accessibleNode.onaccessiblecontextmenu = function() {
+      gotAccessibleEvent = true;
+    };
+    axTarget.showMenu();
+
+    assert_true(gotAccessibleEvent);
+    assert_true(gotDOMEvent);
+    t.done();
+  });
+}, "AccessibleNode.onaccessiblecontextmenu");
+</script>

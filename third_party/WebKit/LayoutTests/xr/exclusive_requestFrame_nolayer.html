@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="file:///gen/layout_test_data/mojo/public/js/mojo_bindings.js"></script>
+<script src="file:///gen/device/vr/public/mojom/vr_service.mojom.js"></script>
+<script src="../xr/resources/xr-device-mocking.js"></script>
+<script src="../xr/resources/xr-test-utils.js"></script>
+<canvas id="webgl-canvas"></canvas>
+
+<script>
+let fakeDevices = fakeXRDevices();
+
+xr_session_promise_test( (session) => new Promise((resolve, reject) => {
+  // Session must have a baseLayer or frame requests will be ignored.
+  let webglLayer = new XRWebGLLayer(session, gl);
+
+  function onBadFrame(time, vrFrame) {
+    reject("Callback registered without layer was called");
+  }
+
+  function onGoodFrame(time, vrFrame) {
+    resolve();
+  }
+
+  // This callback shouldn't be allowed to register, since the session doesn't
+  // have a baseLayer when this call is made.
+  let badHandle = session.requestAnimationFrame(onBadFrame);
+  assert_equals(badHandle, 0);
+
+  // Once the base layer is set the callback should be allowed.
+  session.baseLayer = webglLayer;
+
+  let goodHandle = session.requestAnimationFrame(onGoodFrame);
+  assert_not_equals(goodHandle, 0);
+
+}), fakeDevices["FakeGooglePixelPhone"], [
+      { exclusive: true },
+      { outputContext: getOutputContext() }
+  ],
+"XRSession requestAnimationFrame must fail if the session has no baseLayer");
+
+</script>

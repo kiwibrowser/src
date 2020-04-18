@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+
+<div id="target"></div>
+
+<script>
+function testImageVar(property, value) {
+  test(() => {
+    target.style.setProperty('--test', value);
+    target.style[property] = 'var(--test)';
+    var actual = getComputedStyle(target)[property];
+
+    target.style[property] = value;
+    assert_not_equals(target.style[property], '', value + ' must be valid for ' + property);
+    var expected = getComputedStyle(target)[property];
+
+    assert_equals(actual, expected);
+  }, property + ' should resolve ' + value + ' the same whether via var() or not.');
+}
+
+testImageVar('background-image', 'url("image.png")');
+testImageVar('background-image', '-webkit-image-set(url("image.png") 1x)');
+testImageVar('background', 'url("image.png")');
+testImageVar('background', '-webkit-image-set(url("image.png") 1x)');
+</script>

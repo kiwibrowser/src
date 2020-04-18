@@ -1,0 +1,17 @@
+@hex:
+  # hello_rip.c example from Mark Dowd.
+  # Issue 390
+  
+  # mov    $0x12345678,%eax
+  b8 78 56 34 12
+  
+  # addr32 mov %rax,0x61e0cf(%eip)  63e420 <_end+0x3da70>
+  67 48 89 05 cf e0 61 00
+@dis:
+     0:	b8 78 56 34 12                               	mov    $0x12345678,%eax
+     5:	67 48 89 05 cf e0 61 00                      	mov    %rax,0x61e0cf(%eip)        # 0x61e0dc
+@rdfa_output:
+  5: unrecognized instruction
+  return code: 1
+@spec:
+  5: ('addr prefix is not allowed', Instruction(0x5: 67 48 89 05 cf e0 61 00  mov %rax,0x61e0cf(%eip) # 0x61e0dc))

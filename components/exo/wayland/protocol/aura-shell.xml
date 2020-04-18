@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="aura_shell">
+
+  <copyright>
+    Copyright 2017 The Chromium Authors.
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice (including the next
+    paragraph) shall be included in all copies or substantial portions of the
+    Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+  </copyright>
+
+  <interface name="zaura_shell" version="6">
+    <description summary="aura_shell">
+      The global interface exposing aura shell capabilities is used to
+      instantiate an interface extension for a wl_surface object.
+      This extended interface will then allow the client to use aura shell
+      specific functionality.
+    </description>
+
+    <enum name="error">
+      <entry name="aura_surface_exists" value="0"
+	     summary="the surface already has an aura surface object associated"/>
+      <entry name="aura_output_exists" value="1"
+	     summary="the output already has an aura output object associated"/>
+    </enum>
+
+    <request name="get_aura_surface">
+      <description summary="extend surface interface for aura shell">
+	Instantiate an interface extension for the given wl_surface to
+	provide aura shell functionality. If the given wl_surface is not
+	associated with a shell surface, the shell_surface_missing protocol
+	error is raised.
+      </description>
+
+      <arg name="id" type="new_id" interface="zaura_surface"
+	   summary="the new aura surface interface id"/>
+      <arg name="surface" type="object" interface="wl_surface"
+	   summary="the surface"/>
+    </request>
+
+    <!-- Version 2 additions -->
+
+    <request name="get_aura_output" since="2">
+      <description summary="extend output interface for aura shell">
+	Instantiate an interface extension for the given wl_output to
+	provide aura shell functionality.
+      </description>
+
+      <arg name="id" type="new_id" interface="zaura_output"
+	   summary="the new aura output interface id"/>
+      <arg name="output" type="object" interface="wl_output"
+	   summary="the output"/>
+    </request>
+  </interface>
+
+  <interface name="zaura_surface" version="5">
+    <description summary="aura shell interface to a wl_surface">
+      An additional interface to a wl_surface object, which allows the
+      client to access aura shell specific functionality for surface.
+    </description>
+
+    <enum name="frame_type">
+      <description summary="different frame types">
+	Frame types that can be used to decorate a surface.
+      </description>
+      <entry name="none" value="0" summary="no frame"/>
+      <entry name="normal" value="1" summary="caption with shadow" />
+      <entry name="shadow" value="2" summary="shadow only"/>
+    </enum>
+
+    <request name="set_frame">
+      <description summary="request a frame for surface">
+	Suggests a surface should use a specific frame.
+      </description>
+      <arg name="type" type="uint" summary="the new frame type"/>
+    </request>
+
+    <!-- Version 2 additions -->
+
+    <request name="set_parent" since="2">
+      <description summary="set the parent of this surface">
+	Set the "parent" of this surface. "x" and "y" arguments specify the
+	initial position for surface relative to parent.
+      </description>
+      <arg name="parent" type="object" interface="zaura_surface" allow-null="true"/>
+      <arg name="x" type="int"/>
+      <arg name="y" type="int"/>
+    </request>
+
+    <!-- Version 3 additions -->
+
+    <request name="set_frame_colors" since="3">
+      <description summary="set the frame colors of this surface">
+	Set the frame colors.
+      </description>
+      <arg name="active_color" type="uint" summary="32 bit ARGB color value, not premultiplied"/>
+      <arg name="inactive_color" type="uint" summary="32 bit ARGB color value, not premultiplied"/>
+    </request>
+
+    <!-- Version 4 additions -->
+
+    <request name="set_startup_id" since="4">
+      <description summary="set the startup ID of this surface">
+	Set the startup ID.
+      </description>
+      <arg name="startup_id" type="string" allow-null="true"/>
+    </request>
+
+    <!-- Version 5 additions -->
+
+    <request name="set_application_id" since="5">
+      <description summary="set the application ID of this surface">
+	Set the application ID.
+      </description>
+      <arg name="application_id" type="string" allow-null="true"/>
+    </request>
+  </interface>
+
+  <interface name="zaura_output" version="6">
+    <description summary="aura shell interface to a wl_output">
+      An additional interface to a wl_output object, which allows the
+      client to access aura shell specific functionality for output.
+    </description>
+
+    <!-- Version 2 additions -->
+
+    <enum name="scale_property" bitfield="true">
+      <description summary="scale information">
+	These flags describe properties of an output scale.
+	They are used in the flags bitfield of the scale event.
+      </description>
+      <entry name="current" value="0x1"
+	     summary="indicates this is the current scale"/>
+      <entry name="preferred" value="0x2"
+	     summary="indicates this is the preferred scale"/>
+    </enum>
+
+    <enum name="scale_factor">
+      <entry name="0400" value="400"/>
+      <entry name="0500" value="500"/>
+      <entry name="0550" value="550"/>
+      <entry name="0600" value="600"/>
+      <entry name="0625" value="625"/>
+      <entry name="0650" value="650"/>
+      <entry name="0700" value="700"/>
+      <entry name="0750" value="750"/>
+      <entry name="0800" value="800"/>
+      <entry name="0850" value="850"/>
+      <entry name="0900" value="900"/>
+      <entry name="0950" value="950"/>
+      <entry name="1000" value="1000"/>
+      <entry name="1050" value="1050"/>
+      <entry name="1100" value="1100"/>
+      <entry name="1150" value="1150"/>
+      <entry name="1125" value="1125"/>
+      <entry name="1200" value="1200"/>
+      <entry name="1250" value="1250"/>
+      <entry name="1300" value="1300"/>
+      <entry name="1400" value="1400"/>
+      <entry name="1450" value="1450"/>
+      <entry name="1500" value="1500"/>
+      <entry name="1600" value="1600"/>
+      <entry name="1750" value="1750"/>
+      <entry name="1800" value="1800"/>
+      <entry name="2000" value="2000"/>
+      <entry name="2200" value="2200"/>
+      <entry name="2250" value="2250"/>
+      <entry name="2500" value="2500"/>
+      <entry name="2750" value="2750"/>
+      <entry name="3000" value="3000"/>
+      <entry name="3500" value="3500"/>
+      <entry name="4000" value="4000"/>
+      <entry name="4500" value="4500"/>
+      <entry name="5000" value="5000"/>
+    </enum>
+
+    <event name="scale" since="2">
+      <description summary="advertise available scales for the output">
+	The scale event describes an available scale for the output.
+
+	The event is sent when binding to the output object and there
+	will always be one scale, the current scale. The event is sent
+	again if an output changes scale, for the scale that is now
+	current. In other words, the current scale is always the last
+	scale that was received with the current flag set.
+      </description>
+      <arg name="flags" type="uint" enum="scale_property" summary="bitfield of scale flags"/>
+      <arg name="scale" type="uint" enum="scale_factor" summary="output scale"/>
+    </event>
+
+    <!-- Version 5 additions -->
+
+    <enum name="connection_type">
+      <entry name="unknown" value="0"/>
+      <entry name="internal" value="1"/>
+    </enum>
+
+    <event name="connection" since="5">
+      <description summary="advertise connection for the output">
+	The connection event describes how the output is connected.
+
+	The event is sent when binding to the output object.
+      </description>
+      <arg name="connection" type="uint" enum="connection_type" summary="output connection"/>
+    </event>
+
+    <event name="device_scale_factor" since="5">
+      <description summary="advertise device scale factor for the output">
+	This event describes the device specific scale factor for the output.
+
+	The device specific scale factor is not expected the change during
+	the lifetime of the output. And it is not limited to an integer value
+	like the scale factor provided by wl_output interface. The exact
+	contents scale used by the compositor can be determined by combining
+	this device scale factor with the current output scale.
+
+	The event is sent when binding to the output object.
+      </description>
+      <arg name="scale" type="uint" enum="scale_factor" summary="output device scale factor"/>
+    </event>
+ </interface>
+
+</protocol>

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+<script>
+    var counter = 1;
+    var t = async_test("Verify that removing a source triggers a proper image load and doesn't result in a crash.");
+    window.addEventListener("message", t.step_func(function (message) {
+        if (message.data.indexOf("fail") != -1) {
+            assert_unreached("The test failed on " + message.data);
+            t.done();
+            return;
+        }
+        if (counter == 1) {
+            assert_equals(message.data, "remove");
+            ++counter;
+            document.getElementById("frame").contentWindow.postMessage("remove", "*");
+        } else {
+            assert_equals(message.data, "success");
+            t.done();
+        }
+    }));
+</script>
+<iframe src="resources/iframe-ch-with-picture-removal.php" onerror="console.log('failed to load iframe');t.done()" id=frame style="width: 800px"></iframe>

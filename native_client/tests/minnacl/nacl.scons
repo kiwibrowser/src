@@ -1,0 +1,63 @@
+# -*- python -*-
+# Copyright 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# valgrind has problems with minimal_test_guest
+if env.IsRunningUnderValgrind():
+  Return()
+
+# This test case tests an experimental profile of NaCl.  If you make a
+# change which breaks this test which is difficult to fix, you can
+# disable the test, but please CC mseaborn,krasin.
+
+if 'TRUSTED_ENV' not in env:
+  Return()
+trusted_env = env['TRUSTED_ENV']
+
+runner = trusted_env.ComponentProgram(
+    'minimal_test_host', ['minimal_test_host.c'],
+    EXTRA_LIBS=['sel'])
+
+# This can generate references to runtime code we won't link with.
+env.FilterOut(CCFLAGS=['-fasynchronous-unwind-tables'])
+
+test_prog = env.ComponentProgram(
+    'minimal_test_guest',
+    ['minimal_test_guest.c'],
+    EXTRA_LINKFLAGS=['-nostdlib'])
+
+# The minimal_test_guest expects fairly minimal code. Without -nostdlib
+# in the TRANSLATEFLAGS, a dummy pnacl shim will be the real entry
+# point instead of _start, and that will end up doing a bit more work
+# (e.g., an IRT query for nacl_read_tp). This extra work seems to be okay
+# with --use_separate_thread, but crashes otherwise.
+env.Replace(TRANSLATEFLAGS=['-nostdlib'])
+# Avoid supporting non-standard linker-related TRANSLATEFLAGS (-nostdlib) with
+# the sandboxed translator.
+if env.Bit('use_sandboxed_translator'):
+  Return()
+# TODO(stichnot,jvoung): For this special minimal-code test (see comment above),
+# linking the Subzero generated ELF file results in a nexe that fails
+# validation.  https://code.google.com/p/nativeclient/issues/detail?id=4134
+if env.Bit('use_sz'):
+  Return()
+test_prog = env.GetTranslatedNexe(test_prog)
+
+is_broken = not env.Bit('nacl_static_link')
+
+node = env.CommandTest('minimal_test.out',
+                       env.AddBootstrap(runner, [test_prog]),
+                       stdout_golden=env.File('minimal_test.stdout'))
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_minnacl_test',
+                       is_broken=is_broken)
+
+node = env.CommandTest('minimal_test_separate_thread.out',
+                       env.AddBootstrap(runner,
+                                        ['--use_separate_thread', test_prog]),
+                       stdout_golden=env.File('minimal_test.stdout'))
+env.AddNodeToTestSuite(node, ['small_tests'],
+                       'run_minnacl_separate_thread_test',
+                       is_broken=is_broken)

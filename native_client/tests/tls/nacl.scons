@@ -1,0 +1,37 @@
+# -*- python -*-
+# Copyright 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+defines_map = {
+    'tdata1' : ['WITH_PTHREAD'],
+    'tdata2' : ['MORE_TDATA', 'WITH_PTHREAD'],
+    'tbss1' : ['WITH_TBSS', 'WITH_PTHREAD'],
+    'tbss2' : ['WITH_TBSS', 'MORE_TBSS', 'WITH_PTHREAD'],
+    'tbss3' : ['WITH_TBSS', 'MORE_TDATA', 'WITH_PTHREAD'],
+    'largealign' : ['TDATA_LARGE_ALIGN', 'TBSS_LARGE_ALIGN', 'WITH_PTHREAD'],
+    'nopthread' : ['WITH_TBSS', 'TDATA_LARGE_ALIGN', 'TBSS_LARGE_ALIGN']}
+
+pic_list = [('', [])]
+if not env.Bit('bitcode'):
+  pic_list.append(('_pic', ['-fPIC']))
+
+for case_name, defines in sorted(defines_map.iteritems()):
+  if 'WITH_PTHREAD' in defines:
+    libs = ['${PTHREAD_LIBS}']
+  else:
+    libs = []
+  libs += ['${NONIRT_LIBS}']
+  for pic_suffix, pic_flags in pic_list:
+    full_name = 'tls_test_' + case_name + pic_suffix
+    env_test = env.Clone()
+    env_test.Append(CPPDEFINES=[[define, ''] for define in defines])
+    env_test.Append(CCFLAGS=pic_flags)
+    obj = env_test.ComponentObject(full_name + '.o', 'tls.c')
+    prog = env_test.ComponentProgram(full_name, obj, EXTRA_LIBS=libs)
+    node = env_test.CommandSelLdrTestNacl(full_name + '.out', prog,
+                                          size='small')
+    env_test.AddNodeToTestSuite(node, ['small_tests', 'toolchain_tests'],
+                                'run_' + full_name)

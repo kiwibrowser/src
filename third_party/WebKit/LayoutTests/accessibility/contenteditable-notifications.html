@@ -1,0 +1,64 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<script src="../resources/js-test.js"></script>
+<script src="../resources/accessibility-helper.js"></script>
+</head>
+<body>
+
+<div id="textbox" contentEditable="true">First<p>Second</p></div>
+
+<div id="console"></div>
+<script>
+description("This test ensures that moving the cursor in a contentEditable sends a selected text change notification, and typing in a contentEditable sends both a value changed and selected text changed notification - both on the root element that's marked as contentEditable.");
+window.jsTestIsAsync = true;
+
+if (window.testRunner && window.accessibilityController) {
+    testRunner.dumpAsText();
+
+    // Ensure entire a11y tree has already been seen.
+    traverseAccessibilityTree(accessibilityController.rootElement);
+
+    // Focus the contenteditable text box and move the cursor to the end.
+    var textbox = document.getElementById("textbox");
+    textbox.focus();
+    eventSender.keyDown("ArrowDown", []);
+    eventSender.keyDown("ArrowDown", []);
+
+    var axTextBox = accessibilityController.focusedElement;
+
+    var valueChangedCount = 0;
+    var selectedTextChangedCount = 0;
+
+    // Defer the main part of the test so that the notification listener
+    // doesn't catch any notifications still in the queue from loading the
+    // page and initially setting focus.
+    window.setTimeout(function() {
+        axTextBox.addNotificationListener(function(notification) {
+            testPassed("Got notification: " + notification);
+
+            if (notification == "ValueChanged")
+                valueChangedCount++;
+            else if (notification == "SelectedTextChanged")
+                selectedTextChangedCount++;
+
+            if (valueChangedCount >= 8 && selectedTextChangedCount >= 4) {
+                textbox.style.display = "none";
+                finishJSTest();
+            }
+        });
+
+        eventSender.keyDown("ArrowLeft", []);
+        eventSender.keyDown("ArrowLeft", []);
+        eventSender.keyDown("w", []);
+        eventSender.keyDown("x", []);
+        eventSender.keyDown("y", []);
+        eventSender.keyDown("z", []);
+
+    }, 0);
+}
+
+</script>
+
+</body>
+</html>

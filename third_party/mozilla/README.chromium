@@ -1,0 +1,37 @@
+Name: Cocoa extension code from Camino
+Short Name: camino
+URL: http://caminobrowser.org/
+Version: unknown
+License: MPL 1.1/GPL 2.0/LGPL 2.1
+Security Critical: yes
+
+Description:
+  This directory contains the following files come from (Mozilla) Camino
+  (src/camino/src/extensions):
+
+    NSPasteboard+Utils.h/mm
+    NSScreen+Utils.h/m
+    NSString+Utils.h/m
+    NSURL+Utils.h/m
+    NSWorkspace+Utils.h/m
+
+Local modifications:
+- NSURL+Utils.m was modified to use non-deprecated Cocoa APIs to allow
+  compilation on modern versions of Mac OS X.
+- NSString+Utils.m was renamed to NSString+Utils.mm and modified to use GURL
+  for validation in -[NSString isValidURI].
+- NSPasteboard+Utils.mm was modified to add an argument to
+  -[NSPasteboard getURLs:andTitles:] to determine whether or not filenames in
+  the drag should be converted to file URLs.
+- -[NSPasteboard getURLs:andTitles:convertingFilenames:convertingTextToURL:]
+  was modified to keep going if WebURLsWithTitlesPboardType exists but doesn't
+  contain any URLs, which can happen with drags from WebView.
+- -[NSPasteboard:containsURLData] and [NSPasteboard getURLs:andTitles:] were
+  modified to accept an additional parameter convertingTextToURL:, which
+  indicates whether the string contents of the pasteboard should be
+  interpreted as a URL if possible.
+- -[NSPasteboard htmlFromRtf] was added to do rtf->html conversion.
+- NSWorkspace+Utils.m was modified to compile on the x86_64 architecture.
+- MOZILLA_EXPORT was added to some constants in NSPasteboard+Utils.h.
+- +[NSWorkspace(CaminoDefaultBrowserAdditions) isLeopardOrHigher] hidden since
+  it relies on methods deprecated in 10.8 (and is unused in Chrome).

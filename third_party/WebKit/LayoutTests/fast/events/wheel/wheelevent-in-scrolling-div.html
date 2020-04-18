@@ -1,0 +1,51 @@
+<html>
+    <head>
+        <script src="../../../resources/js-test.js"></script>
+        <script>
+            window.jsTestIsAsync = true;
+            var expectedScrollTop = 200;
+            var expectedScrollLeft = 100;
+            var event;
+            var div;
+
+            function runTest()
+            {
+                var overflowElement = document.getElementById("overflow");
+                if (overflowElement) {
+                    overflowElement.addEventListener("mousewheel", mousewheelHandler, false);
+
+                    // EventSender uses 40px per tick.
+                    eventSender.mouseMoveTo(overflowElement.offsetLeft + 5, overflowElement.offsetTop + 5);
+                    eventSender.mouseScrollBy(-2.5, -5, false, true, 0, true, "phaseBegan");
+                }
+
+                div = document.getElementById("overflow");
+                shouldBecomeEqual("div.scrollTop == window.expectedScrollTop && " +
+                    "div.scrollLeft == window.expectedScrollLeft", "true", finishJSTest);
+            }
+
+            function mousewheelHandler(e)
+            {
+                event = e;
+                shouldBe("event.deltaY", "window.expectedScrollTop");
+                shouldBe("event.deltaX", "window.expectedScrollLeft");
+                shouldBe("event.wheelDeltaY", "-5*120");
+                shouldBe("event.wheelDeltaX", "-2.5*120");
+
+                if (e.wheelDeltaY)
+                    shouldBe("event.wheelDelta", "-5*120");
+                else
+                    shouldBe("event.wheelDelta", "-2.5*120");
+            }
+        </script>
+    </head>
+
+    <body style="margin:0" onload="runTest()">
+        <div id="overflow" style="border:2px solid black;overflow:auto;height:200px;width:200px;">
+            <div style="background-color:red;height:200px;width:400px;"></div>
+            <div style="background-color:green;height:200px;width:400px;"></div>
+            <div style="background-color:red;height:200px;width:400px;"></div>
+        </div>
+        <div id="console"></div>
+    </body>
+</html>

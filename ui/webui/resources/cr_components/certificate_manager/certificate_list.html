@@ -1,0 +1,41 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/html/assert.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="certificate_entry.html">
+<link rel="import" href="certificate_manager_types.html">
+<link rel="import" href="certificate_shared_css.html">
+<link rel="import" href="certificates_browser_proxy.html">
+
+<dom-module id="certificate-list">
+  <template>
+    <style include="certificate-shared iron-flex">
+      .button-box {
+        align-items: center;
+        display: flex;
+        margin-bottom: 24px;
+        min-height: 48px;
+        padding: 0 20px;
+      }
+    </style>
+    <div class="button-box">
+      <span class="flex">
+          [[getDescription_(certificateType, certificates)]]</span>
+      <paper-button id="import" on-tap="onImportTap_"
+          hidden="[[!canImport_(certificateType)]]">
+        [[i18n('certificateManagerImport')]]</paper-button>
+<if expr="chromeos">
+      <paper-button id="importAndBind" on-tap="onImportAndBindTap_"
+          hidden="[[!canImportAndBind_(certificateType, isGuest_)]]">
+        [[i18n('certificateManagerImportAndBind')]]</paper-button>
+</if>
+    </div>
+    <template is="dom-repeat" items="[[certificates]]">
+      <certificate-entry model="[[item]]"
+          certificate-type="[[certificateType]]">
+      </certificate-entry>
+    </template>
+  </template>
+  <script src="certificate_list.js"></script>
+</dom-module>

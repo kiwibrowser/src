@@ -1,0 +1,21 @@
+<html>
+<head>
+<title>Autoplay Test Page</title>
+</head>
+<body>
+<iframe id=subframe></iframe>
+<video id=video>
+  <source src=bigbuck.webm type=video/webm />
+</video>
+<script>
+function tryPlayback() {
+  const video = document.getElementById('video');
+  video.play().then(() => {
+    window.domAutomationController.send(true);
+  }, (e) => {
+    window.domAutomationController.send(e.name != 'NotAllowedError');
+  });
+}
+</script>
+</body>
+</html>

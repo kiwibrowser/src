@@ -1,0 +1,33 @@
+<html>
+<body onload="step1()">
+<script>
+  function step1() {
+    console.log('step1');
+    // Step 1 - create some history by navigating forward.  Note that this
+    // doesn't cause a load.
+    history.pushState({}, '', '/foo');
+    setTimeout(step2, 100);
+  }
+  function step2() {
+    console.log('step2');
+    if (!location.href.endsWith('/foo'))
+      console.log('pushState failed. ' + location.href);
+    history.back();
+    setTimeout(step3, 100);
+  }
+  function step3() {
+    console.log('step3');
+    if (location.href.endsWith('/foo'))
+      console.log('Backward navigation failed. ' + location.href);
+    history.forward();
+    setTimeout(step4, 100);
+  }
+  function step4() {
+    console.log('step4');
+    if (!location.href.endsWith('/foo'))
+      console.log ('Forward navigation failed. ' + location.href);
+    console.log('pass');
+  }
+</script>
+</body>
+</html>

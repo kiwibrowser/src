@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>document.origin</title>
+    <script src="/resources/testharness.js"></script>
+    <script src="/resources/testharnessreport.js"></script>
+</head>
+<body>
+    <script>
+    test(function() {
+        assert_equals(document.origin, 'http://127.0.0.1:8000');
+    }, 'Top-level document.');
+
+    test(function() {
+        var doc = document.implementation.createHTMLDocument();
+        assert_equals(doc.origin, 'http://127.0.0.1:8000');
+    }, 'createHTMLDocument()');
+
+
+    (function() {
+        var t = async_test("about:blank IFrame.");
+        t.step(function () {
+            var iframe = document.createElement('iframe');
+            iframe.addEventListener('load', function () {
+                assert_equals(iframe.contentDocument.origin, 'http://127.0.0.1:8000');
+                t.done();
+            });
+            document.body.appendChild(iframe);
+        });
+    })();
+
+    (function() {
+        var t = async_test("srcdoc IFrame.");
+        t.step(function () {
+            var iframe = document.createElement('iframe');
+            iframe.setAttribute('srcdoc', '<p>Yay!</p>');
+            iframe.addEventListener('load', function () {
+                assert_equals(iframe.contentDocument.origin, 'http://127.0.0.1:8000');
+                t.done();
+            });
+            document.body.appendChild(iframe);
+        });
+    })();
+
+    (function() {
+        var t = async_test("Same-origin IFrame.");
+        t.step(function () {
+            var iframe = document.createElement('iframe');
+            iframe.src = "/security/resources/postmessage-document-origin.html";
+            iframe.addEventListener('load', function () {
+                iframe.contentWindow.postMessage({ 'id': 'same-origin-iframe' }, '*');
+            });
+            window.addEventListener('message', function (e) {
+                if (e.data.id != 'same-origin-iframe')
+                    return;
+
+                assert_equals(e.data.origin, 'http://127.0.0.1:8000');
+                assert_equals(e.data.origin, e.origin);
+                t.done();
+            });
+            document.body.appendChild(iframe);
+        });
+    })();
+
+    (function() {
+        var t = async_test("Cross-origin IFrame.");
+        t.step(function () {
+            var iframe = document.createElement('iframe');
+            iframe.src = "http://localhost:8080/security/resources/postmessage-document-origin.html";
+            iframe.addEventListener('load', function () {
+                iframe.contentWindow.postMessage({ 'id': 'cross-origin-iframe' }, '*');
+            });
+            window.addEventListener('message', function (e) {
+                if (e.data.id != 'cross-origin-iframe')
+                    return;
+
+                assert_equals(e.data.origin, 'http://localhost:8080');
+                assert_equals(e.data.origin, e.origin);
+                t.done();
+            });
+            document.body.appendChild(iframe);
+        });
+    })();
+
+    (function() {
+        var t = async_test("data: IFrame.");
+        t.step(function () {
+            var iframe = document.createElement('iframe');
+            iframe.src = "data:text/html,<script>" +
+                         "  window.addEventListener('message', function (e) {" +
+                         "    event.source.postMessage({" +
+                         "        'origin': document.origin," +
+                         "        'id': e.data.id" +
+                         "    }, e.origin);" +
+                         "  });" +
+                         "</sc" + "ript>";
+
+            iframe.addEventListener('load', function () {
+                iframe.contentWindow.postMessage({ 'id': 'data-iframe' }, '*');
+            });
+            window.addEventListener('message', function (e) {
+                if (e.data.id != 'data-iframe')
+                    return;
+
+                assert_equals(e.data.origin, 'null');
+                assert_equals(e.data.origin, e.origin);
+                t.done();
+            });
+            document.body.appendChild(iframe);
+        });
+    })();
+
+    (function() {
+        var t = async_test("Sandboxed same-origin IFrame.");
+        t.step(function () {
+            var iframe = document.createElement('iframe');
+            iframe.setAttribute('sandbox', 'allow-scripts');
+            iframe.src = "/security/resources/postmessage-document-origin.html";
+            iframe.addEventListener('load', function () {
+                iframe.contentWindow.postMessage({ 'id': 'sandboxed-same-origin-iframe' }, '*');
+            });
+            window.addEventListener('message', function (e) {
+                if (e.data.id != 'sandboxed-same-origin-iframe')
+                    return;
+
+                assert_equals(e.data.origin, 'null');
+                assert_equals(e.data.origin, e.origin);
+                t.done();
+            });
+            document.body.appendChild(iframe);
+        });
+    })();
+
+    (function() {
+        var t = async_test("Sandboxed cross-origin IFrame.");
+        t.step(function () {
+            var iframe = document.createElement('iframe');
+            iframe.setAttribute('sandbox', 'allow-scripts');
+            iframe.src = "http://localhost:8080/security/resources/postmessage-document-origin.html";
+            iframe.addEventListener('load', function () {
+                iframe.contentWindow.postMessage({ 'id': 'sandboxed-cross-origin-iframe' }, '*');
+            });
+            window.addEventListener('message', function (e) {
+                if (e.data.id != 'sandboxed-cross-origin-iframe')
+                    return;
+
+                assert_equals(e.data.origin, 'null');
+                assert_equals(e.data.origin, e.origin);
+                t.done();
+            });
+            document.body.appendChild(iframe);
+        });
+    })();
+    </script>
+</body>
+</html>

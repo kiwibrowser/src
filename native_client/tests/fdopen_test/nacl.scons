@@ -1,0 +1,21 @@
+# -*- python -*-
+# Copyright 2014 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This test checks that fdopen works correctly.
+# In particular, it is meant to ensure the glibc fdopen doesn't regress.
+
+Import('env')
+
+fdopen_test_nexe = env.ComponentProgram(
+    'fdopen_test', 'fdopen_test.c',
+    EXTRA_LIBS=['${PTHREAD_LIBS}', '${NONIRT_LIBS}'])
+
+test_fdopen = env.CommandSelLdrTestNacl(
+    'test_fdopen.out',
+    fdopen_test_nexe,
+    sel_ldr_flags=['-a'],
+    args=[env.File('test_data')])
+
+env.AddNodeToTestSuite(test_fdopen, ['small_tests'], 'run_fdopen_test')

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<head>
+    <title>document.origin + document.domain</title>
+    <script src="/resources/testharness.js"></script>
+    <script src="/resources/testharnessreport.js"></script>
+    <script>
+        if (document.location.hostname == "127.0.0.1")
+            document.location = "http://subdomain.example.test:8000/security/document-origin-domain.html";
+    </script>
+</head>
+<body>
+
+<script>
+test(function() {
+    assert_equals(document.origin, 'http://subdomain.example.test:8000');
+    assert_equals(document.domain, 'subdomain.example.test');
+
+    document.domain = 'example.test';
+
+    assert_equals(document.origin, 'http://subdomain.example.test:8000');
+    assert_equals(document.domain, 'example.test');
+}, 'document.domain does not effect document.origin.');
+</script>

@@ -1,0 +1,46 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef MEDIA_CAPTURE_VIDEO_MOCK_GPU_MEMORY_BUFFER_MANAGER_H_
+#define MEDIA_CAPTURE_VIDEO_MOCK_GPU_MEMORY_BUFFER_MANAGER_H_
+
+#include "gpu/command_buffer/client/gpu_memory_buffer_manager.h"
+#include "gpu/command_buffer/common/sync_token.h"
+#include "testing/gmock/include/gmock/gmock.h"
+#include "ui/gfx/color_space.h"
+
+namespace media {
+namespace unittest_internal {
+
+class MockGpuMemoryBufferManager : public gpu::GpuMemoryBufferManager {
+ public:
+  MockGpuMemoryBufferManager();
+
+  ~MockGpuMemoryBufferManager() override;
+
+  MOCK_METHOD4(
+      CreateGpuMemoryBuffer,
+      std::unique_ptr<gfx::GpuMemoryBuffer>(const gfx::Size& size,
+                                            gfx::BufferFormat format,
+                                            gfx::BufferUsage usage,
+                                            gpu::SurfaceHandle surface_handle));
+
+  MOCK_METHOD2(SetDestructionSyncToken,
+               void(gfx::GpuMemoryBuffer* buffer,
+                    const gpu::SyncToken& sync_token));
+
+  static std::unique_ptr<gfx::GpuMemoryBuffer> CreateFakeGpuMemoryBuffer(
+      const gfx::Size& size,
+      gfx::BufferFormat format,
+      gfx::BufferUsage usage,
+      gpu::SurfaceHandle surface_handle);
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(MockGpuMemoryBufferManager);
+};
+
+}  // namespace unittest_internal
+}  // namespace media
+
+#endif  // MEDIA_CAPTURE_VIDEO_MOCK_GPU_MEMORY_BUFFER_MANAGER_H_

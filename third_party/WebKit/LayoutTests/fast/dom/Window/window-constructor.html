@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+<script>
+test(() => {
+  assert_equals(window.constructor.prototype, window.__proto__,
+      "Window constructor prototype is window prototype.");
+
+  assert_throws(new TypeError, () => { window.constructor(); },
+      "Window constructor must be non-callable.");
+  assert_throws(new TypeError, () => { new window.constructor; },
+      "Window constructor must be non-callable.");
+
+  assert_throws(new TypeError, () => { window.__proto__.constructor(); },
+      "Window.prototype constructor must be non-callable.");
+  assert_throws(new TypeError, () => { new window.__proto__.constructor; },
+      "Window.prototype constructor must be non-callable.");
+
+  assert_throws(new TypeError, () => { window.__proto__.__proto__.constructor(); },
+      "WindowProperties constructor must be non-callable.");
+  assert_throws(new TypeError, () => { new window.__proto__.__proto__.constructor; },
+      "WindowProperties constructor must be non-callable.");
+}, "Test Window and its prototype chain's constructors.");
+</script>

@@ -1,0 +1,120 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/html/assert.html">
+<link rel="import" href="chrome://resources/html/cr/ui/focus_without_ink.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_action_menu/cr_action_menu.html">
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/cr_elements/policy/cr_policy_pref_indicator.html">
+<link rel="import" href="chrome://resources/html/web_ui_listener_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-icon/iron-icon.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="../i18n_setup.html">
+<link rel="import" href="../icons.html">
+<link rel="import" href="../route.html">
+<link rel="import" href="../settings_shared_css.html">
+<link rel="import" href="add_site_dialog.html">
+<link rel="import" href="constants.html">
+<link rel="import" href="edit_exception_dialog.html">
+<link rel="import" href="site_settings_behavior.html">
+<link rel="import" href="site_settings_prefs_browser_proxy.html">
+
+<dom-module id="site-list">
+  <template>
+    <style include="settings-shared">
+      .settings-row {
+        flex: 1
+      }
+    </style>
+    <div id="category">
+      <div class="settings-box first">
+        <h2 class="start">[[categoryHeader]]</h2>
+        <paper-button id="addSite"
+            class="secondary-button header-aligned-button"
+            hidden="[[readOnlyList]]" on-click="onAddSiteTap_">
+          $i18n{add}
+        </paper-button>
+      </div>
+
+      <cr-action-menu>
+        <button slot="item" class="dropdown-item" id="allow"
+            on-click="onAllowTap_" hidden$="[[!showAllowAction_]]">
+          $i18n{siteSettingsActionAllow}
+        </button>
+        <button slot="item" class="dropdown-item" id="block"
+            on-click="onBlockTap_" hidden$="[[!showBlockAction_]]">
+          $i18n{siteSettingsActionBlock}
+        </button>
+        <button slot="item" class="dropdown-item" id="sessionOnly"
+            on-click="onSessionOnlyTap_"
+            hidden$="[[!showSessionOnlyActionForSite_(actionMenuSite_)]]">
+          $i18n{siteSettingsActionSessionOnly}
+        </button>
+        <button slot="item" class="dropdown-item" id="edit"
+            on-click="onEditTap_">
+          $i18n{edit}
+        </button>
+        <button slot="item" class="dropdown-item" id="reset"
+            on-click="onResetTap_">
+          $i18n{siteSettingsActionReset}
+        </button>
+      </cr-action-menu>
+
+      <div class="list-frame" hidden$="[[hasSites_(sites)]]">
+        <div class="list-item secondary">$i18n{noSitesAdded}</div>
+      </div>
+      <div class="list-frame menu-content vertical-list" id="listContainer">
+        <template is="dom-repeat" items="[[sites]]">
+          <div class="list-item">
+            <div class="settings-row"
+                actionable$="[[enableSiteSettings_]]" on-click="onOriginTap_">
+              <div class="favicon-image"
+                  style$="[[computeSiteIcon(item.origin)]]">
+              </div>
+              <div class="middle no-min-width">
+                <div class="text-elide">[[item.displayName]]</div>
+
+                <!-- This div must not contain extra whitespace. -->
+                <div class="secondary text-elide"
+                    id="siteDescription">[[computeSiteDescription_(item)]]</div>
+              </div>
+              <template is="dom-if" if="[[enableSiteSettings_]]">
+                <div on-click="onOriginTap_" actionable>
+                  <paper-icon-button-light class="subpage-arrow">
+                    <button aria-label$="[[item.displayName]]"
+                        aria-describedby="siteDescription"></button>
+                  </paper-icon-button-light>
+                </div>
+                <div class="separator"></div>
+              </template>
+            </div>
+            <template is="dom-if" if="[[item.controlledBy]]">
+              <cr-policy-pref-indicator pref="[[item]]"
+                  icon-aria-label="[[label]]">
+              </cr-policy-pref-indicator>
+            </template>
+            <paper-icon-button-light id="resetSiteContainer"
+                class="icon-delete-gray"
+                hidden="[[shouldHideResetButton_(item, readOnlyList)]]">
+              <button id="resetSite" on-click="onResetButtonTap_"
+                  aria-label="$i18n{siteSettingsActionReset}">
+              </button>
+            </paper-icon-button-light>
+            <paper-icon-button-light id="actionMenuButtonContainer"
+                class="icon-more-vert"
+                hidden="[[shouldHideActionMenu_(item, readOnlyList)]]">
+              <button id="actionMenuButton" on-click="onShowActionMenuTap_"
+                  title="$i18n{moreActions}">
+              </button>
+            </paper-icon-button-light>
+          </div>
+        </template>
+      </div>
+    </div>
+    <template is="dom-if" if="[[showEditExceptionDialog_]]" restamp>
+      <settings-edit-exception-dialog model="[[actionMenuSite_]]"
+          on-close="onEditExceptionDialogClosed_">
+      </settings-edit-exception-dialog>
+    </template>
+  </template>
+  <script src="site_list.js"></script>
+</dom-module>

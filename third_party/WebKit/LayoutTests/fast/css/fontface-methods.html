@@ -1,0 +1,94 @@
+<html>
+<head>
+<script src="../../resources/js-test.js"></script>
+<style>
+@font-face {
+    font-family: Font1;
+    src: url(../../resources/Ahem.ttf?font1);
+}
+
+@font-face {
+    font-family: Font2;
+    src: url(../../resources/DownLoadErrorAhem.otf);
+}
+</style>
+<script>
+description('Tests load() method of FontFace.');
+
+window.jsTestIsAsync = true;
+
+function getDocumentFontFaces() {
+    var faces = [];
+    document.fonts.forEach(function(face) { faces.push(face); });
+    return faces;
+}
+
+function fail(message) {
+    return function() {
+        testFailed(message);
+        finishJSTest();
+    };
+}
+
+function testStep1() {
+    var faces = getDocumentFontFaces();
+    face1 = faces[0];
+    face2 = faces[1];
+
+    shouldBeEqualToString('face1.status', 'unloaded');
+    face1.load().then(testStep2, fail('face1.load() rejected'));
+    shouldBeEqualToString('face1.status', 'loading');
+}
+
+function testStep2() {
+    shouldBeEqualToString('face1.status', 'loaded');
+
+    shouldBeEqualToString('face2.status', 'unloaded');
+    face2.load().then(fail('face2.load() fulfilled'), testStep3);
+    shouldBeEqualToString('face2.status', 'loading');
+}
+
+function testStep3() {
+    shouldBeEqualToString('face2.status', 'error');
+
+    face3 = new FontFace('Font3', 'url(../../resources/Ahem.ttf?font3)', {});
+    shouldBeEqualToString('face3.status', 'unloaded');
+    face3.load();
+    shouldBeEqualToString('face3.status', 'loading');
+    face3.loaded.then(testStep4, fail('face3.load() rejected'));
+}
+
+function testStep4() {
+    shouldBeEqualToString('face3.status', 'loaded');
+
+    face4 = new FontFace('Font4', 'url(../../resources/DownLoadErrorAhem.otf)', {});
+    shouldBeEqualToString('face4.status', 'unloaded');
+    face4.load();
+    shouldBeEqualToString('face4.status', 'loading');
+    face4.loaded.then(fail('face4.load() fulfilled'), testStep5);
+}
+
+function testStep5() {
+    shouldBeEqualToString('face4.status', 'error');
+
+    face5 = new FontFace('Font5', 'url(data:font/truetype;base64,), url(../../resources/Ahem.ttf?font5)', {});
+    shouldBeEqualToString('face5.status', 'unloaded');
+    face5.load().then(testStep6, fail('face5.load() rejected'));
+    shouldBeEqualToString('face5.status', 'loading');
+}
+
+function testStep6() {
+    shouldBeEqualToString('face5.status', 'loaded');
+    finishJSTest();
+}
+
+if (document.fonts)
+    testStep1();
+else
+    testFailed('document.fonts does not exist');
+
+</script>
+</head>
+<body>
+</body>
+</html>

@@ -1,0 +1,75 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+if 'TRUSTED_ENV' not in env:
+  Return()
+
+# Even if stubout mode is not supported sel_ldr still must run valid .nexes.
+# TODO(shyamsundarr): consider removing support for stubout mode completely
+# from code, given that currently only MIPS supports it and it is untested.
+hello_world_nexe = env.File('${STAGING_DIR}/hello_world${PROGSUFFIX}')
+node = env.CommandSelLdrTestNacl(
+    'hello_world_stub_out_run.out', hello_world_nexe,
+    sel_ldr_flags=['-s'])
+env.AddNodeToTestSuite(
+    node, ['small_tests'], 'run_valid_nexe_with_stubout_test')
+
+# Do not run these tests with pexes, assuming they are portable, since
+# they use inline assembler.
+if env.Bit('bitcode') and env.Bit('pnacl_generate_pexe'):
+  Return()
+
+# The file partly_invalid.c contains inline assembler
+if env.Bit('bitcode'):
+  env.AddBiasForPNaCl()
+  env.PNaClForceNative()
+  env.Append(CCFLAGS=['-fgnu-inline-asm'])
+
+# Newlib + PIC doesn't provide native ___tls_get_addr, so gold complains.
+if env.Bit('bitcode') and env.Bit('nacl_pic'):
+  Return()
+
+# TODO(mseaborn): Extend the ARM validator to support this.
+# BUG= http://code.google.com/p/nativeclient/issues/detail?id=2369
+if env.Bit('build_arm'):
+  Return()
+
+partly_invalid_nexe = env.ComponentProgram('partly_invalid', 'partly_invalid.c',
+                                           EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+# This alias is to ensure this test works with built_elsewhere=1,
+# because with that option CommandSelLdrTestNacl() assumes all its
+# inputs have already been built (which is not necessarily a good
+# idea, but apparently true for all other cases so far).
+env.Alias('all_test_programs', node)
+
+# For speed, SConstruct disables the validator (using '-cc') for
+# Valgrind+nacl-glibc tests, which breaks one test below.
+is_validation_disabled = env.IsRunningUnderValgrind() and env.Bit('nacl_glibc')
+
+# TODO(shyamsundarr): investigate if we can run non_pexe tests.
+test_suites = ['small_tests']
+
+# Without any debug flags, the executable fails validation.
+if env.Bit('nacl_static_link'):
+  # The exit status produced by sel_ldr.
+  validation_failure_status = '1'
+else:
+  # The exit status produced by the dynamic linker.
+  validation_failure_status = '127'
+node = env.CommandSelLdrTestNacl(
+    'partly_invalid_1.out', partly_invalid_nexe,
+    exit_status=validation_failure_status)
+env.AddNodeToTestSuite(node, test_suites, 'run_without_stubout_1_test',
+                       is_broken=is_validation_disabled)
+
+# With "-c", the executable runs to completion but is not safe.
+node = env.CommandSelLdrTestNacl(
+    'partly_invalid_2.out', partly_invalid_nexe,
+    stdout_golden=env.File('without_stubout.stdout'),
+    sel_ldr_flags=['-c'])
+env.AddNodeToTestSuite(node, test_suites, 'run_without_stubout_2_test')

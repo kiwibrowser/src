@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<style>
+  body {
+    height: 2000px;
+    width: 2000px;
+  }
+</style>
+
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+<script>
+  var numCallsScroll = 0;
+  var numCallsResize = 0;
+  var pageScaleFactor = 2;
+
+  var t = async_test('verify that the scroll and resize events get fired on window.visualViewport');
+
+  window.onload = t.step_func(function() {
+    // Turn off smooth scrolling.
+    internals.settings.setScrollAnimatorEnabled(false);
+
+    window.visualViewport.addEventListener('scroll', function(e) {
+      numCallsScroll++;
+    });
+
+    window.visualViewport.addEventListener('resize', function(e) {
+      numCallsResize++;
+    });
+
+    // Scroll both viewports.
+    eventSender.mouseMoveTo(100, 100);
+    eventSender.continuousMouseScrollBy(100, 100);
+    assert_equals(numCallsScroll, 0);
+    assert_equals(numCallsResize, 0);
+
+    // TODO(ymalik): Remove hook to internals to pinch-zoom here and browser
+    // zoom below. This will be required to upstream to w3c repo.
+    internals.setPageScaleFactor(pageScaleFactor);
+
+    // Verify viewport dimensions exclude scrollbar.
+    requestAnimationFrame(function() {
+      t.step(function() {
+        assert_equals(numCallsScroll, 0, "scroll listener not called for scale");
+        assert_equals(numCallsResize, 1, "resize listener called for scale");
+      });
+      internals.setVisualViewportOffset(10, 10);
+      requestAnimationFrame(function() {
+        t.step(function() {
+          assert_equals(numCallsScroll, 1, "scroll listener called for offset change");
+          assert_equals(numCallsResize, 1, "resize listener not called for offset change");
+        });
+        t.done();
+      });
+    });
+  });
+</script>

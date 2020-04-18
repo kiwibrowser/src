@@ -1,0 +1,74 @@
+{% from "templates/macros.tmpl" import license, source_files_for_generated_file %}
+{{ license() }}
+
+{{source_files_for_generated_file(template_file, input_files)}}
+
+#include "third_party/blink/renderer/core/{{namespace|lower}}_element_factory.h"
+
+#include "third_party/blink/renderer/core/{{namespace|lower}}_names.h"
+{% for header in tags|groupby('interface_header') %}
+#include "{{header[0]}}"
+{% endfor %}
+{% if fallback_interface %}
+#include "third_party/blink/renderer/core/{{namespace|lower}}/{{fallback_interface_header}}"
+{% endif %}
+#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+#include "third_party/blink/renderer/platform/wtf/hash_map.h"
+
+namespace blink {
+
+typedef {{namespace}}Element* (*{{namespace}}ConstructorFunction)(
+    Document&,
+    const CreateElementFlags);
+
+typedef HashMap<AtomicString, {{namespace}}ConstructorFunction> {{namespace}}FunctionMap;
+
+static {{namespace}}FunctionMap* g_{{namespace}}_constructors = 0;
+
+{% for tag in tags|sort if not tag.noConstructor %}
+static {{namespace}}Element* {{namespace}}{{tag|symbol}}Constructor(
+    Document& document,
+    const CreateElementFlags flags) {
+  {% if tag.runtimeEnabled %}
+  if (!RuntimeEnabledFeatures::{{tag.runtimeEnabled}}Enabled())
+    return {{fallback_interface}}::Create({{namespace}}Names::{{tag|symbol}}Tag, document);
+  {% endif %}
+  return {{tag.interface}}::Create(
+      {%- if tag.multipleTagNames %}{{namespace}}Names::{{tag|symbol}}Tag, {% endif -%}
+      document
+      {%- if tag.constructorNeedsCreateElementFlags %}, flags{% endif -%}
+  );
+}
+{% endfor %}
+
+struct Create{{namespace}}FunctionMapData {
+  const QualifiedName& tag;
+  {{namespace}}ConstructorFunction func;
+};
+
+static void create{{namespace}}FunctionMap() {
+  DCHECK(!g_{{namespace}}_constructors);
+  g_{{namespace}}_constructors = new {{namespace}}FunctionMap;
+  // Empty array initializer lists are illegal [dcl.init.aggr] and will not
+  // compile in MSVC. If tags list is empty, add check to skip this.
+  static const Create{{namespace}}FunctionMapData data[] = {
+  {% for tag in tags|sort if not tag.noConstructor %}
+    { {{namespace}}Names::{{tag|symbol}}Tag, {{namespace}}{{tag|symbol}}Constructor },
+  {% endfor %}
+  };
+  for (size_t i = 0; i < arraysize(data); i++)
+    g_{{namespace}}_constructors->Set(data[i].tag.LocalName(), data[i].func);
+}
+
+{{namespace}}Element* {{namespace}}ElementFactory::Create(
+    const AtomicString& localName,
+    Document& document,
+    const CreateElementFlags flags) {
+  if (!g_{{namespace}}_constructors)
+    create{{namespace}}FunctionMap();
+  if ({{namespace}}ConstructorFunction function = g_{{namespace}}_constructors->at(localName))
+    return function(document, flags);
+  return nullptr;
+}
+
+}  // namespace blink

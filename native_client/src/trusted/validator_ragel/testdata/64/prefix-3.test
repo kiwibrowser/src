@@ -1,0 +1,104 @@
+@hex:
+  66 F0 44 01 3C 24
+  F0 66 44 01 3C 24
+@dis:
+     0:	66 f0 44 01 3c 24                            	lock add %r15w,(%rsp)
+     6:	f0 66 44 01 3c 24                            	lock add %r15w,(%rsp)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  64 66 41 89 C0
+@dis:
+     0:	64                                           	fs
+     1:	66 41 89 c0                                  	mov    %ax,%r8w
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: unrecognized instruction 'fs'
+----------------------------------------------------------------------
+@hex:
+  66 64 41 89 C0
+@dis:
+     0:	66                                           	data16
+     1:	64                                           	fs
+     2:	41 89 c0                                     	mov    %eax,%r8d
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('dangling legacy prefixes', Instruction(0x0: 66  data16))
+  1: unrecognized instruction 'fs'
+----------------------------------------------------------------------
+@hex:
+  # DATA16 prefix together with REP is disallowed because of the bug,
+  # see https://code.google.com/p/nativeclient/issues/detail?id=1950
+  89 FF
+  49 8D 3C 3F
+  66 F3 AB
+@dis:
+     0:	89 ff                                        	mov    %edi,%edi
+     2:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     6:	66 f3 ab                                     	rep stos %ax,%es:(%rdi)
+@rdfa_output:
+  6: unrecognized instruction
+  return code: 1
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # REP prefix together with DATA16
+  89 FF
+  49 8D 3C 3F
+  F3 66 AB
+@dis:
+     0:	89 ff                                        	mov    %edi,%edi
+     2:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     6:	f3 66 ab                                     	rep stos %ax,%es:(%rdi)
+@rdfa_output:
+  6: unrecognized instruction
+  return code: 1
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  66 90
+@dis:
+     0:	66 90                                        	xchg   %ax,%ax
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  66 66 90
+@dis:
+     0:	66 66 90                                     	data32 xchg %ax,%ax
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('duplicate legacy prefix', Instruction(0x0: 66 66 90  data32 xchg %ax,%ax))
+----------------------------------------------------------------------
+@hex:
+  66 66 66 90
+@dis:
+     0:	66 66 66 90                                  	data32 data32 xchg %ax,%ax
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('duplicate legacy prefix', Instruction(0x0: 66 66 66 90  data32 data32 xchg %ax,%ax))
+----------------------------------------------------------------------
+@hex:
+  # white-listed nop
+  66 66 66 2E 0F 1F 84 00 00 00 00 00
+@dis:
+     0:	66 66 66 2e 0f 1f 84 00 00 00 00 00          	data32 data32 nopw %cs:0x0(%rax,%rax,1)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE

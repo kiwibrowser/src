@@ -1,0 +1,54 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+<script src="../../../../resources/js-test.js"></script>
+</head>
+<body onload="test()">
+<p>This test checks long press behavior when both touch drag/drop and touch editing are enabled.<br>
+1. Check that long press on a draggable element starts drag.<br>
+2. Check that long press on non-draggable text selects the text.<br>
+3. Check that long press on selected text starts drag.</p>
+<div id="text">Testing</div>
+<div id="draggableDivResult">FAIL</div>
+<div id="selectTextResult">FAIL</div>
+<div id="draggableTextResult">FAIL</div>
+<div id="draggableDiv" draggable='true'>Drag me</div>
+<div id="textDiv">Some text</div>
+<script>
+function test()
+{
+    if (window.testRunner)
+        testRunner.dumpAsText();
+
+    if (window.internals)
+        internals.settings.setTouchDragDropEnabled(true);
+
+    var draggableDiv = document.getElementById("draggableDiv");
+    draggableDiv.ondragstart = function() { document.getElementById("draggableDivResult").innerHTML = "PASS"; }
+
+    var textDiv = document.getElementById("textDiv");
+    textDiv.ondragstart = function() { document.getElementById("draggableTextResult").innerHTML = "PASS"; }
+
+    if (!window.eventSender)
+        return;
+    if (eventSender.gestureLongPress) {
+        var x = draggableDiv.offsetParent.offsetLeft + draggableDiv.offsetLeft + 4;
+        var y = draggableDiv.offsetParent.offsetTop + draggableDiv.offsetTop + draggableDiv.offsetHeight / 2;
+        eventSender.gestureLongPress(x, y);
+
+        x = textDiv.offsetParent.offsetLeft + textDiv.offsetLeft + 4;
+        y = textDiv.offsetParent.offsetTop + textDiv.offsetTop + textDiv.offsetHeight / 2;
+
+        eventSender.gestureLongPress(x, y);
+        if (document.getSelection().toString().length > 0)
+            document.getElementById("selectTextResult").innerHTML = "PASS";
+
+        eventSender.gestureLongPress(x, y);
+    } else {
+        debug("gestureLongPress not implemented by this platform");
+        return;
+    }
+}
+</script>
+</body>
+</html>

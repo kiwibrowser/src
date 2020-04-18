@@ -1,0 +1,216 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/html/assert.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-collapse/iron-collapse.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-icon/iron-icon.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-selector/iron-selector.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+<link rel="import" href="../icons.html">
+<link rel="import" href="../route.html">
+<link rel="import" href="../settings_shared_css.html">
+
+<dom-module id="settings-menu">
+  <template>
+    <style include="settings-shared">
+      :host {
+        display: block;
+        margin-top: 8px;
+      }
+
+      a[href],
+      #advancedButton {
+        --cr-selectable-focus: {
+          outline: auto 5px -webkit-focus-ring-color;
+        };
+        -webkit-margin-end: 2px;  /* Margin so selected outline is visible. */
+        -webkit-margin-start: 1px;
+        -webkit-padding-start: 23px;  /* 24px - 1px from margin for outline. */
+        align-items: center;
+        color: var(--settings-nav-grey);
+        display: flex;
+        font-weight: 500;
+        min-height: 20px;
+        padding-bottom: 10px;
+        padding-top: 10px;
+      }
+
+      a[href].iron-selected {
+        color: var(--google-blue-700);
+      }
+
+      iron-icon {
+        --iron-icon-fill-color: var(--settings-nav-grey);
+        -webkit-margin-end: 24px;
+        pointer-events: none;
+        vertical-align: top;
+      }
+
+      .iron-selected > iron-icon {
+        fill: var(--google-blue-700);
+      }
+
+      #advancedButton {
+        -webkit-padding-end: 0;
+        background-color: unset;
+        border: none;
+        border-radius: initial;
+        height: unset;
+        margin-top: 8px;
+        text-transform: none;
+      }
+
+      #advancedButton:focus {
+        box-shadow: none;
+        outline: none;
+      }
+
+      #advancedButton.keyboard-focus:focus {
+        outline: auto 5px -webkit-focus-ring-color;
+      }
+
+      #advancedButton > span,
+      #extensionsLink > span {
+        flex: 1;
+      }
+
+      #advancedButton > iron-icon,
+      #extensionsLink > iron-icon {
+        @apply --cr-icon-height-width;
+        -webkit-margin-end: 14px;  /* 16px - 2px from margin for outline. */
+      }
+
+      #menuSeparator {
+        /* Per bettes@, this is different from the other separator lines. */
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        margin-bottom: 8px;
+        margin-top: 8px;
+      }
+    </style>
+    <iron-selector id="topMenu" selectable="a:not(#extensionsLink)"
+        attr-for-selected="href" on-iron-activate="onSelectorActivate_"
+        role="navigation">
+<if expr="chromeos">
+      <a href="/internet">
+        <iron-icon icon="settings:network-wifi"></iron-icon>
+        $i18n{internetPageTitle}
+      </a>
+      <a href="/bluetooth">
+        <iron-icon icon="settings:bluetooth"></iron-icon>
+        $i18n{bluetoothPageTitle}
+      </a>
+</if>
+      <a id="people" href="/people" hidden="[[!pageVisibility.people]]">
+        <iron-icon icon="cr:person"></iron-icon>
+        $i18n{peoplePageTitle}
+      </a>
+      <a id="appearance" href="/appearance"
+        hidden="[[!pageVisibility.appearance]]">
+        <iron-icon icon="settings:palette"></iron-icon>
+        $i18n{appearancePageTitle}
+      </a>
+<if expr="chromeos">
+      <a href="/device">
+        <iron-icon icon="settings:laptop-chromebook"></iron-icon>
+        $i18n{devicePageTitle}
+      </a>
+</if>
+      <a href="/search">
+        <iron-icon icon="cr:search"></iron-icon>
+        $i18n{searchPageTitle}
+      </a>
+<if expr="chromeos">
+      <a href="/crostini" hidden="[[!showCrostini]]">
+        <iron-icon icon="settings:crostini-mascot"></iron-icon>
+        $i18n{crostiniPageTitle}
+      </a>
+</if>
+<if expr="chromeos">
+      <a href="/androidApps" hidden="[[!showAndroidApps]]">
+        <iron-icon icon="settings:play-prism"></iron-icon>
+        $i18n{androidAppsPageTitle}
+      </a>
+</if>
+<if expr="not chromeos">
+      <a id="defaultBrowser" href="/defaultBrowser"
+        hidden="[[!pageVisibility.defaultBrowser]]">
+        <iron-icon icon="settings:web"></iron-icon>
+        $i18n{defaultBrowser}
+      </a>
+</if>
+      <a id="onStartup" href="/onStartup"
+        hidden="[[!pageVisibility.onStartup]]">
+        <iron-icon icon="settings:power-settings-new"></iron-icon>
+        $i18n{onStartup}
+      </a>
+      <paper-button toggles id="advancedButton"
+          aria-active-attribute="aria-expanded" active="{{advancedOpened}}"
+          hidden="[[!pageVisibility.advancedSettings]]">
+        <span>$i18n{advancedPageTitle}</span>
+        <iron-icon icon="[[arrowState_(advancedOpened)]]">
+        </iron-icon></paper-button>
+      <iron-collapse id="advancedSubmenu" opened="[[advancedOpened]]"
+          hidden="[[!pageVisibility.advancedSettings]]">
+        <iron-selector id="subMenu" selectable="a" attr-for-selected="href"
+            role="navigation">
+<if expr="chromeos">
+          <a href="/dateTime">
+            <iron-icon icon="settings:access-time"></iron-icon>
+            $i18n{dateTimePageTitle}
+          </a>
+</if>
+          <a href="/privacy">
+            <iron-icon icon="cr:security"></iron-icon>
+            $i18n{privacyPageTitle}
+          </a>
+          <a id= "passwordsAndForms" href="/passwordsAndForms"
+              hidden="[[!pageVisibility.passwordsAndForms]]">
+            <iron-icon icon="settings:assignment"></iron-icon>
+            $i18n{passwordsAndAutofillPageTitle}
+          </a>
+          <a href="/languages">
+            <iron-icon icon="settings:language"></iron-icon>
+            $i18n{languagesPageTitle}
+          </a>
+          <a href="/downloads">
+            <iron-icon icon="cr:file-download"></iron-icon>
+            $i18n{downloadsPageTitle}
+          </a>
+          <a href="/printing">
+            <iron-icon icon="cr:print"></iron-icon>
+            $i18n{printingPageTitle}
+          </a>
+<if expr="chromeos">
+          <a href="/multidevice" hidden="[[!showMultidevice]]">
+            <iron-icon icon="settings:devices-other"></iron-icon>
+            $i18n{multidevicePageTitle}
+          </a>
+</if>
+          <a href="/accessibility">
+            <iron-icon icon="settings:accessibility"></iron-icon>
+            $i18n{a11yPageTitle}
+          </a>
+<if expr="not chromeos">
+          <a href="/system">
+            <iron-icon icon="settings:build"></iron-icon>
+            $i18n{systemPageTitle}
+          </a>
+</if>
+          <a id="reset" href="/reset" hidden="[[!pageVisibility.reset]]">
+            <iron-icon icon="settings:restore"></iron-icon>
+            $i18n{resetPageTitle}
+          </a>
+        </iron-selector>
+      </iron-collapse>
+      <div id="menuSeparator"></div>
+      <a id="extensionsLink" href="chrome://extensions" target="_blank"
+          on-click="onExtensionsLinkClick_"
+          title="$i18n{extensionsLinkTooltip}">
+        <span>$i18n{extensionsPageTitle}</span>
+        <iron-icon class="cr-icon icon-external" actionable></iron-icon>
+      </a>
+      <a id="about-menu" href="/help">$i18n{aboutPageTitle}</a>
+    </iron-selector>
+  </template>
+  <script src="settings_menu.js"></script>
+</dom-module>

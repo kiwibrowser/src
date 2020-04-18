@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+
+<div id="editable" contenteditable="true">
+    Hello
+  <div>there</div>
+</div>
+
+<script>
+  test(() => {
+    let editable = accessibilityController.accessibleElementById('editable');
+    assert_not_equals(editable, null);
+    assert_equals(editable.childrenCount, 2);
+
+    let anonymousBlock = editable.childAtIndex(0);
+    assert_not_equals(anonymousBlock, null);
+    assert_equals(anonymousBlock.childrenCount, 1);
+    assert_equals(anonymousBlock.childAtIndex(0).role, 'AXRole: AXStaticText');
+    assert_equals(anonymousBlock.childAtIndex(0).name, 'Hello');
+
+    assert_true(anonymousBlock.isEditable);
+    assert_true(anonymousBlock.isRichlyEditable);
+  }, 'Ensure that anonymous blocks inside content editables are not ignored and are marked as editable.');
+</script>

@@ -1,0 +1,167 @@
+// Copyright 2015 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "third_party/blink/renderer/platform/scheduler/main_thread/idle_time_estimator.h"
+
+#include <memory>
+#include "base/memory/scoped_refptr.h"
+#include "base/test/simple_test_tick_clock.h"
+#include "components/viz/test/ordered_simple_task_runner.h"
+#include "testing/gmock/include/gmock/gmock.h"
+#include "testing/gtest/include/gtest/gtest.h"
+#include "third_party/blink/renderer/platform/scheduler/base/task_queue.h"
+#include "third_party/blink/renderer/platform/scheduler/base/task_queue_manager.h"
+#include "third_party/blink/renderer/platform/scheduler/base/test/task_queue_manager_for_test.h"
+#include "third_party/blink/renderer/platform/scheduler/base/test/test_task_queue.h"
+#include "third_party/blink/renderer/platform/scheduler/base/test/test_task_time_observer.h"
+
+namespace blink {
+namespace scheduler {
+
+class IdleTimeEstimatorForTest : public IdleTimeEstimator {
+ public:
+  IdleTimeEstimatorForTest(
+      const scoped_refptr<base::sequence_manager::TaskQueue>&
+          compositor_task_runner,
+      const base::TickClock* clock,
+      int sample_count,
+      double estimation_percentile)
+      : IdleTimeEstimator(compositor_task_runner,
+                          clock,
+                          sample_count,
+                          estimation_percentile) {}
+};
+
+class IdleTimeEstimatorTest : public testing::Test {
+ public:
+  IdleTimeEstimatorTest()
+      : frame_length_(base::TimeDelta::FromMilliseconds(16)) {}
+
+  ~IdleTimeEstimatorTest() override = default;
+
+  void SetUp() override {
+    clock_.Advance(base::TimeDelta::FromMicroseconds(5000));
+    mock_task_runner_ =
+        base::MakeRefCounted<cc::OrderedSimpleTaskRunner>(&clock_, false);
+    manager_ = base::sequence_manager::TaskQueueManagerForTest::Create(
+        nullptr, mock_task_runner_, &clock_);
+    compositor_task_queue_ =
+        manager_->CreateTaskQueue<base::sequence_manager::TestTaskQueue>(
+            base::sequence_manager::TaskQueue::Spec("test_tq"));
+    estimator_.reset(
+        new IdleTimeEstimatorForTest(compositor_task_queue_, &clock_, 10, 50));
+  }
+
+  void SimulateFrameWithOneCompositorTask(int compositor_time) {
+    base::TimeDelta non_idle_time =
+        base::TimeDelta::FromMilliseconds(compositor_time);
+    base::PendingTask task(FROM_HERE, base::Closure());
+    estimator_->WillProcessTask(task);
+    clock_.Advance(non_idle_time);
+    estimator_->DidCommitFrameToCompositor();
+    estimator_->DidProcessTask(task);
+    if (non_idle_time < frame_length_)
+      clock_.Advance(frame_length_ - non_idle_time);
+  }
+
+  void SimulateFrameWithTwoCompositorTasks(int compositor_time1,
+                                           int compositor_time2) {
+    base::TimeDelta non_idle_time1 =
+        base::TimeDelta::FromMilliseconds(compositor_time1);
+    base::TimeDelta non_idle_time2 =
+        base::TimeDelta::FromMilliseconds(compositor_time2);
+    base::PendingTask task(FROM_HERE, base::Closure());
+    estimator_->WillProcessTask(task);
+    clock_.Advance(non_idle_time1);
+    estimator_->DidProcessTask(task);
+
+    estimator_->WillProcessTask(task);
+    clock_.Advance(non_idle_time2);
+    estimator_->DidCommitFrameToCompositor();
+    estimator_->DidProcessTask(task);
+
+    base::TimeDelta idle_time = frame_length_ - non_idle_time1 - non_idle_time2;
+    clock_.Advance(idle_time);
+  }
+
+  base::SimpleTestTickClock clock_;
+  scoped_refptr<cc::OrderedSimpleTaskRunner> mock_task_runner_;
+  std::unique_ptr<base::sequence_manager::TaskQueueManager> manager_;
+  scoped_refptr<base::sequence_manager::TaskQueue> compositor_task_queue_;
+  std::unique_ptr<IdleTimeEstimatorForTest> estimator_;
+  const base::TimeDelta frame_length_;
+  base::sequence_manager::TestTaskTimeObserver test_task_time_observer_;
+};
+
+TEST_F(IdleTimeEstimatorTest, InitialTimeEstimateWithNoData) {
+  EXPECT_EQ(frame_length_, estimator_->GetExpectedIdleDuration(frame_length_));
+}
+
+TEST_F(IdleTimeEstimatorTest, BasicEstimation_SteadyState) {
+  SimulateFrameWithOneCompositorTask(5);
+  SimulateFrameWithOneCompositorTask(5);
+
+  EXPECT_EQ(base::TimeDelta::FromMilliseconds(11),
+            estimator_->GetExpectedIdleDuration(frame_length_));
+}
+
+TEST_F(IdleTimeEstimatorTest, BasicEstimation_Variable) {
+  SimulateFrameWithOneCompositorTask(5);
+  SimulateFrameWithOneCompositorTask(6);
+  SimulateFrameWithOneCompositorTask(7);
+  SimulateFrameWithOneCompositorTask(7);
+  SimulateFrameWithOneCompositorTask(7);
+  SimulateFrameWithOneCompositorTask(8);
+
+  // We expect it to return the median.
+  EXPECT_EQ(base::TimeDelta::FromMilliseconds(9),
+            estimator_->GetExpectedIdleDuration(frame_length_));
+}
+
+TEST_F(IdleTimeEstimatorTest, NoIdleTime) {
+  SimulateFrameWithOneCompositorTask(100);
+  SimulateFrameWithOneCompositorTask(100);
+
+  EXPECT_EQ(base::TimeDelta::FromMilliseconds(0),
+            estimator_->GetExpectedIdleDuration(frame_length_));
+}
+
+TEST_F(IdleTimeEstimatorTest, Clear) {
+  SimulateFrameWithOneCompositorTask(5);
+  SimulateFrameWithOneCompositorTask(5);
+
+  EXPECT_EQ(base::TimeDelta::FromMilliseconds(11),
+            estimator_->GetExpectedIdleDuration(frame_length_));
+  estimator_->Clear();
+
+  EXPECT_EQ(frame_length_, estimator_->GetExpectedIdleDuration(frame_length_));
+}
+
+TEST_F(IdleTimeEstimatorTest, Estimation_MultipleTasks) {
+  SimulateFrameWithTwoCompositorTasks(1, 4);
+  SimulateFrameWithTwoCompositorTasks(1, 4);
+
+  EXPECT_EQ(base::TimeDelta::FromMilliseconds(11),
+            estimator_->GetExpectedIdleDuration(frame_length_));
+}
+
+TEST_F(IdleTimeEstimatorTest, IgnoresNestedTasks) {
+  SimulateFrameWithOneCompositorTask(5);
+  SimulateFrameWithOneCompositorTask(5);
+
+  base::PendingTask task(FROM_HERE, base::Closure());
+  estimator_->WillProcessTask(task);
+  SimulateFrameWithTwoCompositorTasks(4, 4);
+  SimulateFrameWithTwoCompositorTasks(4, 4);
+  SimulateFrameWithTwoCompositorTasks(4, 4);
+  SimulateFrameWithTwoCompositorTasks(4, 4);
+  estimator_->DidCommitFrameToCompositor();
+  estimator_->DidProcessTask(task);
+
+  EXPECT_EQ(base::TimeDelta::FromMilliseconds(11),
+            estimator_->GetExpectedIdleDuration(frame_length_));
+}
+
+}  // namespace scheduler
+}  // namespace blink

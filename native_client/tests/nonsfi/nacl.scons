@@ -1,0 +1,177 @@
+# -*- python -*-
+# Copyright 2014 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+if not env.Bit('nonsfi_nacl'):
+  Return()
+
+env.AddBiasForPNaCl()
+
+nexe = env.ComponentProgram('icache_test',
+                            'icache_test.cc',
+                            EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl('icache_test.out', nexe)
+
+is_broken = (not env.Bit('build_arm') or env.Bit('pnacl_generate_pexe') or
+             not env.Bit('tests_use_irt'))
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_icache_test',
+                       is_broken=is_broken)
+
+# Tests sending and receiving userspace signals. This test only works with the
+# newlib nonsfi loader.
+if env.Bit('tests_use_irt') and env.Bit('use_newlib_nonsfi_loader'):
+  nexe = env.ComponentProgram('user_async_signal_test',
+                              'user_async_signal_test.cc',
+                              EXTRA_LIBS=['${NONIRT_LIBS}'])
+  node = env.CommandSelLdrTestNacl('user_async_signal_test.out', nexe)
+  env.AddNodeToTestSuite(node, ['small_tests'], 'run_user_async_signal_test')
+
+# The subsequent tests are for syscall wrappers required by newlib
+# based non-SFI nacl_helper. The rest of NaCl does not need them.
+if env.Bit('tests_use_irt'):
+  Return()
+
+nexe = env.ComponentProgram('fcntl_test',
+                            'fcntl_test.cc',
+                            EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl('fcntl_test.out', nexe,
+                                 args=[env.MakeEmptyFile(prefix='tmp_fcntl')])
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_fcntl_test')
+
+nexe = env.ComponentProgram('file_descriptor_test',
+                            'file_descriptor_test.cc',
+                            EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+    'file_descriptor_test.out', nexe,
+    args=[env.MakeTempDir(prefix='tmp_file_descriptor')])
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_file_descriptor_test')
+
+nexe = env.ComponentProgram('fork_test',
+                            'fork_test.cc',
+                            EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl('fork_test.out', nexe)
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_fork_test')
+
+nexe = env.ComponentProgram('socket_test',
+                            'socket_test.cc',
+                            EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl('socket_test.out', nexe)
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_socket_test')
+
+nexe = env.ComponentProgram('directory_test',
+                            'directory_test.cc',
+                            EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+    'directory_test.out', nexe,
+    args=[env.MakeTempDir(prefix='tmp_directory')])
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_directory_test')
+
+nexe = env.ComponentProgram('prctl_test',
+                            'prctl_test.cc',
+                            EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl('prctl_test.out', nexe)
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_prctl_test')
+
+asm_enabled_env = env.Clone()
+# Enable the use of inline assembly.
+asm_enabled_env.Append(CCFLAGS=['-fgnu-inline-asm'])
+
+nexe = asm_enabled_env.ComponentProgram('sigaction_test',
+                                        'sigaction_test.cc',
+                                        EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = asm_enabled_env.CommandSelLdrTestNacl('sigaction_test.out', nexe)
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_sigaction_test')
+
+nexe = env.ComponentProgram('signal_test',
+                            'signal_test.cc',
+                            EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl('signal_test.out', nexe)
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_signal_test',
+                       is_broken=env.UsingEmulator())
+
+nexe = env.ComponentProgram('signal_sigbus_test',
+                            'signal_sigbus_test.cc',
+                            EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl('signal_sigbus_test.out', nexe,
+                                 args=[env.File('test_file')])
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_signal_sigbus_test',
+                       is_broken=env.UsingEmulator())
+
+
+nexe = env.ComponentProgram('nonsfi_syscall_test',
+                            'syscall_test.cc',
+                            EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl('nonsfi_syscall_test.out', nexe)
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_nonsfi_syscall_test')
+
+
+nexe = env.ComponentProgram('clone_test',
+                            'clone_test.cc',
+                            EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+osenv = None
+if (env.Bit('build_arm') and env.UsingEmulator() and
+    not env.Bit('tests_use_irt')):
+  osenv = ['UNDER_QEMU_ARM=1']
+node = env.CommandSelLdrTestNacl('clone_test.out', nexe, osenv=osenv)
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_clone_test')
+
+
+nexe = env.ComponentProgram('rlimit_test',
+                            'rlimit_test.cc',
+                            EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl('rlimit_test.out', nexe)
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_rlimit_test')
+
+# We must actually translate from a pexe to a nexe for this next test.
+if env.Bit('pnacl_generate_pexe') and 'TRUSTED_ENV' in env:
+  loader_env = env.Clone();
+  # The default for nonsfi is "noirt" -- but here, we are using a custom IRT.
+  loader_env['TRANSLATEFLAGS'].remove('--noirt')
+  # Since we are building this nexe a bit differently compared to the others,
+  # the environment must be cloned to avoid messing it up for anyone else.
+  nexe = loader_env.ComponentProgram('example_irt_caller_test',
+                                     'example_irt_caller_test.cc')
+
+  nexe = loader_env.GetTranslatedNexe(nexe)
+
+  trusted_env = loader_env['TRUSTED_ENV']
+
+  extra_libs = ['irt_nonsfi', 'nacl_random_private', 'nonsfi_elf_loader',
+                'platform']
+  example_ldr = trusted_env.ComponentProgram('example_loader',
+      'example_loader.cc',
+      EXTRA_LIBS=extra_libs)
+
+  node = loader_env.CommandTest('example_irt_caller_test.out',
+                                [example_ldr, nexe])
+
+  loader_env.AddNodeToTestSuite(node, ['small_tests'],
+                                'run_example_irt_caller_test')

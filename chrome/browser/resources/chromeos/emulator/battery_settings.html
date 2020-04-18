@@ -1,0 +1,93 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_checkbox/cr_checkbox.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_radio_button/cr_radio_button.html">
+<link rel="import" href="chrome://resources/html/md_select_css.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-collapse/iron-collapse.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/neon-animatable-behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-input/paper-input.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-radio-group/paper-radio-group.html">
+<link rel="import" href="icons.html">
+<link rel="import" href="shared_styles.html">
+
+<dom-module id="battery-settings">
+  <template>
+    <!-- TODO(michaelpg): Wrap the line below to fit within the 80-char limit.
+         See https://github.com/Polymer/polymer/pull/3668. -->
+    <style include="device-emulator-shared-styles iron-flex iron-flex-alignment
+        iron-positioning md-select">
+    </style>
+    <div class="layout vertical">
+      <div class="element-label">
+        <paper-icon-button icon="device-emulator:battery-charging-full">
+        </paper-icon-button>
+        Power
+      </div>
+      <label>
+        <span class="form-label">Battery state</span>
+        <paper-radio-group selected="{{batteryState}}"
+            selectable="cr-radio-button">
+          <template is="dom-repeat" items="[[batteryStateOptions]]">
+            <cr-radio-button name="[[item]]">[[item]]</cr-radio-button>
+          </template>
+        </paper-radio-group>
+      </label>
+      <iron-collapse opened="[[isBatteryPresent(batteryState)]]">
+        <div class="layout vertical">
+          <paper-input label="Battery percentage" value="[[batteryPercent]]"
+              on-change="onBatteryPercentChange" type="number">
+          </paper-input>
+
+          <paper-input label="Seconds until empty" value="[[timeUntilEmpty]]"
+              on-change="onTimeUntilEmptyChange" type="number">
+          </paper-input>
+
+          <paper-input label="Seconds until full" value="[[timeUntilFull]]"
+              on-change="onTimeUntilFullChange" type="number">
+          </paper-input>
+        </div>
+      </iron-collapse>
+
+      <table class="devices-table">
+        <tbody>
+          <tr class="table-section-header">
+            <td>Power sources</td>
+            <td class="centered-cell-label">Connected</td>
+            <td class="centered-cell-label">Role</td>
+            <td class="centered-cell-label">Amps</td>
+          </tr>
+          <template is="dom-repeat" items="[[powerSourceOptions]]">
+            <tr>
+              <td class="alias-cell">[[item.name]]</td>
+              <td class="control-cell">
+                <cr-checkbox checked="{{item.connected}}"></cr-checkbox>
+              </td>
+              <td class="control-cell">
+                <paper-button on-tap="onSetAsSourceTap"
+                    hidden$="[[!isDualRole(item)]]"
+                    raised="[[!isSelectedSource(item, selectedPowerSourceId)]]"
+                    disabled="[[!canBecomeSource(
+                        item, selectedPowerSourceId, powerSourceOptions.*)]]">
+                  Set as source
+                </paper-button>
+                <div hidden$="[[isDualRole(item)]]">Source</div>
+              </td>
+              <td class="control-cell">
+                <div class="md-select-wrapper">
+                  <select class="md-select" disabled$="[[!item.variablePower]]"
+                      on-change="onPowerChanged" value="[[item.power]]">
+                    <option value="high">High</option>
+                    <option value="low">Low</option>
+                  </select>
+                  <span class="md-select-underline"></span>
+                </div>
+              </td>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </template>
+  <script src="battery_settings.js"></script>
+</dom-module>

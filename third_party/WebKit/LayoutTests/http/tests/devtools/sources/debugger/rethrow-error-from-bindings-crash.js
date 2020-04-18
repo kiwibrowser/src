@@ -1,0 +1,62 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(`Tests that pausing on uncaught exceptions thrown from C++ bindings will not crash.\n`);
+  await TestRunner.loadModule('sources_test_runner');
+  await TestRunner.loadModule('console_test_runner');
+  await TestRunner.showPanel('sources');
+  await TestRunner.evaluateInPagePromise(`
+      var functions;
+
+      function testFunction()
+      {
+          console.clear();
+          // This used to be a racy crash. Test some sequence of functions.
+          functions = [f2, f1, f2, f1, f2, f1, f2, f1];
+          functions.push(function() {});
+          functions.shift()();
+      }
+
+      function f1() {
+          setTimeout(functions.shift(), 0);
+          document.body.appendChild("<throw_exception>");
+      }
+
+      function f2() {
+          setTimeout(functions.shift(), 0);
+          new Range().compareBoundaryPoints(1, 2);
+      }
+  `);
+
+  var expectedErrorsCount = 8;
+
+  SourcesTestRunner.setQuiet(true);
+  SourcesTestRunner.startDebuggerTest(step1);
+
+  function step1() {
+    TestRunner.DebuggerAgent.setPauseOnExceptions(SDK.DebuggerModel.PauseOnExceptionsState.PauseOnUncaughtExceptions);
+    SourcesTestRunner.runTestFunctionAndWaitUntilPaused(didPause);
+  }
+
+  function didPause(callFrames, reason, breakpointIds, asyncStackTrace) {
+    --expectedErrorsCount;
+    if (!expectedErrorsCount) {
+      ConsoleTestRunner.waitUntilNthMessageReceived(1, step2);
+      SourcesTestRunner.resumeExecution();
+    } else {
+      SourcesTestRunner.resumeExecution(SourcesTestRunner.waitUntilPaused.bind(SourcesTestRunner, didPause));
+    }
+  }
+
+  function step2() {
+    ConsoleTestRunner.dumpConsoleMessages();
+    completeTest();
+  }
+
+  function completeTest() {
+    TestRunner.DebuggerAgent.setPauseOnExceptions(SDK.DebuggerModel.PauseOnExceptionsState.DontPauseOnExceptions);
+    SourcesTestRunner.completeDebuggerTest();
+  }
+})();

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="file:///gen/layout_test_data/mojo/public/js/mojo_bindings.js"></script>
+<script src="file:///gen/device/vr/public/mojom/vr_service.mojom.js"></script>
+<script src="../xr/resources/xr-device-mocking.js"></script>
+<script src="../xr/resources/xr-test-utils.js"></script>
+<script src="../xr/resources/test-constants.js"></script>
+<canvas id="webgl-canvas"></canvas>
+
+<script>
+let fakeDevices = fakeXRDevices();
+promise_test( (t) => {
+  setFakeDevices([fakeDevices["FakeGooglePixelPhone"]]);
+  return navigator.xr.requestDevice().then( (device) => {
+    webglCanvas = document.getElementById('webgl-canvas');
+    gl = webglCanvas.getContext('webgl', {compatibleXRDevice: device});
+    gl.getExtension('WEBGL_lose_context').loseContext();
+    return promise_rejects(t, 'InvalidStateError',
+        gl.setCompatibleXRDevice(device));
+  });
+}, "A lost webglCanvasContext should not be able to set device");
+
+</script>

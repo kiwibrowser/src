@@ -1,0 +1,1 @@
+function uglyFunction() {console.log('ugly function');}

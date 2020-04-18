@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<title>DocumentType.cloneNode()</title>
+<link rel="help" href="https://dom.spec.whatwg.org/#dom-node-clonenode">
+<script src="../../resources/js-test.js"></script>
+<script>
+description('Tests cloneNode for DocumentType.');
+
+shouldBeNonNull("document.doctype");
+shouldBe("document.doctype.parentNode", "document");
+
+var cd = document.doctype.cloneNode(false);
+shouldBeNonNull("cd");
+shouldBe("cd.publicId", "document.doctype.publicId");
+shouldBe("cd.systemId", "document.doctype.systemId");
+shouldBe("cd.parentNode", "null");
+shouldBe("cd.ownerDocument", "document");
+
+var doc = document.implementation.createDocument(null, null, null);
+cd = doc.importNode(cd, true);
+
+shouldBe("cd.publicId", "document.doctype.publicId");
+shouldBe("cd.systemId", "document.doctype.systemId");
+shouldBe("cd.parentNode", "null");
+shouldBe("cd.ownerDocument", "doc");
+doc.appendChild(cd);
+shouldBe("cd.parentNode", "doc");
+
+var cd = document.implementation.createDocumentType(
+	"a", "b", "c").cloneNode(false);
+shouldBe("cd.name", "'a'");
+shouldBe("cd.publicId", "'b'");
+shouldBe("cd.systemId", "'c'");
+shouldBe("cd.parentNode", "null");
+shouldBe("cd.ownerDocument", "document");
+
+</script>

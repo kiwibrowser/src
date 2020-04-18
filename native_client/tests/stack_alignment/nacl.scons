@@ -1,0 +1,57 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+
+# The first tests check stack alignment indirectly by stack-allocating
+# data structures that are meant to be aligned.  These tests could be
+# defeated if the toolchain optimizes the checks away or realigns the
+# stack defensively.
+
+stack_alignment_test_nexe = env.ComponentProgram('stack_alignment_test',
+                                                 'stack_alignment_test.c',
+                                                 EXTRA_LIBS=[
+                                                     '${PTHREAD_LIBS}',
+                                                     '${NONIRT_LIBS}'
+                                                     ])
+node = env.CommandSelLdrTestNacl('stack_alignment_test.out',
+                                 stack_alignment_test_nexe)
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_stack_alignment_test')
+
+if env.Bit('build_x86') and not env.Bit('bitcode'):
+  # This tests use of x86-specific SSE operations.
+  sse_alignment_test_nexe = env.ComponentProgram(
+                                'sse_alignment_test',
+                                'sse_alignment_test.c',
+                                EXTRA_CFLAGS=['-msse2'],
+                                EXTRA_LIBS=['${PTHREAD_LIBS}',
+                                            '${NONIRT_LIBS}'])
+  node = env.CommandSelLdrTestNacl('sse_alignment_test.out',
+                                   sse_alignment_test_nexe)
+  env.AddNodeToTestSuite(node, ['small_tests'], 'run_sse_alignment_test')
+
+
+# This test checks stack alignment directly, by checking the stack
+# pointer register.  This requires assembly code.
+
+asm_env = env.Clone()
+asm_allowed = asm_env.AllowInlineAssembly()
+
+# This test's IRT interface querying does not work under nacl-glibc.
+if asm_allowed and not env.Bit('nacl_glibc'):
+  stack_alignment_asm_test_nexe = asm_env.ComponentProgram(
+      'stack_alignment_asm_test', 'stack_alignment_asm_test.c',
+      EXTRA_LIBS=['${PTHREAD_LIBS}', '${NONIRT_LIBS}'])
+  node = env.CommandSelLdrTestNacl('stack_alignment_asm_test.out',
+                                   stack_alignment_asm_test_nexe)
+  # This test is flaky on mac10.7-newlib-dbg-asan.
+  # See https://code.google.com/p/nativeclient/issues/detail?id=3906
+  is_broken = env.Bit('asan') and env.Bit('host_mac')
+  # This test is broken under qemu-arm when using IRT in Non-SFI mode.
+  is_broken |= (env.Bit('build_arm') and env.Bit('nonsfi_nacl') and
+                env.Bit('tests_use_irt') and env.UsingEmulator())
+  env.AddNodeToTestSuite(node, ['small_tests'], 'run_stack_alignment_asm_test',
+                         is_broken=is_broken)

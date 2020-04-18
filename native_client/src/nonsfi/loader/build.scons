@@ -1,0 +1,26 @@
+# -*- python -*-
+# Copyright (c) 2014 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# We could build nonsfi_loader on Mac OS X, but for now we are only testing
+# this on Linux.
+if not env.Bit('linux') and not env.Bit('nonsfi_nacl'):
+  Return()
+
+# Since we are only targeting Unix, not Windows/MSVC, we can use C99
+# language features.
+env.FilterOut(CFLAGS='-Wdeclaration-after-statement')
+
+env.ComponentLibrary('nonsfi_elf_loader',
+                     ['elf_loader.c'])
+
+extra_libs = ['irt_nonsfi', 'nacl_random_private', 'nonsfi_elf_loader',
+              'platform']
+if env['NACL_BUILD_FAMILY'] == 'UNTRUSTED':
+  extra_libs.append('${NONIRT_LIBS}')
+env.ComponentProgram('nonsfi_loader',
+                     ['elf_loader_main.c'],
+                     EXTRA_LIBS=extra_libs)

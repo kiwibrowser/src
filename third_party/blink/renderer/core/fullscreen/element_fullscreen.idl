@@ -1,0 +1,27 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// https://fullscreen.spec.whatwg.org/#api
+
+[
+    ImplementedAs=ElementFullscreen
+] partial interface Element {
+    // TODO(dtapuska): If RuntimeEnabled=FullscreenUnprefixed is shipped before RuntimeEnabled=FullscreenOptions
+    // we need to split the optional FullscreenOptions out controlled by RuntimeEnabled=FullscreenOptions
+    [RuntimeEnabled=FullscreenUnprefixed] void requestFullscreen(optional FullscreenOptions options);
+
+    [RuntimeEnabled=FullscreenUnprefixed] attribute EventHandler onfullscreenchange;
+    [RuntimeEnabled=FullscreenUnprefixed] attribute EventHandler onfullscreenerror;
+
+    // Mozilla version
+    [LogActivity, LogAllWorlds, MeasureAs=PrefixedElementRequestFullScreen, ImplementedAs=webkitRequestFullscreen] void webkitRequestFullScreen();
+    [RuntimeEnabled=FullscreenOptions, LogActivity, LogAllWorlds, MeasureAs=PrefixedElementRequestFullScreen, ImplementedAs=webkitRequestFullscreen] void webkitRequestFullScreen(FullscreenOptions options);
+
+    // W3C version
+    [LogActivity, LogAllWorlds, MeasureAs=PrefixedElementRequestFullscreen] void webkitRequestFullscreen();
+    [RuntimeEnabled=FullscreenOptions, LogActivity, LogAllWorlds, MeasureAs=PrefixedElementRequestFullscreen] void webkitRequestFullscreen(FullscreenOptions options);
+
+    attribute EventHandler onwebkitfullscreenchange;
+    attribute EventHandler onwebkitfullscreenerror;
+};

@@ -1,0 +1,44 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<script src="../../../resources/js-test.js"></script>
+</head>
+<body>
+<script>
+description("Accessing SpeechRecognition on a detached window should not crash.");
+
+window.jsTestIsAsync = true;
+
+if (window.testRunner) {
+    testRunner.dumpAsText();
+    testRunner.waitUntilDone();
+    testRunner.setCanOpenWindows();
+}
+
+var w;
+var recognition;
+var constructor;
+
+function processMessage(event) {
+    if (event.data == "opened") {
+        constructor = w.webkitSpeechRecognition;
+        recognition = new constructor();
+        w.close();
+    } else if (event.data == "closed") {
+        shouldBeUndefined("recognition.start()");
+        shouldBeUndefined("recognition.stop()");
+        shouldBeUndefined("recognition.abort()");
+        // Create SpeechRecognition for a page-detached window/document.
+        shouldNotThrow("recognition = new constructor()");
+        shouldBeUndefined("recognition.start()");
+        shouldBeUndefined("recognition.stop()");
+        shouldBeUndefined("recognition.abort()");
+        finishJSTest();
+    }
+}
+
+w = window.open('../../../resources/window-postmessage-open-close.html');
+window.addEventListener("message", processMessage, false);
+</script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(
+      `Tests that when uncaught exception in eval'ed script ending with //# sourceURL=url is logged into console, its stack trace will have the url as the script source. Bug 47252.\n`);
+  await TestRunner.loadModule('console_test_runner');
+  await TestRunner.showPanel('console');
+
+  await TestRunner.evaluateInPagePromise(`
+      function evalSource(name)
+      {
+          function b()
+          {
+              throw new Error("Exception in eval:" + name);
+          }
+
+          function a()
+          {
+              b();
+          }
+
+          a();
+      }
+
+      function doEvalWithSourceURL()
+      {
+          var source = "(" + evalSource + ")(\\"with sourceURL\\")//# sourceURL=evalURL.js";
+          setTimeout(eval.bind(this, source), 0);
+      }
+
+      function doAnonymousEvalWith()
+      {
+          var source = "(" + evalSource + ")(\\"anonymous\\")";
+          setTimeout(eval.bind(this, source), 0);
+      }
+  `);
+
+  TestRunner.evaluateInPage('doEvalWithSourceURL()', step2.bind(this));
+
+  function step2() {
+    TestRunner.evaluateInPage('doAnonymousEvalWith()', step3.bind(this));
+  }
+
+  function step3() {
+    if (Console.ConsoleView.instance()._visibleViewMessages.length < 2)
+      ConsoleTestRunner.addConsoleSniffer(step3);
+    else
+      step4();
+  }
+
+  function step4() {
+    ConsoleTestRunner.expandConsoleMessages(onExpanded);
+  }
+
+  function onExpanded() {
+    ConsoleTestRunner.dumpConsoleMessages();
+    TestRunner.completeTest();
+  }
+})();

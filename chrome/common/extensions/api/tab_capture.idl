@@ -1,0 +1,114 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// Use the <code>chrome.tabCapture</code> API to interact with tab media
+// streams.
+namespace tabCapture {
+
+  enum TabCaptureState {
+    pending,
+    active,
+    stopped,
+    error
+  };
+
+  dictionary CaptureInfo {
+    // The id of the tab whose status changed.
+    long tabId;
+
+    // The new capture status of the tab.
+    TabCaptureState status;
+
+    // Whether an element in the tab being captured is in fullscreen mode.
+    boolean fullscreen;
+  };
+
+  // MediaTrackConstraints for the media streams that will be passed to WebRTC.
+  // See section on MediaTrackConstraints:
+  // http://dev.w3.org/2011/webrtc/editor/getusermedia.html
+  dictionary MediaStreamConstraint {
+    object mandatory;
+    object? _optional;
+  };
+
+  // Whether we are requesting tab video and/or audio and the
+  // MediaTrackConstraints that should be set for these streams.
+  dictionary CaptureOptions {
+    boolean? audio;
+    boolean? video;
+    MediaStreamConstraint? audioConstraints;
+    MediaStreamConstraint? videoConstraints;
+    [nodoc] DOMString? presentationId;
+  };
+
+  callback GetTabMediaCallback =
+      void ([instanceOf=LocalMediaStream] object stream);
+
+  callback GetCapturedTabsCallback = void (CaptureInfo[] result);
+
+  interface Functions {
+    // Captures the visible area of the currently active tab.  Capture can
+    // only be started on the currently active tab after the extension has been
+    // <em>invoked</em>, similar to the way that
+    // <a href="activeTab#invoking-activeTab">activeTab</a> works.
+    //  Capture is maintained across page navigations within
+    // the tab, and stops when the tab is closed, or the media stream is closed
+    // by the extension.
+    //
+    // |options| : Configures the returned media stream.
+    // |callback| : Callback with either the tab capture MediaStream or
+    //   <code>null</code>.  <code>null</code> indicates an error has occurred
+    //   and the client may query chrome.runtime.lastError to access the error
+    //   details.
+    static void capture(CaptureOptions options,
+                        GetTabMediaCallback callback);
+
+    // Returns a list of tabs that have requested capture or are being
+    // captured, i.e. status != stopped and status != error.
+    // This allows extensions to inform the user that there is an existing
+    // tab capture that would prevent a new tab capture from succeeding (or
+    // to prevent redundant requests for the same tab).
+    // |callback| : Callback invoked with CaptureInfo[] for captured tabs.
+    static void getCapturedTabs(GetCapturedTabsCallback callback);
+
+    // Creates an off-screen tab and navigates it to the given |startUrl|.
+    // Then, capture is started and a MediaStream is returned via |callback|.
+    //
+    // Off-screen tabs are isolated from the user's normal browser experience.
+    // They do not show up in the browser window or tab strip, nor are they
+    // visible to extensions (e.g., via the chrome.tabs.* APIs).
+    //
+    // An off-screen tab remains alive until one of three events occurs: 1. All
+    // MediaStreams providing its captured content are closed; 2. the page
+    // self-closes (e.g., via window.close()); 3. the extension that called
+    // captureOffscreenTab() is unloaded.
+    //
+    // Sandboxing: The off-screen tab does not have any access whatsoever to the
+    // local user profile (including cookies, HTTP auth, etc.).  Instead, it is
+    // provided its own sandboxed profile.  Also, it cannot access any
+    // interactive resources such as keyboard/mouse input, media recording
+    // devices (e.g., web cams), copy/paste to/from the system clipboard, etc.
+    //
+    // Note: This is a new API, currently only available in Canary/Dev channel,
+    // and may change without notice.
+    //
+    // |options| : Constraints for the capture and returned MediaStream.
+    // |callback| : Callback with either the tab capture MediaStream or
+    //   <code>null</code>.  <code>null</code> indicates an error has occurred
+    //   and the client may query chrome.runtime.lastError to access the error
+    //   details.
+    static void captureOffscreenTab(DOMString startUrl,
+                                    CaptureOptions options,
+                                    GetTabMediaCallback callback);
+  };
+
+  interface Events {
+    // Event fired when the capture status of a tab changes.
+    // This allows extension authors to keep track of the capture status of
+    // tabs to keep UI elements like page actions in sync.
+    // |info| : CaptureInfo with new capture status for the tab.
+    static void onStatusChanged(CaptureInfo info);
+  };
+
+};

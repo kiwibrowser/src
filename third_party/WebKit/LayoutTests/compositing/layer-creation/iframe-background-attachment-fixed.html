@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<pre id="mainThreadScrollingReasons"></pre>
+
+<iframe id="iframe" src="resources/background-attachment-fixed.html"></iframe>
+
+<div style="height: 2000px;">
+</div>
+
+<script>
+function scrollingLocationAndReasons(reasons) {
+  return reasons ? "scrolls on main: " + reasons : "scrolls on impl";
+}
+
+if (window.testRunner)
+    testRunner.dumpAsText(true);
+
+window.addEventListener('load', function() {
+    reasons = internals.mainThreadScrollingReasons(document);
+    text = "Main frame " + scrollingLocationAndReasons(reasons);
+    text += "\nThe iFrame scrolls on main thread, reasons: " + document.getElementById("iframe").contentDocument.getElementById("mainThreadScrollingReasons").innerText;
+    document.getElementById("mainThreadScrollingReasons").innerText = text;
+});
+</script>

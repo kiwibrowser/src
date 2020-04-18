@@ -1,0 +1,68 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+nexe = env.ComponentProgram('env_var_test', 'env_var_test.c',
+                            EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+nodes = []
+
+nodes.append(env.CommandSelLdrTestNacl(
+    'empty_env_var_test.out',
+    nexe,
+    stdout_golden=env.File('empty_env.stdout'),
+    osenv='LANG=This_variable_should_not_get_passed_through_by_default'))
+
+# Note that Scons has trouble with arguments containing spaces so we
+# avoid example values with spaces.
+example_env_args = [
+    '-E', 'FOO=contents_of_foo',
+    '-E', 'ANOTHER_VAR=another_environment_variable',
+    # For simplicity, sel_ldr does not interpret the strings
+    # passed via "-E", so it allows duplicate keys, as well as
+    # strings not of the form "KEY=VALUE".  This is in line with
+    # how Unix's execve() behaves.  We demonstrate this here, but
+    # we could change sel_ldr in the future to remove duplicates
+    # or require "KEY=VALUE" strings.
+    '-E', 'DUP=duplicated_key_1',
+    '-E', 'DUP=duplicated_key_2',
+    '-E', 'Technically_we_do_not_need_an_equals_sign_here']
+nodes.append(env.CommandSelLdrTestNacl(
+    'nonempty_env_var_test.out',
+    nexe,
+    sel_ldr_flags=example_env_args,
+    stdout_golden=env.File('nonempty_env.stdout'),
+    osenv='LANG=This_variable_should_not_get_passed_through_by_default'))
+
+if not env.IsRunningUnderValgrind():
+  env.AddNodeToTestSuite(nodes, ['small_tests'], 'run_env_var_test')
+
+passthrough_nexe = env.ComponentProgram('passthrough_test',
+                                        'passthrough_test.c',
+                                        EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+    'passthrough_test.out',
+    passthrough_nexe,
+    args=['with_p'],
+    sel_ldr_flags=['-p'],
+    osenv=['FOO=bar'])
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_passthrough_test')
+
+node = env.CommandSelLdrTestNacl(
+    'no_passthrough_test.out',
+    passthrough_nexe,
+    args=['without_p'],
+    osenv=['FOO=bar'])
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_no_passthrough_test')
+
+node = env.CommandSelLdrTestNacl(
+    'passthrough_override_test.out',
+    passthrough_nexe,
+    args=['with_p_override'],
+    sel_ldr_flags=['-p', '-E', 'FOO=bar'],
+    osenv=['FOO=badness'])
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_passthrough_override_test')

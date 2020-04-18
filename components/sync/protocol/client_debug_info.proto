@@ -1,0 +1,162 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+//
+// Sync protocol for debug info clients can send to the sync server.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package sync_pb;
+
+import "get_updates_caller_info.proto";
+import "sync_enums.proto";
+
+// Per-type hint information.
+message TypeHint {
+  // The data type this hint applied to.
+  optional int32 data_type_id = 1;
+
+  // Whether or not a valid hint is provided.
+  optional bool has_valid_hint = 2;
+}
+
+// A dummy message definition for deprecated fields. Never add any fields to
+// this message.
+message DeprecatedMessage {}
+
+// The additional info here is from the StatusController. They get sent when
+// the event SYNC_CYCLE_COMPLETED  is sent.
+message SyncCycleCompletedEventInfo {
+  // optional bool syncer_stuck = 1; // Was always false, now obsolete.
+
+  // The client has never set these values correctly.  It set
+  // num_blocking_conflicts to the total number of conflicts detected and set
+  // num_non_blocking_conflicts to the number of blocking (aka. simple)
+  // conflicts.
+  //
+  // These counters have been deprecated to avoid further confusion.  The newer
+  // counters provide more detail and are less buggy.
+  optional int32 num_blocking_conflicts = 2 [deprecated = true];
+  optional int32 num_non_blocking_conflicts = 3 [deprecated = true];
+
+  // These new conflict counters replace the ones above.
+  optional int32 num_encryption_conflicts = 4;
+  optional int32 num_hierarchy_conflicts = 5;
+  optional int32 num_simple_conflicts = 6;  // No longer sent since M24.
+  optional int32 num_server_conflicts = 7;
+
+  // Counts to track the effective usefulness of our GetUpdate requests.
+  optional int32 num_updates_downloaded = 8;
+  optional int32 num_reflected_updates_downloaded = 9;
+
+  // |caller_info| was mostly replaced by |get_updates_origin|; now it only
+  // contains the |notifications_enabled| flag.
+  optional GetUpdatesCallerInfo caller_info = 10;
+
+  // |source_info| was unused and marked deprecated in M67.
+  repeated DeprecatedMessage source_info = 11 [deprecated = true];
+
+  optional SyncEnums.GetUpdatesOrigin get_updates_origin = 12;
+}
+
+// Datatype specifics statistics gathered at association time.
+message DatatypeAssociationStats {
+  // The datatype that was associated.
+  optional int32 data_type_id = 1;
+
+  // The state of the world before association.
+  optional int32 num_local_items_before_association = 2;
+  optional int32 num_sync_items_before_association = 3;
+
+  // The state of the world after association.
+  optional int32 num_local_items_after_association = 4;
+  optional int32 num_sync_items_after_association = 5;
+
+  // The changes that got us from before to after. In a correctly working
+  // system these should be the deltas between before and after.
+  optional int32 num_local_items_added = 6;
+  optional int32 num_local_items_deleted = 7;
+  optional int32 num_local_items_modified = 8;
+  optional int32 num_sync_items_added = 9;
+  optional int32 num_sync_items_deleted = 10;
+  optional int32 num_sync_items_modified = 11;
+
+  // Model versions before association. Ideally local and sync model should
+  // have same version if models were persisted properly in last cycle.
+  // Note: currently version is only set on bookmark model.
+  optional int64 local_version_pre_association = 20;
+  optional int64 sync_version_pre_association = 21;
+
+  // The data type ran into an error during model association.
+  optional bool had_error = 12;
+
+  // Waiting time before downloading starts. This measures the time between
+  // receiving configuration request for a set of data types to starting
+  // downloading data of this type.
+  optional int64 download_wait_time_us = 15;
+
+  // Time spent on downloading sync data for first time sync.
+  // Note: This measures the time between asking backend to download data to
+  //       being notified of download-ready by backend. So it consists of
+  //       time on data downloading and processing at sync backend. But
+  //       downloading time should dominate. It's also the total time spent on
+  //       downloading data of all types in the priority group of
+  //       |data_type_id| instead of just one data type.
+  optional int64 download_time_us = 13;
+
+  // Waiting time for higher priority types to finish association. This
+  // measures the time between finishing downloading data to requesting
+  // association manager to associate this batch of types. High priority types
+  // have near zero waiting time.
+  optional int64 association_wait_time_for_high_priority_us = 16;
+
+  // Waiting time for other types with same priority during association.
+  // Data type manger sends types of same priority to association manager to
+  // configure as a batch. Association manager configures one type at a time.
+  // This measures the time between when a type is sent to association manager
+  // (among other types) to when association manager starts configuring the
+  // type. Total wait time before association is
+  //     |association_wait_time_for_high_priority_us| +
+  //     |association_wait_time_for_same_priority_us|
+  optional int64 association_wait_time_for_same_priority_us = 14;
+
+  // Time spent on model association.
+  optional int64 association_time_us = 17;
+
+  // Higher priority type that's configured before this type.
+  repeated int32 high_priority_type_configured_before = 18;
+
+  // Same priority type that's configured before this type.
+  repeated int32 same_priority_type_configured_before = 19;
+}
+
+message DebugEventInfo {
+  // Each of the following fields correspond to different kinds of events. as
+  // a result, only one is set during any single DebugEventInfo.
+  // A singleton event. See enum definition.
+  optional SyncEnums.SingletonDebugEventType singleton_event = 1;
+  // A sync cycle completed.
+  optional SyncCycleCompletedEventInfo sync_cycle_completed_event_info = 2;
+  // A datatype triggered a nudge.
+  optional int32 nudging_datatype = 3;
+  // A notification triggered a nudge.
+  repeated int32 datatypes_notified_from_server = 4;
+  // A datatype finished model association.
+  optional DatatypeAssociationStats datatype_association_stats = 5;
+}
+
+message DebugInfo {
+  repeated DebugEventInfo events = 1;
+
+  // Whether cryptographer is ready to encrypt and decrypt data.
+  optional bool cryptographer_ready = 2;
+
+  // Cryptographer has pending keys which indicates the correct passphrase
+  // has not been provided yet.
+  optional bool cryptographer_has_pending_keys = 3;
+
+  // Indicates client has dropped some events to save bandwidth.
+  optional bool events_dropped = 4;
+}

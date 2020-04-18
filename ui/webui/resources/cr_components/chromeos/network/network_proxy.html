@@ -1,0 +1,159 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/chromeos/network/cr_onc_types.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_toggle/cr_toggle.html">
+<link rel="import" href="chrome://resources/cr_elements/hidden_style_css.html">
+<link rel="import" href="chrome://resources/cr_elements/policy/cr_policy_network_behavior.html">
+<link rel="import" href="chrome://resources/html/assert.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/html/md_select_css.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-a11y-keys/iron-a11y-keys.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-input/iron-input.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-input/paper-input-container.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-input/paper-input.html">
+<link rel="import" href="network_proxy_exclusions.html">
+<link rel="import" href="network_proxy_input.html">
+<link rel="import" href="network_shared_css.html">
+
+<dom-module id="network-proxy">
+  <template>
+    <style include="network-shared md-select cr-hidden-style iron-flex iron-flex-alignment">
+      network-proxy-input {
+        margin-bottom: 10px;
+      }
+
+      network-proxy-exclusions {
+        margin: 10px 0;
+      }
+
+      #manualProxy {
+        -webkit-padding-start: var(--cr-section-padding);
+      }
+    </style>
+
+    <!-- Proxy type dropdown -->
+    <div class="property-box">
+      <div class="start">[[i18n('networkProxyConnectionType')]]</div>
+      <div class="md-select-wrapper">
+        <select id="proxyType" class="md-select" on-change="onTypeChange_"
+            value="[[proxy_.Type]]"
+            disabled="[[!isEditable_('Type', networkProperties, editable,
+                useSharedProxies)]]"
+            aria-label="[[i18n('networkProxyConnectionType')]]">
+          <template is="dom-repeat" items="[[proxyTypes_]]">
+            <option value="[[item]]">[[getProxyTypeDesc_(item)]]</option>
+          </template>
+        </select>
+        <span class="md-select-underline"></span>
+      </div>
+    </div>
+
+    <!-- Autoconfiguration (PAC) -->
+    <div class="property-box indented"
+        hidden$="[[!matches_(proxy_.Type, ProxySettingsType_.PAC)]]">
+      <div>[[i18n('networkProxyAutoConfig')]]</div>
+      <paper-input id="pacInput" no-label-float class="middle"
+          value="{{proxy_.PAC}}" on-change="onPACChange_"
+          disabled="[[!isEditable_('PAC', networkProperties, editable,
+              useSharedProxies)]]">
+      </paper-input>
+    </div>
+
+    <!-- Web Proxy Auto Discovery (WPAD) -->
+    <div class="property-box indented"
+        hidden$="[[!matches_(proxy_.Type, ProxySettingsType_.WPAD)]]">
+      <div>[[i18n('networkProxyWpad')]]</div>
+      <div class="middle">[[WPAD_]]</div>
+    </div>
+
+    <!-- Manual -->
+    <div class="property-box indented"
+        hidden$="[[!matches_(proxy_.Type, ProxySettingsType_.MANUAL)]]">
+      <div id="networkProxyToggleLabel" class="flex">
+        [[i18n('networkProxyUseSame')]]
+      </div>
+      <cr-toggle checked="{{useSameProxy_}}"
+          disabled="[[!isEditable_('Type', networkProperties, editable,
+              useSharedProxies)]]"
+          aria-labelledby="networkProxyToggleLabel">
+      </cr-toggle>
+    </div>
+
+    <div id="manualProxy" class="layout vertical start"
+        hidden$="[[!matches_(proxy_.Type, ProxySettingsType_.MANUAL)]]">
+      <div hidden$="[[!useSameProxy_]]" class="layout vertical">
+        <network-proxy-input
+            on-proxy-change="onProxyInputChange_"
+            editable="[[isEditable_('Manual.HTTPProxy.Host', networkProperties,
+                editable, useSharedProxies)]]"
+            value="{{proxy_.Manual.HTTPProxy}}"
+            label="[[i18n('networkProxy')]]">
+        </network-proxy-input>
+      </div>
+      <div hidden$="[[useSameProxy_]]" class="layout vertical">
+        <network-proxy-input
+            on-proxy-change="onProxyInputChange_"
+            editable="[[isEditable_('Manual.HTTPProxy.Host', networkProperties,
+                editable, useSharedProxies)]]"
+            value="{{proxy_.Manual.HTTPProxy}}"
+            label="[[i18n('networkProxyHttp')]]">
+        </network-proxy-input>
+        <network-proxy-input
+            on-proxy-change="onProxyInputChange_"
+            editable="[[isEditable_('Manual.SecureHTTPProxy.Host',
+                networkProperties, editable, useSharedProxies)]]"
+            value="{{proxy_.Manual.SecureHTTPProxy}}"
+            label="[[i18n('networkProxyShttp')]]">
+        </network-proxy-input>
+        <network-proxy-input
+            on-proxy-change="onProxyInputChange_"
+            editable="[[isEditable_('Manual.FTPProxy.Host', networkProperties,
+                editable, useSharedProxies)]]"
+            value="{{proxy_.Manual.FTPProxy}}"
+            label="[[i18n('networkProxyFtp')]]">
+        </network-proxy-input>
+        <network-proxy-input
+            on-proxy-change="onProxyInputChange_"
+            editable="[[isEditable_('Manual.SOCKS.Host', networkProperties,
+                editable, useSharedProxies)]]"
+            value="{{proxy_.Manual.SOCKS}}"
+            label="[[i18n('networkProxySocks')]]">
+        </network-proxy-input>
+      </div>
+
+      <div hidden="[[!isEditable_('Type', networkProperties, editable,
+          useSharedProxies)]]">
+        <div>[[i18n('networkProxyExceptionList')]]</div>
+        <network-proxy-exclusions on-proxy-change="onProxyExclusionsChange_"
+            exclusions="{{proxy_.ExcludeDomains}}"
+            editable="[[isEditable_('ExcludeDomains', networkProperties,
+                editable, useSharedProxies)]]">
+        </network-proxy-exclusions>
+        <div class="layout horizontal">
+          <paper-input-container no-label-float class="flex">
+            <iron-input slot="input">
+              <input id="proxyExclusion">
+            </iron-input>
+            <iron-a11y-keys keys="enter" slot="add-on"
+                on-keys-pressed="onAddProxyExclusionTap_">
+            </iron-a11y-keys>
+          </paper-input-container>
+          <paper-button on-tap="onAddProxyExclusionTap_">
+            [[i18n('networkProxyAddException')]]
+          </paper-button>
+        </div>
+      </div>
+
+      <paper-button id="saveManualProxy"
+          on-tap="onSaveProxyTap_" class="action-button"
+          disabled="[[!isSaveManualProxyEnabled_(networkProperties,
+              proxyIsUserModified_, proxy_.*)]]">
+        [[i18n('save')]]
+      </paper-button>
+    </div>
+
+  </template>
+  <script src="network_proxy.js"></script>
+</dom-module>

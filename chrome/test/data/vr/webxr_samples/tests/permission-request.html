@@ -1,0 +1,265 @@
+<!doctype html>
+<!--
+Copyright 2018 The Immersive Web Community Group
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-->
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1, user-scalable=no'>
+    <meta name='mobile-web-app-capable' content='yes'>
+    <meta name='apple-mobile-web-app-capable' content='yes'>
+
+    <title>Permission Requests</title>
+
+    <link href='../css/common.css' rel='stylesheet'></link>
+
+    <script src='../js/cottontail/build/cottontail.js'></script>
+
+    <script src='../js/webxr-button.js'></script>
+  </head>
+  <body>
+    <header>
+      <details open>
+        <summary>Permission Requests</summary>
+        <p>
+          Tests requesting permissions from within XR. Demonstrates how the UA
+          handles those requests, if at all.
+          <a class="back" href="./">Back</a>
+        </p>
+      </details>
+    </header>
+    <script>
+      (function () {
+      'use strict';
+
+      const BUTTON_PER_ROW = 5;
+      const BUTTON_ROW_ARC = Math.PI * 0.2;
+      const BUTTON_ROW_HEIGHT = 0.12;
+      const BUTTON_GRID_HEIGHT = 1.3;
+      const BUTTON_GRID_DISTANCE = 1.0;
+
+      // XR globals.
+      let xrButton = null;
+      let xrExclusiveFrameOfRef = null;
+      let xrNonExclusiveFrameOfRef = null;
+
+      // WebGL scene globals.
+      let gl = null;
+      let renderer = null;
+      let scene = new Scene();
+      scene.addNode(new Gltf2Node({url: '../media/gltf/cube-room/cube-room.gltf'}));
+      scene.enableStats(false);
+
+      let checkTexture = new UrlTexture('../media/textures/check-button.png');
+      let xTexture = new UrlTexture('../media/textures/x-button.png');
+
+      function initXR() {
+        xrButton = new XRDeviceButton({
+          onRequestSession: onRequestSession,
+          onEndSession: onEndSession
+        });
+        document.querySelector('header').appendChild(xrButton.domElement);
+
+        if (navigator.xr) {
+          navigator.xr.requestDevice().then((device) => {
+            device.supportsSession({exclusive: true}).then(() => {
+              xrButton.setDevice(device);
+            });
+
+            let outputCanvas = document.createElement('canvas');
+            let ctx = outputCanvas.getContext('xrpresent');
+
+            device.requestSession({ outputContext: ctx })
+                .then((session) => {
+                  document.body.appendChild(outputCanvas);
+                  onSessionStarted(session);
+                });
+          }).catch(() => {
+            initFallback();
+          });
+        } else {
+          initFallback();
+        }
+      }
+
+      function initFallback() {
+        initGL();
+        document.body.appendChild(gl.canvas);
+        let fallbackHelper = new FallbackHelper(scene, gl);
+        fallbackHelper.emulateStage = true;
+      }
+
+      function initGL(compatibleDevice) {
+        if (gl)
+          return;
+
+        gl = createWebGLContext({
+          compatibleXRDevice: compatibleDevice
+        });
+
+        renderer = new Renderer(gl);
+        scene.setRenderer(renderer);
+        scene.inputRenderer.setControllerMesh(new Gltf2Node({url: '../media/gltf/controller/controller.gltf'}));
+
+        function addPermissionButton(iconUrl, callback, yAngle, yOffset) {
+          let button = new ButtonNode(new UrlTexture(iconUrl), () => {
+            callback(
+              () => { button.iconTexture = checkTexture; }, // Success callback
+              () => { button.iconTexture = xTexture; } // Failure callback
+            )
+          });
+          mat4.identity(button.matrix);
+          mat4.translate(button.matrix, button.matrix, [0, yOffset, 0]);
+          mat4.rotateY(button.matrix, button.matrix, yAngle);
+          mat4.translate(button.matrix, button.matrix, [0, 0, -BUTTON_GRID_DISTANCE]);
+          scene.addNode(button);
+        }
+
+        // Builds a cylindrical grid of buttons
+        function addPermissionButtons(buttonList) {
+          let count = buttonList.length;
+          let rows = Math.ceil(count / BUTTON_PER_ROW);
+          let firstRowOffset = (rows / 2) * BUTTON_ROW_HEIGHT;
+          let anglePerButton = BUTTON_ROW_ARC / BUTTON_PER_ROW;
+          let rowAngleOffset = (BUTTON_ROW_ARC * 0.5) - (anglePerButton * 0.5)
+
+          for (let i = 0; i < count; ++i) {
+            let button = buttonList[i];
+            let yAngle = rowAngleOffset - ((i % BUTTON_PER_ROW) * anglePerButton);
+            let row = Math.floor(i / BUTTON_PER_ROW);
+            let yOffset = BUTTON_GRID_HEIGHT + (firstRowOffset - (row * BUTTON_ROW_HEIGHT));
+            addPermissionButton(button.icon, button.callback, yAngle, yOffset);
+          }
+        }
+
+        addPermissionButtons([
+          {
+            icon: '../media/textures/camera-button.png',
+            callback: (success, fail) => {
+              navigator.getUserMedia({ video: true }, success, fail);
+            }
+          },
+          {
+            icon: '../media/textures/mic-button.png',
+            callback: (success, fail) => {
+              navigator.getUserMedia({ audio: true }, success, fail);
+            }
+          },
+          {
+            icon: '../media/textures/location-button.png',
+            callback: (success, fail) => {
+              navigator.geolocation.getCurrentPosition(success, fail);
+            }
+          },
+          {
+            icon: '../media/textures/bluetooth-button.png',
+            callback: (success, fail) => {
+              navigator.bluetooth.requestDevice({
+                // filters: [...] <- Prefer filters to save energy & show relevant devices.
+                // acceptAllDevices here ensures dialog can populate, we don't care with what.
+                acceptAllDevices:true
+              })
+              .then(device => device.gatt.connect())
+              .then(success, fail);
+            }
+          },
+          {
+            icon: '../media/textures/usb-button.png',
+            callback: (success, fail) => {
+              navigator.usb.requestDevice({filters: [{}]})
+              .then(success, fail);
+            }
+          },
+        ]);
+      }
+
+      function onRequestSession(device) {
+        // Set up a mirror canvas
+        let mirrorCanvas = document.createElement('canvas');
+        let ctx = mirrorCanvas.getContext('xrpresent');
+        mirrorCanvas.setAttribute('id', 'mirror-canvas');
+        document.body.appendChild(mirrorCanvas);
+
+        device.requestSession({ exclusive: true, outputContext: ctx }).then((session) => {
+          xrButton.setSession(session);
+          onSessionStarted(session);
+        });
+      }
+
+      function onSessionStarted(session) {
+        session.addEventListener('end', onSessionEnded);
+
+        session.addEventListener('select', (ev) => {
+          let frameOfRef = ev.frame.session.exclusive ?
+                           xrExclusiveFrameOfRef :
+                           xrNonExclusiveFrameOfRef;
+          scene.handleSelect(ev.inputSource, ev.frame, frameOfRef);
+        });
+
+        initGL(session.device);
+
+        session.baseLayer = new XRWebGLLayer(session, gl);
+
+        session.requestFrameOfReference('stage').then((frameOfRef) => {
+          if (session.exclusive) {
+            xrExclusiveFrameOfRef = frameOfRef;
+          } else {
+            xrNonExclusiveFrameOfRef = frameOfRef;
+          }
+
+          session.requestAnimationFrame(onXRFrame);
+        });
+      }
+
+      function onEndSession(session) {
+        session.end();
+      }
+
+      function onSessionEnded(event) {
+        if (event.session.exclusive) {
+          document.body.removeChild(document.querySelector('#mirror-canvas'));
+          xrButton.setSession(null);
+        }
+      }
+
+      function onXRFrame(t, frame) {
+        let session = frame.session;
+        let frameOfRef = session.exclusive ?
+                         xrExclusiveFrameOfRef :
+                         xrNonExclusiveFrameOfRef;
+        let pose = frame.getDevicePose(frameOfRef);
+
+        scene.startFrame();
+
+        session.requestAnimationFrame(onXRFrame);
+
+        scene.updateInputSources(frame, frameOfRef);
+
+        scene.drawXRFrame(frame, pose);
+
+        scene.endFrame();
+      }
+
+      // Start the XR application.
+      initXR();
+      })();
+    </script>
+  </body>
+</html>

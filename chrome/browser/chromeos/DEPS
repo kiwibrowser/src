@@ -1,0 +1,48 @@
+include_rules = [
+  "-ash",
+  # Public ash interfaces are OK.
+  "+ash/public",
+
+  # TODO(ananta): Remove this when we move files which display UI in
+  # chrome/browser/chromeos to chrome/browser/ui/views/chromeos
+  # crbug.com/728877
+  "+chrome/browser/ui/views/harmony/chrome_layout_provider.h",
+
+  "+components/constrained_window",
+  "+components/drive/drive_pref_names.h",
+  "+components/pairing",
+  "+components/password_manager/core/browser/hash_password_manager.h",
+  "+components/onc",
+  "+components/ownership",
+  "+components/session_manager/core",
+  "+components/user_manager",
+  "+cros",
+  "+dbus",
+  "+device/bluetooth",
+  "+mash/public/mojom",
+  "+media/audio/sounds",  # For system sounds
+  "+media/base/media_switches.h",  # For media command line switches.
+  "+media/mojo/interfaces",  # For platform verification mojom interface.
+  "+mojo/edk/embedder",
+  "+services/device/public",
+  "+services/metrics/public",
+  "+services/tracing/public",
+  "+services/viz/public/interfaces",
+  # Chromeos should not use ozone directly, it must go through mojo as ozone
+  # does not run in process in mus.
+  "-ui/ozone/public",
+  "+ui/ozone/public/ozone_switches.h",
+]
+
+specific_include_rules = {
+  ".*test.*": [
+   "!ash",
+  ],
+  "chrome_browser_main_chromeos\.cc": [
+    # TODO(mash): Support EventRewriters, http://crbug.com/647781.
+    "+ash/events/event_rewriter_controller.h",
+    "+ash/root_window_controller.h",
+    "+ash/shell.h",
+    "+ash/sticky_keys/sticky_keys_controller.h",
+  ],
+}

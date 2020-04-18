@@ -1,0 +1,31 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef THIRD_PARTY_BLINK_RENDERER_CORE_PAINT_BLOCK_PAINT_INVALIDATOR_H_
+#define THIRD_PARTY_BLINK_RENDERER_CORE_PAINT_BLOCK_PAINT_INVALIDATOR_H_
+
+#include "third_party/blink/renderer/platform/graphics/paint_invalidation_reason.h"
+#include "third_party/blink/renderer/platform/wtf/allocator.h"
+
+namespace blink {
+
+struct PaintInvalidatorContext;
+class LayoutBlock;
+
+class BlockPaintInvalidator {
+  STACK_ALLOCATED();
+
+ public:
+  BlockPaintInvalidator(const LayoutBlock& block) : block_(block) {}
+
+  void ClearPreviousVisualRects();
+  PaintInvalidationReason InvalidatePaint(const PaintInvalidatorContext&);
+
+ private:
+  const LayoutBlock& block_;
+};
+
+}  // namespace blink
+
+#endif

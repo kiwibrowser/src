@@ -1,0 +1,154 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef THIRD_PARTY_BLINK_RENDERER_PLATFORM_GRAPHICS_PAINT_SCROLL_PAINT_PROPERTY_NODE_H_
+#define THIRD_PARTY_BLINK_RENDERER_PLATFORM_GRAPHICS_PAINT_SCROLL_PAINT_PROPERTY_NODE_H_
+
+#include "third_party/blink/renderer/platform/geometry/float_point.h"
+#include "third_party/blink/renderer/platform/geometry/float_size.h"
+#include "third_party/blink/renderer/platform/geometry/int_rect.h"
+#include "third_party/blink/renderer/platform/graphics/compositor_element_id.h"
+#include "third_party/blink/renderer/platform/graphics/paint/paint_property_node.h"
+#include "third_party/blink/renderer/platform/platform_export.h"
+#include "third_party/blink/renderer/platform/scroll/main_thread_scrolling_reason.h"
+
+namespace blink {
+
+using MainThreadScrollingReasons = uint32_t;
+
+// A scroll node contains auxiliary scrolling information which includes how far
+// an area can be scrolled, main thread scrolling reasons, etc. Scroll nodes
+// are referenced by TransformPaintPropertyNodes that are used for the scroll
+// offset translation, though scroll offset translation can exist without a
+// scroll node (e.g., overflow: hidden).
+//
+// Main thread scrolling reasons force scroll updates to go to the main thread
+// and can have dependencies on other nodes. For example, all parents of a
+// scroll node with background attachment fixed set should also have it set.
+//
+// The scroll tree differs from the other trees because it does not affect
+// geometry directly.
+class PLATFORM_EXPORT ScrollPaintPropertyNode
+    : public PaintPropertyNode<ScrollPaintPropertyNode> {
+ public:
+  // To make it less verbose and more readable to construct and update a node,
+  // a struct with default values is used to represent the state.
+  struct State {
+    IntRect container_rect;
+    IntRect contents_rect;
+    bool user_scrollable_horizontal = false;
+    bool user_scrollable_vertical = false;
+    MainThreadScrollingReasons main_thread_scrolling_reasons =
+        MainThreadScrollingReason::kNotScrollingOnMain;
+    // The scrolling element id is stored directly on the scroll node and not on
+    // the associated TransformPaintPropertyNode used for scroll offset.
+    CompositorElementId compositor_element_id;
+
+    bool operator==(const State& o) const {
+      return container_rect == o.container_rect &&
+             contents_rect == o.contents_rect &&
+             user_scrollable_horizontal == o.user_scrollable_horizontal &&
+             user_scrollable_vertical == o.user_scrollable_vertical &&
+             main_thread_scrolling_reasons == o.main_thread_scrolling_reasons &&
+             compositor_element_id == o.compositor_element_id;
+    }
+  };
+
+  // This node is really a sentinel, and does not represent a real scroll.
+  static ScrollPaintPropertyNode* Root();
+
+  static scoped_refptr<ScrollPaintPropertyNode> Create(
+      scoped_refptr<const ScrollPaintPropertyNode> parent,
+      State&& state) {
+    return base::AdoptRef(
+        new ScrollPaintPropertyNode(std::move(parent), std::move(state)));
+  }
+
+  bool Update(scoped_refptr<const ScrollPaintPropertyNode> parent,
+              State&& state) {
+    bool parent_changed = SetParent(parent);
+    if (state == state_)
+      return parent_changed;
+
+    SetChanged();
+    state_ = std::move(state);
+    Validate();
+    return true;
+  }
+
+  // Rect of the container area that the contents scrolls in, in the space of
+  // the parent of the associated transform node (ScrollTranslation).
+  // It doesn't include non-overlay scrollbars. Overlay scrollbars do not affect
+  // the rect.
+  const IntRect& ContainerRect() const { return state_.container_rect; }
+
+  // Rect of the contents that is scrolled within the container rect, in the
+  // space of the associated transform node (ScrollTranslation).
+  const IntRect& ContentsRect() const { return state_.contents_rect; }
+
+  bool UserScrollableHorizontal() const {
+    return state_.user_scrollable_horizontal;
+  }
+  bool UserScrollableVertical() const {
+    return state_.user_scrollable_vertical;
+  }
+
+  // Return reason bitfield with values from cc::MainThreadScrollingReason.
+  MainThreadScrollingReasons GetMainThreadScrollingReasons() const {
+    return state_.main_thread_scrolling_reasons;
+  }
+
+  // Main thread scrolling reason for the threaded scrolling disabled setting.
+  bool ThreadedScrollingDisabled() const {
+    return state_.main_thread_scrolling_reasons &
+           MainThreadScrollingReason::kThreadedScrollingDisabled;
+  }
+
+  // Main thread scrolling reason for background attachment fixed descendants.
+  bool HasBackgroundAttachmentFixedDescendants() const {
+    return state_.main_thread_scrolling_reasons &
+           MainThreadScrollingReason::kHasBackgroundAttachmentFixedObjects;
+  }
+
+  const CompositorElementId& GetCompositorElementId() const {
+    return state_.compositor_element_id;
+  }
+
+#if DCHECK_IS_ON()
+  // The clone function is used by FindPropertiesNeedingUpdate.h for recording
+  // a scroll node before it has been updated, to later detect changes.
+  scoped_refptr<ScrollPaintPropertyNode> Clone() const {
+    return base::AdoptRef(new ScrollPaintPropertyNode(Parent(), State(state_)));
+  }
+
+  // The equality operator is used by FindPropertiesNeedingUpdate.h for checking
+  // if a scroll node has changed.
+  bool operator==(const ScrollPaintPropertyNode& o) const {
+    return Parent() == o.Parent() && state_ == o.state_;
+  }
+#endif
+
+  std::unique_ptr<JSONObject> ToJSON() const;
+
+ private:
+  ScrollPaintPropertyNode(scoped_refptr<const ScrollPaintPropertyNode> parent,
+                          State&& state)
+      : PaintPropertyNode(std::move(parent)), state_(std::move(state)) {
+    Validate();
+  }
+
+  void Validate() const {
+#if DCHECK_IS_ON()
+    DCHECK(!state_.compositor_element_id ||
+           NamespaceFromCompositorElementId(state_.compositor_element_id) ==
+               CompositorElementIdNamespace::kScroll);
+#endif
+  }
+
+  State state_;
+};
+
+}  // namespace blink
+
+#endif  // THIRD_PARTY_BLINK_RENDERER_PLATFORM_GRAPHICS_PAINT_SCROLL_PAINT_PROPERTY_NODE_H_

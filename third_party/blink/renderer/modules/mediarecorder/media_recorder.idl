@@ -1,0 +1,36 @@
+// Copyright 2015 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// https://w3c.github.io/mediacapture-record/#mediarecorder-api
+
+enum RecordingState { "inactive", "recording", "paused" };
+
+[
+    ActiveScriptWrappable,
+    ConstructorCallWith=ExecutionContext,
+    Constructor(MediaStream stream, optional MediaRecorderOptions options),
+    RaisesException=Constructor,
+    Exposed=Window
+] interface MediaRecorder : EventTarget {
+    readonly attribute MediaStream stream;
+    readonly attribute DOMString mimeType;
+    readonly attribute RecordingState state;
+
+    attribute EventHandler onstart;
+    attribute EventHandler onstop;
+    attribute EventHandler ondataavailable;
+    attribute EventHandler onpause;
+    attribute EventHandler onresume;
+    attribute EventHandler onerror;
+    readonly attribute unsigned long videoBitsPerSecond;
+    readonly attribute unsigned long audioBitsPerSecond;
+
+    [RaisesException, Measure] void start(optional long timeslice);
+    [RaisesException] void stop();
+    [RaisesException] void pause();
+    [RaisesException] void resume();
+    [RaisesException] void requestData();
+
+    [CallWith=ExecutionContext] static boolean isTypeSupported(DOMString type);
+};

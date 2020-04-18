@@ -1,0 +1,558 @@
+/* Copyright 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file. */
+
+html {
+  /* Material Design constants */
+  --md-favicon-size: 16px;
+  --md-icon-margin-bottom: 16px;
+  --md-icon-size: 40px;
+  --md-max-tiles-row: 5;
+  --md-menu-margin-side: 2px;
+  --md-menu-margin-top: 4px;
+  --md-menu-size: 12px;
+  --md-tile-height: 104px;
+  --md-tile-margin: 8px;
+  --md-tile-padding: 8px;
+  --md-tile-width: 88px;
+  --md-title-font-size: 12px;
+  --md-title-height: 32px;
+
+  /* Constants. */
+  --tile-height: 128px;
+  --tile-margin: 16px;
+  --tile-width: 154px;
+  --title-height: 32px;
+
+  /* May be overridden by themes (on the body element). */
+  --tile-title-color: #323232;
+}
+
+body {
+  background: none transparent;
+  color: var(--tile-title-color);
+  margin: 0;
+  overflow: hidden;
+  padding: 0;
+  user-select: none;
+}
+
+a {
+  display: block;
+}
+
+a,
+a:active,
+a:hover,
+a:visited {
+  color: inherit;
+  text-decoration: none;
+}
+
+#most-visited {
+  margin: 0;
+  text-align: -webkit-center;
+  user-select: none;
+}
+
+.md #most-visited {
+  margin: 10px 0;
+  width: 100%
+}
+
+#mv-tiles,
+.mv-tiles-old {
+  font-size: 0;
+  /* Two rows of tiles of 128px each, and 16px of spacing between the rows.
+   * If you change this, also change the corresponding values in
+   * local_ntp.css. */
+  height: calc(2*var(--tile-height) + var(--tile-margin));
+  line-height: calc(var(--tile-height) + var(--tile-margin));
+  margin: 4px 0 8px 0;
+  opacity: 0;
+  position: absolute;
+  /* This align correctly for both LTR and RTL */
+  text-align: -webkit-auto;
+  transition: opacity 1s;
+  user-select: none;
+}
+
+.md #mv-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  height: auto;
+  justify-content: center;
+  line-height: normal;
+  margin: 0;
+  /* 5 88px tiles per row. If you change this, also change the corresponding
+   * values in local_ntp.css. */
+  max-width: calc(var(--md-tile-width) * var(--md-max-tiles-row));
+  position: static;
+}
+
+.md .mv-tiles-old {
+  display: none;
+}
+
+.mv-tile,
+.mv-empty-tile {
+  border-radius: 2px;
+  box-sizing: border-box;
+  display: none;
+  font-family: arial, sans-serif;
+  font-size: 12px;
+  height: var(--tile-height);
+  line-height: 100%;
+  margin: 0 calc(var(--tile-margin) / 2);
+  opacity: 1;
+  position: relative;
+  vertical-align: top;
+  white-space: nowrap;
+  width: var(--tile-width);
+}
+
+/* Minimal layout: 2 columns; only first 4 tiles are visible. */
+.mv-tile:nth-child(-n+4),
+.mv-empty-tile:nth-child(-n+4) {
+  display: inline-block;
+}
+
+/* width >= (3 cols * (16px + 154px))
+ * 3 columns; first 6 tiles are visible. */
+@media (min-width: 510px) {
+  .mv-tile:nth-child(-n+6),
+  .mv-empty-tile:nth-child(-n+6) {
+    display: inline-block;
+  }
+}
+/* width >= (4 cols * (16px + 154px))
+ * 4 columns; first 8 tiles are visible. */
+@media (min-width: 680px) {
+  .mv-tile:nth-child(-n+8),
+  .mv-empty-tile:nth-child(-n+8) {
+    display: inline-block;
+  }
+}
+
+.mv-tile {
+  background: rgb(250,250,250);
+}
+
+.mv-empty-tile {
+  background: rgb(245,245,245);
+}
+
+body.dark-theme .mv-tile,
+body.dark-theme .mv-empty-tile {
+  background: rgb(51,51,51);
+}
+
+.mv-tile {
+  box-shadow: 0 2px 2px 0 rgba(0,0,0,0.16), 0 0 0 1px rgba(0,0,0,0.08);
+  cursor: pointer;
+  transition-duration: 200ms;
+  transition-property: transform, box-shadow, margin, opacity, width;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mv-tile:hover:not(:active),
+.mv-tile:focus-within:not(:active) {
+  box-shadow: 0 3px 8px 0 rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.08);
+}
+
+.mv-tile:focus,
+.mv-tile:focus-within {
+  filter: brightness(92%);
+}
+
+.mv-tile:active {
+  box-shadow: 0 3px 8px 0 rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.12);
+  filter: brightness(88%);
+}
+
+.mv-tile.blacklisted {
+  margin: 0;
+  transform: scale(0, 0);
+  width: 0;
+}
+
+.mv-title {
+  height: 15px;
+  left: 31px;
+  line-height: 14px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  text-overflow: ellipsis;
+  top: 9px;
+  width: 120px;
+}
+
+.mv-title.multiline {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+html:not([dir=rtl]) .mv-title[style*='direction: rtl'] {
+  -webkit-mask-image:
+    linear-gradient(to left, black, black, 100px, transparent);
+  left: auto;
+  right: 8px;
+  text-align: right;
+}
+
+html[dir=rtl] .mv-title {
+  left: 8px;
+  text-align: left;
+}
+
+html[dir=rtl] .mv-title[style*='direction: rtl'] {
+  -webkit-mask-image:
+    linear-gradient(to left, black, black, 100px, transparent);
+  right: 31px;
+  text-align: right;
+}
+
+.mv-thumb {
+  border-radius: 0 0 2px 2px;
+  cursor: pointer;
+  display: block;
+  height: calc(var(--tile-height) - var(--title-height));
+  overflow: hidden;
+  position: absolute;
+  top: var(--title-height);
+  width: var(--tile-width);
+}
+
+.mv-thumb img {
+  height: auto;
+  min-height: 100%;
+  width: 100%;
+}
+
+.mv-thumb.failed-img {
+  background-color: rgb(245,245,245);
+}
+
+body.dark-theme .mv-thumb.failed-img {
+  background-color: #555;
+}
+
+/* We use ::after without content to provide an additional element on top of the
+ * thumbnail. */
+.mv-thumb.failed-img::after {
+  border: 8px solid rgb(215,215,215);
+  border-radius: 50%;
+  content: '';
+  display: block;
+  height: 0;
+  margin: 39px 66px;
+  width: 0;
+}
+
+body.dark-theme .mv-thumb.failed-img::after {
+  border-color: #333;
+}
+
+.mv-x {
+  background: linear-gradient(to left, rgb(250,250,250) 60%, transparent);
+  border: none;
+  cursor: pointer;
+  height: var(--title-height);
+  opacity: 0;
+  padding: 0;
+  position: absolute;
+  right: 0;
+  transition: opacity 150ms;
+  width: 40px;
+}
+
+body.dark-theme .mv-x {
+  background: linear-gradient(to left, rgb(51,51,51) 60%, transparent);
+}
+
+/* We use ::after without content to provide the masked X element. The "bottom"
+ * div is actually just the gradient. */
+.mv-x::after {
+  --mask-offset: calc((var(--title-height) - var(--mask-width)) / 2);
+  --mask-width: 10px;
+  -webkit-mask-image: -webkit-image-set(
+      url(chrome-search://local-ntp/images/close_3_mask.png) 1x,
+      url(chrome-search://local-ntp/images/close_3_mask.png@2x) 2x);
+  -webkit-mask-position: var(--mask-offset) var(--mask-offset);
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: var(--mask-width);
+  background-color: rgba(90,90,90,0.7);
+  content: '';
+  display: block;
+  height: var(--title-height);
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: var(--title-height);
+}
+
+body.dark-theme .mv-x.mv-x::after {
+  background-color: rgba(255,255,255,0.7);
+}
+
+html[dir=rtl] .mv-x {
+  background: linear-gradient(to right, rgb(250,250,250) 60%, transparent);
+  left: -1px;
+  right: auto;
+}
+
+body.dark-theme body.dark-theme .mv-x {
+  background: linear-gradient(to right, rgb(51,51,51) 60%, transparent);
+}
+
+html[dir=rtl] .mv-x::after {
+  left: -1px;
+  right: auto;
+}
+
+.mv-x:hover::after {
+  background-color: rgb(90,90,90);
+}
+
+body.dark-theme .mv-x:hover::after {
+  background-color: #fff;
+}
+
+.mv-x:active::after {
+  background-color: rgb(66,133,244);
+}
+
+body.dark-theme .mv-x:active::after {
+  background-color: rgba(255,255,255,0.5);
+}
+
+.mv-tile:hover .mv-x,
+.mv-tile:focus .mv-x {
+  opacity: 1;
+  transition-delay: 500ms;
+}
+
+.mv-x:hover,
+.mv-x:focus {
+  opacity: 1;
+  transition: none;
+}
+
+.mv-favicon {
+  background-size: 16px;
+  height: 16px;
+  left: 7px;
+  margin: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 8px;
+  width: 16px;
+}
+
+html[dir=rtl] .mv-favicon {
+  left: auto;
+  right: 7px;
+}
+
+.mv-favicon.failed-favicon {
+  background-image: -webkit-image-set(
+      url(chrome-search://local-ntp/images/ntp_default_favicon.png) 1x,
+      url(chrome-search://local-ntp/images/ntp_default_favicon.png@2x) 2x);
+  background-repeat: no-repeat;
+  background-size: 16px 16px;
+}
+
+.mv-favicon img {
+  height: 100%;
+  width: 100%;
+}
+
+.mv-favicon.failed-favicon img {
+  display: none;
+}
+
+.md-tile {
+  border-radius: 4px;
+  box-sizing: border-box;
+  cursor: pointer;
+  height: var(--md-tile-height);
+  margin-bottom: var(--md-tile-margin);
+  opacity: 1;
+  padding: var(--md-tile-padding);
+  position: relative;
+  transition-property: background, border-color, box-shadow, opacity;
+  width: var(--md-tile-width);
+}
+
+.md-empty-tile {
+  display: none;
+}
+
+.md-tile:hover {
+  background-color: rgba(33, 32, 36, 0.06);
+}
+
+body.dark-theme .md-tile:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.md-tile:hover > .md-menu {
+  opacity: 1;
+}
+
+.md-tile:active,
+body.dark-theme .md-tile:active {
+  background-color: white;
+  box-shadow: 0 1px 3px 0 rgba(60, 64, 67, 0.3),
+      0 4px 8px 3px rgba(60, 64, 67, 0.15);
+  transition-duration: 200ms;
+  z-index: 10;
+}
+
+body.dark-theme .md-tile:active .md-title {
+  color: rgba(33, 32, 36, 0.86);
+}
+
+body.dark-theme .md-tile:active .md-menu::after {
+  background-color: rgba(33, 32, 36, 0.71);
+}
+
+.md-tile.blacklisted {
+  margin: 0;
+  padding: 0;
+  transform: scale(0, 0);
+  transition-duration: 200ms;
+  transition-property: transform, box-shadow, margin, opacity, padding, width;
+  width: 0;
+}
+
+.md-tile-inner {
+  align-items: center;
+  display: flex;
+  flex-flow: column nowrap;
+  height: 100%;
+  position: relative;
+  width: 100%;
+  z-index: -1;
+}
+
+.md-link {
+  height: 100%;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 100%;
+}
+
+.md-icon {
+  margin-bottom: var(--md-icon-margin-bottom);
+}
+
+.md-icon-background {
+  align-items: center;
+  background-color: rgb(241, 243, 244);
+  border-radius: 50%;
+  display: flex;
+  height: var(--md-icon-size);
+  justify-content: center;
+  width: var(--md-icon-size);
+}
+
+.md-favicon {
+  height: var(--md-favicon-size);
+  pointer-events: none;
+  width: var(--md-favicon-size);
+}
+
+.md-favicon img {
+  height: 100%;
+  width: 100%;
+}
+
+.md-favicon.failed-favicon {
+  background-image: -webkit-image-set(
+      url(chrome-search://local-ntp/images/ntp_default_favicon.png) 1x,
+      url(chrome-search://local-ntp/images/ntp_default_favicon.png@2x) 2x);
+  background-repeat: no-repeat;
+  background-size: var(--md-favicon-size) var(--md-favicon-size);
+}
+
+.md-favicon.failed-favicon img {
+  display: none;
+}
+
+.md-title-container {
+  overflow: hidden;
+}
+
+.md-title {
+  color: rgba(33, 32, 36, 0.86);
+  font-family: 'Roboto';
+  font-size: var(--md-title-font-size);
+  height: var(--md-title-height);
+  line-height: 1.4em;
+  text-align: center;
+  width: 100%;
+  word-break: break-word;
+  word-wrap: break-word;
+}
+
+body.dark-theme .md-title {
+  color: rgb(248, 249, 250);
+}
+
+.md-menu {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  height: var(--md-menu-size);
+  margin: var(--md-menu-margin-top) var(--md-menu-margin-side);
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: var(--md-menu-size);
+}
+
+.md-menu:focus {
+  opacity: 1;
+}
+
+/* We use ::after without content to provide the masked X element. */
+.md-menu::after {
+  --mask-width: calc(var(--md-menu-size) - 2);
+  -webkit-mask-image: -webkit-image-set(
+      url(chrome-search://local-ntp/images/close_3_mask.png) 1x,
+      url(chrome-search://local-ntp/images/close_3_mask.png@2x) 2x);
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: var(--mask-width);
+  background-color: rgba(33, 32, 36, 0.55);
+  content: '';
+  display: block;
+  height: var(--md-menu-size);
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: var(--md-menu-size);
+}
+
+body.dark-theme .md-menu::after {
+  background-color: white;
+}
+
+html[dir=rtl] .md-menu {
+  left: 0;
+  right: auto;
+}
+
+.md-menu:hover::after,
+.md-menu:focus::after {
+  background-color: rgba(33, 32, 36, 0.71);
+}
+
+body.dark-theme .md-menu:hover::after,
+body.dark-theme .md-menu:focus::after {
+  background-color: rgb(218, 220, 224);
+}

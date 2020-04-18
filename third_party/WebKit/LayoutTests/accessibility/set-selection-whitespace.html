@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+
+<div id="main" role="main">
+
+    <div id="editable1" contenteditable="true">Hello1</div>
+
+    <div id="editable2" contenteditable="true">  Hello2  </div>
+
+    <h2 id="heading">  Hello2  </h2>
+
+</div>
+
+<script>
+    test(function()
+    {
+        var axEditable1 = accessibilityController.accessibleElementById("editable1");
+        var axTextNode1 = axEditable1.childAtIndex(0);
+        assert_equals(axTextNode1.name, "Hello1");
+        axTextNode1.setSelectedTextRange(0, 6);
+
+        var selection = window.getSelection();
+        var range = selection.getRangeAt(0);
+        assert_equals(range.toString(), "Hello1");
+
+        var editable1 = document.getElementById("editable1");
+        var textNode1 = editable1.firstChild;
+        assert_equals(range.startContainer, textNode1);
+        assert_equals(range.startOffset, 0);
+        assert_equals(range.endContainer, textNode1);
+        assert_equals(range.endOffset, 6);
+    }, "Using accessible APIs to set selection works when there's no extra whitespace.");
+
+    test(function()
+    {
+        var axEditable2 = accessibilityController.accessibleElementById("editable2");
+        var axTextNode2 = axEditable2.childAtIndex(0);
+        assert_equals(axTextNode2.name, "Hello2");
+        axTextNode2.setSelectedTextRange(0, 6);
+
+        var selection = window.getSelection();
+        var range = selection.getRangeAt(0);
+        assert_equals(range.toString(), "Hello2");
+
+        var editable2 = document.getElementById("editable2");
+        var textNode2 = editable2.firstChild;
+        assert_equals(range.startContainer, textNode2);
+        assert_equals(range.startOffset, 2);
+        assert_equals(range.endContainer, textNode2);
+        assert_equals(range.endOffset, 8);
+    }, "Using accessible APIs to set selection works even with non-visible whitespace.");
+</script>
+
+<script>
+    test(function()
+    {
+        var axHeading = accessibilityController.accessibleElementById("heading");
+        axHeading.setSelectedTextRange(0, 1);  // Should select the whole element.
+
+        var selection = window.getSelection();
+        var range = selection.getRangeAt(0);
+        assert_equals(range.toString(), "Hello2");
+
+        var heading = document.getElementById("heading");
+        var textNode = heading.firstChild;
+        assert_equals(range.startContainer, textNode);
+        assert_equals(range.startOffset, 2);
+        assert_equals(range.endContainer, textNode);
+        assert_equals(range.endOffset, 8);
+    }, "Use accessible APIs to set selection on element rather than static text node.");
+</script>
+
+<script>
+    if (window.testRunner)
+        document.getElementById("main").style.display = "none";;
+</script>

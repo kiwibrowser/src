@@ -1,0 +1,37 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+include "components/url_pattern_index/flat/url_pattern_index.fbs";
+
+namespace extensions.declarative_net_request.flat;
+
+/// Additional extension related metadata for a url_pattern_index UrlRule.
+table UrlRuleMetadata {
+  /// ID of the UrlRule for which this metadata is stored.
+  id : uint (key);
+
+  /// Redirect url for this rule. Should represent a valid GURL.
+  redirect_url : string;
+}
+
+/// The top-level data structure used to store extensions URL rules for the
+/// Declarative Net Request API.
+table ExtensionIndexedRuleset {
+  /// The index of all blocking URL rules.
+  blacklist_index : url_pattern_index.flat.UrlPatternIndex;
+
+  /// The index of all whitelist URL rules.
+  whitelist_index : url_pattern_index.flat.UrlPatternIndex;
+
+  /// The index of all redirect URL rules.
+  redirect_index : url_pattern_index.flat.UrlPatternIndex;
+
+  /// Extension related metadata. Sorted by id, to support fast lookup.
+  /// Currently this is only used for redirect rules.
+  extension_metadata : [UrlRuleMetadata];
+}
+
+root_type ExtensionIndexedRuleset;
+
+file_identifier "EXTR";

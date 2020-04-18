@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+
+<div id="editable" contentEditable="true" spellcheck="true">Test spelling markers</div>
+
+<p id="paragraph" tabIndex="0" spellcheck="true">Test spelling markers</p>
+
+<input id="input" spellcheck="true" value="Test spelling markers">
+
+<textarea id="textarea" spellcheck="true">Test spelling markers</textarea>
+
+<script>
+test(() => {
+  if (!window.internals)
+    return;
+
+  var editable = document.getElementById('editable');
+  assert_equals(editable.childNodes.length, 1);
+  var text = editable.firstChild;
+  var range = document.createRange();
+  range.setStart(text, 0);
+  range.setEnd(text, 4);
+  internals.setMarker(document, range, 'spelling');
+  range.setStart(text, 14);
+  range.setEnd(text, 21);
+  internals.setMarker(document, range, 'spelling');
+
+  var axEditable = accessibilityController.accessibleElementById('editable');
+  var axStaticText = axEditable.childAtIndex(0);
+
+  assert_equals(axStaticText.misspellingsCount, 2);
+  assert_equals(axStaticText.misspellingAtIndex(0), 'Test');
+  assert_equals(axStaticText.misspellingAtIndex(1), 'markers');
+}, 'Spelling markers should be reported in content editables.');
+
+test(() => {
+  if (!window.internals)
+    return;
+
+  document.designMode = 'on';
+  var paragraph = document.getElementById('paragraph');
+  assert_equals(paragraph.childNodes.length, 1);
+  var text = paragraph.firstChild;
+  var range = document.createRange();
+  range.setStart(text, 0);
+  range.setEnd(text, 4);
+  internals.setMarker(document, range, 'spelling');
+  range.setStart(text, 14);
+  range.setEnd(text, 21);
+  internals.setMarker(document, range, 'spelling');
+
+  var axParagraph = accessibilityController.accessibleElementById('paragraph');
+  var axStaticText = axParagraph.childAtIndex(0);
+
+  assert_equals(axStaticText.misspellingsCount, 2);
+  assert_equals(axStaticText.misspellingAtIndex(0), 'Test');
+  assert_equals(axStaticText.misspellingAtIndex(1), 'markers');
+
+  document.designMode = 'off';
+}, 'Spelling markers should be reported in static text when design mode is on.');
+
+test(() => {
+  if (!window.internals)
+    return;
+
+  var input = document.getElementById('input');
+  input.focus();
+  var innerEditor = internals.innerEditorElement(input);
+  assert_equals(innerEditor.childNodes.length, 1);
+  var text = innerEditor.firstChild;
+  var range = document.createRange();
+  range.setStart(text, 5);
+  range.setEnd(text, 13);
+  internals.setMarker(document, range, 'spelling');
+
+  var axInput = accessibilityController.accessibleElementById('input');
+  // If input's shadow DOM changes, this logic might need to be modified.
+  assert_equals(axInput.childrenCount, 1);
+  var axDiv = axInput.childAtIndex(0);
+  assert_equals(axDiv.childrenCount, 1);
+  var axStaticText = axDiv.childAtIndex(0);
+
+  assert_equals(axStaticText.misspellingsCount, 1);
+  assert_equals(axStaticText.misspellingAtIndex(0), 'spelling');
+}, 'Spelling markers should be reported in input text fields.');
+
+test(() => {
+  if (!window.internals)
+    return;
+
+  var textarea = document.getElementById('textarea');
+  var innerEditor = internals.innerEditorElement(textarea);
+  assert_equals(innerEditor.childNodes.length, 1);
+  var text = innerEditor.firstChild;
+  var range = document.createRange();
+  range.setStart(text, 14);
+  range.setEnd(text, 21);
+  internals.setMarker(document, range, 'spelling');
+
+  var axTextarea = accessibilityController.accessibleElementById('textarea');
+  // If textarea's shadow DOM changes, this logic might need to be modified.
+  assert_equals(axTextarea.childrenCount, 1);
+  var axDiv = axTextarea.childAtIndex(0);
+  assert_equals(axDiv.childrenCount, 1);
+  var axStaticText = axDiv.childAtIndex(0);
+
+  assert_equals(axStaticText.misspellingsCount, 1);
+  assert_equals(axStaticText.misspellingAtIndex(0), 'markers');
+}, 'Spelling markers should be reported in textareas.');
+</script>

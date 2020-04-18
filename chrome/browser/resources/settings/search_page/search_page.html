@@ -1,0 +1,150 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/policy/cr_policy_pref_indicator.html">
+<link rel="import" href="chrome://resources/html/assert.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/html/md_select_css.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/neon-animatable.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="../controls/extension_controlled_indicator.html">
+<link rel="import" href="../controls/settings_toggle_button.html">
+<link rel="import" href="../icons.html">
+<link rel="import" href="../i18n_setup.html">
+<link rel="import" href="../route.html">
+<link rel="import" href="../search_engines_page/search_engines_page.html">
+<link rel="import" href="../search_engines_page/search_engines_browser_proxy.html">
+<link rel="import" href="../settings_page/settings_animated_pages.html">
+<link rel="import" href="../settings_page/settings_subpage.html">
+<link rel="import" href="../settings_shared_css.html">
+<link rel="import" href="../settings_vars_css.html">
+
+<if expr="chromeos">
+  <link rel="import" href="../google_assistant_page/google_assistant_page.html">
+  <link rel="import" href="../google_assistant_page/google_assistant_browser_proxy.html">
+</if>
+
+<dom-module id="settings-search-page">
+  <template>
+    <style include="settings-shared md-select">
+      #search-wrapper {
+        align-items: center;
+        display: flex;
+        min-height: var(--settings-row-min-height);
+      }
+
+      iron-icon {
+        -webkit-padding-end: 16px;
+      }
+
+      .indented {
+        -webkit-margin-start: var(--settings-indent-width);
+      }
+    </style>
+    <settings-animated-pages id="pages" section="search"
+        focus-config="[[focusConfig_]]">
+      <neon-animatable route-path="default">
+        <!-- Omnibox search engine -->
+        <div class="settings-box first block">
+          <div id="search-wrapper">
+            <p id="searchExplanation" class="start">
+              $i18nRaw{searchExplanation}
+            </p>
+            <template is="dom-if" if="[[isDefaultSearchControlledByPolicy_(
+                prefs.default_search_provider_data.template_url_data)]]">
+              <cr-policy-pref-indicator pref="[[
+                  prefs.default_search_provider_data.template_url_data]]">
+              </cr-policy-pref-indicator>
+            </template>
+            <div>
+              <select class="md-select" on-change="onChange_"
+                  aria-labelledby="searchExplanation"
+                  disabled$="[[isDefaultSearchEngineEnforced_(
+                      prefs.default_search_provider_data.template_url_data)]]">
+                <template is="dom-repeat" items="[[searchEngines_]]">
+                  <option selected="[[item.default]]">[[item.name]]</option>
+                </template>
+              </select>
+              <span class="md-select-underline"></span>
+            </div>
+          </div>
+          <template is="dom-if"
+              if="[[prefs.default_search_provider_data.template_url_data.extensionId]]">
+            <extension-controlled-indicator
+                extension-id="[[
+                    prefs.default_search_provider_data.template_url_data.extensionId]]"
+                extension-name="[[
+                    prefs.default_search_provider_data.template_url_data.controlledByName]]"
+                extension-can-be-disabled="[[
+                    prefs.default_search_provider_data.template_url_data.extensionCanBeDisabled]]"
+                on-disable-extension="onDisableExtension_">
+            </extension-controlled-indicator>
+          </template>
+        </div>
+
+        <!-- Manage search engines -->
+        <div id="engines-subpage-trigger" class="settings-box"
+            on-click="onManageSearchEnginesTap_" actionable>
+          <div class="start">
+            $i18n{searchEnginesManage}
+          </div>
+          <paper-icon-button-light class="subpage-arrow">
+            <button aria-label="$i18n{searchEnginesManage}"></button>
+          </paper-icon-button-light>
+        </div>
+
+<if expr="chromeos">
+        <!-- Google Assistant -->
+        <template is="dom-if" if="[[voiceInteractionFeatureEnabled_]]">
+          <div id="assistant-subpage-trigger" class="settings-box two-line"
+            on-click="onGoogleAssistantTap_" actionable>
+            <div class="start">
+              $i18n{searchGoogleAssistant}
+              <div class="secondary">
+                [[getAssistantEnabledDisabledLabel_(
+                    prefs.settings.voice_interaction.enabled.value)]]
+              </div>
+            </div>
+            <template is="dom-if" if="[[assistantOn_]]">
+              <paper-icon-button-light class="subpage-arrow">
+                <button aria-label="$i18n{searchGoogleAssistant}"></button>
+              </paper-icon-button-light>
+            </template>
+            <template is="dom-if" if="[[!assistantOn_]]">
+              <div class="separator"></div>
+              <paper-button id="enable" class="secondary-button"
+                  on-click="onAssistantTurnOnTap_"
+                  aria-label="$i18n{searchPageTitle}"
+                  aria-describedby="secondaryText">
+                $i18n{assistantTurnOn}
+              </paper-button>
+            </template>
+          </div>
+        </template>
+</if>
+      </neon-animatable>
+      <template is="dom-if" route-path="/searchEngines">
+        <settings-subpage
+            associated-control="[[$$('#engines-subpage-trigger')]]"
+            page-title="$i18n{searchEnginesManage}"
+            search-label="$i18n{searchEnginesSearch}"
+            search-term="{{searchEnginesFilter_}}">
+          <settings-search-engines-page filter="[[searchEnginesFilter_]]">
+        </settings-subpage>
+      </template>
+<if expr="chromeos">
+      <template is="dom-if" if="[[voiceInteractionFeatureEnabled_]]">
+        <template is="dom-if" route-path="/googleAssistant">
+          <settings-subpage
+              associated-control="[[$$('#assistant-subpage-trigger')]]"
+              page-title="$i18n{googleAssistantPageTitle}">
+            <settings-google-assistant-page prefs="{{prefs}}">
+            </settings-google-assistant-page>
+          </settings-subpage>
+        </template>
+      </template>
+</if>
+    </settings-animated-pages>
+  </template>
+  <script src="search_page.js"></script>
+</dom-module>

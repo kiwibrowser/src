@@ -1,0 +1,142 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_expand_button/cr_expand_button.html">
+<link rel="import" href="chrome://resources/cr_elements/policy/cr_policy_pref_indicator.html">
+<link rel="import" href="chrome://resources/cr_elements/shared_vars_css.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-collapse/iron-collapse.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-icon/iron-icon.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-spinner/paper-spinner-lite.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-styles/color.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/html/web_ui_listener_behavior.html">
+<link rel="import" href="../controls/controlled_button.html">
+<link rel="import" href="../controls/settings_toggle_button.html">
+<link rel="import" href="../settings_shared_css.html">
+<link rel="import" href="chrome_cleanup_proxy.html">
+<link rel="import" href="items_to_remove_list.html">
+
+<dom-module id="settings-chrome-cleanup-page">
+  <template>
+    <style include="settings-shared">
+      #waiting-spinner {
+        height: 20px;
+        width: 20px;
+      }
+
+      #powered-by-settings-box {
+        min-height: 1em;
+      }
+
+      #powered-by-container {
+        align-items: center;
+        display: flex;
+        min-height: var(--settings-row-min-height);
+        width: 100%;
+      }
+
+      /* Used by |chromeCleanupPoweredByHTML| */
+      #powered-by-logo {
+        content: url(chrome://settings/partner-logo.svg);
+        height: 22px;
+      }
+
+      #status-icon {
+        height: 20px;
+        vertical-align: top;
+        width: 20px;
+      }
+
+      .status-icon-container {
+        -webkit-padding-end: var(--settings-box-row-padding);
+      }
+
+      .status-icon-remove {
+        --iron-icon-fill-color: var(--paper-grey-700);
+      }
+
+      .status-icon-done {
+        --iron-icon-fill-color: var(--google-blue-500);
+      }
+
+      .status-icon-warning {
+        --iron-icon-fill-color: var(--google-red-700);
+      }
+
+      .top-aligned-settings-box {
+        align-items: center;
+        /* override settings-box min-height since we use vertical padding */
+        min-height: 0;
+        padding: 15px var(--settings-box-row-padding);
+      }
+    </style>
+    <div class$="settings-box first
+                 [[getTopSettingsBoxClass_(showExplanation_)]]">
+      <div class="status-icon-container">
+        <paper-spinner-lite id="waiting-spinner"
+            hidden="[[!isWaitingForResult_]]" active="[[isWaitingForResult_]]">
+        </paper-spinner-lite>
+        <iron-icon id="status-icon" hidden="[[isWaitingForResult_]]"
+            icon="[[statusIcon_]]" class$="[[statusIconClassName_]]">
+        </iron-icon>
+      </div>
+      <div class="start">
+        <div role="status">[[title_]]</div>
+        <div hidden="[[!showExplanation_]]">
+          <span class="secondary">[[explanation_]]</span>
+        </div>
+      </div>
+      <cr-policy-pref-indicator
+          pref="[[prefs.software_reporter.enabled]]">
+      </cr-policy-pref-indicator>
+      <template is="dom-if" if="[[showActionButton_]]">
+        <div class="separator"></div>
+        <paper-button id="action-button" class="action-button"
+            disabled$="[[!cleanupEnabled_]]" on-click="proceed_">
+          [[actionButtonLabel_]]
+        </paper-button>
+      </template>
+    </div>
+    <settings-toggle-button hidden="[[!showLogsPermission_]]"
+        id="chromeCleanupLogsUploadControl"
+        label="$i18n{chromeCleanupLogsUploadPermission}"
+        pref="[[logsUploadPref_]]"
+        sub-label="$i18n{chromeCleanupTitleLogsPermissionExplanation}"
+        on-settings-boolean-control-change="changeLogsPermission_">
+    </settings-toggle-button>
+    <div id="show-items-button" class="settings-box" actionable
+        on-click="toggleExpandButton_" hidden="[[!showItemsToRemove_]]">
+      <div class="start">[[showItemsLinkLabel_]]</div>
+      <cr-expand-button expanded="{{itemsToRemoveSectionExpanded_}}"
+          alt="[[showItemsLinkLabel_]]">
+      </cr-expand-button>
+    </div>
+    <iron-collapse id="iron-collapse-items"
+        opened="[[itemsToRemoveSectionExpanded_]]">
+      <items-to-remove-list
+          id="files-to-remove-list"
+          hidden="[[!hasFilesToShow_]]"
+          title="$i18n{chromeCleanupDetailsFilesAndPrograms}"
+          items-to-show="[[scannerResults_.files]]">
+      </items-to-remove-list>
+      <items-to-remove-list
+          id="registry-keys-list"
+          hidden="[[!hasRegistryKeysToShow_]]"
+          title="$i18n{chromeCleanupDetailsRegistryEntries}"
+          items-to-show="[[scannerResults_.registryKeys]]">
+      </items-to-remove-list>
+      <div class="settings-box continuation">
+        <div class="secondary">
+          $i18nRaw{chromeCleanupDetailsExplanation}
+        </div>
+      </div>
+      <div id="powered-by-settings-box" class="settings-box continuation">
+        <div id="powered-by-container" class="secondary"
+            hidden="[[!isPoweredByPartner_]]">
+          $i18nRaw{chromeCleanupPoweredByHtml}
+        </div>
+      </div>
+    </iron-collapse>
+  </template>
+  <script src="chrome_cleanup_page.js"></script>
+</dom-module>

@@ -1,0 +1,97 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_radio_button/cr_radio_button.html">
+<link rel="import" href="../controls/settings_radio_group.html">
+<link rel="import" href="../controls/settings_slider.html">
+<link rel="import" href="../controls/settings_toggle_button.html">
+<link rel="import" href="../settings_shared_css.html">
+<link rel="import" href="device_page_browser_proxy.html">
+
+<dom-module id="settings-pointers">
+  <template>
+    <style include="settings-shared">
+      h2 {
+        -webkit-padding-start: var(--settings-box-row-padding);
+      }
+
+      .subsection {
+        -webkit-padding-end: var(--settings-box-row-padding);
+        -webkit-padding-start: var(--settings-box-row-indent);
+      }
+
+      .subsection > settings-toggle-button,
+      .subsection > .settings-box  {
+        padding-left: 0;
+        padding-right: 0;
+      }
+    </style>
+    <div id="mouse" hidden$="[[!hasMouse]]">
+      <!-- Subsection title only appears if both mouse and touchpad exist. -->
+      <h2 hidden$="[[!hasTouchpad]]">$i18n{mouseTitle}</h2>
+      <div class$="[[getSubsectionClass_(hasMouse, hasTouchpad)]]">
+        <!-- Do not change the mouse button pref before the mouse is released.
+             See crbug.com/686949 -->
+        <settings-toggle-button id="mouseSwapButton" class="first"
+            pref="{{prefs.settings.mouse.primary_right}}"
+            label="$i18n{mouseSwapButtons}"
+            on-settings-boolean-control-change="onMouseSwapButtonsChange_"
+            on-down="onMouseSwapButtonsDown_" on-up="onMouseSwapButtonsUp_"
+            no-set-pref>
+        </settings-toggle-button>
+        <settings-toggle-button id="mouseReverseScroll"
+            pref="{{prefs.settings.mouse.reverse_scroll}}"
+            label="$i18n{mouseReverseScroll}">
+        </settings-toggle-button>
+        <div class="settings-box">
+          <div class="start" id="mouseSpeedLabel">$i18n{mouseSpeed}</div>
+          <settings-slider pref="{{prefs.settings.mouse.sensitivity2}}"
+              tick-values="[[sensitivityValues_]]"
+              aria-labelledby="mouseSpeedLabel"
+              label-min="$i18n{pointerSlow}"
+              label-max="$i18n{pointerFast}">
+          </settings-slider>
+        </div>
+      </div>
+    </div>
+    <div id="touchpad" hidden$="[[!hasTouchpad]]">
+      <!-- Subsection title only appears if both mouse and touchpad exist. -->
+      <h2 hidden$="[[!hasMouse]]">$i18n{touchpadTitle}</h2>
+      <div class$="[[getSubsectionClass_(hasMouse, hasTouchpad)]]">
+        <settings-toggle-button id="enableTapToClick" class="first"
+            pref="{{prefs.settings.touchpad.enable_tap_to_click}}"
+            label="$i18n{touchpadTapToClickEnabledLabel}">
+        </settings-toggle-button>
+        <settings-toggle-button id="enableTapDragging"
+            pref="{{prefs.settings.touchpad.enable_tap_dragging}}"
+            label="$i18n{tapDraggingLabel}">
+        </settings-toggle-button>
+        <div class="settings-box">
+          <div class="start" id="touchpadSpeedLabel">$i18n{touchpadSpeed}</div>
+            <settings-slider id="touchpadSensitivity"
+                pref="{{prefs.settings.touchpad.sensitivity2}}"
+                tick-values="[[sensitivityValues_]]"
+                aria-labelledby="touchpadSpeedLabel"
+                label-min="$i18n{pointerSlow}"
+                label-max="$i18n{pointerFast}">
+            </settings-slider>
+        </div>
+        <div class="settings-box">$i18n{scrollLabel}</div>
+        <div class="list-frame">
+          <settings-radio-group
+              pref="{{prefs.settings.touchpad.natural_scroll}}">
+            <cr-radio-button name="false">
+              $i18n{traditionalScrollLabel}
+            </cr-radio-button>
+            <cr-radio-button name="true">
+              $i18n{naturalScrollLabel}
+              <a href="$i18n{naturalScrollLearnMoreLink}" target="_blank">
+                $i18n{naturalScrollLearnMore}
+              </a>
+            </cr-radio-button>
+          </settings-radio-group>
+        </div>
+      </div>
+    </div>
+  </template>
+  <script src="pointers.js"></script>
+</dom-module>

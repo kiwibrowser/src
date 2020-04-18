@@ -1,0 +1,57 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+</head>
+<body>
+<script>
+function getInitializer() {
+    return {
+        candidate: 'foo',
+        sdpMid:'bar',
+        sdpMLineIndex: 6
+    };
+}
+
+test(function() {
+    let candidate = new RTCIceCandidate(getInitializer());
+    assert_equals(candidate.candidate, 'foo');
+    assert_equals(candidate.sdpMid, 'bar');
+    assert_equals(candidate.sdpMLineIndex, 6);
+
+    const initializer = JSON.parse(JSON.stringify(candidate));
+    candidate = new RTCIceCandidate(initializer);
+    assert_equals(candidate.candidate, 'foo');
+    assert_equals(candidate.sdpMid, 'bar');
+    assert_equals(candidate.sdpMLineIndex, 6);
+}, 'Constructor can be initialized with output from another constructor');
+
+test(function() {
+    assert_throws('TypeMismatchError', () => new RTCIceCandidate({}));
+    assert_throws({name: 'TypeError'}, () => new RTCIceCandidate(5));
+    assert_throws({name: 'TypeError'}, () => new RTCIceCandidate('foobar'));
+    assert_throws('TypeMismatchError', () => new RTCIceCandidate({candidate: ''}));
+}, 'Constructor throws on invalid input');
+
+test(function() {
+    new RTCIceCandidate({candidate: 'x'})
+}, 'Constructor does not throw on valid input');
+
+test(function() {
+    const candidate = new RTCIceCandidate(getInitializer());
+    candidate.candidate = 'bar';
+    candidate.sdpMid = 'foo';
+    candidate.sdpMLineIndex = 0;
+    assert_equals(candidate.candidate, 'bar');
+    assert_equals(candidate.sdpMid, 'foo');
+    assert_equals(candidate.sdpMLineIndex, 0);
+
+    candidate.candidate = null;
+    candidate.sdpMid = null;
+    assert_equals(candidate.candidate, 'null');
+    assert_equals(candidate.sdpMid, 'null');
+}, 'candidate, sdpMid, and sdpMLineIndex properties can be modified');
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+<!doctype html>
+<script type="text/javascript">
+  window.testIframe = function(extensionId, iframeSrc) {
+    var iframe = document.createElement('iframe');
+    var responseSent = false;
+
+    window.onmessage = function(e) {
+      if (!responseSent) {
+        responseSent = true;
+        window.domAutomationController.send(e.data);
+        document.body.removeChild(iframe);
+      }
+    };
+
+    iframe.onload = function() {
+      iframe.contentWindow.postMessage('ping', '*');
+    };
+
+    iframe.src = 'chrome-extension://' + extensionId + '/' + iframeSrc;
+    document.body.appendChild(iframe);
+  };
+</script>

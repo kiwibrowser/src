@@ -1,0 +1,50 @@
+<!DOCTYPE>
+<html>
+<head>
+<style>
+    #background {
+        width: 200px;
+        height: 200px;
+        display: block;
+        background-color: green;
+    }
+    .blue {
+        width: 50px;
+        height: 50px;
+        background-color: blue;
+        display: block;
+    }
+
+    .composited {
+        transform: translateZ(0);
+    }
+</style>
+<script type="text/javascript" charset="utf-8">
+    if (window.testRunner) {
+        testRunner.waitUntilDone();
+        testRunner.dumpAsTextWithPixelResults();
+    }
+    function doTest()
+    {
+        var bg = document.getElementById("background");
+
+        window.setTimeout(function() {
+            bg.style.backgroundColor = "transparent";
+            if (window.testRunner) {
+                window.setTimeout(function() {
+                    testRunner.notifyDone();
+                }, 0);
+            }
+        }, 0);
+    }
+
+    window.addEventListener('load', doTest, false);
+</script>
+</head>
+<body>
+<div id="background" class="composited">
+    <div class="blue composited">
+    </div>
+</div>
+</body>
+</html>

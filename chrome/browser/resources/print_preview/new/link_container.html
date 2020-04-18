@@ -1,0 +1,55 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/hidden_style_css.html">
+<link rel="import" href="chrome://resources/html/action_link.html">
+<link rel="import" href="chrome://resources/html/action_link_css.html">
+<link rel="import" href="chrome://resources/html/cr.html">
+<link rel="import" href="../data/destination.html">
+<link rel="import" href="print_preview_shared_css.html">
+<link rel="import" href="throbber_css.html">
+
+<dom-module id="print-preview-link-container">
+  <template>
+    <style include="print-preview-shared throbber action-link cr-hidden-style">
+      :host {
+        margin: 7px 0;
+      }
+
+      :host > div {
+        display: flex;
+      }
+
+      :host > div > .throbber {
+        margin: 8px;
+        min-height: 16px;
+        min-width: 16px;
+      }
+
+      :host > div > a {
+        margin: 8px 20px;
+      }
+
+      :host #systemDialogLink {
+        margin-top: 14px;
+      }
+    </style>
+    <div>
+      <a is="action-link" id="systemDialogLink" disabled="[[disabled]]"
+           hidden$="[[!shouldShowSystemDialogLink_]]"
+           on-click="onSystemDialogClick_">
+        $i18n{systemDialogOption}
+      </a>
+      <div id="systemDialogThrobber" hidden class="throbber"></div>
+    </div>
+<if expr="is_macosx">
+    <div>
+      <a is="action-link" id="openPdfInPreviewLink" disabled="[[disabled]]"
+          on-click="onOpenInPreviewClick_">
+        $i18n{openPdfInPreviewOption}
+      </a>
+      <div id="openPdfInPreviewThrobber" hidden class="throbber"></div>
+    </div>
+</if>
+  </template>
+  <script src="link_container.js"></script>
+</dom-module>

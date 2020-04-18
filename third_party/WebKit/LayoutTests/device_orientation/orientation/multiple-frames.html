@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="../resources/device-orientation-helpers.js"></script>
+<script>
+'use strict';
+
+async_test(test => {
+  assertTestRunner();
+  var orientationData = generateOrientationData(1.1, 2.2, 3.3, true);
+  var hasMainFrameEventFired = false;
+  var hasChildFrameEventFired = false;
+
+  var mainFrameListener = test.step_func(event => {
+    checkOrientation(event, orientationData);
+    hasMainFrameEventFired = true;
+    maybeFinishTest();
+  });
+
+  var childFrameListener = test.step_func(event => {
+    checkOrientation(event, orientationData);
+    hasChildFrameEventFired = true;
+    maybeFinishTest();
+  });
+
+  function maybeFinishTest() {
+    if (hasMainFrameEventFired && hasChildFrameEventFired)
+      test.done();
+  }
+
+  setMockOrientation(orientationData);
+
+  var childFrame = document.createElement('iframe');
+  document.body.appendChild(childFrame);
+  childFrame.contentWindow.addEventListener('deviceorientation', childFrameListener);
+
+  window.addEventListener('deviceorientation', mainFrameListener);
+}, 'Tests using DeviceOrientation from multiple frames.');
+</script>
+</body>
+</html>

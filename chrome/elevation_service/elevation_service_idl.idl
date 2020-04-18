@@ -1,0 +1,36 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+import "oaidl.idl";
+import "ocidl.idl";
+
+[
+  object,
+  oleautomation,
+  uuid(A949CB4E-C4F9-44C4-B213-6BF8AA9AC69C),
+  helpstring("IRegisteredCommandElevator Interface"),
+  pointer_default(unique)
+]
+interface IRegisteredCommandElevator : IUnknown
+{
+  // Runs a command elevated.
+  //
+  // @param event_id Unique id for the command
+  // @param caller_proc_id The process id of the calling process
+  // @param proc_handle The process handle valid in the caller's context
+  HRESULT LaunchCommand([in, string] const WCHAR* cmd_id,
+                        [in] DWORD caller_proc_id,
+                        [out] ULONG_PTR* proc_handle);
+};
+
+[
+  uuid(0014D784-7012-4A79-8AB6-ADDB8193A06E),
+  version(1.0),
+  helpstring("Elevator 1.0 Type Library")
+]
+library ElevatorLib {
+  importlib("stdole2.tlb");
+
+  interface IRegisteredCommandElevator;
+};

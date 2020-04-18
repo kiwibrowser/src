@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script>
+window.enablePixelTesting = true;
+</script>
+<script src="../../../resources/js-test.js"></script>
+<script src="../resources/picker-common.js"></script>
+</head>
+<body>
+<style>
+select, span {
+    font-size: 6px;
+}
+</style>
+<select id="menu">
+  <option>foo</option>
+  <optgroup label="group" id="group">
+      <option selected>bar</option>
+  </optgroup>
+  <option>baz</option>
+</select>
+<span>The font size in the popup content should be 12px, which is the same as this text.</span>
+<p id="description" style="opacity: 0"></p>
+<div id="console" style="opacity: 0"></div>
+<script>
+if (window.testRunner)
+    testRunner.overridePreference('WebKitMinimumFontSize', '12');
+var menu = document.getElementById('menu');
+openPicker(menu, finishJSTest, function () {
+    testFailed('picker didn\'t open')
+    finishJSTest();
+});
+</script>
+</body>
+</html>

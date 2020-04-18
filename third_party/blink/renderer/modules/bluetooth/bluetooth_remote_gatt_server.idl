@@ -1,0 +1,19 @@
+// Copyright 2015 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// https://webbluetoothcg.github.io/web-bluetooth/#bluetoothremotegattserver
+
+// Implement BluetoothGATTRemoteServer interface: https://crbug.com/476735
+
+[
+    RuntimeEnabled=WebBluetooth
+] interface BluetoothRemoteGATTServer
+{
+    [SameObject] readonly attribute BluetoothDevice device;
+    readonly attribute boolean connected;
+    [CallWith=ScriptState, MeasureAs=WebBluetoothRemoteServerConnect] Promise<BluetoothRemoteGATTServer> connect();
+    [CallWith=ScriptState, MeasureAs=WebBluetoothRemoteServerDisconnect] void disconnect();
+    [CallWith=ScriptState, RaisesException, MeasureAs=WebBluetoothRemoteServerGetPrimaryService] Promise<BluetoothRemoteGATTService> getPrimaryService (BluetoothServiceUUID service);
+    [CallWith=ScriptState, RaisesException, MeasureAs=WebBluetoothRemoteServerGetPrimaryServices] Promise<sequence<BluetoothRemoteGATTService>> getPrimaryServices (optional BluetoothServiceUUID service);
+};

@@ -1,0 +1,37 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(`Tests that worker events are properly filtered in timeline.\n`);
+  await TestRunner.loadModule('performance_test_runner');
+  await TestRunner.showPanel('timeline');
+  await TestRunner.evaluateInPagePromise(`
+      // Save references to the worker objects to make sure they are not GC'ed.
+      var worker1;
+      var worker2;
+
+      function startFirstWorker()
+      {
+          worker1 = new Worker("resources/worker.js");
+          worker1.postMessage("");
+          return new Promise((fulfill) => worker1.onmessage = fulfill);
+      }
+
+      function startSecondWorker()
+      {
+          worker2 = new Worker("resources/worker.js");
+          worker2.postMessage("");
+          return new Promise((fulfill) => worker2.onmessage = fulfill);
+      }
+  `);
+
+  await TestRunner.evaluateInPageAsync(`startFirstWorker()`);
+  await PerformanceTestRunner.invokeAsyncWithTimeline('startSecondWorker');
+
+  var workerMetadataEventCount = 0;
+  var allEvents = PerformanceTestRunner.timelineModel().inspectedTargetEvents();
+  var workerEvents = allEvents.filter(e => e.name === TimelineModel.TimelineModel.DevToolsMetadataEvent.TracingSessionIdForWorker);
+  TestRunner.addResult(`Got ${workerEvents.length} worker metadata events`);
+  TestRunner.completeTest();
+})();

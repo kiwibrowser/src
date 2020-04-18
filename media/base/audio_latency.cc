@@ -1,0 +1,193 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "media/base/audio_latency.h"
+
+#include <stdint.h>
+
+#include <algorithm>
+
+#include "base/logging.h"
+#include "base/time/time.h"
+#include "build/build_config.h"
+#include "media/base/limits.h"
+
+#if defined(OS_ANDROID)
+#include "base/android/build_info.h"
+#endif
+
+#if defined(OS_MACOSX)
+#include "media/base/mac/audio_latency_mac.h"
+#endif
+
+namespace media {
+
+namespace {
+#if !defined(OS_WIN)
+// Taken from "Bit Twiddling Hacks"
+// http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+uint32_t RoundUpToPowerOfTwo(uint32_t v) {
+  v--;
+  v |= v >> 1;
+  v |= v >> 2;
+  v |= v >> 4;
+  v |= v >> 8;
+  v |= v >> 16;
+  v++;
+  return v;
+}
+#endif
+}  // namespace
+
+// static
+bool AudioLatency::IsResamplingPassthroughSupported(LatencyType type) {
+#if defined(OS_CHROMEOS)
+  return true;
+#elif defined(OS_ANDROID)
+  // Only N MR1+ has support for OpenSLES performance modes which allow for
+  // power efficient playback. Per the Android audio team, we shouldn't waste
+  // cycles on resampling when using the playback mode. See OpenSLESOutputStream
+  // for additional implementation details.
+  return type == LATENCY_PLAYBACK &&
+         base::android::BuildInfo::GetInstance()->sdk_int() >=
+             base::android::SDK_VERSION_NOUGAT_MR1;
+#else
+  return false;
+#endif
+}
+
+// static
+int AudioLatency::GetHighLatencyBufferSize(int sample_rate,
+                                           int preferred_buffer_size) {
+  // Empirically, we consider 20ms of samples to be high latency.
+  const double twenty_ms_size = 2.0 * sample_rate / 100;
+
+#if defined(OS_WIN)
+  preferred_buffer_size = std::max(preferred_buffer_size, 1);
+
+  // Windows doesn't use power of two buffer sizes, so we should always round up
+  // to the nearest multiple of the output buffer size.
+  const int high_latency_buffer_size =
+      std::ceil(twenty_ms_size / preferred_buffer_size) * preferred_buffer_size;
+#else
+  // On other platforms use the nearest higher power of two buffer size.  For a
+  // given sample rate, this works out to:
+  //
+  //     <= 3200   : 64
+  //     <= 6400   : 128
+  //     <= 12800  : 256
+  //     <= 25600  : 512
+  //     <= 51200  : 1024
+  //     <= 102400 : 2048
+  //     <= 204800 : 4096
+  //
+  // On Linux, the minimum hardware buffer size is 512, so the lower calculated
+  // values are unused.  OSX may have a value as low as 128.
+  const int high_latency_buffer_size = RoundUpToPowerOfTwo(twenty_ms_size);
+#endif  // defined(OS_WIN)
+
+  return std::max(preferred_buffer_size, high_latency_buffer_size);
+}
+
+// static
+int AudioLatency::GetRtcBufferSize(int sample_rate, int hardware_buffer_size) {
+  // Use native hardware buffer size as default. On Windows, we strive to open
+  // up using this native hardware buffer size to achieve best
+  // possible performance and to ensure that no FIFO is needed on the browser
+  // side to match the client request. That is why there is no #if case for
+  // Windows below.
+  int frames_per_buffer = hardware_buffer_size;
+
+  // No |hardware_buffer_size| is specified, fall back to 10 ms buffer size.
+  if (!frames_per_buffer) {
+    frames_per_buffer = sample_rate / 100;
+    DVLOG(1) << "Using 10 ms sink output buffer size: " << frames_per_buffer;
+    return frames_per_buffer;
+  }
+
+#if defined(OS_LINUX) || defined(OS_MACOSX) || defined(OS_FUCHSIA)
+  // On Linux, MacOS and Fuchsia, the low level IO implementations on the
+  // browser side supports all buffer size the clients want. We use the native
+  // peer connection buffer size (10ms) to achieve best possible performance.
+  frames_per_buffer = sample_rate / 100;
+#elif defined(OS_ANDROID)
+  // TODO(olka/henrika): This settings are very old, need to be revisited.
+  int frames_per_10ms = sample_rate / 100;
+  if (frames_per_buffer < 2 * frames_per_10ms) {
+    // Examples of low-latency frame sizes and the resulting |buffer_size|:
+    //  Nexus 7     : 240 audio frames => 2*480 = 960
+    //  Nexus 10    : 256              => 2*441 = 882
+    //  Galaxy Nexus: 144              => 2*441 = 882
+    frames_per_buffer = 2 * frames_per_10ms;
+    DVLOG(1) << "Low-latency output detected on Android";
+  }
+#endif
+
+  DVLOG(1) << "Using sink output buffer size: " << frames_per_buffer;
+  return frames_per_buffer;
+}
+
+// static
+int AudioLatency::GetInteractiveBufferSize(int hardware_buffer_size) {
+#if defined(OS_ANDROID)
+  // Always log this because it's relatively hard to get this
+  // information out.
+  LOG(INFO) << "audioHardwareBufferSize = " << hardware_buffer_size;
+#endif
+
+  return hardware_buffer_size;
+}
+
+int AudioLatency::GetExactBufferSize(base::TimeDelta duration,
+                                     int sample_rate,
+                                     int hardware_buffer_size) {
+  DCHECK_NE(0, hardware_buffer_size);
+
+  const int requested_buffer_size = duration.InSecondsF() * sample_rate;
+
+// On OSX and CRAS the preferred buffer size is larger than the minimum,
+// however we allow values down to the minimum if requested explicitly.
+#if defined(OS_MACOSX)
+  const int minimum_buffer_size =
+      GetMinAudioBufferSizeMacOS(limits::kMinAudioBufferSize, sample_rate);
+  if (requested_buffer_size > limits::kMaxAudioBufferSize) {
+    // Mac OS is currently the only platform with a max buffer size less than
+    // kMaxWebAudioBufferSize. Since Mac OS audio hardware can run at
+    // kMaxAudioBufferSize (currently 4096) and it only makes sense for Web
+    // Audio to run at multiples of the hardware buffer size, tell Web Audio to
+    // just use web audio max (8192) if the user requests >4096.
+    static_assert(
+        limits::kMaxWebAudioBufferSize % limits::kMaxAudioBufferSize == 0,
+        "Returning kMaxWebAudioBufferSize here assumes it's a multiple of the "
+        "hardware buffer size.");
+    return limits::kMaxWebAudioBufferSize;
+  }
+#elif defined(USE_CRAS)
+  const int minimum_buffer_size = limits::kMinAudioBufferSize;
+  static_assert(limits::kMaxAudioBufferSize >= limits::kMaxWebAudioBufferSize,
+                "Algorithm needs refactoring if kMaxAudioBufferSize for CRAS "
+                "is lowered.");
+#else
+  const int minimum_buffer_size = hardware_buffer_size;
+#endif
+
+  // Round requested size up to next multiple of the minimum hardware size. The
+  // minimum hardware size is one that we know is allowed by the platform audio
+  // layer and may be smaller than its preferred buffer size (the
+  // hardware_buffer_size). For platforms where this is supported we know that
+  // using a buffer size that is a multiple of this minimum is safe.
+  const int buffer_size = std::ceil(std::max(requested_buffer_size, 1) /
+                                    static_cast<double>(minimum_buffer_size)) *
+                          minimum_buffer_size;
+
+  // The maximum must also be a multiple of the minimum hardware buffer size in
+  // case the clamping below is required.
+  const int maximum_buffer_size =
+      (limits::kMaxWebAudioBufferSize / minimum_buffer_size) *
+      minimum_buffer_size;
+
+  return std::min(maximum_buffer_size,
+                  std::max(buffer_size, minimum_buffer_size));
+}
+}  // namespace media

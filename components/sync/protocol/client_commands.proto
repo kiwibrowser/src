@@ -1,0 +1,46 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+//
+// Sync protocol for communication between sync client and server.
+
+// Update proto_value_conversions{.h,.cc,_unittest.cc} if you change
+// any fields in this file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package sync_pb;
+
+message CustomNudgeDelay {
+  optional int32 datatype_id = 1;  // Datatype id.
+  optional int32 delay_ms = 2;     // Delay in milliseconds.
+};
+
+message ClientCommand {
+  // Time to wait before sending any requests to the server.
+  optional int32 set_sync_poll_interval = 1;       // in seconds
+  optional int32 set_sync_long_poll_interval = 2;  // in seconds
+
+  optional int32 max_commit_batch_size = 3;
+
+  // Number of seconds to delay between a sessions action and sending a commit
+  // message to the server. Can be overridden by |custom_nudge_delays|.
+  optional int32 sessions_commit_delay_seconds = 4;
+
+  // Number of seconds to delay before the throttled client should retry.
+  optional int32 throttle_delay_seconds = 5;
+
+  // Maximum number of local nudges to buffer per-type.
+  optional int32 client_invalidation_hint_buffer_size = 6;
+
+  // Time to wait before issuing a retry GU.
+  optional int32 gu_retry_delay_seconds = 7;
+
+  // A dictionary of custom nudge delays.
+  // Note: if a SESSIONS value is present, this will override
+  // |sessions_commit_delay_seconds|
+  // New in M39.
+  repeated CustomNudgeDelay custom_nudge_delays = 8;
+};

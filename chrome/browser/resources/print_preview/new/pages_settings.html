@@ -1,0 +1,61 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="checkbox_radio_css.html">
+<link rel="import" href="../data/document_info.html">
+<link rel="import" href="input_behavior.html">
+<link rel="import" href="input_css.html">
+<link rel="import" href="print_preview_shared_css.html">
+<link rel="import" href="settings_behavior.html">
+<link rel="import" href="settings_section.html">
+<link rel="import" href="strings.html">
+
+<dom-module id="print-preview-pages-settings">
+  <template>
+    <style include="print-preview-shared checkbox-radio input">
+      :host .radio .user-value {
+        -webkit-margin-start: 0.6em;
+        flex: 1;
+        width: 100%;
+      }
+
+      [slot='title'] {
+        --settings-section-title-style: {
+          padding-top: 7px;
+          align-self: flex-start;
+        }
+      }
+    </style>
+    <print-preview-settings-section
+        class="input-settings-section multirow-controls">
+      <span slot="title">$i18n{pagesLabel}</span>
+      <div slot="controls">
+        <div class="radio">
+          <label><input type="radio" name="pages" id="all-radio-button"
+              checked="{{allSelected_::change}}"
+              disabled$="[[getDisabled_(disabled, settings.pages.valid)]]">
+            <span>$i18n{optionAllPages}</span>
+          </label>
+          <label class="custom-input-wrapper"
+              for="pageSettingsCustomInput" tabindex=-1>
+            <input type="radio" name="pages" id="custom-radio-button"
+                disabled$="[[getDisabled_(disabled, settings.pages.valid)]]"
+                on-click="onCustomRadioClick_">
+            <input id="pageSettingsCustomInput" class="user-value" type="text"
+                checked="{{customSelected_::change}}" data-timeout-delay="500"
+                disabled$="[[getDisabled_(disabled, settings.pages.valid)]]"
+                pattern="[[inputPattern_]]"
+                on-focus="onCustomInputFocus_" on-blur="onCustomInputBlur_"
+                placeholder="$i18n{examplePageRangeText}"
+                aria-label="$i18n{examplePageRangeText}">
+          </label>
+        </div>
+        <span class="hint" aria-live="polite"
+            inner-h-t-m-l="[[getHintMessage_(errorState_,
+                                             documentInfo.pageCount)]]"
+            hidden$="[[hintHidden_(inputString_, errorState_)]]">
+        </span>
+      </div>
+    </print-preview-settings-section>
+  </template>
+  <script src="pages_settings.js"></script>
+</dom-module>

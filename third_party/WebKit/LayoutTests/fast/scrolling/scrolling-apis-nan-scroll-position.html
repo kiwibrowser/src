@@ -1,0 +1,101 @@
+<!DOCTYPE HTML>
+<style>
+
+body {
+  height: 30000px;
+  width: 30000px;
+}
+
+.spacer {
+  height: 1000px;
+  width: 1000px;
+}
+
+#scroller {
+  height: 100px;
+  width: 100px;
+  overflow: scroll;
+}
+</style>
+
+<div id=scroller>
+    <div class=spacer></div>
+</div>
+
+<script src="../../resources/js-test.js"></script>
+<script>
+description("Verifies that nan scroll position works correctly.");
+
+function scrollToNonFinite(x, y)
+{
+    window.scrollTo(100, 100);
+    window.scrollTo(x, y);
+    shouldBe('window.scrollY', "0");
+    shouldBe('window.scrollX', "0");
+
+    window.scrollTo(100, 100);
+    window.scrollTo({top: y, left: x});
+    shouldBe('window.scrollY', "0");
+    shouldBe('window.scrollX', "0");
+}
+
+function scrollByNonFinite(x, y)
+{
+    window.scrollTo(100, 100);
+    window.scrollBy(x, y);
+    shouldBe('window.scrollY', "100");
+    shouldBe('window.scrollX', "100");
+
+    window.scrollTo(100, 100);
+    window.scrollBy({top: y, left: x});
+    shouldBe('window.scrollY', "100");
+    shouldBe('window.scrollX', "100");
+}
+
+function scrollTopNonFinite(y)
+{
+    scroller.scrollTop = 1;
+    shouldBe("scroller.scrollTop", "1");
+    scroller.scrollTop = y;
+    shouldBe("scroller.scrollTop", "0");
+}
+
+function scrollLeftNonFinite(x)
+{
+    scroller.scrollLeft = 1;
+    shouldBe("scroller.scrollLeft", "1");
+    scroller.scrollLeft = x;
+    shouldBe("scroller.scrollLeft", "0");
+}
+
+function scroll()
+{
+    window.scrollTo(1, 1);
+    shouldBe('window.scrollY', "1");
+    shouldBe('window.scrollX', "1");
+
+    scrollToNonFinite(window.NaN, window.NaN);
+    scrollToNonFinite(window.Infinity, window.Infinity);
+    scrollToNonFinite(0, window.Infinity);
+    scrollToNonFinite(-window.Infinity, -window.Infinity);
+
+    scrollByNonFinite(window.NaN, window.NaN);
+    scrollByNonFinite(window.Infinity, window.Infinity);
+    scrollByNonFinite(0, window.Infinity);
+    scrollByNonFinite(-window.Infinity, -window.Infinity);
+
+    scrollTopNonFinite(window.NaN);
+    scrollTopNonFinite(window.Infinity);
+    scrollTopNonFinite(-window.Infinity);
+
+    scrollLeftNonFinite(window.NaN);
+    scrollLeftNonFinite(window.Infinity);
+    scrollLeftNonFinite(-window.Infinity);
+}
+
+onload = function() {
+    if (window.eventSender)
+      scroll();
+}
+
+</script>

@@ -1,0 +1,62 @@
+<!DOCTYPE HTML>
+<link rel="help" href="http://url.spec.whatwg.org/#dom-url-pathname">
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script>
+
+test(function() {
+    var url = new URL('http://www.domain.com/');
+    assert_equals(url.pathname, '/');
+
+    url = new URL('http://www.domain.com/a');
+    assert_equals(url.pathname, '/a');
+
+    url = new URL('http://www.domain.com');
+    assert_equals(url.pathname, '/');
+
+    url.pathname = 'a/b';
+    assert_equals(url.pathname, '/a/b');
+
+    url.pathname = '/a/b';
+    assert_equals(url.pathname, '/a/b');
+
+    url.pathname = 'a/b/';
+    assert_equals(url.pathname, '/a/b/');
+
+    url.pathname = '';
+    assert_equals(url.pathname, '/');
+
+    url.pathname = '/';
+    assert_equals(url.pathname, '/');
+
+    url = new URL('file:///home/abarth');
+    assert_equals(url.pathname, '/home/abarth');
+}, 'Basic pathname');
+
+test(function() {
+    var url = new URL('mailto:foo@bar.com');
+    assert_equals(url.pathname, 'foo@bar.com');
+
+    url.pathname = '/a/b';
+    assert_equals(url.pathname, 'foo@bar.com');
+}, 'non hierarchical');
+
+test(function() {
+    var url = new URL('http://abc.de:8080/path/file?query#fragment');
+    url.href = 'invalid';
+    assert_equals(url.pathname, '');
+
+    url.pathname = '/new/path';
+    assert_equals(url.pathname, '');
+    assert_equals(url.href, 'invalid');
+}, 'pathname property invalid URL');
+
+test(function() {
+    var url = new URL('http://www.domain.com/');
+    assert_equals(url.pathname, '/');
+
+    url.pathname = '\udc01\ud802a';
+    assert_equals(url.pathname, '/' + encodeURIComponent('\ufffd\ufffda'));
+}, 'pathname with unmatched surrogates');
+
+</script>

@@ -1,0 +1,96 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-styles/color.html">
+
+<dom-module id="md-select">
+  <template>
+    <style>
+      :root {
+        --md-select-side-padding: 12px;
+      }
+
+      .md-select {
+        --md-arrow-width: 0.9em;
+
+        /* The offset of the arrow from the end of the underline. */
+        --md-arrow-offset: 3%;
+
+        -webkit-appearance: none;
+        -webkit-margin-end: calc(-1 * var(--md-select-side-padding));
+        /* Ensure that there is a 3px space between the text and the arrow. */
+        -webkit-padding-end: calc(var(--md-select-side-padding) +
+            var(--md-arrow-offset) + var(--md-arrow-width) + 3px);
+        -webkit-padding-start: var(--md-select-side-padding);
+        background: url(
+            chrome://resources/images/arrow_down.svg)
+            calc(100% - var(--md-arrow-offset) - var(--md-select-side-padding))
+            center no-repeat;
+        background-size: var(--md-arrow-width);
+        border: none;
+        color: var(--primary-text-color);
+        cursor: pointer;
+        font-family: inherit;
+        font-size: inherit;
+        outline: none;
+        padding-bottom: 4px;
+        padding-top: 3px;
+        width: calc(var(--md-select-width, 200px) + 2 * var(--md-select-side-padding));
+      }
+
+      /* Mirroring paper-dropdown-menu disabled style. */
+      .md-select[disabled] {
+        pointer-events: none;
+      }
+
+      .md-select[disabled],
+      .md-select[disabled] + .md-select-underline {
+        color: var(--secondary-text-color);
+        opacity: 0.65;
+      }
+
+      :host-context([dir=rtl]) .md-select {
+        background-position-x: calc(var(--md-select-side-padding) +
+            var(--md-arrow-offset));
+      }
+
+      /* Persistent underline */
+      .md-select-underline {
+        -webkit-margin-end: 0;
+        -webkit-margin-start: var(--md-select-side-padding);
+        border-bottom: 1px solid var(--paper-grey-300);
+        display: block;
+        margin-bottom: 0;
+        margin-top: 0;
+        position: relative;
+        /* Make the focus line visible by 1px while the <select> is expanded. */
+        top: -2px;
+      }
+
+      /* Focus underline */
+      .md-select-underline::before {
+        border-top: 2px solid var(--google-blue-500);
+        content: '';
+        display: block;
+        position: relative;
+        /* Force the thicker "focus" underline to be properly overlapping with
+         * the "persistent" underline. */
+        top: 1px;
+        transform: scale3d(0, 1, 1);
+        transition: transform 200ms ease-in;
+      }
+
+      .md-select:focus + .md-select-underline::before {
+        transform: scale3d(1, 1, 1);
+        transition: transform 200ms ease-out;
+      }
+
+      .md-select[disabled] + .md-select-underline {
+        border-bottom: 1px dashed var(--secondary-text-color);
+      }
+
+      .md-select-wrapper {
+        display: inline-block;
+        max-width: 100%;
+      }
+    </style>
+  </template>
+</dom-module>

@@ -1,0 +1,101 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+[
+  {
+    "namespace":"fileBrowserHandler",
+    "description": "Use the <code>chrome.fileBrowserHandler</code> API to extend the Chrome OS file browser. For example, you can use this API to enable users to upload files to your website.",
+    "types": [
+      {
+        "id": "FileHandlerExecuteEventDetails",
+        "type": "object",
+        "description": "Event details payload for fileBrowserHandler.onExecute event.",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": { "type": "any" },
+            "description": "Array of Entry instances representing files that are targets of this action (selected in ChromeOS file browser)."
+          },
+          "tab_id" : {
+            "type": "integer",
+            "optional": true,
+            "description": "The ID of the tab that raised this event. Tab IDs are unique within a browser session."
+          }
+        }
+      }
+    ],
+
+    "events": [
+      {
+        "name": "onExecute",
+        "type": "function",
+        "description": "Fired when file system action is executed from ChromeOS file browser.",
+        "parameters": [
+          {
+            "name": "id",
+            "type": "string",
+            "description": "File browser action id as specified in the listener component's manifest."
+          },
+          {
+            "name": "details",
+            "$ref": "FileHandlerExecuteEventDetails",
+            "description": "File handler execute event details."
+          }
+        ]
+      }
+    ],
+
+    "functions": [
+      {
+        "name": "selectFile",
+        "type": "function",
+        "description": "Prompts user to select file path under which file should be saved. When the file is selected, file access permission required to use the file (read, write and create) are granted to the caller. The file will not actually get created during the function call, so function caller must ensure its existence before using it. The function has to be invoked with a user gesture.",
+        "parameters": [
+          {
+            "name": "selectionParams",
+            "type": "object",
+            "description": "Parameters that will be used while selecting the file.",
+            "properties": {
+              "suggestedName": {
+                  "type": "string",
+                  "description": "Suggested name for the file."
+              },
+              "allowedFileExtensions": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "optional": true,
+                  "description": "List of file extensions that the selected file can have. The list is also used to specify what files to be shown in the select file dialog. Files with the listed extensions are only shown in the dialog. Extensions should not include the leading '.'. Example: ['jpg', 'png']"
+              }
+            }
+          },
+          {
+            "name": "callback",
+            "type": "function",
+            "description": "Function called upon completion.",
+            "parameters": [
+              {
+                "name": "result",
+                "description": "Result of the method.",
+                "type": "object",
+                "properties": {
+                  "success": {
+                    "type": "boolean",
+                    "description": "Whether the file has been selected."
+                  },
+                  "entry": {
+                    "type": "object",
+                    "constructor": "Entry",
+                    "additionalProperties": { "type": "any" },
+                    "optional": true,
+                    "description": "Selected file entry. It will be null if a file hasn't been selected."
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

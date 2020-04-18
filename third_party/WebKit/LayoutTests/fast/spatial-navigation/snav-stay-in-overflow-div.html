@@ -1,0 +1,51 @@
+<script src="../../resources/js-test.js"></script>
+<script src="resources/spatial-navigation-utils.js"></script>
+<script>
+var resultMap = [
+  ["Down", "a"], // Scrolled so no focus change.
+  ["Down", "b"],
+  ["Down", "c"],
+  ["Up", "b"],
+  ["Up", "b"],   // Scrolled so no focus change.
+  ["Up", "a"],
+  ["DONE", "DONE"]
+];
+
+if (window.testRunner) {
+  testRunner.dumpAsText();
+  testRunner.overridePreference("WebKitTabToLinksPreferenceKey", 1);
+  testRunner.overridePreference("WebKitSpatialNavigationEnabled", 1);
+  testRunner.waitUntilDone();
+}
+
+function runTest()
+{
+  // Start at a known place.
+  document.getElementById("a").focus();
+  initTest(resultMap, testCompleted);
+}
+
+function testCompleted()
+{
+  if (window.testRunner)
+    testRunner.notifyDone();
+}
+
+window.onload = runTest;
+</script>
+
+<style>
+  div.scroll {
+    /* The div displays one line of text at once. */
+    line-height: 1.5em;
+    height: 1.5em;
+    overflow-y: scroll;
+  }
+</style>
+
+<div class="scroll">
+  <a href="#" id="a">a</a><br>
+  <a href="#" id="b">b</a>
+</div>
+<a href="#" id="c">c</a>
+<div id="console"></div>

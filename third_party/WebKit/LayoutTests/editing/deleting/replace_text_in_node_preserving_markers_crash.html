@@ -1,0 +1,26 @@
+<!doctype html>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="../assert_selection.js"></script>
+<script>
+test(() => assert_selection(
+    [
+        // Place each character at own line
+        '<div contenteditable style="width: 3px;">',
+            'abcd efg| hijkl',
+        '</div>',
+    ].join(''),
+    selection => {
+        // Delete " efg"
+        selection.document.execCommand('delete');
+        selection.document.execCommand('delete');
+        selection.document.execCommand('delete');
+        selection.document.execCommand('delete');
+    },
+    [
+        '<div contenteditable style="width: 3px;">',
+            'abcd|hijkl',
+        '</div>',
+    ].join('')),
+    'Crash test for replaceTextInNodePreservingMarkers');
+</script>

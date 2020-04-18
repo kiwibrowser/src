@@ -1,0 +1,30 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<script src="../../../resources/js-test.js"></script>
+</head>
+<body>
+<script>
+description("Verify that multiple overlapping start() calls is well-behaved.");
+
+self.jsTestIsAsync = true;
+
+if (window.testRunner) {
+    testRunner.dumpAsText();
+    testRunner.waitUntilDone();
+}
+
+var r1 = new webkitSpeechRecognition();
+r1.onend = function() {
+    r1.start();
+};
+r1.start();
+
+var r2 = new webkitSpeechRecognition();
+r2.onend = function() {
+    setTimeout(finishJSTest);
+};
+r2.start();
+</script>
+</body>
+</html>

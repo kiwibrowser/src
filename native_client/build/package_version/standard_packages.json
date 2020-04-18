@@ -1,0 +1,141 @@
+# Copyright (c) 2014 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This file describes all the package targets and also the packages that exist
+# for each package target.
+{
+  # This section describes the list of package targets. The host platforms and
+  # architectures should match standard ones found under pynacl.platform.
+  "package_targets": {
+    # The first level of package targets is the host platform.
+    "win": {
+      # The second level of package targets is the host architecture.
+      "x86-32": [
+        # The third level is a list of all the platform targets.
+        # The standard one is just the host platform and arch by convention.
+        "win_x86"
+      ],
+      "x86-64": [
+        "win_x86"
+      ]
+    },
+    "mac": {
+      "x86-32": [
+        "mac_x86"
+      ],
+      "x86-64": [
+        "mac_x86"
+      ]
+    },
+    "linux": {
+      "x86-32": [
+        "linux_x86"
+      ],
+      "x86-64": [
+        "linux_x86"
+      ],
+      "arm": [
+        "linux_arm"
+      ]
+    }
+  },
+
+  # The shared field is a list of packages that will be shared among package
+  # targets if they are specified with the same name. Shared does not mean that
+  # all platform targets will automatically all contain these packages.
+  "shared": [
+    "pnacl_translator"
+  ],
+
+  # For each package target, there should exists a list of packages.
+  "packages": {
+    "win_x86": [
+      "nacl_arm_glibc",
+      "nacl_arm_glibc_raw",
+      "nacl_x86_glibc",
+      "nacl_x86_glibc_raw",
+      "nacl_x86_newlib",
+      "nacl_x86_newlib_raw",
+      "pnacl_newlib",
+      "pnacl_newlib_raw",
+      "pnacl_translator"
+    ],
+
+    "mac_x86": [
+      "nacl_arm_glibc",
+      "nacl_arm_glibc_raw",
+      "nacl_x86_glibc",
+      "nacl_x86_glibc_raw",
+      "nacl_x86_newlib",
+      "nacl_x86_newlib_raw",
+      "pnacl_newlib",
+      "pnacl_newlib_raw",
+      "pnacl_translator"
+    ],
+
+    "linux_x86": [
+      "arm_trusted",
+      "nacl_arm_glibc",
+      "nacl_arm_glibc_raw",
+      "nacl_x86_glibc",
+      "nacl_x86_glibc_raw",
+      "nacl_x86_newlib",
+      "nacl_x86_newlib_raw",
+      "pnacl_newlib",
+      "pnacl_newlib_raw",
+      "pnacl_translator"
+    ],
+
+    "linux_arm": [
+      "pnacl_translator"
+    ]
+  },
+
+  # A revision set contains a list of packages which should be updated in sync.
+  # The revision set name does not need to be the same name as a package, but
+  # it is convenient to use the name of the "main" package name so users do not
+  # need to remember an extra revision set name.
+  "revision_sets": {
+    # Revision Set Name
+    "nacl_arm_glibc": [
+      # Packages contained within this revision set.
+      "nacl_arm_glibc",
+      "nacl_arm_glibc_raw"
+    ],
+    "nacl_x86_newlib": [
+      "nacl_x86_newlib",
+      "nacl_x86_newlib_raw"
+    ],
+    "nacl_x86_glibc": [
+      "nacl_x86_glibc",
+      "nacl_x86_glibc_raw"
+    ],
+    "pnacl_newlib": [
+      "pnacl_newlib",
+      "pnacl_newlib_raw",
+      "pnacl_translator"
+    ]
+  },
+
+  # Modes specify a subset of packages to be used, this is a convenient way
+  # to filter packages for groups of users to get just what they need.
+  # Each mode has a list of packages associated with the mode. When you
+  # specify "--mode mode_name" under package_version, it will only operate
+  # on the list of packages specified under that mode.
+  # For example, say normally "package_version sync" syncs packages 1,2,3,4 for
+  # a platform. If you create a mode "evens_only" which only contains "2,4,6",
+  # then "package_version --mode evens_only sync" will only sync packages "2,4".
+  # (Notice 6 was not part of the original list of packages to sync so it is
+  # ignored. This can happen if 6 would have been synced for another platform.)
+  "modes": {
+    "nacl_core_sdk": [
+      "arm_trusted",
+      "nacl_arm_glibc",
+      "nacl_x86_glibc",
+      "nacl_x86_newlib",
+      "pnacl_newlib",
+      "pnacl_translator"
+    ]
+  }
+}

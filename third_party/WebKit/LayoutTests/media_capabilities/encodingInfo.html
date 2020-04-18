@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<script src=../resources/testharness.js></script>
+<script src=../resources/testharnessreport.js></script>
+<script>
+
+// Check navigator.mediaCapabilities.encodingInfo() with some MIME types that
+// should be recordable and a few that shouldn't.
+
+var createTestForContentType = function(mimeType, isSupported = true) {
+  async_test(function(t) {
+    const media = mimeType.split('/')[0];
+    var queryParameters;
+    if (media == 'video') {
+      queryParameters = {
+        type : 'record',
+        video : {
+          contentType : mimeType,
+          width : 640,
+          height : 480,
+          bitrate : 10000,
+          framerate : 30
+        }
+      };
+    } else if (media == 'audio') {
+      queryParameters = {type : 'record', audio : {contentType : mimeType}};
+    } else {
+      assert_unreached('Unsupported media type');
+    }
+
+    navigator.mediaCapabilities.encodingInfo(queryParameters)
+        .then((result) => {
+          assert_equals(isSupported, result.supported, mimeType + 'supported?');
+          t.done();
+        })
+        .catch(e => {
+          assert_unreached('encodingInfo() failed with ' + e +
+                           ' using mimeType ' +  mimeType);
+          t.done();
+        });
+  });
+};
+
+generate_tests(createTestForContentType, [
+  [ 'video/webm', 'video/webm' ],
+  [ 'video/webm;codecs=vp8', 'video/webm;codecs=vp8' ],
+  [ 'video/webm;codecs=vp9', 'video/webm;codecs=vp9' ],
+  [ 'video/webm;codecs=VP8.0', 'video/webm;codecs=vp8.0' ],
+  [ 'video/webm;codecs=vp9.0', 'video/webm;codecs=vp9.0' ],
+  [ 'video/webm;codecs=h264', 'video/webm;codecs=h264' ],
+  [ 'video/webm;codecs=H264', 'video/webm;codecs=H264' ],
+  [ 'video/webm;codecs=avc1', 'video/webm;codecs=avc1' ],
+  // 'video/webm' supports audio codec specification, see
+  // http://www.webmproject.org/docs/container/
+  [ 'video/webm;codecs="vp8,opus"', 'video/webm;codecs="vp8,opus"' ],
+  [ 'video/WEBM;codecs="VP8,OPUS"', 'video/WEBM;codecs="VP8,OPUS"' ],
+  [ 'video/webm;codecs="vp9,opus"', 'video/webm;codecs="vp9,opus"' ],
+  [ 'video/webm;codecs="vp8,vp9,opus"', 'video/webm;codecs="vp8,vp9,opus"' ],
+  [ 'video/webm;codecs="h264,opus"', 'video/webm;codecs="h264,opus"' ],
+  [ 'video/webm;codecs="h264,vp9,opus"', 'video/webm;codecs="h264,vp9,opus"' ],
+  // https://matroska.org/technical/specs/notes.html#MIME
+  [ 'video/x-matroska;codecs=vorbis', 'video/x-matroska;codecs=opus' ],
+  [ 'audio/webm', 'audio/webm' ],
+  [ 'audio/webm;codecs=opus', 'audio/webm;codecs=opus' ],
+
+  // Rejected MIME types
+  [ 'video/invalid', 'video/invalid', false],
+  [ 'video/mpeg4', 'video/mpeg4', false],
+  [ 'video/webm;codecs=daala', 'video/webm;codecs=daala', false],
+  [ 'audio/invalid', 'audio/invalid', false],
+  [ 'audio/ogg', 'audio/ogg', false],
+  [ 'audio/webm;codecs=vorbis', 'audio/webm;codecs=vorbis', false],
+]);
+
+</script>

@@ -1,0 +1,29 @@
+@hex:
+  # Regression tests for 
+  # https://code.google.com/p/nativeclient/issues/detail?id=3084
+  89 f1
+  48 89 ec
+  8b 1c 0c
+@dis:
+     0:	89 f1                                        	mov    %esi,%ecx
+     2:	48 89 ec                                     	mov    %rbp,%rsp
+     5:	8b 1c 0c                                     	mov    (%rsp,%rcx,1),%ebx
+@rdfa_output:
+  5: improper memory address - bad index
+  return code: 1
+@spec:
+  5: register %rcx should be restricted, while in fact None is restricted
+----------------------------------------------------------------------
+@hex:
+  89 f1
+  48 89 e5
+  8b 1c 0c
+@dis:
+     0:	89 f1                                        	mov    %esi,%ecx
+     2:	48 89 e5                                     	mov    %rsp,%rbp
+     5:	8b 1c 0c                                     	mov    (%rsp,%rcx,1),%ebx
+@rdfa_output:
+  5: improper memory address - bad index
+  return code: 1
+@spec:
+  5: register %rcx should be restricted, while in fact None is restricted

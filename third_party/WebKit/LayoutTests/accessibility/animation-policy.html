@@ -1,0 +1,36 @@
+<script>
+var updated = false;
+var prevTime;
+if (window.internals)
+    internals.settings.setImageAnimationPolicy("none");
+
+if (window.testRunner)
+    testRunner.waitUntilDone();
+
+function changeImage() {
+    document.getElementById("target").src = "animation-green.gif";
+    updated = true;
+}
+
+function finishTest() {
+    if (window.testRunner)
+        testRunner.notifyDone();
+}
+
+function imageLoaded() {
+    if (!updated)
+        return;
+    setTimeout(onTimeout, 0.5);
+}
+
+function onTimeout() {
+    if (window.testRunner) {
+        testRunner.layoutAndPaintAsyncThen(function () {
+            window.requestAnimationFrame(finishTest);
+        });
+    }
+}
+</script>
+<body onload="changeImage()">
+<img id="target" src="animation-blue.gif" onload="imageLoaded()">
+</body>

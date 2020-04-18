@@ -1,0 +1,58 @@
+# -*- python -*-
+# Copyright 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import os
+
+Import('env')
+
+
+slave_name = os.environ.get('BUILDBOT_SLAVENAME', '')
+
+# Performance tests are broken because their runtime is highly variable and
+# somewhat short, which is especially bad when running on virtual
+# machines. Fixing this issue should be part of:
+# https://code.google.com/p/nativeclient/issues/detail?id=3987
+is_broken = slave_name.startswith('vm') or slave_name.startswith('slave')
+
+# Disable this on Valgrind because TestThreadWakeup is very slow under
+# Valgrind, and because we don't particularly need to measure
+# performance under Valgrind.
+is_broken = is_broken or env.Bit('running_on_valgrind')
+
+libs = []
+if env.Bit('nacl_glibc'):
+  # Needed for clock_gettime().
+  libs.append('rt')
+
+nexe = env.ComponentProgram(
+    'performance_test',
+    ['perf_test_runner.cc',
+     'perf_test_basics.cc',
+     'perf_test_exceptions.cc',
+     'perf_test_threads.cc'],
+    EXTRA_LIBS=['${NONIRT_LIBS}',
+                '${PTHREAD_LIBS}',
+                '${EXCEPTION_LIBS}']
+               + libs)
+
+if 'TRUSTED_ENV' not in env:
+  Return()
+trusted_env = env['TRUSTED_ENV']
+
+node = env.CommandSelLdrTestNacl(
+    'performance_test.out', nexe, [env.GetPerfEnvDescription()],
+    # Pass '-e' to enable untrusted fault handling.  This should not
+    # affect performance until the exception_handler() syscall is
+    # called -- the Windows debug exception handler process is
+    # launched and attached on demand.
+    sel_ldr_flags=['-e'],
+    # Don't hide output: We want the timings to be reported in the
+    # Buildbot logs so that Buildbot records the "RESULT" lines.
+    capture_output=False)
+env.AddNodeToTestSuite(node, ['large_tests'], 'run_performance_test',
+                       is_broken=is_broken or
+# This test is flaky on mac10.7-newlib-dbg-asan.
+# See https://code.google.com/p/nativeclient/issues/detail?id=3906
+                                 (env.Bit('asan') and env.Bit('host_mac')))

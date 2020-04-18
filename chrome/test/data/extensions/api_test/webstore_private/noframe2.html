@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<body onload="dropFrame()">
+This represents not an extension, but an HTML page within an untrusted
+origin (127.0.0.1).
+<script>
+var interval_id = -1;
+var check_count = 0;
+function dropFrame() {
+  var s = location.href.toString();
+  if (s.indexOf('127.0.0.1') > 0) {
+    // try to frame a copy of an error page from the webstore origin, but
+    // not under the webstore root directory.  The server does not send
+    // an x-frame-options header for the error page.
+    var f = document.createElement('iframe');
+    s = s.replace('127.0.0.1', 'www.example.com');
+    s = s.replace('/extensions/', '/nonesuch/extensions/');
+    f.src = s;
+    f.onload = checkFrame;
+    f.onerror = checkFrame;
+    document.body.appendChild(f);
+    // Due to https://bugs.webkit.org/show_bug.cgi?id=90660 neither onload
+    // or onerror fires when interrupted by XFO, so use a setInterval()
+    // workaround. Remove this workaround when resolved.
+    interval_id = setInterval("checkFrame()", 500);
+  }
+}
+
+function checkFrame() {
+  try {
+    // If the frame was blocked, we instead have an about:blank frame which we
+    // can access.
+    x = window.frames[0].document.location.href;
+    document.title = 'PASS: ' + x;
+    clearInterval(interval_id);
+  }
+  catch (e) {
+    // Frame was not yet blocked, so we have no access.
+    if (++check_count > 40) {
+      document.title = 'FAIL';
+      clearInterval(interval_id);
+    }
+  }
+}
+</script>
+</html>

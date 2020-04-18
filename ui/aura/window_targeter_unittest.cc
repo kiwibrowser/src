@@ -1,0 +1,308 @@
+// Copyright (c) 2013 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "ui/aura/window_targeter.h"
+
+#include <utility>
+
+#include "base/macros.h"
+#include "ui/aura/scoped_window_targeter.h"
+#include "ui/aura/test/aura_test_base.h"
+#include "ui/aura/test/test_window_delegate.h"
+#include "ui/aura/window.h"
+#include "ui/events/event_utils.h"
+#include "ui/events/test/test_event_handler.h"
+
+namespace aura {
+
+// Always returns the same window.
+class StaticWindowTargeter : public WindowTargeter {
+ public:
+  explicit StaticWindowTargeter(aura::Window* window)
+      : window_(window) {}
+  ~StaticWindowTargeter() override {}
+
+ private:
+  // aura::WindowTargeter:
+  Window* FindTargetForLocatedEvent(Window* window,
+                                    ui::LocatedEvent* event) override {
+    return window_;
+  }
+
+  Window* window_;
+
+  DISALLOW_COPY_AND_ASSIGN(StaticWindowTargeter);
+};
+
+gfx::RectF GetEffectiveVisibleBoundsInRootWindow(Window* window) {
+  gfx::RectF bounds = gfx::RectF(gfx::SizeF(window->bounds().size()));
+  Window* root = window->GetRootWindow();
+  CHECK(window->layer());
+  CHECK(root->layer());
+  gfx::Transform transform;
+  if (!window->layer()->GetTargetTransformRelativeTo(root->layer(), &transform))
+    return gfx::RectF();
+  transform.TransformRect(&bounds);
+  return bounds;
+}
+
+using WindowTargeterTest = test::AuraTestBaseWithType;
+
+TEST_P(WindowTargeterTest, Basic) {
+  test::TestWindowDelegate delegate;
+  std::unique_ptr<Window> window(
+      CreateNormalWindow(1, root_window(), &delegate));
+  Window* one = CreateNormalWindow(2, window.get(), &delegate);
+  Window* two = CreateNormalWindow(3, window.get(), &delegate);
+
+  window->SetBounds(gfx::Rect(0, 0, 100, 100));
+  one->SetBounds(gfx::Rect(0, 0, 500, 100));
+  two->SetBounds(gfx::Rect(501, 0, 500, 1000));
+
+  root_window()->Show();
+
+  ui::test::TestEventHandler handler;
+  one->AddPreTargetHandler(&handler);
+
+  ui::MouseEvent press(ui::ET_MOUSE_PRESSED, gfx::Point(20, 20),
+                       gfx::Point(20, 20), ui::EventTimeForNow(), ui::EF_NONE,
+                       ui::EF_NONE);
+  DispatchEventUsingWindowDispatcher(&press);
+  EXPECT_EQ(1, handler.num_mouse_events());
+
+  handler.Reset();
+  DispatchEventUsingWindowDispatcher(&press);
+  EXPECT_EQ(1, handler.num_mouse_events());
+
+  one->RemovePreTargetHandler(&handler);
+}
+
+TEST_P(WindowTargeterTest, ScopedWindowTargeter) {
+  test::TestWindowDelegate delegate;
+  std::unique_ptr<Window> window(
+      CreateNormalWindow(1, root_window(), &delegate));
+  Window* child = CreateNormalWindow(2, window.get(), &delegate);
+
+  window->SetBounds(gfx::Rect(30, 30, 100, 100));
+  child->SetBounds(gfx::Rect(20, 20, 50, 50));
+  root_window()->Show();
+
+  ui::EventTarget* root = root_window();
+  ui::EventTargeter* targeter = root->GetEventTargeter();
+
+  gfx::Point event_location(60, 60);
+  {
+    ui::MouseEvent mouse(ui::ET_MOUSE_MOVED, event_location, event_location,
+                         ui::EventTimeForNow(), ui::EF_NONE, ui::EF_NONE);
+    EXPECT_EQ(child, targeter->FindTargetForEvent(root, &mouse));
+  }
+
+  // Install a targeter on |window| so that the events never reach the child.
+  std::unique_ptr<ScopedWindowTargeter> scoped_targeter(
+      new ScopedWindowTargeter(window.get(),
+                               std::unique_ptr<ui::EventTargeter>(
+                                   new StaticWindowTargeter(window.get()))));
+  {
+    ui::MouseEvent mouse(ui::ET_MOUSE_MOVED, event_location, event_location,
+                         ui::EventTimeForNow(), ui::EF_NONE, ui::EF_NONE);
+    EXPECT_EQ(window.get(), targeter->FindTargetForEvent(root, &mouse));
+  }
+  scoped_targeter.reset();
+  {
+    ui::MouseEvent mouse(ui::ET_MOUSE_MOVED, event_location, event_location,
+                         ui::EventTimeForNow(), ui::EF_NONE, ui::EF_NONE);
+    EXPECT_EQ(child, targeter->FindTargetForEvent(root, &mouse));
+  }
+}
+
+// Test that ScopedWindowTargeter does not crash if the window for which it
+// replaces the targeter gets destroyed before it does.
+TEST_P(WindowTargeterTest, ScopedWindowTargeterWindowDestroyed) {
+  test::TestWindowDelegate delegate;
+  std::unique_ptr<Window> window(
+      CreateNormalWindow(1, root_window(), &delegate));
+  std::unique_ptr<ScopedWindowTargeter> scoped_targeter(
+      new ScopedWindowTargeter(window.get(),
+                               std::unique_ptr<ui::EventTargeter>(
+                                   new StaticWindowTargeter(window.get()))));
+
+  window.reset();
+  scoped_targeter.reset();
+
+  // We did not crash!
+}
+
+TEST_P(WindowTargeterTest, TargetTransformedWindow) {
+  root_window()->Show();
+
+  test::TestWindowDelegate delegate;
+  std::unique_ptr<Window> window(
+      CreateNormalWindow(2, root_window(), &delegate));
+
+  const gfx::Rect window_bounds(100, 20, 400, 80);
+  window->SetBounds(window_bounds);
+
+  ui::EventTarget* root_target = root_window();
+  ui::EventTargeter* targeter = root_target->GetEventTargeter();
+  gfx::Point event_location(490, 50);
+  {
+    ui::MouseEvent mouse(ui::ET_MOUSE_MOVED, event_location, event_location,
+                         ui::EventTimeForNow(), ui::EF_NONE, ui::EF_NONE);
+    EXPECT_EQ(window.get(), targeter->FindTargetForEvent(root_target, &mouse));
+  }
+
+  // Scale |window| by 50%. This should move it away from underneath
+  // |event_location|, so an event in that location will not be targeted to it.
+  gfx::Transform transform;
+  transform.Scale(0.5, 0.5);
+  window->SetTransform(transform);
+  EXPECT_EQ(gfx::RectF(100, 20, 200, 40).ToString(),
+            GetEffectiveVisibleBoundsInRootWindow(window.get()).ToString());
+  {
+    ui::MouseEvent mouse(ui::ET_MOUSE_MOVED, event_location, event_location,
+                         ui::EventTimeForNow(), ui::EF_NONE, ui::EF_NONE);
+    EXPECT_EQ(root_window(), targeter->FindTargetForEvent(root_target, &mouse));
+  }
+
+  transform = gfx::Transform();
+  transform.Translate(200, 10);
+  transform.Scale(0.5, 0.5);
+  window->SetTransform(transform);
+  EXPECT_EQ(gfx::RectF(300, 30, 200, 40).ToString(),
+            GetEffectiveVisibleBoundsInRootWindow(window.get()).ToString());
+  {
+    ui::MouseEvent mouse(ui::ET_MOUSE_MOVED, event_location, event_location,
+                         ui::EventTimeForNow(), ui::EF_NONE, ui::EF_NONE);
+    EXPECT_EQ(window.get(), targeter->FindTargetForEvent(root_target, &mouse));
+  }
+}
+
+class IdCheckingEventTargeter : public WindowTargeter {
+ public:
+  IdCheckingEventTargeter(int id) : id_(id) {}
+  ~IdCheckingEventTargeter() override {}
+
+ protected:
+  // WindowTargeter:
+  bool SubtreeShouldBeExploredForEvent(Window* window,
+                                       const ui::LocatedEvent& event) override {
+    return (window->id() == id_ &&
+            WindowTargeter::SubtreeShouldBeExploredForEvent(window, event));
+  }
+
+ private:
+  int id_;
+};
+
+TEST_P(WindowTargeterTest, Bounds) {
+  test::TestWindowDelegate delegate;
+  std::unique_ptr<Window> parent(
+      CreateNormalWindow(1, root_window(), &delegate));
+  std::unique_ptr<Window> child(CreateNormalWindow(1, parent.get(), &delegate));
+  std::unique_ptr<Window> grandchild(
+      CreateNormalWindow(1, child.get(), &delegate));
+
+  parent->SetBounds(gfx::Rect(0, 0, 30, 30));
+  child->SetBounds(gfx::Rect(5, 5, 20, 20));
+  grandchild->SetBounds(gfx::Rect(5, 5, 5, 5));
+
+  ASSERT_EQ(1u, root_window()->children().size());
+  ASSERT_EQ(1u, root_window()->children()[0]->children().size());
+  ASSERT_EQ(1u, root_window()->children()[0]->children()[0]->children().size());
+
+  Window* parent_r = root_window()->children()[0];
+  Window* child_r = parent_r->children()[0];
+  Window* grandchild_r = child_r->children()[0];
+
+  ui::EventTarget* root_target = root_window();
+  ui::EventTargeter* targeter = root_target->GetEventTargeter();
+
+  // Dispatch a mouse event that falls on the parent, but not on the child. When
+  // the default event-targeter used, the event will still reach |grandchild|,
+  // because the default targeter does not look at the bounds.
+  ui::MouseEvent mouse(ui::ET_MOUSE_MOVED, gfx::Point(1, 1), gfx::Point(1, 1),
+                       ui::EventTimeForNow(), ui::EF_NONE, ui::EF_NONE);
+  EXPECT_EQ(parent_r, targeter->FindTargetForEvent(root_target, &mouse));
+
+  // Install a targeter on the |child| that looks at the window id as well
+  // as the bounds and makes sure the event reaches the target only if the id of
+  // the window is equal to 2 (incorrect). This causes the event to get handled
+  // by |parent|.
+  ui::MouseEvent mouse2(ui::ET_MOUSE_MOVED, gfx::Point(8, 8), gfx::Point(8, 8),
+                        ui::EventTimeForNow(), ui::EF_NONE, ui::EF_NONE);
+  std::unique_ptr<ui::EventTargeter> original_targeter =
+      child_r->SetEventTargeter(
+          std::unique_ptr<ui::EventTargeter>(new IdCheckingEventTargeter(2)));
+  EXPECT_EQ(parent_r, targeter->FindTargetForEvent(root_target, &mouse2));
+
+  // Now install a targeter on the |child| that looks at the window id as well
+  // as the bounds and makes sure the event reaches the target only if the id of
+  // the window is equal to 1 (correct).
+  ui::MouseEvent mouse3(ui::ET_MOUSE_MOVED, gfx::Point(8, 8), gfx::Point(8, 8),
+                        ui::EventTimeForNow(), ui::EF_NONE, ui::EF_NONE);
+  child_r->SetEventTargeter(
+      std::unique_ptr<ui::EventTargeter>(new IdCheckingEventTargeter(1)));
+  EXPECT_EQ(child_r, targeter->FindTargetForEvent(root_target, &mouse3));
+
+  // restore original WindowTargeter for |child|.
+  child_r->SetEventTargeter(std::move(original_targeter));
+
+  // Target |grandchild| location.
+  ui::MouseEvent second(ui::ET_MOUSE_MOVED, gfx::Point(12, 12),
+                        gfx::Point(12, 12), ui::EventTimeForNow(), ui::EF_NONE,
+                        ui::EF_NONE);
+  EXPECT_EQ(grandchild_r, targeter->FindTargetForEvent(root_target, &second));
+
+  // Target |child| location.
+  ui::MouseEvent third(ui::ET_MOUSE_MOVED, gfx::Point(8, 8), gfx::Point(8, 8),
+                       ui::EventTimeForNow(), ui::EF_NONE, ui::EF_NONE);
+  EXPECT_EQ(child_r, targeter->FindTargetForEvent(root_target, &third));
+}
+
+class IgnoreWindowTargeter : public WindowTargeter {
+ public:
+  IgnoreWindowTargeter() {}
+  ~IgnoreWindowTargeter() override {}
+
+ private:
+  // WindowTargeter:
+  bool SubtreeShouldBeExploredForEvent(Window* window,
+                                       const ui::LocatedEvent& event) override {
+    return false;
+  }
+};
+
+// Verifies that an EventTargeter installed on an EventTarget can dictate
+// whether the target itself can process an event.
+TEST_P(WindowTargeterTest, TargeterChecksOwningEventTarget) {
+  test::TestWindowDelegate delegate;
+  std::unique_ptr<Window> child(
+      CreateNormalWindow(1, root_window(), &delegate));
+
+  ui::EventTarget* root_target = root_window();
+  ui::EventTargeter* targeter = root_target->GetEventTargeter();
+
+  ui::MouseEvent mouse(ui::ET_MOUSE_MOVED, gfx::Point(10, 10),
+                       gfx::Point(10, 10), ui::EventTimeForNow(), ui::EF_NONE,
+                       ui::EF_NONE);
+  EXPECT_EQ(child.get(), targeter->FindTargetForEvent(root_target, &mouse));
+
+  // Install an event targeter on |child| which always prevents the target from
+  // receiving event.
+  child->SetEventTargeter(
+      std::unique_ptr<ui::EventTargeter>(new IgnoreWindowTargeter()));
+
+  ui::MouseEvent mouse2(ui::ET_MOUSE_MOVED, gfx::Point(10, 10),
+                        gfx::Point(10, 10), ui::EventTimeForNow(), ui::EF_NONE,
+                        ui::EF_NONE);
+  EXPECT_EQ(root_window(), targeter->FindTargetForEvent(root_target, &mouse2));
+}
+
+INSTANTIATE_TEST_CASE_P(/* no prefix */,
+                        WindowTargeterTest,
+                        ::testing::Values(test::BackendType::CLASSIC,
+                                          test::BackendType::MUS,
+                                          test::BackendType::MUS2));
+
+}  // namespace aura

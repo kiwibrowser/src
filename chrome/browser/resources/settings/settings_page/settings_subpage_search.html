@@ -1,0 +1,83 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_search_field/cr_search_field_behavior.html">
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/cr_elements/shared_style_css.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-icon/iron-icon.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-input/paper-input-container.html">
+
+<dom-module id="settings-subpage-search">
+  <template>
+    <style include="cr-shared-style">
+      :host {
+        --paper-input-container-underline: var(--subpage-search-underline);
+        --paper-input-container-underline-focus:
+            var(--subpage-search-underline);
+        --paper-input-container-underline-disabled:
+            var(--subpage-search-underline);
+        --paper-input-suffix: {
+          /* Required to align the icon in |clearSearch| vertically. */
+          line-height: 0;
+        };
+        --subpage-search-underline: {
+          margin-bottom: -2px;
+          margin-top: -2px;
+        }
+        user-select: none;
+      }
+
+      #searchIcon {
+        height: 16px;
+        padding: 4px;
+        vertical-align: middle;
+        width: 16px;
+      }
+
+      paper-input-container {
+        display: inline-block;
+        vertical-align: middle;
+        width: 160px;  /* Special width for search input. */
+      }
+
+      input[type='search']::-webkit-search-cancel-button {
+        -webkit-appearance: none;
+      }
+
+      input[placeholder] {
+        text-overflow: ellipsis;
+      }
+
+      #searchInput {
+        font-size: 92.3076923%;  /* To 12px from 13px. */
+        min-height: 24px;
+      }
+
+      #searchInput {
+        color: var(--paper-grey-800);
+      }
+
+      #clearSearchContainer {
+        -webkit-margin-end: -4px;
+        -webkit-margin-start: 4px;
+
+        /* A 16px icon that fits on the input line. */
+        background-size: 16px;
+        height: 24px;
+        width: 24px;
+      }
+    </style>
+    <iron-icon id="searchIcon" icon="cr:search"></iron-icon>
+    <paper-input-container no-label-float>
+      <input id="searchInput" type="search" on-search="onSearchTermSearch"
+          on-input="onSearchTermInput" aria-label$="[[label]]" incremental
+          autofocus$="[[autofocus]]" placeholder="[[label]]" slot="input">
+      <paper-icon-button-light id="clearSearchContainer" class="icon-cancel"
+          hidden$="[[!hasSearchText]]" slot="suffix">
+        <button id="clearSearch" on-click="onTapClear_" title="[[clearLabel]]">
+        </button>
+      </paper-icon-button-light>
+    </paper-input-container>
+  </template>
+  <script src="settings_subpage_search.js"></script>
+</dom-module>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+
+<div id="main" role="main">
+
+    <div id="contenteditable-textbox" role="textbox" contenteditable="true">
+        <div id="contenteditable-line1">Line 1</div>
+        <textarea id="contenteditable-line2" rows="1" cols="40">Line 2</textarea>
+    </div>
+
+    <div id="contenteditable-div" contenteditable>
+        <p id="paragraph1">Line 1<br>Line 2</p>
+        <p id="paragraph2">Line 3</p>
+    </div>
+
+</div>
+
+<script>
+    test(function()
+    {
+        var selection = window.getSelection();
+        var selectionRange = document.createRange();
+        var mainAccessible = accessibilityController.accessibleElementById("main");
+        var rootAccessible = accessibilityController.rootElement;
+
+        var textbox = document.getElementById("contenteditable-textbox");
+        var textboxAccessible = accessibilityController.accessibleElementById("contenteditable-textbox");
+        var line1Accessible = accessibilityController.accessibleElementById("contenteditable-line1");
+        var line1TextAccessible = line1Accessible.childAtIndex(0);
+
+        // Select the entire contents of the outer ARIA textbox.
+        // These include another ARIA textbox and a textarea node
+        // taking up three lines.
+        textbox.focus();
+        selectionRange.selectNodeContents(textbox);
+        selection.removeAllRanges();
+        selection.addRange(selectionRange);
+
+        assert_equals(textboxAccessible.selectionStart, 0);
+        // 7 for the "Line 1" text div + 1 for the textarea node.
+        // (The textarea node should be treated as a single unit.)
+        assert_equals(textboxAccessible.selectionEnd, 8);
+
+        // Selection offsets should be the same when retrieved from the parent object.
+        assert_equals(mainAccessible.selectionStart, 0);
+        assert_equals(mainAccessible.selectionEnd, 8);
+
+        assert_equals(rootAccessible.selectionAnchorObject, line1TextAccessible);
+        assert_equals(rootAccessible.selectionAnchorOffset, 0);
+        assert_equals(rootAccessible.selectionFocusObject, textboxAccessible);
+        assert_equals(rootAccessible.selectionFocusOffset, 8);
+    }, "Test selectNodeContents on an ARIA textbox.");
+</script>
+
+<script>
+    test(function()
+    {
+        var selection = window.getSelection();
+        var selectionRange = document.createRange();
+        var mainAccessible = accessibilityController.accessibleElementById("main");
+        var rootAccessible = accessibilityController.rootElement;
+
+        var contenteditable = document.getElementById("contenteditable-div");
+        var line1 = document.getElementById("paragraph1").firstChild;
+        var line3 = document.getElementById("paragraph2").firstChild;
+        var contenteditableAccessible = accessibilityController.accessibleElementById("contenteditable-div");
+
+        // Select the entire contents of the second content editable.
+        contenteditable.focus();
+        selectionRange.selectNodeContents(contenteditable);
+        selection.removeAllRanges();
+        selection.addRange(selectionRange);
+
+        assert_equals(contenteditableAccessible.selectionStart, 0);
+        assert_equals(contenteditableAccessible.selectionEnd, 21);
+
+        // 7 for line1 + 1 for the textarea + 1 for the blank line.
+        assert_equals(mainAccessible.selectionStart, 9);
+        assert_equals(mainAccessible.selectionEnd, 30);
+
+        assert_equals(rootAccessible.selectionAnchorObject.name,
+            line1.textContent);
+        assert_equals(rootAccessible.selectionAnchorOffset, 0);
+        assert_equals(rootAccessible.selectionFocusObject.name,
+            line3.textContent);
+        assert_equals(rootAccessible.selectionFocusOffset, 6);
+    }, "Test selectNodeContents on a contenteditable.");
+</script>
+
+<script>
+    test(function()
+    {
+        var selection = window.getSelection();
+        var selectionRange = document.createRange();
+        var mainAccessible = accessibilityController.accessibleElementById("main");
+        var rootAccessible = accessibilityController.rootElement;
+        var textboxAccessible = accessibilityController.accessibleElementById("contenteditable-textbox");
+        var line1 = document.getElementById("contenteditable-line1");
+        var line1Accessible = accessibilityController.accessibleElementById("contenteditable-line1");
+        var line1TextAccessible = line1Accessible.childAtIndex(0);
+
+        // Select only the first line of the ARIA textbox.
+        selectionRange.setStart(line1.firstChild, 0);
+        selectionRange.setEnd(line1.firstChild, 6);
+        selection.removeAllRanges();
+        selection.addRange(selectionRange);
+
+        assert_equals(textboxAccessible.selectionStart, 0);
+        assert_equals(textboxAccessible.selectionEnd, 6);
+
+        assert_equals(mainAccessible.selectionStart, 0);
+        assert_equals(mainAccessible.selectionEnd, 6);
+
+        assert_equals(rootAccessible.selectionAnchorObject, line1TextAccessible);
+        assert_equals(rootAccessible.selectionAnchorOffset, 0);
+        assert_equals(rootAccessible.selectionFocusObject, line1TextAccessible);
+        assert_equals(rootAccessible.selectionFocusOffset, 6);
+    }, "The effects of the setStart and setEnd methods should be reflected in the accessibility API.");
+</script>
+
+<script>
+    test(function()
+    {
+        var textboxAccessible = accessibilityController.accessibleElementById("contenteditable-textbox");
+        var rootAccessible = accessibilityController.rootElement;
+        var line2 = document.getElementById("contenteditable-line2");
+        var line2Accessible = accessibilityController.accessibleElementById("contenteditable-line2");
+
+        line2.focus();
+
+        // The selection should have been removed from the line1 div
+        // due to the focus being moved.
+        assert_equals(textboxAccessible.selectionStart, 0);
+        assert_equals(textboxAccessible.selectionEnd, 0);
+        assert_equals(rootAccessible.selectionAnchorObject, line2Accessible);
+        assert_equals(rootAccessible.selectionAnchorOffset, 0);
+        assert_equals(rootAccessible.selectionFocusObject, line2Accessible);
+        assert_equals(rootAccessible.selectionFocusOffset, 0);
+    }, "Verify that changing the focus removes the selection.");
+</script>
+
+<script>
+    test(function()
+    {
+        var textboxAccessible = accessibilityController.accessibleElementById("contenteditable-textbox");
+        var mainAccessible = accessibilityController.accessibleElementById("main");
+        var rootAccessible = accessibilityController.rootElement;
+        var line2Accessible = accessibilityController.accessibleElementById("contenteditable-line2");
+        var line2 = document.getElementById("contenteditable-line2");
+
+        // Select only the second line of the ARIA textbox, that is,
+        // the one found in the textarea.
+        line2.setSelectionRange(0, line2.textLength);
+
+        assert_equals(line2Accessible.selectionStart, 0);
+        assert_equals(line2Accessible.selectionEnd, line2.textLength);
+
+        // Unlike for other elements, offsets in text fields should be
+        // reported from the beginning of the field and not from the top of the
+        // container on which the API was called.
+        assert_equals(textboxAccessible.selectionStart, 0);
+        assert_equals(textboxAccessible.selectionEnd, line2.textLength);
+
+        assert_equals(mainAccessible.selectionStart, 0);
+        assert_equals(mainAccessible.selectionEnd, line2.textLength);
+
+        assert_equals(rootAccessible.selectionAnchorObject, line2Accessible);
+        assert_equals(rootAccessible.selectionAnchorOffset, 0);
+        assert_equals(rootAccessible.selectionFocusObject, line2Accessible);
+        assert_equals(rootAccessible.selectionFocusOffset, line2.textLength);
+    }, "The effects of the textarea.setSelectionRange method should be reflected in the accessibility API.");
+</script>
+
+<script>
+    test(function()
+    {
+        var textboxAccessible = accessibilityController.accessibleElementById("contenteditable-textbox");
+        var mainAccessible = accessibilityController.accessibleElementById("main");
+        var rootAccessible = accessibilityController.rootElement;
+        var line2Accessible = accessibilityController.accessibleElementById("contenteditable-line2");
+
+        // Selection can also be set via the accessibility API.
+        line2Accessible.setSelectedTextRange(2, 3);
+
+        assert_equals(line2Accessible.selectionStart, 2);
+        assert_equals(line2Accessible.selectionEnd, 5);
+
+        assert_equals(textboxAccessible.selectionStart, 2);
+        assert_equals(textboxAccessible.selectionEnd, 5);
+
+        assert_equals(mainAccessible.selectionStart, 2);
+        assert_equals(mainAccessible.selectionEnd, 5);
+
+        assert_equals(rootAccessible.selectionAnchorObject, line2Accessible);
+        assert_equals(rootAccessible.selectionAnchorOffset, 2);
+        assert_equals(rootAccessible.selectionFocusObject, line2Accessible);
+        assert_equals(rootAccessible.selectionFocusOffset, 5);
+    }, "Test the setSelectedTextRange accessibility API function.");
+</script>
+
+<script>
+    test(function()
+    {
+        var selection = window.getSelection();
+        var selectionRange = document.createRange();
+        var mainAccessible = accessibilityController.accessibleElementById("main");
+        var rootAccessible = accessibilityController.rootElement;
+
+        var contenteditable = document.getElementById("contenteditable-div");
+        var line1 = document.getElementById("paragraph1").firstChild;
+        var line2 = document.getElementById("paragraph1").lastChild;
+        var line3 = document.getElementById("paragraph2").firstChild;
+        var contenteditableLines = [ line1, line2, line3 ];
+        var contenteditableAccessible = accessibilityController.accessibleElementById("contenteditable-div");
+
+        // Select entire lines in the second content editable.
+        for (var testCase = 0; testCase < 2; ++testCase) {
+
+            for (var i = 0; i < contenteditableLines.length; ++i) {
+                var start = i * 7;
+                var end = i * 7 + 6;
+                if (i == 2) {
+                    // Paragraphs have a blank line between them.
+                    ++start;
+                    ++end;
+                }
+
+                selectionRange.selectNode(contenteditableLines[i]);
+                selection.removeAllRanges();
+                selection.addRange(selectionRange);
+
+                assert_equals(contenteditableAccessible.selectionStart, start);
+                assert_equals(contenteditableAccessible.selectionEnd, end);
+
+                assert_equals(mainAccessible.selectionStart, start + 9);
+                assert_equals(mainAccessible.selectionEnd, end + 9);
+
+                assert_equals(rootAccessible.selectionAnchorObject.name,
+                    contenteditableLines[i].textContent);
+                assert_equals(rootAccessible.selectionAnchorOffset, 0);
+                assert_equals(rootAccessible.selectionFocusObject.name,
+                    contenteditableLines[i].textContent);
+                assert_equals(rootAccessible.selectionFocusOffset, 6);
+            }
+
+            // For a sanity check, try the same test with contenteditable="false".
+            contenteditable.contenteditable = false;
+        }
+
+    }, "The effects of the selectNode method should be reflected in the accessibility API.");
+</script>
+
+<script>
+    if (window.testRunner)
+        document.getElementById("main").style.display = "none";;
+</script>

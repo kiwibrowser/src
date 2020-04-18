@@ -1,0 +1,80 @@
+<!-- Copyright 2016 The Chromium Authors. All rights reserved.
+     Use of this source code is governed by a BSD-style license that can be
+     found in the LICENSE file. -->
+
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-styles/color.html">
+
+<!--
+  Simple OOBE dialog which should be used for OOBE UI elements.
+  It has correct size and padding. It can display top left icon, and has
+  three parts: header (which should have <h1>title</h1>), footer (content part),
+  and optional buttons container at the bottom.
+
+  When shown (i.e. when outside container calls .show()):
+    1. If this dialog has tags in class "focus-on-show", the first one will be
+  focused.
+    2. 'show-dialog' is fired.
+
+  Example:
+    <link rel="stylesheet" href="oobe_dialog_parameters.css">
+    <oobe-dialog on-show-dialog="onTestDialogShown_" has-buttons>
+      <iron-icon ... class="oobe-icon">
+      <div class="header">
+        <h1 class="title">Title</h1>
+        <div class="subtitle">Subtitle</div>
+      </div>
+      <div class="footer">
+        <div class="focus-on-show">...</div>
+        ...
+      </div>
+      <div class="bottom-buttons">
+        ...
+      </div>
+    </oobe-dialog>
+
+  Add class |header| to all which you want to go inside the header.  Similar
+  with clases |footer|, |bottom-buttons|.
+
+  For single-DPI image |oobe-icon| class should be used. To select between two
+  images of different DPI, |oobe-icon-1x| and |oobe-icon-2x| should be used
+  instead. For example:
+
+      <iron-icon icon="icon1" ... class="oobe-icon oobe-icon-1x">
+      <iron-icon icon-"icon2" ... class="oobe-icon oobe-icon-2x">
+
+  |bottom-buttons| block is shown only if |has-buttons| attribute is set.
+
+  Attributes:
+    no-header - hides header
+    no-footer-padding - disables footer padding.
+    has-buttons - shows bottom buttons menu
+
+  I.e. [no-header no-footer-padding] will make the footer occupy all the dialog
+  space.
+-->
+<dom-module id="oobe-dialog">
+  <template>
+    <link rel="stylesheet" href="oobe_dialog_host.css">
+    <link rel="stylesheet" href="oobe_dialog.css">
+    <link rel="stylesheet" href="oobe_flex_layout.css">
+    <div id="header-container" hidden="[[noHeader]]" android$="[[android]]">
+      <div class="oobe-icon-div">
+        <content select=".oobe-icon"></content>
+      </div>
+      <div class="oobe-header layout vertical">
+        <content select=".header"></content>
+      </div>
+    </div>
+    <div id="footer-container" noFooterPadding$="[[noFooterPadding]]"
+        class="flex layout vertical">
+      <content select=".footer"></content>
+    </div>
+    <template is="dom-if" if="[[hasButtons]]">
+      <div id="oobe-bottom" hideShadow$="[[hideShadow]]" android$="[[android]]"
+          class="layout horizontal center">
+        <content select=".bottom-buttons"></content>
+      </div>
+    </template>
+  </template>
+</dom-module>
+

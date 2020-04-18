@@ -1,0 +1,70 @@
+# -*- python -*-
+# Copyright (c) 2013 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+def AddLibcTest(env, src, golden_file=None, test_suffix='', is_broken=False,
+                compile_env=None, link_env=None, EXTRA_LIBS=[]):
+  """Convenience function for adding new tests.
+
+  src: name of the source file for the test. The test name is derived from it
+       by removing the extension and appending the optional test_suffix.
+  golden_file: golden file for stdout, if applicable
+  is_broken: is the test expected to be broken?
+  compile_env, link_env: if passed, these are used as the envs for compiling and
+       linking the code, respectively.
+  EXTRA_LIBS: extra libraries to provide during linking.
+  """
+  name = src.split('.')[0]
+  name += test_suffix
+
+  compile_env = compile_env or env
+  link_env = link_env or env
+
+  obj = compile_env.ComponentObject(name, src)
+  nexe = link_env.ComponentProgram(
+      name, obj, EXTRA_LIBS=['${NONIRT_LIBS}'] + EXTRA_LIBS)
+  node = env.CommandSelLdrTestNacl(name + '.out',
+                                   nexe,
+                                   stdout_golden=golden_file)
+  env.AddNodeToTestSuite(node,
+                         ['toolchain_tests', 'small_tests'],
+                         'run_' + name + '_test',
+                         is_broken=is_broken)
+
+for envtype in ['builtin', 'nobuiltin']:
+  uenv = env.Clone()
+  # Prevent the compiler from replacing or modifying calls to memcpy et al. so
+  # we actually test the libc imlementation.
+  if envtype == 'nobuiltin':
+    uenv.Append(CFLAGS=['-fno-builtin'])
+  AddLibcTest(uenv, 'memcpy_move_set.c', test_suffix='_' + envtype,
+              golden_file=env.File('memcpy_move_set.stdout'))
+
+AddLibcTest(env, 'malloc_realloc_calloc_free.c')
+
+AddLibcTest(env, 'inet.c')
+AddLibcTest(env, 'uname.c')
+AddLibcTest(env, 'snprintf.c', golden_file=env.File('snprintf.stdout'))
+AddLibcTest(env, 'strtoll.c')
+AddLibcTest(env, 'strtoull.c')
+AddLibcTest(env, 'timezone.c')
+AddLibcTest(env, 'wcstoll.c', is_broken=env.Bit('nacl_glibc'))
+
+AddLibcTest(env, 'iconv.c', is_broken=env.Bit('nacl_glibc'))
+
+# Test that using link-time optimization does not convert calls to
+# library functions that were never linked in.
+if env.Bit('bitcode'):
+  unopt_env = env.Clone()
+  unopt_env.Append(CFLAGS=['-O0'])
+  unopt_env.Append(CCFLAGS=['-O0'])
+  opt_env = env.Clone()
+  opt_env.Append(CFLAGS=['-O3'])
+  opt_env.Append(CCFLAGS=['-O3'])
+  opt_env.Append(LINKFLAGS=['-O3'])
+  AddLibcTest(env, 'printf_to_puts.c', compile_env=unopt_env, link_env=opt_env)
+
+AddLibcTest(env, 'posix_memalign.c')

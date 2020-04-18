@@ -1,0 +1,28 @@
+# Copyright 2010 The Native Client Authors.  All rights reserved.  Use
+# of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This config file is a shell script which can be used to remap where autoconf
+# stores cached information, such that even if the output directory is clobbered
+# the cache can be retained. This is particularly helpful for cygwin, which
+# takes a long time to generate configuration information.
+#
+# This file can be used by setting:
+#   CONFIG_SITE=`pwd`/global_config_cache
+#   GLOBAL_CONFIG_CACHE=/nacl_config_cache
+
+# Handle /dev/null by assuming a local config.
+if test "$cache_file" = /dev/null; then
+  cache_file=./config.cache
+fi
+
+# Find the absolute path to the default cache file, and its containing dir.
+cache_file_dir=$(dirname "$cache_file")
+cache_file_dir_abs=$(cd "$cache_file_dir" ; pwd)
+cache_file_base=$(basename "$cache_file")
+cache_file_abs="$cache_file_dir_abs/$cache_file_base"
+
+# Create a place for the cache file in a global location.
+mkdir -p "$GLOBAL_CONFIG_CACHE/$cache_file_dir_abs"
+# Set the cache file to a global location.
+cache_file="$GLOBAL_CONFIG_CACHE/$cache_file_abs"

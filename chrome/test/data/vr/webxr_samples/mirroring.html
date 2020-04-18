@@ -1,0 +1,177 @@
+<!doctype html>
+<!--
+Copyright 2018 The Immersive Web Community Group
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-->
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1, user-scalable=no'>
+    <meta name='mobile-web-app-capable' content='yes'>
+    <meta name='apple-mobile-web-app-capable' content='yes'>
+
+    <title>Mirroring</title>
+
+    <link href='css/common.css' rel='stylesheet'></link>
+
+    <script src='js/cottontail/build/cottontail.js'></script>
+
+    <script src='js/webxr-button.js'></script>
+  </head>
+  <body>
+    <header>
+      <details open>
+        <summary>Mirroring</summary>
+        <p>
+          This sample demonstrates how to present a simple WebGL scene to a
+          XRDevice while mirroring to a context. The scene is not rendered to
+          the page prior to XR presentation. Mirroring has no effect on mobile
+          or standalone devices.
+          <a class="back" href="./">Back</a>
+        </p>
+      </details>
+    </header>
+    <main style='text-align: center;'>
+      <p>Click 'Enter XR' to see content</p>
+    </main>
+    <script>
+      (function () {
+      'use strict';
+
+      // XR globals.
+      let xrButton = null;
+      let xrFrameOfRef = null;
+
+      // WebGL scene globals.
+      let gl = null;
+      let renderer = null;
+      let scene = new Scene();
+      scene.addNode(new Gltf2Node({url: 'media/gltf/space/space.gltf'}));
+      scene.addNode(new SkyboxNode({url: 'media/textures/milky-way-4k.png'}));
+
+      function initXR() {
+        xrButton = new XRDeviceButton({
+          onRequestSession: onRequestSession,
+          onEndSession: onEndSession
+        });
+        document.querySelector('header').appendChild(xrButton.domElement);
+
+        if (navigator.xr) {
+          navigator.xr.requestDevice().then((device) => {
+            device.supportsSession({exclusive: true}).then(() => {
+              xrButton.setDevice(device);
+            });
+          });
+        }
+      }
+
+      function onRequestSession(device) {
+        // In order to mirror an exclusive session, we must provide
+        // an XRPresentationContext, which indicates the canvas that will
+        // contain results of the session's rendering.
+        let mirrorCanvas = document.createElement('canvas');
+        let ctx = mirrorCanvas.getContext('xrpresent');
+        mirrorCanvas.setAttribute('id', 'mirror-canvas');
+
+        // Add the canvas to the document.
+        document.body.appendChild(mirrorCanvas);
+
+        // Providing an outputContext when requesting an exclusive session
+        // indicates that it should be used as the mirror destination.
+        device.requestSession({
+          exclusive: true,
+          outputContext: ctx
+        }).then(onSessionStarted);
+      }
+
+      function onSessionStarted(session) {
+        xrButton.setSession(session);
+
+        session.addEventListener('end', onSessionEnded);
+
+        if (!gl) {
+          gl = createWebGLContext({
+            compatibleXRDevice: session.device
+          });
+
+          renderer = new Renderer(gl);
+
+          scene.setRenderer(renderer);
+        }
+
+        session.baseLayer = new XRWebGLLayer(session, gl);
+
+        // Set the mirroring context to be the same size as one eye on the
+        // layer context.
+        let outputCanvas = document.querySelector('#mirror-canvas');
+        outputCanvas.width = session.baseLayer.framebufferWidth / 2;
+        outputCanvas.height = session.baseLayer.framebufferHeight;
+
+        session.requestFrameOfReference('eyeLevel').then((frameOfRef) => {
+          xrFrameOfRef = frameOfRef;
+
+          session.requestAnimationFrame(onXRFrame);
+        });
+      }
+
+      function onEndSession(session) {
+        session.end();
+      }
+
+      function onSessionEnded(event) {
+        xrButton.setSession(null);
+
+        gl = null;
+
+        // Remove the injected mirroring canvas from the DOM.
+        document.body.removeChild(document.querySelector('#mirror-canvas'));
+      }
+
+      function onXRFrame(t, frame) {
+        let session = frame.session;
+
+        scene.startFrame();
+
+        session.requestAnimationFrame(onXRFrame);
+
+        let pose = frame.getDevicePose(xrFrameOfRef);
+
+        if (pose) {
+          gl.bindFramebuffer(gl.FRAMEBUFFER, session.baseLayer.framebuffer);
+          gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+          for (let view of frame.views) {
+            let viewport = session.baseLayer.getViewport(view);
+            gl.viewport(viewport.x, viewport.y,
+                        viewport.width, viewport.height);
+
+            scene.draw(view.projectionMatrix, pose.getViewMatrix(view));
+          }
+        }
+
+        // Per-frame scene teardown. Nothing WebXR specific here.
+        scene.endFrame();
+      }
+
+      // Start the XR application.
+      initXR();
+      })();
+    </script>
+  </body>
+</html>

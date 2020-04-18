@@ -1,0 +1,30 @@
+<!DOCTYPE HTML>
+<title>Verify that MediaStreamTracks created while dispatching MediaStreamSource
+ events do not crash.</title>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script>
+  async_test(test => {
+    navigator.mediaDevices.getUserMedia({audio:true, video: true})
+      .then(test.step_func(stream => {
+        // |track| may be any of the audio or video tracks.
+        var track = stream.getTracks()[0];
+        assert_equals(track.readyState, "live");
+        track.onended = test.unreached_func("ended event should not be fired.");
+        track.onmute = test.step_func(() => {
+          assert_equals(track.readyState, "live");
+          track.clone();
+          track.stop();
+          assert_equals(track.readyState, "ended");
+          track.clone();
+
+          // Use a timeout to detect a misfire of the ended event.
+          test.step_timeout(test.step_func_done(() => {
+            assert_equals(track.readyState, "ended");
+          }));
+        });
+        track.enabled = false;
+      }))
+      .catch(test.unreached_func("getUserMedia failed"));
+  });
+</script>

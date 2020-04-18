@@ -1,0 +1,136 @@
+# -*- python -*-
+# Copyright (c) 2013 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# This test only tests PNaCl's nonpexe mode with native object files/archives
+if not env.Bit('bitcode') or env.Bit('pnacl_generate_pexe'):
+  Return()
+
+# This file fails with "--mode=dbg-host,nacl,nacl_irt_test
+# pnacl_generate_pexe=0 bitcode=1", so disable it for that case.
+# TODO(uekawa): Investigate why this fails in that case and re-enable.
+if env.Bit('tests_use_irt'):
+  Return()
+
+tests = []
+bc_env = env.Clone()
+bc_env.Replace(CCFLAGS=[], LINKFLAGS=[])
+bc_env.Append(EXTRA_LIBS=['${NONIRT_LIBS}'])
+native_env = env.Clone()
+native_env.Replace(CCFLAGS=[], LINKFLAGS=[])
+native_env.PNaClForceNative()
+native_env.Append(EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+# The main object depends on symbols found in lib a and lib b (sym_a and sym_b).
+# Lib a also depends on a sym_b2 which is also in lib b, but in a different
+# object than sym_b. (This means that putting b first will fail unless they are
+# grouped)
+
+bc_a = bc_env.ComponentObject('sym_a', ['sym_a.c'])
+bc_b = bc_env.ComponentObject('sym_b', ['sym_b.c'])
+bc_b2 = bc_env.ComponentObject('sym_b2', ['sym_b2.c'])
+bclib_a = bc_env.Replicate("${LIB_DIR}",
+                           bc_env.ComponentLibrary('bcsym_a', [bc_a]))
+bclib_b = bc_env.Replicate("${LIB_DIR}",
+                           bc_env.ComponentLibrary('bcsym_b', [bc_b, bc_b2]))
+bc_main = bc_env.ComponentObject('main', ['main.c'])
+
+native_a = native_env.ComponentObject('sym_a', ['sym_a.c'])
+native_b = native_env.ComponentObject('sym_b', ['sym_b.c'])
+native_b2 = native_env.ComponentObject('sym_b2', ['sym_b2.c'])
+nativelib_a = native_env.Replicate(
+    "${LIB_DIR}",
+    native_env.ComponentLibrary('nativesym_a', [native_a]))
+nativelib_b = native_env.Replicate(
+    "${LIB_DIR}",
+    native_env.ComponentLibrary('nativesym_b', [native_b, native_b2]))
+native_main = native_env.ComponentObject('main', ['main.c'])
+
+
+# Test with both archives as bitcode
+both_env = native_env.Clone()
+# _LIBFLAGS is the internal scons variable that gets the libs flags like -lfoo.
+# Because it takes the LIBS and prepends -l to them, there is no way to insert
+# flags like -Wl,--start-group (also the LINKFLAGS come before the main object
+# so sneaking libs in there is no good either)
+both_env.Append(_LIBFLAGS=['-lbcsym_a', '-lbcsym_b'])
+# Because we can't properly put these libs into EXTRA_LIBS, we have to add them
+# to IMPLICIT_LIBS to make sure they get built.
+both_env.Append(IMPLICIT_LIBS=[bclib_a, bclib_b])
+tests.append(('archive_bitcode',
+              both_env.ComponentProgram('bitcode', [bc_main])))
+
+# Link one archive as native, one as bitcode
+mixed_env = native_env.Clone()
+mixed_env.Append(_LIBFLAGS=['-lbcsym_a', '-lnativesym_b'])
+mixed_env.Append(IMPLICIT_LIBS=[bclib_a, nativelib_b])
+tests.append(('archive_mixed',
+              mixed_env.ComponentProgram('mixed', [bc_main])))
+
+# Both archives are bitcode, in a group
+bcgroup_env = native_env.Clone()
+bcgroup_env.Append(_LIBFLAGS=['-Wl,--start-group',
+                              '-lbcsym_b', '-lbcsym_a',
+                              '-Wl,--end-group'])
+bcgroup_env.Append(IMPLICIT_LIBS=[bclib_a, bclib_b])
+tests.append(('archive_bitcode_group',
+              bcgroup_env.ComponentProgram('bitcode_group', [bc_main])))
+
+# One bitcode, one native, in a group
+mixedgroup_env = native_env.Clone()
+mixedgroup_env.Append(_LIBFLAGS=['-Wl,--start-group',
+                                 '-lbcsym_b', '-lnativesym_a',
+                                 '-Wl,--end-group'])
+mixedgroup_env.Append(IMPLICIT_LIBS=[bclib_b, nativelib_a])
+tests.append(('archive_mixed_group',
+              mixedgroup_env.ComponentProgram('mixed_group', [bc_main])))
+
+# One bitcode, one native, in a group (but switch which one is bitcode)
+mixedgroup_reverse_env = native_env.Clone()
+mixedgroup_reverse_env.Append(_LIBFLAGS=['-Wl,--start-group',
+                                         '-lnativesym_b', '-lbcsym_a',
+                                         '-Wl,--end-group'])
+mixedgroup_reverse_env.Append(IMPLICIT_LIBS=[bclib_a, nativelib_b])
+tests.append(('archive_mixed_group_reverse',
+              mixedgroup_reverse_env.ComponentProgram(
+                  'mixed_group_reverse', [bc_main])))
+
+# Link all as native
+nativegroup_env = native_env.Clone()
+nativegroup_env.Append(_LIBFLAGS=['-Wl,--start-group',
+                                  '-lnativesym_b', '-lnativesym_a',
+                                  '-Wl,--end-group'])
+nativegroup_env.Append(IMPLICIT_LIBS=[nativelib_a, nativelib_b])
+tests.append(('archive_native_group',
+              nativegroup_env.ComponentProgram(
+                  'native_group', [native_main])))
+
+
+
+# Test mixing bitcode and native objects with TLS
+tls_def_bc = bc_env.ComponentObject('tls_def', ['tls_def.c'])
+tls_use_bc = bc_env.ComponentObject('tls_use', ['tls_use.c'])
+tls_def_native = native_env.ComponentObject('tls_def', ['tls_def.c'])
+tls_use_native = native_env.ComponentObject('tls_use', ['tls_use.c'])
+
+tests.append(('tls_all_native',
+              native_env.ComponentProgram(
+                  'tls_all_native', [tls_def_native, tls_use_native])))
+
+tests.append(('tls_def_native',
+              native_env.ComponentProgram(
+                  'tls_def_native', [tls_def_native, tls_use_bc])))
+
+tests.append(('tls_use_native',
+              native_env.ComponentProgram(
+                  'tls_use_native', [tls_use_native, tls_def_bc])))
+
+
+for name, prog in tests:
+  node = env.CommandSelLdrTestNacl(name + '.out', prog)
+  env.AddNodeToTestSuite(node, ['small_tests', 'toolchain_tests',
+                                'nonpexe_tests'],
+                         'run_' + name + '_test')

@@ -1,0 +1,110 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_lazy_render/cr_lazy_render.html">
+<link rel="import" href="chrome://resources/cr_elements/hidden_style_css.html">
+<link rel="import" href="chrome://resources/html/event_tracker.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="../data/destination.html">
+<link rel="import" href="../data/destination_store.html">
+<link rel="import" href="../data/invitation_store.html">
+<link rel="import" href="../data/user_info.html">
+<link rel="import" href="button_css.html">
+<link rel="import" href="destination_dialog.html">
+<link rel="import" href="print_preview_shared_css.html">
+<link rel="import" href="throbber_css.html">
+<link rel="import" href="settings_section.html">
+<link rel="import" href="strings.html">
+
+<dom-module id="print-preview-destination-settings">
+  <template>
+    <style include="print-preview-shared button throbber cr-hidden-style">
+      :host button {
+        margin-top: 10px;
+      }
+
+      .throbber {
+        margin-top: 6px;
+      }
+
+      .destination-settings-box,
+      .throbber-container {
+        align-items: center;
+        display: flex;
+        min-height: 28px;
+        overflow: hidden;
+      }
+
+      .destination-icon {
+        -webkit-margin-end: 8px;
+        height: 24px;
+        vertical-align: middle;
+        width: 24px;
+      }
+
+      .destination-info-wrapper {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        overflow: hidden;
+        width: 100%;
+      }
+
+      .destination-info-wrapper > div,
+      .destination-throbber-name {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .destination-throbber-name,
+      .destination-name {
+        font-size: 110%;
+      }
+
+      .destination-location,
+      :host([stale_]) .destination-info-wrapper {
+        opacity: 0.4;
+      }
+    </style>
+    <print-preview-settings-section class="multirow-controls">
+      <span slot="title">$i18n{destinationLabel}</span>
+      <div slot="controls">
+        <div class="throbber-container" hidden="[[!loadingDestination_]]">
+          <div class="throbber"></div>
+          <div class="destination-throbber-name"></div>
+        </div>
+        <div class="destination-settings-box" hidden="[[loadingDestination_]]">
+          <img class="destination-icon"
+             src="[[destination.iconUrl]]" alt="">
+          <div class="destination-info-wrapper">
+            <div class="destination-name">[[destination.displayName]]</div>
+            <div class="destination-location">[[destination.hint]]</div>
+            <div class="destination-connection-status">
+              [[getStatusText_(destination.connectionStatusText,
+                  destination.shouldShowInvalidCertificateError)]]
+            </div>
+          </div>
+        </div>
+        <button
+          disabled$="[[shouldDisableButton_(destinationStore, disabled,
+                                            state)]]"
+          on-click="onChangeButtonClick_">
+          $i18n{changeDestination}
+        </button>
+      </div>
+    </print-preview-settings-section>
+    <cr-lazy-render id="destinationDialog">
+      <template>
+        <print-preview-destination-dialog
+            destination-store="[[destinationStore]]"
+            invitation-store="[[invitationStore]]"
+            recent-destinations="[[recentDestinations]]"
+            user-info="{{userInfo}}"
+            show-cloud-print-promo="{{showCloudPrintPromo_}}">
+        </print-preview-destination-dialog>
+      </template>
+    </cr-lazy-render>
+  </template>
+  <script src="destination_settings.js"></script>
+</dom-module>

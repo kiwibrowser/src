@@ -1,0 +1,880 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include <stddef.h>
+
+#include <string>
+
+#include "base/command_line.h"
+#include "base/files/file_path.h"
+#include "base/files/file_util.h"
+#include "base/lazy_instance.h"
+#include "base/macros.h"
+#include "base/path_service.h"
+#include "base/strings/utf_string_conversions.h"
+#include "base/test/bind_test_util.h"
+#include "base/threading/thread_restrictions.h"
+#include "build/build_config.h"
+#include "chrome/browser/background/background_mode_manager.h"
+#include "chrome/browser/browser_process.h"
+#include "chrome/browser/content_settings/cookie_settings_factory.h"
+#include "chrome/browser/defaults.h"
+#include "chrome/browser/infobars/infobar_service.h"
+#include "chrome/browser/prefs/session_startup_pref.h"
+#include "chrome/browser/profiles/profile.h"
+#include "chrome/browser/profiles/profile_impl.h"
+#include "chrome/browser/profiles/profile_manager.h"
+#include "chrome/browser/sessions/session_restore_test_helper.h"
+#include "chrome/browser/sessions/session_service_factory.h"
+#include "chrome/browser/sessions/session_service_test_helper.h"
+#include "chrome/browser/ui/browser.h"
+#include "chrome/browser/ui/browser_commands.h"
+#include "chrome/browser/ui/browser_list.h"
+#include "chrome/browser/ui/browser_window.h"
+#include "chrome/browser/ui/startup/startup_browser_creator.h"
+#include "chrome/browser/ui/tabs/tab_strip_model.h"
+#include "chrome/browser/ui/webui/md_history_ui.h"
+#include "chrome/common/buildflags.h"
+#include "chrome/common/pref_names.h"
+#include "chrome/common/url_constants.h"
+#include "chrome/test/base/in_process_browser_test.h"
+#include "chrome/test/base/ui_test_utils.h"
+#include "components/content_settings/core/browser/cookie_settings.h"
+#include "components/content_settings/core/common/content_settings.h"
+#include "components/infobars/core/confirm_infobar_delegate.h"
+#include "components/keep_alive_registry/keep_alive_types.h"
+#include "components/keep_alive_registry/scoped_keep_alive.h"
+#include "components/prefs/pref_service.h"
+#include "content/public/browser/web_contents.h"
+#include "content/public/common/url_constants.h"
+#include "content/public/test/browser_test_utils.h"
+#include "content/public/test/url_loader_interceptor.h"
+#include "net/base/upload_bytes_element_reader.h"
+#include "net/base/upload_data_stream.h"
+#include "net/url_request/url_request.h"
+#include "services/network/public/cpp/features.h"
+
+#if defined(OS_MACOSX)
+#include "base/mac/scoped_nsautorelease_pool.h"
+#endif
+
+namespace {
+
+const char kTestHeaders[] = "HTTP/1.1 200 OK\nContent-type: text/html\n\n";
+
+// We need to serve the test files so that PRE_Test and Test can access the same
+// page using the same URL. In addition, perceived security origin of the page
+// needs to stay the same, so e.g., redirecting the URL requests doesn't
+// work. (If we used a test server, the PRE_Test and Test would have separate
+// instances running on separate ports.)
+
+#if BUILDFLAG(ENABLE_BACKGROUND_MODE)
+class FakeBackgroundModeManager : public BackgroundModeManager {
+ public:
+  FakeBackgroundModeManager()
+      : BackgroundModeManager(
+            *base::CommandLine::ForCurrentProcess(),
+            &g_browser_process->profile_manager()->
+                GetProfileAttributesStorage()),
+        background_mode_active_(false) {}
+
+  void SetBackgroundModeActive(bool active) {
+    background_mode_active_ = active;
+  }
+
+  bool IsBackgroundModeActive() override { return background_mode_active_; }
+
+ private:
+  bool background_mode_active_;
+
+};
+#endif  // BUILDFLAG(ENABLE_BACKGROUND_MODE)
+
+}  // namespace
+
+class BetterSessionRestoreTest : public InProcessBrowserTest {
+ public:
+  BetterSessionRestoreTest()
+      : fake_server_address_("http://www.test.com/"),
+        test_path_("session_restore/"),
+        title_pass_(base::ASCIIToUTF16("PASS")),
+        title_storing_(base::ASCIIToUTF16("STORING")),
+        title_error_write_failed_(base::ASCIIToUTF16("ERROR_WRITE_FAILED")),
+        title_error_empty_(base::ASCIIToUTF16("ERROR_EMPTY")) {
+    // Set up the URL request filtering.
+    test_files_.push_back("common.js");
+    test_files_.push_back("cookies.html");
+    test_files_.push_back("local_storage.html");
+    test_files_.push_back("post.html");
+    test_files_.push_back("post_with_password.html");
+    test_files_.push_back("session_cookies.html");
+    test_files_.push_back("session_storage.html");
+    test_files_.push_back("subdomain_cookies.html");
+
+    CHECK(base::PathService::Get(base::DIR_SOURCE_ROOT, &test_file_dir_));
+    test_file_dir_ =
+        test_file_dir_.AppendASCII("chrome/test/data").AppendASCII(test_path_);
+
+    // We are adding a URLLoaderInterceptor here, instead of in
+    // SetUpOnMainThread(), because during a session restore the restored tab
+    // comes up before SetUpOnMainThread().  Note that at this point, we do not
+    // have a profile.
+    url_loader_interceptor_ = std::make_unique<content::URLLoaderInterceptor>(
+        base::BindLambdaForTesting(
+            [&](content::URLLoaderInterceptor::RequestParams* params) {
+              std::string path = params->url_request.url.path();
+              std::string path_prefix = std::string("/") + test_path_;
+              for (auto& it : test_files_) {
+                std::string file = path_prefix + it;
+                if (path == file) {
+                  base::ScopedAllowBlockingForTesting allow_io;
+                  base::FilePath file_path = test_file_dir_.AppendASCII(it);
+                  std::string contents;
+                  CHECK(base::ReadFileToString(file_path, &contents));
+
+                  content::URLLoaderInterceptor::WriteResponse(
+                      kTestHeaders, contents, params->client.get());
+
+                  return true;
+                }
+              }
+              if (path == path_prefix + "posted.php") {
+                last_upload_bytes_.clear();
+                if (params->url_request.request_body) {
+                  auto* elements = params->url_request.request_body->elements();
+                  DCHECK_EQ(elements->size(), 1u);
+                  auto& element = (*elements)[0];
+                  DCHECK_EQ(element.type(), network::DataElement::TYPE_BYTES);
+                  last_upload_bytes_ =
+                      std::string(element.bytes(), element.length());
+                }
+                content::URLLoaderInterceptor::WriteResponse(
+                    kTestHeaders,
+                    "<html><head><title>PASS</title></head><body>Data posted"
+                    "</body></html>",
+                    params->client.get());
+                return true;
+              }
+              return false;
+            }));
+  }
+
+ protected:
+  void SetUpOnMainThread() override {
+    SessionServiceTestHelper helper(
+        SessionServiceFactory::GetForProfile(browser()->profile()));
+    helper.SetForceBrowserNotAliveWithNoWindows(true);
+    helper.ReleaseService();
+#if BUILDFLAG(ENABLE_BACKGROUND_MODE)
+    g_browser_process->set_background_mode_manager_for_test(
+        std::unique_ptr<BackgroundModeManager>(new FakeBackgroundModeManager));
+#endif  //  BUILDFLAG(ENABLE_BACKGROUND_MODE)
+  }
+
+  void TearDownOnMainThread() override { url_loader_interceptor_.reset(); }
+
+  void StoreDataWithPage(const std::string& filename) {
+    StoreDataWithPage(browser(), filename);
+  }
+
+  void StoreDataWithPage(Browser* browser, const std::string& filename) {
+    content::WebContents* web_contents =
+        browser->tab_strip_model()->GetActiveWebContents();
+    content::TitleWatcher title_watcher(web_contents, title_storing_);
+    title_watcher.AlsoWaitForTitle(title_pass_);
+    title_watcher.AlsoWaitForTitle(title_error_write_failed_);
+    title_watcher.AlsoWaitForTitle(title_error_empty_);
+    ui_test_utils::NavigateToURL(
+        browser, GURL(fake_server_address_ + test_path_ + filename));
+    base::string16 final_title = title_watcher.WaitAndGetTitle();
+    EXPECT_EQ(title_storing_, final_title);
+  }
+
+  void NavigateAndCheckStoredData(const std::string& filename) {
+    NavigateAndCheckStoredData(browser(), filename);
+  }
+
+  void NavigateAndCheckStoredData(Browser* browser,
+                                  const std::string& filename) {
+    // Navigate to a page which has previously stored data; check that the
+    // stored data can be accessed.
+    content::WebContents* web_contents =
+        browser->tab_strip_model()->GetActiveWebContents();
+    content::TitleWatcher title_watcher(web_contents, title_pass_);
+    title_watcher.AlsoWaitForTitle(title_storing_);
+    title_watcher.AlsoWaitForTitle(title_error_write_failed_);
+    title_watcher.AlsoWaitForTitle(title_error_empty_);
+    ui_test_utils::NavigateToURL(
+        browser, GURL(fake_server_address_ + test_path_ + filename));
+    base::string16 final_title = title_watcher.WaitAndGetTitle();
+    EXPECT_EQ(title_pass_, final_title);
+  }
+
+  void CheckReloadedPageRestored() {
+    CheckTitle(browser(), title_pass_);
+  }
+
+  void CheckReloadedPageRestored(Browser* browser) {
+    CheckTitle(browser, title_pass_);
+  }
+
+  void CheckReloadedPageNotRestored() {
+    CheckReloadedPageNotRestored(browser());
+  }
+
+  void CheckReloadedPageNotRestored(Browser* browser) {
+    CheckTitle(browser, title_storing_);
+  }
+
+  void CheckTitle(Browser* browser, const base::string16& expected_title) {
+    content::WebContents* web_contents =
+        browser->tab_strip_model()->GetWebContentsAt(0);
+    content::TitleWatcher title_watcher(web_contents, expected_title);
+    title_watcher.AlsoWaitForTitle(title_pass_);
+    title_watcher.AlsoWaitForTitle(title_storing_);
+    title_watcher.AlsoWaitForTitle(title_error_write_failed_);
+    title_watcher.AlsoWaitForTitle(title_error_empty_);
+    // It's possible that the title was already the right one before
+    // title_watcher was created.
+    base::string16 first_title = web_contents->GetTitle();
+    if (first_title != title_pass_ &&
+        first_title != title_storing_ &&
+        first_title != title_error_write_failed_ &&
+        first_title != title_error_empty_) {
+      base::string16 final_title = title_watcher.WaitAndGetTitle();
+      EXPECT_EQ(expected_title, final_title);
+    } else {
+      EXPECT_EQ(expected_title, first_title);
+    }
+  }
+
+  // Did the last intercepted upload data contain |search_string|?
+  // This method is not thread-safe.  It's called on the UI thread, though
+  // the intercept takes place on the IO thread.  It must not be called while an
+  // upload is in progress.
+  bool DidLastUploadContain(const std::string& search_string) {
+    return last_upload_bytes_.find(search_string) != std::string::npos;
+  }
+
+  void PostFormWithPage(const std::string& filename, bool password_present) {
+    content::WebContents* web_contents =
+        browser()->tab_strip_model()->GetActiveWebContents();
+    content::TitleWatcher title_watcher(web_contents, title_pass_);
+    ui_test_utils::NavigateToURL(
+        browser(), GURL(fake_server_address_ + test_path_ + filename));
+    base::string16 final_title = title_watcher.WaitAndGetTitle();
+    EXPECT_EQ(title_pass_, final_title);
+    EXPECT_TRUE(DidLastUploadContain("posted-text"));
+    EXPECT_TRUE(DidLastUploadContain("text-entered"));
+    if (password_present) {
+      EXPECT_TRUE(DidLastUploadContain("posted-password"));
+      EXPECT_TRUE(DidLastUploadContain("password-entered"));
+    }
+  }
+
+  void CheckFormRestored(bool text_present, bool password_present) {
+    CheckFormRestored(browser(), text_present, password_present);
+  }
+
+  void CheckFormRestored(
+      Browser* browser, bool text_present, bool password_present) {
+    CheckReloadedPageRestored(browser);
+    EXPECT_EQ(text_present, DidLastUploadContain("posted-text"));
+    EXPECT_EQ(text_present, DidLastUploadContain("text-entered"));
+    EXPECT_EQ(password_present, DidLastUploadContain("posted-password"));
+    EXPECT_EQ(password_present, DidLastUploadContain("password-entered"));
+  }
+
+  virtual Browser* QuitBrowserAndRestore(Browser* browser,
+                                         bool close_all_windows) {
+    Profile* profile = browser->profile();
+
+    ScopedKeepAlive test_keep_alive(KeepAliveOrigin::PANEL_VIEW,
+                                    KeepAliveRestartOption::DISABLED);
+
+    // Close the browser.
+    if (close_all_windows)
+      CloseAllBrowsers();
+    else
+      CloseBrowserSynchronously(browser);
+
+    SessionServiceTestHelper helper;
+    helper.SetService(
+        SessionServiceFactory::GetForProfileForSessionRestore(profile));
+    helper.SetForceBrowserNotAliveWithNoWindows(true);
+    helper.ReleaseService();
+
+    // Create a new window, which should trigger session restore.
+    ui_test_utils::BrowserAddedObserver window_observer;
+    chrome::NewEmptyWindow(profile);
+    Browser* new_browser = window_observer.WaitForSingleNewBrowser();
+
+    return new_browser;
+  }
+
+  std::string fake_server_address() {
+    return fake_server_address_;
+  }
+
+  std::string test_path() {
+    return test_path_;
+  }
+
+#if BUILDFLAG(ENABLE_BACKGROUND_MODE)
+  void EnableBackgroundMode() {
+    static_cast<FakeBackgroundModeManager*>(
+        g_browser_process->background_mode_manager())->
+        SetBackgroundModeActive(true);
+  }
+
+  void DisableBackgroundMode() {
+    static_cast<FakeBackgroundModeManager*>(
+        g_browser_process->background_mode_manager())->
+        SetBackgroundModeActive(false);
+  }
+#endif  // BUILDFLAG(ENABLE_BACKGROUND_MODE)
+
+ private:
+  std::string last_upload_bytes_;
+  const std::string fake_server_address_;
+  std::vector<std::string> test_files_;
+  base::FilePath test_file_dir_;
+  const std::string test_path_;
+  const base::string16 title_pass_;
+  const base::string16 title_storing_;
+  const base::string16 title_error_write_failed_;
+  const base::string16 title_error_empty_;
+
+  std::unique_ptr<content::URLLoaderInterceptor> url_loader_interceptor_;
+
+  DISALLOW_COPY_AND_ASSIGN(BetterSessionRestoreTest);
+};
+
+class ContinueWhereILeftOffTest : public BetterSessionRestoreTest {
+ public:
+  ContinueWhereILeftOffTest() { }
+
+  void SetUpOnMainThread() override {
+    BetterSessionRestoreTest::SetUpOnMainThread();
+    SessionStartupPref::SetStartupPref(
+        browser()->profile(), SessionStartupPref(SessionStartupPref::LAST));
+  }
+
+ protected:
+  Browser* QuitBrowserAndRestore(Browser* browser,
+                                 bool close_all_windows) override {
+    SessionRestoreTestHelper session_restore_observer;
+    Browser* new_browser = BetterSessionRestoreTest::QuitBrowserAndRestore(
+        browser, close_all_windows);
+    session_restore_observer.Wait();
+    return new_browser;
+  }
+
+  DISALLOW_COPY_AND_ASSIGN(ContinueWhereILeftOffTest);
+};
+
+IN_PROC_BROWSER_TEST_F(ContinueWhereILeftOffTest, PRE_SessionCookies) {
+  // Set the startup preference to "continue where I left off" and visit a page
+  // which stores a session cookie.
+  StoreDataWithPage("session_cookies.html");
+  content::EnsureCookiesFlushed(browser()->profile());
+}
+
+IN_PROC_BROWSER_TEST_F(ContinueWhereILeftOffTest, SessionCookies) {
+  // The browsing session will be continued; just wait for the page to reload
+  // and check the stored data.
+  CheckReloadedPageRestored();
+}
+
+IN_PROC_BROWSER_TEST_F(ContinueWhereILeftOffTest, PRE_SessionStorage) {
+  StoreDataWithPage("session_storage.html");
+}
+
+IN_PROC_BROWSER_TEST_F(ContinueWhereILeftOffTest, SessionStorage) {
+  CheckReloadedPageRestored();
+}
+
+IN_PROC_BROWSER_TEST_F(ContinueWhereILeftOffTest,
+                       PRE_PRE_LocalStorageClearedOnExit) {
+  StoreDataWithPage("local_storage.html");
+}
+
+IN_PROC_BROWSER_TEST_F(ContinueWhereILeftOffTest,
+                       PRE_LocalStorageClearedOnExit) {
+  // Normally localStorage is restored.
+  CheckReloadedPageRestored();
+  // ... but not if it's set to clear on exit.
+  CookieSettingsFactory::GetForProfile(browser()->profile())
+      ->SetDefaultCookieSetting(CONTENT_SETTING_SESSION_ONLY);
+}
+
+// Crashes on Mac and Windows. http://crbug.com/656211
+#if defined(OS_MACOSX) || defined(OS_WIN)
+#define MAYBE_LocalStorageClearedOnExit DISABLED_LocalStorageClearedOnExit
+#else
+#define MAYBE_LocalStorageClearedOnExit LocalStorageClearedOnExit
+#endif
+IN_PROC_BROWSER_TEST_F(ContinueWhereILeftOffTest,
+                       MAYBE_LocalStorageClearedOnExit) {
+  CheckReloadedPageNotRestored();
+}
+
+IN_PROC_BROWSER_TEST_F(ContinueWhereILeftOffTest,
+                       PRE_PRE_CookiesClearedOnExit) {
+  StoreDataWithPage("cookies.html");
+}
+
+IN_PROC_BROWSER_TEST_F(ContinueWhereILeftOffTest, PRE_CookiesClearedOnExit) {
+  // Normally cookies are restored.
+  CheckReloadedPageRestored();
+  // ... but not if the content setting is set to clear on exit.
+  CookieSettingsFactory::GetForProfile(browser()->profile())
+      ->SetDefaultCookieSetting(CONTENT_SETTING_SESSION_ONLY);
+}
+
+// Flaky on Mac. http://crbug.com/656211.
+#if defined(OS_MACOSX)
+#define MAYBE_CookiesClearedOnExit DISABLED_CookiesClearedOnExit
+#else
+#define MAYBE_CookiesClearedOnExit CookiesClearedOnExit
+#endif
+IN_PROC_BROWSER_TEST_F(ContinueWhereILeftOffTest, MAYBE_CookiesClearedOnExit) {
+  CheckReloadedPageNotRestored();
+}
+
+IN_PROC_BROWSER_TEST_F(ContinueWhereILeftOffTest, PRE_Post) {
+  PostFormWithPage("post.html", false);
+}
+
+IN_PROC_BROWSER_TEST_F(ContinueWhereILeftOffTest, Post) {
+  CheckFormRestored(true, false);
+}
+
+IN_PROC_BROWSER_TEST_F(ContinueWhereILeftOffTest, PRE_PostWithPassword) {
+  PostFormWithPage("post_with_password.html", true);
+}
+
+IN_PROC_BROWSER_TEST_F(ContinueWhereILeftOffTest, PostWithPassword) {
+  CheckReloadedPageRestored();
+  // The form data contained passwords, so it's removed completely.
+  CheckFormRestored(false, false);
+}
+
+IN_PROC_BROWSER_TEST_F(ContinueWhereILeftOffTest, SessionCookiesBrowserClose) {
+  // Set the startup preference to "continue where I left off" and visit a page
+  // which stores a session cookie.
+  StoreDataWithPage("session_cookies.html");
+  Browser* new_browser = QuitBrowserAndRestore(browser(), false);
+  // The browsing session will be continued; just wait for the page to reload
+  // and check the stored data.
+  CheckReloadedPageRestored(new_browser);
+}
+
+// Test that leaving a popup open will not prevent session restore.
+IN_PROC_BROWSER_TEST_F(ContinueWhereILeftOffTest,
+                       SessionCookiesBrowserCloseWithPopupOpen) {
+  // Set the startup preference to "continue where I left off" and visit a page
+  // which stores a session cookie.
+  StoreDataWithPage("session_cookies.html");
+  Browser* popup = new Browser(
+      Browser::CreateParams(Browser::TYPE_POPUP, browser()->profile(), true));
+  popup->window()->Show();
+
+  Browser* new_browser = QuitBrowserAndRestore(browser(), false);
+  // The browsing session will be continued; just wait for the page to reload
+  // and check the stored data.
+  CheckReloadedPageRestored(new_browser);
+}
+
+IN_PROC_BROWSER_TEST_F(ContinueWhereILeftOffTest, PostBrowserClose) {
+  PostFormWithPage("post.html", false);
+  Browser* new_browser = QuitBrowserAndRestore(browser(), false);
+  CheckFormRestored(new_browser, true, false);
+}
+
+IN_PROC_BROWSER_TEST_F(ContinueWhereILeftOffTest,
+                       PostWithPasswordBrowserClose) {
+  PostFormWithPage("post_with_password.html", true);
+  Browser* new_browser = QuitBrowserAndRestore(browser(), false);
+  CheckReloadedPageRestored(new_browser);
+  // The form data contained passwords, so it's removed completely.
+  CheckFormRestored(new_browser, false, false);
+}
+
+// Flaky on Mac: https://crbug.com/709504
+#if defined(OS_MACOSX)
+#define MAYBE_SessionCookiesCloseAllBrowsers \
+  DISABLED_SessionCookiesCloseAllBrowsers
+#else
+#define MAYBE_SessionCookiesCloseAllBrowsers SessionCookiesCloseAllBrowsers
+#endif
+// Check that session cookies are cleared on a wrench menu quit.
+IN_PROC_BROWSER_TEST_F(ContinueWhereILeftOffTest,
+                       MAYBE_SessionCookiesCloseAllBrowsers) {
+  // Set the startup preference to "continue where I left off" and visit a page
+  // which stores a session cookie.
+  StoreDataWithPage("session_cookies.html");
+  Browser* new_browser = QuitBrowserAndRestore(browser(), true);
+  // The browsing session will be continued; just wait for the page to reload
+  // and check the stored data.
+  CheckReloadedPageRestored(new_browser);
+}
+
+// Check that form data is restored after wrench menu quit.
+IN_PROC_BROWSER_TEST_F(ContinueWhereILeftOffTest, PostCloseAllBrowsers) {
+  PostFormWithPage("post.html", false);
+  Browser* new_browser = QuitBrowserAndRestore(browser(), true);
+  CheckFormRestored(new_browser, true, false);
+}
+
+// Check that form data with a password field is cleared after wrench menu quit.
+IN_PROC_BROWSER_TEST_F(ContinueWhereILeftOffTest,
+                       PostWithPasswordCloseAllBrowsers) {
+  PostFormWithPage("post_with_password.html", true);
+  Browser* new_browser = QuitBrowserAndRestore(browser(), true);
+  CheckReloadedPageRestored(new_browser);
+  // The form data contained passwords, so it's removed completely.
+  CheckFormRestored(new_browser, false, false);
+}
+
+#if BUILDFLAG(ENABLE_BACKGROUND_MODE)
+
+IN_PROC_BROWSER_TEST_F(ContinueWhereILeftOffTest,
+                       CookiesClearedOnBrowserClose) {
+  StoreDataWithPage("cookies.html");
+  // Normally cookies are restored.
+  Browser* new_browser = QuitBrowserAndRestore(browser(), false);
+  CheckReloadedPageRestored(new_browser);
+  // ... but not if the content setting is set to clear on exit.
+  CookieSettingsFactory::GetForProfile(new_browser->profile())
+      ->SetDefaultCookieSetting(CONTENT_SETTING_SESSION_ONLY);
+  // ... unless background mode is active.
+  EnableBackgroundMode();
+  new_browser = QuitBrowserAndRestore(new_browser, false);
+  CheckReloadedPageRestored(new_browser);
+
+  DisableBackgroundMode();
+  new_browser = QuitBrowserAndRestore(new_browser, false);
+  if (browser_defaults::kBrowserAliveWithNoWindows)
+    CheckReloadedPageRestored(new_browser);
+  else
+    CheckReloadedPageNotRestored(new_browser);
+}
+
+// Check that cookies are cleared on a wrench menu quit only if cookies are set
+// to current session only, regardless of whether background mode is enabled.
+IN_PROC_BROWSER_TEST_F(ContinueWhereILeftOffTest,
+                       CookiesClearedOnCloseAllBrowsers) {
+  StoreDataWithPage("cookies.html");
+  // Normally cookies are restored.
+  Browser* new_browser = QuitBrowserAndRestore(browser(), true);
+  CheckReloadedPageRestored(new_browser);
+  // ... but not if the content setting is set to clear on exit.
+  CookieSettingsFactory::GetForProfile(new_browser->profile())
+      ->SetDefaultCookieSetting(CONTENT_SETTING_SESSION_ONLY);
+  // ... even if background mode is active.
+  EnableBackgroundMode();
+  new_browser = QuitBrowserAndRestore(new_browser, true);
+  CheckReloadedPageNotRestored(new_browser);
+
+  DisableBackgroundMode();
+  new_browser = QuitBrowserAndRestore(new_browser, true);
+  CheckReloadedPageNotRestored(new_browser);
+}
+
+#endif  // BUILDFLAG(ENABLE_BACKGROUND_MODE)
+// ChromeOS does not override the SessionStartupPreference upon controlled
+// system restart.
+#if !defined(OS_CHROMEOS)
+class RestartTest : public BetterSessionRestoreTest {
+ public:
+  RestartTest() { }
+  ~RestartTest() override {}
+
+ protected:
+  void Restart() {
+    // Simulate restarting the browser, but let the test exit peacefully.
+    for (auto* browser : *BrowserList::GetInstance())
+      content::BrowserContext::SaveSessionState(browser->profile());
+    PrefService* pref_service = g_browser_process->local_state();
+    pref_service->SetBoolean(prefs::kWasRestarted, true);
+  }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(RestartTest);
+};
+
+IN_PROC_BROWSER_TEST_F(RestartTest, PRE_SessionCookies) {
+  StoreDataWithPage("session_cookies.html");
+  content::EnsureCookiesFlushed(browser()->profile());
+  Restart();
+}
+
+IN_PROC_BROWSER_TEST_F(RestartTest, SessionCookies) {
+  CheckReloadedPageRestored();
+}
+
+IN_PROC_BROWSER_TEST_F(RestartTest, PRE_SessionStorage) {
+  StoreDataWithPage("session_storage.html");
+  Restart();
+}
+
+IN_PROC_BROWSER_TEST_F(RestartTest, SessionStorage) {
+  CheckReloadedPageRestored();
+}
+
+IN_PROC_BROWSER_TEST_F(RestartTest, PRE_LocalStorageClearedOnExit) {
+  StoreDataWithPage("local_storage.html");
+  CookieSettingsFactory::GetForProfile(browser()->profile())
+      ->SetDefaultCookieSetting(CONTENT_SETTING_SESSION_ONLY);
+  Restart();
+}
+
+IN_PROC_BROWSER_TEST_F(RestartTest, LocalStorageClearedOnExit) {
+  CheckReloadedPageRestored();
+}
+
+IN_PROC_BROWSER_TEST_F(RestartTest, PRE_CookiesClearedOnExit) {
+  StoreDataWithPage("cookies.html");
+  content::EnsureCookiesFlushed(browser()->profile());
+  CookieSettingsFactory::GetForProfile(browser()->profile())
+      ->SetDefaultCookieSetting(CONTENT_SETTING_SESSION_ONLY);
+  Restart();
+}
+
+IN_PROC_BROWSER_TEST_F(RestartTest, CookiesClearedOnExit) {
+  CheckReloadedPageRestored();
+}
+
+IN_PROC_BROWSER_TEST_F(RestartTest, PRE_Post) {
+  PostFormWithPage("post.html", false);
+  Restart();
+}
+
+IN_PROC_BROWSER_TEST_F(RestartTest, Post) {
+  CheckFormRestored(true, false);
+}
+
+IN_PROC_BROWSER_TEST_F(RestartTest, PRE_PostWithPassword) {
+  PostFormWithPage("post_with_password.html", true);
+  Restart();
+}
+
+IN_PROC_BROWSER_TEST_F(RestartTest, PostWithPassword) {
+  // The form data contained passwords, so it's removed completely.
+  CheckFormRestored(false, false);
+}
+#endif
+
+// These tests ensure that the Better Session Restore features are not triggered
+// when they shouldn't be.
+class NoSessionRestoreTest : public BetterSessionRestoreTest {
+ public:
+  NoSessionRestoreTest() { }
+
+  void SetUpOnMainThread() override {
+    BetterSessionRestoreTest::SetUpOnMainThread();
+    SessionStartupPref::SetStartupPref(
+        browser()->profile(), SessionStartupPref(SessionStartupPref::DEFAULT));
+  }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(NoSessionRestoreTest);
+};
+
+IN_PROC_BROWSER_TEST_F(NoSessionRestoreTest, PRE_SessionCookies) {
+  StoreDataWithPage("session_cookies.html");
+}
+
+IN_PROC_BROWSER_TEST_F(NoSessionRestoreTest, SessionCookies) {
+  content::WebContents* web_contents =
+      browser()->tab_strip_model()->GetActiveWebContents();
+  EXPECT_EQ(std::string(url::kAboutBlankURL), web_contents->GetURL().spec());
+  // When we navigate to the page again, it doens't see the data previously
+  // stored.
+  StoreDataWithPage("session_cookies.html");
+}
+
+IN_PROC_BROWSER_TEST_F(NoSessionRestoreTest, PRE_SessionStorage) {
+  StoreDataWithPage("session_storage.html");
+}
+
+IN_PROC_BROWSER_TEST_F(NoSessionRestoreTest, SessionStorage) {
+  content::WebContents* web_contents =
+      browser()->tab_strip_model()->GetActiveWebContents();
+  EXPECT_EQ(std::string(url::kAboutBlankURL), web_contents->GetURL().spec());
+  StoreDataWithPage("session_storage.html");
+}
+
+IN_PROC_BROWSER_TEST_F(NoSessionRestoreTest,
+                       PRE_PRE_LocalStorageClearedOnExit) {
+  StoreDataWithPage("local_storage.html");
+}
+
+IN_PROC_BROWSER_TEST_F(NoSessionRestoreTest, PRE_LocalStorageClearedOnExit) {
+  // Normally localStorage is persisted.
+  content::WebContents* web_contents =
+      browser()->tab_strip_model()->GetActiveWebContents();
+  EXPECT_EQ(std::string(url::kAboutBlankURL), web_contents->GetURL().spec());
+  NavigateAndCheckStoredData("local_storage.html");
+  // ... but not if it's set to clear on exit.
+  CookieSettingsFactory::GetForProfile(browser()->profile())
+      ->SetDefaultCookieSetting(CONTENT_SETTING_SESSION_ONLY);
+}
+
+// Crashes on Windows. http://crbug.com/732013
+#if defined(OS_WIN)
+#define MAYBE_NSRT_LocalStorageClearedOnExit DISABLED_LocalStorageClearedOnExit
+#else
+#define MAYBE_NSRT_LocalStorageClearedOnExit LocalStorageClearedOnExit
+#endif
+IN_PROC_BROWSER_TEST_F(NoSessionRestoreTest,
+                       MAYBE_NSRT_LocalStorageClearedOnExit) {
+  content::WebContents* web_contents =
+      browser()->tab_strip_model()->GetActiveWebContents();
+  EXPECT_EQ(std::string(url::kAboutBlankURL), web_contents->GetURL().spec());
+  StoreDataWithPage("local_storage.html");
+}
+
+IN_PROC_BROWSER_TEST_F(NoSessionRestoreTest, PRE_PRE_CookiesClearedOnExit) {
+  StoreDataWithPage("cookies.html");
+  content::EnsureCookiesFlushed(browser()->profile());
+}
+
+IN_PROC_BROWSER_TEST_F(NoSessionRestoreTest, PRE_CookiesClearedOnExit) {
+  // Normally cookies are restored.
+  content::WebContents* web_contents =
+      browser()->tab_strip_model()->GetActiveWebContents();
+  EXPECT_EQ(std::string(url::kAboutBlankURL), web_contents->GetURL().spec());
+  NavigateAndCheckStoredData("cookies.html");
+  // ... but not if the content setting is set to clear on exit.
+  CookieSettingsFactory::GetForProfile(browser()->profile())
+      ->SetDefaultCookieSetting(CONTENT_SETTING_SESSION_ONLY);
+}
+
+IN_PROC_BROWSER_TEST_F(NoSessionRestoreTest, CookiesClearedOnExit) {
+  content::WebContents* web_contents =
+      browser()->tab_strip_model()->GetActiveWebContents();
+  EXPECT_EQ(std::string(url::kAboutBlankURL), web_contents->GetURL().spec());
+  StoreDataWithPage("local_storage.html");
+}
+
+// Tests that session cookies are not cleared when only a popup window is open.
+IN_PROC_BROWSER_TEST_F(NoSessionRestoreTest,
+                       SessionCookiesBrowserCloseWithPopupOpen) {
+  StoreDataWithPage("session_cookies.html");
+  Browser* popup = new Browser(
+      Browser::CreateParams(Browser::TYPE_POPUP, browser()->profile(), true));
+  popup->window()->Show();
+  Browser* new_browser = QuitBrowserAndRestore(browser(), false);
+  NavigateAndCheckStoredData(new_browser, "session_cookies.html");
+}
+
+// Tests that session cookies are cleared if the last window to close is a
+// popup.
+IN_PROC_BROWSER_TEST_F(NoSessionRestoreTest,
+                       SessionCookiesBrowserClosePopupLast) {
+  StoreDataWithPage("session_cookies.html");
+  Browser* popup = new Browser(
+      Browser::CreateParams(Browser::TYPE_POPUP, browser()->profile(), true));
+  popup->window()->Show();
+  CloseBrowserSynchronously(browser());
+  Browser* new_browser = QuitBrowserAndRestore(popup, false);
+  if (browser_defaults::kBrowserAliveWithNoWindows)
+    NavigateAndCheckStoredData(new_browser, "session_cookies.html");
+  else
+    StoreDataWithPage(new_browser, "session_cookies.html");
+}
+
+#if BUILDFLAG(ENABLE_BACKGROUND_MODE)
+// Check that cookies are cleared on a wrench menu quit only if cookies are set
+// to current session only, regardless of whether background mode is enabled.
+IN_PROC_BROWSER_TEST_F(NoSessionRestoreTest,
+                       SubdomainCookiesClearedOnCloseAllBrowsers) {
+  StoreDataWithPage("subdomain_cookies.html");
+
+  // Normally cookies are restored.
+  Browser* new_browser = QuitBrowserAndRestore(browser(), true);
+  NavigateAndCheckStoredData(new_browser, "subdomain_cookies.html");
+
+  // ... but not if the content setting is set to clear on exit.
+  auto cookie_settings =
+      CookieSettingsFactory::GetForProfile(new_browser->profile());
+  cookie_settings->SetDefaultCookieSetting(CONTENT_SETTING_BLOCK);
+  cookie_settings->SetCookieSetting(GURL("http://www.test.com"),
+                                    CONTENT_SETTING_SESSION_ONLY);
+
+  // Cookie for .test.com is created on www.test.com and deleted on shutdown.
+  new_browser = QuitBrowserAndRestore(new_browser, true);
+  StoreDataWithPage(new_browser, "subdomain_cookies.html");
+}
+
+IN_PROC_BROWSER_TEST_F(NoSessionRestoreTest, CookiesClearedOnBrowserClose) {
+  StoreDataWithPage("cookies.html");
+
+  // Normally cookies are restored.
+  Browser* new_browser = QuitBrowserAndRestore(browser(), false);
+  NavigateAndCheckStoredData(new_browser, "cookies.html");
+
+  // ... but not if the content setting is set to clear on exit.
+  CookieSettingsFactory::GetForProfile(new_browser->profile())
+      ->SetDefaultCookieSetting(CONTENT_SETTING_SESSION_ONLY);
+  // ... unless background mode is active.
+  EnableBackgroundMode();
+  new_browser = QuitBrowserAndRestore(new_browser, false);
+  NavigateAndCheckStoredData(new_browser, "cookies.html");
+  DisableBackgroundMode();
+  new_browser = QuitBrowserAndRestore(new_browser, false);
+  if (browser_defaults::kBrowserAliveWithNoWindows)
+    NavigateAndCheckStoredData(new_browser, "cookies.html");
+  else
+    StoreDataWithPage(new_browser, "cookies.html");
+}
+
+// Check that session cookies are cleared on a wrench menu quit.
+IN_PROC_BROWSER_TEST_F(NoSessionRestoreTest, SessionCookiesCloseAllBrowsers) {
+  StoreDataWithPage("session_cookies.html");
+  EnableBackgroundMode();
+  Browser* new_browser = QuitBrowserAndRestore(browser(), true);
+  StoreDataWithPage(new_browser, "session_cookies.html");
+  DisableBackgroundMode();
+  new_browser = QuitBrowserAndRestore(new_browser, true);
+  StoreDataWithPage(new_browser, "session_cookies.html");
+}
+
+// Check that cookies are cleared on a wrench menu quit only if cookies are set
+// to current session only, regardless of whether background mode is enabled.
+IN_PROC_BROWSER_TEST_F(NoSessionRestoreTest, CookiesClearedOnCloseAllBrowsers) {
+  StoreDataWithPage("cookies.html");
+
+  // Normally cookies are restored.
+  Browser* new_browser = QuitBrowserAndRestore(browser(), true);
+  NavigateAndCheckStoredData(new_browser, "cookies.html");
+
+  // ... but not if the content setting is set to clear on exit.
+  CookieSettingsFactory::GetForProfile(new_browser->profile())
+      ->SetDefaultCookieSetting(CONTENT_SETTING_SESSION_ONLY);
+  // ... even if background mode is active.
+  EnableBackgroundMode();
+  new_browser = QuitBrowserAndRestore(new_browser, true);
+  StoreDataWithPage(new_browser, "cookies.html");
+  DisableBackgroundMode();
+  new_browser = QuitBrowserAndRestore(new_browser, true);
+  StoreDataWithPage(new_browser, "cookies.html");
+}
+
+IN_PROC_BROWSER_TEST_F(NoSessionRestoreTest, SessionCookiesBrowserClose) {
+  StoreDataWithPage("session_cookies.html");
+  EnableBackgroundMode();
+  Browser* new_browser = QuitBrowserAndRestore(browser(), false);
+  NavigateAndCheckStoredData(new_browser, "session_cookies.html");
+  DisableBackgroundMode();
+  new_browser = QuitBrowserAndRestore(new_browser, false);
+  if (browser_defaults::kBrowserAliveWithNoWindows)
+    NavigateAndCheckStoredData(new_browser, "session_cookies.html");
+  else
+    StoreDataWithPage(new_browser, "session_cookies.html");
+}
+
+#endif  // BUILDFLAG(ENABLE_BACKGROUND_MODE)

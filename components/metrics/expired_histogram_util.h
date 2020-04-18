@@ -1,0 +1,21 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef COMPONENTS_METRICS_EXPIRED_HISTOGRAM_UTIL_H_
+#define COMPONENTS_METRICS_EXPIRED_HISTOGRAM_UTIL_H_
+
+#include <stddef.h>
+#include <stdint.h>
+
+namespace metrics {
+
+// Enables histogram expiry checker if it is enabled by field trial. Histogram
+// expiry is disbaled by default so that unit tests don't fail unexpectedly when
+// a histogram expires.
+void EnableExpiryChecker(const uint64_t* expired_histograms_hashes,
+                         size_t num_expired_histograms);
+
+}  // namespace metrics
+
+#endif  // COMPONENTS_METRICS_EXPIRED_HISTOGRAM_UTIL_H_

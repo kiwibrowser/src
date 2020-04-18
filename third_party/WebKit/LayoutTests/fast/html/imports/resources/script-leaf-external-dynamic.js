@@ -1,0 +1,1 @@
+document.notifyLoaded("ExternalDynamic", document);

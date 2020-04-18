@@ -1,0 +1,109 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_checkbox/cr_checkbox.html">
+<link rel="import" href="chrome://resources/html/md_select_css.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-icons/av-icons.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-slider/paper-slider.html">
+<dom-module id="route-controls">
+  <link rel="import" type="css" href="../../media_router_common.css">
+  <link rel="import" type="css" href="route_controls.css">
+  <template>
+    <style include="md-select"></style>
+    <div id="media-controls">
+      <div class="ellipsis" id="route-description"
+           title="[[routeDescription_]]">
+        [[routeDescription_]]
+      </div>
+      <div class="ellipsis" id="route-title" title="[[routeStatus.title]]"
+           hidden$="[[!shouldShowRouteStatusTitle_]]">
+        [[routeStatus.title]]
+      </div>
+      <div>
+        <div id="route-time-controls" hidden="[[!routeStatus.canSeek]]">
+          <paper-slider
+              aria-valuetext$="[[getTimeSliderValueText_(displayedCurrentTime_)]]"
+              dir="ltr"
+              id="route-time-slider"
+              on-change="onSeekComplete_"
+              on-immediate-value-change="onSeekByDragging_"
+              min="0" max="[[routeStatus.duration]]" step="1"
+              title="[[i18n('seekTitle')]]"
+              value="[[displayedCurrentTime_]]"></paper-slider>
+          <div id="timeline">
+            <span id="current-time"
+                  aria-label$="[[getCurrentTimeLabel_(displayedCurrentTime_)]]">
+              [[getFormattedTime_(displayedCurrentTime_)]]
+            </span>
+            <span id="duration"
+                  aria-label$="[[getDurationLabel_(routeStatus.duration)]]">
+              [[getFormattedTime_(routeStatus.duration)]]
+            </span>
+          </div>
+        </div>
+        <div id="play-pause-volume-hangouts-controls">
+          <span id="button-holder" dir="ltr">
+            <paper-icon-button
+                id="route-play-pause-button"
+                hidden="[[!routeStatus.canPlayPause]]"
+                disabled="[[!routeStatus.canPlayPause]]"
+                icon="[[getPlayPauseIcon_(routeStatus)]]"
+                title="[[getPlayPauseTitle_(routeStatus)]]"
+                on-click="onPlayPause_"></paper-icon-button>
+            <paper-icon-button
+                id="route-volume-button"
+                hidden="[[!routeStatus.canMute]]"
+                disabled="[[!routeStatus.canMute]]"
+                icon="[[getMuteUnmuteIcon_(routeStatus)]]"
+                title="[[getMuteUnmuteTitle_(routeStatus)]]"
+                on-click="onMuteUnmute_"></paper-icon-button>
+          </span>
+          <span id="volume-holder" hidden="[[!routeStatus.canSetVolume]]">
+            <paper-slider
+                aria-valuetext$="[[getVolumeSliderValueText_(displayedVolume_)]]"
+                id="route-volume-slider"
+                disabled="[[!routeStatus.canSetVolume]]"
+                on-change="onVolumeChangeComplete_"
+                on-immediate-value-change="onVolumeChangeByDragging_"
+                title="[[i18n('volumeTitle')]]"
+                value="[[displayedVolume_]]"
+                min="0" max="1" step="0.01"></paper-slider>
+          </span>
+          <div id="hangouts-local-present-controls"
+               hidden="[[!routeStatus.hangoutsExtraData]]">
+            <cr-checkbox
+                checked="[[hangoutsLocalPresent_]]"
+                id="hangouts-local-present-checkbox"
+                on-change="onHangoutsLocalPresentChange_"
+                tabindex="0">
+              <span id='hangouts-local-present-checkbox-title'>
+                [[i18n('hangoutsLocalPresentTitle')]]
+              </span>
+              <span id="hangouts-local-present-checkbox-subtitle">
+                [[i18n('hangoutsLocalPresentSubtitle')]]
+              </span>
+            </cr-checkbox>
+          </div>
+        </div>
+        <div id="mirroring-fullscreen-video-controls"
+             hidden="[[!routeStatus.mirroringExtraData]]">
+          [[i18n('fullscreenVideosDropdownTitle')]]
+          <span class="md-select-wrapper">
+            <select class="md-select"
+                    id="mirroring-fullscreen-video-dropdown"
+                    on-change="onFullscreenVideoDropdownChange_">
+                <option value="[[FullscreenVideoOption_.REMOTE_SCREEN]]">
+                  [[i18n('fullscreenVideosRemoteScreen')]]
+                </option>
+                <option value="[[FullscreenVideoOption_.BOTH_SCREENS]]">
+                  [[i18n('fullscreenVideosBothScreens')]]
+                </option>
+            </select>
+            <span class="md-select-underline"></span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </template>
+<script src="route_controls.js"></script>
+</dom-module>

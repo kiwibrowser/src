@@ -1,0 +1,81 @@
+# This file is used for tests that only need to be suppressed on the Chromium
+# WebKit Leak bots.
+# Further documentation:
+# https://chromium.googlesource.com/chromium/src/+/master/docs/testing/layout_test_expectations.md
+
+###########################################################################
+# WARNING: Memory leaks must be fixed asap. Sheriff is expected to revert #
+# culprit CLs instead of suppressing the leaks. If you have any question, #
+# ask hajimehoshi@.                                                       #
+###########################################################################
+
+# FIXME: scroll customization leaks memory. See
+# codereview.chromium.org/1236913004/ for context.
+crbug.com/410974 virtual/scroll_customization/fast/scroll-behavior/scroll-customization/scroll-customization-property.html [ Leak ]
+crbug.com/410974 virtual/scroll_customization/fast/scroll-behavior/scroll-customization/touch-scroll-customization.html [ Leak ]
+crbug.com/410974 virtual/scroll_customization/fast/scroll-behavior/scroll-customization/scrollstate-distribute-to-scroll-chain-descendant.html [ Leak ]
+
+# -----------------------------------------------------------------
+# Untriaged but known leaks of PausableObject (fast).
+# -----------------------------------------------------------------
+crbug.com/661182 fast/loader/open-in-srcdoc-unload.html [ Leak ]
+
+# -----------------------------------------------------------------
+# Untriaged but known leaks of PausableObject (http).
+# -----------------------------------------------------------------
+crbug.com/506754 http/tests/serviceworker/resolve-after-window-close.html [ Leak ]
+crbug.com/506754 http/tests/serviceworker/window-close-during-registration.html [ Leak ]
+
+crbug.com/664874 http/tests/xmlhttprequest/workers/xmlhttprequest-allowed-with-disabled-web-security.html [ Leak ]
+
+crbug.com/672740 http/tests/security/mixedContent/websocket/insecure-websocket-in-secure-page-worker-allowed.html [ Leak Pass ]
+crbug.com/672740 http/tests/security/mixedContent/websocket/insecure-websocket-in-secure-page-worker.html [ Leak Pass ]
+
+crbug.com/786995 virtual/threaded/http/tests/devtools/tracing/timeline-style/timeline-style-recalc-all-invalidator-types.js [ Leak Pass ]
+
+# Requests with keepalive specified will be kept alive even when the frame is
+# detached, which means leaks reported by the leak detector are by design.
+# Ignore them.
+crbug.com/755625 external/wpt/beacon/beacon-error.window.html [ Leak ]
+crbug.com/762353 external/wpt/beacon/headers/header-referrer-no-referrer.html [ Leak ]
+crbug.com/651742 external/wpt/content-security-policy/connect-src/connect-src-beacon-allowed.sub.html [ Leak ]
+
+# -----------------------------------------------------------------
+# Flakily leaks
+# -----------------------------------------------------------------
+crbug.com/780386 external/wpt/html/dom/reflection-grouping.html [ Leak Pass ]
+crbug.com/667560 [ Linux ] http/tests/devtools/console/console-search.js [ Leak Pass ]
+crbug.com/835943 [ Linux ] http/tests/appcache/non-html.xhtml [ Leak Pass ]
+
+# -----------------------------------------------------------------
+# Not revert suspected CL as jam@ request, expected to be fixed soon.
+# -----------------------------------------------------------------
+crbug.com/765721 [ Linux ] http/tests/navigation/navigation-interrupted-by-fragment.html [ Pass Leak ]
+crbug.com/765721 [ Linux ] virtual/stable/http/tests/navigation/navigation-interrupted-by-fragment.html [ Pass Leak ]
+
+crbug.com/809609 [ Linux ] editing/pasteboard/drop-file-svg.html [ Pass Leak ]
+crbug.com/809609 [ Linux ] editing/inserting/insert_div_with_style.html [ Pass Leak ]
+
+# -----------------------------------------------------------------
+# Sheriff 2018-03-08
+# -----------------------------------------------------------------
+crbug.com/821547 [ Linux ] animations/composition/backdrop-filter-composition.html [ Pass Leak ]
+crbug.com/821547 [ Linux ] animations/interpolation/backdrop-filter-interpolation.html [ Pass Leak ]
+crbug.com/821547 [ Linux ] external/wpt/web-animations/animation-model/animation-types/interpolation-per-property.html [ Pass Leak ]
+crbug.com/821547 [ Linux ] svg/animations/additive-type-by-animation.html [ Pass Leak ]
+crbug.com/821547 [ Linux ] virtual/threaded/animations/composition/backdrop-filter-composition.html [ Pass Leak ]
+crbug.com/821547 [ Linux ] virtual/threaded/animations/interpolation/backdrop-filter-interpolation.html [ Pass Leak ]
+crbug.com/821547 [ Linux ] virtual/threaded/animations/interpolation/filter-interpolation-003.html [ Pass Leak ]
+
+# -----------------------------------------------------------------
+# Sheriff 2018-04-23
+# -----------------------------------------------------------------
+crbug.com/835802 [ Linux ] fast/loader/scroll-position-restored-on-back-at-load-event.html [ Pass Leak ]
+crbug.com/836278 [ Linux ] external/wpt/offscreen-canvas/convert-to-blob/offscreencanvas.convert.to.blob.html [ Pass Leak ]
+crbug.com/836278 [ Linux ] virtual/threaded/external/wpt/offscreen-canvas/convert-to-blob/offscreencanvas.convert.to.blob.html [ Pass Leak ]
+
+###########################################################################
+# WARNING: Memory leaks must be fixed asap. Sheriff is expected to revert #
+# culprit CLs instead of suppressing the leaks. If you have any question, #
+# ask hajimehoshi@.                                                       #
+###########################################################################

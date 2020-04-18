@@ -1,0 +1,410 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux (vers 25 March 2009), see www.w3.org">
+<title>RDFA testing</title>
+
+<style type="text/css">
+ol{margin:0;padding:0}.c5{list-style-type:disc;margin:0;padding:0}.c7{max-width:468pt;background-color:#ffffff;padding:72pt 72pt 72pt 72pt}.c8{color:inherit;text-decoration:inherit}.c3{color:#1155cc;text-decoration:underline}.c1{padding-left:0pt;margin-left:36pt}.c4{font-size:8pt;font-family:"Courier New"}.c6{margin-left:18pt}.c9{margin-left:36pt}.c0{direction:ltr}.c2{height:11pt}.c10{height:12pt}.title{padding-top:0pt;line-height:1.15;text-align:left;color:#000000;font-size:21pt;font-family:"Trebuchet MS";padding-bottom:0pt}.subtitle{padding-top:0pt;line-height:1.15;text-align:left;color:#666666;font-style:italic;font-size:13pt;font-family:"Trebuchet MS";padding-bottom:10pt}li{color:#000000;font-size:11pt;font-family:"Arial"}p{color:#000000;font-size:11pt;margin:0;font-family:"Arial"}h1{padding-top:10pt;line-height:1.15;text-align:left;color:#000000;font-size:16pt;font-family:"Trebuchet MS";padding-bottom:0pt}h2{padding-top:10pt;line-height:1.15;text-align:left;color:#000000;font-size:13pt;font-family:"Trebuchet MS";font-weight:bold;padding-bottom:0pt}h3{padding-top:8pt;line-height:1.15;text-align:left;color:#666666;font-size:12pt;font-family:"Trebuchet MS";font-weight:bold;padding-bottom:0pt}h4{padding-top:8pt;line-height:1.15;text-align:left;color:#666666;font-size:11pt;text-decoration:underline;font-family:"Trebuchet MS";padding-bottom:0pt}h5{padding-top:8pt;line-height:1.15;text-align:left;color:#666666;font-size:11pt;font-family:"Trebuchet MS";padding-bottom:0pt}h6{padding-top:8pt;line-height:1.15;text-align:left;color:#666666;font-style:italic;font-size:11pt;font-family:"Trebuchet MS";padding-bottom:0pt}
+</style>
+</head>
+<body class="c7">
+
+<p>
+  <b>
+    This file is obtained from <a href="https://docs.google.com/a/google.com/document/d/1_Vuhf1Gl194DDxZ0FPSsmxfmJ-jMZwVXDcuE4Wvlvto">RDFA testing</a> document using tidyhtml.
+  </b>
+</p>
+
+<h3 class="c0 c10"><a name="h.5jrwqmn7dpau" id=
+"h.5jrwqmn7dpau"></a></h3>
+<p class="c0 c6"><span class="c3"><a class="c8" href=
+"#h.1f2x079v5f04">Text-based specification and ncval</a></span></p>
+<p class="c6 c0"><span class="c3"><a class="c8" href=
+"#h.exyvuj8cfycc">Targeted tests</a></span></p>
+<p class="c6 c0"><span class="c3"><a class="c8" href=
+"#h.jc1st7li75l8">Exhaustive decoder test</a></span></p>
+<p class="c6 c0"><span class="c3"><a class="c8" href=
+"#h.gww7c2qkz2">Exhaustive validator test</a></span></p>
+<p class="c0 c9"><span class="c3"><a class="c8" href=
+"#h.6r4bpnhb7uz9">How do we apply text-based specification to
+sequences of bytes?</a></span></p>
+<p class="c6 c0"><span class="c3"><a class="c8" href=
+"#h.ulbjndlz4f2f">Presubmit script</a></span></p>
+<p class="c0 c2"></p>
+<h3 class="c0"><a name="h.1f2x079v5f04" id=
+"h.1f2x079v5f04"></a><span>Text-based specification and
+ncval</span></h3>
+<p class="c0"><span class="c3"><a class="c8" href=
+"https://code.google.com/p/nativeclient/issues/detail?id=3453">https://code.google.com/p/nativeclient/issues/detail?id=3453</a></span></p>
+<p class="c0"><span>Basically it&rsquo;s a handful of python
+functions which accept disassembly listing and say whether
+it&rsquo;s correct from the sandboxing point of view.</span></p>
+<p class="c0"><span>This executable specification is intended to be
+more or less readable and automatically up-to-date.</span></p>
+<p class="c0"><span>Note that there is no goal to reflect all
+validator quirks in the spec. For example, for purely technical
+reason old validator (and consequently new one) rejects 16-bit
+atomics. We plan to allow them eventually. Specification allows
+them from the beginning.</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>This specification is not a test per se, but it
+is used in two sets of tests: targeted tests and exhaustive
+validator tests.</span></p>
+<h3 class="c0"><a name="h.exyvuj8cfycc" id=
+"h.exyvuj8cfycc"></a><span>Targeted tests</span></h3>
+<p class="c0"><span class="c3"><a class="c8" href=
+"https://code.google.com/p/nativeclient/issues/detail?id=3037">https://code.google.com/p/nativeclient/issues/detail?id=3037</a></span></p>
+<p class="c0"><span class="c3"><a class="c8" href=
+"https://code.google.com/p/nativeclient/issues/detail?id=3452">https://code.google.com/p/nativeclient/issues/detail?id=3452</a></span></p>
+<p class="c0"><span>These tests serve several purposes:</span></p>
+<ol class="c5" start="1">
+<li class="c1 c0"><span>as regression tests and convenient way to
+report bugs and document behaviors</span></li>
+<li class="c1 c0"><span>as positive tests for RDFA validator (other
+tests only check that it rejects something that is unsafe, not that
+it accepts what it&rsquo;s supposed to accept)</span></li>
+<li class="c1 c0"><span>as negative tests for text-based
+specification (in other places we only check that it allows what
+RDFA actually accepts; here we can check that it&rsquo;s not too
+forgiving)</span></li>
+<li class="c0 c1"><span>as cheap, although incomplete, test suite
+that can be run on bots consistently</span></li>
+</ol>
+<p class="c0"><span>There are about 200 manually written test files
+(incorporating ~300 test cases) for 32- and 64-bit validators. They
+originate from tests Karl used for old validator. Since then they
+were supplemented with tests for most (hopefully, all) defects and
+subtle behaviours we encountered during the work on RDFA validator.
+They also include tests Mark used for his prototype DFA-based
+validator. They are somewhat poorly structured, so sometimes it may
+not be directly obvious where to find test case for a specific
+problem, but there is a lot of stuff there.</span></p>
+<p class="c0"><span>Test format. Test files
+(validator_ragel/testdata/32/*.test,
+validator_ragel/testdata/64/*.test) consist of one or more test
+cases separated by &lsquo;------------&rsquo;. Each test case
+consists of sections. Example:</span></p>
+<p class="c0"><span class="c4">@hex:</span></p>
+<p class="c0"><span class="c4">&nbsp; # This is the correct nop
+case.</span></p>
+<p class="c0"><span class="c4">&nbsp; # nopw &nbsp;
+0x0(%eax,%eax,1)</span></p>
+<p class="c0"><span class="c4">&nbsp; 66 0f 1f 44 00 00</span></p>
+<p class="c0"><span class="c4">@dis:</span></p>
+<p class="c0"><span class="c4">&nbsp; &nbsp;
+&nbsp;0:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;66 0f 1f 44
+00 00 &nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nopw &nbsp;
+0x0(%eax,%eax,1)</span></p>
+<p class="c0"><span class="c4">@rdfa_output:</span></p>
+<p class="c0"><span class="c4">&nbsp; return code: 0</span></p>
+<p class="c0"><span class="c4">@spec:</span></p>
+<p class="c0"><span class="c4">&nbsp; SAFE</span></p>
+<p class="c0"><span class=
+"c4">----------------------------------------------------------------------</span></p>
+<p class="c0"><span class="c4">@hex:</span></p>
+<p class="c0"><span class="c4">&nbsp; # This is an example where we
+have incremented the nop by 1.</span></p>
+<p class="c0"><span class="c4">&nbsp; 66 0f 1f 44 00 01</span></p>
+<p class="c0"><span class="c4">@dis:</span></p>
+<p class="c0"><span class="c4">&nbsp; &nbsp;
+&nbsp;0:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;66 0f 1f 44
+00 01 &nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nopw &nbsp;
+0x1(%eax,%eax,1)</span></p>
+<p class="c0"><span class="c4">@rdfa_output:</span></p>
+<p class="c0"><span class="c4">&nbsp; 0: [0] unrecognized
+instruction</span></p>
+<p class="c0"><span class="c4">&nbsp; return code: 1</span></p>
+<p class="c0"><span class="c4">@spec:</span></p>
+<p class="c0"><span class="c4">&nbsp; 0: unrecognized instruction
+'nopw 0x1(%eax,%eax,1)'</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>&lsquo;@hex&rsquo; section contains input data
+as sequence of bytes. By convention, in complex cases bytes
+corresponding to instruction are usually preceded with comment
+specifying assembly form of the instruction. But this
+correspondence is not enforced so in principle comments can lie. To
+make it easier to spot errors in comments, there is a
+&lsquo;@dis&rsquo; section containing output of nacl-objdump on
+given input.</span></p>
+<p class="c0"><span>&lsquo;@spec&rsquo; section contains expected
+output of text-based ncval (which receives its input from @dis
+section).</span></p>
+<p class="c0"><span>&lsquo;@rdfa_output&rsquo; section contains
+expected output of RDFA-based ncval (actually, it&rsquo;s processed
+in a certain way, see</span> <span class="c3"><a class="c8" href=
+"https://code.google.com/p/nativeclient/issues/detail?id=3037">https://code.google.com/p/nativeclient/issues/detail?id=3037</a></span><span>&nbsp;under
+&lsquo;tricky part&rsquo; paragraph. In the ideal world this
+simulation of error recovery won&rsquo;t be needed, as any test
+would contain no more than one violation of sandboxing rules, but
+for historical reasons we have tests with several errors in a
+single chunk of code and we want to check them all. New tests
+should exhibit only one failure per test case)</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>For each of these three sections there is a
+dedicated scons target:</span></p>
+<ol class="c5" start="1">
+<li class="c1 c0"><span>Content of @dis is checked with ./scons
+run_dis_section_test_32 (or _64).</span></li>
+<li class="c1 c0"><span>Content of @spec is checked with ./scons
+run_spec_val_test_32 (or _64).</span></li>
+<li class="c1 c0"><span>Content of @rdfa_output is checked with
+./scons run_rdfa_targeted_tests_32 (or _64).<br>
+Additionally these two targets check that RDFA validator determines
+valid jump targets correctly by appending jump instruction leading
+to each location in input code. How @hex section is split into
+lines determines which jump targets are allowed (it is expected
+that bytes corresponding to a single instruction occupy one line in
+hex files; for superinstructions, line continuation mark
+&lsquo;\\&rsquo; is used to disallow jump to the end of the marked
+instruction).</span></li>
+</ol>
+<p class="c0"><span>All these test targets are run on
+bots.</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>If &lsquo;regenerate_golden=1&rsquo; option is
+passed to scons with any of these targets, the content of the
+section is replaced with the actual output of the corresponding
+tool. It is helpful when tests are edited. Of course, each such
+change have to be manually reviewed.</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>TODO: when @rdfa_output and @spec disagree and
+how to check for it.</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>Note: there is legacy stuff in
+validator_x86/testdata.</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>How to</span> <span>run</span><span>&nbsp;all
+these tests:</span></p>
+<p class="c0"><span>&nbsp; ./scons small_tests</span></p>
+<p class="c0"><span>(or, more specifically,</span></p>
+<p class="c0"><span>&nbsp; ./scons run_dis_section_test_32
+run_rdfa_targeted_tests_32 run_spec_val_test_32</span></p>
+<p class="c0"><span>and same for 64)</span></p>
+<h3 class="c0"><a name="h.jc1st7li75l8" id=
+"h.jc1st7li75l8"></a><span>Exhaustive decoder test</span></h3>
+<p class="c0"><span class="c3"><a class="c8" href=
+"https://code.google.com/p/nativeclient/issues/detail?id=3154">https://code.google.com/p/nativeclient/issues/detail?id=3154</a></span></p>
+<p class="c0"><span>The primary purpose of this test is to find
+errors in our instruction definition files.</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>We enumerate all instruction sequences accepted
+by decoder automaton and compare output of our decoder with
+specific version of objdump.</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>We do not enumerate all possible values of
+immediates (there are too many of them). Transitions corresponding
+to immediate bytes (as well as direct jump/call targets and
+relative offsets - collectively &lsquo;anybytes&rsquo;) are marked
+in the automaton, so we recognize them in our traversal and only
+generate one representative instance of the immediate.</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>Our decoder behaves differently than objdump
+when it comes to fwait instruction (</span><span class=
+"c3"><a class="c8" href=
+"https://code.google.com/p/nativeclient/issues/detail?id=3251">https://code.google.com/p/nativeclient/issues/detail?id=3251</a></span><span>),
+for example &lsquo;FWAIT; FNINIT&rsquo; sequence is decoded as
+single &lsquo;FINIT&rsquo; instruction by objdump. We decide not to
+reproduce this behavior and instead took precautions to ensure that
+FWAIT instruction is always followed with NOP in the stream we
+generate.</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>Also, RDFA decoder does not sign-extend
+negative immediates (</span><span class="c3"><a class="c8" href=
+"https://code.google.com/p/nativeclient/issues/detail?id=3164">https://code.google.com/p/nativeclient/issues/detail?id=3164</a></span><span>),
+but it does not show up in this test because we use positive
+numbers for &lsquo;anybytes&rsquo;.</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>How to run:</span></p>
+<p class="c0"><span>&nbsp; ./scons dfacheckdecoder</span></p>
+<p class="c0"><span>Since this test requires ragel, it can only be
+run on linux. Also, it takes a while (about an hour on z620), so we
+do not even attempt to run in on bots.</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>There are ~250 millions 32-bit instructions and
+~4 billions 64-bit instructions accepted by decoder.</span></p>
+<h3 class="c0"><a name="h.gww7c2qkz2" id=
+"h.gww7c2qkz2"></a><span>Exhaustive validator test</span></h3>
+<p class="c0"><span class="c3"><a class="c8" href=
+"https://code.google.com/p/nativeclient/issues/detail?id=3167">https://code.google.com/p/nativeclient/issues/detail?id=3167</a></span></p>
+<p class="c0"><span>This test is designed to catch following
+problems:</span></p>
+<ol class="c5" start="1">
+<li class="c1 c0"><span>unexpected interactions between DFA actions
+due to nondeterminism</span></li>
+<li class="c1 c0"><span>mistakes in sandboxing logic in DFA
+actions</span></li>
+<li class="c1 c0"><span>wrong nacl-specific annotations in .def
+files (for example, when one forgets to mark forbidden instruction
+as nacl-forbidden)</span></li>
+<li class="c1 c0"><span>typos and other errors in superinstructions
+and special instructions that are manually specified in .rl files
+(as opposed to .def files)</span></li>
+</ol>
+<p class="c0 c2"></p>
+<p class="c0"><span>(requires ragel, platform=x86-64 (because of
+python/validator integration) and old ncval built)</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>Basically we are solving some kind of
+&lsquo;</span><span>inverse kleeny star problem&rsquo;: given DFA,
+we attempt to find such set of words, that any word is accepted by
+this DFA iff it is a concatenation of words from this set. We do
+not know how to solve this problem in general efficiently, so we
+are using some algorithm which makes certain assumptions about DFA
+structure (and verifies this assumption along the way).
+Corresponding code lives in
+validator_ragel/verify_validators_dfa.py.</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>For technical reasons we subdivide all such
+words into two categories: regular instructions and
+superinstructions.</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>Superinstructions enumerated by
+validator_ragel/verify_validators_dfa.py are checked in
+validator_ragel/verify_superinstructions.py. For each byte sequence
+we call objdump to make sure that it does not end mid-instruction.
+Then we parse disassembly listing to determine whether it is indeed
+valid superinstruction (since part of validation logic resides in
+DFA action, some of the byte sequences accepted by automaton are
+invalid from sandboxing point of view). And then we invoke
+validator itself through python interface and check that it accepts
+or rejects given byte sequence according to sandboxing rules. There
+are less than dozen types of superinstructions and they are
+relatively easy to parse (it is done in function
+ValidateSuperinstruction32/64 in validator_ragel/spec.py), so we
+don&rsquo;t bother to compare against the old validator for
+simplicity.</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>Regular instructions are enumerated and checked
+by validator_ragel/verify_regular_instructions.py. There are about
+4M 32-bit instructions and 70M 64-bit instructions accepted by DFA,
+so it is quite a costly test (about an hour on z620). For each
+instruction, we call objdump to ensure that it&rsquo;s indeed a
+single instruction. If text-based specification rejects this
+instruction, we make sure RDFA validator rejects it as well. There
+is no point for checks in other direction, because we ultimately
+enumerate only byte sequences RDFA accepts (enumerating all
+sequences would be impossible).</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>Actually, this scheme works for 32-bit
+validator. 64-bit one is additionally complicated by the fact that
+information flows between instructions (in the form of current
+restricted register). So we have to ensure that specification and
+RDFA validator agree on instruction pre- and post-
+conditions.</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>Also, just as in exhaustive decoder test, we
+actually do not try all possible values for &lsquo;anybytes&rsquo;
+(and direct jump targets fall into this category). Anyway, checking
+jump targets logic is not the goal of this test (we rely on
+manually written targeted tests for jumps instead).</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>How to run:</span></p>
+<p class="c0"><span>&nbsp; ./scons dfacheckvalidator
+platform=x86-64</span></p>
+<p class="c0"><span>This test requires ragel and takes a lot of
+time, so it can only be run on linux. It uses python interface to
+validator (implemented as DSO), so supplied value of
+&lsquo;platform&rsquo; parameter should match python bitness.
+Additionally, since it uses both 32-bit and 64-bit ncvals,
+following commands should be run before manually:</span></p>
+<p class="c0"><span>&nbsp; ./scons ncval platform=x86-32</span></p>
+<p class="c0"><span>&nbsp; ./scons ncval platform=x86-64</span></p>
+<p class="c0"><span>(this requirement can&rsquo;t be represented as
+scons dependencies because these targets span across different
+platform configurations)</span></p>
+<h4 class="c0"><a name="h.6r4bpnhb7uz9" id=
+"h.6r4bpnhb7uz9"></a><span>How do we apply text-based specification
+to sequences of bytes?</span></h4>
+<p class="c0"><span>Of course we could use objdump to get
+disassembly, but that raises the question how reliable is objdump
+in presence of invalid instructions (which is not its intended use
+case)?</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>Objdump is well-tested for the instructions
+which make sense and which CPU accepts (each time someone adds the
+instruction to gas it's added to objdump with the appropriate tests
+and everything) but it's not all that good for incorrect
+instructions (especially ones which are similar to other, existing,
+instructions). E.g.:</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>&nbsp;
+&nbsp;0:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;66 0f 78 c0
+02 01 &nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;extrq
+&nbsp;$0x1,$0x2,%xmm0</span></p>
+<p class="c0"><span>&nbsp;
+&nbsp;6:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;c5 f8 28 d1
+&nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vmovaps
+%xmm1,%xmm2</span></p>
+<p class="c0"><span>&nbsp;
+&nbsp;a:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;c5 f2 2a d0
+&nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vcvtsi2ss
+%eax,%xmm1,%xmm2</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>&nbsp;
+&nbsp;e:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;66 0f 78 00
+&nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;extrq
+&nbsp;$0x0,$0x78,(bad)</span></p>
+<p class="c0"><span>&nbsp;
+12:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;c5 fa 28 d1
+&nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vmovaps
+%xmm1,%xmm2</span></p>
+<p class="c0"><span>&nbsp;
+16:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;c5 f0 2a &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(bad)
+&nbsp;</span></p>
+<p class="c0"><span>&nbsp;
+19:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;d0 &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.byte
+0xd0</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>First three instructions are correct and
+instructions after that point are minor modifications of the
+existing instructions (extrq with register, not memory, vmovaps
+with vex.pp changed from 00 to 10, and vcvtsi2ss with vex.pp
+changed from 10 to 00). Objdump can declare instruction "(bad)", it
+can detect that it's "(bad)" in the middle of instruction or can
+just confuse it for different, real instruction!</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>Suppose for some reason DFA accepts completely
+meaningless sequence of bytes, but objdump incorrectly decodes it
+as innocent instruction, which text-based specification allows.
+This situation is undesirable. That&rsquo;s why we use our own RDFA
+decoder (which is tailored to mimic objdump output) instead of
+objdump itself.</span></p>
+<p class="c0 c2"></p>
+<p class="c0"><span>RDFA decoder is designed to never accept
+invalid instructions (it always produces the same
+&lsquo;unrecognized instruction&rsquo; message where objdump might
+try some guesswork). In order for decoding problem to go unnoticed
+by exhaustive decoder test, RDFA decoder should accept invalid
+sequence, objdump should accept the same invalid sequence, and they
+both should produce identically incorrect output. So using RDFA
+decoder in exhaustive validator test makes it extremely unlikely
+that text-based specification would have to deal with incorrectly
+decoded instruction.</span></p>
+<h3 class="c0"><a name="h.ulbjndlz4f2f" id=
+"h.ulbjndlz4f2f"></a><span>Presubmit script</span></h3>
+<p class="c0"><span>The script resides in
+validator_ragel/PRESUBMIT.py and performs two checks:</span></p>
+<ol class="c5" start="1">
+<li class="c1 c0"><span>when files that can affect generated
+validator files are updated, it reminds developer to run ./scons
+dfagen to regenerate these files</span></li>
+<li class="c1 c0"><span>when files that determine validator
+behavior (including generated files) are changed, it reminds
+developer to run ./scons dfacheckvalidator (because it can be only
+run locally)</span></li>
+</ol>
+</body>
+</html>

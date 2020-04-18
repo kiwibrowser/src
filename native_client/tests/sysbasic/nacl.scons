@@ -1,0 +1,38 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+nonstable_env = env.Clone()
+if nonstable_env.SetNonStableBitcodeIfAllowed():
+  if nonstable_env.Bit('bitcode'):
+    # sysbasic.c has an external reference to "end", a symbol defined
+    # by the native linker, which is disallowed by PNaCl's ABI.
+    nonstable_env.Append(LINKFLAGS=['--pnacl-disable-abi-check'])
+  sysbasic_nexe = nonstable_env.ComponentProgram(
+      'sysbasic', 'sysbasic.c',
+      EXTRA_LIBS=['${PTHREAD_LIBS}',
+                  '${NONIRT_LIBS}',
+                  'nacl_sys_private'])
+  node = nonstable_env.CommandSelLdrTestNacl(
+      'sysbasic_test.out',
+      sysbasic_nexe,
+      exit_status='69')
+  nonstable_env.AddNodeToTestSuite(node,
+                                   ['small_tests', 'sel_ldr_tests'],
+                                   'run_sysbasic_test')
+
+
+tls_test_nexe = env.ComponentProgram('tls_test',
+                                     'tls_test.c',
+                                     EXTRA_LIBS=['${PTHREAD_LIBS}',
+                                                 '${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl(
+    'tls_test_test.out',
+    tls_test_nexe,
+    exit_status='69')
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_tls_test')

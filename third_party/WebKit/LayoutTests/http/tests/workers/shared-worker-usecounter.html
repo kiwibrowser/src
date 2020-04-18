@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<title>Shared Worker: UseCounter</title>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<body>
+</body>
+<script>
+
+const kFeature = 675;  // From UseCounter.h
+const kDeprecatedFeature = 538;  // From Deprecation.h
+
+function isUseCounted(win, feature) {
+  return win.internals.isUseCounted(win.document, feature);
+}
+
+function observeUseCounter(win, feature) {
+  return win.internals.observeUseCounter(win.document, feature);
+}
+
+function openWindow(url) {
+  return new Promise(resolve => {
+      let win = window.open(url, '_blank');
+      add_completion_callback(() => win.close());
+      window.onmessage = e => {
+        assert_equals(e.data, 'LOADED');
+        resolve(win);
+      };
+    });
+}
+
+promise_test(t => {
+  const kWindowUrl = 'resources/shared-worker-usecounter-window.html';
+
+  let win1;
+  let win2;
+  let win3;
+  let worker;
+
+  return openWindow(kWindowUrl)
+    .then(win => {
+        win1 = win;
+        win1.connectToWorker();
+        return openWindow(kWindowUrl);
+      })
+    .then(win => {
+        win2 = win;
+        win2.connectToWorker();
+
+        // Connect to a shared worker from the main document to get a
+        // communication channel to the worker.
+        worker = new SharedWorker('resources/shared-worker-usecounter.js');
+        return new Promise(resolve => worker.port.onmessage = resolve);
+      })
+    .then(e => {
+        assert_equals(e.data, 'CONNECTED');
+
+        assert_false(isUseCounted(win1, kFeature));
+        assert_false(isUseCounted(win2, kFeature));
+
+        // Request to count a feature.
+        worker.port.postMessage({type: 'COUNT_FEATURE', feature: kFeature});
+        return Promise.all([
+            observeUseCounter(win1, kFeature),
+            observeUseCounter(win2, kFeature)
+        ]);
+      })
+    .then(() => {
+        // API use on the SharedWorkerGlobalScope is recorded in UseCounters on
+        // all connected documents.
+        assert_true(isUseCounted(win1, kFeature));
+        assert_true(isUseCounted(win2, kFeature));
+
+        assert_false(isUseCounted(win1, kDeprecatedFeature));
+        assert_false(isUseCounted(win2, kDeprecatedFeature));
+
+        // Request to count a deprecated feature.
+        worker.port.postMessage(
+            {type: 'COUNT_DEPRECATION', feature: kDeprecatedFeature});
+        return Promise.all([
+            observeUseCounter(win1, kDeprecatedFeature),
+            observeUseCounter(win2, kDeprecatedFeature)
+        ]);
+      })
+    .then(() => {
+        // Deprecated API use on the SharedWorkerGlobalScope is recorded in
+        // UseCounters on all connected documents.
+        assert_true(isUseCounted(win1, kDeprecatedFeature));
+        assert_true(isUseCounted(win2, kDeprecatedFeature));
+
+        return openWindow(kWindowUrl);
+      })
+    .then(win => {
+        win3 = win;
+        // A new document hasn't connected to the worker, so the API use should
+        // not be counted yet.
+        assert_false(isUseCounted(win3, kFeature));
+        assert_false(isUseCounted(win3, kDeprecatedFeature));
+        win3.connectToWorker();
+        return Promise.all([
+            observeUseCounter(win3, kFeature),
+            observeUseCounter(win3, kDeprecatedFeature)
+        ]);
+      })
+    .then(() => {
+        // A counter of the newly connected document should be synced with
+        // others.
+        assert_true(isUseCounted(win3, kFeature));
+        assert_true(isUseCounted(win3, kDeprecatedFeature));
+      });
+}, 'UseCounter on SharedWorkerGlobalScope');
+
+</script>
+</html>

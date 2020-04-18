@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<script src='../resources/testharness.js'></script>
+<script src='../resources/testharnessreport.js'></script>
+<script src='resources/shadow-dom.js'></script>
+<style>
+.container { position: relative; }
+</style>
+
+<!--
+When both the context object and the real offset parent is in the same
+node tree, offsetParent doesn't perform any adjustment.
+-->
+<div id='host_open0'>
+  <template data-mode='open' data-expose-as='root_open0'>
+    <div id='container' style='position: relative;'>
+      <div id='inner_node'>X</div>
+    </div>
+  </template>
+</div>
+
+<div id='host_closed0'>
+  <template data-mode='closed' data-expose-as='root_closed0'>
+    <div id='container' style='position: relative;'>
+      <div id='inner_node'>X</div>
+    </div>
+  </template>
+</div>
+
+<script>
+test(() => {
+  convertTemplatesToShadowRootsWithin(host_open0);
+  let container = root_open0.querySelector('#container');
+  let inner_node = root_open0.querySelector('#inner_node');
+  assert_equals(inner_node.offsetParent, container);
+}, 'offsetParent should return node in the same node tree in open shadow root.');
+
+test(() => {
+  convertTemplatesToShadowRootsWithin(host_closed0);
+  let container = root_closed0.querySelector('#container');
+  let inner_node = root_closed0.querySelector('#inner_node');
+  assert_equals(inner_node.offsetParent, container);
+}, 'offsetParent should return node in the same node tree in closed shadow root.');
+</script>
+
+<!--
+Even when the real offsetParent is in a closed shadow tree,
+if it is unclosed to the context object, that parent should be returned.
+-->
+<div id='host_open1'>
+  <template data-mode='open' data-expose-as='root_open1'>
+    <div id='inner_host' style='position: relative'>
+      <template data-mode='closed' data-expose-as='root_closed_inner1'>
+        <div id='inner_node'>X</div>
+      </template>
+    </div>
+  </template>
+</div>
+
+<div id='host_closed1'>
+  <template data-mode='closed' data-expose-as='root_closed1'>
+    <div id='inner_host' style='position: relative;'>
+      <template data-mode='open' data-expose-as='root_open_inner1'>
+        <div id='inner_node'>X</div>
+      </template>
+    </div>
+  </template>
+</div>
+
+<script>
+test(() => {
+  convertTemplatesToShadowRootsWithin(host_open1);
+  let inner_host = root_open1.querySelector('#inner_host');
+  let inner_node = root_closed_inner1.querySelector('#inner_node');
+  assert_equals(inner_node.offsetParent, inner_host);
+}, 'offsetParent should return an unclosed node in a open shadow from closed shadow.');
+
+test(() => {
+  convertTemplatesToShadowRootsWithin(host_closed1);
+  let inner_host = root_closed1.querySelector('#inner_host');
+  let inner_node = root_open_inner1.querySelector('#inner_node');
+  assert_equals(inner_node.offsetParent, inner_host);
+}, 'offsetParent should return an unclosed node in a closed shadow from open shadow.');
+</script>
+
+<!--
+#host_open2 and #host_closed2 have the same structure, and #target_open2 /
+#target_closed2 are slotted into each shadow slot, then real offsetParent would
+be in the shadow. For the closed shadow, such element should not leak to the
+light DOM, so it is adjusted to the nearest unclosed offsetParent.
+
+See also
+https://github.com/w3c/webcomponents/issues/497
+https://github.com/w3c/csswg-drafts/issues/159
+-->
+<div id='host_open2' class='container'>
+  <template data-mode='open' data-expose-as='root_open2'>
+    <div id='container_open' style='position: relative;'>
+      <slot name='x'></slot>
+    </div>
+  </template>
+  <span id='target_open2' slot='x'>X</span>
+</div>
+
+<div id='host_closed2' class='container'>
+  <template data-mode='closed' data-expose-as='root_closed2'>
+    <div id='container_closed' style='position: relative;'>
+      <slot name='x'></slot>
+    </div>
+  </template>
+  <span id='target_closed2' slot='x'>X</span>
+</div>
+
+<script>
+test(() => {
+  convertTemplatesToShadowRootsWithin(host_open2);
+  convertTemplatesToShadowRootsWithin(host_closed2);
+
+  assert_equals(target_open2.offsetParent.id, 'container_open');
+  assert_equals(target_closed2.offsetParent.id, 'host_closed2');
+}, 'offsetParent should return an unclosed node.');
+</script>
+
+<!--
+Check if offsetParent can properly traverse up to find unclosed node.
+In the following example, #target_closed3 will distributed to slot y,
+but its offsetParent should neither return #inner_node nor #inner_host.
+-->
+<div id='host_closed3' class='container'>
+  <template data-mode='closed' data-expose-as='root_closed3'>
+    <div id='inner_host' style='position: relative;'>
+      <template data-mode='closed' data-expose-as='root_closed_inner3'>
+        <div id='inner_node' style='position: relative;'>
+          <slot name='y'></slot>
+        </div>
+      </template>
+      <slot name='x' slot='y'></slot>
+    </div>
+  </template>
+  <span id='target_closed3' slot='x'>X</span>
+</div>
+
+<script>
+test(() => {
+  convertTemplatesToShadowRootsWithin(host_closed3);
+  let slot_y = root_closed_inner3.querySelector('slot[name=y]');
+  assert_array_equals(slot_y.assignedNodes({flatten: true}), [target_closed3]);
+  assert_equals(target_closed3.offsetParent.id, 'host_closed3');
+}, 'offsetParent should skip any non-unclosed nodes.');
+</script>
+
+<!--
+Yet another test case if the check for unclosed node is working as expected.
+inner_node.offsetParent should neither return #host_closed4 (unclosed, but its
+position is static) nor #host_open4 (as #container is the closer unclosed parent).
+As #container is unclosed to #inner_node, inner_node.offsetParent should return
+#container.
+-->
+<div id='host_open4' class='container'>
+  <template data-mode='open' data-expose-as='root_open4'>
+    <div id='container' style='position: relative;'>
+      <slot name='x'></slot>
+    </div>
+  </template>
+  <div id='host_closed4' slot='x'>
+    <template data-mode='closed' data-expose-as='root_closed4'>
+      <div id='inner_node'>X</div>
+    </template>
+  </div>
+</div>
+
+<script>
+test(() => {
+  convertTemplatesToShadowRootsWithin(host_open4);
+  let container = root_open4.querySelector('#container');
+  let inner_node = root_closed4.querySelector('#inner_node');
+  assert_equals(inner_node.offsetParent, container);
+}, 'offsetParent should return node in the open shadow root because it is unclosed.');
+</script>
+
+<!--
+Quoted from https://github.com/w3c/csswg-drafts/issues/159
+When the real offsetParent is 'position: fixed' but not unclosed, do not traverse up to
+find unclosed ancestor, but should return null.  If it is unclosed, return it.
+-->
+<div id='host_closed5'>
+  <template data-mode='closed'>
+    <div id='container' style='position: fixed;'>
+      <slot name='x'></slot>
+    </div>
+  </template>
+  <div id='inner_node5' slot='x'>X</div>
+</div>
+
+<div id='host_open5'>
+  <template data-mode='open'>
+    <div id='container' style='position: fixed;'>
+      <slot name='x'></slot>
+    </div>
+  </template>
+  <div id='inner_node5_open' slot='x'>X</div>
+</div>
+
+<script>
+test(() => {
+  convertTemplatesToShadowRootsWithin(host_closed5);
+  assert_equals(inner_node5.offsetParent, null);
+
+  convertTemplatesToShadowRootsWithin(host_open5);
+  let container = host_open5.shadowRoot.querySelector('#container');
+  assert_equals(inner_node5_open.offsetParent, container);
+}, 'offsetParent should return null in case position:fixed offsetParent is not unclosed.');
+</script>
+
+<!--
+Check if all position: static elements are properly skipped in searching offsetParent.
+-->
+<div id='host_open6'>
+  <template data-mode='open' data-expose-as='root_open6'>
+    <div id='static1'>
+      <div id='relative' style='position: relative;'>
+        <div id='static2'>
+          <template data-mode='open'>
+            <div id='inner-static'>
+              <slot name='y'></slot>
+            </div>
+          </template>
+          <slot name='x' slot='y'></slot>
+        </div>
+      </div>
+    </div>
+  </template>
+  <div id='lightdom-static' slot='x'>
+    <div id='inner_node6'>X</div>
+  </div>
+</div>
+
+<script>
+test(() => {
+  convertTemplatesToShadowRootsWithin(host_open6);
+  assert_not_equals(inner_node6.offsetParent, null);
+  let relative = root_open6.querySelector('#relative');
+  assert_equals(inner_node6.offsetParent, relative);
+}, 'All position:static elements should be skipped for offsetParent.');
+</script>

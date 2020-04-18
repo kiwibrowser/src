@@ -1,0 +1,64 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-icon/iron-icon.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_lazy_render/cr_lazy_render.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_toolbar/cr_toolbar.html">
+<link rel="import" href="chrome://history/browser_service.html">
+<link rel="import" href="chrome://history/icons.html">
+<link rel="import" href="chrome://history/shared_style.html">
+
+<!-- Lazy loaded: cr-toolbar-selection-overlay. -->
+
+<dom-module id="history-toolbar">
+  <template>
+    <style include="shared-style">
+      :host {
+        color: #fff;
+        display: flex;
+        transition: background-color 150ms;
+      }
+
+      /* General toolbar layout. */
+
+      :host([items-selected_]) {
+        background: var(--interactive-color);
+      }
+
+      cr-toolbar,
+      cr-toolbar-selection-overlay {
+        --cr-toolbar-field-margin: var(--side-bar-width);
+        flex: 1;
+      }
+
+      :host([has-drawer]) cr-toolbar,
+      :host([has-drawer]) cr-toolbar-selection-overlay {
+        --cr-toolbar-field-margin: 0;
+      }
+
+      cr-toolbar-selection-overlay {
+        --selection-overlay-max-width: var(--card-max-width);
+      }
+    </style>
+    <cr-toolbar id="main-toolbar"
+        page-name="$i18n{title}"
+        clear-label="$i18n{clearSearch}"
+        search-prompt="$i18n{searchPrompt}"
+        hidden$="[[itemsSelected_]]"
+        spinner-active="[[spinnerActive]]"
+        show-menu="[[hasDrawer]]"
+        show-menu-promo="[[canShowMenuPromo_(showMenuPromo)]]"
+        menu-label="$i18n{historyMenuButton}"
+        menu-promo="$i18n{menuPromo}"
+        close-menu-promo="$i18n{closeMenuPromo}"
+        on-search-changed="onSearchChanged_">
+    </cr-toolbar>
+    <template is="dom-if" if="[[itemsSelected_]]">
+      <cr-toolbar-selection-overlay delete-label="$i18n{delete}"
+          cancel-label="$i18n{cancel}"
+          selection-label="[[numberOfItemsSelected_(count)]]"
+          on-clear-selected-items="clearSelectedItems"
+          on-delete-selected-items="deleteSelectedItems">
+      </cr-toolbar-selection-overlay>
+    </template>
+  </template>
+  <script src="chrome://history/history_toolbar.js"></script>
+</dom-module>

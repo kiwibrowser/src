@@ -1,0 +1,73 @@
+{% from 'templates/macros.tmpl' import license, source_files_for_generated_file %}
+{{license()}}
+
+{{source_files_for_generated_file(template_file, input_files)}}
+
+#include "third_party/blink/renderer/core/css/resolver/style_builder.h"
+
+#include "third_party/blink/renderer/core/css/css_property_value.h"
+#include "third_party/blink/renderer/core/css/properties/longhand.h"
+#include "third_party/blink/renderer/core/css/resolver/style_resolver_state.h"
+#include "third_party/blink/renderer/core/style/computed_style.h"
+#include "third_party/blink/renderer/core/style_builder_functions.h"
+
+namespace blink {
+
+// TODO(crbug.com/751354): Delete this method and call property class methods
+// directly using CSSProperty::Get() once all StyleBuilderFunctions have been
+// moved to property classes.
+void StyleBuilder::ApplyProperty(const CSSProperty& property,
+                                 StyleResolverState& state,
+                                 const CSSValue& value,
+                                 bool isInitial,
+                                 bool isInherit) {
+  switch (property.PropertyID()) {
+    {% for input_property in properties if input_property.should_declare_functions %}
+    {% set property_id = input_property.property_id %}
+    {% if input_property.use_property_class_in_stylebuilder %}
+    case {{input_property.property_id}}:
+      if (isInitial)
+        ToLonghand(Get{{property_id}}()).ApplyInitial(state);
+      else if (isInherit)
+        ToLonghand(Get{{property_id}}()).ApplyInherit(state);
+      else
+        ToLonghand(Get{{property_id}}()).ApplyValue(state, value);
+      return;
+      {% else %}
+    case {{input_property.property_id}}:
+      if (isInitial)
+        StyleBuilderFunctions::applyInitial{{property_id}}(state);
+      else if (isInherit)
+        StyleBuilderFunctions::applyInherit{{property_id}}(state);
+      else
+        StyleBuilderFunctions::applyValue{{property_id}}(state, value);
+      return;
+    {% endif %}
+
+    {% endfor %}
+    case CSSPropertyVariable:
+      DCHECK(!isInitial);
+      DCHECK(!isInherit);
+      StyleBuilderFunctions::applyValueCSSPropertyVariable(state, value);
+      return;
+    {% for input_property in properties if input_property.direction_aware_options %}
+    case {{input_property.property_id}}:
+    {% endfor %}
+    {
+      const CSSProperty& resolved_property =
+              property.ResolveDirectionAwareProperty(state.Style()->Direction(),
+                                             state.Style()->GetWritingMode());
+      DCHECK(!resolved_property.IDEquals(property.PropertyID()));
+      ApplyProperty(resolved_property, state, value);
+      return;
+    }
+    {% for input_property in properties if input_property.builder_skip %}
+    case {{input_property.property_id}}:
+    {% endfor %}
+      return;
+    default:
+      NOTREACHED();
+  }
+}
+
+} // namespace blink

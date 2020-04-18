@@ -1,0 +1,43 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(`Tests function's return value reported from backend.\n`);
+  await TestRunner.loadModule('sources_test_runner');
+  await TestRunner.showPanel('sources');
+  await TestRunner.evaluateInPagePromise(`
+      function d()
+      {
+          var i = 10;
+          return i;
+      }
+
+      function testFunction()
+      {
+          debugger;
+          return d();
+      }
+  `);
+
+  SourcesTestRunner.setQuiet(true);
+  SourcesTestRunner.startDebuggerTest(step1);
+
+  function step1() {
+    SourcesTestRunner.runTestFunctionAndWaitUntilPaused(step2);
+  }
+
+  var stepCount = 0;
+  function step2(callFrames) {
+    if (stepCount < 2) {
+      for (var i = 0, frame; frame = callFrames[i]; ++i)
+        TestRunner.assertTrue(!frame.returnValue(), 'Unexpected returnValue in frame #' + i);
+      SourcesTestRunner.stepOver();
+      SourcesTestRunner.waitUntilResumed(SourcesTestRunner.waitUntilPaused.bind(SourcesTestRunner, step2));
+    } else {
+      SourcesTestRunner.captureStackTrace(callFrames, null, {printReturnValue: true});
+      SourcesTestRunner.completeDebuggerTest();
+    }
+    ++stepCount;
+  }
+})();

@@ -1,0 +1,96 @@
+<!doctype html>
+<html dir="$i18n{textdirection}" lang="$i18n{language}">
+<head>
+  <meta charset="utf-8">
+  <script src="chrome://resources/js/cr.js"></script>
+  <script src="chrome://resources/js/util.js"></script>
+  <script src="chrome://resources/js/load_time_data.js"></script>
+  <script src="chrome://signin-internals/strings.js"></script>
+  <if expr="is_ios">
+    <!-- TODO(crbug.com/487000): Remove this once injected by the web layer. -->
+    <script src="chrome://resources/js/ios/web_ui.js"></script>
+  </if>
+  <link rel="stylesheet" href="chrome://resources/css/text_defaults.css">
+  <link rel="stylesheet" type="text/css" href="signin_index.css">
+</head>
+<body>
+  <div id='signin-info'>
+    <div class="section" jsselect="signin_info">
+      <h2 jscontent="title"></h2>
+      <table class="signin-details">
+        <tr jsselect="data"
+            jsvalues="class:chrome.signin.setClassFromValue($this.value)"
+            jseval="chrome.signin.highlightIfChanged(this,
+                      this.children[1].innerText, value)">
+          <td jscontent="label"></td>
+          <td jscontent="status"></td>
+          <td jscontent="time" jsdisplay="time"></td>
+          <td jsdisplay="time.length==0">&nbsp;</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+  <div id='token-info'>
+    <h2>Access Token Details By Account</h2>
+    <div class="tokenSection" jsselect="token_info">
+      <h3 jscontent="title"></h3>
+      <table class="signin-details">
+        <tr class="header">
+          <td>Service</td>
+          <td>Requested Scopes</td>
+          <td>Request Time</td>
+          <td>Request Status</td>
+        </tr>
+        <tr jsselect="data"
+            jsvalues="class:chrome.signin.setClassFromValue($this.status)"
+            jseval="chrome.signin.highlightIfAnyChanged(this,
+                      [[this.children[1].innerText, scopes],
+                      [this.children[2].innerText, request_time],
+                      [this.children[3].innerText, status]])">
+          <td jscontent="service"></td>
+          <td jsvalues=".innerHTML: scopes"></td>
+          <td jscontent="request_time"></td>
+          <td jsvalues=".innerHTML: status"></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+  <div id='cookie-info'>
+    <h2>Accounts in Cookie Jar</h2>
+    <div class="cookieSection">
+      <table class="signin-details">
+        <tr class="header">
+          <td>Email Address</td>
+          <td>Gaia ID</td>
+          <td>Validity</td>
+        </tr>
+        <tr jsselect="cookie_info">
+          <td jscontent="email"></td>
+          <td jscontent="gaia_id"></td>
+          <td jscontent="valid"></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+  <div id="account-info">
+    <h2>Accounts in Token Service</h2>
+    <div class="account-section">
+      <table class="signin-details">
+        <tr class="header">
+          <td>Accound Id</td>
+          <td>Has refresh token</td>
+          <td>Has persistent auth error</td>
+        </tr>
+        <tr jsselect="accountInfo">
+          <td jscontent="accountId"></td>
+          <td jscontent="hasRefreshToken"></td>
+          <td jscontent="hasAuthError"></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+  <script src="chrome://resources/js/i18n_template.js"></script>
+  <script src="chrome://resources/js/jstemplate_compiled.js"></script>
+  <script src="chrome://signin-internals/signin_internals.js"></script>
+</body>
+</html>

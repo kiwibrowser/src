@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<button id="button"></button>
+<script>
+
+if (window.testRunner) {
+    testRunner.dumpAsText();
+    testRunner.setScriptsAllowed(false);
+
+    document.getElementById('button').addEventListener('keydown', function() { console.log('keydown event in main world') });
+    testRunner.evaluateScriptInIsolatedWorld(1, "document.getElementById('button').addEventListener('keydown', function() { console.log('keydown event in isolated world') });");
+
+    document.getElementById("button").focus();
+    eventSender.keyDown('e', []);
+} else {
+    console.log("This test reuqires testRunner.setScriptsAllowed, so it can't run in a browser.");
+}
+</script>
+

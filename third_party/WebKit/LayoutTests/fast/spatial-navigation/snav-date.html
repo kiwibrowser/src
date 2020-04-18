@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<head>
+<script src="../../resources/js-test.js"></script>
+<script src="resources/spatial-navigation-utils.js"></script>
+<script>
+window.jsTestIsAsync = true;
+
+if (window.testRunner) {
+    testRunner.overridePreference("WebKitTabToLinksPreferenceKey", 1);
+    testRunner.overridePreference("WebKitSpatialNavigationEnabled", 1);
+}
+</script>
+</head>
+<body id="some-content" xmlns="http://www.w3.org/1999/xhtml">
+<p id="description"></p>
+<table style="text-align: left; width: 100%; margin-left: auto; margin-right: auto;" border="1" cellpadding="2" cellspacing="1">
+<tbody>
+<tr>
+<td style="vertical-align: top; text-align: center;"><a id="left" href="a">Left</a></td>
+<td style="vertical-align: top; text-align: center;"><input id="start" type="date" value="text"></td>
+<td style="vertical-align: top; text-align: center;"><a id="right" href="a">Right</a></td>
+</tr>
+</tbody>
+</table>
+<div id="console"></div>
+<script type="application/javascript">
+description('This test ensures the correctness of Spatial Navigation (SNav) algorithm over date input element (having shadow DOM).<br>\
+             * Navigation steps:<br>\
+             1) Loads this page, focus goes to "start" automatically.<br>\
+             2) Focus moves away from input box, left and right to neighbor nodes and back.<br>');
+
+var resultMap = [
+    ["Left", "left"],
+    ["Right", "start"], // month
+    ["Right", "start"], // day
+    ["Right", "start"], // year
+    ["Right", "right"],
+    ["Left", "start"],
+    ["DONE", "DONE"]
+];
+
+function runTest()
+{
+    // starting the test itself: get to a known place.
+    document.getElementById("start").focus();
+
+    initTest(resultMap, finishJSTest);
+}
+
+window.onload = runTest;
+</script>
+</body>
+</html>
+

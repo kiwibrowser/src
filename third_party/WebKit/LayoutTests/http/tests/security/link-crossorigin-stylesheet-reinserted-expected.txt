@@ -1,0 +1,11 @@
+CONSOLE ERROR: Access to CSS stylesheet at 'http://127.0.0.1:8080/resources/slow-script.pl?delay=100' from origin 'http://127.0.0.1:8000' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. Origin 'http://127.0.0.1:8000' is therefore not allowed access.
+Test that re-inserting a CORS-loading stylesheet is correctly handled.
+
+On success, you will see a series of "PASS" messages, followed by "TEST COMPLETE".
+
+
+PASS non-CORS stylesheet loaded with error(no assert)
+PASS successfullyParsed is true
+
+TEST COMPLETE
+

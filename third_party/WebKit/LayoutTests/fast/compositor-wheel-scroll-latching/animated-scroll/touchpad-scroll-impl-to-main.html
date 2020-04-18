@@ -1,0 +1,77 @@
+<!DOCTYPE HTML>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+<style>
+  body {
+    margin: 0px;
+    height: 1000px;
+    width: 1000px;
+  }
+  #div {
+    background-color: #84BE6A;
+    height: 500px;
+    width: 500px;
+    overflow: scroll;
+  }
+  #content {
+    height: 800px;
+    width: 800px;
+  }
+</style>
+
+<div id="div" style="will-change:transform; position:relative;">
+  <div id="content"> </div>
+</div>
+
+<script>
+var div = document.getElementById('div');
+var rect = div.getBoundingClientRect();
+const GESTURE_SOURCE_TYPE = 2; // MOUSE_INPUT from synthetic_gesture_params.h
+
+function changeStyleToScrollOnMain() {
+  if(div.scrollTop > 100)
+    div.style = "border-radius:40px; position:fixed;";
+}
+div.addEventListener("wheel", changeStyleToScrollOnMain, {passive: true});
+
+let last_scroll_offset = div.scrollTop;
+var last_changed_count = 0;
+var raf_count = 0;
+function waitForAnimationEnd() {
+  return new Promise((resolve, reject) => {
+    function tick() {
+    // We requestAnimationFrame until either 70 frames with no change observed
+    // or the div is fully scrolled.
+      if (raf_count - last_changed_count > 70 ||
+          div.scrollTop == div.scrollHeight - div.clientHeight) {
+        resolve();
+      } else {
+        if (div.scrollTop != last_scroll_offset) {
+          last_changed_count = raf_count;
+          last_scroll_offset = div.scrollTop;
+        }
+        requestAnimationFrame(tick.bind(this));
+      }
+      raf_count++;
+    }
+    tick();
+  });
+}
+
+promise_test(() => {
+  return new Promise((resolve, reject) => {
+    chrome.gpuBenchmarking.smoothScrollBy(500,
+                                          resolve,
+                                          (rect.left + rect.right) / 2,
+                                          (rect.top + rect.bottom) / 2,
+                                          GESTURE_SOURCE_TYPE,
+                                          'down',
+                                          2000);
+  }).then(waitForAnimationEnd)
+  .then(() => {
+    assert_equals(div.scrollTop, div.scrollHeight - div.clientHeight,
+        "div must be fully scrolled");
+  });
+}, "Scroller should continue to scroll when MT takes over scroll handling.");
+
+</script>

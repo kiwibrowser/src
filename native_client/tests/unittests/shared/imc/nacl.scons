@@ -1,0 +1,56 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+nacl_close_test_nexe = env.ComponentProgram(
+                           'nacl_close_test',
+                           ['nacl_close_test.c'],
+                           EXTRA_LIBS=['imc',
+                                       'imc_syscalls',
+                                       'platform',
+                                       'gio',
+                                       '${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl(
+    'nacl_close_test_nexe.out', nacl_close_test_nexe,
+    # Pass '-a' to enable imc_socketpair().
+    sel_ldr_flags=['-a'])
+env.AddNodeToTestSuite(node,
+                       ['small_tests'],
+                       'run_nacl_close_test_nexe')
+
+double_nacl_close_test_nexe = env.ComponentProgram(
+                                  'double_nacl_close_test',
+                                  ['double_nacl_close_test.c'],
+                                  EXTRA_LIBS=['imc',
+                                              'imc_syscalls',
+                                              'platform',
+                                              'gio',
+                                              '${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl(
+    'double_nacl_close_test_nexe.out', double_nacl_close_test_nexe,
+    # Pass '-a' to enable imc_socketpair().
+    sel_ldr_flags=['-a'])
+env.AddNodeToTestSuite(node,
+                       ['small_tests'],
+                       'run_double_nacl_close_test_nexe')
+
+
+nacl_create_memory_object_test_nexe = env.ComponentProgram(
+    'nacl_create_memory_object_test',
+    ['nacl_create_memory_object_test.c'],
+    EXTRA_LIBS=['imc',
+                'imc_syscalls',
+                'platform',
+                'gio',
+                '${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl(
+    'nacl_create_memory_object_test_nexe.out',
+    nacl_create_memory_object_test_nexe,
+    # Pass '-a' to enable imc_mem_obj_create().
+    sel_ldr_flags=['-a'])
+env.AddNodeToTestSuite(node,
+                       ['small_tests'],
+                       'run_nacl_create_memory_object_test_nexe')

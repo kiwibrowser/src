@@ -1,0 +1,59 @@
+# -*- python -*-
+# Copyright 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+valgrind = env.ComponentObject(
+    'valgrind_annotations.o',
+    '${MAIN_DIR}/src/untrusted/valgrind/dynamic_annotations.c')
+
+# These tests are flaky on mac10.7-newlib-dbg-asan.
+# See https://code.google.com/p/nativeclient/issues/detail?id=3906
+is_broken = env.Bit('asan') and env.Bit('host_mac')
+
+# TEST_IRT_FUTEX=0 works with x86 nacl-glibc (since it has its own futex
+# implementation) and with libpthread_private, but not with
+# nacl-newlib's IRT-using libpthread, nor with new (currently ARM only)
+# nacl-glibc, which always uses the IRT interfaces.
+if ((env.Bit('nacl_glibc') and env.Bit('build_x86')) or
+    (not env.Bit('nacl_glibc') and not env.Bit('tests_use_irt'))):
+  test_env = env.Clone()
+  test_env.Append(CPPDEFINES=[['TEST_IRT_FUTEX', '0'],
+                              ['TEST_FUTEX_SYSCALLS', '0']])
+  nexe = test_env.ComponentProgram(
+      'futex_test', ['futex_test.c'] + valgrind,
+      EXTRA_LIBS=['${NONIRT_LIBS}', '${PTHREAD_LIBS}'])
+
+  node = env.CommandSelLdrTestNacl('futex_test.out', nexe)
+  env.AddNodeToTestSuite(node, ['small_tests'], 'run_futex_test',
+                         is_broken=is_broken)
+
+
+if env.Bit('tests_use_irt'):
+  test_env = env.Clone()
+  test_env.Append(CPPDEFINES=[['TEST_IRT_FUTEX', '1'],
+                              ['TEST_FUTEX_SYSCALLS', '0']])
+  nexe = test_env.ComponentProgram(
+      'irt_futex_test',
+      [test_env.ComponentObject('irt_futex_test.o', 'futex_test.c')] + valgrind,
+      EXTRA_LIBS=['${NONIRT_LIBS}', '${PTHREAD_LIBS}'])
+
+  node = env.CommandSelLdrTestNacl('irt_futex_test.out', nexe)
+  env.AddNodeToTestSuite(node, ['small_tests'], 'run_irt_futex_test',
+                         is_broken=is_broken)
+
+
+test_env = env.Clone()
+test_env.Append(CPPDEFINES=[['TEST_IRT_FUTEX', '0'],
+                            ['TEST_FUTEX_SYSCALLS', '1']])
+nexe = test_env.ComponentProgram(
+    'futex_syscalls_test',
+    [test_env.ComponentObject('futex_syscalls_test.o', 'futex_test.c')]
+    + valgrind,
+    EXTRA_LIBS=['${NONIRT_LIBS}', '${PTHREAD_LIBS}'])
+
+node = env.CommandSelLdrTestNacl('futex_syscalls_test.out', nexe)
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_futex_syscalls_test',
+                       is_broken=is_broken)

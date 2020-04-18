@@ -1,0 +1,71 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package ukm;
+
+// Source contains data related to a top-level navigation.
+// Next tag: 10
+message Source {
+  // The URL scheme, such as HTTP, HTTPS, CHROME_EXTENSION, etc.
+  enum UrlScheme {
+    UNSUPPORTED = 0;
+    HTTP = 1;
+    HTTPS = 2;
+    FTP = 3;
+    ABOUT = 4;
+    CHROME = 5;
+    CHROME_EXTENSION = 6;
+  };
+
+  // An identifier for the source. This should be unique within a session.
+  optional int64 id = 1;
+
+  // Holds data about a URL seen by the client.
+  message UrlInfo {
+    // The URL seen by the client.
+    optional string url = 1;
+
+    // Number of URLs seen for this source before the current URL.
+    // If unset, it’s equivalent to the count of the UrlInfo before it + 1,
+    // or 0 if it’s the first UrlInfo.
+    optional int32 previous_url_count = 2;
+  }
+
+  // Data about each URL associated with the source_id within the record's
+  // scope, in the order that the URLs were encountered. Data may include full
+  // or partial redirect chains for main frame navigations.
+  repeated UrlInfo urls = 8;
+
+  // The URL of the source, as recorded in history. If this URL has not been
+  // discovered by Google's crawler, it should not be recorded.
+  optional string url = 2;
+
+  // The origin of the URL (ex. "http://docs.google.com" if the URL is something
+  // like "http://docs.google.com/some_doc_hash"). This field is populated
+  // server-side and should never be filled in by clients.
+  reserved 5;
+  reserved "url_origin";
+  reserved 9;
+  reserved "url_scheme";
+
+  // The initial URL of the source. Set in cases where the source URL changed
+  // (e.g. it was redirected), otherwise unset. If this URL has not been
+  // discovered by Google's crawler, it should not be recorded.
+  optional string initial_url = 6;
+
+  // Flag indicating if the metric was collected while inside a "custom tab".
+  optional bool is_custom_tab = 7;
+
+  // Timestamp of navigation to this Source, as seen by the client. Time of
+  // events related to this Source will generally be relative to this timestamp.
+  optional int64 navigation_time_msec = 3;
+
+  // Time between navigation and the first contentful paint, in milliseconds.
+  // Deprecated. Use ukm::Entry instead.
+  optional int64 first_contentful_paint_msec = 4 [deprecated = true];
+}

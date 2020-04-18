@@ -1,0 +1,74 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/policy/cr_policy_pref_indicator.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/neon-animatable.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="../i18n_setup.html">
+<link rel="import" href="../prefs/prefs_behavior.html">
+<link rel="import" href="../settings_page/settings_animated_pages.html">
+<link rel="import" href="../settings_page/settings_subpage.html">
+<link rel="import" href="../settings_shared_css.html">
+<link rel="import" href="android_apps_browser_proxy.html">
+<link rel="import" href="android_apps_subpage.html">
+
+<dom-module id="settings-android-apps-page">
+  <template>
+    <style include="settings-shared"></style>
+
+    <settings-animated-pages id="pages" section="androidApps"
+        focus-config="[[focusConfig_]]">
+      <neon-animatable route-path="default">
+        <template is="dom-if" if="[[havePlayStoreApp]]" restamp>
+          <div id="android-apps" class="settings-box two-line first"
+              actionable$="[[androidAppsInfo.playStoreEnabled]]"
+              on-click="onSubpageTap_">
+            <div class="start">
+              $i18n{androidAppsPageLabel}
+              <div class="secondary" id="secondaryText"
+                  inner-h-t-m-l="[[i18nAdvanced('androidAppsSubtext')]]">
+              </div>
+            </div>
+            <cr-policy-pref-indicator pref="[[prefs.arc.enabled]]"
+                icon-aria-label="$i18n{androidAppsPageTitle}">
+            </cr-policy-pref-indicator>
+            <template is="dom-if" if="[[androidAppsInfo.playStoreEnabled]]">
+              <paper-icon-button-light class="subpage-arrow">
+                <button aria-label="$i18n{androidAppsPageTitle}"
+                    aria-describedby="secondaryText">
+                </button>
+              </paper-icon-button-light>
+            </template>
+            <template is="dom-if" if="[[!androidAppsInfo.playStoreEnabled]]">
+              <div class="separator"></div>
+              <paper-button id="enable" class="secondary-button"
+                  disabled="[[isEnforced_(prefs.arc.enabled)]]"
+                  on-click="onEnableTap_"
+                  aria-label="$i18n{androidAppsPageTitle}"
+                  aria-describedby="secondaryText">
+                $i18n{androidAppsEnable}
+              </paper-button>
+            </template>
+          </div>
+        </template>
+        <template is="dom-if" if="[[!havePlayStoreApp]]" restamp>
+          <settings-android-settings-element>
+          </settings-android-settings-element>
+        </template>
+      </neon-animatable>
+
+      <template is="dom-if" route-path="/androidApps/details">
+        <settings-subpage
+            associated-control="[[$$('#android-apps')]]"
+            page-title="$i18n{androidAppsPageLabel}">
+          <settings-android-apps-subpage
+              android-apps-info="[[androidAppsInfo]]" prefs="{{prefs}}">
+          </settings-android-apps-subpage>
+        </settings-subpage>
+      </template>
+    </settings-animated-pages>
+
+  </template>
+  <script src="android_apps_page.js"></script>
+</dom-module>

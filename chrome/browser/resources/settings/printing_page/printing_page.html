@@ -1,0 +1,73 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/neon-animatable.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="cloud_printers.html">
+<link rel="import" href="../route.html">
+<link rel="import" href="../settings_page/settings_animated_pages.html">
+<link rel="import" href="../settings_page/settings_subpage.html">
+<link rel="import" href="../settings_shared_css.html">
+<if expr="chromeos">
+<link rel="import" href="cups_printers.html">
+</if>
+<if expr="not chromeos">
+<link rel="import" href="printing_browser_proxy.html">
+</if>
+
+<dom-module id="settings-printing-page">
+  <template>
+    <style include="settings-shared"></style>
+    <settings-animated-pages id="pages" section="printing"
+        focus-config="[[focusConfig_]]">
+      <neon-animatable route-path="default">
+<if expr="chromeos">
+        <div id="cupsPrinters" class="settings-box first"
+            on-click="onTapCupsPrinters_" actionable>
+          <div class="start">$i18n{cupsPrintersTitle}</div>
+          <paper-icon-button-light class="subpage-arrow">
+            <button aria-label="$i18n{cupsPrintersTitle}"></button>
+          </paper-icon-button-light>
+        </div>
+</if>
+<if expr="not chromeos">
+        <div class="settings-box first"
+            on-click="onTapLocalPrinters_" actionable>
+          <div class="start">$i18n{localPrintersTitle}</div>
+          <paper-icon-button-light class="subpage-arrow">
+            <button aria-label="$i18n{localPrintersTitle}"></button>
+          </paper-icon-button-light>
+        </div>
+</if>
+        <div id="cloudPrinters" class="settings-box"
+            on-click="onTapCloudPrinters_" actionable>
+          <div class="start">$i18n{cloudPrintersTitle}</div>
+          <paper-icon-button-light class="subpage-arrow">
+            <button aria-label="$i18n{cloudPrintersTitle}"></button>
+          </paper-icon-button-light>
+        </div>
+      </neon-animatable>
+<if expr="chromeos">
+      <template is="dom-if" route-path="/cupsPrinters">
+        <settings-subpage
+            associated-control="[[$$('#cupsPrinters')]]"
+            page-title="$i18n{cupsPrintersTitle}"
+            search-label="$i18n{searchLabel}"
+            search-term="{{searchTerm}}">
+          <settings-cups-printers search-term="{{searchTerm}}"
+              prefs="[[prefs]]">
+          </settings-cups-printers>
+        </settings-subpage>
+      </template>
+</if>
+      <template is="dom-if" route-path="/cloudPrinters">
+        <settings-subpage
+            associated-control="[[$$('#cloudPrinters')]]"
+            page-title="$i18n{cloudPrintersTitle}">
+          <settings-cloud-printers prefs="{{prefs}}">
+          </settings-cloud-printers>
+        </settings-subpage>
+      </template>
+    </settings-animated-pages>
+  </template>
+  <script src="printing_page.js"></script>
+</dom-module>

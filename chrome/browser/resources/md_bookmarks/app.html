@@ -1,0 +1,84 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/html/cr/ui/splitter.html">
+<link rel="import" href="chrome://bookmarks/api_listener.html">
+<link rel="import" href="chrome://bookmarks/command_manager.html">
+<link rel="import" href="chrome://bookmarks/constants.html">
+<link rel="import" href="chrome://bookmarks/dnd_manager.html">
+<link rel="import" href="chrome://bookmarks/folder_node.html">
+<link rel="import" href="chrome://bookmarks/list.html">
+<link rel="import" href="chrome://bookmarks/mouse_focus_behavior.html">
+<link rel="import" href="chrome://bookmarks/router.html">
+<link rel="import" href="chrome://bookmarks/shared_vars.html">
+<link rel="import" href="chrome://bookmarks/store.html">
+<link rel="import" href="chrome://bookmarks/toast_manager.html">
+<link rel="import" href="chrome://bookmarks/toolbar.html">
+<link rel="import" href="chrome://bookmarks/util.html">
+
+<dom-module id="bookmarks-app">
+  <template>
+    <style>
+      :host {
+        color: var(--primary-text-color);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        line-height: 1.54;  /* 20px. */
+      }
+
+      #main-container {
+        display: flex;
+        flex-direction: row;
+        flex-grow: 1;
+        overflow: hidden;
+      }
+
+      #splitter {
+        box-sizing: border-box;
+        cursor: col-resize;
+<if expr="is_win">
+        /* Unlike other platforms, e-resize is a two-way arrow on Windows. */
+        cursor: e-resize;
+</if>
+        flex: 0 0 var(--splitter-width);
+        opacity: 0;
+      }
+
+      #splitter:hover,
+      #splitter.splitter-active {
+        -webkit-border-start: 1px solid rgba(0, 0, 0, 0.1);
+        opacity: 1;
+        transition: opacity 100ms ease-out;
+      }
+
+      #sidebar {
+        -webkit-padding-start: 3px;
+        display: block;
+        max-width: 40%;
+        min-width: var(--min-sidebar-width);
+        overflow-y: auto;
+        padding-top: 8px;
+        user-select: none;
+        width: var(--min-sidebar-width);
+      }
+
+      bookmarks-list {
+        flex: 1;
+        overflow-x: hidden;
+      }
+    </style>
+    <bookmarks-toolbar sidebar-width="[[sidebarWidth_]]" role="banner">
+    </bookmarks-toolbar>
+    <div id="main-container">
+       <div id="sidebar" role="navigation" aria-label="$i18n{sidebarAxLabel}">
+         <bookmarks-folder-node item-id="0" depth="-1"></bookmarks-folder-node>
+      </div>
+      <div id="splitter"></div>
+      <bookmarks-list></bookmarks-list>
+    </div>
+    <bookmarks-router></bookmarks-router>
+    <bookmarks-command-manager></bookmarks-command-manager>
+    <bookmarks-toast-manager duration="5000"></bookmarks-toast-manager>
+  </template>
+  <script src="chrome://bookmarks/app.js"></script>
+</dom-module>

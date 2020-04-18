@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script>
+
+function testMembersReadOnly() {
+  var resolver = new PromiseResolver;
+  assertThrows(function() { resolver.promise = new Promise; });
+  assertThrows(function() { resolver.resolve = function() {}; });
+  assertThrows(function() { resolver.reject = function() {}; });
+}
+
+function testResolves(done) {
+  var resolver = new PromiseResolver;
+  resolver.promise.then(done);
+  resolver.resolve();
+}
+
+function testRejects(done) {
+  var resolver = new PromiseResolver;
+  resolver.promise.catch(done);
+  resolver.reject();
+}
+
+</script>
+</body>
+</html>

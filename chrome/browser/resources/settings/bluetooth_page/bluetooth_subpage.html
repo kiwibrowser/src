@@ -1,0 +1,111 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_components/chromeos/bluetooth_dialog.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_scrollable_behavior.html">
+<link rel="import" href="chrome://resources/cr_elements/cr_toggle/cr_toggle.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-list/iron-list.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-spinner/paper-spinner-lite.html">
+<link rel="import" href="../i18n_setup.html">
+<link rel="import" href="../icons.html">
+<link rel="import" href="../settings_shared_css.html">
+<link rel="import" href="bluetooth_device_list_item.html">
+
+<dom-module id="settings-bluetooth-subpage">
+  <template>
+    <style include="settings-shared iron-flex">
+      .container {
+        @apply --settings-list-frame-padding;
+        display: flex;
+        flex-direction: column;
+        min-height: 10px;
+        overflow-y: auto;
+      }
+
+      .header {
+        margin-top: 10px;
+      }
+
+      paper-spinner-lite {
+        @apply --cr-icon-height-width;
+      }
+
+      #onOff {
+        font-weight: 500;
+      }
+
+      #onOff[on] {
+        color: var(--cr-toggle-color);
+      }
+    </style>
+
+    <div class="settings-box first" actionable on-click="onEnableTap_">
+      <div id="onOff" class="start" on$="[[bluetoothToggleState]]">
+        [[getOnOffString_(bluetoothToggleState,
+          '$i18nPolymer{deviceOn}', '$i18nPolymer{deviceOff}')]]
+      </div>
+      <cr-toggle id="enableBluetooth"
+          checked="{{bluetoothToggleState}}"
+          disabled$="[[!isToggleEnabled_(adapterState, stateChangeInProgress)]]"
+          aria-label="$i18n{bluetoothToggleA11yLabel}">
+      </cr-toggle>
+    </div>
+
+    <!-- Paired device list -->
+    <div class="settings-box first header" hidden="[[!bluetoothToggleState]]">
+      <div class="start">$i18n{bluetoothDeviceListPaired}</div>
+    </div>
+    <div id="noPairedDevices" class="list-frame"
+        hidden="[[!showNoDevices_(bluetoothToggleState, pairedDeviceList_)]]">
+      $i18n{bluetoothNoDevices}
+    </div>
+    <div id="pairedContainer" class="container"
+        scrollable on-device-event="onDeviceEvent_"
+        hidden="[[!showDevices_(bluetoothToggleState, pairedDeviceList_)]]">
+      <iron-list id="pairedDevices" preserve-focus items="[[pairedDeviceList_]]"
+          selection-enabled selected-item="{{selectedPairedItem_}}"
+          scroll-target="pairedContainer" class="cr-separators">
+        <template>
+          <bluetooth-device-list-item actionable device="[[item]]"
+              first$="[[!index]]" tabindex$="[[tabIndex]]">
+          </bluetooth-device-list-item>
+        </template>
+      </iron-list>
+    </div>
+
+    <!-- Unpaired device list -->
+    <div class="settings-box first header" hidden="[[!bluetoothToggleState]]">
+      <div class="start">$i18n{bluetoothDeviceListUnpaired}</div>
+      <paper-spinner-lite active="[[showSpinner_]]">
+      </paper-spinner-lite>
+    </div>
+    <div id="noUnpairedDevices" class="list-frame"
+        hidden="[[!showNoDevices_(bluetoothToggleState, unpairedDeviceList_)]]">
+      $i18n{bluetoothNoDevicesFound}
+    </div>
+    <div id="unpairedContainer" class="container"
+        scrollable on-device-event="onDeviceEvent_"
+        hidden="[[!showDevices_(bluetoothToggleState, unpairedDeviceList_)]]">
+      <iron-list id="unpairedDevices" class="cr-separators" preserve-focus
+          items="[[unpairedDeviceList_]]"
+          selection-enabled selected-item="{{selectedUnpairedItem_}}"
+          scroll-target="unpairedContainer">
+        <template>
+          <bluetooth-device-list-item actionable device="[[item]]"
+              first$="[[!index]]" tabindex$="[[tabIndex]]">
+          </bluetooth-device-list-item>
+        </template>
+      </iron-list>
+    </div>
+
+    <bluetooth-dialog id="deviceDialog"
+        bluetooth="[[bluetooth]]"
+        bluetooth-private="[[bluetoothPrivate]]"
+        dialog-title="$i18n{bluetoothPairDevicePageTitle}"
+        on-close="onDialogClose_"
+        pairing-device="[[pairingDevice_]]">
+    </bluetooth-dialog>
+
+  </template>
+  <script src="bluetooth_subpage.js"></script>
+</dom-module>

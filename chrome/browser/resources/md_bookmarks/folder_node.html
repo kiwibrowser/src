@@ -1,0 +1,121 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-icon/iron-icon.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="chrome://bookmarks/actions.html">
+<link rel="import" href="chrome://bookmarks/command_manager.html">
+<link rel="import" href="chrome://bookmarks/shared_style.html">
+<link rel="import" href="chrome://bookmarks/store_client.html">
+
+<dom-module id="bookmarks-folder-node">
+  <template>
+    <style include="shared-style">
+      :host {
+        --padding-start-per-depth: 36px;
+        display: block;
+      }
+
+      .v-centered {
+        align-items: center;
+        display: flex;
+        flex-direction: row;
+      }
+
+      .menu-label {
+        -webkit-margin-start: 16px;
+        color: var(--folder-inactive-color);
+        font-weight: 500;
+      }
+
+      #container {
+        -webkit-padding-start:
+            calc(var(--node-depth, 0) * var(--padding-start-per-depth));
+        cursor: pointer;
+        height: 40px;
+        position: relative;
+      }
+
+      #folder-label {
+        -webkit-padding-end: 8px;
+        color: var(--secondary-text-color);
+        flex-grow: 1;
+      }
+
+      :host([is-selected-folder_]) .menu-label,
+      :host([is-selected-folder_]) #folder-label {
+        color: var(--interactive-color);
+      }
+
+      iron-icon {
+        flex-shrink: 0;
+      }
+
+      #arrow {
+        color: var(--secondary-text-color);
+        margin: 0 8px;
+      }
+
+      #arrow iron-icon {
+        transform: rotate(-90deg);
+        transition: transform 150ms;
+      }
+
+      :host-context([dir='rtl']) #arrow iron-icon {
+        transform: rotate(90deg);
+      }
+
+      #arrow iron-icon[is-open] {
+        transform: initial;
+      }
+
+      [no-children] {
+        -webkit-margin-start: 52px; /* The width of the arrow and its margin */
+      }
+    </style>
+
+    <div id="container"
+        class="v-centered"
+        on-click="selectFolder_"
+        on-dblclick="toggleFolder_"
+        on-contextmenu="onContextMenu_"
+        tabindex$="[[getTabIndex_(selectedFolder_, itemId)]]"
+        hidden="[[isRootFolder_(depth)]]"
+        role="treeitem">
+      <template is="dom-if" if="[[hasChildFolder_]]">
+        <paper-icon-button-light id="arrow">
+          <button on-click="toggleFolder_"
+              on-mousedown="preventDefault_"
+              tabindex="-1"
+              aria-label$="[[getButtonAriaLabel_(isOpen, item_)]]">
+            <iron-icon icon="cr:arrow-drop-down" is-open$="[[isOpen]]">
+            </iron-icon>
+          </button>
+        </paper-icon-button-light>
+      </template>
+      <div id="folder-label" class="v-centered">
+        <div class="folder-icon"
+            open$="[[isSelectedFolder_]]"
+            no-children$="[[!hasChildFolder_]]">
+        </div>
+        <div class="menu-label elided-text" title="[[item_.title]]">
+          [[item_.title]]
+        </div>
+      </div>
+    </div>
+    <div id="descendants" role="group">
+      <template is="dom-if" if="[[isOpen]]">
+        <template is="dom-repeat"
+            items="[[item_.children]]"
+            as="child"
+            filter="isFolder_">
+          <bookmarks-folder-node item-id="[[child]]"
+              draggable="true"
+              depth="[[getChildDepth_(depth)]]">
+          </bookmarks-folder-node>
+        </template>
+      </template>
+    </div>
+  </template>
+  <script src="chrome://bookmarks/folder_node.js"></script>
+</dom-module>

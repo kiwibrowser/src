@@ -1,0 +1,191 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+//
+// Sync protocol datatype extension for sessions.
+
+// Update proto_value_conversions{.h,.cc,_unittest.cc} if you change
+// any fields in this file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package sync_pb;
+
+import "sync_enums.proto";
+
+message SessionSpecifics {
+  // Unique id for the client.
+  optional string session_tag = 1;
+  optional SessionHeader header = 2;
+  optional SessionTab tab = 3;
+
+  // The local tab id used by sync. Unique across all nodes for that client.
+  optional int32 tab_node_id = 4 [default = -1];
+}
+
+// Properties of session sync objects.
+message SessionHeader {
+  // Each session is composed of windows.
+  repeated SessionWindow window = 2;
+  // A non-unique but human-readable name to describe this client.
+  optional string client_name = 3;
+  // The type of device.
+  optional SyncEnums.DeviceType device_type = 4;
+}
+
+message SessionWindow {
+  // Unique (to the owner) id for this window.
+  optional int32 window_id = 1;
+  // Index of the selected tab in tabs; -1 if no tab is selected.
+  optional int32 selected_tab_index = 2 [default = -1];
+  // Type of the window.
+  enum BrowserType {
+    TYPE_TABBED = 1;      // A normal tabbed window.
+    TYPE_POPUP = 2;       // A popup window.
+    TYPE_CUSTOM_TAB = 3;  // A custom tab within an app. Not restored
+                          // automatically on sync startup.
+  }
+  optional BrowserType browser_type = 3 [default = TYPE_TABBED];
+  // The tabs that compose a window (correspond to tab id's).
+  repeated int32 tab = 4;
+}
+
+message SessionTab {
+  // Unique (to the owner) id for this tab.
+  optional int32 tab_id = 1 [default = -1];
+  // The unique id for the window this tab belongs to.
+  optional int32 window_id = 2;
+  // Visual index of the tab within its window. There may be gaps in these
+  // values.
+  optional int32 tab_visual_index = 3 [default = -1];
+  // Identifies the index of the current navigation in navigations. For
+  // example, if this is 2 it means the current navigation is navigations[2].
+  optional int32 current_navigation_index = 4 [default = -1];
+  // True if the tab is pinned.
+  optional bool pinned = 5 [default = false];
+  // If non-empty, this tab is an app tab and this is the id of the extension.
+  optional string extension_app_id = 6;
+  // Tabs are navigated, and the navigation data is here.
+  repeated TabNavigation navigation = 7;
+
+  // The favicon for the current url the tab is displaying. Either empty
+  // or a valid PNG encoded favicon.
+  optional bytes favicon = 8 [deprecated = true];
+  // The type of favicon. For now only normal web favicons are supported.
+  enum FaviconType { TYPE_WEB_FAVICON = 1; }
+  optional FaviconType favicon_type = 9 [deprecated = true];
+  // The url of the actual favicon (as opposed to the page using the favicon).
+  optional string favicon_source = 11 [deprecated = true];
+  // Ids of the currently assigned variations which should be sent to sync.
+  repeated uint64 variation_id = 12 [deprecated = true];
+}
+
+message TabNavigation {
+  // The index in the NavigationController. If this is -1, it means this
+  // TabNavigation is bogus.
+  // optional int32 index = 1 [default = -1];  // obsolete.
+  // The virtual URL, when nonempty, will override the actual URL of the page
+  // when we display it to the user.
+  optional string virtual_url = 2;
+  // The referring URL, which can be empty.
+  optional string referrer = 3;
+  // The title of the page.
+  optional string title = 4;
+  // Content state is an opaque blob created by WebKit that represents the
+  // state of the page. This includes form entries and scroll position for each
+  // frame.
+  // optional string state = 5;  // obsolete.
+  // The core transition type.
+  optional SyncEnums.PageTransition page_transition = 6 [default = LINK];
+  // If this transition was triggered by a redirect, the redirect type.
+  optional SyncEnums.PageTransitionRedirectType redirect_type = 7;
+  // The unique navigation id (within this client).
+  optional int32 unique_id = 8;
+  // Timestamp for when this navigation last occurred (in client time).
+  // If the user goes back/forward in history the timestamp may refresh.
+  optional int64 timestamp_msec = 9;
+  // User used the Forward or Back button to navigate among browsing history.
+  optional bool navigation_forward_back = 10;
+  // User used the address bar to trigger this navigation.
+  optional bool navigation_from_address_bar = 11;
+  // User is navigating to the home page.
+  optional bool navigation_home_page = 12;
+  // The beginning of a navigation chain.
+  optional bool navigation_chain_start = 13;
+  // The last transition in a redirect chain.
+  optional bool navigation_chain_end = 14;
+  // The id for this navigation, which is globally unique with high
+  // probability.
+  optional int64 global_id = 15;
+  // Search terms extracted from the URL.
+  optional string search_terms = 16 [deprecated = true];
+  // The favicon url associated with this page.
+  optional string favicon_url = 17;
+  enum BlockedState {
+    STATE_ALLOWED = 1;
+    STATE_BLOCKED = 2;
+  }
+  // Whether access to the URL was allowed or blocked.
+  optional BlockedState blocked_state = 18 [default = STATE_ALLOWED];
+  // A list of category identifiers for the URL.
+  repeated string content_pack_categories = 19;
+  // The status code from the last navigation.
+  optional int32 http_status_code = 20;
+
+  // Referrer policy. Old, broken value. Deprecated in M61.
+  optional int32 obsolete_referrer_policy = 21 [deprecated = true];
+  // True if created from restored navigation entry that hasn't been loaded.
+  optional bool is_restored = 22;
+  // The chain of redirections for this navigation, from the original URL
+  // through the last URL that redirected.
+  repeated NavigationRedirect navigation_redirect = 23;
+  // Normally not present.
+  // The last URL traversed when different from the virtual_url.
+  optional string last_navigation_redirect_url = 24;
+  // Correct referrer policy. Valid enums are defined in
+  // third_party/WebKit/public/platform/WebReferrerPolicy.h.
+  optional int32 correct_referrer_policy = 25 [default = 1];
+
+  enum PasswordState {
+    PASSWORD_STATE_UNKNOWN = 0;
+    NO_PASSWORD_FIELD = 1;
+    HAS_PASSWORD_FIELD = 2;
+  }
+  // Whether the Password Manager saw a password field on the page.
+  optional PasswordState password_state = 26;
+
+  // The id for the task associated with this navigation, which is globally
+  // unique with high probability.
+  // Similar with global_id, but used to identify a navigation in Chrome Tasks,
+  // so navigations of a page have the same task_id if one is the first visit of
+  // the page, and others are its back/forward visits.
+  optional int64 task_id = 27;
+  // Task ids of all ancestor navigations, which can be from other tabs, from
+  // root to parent. We define navigation A is parent of navigation B if page of
+  // B is got by clicking a link on page of A. This relationship is used to
+  // define a Chrome Task as a tree rooted by a navigation.
+  repeated int64 ancestor_task_id = 28;
+
+  // When a history entry is replaced (e.g. history.replaceState()), this
+  // contains some information about the entry prior to being replaced. Even if
+  // an entry is replaced multiple times, it represents data prior to the
+  // *first* replace.
+  optional ReplacedNavigation replaced_navigation = 29;
+}
+
+// Navigation information for a single redirection within a single navigation.
+message NavigationRedirect {
+  // A URL that redirected while navigating to the virtual_url.
+  optional string url = 1;
+}
+
+// Subset of TabNavigation fields representing a navigation that was later
+// replaced in history (e.g. history.replaceState()), which allows tracking
+// information about the original navigation prior to the first replacement.
+message ReplacedNavigation {
+  optional string first_committed_url = 1;
+  optional int64 first_timestamp_msec = 2;
+  optional SyncEnums.PageTransition first_page_transition = 3;
+}

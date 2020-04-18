@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<title>INPUT TYPE=FILE and key events - Other keys</title>
+<p>
+  Ensure pressing non-enter/space keys with focus on an INPUT element
+  with TYPE=FILE does <b>not</b> launch a file chooser. Automated test
+  <b>fails</b> if 'Opening a file chooser' was logged.
+</p>
+<input type="file">
+<script>
+if (testRunner && eventSender) {
+  testRunner.dumpAsText();
+  const file = document.querySelector('input');
+  file.focus();
+  ['x', '0', 'ArrowRight', 'ControlLeft'].forEach(key => {
+    // Despite the name, 'keyDown' simulates a full down/press/up sequence.
+    eventSender.keyDown(key, []);
+  });
+}
+</script>

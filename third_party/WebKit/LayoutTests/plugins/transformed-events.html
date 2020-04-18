@@ -1,0 +1,47 @@
+<html>
+<head>
+<style>
+  #plugin {
+    width: 150px;
+    height: 150px;
+    transform: rotate(90deg);
+  }
+</style>
+</head>
+
+<body>
+<embed id="plugin" type="application/x-webkit-test-webplugin" accepts-touch="raw" print-event-details="true"></embed>
+<script>
+
+    if (!window.testRunner || !window.eventSender) {
+        document.write("This test requires DumpRenderTree.");
+    } else {
+        testRunner.dumpAsText();
+
+        // Test touch events.
+        var positionX = plugin.offsetLeft + plugin.offsetWidth - 10;
+        var positionY = plugin.offsetTop + 10;
+        eventSender.addTouchPoint(positionX, positionY);
+        eventSender.touchStart();
+        eventSender.updateTouchPoint(0, positionX - 5, positionY + 10);
+        eventSender.touchMove();
+        eventSender.releaseTouchPoint(0);
+        eventSender.touchEnd();
+
+        // Test mouse events.
+        eventSender.mouseMoveTo(positionX, positionY);
+        eventSender.mouseDown();
+        eventSender.leapForward(10);
+        eventSender.mouseMoveTo(positionX - 5, positionY + 10);
+        eventSender.mouseUp();
+        eventSender.mouseMoveTo(positionX, positionY);
+        eventSender.mouseScrollBy(10, 0, false, false, 0, false);
+
+        // Test gesture events.
+        eventSender.gestureShowPress(positionX, positionY);
+        eventSender.gestureTap(positionX, positionY);
+    }
+
+</script>
+</body>
+</html>

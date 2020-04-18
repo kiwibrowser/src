@@ -1,0 +1,26 @@
+<html>
+<head>
+<script type="text/javascript">
+var gl;
+
+function init()
+{
+  var canvas = document.getElementById('c');
+  canvas.addEventListener('webglcontextlost', function(e) {
+    e.preventDefault();
+    window.location.href = "webgl-domain-blocking-page2.html";
+  }, false);
+  gl = canvas.getContext('webgl');
+  if (window.domAutomationController) {
+    window.domAutomationController.send("LOADED");
+    if (!gl) {
+      window.domAutomationController.send("FAILED");
+    }
+  }
+}
+</script>
+</head>
+<body bgcolor="lightgray" onload="init()">
+<canvas id="c" width="400" height="300" style="border-width: 1px; border-style: solid;"></canvas>
+</body>
+</html>

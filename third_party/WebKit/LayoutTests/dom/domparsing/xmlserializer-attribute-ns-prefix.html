@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<body>
+<script src="../../resources/js-test.js"></script>
+<script>
+
+description('This tests that XMLSerializer emits a correct namespace declaration for the <image> element. The first line is serialized as part of a DocumentFragment. The second line is serialized as part of the Document.');
+
+var svgDoc = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"></svg>', 'text/xml');
+var svgEl = svgDoc.firstChild;
+var imageEl = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+imageEl.setAttributeNS('http://www.w3.org/1999/xlink', 'href', 'blah');
+svgEl.appendChild(imageEl);
+
+var serializer = new XMLSerializer();
+
+debug(escapeHTML(serializer.serializeToString(svgEl)));
+document.body.appendChild(svgDoc.removeChild(svgEl));
+debug(escapeHTML(serializer.serializeToString(svgEl)));
+
+document.body.removeChild(svgEl);
+</script>

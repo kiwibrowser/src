@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<title>Test adding keywords to controlsList hides buttons</title>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="../../media-resources/media-controls.js"></script>
+<video controls id="enabled-controls" width="500px"></video>
+<script>
+async_test(t => {
+  var v = document.getElementById('enabled-controls');
+
+  v.addEventListener('canplaythrough', t.step_func(e => {
+    assert_true(isFullscreenButtonEnabled(v));
+    assert_true(isDownloadsButtonEnabled(v));
+
+    v.controlsList.add('nodownload');
+
+    testRunner.layoutAndPaintAsyncThen(t.step_func(() => {
+      assert_true(isFullscreenButtonEnabled(v));
+      assert_false(isDownloadsButtonEnabled(v));
+      v.controlsList.add('nofullscreen');
+
+      testRunner.layoutAndPaintAsyncThen(t.step_func_done(() => {
+        assert_false(isFullscreenButtonEnabled(v));
+        assert_false(isDownloadsButtonEnabled(v));
+      }));
+    }));
+  }));
+
+  v.src = '../resources/test.ogv';
+}, 'Test disabling controls on the video element with all controls.');
+</script>

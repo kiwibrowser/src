@@ -1,0 +1,184 @@
+// Copyright 2013 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+[
+  {
+    "namespace": "gcm",
+    "description": "Use <code>chrome.gcm</code> to enable apps and extensions to send and receive messages through the <a href='http://developer.android.com/google/gcm/'>Google Cloud Messaging Service</a>.",
+    "properties": {
+      "MAX_MESSAGE_SIZE": {
+        "value": 4096,
+        "description": "The maximum size (in bytes) of all key/value pairs in a message."
+      }
+    },
+    "functions": [
+      {
+        "name": "register",
+        "type": "function",
+        "description": "Registers the application with GCM. The registration ID will be returned by the <code>callback</code>. If <code>register</code> is called again with the same list of <code>senderIds</code>, the same registration ID will be returned.",
+        "parameters": [
+          {
+            "name": "senderIds",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1,
+            "maxItems": 100,
+            "description": "A list of server IDs that are allowed to send messages to the application. It should contain at least one and no more than 100 sender IDs."
+          },
+          {
+            "name": "callback",
+            "type": "function",
+            "description": "Function called when registration completes. It should check $(ref:runtime.lastError) for error when <code>registrationId</code> is empty.",
+            "parameters": [
+              {
+                "name": "registrationId",
+                "type": "string",
+                "description": "A registration ID assigned to the application by the GCM."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "unregister",
+        "type": "function",
+        "description": "Unregisters the application from GCM.",
+        "parameters": [
+          {
+            "name": "callback",
+            "type": "function",
+            "description": "A function called after the unregistration completes. Unregistration was successful if $(ref:runtime.lastError) is not set.",
+            "parameters": []
+          }
+        ]
+      },
+      {
+        "name": "send",
+        "type": "function",
+        "description": "Sends a message according to its contents.",
+        "parameters": [
+          {
+            "name": "message",
+            "type": "object",
+            "description": "A message to send to the other party via GCM.",
+            "properties": {
+              "destinationId": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The ID of the server to send the message to as assigned by <a href='https://code.google.com/apis/console'>Google API Console</a>."
+              },
+              "messageId": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The ID of the message. It must be unique for each message in scope of the applications. See the <a href='cloudMessaging#send_messages'>Cloud Messaging documentation</a> for advice for picking and handling an ID."
+              },
+              "timeToLive": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 86400,
+                "optional": true,
+                "description": "Time-to-live of the message in seconds. If it is not possible to send the message within that time, an onSendError event will be raised. A time-to-live of 0 indicates that the message should be sent immediately or fail if it's not possible. The maximum and a default value of time-to-live is 86400 seconds (1 day)."
+              },
+              "data": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": "Message data to send to the server. Case-insensitive <code>goog.</code> and <code>google</code>, as well as case-sensitive <code>collapse_key</code> are disallowed as key prefixes. Sum of all key/value pairs should not exceed $(ref:gcm.MAX_MESSAGE_SIZE)."
+              }
+            }
+          },
+          {
+            "name": "callback",
+            "type": "function",
+            "description": "A function called after the message is successfully queued for sending. $(ref:runtime.lastError) should be checked, to ensure a message was sent without problems.",
+            "parameters": [
+              {
+                "name": "messageId",
+                "type": "string",
+                "description": "The ID of the message that the callback was issued for."
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "events": [
+      {
+        "name": "onMessage",
+        "type": "function",
+        "description": "Fired when a message is received through GCM.",
+        "parameters": [
+          {
+            "name": "message",
+            "type": "object",
+            "description": "A message received from another party via GCM.",
+            "properties": {
+              "data": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "The message data."
+              },
+              "from": {
+                "type": "string",
+                "optional": true,
+                "description": "The sender who issued the message."
+              },
+              "collapseKey": {
+                "type": "string",
+                "optional": true,
+                "description": "The collapse key of a message. See <a href='cloudMessaging#collapsible_messages'>Collapsible Messages</a> section of Cloud Messaging documentation for details."
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "onMessagesDeleted",
+        "type": "function",
+        "description": "Fired when a GCM server had to delete messages sent by an app server to the application. See <a href='cloudMessaging#messages_deleted_event'>Messages deleted event</a> section of Cloud Messaging documentation for details on handling this event."
+      },
+      {
+        "name": "onSendError",
+        "type": "function",
+        "description": "Fired when it was not possible to send a message to the GCM server.",
+        "parameters": [
+          {
+            "name": "error",
+            "type": "object",
+            "description": "An error related to sending a message raised by GCM.",
+            "properties": {
+              "errorMessage": {
+                "type": "string",
+                "description": "The error message describing the problem."
+              },
+              "messageId": {
+                "type": "string",
+                "optional": true,
+                "description": "The ID of the message with this error, if error is related to a specific message."
+              },
+              "details": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "Additional details related to the error, when available."
+              }
+            },
+            "description": "An error that occured while trying to send the message either in Chrome or on the GCM server. Application can retry sending the message with a reasonable backoff and possibly longer time-to-live."
+          }
+        ]
+      }
+    ]
+  }
+]

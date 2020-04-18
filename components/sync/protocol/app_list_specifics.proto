@@ -1,0 +1,52 @@
+// Copyright 2013 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+//
+// Sync protocol datatype extension for the app list (aka app launcher).
+
+// Update proto_{value,enum}_conversions{.h,.cc,_unittest.cc} if you change
+// any fields in this file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package sync_pb;
+
+// Properties of app list objects.
+message AppListSpecifics {
+  // Unique identifier for the item:
+  // * TYPE_FOLDER: Folder id (generated)
+  // * TYPE_APP: App Id
+  // * TYPE_URL: Url
+  optional string item_id = 1;
+
+  // What type of item this is.
+  enum AppListItemType {
+    // An extension app.
+    TYPE_APP = 1;
+    // A request to remove any matching default installed apps.
+    TYPE_REMOVE_DEFAULT_APP = 2;
+    // A folder containing entries whose |parent_id| matches |item_id|.
+    TYPE_FOLDER = 3;
+    // A URL shortcut (functionally equivalent to a bookmark).
+    TYPE_URL = 4;
+  }
+  optional AppListItemType item_type = 2;
+
+  // Item name (FOLDER or URL).
+  optional string item_name = 3;
+
+  // Id of the parent (folder) item.
+  optional string parent_id = 4;
+
+  // Marked OBSOLETE because this is unused for the app list.
+  // Which page this item will appear on in the app list.
+  optional string OBSOLETE_page_ordinal = 5 [deprecated = true];
+
+  // Where on a page this item will appear.
+  optional string item_ordinal = 6;
+
+  // Where on a shelf this item will appear.
+  optional string item_pin_ordinal = 7;
+}

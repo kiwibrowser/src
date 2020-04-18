@@ -1,0 +1,105 @@
+# speech api not enabled in webview, crbug.com/487255
+interface SpeechSynthesisEvent : Event
+interface SpeechSynthesisUtterance : EventTarget
+interface webkitSpeechGrammar
+interface webkitSpeechGrammarList
+interface webkitSpeechRecognition : EventTarget
+interface webkitSpeechRecognitionError : Event
+interface webkitSpeechRecognitionEvent : Event
+
+# permissions api not enabled in webview, crbug.com/490120
+interface PermissionStatus : EventTarget
+interface Permissions
+
+# notifications api not enabled in webview, crbug.com/434712
+interface Notification : EventTarget
+
+# web payments api not enabled in webiew, crbug.com/667069
+interface PaymentAddress
+interface PaymentRequest : EventTarget
+interface PaymentRequestUpdateEvent : Event
+interface PaymentResponse
+
+# not yet supported in webview and chrome on android in general, crbug.com/154571
+interface SharedWorker : EventTarget
+
+# push API not supported in webview, crbug.com/421921
+interface PushManager
+interface PushSubscription
+interface PushSubscriptionOptions
+
+# presentation api not supported in webview crbug.com/521319
+interface Presentation
+interface PresentationAvailability : EventTarget
+interface PresentationConnection : EventTarget
+interface PresentationConnectionAvailableEvent : Event
+interface PresentationConnectionCloseEvent : Event
+interface PresentationConnectionList : EventTarget
+interface PresentationReceiver
+interface PresentationRequest : EventTarget
+
+# remoteplayback api not supported in webview crbug.com/521319
+interface RemotePlayback : EventTarget
+
+# web payments api not enabled in webview, crbug.com/667069
+interface HTMLIFrameElement : HTMLElement
+    getter allowPaymentRequest
+    setter allowPaymentRequest
+
+# Android does not support switching the audio output device, crbug.com/589500
+# Remote Playback API is not supported on Android WebView, crbug.com/521319
+interface HTMLMediaElement : HTMLElement
+    getter sinkId                      # crbug.com/589500
+    method setSinkId                   # crbug.com/589500
+    setter disableRemotePlayback       # crbug.com/521319
+    getter disableRemotePlayback       # crbug.com/521319
+    getter remote                      # crbug.com/521319
+
+# permissions API (crbug.com/490120), presentation API (crbug.com/521319),
+# share API (crbug.com/765923) and custom scheme handlers (crbug.com/589502)
+# not supported in webview
+interface Navigator
+    getter permissions                 # crbug.com/490120
+    getter presentation                # crbug.com/521319
+    method registerProtocolHandler     # crbug.com/589502
+    method unregisterProtocolHandler   # crbug.com/589502
+    method share                       # crbug.com/765923
+
+# notifications not yet supported in webview, crbug.com/551446
+interface ServiceWorkerRegistration : EventTarget
+    getter pushManager
+    method getNotifications
+    method showNotification
+
+# File System API disabled in WebView, crbug.com/589504, crbug.com/589843, b/6930981
+interface HTMLInputElement : HTMLElement
+    getter webkitEntries
+
+# MediaDevices devicechange disabled on Android, crbug.com/671461
+interface MediaDevices : EventTarget
+    getter ondevicechange
+    setter ondevicechange
+
+# WebAuthN API should not be exposed in WebView, crbug.com/828168
+interface AuthenticatorAssertionResponse : AuthenticatorResponse
+interface PublicKeyCredential : Credential
+interface AuthenticatorResponse
+interface AuthenticatorAttestationResponse : AuthenticatorResponse
+
+[GLOBAL OBJECT]
+    method openDatabase
+    attribute eventSender                    # test only
+    attribute testRunner                     # test only
+    attribute internals                      # test only
+    attribute accessibilityController        # test only
+    attribute textInputController            # test only
+    attribute gamepadController              # test only
+    attribute GCController                   # test only
+    getter speechSynthesis                   # Speech API, crbug.com/487255
+    attribute chrome                         # crbug.com/618471
+    method gc                                # test only
+    method webkitRequestFileSystem           # File System API, crbug.com/589843
+    method webkitResolveLocalFileSystemURL   # File System API, crbug.com/589843
+
+# TODO(timvolodine): check screen orientation lock api
+# TODO(timvolodine): check notifications in service workers

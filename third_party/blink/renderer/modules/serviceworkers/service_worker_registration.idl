@@ -1,0 +1,31 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// https://w3c.github.io/ServiceWorker/#enumdef-serviceworkerupdateviacache
+[
+    RuntimeEnabled=ServiceWorkerUpdateViaCache
+] enum ServiceWorkerUpdateViaCache {
+    "imports",
+    "all",
+    "none"
+};
+
+// https://w3c.github.io/ServiceWorker/#serviceworkerregistration-interface
+[
+    ActiveScriptWrappable,
+    Exposed=(Window,Worker)
+] interface ServiceWorkerRegistration : EventTarget {
+    readonly attribute ServiceWorker? installing;
+    readonly attribute ServiceWorker? waiting;
+    readonly attribute ServiceWorker? active;
+    readonly attribute NavigationPreloadManager navigationPreload;
+
+    readonly attribute USVString scope;
+    [RuntimeEnabled=ServiceWorkerUpdateViaCache] readonly attribute ServiceWorkerUpdateViaCache updateViaCache;
+
+    [CallWith=ScriptState] Promise<void> update();
+    [CallWith=ScriptState] Promise<boolean> unregister();
+
+    attribute EventHandler onupdatefound;
+};

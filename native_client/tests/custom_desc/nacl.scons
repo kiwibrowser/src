@@ -1,0 +1,25 @@
+# -*- python -*-
+# Copyright 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+if 'TRUSTED_ENV' not in env:
+  Return()
+trusted_env = env['TRUSTED_ENV']
+
+test_host = trusted_env.ComponentProgram(
+    'desc_test_host', ['desc_test_host.c'],
+    EXTRA_LIBS=['sel'])
+
+test_guest = env.ComponentProgram(
+    'desc_test_guest', ['desc_test_guest.c'],
+    EXTRA_LIBS=['imc_syscalls', '${NONIRT_LIBS}'])
+
+test_guest = env.GetTranslatedNexe(test_guest)
+
+node = env.CommandTest('custom_desc_test.out',
+                       env.AddBootstrap(test_host, [test_guest]))
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_custom_desc_test',
+                       is_broken=not env.Bit('nacl_static_link'))

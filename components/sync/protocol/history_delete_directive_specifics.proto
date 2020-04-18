@@ -1,0 +1,47 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+//
+// Sync protocol datatype extension for history delete directives.
+
+// Update proto_value_conversions{.h,.cc,_unittest.cc} if you change
+// any fields in this file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package sync_pb;
+
+// All timestamps below are from Sane Time (
+// http://www.chromium.org/developers/design-documents/sane-time )
+// and are in microseconds since the Unix epoch.
+
+// Properties of history delete directive sync objects.
+message HistoryDeleteDirectiveSpecifics {
+  // Exactly one of the fields below must be filled in.  Otherwise, this
+  // delete directive must be ignored.
+  optional GlobalIdDirective global_id_directive = 1;
+  optional TimeRangeDirective time_range_directive = 2;
+}
+
+message GlobalIdDirective {
+  // The global IDs of the navigations to delete.
+  repeated int64 global_id = 1;
+
+  // Time range for searching for navigations to delete. Client should delete
+  // all navigations to a URL between [start_time_usec, end_time_usec]
+  // if one of them matches a |global_id|.
+  optional int64 start_time_usec = 2;
+  optional int64 end_time_usec = 3;
+}
+
+message TimeRangeDirective {
+  // Both fields below must be filled in.  Otherwise, this delete directive
+  // must be ignored.
+
+  // The time on or after which entries must be deleted.
+  optional int64 start_time_usec = 1;
+  // The time on or before which entries must be deleted.
+  optional int64 end_time_usec = 2;
+}

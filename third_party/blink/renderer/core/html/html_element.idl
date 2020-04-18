@@ -1,0 +1,67 @@
+/*
+ * Copyright (C) 2006, 2007, 2009 Apple Inc. All rights reserved.
+ * Copyright (C) 2006 Samuel Weinig <sam.weinig@gmail.com>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Library General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Library General Public License for more details.
+ *
+ * You should have received a copy of the GNU Library General Public License
+ * along with this library; see the file COPYING.LIB.  If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301, USA.
+ */
+
+// https://html.spec.whatwg.org/#htmlelement
+[HTMLConstructor]
+interface HTMLElement : Element {
+    // metadata attributes
+    [CEReactions, Reflect] attribute DOMString title;
+    [CEReactions, Reflect] attribute DOMString lang;
+    [CEReactions] attribute boolean translate;
+    [CEReactions] attribute DOMString dir;
+    [SameObject, PerWorldBindings] readonly attribute DOMStringMap dataset;
+
+    // user interaction
+    [Affects=Nothing, CEReactions, Reflect] attribute boolean hidden;
+    [RuntimeCallStatsCounter=HTMLElementClick] void click();
+    [Affects=Nothing, CEReactions, CustomElementCallbacks] attribute long tabIndex;
+    [CEReactions, RuntimeEnabled=InertAttribute, Reflect] attribute boolean inert;
+    void focus(optional FocusOptions options);
+    void blur();
+    [CEReactions, Reflect] attribute DOMString accessKey;
+    [CEReactions, CustomElementCallbacks] attribute boolean draggable;
+    [CEReactions] attribute boolean spellcheck;
+    [Measure] attribute DOMString autocapitalize;
+
+    // HTMLElement implements ElementContentEditable
+    // https://html.spec.whatwg.org/#contenteditable
+    [CEReactions, CustomElementCallbacks, RaisesException=Setter] attribute DOMString contentEditable;
+    [ImplementedAs=isContentEditableForBinding] readonly attribute boolean isContentEditable;
+    [CEReactions, Reflect, ReflectOnly=("none","text","tel","url","email","numeric","decimal","search")] attribute DOMString inputMode;
+
+    // CSSOM View Module
+    // https://drafts.csswg.org/cssom-view/#extensions-to-the-htmlelement-interface
+    [Affects=Nothing, PerWorldBindings, ImplementedAs=unclosedOffsetParent] readonly attribute Element? offsetParent;
+    [Affects=Nothing, ImplementedAs=offsetTopForBinding] readonly attribute long offsetTop;
+    [Affects=Nothing, ImplementedAs=offsetLeftForBinding] readonly attribute long offsetLeft;
+    [Affects=Nothing, ImplementedAs=offsetWidthForBinding] readonly attribute long offsetWidth;
+    [Affects=Nothing, ImplementedAs=offsetHeightForBinding] readonly attribute long offsetHeight;
+
+    // CSS Object Model (CSSOM)
+    // https://drafts.csswg.org/cssom/#the-elementcssinlinestyle-interface
+    [Affects=Nothing, SameObject, PerWorldBindings, PutForwards=cssText] readonly attribute CSSStyleDeclaration style;
+
+    // Non-standard APIs
+    [Affects=Nothing, CEReactions, CustomElementCallbacks, RaisesException=Setter, MeasureAs=HTMLElementInnerText] attribute [TreatNullAs=NullString] DOMString innerText;
+    [Affects=Nothing, CEReactions, CustomElementCallbacks, RaisesException=Setter, MeasureAs=HTMLElementOuterText] attribute [TreatNullAs=NullString] DOMString outerText;
+};
+
+HTMLElement implements GlobalEventHandlers;
+HTMLElement implements NoncedElement;

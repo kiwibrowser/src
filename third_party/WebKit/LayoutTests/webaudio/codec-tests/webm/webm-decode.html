@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>
+      Test webm Decoding
+    </title>
+    <script src="../../../resources/testharness.js"></script>
+    <script src="../../../resources/testharnessreport.js"></script>
+    <script src="../../resources/audit-util.js"></script>
+    <script src="../../resources/audit.js"></script>
+    <script src="../../resources/buffer-loader.js"></script>
+    <script src="../../resources/audio-file-utils.js"></script>
+  </head>
+  <body>
+    <script id="layout-test-code">
+      let audit = Audit.createTaskRunner();
+      let decodedAudio;
+      let expectedAudio;
+
+      audit.define(
+          {label: 'test', description: 'Test webm decoding'},
+          function(task, should) {
+
+            let context = new AudioContext();
+
+            let bufferLoader = new BufferLoader(
+                context, ['webm-decode-expected.wav', 'test-webm.webm'],
+                function(bufferList) {
+                  expectedAudio = bufferList[0];
+                  decodedAudio = bufferList[1];
+
+                  // Verify that we have the right number of channels and
+                  // frames.
+                  should(decodedAudio.numberOfChannels, 'Number of channels')
+                      .beEqualTo(expectedAudio.numberOfChannels);
+                  should(decodedAudio.length, 'Decoded number of frames')
+                      .beEqualTo(expectedAudio.length);
+
+                  // Verify that the actual data matches the expected data very
+                  // closely.
+                  for (let c = 0; c < expectedAudio.numberOfChannels; ++c) {
+                    let snrdB = 10 *
+                        Math.log10(computeSNR(
+                            decodedAudio.getChannelData(c),
+                            expectedAudio.getChannelData(c)));
+                    should(snrdB, 'SNR between actual expected channel ' + c)
+                        .beGreaterThanOrEqualTo(109.56);
+                    should(
+                        decodedAudio.getChannelData(c), 'Decoded channel ' + c)
+                        .beCloseToArray(
+                            expectedAudio.getChannelData(c),
+                            {absoluteThreshold: 4.0234e-5});
+                  }
+                  let filename = 'webm-decode-actual.wav';
+                  if (downloadAudioBuffer(decodedAudio, filename))
+                    should(true, 'Saved reference file').message(filename, '');
+                  task.done();
+                });
+
+            bufferLoader.load();
+          });
+
+      audit.run();
+    </script>
+  </body>
+</html>

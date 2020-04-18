@@ -1,0 +1,67 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<!-- Copyright 2011 Native Client Authors.  All rights reserved. -->
+<head>
+  <title> Chrome Extension Nexe loading test </title>
+  <META HTTP-EQUIV="Pragma" CONTENT="no-cache" />
+  <META HTTP-EQUIV="Expires" CONTENT="-1" />
+  <script type="text/javascript" src="nacltest.js"></script>
+  <script type="text/javascript">
+  /**
+   * Take the results of the test run in the extension, and run the Tester
+   * object with them.  Note that the unit tests are actually run in the
+   * extension process; the test results are sent to this page via RPC
+   * (chrome.extension.sendRequest()).  This function is called from runTests()
+   * in test_bridge.js.  test_bridge.js is injected into this page as part of
+   * the Chrome extension.
+   * @param {!Object} testResults A dictionary that maps test properties to
+   *     test result values.
+   */
+  function processTestResults(testResults) {
+    // When this function is called, the "test" has already been performed.
+    // These tests are actually validating the output of the test that ran
+    // inside the extension and sent its results to this page.  This is done
+    // so the output can be easily seen.  Output inside the extension would
+    // not be visible.
+
+    // Fail if any errors occurred during the test run in the extension.
+    tester.addTest('load_errors', function() {
+      assertEqual(testResults.error, 0);
+    });
+
+    // Check that the nexe worked.
+    tester.addTest('check_result', function() {
+      assertEqual(testResults.testResult, 'TestSimple:PASSED');
+    });
+
+    // Note that there are no EMBED elements for the tester to wait for, so
+    // it's ok to just run the tester.
+    tester.run();
+  }
+  </script>
+</head>
+<body>
+  <!-- This div is here because the RPC mechanism used to talk to the Chrome
+       extension requires one in order to communicate from the extension to
+       this page.
+  -->
+  <div id="test_results_element" style="display: none;">
+  </div>
+  <script type="text/javascript">
+    // Co-opt the 'onclick' event handler to watch for the test results.  The
+    // injected test_bridge script will manually fire this event when the test
+    // results are ready.  Note that the context script cannot access scripts
+    // in this page; the only way it can communicate is via the DOM.  For more
+    // info, see:
+    //     http://code.google.com/chrome/extensions/content_scripts.html
+    var tester = new Tester();
+    var naclTestModule = $('test_results_element');
+    // Use onclick because arbitrary attributes don't show up in the bridge
+    // script.
+    naclTestModule.onclick = {}
+    naclTestModule.onclick.run = processTestResults;
+    naclTestModule.onclick.log = function(message) { tester.log(message); }
+  </script>
+</body>
+</html>

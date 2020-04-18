@@ -1,0 +1,435 @@
+# These tests fail when running browser_tests with out-of-process ash
+# system UI on Chrome OS ("mash"). Most new features are expected to work
+# with mash, see //ash/README.md. If you need to disable more than
+# ~10 tests, please contact someone on mustash-team@google.com to discuss.
+# Meta-bug: http://crbug.com/678687
+
+# Unknown failure.
+-BrowserTabRestoreTest.*
+
+# Extensive use of ash::WindowState.
+-AcceleratorCommandsBrowserTest.*
+-InitiallyMaximized/AcceleratorCommandsFullscreenBrowserTest.*
+-InitiallyMaximized/AcceleratorCommandsPlatformAppFullscreenBrowserTest.*
+-InitiallyRestored/AcceleratorCommandsFullscreenBrowserTest.*
+-InitiallyRestored/AcceleratorCommandsPlatformAppFullscreenBrowserTest.*
+
+# Volume adjustment fails.
+-WizardControllerTest.*ChromeVox
+
+# Login constructs ash::FocusRingController and KeyboardDrivenOobeKeyHandler,
+# both of which use ash::Shell.
+-WizardControllerKioskFlowTest.*
+
+# Uses ash::Shell::GetRootWindowForNewWindows to choose a display for the app list.
+# More generally, app list needs to move into ash.
+-AppListControllerGuestModeBrowserTest.*
+-AppListControllerSearchResultsBrowserTest.*
+-AppListServiceImplBrowserTest.*
+-AppListTest.*
+-ArcAppUninstallDialogViewBrowserTest.*
+
+# Accesses ash::Shelf to make assertions about the shelf view.
+-ArcAppDeferredLauncherBrowserTest.*
+-ArcAppDeferredLauncherWithParamsBrowserTestInstance/ArcAppDeferredLauncherWithParamsBrowserTest.*
+
+# AutomationManagerAura::Enable() uses ash to get active window. More generally,
+# chrome a11y code directly accesses ash system UI widgets and views.
+-AutomationApiTest.*
+-AutomationApiTestWithDeviceScaleFactor.*
+-AutomationManagerAuraBrowserTest.*
+
+# Direct access to ash window frames, tablet mode, overview mode, etc.
+-BrowserNonClientFrameViewAshBackButtonTest.*
+-BrowserNonClientFrameViewAshTest.*
+-ExtensionUninstallDialogViewBrowserTest.BookmarkAppWindowAshCrash
+-HostedAppNonClientFrameViewAshTest.*
+-ImmersiveModeControllerAshHostedAppBrowserTest.*
+
+# Fix immersive fullscreen mode in mash. https://crbug.com/844748.
+-ImmersiveModeBrowserViewTest.TestCaptionButtonsReceiveEventsInAppImmersiveMode*
+-ImmersiveModeBrowserViewTest.TestCaptionButtonsReceiveEventsInBrowserImmersiveMode*
+
+# ash::Shell access from ChromeViewsDelegate::CreateDefaultNonClientFrameView()
+# e.g. from chromeos::CaptivePortalWindowProxy::Show().
+# See https://crbug.com/838974
+-CaptivePortalWindowCtorDtorTest.*
+-CaptivePortalWindowTest.*
+-SimpleWebViewDialogTest.*
+
+# Need pixel copy support. http://crbug.com/754864 http://crbug.com/754872
+-ArcAccessibilityHelperBridgeBrowserTest.*
+-CastStreamingApiTest.*
+-CastStreamingApiTestWithPixelOutput.*
+-TabCaptureApiPixelTest.*
+-TabCaptureApiTest.*
+
+# RefCounted check failed: CalledOnValidSequence() from SchedulerWorkerDelegate::OnMainExit
+-CheckSystemTokenAvailability/EnterprisePlatformKeysTest.*
+
+# aura::CrashInFlightChange::ChangeFailed() when searching PDF.
+-ChromeFindRequestManagerTest.*
+-PDFExtensionTest.*
+-PDFExtensionHitTestTest.*
+-PDFExtensionLoadTest.*
+
+# Need screenshot support. http://crbug.com/706246
+-ChromeScreenshotGrabberBrowserTest.*
+
+# Null immersive_fullscreen_controller_.
+-ChromeNativeAppWindowViewsAuraAshBrowserTest.*
+
+# Flaky. SessionRestoreStatsCollector::Observe failure. crbug.com/785298
+# session_restore_stats_collector.cc(210) Check failed: 0u < loading_tab_count_ (0 vs. 0)
+-ContinueWhereILeftOffTest.*
+-DeviceIDTest.*
+-SessionRestoreTest.*
+-SessionRestoreTestChromeOS.*
+-SAMLPolicyTest.TransferCookiesAffiliated
+-SmartSessionRestoreTest.*
+
+# ash::Shell access for LogoutConfirmationController
+-DeviceLocalAccountTest.*
+
+# ash::PowerStatus access. https://crbug.com/770866.
+-PowerHandlerTest.*
+
+# DBusThreadManager initialized for testing in chrome is not recognized as
+# initialized in window manager service. https://crbug.com/830816.
+-PowerPolicyInSessionBrowserTest.AllowScreenWakeLocks
+-PowerPolicyInSessionBrowserTest.SetLegacyUserPolicy
+-PowerPolicyInSessionBrowserTest.SetUserPolicy
+-PowerPolicyLoginScreenBrowserTest.SetDevicePolicy
+
+# TODO: Very slow (>25 seconds) and occasional timeouts.
+-ExecuteScriptApiTest/DestructiveScriptTest.*
+
+# Fails: immersive_controller->IsRevealed() returns false.
+# http://crbug.com/791148
+-ZoomBubbleBrowserTest.*
+
+# ozone_platform.cc(61) Check failed: instance_. OzonePlatform is not initialized
+-ExtensionWebstoreGetWebGLStatusTest.*
+
+# SystemLogsFetcher -> TouchLogSource -> ash::TouchHudDebug -> ash::Shell
+-FeedbackTest.*
+
+# ash::Shell::display_manager() to update displays.
+# http://crbug.com/831826
+-ForceMaximizeOnFirstRunTest.*
+-ForceMaximizePolicyFalseTest.*
+-PolicyDisplayRotationDefault/DisplayRotationBootTest.*
+-PolicyDisplayRotationDefault/DisplayRotationDefaultTest.*
+
+# ash::Shell::display_manager() to get display state.
+# http://crbug.com/831826
+-PolicyTest.UnifiedDesktopEnabledByDefault
+
+# IME accesses ash::Shell for root window.
+-InputMethodEngineBrowserTest/InputMethodEngineBrowserTest.*
+-InputMethodEngineComponentExtensionBrowserTest/InputMethodEngineBrowserTest.*
+-InputMethodEngineIncognitoBrowserTest/InputMethodEngineBrowserTest.*
+
+# KeyboardOverlayUI uses ash::Shell.
+-KeyboardOverlayUIBrowserTest.*
+
+# Kiosk mode has a variety of failures:
+# termination_observer_->terminated() is false.
+# Value of: login_display_host == NULL || login_display_host->GetNativeWindow()->layer()->GetTargetOpacity() == 0.0f
+# Check failed: !browser_client || browser_client->IsShuttingDown() || did_respond() || ignore_all_did_respond_for_testing_do_not_use. app.window.create
+-KioskAppManagerTest.*
+-KioskAppSettingsWebUITest.*
+-KioskCrashRestoreTest.*
+-KioskEnterpriseTest.*
+-KioskHiddenWebUITest.*
+-KioskTest.*
+-KioskUpdateTest.*
+
+# Panel state lookup failures for window active, item running, etc.
+-LauncherPlatformAppBrowserTest.PanelAttentionStatus
+-LauncherPlatformAppBrowserTest.PanelItemClickBehavior
+
+# JS failure: hasAccessToCurrentWindow: FAIL (no message)
+-LockScreenNoteTakingTest.*
+
+# desktop_window_tree_host_mus.cc(796) Check failed: !window->GetRootWindow() || this->window() == window->GetRootWindow().
+-LoginFeedbackTest.*
+
+# Missing magnification manager and also RefCounted check failed:
+# CalledOnValidSequence() from SchedulerWorkerDelegate::OnMainExit
+-LoginScreenDefaultPolicyInSessionBrowsertest.*
+-LoginScreenDefaultPolicyLoginScreenBrowsertest.*
+-PolicyTest.ScreenMagnifierTypeFull
+-PolicyTest.ScreenMagnifierTypeNone
+
+# Crashes in pre-login phase, probably MagnificationManager not created.
+-MagnificationManagerTest.*
+
+# OutputProtection problems:
+# interface_endpoint_client.cc(32) Check failed: !is_valid. The callback passed to OutputProtection::QueryStatus() was never run.
+# binder_registry.h(89) Failed to locate a binder for interface: display::mojom::OutputProtection
+-*ECKEncryptedMediaTest.OutputProtectionTest*
+-OutOfProcessPPAPITest.*
+
+# ash::FocusRingController::SetVisible() from LoginDisplayHostWebUI.
+-MultiAuthEnrollmentScreenTest.*
+-ProvisionedEnrollmentScreenTest.*
+
+# VPN item not in system tray.
+-NetworkingConfigDelegateChromeosTest.*
+
+# Timeout device_event_log_impl.cc(156) Network: network_portal_detector_impl.cc:486 Portal detection timeout:  name= id=
+-NetworkingConfigTest.*
+-NetworkPortalDetectorImplBrowserTest.*
+
+# ash::Shell access in test for display configuration.
+# http://crbug.com/831826
+-ShelfAppBrowserTest.LaunchAppFromDisplayWithoutFocus*
+
+# ash::Shell access in test.
+-ShutdownPolicyInSessionTest.*
+
+# content::WaitForChildFrameSurfaceReady hangs.
+-SitePerProcessDevToolsSanityTest.InputDispatchEventsToOOPIF
+-WebViewGuestTouchFocusBrowserPluginSpecificTest.TouchFocusesBrowserPluginInEmbedder
+
+# Function under test uses ash::Shell for window list.
+-SortWindowsByZIndexBrowserTest.*
+
+# Timeout.
+-StartupMetricsTest.*
+
+# ash::Shell access in test for StatusAreaWidget.
+-SupervisedUserCreationTest.*
+
+# Crash. Database is locked.
+-SyncAwareCounterTest.*
+
+# ash::Shell access in test.
+-SystemTrayTrayCastMediaRouterChromeOSTest.*
+
+# ash::Shell access in test.
+-SystemUse24HourClockPolicyTest.*
+
+# Flaky shutdown crashes in ~MusClient http://crbug.com/786234 and AtExit
+# crashes in ~WebContentsTaskProvider http://crbug.com/786230
+-AppBackgroundPageApiTest.*
+-DefaultIsolation/TaskManagerOOPIFBrowserTest.*
+-PrerenderBrowserTest.*
+-SitePerProcess/TaskManagerOOPIFBrowserTest.*
+-TaskManagerBrowserTest.*
+-TaskManagerMemoryCoordinatorBrowserTest.*
+-TaskManagerUtilityProcessBrowserTest.*
+
+# ash::Shell access in test.
+-TrayAccessibilityTestInstance/TrayAccessibilityTest.*
+
+# Virtual keyboard not supported.
+-AccessibilityManagerLoginTest.ResumeSavedPref
+-DefaultKeyboardExtensionBrowserTest.*
+-KeyboardEndToEndTest.*
+-KioskVirtualKeyboardTest.*
+-VirtualKeyboardAppWindowTest.*
+-VirtualKeyboardStateTest.*
+-VirtualKeyboardWebContentTest.*
+
+# Timeouts in content::WaitForChildFrameSurfaceReady()
+# Crashes in viz::HostFrameSinkManager::RegisterFrameSinkId()
+# http://crbug.com/755328
+-WebViewTest.*
+
+# Sending invalid FrameSinkIds crbug.com/796999
+-WebviewLoginTest.AllowNewUser
+-EnterpriseEnrollmentTest.TestAuthCodeGetsProperlyReceivedFromGaia
+-PowerPolicyLoginScreenBrowserTest.SetDevicePolicy
+-EnterpriseEnrollmentTest.TestActiveDirectoryEnrollment_Success
+
+# Needs EventGenerator to work across window tree hosts. crbug.com/814675
+-RoundedOmniboxPopupContentsViewTest.ClickOmnibox*
+
+# HostedAppMenu needs porting to BrowserNonClientFrameViewMus crbug.com/813666
+-HostedAppPWAOnlyTest.AppInfoOpensPageInfo*
+
+# DCHECK in DelegatedFrameHost
+-SafeBrowsingTriggeredPopupBlockerBrowserTest.NoFeature_NoMessages
+
+# https://crbug.com/815379
+-WindowOpenApiTest.RemoveLockedFullscreenFromWindow
+-WindowOpenApiTest.RemoveLockedFullscreenFromWindowWithoutPermission
+
+# Flaky segfaults: https://crbug.com/818147
+-ExtensionApiTest.BookmarkManager
+
+# Depends on chrome/browser/media/webrtc; CHECKs in ash::Shell::Get()
+# https://crbug.com/723880
+-MediaRouterIntegrationBrowserTest.*
+-MediaRouterIntegrationOneUABrowserTest.*
+-MediaRouterIntegrationOneUANoReceiverBrowserTest.*
+
+# Segfaults after massive recursion setting ash::kWindowStateTypeKey:
+# crbug.com/824458
+-PresentationReceiverWindowViewBrowserTest.ChromeOSHardwareFullscreenButton
+
+# RenderFrameMetadata observation not supported: https://crbug.com/820974
+-WebViewFocusBrowserPluginSpecificTest.*
+-WebViewGuestScrollLatchingTest.ScrollLatchingPreservedInGuests
+-WebViewScrollBubbling/WebViewGuestScrollTouchTest.*
+-WebViewScrollGuestContentBrowserPluginSpecificTest.OverscrollControllerSeesConsumedScrollsInGuest
+-WebViewScrollBubbling/WebViewGuestScrollTest.TestGuestWheelScrollsBubble/*
+
+# Viz is not supported, https://crbug.com/827327
+-*ECKEncryptedMediaTest.*
+-MSE_ClearKey/EncryptedMediaTest.*
+-MSE_ExternalClearKey/EncryptedMediaTest.*
+-AutoplayExtensionBrowserTest.AutoplayAllowed
+-MediaEngagementBrowserTest.*
+-MediaEngagementAutoplayBrowserTest.*
+-UnifiedAutoplayBrowserTest.*
+-AutoplayPolicyTest.*
+-ExtensionResourceRequestPolicyTest.Audio
+-ExtensionResourceRequestPolicyTest.Video
+-DeferredMediaBrowserTest.BackgroundMediaIsDeferred
+-DeclarativeNetRequestResourceTypeBrowserTest.Test1/0
+-IsolatedAppTest.SubresourceCookieIsolation
+-PageLoadMetricsBrowserTest.*
+-SRC_ExternalClearKey/EncryptedMediaTest.*
+-MultiProfileFileManagerBrowserTest.BasicDownloads
+-ChromeRenderProcessHostBackgroundingTest.ProcessPriorityAfterAudioStopsOnNotVisibleTab
+-ChromeRenderProcessHostBackgroundingTest.ProcessPriorityAfterAudioStartsFromBackgroundTab
+-ChromeRenderProcessHostBackgroundingTest.ProcessPriorityAfterStoppedAudio
+-DeclarativeNetRequestResourceTypeBrowserTest.Test1/1
+-DeclarativeNetRequestResourceTypeBrowserTest.Test2/0
+-DeclarativeNetRequestResourceTypeBrowserTest.Test2/1
+-MediaEngagementSessionRestoreBrowserTest.RestoredSession_Playback_MEI
+-AutoplayExtensionBrowserTest.*
+-AutoplayMetricsBrowserTest.RecordAutoplayAttemptUkm
+-ChromeTracingDelegateBrowserTestOnStartup.StartupTracingThrottle
+
+# Viz not supported (cont) https://crbug.com/827327. The FileManageBrowserTest
+# were renamed to FilesAppBrowserTest in https://crbug.com/843030.
+-AudioPlayerBrowserTest.*
+-AudioPlayerBrowserTestInGuestMode.OpenAudioOnDownloads
+-GalleryBrowserTest.*
+-GalleryBrowserTestInGuestMode.*
+-MultiProfileFileManagerBrowserTest.BasicDrive
+-MultiProfileFileManagerBrowserTest.PRE_BasicDrive
+-VideoPlayerBrowserTest.*
+-VideoPlayerBrowserTestInGuestMode.OpenSingleVideoOnDownloads
+-CreateNewFolder/FilesAppBrowserTest.Test/createFolderDownloads
+-CreateNewFolder/FilesAppBrowserTest.Test/createFolderDownloads_GuestMode
+-CreateNewFolder/FilesAppBrowserTest.Test/selectCreateFolderDownloads
+-Delete/FilesAppBrowserTest.Test/deleteEntryWithToolbar
+-Delete/FilesAppBrowserTest.Test/deleteMenuItemNoEntrySelected
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirCopyWithContextMenu
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirCopyWithContextMenu_GuestMode
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirCopyWithKeyboard
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirCopyWithKeyboard_GuestMode
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirCopyWithoutChangingCurrent
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirCreateWithContextMenu
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirCreateWithKeyboard
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirCreateWithoutChangingCurrent
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirCutWithContextMenu
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirCutWithContextMenu_GuestMode
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirCutWithKeyboard
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirCutWithKeyboard_GuestMode
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirPasteWithContextMenu
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirPasteWithContextMenu_GuestMode
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirPasteWithoutChangingCurrent
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirRenameToEmptyString
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirRenameToEmptyString_GuestMode
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirRenameToExisting
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirRenameToExisting_GuestMode
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirRenameWithContextMenu
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirRenameWithContextMenu_GuestMode
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirRenameWithKeyboard
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirRenameWithKeyboard_GuestMode
+-DirectoryTreeContextMenu/FilesAppBrowserTest.Test/dirRenameWithoutChangingCurrent
+-FileDialog/FilesAppBrowserTest.Test/openFileDialogCancelDownloads
+-FileDialog/FilesAppBrowserTest.Test/openFileDialogCancelDrive
+-FileDialog/FilesAppBrowserTest.Test/openFileDialogDownloads
+-FileDialog/FilesAppBrowserTest.Test/openFileDialogDownloads_GuestMode
+-FileDialog/FilesAppBrowserTest.Test/openFileDialogDownloads_Incognito
+-FileDialog/FilesAppBrowserTest.Test/openFileDialogDrive
+-FileDialog/FilesAppBrowserTest.Test/openFileDialogDrive_Incognito
+-FileDialog/FilesAppBrowserTest.Test/openFileDialogEscapeDownloads
+-FileDialog/FilesAppBrowserTest.Test/openFileDialogEscapeDrive
+-FileDisplay/FilesAppBrowserTest.Test/fileDisplayDownloads
+-FileDisplay/FilesAppBrowserTest.Test/fileDisplayDownloads_GuestMode
+-FileDisplay/FilesAppBrowserTest.Test/fileDisplayDownloads_TabletMode
+-FileDisplay/FilesAppBrowserTest.Test/fileDisplayDrive_TabletMode
+-FileDisplay/FilesAppBrowserTest.Test/fileDisplayMtp
+-FileDisplay/FilesAppBrowserTest.Test/fileDisplayUsb
+-FileDisplay/FilesAppBrowserTest.Test/fileSearch
+-FileDisplay/FilesAppBrowserTest.Test/fileSearchCaseInsensitive
+-FileDisplay/FilesAppBrowserTest.Test/fileSearchNotFound
+-GearMenu/FilesAppBrowserTest.Test/showHiddenFilesDownloads
+-GearMenu/FilesAppBrowserTest.Test/showPasteIntoCurrentFolder
+-GridView/FilesAppBrowserTest.Test/showGridViewDownloads
+-GridView/FilesAppBrowserTest.Test/showGridViewDownloads_GuestMode
+-KeyboardOperations/FilesAppBrowserTest.Test/keyboardCopyDownloads
+-KeyboardOperations/FilesAppBrowserTest.Test/keyboardCopyDownloads_GuestMode
+-KeyboardOperations/FilesAppBrowserTest.Test/keyboardDeleteDownloads
+-KeyboardOperations/FilesAppBrowserTest.Test/keyboardDeleteDownloads_GuestMode
+-KeyboardOperations/FilesAppBrowserTest.Test/renameFileDownloads
+-KeyboardOperations/FilesAppBrowserTest.Test/renameFileDownloads_GuestMode
+-KeyboardOperations/FilesAppBrowserTest.Test/renameNewFolderDownloads
+-KeyboardOperations/FilesAppBrowserTest.Test/renameNewFolderDownloads_GuestMode
+-OpenAudioFiles/FilesAppBrowserTest.Test/audioAutoAdvanceDrive
+-OpenAudioFiles/FilesAppBrowserTest.Test/audioNoRepeatModeMultipleFileDrive
+-OpenAudioFiles/FilesAppBrowserTest.Test/audioNoRepeatModeSingleFileDrive
+-OpenAudioFiles/FilesAppBrowserTest.Test/audioOpenDownloads
+-OpenAudioFiles/FilesAppBrowserTest.Test/audioOpenDownloads_GuestMode
+-OpenAudioFiles/FilesAppBrowserTest.Test/audioOpenDrive
+-OpenAudioFiles/FilesAppBrowserTest.Test/audioRepeatAllModeMultipleFileDrive
+-OpenAudioFiles/FilesAppBrowserTest.Test/audioRepeatAllModeSingleFileDrive
+-OpenAudioFiles/FilesAppBrowserTest.Test/audioRepeatOneModeMultipleFileDrive
+-OpenAudioFiles/FilesAppBrowserTest.Test/audioRepeatOneModeSingleFileDrive
+-OpenImageFiles/FilesAppBrowserTest.Test/imageOpenDownloads
+-OpenImageFiles/FilesAppBrowserTest.Test/imageOpenDownloads_GuestMode
+-OpenVideoFiles/FilesAppBrowserTest.Test/videoOpenDownloads
+-OpenVideoFiles/FilesAppBrowserTest.Test/videoOpenDownloads_GuestMode
+-OpenVideoFiles/FilesAppBrowserTest.Test/videoOpenDrive
+-Providers/FilesAppBrowserTest.Test/requestMount
+-Providers/FilesAppBrowserTest.Test/requestMountMultipleMounts
+-Providers/FilesAppBrowserTest.Test/requestMountSourceDevice
+-Providers/FilesAppBrowserTest.Test/requestMountSourceFile
+-QuickView/FilesAppBrowserTest.Test/closeQuickView
+-QuickView/FilesAppBrowserTest.Test/openQuickView
+-RestoreGeometry/FilesAppBrowserTest.Test/restoreGeometry
+-RestoreGeometry/FilesAppBrowserTest.Test/restoreGeometryMaximized
+-RestoreGeometry/FilesAppBrowserTest.Test/restoreGeometry_GuestMode
+-RestorePrefs/FilesAppBrowserTest.Test/restoreCurrentView
+-RestorePrefs/FilesAppBrowserTest.Test/restoreCurrentView_GuestMode
+-RestorePrefs/FilesAppBrowserTest.Test/restoreSortColumn
+-RestorePrefs/FilesAppBrowserTest.Test/restoreSortColumn_GuestMode
+-SortColumns/FilesAppBrowserTest.Test/sortColumns
+-SortColumns/FilesAppBrowserTest.Test/sortColumns_GuestMode
+-TabIndex/FilesAppBrowserTest.Test/tabindexFocusDownloads
+-TabIndex/FilesAppBrowserTest.Test/tabindexFocusDownloads_GuestMode
+-TabIndex/FilesAppBrowserTest.Test/tabindexOpenDialogDownloads
+-TabIndex/FilesAppBrowserTest.Test/tabindexOpenDialogDownloads_GuestMode
+-TabIndex/FilesAppBrowserTest.Test/tabindexOpenDialogDrive
+-TabIndex/FilesAppBrowserTest.Test/tabindexSaveFileDialogDownloads
+-TabIndex/FilesAppBrowserTest.Test/tabindexSaveFileDialogDownloads_GuestMode
+-TabIndex/FilesAppBrowserTest.Test/tabindexSaveFileDialogDrive
+-Tasks/FilesAppBrowserTest.Test/defaultTaskDialogDownloads
+-Tasks/FilesAppBrowserTest.Test/defaultTaskDialogDownloads_GuestMode
+-Tasks/FilesAppBrowserTest.Test/executeDefaultTaskDownloads
+-Tasks/FilesAppBrowserTest.Test/executeDefaultTaskDownloads_GuestMode
+-Tasks/FilesAppBrowserTest.Test/genericTaskAndNonGenericTask
+-Tasks/FilesAppBrowserTest.Test/genericTaskIsNotExecuted
+-Transfer/FilesAppBrowserTest.Test/transferFromDownloadsToDrive
+-Transfer/FilesAppBrowserTest.Test/transferFromDriveToDownloads
+-Transfer/FilesAppBrowserTest.Test/transferFromOfflineToDownloads
+-Transfer/FilesAppBrowserTest.Test/transferFromOfflineToDrive
+-Transfer/FilesAppBrowserTest.Test/transferFromSharedToDownloads
+-Transfer/FilesAppBrowserTest.Test/transferFromSharedToDrive
+
+# https://crbug.com/843760: webm in <object> triggers RegisterFrameSinkId crash
+-*SavePageOriginalVsSavedComparisonTest.CrossSiteObject*
+
+# DisplayPrefs need to be loaded synchronously, which currently is not
+# supported in mash. crbug/834775
+-DisplayPrefsBrowserTest.*
+
+# See comment at top of file regarding adding test exclusions.

@@ -1,0 +1,34 @@
+<!doctype html>
+<script src="/js-test-resources/js-test.js"></script>
+<body onload="openXHR();">
+<!-- This embed is necessary to cause the synchronous invocation of onload -->
+<embed type="text/html; charset=utf-8">
+<script>
+window.jsTestIsAsync = true;
+description('XMLHttpRequest doesn\'t crash even when open() is invoked ' +
+            'synchronously to handling of an invalid preflight response.');
+
+var xhr = new XMLHttpRequest;
+var count = 10;  // The crash doesn't always happen. Repeat to capture it.
+
+function openXHR() {
+  xhr.open('GET', '/');
+  openAndSendCrossOriginNonSimpleXHR();
+}
+
+function openAndSendCrossOriginNonSimpleXHR() {
+  xhr.open("PUT", "http://localhost:8000/xmlhttprequest/");
+  xhr.send();
+}
+
+xhr.onerror = function() {
+  --count;
+  if (count <= 0) {
+    setTimeout(finishJSTest, 0);
+  } else {
+    openAndSendCrossOriginNonSimpleXHR();
+  }
+}
+
+openAndSendCrossOriginNonSimpleXHR();
+</script>

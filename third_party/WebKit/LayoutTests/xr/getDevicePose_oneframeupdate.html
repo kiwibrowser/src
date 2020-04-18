@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="file:///gen/layout_test_data/mojo/public/js/mojo_bindings.js"></script>
+<script src="file:///gen/device/vr/public/mojom/vr_service.mojom.js"></script>
+<script src="../xr/resources/xr-device-mocking.js"></script>
+<script src="../xr/resources/xr-test-utils.js"></script>
+<script src="../xr/resources/test-constants.js"></script>
+<canvas id="webgl-canvas"></canvas>
+
+<script>
+let fakeDevices = fakeXRDevices();
+
+xr_session_promise_test( (session, t) =>  {
+  // Session must have a baseLayer or else frame requests will be ignored.
+  session.baseLayer = new XRWebGLLayer(session, gl);
+
+  setPose(null);
+
+  return session.requestFrameOfReference("eyeLevel")
+    .then((frameOfRef) => new Promise((resolve, reject) => {
+      let expected_pose = VALID_POSE;
+      let counter = 0;
+      function onFrame(time, vrFrame) {
+        session.requestAnimationFrame(onFrame);
+        if (counter == 0) {
+          t.step( () => {
+            // Expecting to not get a pose since none has been supplied
+            assert_equals(vrFrame.getDevicePose(frameOfRef), null);
+
+            setPose(expected_pose);
+
+            // Check that pose does not update pose within the same frame.
+            assert_equals(vrFrame.getDevicePose(frameOfRef), null);
+          });
+        } else {
+          t.step( () => {
+            // Check that pose was updated.
+            let pose = vrFrame.getDevicePose(frameOfRef);
+            assert_not_equals(pose, null);
+
+            let poseMatrix = pose.poseModelMatrix;
+            assert_not_equals(poseMatrix, null);
+
+            let expectedMatrix = matrixFrom11Pose(expected_pose);
+            assert_matrices_approx_equal(poseMatrix, expectedMatrix);
+          });
+
+          // Finished.
+          resolve();
+        }
+        counter++;
+      }
+
+      session.requestAnimationFrame(onFrame);
+    }));
+}, fakeDevices["FakeGooglePixelPhone"], [
+      { exclusive: true },
+      { outputContext: getOutputContext() }
+  ],
+"XRPresentationFrame getDevicePose updates on the next frame");
+
+</script>

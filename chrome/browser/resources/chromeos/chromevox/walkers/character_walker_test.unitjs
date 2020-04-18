@@ -1,0 +1,117 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// Include test fixture.
+GEN_INCLUDE(['walker_unittest_base.js']);
+
+/**
+ * Test fixture.
+ * @constructor
+ * @extends {CvoxWalkerTestBase}
+ */
+function CvoxCharacterWalkerUnitTest() {}
+
+CvoxCharacterWalkerUnitTest.prototype = {
+  __proto__: CvoxWalkerUnitTestBase.prototype,
+
+  /** @override */
+  closureModuleDeps: CvoxWalkerUnitTestBase.prototype.closureModuleDeps.concat(
+      'cvox.CharacterWalker'),
+
+  /** @override */
+  newWalker: function() {
+    return new cvox.CharacterWalker();
+  },
+
+  /**
+   * Set up for simple tests so we don't have to repeat.
+   * @private
+   */
+  setUpSimpleHtml_: function() {
+    this.loadDoc(function() {/*!
+      <div id="a"><p id="b">Th</p><p id="c">e quick</p></div>
+     */});
+  }
+};
+
+CvoxWalkerUnitTestBase.addCommonTests('CvoxCharacterWalkerUnitTest');
+
+TEST_F('CvoxCharacterWalkerUnitTest', 'SimpleForwardSync', function() {
+  this.setUpSimpleHtml_();
+
+  // invalid selection
+  var sel = cvox.CursorSelection.fromNode($('a'));
+  var ret = this.go(sel, 'sync', {
+    selText: 'Th',
+    selParentNodeId: 'b',
+    selStartIndex: 0,
+    selEndIndex: 1,
+    selReversed: false
+  });
+
+  // valid selection
+  var ret2 = this.walker.sync(ret);
+  assertTrue(ret2.equals(ret));
+});
+
+TEST_F('CvoxCharacterWalkerUnitTest', 'testSimpleReversedSync', function() {
+  this.setUpSimpleHtml_();
+
+  // invalid selection
+  var sel = cvox.CursorSelection.fromNode($('a'));
+  sel.setReversed(true);
+  var ret = this.go(sel, 'sync', {
+    selText: 'e quick',
+    selParentNodeId: 'c',
+    selStartIndex: 0,
+    selEndIndex: 1,
+    selReversed: true
+  });
+
+  // valid selection
+  var ret2 = this.walker.sync(ret);
+  assertTrue(ret2.equals(ret));
+});
+
+TEST_F('CvoxCharacterWalkerUnitTest', 'testSimpleForwardNext', function() {
+  this.setUpSimpleHtml_();
+
+  var sel = cvox.CursorSelection.fromNode($('a'));
+  sel = this.walker.sync(sel);
+  var ret = this.go(sel, 'next', {
+    selText: 'Th',
+    selParentNodeId: 'b',
+    selStartIndex: 1,
+    selEndIndex: 2,
+    selReversed: false
+  });
+});
+
+TEST_F('CvoxCharacterWalkerUnitTest', 'testSimpleReversedNext', function() {
+  this.setUpSimpleHtml_();
+
+  var sel = cvox.CursorSelection.fromNode($('a'));
+  sel = this.walker.sync(sel.setReversed(true));
+  var ret = this.go(sel, 'next', {
+    selText: 'Th',
+    selParentNodeId: 'b',
+    selStartIndex: 1,
+    selEndIndex: 2,
+    selReversed: true
+  });
+});
+
+/**
+ * Tests for how spaces should be navigated character by character.
+ */
+TEST_F('CvoxCharacterWalkerUnitTest', 'testSpaces', function() {
+  this.loadDoc(function() {/*!
+    <div id="foo">a <i>b</i> c<input type="text" value="asdf"/></div>
+  */});
+  var node = $('foo');
+  var sel = cvox.CursorSelection.fromNode(node);
+  var ret = this.go(sel, 'next', {descText: 'a'});
+  ret = this.go(ret, 'next', {descText: ' '});
+  ret = this.go(ret, 'next', {descText: 'b'});
+});

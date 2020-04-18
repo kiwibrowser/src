@@ -1,0 +1,355 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import os
+Import('env')
+
+# Android compiler cannot compile NDK C++ headers with these.
+if env.Bit('linux') and not env.Bit('android'):
+  env.Append(
+      # TODO(cbiffle): give everyone else these warnings too.
+      # TODO(karl): Why does -fno-rtti cause linking issues.
+      # CXXFLAGS='-Weffc++ -Woverloaded-virtual -fno-rtti -fomit-frame-pointer',
+      CXXFLAGS='-Weffc++ -Woverloaded-virtual -fomit-frame-pointer',
+)
+
+# ------------------------------------------------------------------
+# Source generation is controlled by command line directives. To update
+# source generation, you must add one of the following arguments:
+#
+#   valclean : Delete the existing versions of the generated files.
+#       This step should be done whenever ANY change may effect
+#       the generated sources.
+#
+#   valgen : Regenerate any deleted source files. Note: some generated
+#       source files do understand dependencies and do not need to be
+#       deleted before calling valgen. However, do not count on this,
+#       as some dependencies are not caught. To be safe, if you have
+#       modified a file that effects source generation, run "valclean"
+#       followed by a "valgen" to guarantee that generated sources are
+#       up to date.
+gen_env = env.Clone()
+
+# The subdirectory that generated source is put into.
+GEN_DIR = 'gen'
+
+# Defines this generated source directory.
+GEN_SRC_DIR = '${MAIN_DIR}/src/trusted/validator_arm/%s' % GEN_DIR
+
+# The list of command line arguments to be passed to the code generators.
+GEN_CL_ARGS=""
+
+# The list of tables in armv7.table. From this, a separate source test
+# file is generated for each table. This is done so that changes in the
+# table result in localized changes in the test files, making it easier
+# to see what has changed.
+# TODO(karl): Find a way to generate this from file armv7.table.
+GEN_TABLES = ["ARMv7",
+              "data_processing_and_miscellaneous_instructions",
+              "data_processing_register",
+              "data_processing_register_shifted_register",
+              "data_processing_immediate",
+              "multiply_and_multiply_accumulate",
+              "saturating_addition_and_subtraction",
+              "halfword_multiply_and_multiply_accumulate",
+              "extra_load_store_instructions",
+              "synchronization_primitives",
+              "msr_immediate_and_hints",
+              "miscellaneous_instructions",
+              "load_store_word_and_unsigned_byte",
+              "media_instructions",
+              "parallel_addition_and_subtraction_signed",
+              "parallel_addition_and_subtraction_unsigned",
+              "packing_unpacking_saturation_and_reversal",
+              "signed_multiply_signed_and_unsigned_divide",
+              "branch_branch_with_link_and_block_data_transfer",
+              "coprocessor_instructions_and_supervisor_call",
+              "floating_point_data_processing_instructions",
+              "other_floating_point_data_processing_instructions",
+              "extension_register_load_store_instructions",
+              "transfer_between_arm_core_and_extension_register_8_16_and_32_bit",
+              "transfer_between_arm_core_and_extension_registers_64_bit",
+              "unconditional_instructions",
+              "memory_hints_advanced_simd_instructions_and_miscellaneous_instructions",
+              "advanced_simd_data_processing_instructions",
+              "simd_dp_3same",
+              "simd_dp_3diff",
+              "simd_dp_2scalar",
+              "simd_dp_2shift",
+              "simd_dp_2misc",
+              "simd_dp_1imm",
+              "advanced_simd_element_or_structure_load_store_instructions",
+              ]
+
+# The separators to use for splitting up automatically generated actual
+# classes.
+AUTO_ACTUAL_SEPARATORS = ['VABD']
+AUTO_ACTUAL_H_FORMAT = 'arm32_decode_actuals_%s.h'
+AUTO_ACTUAL_CC_FORMAT = 'arm32_decode_actuals_%s.cc'
+
+# The separators to use for splitting up automatically generated baseline
+# classes.
+AUTO_BASELINE_SEPARATORS = ['SMM', 'VLD']
+AUTO_BASELINE_H_FORMAT = 'arm32_decode_baselines_%s.h'
+AUTO_BASELINE_CC_FORMAT = 'arm32_decode_baselines_%s.cc'
+
+# Generates the corresponding automatically generated classes, when
+# split into files using the given separators.
+def GenerateSeparatorFiles(format, separators):
+  return [(format % (n+1)) for n in range(len(separators)+1)]
+
+# Generates the corresponding automatically generated actual classes,
+# when split into files using the separators in AUTO_ACTUAL_SEPARATORS
+def GenerateActualFiles(format):
+  return GenerateSeparatorFiles(format, AUTO_ACTUAL_SEPARATORS)
+
+# Generates the corresponding automatically generated baseline classes,
+# when split into files using the separators in AUTO_BASELINE_SEPARATORS
+def GenerateBaselineFiles(format):
+  return GenerateSeparatorFiles(format, AUTO_BASELINE_SEPARATORS)
+
+# Changes table name to test name.
+def _TableTestName(tbl):
+  return 'arm32_decode_' + tbl + '_tests'
+
+# Defines the full file name for a generated file.
+def _gen_file(filename):
+  return '%s/%s' % (GEN_SRC_DIR, filename)
+
+# Defines the full file name for a list of generated files.
+def _gen_files(filenames):
+  return [_gen_file(f) for f in filenames]
+
+# Extends a name to be in the GEN_DIR.
+def _gen_dir(filename):
+  return '%s/%s' % (GEN_DIR, filename)
+
+# Extends the names to be in the GEN_DIR.
+def _gen_dirs(filenames):
+  return [_gen_dir(f) for f in filenames]
+
+# The set of generated test files.
+GEN_TEST_LIST = [_TableTestName(x) + '.cc' for x in GEN_TABLES]
+
+# Other files, besides test files, that are generated.
+GEN_OTHER_LIST = (['arm32_decode.cc', 'arm32_decode.h',
+                   'arm32_decode_actuals.h',
+                   'arm32_decode_baselines.h',
+                   'arm32_decode_named.cc' ,
+                   'arm32_decode_named_classes.h',
+                   'arm32_decode_named_bases.h',
+                   'arm32_decode_named_decoder.h'] +
+                  GenerateActualFiles(AUTO_ACTUAL_H_FORMAT) +
+                  GenerateActualFiles(AUTO_ACTUAL_CC_FORMAT) +
+                  GenerateBaselineFiles(AUTO_BASELINE_H_FORMAT) +
+                  GenerateBaselineFiles(AUTO_BASELINE_CC_FORMAT))
+
+# Set of generated source files.
+GEN_LIST = _gen_files(GEN_TEST_LIST + GEN_OTHER_LIST)
+
+generate = False
+gen_env = env.Clone()
+if 'valgen' in COMMAND_LINE_TARGETS: generate = True
+if 'valclean' in COMMAND_LINE_TARGETS: generate = True
+
+if generate:
+  gen_env.AlwaysBuild(gen_env.Alias('valgen', GEN_LIST))
+  gen_env.AlwaysBuild(
+    gen_env.Alias('valclean', action=[Delete(x) for x in GEN_LIST]))
+
+def _generate_source(filename, table=None):
+  if not generate: return  # i.e. don't add source dependency.
+  cl_args = GEN_CL_ARGS
+  if table:
+    cl_args += ' --table=' + table
+  for sep in AUTO_ACTUAL_SEPARATORS:
+    cl_args += ' --auto-actual-sep=' + sep
+  for sep in AUTO_BASELINE_SEPARATORS:
+    cl_args += ' --auto-baseline-sep=' + sep
+  env.Command(target=_gen_file(filename),
+              source=['armv7.table',
+                      'generate_decoder.py',
+                      'dgen_core.py',
+                      'dgen_input.py',
+                      'dgen_opt.py',
+                      'dgen_output.py',
+                      'dgen_add_patterns.py',
+                      'dgen_decoder_output.py',
+                      'dgen_test_output.py',
+                      'dgen_decoder.py',
+                      'dgen_actuals.py',
+                      'dgen_baselines.py',
+                      ],
+              action=['${SOURCES[1].abspath} ${SOURCES[0].abspath} '
+                      '${TARGET.abspath} Arm32DecoderState ' +
+                      cl_args])
+
+for source in GEN_OTHER_LIST:
+  _generate_source(source)
+
+for tbl in GEN_TABLES:
+  _generate_source(_TableTestName(tbl) + '.cc', tbl)
+
+env.ComponentLibrary('arm_validator_core',
+                     ['address_set.cc',
+                      'inst_classes.cc',
+                      'model.cc',
+                      'arm_helpers.cc',
+                      'validator.cc',
+                      _gen_dir('arm32_decode.cc')] +
+                     _gen_dirs(GenerateActualFiles(AUTO_ACTUAL_CC_FORMAT)))
+
+env.ComponentLibrary('ncvalidate_arm_v2',
+                     ['ncvalidate.cc'],
+                     LIBS=['arm_validator_core',
+                           '${OPTIONAL_COVERAGE_LIBS}'])
+
+env.ComponentLibrary('arm_validator_reporters',
+                     ['problem_reporter.cc'])
+
+# Build test environment to show that we are compiling in the test
+# environment (rather than for the TCB).
+gtest_env = env.MakeGTestEnv()
+gtest_env.Append(CCFLAGS=['-DNACL_TRUSTED_BUT_NOT_TCB'])
+
+gtest_env.ComponentProgram('address_set_test_binary',
+                           ['address_set_test.cc'],
+                           EXTRA_LIBS=['arm_validator_core',
+                                       '${OPTIONAL_COVERAGE_LIBS}'])
+
+address_set_test = gtest_env.Command(target='address_set_test.out',
+                                     source=['address_set_test_binary'],
+                                     action=['${SOURCES[0].abspath}'])
+
+# TODO(cbiffle): get this wrapped in QEMU.
+#env.AddNodeToTestSuite(address_set_test, ['small_tests'], 'address_set_test')
+
+# TODO(jfb) Remove this, see issue #3217.
+# The rest are ncval and tests, they currently only work on linux.
+if not env.Bit('linux'):
+  Return()
+
+# If we are skipping trusted tests, there is no need to build the
+# cross-targeted ARM validator and tests on x86.
+if env.Bit('skip_trusted_tests') and not env.Bit('build_arm'):
+  Return()
+
+ncval = env.ComponentProgram(
+    'arm-ncval-core',
+    ['ncval.cc'],
+    EXTRA_LIBS=['arm_validator_reporters',
+                'arm_validator_core',
+                'platform',
+                env.NaClTargetArchSuffix('ncfileutils'),
+                '${OPTIONAL_COVERAGE_LIBS}'])
+
+env.SDKInstallBin('ncval', ncval, target='arm')
+
+# TODO(shcherbina): make these tests run on windows as well once
+# http://code.google.com/p/nativeclient/issues/detail?id=3217 is fixed.
+
+validator_tests = {
+  'test_external_jumps': 1,
+  'test_forbidden_instructions': 1,
+  'test_internal_jumps': 1,
+  'test_sp_updates': 1,
+  'test_stores': 1,
+  'test_vector_stores': 1,
+  'test_loads': 1,
+  'test_vector_loads': 1,
+  'test_mcr_viol': 1,
+}
+
+# The following tests generate ARM nexes from assembly and validate the
+# generate file. They're all expected to fail and produce the golden files'
+# stdout. Stderr is expected to be empty.
+if env.Bit('build_arm'):
+  untrusted_env = env.MakeUntrustedNativeEnv()
+  for test, exit_status in validator_tests.iteritems():
+    nexe = untrusted_env.ComponentProgram(test, 'testdata/' + test + '.S',
+                                          LINKFLAGS=['-nodefaultlibs',
+                                                     '-nostdlib'])
+    node = untrusted_env.CommandTest(
+        test + '_actual.out',
+        [ncval, untrusted_env.File(nexe)],
+        exit_status = str(exit_status),
+        stdout_golden = untrusted_env.File('testdata/' + test + '.out'),
+        stderr_golden = untrusted_env.File('testdata/empty_file'))
+    untrusted_env.AddNodeToTestSuite(node, ['small_tests', 'validator_tests'],
+                                     "run_arm_" + test,
+                                     # TODO(jfb) Remove this, see issue #3217.
+                                     is_broken=untrusted_env.Bit('windows'))
+
+gtest_env.ComponentLibrary('decoder_test_tools',
+                           ['decoder_tester.cc',
+                            'actual_vs_baseline.cc',
+                            'named_class_decoder.cc',
+                            _gen_dir('arm32_decode_named.cc')] +
+                           _gen_dirs(GenerateBaselineFiles(
+                               AUTO_BASELINE_CC_FORMAT)))
+
+
+gtest_env.ComponentLibrary('arm_validator_tester',
+                           ['validator_tests.cc'])
+
+# Do NOT name this program 'validator_tests' because this is the same name as
+# a test suite, and scons will run that test suite if it ever builds
+# a program of the same name.
+validator_tests_exe = gtest_env.ComponentProgram(
+                               'arm_validator_small_tests',
+                               ['validator_small_tests.cc'],
+                               EXTRA_LIBS=['arm_validator_tester',
+                                           'arm_validator_core',
+                                           'arm_validator_reporters',
+                                           'platform'])
+
+validator_small_test_node = gtest_env.CommandTest(
+    'validator_small_tests.out',
+    command=[validator_tests_exe],
+    scale_timeout=500)
+
+gtest_env.AddNodeToTestSuite(validator_small_test_node,
+    ['small_tests', 'validator_tests'],
+    'run_arm_validator_small_tests')
+
+validator_huge_tests_exe = gtest_env.ComponentProgram(
+                               'arm_validator_huge_tests',
+                               ['validator_huge_tests.cc'],
+                               EXTRA_LIBS=['arm_validator_tester',
+                                           'arm_validator_core',
+                                           'arm_validator_reporters',
+                                           'platform'])
+
+validator_huge_test_node = gtest_env.CommandTest(
+    'validator_huge_tests.out',
+    command=[validator_huge_tests_exe],
+    size='huge')
+
+gtest_env.AddNodeToTestSuite(validator_huge_test_node,
+    ['huge_tests', 'validator_tests'],
+    'run_arm_validator_huge_tests')
+
+# Test ARM (32-bit) instruction decoding.
+for tbl in GEN_TABLES:
+  # Note: We build the object file separately, to get around a scons
+  # bug that (otherwise) puts the corresponding .o file in the
+  # source gen directory.
+  decoder_tests_obj = gtest_env.ComponentObject(
+      _TableTestName(tbl) + '.o',
+      _gen_file(_TableTestName(tbl) +'.cc'))
+
+  decoder_tests_exe = gtest_env.ComponentProgram(
+      'arm32_decode_' + tbl + '_tests',
+      decoder_tests_obj,
+      EXTRA_LIBS=['decoder_test_tools', 'arm_validator_core', 'platform'])
+
+  decoder_test_node = gtest_env.CommandTest(
+      'arm32_decode_' + tbl + 'tests.out',
+      command=[decoder_tests_exe],
+      scale_timeout=1000)
+
+  gtest_env.AddNodeToTestSuite(decoder_test_node,
+                               ['huge_tests', 'arm_decoder_tests'],
+                                'run_arm32_decode_' + tbl + '_tests')

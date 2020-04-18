@@ -1,0 +1,455 @@
+<!doctype html>
+<!--
+Copyright 2018 The Immersive Web Community Group
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-->
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1, user-scalable=no'>
+    <meta name='mobile-web-app-capable' content='yes'>
+    <meta name='apple-mobile-web-app-capable' content='yes'>
+
+    <title>Positional Audio</title>
+
+    <link href='css/common.css' rel='stylesheet'></link>
+
+    <script src="https://cdn.jsdelivr.net/npm/resonance-audio/build/resonance-audio.min.js"></script>
+
+    <script src='js/cottontail/build/cottontail.debug.js'></script>
+
+    <script src='js/webxr-button.js'></script>
+  </head>
+  <body>
+    <header>
+      <details open>
+        <summary>Positional Audio</summary>
+        <p>
+          This sample demonstrates playing audio that sounds as if it originates
+          at a specific point in the space. Audio will begin playing when you
+          enter XR.
+          <a class="back" href="./">Back</a>
+        </p>
+      </details>
+    </header>
+    <script>
+      (function () {
+      'use strict';
+
+      const DEFAULT_HEIGHT = 1.5;
+      const ANALYSER_FFT_SIZE = 1024;
+
+      // XR globals.
+      let xrButton = null;
+      let xrExclusiveFrameOfRef = null;
+      let xrNonExclusiveFrameOfRef = null;
+
+      // WebGL scene globals.
+      let gl = null;
+      let renderer = null;
+      let scene = new Scene();
+      scene.addNode(new Gltf2Node({url: 'media/gltf/garage/garage.gltf'}));
+      scene.standingStats(true);
+
+      let playButton = null;
+      let playTexture = new UrlTexture('media/textures/play-button.png');
+      let pauseTexture = new UrlTexture('media/textures/pause-button.png');
+      let stereo = new Gltf2Node({url: 'media/gltf/stereo/stereo.gltf'});
+      // FIXME: Temporary fix to initialize for cloning.
+      stereo.visible = false;
+      scene.addNode(stereo);
+
+      // Audio scene globals
+      let audioContext = new AudioContext();
+      let resonance = new ResonanceAudio(audioContext);
+      resonance.output.connect(audioContext.destination);
+
+      audioContext.suspend();
+
+      // Rough room dimensions in meters (estimated from model in Blender.)
+      let roomDimensions = {
+        width : 6,
+        height : 3,
+        depth : 6
+      };
+
+      // Simplified view of the materials that make up the scene.
+      let roomMaterials = {
+        left : 'plywood-panel', // Garage walls
+        right : 'plywood-panel',
+        front : 'plywood-panel',
+        back : 'metal', // To account for the garage door
+        down : 'polished-concrete-or-tile', // garage floor
+        up : 'wood-ceiling'
+      };
+      resonance.setRoomProperties(roomDimensions, roomMaterials);
+
+      function createAudioSource(options) {
+        // Create a Resonance source and set its position in space.
+        let source = resonance.createSource();
+        let pos = options.position;
+        source.setPosition(pos[0], pos[1], pos[2]);
+
+        // Connect an analyser. This is only for visualization of the audio, and
+        // in most cases you won't want it.
+        let analyser = audioContext.createAnalyser();
+        analyser.fftSize = ANALYSER_FFT_SIZE;
+        analyser.lastRMSdB = 0;
+
+        return fetch(options.url)
+          .then((response) => response.arrayBuffer())
+          .then((buffer) => audioContext.decodeAudioData(buffer))
+          .then((decodedBuffer) => {
+            let bufferSource = createBufferSource(
+              source, decodedBuffer, analyser);
+
+            return {
+              buffer: decodedBuffer,
+              bufferSource: bufferSource,
+              source: source,
+              analyser: analyser,
+              position: pos,
+              rotateY: options.rotateY,
+              node: null
+            };
+          });
+      }
+
+      function createBufferSource(source, buffer, analyser) {
+        // Create a buffer source. This will need to be recreated every time
+        // we wish to start the audio, see 
+        // https://developer.mozilla.org/en-US/docs/Web/API/AudioBufferSourceNode
+        let bufferSource = audioContext.createBufferSource();
+        bufferSource.loop = true;
+        bufferSource.connect(source.input);
+
+        bufferSource.connect(analyser);
+
+        bufferSource.buffer = buffer;
+
+        return bufferSource;
+      }
+
+      /**
+       * Returns a floating point value that represents the loudness of the audio
+       * stream, appropriate for scaling an object with.
+       * @return {Number} loudness scalar.
+       */
+      let fftBuffer = new Float32Array(ANALYSER_FFT_SIZE);
+      function getLoudnessScale(analyser) {
+        analyser.getFloatTimeDomainData(fftBuffer);
+        let sum = 0;
+        for (let i = 0; i < fftBuffer.length; ++i)
+          sum += fftBuffer[i] * fftBuffer[i];
+
+        // Calculate RMS and convert it to DB for perceptual loudness.
+        let rms = Math.sqrt(sum / fftBuffer.length);
+        let db = 30 + 10 / Math.LN10 * Math.log(rms <= 0 ? 0.0001 : rms);
+
+        // Moving average with the alpha of 0.525. Experimentally determined.
+        analyser.lastRMSdB += 0.525 * ((db < 0 ? 0 : db) - analyser.lastRMSdB);
+
+        // Scaling by 1/30 is also experimentally determined. Max is to present
+        // objects from disappearing entirely.
+        return Math.max(0.3, analyser.lastRMSdB / 30.0);
+      }
+
+      let audioSources = [];
+
+      function updateAudioNodes() {
+        if (!stereo)
+          return;
+
+        for (let source of audioSources) {
+          if (!source.node) {
+            source.node = stereo.clone();
+            source.node.visible = true;
+            source.node.selectable = true;
+            scene.addNode(source.node);
+          }
+
+          let node = source.node;
+          let matrix = node.matrix;
+
+          // Move the node to the right location.
+          mat4.identity(matrix);
+          mat4.translate(matrix, matrix, source.position);
+          mat4.rotateY(matrix, matrix, source.rotateY);
+
+          // Scale it based on loudness of the audio channel
+          let scale = getLoudnessScale(source.analyser);
+          mat4.scale(matrix, matrix, [scale, scale, scale]);
+        }
+      }
+
+      function playAudio() {
+        if (audioContext.state == 'running')
+          return;
+
+        audioContext.resume();
+
+        for (let source of audioSources) {
+          source.bufferSource.start(0);
+        }
+
+        if (playButton) {
+          playButton.iconTexture = pauseTexture;
+        }
+      }
+
+      function pauseAudio() {
+        if (audioContext.state == 'suspended')
+          return;
+
+        for (let source of audioSources) {
+          source.bufferSource.stop(0);
+          source.bufferSource = createBufferSource(
+            source.source, source.buffer, source.analyser);
+        }
+
+        audioContext.suspend();
+
+        if (playButton) {
+          playButton.iconTexture = playTexture;
+        }
+      }
+
+      window.addEventListener('blur', () => {
+        // As a general rule you should mute any sounds your page is playing
+        // whenever the page loses focus.
+        pauseAudio();
+      });
+
+      function initXR() {
+        xrButton = new XRDeviceButton({
+          onRequestSession: onRequestSession,
+          onEndSession: onEndSession
+        });
+        document.querySelector('header').appendChild(xrButton.domElement);
+
+        if (navigator.xr) {
+          navigator.xr.requestDevice().then((device) => {
+            device.supportsSession({exclusive: true}).then(() => {
+              xrButton.setDevice(device);
+            });
+
+            // Load multiple audio sources.
+            Promise.all([
+              createAudioSource({
+                url: 'media/sound/guitar.ogg',
+                position: [0, DEFAULT_HEIGHT, -1],
+                rotateY: 0
+              }),
+              createAudioSource({
+                url: 'media/sound/drums.ogg',
+                position: [-1, DEFAULT_HEIGHT, 0],
+                rotateY: Math.PI * 0.5
+              }),
+              createAudioSource({
+                url: 'media/sound/perc.ogg',
+                position: [1, DEFAULT_HEIGHT, 0],
+                rotateY: Math.PI * -0.5
+              }),
+            ]).then((sources) => {
+              audioSources = sources;
+
+              // Once the audio is loaded, create a button that toggles the
+              // audio state when clicked.
+              playButton = new ButtonNode(playTexture, () => {
+                if (audioContext.state == 'running') {
+                  pauseAudio();
+                } else {
+                  playAudio();
+                }
+              });
+              playButton.translation = [0, 1.2, -0.65];
+              scene.addNode(playButton);
+            });
+
+            let outputCanvas = document.createElement('canvas');
+            let ctx = outputCanvas.getContext('xrpresent');
+
+            device.requestSession({ outputContext: ctx })
+                .then((session) => {
+                  document.body.appendChild(outputCanvas);
+                  onSessionStarted(session);
+                });
+          }).catch(() => {
+            initFallback();
+          });
+        } else {
+          initFallback();
+        }
+      }
+
+      function initFallback() {
+        initGL();
+        document.body.appendChild(gl.canvas);
+        let fallbackHelper = new FallbackHelper(scene, gl);
+        fallbackHelper.emulateStage = true;
+      }
+
+      function initGL(compatibleDevice) {
+        if (gl)
+          return;
+
+        gl = createWebGLContext({
+          compatibleXRDevice: compatibleDevice
+        });
+
+        renderer = new Renderer(gl);
+        scene.setRenderer(renderer);
+        scene.inputRenderer.setControllerMesh(new Gltf2Node({url: 'media/gltf/controller/controller.gltf'}));
+      }
+
+      function onRequestSession(device) {
+        // Set up a mirror canvas
+        let mirrorCanvas = document.createElement('canvas');
+        let ctx = mirrorCanvas.getContext('xrpresent');
+        mirrorCanvas.setAttribute('id', 'mirror-canvas');
+        document.body.appendChild(mirrorCanvas);
+
+        device.requestSession({ exclusive: true, outputContext: ctx }).then((session) => {
+          xrButton.setSession(session);
+          onSessionStarted(session);
+        });
+      }
+
+      function onSessionStarted(session) {
+        session.addEventListener('end', onSessionEnded);
+
+        session.addEventListener('selectstart', onSelectStart);
+        session.addEventListener('selectend', onSelectEnd);
+        session.addEventListener('select', (ev) => {
+          let frameOfRef = ev.frame.session.exclusive ?
+                           xrExclusiveFrameOfRef :
+                           xrNonExclusiveFrameOfRef;
+          scene.handleSelect(ev.inputSource, ev.frame, frameOfRef);
+        });
+
+        initGL(session.device);
+
+        session.baseLayer = new XRWebGLLayer(session, gl);
+
+        session.requestFrameOfReference('stage').then((frameOfRef) => {
+          if (session.exclusive) {
+            xrExclusiveFrameOfRef = frameOfRef;
+          } else {
+            xrNonExclusiveFrameOfRef = frameOfRef;
+          }
+
+          session.requestAnimationFrame(onXRFrame);
+        });
+      }
+
+      function onEndSession(session) {
+        session.end();
+      }
+
+      function onSessionEnded(event) {
+        if (event.session.exclusive) {
+          document.body.removeChild(document.querySelector('#mirror-canvas'));
+          xrButton.setSession(null);
+
+          // Stop the audio playback when we exit XR.
+          pauseAudio();
+        }
+      }
+
+      let draggingSource = null;
+      let draggingInput = null;
+      let draggingTransform = mat4.create();
+
+      function hitTest(inputSource, frame, frameOfRef) {
+        let inputPose = frame.getInputPose(inputSource, frameOfRef);
+        if (!inputPose) {
+          return;
+        }
+
+        if (inputPose.pointerMatrix) {
+          let hitResult = scene.hitTest(inputPose.pointerMatrix)
+          if (hitResult) {
+            for (let source of audioSources) {
+              if (hitResult.node ==  source.node) {
+                draggingSource = source;
+                draggingInput = inputSource;
+                mat4.invert(draggingTransform, inputPose.pointerMatrix);
+                mat4.multiply(draggingTransform, draggingTransform, source.node.matrix);
+                return true;
+              }
+            }
+          }
+        }
+
+        return false;
+      }
+
+      function onSelectStart(ev) {
+        let frameOfRef = ev.frame.session.exclusive ?
+                         xrExclusiveFrameOfRef :
+                         xrNonExclusiveFrameOfRef;
+        hitTest(ev.inputSource, ev.frame, frameOfRef);
+      }
+
+      function onSelectEnd(ev) {
+        draggingSource =  null;
+        draggingInput = null;
+      }
+
+      let tmpMatrix = mat4.create();
+      function onXRFrame(t, frame) {
+        let session = frame.session;
+        let frameOfRef = session.exclusive ?
+                         xrExclusiveFrameOfRef :
+                         xrNonExclusiveFrameOfRef;
+        let pose = frame.getDevicePose(frameOfRef);
+
+        scene.startFrame();
+
+        session.requestAnimationFrame(onXRFrame);
+
+        scene.updateInputSources(frame, frameOfRef);
+
+        if (draggingSource) {
+          let draggingPose = frame.getInputPose(draggingInput, frameOfRef);
+          if (draggingPose) {
+            let pos = draggingSource.position;
+            mat4.multiply(tmpMatrix, draggingPose.pointerMatrix, draggingTransform);
+            vec3.transformMat4(pos, [0, 0, 0], tmpMatrix);
+            draggingSource.source.setPosition(pos[0], pos[1], pos[2]);
+          }
+        }
+
+        updateAudioNodes();
+
+        scene.drawXRFrame(frame, pose);
+
+        if (pose) {
+          resonance.setListenerFromMatrix({ elements: pose.poseModelMatrix });
+        }
+
+        scene.endFrame();
+      }
+
+      // Start the XR application.
+      initXR();
+      })();
+    </script>
+  </body>
+</html>

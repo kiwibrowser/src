@@ -1,0 +1,53 @@
+<!doctype html>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+<style>
+  body {
+    margin: 0;
+    width: 2000px;
+    height: 2000px;
+  }
+</style>
+<h1>Viewport: Scale is inert</h1>
+<h4>
+    Test Description: This test checks that window scroll and size properties
+    are unaffected by page scale.
+</h4>
+<script>
+    addEventListener("load", function() {
+        if (!window.internals)
+          return;
+
+        var initialWidth = window.innerWidth;
+        var initialHeight = window.innerHeight;
+
+        // Zoom into the page, innerWidth and innerHeight shouldn't be affected.
+        internals.setPageScaleFactor(2);
+
+        test(function() {
+              assert_equals(window.innerWidth, initialWidth);
+              assert_equals(window.innerHeight, initialHeight);
+            }, "window.innerWidth and window.innerHeight don't change");
+
+        // Pan just the visual viepwort. scrollX and scrollY shouldn't be
+        // affected.
+        internals.setVisualViewportOffset(10, 20);
+
+        test(function() {
+              assert_equals(window.scrollX, 0);
+              assert_equals(window.scrollY, 0);
+              assert_equals(window.visualViewport.offsetLeft, 10);
+              assert_equals(window.visualViewport.offsetTop, 20);
+            }, "window.scrollX and window.scrollY don't change when visual viewport moved.");
+
+        // Scroll to maximum extent
+        window.scrollTo(2000, 2000);
+
+        test(function() {
+              assert_equals(window.scrollX, 1200);
+              assert_equals(window.scrollY, 1400);
+              assert_equals(window.visualViewport.offsetLeft, 10);
+              assert_equals(window.visualViewport.offsetTop, 20);
+            }, "Visual viewport not moved by window.scrollTo");
+    });
+</script>

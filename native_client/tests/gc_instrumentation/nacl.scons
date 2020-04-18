@@ -1,0 +1,28 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# The nacl_irt_blockhook interface is deprecated and will be disabled
+# under PNaCl.
+# See https://code.google.com/p/nativeclient/issues/detail?id=3539
+if env.Bit('bitcode'):
+  Return()
+
+# TODO(mseaborn): Make this test build and run under nacl-glibc.
+if env.Bit('nacl_glibc'):
+  Return()
+
+env.Append(CPPDEFINES=[['TESTS_USE_IRT',
+                        str(int(env.Bit('tests_use_irt')))]])
+nexe = env.ComponentProgram('gc_instrumentation',
+                            ['gc_instrumentation.c'],
+                            EXTRA_LIBS=['${DYNCODE_LIBS}',
+                                        '${PTHREAD_LIBS}',
+                                        '${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl('gc_instrumentation.out', nexe)
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_gc_instrumentation_test')

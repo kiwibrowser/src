@@ -1,0 +1,15 @@
+# -*- python -*-
+# Copyright (c) 2014 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# Compile this program using the host build environment since it is always
+# used as an intermediate build step.
+tls_edit_env = env['BUILD_ENV']
+tls_edit_exe = tls_edit_env.ComponentProgram(
+    'tls_edit',
+    'tls_edit.c',
+    EXTRA_LIBS=['rdfa_validator', 'platform'])
+tls_edit_env.Install('${STAGING_DIR}', tls_edit_exe)

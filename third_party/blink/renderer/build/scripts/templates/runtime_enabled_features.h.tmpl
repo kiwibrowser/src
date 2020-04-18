@@ -1,0 +1,82 @@
+{% from 'templates/macros.tmpl' import license, source_files_for_generated_file %}
+{{license()}}
+
+{{source_files_for_generated_file(template_file, input_files)}}
+
+#ifndef RuntimeEnabledFeatures_h
+#define RuntimeEnabledFeatures_h
+
+#include <string>
+
+#include "third_party/blink/renderer/platform/platform_export.h"
+#include "third_party/blink/renderer/platform/wtf/allocator.h"
+#include "third_party/blink/renderer/platform/wtf/forward.h"
+
+namespace blink {
+
+// A class that stores static enablers for all experimental features.
+
+class PLATFORM_EXPORT RuntimeEnabledFeatures {
+  STATIC_ONLY(RuntimeEnabledFeatures);
+ public:
+  class PLATFORM_EXPORT Backup {
+   public:
+    explicit Backup();
+    void Restore();
+
+   private:
+    {% for feature in standard_features %}
+    bool {{feature.class_member_name}};
+    {% endfor %}
+  };
+
+  {% for feature_set in feature_sets %}
+  static void Set{{feature_set|capitalize}}FeaturesEnabled(bool);
+  {% endfor %}
+  static void SetOriginTrialControlledFeaturesEnabled(bool);
+
+  static void SetFeatureEnabledFromString(const std::string& name, bool enabled);
+
+  {% for feature in features %}
+  {% if not feature.origin_trial_feature_name %}
+  {% if feature.custom %}
+  static bool {{feature.name}}Enabled();
+  {% else %}
+  static void Set{{feature.name}}Enabled(bool enabled) { is_{{feature.class_member_name}}enabled_ = enabled; }
+  static bool {{feature.name}}Enabled() { return {{feature.enabled_condition}}; }
+  {% endif %}
+
+  {% endif %}
+  {% endfor %}
+
+  // Origin-trial-enabled features:
+  //
+  // These features are currently part of an origin trial (see
+  // https://www.chromium.org/blink/origin-trials). These methods can be used
+  // to test whether the feature is unconditionally enabled (for example, by
+  // starting the browser with the appropriate command-line flag). However,
+  // that is almost always the incorrect check. Most renderer code should
+  // be calling OriginTrials::<feature>Enabled() instead, to test if the
+  // feature is enabled in a given context.
+
+  {% for feature in features %}
+  {% if feature.origin_trial_feature_name %}
+  {% if feature.custom %}
+  static bool {{feature.name}}EnabledByRuntimeFlag();
+  {% else %}
+  static void Set{{feature.name}}Enabled(bool enabled) { is_{{feature.class_member_name}}enabled_ = enabled; }
+  static bool {{feature.name}}EnabledByRuntimeFlag() { return {{feature.enabled_condition}}; }
+  {% endif %}
+
+  {% endif %}
+  {% endfor %}
+
+ private:
+  {% for feature in standard_features %}
+  static bool is_{{feature.class_member_name}}enabled_;
+  {% endfor %}
+};
+
+} // namespace blink
+
+#endif // RuntimeEnabledFeatures_h

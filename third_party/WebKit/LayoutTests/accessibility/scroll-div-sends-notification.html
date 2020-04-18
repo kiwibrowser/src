@@ -1,0 +1,56 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<script src="../resources/js-test.js"></script>
+<style>
+.container {
+  padding: 100px;
+  margin: 100px;
+  border: 1px solid #000;
+  height: 900px;
+  overflow: scroll;
+}
+.bigbutton {
+  display:block;
+  width: 600px;
+  height: 600px;
+}
+</style>
+</head>
+<body>
+
+<div id="container" class="container">
+    <button class="bigbutton">One</button>
+    <button class="bigbutton">Two</button>
+    <button class="bigbutton">Three</button>
+</div>
+
+<div id="console"></div>
+<script>
+
+description("This test ensures that scrolling the window sends a notification.");
+window.jsTestIsAsync = true;
+
+if (window.testRunner && window.accessibilityController) {
+    testRunner.dumpAsText();
+
+    var container = document.getElementById('container');
+
+    accessibilityController.addNotificationListener(function (target, notification) {
+        if (target.role == 'AXRole: AXGenericContainer') {
+            debug('Got notification on container div');
+            shouldBe("container.scrollTop", "500");
+            accessibilityController.removeNotificationListener();
+            finishJSTest();
+        }
+    });
+
+    window.setTimeout(function() {
+        container.scrollTop = 500;
+    }, 0);
+}
+
+</script>
+
+</body>
+</html>

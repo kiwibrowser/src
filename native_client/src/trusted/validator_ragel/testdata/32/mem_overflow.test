@@ -1,0 +1,51 @@
+@hex:
+  # Align instruction of interest at the end of the bundle
+  90 90 90 90
+  90 90 90 90
+  90 90 90 90
+  90 90 90 90
+  90 90 90 90
+  90 90 90 90
+  90 90 90 90
+  
+  # Test if we fill in (zero) for memory overflow of instruction:
+  # 00000000: 03 1d 20 00 00 00              add %ebx, 0x20
+  03 1d 20 00
+@dis:
+     0:	90                                           	nop
+     1:	90                                           	nop
+     2:	90                                           	nop
+     3:	90                                           	nop
+     4:	90                                           	nop
+     5:	90                                           	nop
+     6:	90                                           	nop
+     7:	90                                           	nop
+     8:	90                                           	nop
+     9:	90                                           	nop
+     a:	90                                           	nop
+     b:	90                                           	nop
+     c:	90                                           	nop
+     d:	90                                           	nop
+     e:	90                                           	nop
+     f:	90                                           	nop
+    10:	90                                           	nop
+    11:	90                                           	nop
+    12:	90                                           	nop
+    13:	90                                           	nop
+    14:	90                                           	nop
+    15:	90                                           	nop
+    16:	90                                           	nop
+    17:	90                                           	nop
+    18:	90                                           	nop
+    19:	90                                           	nop
+    1a:	90                                           	nop
+    1b:	90                                           	nop
+    1c:	03                                           	.byte 0x3
+    1d:	1d                                           	.byte 0x1d
+    1e:	20 00                                        	and    %al,(%eax)
+@rdfa_output:
+  1c: unrecognized instruction
+  return code: 1
+@spec:
+  1c: ('objdump failed to decode', Instruction(0x1c: 03  .byte 0x3))
+  1d: ('objdump failed to decode', Instruction(0x1d: 1d  .byte 0x1d))

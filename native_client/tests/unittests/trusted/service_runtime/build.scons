@@ -1,0 +1,21 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+
+Import('env')
+
+nacl_memory_test_exe = env.ComponentProgram(
+    'nacl_memory_test',
+    'nacl_memory_test.c',
+    EXTRA_LIBS = [
+        'sel',
+        'platform',
+        'gio',
+    ])
+
+node = env.CommandTest(
+    'nacl_memory_test.out',
+    command=[nacl_memory_test_exe])
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_nacl_memory_test')

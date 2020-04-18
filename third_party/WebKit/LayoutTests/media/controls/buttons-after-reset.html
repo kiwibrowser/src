@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<title>Test that resetting the controls after load is a no-op.</title>
+<script src="../media-controls.js"></script>
+<video controls width=400>
+  <track kind=subtitles src=fake-en-sub.vtt srclang=en label=English>
+  <track kind=subtitles src=fake-fr-sub.vtt srclang=fr label=French>
+</video>
+<script>
+  if (window.testRunner)
+    testRunner.waitUntilDone();
+
+  var video = document.querySelector('video');
+  enableTestMode(video);
+  video.src = '../content/test.ogv';
+  video.addEventListener('loadedmetadata', () => {
+    video.controls = false;
+    testRunner.layoutAndPaintAsyncThen(() => {
+      video.controls = true;
+
+      testRunner.layoutAndPaintAsyncThen(() => {
+        testRunner.notifyDone();
+      });
+    });
+  });
+</script>
+</html>

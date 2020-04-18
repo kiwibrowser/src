@@ -1,0 +1,117 @@
+{% filter format_blink_cpp_source_code %}
+
+{% include 'copyright_block.txt' %}
+
+#include "{{this_include_header_path}}"
+
+#include <cstdint>
+
+{% for include_file in include_files %}
+#include "{{include_file}}"
+{% endfor %}
+
+namespace blink {
+
+const intptr_t* {{class}}::GetTable() {
+  static const intptr_t reference_table[] = {
+#if defined(USE_V8_CONTEXT_SNAPSHOT)
+    // Android is sensitive on its APK size, and this table improves it.
+    // So we drop the table entries until the V8 context snapshot feature
+    // is released on Android.
+    {% for interface in interfaces %}
+    {% if not interface.is_array_buffer_or_view %}
+    {%   set v8_class = interface.v8_name %}
+    {# Attributes #}
+    {%-  for attribute in interface.attributes %}
+    {%-    for world_suffix in attribute.world_suffixes %}
+    {%      if not attribute.constructor_type %}
+    reinterpret_cast<intptr_t>({{v8_class}}::{{attribute.name}}AttributeGetterCallback{{world_suffix}}),
+    {%      else %}
+    reinterpret_cast<intptr_t>({{v8_class}}::{{attribute.name}}ConstructorGetterCallback{{world_suffix}}),
+    {%      endif %}
+    {%      if attribute.has_setter %}
+    reinterpret_cast<intptr_t>({{v8_class}}::{{attribute.name}}AttributeSetterCallback{{world_suffix}}),
+    {%      endif %}
+    {%-    endfor %}{# world_suffix #}
+    {%-  endfor %}{# attributes #}
+    {# Methods / Operations #}
+    {%  for method in interface.methods %}
+    {%-   for world_suffix in method.world_suffixes %}
+    {%      if not method.overload_index or method.overloads %}
+    {%        if (method.overloads and method.overloads.visible and
+                  (not method.overloads.has_partial_overloads or not interface.is_partial)) or
+                 (not method.overloads and method.visible) %}
+    {# TODO(bashi): Remove this 'if' condition when crbug.com/630986 is fixed. #}
+    {%          if not interface.is_callback %}
+    reinterpret_cast<intptr_t>({{v8_class}}::{{method.name}}MethodCallback{{world_suffix}}),
+    {%          endif %}
+    {%        endif %}
+    {%      endif %}{# overload(_index) #}
+    {%         if method.is_cross_origin and method.visible %}
+    reinterpret_cast<intptr_t>({{v8_class}}::{{method.name}}OriginSafeMethodGetterCallback{{world_suffix}}),
+    {%         endif%}
+    {%    endfor %}
+    {%  endfor %}{# method #}
+    {%  if interface.has_origin_safe_method_setter %}
+    reinterpret_cast<intptr_t>({{v8_class}}::{{interface.name}}OriginSafeMethodSetterCallback),
+    {%  endif %}
+    {%  if interface.has_cross_origin_named_getter %}
+    reinterpret_cast<intptr_t>({{v8_class}}::crossOriginNamedGetter),
+    {%  endif %}
+    {%  if interface.has_cross_origin_named_setter %}
+    reinterpret_cast<intptr_t>({{v8_class}}::crossOriginNamedSetter),
+    {%  endif %}
+    {%  if interface.has_cross_origin_named_enumerator %}
+    reinterpret_cast<intptr_t>({{v8_class}}::crossOriginNamedEnumerator),
+    {%  endif %}
+    {%  if interface.has_cross_origin_indexed_getter %}
+    reinterpret_cast<intptr_t>({{v8_class}}::crossOriginIndexedGetter),
+    {%  endif %}
+    {%  if interface.has_security_check %}
+    reinterpret_cast<intptr_t>({{v8_class}}::securityCheck),
+    reinterpret_cast<intptr_t>(&{{v8_class}}::wrapperTypeInfo),
+    {%  endif %}
+    {# Other properties #}
+    {%  if interface.has_constructor_callback %}
+    reinterpret_cast<intptr_t>({{v8_class}}::constructorCallback),
+    {%  endif %}
+    {%  if interface.named_property_getter %}
+    reinterpret_cast<intptr_t>({{v8_class}}::namedPropertyGetterCallback),
+    {%  endif %}
+    {%-  if interface.named_property_setter %}
+    reinterpret_cast<intptr_t>({{v8_class}}::namedPropertySetterCallback),
+    {%  endif %}
+    {%-  if interface.named_property_deleter %}
+    reinterpret_cast<intptr_t>({{v8_class}}::namedPropertyDeleterCallback),
+    {%  endif %}
+    {%-  if interface.named_property_getter and interface.named_property_getter.is_enumerable %}
+    reinterpret_cast<intptr_t>({{v8_class}}::namedPropertyQueryCallback),
+    reinterpret_cast<intptr_t>({{v8_class}}::namedPropertyEnumeratorCallback),
+    {%  endif %}
+    {%-  if interface.indexed_property_getter %}
+    reinterpret_cast<intptr_t>({{v8_class}}::indexedPropertyGetterCallback),
+    reinterpret_cast<intptr_t>({{v8_class}}::indexedPropertyDefinerCallback),
+    reinterpret_cast<intptr_t>({{v8_class}}::indexedPropertyDescriptorCallback),
+    {%  endif %}
+    {%-  if interface.indexed_property_getter or interface.named_property_setter %}
+    reinterpret_cast<intptr_t>({{v8_class}}::indexedPropertySetterCallback),
+    {%  endif %}
+    {%-  if interface.indexed_property_deleter %}
+    reinterpret_cast<intptr_t>({{v8_class}}::indexedPropertyDeleterCallback),
+    {%  endif %}
+    {%   if interface.has_security_check_function %}
+    reinterpret_cast<intptr_t>({{v8_class}}::securityCheck),
+    {%-  endif %}
+    {% endif %}{# not is_array_buffer_or_view #}
+    {% endfor %}{# interfaces #}
+    reinterpret_cast<intptr_t>(V8ObjectConstructor::IsValidConstructorMode),
+#endif  // USE_V8_CONTEXT_SNAPSHOT
+    0  // terminate with a null
+  };
+
+  return reference_table;
+}
+
+}  // namespace blink
+
+{% endfilter %}{# format_blink_cpp_source_code #}

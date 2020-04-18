@@ -1,0 +1,64 @@
+@hex:
+  # Disallowed because %r15 is the base (should be (%rbp, %r15))
+  89 e5
+  49 8d 2c 2f
+@dis:
+     0:	89 e5                                        	mov    %esp,%ebp
+     2:	49 8d 2c 2f                                  	lea    (%r15,%rbp,1),%rbp
+@rdfa_output:
+  2: improper %rbp sandboxing
+  2: error - %bpl or %bp is changed
+  return code: 1
+@spec:
+  2: ('changes to rbp are not allowed', Instruction(0x2: 49 8d 2c 2f  lea (%r15,%rbp,1),%rbp))
+----------------------------------------------------------------------
+@hex:
+  # Allowed
+  # mov %esp, %ebp
+  89 e5 \\
+  # lea 0x00(%rbp, %r15), %rbp
+  4a 8d 6c 3d 00
+  
+  # Allowed
+  # mov %esp, %ebp
+  89 e5 \\
+  # lea 0x00000000(%rbp, %r15), %rbp
+  4a 8d ac 3d 00 00 00 00
+@dis:
+     0:	89 e5                                        	mov    %esp,%ebp
+     2:	4a 8d 6c 3d 00                               	lea    0x0(%rbp,%r15,1),%rbp
+     7:	89 e5                                        	mov    %esp,%ebp
+     9:	4a 8d ac 3d 00 00 00 00                      	lea    0x0(%rbp,%r15,1),%rbp
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # mov %ebp, %esp
+  89 ec \\
+  # lea (%rsp, %r15), %rsp
+  4a 8d 24 3c
+  
+  # mov %ebp, %esp
+  89 ec \\
+  # lea 0x00(%rsp, %r15), %rsp
+  4a 8d 64 3c 00
+  
+  # mov %ebp, %esp
+  89 ec \\
+  # lea 0x00000000(%rsp, %r15), %rsp
+  4a 8d a4 3c 00 00 00 00
+  
+  # There is no 'lea (%r15, %rsp), ...' instruction, so nothing to try.
+@dis:
+     0:	89 ec                                        	mov    %ebp,%esp
+     2:	4a 8d 24 3c                                  	lea    (%rsp,%r15,1),%rsp
+     6:	89 ec                                        	mov    %ebp,%esp
+     8:	4a 8d 64 3c 00                               	lea    0x0(%rsp,%r15,1),%rsp
+     d:	89 ec                                        	mov    %ebp,%esp
+     f:	4a 8d a4 3c 00 00 00 00                      	lea    0x0(%rsp,%r15,1),%rsp
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE

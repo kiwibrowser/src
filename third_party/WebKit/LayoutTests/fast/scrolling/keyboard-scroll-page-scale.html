@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<script src="../../resources/js-test.js"></script>
+<script>
+  var numScrolls;
+  var pageHeight = 2000;
+  var pageWidth = 2000;
+
+  function reset()
+  {
+    window.scrollTo(0, 0);
+    internals.setPageScaleFactor(2);
+  }
+
+  function testArrowKeys()
+  {
+    // Test up and down.
+    eventSender.keyDown('ArrowDown');
+    shouldBeGreaterThan('internals.visualViewportScrollY()', '0');
+
+    numScrolls = Math.ceil((pageHeight - internals.visualViewportHeight()) / internals.visualViewportScrollY());
+
+    for(var i = 0; i < numScrolls - 1; ++i) {
+      eventSender.keyDown('ArrowDown');
+    }
+
+    shouldBe('internals.visualViewportScrollY()', 'pageHeight - internals.visualViewportHeight()');
+
+    for(var i = 0; i < numScrolls; ++i) {
+      eventSender.keyDown('ArrowUp');
+    }
+
+    shouldBe('internals.visualViewportScrollY()', '0');
+
+    // Now test left and right.
+
+    reset();
+    eventSender.keyDown('ArrowRight');
+    numScrolls = Math.ceil((pageWidth - internals.visualViewportWidth()) / internals.visualViewportScrollX());
+
+    for(var i = 0; i < numScrolls - 1; ++i) {
+      eventSender.keyDown('ArrowRight');
+    }
+
+    shouldBe('internals.visualViewportScrollX()', 'pageWidth - internals.visualViewportWidth()');
+
+    for(var i = 0; i < numScrolls; ++i) {
+      eventSender.keyDown('ArrowLeft');
+    }
+
+    shouldBe('internals.visualViewportScrollX()', '0');
+  }
+
+  function testHomeEnd()
+  {
+    eventSender.keyDown('End');
+    shouldBe('window.scrollY', 'pageHeight - window.innerHeight');
+    shouldBe('internals.visualViewportScrollY()', 'pageHeight - internals.visualViewportHeight()');
+    eventSender.keyDown('Home');
+    shouldBe('window.scrollY', '0');
+    shouldBe('internals.visualViewportScrollY()', '0');
+  }
+
+  function testPageUpDown()
+  {
+    eventSender.keyDown('PageDown');
+    shouldBeGreaterThan('internals.visualViewportScrollY()', '0');
+
+    numScrolls = Math.ceil((pageHeight - internals.visualViewportHeight()) / internals.visualViewportScrollY());
+
+    for(var i = 0; i < numScrolls - 1; ++i) {
+      eventSender.keyDown('PageDown');
+    }
+
+    shouldBe('internals.visualViewportScrollY()', 'pageHeight - internals.visualViewportHeight()');
+
+    for(var i = 0; i < numScrolls; ++i) {
+      eventSender.keyDown('PageUp');
+    }
+
+    shouldBe('internals.visualViewportScrollY()', '0');
+  }
+
+  function testSpacebar()
+  {
+    eventSender.keyDown(' ');
+    shouldBeGreaterThan('internals.visualViewportScrollY()', '0');
+
+    numScrolls = Math.ceil((pageHeight - internals.visualViewportHeight()) / internals.visualViewportScrollY());
+
+    for(var i = 0; i < numScrolls - 1; ++i) {
+      eventSender.keyDown(' ');
+    }
+
+    shouldBe('internals.visualViewportScrollY()', 'pageHeight - internals.visualViewportHeight()');
+
+    for(var i = 0; i < numScrolls; ++i) {
+      eventSender.keyDown(' ', 'shiftKey');
+    }
+
+    shouldBe('internals.visualViewportScrollY()', '0');
+  }
+
+  function runTest()
+  {
+    description(
+        'Test that keyboard scrolling while the page is scaled scrolls ' +
+        'both viewports. To test manually, pinch zoom into the page and ' +
+        'use the arrow keys, page up/down, home/end to scroll the page. ' +
+        'You should be able to reach the end of the page bounds (i.e. ' +
+        'scroll to see the divs at the bounds.)');
+
+    if (window.eventSender && window.internals) {
+      internals.settings.setScrollAnimatorEnabled(false);
+      reset();
+      debug('Testing arrow keys:');
+      testArrowKeys();
+
+      reset();
+      debug('');
+      debug('Testing home and end keys:');
+      testHomeEnd();
+
+      reset();
+      debug('');
+      debug('Testing page up and page down keys:');
+      testPageUpDown();
+
+      reset();
+      debug('');
+      debug('Testing spacebar:');
+      testSpacebar();
+    }
+  }
+
+  addEventListener('load', runTest);
+</script>
+<style>
+  ::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+  }
+
+  div {
+    width: 200px;
+    height: 20px;
+    background-color: red;
+  }
+
+  html{
+    padding: 0px;
+    margin: 0px;
+    width: 2000px;
+    height: 2000px;
+  }
+
+  .top {
+    position: absolute;
+    top: 0px;
+    left: 300px;
+  }
+
+  .middle{
+    position: absolute;
+    top: 975px;
+    left: 300px;
+  }
+
+  .bottom {
+    position: absolute;
+    top: 1980px;
+    left: 300px;
+
+  }
+
+  .left {
+    position: absolute;
+    top: 275px;
+    left: 0px;
+  }
+
+  .right {
+    position: absolute;
+    top: 275px;
+    left: 1800px;
+  }
+</style>
+<p id="description" style="width: 800px"></p>
+<p id="console" style="width: 800px"></p>
+<div class="top">Top of page</div>
+<div class="bottom">Bottom of page</div>
+<div class="left">Left of page</div>
+<div class="right">Right of page</div>
+<div class="middle">Middle of page</div>

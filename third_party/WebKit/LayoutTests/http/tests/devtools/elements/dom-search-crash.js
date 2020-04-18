@@ -1,0 +1,21 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(`Tests that elements panel search is not crashing on documentElement-less cases.\n`);
+  await TestRunner.showPanel('elements');
+  await TestRunner.loadHTML(`
+      <iframe src="resources/dom-search-crash-iframe.html" onload="runTest()"></iframe>
+    `);
+
+  TestRunner.runTestSuite([
+    function testSetUp(next) {
+      TestRunner.domModel.requestDocument().then(next);
+    },
+
+    function testNoCrash(next) {
+      TestRunner.domModel.performSearch('FooBar', false).then(next);
+    }
+  ]);
+})();

@@ -1,0 +1,48 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/html/util.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../i18n_setup.html">
+<link rel="import" href="../route.html">
+<link rel="import" href="../settings_shared_css.html">
+
+<dom-module id="settings-account-manager">
+  <template>
+    <style include="settings-shared iron-flex iron-flex-alignment">
+      .profile-icon {
+        background: center / cover no-repeat;
+        border-radius: 20px;
+        flex-shrink: 0;
+        height: 40px;
+        width: 40px;
+      }
+
+      #outer {
+        margin-left: auto;
+        margin-right: auto;
+        width: 90%;
+      }
+    </style>
+    <div class="settings-box first">$i18n{accountManagerDescription}</div>
+    <div class="settings-box first">
+      <h2>$i18n{accountListHeader}</h2>
+    </div>
+    <div id="outer" class="layout vertical nowrap">
+      <template is="dom-repeat" items="[[accounts_]]">
+        <div class="settings-box">
+          <div class="profile-icon"
+              style="background-image: [[getIconImageSet_(item.pic)]]"></div>
+          <div class="middle two-line no-min-width">
+            <div class="flex text-elide">
+              <span>[[item.fullName]]</span>
+              <div class="secondary">[[item.email]]</div>
+            </div>
+          </div>
+        </div>
+      </template>
+      <div class="clear settings-box"></div>
+    </div>
+  </template>
+  <script src="account_manager.js"></script>
+</dom-module>

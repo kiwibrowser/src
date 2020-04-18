@@ -1,0 +1,44 @@
+# -*- python -*-
+# Copyright (c) 2013 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import os
+Import('env')
+
+sources = ['arch/arm/cpu_arm.c',
+           'arch/mips/cpu_mips.c']
+
+# TODO(jfb) Temporary hack while the x86 CPU features aren't factored
+# out between host and target API functions. The eventual goal is for
+# inline asm to be in host-specific code and only built for that host,
+# and generic CPU feature emulation and querying to be built for all
+# hosts. ARM and MIPS don't ahve these problems as of today because they
+# don't actually query their CPU.
+# Do the same in the gyp build.
+if env.Bit('build_x86'):
+  sources += ['arch/x86/cpu_x86.c',
+              'arch/x86/cpu_xgetbv.S']
+
+env.ComponentLibrary('cpu_features', sources)
+
+# TODO(jfb) Also test ARM and MIPS.
+if env.Bit('build_x86'):
+  # Create environment for command-line tools and testing, rather than
+  # part of the TCB. Then define compile-time flag that communicates
+  # that we are compiling in the test environment (rather than for the TCB).
+  test_env = env.Clone()
+  test_env.Append(CCFLAGS=['-DNACL_TRUSTED_BUT_NOT_TCB'])
+
+  cpu_x86_test = test_env.ComponentProgram(
+      'cpu_x86_test',
+      ['arch/x86/cpu_x86_test.c'],
+      EXTRA_LIBS=[
+        'cpu_features',
+        'platform'
+      ])
+
+  node = test_env.CommandTest(
+      'cpu_x86_test.out',
+      [cpu_x86_test])
+  test_env.AddNodeToTestSuite(node, ['small_tests'], 'run_cpu_x86_test')

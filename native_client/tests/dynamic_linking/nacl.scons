@@ -1,0 +1,19 @@
+# -*- python -*-
+# Copyright 2010 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+if not env.Bit('nacl_glibc'):
+  Return()
+
+nexe = env.ComponentProgram('dlopen_test', 'dlopen_test.c', EXTRA_LIBS=['dl'])
+
+dlopen_test = env.CommandSelLdrTestNacl('dlopen_test.out', nexe)
+
+# This particular test does not work with static linking, although
+# dlopen() can work with a statically-linked main executable in
+# general.
+if not env.Bit('nacl_static_link'):
+  env.AddNodeToTestSuite(dlopen_test, ['small_tests'], 'run_dlopen_test')

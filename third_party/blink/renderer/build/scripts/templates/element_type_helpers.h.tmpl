@@ -1,0 +1,74 @@
+{% from "templates/macros.tmpl" import license, source_files_for_generated_file %}
+{{ license() }}
+
+{{source_files_for_generated_file(template_file, input_files)}}
+
+#ifndef THIRD_PARTY_BLINK_RENDERER_CORE_{{namespace|upper}}_ELEMENT_TYPE_HELPERS_H_
+#define THIRD_PARTY_BLINK_RENDERER_CORE_{{namespace|upper}}_ELEMENT_TYPE_HELPERS_H_
+
+#include "{{base_element_header}}"
+#include "third_party/blink/renderer/core/{{namespace|lower}}_names.h"
+#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+
+namespace blink {
+// Type checking.
+{% for tag in tags|sort if not tag.multipleTagNames and not tag.noTypeHelpers %}
+class {{tag.interface}};
+// Catch unnecessary runtime check of type known at compile time.
+void Is{{tag.interface}}(const {{tag.interface}}&);
+void Is{{tag.interface}}(const {{tag.interface}}*);
+
+inline bool Is{{tag.interface}}(const {{namespace}}Element& element) {
+  {% if tag.runtimeEnabled %}
+  if (!RuntimeEnabledFeatures::{{tag.runtimeEnabled}}Enabled())
+    return false;
+  {% endif %}
+  return element.HasTagName({{namespace}}Names::{{tag|symbol}}Tag);
+}
+inline bool Is{{tag.interface}}(const {{namespace}}Element* element) {
+  return element && Is{{tag.interface}}(*element);
+}
+inline bool Is{{tag.interface}}(const Node& node) {
+  return node.Is{{namespace}}Element() && Is{{tag.interface}}(To{{namespace}}Element(node));
+}
+inline bool Is{{tag.interface}}(const Node* node) {
+  return node && Is{{tag.interface}}(*node);
+}
+template <>
+inline bool IsElementOfType<const {{tag.interface}}>(const Node& node) {
+  return Is{{tag.interface}}(node);
+}
+template <>
+inline bool IsElementOfType<const {{tag.interface}}>(const {{namespace}}Element& element) {
+  return Is{{tag.interface}}(element);
+}
+
+{% endfor %}
+// Using macros because the types are forward-declared and we don't want to use
+// reinterpret_cast in the casting functions above. reinterpret_cast would be
+// unsafe due to multiple inheritence.
+
+{% for tag in tags|sort if not tag.multipleTagNames and not tag.noTypeHelpers %}
+#define To{{tag.interface}}(x) blink::ToElement<blink::{{tag.interface}}>(x)
+#define To{{tag.interface}}OrNull(x) blink::ToElementOrNull<blink::{{tag.interface}}>(x)
+#define To{{tag.interface}}OrDie(x) blink::ToElementOrDie<blink::{{tag.interface}}>(x)
+{% endfor %}
+
+{% if namespace == "HTML" %}
+
+enum class HTMLElementType {
+  {% for element in elements|sort %}k{{element}},
+  {% endfor %}
+};
+
+// Tag checking.
+// tagName is the local name for an html element in lowercase
+// The corresponding HTMLElement type for the tag name will be returned
+// Do NOT use this function with SVG tag names and SVGElements
+// If tagName is an undefined html tag name HTMLUnknownElement is returned
+HTMLElementType htmlElementTypeForTag(const AtomicString& tagName);
+
+{% endif %}
+}  // namespace blink
+
+#endif  // THIRD_PARTY_BLINK_RENDERER_CORE_{{namespace|upper}}_ELEMENT_TYPE_HELPERS_H_

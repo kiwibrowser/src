@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<title>Register a ServiceWorker On An Insecure Origin</title>
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="/resources/get-host-info.js"></script>
+<script>
+if (window.location.origin != get_host_info().UNAUTHENTICATED_ORIGIN) {
+    window.location = get_host_info().UNAUTHENTICATED_ORIGIN + window.location.pathname;
+} else {
+    async_test(function() {
+        var scope = 'resources/registration/';
+        navigator.serviceWorker.register(
+            'resources/registration-worker.js',
+            {scope: scope}
+        ).then(
+            this.step_func(function() {
+                assert_unreached('Registration should fail, but succeeded.');
+                service_worker_unregister_and_done(this, scope);
+            }),
+            this.step_func(function(reason) {
+                assert_equals(reason.name, "SecurityError");
+                this.done();
+            })
+        );
+    }, "Registering on an unauthenticated origin");
+}
+</script>

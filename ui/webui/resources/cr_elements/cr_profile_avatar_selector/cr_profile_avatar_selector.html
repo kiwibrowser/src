@@ -1,0 +1,54 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/html/icon.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+<link rel="import" href="cr_profile_avatar_selector_grid.html">
+
+<dom-module id="cr-profile-avatar-selector">
+  <template>
+    <style>
+      :host {
+        --avatar-size: 48px;
+        --avatar-spacing: 24px;
+        display: inline-flex;
+
+        @apply --avatar-selector;
+      }
+
+      #avatar-grid .avatar {
+        background-color: var(--paper-grey-300);
+        background-position: center;
+        background-repeat: no-repeat;
+        border: 1px solid rgba(0, 0, 0, .12);
+        border-radius: 2px;
+        display: flex;
+        height: var(--avatar-size);
+        margin: calc(var(--avatar-spacing) / 2);
+        min-width: 0;
+        padding: 0;
+        width: var(--avatar-size);
+
+        @apply --avatar-selector-avatar;
+      }
+
+      #avatar-grid .avatar.keyboard-focus {
+        background-color: var(--paper-grey-400);
+      }
+
+      #avatar-grid .avatar.iron-selected {
+        border: 2px solid var(--google-blue-500);
+      }
+    </style>
+    <cr-profile-avatar-selector-grid id="avatar-grid"
+        ignore-modified-key-events="[[ignoreModifiedKeyEvents]]">
+      <template is="dom-repeat" items="[[avatars]]">
+        <paper-button class$="avatar [[getSelectedClass_(item.selected)]]"
+            title="[[item.label]]"
+            style$="background-image: [[getIconImageSet_(item.url)]]"
+            on-tap="onAvatarTap_">
+        </paper-button>
+      </template>
+    </cr-profile-avatar-selector-grid>
+  </template>
+  <script src="cr_profile_avatar_selector.js"></script>
+</dom-module>

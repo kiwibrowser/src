@@ -1,0 +1,38 @@
+# -*- python -*-
+# Copyright 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# suspend_test_guest.nexe fails to link when Valgrind is enabled
+# because of a problem with the TLS ".tbss" section.
+if env.IsRunningUnderValgrind():
+  Return()
+
+if 'TRUSTED_ENV' not in env:
+  Return()
+trusted_env = env['TRUSTED_ENV']
+
+if not env.AllowInlineAssembly():
+  Return()
+
+test_guest = env.ComponentProgram(
+    'suspend_test_guest', ['suspend_test_guest.c'],
+    EXTRA_LIBS=['${NONIRT_LIBS}', 'test_common'])
+
+test_host = trusted_env.ComponentProgram(
+    'suspend_test_host', ['suspend_test_host.c'],
+    EXTRA_LIBS=['sel', 'test_common'])
+
+node = env.CommandTest('thread_suspension_test.out',
+                       env.AddBootstrap(test_host, [test_guest]),
+                       size='large')
+
+# This test is flaky on mac10.7-newlib-dbg-asan.
+# See https://code.google.com/p/nativeclient/issues/detail?id=3906
+is_broken= (not env.Bit('nacl_static_link') or
+            (env.Bit('asan') and env.Bit('host_mac')))
+
+env.AddNodeToTestSuite(node, ['small_tests', 'nonpexe_tests'],
+                       'run_thread_suspension_test', is_broken=is_broken)

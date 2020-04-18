@@ -1,0 +1,37 @@
+<html>
+<head>
+  <script type="text/javascript" src="webrtc_test_utilities.js"></script>
+  <script type="text/javascript">
+  $ = function(id) {
+    return document.getElementById(id);
+  };
+
+  function getUserMediaAndReturnVideoDimensions(constraints) {
+    navigator.mediaDevices.getUserMedia(constraints)
+        .then(gotStreamCallback)
+        .catch(failedCallback);
+  }
+
+  function failedCallback(error) {
+    failTest('GetUserMedia call failed with code ' + error.code);
+  }
+
+  function gotStreamCallback(stream) {
+    var localView = $('local-view');
+    localView.srcObject = stream;
+    detectVideoPlaying('local-view').then(() => {
+      sendValueToTest(localView.videoWidth + 'x' + localView.videoHeight);
+    });
+  }
+  </script>
+</head>
+<body>
+  <table border="0">
+    <tr>
+      <td><video id="local-view" autoplay="autoplay">
+          </video></td>
+      <td><canvas id="local-view-canvas" style="display:none"></canvas></td>
+    </tr>
+  </table>
+</body>
+</html>

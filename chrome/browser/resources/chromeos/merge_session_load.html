@@ -1,0 +1,57 @@
+<!doctype html>
+<html i18n-values="dir:textdirection;lang:language">
+<head>
+<title i18n-content="title">
+</title>
+<link rel="stylesheet" href="chrome://resources/css/text_defaults.css">
+<style>
+html {
+  height: 100%;
+}
+body {
+  background: white;
+  color: #000;
+  display: -webkit-box;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  visibility: hidden;
+  width: 100%;
+}
+
+.header {
+  padding: 3px;
+  width: 80%;
+}
+</style>
+
+<script>
+
+function sendCommand(cmd) {
+  window.domAutomationController.send(cmd);
+}
+
+// Show the interstitial page.
+function showPage() {
+  document.body.style.visibility = 'visible';
+}
+
+// Show the interstitial page.
+function forceLoad() {
+  sendCommand('proceed');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var showDelayTime = loadTimeData.getString('show_delay_time');
+  var totalWaitTime = loadTimeData.getString('total_wait_time');
+  window.setTimeout(showPage, showDelayTime);
+  window.setTimeout(forceLoad, totalWaitTime);
+});
+</script>
+
+<body oncontextmenu="return false;">
+  <div class="header" i18n-content="heading" id="mgs">
+  </div>
+</body>
+</html>

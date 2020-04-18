@@ -1,0 +1,114 @@
+# This file is used for tests that only need to be suppressed on
+# the Chromium Blink MSan bots.
+# Further documentation:
+# https://chromium.googlesource.com/chromium/src/+/master/docs/testing/layout_test_expectations.md
+
+# Those stress V8's simulator, making them very slow under MSan.
+crbug.com/420198 [ Linux ] fast/js/regress [ Skip ]
+crbug.com/420198 [ Linux ] fast/css/fontface-arraybuffer.html [ Skip ]
+
+# Deliberate infinite recursion. A JS exception is expected, but may crash with
+# a stack overflow due to bloated stack frames under MSan.
+crbug.com/420606 [ Linux ] fast/workers/shared-worker-constructor.html [ Skip ]
+crbug.com/420606 [ Linux ] fast/workers/worker-constructor.html [ Skip ]
+
+# Flaky under MSan (hang forever).
+crbug.com/422982 [ Linux ] virtual/threaded [ Skip ]
+
+crbug.com/700795 [ Linux ] http/tests/devtools/animation/animation-transition-setTiming-crash.js [ Skip ]
+
+crbug.com/454267 [ Linux ] virtual/gpu/fast/canvas/canvas-arc-360-winding.html [ Crash ]
+crbug.com/454267 [ Linux ] virtual/gpu/fast/canvas/canvas-ellipse-360-winding.html [ Crash ]
+crbug.com/522315 [ Linux ] virtual/gpu/fast/canvas/quadraticCurveTo.xml [ Crash ]
+
+crbug.com/517704 [ Linux ] external/wpt/encoding/api-invalid-label.html [ Timeout Pass ]
+crbug.com/708175 [ Linux ] external/wpt/IndexedDB/interleaved-cursors-small.html [ Timeout ]
+crbug.com/708175 [ Linux ] external/wpt/IndexedDB/interleaved-cursors-large.html [ Timeout ]
+
+crbug.com/701433 [ Linux ] crypto/subtle/worker-subtle-crypto-concurrent.html [ Timeout Pass ]
+crbug.com/701563 [ Linux ] external/wpt/svg/interfaces.html [ Timeout Pass ]
+
+crbug.com/704360 [ Linux ] shapedetection/detection-HTMLVideoElement.html [ Timeout Pass ]
+crbug.com/704360 [ Linux ] shapedetection/detection-HTMLCanvasElement.html [ Timeout Pass ]
+crbug.com/704360 [ Linux ] shapedetection/detection-ImageData.html [ Timeout Pass ]
+
+# Times out on MSAN
+crbug.com/462190 [ Linux ] inspector-protocol/heap-profiler/heap-samples-in-snapshot.js [ Timeout ]
+crbug.com/462190 [ Linux ] inspector-protocol/heap-profiler/heap-snapshot-merged-nodes.js [ Timeout ]
+crbug.com/462190 [ Linux ] inspector-protocol/heap-profiler/heap-snapshot-with-active-dom-object.js [ Timeout ]
+crbug.com/462190 [ Linux ] inspector-protocol/heap-profiler/heap-snapshot-with-detached-dom-tree.js [ Timeout ]
+crbug.com/462190 [ Linux ] inspector-protocol/heap-profiler/heap-snapshot-with-detached-iframe.js [ Timeout ]
+crbug.com/462190 [ Linux ] inspector-protocol/heap-profiler/heap-snapshot-with-event-listener.js [ Timeout ]
+crbug.com/462190 [ Linux ] inspector-protocol/heap-profiler/heap-snapshot-with-multiple-retainers.js [ Timeout ]
+crbug.com/462190 [ Linux ] inspector-protocol/heap-profiler/heap-snapshot-with-no-detached-iframe.js [ Timeout ]
+
+crbug.com/667560 [ Linux ] http/tests/devtools/startup/console/console-format-startup.js [ Timeout Pass ]
+crbug.com/751906 [ Linux ] http/tests/devtools/console/console-correct-suggestions.js [ Timeout Pass ]
+crbug.com/811820 [ Linux ] http/tests/devtools/tracing-session-id.js [ Timeout Pass ]
+
+crbug.com/736370 [ Linux ] external/wpt/editing/run/removeformat.html [ Timeout ]
+crbug.com/810960 [ Linux ] external/wpt/IndexedDB/nested-cloning-large.html [ Timeout ]
+crbug.com/736554 [ Linux ] external/wpt/IndexedDB/nested-cloning-large-multiple.html [ Timeout ]
+
+crbug.com/810963 [ Linux ] external/wpt/dom/interfaces.html [ Timeout ]
+
+# Intentionally failed allocations, via partitionAllocGenericFlags()
+crbug.com/577889 [ Linux ] fast/js/typed-array-allocation-failure.html [ Crash ]
+
+# These tests use OpenGl, which crashes on MSAN builds due to missing instrumentation
+crbug.com/555703 [ Linux ] virtual/media-gpu-accelerated [ Skip ]
+
+crbug.com/769729 [ Linux ] paint/invalidation/video-paint-invalidation.html [ Crash ]
+
+# These tests are just a tad bit too slow on MSAN bots and time out. Setting
+# them as "Slow" doesn't seem to help the problem (see discussion on bug), so
+# marking them as "Timeout" while crbug.com/729136 is worked out.
+crbug.com/729136 [ Linux ] external/wpt/encoding/textdecoder-fatal-single-byte.html [ Timeout ]
+crbug.com/729136 [ Linux ] external/wpt/mimesniff/mime-types/parsing.any.html [ Timeout ]
+crbug.com/729136 [ Linux ] external/wpt/mimesniff/mime-types/parsing.any.worker.html [ Timeout ]
+crbug.com/729136 [ Linux ] fast/css/css-selector-deeply-nested.html [ Timeout ]
+crbug.com/729136 [ Linux ] http/tests/devtools/forced-layout-in-microtask.js [ Timeout ]
+crbug.com/729136 [ Linux ] http/tests/devtools/tracing/timeline-xhr-response-type-blob-event.js [ Timeout ]
+crbug.com/729136 [ Linux ] http/tests/devtools/components/file-path-scoring.js [ Timeout ]
+crbug.com/729136 [ Linux ] http/tests/devtools/elements/styles-4/styles-should-not-force-sync-style-recalc.js [ Timeout ]
+crbug.com/729136 [ Linux ] webaudio/mixing.html [ Timeout ]
+
+crbug.com/739365 [ Linux ] virtual/layout_ng/fast/block/float/assert-when-moving-float.html [ Skip ]
+
+# Tests timing out on WebKit Linux Trusty MSAN
+crbug.com/760543 [ Linux ] http/tests/devtools/tracing/console-timeline.js [ Pass Timeout ]
+crbug.com/760543 [ Linux ] http/tests/devtools/tracing/timeline-layout/timeline-layout-with-invalidations.js [ Pass Timeout ]
+crbug.com/760543 [ Linux ] http/tests/devtools/tracing/timeline-paint/timeline-paint-with-layout-invalidations.js [ Pass Timeout ]
+crbug.com/760543 [ Linux ] http/tests/devtools/tracing/timeline-paint/timeline-paint-with-style-recalc-invalidations.js [ Pass Timeout ]
+crbug.com/760543 [ Linux ] http/tests/devtools/tracing/timeline-style/timeline-style-recalc-with-invalidations.js [ Pass Timeout ]
+crbug.com/760543 [ Linux ] http/tests/devtools/tracing/timeline-style/timeline-style-recalc-with-invalidator-invalidations.js [ Pass Timeout ]
+crbug.com/760543 [ Linux ] http/tests/devtools/tracing/timeline-misc/timeline-event-causes.js [ Pass Timeout ]
+crbug.com/760543 [ Linux ] http/tests/devtools/tracing/timeline-paint/timeline-paint-with-layout-invalidations-on-deleted-node.js [ Pass Timeout ]
+crbug.com/760543 [ Linux ] http/tests/devtools/tracing/timeline-time/timeline-usertiming.js [ Pass Timeout ]
+crbug.com/760543 [ Linux ] http/tests/devtools/tracing/timeline-paint/timeline-paint.js [ Pass Timeout ]
+
+# Timing out consistenly on WebKit Linux Trusty MSAN
+crbug.com/798957 [ Linux ] http/tests/devtools/audits2/audits2-limited-run.js [ Skip ]
+crbug.com/798957 [ Linux ] http/tests/devtools/audits2/audits2-successful-run.js [ Skip ]
+crbug.com/824455 [ Linux ] external/wpt/webaudio/idlharness.https.html [ Skip ]
+
+# Memory allocation hooks are disabled on ASAN/MSAN
+crbug.com/803276 inspector-protocol/memory/sampling-native-profile.js [ Skip ]
+crbug.com/803276 inspector-protocol/memory/sampling-native-snapshot.js [ Skip ]
+crbug.com/803276 virtual/sampling-heap-profiler/inspector-protocol/memory/sampling-native-profile.js [ Skip ]
+crbug.com/803276 virtual/sampling-heap-profiler/inspector-protocol/memory/sampling-native-snapshot.js [ Skip ]
+
+# CORS test crash on MSAN
+crbug.com/838057 [ Linux ] virtual/outofblink-cors/external/wpt/fetch/api/cors/cors-cookies-redirect.any.html [ Crash ]
+crbug.com/838057 [ Linux ] virtual/outofblink-cors/external/wpt/fetch/api/cors/cors-cookies-redirect.any.worker.html [ Crash ]
+crbug.com/838057 [ Linux ] virtual/outofblink-cors/external/wpt/fetch/api/cors/cors-preflight-star.any.html [ Crash ]
+crbug.com/838057 [ Linux ] virtual/outofblink-cors/external/wpt/fetch/api/cors/cors-preflight-star.any.worker.html [ Crash ]
+crbug.com/838057 [ Linux ] virtual/outofblink-cors/external/wpt/fetch/api/cors/cors-preflight.any.html [ Crash ]
+crbug.com/838057 [ Linux ] virtual/outofblink-cors/external/wpt/fetch/api/cors/cors-preflight.any.worker.html [ Crash ]
+crbug.com/838057 [ Linux ] virtual/outofblink-cors/external/wpt/fetch/api/cors/cors-redirect-preflight.any.html [ Crash ]
+crbug.com/838057 [ Linux ] virtual/outofblink-cors/external/wpt/fetch/api/cors/cors-redirect-preflight.any.worker.html [ Crash ]
+crbug.com/838057 [ Linux ] virtual/outofblink-cors/external/wpt/service-workers/service-worker/fetch-canvas-tainting-video-cache.https.html [ Crash ]
+crbug.com/838057 [ Linux ] virtual/outofblink-cors/external/wpt/service-workers/service-worker/fetch-canvas-tainting-video.https.html [ Crash ]
+
+# Crashes on Linux Trusty MSAN
+crbug.com/842262 [ Linux ] virtual/enable_wasm/external/wpt/wasm/wasm_indexeddb_test.https.html [ Crash ]

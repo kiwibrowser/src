@@ -1,0 +1,69 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_dialog/cr_dialog.html">
+<link rel="import" href="chrome://resources/cr_elements/paper_button_style_css.html">
+<link rel="import" href="chrome://resources/cr_elements/paper_input_style_css.html">
+<link rel="import" href="chrome://resources/cr_elements/shared_style_css.html">
+<link rel="import" href="chrome://resources/html/assert.html">
+<link rel="import" href="chrome://resources/html/cr.html">
+<link rel="import" href="chrome://resources/html/util.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-input/paper-input.html">
+<link rel="import" href="pack_dialog_alert.html">
+
+<dom-module id="extensions-pack-dialog">
+  <template>
+    <style include="cr-shared-style paper-button-style paper-input-style">
+      .file-input {
+        align-items: center;
+        display: flex;
+      }
+
+      .file-input paper-input {
+        flex: 1;
+      }
+
+      .file-input paper-button {
+        -webkit-margin-start: 10px;
+        color: var(--google-blue-500);
+      }
+    </style>
+    <cr-dialog id="dialog" close-text="$i18n{close}">
+      <div slot="title">$i18n{packDialogTitle}</div>
+      <div slot="body">
+        <div>$i18n{packDialogContent}</div>
+        <div class="file-input">
+          <paper-input id="root-dir" label="$i18n{packDialogExtensionRoot}"
+              always-float-label value="{{packDirectory_}}">
+          </paper-input>
+          <paper-button id="root-dir-browse" on-click="onRootBrowse_">
+            $i18n{packDialogBrowse}
+          </paper-button>
+        </div>
+        <div class="file-input">
+          <paper-input id="key-file" label="$i18n{packDialogKeyFile}"
+              always-float-label value="{{keyFile_}}">
+          </paper-input>
+          <paper-button id="key-file-browse" on-click="onKeyBrowse_">
+            $i18n{packDialogBrowse}
+          </paper-button>
+        </div>
+      </div>
+      <div slot="button-container">
+        <paper-button class="cancel-button" on-click="onCancelTap_">
+          $i18n{cancel}
+        </paper-button>
+        <paper-button class="action-button" on-click="onConfirmTap_"
+            disabled="[[!packDirectory_]]">
+          $i18n{packDialogConfirm}
+        </paper-button>
+      </div>
+    </cr-dialog>
+    <template is="dom-if" if="[[lastResponse_]]" restamp>
+      <extensions-pack-dialog-alert model="[[lastResponse_]]"
+          on-close="onAlertClose_">
+      </extensions-pack-dialog-alert>
+    </template>
+  </template>
+  <script src="pack_dialog.js"></script>
+</dom-module>

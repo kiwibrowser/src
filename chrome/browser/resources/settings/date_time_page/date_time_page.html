@@ -1,0 +1,101 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/html/cr.html">
+<link rel="import" href="chrome://resources/html/i18n_behavior.html">
+<link rel="import" href="chrome://resources/html/web_ui_listener_behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button-light.html">
+<link rel="import" href="../controls/settings_toggle_button.html">
+<link rel="import" href="../i18n_setup.html">
+<link rel="import" href="../prefs/prefs_behavior.html">
+<link rel="import" href="../route.html">
+<link rel="import" href="../settings_page/settings_subpage.html">
+<link rel="import" href="../settings_shared_css.html">
+<link rel="import" href="date_time_types.html">
+<link rel="import" href="timezone_selector.html">
+<link rel="import" href="timezone_subpage.html">
+
+<dom-module id="settings-date-time-page">
+  <template>
+    <style include="settings-shared">
+      #timeZoneAutoDetect {
+        padding: 0;
+        width: 100%;
+      }
+      #timeZoneButton {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        width: 100%;
+      }
+    </style>
+    <settings-animated-pages id="pages" section="dateTime"
+        focus-config="[[focusConfig_]]">
+      <neon-animatable id="main" route-path="default">
+        <template is="dom-if"
+            if="[[!prefs.cros.flags.fine_grained_time_zone_detection_enabled.value]]"
+            restamp>
+          <div class="settings-box first">
+            <settings-toggle-button id="timeZoneAutoDetect"
+                label="$i18n{timeZoneGeolocation}"
+                pref="{{prefs.generated.resolve_timezone_by_geolocation_on_off}}">
+            </settings-toggle-button>
+          </div>
+        </template>
+        <template is="dom-if"
+            if="[[prefs.cros.flags.fine_grained_time_zone_detection_enabled.value]]"
+            restamp>
+          <div id="timeZoneSettingsTrigger" class="settings-box first"
+              on-click="onTimeZoneSettings_" actionable>
+            <div id="timeZoneButton" class="two-line">
+                $i18n{timeZoneButton}
+              <div class="secondary">
+                <div hidden="[[prefs.generated.resolve_timezone_by_geolocation_on_off.value]]">
+                  [[activeTimeZoneDisplayName]]
+                </div>
+                <div hidden="[[!prefs.generated.resolve_timezone_by_geolocation_on_off.value]]">
+                  [[getTimeZoneAutoDetectMethodDisplayName_(
+                        prefs.generated.resolve_timezone_by_geolocation_method_short.value)]]
+                </div>
+              </div>
+            </div>
+            <div class="flex"></div>
+            <cr-policy-pref-indicator
+                pref="[[prefs.generated.resolve_timezone_by_geolocation_on_off]]">
+            </cr-policy-pref-indicator>
+            <paper-icon-button-light class="subpage-arrow">
+              <button aria-label="$i18n{timeZoneButton}"></button>
+            </paper-icon-button-light>
+          </div>
+        </template>
+        <div class="settings-box continuation embedded"
+            hidden="[[prefs.cros.flags.fine_grained_time_zone_detection_enabled.value]]">
+          <timezone-selector prefs="{{prefs}}"
+              active-time-zone-display-name="{{activeTimeZoneDisplayName}}">
+          </timezone-selector>
+        </div>
+        <settings-toggle-button
+            pref="{{prefs.settings.clock.use_24hour_clock}}"
+            label="$i18n{use24HourClock}">
+        </settings-toggle-button>
+        <div class="settings-box" id="setDateTime" actionable
+            on-click="onSetDateTimeTap_" hidden$="[[!canSetDateTime_]]">
+          <div class="start">$i18n{setDateTime}</div>
+          <paper-icon-button-light class="subpage-arrow">
+            <button aria-label="$i18n{setDateTime}"></button>
+          </paper-icon-button-light>
+        </div>
+      </neon-animatable>
+      <template is="dom-if" route-path="/dateTime/timeZone">
+        <settings-subpage data-route="DATETIME_TIMEZONE_SUBPAGE"
+            associated-control="[[$$('#timeZoneSettingsTrigger')]]"
+            page-title="$i18n{timeZoneSubpageTitle}"
+            learn-more-url="$i18n{timeZoneSettingsLearnMoreURL}">
+          <timezone-subpage id="timezoneSubpage" prefs="{{prefs}}"
+              active-time-zone-display-name="{{activeTimeZoneDisplayName}}">
+          </timezone-subpage>
+        </settings-subpage>
+      </template>
+    </settings-animated-pages>
+  </template>
+  <script src="date_time_page.js"></script>
+</dom-module>

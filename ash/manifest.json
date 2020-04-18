@@ -1,0 +1,74 @@
+{
+  "name": "ash",
+  "display_name": "Ash Window Manager and Shell",
+  "sandbox_type": "none",
+  "interface_provider_specs": {
+    "service_manager:connector": {
+      "provides": {
+        // Modifications here should correspond with changes to
+        // chrome_content_browser_manifest_overlay.json.
+        "system_ui": [
+          "app_list.mojom.AppList",
+          "ash.mojom.AcceleratorController",
+          "ash.mojom.AccessibilityController",
+          "ash.mojom.AccessibilityFocusRingController",
+          "ash.mojom.AppListController",
+          "ash.mojom.AshMessageCenterController",
+          "ash.mojom.AssistantController",
+          "ash.mojom.CastConfig",
+          "ash.mojom.CrosDisplayConfigController",
+          "ash.mojom.DockedMagnifierController",
+          "ash.mojom.EventRewriterController",
+          "ash.mojom.FirstRunHelper",
+          "ash.mojom.HighlighterController",
+          "ash.mojom.ImeController",
+          "ash.mojom.LocaleNotificationController",
+          "ash.mojom.LoginScreen",
+          "ash.mojom.MediaController",
+          "ash.mojom.NewWindowController",
+          "ash.mojom.NightLightController",
+          "ash.mojom.NoteTakingController",
+          "ash.mojom.ProcessCreationTimeRecorder",
+          "ash.mojom.SessionController",
+          "ash.mojom.ShelfController",
+          "ash.mojom.ShutdownController",
+          "ash.mojom.SplitViewController",
+          "ash.mojom.SystemTray",
+          "ash.mojom.TabletModeController",
+          "ash.mojom.TrayAction",
+          "ash.mojom.VoiceInteractionController",
+          "ash.mojom.VpnList",
+          "ash.mojom.WallpaperController"
+        ],
+        // Test-only interfaces.
+        "test": [
+          "ash.mojom.ShelfTestApi",
+          "ash.mojom.ShellTestApi",
+          "ash.mojom.StatusAreaWidgetTestApi",
+          "ash.mojom.SystemTrayTestApi",
+          "ash.mojom.TimeToFirstPresentRecorderTestApi"
+        ],
+        // Only chrome is allowed to use this (required as dbus runs in Chrome).
+        "display": [
+          "ash.mojom.AshDisplayController"
+        ],
+        "mus:window_manager": [ "ui.mojom.AcceleratorRegistrar" ]
+      },
+      "requires": {
+        "*": [ "accessibility", "app" ],
+        "autoclick_app": [
+          "chromeos:autoclick",
+          "mash:launchable"
+        ],
+        "ash_pref_connector": [ "pref_connector" ],
+        "catalog": [ "directory" ],
+        "local_state": [ "pref_client" ],
+        "multidevice_setup": [ "multidevice_setup" ],
+        "quick_launch_app": [ "mash:launchable" ],
+        "service_manager": [ "service_manager:singleton" ],
+        "ui": [ "display_dev", "window_manager", "video_detector" ],
+        "data_decoder": [ "image_decoder" ]
+      }
+    }
+  }
+}

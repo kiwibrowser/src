@@ -1,0 +1,45 @@
+<script>
+var port = undefined;
+var scope = 'fetch-request-body-file-test';
+var script = 'fetch-request-body-file-worker.js';
+
+window.addEventListener('message', function(evt) {
+    port = evt.ports[0];
+    start();
+  }, false);
+
+function wait_for_activated(registration) {
+  return new Promise(function(resolve) {
+      var worker = registration.installing;
+      worker.addEventListener('statechange', function() {
+          if (worker.state == 'activated') {
+            resolve(worker);
+          }
+        });
+    });
+}
+
+function start() {
+  if (location.search == '?register') {
+    navigator.serviceWorker.register(script, {scope: scope})
+      .then(function(registration) {
+          return registration.unregister();
+        })
+      .then(function() {
+          return navigator.serviceWorker.register(script, {scope: scope});
+        })
+      .then(wait_for_activated)
+      .then(function(worker) {
+          port.postMessage({msg: 'registered'});
+        });
+  } else if (location.search == '?unregister') {
+    navigator.serviceWorker.register(script, {scope: scope})
+      .then(function(registration) {
+          return registration.unregister();
+        })
+      .then(function() {
+          port.postMessage({msg: 'unregistered'});
+        });
+  }
+}
+</script>

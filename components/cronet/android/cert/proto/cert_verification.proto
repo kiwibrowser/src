@@ -1,0 +1,77 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+//
+// WARNING: This is experimental code, please don't use it.
+//
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package cronet_pb;
+
+message CertVerificationCertificate {
+  // Certficate number associated with each unique certificate.
+  repeated uint32 cert_numbers = 1;
+};
+
+// Protobuf for input parameters of a certificate verification request.
+message CertVerificationRequestParams {
+  optional CertVerificationCertificate certificate = 1;
+  optional string hostname = 2;
+  optional int32 flags = 3;
+  optional string ocsp_response = 4;
+  repeated CertVerificationCertificate additional_trust_anchors = 5;
+};
+
+// Protobuf for the result of certificate verification.
+message CertVerificationResult {
+  optional CertVerificationCertificate verified_cert = 1;
+
+  optional uint32 cert_status = 2;
+
+  // Properties of the certificate chain.
+  optional bool has_md2 = 3;
+  optional bool has_md4 = 4;
+  optional bool has_md5 = 5;
+  optional bool has_sha1 = 6;
+  optional bool has_sha1_leaf = 7;
+
+  repeated string public_key_hashes = 8;
+  optional bool is_issued_by_known_root = 9;
+  optional bool is_issued_by_additional_trust_anchor = 10;
+  optional bool common_name_fallback_used = 11 [deprecated = true];
+};
+
+// Protobuf for CertVerificationResult and the error.
+message CertVerificationCachedResult {
+  // The return value of CertVerifier::Verify.
+  optional int64 error = 1;
+  // The output of CertVerifier::Verify.
+  optional CertVerificationResult result = 2;
+}
+
+// Each cache entry for certificate verification request, verification result
+// and it's time of verification.
+message CertVerificationCacheEntry {
+  optional CertVerificationRequestParams request_params = 1;
+  optional CertVerificationCachedResult cached_result = 2;
+  optional int64 verification_time = 3;
+};
+
+// Protobuf for each unique certificate.
+message CertVerificationCertificateData {
+  // DER encoded certificate.
+  optional string cert = 1;
+  // Certficate number associated with the certificate.
+  optional uint32 cert_number = 2;
+};
+
+message CertVerificationCache {
+  // Set of unique certificates.
+  repeated CertVerificationCertificateData cert_entry = 1;
+  // CachingCertVerifier's cache entries.
+  repeated CertVerificationCacheEntry cache_entry = 2;
+};

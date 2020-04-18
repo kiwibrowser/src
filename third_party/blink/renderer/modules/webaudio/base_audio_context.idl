@@ -1,0 +1,76 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// See https://webaudio.github.io/web-audio-api/#BaseAudioContext
+
+enum AudioContextState {
+    "suspended",
+    "running",
+    "closed"
+};
+
+callback DecodeErrorCallback = void (DOMException error);
+callback DecodeSuccessCallback = void (AudioBuffer decodedData);
+
+[
+    ActiveScriptWrappable
+] interface BaseAudioContext : EventTarget {
+    // All rendered audio ultimately connects to destination, which represents the audio hardware.
+    readonly attribute AudioDestinationNode destination;
+
+    // All scheduled times are relative to this time in seconds.
+    readonly attribute double currentTime;
+
+    // All AudioNodes in the context run at this sample-rate (sample-frames per second).
+    readonly attribute float sampleRate;
+
+    // All panning is relative to this listener.
+    readonly attribute AudioListener listener;
+
+    // Current state of the AudioContext
+    readonly attribute AudioContextState state;
+
+    [RaisesException] AudioBuffer createBuffer(unsigned long numberOfChannels, unsigned long numberOfFrames, float sampleRate);
+
+    // Asynchronous audio file data decoding.
+    // TODO(crbug.com/841185): |successCallback| and |errorCallback| are not
+    // nullable in the spec.
+    [RaisesException, MeasureAs=AudioContextDecodeAudioData, CallWith=ScriptState] Promise<AudioBuffer> decodeAudioData(ArrayBuffer audioData, optional DecodeSuccessCallback? successCallback, optional DecodeErrorCallback? errorCallback);
+
+    // Sources
+    [RaisesException, MeasureAs=AudioContextCreateBufferSource] AudioBufferSourceNode createBufferSource();
+    [RaisesException, MeasureAs=AudioContextCreateConstantSource] ConstantSourceNode createConstantSource();
+
+    // Processing nodes
+    [RaisesException, MeasureAs=AudioContextCreateGain] GainNode createGain();
+    [RaisesException, MeasureAs=AudioContextCreateDelay] DelayNode createDelay(optional double maxDelayTime);
+    [RaisesException, MeasureAs=AudioContextCreateBiquadFilter] BiquadFilterNode createBiquadFilter();
+    [RaisesException, MeasureAs=AudioContextCreateIIRFilter] IIRFilterNode createIIRFilter(sequence<double> feedForward, sequence<double> feedBack);
+    [RaisesException, MeasureAs=AudioContextCreateWaveShaper] WaveShaperNode createWaveShaper();
+    [RaisesException, MeasureAs=AudioContextCreatePannerAutomated] PannerNode createPanner();
+    [RaisesException, MeasureAs=AudioContextCreateConvolver] ConvolverNode createConvolver();
+    [RaisesException, MeasureAs=AudioContextCreateDynamicsCompressor] DynamicsCompressorNode createDynamicsCompressor();
+    [RaisesException, MeasureAs=AudioContextCreateAnalyser] AnalyserNode createAnalyser();
+    [RaisesException, MeasureAs=AudioContextCreateScriptProcessor] ScriptProcessorNode createScriptProcessor(optional unsigned long bufferSize, optional unsigned long numberOfInputChannels, optional unsigned long numberOfOutputChannels);
+    [RaisesException, MeasureAs=AudioContextCreateStereoPanner] StereoPannerNode createStereoPanner();
+    [RaisesException, MeasureAs=AudioContextCreateOscillator] OscillatorNode createOscillator();
+    [RaisesException, MeasureAs=AudioContextCreatePeriodicWave] PeriodicWave createPeriodicWave(sequence<float> real, sequence<float> imag, optional PeriodicWaveConstraints options);
+
+    // Channel splitting and merging
+    [RaisesException, MeasureAs=AudioContextCreateChannelSplitter] ChannelSplitterNode createChannelSplitter(optional unsigned long numberOfOutputs);
+    [RaisesException, MeasureAs=AudioContextCreateChannelMerger] ChannelMergerNode createChannelMerger(optional unsigned long numberOfInputs);
+
+    // Pause/resume
+    [MeasureAs=AudioContextResume, CallWith=ScriptState, ImplementedAs=resumeContext] Promise<void> resume();
+
+    // TODO(rtoy): These really belong to the AudioContext, but we need them
+    // here so we can use an offline audio context to test these.
+    [RaisesException, MeasureAs=AudioContextCreateMediaElementSource] MediaElementAudioSourceNode createMediaElementSource(HTMLMediaElement mediaElement);
+    [RaisesException, MeasureAs=AudioContextCreateMediaStreamSource] MediaStreamAudioSourceNode createMediaStreamSource(MediaStream mediaStream);
+    [RaisesException, MeasureAs=AudioContextCreateMediaStreamDestination] MediaStreamAudioDestinationNode createMediaStreamDestination();
+
+    [SecureContext] readonly attribute AudioWorklet audioWorklet;
+
+    attribute EventHandler onstatechange;
+};

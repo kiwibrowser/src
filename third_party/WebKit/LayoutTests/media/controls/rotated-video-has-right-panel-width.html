@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<script>
+  internals.settings.setViewportEnabled(true);
+  internals.settings.setViewportMetaEnabled(true);
+</script>
+<head>
+<title>Test that overflow-x: hidden with a large viewport doesn't clip the controls when rotated</title>
+<meta name='viewport' content='width=800'>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="../media-controls.js"></script>
+</head>
+<style>
+body {
+  overflow-x: hidden;
+}
+</style>
+<body>
+  <video controls width=400 style="transform:rotate(180deg)"></video>
+  <video controls width=1200></video>
+  <video controls width=1200 style="transform:rotate(90deg)"></video>
+  <video controls width=1200 style="transform:rotate(30deg)"></video>
+</body>
+<script>
+test(_ => {
+  const expectedWidth = [
+    "400px", // Smaller than viewport so fully visible.
+    "800px", // Larger than viewport and horizontal so width=viewport_width.
+    "1200px", // Larger than viewport but vertical so fully visible anyway :).
+    "1004.14px", // Larger than viewport but angled so we'll see more than
+                 // viewport but less than full.
+  ];
+
+  var videos = document.querySelectorAll('video');
+  for (var i=0; i < videos.length; ++i) {
+    videos[i].src = 'content/test.ogv';
+  }
+
+  var forceLayout = document.body.offsetHeight;
+
+  for (var i=0; i < videos.length; ++i) {
+    var controls = mediaControlsButton(videos[i], 'panel');
+    assert_equals(getComputedStyle(controls).width, expectedWidth[i]);
+  }
+});
+</script>
+</html>

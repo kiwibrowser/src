@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="../resources/device-orientation-helpers.js"></script>
+<script>
+'use strict';
+
+async_test(test => {
+  assertTestRunner();
+  var numSecondListenerCalls = 0;
+  var motionData = generateMotionData(1, 2, 3,
+                                      4, 5, 6,
+                                      7, 8, 9,
+                                      10);
+  setMockMotion(motionData);
+  window.addEventListener('devicemotion', function firstListener(event) {
+    test.step(() => {
+      checkMotion(event, motionData);
+    });
+    window.removeEventListener('devicemotion', firstListener);
+    window.addEventListener('devicemotion', () => {
+      ++numSecondListenerCalls;
+    });
+    setTimeout(test.step_func_done(() => {
+      assert_equals(numSecondListenerCalls, 1);
+    }), 100);
+  });
+}, 'Test no fire listeners added during event dispatch.');
+</script>
+</body>
+</html>

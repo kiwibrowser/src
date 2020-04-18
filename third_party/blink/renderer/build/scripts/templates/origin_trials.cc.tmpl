@@ -1,0 +1,69 @@
+{% from 'templates/macros.tmpl' import license, source_files_for_generated_file %}
+{{license()}}
+
+{{source_files_for_generated_file(template_file, input_files)}}
+
+#include "third_party/blink/renderer/core/origin_trials/origin_trials.h"
+
+#include "third_party/blink/renderer/core/origin_trials/origin_trial_context.h"
+#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+
+namespace blink {
+
+{% for feature in features %}
+{% if feature.origin_trial_feature_name %}
+const char OriginTrials::k{{feature.name}}TrialName[] = "{{feature.origin_trial_feature_name}}";
+{% endif %}
+{% endfor %}
+
+{% for feature in features %}
+{% if feature.origin_trial_feature_name %}
+
+bool OriginTrials::{{feature.tokenized_name.to_lower_camel_case()}}Enabled(const ExecutionContext* executionContext) {
+  if (RuntimeEnabledFeatures::{{feature.name}}EnabledByRuntimeFlag())
+    return true;
+{% if feature.origin_trial_os %}
+#if
+{%- for os in feature.origin_trial_os %}
+{%- if not loop.first %} ||{% endif %}
+ defined(OS_{{os | upper}})
+{%- endfor %}
+{% endif %}
+
+  const OriginTrialContext* context = OriginTrialContext::From(executionContext);
+  if (!context) return false;
+  if (context->IsTrialEnabled(k{{feature.name}}TrialName))
+    return true;
+{% for implied_by_name in feature.implied_by_origin_trials %}
+  // TODO(crbug.com/831346): This check should be redundant with
+  // GetImpliedTrials() being checked in OriginTrialContext::EnableTrialFromToken().
+  // Remove when verified by further testing.
+  if (context->IsTrialEnabled(k{{implied_by_name}}TrialName))
+    return true;
+{% endfor %}
+  return false;
+{% if feature.origin_trial_os %}
+#else
+  return false;
+#endif
+{% endif %}
+}
+
+{% endif %}
+{% endfor %}
+
+Vector<AtomicString> OriginTrials::GetImpliedTrials(const String& trial_name) {
+{% for implied_by_name, implied_list in implied_origin_trial_features.items() %}
+  if (trial_name == k{{implied_by_name}}TrialName) {
+    Vector<AtomicString> implied_trials = {
+{%- for implied_name in implied_list %}
+AtomicString(k{{implied_name}}TrialName),
+{%- endfor %}
+};
+    return implied_trials;
+  }
+{% endfor %}
+  return Vector<AtomicString>();
+}
+
+} // namespace blink

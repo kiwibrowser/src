@@ -1,0 +1,265 @@
+{
+  "name": "content_browser",
+  "display_name": "Content (browser process)",
+  "interface_provider_specs": {
+    "service_manager:connector": {
+      "provides": {
+        // Interfaces needed by a generic client of content browser.
+        "app": [
+          "discardable_memory.mojom.DiscardableSharedMemoryManager",
+          "memory_instrumentation.mojom.Coordinator"
+        ],
+        "dwrite_font_proxy": [
+          "content.mojom.DWriteFontProxy"
+        ],
+        "field_trials": [
+          "content.mojom.FieldTrialRecorder"
+        ],
+        "font_cache": [
+          "content.mojom.FontCacheWin"
+        ],
+        "font_loader": [
+          "content.mojom.FontLoaderMac"
+        ],
+        "gpu": [
+          "discardable_memory.mojom.DiscardableSharedMemoryManager",
+          "media.mojom.AndroidOverlayProvider"
+        ],
+        "plugin": [
+          "discardable_memory.mojom.DiscardableSharedMemoryManager",
+          "ui.mojom.Gpu"
+        ],
+        "renderer": [
+          "blink.mojom.BackgroundSyncService",
+          "blink.mojom.BlobRegistry",
+          "blink.mojom.BroadcastChannelProvider",
+          "blink.mojom.ClipboardHost",
+          "blink.mojom.EmbeddedFrameSinkProvider",
+          "blink.mojom.FileUtilitiesHost",
+          "blink.mojom.LockManager",
+          "blink.mojom.Hyphenation",
+          "blink.mojom.MimeRegistry",
+          "blink.mojom.ReportingServiceProxy",
+          "blink.mojom.WebDatabaseHost",
+          "content.mojom.AppCacheBackend",
+          "content.mojom.ClipboardHost",
+          "content.mojom.FieldTrialRecorder",
+          "content.mojom.FrameSinkProvider",
+          "content.mojom.MediaStreamTrackMetricsHost",
+          "content.mojom.MemoryCoordinatorHandle",
+          "content.mojom.PeerConnectionTrackerHost",
+          "content.mojom.PushMessaging",
+          "content.mojom.RendererHost",
+          "content.mojom.ReportingServiceProxy",
+          "content.mojom.ServiceWorkerDispatcherHost",
+          "content.mojom.StoragePartitionService",
+          "content.mojom.WorkerURLLoaderFactoryProvider",
+          "device.mojom.BatteryMonitor",
+          "device.mojom.GamepadHapticsManager",
+          "device.mojom.GamepadMonitor",
+          "discardable_memory.mojom.DiscardableSharedMemoryManager",
+          "media.mojom.KeySystemSupport",
+          "media.mojom.VideoCaptureHost",
+          "media.mojom.VideoDecodePerfHistory",
+          "memory_coordinator.mojom.MemoryCoordinatorHandle",
+          "metrics.mojom.SingleSampleMetricsProvider",
+          "network.mojom.URLLoaderFactory",
+          "resource_coordinator.mojom.ProcessCoordinationUnit",
+          "ui.mojom.Gpu",
+          "viz.mojom.CompositingModeReporter"
+        ],
+        "service_manager:service_factory": [
+          "service_manager.mojom.ServiceFactory"
+        ]
+      },
+      "requires": {
+        "*": [ "app" ],
+        "audio": [
+          "info",
+          "debug_recording",
+          "device_notifier",
+          "stream_factory"
+        ],
+        "cdm": [ "media:cdm" ],
+        "content_gpu": [ "browser" ],
+        "content_plugin": [ "browser" ],
+        "content_renderer": [ "browser" ],
+        "content_utility": [ "browser" ],
+        "data_decoder": [ "image_decoder", "json_parser", "xml_parser" ],
+        "device": [
+          "device:battery_monitor",
+          "device:generic_sensor",
+          "device:geolocation",
+          "device:hid",
+          "device:input_service",
+          "device:mtp",
+          "device:nfc",
+          "device:serial",
+          "device:vibration",
+          "device:wake_lock"
+        ],
+        "file": [ "file:filesystem", "file:leveldb" ],
+        "media": [ "media:media" ],
+        "metrics": [ "url_keyed_metrics" ],
+        "network": [
+          "network_service",
+          "test",
+          "url_loader"
+        ],
+        "patch_service": [ "patch_file" ],
+        "resource_coordinator": [
+          "coordination_unit",
+          "coordination_unit_introspector",
+          "service_callbacks",
+          "page_signal"
+        ],
+        "service_manager": [
+          "service_manager:client_process",
+          "service_manager:instance_name",
+          "service_manager:service_manager",
+          "service_manager:user_id"
+        ],
+        "shape_detection": [
+          "barcode_detection",
+          "face_detection",
+          "text_detection"
+        ],
+        "tracing": [
+          "tracing"
+        ],
+        "ui": [ "arc_manager", "display_output_protection", "video_detector" ],
+        "unzip_service": [ "unzip_file" ],
+        "video_capture": [ "capture", "tests" ]
+      }
+    },
+    "navigation:frame": {
+      "provides": {
+        "renderer": [
+          // TODO(beng): these belong in //chrome's overlay, but there are some
+          // issues with mash browser_tests's manifest config that make this
+          // impossible this week. Remove once sky/ken fix this.
+          "autofill.mojom.AutofillDriver",
+          "autofill.mojom.PasswordManagerDriver",
+          "blink.mojom.BackgroundFetchService",
+          "blink.mojom.BudgetService",
+          "blink.mojom.CacheStorage",
+          "blink.mojom.ColorChooserFactory",
+          "blink.mojom.DedicatedWorkerFactory",
+          "blink.mojom.LockManager",
+          "blink.mojom.GeolocationService",
+          "blink.mojom.InsecureInputService",
+          "blink.mojom.KeyboardLockService",
+          "blink.mojom.MediaDevicesDispatcherHost",
+          "blink.mojom.MediaSessionService",
+          "blink.mojom.NotificationService",
+          "blink.mojom.PermissionService",
+          "blink.mojom.PrefetchURLLoaderService",
+          "blink.mojom.PresentationService",
+          "blink.mojom.QuotaDispatcherHost",
+          "blink.mojom.TextSuggestionHost",
+          "blink.mojom.UnhandledTapNotifier",
+          "blink.mojom.WebBluetoothService",
+
+          // TODO(beng): figure out how to overlay test interfaces like this.
+          "content.mojom.BrowserTarget",
+
+          // InputInjector is only exposed when gpu benchmarking is enabled.
+          "content.mojom.InputInjector",
+
+          "content.mojom.MediaStreamDispatcherHost",
+          "content.mojom.RendererAudioInputStreamFactory",
+          "content.mojom.RendererAudioOutputStreamFactory",
+          "content.mojom.SharedWorkerConnector",
+          "content.mojom.SpeechRecognizer",
+          "device.mojom.Geolocation",
+          "device.mojom.NFC",
+          "device.mojom.SensorProvider",
+          "device.mojom.UsbChooserService",
+          "device.mojom.UsbDeviceManager",
+          "device.mojom.VibrationManager",
+          "device.mojom.UsbDeviceManager",
+          "device.mojom.VRService",
+          "device.mojom.VRService",
+          "device.mojom.WakeLock",
+          "discardable_memory.mojom.DiscardableSharedMemoryManager",
+          "media.mojom.ImageCapture",
+          "media.mojom.InterfaceFactory",
+          "media.mojom.MediaMetricsProvider",
+          "media.mojom.RemoterFactory",
+          "media.mojom.Renderer",
+          "mojom.ProcessInternalsHandler",
+          "network.mojom.RestrictedCookieManager",
+          "network.mojom.WebSocket",
+          "password_manager.mojom.CredentialManager",
+          "payments.mojom.PaymentManager",
+          "payments.mojom.PaymentRequest",
+          "resource_coordinator.mojom.FrameCoordinationUnit",
+          "shape_detection.mojom.BarcodeDetection",
+          "shape_detection.mojom.FaceDetectionProvider",
+          "shape_detection.mojom.TextDetection",
+          "ui.mojom.Gpu",
+          "webauth.mojom.Authenticator",
+          "webauth.test.mojom.VirtualAuthenticatorManager"
+        ]
+      },
+      "requires": {
+        "content_renderer": [ "browser" ]
+      }
+    },
+    "navigation:dedicated_worker": {
+      "provides": {
+        "renderer": [
+          "blink.mojom.BudgetService",
+          "blink.mojom.CacheStorage",
+          "blink.mojom.LockManager",
+          "blink.mojom.NotificationService",
+          "blink.mojom.PermissionService",
+          "blink.mojom.QuotaDispatcherHost",
+          "device.mojom.UsbDeviceManager",
+          "network.mojom.WebSocket",
+          "payments.mojom.PaymentManager",
+          "shape_detection.mojom.BarcodeDetection",
+          "shape_detection.mojom.FaceDetectionProvider",
+          "shape_detection.mojom.TextDetection"
+        ]
+      }
+    },
+    "navigation:service_worker": {
+      "provides": {
+        "renderer": [
+          "blink.mojom.BackgroundFetchService",
+          "blink.mojom.BudgetService",
+          "blink.mojom.CacheStorage",
+          "blink.mojom.CookieStore",
+          "blink.mojom.LockManager",
+          "blink.mojom.NotificationService",
+          "blink.mojom.PermissionService",
+          "blink.mojom.QuotaDispatcherHost",
+          "network.mojom.RestrictedCookieManager",
+          "network.mojom.WebSocket",
+          "payments.mojom.PaymentManager",
+          "shape_detection.mojom.BarcodeDetection",
+          "shape_detection.mojom.FaceDetectionProvider",
+          "shape_detection.mojom.TextDetection"
+        ]
+      }
+    },
+    "navigation:shared_worker": {
+      "provides": {
+        "renderer": [
+          "blink.mojom.BudgetService",
+          "blink.mojom.CacheStorage",
+          "blink.mojom.LockManager",
+          "blink.mojom.NotificationService",
+          "blink.mojom.PermissionService",
+          "blink.mojom.QuotaDispatcherHost",
+          "network.mojom.WebSocket",
+          "payments.mojom.PaymentManager",
+          "shape_detection.mojom.BarcodeDetection",
+          "shape_detection.mojom.FaceDetectionProvider",
+          "shape_detection.mojom.TextDetection"
+        ]
+      }
+    }
+  }
+}

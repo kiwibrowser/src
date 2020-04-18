@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+
+<div id="parent"></div>
+
+<script>
+function assertComposited(properties, isComposited) {
+  var element = document.createElement('div');
+  // The element must have some painted content in order to be
+  // composited when animated in SPv2.
+  element.innerText = 'x';
+  document.getElementById('parent').appendChild(element);
+
+  var properties = typeof properties == "string" ? [properties] : properties;
+  var keyframe = {};
+
+  properties.forEach(function(property) {
+    keyframe[property] = 'initial';
+  });
+
+  var animation = element.animate([keyframe, keyframe], {
+    duration: 4000,
+    iterations: Infinity
+  });
+
+  var asyncHandle = async_test("Animation on " + properties.join(", ") + (isComposited ? " is " : " is not ") + "composited");
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      asyncHandle.step(function() {
+        assert_equals(internals.isCompositedAnimation(animation), isComposited, properties.join(", ") + (isComposited ? " should " : " should not ") + "be composited");
+      });
+
+      animation.cancel();
+      asyncHandle.done();
+    });
+  });
+}
+
+var assertIsComposited = function(properties) { return assertComposited(properties, true); }
+var assertIsNotComposited = function(properties) { return assertComposited(properties, false); }
+
+assertIsComposited('transform');
+assertIsComposited('opacity');
+
+assertIsComposited('translate');
+assertIsComposited('rotate');
+assertIsComposited('scale');
+
+assertIsComposited(['transform', 'opacity']);
+assertIsComposited(['translate', 'opacity']);
+assertIsComposited(['rotate', 'opacity']);
+assertIsComposited(['scale', 'opacity']);
+
+assertIsNotComposited(['transform', 'translate']);
+assertIsNotComposited(['transform', 'scale']);
+assertIsNotComposited(['transform', 'rotate']);
+
+assertIsNotComposited(['translate', 'scale']);
+assertIsNotComposited(['translate', 'rotate']);
+assertIsNotComposited(['rotate', 'scale']);
+
+assertIsNotComposited(['translate', 'rotate', 'scale']);
+assertIsNotComposited(['transform', 'translate', 'rotate', 'scale']);
+</script>

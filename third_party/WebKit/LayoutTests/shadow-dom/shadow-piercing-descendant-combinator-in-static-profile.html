@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<script src="resources/shadow-dom.js"></script>
+<style>
+body >>> #x { color: red; }
+</style>
+<div id="host">
+  <template data-mode="open">
+    <div><span id="x">In the shadow tree.</span></div>
+  </template>
+</div>
+<script>
+convertTemplatesToShadowRootsWithin(host);
+test(() => {
+  var span = document.querySelector('body >>> #x');
+  assert_equals(span.textContent, 'In the shadow tree.',
+                '>>> should work in static profile.');
+
+  var stylesheet = document.styleSheets[0];
+  assert_equals(stylesheet.cssRules.length, 0,
+      'A selector containing >>> should be discarded in dynamic profile.');
+  assert_equals(window.getComputedStyle(span).color, 'rgb(0, 0, 0)',
+                '>>> in dynamic profile should not match.');
+}, 'deep descendant combinator >>> should work only in static profile.');
+</script>

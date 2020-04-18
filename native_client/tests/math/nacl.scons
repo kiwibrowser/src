@@ -1,0 +1,140 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import os
+
+Import('env')
+
+
+# test_env: The env to add to.
+# src: Source file name. The default test name will be the file name with its
+#      extension stripped.
+# testname: If the default test name is not good enough, provide a custom one.
+# exit_status: The expected exit status.
+# golden_filename: Name of the golden stdout file.
+def AddMathTest(test_env, src, testname=None,
+                exit_status='0', golden_filename='', EXTRA_LIBS=[]):
+  if testname is None:
+    testname = os.path.splitext(src)[0]
+  golden_file = test_env.File(golden_filename) if golden_filename else None
+
+  object = test_env.ComponentObject(testname, src)
+  nexe = test_env.ComponentProgram(
+      testname, object, EXTRA_LIBS=['${NONIRT_LIBS}', 'm'] + EXTRA_LIBS)
+  node = test_env.CommandSelLdrTestNacl(
+    testname + '.out',
+    nexe,
+    exit_status=exit_status,
+    stdout_golden=golden_file)
+  test_env.AddNodeToTestSuite(node,
+                              ['small_tests'], 'run_' + testname + '_test')
+
+
+AddMathTest(env, 'sincos_test.c',
+            exit_status='0', golden_filename='sincos_test.stdout')
+
+# Create envs for -fmath-errno (which also happens to be the default) and
+# -fno-math-errno.
+errno_env = env.Clone()
+errno_env.Append(CCFLAGS=['-fmath-errno'])
+noerrno_env = env.Clone()
+noerrno_env.Append(CCFLAGS=['-fno-math-errno'])
+noerrno_env.Append(CPPDEFINES=['NO_ERRNO_CHECK'])
+
+AddMathTest(errno_env, 'float_math.c', testname='float_math_errno',
+            exit_status='55')
+AddMathTest(noerrno_env, 'float_math.c', testname='float_math_noerrno',
+            exit_status='55')
+
+AddMathTest(errno_env, 'float_remainder.c', testname='float_remainder_fmod')
+if env.Bit('bitcode') and env.Bit('pnacl_generate_pexe'):
+  # Only run this test for bitcode, since it uses the LLVM assembler
+  # to assemble a .ll file. When pnacl_generate_pexe is false, the
+  # assembler is assumed to be operating on architecture specific .S files.
+  bitcode_env = env.Clone()
+  bitcode_env.Append(CPPDEFINES=['TEST_LLVM_IR'])
+  obj1 = bitcode_env.ComponentObject('float_remainder_frem',
+                                     'float_remainder.c')
+  obj2 = bitcode_env.Command(target='frem.bc', source=['frem.ll'],
+                             action=[Action('${ASCOM}', '${ASCOMSTR}')])
+  nexe = bitcode_env.ComponentProgram(
+      'float_remainder_frem',
+      [obj1, obj2], EXTRA_LIBS=['${NONIRT_LIBS}'])
+  node = bitcode_env.CommandSelLdrTestNacl('float_remainder_frem.out', nexe)
+  bitcode_env.AddNodeToTestSuite(node, ['small_tests'],
+                                 'run_float_remainder_frem_test')
+
+AddMathTest(errno_env, 'c_pow.c', testname='c_pow_errno',
+            golden_filename='common_pow.stdout')
+AddMathTest(noerrno_env, 'c_pow.c', testname='c_pow_noerrno',
+            golden_filename='common_pow.stdout')
+
+# pthread is needed when building with libc++.
+AddMathTest(errno_env, 'cxx_pow.cc', testname='cxx_pow_errno',
+            golden_filename='common_pow.stdout', EXTRA_LIBS=['${PTHREAD_LIBS}'])
+AddMathTest(noerrno_env, 'cxx_pow.cc', testname='cxx_pow_noerrno',
+            golden_filename='common_pow.stdout', EXTRA_LIBS=['${PTHREAD_LIBS}'])
+
+# --- Test rounding mode settings / queries.
+
+asm_env = env.Clone()
+# biased_env is needed for the C file that has a MIPS if-def check.
+biased_env = env.Clone()
+if env.Bit('bitcode'):
+  # Depends on assembly, so cannot build it as a pexe.
+  if env.Bit('pnacl_generate_pexe'):
+    Return()
+  else:
+    asm_env.PNaClForceNative()
+    asm_env.AddBiasForPNaCl()
+    biased_env.AddBiasForPNaCl()
+    biased_env.Append(LINKFLAGS=['--pnacl-allow-native'])
+    env.Append(LINKFLAGS=['--pnacl-allow-native'])
+
+if env.Bit('build_x86'):
+  asm_helper = 'set_rounding_x86.S'
+elif env.Bit('build_arm'):
+  asm_helper = 'set_rounding_arm.S'
+elif env.Bit('build_mips32'):
+  asm_helper = 'set_rounding_mips.S'
+else:
+  raise Exception('Unknown target')
+
+asm_obj = asm_env.ComponentObject(asm_helper)
+nexe = biased_env.ComponentProgram('float_rounding_mode',
+                                   ['float_rounding_mode.c', asm_obj],
+                                   EXTRA_LIBS=['m', '${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl(
+    'float_rounding_mode.out',
+    nexe)
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'nonpexe_tests'],
+                       'run_float_rounding_mode_test',
+                        # Valgrind does not support rounding mode changes yet:
+                        # https://bugs.kde.org/show_bug.cgi?id=136779
+                        is_broken=env.IsRunningUnderValgrind())
+
+# Test that signaling NaNs don't trigger exceptions for PNaCl,
+# since the bit pattern for quiet NaNs == signaling NaNs
+# for some architectures.
+# Some helpers defined in assembly to (a) load the right snan constant
+# for each arch and (b) avoid issues with code getting optimized.
+if env.Bit('build_x86'):
+  asm_helper = 'test_snan_no_signal_x86.S'
+elif env.Bit('build_arm'):
+  asm_helper = 'test_snan_no_signal_arm.S'
+elif env.Bit('build_mips32'):
+  asm_helper = 'test_snan_no_signal_mips.S'
+else:
+  raise Exception('Unknown target')
+
+asm_obj = asm_env.ComponentObject(asm_helper)
+nexe = env.ComponentProgram('snan_no_signal',
+                            ['snan_no_signal.c', asm_obj],
+                            EXTRA_LIBS=['m', '${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl('snan_no_signal.out', nexe)
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'nonpexe_tests'],
+                       'run_snan_no_signal_test')

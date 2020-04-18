@@ -1,0 +1,71 @@
+// Copyright 2013 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "chrome/browser/profile_resetter/profile_resetter_test_base.h"
+
+#include <string>
+#include <utility>
+
+#include "base/callback.h"
+#include "chrome/browser/profile_resetter/brandcoded_default_settings.h"
+#include "chrome/browser/profiles/profile.h"
+#include "chrome/browser/search_engines/ui_thread_search_terms_data.h"
+#include "chrome/browser/web_data_service_factory.h"
+#include "components/keyed_service/core/service_access_type.h"
+#include "components/search_engines/template_url_service.h"
+#include "components/search_engines/template_url_service_client.h"
+#include "content/public/browser/browser_context.h"
+
+ProfileResetterMockObject::ProfileResetterMockObject() {}
+
+ProfileResetterMockObject::~ProfileResetterMockObject() {}
+
+void ProfileResetterMockObject::RunLoop() {
+  EXPECT_CALL(*this, Callback());
+  runner_ = new content::MessageLoopRunner;
+  runner_->Run();
+  runner_ = NULL;
+}
+
+void ProfileResetterMockObject::StopLoop() {
+  DCHECK(runner_.get());
+  Callback();
+  runner_->Quit();
+}
+
+ProfileResetterTestBase::ProfileResetterTestBase() {}
+
+ProfileResetterTestBase::~ProfileResetterTestBase() {}
+
+void ProfileResetterTestBase::ResetAndWait(
+    ProfileResetter::ResettableFlags resettable_flags) {
+  std::unique_ptr<BrandcodedDefaultSettings> master_settings(
+      new BrandcodedDefaultSettings);
+  resetter_->Reset(resettable_flags, std::move(master_settings),
+                   base::Bind(&ProfileResetterMockObject::StopLoop,
+                              base::Unretained(&mock_object_)));
+  mock_object_.RunLoop();
+}
+
+void ProfileResetterTestBase::ResetAndWait(
+    ProfileResetter::ResettableFlags resettable_flags,
+    const std::string& prefs) {
+  std::unique_ptr<BrandcodedDefaultSettings> master_settings(
+      new BrandcodedDefaultSettings(prefs));
+  resetter_->Reset(resettable_flags, std::move(master_settings),
+                   base::Bind(&ProfileResetterMockObject::StopLoop,
+                              base::Unretained(&mock_object_)));
+  mock_object_.RunLoop();
+}
+
+std::unique_ptr<KeyedService> CreateTemplateURLServiceForTesting(
+    content::BrowserContext* context) {
+  Profile* profile = static_cast<Profile*>(context);
+  return std::make_unique<TemplateURLService>(
+      profile->GetPrefs(), std::make_unique<UIThreadSearchTermsData>(profile),
+      WebDataServiceFactory::GetKeywordWebDataForProfile(
+          profile, ServiceAccessType::EXPLICIT_ACCESS),
+      std::unique_ptr<TemplateURLServiceClient>(), nullptr, nullptr,
+      base::Closure());
+}

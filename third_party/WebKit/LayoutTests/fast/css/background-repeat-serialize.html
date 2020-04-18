@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script>
+// Test serializing background-repeat values on CSSOM objects
+
+function serialize(css) {
+    document.documentElement.style.cssText = css;
+    return document.documentElement.style.backgroundRepeat;
+}
+
+test(function() {
+  assert_equals(serialize('background-repeat: initial;'), 'initial');
+  assert_equals(serialize('background-repeat: inherit;'), 'inherit');
+}, 'initial and inherit should serialize properly');
+
+test(function() {
+  assert_equals(serialize('background-repeat: no-repeat;'), 'no-repeat');
+  assert_equals(serialize('background-repeat: repeat;'), 'repeat');
+  assert_equals(serialize('background-repeat: repeat-x;'), 'repeat-x');
+  assert_equals(serialize('background-repeat: repeat-y;'), 'repeat-y');
+  assert_equals(serialize('background-repeat: repeat no-repeat;'), 'repeat-x');
+  assert_equals(serialize('background-repeat: no-repeat repeat;'), 'repeat-y');
+}, 'Single values should serialize properly');
+
+test(function() {
+  assert_equals(serialize('background-repeat: repeat, no-repeat;'), 'repeat, no-repeat');
+  assert_equals(serialize('background-repeat: repeat-x, repeat-y;'), 'repeat-x, repeat-y');
+  assert_equals(serialize('background-repeat: repeat, no-repeat, repeat no-repeat, no-repeat repeat, repeat-x, repeat-y;'),
+    'repeat, no-repeat, repeat-x, repeat-y, repeat-x, repeat-y');
+}, 'Multiple values should serialize properly');
+
+test(function() {
+  // FIXME (crbug.com/376179): Make setting background-repeat-x/y to multiple values work on CSSStyleDeclarations.
+  // assert_equals(serialize('background-repeat-x: repeat, no-repeat; background-repeat-y: no-repeat, repeat, no-repeat'),
+  //   'repeat-x, repeat-y, repeat-x, no-repeat, repeat, no-repeat');
+  assert_equals(serialize('background-repeat: repeat, no-repeat, repeat; background-repeat-y: no-repeat;'), 'repeat-x, no-repeat, repeat-x');
+}, 'Mismatched value lengths should repeat to their lowest common multiple');
+
+test(function() {
+  assert_equals(serialize('background: url(#1), url(#2), url(#3);'), 'repeat, repeat, repeat');
+  assert_equals(serialize('background: repeat-x, repeat-y, url(#);'), 'repeat-x, repeat-y, repeat');
+  assert_equals(serialize('background: url(#), no-repeat; background-repeat-x: no-repeat'), 'repeat-y, no-repeat');
+  assert_equals(serialize('background: url(#), no-repeat; background-repeat-y: no-repeat'), 'repeat-x, no-repeat');
+}, 'Initial values introduced by the background shorthand should be handled as repeat.');
+</script>

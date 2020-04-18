@@ -1,0 +1,94 @@
+<!DOCTYPE HTML>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+<style>
+
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  body {
+    margin: 0px;
+    height: 1000px;
+    width: 1000px;
+  }
+  #parentDiv {
+    background-color: #FF7F7F;
+    height: 600px;
+    width: 600px;
+    overflow: scroll;
+  }
+  #content1 {
+    height: 700px;
+    width: 700px;
+  }
+  #childDiv {
+    background-color: #84BE6A;
+    height: 500px;
+    width: 500px;
+    overflow: scroll;
+  }
+  #content2 {
+    height: 600px;
+    width: 600px;
+  }
+</style>
+
+<div id="parentDiv">
+  <div id="content1">
+    <div id="childDiv">
+      <div id="content2">
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var parentDiv = document.getElementById('parentDiv');
+var childDiv = document.getElementById('childDiv');
+var rect = childDiv.getBoundingClientRect();
+var source = "touchpad";
+
+function setUpForTest() {
+  if (window.internals)
+    internals.settings.setScrollAnimatorEnabled(false);
+  if (!document.getElementById('childDiv'))
+     document.getElementById('content1').appendChild(childDiv);
+  parentDiv.scrollTo(0, 0);
+  childDiv.scrollTo(0, 0);
+}
+
+function sendScrollEventsAndCheck() {
+  // Start scrolling on the child div.
+  eventSender.gestureScrollBegin(source,
+                                 (rect.left + rect.right) / 2,
+                                 (rect.top + rect.bottom) / 2);
+  eventSender.gestureScrollUpdate(source, 0, -70);
+
+  // Check that childDiv fully consumes scroll delta, then remove the div.
+  assert_equals(parentDiv.scrollTop, 0,
+        "The parent div should not scroll.");
+  assert_equals(childDiv.scrollTop, 70,
+        "The child div should fully comsume scroll delta.");
+  childDiv.remove();
+
+  // Send the next GSU event and check that parentDiv scrolls.
+  eventSender.gestureScrollUpdate(source, 0, -30);
+  assert_greater_than(parentDiv.scrollTop, 0,
+        "The parent div should start scrolling.");
+
+  // Finish scrolling.
+  eventSender.gestureScrollEnd(source,
+                               (rect.left + rect.right) / 2,
+                               (rect.top + rect.bottom) / 2);
+}
+
+test(() => {
+  setUpForTest();
+  sendScrollEventsAndCheck();
+}, "New node must start wheel scrolling when the latched node is removed.");
+test(() => {
+  source = "touchscreen";
+  setUpForTest();
+  sendScrollEventsAndCheck();
+}, "New node must start touch scrolling when the latched node is removed.");
+</script>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Test rendering of sub-pixel borders</title>
+    <style>
+      .test {
+        box-sizing: content-box;
+        display: inline-block;
+        margin: 5px;
+        width: 80px;
+        height: 80px;
+        border: 1px solid green;
+        background: lightgreen;
+        text-align: center;
+        line-height: 80px;
+      }
+    </style>
+    <script src="../../resources/testharness.js"></script>
+    <script src="../../resources/testharnessreport.js"></script>
+  </head>
+  <body>
+    <div class="test" style="border-width: 0.25px">0.25px</div>
+    <div class="test" style="border-width: 0.5px">0.5px</div>
+    <div class="test" style="border-width: 0.75px">0.75px</div>
+    <div class="test" style="border-width: 1px">1px</div>
+    <div class="test" style="border-width: 1.25px">1.25px</div>
+    <div class="test" style="border-width: 1.5px">1.5px</div>
+    <p>
+      Border thickness should be rounded, not floored, with the exception of
+      values below 1px where it should always round up.
+    </p>
+    <script>
+      var testElements = {};
+      var elements = document.getElementsByClassName('test');
+      for (var element, i = 0; element = elements[i]; i++) {
+        testElements[element.firstChild.nodeValue] = element;
+      }
+
+      function borderAsString(element) {
+        var style = window.getComputedStyle(element);
+        return style.borderTopWidth + ' ' + style.borderRightWidth + ' ' +
+            style.borderBottomWidth + ' ' + style.borderLeftWidth;
+      }
+
+      test(function() {
+        var refSize = testElements['0.25px'].getBoundingClientRect();
+        var testSize = testElements['0.5px'].getBoundingClientRect();
+        assert_greater_than(testSize.width, refSize.width,
+            'Size of 0.5px box should be larger than 0.25px box.');
+        assert_greater_than(testSize.height, refSize.height,
+            'Size of 0.5px box should be larger than 0.25px box.');
+
+        refSize = testSize;
+        testSize =  testElements['0.75px'].getBoundingClientRect();
+        assert_greater_than(testSize.width, refSize.width,
+            'Size of 0.75px box should be larger than 0.5px box.');
+        assert_greater_than(testSize.height, refSize.height,
+            'Size of 0.75px box should be larger than 0.5px box.');
+
+        refSize = testSize;
+        testSize =  testElements['1px'].getBoundingClientRect();
+        assert_greater_than(testSize.width, refSize.width,
+            'Size of 1px box should be larger than 0.75px box.');
+        assert_greater_than(testSize.height, refSize.height,
+            'Size of 1px box should be larger than 0.75px box.');
+
+        refSize = testSize;
+        testSize =  testElements['1.25px'].getBoundingClientRect();
+        assert_greater_than(testSize.width, refSize.width,
+            'Size of 1.25px box should be larger than 1px box.');
+        assert_greater_than(testSize.height, refSize.height,
+            'Size of 1.25px box should be larger than 1px box.');
+
+        refSize = testSize;
+        testSize =  testElements['1.5px'].getBoundingClientRect();
+        assert_greater_than(testSize.width, refSize.width,
+            'Size of 1.5px box should be larger than 1.25px box.');
+        assert_greater_than(testSize.height, refSize.height,
+            'Size of 1.5px box should be larger than 1.25px box.');
+      }, 'Size of all elements are correct.');
+
+      test(function() {
+        assert_equals(borderAsString(testElements['0.25px']),
+            '0.25px 0.25px 0.25px 0.25px',
+            'Border thickness of 0.25px box should be 0.25px.');
+        assert_equals(borderAsString(testElements['0.5px']),
+            '0.5px 0.5px 0.5px 0.5px',
+            'Border thickness of 0.5px box should be 0.5px.');
+        assert_equals(borderAsString(testElements['0.75px']),
+            '0.75px 0.75px 0.75px 0.75px',
+            'Border thickness of 0.75px box should be 0.75px.');
+        assert_equals(borderAsString(testElements['1.25px']),
+            '1.25px 1.25px 1.25px 1.25px',
+            'Border thickness of 1.25px box should retain decimals.');
+        assert_equals(borderAsString(testElements['1.5px']),
+            '1.5px 1.5px 1.5px 1.5px',
+            'Border thickness of 1.5px box should retain decimals.');
+      }, 'All elements should have correctly sized borders.');
+    </script>
+  </body>
+</html>

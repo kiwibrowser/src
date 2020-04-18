@@ -1,0 +1,40 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function() {
+  TestRunner.addResult(
+      `Tests that debugger StepOver will step through inlined scripts.\n`);
+  await TestRunner.loadModule('sources_test_runner');
+  await TestRunner.showPanel('sources');
+  await TestRunner.navigatePromise(
+      'resources/debugger-step-over-inlined-scripts.html');
+
+  var numberOfStepOver = 4;
+
+  SourcesTestRunner.startDebuggerTest(step1, true);
+
+  function step1() {
+    SourcesTestRunner.showScriptSource(
+        'debugger-step-over-inlined-scripts.html', step2);
+  }
+
+  function step2(sourceFrame) {
+    TestRunner.addResult('Script source was shown.');
+    SourcesTestRunner.setBreakpoint(sourceFrame, 6, '', true);
+    SourcesTestRunner.waitUntilPaused(step3);
+    TestRunner.reloadPage(completeTest);
+  }
+
+  function step3() {
+    var actions = ['Print'];  // First pause on breakpoint.
+    for (var i = 0; i < numberOfStepOver; ++i)
+      actions.push('StepOver', 'Print');
+    actions.push('Resume');
+    SourcesTestRunner.waitUntilPausedAndPerformSteppingActions(actions);
+  }
+
+  function completeTest() {
+    SourcesTestRunner.completeDebuggerTest();
+  }
+})();

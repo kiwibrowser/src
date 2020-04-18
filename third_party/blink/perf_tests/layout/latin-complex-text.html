@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="../resources/runner.js"></script>
+        <style>
+                p { text-rendering: optimizeLegibility; }
+        </style>
+    </head>
+    <body>
+        <article id="textContainer">
+            <header>
+                <h1>The Sleeper</h1>
+                <div>
+                    by Edgar Allan Poe<br>
+                    (published 1831)
+                </div>
+            </header>
+            <p>
+                At midnight, in the month of June, 
+                I stand beneath the mystic moon. 
+                An opiate vapor, dewy, dim, 
+                Exhales from out her golden rim, 
+                And, softly dripping, drop by drop, 
+                Upon the quiet mountain top, 
+                Steals drowsily and musically 
+                Into the universal valley. 
+                The rosemary nods upon the grave; 
+                The lily lolls upon the wave; 
+                Wrapping the fog about its breast, 
+                The ruin molders into rest; 
+                Looking like Lethe, see! the lake 
+                A conscious slumber seems to take, 
+                And would not, for the world, awake. 
+                All Beauty sleeps!- and lo! where lies 
+                Irene, with her Destinies!
+
+                O, lady bright! can it be right- 
+                This window open to the night? 
+                The wanton airs, from the tree-top, 
+                Laughingly through the lattice drop- 
+                The bodiless airs, a wizard rout, 
+                Flit through thy chamber in and out, 
+                And wave the curtain canopy 
+                So fitfully- so fearfully- 
+                Above the closed and fringed lid 
+                'Neath which thy slumb'ring soul lies hid, 
+                That, o'er the floor and down the wall, 
+                Like ghosts the shadows rise and fall! 
+                Oh, lady dear, hast thou no fear? 
+                Why and what art thou dreaming here? 
+                Sure thou art come O'er far-off seas, 
+                A wonder to these garden trees! 
+                Strange is thy pallor! strange thy dress, 
+                Strange, above all, thy length of tress, 
+                And this all solemn silentness!
+
+                The lady sleeps! Oh, may her sleep, 
+                Which is enduring, so be deep! 
+                Heaven have her in its sacred keep! 
+                This chamber changed for one more holy, 
+                This bed for one more melancholy, 
+                I pray to God that she may lie 
+                For ever with unopened eye, 
+                While the pale sheeted ghosts go by! 
+
+                My love, she sleeps! Oh, may her sleep 
+                As it is lasting, so be deep! 
+                Soft may the worms about her creep! 
+                Far in the forest, dim and old, 
+                For her may some tall vault unfold- 
+                Some vault that oft has flung its black 
+                And winged panels fluttering back, 
+                Triumphant, o'er the crested palls, 
+                Of her grand family funerals- 
+
+                Some sepulchre, remote, alone, 
+                Against whose portal she hath thrown, 
+                In childhood, many an idle stone- 
+                Some tomb from out whose sounding door 
+                She ne'er shall force an echo more, 
+                Thrilling to think, poor child of sin! 
+                It was the dead who groaned within.
+            </p>
+        </article>
+        <script>
+            var docFragment;
+            
+            function setupTest() {
+                var textContainer = document.getElementById('textContainer');
+                var textNode = textContainer.getElementsByTagName('p')[0].
+                        firstChild;
+                // Use Array.join to repeat string 20 times.
+                textNode.nodeValue = Array(21).join(textNode.nodeValue);
+                docFragment = document.createDocumentFragment();
+                docFragment.appendChild(textContainer);
+            };
+
+            function runTest() {
+                PerfTestRunner.forceLayout();
+                var now = PerfTestRunner.now();
+                document.body.appendChild(docFragment.cloneNode(true));
+                PerfTestRunner.forceLayout();
+                var resultTime = PerfTestRunner.now() - now;
+                document.body.removeChild(document.body.lastChild);
+                return resultTime;
+            }
+
+            window.requestAnimationFrame(function () {
+                setupTest();
+                PerfTestRunner.measureTime({
+                    description: "Measures performance of processing a large amount of latin text, rendered using the complex text path.",
+                    run: runTest
+                });
+            });
+        </script>
+    </body>
+</html>

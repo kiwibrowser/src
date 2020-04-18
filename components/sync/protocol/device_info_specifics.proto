@@ -1,0 +1,51 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+//
+// Sync protocol datatype extension for nigori keys.
+
+// Update proto_value_conversions{.h,.cc,_unittest.cc} if you change
+// any fields in this file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package sync_pb;
+
+import "sync_enums.proto";
+
+// Information about a device that is running a sync-enabled Chrome browser.  We
+// are mapping the per-client cache guid to more specific information about the
+// device.
+message DeviceInfoSpecifics {
+  // The cache_guid created to identify a sync client on this device.
+  optional string cache_guid = 1;
+
+  // A non-unique but human readable name to describe this client.
+  optional string client_name = 2;
+
+  // The platform of the device.
+  optional SyncEnums.DeviceType device_type = 3;
+
+  // The UserAgent used when contacting the Chrome Sync server.
+  optional string sync_user_agent = 4;
+
+  // The Chrome instance's version.  Updated (if necessary) on every startup.
+  optional string chrome_version = 5;
+
+  // Last time when pre-sync data on the device was saved. The device can be
+  // restored to state back to this time. In millisecond since UNIX epoch.
+  // DEPRECATED in M50.
+  optional int64 deprecated_backup_timestamp = 6 [deprecated = true];
+
+  // Device_id that is stable until user signs out. This device_id is used for
+  // annotating login scoped refresh token.
+  optional string signin_scoped_device_id = 7;
+
+  // This field is updated to be the current time periodically, and is also set
+  // to the current time whenever another field changes. By examining the
+  // difference between this field and the current time, it should be possible
+  // to reason about the inactivity of any device that was syncing at one time.
+  optional int64 last_updated_timestamp = 8;
+}

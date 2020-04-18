@@ -1,0 +1,53 @@
+// Copyright 2015 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "chrome/browser/usb/web_usb_chooser_service.h"
+
+#include <utility>
+
+#include "chrome/browser/profiles/profile.h"
+#include "chrome/browser/usb/usb_chooser_context.h"
+#include "chrome/browser/usb/usb_chooser_context_factory.h"
+#include "chrome/browser/usb/usb_chooser_controller.h"
+#include "content/public/browser/browser_thread.h"
+#include "content/public/browser/render_frame_host.h"
+#include "content/public/browser/web_contents.h"
+
+WebUsbChooserService::WebUsbChooserService(
+    content::RenderFrameHost* render_frame_host)
+    : render_frame_host_(render_frame_host) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  DCHECK(render_frame_host);
+}
+
+WebUsbChooserService::~WebUsbChooserService() {}
+
+void WebUsbChooserService::GetPermission(
+    std::vector<device::mojom::UsbDeviceFilterPtr> device_filters,
+    GetPermissionCallback callback) {
+  auto* web_contents =
+      content::WebContents::FromRenderFrameHost(render_frame_host_);
+  GURL requesting_origin =
+      render_frame_host_->GetLastCommittedURL().GetOrigin();
+  GURL embedding_origin =
+      web_contents->GetMainFrame()->GetLastCommittedURL().GetOrigin();
+  auto* profile =
+      Profile::FromBrowserContext(web_contents->GetBrowserContext());
+  auto* context = UsbChooserContextFactory::GetForProfile(profile);
+  if (!context->CanRequestObjectPermission(requesting_origin,
+                                           embedding_origin)) {
+    std::move(callback).Run(nullptr);
+    return;
+  }
+
+  auto controller = std::make_unique<UsbChooserController>(
+      render_frame_host_, std::move(device_filters), std::move(callback));
+  ShowChooser(std::move(controller));
+}
+
+void WebUsbChooserService::Bind(
+    device::mojom::UsbChooserServiceRequest request) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  bindings_.AddBinding(this, std::move(request));
+}

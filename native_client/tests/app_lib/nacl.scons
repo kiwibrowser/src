@@ -1,0 +1,30 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+######################################################################
+# Smoke Test
+######################################################################
+nexe = env.ComponentProgram('app_lib_test',
+                            'app_lib_test.c',
+                            EXTRA_LIBS=['${NONIRT_LIBS}', '${PTHREAD_LIBS}'],
+                            )
+
+# NOTE: we are using the same file as stdin and on the command line
+#
+# app_lib_test exercises stdio, in particular, it uses fopen on the
+# command line argument, so it requires the -a flag to sel_ldr in
+# order to access the filesystem.
+node = env.CommandSelLdrTestNacl(
+     'app_lib_test.out',
+     nexe,
+     args=[env.File('app_lib_test.stdin')],
+     stdin=env.File('app_lib_test.stdin'),
+     stdout_golden=env.File('app_lib_test.stdout'),
+     sel_ldr_flags=['-a'],
+     )
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_app_lib_test')

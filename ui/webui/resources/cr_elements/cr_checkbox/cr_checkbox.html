@@ -1,0 +1,131 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-behaviors/paper-ripple-behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-styles/color.html">
+<link rel="import" href="../shared_vars_css.html">
+
+<!--
+List of customizable styles:
+
+  --cr-checkbox-border-size
+  --cr-checkbox-checked-box-color
+  --cr-checkbox-label-container (CSS mixin)
+  --cr-checkbox-mark-color
+  --cr-checkbox-ripple-checked-color
+  --cr-checkbox-ripple-size
+  --cr-checkbox-ripple-unchecked-color
+  --cr-checkbox-size
+  --cr-checkbox-unchecked-box-color
+-->
+<dom-module id="cr-checkbox">
+  <template>
+    <style>
+      :host {
+        -webkit-tap-highlight-color: transparent;
+        align-items: center;
+        cursor: pointer;
+        display: flex;
+        outline: none;
+        user-select: none;
+
+        --cr-checkbox-size: 16px;
+        --cr-checkbox-border-size: 2px;
+        --cr-checkbox-ripple-size: 40px;
+        --cr-checkbox-ripple-offset: calc(var(--cr-checkbox-size)/2 -
+            var(--cr-checkbox-ripple-size)/2 - var(--cr-checkbox-border-size));
+      }
+
+      :host([disabled]) {
+        cursor: initial;
+        opacity: var(--cr-disabled-opacity);
+        pointer-events: none;
+      }
+
+      #checkbox {
+        background: none;
+        border: var(--cr-checkbox-border-size) solid
+            var(--cr-checkbox-unchecked-box-color, var(--google-grey-700));
+        border-radius: 2px;
+        box-sizing: border-box;
+        cursor: pointer;
+        display: block;
+        flex-shrink: 0;
+        height: var(--cr-checkbox-size);
+        margin: 0;
+        outline: none;
+        padding: 0;
+        position: relative;
+        transform: none;  /* Checkboxes shouldn't flip even in RTL. */
+        width: var(--cr-checkbox-size);
+      }
+
+      #checkmark {
+        border-color: var(--cr-checkbox-mark-color, white);
+        border-style: solid;
+        border-width: 0 2px 2px 0;
+        content: '';
+        display: block;
+        height: 73%;
+        transform: scale(0) rotate(45deg);
+        transform-origin: 100% 80%;
+        width: 36%;
+      }
+
+      :host-context([dir='rtl']) #checkmark {
+        transform-origin: 50% 14%;
+      }
+
+      :host([checked]) #checkbox {
+        background: var(--cr-checkbox-checked-box-color,
+            var(--google-blue-600));
+        border-color: var(--cr-checkbox-checked-box-color,
+            var(--google-blue-600));
+      }
+
+      :host([checked]) #checkmark {
+        transform: scale(1) rotate(45deg);
+        /* Only animate when showing checkmark. */
+        transition: transform 140ms ease-out;
+      }
+
+      paper-ripple {
+        --paper-ripple-opacity: var(--cr-checkbox-ripple-opacity, 0.1);
+        color: var(--cr-checkbox-ripple-unchecked-color, var(--google-grey-900));
+        height: var(--cr-checkbox-ripple-size);
+        left: var(--cr-checkbox-ripple-offset);
+        pointer-events: none;
+        top: var(--cr-checkbox-ripple-offset);
+        transition: color linear 80ms;
+        width: var(--cr-checkbox-ripple-size);
+      }
+
+      :host([checked]) paper-ripple {
+        color: var(--cr-checkbox-ripple-checked-color, var(--google-blue-600));
+      }
+
+      :host-context([dir=rtl]) paper-ripple {
+        left: auto;
+        right: var(--cr-checkbox-ripple-offset);
+      }
+
+      #label-container {
+        -webkit-padding-start: 20px;
+        white-space: normal;
+
+        @apply --cr-checkbox-label-container;
+      }
+
+      :host(.no-label) #label-container {
+        display: none;
+      }
+    </style>
+    <!-- Mousing down then moving cursor out of this element should not trigger
+         click on the parent. With <button> this works as expected, while <div>
+         does not. -->
+    <button id="checkbox" tabindex="-1" on-focus="onButtonFocus_">
+      <span id="checkmark"></span>
+    </button>
+    <div id="label-container"><slot></slot></div>
+  </template>
+  <script src="cr_checkbox.js"></script>
+</dom-module>

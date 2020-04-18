@@ -1,0 +1,120 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+<script src="../../../../resources/js-test.js"></script>
+<style type="text/css">
+::-webkit-scrollbar {
+  background-color: #ccc;
+  height: 15px;
+  width: 15px;
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #777;
+  height: 15px;
+  width: 15px;
+}
+
+#scrollable {
+    height: 300px;
+    width: 300px;
+    overflow: scroll;
+}
+
+.large {
+    height: 600px;
+    width: 600px;
+}
+</style>
+</head>
+<body onload="runTest();">
+<div id="scrollable">
+  <div class="large">
+  </div>
+</div>
+<div id="console"></div>
+
+<script type="text/javascript">
+
+var movingDiv;
+
+function scrollTest() {
+    movingDiv = document.getElementById('scrollable');
+
+    // Ensure the div is a target for touch adjustment.
+    movingDiv.addEventListener('click', function() {});
+
+    var scrollbarX = movingDiv.offsetLeft + movingDiv.offsetWidth - 5;
+    var scrollThumbSafeOffset = 80;
+    var scrollbarY = movingDiv.offsetTop + scrollThumbSafeOffset;
+
+    // Ensure we use a touch with an area to test under touch adjustment
+    var touchWidth = 25;
+    var touchHeight = 25;
+
+    shouldBe('movingDiv.scrollTop', '0');
+    eventSender.gestureTapDown(scrollbarX, scrollbarY, touchWidth, touchHeight);
+    eventSender.gestureShowPress(scrollbarX, scrollbarY, touchWidth, touchHeight);
+    eventSender.gestureScrollBegin(scrollbarX + 20, scrollbarY);
+    eventSender.gestureTapCancel(scrollbarX, scrollbarY);
+    shouldBe('movingDiv.scrollTop', '0');
+    eventSender.gestureScrollUpdate(0, 20);
+    shouldBeGreaterThanOrEqual('movingDiv.scrollTop', '20');
+    eventSender.gestureScrollUpdate(0, 60);
+    shouldBeGreaterThanOrEqual('movingDiv.scrollTop', '85');
+    eventSender.gestureScrollEnd(0, 0);
+    shouldBeGreaterThanOrEqual('movingDiv.scrollTop', '85');
+
+    // Test horizontal scrollbar too
+    scrollbarY = movingDiv.offsetTop + movingDiv.offsetHeight - 5;
+    scrollbarX = movingDiv.offsetLeft + scrollThumbSafeOffset;
+    shouldBe('movingDiv.scrollLeft', '0');
+    eventSender.gestureTapDown(scrollbarX, scrollbarY, touchWidth, touchHeight);
+    eventSender.gestureShowPress(scrollbarX, scrollbarY, touchWidth, touchHeight);
+    eventSender.gestureScrollBegin(scrollbarX, scrollbarY + 20);
+    eventSender.gestureTapCancel(scrollbarX, scrollbarY);
+    shouldBe('movingDiv.scrollLeft', '0');
+    eventSender.gestureScrollUpdate(20, 0);
+    shouldBeGreaterThanOrEqual('movingDiv.scrollLeft', '20');
+    eventSender.gestureScrollUpdate(60, 0);
+    shouldBeGreaterThanOrEqual('movingDiv.scrollLeft', '85');
+    eventSender.gestureScrollEnd(0, 0);
+    shouldBeGreaterThanOrEqual('movingDiv.scrollLeft', '85');
+
+    // If we've got here, we've passed.
+    isSuccessfullyParsed();
+}
+
+function exitIfNecessary()
+{
+    debug('Gesture events not implemented on this platform or broken');
+    isSuccessfullyParsed();
+}
+
+function runTest()
+{
+    internals.settings.setMockScrollbarsEnabled(true);
+
+    if (window.testRunner)
+        testRunner.dumpAsText();
+
+    if (window.eventSender) {
+        description('This tests scroll gesture events on a scroll bar. ' +
+            'The scrollable div below should be slightly scrolled down ' +
+            'if successful.');
+
+        if (eventSender.clearTouchPoints)
+            scrollTest();
+        else
+            exitIfNecessary();
+    } else {
+        debug("This test requires DumpRenderTree.");
+    }
+}
+</script>
+</body>
+</html>

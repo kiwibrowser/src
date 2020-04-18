@@ -1,0 +1,32 @@
+#! -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+if 'TRUSTED_ENV' not in env:
+  Return()
+trusted_env = env['TRUSTED_ENV']
+
+if not env.AllowInlineAssembly():
+  Return()
+
+test_guest = env.ComponentProgram(
+    'faultqueue_test_guest', ['faultqueue_test_guest.c'],
+    EXTRA_LIBS=['${NONIRT_LIBS}', 'test_common'])
+
+test_host = trusted_env.ComponentProgram(
+    'faultqueue_test_host', ['faultqueue_test_host.c'],
+    EXTRA_LIBS=['sel', 'test_common'])
+
+# This test is disabled for Valgrind because Valgrind does not
+# recognise the HLT instruction and produces SIGILL for it rather than
+# the SIGSEGV that this test expects.
+is_broken = (not env.Bit('nacl_static_link') or
+             env.IsRunningUnderValgrind())
+
+node = env.CommandTest('faulted_thread_queue_test.out',
+                       env.AddBootstrap(test_host, [test_guest]))
+env.AddNodeToTestSuite(node, ['small_tests', 'nonpexe_tests'],
+                       'run_faulted_thread_queue_test', is_broken=is_broken)

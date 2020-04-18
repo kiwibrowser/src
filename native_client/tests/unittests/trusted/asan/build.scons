@@ -1,0 +1,18 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+if not env.Bit('asan'):
+  Return()
+
+asan_test_exe = env.ComponentProgram('asan_test', 'asan_test.c')
+
+node = env.CommandTest(
+    'asan_test.out',
+    command=[asan_test_exe],
+    exit_status='1',
+    )
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_asan_test')

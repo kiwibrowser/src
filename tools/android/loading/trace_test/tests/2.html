@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<!--
+  Test Less Javascript Redirection in <head>
+
+  Like 1.html, in <head> we have a CSS, a javascript file and a <style> tag. In
+  this case, the javacript file directly inserts a <style> tag into <head>. This
+  causes the subsequently loaded font to not be associated with a stack trace,
+  but also causes the dynamically loaded static font from 1b.js to also not have
+  a stack trace.
+-->
+<html>
+<head>
+<title>As 1.html, but one less redirection</title>
+<link rel='stylesheet' type='text/css' href='1.css'>
+<script type='text/javascript' src='1b.js'></script>
+<style>
+@font-face {
+ font-family: 'indie';
+ font-style: normal;
+ font-weight: normal;
+ src: local('Indie Flower'), local('IndieFlower'), url(1.ttf) format('truetype');
+}
+</style>
+<style>
+div {
+ background: url('1a.png')
+}
+</style>
+</head>
+<body>
+<img src='1b.png' alt=''>
+
+<div class="outside">Outside</div>
+<div class="inside">Inside</div>
+</body>
+</html>

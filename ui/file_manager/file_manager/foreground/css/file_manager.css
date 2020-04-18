@@ -1,0 +1,2305 @@
+/* Copyright (c) 2014 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file. */
+
+/* Special attribute used in HTML to hide elements. */
+body:not([type]) [visibleif] {
+  display: none;
+}
+
+body[type='folder'] [invisibleif~='folder'],
+body[type='upload-folder'] [invisibleif~='upload-folder'],
+body[type='saveas-file'] [invisibleif~='saveas-file'],
+body[type='open-file'] [invisibleif~='open-file'],
+body[type='open-multi-file'] [invisibleif~='open-multi-file'],
+body[type='full-page'] [invisibleif~='full-page'],
+
+body[type='folder'] [visibleif]:not([visibleif~='folder']),
+body[type='upload-folder'] [visibleif]:not([visibleif~='upload-folder']),
+body[type='saveas-file'] [visibleif]:not([visibleif~='saveas-file']),
+body[type='open-file'] [visibleif]:not([visibleif~='open-file']),
+body[type='open-multi-file'] [visibleif]:not([visibleif~='open-multi-file']),
+body[type='full-page'] [visibleif]:not([visibleif~='full-page']) {
+  display: none !important;
+}
+
+html {
+  height: 100%;
+  overflow: hidden;
+}
+
+html.col-resize * {
+  cursor: col-resize !important;
+}
+
+/* Outer frame of the dialog. */
+body {
+  -webkit-tap-highlight-color: transparent;
+  cursor: default;
+  display: flex;
+  flex: auto;
+  flex-direction: column;
+  font-size: 81%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  width: 100%;
+}
+
+button:focus,
+input[type='button']:focus,
+input[type='submit']:focus,
+select:focus,
+a:focus {
+  outline-color: rgb(77, 144, 254);
+}
+
+/* Drop opacity of selected rows to give a visual feedback on copy/cut
+ * operation. */
+.blink {
+  opacity: 0.8;
+}
+
+/* Main part of the dialog between header and footer. */
+.dialog-container {
+  align-items: stretch;
+  background-color: rgb(250, 250, 250);  /* Makes #drag-container invisible. */
+  display: flex;
+  flex: auto;
+  flex-direction: row;
+  overflow: hidden;
+  position: relative;
+}
+
+/* List and grid are inside this container. */
+.dialog-main {
+  align-items: stretch;
+  background: rgb(245, 245, 245);
+  display: flex;
+  flex: auto;
+  flex-direction: column;
+}
+
+/* Directory tree at the left. */
+.dialog-navigation-list {
+  -webkit-border-end: 1px solid rgba(0, 0, 0, 0.15);
+  background-color: rgb(250, 250, 250);
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  max-width: 40%;
+  min-width: 105px;
+  overflow: hidden;
+  position: relative;
+  width: 240px;
+}
+
+.dialog-navigation-list-contents {
+  display: flex;
+  flex: 1 1 auto;
+  margin-top: 8px;
+  position: relative;
+}
+
+.dialog-navigation-list-footer {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+}
+
+/* A vertical splitter between the roots list and the file list. It is actually
+   a transparent area centered on the roots list right border.*/
+div.splitter {
+  cursor: col-resize;
+  flex: none;
+  margin-left: -3px;
+  margin-right: -3px;
+  position: relative;
+  width: 6px;
+  z-index: 500;  /* Must be below the contextmenu (600). */
+}
+
+#directory-tree {
+  bottom: 0;
+  flex: none;
+  left: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+#directory-tree .tree-row {
+  align-items: center;
+  color: rgb(90, 90, 90);
+  cursor: pointer;
+  display: flex;
+  height: 40px;
+  padding: 0 3px;
+}
+
+#directory-tree .tree-row > .button {
+  display: flex;
+  min-width: 0;
+}
+
+#directory-tree .tree-row > .expand-icon {
+  flex: none;
+  height: 36px;
+  left: 3px;
+  margin: -12px -2px;
+  right: 3px;
+  top: 0;
+  width: 36px;
+}
+
+#directory-tree .tree-row .item-icon {
+  flex: none;
+  height: 16px;
+  width: 16px;
+}
+
+#directory-tree .tree-row .label {
+  display: block;
+  flex: auto;
+  font-weight: 500;
+  margin: 0 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#directory-tree .tree-row .rename-placeholder {
+  display: block;
+  flex: auto;
+  font-weight: 500;
+  margin: 0 6px;
+}
+
+#directory-tree .tree-row .rename-placeholder > input {
+  width: 100%;
+}
+
+#directory-tree [renaming] > .tree-row > .label {
+  display: none;
+}
+
+#directory-tree .tree-row > input {
+  display: none;
+  margin: 0 6px;
+  overflow: hidden;
+}
+
+#directory-tree [renaming] > .tree-row > input {
+  display: block;
+}
+
+#directory-tree .tree-row > paper-ripple {
+  color: rgb(51, 103, 214);
+}
+
+#directory-tree [renaming] > .tree-row > paper-ripple {
+  display: none;
+}
+
+#directory-tree .tree-item.accepts > .tree-row,
+#directory-tree .tree-row[selected] {
+  color: rgb(51, 103, 214);
+}
+
+#directory-tree:focus .tree-row[selected] {
+  background-color: rgb(216, 223, 240);
+}
+
+#directory-tree .tree-row > .root-eject {
+  background: -webkit-image-set(
+      url(../images/files/ui/eject.png) 1x,
+      url(../images/files/ui/2x/eject.png) 2x) no-repeat center;
+  border-style: none;
+  cursor: pointer;
+  flex: none;
+  height: 40px;
+  position: relative;
+  width: 40px;
+  z-index: 1;  /* Make sure .root-eject is on upper layer than paper-ripple. */
+}
+
+#directory-tree .tree-row[selected] > .root-eject {
+  background-image: -webkit-image-set(
+      url(../images/files/ui/eject_active.png) 1x,
+      url(../images/files/ui/2x/eject_active.png) 2x);
+}
+
+#directory-tree .root-item[disabled] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Breadcrumbs and things under the title but above the list view. */
+.dialog-header {
+  align-items: center;
+  background: rgb(51, 103, 214);
+  box-sizing: border-box;
+  color: white;
+  display: flex;
+  flex: none;
+  flex-direction: row;
+  height: 48px;
+  transition: background 220ms ease;
+}
+
+body.check-select .dialog-header {
+  background: white;
+  border-bottom: 1px solid rgb(219, 219, 219);
+  border-top: 1px solid transparent;
+  color: rgb(90, 90, 90);
+}
+
+/* Display a grey border during check-select mode if we're in a dialog. (This
+   can only happen in an open-multi-file dialog). */
+body[type='open-multi-file'].check-select .dialog-header {
+  border-top: 1px solid rgb(219, 219, 219);
+}
+
+.dialog-header > .spacer {
+  flex: auto;
+}
+
+.dialog-header paper-button,
+.dialog-header button {
+  border-radius: 2px;
+  height: 32px;
+  margin: 0 8px;
+  min-width: 32px;
+  padding: 0;
+}
+
+.dialog-header button {
+  cursor: pointer;
+  position: relative;
+  text-transform: uppercase;
+  z-index: 1;
+}
+
+.dialog-header button,
+.dialog-header button:hover {
+  color: white;
+}
+
+body.check-select button,
+body.check-select button:hover {
+  color: rgb(90, 90, 90);
+}
+
+.dialog-header .icon-button > paper-ripple,
+.dialog-header .ripples > paper-ripple {
+  color: black;
+}
+
+body.check-select .dialog-header button paper-ripple {
+  color: rgb(90, 90, 90);
+}
+
+/** Avoid highlighting if element doesn't have focus by tab (tabindex=-1)
+ *  or if focusing during mouse click event ":active" pseudo-selector. */
+.dialog-header
+    .menu-button:focus:not([tabindex='-1']):not(:active) {
+  background-color: rgba(255, 255, 255, 0.20);
+}
+
+body.check-select .dialog-header
+    .menu-button:focus:not([tabindex='-1']):not(:active) {
+  background-color: rgba(153, 153, 153, 0.20);
+}
+
+.dialog-header iron-icon,
+.dialog-header .icon {
+  height: 16px;
+  width: 16px;
+}
+
+.dialog-header paper-button {
+  line-height: 32px;
+  padding: 0 8px;
+}
+
+.dialog-header button.icon-button {
+  -webkit-app-region: no-drag;
+  background-color: transparent;
+  background-image: none;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: 0;
+  box-shadow: none;
+  outline: none;
+  position: relative;
+}
+
+.dialog-header button.icon-button > iron-icon {
+  margin: 8px;
+}
+
+.dialog-header button.icon-button > files-toggle-ripple {
+  height: 28px;
+  left: 2px;
+  top: 2px;
+  width: 28px;
+}
+
+html[dir='rtl'] .dialog-header button.icon-button > files-toggle-ripple {
+  left: auto;
+  right: 2px;
+}
+
+.dialog-header button.icon-button > .icon {
+  background-position: center;
+  background-repeat: no-repeat;
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 32px;
+}
+
+#search-button > .icon {
+  background-image: -webkit-image-set(
+      url(../images/files/ui/search_white.png) 1x,
+      url(../images/files/ui/2x/search_white.png) 2x);
+}
+
+body.check-select #search-button > .icon {
+  background-image: -webkit-image-set(
+      url(../images/files/ui/search.png) 1x,
+      url(../images/files/ui/2x/search.png) 2x);
+}
+
+#share-menu-button > .icon {
+  background-image: -webkit-image-set(
+      url(../images/files/ui/share_white.png) 1x,
+      url(../images/files/ui/2x/share_white.png) 2x);
+}
+
+body.check-select #share-menu-button > .icon {
+  background-image: -webkit-image-set(
+      url(../images/files/ui/share.png) 1x,
+      url(../images/files/ui/2x/share.png) 2x);
+}
+
+#delete-button > .icon {
+  background-image: -webkit-image-set(
+      url(../images/files/ui/delete_white.png) 1x,
+      url(../images/files/ui/2x/delete_white.png) 2x);
+}
+
+body.check-select #delete-button > .icon {
+  background-image: -webkit-image-set(
+      url(../images/files/ui/delete.png) 1x,
+      url(../images/files/ui/2x/delete.png) 2x);
+}
+
+#view-button > .icon {
+  background-image: -webkit-image-set(
+      url(../images/files/ui/view_list_white.png) 1x,
+      url(../images/files/ui/2x/view_list_white.png) 2x);
+}
+
+#refresh-button > .icon {
+  background-image: -webkit-image-set(
+      url(../images/files/ui/refresh_white.png) 1x,
+      url(../images/files/ui/2x/refresh_white.png) 2x);
+}
+
+body.check-select #view-button {
+  display: none;
+}
+
+#view-button.thumbnail > .icon {
+  background-image: -webkit-image-set(
+      url(../images/files/ui/view_thumbnail_white.png) 1x,
+      url(../images/files/ui/2x/view_thumbnail_white.png) 2x);
+}
+
+body.check-select #view-button.thumbnail {
+  display: none;
+}
+
+#sort-button > .icon {
+  background-image: -webkit-image-set(
+      url(../images/files/ui/sorting_white.png) 1x,
+      url(../images/files/ui/2x/sorting_white.png) 2x);
+}
+
+body.check-select #sort-button {
+  display: none;
+}
+
+#gear-button > .icon {
+  background-image: -webkit-image-set(
+      url(../images/files/ui/menu_white.png) 1x,
+      url(../images/files/ui/2x/menu_white.png) 2x);
+}
+
+body.check-select #gear-button {
+  display: none;
+}
+
+#selection-menu-button > .icon {
+  background-image: -webkit-image-set(
+      url(../images/files/ui/menu.png) 1x,
+      url(../images/files/ui/2x/menu.png) 2x);
+}
+
+body:not(.check-select) #selection-menu-button {
+  display: none;
+}
+
+.cloud-import-combo-button {
+  height: 32px;
+  margin: 8px;
+  position: relative;
+}
+
+.cloud-import-combo-button > .buttons {
+  display: flex;
+}
+
+.cloud-import-combo-button > .buttons > #cloud-import-button {
+  margin: 0;
+}
+
+.cloud-import-combo-button > .buttons > #cloud-import-details-button {
+  -webkit-margin-end: 0;
+}
+
+#cloud-import-details-button {
+  -webkit-margin-start: -10px;
+  width: 24px;
+}
+
+#cloud-import-details-button iron-icon {
+  margin: 8px 4px;
+}
+
+#cloud-import-details {
+  background-color: white;
+  border-radius: 2px;
+  box-shadow: 0 4px 5px 0 rgba(0, 0, 0, 0.14),
+              0 1px 10px 0 rgba(0, 0, 0, 0.12),
+              0 2px 4px -1px rgba(0, 0, 0, 0.4);
+  line-height: 1.5em;
+  position: absolute;
+  top: 42px;  /* Positioned just overlapping the top of the toolbar */
+  transition: all 200ms ease;
+  width: 270px;
+  z-index: 550;
+}
+
+/* These horizontal positions for #cloud-import-details are fallback value.
+   Usually, these positions are calculated based on the position of dropdown.
+   These fallback values will be used when the cloud import penel is shown
+   before the toolbar buttons are fully laid out. */
+html[dir='ltr'] #cloud-import-details {
+  right: 148px;  /* Positioned in relation to the cloud-import toolbar button */
+}
+
+html[dir='rtl'] #cloud-import-details {
+  left: 148px;  /* Positioned in relation to the cloud-import toolbar button */
+}
+
+#cloud-import-details.hidden {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+#cloud-import-details .banner {
+  background-color: rgb(55, 71, 79);
+  border-radius: 2px 2px 0 0;
+  color: white;
+  padding: 20px;
+}
+
+#cloud-import-details .banner .title {
+  font-size: 122%;
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+
+#cloud-import-details .main {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+#cloud-import-details .status {
+  display: flex;
+  flex-direction: row;
+  margin-top: .2em;
+}
+
+#cloud-import-details .status iron-icon {
+  display: block;
+  height: 16px;
+  opacity: .6;
+  width: 16px;
+}
+
+#cloud-import-details .status .content {
+  -webkit-padding-start: 10px;
+  color: #646464;
+  flex: 1;
+}
+
+#cloud-import-details .status .content::first-line {
+  color: #333;
+  font-size: 110%;
+}
+
+#cloud-import-details .status a[is='action-link'] {
+  color: rgb(51, 103, 214);
+}
+
+#cloud-import-details .progress {
+  background-color: #E0E0E0;
+  border-radius: 2px;
+  height: 4px;
+  margin-top: 14px;
+  width: 100%;
+}
+
+#cloud-import-details .progress .value {
+  background-color: rgb(26, 194, 34);
+  border-radius: 2px;
+  height: 4px;
+  transition: width 100ms linear;
+  width: 0;
+}
+
+#cloud-import-details paper-button {
+  align-self: flex-end;
+  color: white;
+  font-weight: 500;
+  margin-top: 20px;
+}
+
+#cloud-import-details paper-button.import {
+  background-color: rgb(51, 103, 214);
+}
+
+#cloud-import-details paper-button.cancel {
+  background-color: rgb(219, 68, 55);
+}
+
+#files-selected-label {
+  -webkit-margin-start: 20px;
+  display: none;
+  font-weight: 500;
+}
+
+body.check-select #files-selected-label {
+  display: block;
+}
+
+#cancel-selection-button {
+  display: flex;
+  text-transform: none;
+}
+
+#cancel-selection-button > span {
+  display: inline-block;
+  font-weight: 500;
+  vertical-align: middle;
+}
+
+#cancel-selection-button .icon-arrow-back {
+  -webkit-margin-end: 8px;
+  background-image: -webkit-image-set(
+      url(../images/files/ui/back.png) 1x,
+      url(../images/files/ui/2x/back.png) 2x);
+  background-position: center;
+  background-repeat: no-repeat;
+  flex: none;
+  height: 16px;
+  width: 16px;
+}
+
+#cancel-selection-button-wrapper {
+  display: none;
+  width: 240px;  /* initial value, same as .dialog-navigation-list's width. */
+}
+
+#cancel-selection-button > iron-icon {
+  -webkit-margin-end: 6px;
+}
+
+#cancel-selection-label {
+  flex: auto;
+  line-height: 31px;
+  overflow: hidden;
+  padding-top: 1px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.check-select #cancel-selection-button-wrapper {
+  display: block;
+}
+
+/* Search button */
+body.check-select #search-button {
+  display: none;
+}
+
+/* Search box */
+#search-box {
+  display: flex;
+  flex: none;
+  font-size: 14px;
+}
+
+body.check-select #search-box {
+  display: none;
+}
+
+#search-box input {
+  display: inline-block;
+  transition: width 200ms ease;
+  width: 0;
+}
+
+#search-box input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
+#search-box paper-input-container {
+  margin-top: -4px;
+}
+
+#search-box paper-input-container input::-webkit-input-placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+#search-box.has-cursor,
+#search-box.has-text {
+  -webkit-margin-end: 12px;
+}
+
+#search-box.has-cursor input,
+#search-box.has-text input {
+  width: 202px;
+}
+
+#search-box .clear {
+  background: -webkit-image-set(
+      url(../images/files/ui/search_clear.png) 1x,
+      url(../images/files/ui/2x/search_clear.png) 2x)
+      no-repeat center;
+  cursor: pointer;
+  display: none;
+  height: 16px;
+  margin: 0;
+  position: relative;
+  right: 0;
+  top: 2px;
+  visibility: hidden;
+  width: 16px;
+}
+
+html[dir='rtl'] #search-box .clear {
+  left: 0;
+  right: auto;
+}
+
+#search-box.has-cursor .clear,
+#search-box.has-text .clear {
+  display: block;
+}
+
+#search-box.has-text .clear {
+  visibility: visible;
+}
+
+/* Container for the detail and thumbnail list views. */
+.dialog-body {
+  flex: auto;
+  position: relative;
+  transition: all 180ms ease;
+}
+
+.main-panel {
+  bottom: 0;
+  display: flex;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.dialog-middlebar-contents {
+  display: flex;
+  flex: none;
+  max-width: 50%;
+  min-width: 45px;
+  position: relative;
+  width: 180px;
+}
+
+/* Container for the ok/cancel buttons. */
+.dialog-footer {
+  align-items: center;
+  border-top: 1px solid rgb(225, 225, 225);
+  display: flex;
+  flex: none;
+  flex-direction: row;
+  outline: none;
+  padding: 8px 4px;
+}
+
+.dialog-footer .buttonbar {
+  display: flex;
+  height: 32px;
+}
+
+/* Copy style from paper-button for buttons on the footer. */
+.dialog-footer button {
+  background: transparent;
+  border: 0;
+  border-image: none;
+  border-radius: 2px;
+  box-sizing: border-box;
+  cursor: pointer;
+  margin: 0 0.29em;
+  min-width: 5.14em;
+  outline: none;
+  padding: 1px 16px;
+  position: relative;
+  text-align: center;
+  text-transform: uppercase;
+  transition: box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  z-index: 0;
+}
+
+.dialog-footer button[disabled] {
+  cursor: auto;
+  pointer-events: none;
+}
+
+.dialog-footer button {
+  font-weight: 500;
+}
+
+.dialog-footer button:hover {
+  border-image: none;  /* Overrides the definition of common.css. */
+}
+
+.dialog-footer button:active {
+  box-shadow: 0 4px 5px 0 rgba(0, 0, 0, 0.14),
+              0 1px 10px 0 rgba(0, 0, 0, 0.12),
+              0 2px 4px -1px rgba(0, 0, 0, 0.4);
+}
+
+.dialog-footer paper-button,
+.dialog-footer button {
+  height: 32px;
+  margin: 0 4px;
+  min-width: 92px;
+}
+
+.dialog-footer paper-button[disabled],
+.dialog-footer paper-button[disabled]:hover,
+.dialog-footer button[disabled],
+.dialog-footer button[disabled]:hover {
+  background-color: rgb(234, 234, 234);
+  color: rgb(168, 168, 168);
+}
+
+.dialog-footer .primary,
+.dialog-footer .primary:hover {
+  background-color: rgb(51, 103, 214);
+  color: white;
+}
+
+.dialog-footer .secondary {
+  color: rgb(100, 100, 100);
+}
+
+.dialog-footer .secondary:hover {
+  color: rgb(51, 103, 214);
+}
+
+.dialog-footer input {
+  margin: 3px 0 !important;
+}
+
+.dialog-footer select {
+  min-height: 21px;
+}
+
+.dialog-footer paper-input-container {
+  color: rgb(51, 51, 51);
+  padding: 4px 0;
+  width: 100%;
+}
+
+.dialog-footer select {
+  -webkit-appearance: none;
+  -webkit-margin-start: 16px;
+  background: -webkit-image-set(
+     url(../images/common/disclosure_arrow_dk_grey_down.png) 1x,
+     url(../images/common/2x/disclosure_arrow_dk_grey_down.png) 2x) no-repeat
+     right transparent;
+  border: 0;
+  border-bottom: 1px solid rgb(207, 207, 207);
+  border-radius: 0;
+  color: rgb(51, 51, 51);
+  cursor: pointer;
+  outline: none;
+  padding: 0 12px 0 0;
+}
+
+.dialog-footer select:hover {
+  border-image: none;
+}
+
+/* Draw outline using box-shadow to make them rounded. */
+.dialog-footer .primary:focus:not(:active),
+.dialog-footer .secondary:focus:not(:active),
+.dialog-footer select:focus:not(:active),
+#cloud-import-details paper-button.keyboard-focus {
+  box-shadow: 0 0 0 2px rgba(51, 103, 214, 0.5);
+}
+
+.progressable:not([progress]) .progress-bar,
+.progressable:not([progress]) .preparing-label {
+  display: none;
+}
+
+.progressable[progress] .ok,
+.progressable[progress] #filename-input-box,
+.progressable[progress] .file-type {
+  display: none;
+}
+
+.progressable .preparing-label {
+  -webkit-margin-start: 20px;
+}
+
+.progressable .progress-bar {
+  -webkit-margin-end: 20px;
+  -webkit-margin-start: 20px;
+  flex: auto;
+}
+
+/* The container for breadcrumb elements. */
+.breadcrumbs {
+  align-items: center;
+  display: flex;
+  flex: auto;
+  flex-direction: row;
+  overflow: hidden;
+}
+
+body.check-select .breadcrumbs {
+  display: none;
+}
+
+.breadcrumbs button > paper-ripple {
+  color: black;
+}
+
+.breadcrumbs > [collapsed]::before {
+  content: '...';
+}
+
+.breadcrumbs > [collapsed] .name {
+  display: none;
+}
+
+.breadcrumbs > [collapsed] {
+  box-sizing: content-box !important;
+  width: 1em;
+}
+
+/* A single directory name in the list of path breadcrumbs. */
+.breadcrumbs .breadcrumb-path {
+  box-sizing: border-box;
+  cursor: pointer;
+  flex: none;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+  min-width: 0;
+  padding: 0 9px;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.breadcrumbs .breadcrumb-path:first-child {
+  /* -webkit-margin-start isn't proper
+     because folder names should be ltr even in RTL languages. */
+  margin-left: 8px;
+}
+
+html[dir='rtl'] .breadcrumbs .breadcrumb-path:first-child {
+  margin-left: 0;
+  margin-right: 8px;
+}
+
+.breadcrumbs .breadcrumb-path:active {
+  color: inherit;
+}
+
+.breadcrumbs .breadcrumb-path > .name {
+  overflow: hidden;
+  position: relative;
+  text-align: initial;
+  text-overflow: ellipsis;
+  z-index: 1;
+}
+
+/* The final breadcrumb, representing the current directory. */
+.breadcrumbs .breadcrumb-path.breadcrumb-last {
+  cursor: default;
+}
+
+/* The > arrow between breadcrumbs. */
+.breadcrumbs .separator {
+  background: -webkit-image-set(
+      url(../images/files/ui/arrow_right_white.png) 1x,
+      url(../images/files/ui/2x/arrow_right_white.png) 2x) center no-repeat;
+  flex: none;
+  height: 16px;
+  width: 8px;
+}
+
+html[dir='rtl'] .breadcrumbs .separator {
+  transform: scaleX(-1);
+}
+
+.filelist-panel {
+  display: flex;
+  flex: auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+#list-container {
+  display: flex;
+  flex: auto;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
+}
+
+#detail-table {
+  display: flex;
+  flex: auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+#detail-table > list,
+.thumbnail-grid {
+  flex: auto;
+}
+
+#file-list .drag-selection-border {
+  -webkit-box-sizing: border-box;
+  background-color: rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  outline: 1px solid rgba(0, 0, 0, 0.1);
+  position: absolute;
+  z-index: 2;
+}
+
+.spinner {
+  background: url(chrome://resources/images/throbber_small.svg) center/100%
+      no-repeat;
+  height: 16px;
+  left: 50%;
+  margin-left: -8px;
+  margin-top: -8px;
+  opacity: 0.5;
+  position: absolute;
+  top: 50%;
+  width: 16px;
+}
+
+.loading-indicator {
+  height: 3px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  width: 100%;
+}
+
+.list-view .loading-indicator {
+  top: 40px;
+}
+
+.thumbnail-view .loading-indicator {
+  top: 0;
+}
+
+.downloads-warning {
+  align-items: center;
+  background-color: rgb(79, 129, 232);
+  color: white;
+  display: flex;
+  flex: none;
+  flex-direction: row;
+  font-size: 14px;
+  height: 64px;
+  overflow: hidden;
+  transition: height 70ms linear;
+}
+
+.downloads-warning a:link,
+.volume-warning a:link {
+  color: white;
+  flex: none;
+}
+
+.downloads-warning .warning-icon {
+  background-image: -webkit-image-set(
+      url(../images/files/ui/warning_white.png) 1x,
+      url(../images/files/ui/2x/warning_white.png) 2x);
+  background-size: 16px 16px;
+  flex: none;
+  height: 16px;
+  margin: 0 14px;
+  width: 16px;
+}
+
+.downloads-warning .warning-message {
+  -webkit-margin-end: 40px;
+}
+
+.downloads-warning[hidden] {
+  display: flex !important;  /* Overrides [hidden] for animation. */
+  height: 0;
+}
+
+@keyframes heightAnimation {
+  0% {
+    display: flex;
+    height: 0;
+  }
+}
+
+/* Drive space warning banner. */
+.volume-warning {
+  align-items: center;
+  animation: heightAnimation 70ms linear;
+  background-color: rgb(79, 129, 232);
+  color: white;
+  display: flex;
+  flex: none;
+  flex-direction: row;
+  font-size: 13px;
+  height: 64px;
+  overflow: hidden;
+  position: relative;
+}
+
+.volume-warning[hidden] {
+  border-top-width: 0;
+  height: 0;
+}
+
+.volume-warning .drive-icon {
+  background: white -webkit-image-set(
+      url(../images/files/ui/drive_logo.png) 1x,
+      url(../images/files/ui/2x/drive_logo.png) 2x) no-repeat center;
+  background-size: 29px 29px;
+  border-radius: 2px;
+  flex: none;
+  height: 36px;
+  margin: 0 14px;
+  width: 36px;
+}
+
+.volume-warning .drive-text {
+  -webkit-margin-end: 51px;
+  flex: none;
+  font-size: 16px;
+}
+
+.volume-warning .imitate-paper-button {
+  background-color: white;
+  border-radius: 2px;
+  color: rgb(79, 129, 232);
+  font-size: 13px;
+  font-weight: 500;
+  height: 2.5em;
+}
+
+.banner-close {
+  background: -webkit-image-set(
+      url(../images/files/ui/close_button_white.png) 1x,
+      url(../images/files/ui/2x/close_button_white.png) 2x) no-repeat center;
+  cursor: pointer;
+  display: inline-block;
+  height: 40px;
+  position: absolute;
+  top: 12px;
+  width: 40px;
+}
+
+html[dir='ltr'] .banner-close {
+  right: 0;
+}
+
+html[dir='rtl'] .banner-close {
+  left: 0;
+}
+
+.banner-cloud-bg {
+  background-image: -webkit-image-set(
+      url(../images/files/ui/drive_banner_clouds.png) 1x,
+      url(../images/files/ui/2x/drive_banner_clouds.png) 2x);
+  background-position: bottom left;
+  background-repeat: repeat-x;
+}
+
+/* The cr.ui.Grid representing the detailed file list. */
+.thumbnail-grid {
+  /* On the right side, we have less margin to pack items as long as they are
+     fully visible. */
+  -webkit-padding-end: 2px;
+  -webkit-padding-start: 11px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding-bottom: 16px;
+  padding-top: 12px;
+  width: 100%;
+}
+
+body[type='full-page'] .thumbnail-frame > .img-container {
+  position: relative;
+}
+
+body[type='full-page'] .thumbnail-frame > .img-container,
+body[type='full-page'] .detail-name .detail-icon {
+  cursor: pointer;
+}
+
+.thumbnail-bottom {
+  align-items: center;
+  bottom: 0;
+  cursor: auto;
+  display: flex;
+  flex-direction: row;
+  left: 0;
+  padding: 0 6px;
+  position: absolute;
+  right: 0;
+}
+
+.thumbnail-bottom .detail-icon {
+  flex: none;
+  height: 16px;
+  width: 16px;
+}
+
+.thumbnail-bottom .filename-label {
+  -webkit-padding-end: 6px;
+  flex: auto;
+  font-weight: 500;
+}
+
+/* Styles specific for the grid view. */
+
+.thumbnail-grid .thumbnail-item {
+  -webkit-margin-start: 4px;
+  background-color: rgb(245, 245, 245);
+  height: 180px;
+  margin-top: 4px;
+  overflow: hidden;
+  position: relative;
+  vertical-align: top;  /* Prevent vertical spacing for wrapped inline box. */
+  width: 180px;
+}
+
+.thumbnail-grid .thumbnail-item.directory {
+  box-shadow: 0 1px rgba(0, 0, 0, 0.15);
+  height: 40px;
+}
+
+.thumbnail-grid .thumbnail-frame {
+  height: 100%;
+  width: 100%;
+}
+
+.thumbnail-grid .thumbnail-item[selected],
+.thumbnail-grid .thumbnail-item.accepts {
+  background-color: rgb(221, 242, 253);
+}
+
+.thumbnail-grid .checkmark {
+  -webkit-margin-start: 2px;
+  background-position: center;
+  background-repeat: no-repeat;
+  height: 36px;
+  opacity: 0;
+  position: absolute;
+  top: 2px;
+  transition: opacity 220ms ease;
+  width: 36px;
+}
+
+.thumbnail-grid .checkmark.inactive {
+  background-image: -webkit-image-set(
+      url(../images/files/ui/grid_image_check.png) 1x,
+      url(../images/files/ui/2x/grid_image_check.png) 2x);
+}
+
+.thumbnail-grid .checkmark.active {
+  background-image: -webkit-image-set(
+      url(../images/files/ui/grid_image_check_active.png) 1x,
+      url(../images/files/ui/2x/grid_image_check_active.png) 2x);
+}
+
+body.selecting .thumbnail-grid .checkmark.inactive,
+.thumbnail-grid .thumbnail-item:hover .checkmark.inactive {
+  opacity: 0.6;
+}
+
+body.check-select .thumbnail-grid .thumbnail-item .checkmark.inactive {
+  opacity: 1;
+}
+
+body.check-select .thumbnail-grid .thumbnail-item[selected]
+    .checkmark.inactive {
+  opacity: 0;
+}
+
+body.check-select .thumbnail-grid .thumbnail-item[selected] .checkmark.active {
+  opacity: 1;
+}
+
+.thumbnail-grid .img-container {
+  background-color: rgb(230, 230, 230);
+  height: 100%;
+  width: 100%;
+}
+
+.thumbnail-grid .img-container > .thumbnail {
+  -webkit-user-drag: none;
+  background-color: rgb(230, 230, 230);
+  background-position: center;
+  background-repeat: no-repeat;
+  height: 100%;
+  opacity: 1;
+  position: absolute;
+  width: 100%;
+}
+
+.thumbnail-grid .img-container > .thumbnail.animate {
+  animation: fadeIn 250ms linear;
+}
+
+.thumbnail-grid .shield {
+  background-color: rgba(160, 160, 160, 0.5);
+  bottom: 0;
+  display: none;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.thumbnail-grid:focus .shield {
+  background-color: rgba(51, 103, 214, 0.5);
+}
+
+.thumbnail-grid .thumbnail-item[selected] .shield {
+  display: block;
+}
+
+.thumbnail-grid .thumbnail-bottom {
+  background-color: rgba(255, 255, 255, 0.85);
+  color: rgb(51, 51, 51);
+  height: 40px;
+}
+
+.thumbnail-grid .thumbnail-item.directory .thumbnail-bottom {
+  background-color: rgb(255, 255, 255);
+}
+
+.thumbnail-grid .thumbnail-item[selected].directory .thumbnail-bottom {
+  background-color: rgb(232, 232, 232);
+}
+
+.thumbnail-grid:focus .thumbnail-item[selected].directory .thumbnail-bottom {
+  background-color: rgb(232, 246, 253);
+}
+
+.thumbnail-grid > .spacer.folder-spacer {
+  height: 5px;
+}
+
+body:not(.check-select) .thumbnail-grid.image-dominant
+    .can-hide-filename.thumbnail-loaded:not([selected]) .thumbnail-bottom {
+  display: none;
+}
+
+.badge {
+  background-color: white;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 2px;
+  display: none;
+  height: 20px;
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  width: 20px;
+}
+
+html[dir='rtl'] .badge {
+  left: 10px;
+  right: auto;
+}
+
+.copied .badge {
+  background-image: -webkit-image-set(
+      url(../images/files/ui/cloud_import_syncing.png) 1x,
+      url(../images/files/ui/2x/cloud_import_syncing.png) 2x);
+  display: block;
+}
+
+.imported .badge {
+  background-image: -webkit-image-set(
+      url(../images/files/ui/service_drive.png) 1x,
+      url(../images/files/ui/2x/service_drive.png) 2x);
+  display: block;
+}
+
+.imported .filename-label,
+.copied .filename-label {
+  -webkit-margin-end: 14px;
+}
+
+/* Padding counterweights negative margins of items, thus eliminating scroll
+   bar when it's not needed. Max height is set to fit 8 items before showing
+   scroll bar. */
+#default-tasks-list {
+  max-height: 328px;
+  padding: 1px 0;
+}
+
+#default-tasks-list > li > * {
+  background-position: 5px center;
+  background-repeat: no-repeat;
+  background-size: 16px 16px;
+  padding-left: 26px;
+}
+
+#list-container list > li[selected],
+#list-container list > li:active,
+#list-container list > li.accepts,
+#default-tasks-list > li[selected] {
+  background-color: rgb(232, 232, 232);
+}
+
+#list-container list:focus > li[selected],
+#list-container list:focus > li.accepts[selected],
+#default-tasks-list:focus > li[selected] {
+  background-color: rgb(216, 223, 240);
+}
+
+#list-container.nohover grid > .accepts {
+  background-color: transparent;
+}
+
+#directory-tree .tree-item.accepts > .tree-row,
+#list-container list > li.accepts,
+#list-container grid > li.accepts {
+  animation: acceptsBlink 200ms linear 1s 3;
+}
+
+@keyframes acceptsBlink {
+  0% {
+    color: rgb(90, 90, 90);
+    background-color: transparent;
+  }
+}
+
+.table-row-cell .filename-label,
+.thumbnail-item .filename-label,
+/* Show ellipsis in cells. The name column has different structure and overrides
+   this rule. */
+.table-row-cell > div {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre;
+}
+
+/* Text box used for renaming in the detail list. */
+.table-row-cell input.rename {
+  border-width: 0;
+  min-width: 0;
+  padding: 2px 0;
+}
+
+input.rename:focus,
+#directory-tree .tree-row .rename-placeholder > input:focus,
+#directory-tree .tree-row > input:focus {
+  outline-color: rgb(77, 144, 254);
+}
+
+input.rename {
+  font: inherit;
+  line-height: 1;
+  text-align: inherit;
+}
+
+.table-row-cell .filename-label,
+.table-row-cell input.rename {
+  flex: auto;
+}
+
+li[renaming=''] .filename-label,
+li[renaming=''] .badge {
+  display: none;
+}
+
+/* Text box used for renaming in the thumbnail list. */
+.thumbnail-grid input.rename {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* The cr.ui.Table representing the detailed file list. */
+.detail-table {
+  width: 100%;
+}
+
+.dialog-footer > .left {
+  align-items: center;
+  display: flex;
+  flex: auto;
+  flex-direction: row;
+}
+
+.dialog-footer > .right {
+  align-items: center;
+  flex: none;
+  justify-content: flex-end;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Table splitter element */
+.table-header-splitter {
+  background-image: -webkit-image-set(
+    url(../images/files/ui/vertical_separator.png) 1x,
+    url(../images/files/ui/2x/vertical_separator.png) 2x);
+  background-position: center;
+  background-repeat: repeat-y;
+  height: 40px;
+  top: 0;
+  width: 5px;
+}
+
+.table-header-splitter:last-child {
+  display: none;
+}
+
+/* Container for a table header. */
+.table-header {
+  border-bottom: 1px solid rgb(210, 210, 210);
+  box-sizing: border-box;
+  flex: none;
+  height: 40px;
+}
+
+.table-header-sort-image-desc::after {
+  -webkit-padding-start: 13px;
+  background-image: -webkit-image-set(
+    url(../images/files/ui/sort_desc.png) 1x,
+    url(../images/files/ui/2x/sort_desc.png) 2x);
+  background-position: center center;
+  background-repeat: no-repeat;
+  color: #888;
+  content: '\00a0';
+  position: relative;
+  top: 1px;
+}
+
+.table-header-sort-image-asc::after {
+  -webkit-padding-start: 13px;
+  background-image: -webkit-image-set(
+    url(../images/files/ui/sort_asc.png) 1x,
+    url(../images/files/ui/2x/sort_asc.png) 2x);
+  background-position: center center;
+  background-repeat: no-repeat;
+  color: #888;
+  content: '\00a0';
+  position: relative;
+  top: -1px;
+}
+
+/* Text label in a table header. */
+.table-header-label {
+  color: rgb(100, 100, 100);
+  font-weight: 500;
+  line-height: 40px;
+  margin: 0 10px;
+}
+
+.table-row-cell > * {
+  align-items: center;
+  flex: auto;
+  flex-direction: row;
+  padding: 0 10px;
+}
+
+.table-row-cell {
+  color: rgb(100, 100, 100);
+}
+
+.table-row-cell > .detail-name {
+  display: flex;
+}
+
+.table-row-cell > .detail-name {
+  color: rgb(74, 74, 74);
+}
+
+.table-row-cell {
+  align-items: center;
+}
+
+#default-tasks-list li {
+  height: 32px;
+  line-height: 32px;
+}
+
+#list-container li.table-row {
+  height: 40px;
+  line-height: 40px;
+}
+
+/* The icon in the name column. See file_types.css for specific icons. */
+.detail-icon {
+  height: 24px;
+  width: 24px;
+}
+
+.status-icon {
+  -webkit-margin-end: 10px;
+  height: 24px;
+  width: 24px;
+}
+
+#list-container li .detail-icon {
+  -webkit-margin-end: 6px;
+  height: 28px;
+  width: 28px;
+}
+
+#list-container li .detail-checkmark {
+  background-position: center;
+  background-repeat: no-repeat;
+  height: 28px;
+  isolation: isolate;
+  opacity: 0;
+  position: absolute;
+  transition: opacity 220ms ease;
+  width: 28px;
+}
+
+#list-container list li .detail-checkmark {
+  background-image: -webkit-image-set(
+      url(../images/files/ui/list_check.png) 1x,
+      url(../images/files/ui/2x/list_check.png) 2x);
+}
+
+#list-container grid li .detail-checkmark {
+  background-image: -webkit-image-set(
+      url(../images/files/ui/grid_folder_check.png) 1x,
+      url(../images/files/ui/2x/grid_folder_check.png) 2x);
+}
+
+body.check-select #list-container li[selected] .detail-checkmark {
+  opacity: 1;
+}
+
+#list-container list li .detail-thumbnail {
+  height: 28px;
+  overflow: hidden;
+  width: 28px;
+}
+
+#list-container list li .detail-thumbnail > .thumbnail {
+  -webkit-user-drag: none;
+  background-color: rgb(245, 245, 245);
+  background-position: center;
+  background-size: cover;
+  border-radius: 14px;
+  height: 100%;
+  isolation: isolate;
+  opacity: 1;
+  width: 100%;
+}
+
+#list-container list li .detail-thumbnail > .thumbnail.animate {
+  animation: fadeIn 220ms ease;
+}
+
+body.check-select #list-container list li[selected] .detail-thumbnail
+> .thumbnail {
+  /* Fade out after checkmark fades in. */
+  animation: fadeOut 0ms 220ms ease backwards;
+  opacity: 0;
+}
+
+#share-menu cr-menu-item,
+#tasks-menu cr-menu-item:not(.change-default) {
+  background-position: left 10px center;
+  padding-left: 32px;
+}
+
+#share-menu cr-menu-item[command='#share'] {
+  background-image: -webkit-image-set(
+      url(../images/files/ui/person_add.png) 1x,
+      url(../images/files/ui/2x/person_add.png) 2x);
+}
+
+#action-bar {
+  display: flex;
+  flex: none;
+}
+
+.detail-name > * {
+  align-items: center;
+  display: flex;
+  flex: none;
+}
+
+#filename-input-box {
+  -webkit-margin-end: 30px;
+  -webkit-margin-start: 30px;
+  align-items: center;
+  display: flex;
+  flex: auto;
+}
+
+body:not([type='saveas-file']) #filename-input-box {
+  display: none;
+}
+
+/* Dimmed items */
+
+body[type='folder'] .file,
+body[type='upload-folder'] .file,
+body[drive] .dialog-container[connection='offline'] .dim-offline {
+  opacity: 0.4;
+}
+
+/* Invisible container for elements representing files while dragging. */
+#drag-container {
+  left: 0;
+  position: fixed;
+  top: 0;
+  z-index: -1;  /* below .dialog-container */
+}
+
+#drag-container .drag-contents {
+  background-color: #fafafa;
+  border: 1px solid #bbb;
+  border-radius: 3px;
+  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, .2);
+  display: flex;
+  flex-direction: row;
+  line-height: 0;
+  margin-bottom: 5px;
+  padding: 6px;
+  transition: opacity 200ms ease-in;
+}
+
+#drag-container .drag-contents.for-image  {
+  flex: none;
+  padding: 2px;
+}
+
+#drag-container .thumbnail-item {
+  display: flex;
+  flex-direction: row;
+}
+
+#drag-container .label {
+  flex: auto;
+  font-weight: bold;
+  line-height: 24px;
+  max-width: 320px;
+  overflow: hidden;
+  padding: 0 5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* TODO(fukino): Gather menu-related definitions into one place. */
+cr-menu#file-context-menu {
+  min-width: 208px;
+  z-index: 600;  /* Must be below the overlay pane (1000). */
+}
+
+cr-menu#file-context-menu > :not(hr) {
+  -webkit-padding-end: 8px;
+}
+
+cr-menu#file-context-menu.toolbar-menu > .hide-on-toolbar {
+  display: none;
+}
+
+cr-menu.chrome-menu hr {
+  color: transparent;
+  font-size: 0;
+}
+
+div.shade {
+  /* transition: opacity 1000ms linear; */
+  background-color: rgba(255, 255, 255, 0.8);
+  bottom: 0;
+  left: 0;
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+div.shade[fadein] {
+  opacity: 1;
+}
+
+/* Message panel for unmounted Drive */
+#unmounted-panel,
+#format-panel {
+  bottom: 0;
+  color: #333;
+  display: none;
+  left: 0;
+  padding-left: 50px;
+  padding-top: 20px;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+body[drive='mounting'] .dialog-container #unmounted-panel,
+body[drive='error'] .dialog-container #unmounted-panel,
+body[unformatted] .dialog-container #format-panel {
+  display: block;
+}
+
+body[drive='unmounted'] .dialog-container .filelist-panel,
+body[drive='mounting'] .dialog-container .filelist-panel,
+body[drive='error'] .dialog-container .filelist-panel,
+body[unformatted] .dialog-container .filelist-panel {
+  /* Hide file list when Drive is not mounted.
+     Use opacity to avoid manual resizing.*/
+  opacity: 0;
+}
+
+#unmounted-panel > *,
+#format-panel > * {
+  align-items: center;
+  display: none;
+  flex-direction: row;
+  height: 22px;
+  justify-content: flex-start;
+  margin-bottom: 10px;
+}
+
+#unmounted-panel > .loading {
+  position: relative;
+}
+
+#unmounted-panel > .loading > .spinner-box {
+  bottom: 0;
+  position: absolute;
+  right: 100%;
+  top: 0;
+  width: 40px;
+}
+
+body[unformatted] #format-panel > .error,
+body[drive='mounting'] #unmounted-panel > .loading,
+body[drive='error'] #unmounted-panel > .error,
+#format-panel > #format-button,
+#unmounted-panel.retry-enabled > .learn-more {
+  display: flex;
+}
+
+.plain-link {
+  color: rgb(17, 85, 204);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.buttonbar > * {
+  position: relative;
+}
+
+#empty-folder {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: center;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
+#empty-folder > .image {
+  background-image: -webkit-image-set(
+      url(../images/files/ui/empty_folder.png) 1x,
+      url(../images/files/ui/2x/empty_folder.png) 2x);
+  height: 145px;
+  margin: 50px auto 32px auto;
+  width: 120px;
+}
+
+#empty-folder > .label {
+  color: rgb(180, 180, 180);
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+}
+
+#volume-space-info-contents {
+  align-items: center;
+  display: flex;
+}
+
+#volume-space-info-contents > div {
+  -webkit-margin-start: 15px;
+  display: flex;
+  flex: auto;
+}
+
+#list-container .table-header-inner {
+  height: 100%;
+}
+
+#list-container .table-header-cell:hover {
+  background-color: inherit;
+}
+
+#list-container .table-header-cell:first-child {
+  -webkit-box-sizing: border-box;
+  -webkit-padding-start: 8px;
+}
+
+#new-folder-button {
+  flex: none;
+}
+
+#default-task-dialog {
+  min-width: 300px;
+  width: auto;
+}
+
+.drive-welcome-wrapper {
+  /* drive_welcome.css will override it once loaded. */
+  display: none;
+}
+
+list.autocomplete-suggestions {
+  -webkit-margin-start: -36px;
+  background-color: white;
+  border-radius: 3px;
+  box-shadow: 0 1px 4px 0 rgba(0, 0, 0, .5);
+  box-sizing: border-box;  /* To match the width with the search box's. */
+  color: rgb(90, 90, 90);
+  flex: none;
+  margin-top: 10px;
+  overflow: hidden;
+  padding: 8px 0;
+  position: fixed;
+  width: 260px !important; /* This overrides the value specified by script. */
+  z-index: 550;
+}
+
+list.autocomplete-suggestions > li {
+  align-items: center;
+  display: flex;
+  height: 32px;
+}
+
+list.autocomplete-suggestions > li > div.detail-icon {
+  flex: none;
+  height: 32px;
+  width: 32px;
+}
+
+list.autocomplete-suggestions > li > div.detail-text {
+  flex: auto;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+}
+
+list.autocomplete-suggestions > li > div.detail-text em {
+  color: rgb(150, 150, 150);
+  font-style: normal;
+}
+
+list.autocomplete-suggestions > li > div[search-icon] {
+  background: -webkit-image-set(
+      url(../images/files/ui/search.png) 1x,
+      url(../images/files/ui/2x/search.png) 2x) center no-repeat;
+}
+
+list.autocomplete-suggestions > [selected],
+list.autocomplete-suggestions > [lead] {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+#gear-menu,
+#share-menu,
+#sort-menu,
+#tasks-menu {
+  margin-top: 2px;
+}
+
+#gear-menu > cr-menu-item:not(.menuitem-button),
+#sort-menu > cr-menu-item {
+  -webkit-margin-end: 50px;
+}
+
+#suggest-app-dialog {
+  background-color: #fff;
+  border: 0;
+  padding: 0;
+  width: auto;
+}
+
+.suggest-apps-dialog-title.cr-dialog-title {
+  /* Entire height: 44px (content-box 22px + padding 11px * 2) */
+  font-size: 16px;
+  line-height: 22px;
+  margin: 0;
+  padding: 11px 18px;
+}
+
+.suggest-apps-dialog-text.cr-dialog-text {
+  margin: 0;
+  padding: 0 20px 10px;
+}
+
+.cr-dialog-frame.error-dialog-frame {
+  width: 300px;
+}
+
+.error-dialog-frame .error-dialog-img {
+  background-image: -webkit-image-set(
+    url(chrome://theme/IDR_ERROR_NETWORK_GENERIC) 1x,
+    url(chrome://theme/IDR_ERROR_NETWORK_GENERIC@2x) 2x);
+  background-position: center;
+  background-repeat: no-repeat;
+  height: 40px;
+}
+
+.error-dialog-frame .cr-dialog-cancel {
+  display: none;
+}
+
+.error-dialog-frame .cr-dialog-close,
+.error-dialog-frame .cr-dialog-title {
+  display: none;
+}
+
+.error-dialog-frame .cr-dialog-text {
+  text-align: center;
+}
+
+#multi-profile-share-dialog .cr-dialog-title {
+  margin-bottom: 0;
+}
+
+#multi-profile-share-dialog .cr-dialog-text {
+  line-height: 18px;
+  margin-top: 0;
+}
+
+#multi-profile-share-dialog .mail-label {
+  padding-right: 16px;
+}
+
+#multi-profile-share-dialog .mail-label::after {
+  content: ':';
+}
+
+#multi-profile-share-dialog .share-line {
+  margin: 8px 16px;
+}
+
+#conflict-confirm-dialog .cr-dialog-buttons {
+  align-items: baseline;
+  display: flex;
+}
+
+#conflict-confirm-dialog input[type=checkbox] {
+  -webkit-margin-start: -2px;
+  width: auto;
+}
+
+#conflict-confirm-dialog label {
+  flex: 1 0 auto;
+}
+
+/* Progress center */
+
+@keyframes progress-center-toggle {
+  /* Height values of each frame are set by script.
+   * Keep the animation sync with JS. */
+  from {
+  }
+  to {
+  }
+}
+
+#progress-center {
+  background-color: transparent;
+  border-top: 1px solid rgb(214, 214, 214);
+  overflow: hidden;
+  position: relative;
+  transition: background-color 300ms linear,
+              border 300ms linear;
+}
+
+#progress-center.animated {
+  animation: progress-center-toggle 300ms ease-out;
+}
+
+#progress-center-open-view {
+  opacity: 1;
+  padding-top: 10px;
+  transition: opacity 300ms linear;
+}
+
+#progress-center:not(.opened) #progress-center-open-view {
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+#progress-center-close-view {
+  opacity: 1;
+  padding-top: 20px;
+  transition: opacity 300ms linear;
+}
+
+#progress-center.opened #progress-center-close-view {
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+#progress-center.animated #progress-center-open-view,
+#progress-center.animated #progress-center-close-view {
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 1;
+}
+
+#progress-center li {
+  -webkit-padding-end: 12px;
+  display: flex;
+  /* This must not be margin-bottom to calculate parent's height correctly. */
+  padding-bottom: 16px;
+}
+
+#progress-center label {
+  color: rgb(76, 76, 76);
+  display: block;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#progress-center li.error.single label {
+  white-space: normal;
+}
+
+#progress-center .progress-frame {
+  -webkit-padding-end: 12px;
+  -webkit-padding-start: 16px;
+  flex: 1 0 0;
+}
+
+#progress-center .progress-bar {
+  background: rgb(224, 224, 224);
+  border-radius: 2px;
+  display: inline-block;
+  height: 4px;
+  margin-bottom: 3px;
+  opacity: 1;
+  overflow: hidden;
+  width: 100%;
+}
+
+#progress-center li.error .progress-bar,
+#progress-center-close-view.quiet .progress-bar {
+  display: none;
+}
+
+#progress-center .progress-track {
+  background: rgb(26, 194, 34);
+  height: 100%;
+}
+
+#progress-center .progress-track.animated {
+  transition: width 300ms linear;
+}
+
+#progress-center .button-frame {
+  align-self: flex-end;
+  flex: none;
+}
+
+#progress-center button {
+  border: none;
+  cursor: pointer;
+  display: inline-block;
+  height: 16px;
+  min-height: 0;
+  min-width: 0;
+  outline: none;
+  padding: 0;
+  vertical-align: middle;
+  width: 16px;
+}
+
+#progress-center button.close {
+  -webkit-margin-end: 12px;
+  -webkit-margin-start: auto;
+  background: -webkit-image-set(
+      url(../images/files/ui/expand_more_active.png) 1x,
+      url(../images/files/ui/2x/expand_more_active.png) 2x)
+      no-repeat;
+  display: block;
+  margin-bottom: 20px;
+}
+
+#progress-center button.open {
+  background: -webkit-image-set(
+      url(../images/files/ui/expand_less.png) 1x,
+      url(../images/files/ui/2x/expand_less.png) 2x)
+      no-repeat;
+  /* If progress bar exists, show open button at slighly higher position. */
+  margin-bottom: 14px;
+}
+
+#progress-center button.dismiss,
+#progress-center button.cancel {
+  background: -webkit-image-set(
+      url(../images/files/ui/cancel.png) 1x,
+      url(../images/files/ui/2x/cancel.png) 2x)
+      no-repeat;
+}
+
+#progress-center li.error button.open,
+#progress-center li.quiet button.open {
+  margin-bottom: 0;
+}
+
+#progress-center button.dismiss {
+  display: none;
+}
+
+/*
+ * Dismiss button is shown only when
+ * - Single error in close view.
+ * - Error items in open view.
+ */
+li#progress-center-close-view.error.single button.dismiss,
+#progress-center-open-view li.error button.dismiss {
+  display: block;
+}
+
+#progress-center-close-view:not(.single) button.cancel {
+  display: none;
+}
+
+#progress-center-close-view.single:not(.quiet) button.open {
+  display: none;
+}
+
+#progress-center-close-view.quiet button.cancel,
+#progress-center li:not(.cancelable) button.cancel {
+  visibility: hidden;
+}
+
+#cloud-import-banner {
+  background: rgb(33, 150, 243);
+  color: white;
+  display: flex;
+  flex: 0 0 14px;
+  font-size: 14px;
+  padding: 20px 15px;
+}
+
+.text-measure {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  visibility: hidden;
+  z-index: -1;
+}
+
+files-toggle-ripple {
+  bottom: 0;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+#quick-view {
+  z-index: 505; /* Must be above the scroll bar (500). */
+}
+
+/* Preventing FOUC */
+paper-input-container:unresolved {
+  display: none;
+}
+
+#drop-label {
+  background-color: rgba(0, 0, 0, 0.8);
+  border-radius: 2px;
+  color: white;
+  display: none;  /* hidden until activaed */
+  font-size: 12px;
+  height: 24px;
+  line-height: 24px;
+  padding: 0 8px;
+  position: absolute;
+  z-index: 1000;  /* same height as files-tooltip */
+}

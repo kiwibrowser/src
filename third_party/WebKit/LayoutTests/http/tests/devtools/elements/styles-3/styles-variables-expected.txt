@@ -1,0 +1,98 @@
+Tests that computed styles expand and allow tracing to style rules.
+
+==== Computed style for ID1 ====
+display: block;
+    block - div user agent stylesheet
+[expanded] 
+element.style { ()
+
+[expanded] 
+#id1 { (<style>…</style>)
+    --b: 44px;
+
+[expanded] 
+div { (user agent stylesheet)
+    display: block;
+
+======== Inherited from body ========
+[expanded] 
+body { (<style>…</style>)
+    --a: red;
+
+value of --a:  red
+==== Computed style for ID2 ====
+display: block;
+    block - div user agent stylesheet
+[expanded] 
+element.style { ()
+
+[expanded] 
+#id2 { (<style>…</style>)
+    --a: green;
+
+[expanded] 
+div { (user agent stylesheet)
+    display: block;
+
+======== Inherited from div#id1 ========
+[expanded] 
+#id1 { (<style>…</style>)
+    --b: 44px;
+
+======== Inherited from body ========
+[expanded] 
+body { (<style>…</style>)
+/-- overloaded --/     --a: red;
+
+value of --b:  44px
+==== Computed style for ID3 ====
+display: block;
+    block - div user agent stylesheet
+[expanded] 
+element.style { ()
+
+[expanded] 
+#id3 { (<style>…</style>)
+    --a: inherit;
+
+[expanded] 
+div { (user agent stylesheet)
+    display: block;
+
+======== Inherited from div#id2 ========
+[expanded] 
+#id2 { (<style>…</style>)
+/-- overloaded --/     --a: green;
+
+======== Inherited from div#id1 ========
+[expanded] 
+#id1 { (<style>…</style>)
+    --b: 44px;
+
+======== Inherited from body ========
+[expanded] 
+body { (<style>…</style>)
+/-- overloaded --/     --a: red;
+
+value of --b:  44px
+==== Computed style for ID4 ====
+display: block;
+    block - div user agent stylesheet
+[expanded] 
+element.style { ()
+
+[expanded] 
+#id4 { (<style>…</style>)
+    --a: var(--z);
+
+[expanded] 
+div { (user agent stylesheet)
+    display: block;
+
+======== Inherited from body ========
+[expanded] 
+body { (<style>…</style>)
+/-- overloaded --/     --a: red;
+
+value of --a: undefined
+

@@ -1,0 +1,41 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package safe_browsing;
+
+// Everything below this comment was copied from the page
+// <https://developers.google.com/safe-browsing/developers_guide_v3>,
+// section "HTTP Response for Data" under "Response Body".
+
+// Chunk data encoding format for the shavar-proto list format.
+message ChunkData {
+  required int32 chunk_number = 1;
+
+  // The chunk type is either an add or sub chunk.
+  enum ChunkType {
+    ADD = 0;
+    SUB = 1;
+  }
+  optional ChunkType chunk_type = 2 [default = ADD];
+
+  // Prefix type which currently is either 4B or 32B.  The default is set
+  // to the prefix length, so it doesn't have to be set at all for most
+  // chunks.
+  enum PrefixType {
+    PREFIX_4B = 0;
+    FULL_32B = 1;
+  }
+  optional PrefixType prefix_type = 3 [default = PREFIX_4B];
+  // Stores all SHA256 add or sub prefixes or full-length hashes. The number
+  // of hashes can be inferred from the length of the hashes string and the
+  // prefix type above.
+  optional bytes hashes = 4;
+
+  // Sub chunks also encode one add chunk number for every hash stored above.
+  repeated int32 add_numbers = 5 [packed = true];
+}

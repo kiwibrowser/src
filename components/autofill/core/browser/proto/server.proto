@@ -1,0 +1,174 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package autofill;
+
+// The message is sent when a client needs to autofill forms on web pages and
+// asks the server about known field types.
+// Next available id: 11
+message AutofillQueryContents {
+  required string client_version = 1;
+  repeated group Form = 2 {
+    required fixed64 signature = 3;
+    repeated group Field = 4 {
+      required fixed32 signature = 5;
+      optional string name = 8;
+      optional string type = 9;  // Control type.
+    }
+  }
+}
+
+// This message is the result of an Autofill query. It holds the field type
+// information.
+// Next available id: 8
+message AutofillQueryResponseContents {
+  optional bool upload_required = 1;
+  repeated group Field = 2 {
+    required fixed32 overall_type_prediction = 3;
+    // Detailed list of all possible predictions (including
+    // |overall_type_prediction| as the first item).
+    message FieldPrediction { optional fixed32 type = 1; }
+    repeated FieldPrediction predictions = 7;
+  }
+}
+
+// This message contains information about the field types in a single form.
+// It is sent by the toolbar to contribute to the field type statistics.
+// Next available id: 29
+message AutofillUploadContents {
+  required string client_version = 1;
+  required fixed64 form_signature = 2;
+
+  // True if the autofill feature was used to fill this form, false otherwise.
+  required bool autofill_used = 3;
+
+  // A string representing a bit array of what personal information items
+  // the user has entered in the autofill settings dialog.
+  // The corresponding bit is set if the user has that particular
+  // item entered and is not set otherwise.
+  required string data_present = 4;
+
+  // List of the fields in the form and their types.
+  repeated group Field = 5 {
+    // Field identification inside the current form.
+    required fixed32 signature = 6;
+
+    // Type of the field, e.g. what type of personal information did the user
+    // enter in that field before form submission. There is a predefined
+    // enum of types located at
+    // components/autofill/core/browser/field_types.h
+    // AutoFillFieldType
+    required fixed32 autofill_type = 7;
+
+    // The value of the name attribute on the field, if present. Otherwise, the
+    // value of the id attribute. See HTMLFormControlElement::nameForAutofill.
+    optional string name = 8;
+
+    // The value of the autocomplete attribute on the field, if present.
+    optional string autocomplete = 9;
+
+    // The type of input control for this field (e.g. text, textarea, email).
+    optional string type = 10;
+
+    enum PasswordGenerationType {
+      NO_GENERATION = 0;
+      AUTOMATICALLY_TRIGGERED_GENERATION_ON_SIGN_UP_FORM = 1;
+      AUTOMATICALLY_TRIGGERED_GENERATION_ON_CHANGE_PASSWORD_FORM = 2;
+      MANUALLY_TRIGGERED_GENERATION_ON_SIGN_UP_FORM = 3;
+      MANUALLY_TRIGGERED_GENERATION_ON_CHANGE_PASSWORD_FORM = 4;
+      IGNORED_GENERATION_POPUP = 5;
+    }
+    // The type of password generation, if it happened.
+    optional PasswordGenerationType generation_type = 17;
+
+    enum FormClassifierOutcome {
+      NO_OUTCOME = 0;
+      NON_GENERATION_ELEMENT = 1;
+      GENERATION_ELEMENT = 2;
+    }
+    // The outcome of HTML parsing based form classifier.
+    optional FormClassifierOutcome form_classifier_outcome = 18;
+
+    // The value of the class attribute on the field, if present.
+    optional string css_classes = 19;
+
+    // The properties mask (i.e. whether the field was autofilled, user
+    // modified, etc.) See FieldPropertiesFlags.
+    optional uint32 properties_mask = 20;
+
+    // The value of the id attribute, if it differs from the name attribute.
+    // Otherwise, this field is absent.
+    optional string id = 21;
+
+    // True iff the user changed generated password. If there was no generation,
+    // the field is absent.
+    optional bool generated_password_changed = 22;
+
+    enum VoteType {
+      NO_INFORMATION = 0;
+      // A credential saved on one form (typically a signup form) was used on a
+      // login form. The vote applies to the first (signup) form.
+      CREDENTIALS_REUSED = 1;
+      // When reusing a credential, the username value is not the saved
+      // username, but another value, which appeared on the form where we saved.
+      // The correct field is voted for.
+      USERNAME_OVERWRITTEN = 2;
+      // In the save prompt, the user corrected the username value to another
+      // value from the form. The new field is voted for.
+      USERNAME_EDITED = 3;
+      // The username field was detected by the base heuristic (take the last
+      // non-password field before the first password field). The value is not
+      // used at this point.
+      BASE_HEURISTIC = 4;
+      // The username field was detected by HTML-based detector. The value is
+      // not used at this point.
+      HTML_CLASSIFIER = 5;
+      // A saved credential was used for the first time on a submitted form. The
+      // vote applies to the form being submitted.
+      FIRST_USE = 6;
+    }
+
+    // The type of password-related vote. If |autofill_type| is not a USERNAME
+    // or any PASSWORD vote, then the field is absent. This field describes the
+    // context of the vote.
+    optional VoteType vote_type = 23;
+  }
+  // Signature of the form action host (e.g. Hash64Bit("example.com")).
+  optional fixed64 action_signature = 13;
+
+  // Signature of the form which is used for password generation debugging.
+  // Currently is used when password generated on a password field of a
+  // registration form is used on a password field of a login form.
+  optional fixed64 login_form_signature = 14;
+
+  // Whether a form submission event was observed.
+  optional bool submission = 15;
+
+  // The form name.
+  optional string form_name = 16;
+
+  // True iff the the non-obfuscated password values were shown to the user.
+  optional bool passwords_revealed = 24;
+
+  // The section of noisified data about password attributes.
+  // Upload only one attribute and only when a password is saved first time.
+  // Used to adjust the password generator's settings to site's requirements.
+
+  // Whether the password has any lowercase letter.
+  optional bool password_has_lowercase_letter = 25;
+
+  // Whether the password has any uppercase letter.
+  optional bool password_has_uppercase_letter = 26;
+
+  // Whether the password has any digit.
+  optional bool password_has_numeric = 27;
+
+  // Whether the password has any special symbol.
+  optional bool password_has_special_symbol = 28;
+  // The end of the section of password attributes.
+}

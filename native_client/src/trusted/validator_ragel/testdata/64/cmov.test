@@ -1,0 +1,23 @@
+@hex:
+  48 0f 44 d8
+  49 0f 4b 07
+@dis:
+     0:	48 0f 44 d8                                  	cmove  %rax,%rbx
+     4:	49 0f 4b 07                                  	cmovnp (%r15),%rax
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # It is not considered zero-extending just in case.
+  0f 44 d8
+  41 8a 04 1f
+@dis:
+     0:	0f 44 d8                                     	cmove  %eax,%ebx
+     3:	41 8a 04 1f                                  	mov    (%r15,%rbx,1),%al
+@rdfa_output:
+  3: improper memory address - bad index
+  return code: 1
+@spec:
+  3: register %rbx should be restricted, while in fact None is restricted

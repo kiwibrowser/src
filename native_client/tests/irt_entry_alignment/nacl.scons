@@ -1,0 +1,35 @@
+# -*- python -*-
+# Copyright (c) 2015 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# ASM is hardcoded as x86 (see IRT, misaligned.S).
+if not env.Bit('build_x86'):
+  Return()
+
+# If bitcode is active, then the IRT will not be compiled.
+if env.Bit('bitcode') or env.Bit('nacl_glibc'):
+  Return()
+
+# Here, we link the IRT in the appropriate locations.
+env.Append(LINKFLAGS=['-Wl,-Trodata-segment=${IRT_BLOB_DATA_START}',
+                      '-Wl,-Ttext-segment=${IRT_BLOB_CODE_START}',
+                      '-nostdlib'])
+
+irt_misalignment_test_library = env.ComponentProgram(
+    'irt_misalignment_test', ['misaligned.S'])
+
+# Don't provide IRT, we provide it ourselves via -B.
+env.ClearBits('tests_use_irt')
+
+node = env.CommandSelLdrTestNacl(
+    'irt_misalignment_test.out',
+    env.File('${STAGING_DIR}/hello_world.nexe'),
+    sel_ldr_flags=['-B', irt_misalignment_test_library],
+    stdout_golden='',
+    exit_status='1')
+
+env.AddNodeToTestSuite(node, ['small_tests'],
+                       'run_irt_misalignment_test')

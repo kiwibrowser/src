@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="../assert_selection.js"></script>
+<div id="log"></div>
+<script>
+const isMac = navigator.platform.indexOf('Mac') === 0;
+selection_test(
+  [
+    '<div contenteditable="true" id="root">',
+        '<table border="1">',
+            '<tr>',
+                '<td>All the content in this editable region </td>',
+            '</tr>',
+         '</table>',
+         '<div id="div">|should be in one table cell.</div>',
+    '</div>'
+  ],
+  'Delete',
+  isMac
+    ? [
+        '<div contenteditable="true" id="root">',
+            '<table border="1">',
+                '<tbody>',
+                    '<tr>',
+                        '<td>All the content in this editable region |should be in one table cell.</td>',
+                    '</tr>',
+                '</tbody>',
+            '</table>',
+        '</div>'
+      ]
+    : [
+        '<div contenteditable="true" id="root">',
+            '<table border="1">',
+                '<tbody>',
+                    '<tr>',
+                        '<td>All the content in this editable region </td>',
+                    '</tr>',
+                '</tbody>',
+            '</table>',
+            '|should be in one table cell.',
+        '</div>'
+      ],
+  'Deleting when the caret is at the start of a paragraph just after a table' +
+  isMac
+    ? 'The content in the deleted paragraph should be moved into the last table cell unless that content is another table.'
+    : 'The content in the deleted paragraph should not be merged into the table above.');
+</script>

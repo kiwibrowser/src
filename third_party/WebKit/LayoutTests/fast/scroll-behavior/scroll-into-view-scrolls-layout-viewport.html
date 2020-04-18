@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<style>
+  body {
+    height: 800px;
+    width: 800px;
+  }
+  #box {
+    background-color: black;
+    top: 700px;
+    left: 100px;
+    height: 40px;
+    width: 40px;
+    position: absolute;
+  }
+</style>
+<script src="../../resources/js-test.js"></script>
+<script>
+  if (window.testRunner && window.internals) {
+    window.jsTestIsAsync = true;
+    testRunner.dumpAsText();
+    testRunner.waitUntilDone();
+    setPrintTestResultsLazily();
+  }
+
+  description("Test that element.scrollIntoView() only scrolls the layout\
+    viewport when the intertVisualViewport is set.");
+
+  function runTest() {
+    if (!window.testRunner || !window.internals) {
+      testFailed("This test requires test runner and internals");
+      finishJSTest();
+      return;
+    }
+    internals.setPageScaleFactor(2.0);
+    var target = document.getElementById("box");
+
+    window.scrollTo(0, 0);
+    internals.setVisualViewportOffset(0, 0);
+    target.scrollIntoView();
+    shouldBe('internals.visualViewportScrollX()', 'window.scrollX');
+    shouldBe('internals.visualViewportScrollY()', 'window.scrollY');
+    shouldBe('window.scrollX', '0');
+    shouldBeGreaterThan('window.scrollY', '0');
+    window.scrollTo(0, 0);
+    internals.setVisualViewportOffset(0, 0);
+    target.scrollIntoViewIfNeeded();
+    shouldBe('internals.visualViewportScrollX()', 'window.scrollX');
+    shouldBe('internals.visualViewportScrollY()', 'window.scrollY');
+    shouldBe('window.scrollX', '0');
+    shouldBeGreaterThan('window.scrollY', '0');
+
+    finishJSTest();
+  }
+
+  onload = runTest;
+</script>
+
+<div id="box"></div>

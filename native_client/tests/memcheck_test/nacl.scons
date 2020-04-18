@@ -1,0 +1,80 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# tests in this directory contain (inline) assembler
+if env.Bit('bitcode'):
+  Return()
+
+if not env.IsRunningUnderValgrind():
+  Return()
+
+if env.Bit('nacl_glibc'):
+  golden = env.File('memcheck_test.glibc.stderr.golden')
+else:
+  golden = env.File('memcheck_test.stderr.golden')
+
+memcheck_test_nexe = env.ComponentProgram('memcheck_test', 'memcheck_test.c',
+                                          EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl(
+    'memcheck_test.out',
+    memcheck_test_nexe,
+    stderr_golden=golden,
+    filter_group_only='true',
+    filter_regex=(
+      "'(Invalid [a-z]+ of size .+)|"
+      "( at )0x[01-9A-Fa-f]+: ([_a-zA-Z][_a-zA-Z01-9]+) \([^(]*\)|"
+      "( by )0x[01-9A-Fa-f]+: ([_a-zA-Z][_a-zA-Z01-9]+) \([^(]*\)|"
+      "( Address) 0x[01-9A-Fa-f]+( is.+)|"
+      "( Conditional jump or move depends.+)|"
+      "(VG_USERREQ__CLIENT_CALL.+)|"
+      "( .*BACKTRACE:)|"
+      "(ERROR SUMMARY: [01-9]+ errors from [01-9]+ contexts)|"
+      "(strcmp: .*)'"),
+    exit_status='1',
+    )
+
+# Assume that if we are specifying a special memcheck command (e.g., a
+# copy of valgrind built from valgrind.org sources, without the
+# NaCl-specific patches to check untrusted code), then this test will
+# not work.
+env.AddNodeToTestSuite(node, ['memcheck_bot_tests'], 'run_memcheck_test',
+                       is_broken=ARGUMENTS.get('memcheck_command') is not None)
+
+
+# Leak checker sanity test.
+if env.Bit('with_leakcheck'):
+  if ARGUMENTS.get('memcheck_trusted_only', ''):
+    # Bogus leak_test, since the buildbot_valgrind.sh script runs with
+    # run_leak_test as an explicit target, so declaring it broken with
+    # the is_broken mechanism does not work.  This is needed when
+    # memcheck_command is used to have testing done using a version of
+    # Valgrind that does not have the NaCl patches needed to trace
+    # into leaks in untrusted code.  See
+    # http://code.google.com/p/nativeclient/issues/detail?id=3158 for
+    # more information.
+    #
+    # TODO(evgeniy): decide whether this is useful in the long term,
+    # e.g., whether Valgrind/DWARF changes will again require its use,
+    # and if not, remove.
+    node = env.Command('leak_test.out',
+                       '/bin/true',
+                       '/bin/true')  # posix only but valgrind only runs there
+  else:
+    leak_test_nexe = env.ComponentProgram('leak_test', 'leak_test.c',
+                                          EXTRA_LIBS=['${NONIRT_LIBS}',
+                                                      '${PTHREAD_LIBS}'])
+    node = env.CommandSelLdrTestNacl(
+        'leak_test.out',
+        leak_test_nexe,
+        stderr_golden=env.File('leak_test.stderr.golden'),
+        filter_group_only='true',
+        filter_regex=(
+            "'(7,931,147 bytes in 1 blocks are definitely lost).*'"),
+        exit_status='1',
+        )
+
+  env.AddNodeToTestSuite(node, ['memcheck_bot_tests'], 'run_leak_test')

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<meta charset="UTF-8">
+<style>
+.parent {
+  --image: url('http://parent.png');
+}
+.target {
+  --image: url('http://underlying.png');
+}
+</style>
+<body>
+<script src="../interpolation/resources/interpolation-test.js"></script>
+<script>
+CSS.registerProperty({
+  name: '--image',
+  syntax: '<image>',
+  initialValue: "url('http://initial.png')",
+});
+
+assertInterpolation({
+  property: '--image',
+  from: neutralKeyframe,
+  to: "url('http://value.png')",
+}, [
+  {at: -0.3, is: "url('http://underlying.png')"},
+  {at: 0, is: "(url('http://underlying.png')"},
+  {at: 0.5, is: "-webkit-cross-fade(url('http://underlying.png'), url('http://value.png'), 0.5)"},
+  {at: 1, is: "url('http://value.png')"},
+  {at: 1.5, is: "url('http://value.png')"},
+]);
+
+assertInterpolation({
+  property: '--image',
+  from: 'initial',
+  to: "url('http://value.png')",
+}, [
+  {at: -0.3, is: "url('http://initial.png')"},
+  {at: 0, is: "url('http://initial.png')"},
+  {at: 0.5, is: "-webkit-cross-fade(url('http://initial.png'), url('http://value.png'), 0.5)"},
+  {at: 1, is: "url('http://value.png')"},
+  {at: 1.5, is: "url('http://value.png')"},
+]);
+
+assertInterpolation({
+  property: '--image',
+  from: 'inherit',
+  to: "url('http://value.png')",
+}, [
+  {at: -0.3, is: "url('http://parent.png')"},
+  {at: 0, is: "url('http://parent.png')"},
+  {at: 0.5, is: "-webkit-cross-fade(url('http://parent.png'), url('http://value.png'), 0.5)"},
+  {at: 1, is: "url('http://value.png')"},
+  {at: 1.5, is: "url('http://value.png')"},
+]);
+
+assertInterpolation({
+  property: '--image',
+  from: 'unset',
+  to: "url('http://value.png')",
+}, [
+  {at: -0.3, is: "url('http://initial.png')"},
+  {at: 0, is: "url('http://initial.png')"},
+  {at: 0.5, is: "-webkit-cross-fade(url('http://initial.png'), url('http://value.png'), 0.5)"},
+  {at: 1, is: "url('http://value.png')"},
+  {at: 1.5, is: "url('http://value.png')"},
+]);
+
+assertInterpolation({
+  property: '--image',
+  from: "url('http://a.png')",
+  to: "url('http://b.png')",
+}, [
+  {at: -0.3, is: "url('http://a.png')"},
+  {at: 0, is: "url('http://a.png')"},
+  {at: 0.5, is: "-webkit-cross-fade(url('http://a.png'), url('http://b.png'), 0.5)"},
+  {at: 1, is: "url('http://b.png')"},
+  {at: 1.5, is: "url('http://b.png')"},
+]);
+</script>
+</body>

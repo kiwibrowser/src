@@ -1,0 +1,39 @@
+# Please consult components/viz/README.md about allowable dependencies.
+
+include_rules = [
+  "+base",
+  "+cc/base",
+  "+cc/benchmarks",
+  "+cc/output",
+  "+cc/resources",
+  "+cc/scheduler",
+  "+components/viz/service/surfaces",
+  "+gpu/command_buffer/client",
+  "+gpu/command_buffer/common",
+  "+gpu/GLES2",
+  "+gpu/vulkan",
+  "+media/base",
+  "+skia",
+  "+third_party/khronos",
+  "+third_party/skia",
+  "+ui/latency",
+  "+ui/gl/ca_renderer_layer_params.h",
+  "+ui/gl/dc_renderer_layer_params.h",
+  "+ui/gl/trace_util.h",
+]
+
+specific_include_rules = {
+  "dc_layer_overlay.cc|overlay_unittest.cc": [
+    # TODO(danakj): gl_switches.h brings runtime flags into the compositor which
+    # makes testing coverage harder/less clear, it should not be here.
+    "+ui/gl/gl_switches.h",
+  ],
+  ".*_(unit|pixel|perf)test\.cc": [
+    "+cc/test",
+    "+components/viz/service/display_embedder",
+    "+components/viz/service/frame_sinks",
+    "+components/viz/test",
+    "+gpu/GLES2",
+    "+third_party/libyuv",
+  ],
+}

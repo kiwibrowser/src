@@ -1,0 +1,182 @@
+// Copyright (c) 2013 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef EXTENSIONS_BROWSER_API_DECLARATIVE_DEDUPING_FACTORY_H__
+#define EXTENSIONS_BROWSER_API_DECLARATIVE_DEDUPING_FACTORY_H__
+
+#include <stddef.h>
+
+#include <list>
+#include <string>
+
+#include "base/compiler_specific.h"
+#include "base/containers/hash_tables.h"
+#include "base/logging.h"
+#include "base/macros.h"
+#include "base/memory/ref_counted.h"
+#include "base/stl_util.h"
+
+namespace base {
+class Value;
+}  // namespace base
+
+namespace extensions {
+
+// Factory class that stores a cache of the last |N| created objects of each
+// kind. These objects need to be immutable, refcounted objects that are derived
+// from BaseClassT. The objects do not need to be RefCountedThreadSafe. If a new
+// instance of an object is created that is identical to a pre-existing object,
+// it is discarded and the pre-existing object is recycled.
+//
+// BaseClassT needs to provide a comparison operations. Like the following:
+//
+// class BaseClassT {
+//   virtual bool Equals(const BaseClassT* other) const;
+// };
+//
+// The unit test shows an example.
+template<typename BaseClassT>
+class DedupingFactory {
+ public:
+  // Factory methods for BaseClass instances. |value| contains e.g. the json
+  // dictionary that describes the object to be instantiated. |error| is used
+  // to return error messages in case the extension passed an action that was
+  // syntactically correct but semantically incorrect. |bad_message| is set to
+  // true in case |dict| does not confirm to the validated JSON specification.
+  typedef scoped_refptr<const BaseClassT>
+      (* FactoryMethod)(const std::string& instance_type,
+                        const base::Value* /* value */ ,
+                        std::string* /* error */,
+                        bool* /* bad_message */);
+
+  enum Parameterized {
+    // Two instantiated objects may be different and we need to check for
+    // equality to see whether we can recycle one.
+    IS_PARAMETERIZED,
+    // The objects are not parameterized, i.e. all created instances are the
+    // same and it is sufficient to create a single one.
+    IS_NOT_PARAMETERIZED
+  };
+
+  // Creates a DedupingFactory with a MRU cache of size |max_number_prototypes|
+  // per instance_type. If we find a match within the cache, the factory reuses
+  // that instance instead of creating a new one. The cache size should not be
+  // too large because we probe linearly whether an element is in the cache.
+  explicit DedupingFactory(size_t max_number_prototypes);
+  ~DedupingFactory();
+
+  void RegisterFactoryMethod(const std::string& instance_type,
+                             Parameterized parameterized,
+                             FactoryMethod factory_method);
+
+  scoped_refptr<const BaseClassT> Instantiate(const std::string& instance_type,
+                                              const base::Value* value,
+                                              std::string* error,
+                                              bool* bad_message);
+
+  void ClearPrototypes();
+
+ private:
+  typedef std::string InstanceType;
+  // Cache of previous prototypes in most-recently-used order. Most recently
+  // used objects are at the end.
+  typedef std::list<scoped_refptr<const BaseClassT> > PrototypeList;
+  typedef base::hash_map<InstanceType, PrototypeList> ExistingPrototypes;
+  typedef base::hash_map<InstanceType, FactoryMethod> FactoryMethods;
+  typedef base::hash_set<InstanceType> ParameterizedTypes;
+
+  const size_t max_number_prototypes_;
+  ExistingPrototypes prototypes_;
+  FactoryMethods factory_methods_;
+  ParameterizedTypes parameterized_types_;
+
+  DISALLOW_COPY_AND_ASSIGN(DedupingFactory);
+};
+
+template<typename BaseClassT>
+DedupingFactory<BaseClassT>::DedupingFactory(size_t max_number_prototypes)
+    : max_number_prototypes_(max_number_prototypes) {}
+
+template<typename BaseClassT>
+DedupingFactory<BaseClassT>::~DedupingFactory() {}
+
+template<typename BaseClassT>
+void DedupingFactory<BaseClassT>::RegisterFactoryMethod(
+    const std::string& instance_type,
+    typename DedupingFactory<BaseClassT>::Parameterized parameterized,
+    FactoryMethod factory_method) {
+  DCHECK(!base::ContainsKey(factory_methods_, instance_type));
+  factory_methods_[instance_type] = factory_method;
+  if (parameterized == IS_PARAMETERIZED)
+    parameterized_types_.insert(instance_type);
+}
+
+template<typename BaseClassT>
+scoped_refptr<const BaseClassT> DedupingFactory<BaseClassT>::Instantiate(
+    const std::string& instance_type,
+    const base::Value* value,
+    std::string* error,
+    bool* bad_message) {
+  typename FactoryMethods::const_iterator factory_method_iter =
+      factory_methods_.find(instance_type);
+  if (factory_method_iter == factory_methods_.end()) {
+    *error = "Invalid instance type " + instance_type;
+    *bad_message = true;
+    return scoped_refptr<const BaseClassT>();
+  }
+
+  FactoryMethod factory_method = factory_method_iter->second;
+
+  PrototypeList& prototypes = prototypes_[instance_type];
+
+  // We can take a shortcut for objects that are not parameterized. For those
+  // only a single instance may ever exist so we can simplify the creation
+  // logic.
+  if (!base::ContainsKey(parameterized_types_, instance_type)) {
+    if (prototypes.empty()) {
+      scoped_refptr<const BaseClassT> new_object =
+          (*factory_method)(instance_type, value, error, bad_message);
+      if (!new_object.get() || !error->empty() || *bad_message)
+        return scoped_refptr<const BaseClassT>();
+      prototypes.push_back(new_object);
+    }
+    return prototypes.front();
+  }
+
+  // Handle parameterized objects.
+  scoped_refptr<const BaseClassT> new_object =
+      (*factory_method)(instance_type, value, error, bad_message);
+  if (!new_object.get() || !error->empty() || *bad_message)
+    return scoped_refptr<const BaseClassT>();
+
+  size_t length = 0;
+  for (typename PrototypeList::iterator i = prototypes.begin();
+       i != prototypes.end();
+       ++i) {
+    if ((*i)->Equals(new_object.get())) {
+      // Move the old object to the end of the queue so that it gets
+      // discarded later.
+      scoped_refptr<const BaseClassT> old_object = *i;
+      prototypes.erase(i);
+      prototypes.push_back(old_object);
+      return old_object;
+    }
+    ++length;
+  }
+
+  if (length >= max_number_prototypes_)
+    prototypes.pop_front();
+  prototypes.push_back(new_object);
+
+  return new_object;
+}
+
+template<typename BaseClassT>
+void DedupingFactory<BaseClassT>::ClearPrototypes() {
+  prototypes_.clear();
+}
+
+}  // namespace extensions
+
+#endif  // EXTENSIONS_BROWSER_API_DECLARATIVE_DEDUPING_FACTORY_H__

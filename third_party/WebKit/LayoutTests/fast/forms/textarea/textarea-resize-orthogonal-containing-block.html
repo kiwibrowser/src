@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<body>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+
+<div id="res" style="-webkit-writing-mode: vertical-lr; width:800px; height:700px">
+<textarea style="-webkit-writing-mode: horizontal-tb; width:400px; height:400px; min-width:10%; min-height:10%" id="textInputID">
+Some text
+</textarea>
+</div>
+
+<script>
+function drag(startX, startY, destX, destY, callback) {
+  chrome.gpuBenchmarking.pointerActionSequence([{source: 'mouse', actions:[
+    {name: 'pointerDown', x: startX, y: startY},
+    {name: 'pointerMove', x: destX, y: destY},
+    {name: 'pointerUp'}]}],
+    callback);
+}
+
+var t = async_test('Test for resizing the TEXTAREA below its initial size and with orthogonal containing block.');
+t.step(() => {
+  assert_exists(window, 'chrome');
+  assert_exists(chrome, 'gpuBenchmarking');
+
+  var textArea = document.getElementById("textInputID");
+  var startX = textArea.offsetLeft + 400;
+  var startY = textArea.offsetTop + 400;
+  drag(startX, startY, startX - 395, startY - 395, t.step_func_done(() => {
+    // The min-width/min-height includes padding and border and width/height
+    // does not include padding and border.
+    // So when we set say min-width = 200px it means actual minimum width of box
+    // to be 194px (as 2px padding and 1px border on all side).
+    // Also the containing block is orthogonal to the textarea so min-width will
+    // be 10% of height of containing block and min-height is 10% of width of
+    // containing block.
+    assert_equals(textArea.style.width, '74px');
+    assert_equals(textArea.style.height, '64px');
+  }));
+});
+</script>
+</body>
+</html>

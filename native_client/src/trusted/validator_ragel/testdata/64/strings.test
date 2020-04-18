@@ -1,0 +1,145 @@
+@hex:
+  # Test string operations with 1 memory operand
+  89 ff \\
+  49 8d 3c 3f \\
+  ae
+@dis:
+     0:	89 ff                                        	mov    %edi,%edi
+     2:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     6:	ae                                           	scas   %es:(%rdi),%al
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  01 ff \\
+  49 8d 3c 3f \\
+  ae
+@dis:
+     0:	01 ff                                        	add    %edi,%edi
+     2:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     6:	ae                                           	scas   %es:(%rdi),%al
+@rdfa_output:
+  6: unrecognized instruction
+  return code: 1
+@spec:
+  6: ('segments in memory references are not allowed', Instruction(0x6: ae  scas %es:(%rdi),%al))
+----------------------------------------------------------------------
+@hex:
+  89 ff \\
+  4c 01 ff \\
+  ae
+@dis:
+     0:	89 ff                                        	mov    %edi,%edi
+     2:	4c 01 ff                                     	add    %r15,%rdi
+     5:	ae                                           	scas   %es:(%rdi),%al
+@rdfa_output:
+  5: unrecognized instruction
+  return code: 1
+@spec:
+  5: ('segments in memory references are not allowed', Instruction(0x5: ae  scas %es:(%rdi),%al))
+----------------------------------------------------------------------
+@hex:
+  89 ff \\
+  4a 8d 3c 3f \\
+  ae
+@dis:
+     0:	89 ff                                        	mov    %edi,%edi
+     2:	4a 8d 3c 3f                                  	lea    (%rdi,%r15,1),%rdi
+     6:	ae                                           	scas   %es:(%rdi),%al
+@rdfa_output:
+  6: unrecognized instruction
+  return code: 1
+@spec:
+  6: ('segments in memory references are not allowed', Instruction(0x6: ae  scas %es:(%rdi),%al))
+----------------------------------------------------------------------
+@hex:
+  # Test string operations with 2 memory operands.
+  89 f6 \\
+  4c 01 fe \\
+  89 ff \\
+  4c 01 ff \\
+  a5
+@dis:
+     0:	89 f6                                        	mov    %esi,%esi
+     2:	4c 01 fe                                     	add    %r15,%rsi
+     5:	89 ff                                        	mov    %edi,%edi
+     7:	4c 01 ff                                     	add    %r15,%rdi
+     a:	a5                                           	movsl  %ds:(%rsi),%es:(%rdi)
+@rdfa_output:
+  a: unrecognized instruction
+  return code: 1
+@spec:
+  a: ('segments in memory references are not allowed', Instruction(0xa: a5  movsl %ds:(%rsi),%es:(%rdi)))
+----------------------------------------------------------------------
+@hex:
+  89 f6 \\
+  4c 01 fe \\
+  89 ff \\
+  4c 01 ff \\
+  a7
+@dis:
+     0:	89 f6                                        	mov    %esi,%esi
+     2:	4c 01 fe                                     	add    %r15,%rsi
+     5:	89 ff                                        	mov    %edi,%edi
+     7:	4c 01 ff                                     	add    %r15,%rdi
+     a:	a7                                           	cmpsl  %es:(%rdi),%ds:(%rsi)
+@rdfa_output:
+  a: unrecognized instruction
+  return code: 1
+@spec:
+  a: ('segments in memory references are not allowed', Instruction(0xa: a7  cmpsl %es:(%rdi),%ds:(%rsi)))
+----------------------------------------------------------------------
+@hex:
+  89 f6 \\
+  49 8d 34 37 \\
+  89 ff \\
+  49 8d 3c 3f \\
+  a7
+@dis:
+     0:	89 f6                                        	mov    %esi,%esi
+     2:	49 8d 34 37                                  	lea    (%r15,%rsi,1),%rsi
+     6:	89 ff                                        	mov    %edi,%edi
+     8:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     c:	a7                                           	cmpsl  %es:(%rdi),%ds:(%rsi)
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  89 ff \\
+  49 8d 3c 3f \\
+  89 f6 \\
+  49 8d 34 37 \\
+  a7
+@dis:
+     0:	89 ff                                        	mov    %edi,%edi
+     2:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     6:	89 f6                                        	mov    %esi,%esi
+     8:	49 8d 34 37                                  	lea    (%r15,%rsi,1),%rsi
+     c:	a7                                           	cmpsl  %es:(%rdi),%ds:(%rsi)
+@rdfa_output:
+  c: unrecognized instruction
+  return code: 1
+@spec:
+  c: ('segments in memory references are not allowed', Instruction(0xc: a7  cmpsl %es:(%rdi),%ds:(%rsi)))
+----------------------------------------------------------------------
+@hex:
+  01 f6 \\
+  49 8d 34 37 \\
+  01 ff \\
+  49 8d 3c 3f \\
+  a7
+@dis:
+     0:	01 f6                                        	add    %esi,%esi
+     2:	49 8d 34 37                                  	lea    (%r15,%rsi,1),%rsi
+     6:	01 ff                                        	add    %edi,%edi
+     8:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     c:	a7                                           	cmpsl  %es:(%rdi),%ds:(%rsi)
+@rdfa_output:
+  c: unrecognized instruction
+  return code: 1
+@spec:
+  c: ('segments in memory references are not allowed', Instruction(0xc: a7  cmpsl %es:(%rdi),%ds:(%rsi)))

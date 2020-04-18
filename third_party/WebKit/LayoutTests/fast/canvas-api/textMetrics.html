@@ -1,0 +1,180 @@
+<!DOCTYPE HTML>
+<head>
+<meta charset="UTF-8">
+<style>
+@font-face {
+  font-family: Libertine;
+  src: url('../../third_party/Libertine/LinLibertine_R.woff');
+}
+</style>
+</head>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script>
+
+function getMetric(ctx, text, baseline, align, rtl, metric) {
+  ctx.font = '50px Libertine';
+  ctx.textBaseline = baseline;
+  ctx.textAlign = align;
+  ctx.direction = rtl ? "rtl": "ltr";
+
+  const tm = ctx.measureText(text);
+  tm.actualBoundingBoxWidth = Math.abs(tm.actualBoundingBoxRight + tm.actualBoundingBoxLeft);
+  tm.actualBoundingBoxHeight = Math.abs(tm.actualBoundingBoxDescent + tm.actualBoundingBoxAscent);
+
+  return tm[metric];
+}
+
+function testMetric(name, ctx, text, baseline, align, rtl, metric, expected_value, epsilon = 0) {
+  const value = getMetric(ctx, text, baseline, align, rtl, metric);
+  assert_approx_equals(value, expected_value, epsilon ? Math.ceil(epsilon * expected_value) : 1.0,
+    name + ": " + metric + " for '" + text +
+    "' (" + baseline + ", " + align + ")");
+  return value;
+}
+
+const kAligns = [ "left", "right", "center", "start", "end" ];
+const kBaselines =  ['top','hanging','middle','alphabetic',
+                     'ideographic','bottom'];
+
+// Those bbox are given from alphabetic,left.
+// bbox = [ left, right, ascent, descent ].
+const kTexts = [
+  { text: "", bbox: [0, 0, 0, 0], rtl: false },
+  { text: "hello", bbox: [0, 101, 35, 1], rtl: false },
+  { text: "gypsy", bbox: [0, 122, 24, 12], rtl: false },
+  { text: "傳統是假的", bbox: [0, 250, 42, 7], rtl: false },
+  { text: "フェミニズム", bbox: [0, 300, 42, 3], rtl: false },
+  { text: "एक आम भाषा", bbox: [0, 240, 34, 5], rtl: false },
+  { text: "ليس في اسمنا", bbox: [0, 221, 41, 12], rtl: true },
+]
+
+function forEachExample(fn) {
+  for (const ex of kTexts) {
+    for (const bline of kBaselines) {
+      for (const align of kAligns) {
+        fn(ex, bline, align);
+      }
+    }
+  }
+}
+
+// Widths shouldn't change over baseline/align.
+function testWidth(ctx) {
+  forEachExample((ex, bline, align) => {
+    testMetric("width", ctx, ex.text, bline, align, ex.rtl, "width", ex.bbox[1] + ex.bbox[0]);
+  });
+}
+
+// Reality check that the bounding box we are using for input
+// match the returned values with a big confidence interval.
+// If it does, we adapt to the actual values to accomodate for different OSes.
+function testAndFixBasicExpectations(ctx) {
+  const max_diff = 0.75;
+  for (const ex of kTexts) {
+    ex.bbox[0] = testMetric("expectations", ctx, ex.text, "alphabetic", "left", ex.rtl, "actualBoundingBoxLeft", ex.bbox[0], max_diff);
+    ex.bbox[1] = testMetric("expectations", ctx, ex.text, "alphabetic", "left", ex.rtl, "actualBoundingBoxRight", ex.bbox[1], max_diff);
+    ex.bbox[2] = testMetric("expectations", ctx, ex.text, "alphabetic", "left", ex.rtl, "actualBoundingBoxAscent", ex.bbox[2], max_diff);
+    ex.bbox[3] = testMetric("expectations", ctx, ex.text, "alphabetic", "left", ex.rtl, "actualBoundingBoxDescent", ex.bbox[3], max_diff);
+  }
+}
+
+
+function testBaselines(ctx) {
+  // on their own baseline, metrics should be 0.
+  for (const ex of kTexts) {
+    for (const bline of ["alphabetic", "ideographic", "hanging"]) {
+      for (const align of kAligns) {
+        testMetric("own baselines", ctx, ex.text, bline, align, ex.rtl, bline + "Baseline", 0);
+      }
+    }
+  }
+
+  // Those 3 baselines are font size dependent, so everything should be fixed.
+  forEachExample((ex, _, align) => {
+    testMetric("top baseline", ctx, ex.text, "top", align, ex.rtl, "alphabeticBaseline", -44);
+  });
+
+  forEachExample((ex, _, align) => {
+    testMetric("middle baseline", ctx, ex.text, "middle", align, ex.rtl, "alphabeticBaseline", -15);
+  });
+
+  forEachExample((ex, _, align) => {
+    testMetric("bottom baseline", ctx, ex.text, "bottom", align, ex.rtl, "alphabeticBaseline", 13);
+  });
+}
+
+function testBoundingBox(ctx) {
+  // Width/Height should remain the same across baseline/align.
+  forEachExample((ex, bline, align) => {
+    testMetric("boundingbox", ctx, ex.text, bline, align, ex.rtl, "actualBoundingBoxWidth",
+      ex.bbox[1] + ex.bbox[0]);
+    testMetric("boundingbox", ctx, ex.text, bline, align, ex.rtl, "actualBoundingBoxHeight",
+      ex.bbox[2] + ex.bbox[3]);
+  });
+
+  // Left changes depending on what is the alignment.
+  forEachExample((ex, bline, align) => {
+    let left = 0;
+    let calign = align;
+    if (align == "start") calign = ex.rtl ? "right" : "left";
+    if (align == "end") calign = ex.rtl ? "left" : "right";
+
+    if (calign == "left") left = 0;
+    else if (calign == "right") left = ex.bbox[1] + ex.bbox[0];
+    else if (calign == "center") left = (ex.bbox[1] + ex.bbox[0])/2.0;
+
+    testMetric("boundigbox alignment", ctx, ex.text, bline, align, ex.rtl, "actualBoundingBoxLeft", left);
+  });
+
+  // Right changes depending on what is the alignment.
+  forEachExample((ex, bline, align) => {
+    let right = 0;
+    let calign = align;
+    if (align == "start") calign = ex.rtl ? "right" : "left";
+    if (align == "end") calign = ex.rtl ? "left" : "right";
+
+    if (calign == "left") right = ex.bbox[1] + ex.bbox[0];
+    else if (calign == "right") right = 0;
+    else if (calign == "center") right = (ex.bbox[1] + ex.bbox[0])/2.0;
+
+    testMetric("boundingbox alignment", ctx, ex.text, bline, align, ex.rtl, "actualBoundingBoxRight", right);
+  });
+}
+
+// fontAscent/Descent always includes actual.
+function testFontAscentDescent(ctx) {
+  forEachExample((ex, bline, align) => {
+    const font_asc = getMetric(ctx, ex.text, bline, align, ex.rtl, "fontBoundingBoxAscent");
+    const font_des = getMetric(ctx, ex.text, bline, align, ex.rtl, "fontBoundingBoxAscent");
+    const actual_asc = getMetric(ctx, ex.text, bline, align, ex.rtl, "actualBoundingBoxAscent");
+    const actual_des = getMetric(ctx, ex.text, bline, align, ex.rtl, "actualBoundingBoxAscent");
+
+    assert_greater_than(font_asc, actual_asc, "font_asc > actual_asc for '" + ex.text + "'");
+    assert_greater_than(font_des + font_asc, actual_asc + actual_des, "font_end > actal_end '" + ex.text + "'");
+  });
+}
+
+function measureMetrics(ctx) {
+  testAndFixBasicExpectations(ctx);
+  testWidth(ctx);
+  testBaselines(ctx);
+  testBoundingBox(ctx);
+  testFontAscentDescent(ctx);
+  // TODO(fserb): missing hanging/ideographic baseline tests.
+  // TODO(fserb): missing emHeight tests.
+}
+
+async_test(t => {
+    var canvas = document.createElement('canvas');
+    canvas.width = 100;
+    canvas.height = 100;
+    var ctx = canvas.getContext('2d');
+    ctx.font = '50px Libertine';
+    // Kick off loading of the font
+    ctx.fillText(" ", 0, 0);
+    document.fonts.addEventListener('loadingdone', t.step_func_done(function() {
+        measureMetrics(ctx);
+    }));
+}, "Test all attributes of TextMetrics.");
+</script>

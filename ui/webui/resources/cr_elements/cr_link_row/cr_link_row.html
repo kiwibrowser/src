@@ -1,0 +1,91 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+
+<link rel="import" href="chrome://resources/cr_elements/cr_icons_css.html">
+<link rel="import" href="chrome://resources/cr_elements/hidden_style_css.html">
+<link rel="import" href="chrome://resources/cr_elements/shared_vars_css.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-behaviors/paper-ripple-behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-styles/default-theme.html">
+
+<dom-module id="cr-link-row">
+  <template strip-whitespace="">
+    <style include="cr-hidden-style cr-icons">
+      :host {
+        align-items: center;
+        align-self: stretch;
+        display: block;
+        flex: 1;
+      }
+
+      :host > button {
+        background: none;
+        border: none;
+        color: inherit;
+        cursor: pointer;
+        display: flex;
+        font-family: inherit;
+        font-size: 100%;  /* Specifically for Mac OSX, harmless elsewhere. */
+        line-height: 154%;  /* 20px. */
+        margin: 0;
+        min-height: var(--cr-section-min-height);
+        outline: none;
+        padding: 0 var(--cr-section-padding);
+        width: 100%;
+      }
+
+      :host([disabled]) {
+        color: var(--paper-grey-500);
+        cursor: auto;
+        pointer-events: none;
+      }
+
+      #icon {
+        /* The |_rippleContainer| must be position relative. */
+        position: relative;
+      }
+
+      #label,
+      #subLabel {
+        display: flex;
+      }
+
+      #labelWrapper {
+        flex: 1;
+        flex-basis: 0.000000001px;
+        text-align: start;
+      }
+
+      #outer {
+        align-items: center;
+        display: flex;
+        min-height: var(--cr-section-two-line-min-height);
+        width: 100%;
+      }
+
+      #outer[noSubLabel] {
+        min-height: var(--cr-section-min-height);
+      }
+
+      paper-ripple {
+        opacity: 0.6;
+      }
+
+      #subLabel {
+        /* TODO(dschuyler): replace with: @apply --cr-secondary-text; */
+        color: var(--paper-grey-600);
+        font-weight: 400;
+      }
+    </style>
+    <button disabled="[[disabled]]">
+      <div id="outer" noSubLabel$="[[!subLabel]]">
+        <div id="labelWrapper" hidden="[[!label]]">
+          <div id="label" class="label">[[label]]</div>
+          <div id="subLabel" class="secondary label">[[subLabel]]</div>
+        </div>
+        <slot></slot>
+        <div id="icon" class$="cr-icon [[iconClass]]" aria-hidden="true">
+        </div>
+      </div>
+    </button>
+  </template>
+  <script src="cr_link_row.js"></script>
+</dom-module>

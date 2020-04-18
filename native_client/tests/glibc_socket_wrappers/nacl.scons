@@ -1,0 +1,29 @@
+# -*- python -*-
+# Copyright 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# http://code.google.com/p/nativeclient/issues/detail?id=2755
+if env.Bit('bitcode'):
+  Return()
+
+# There is no sock64 in newlib
+if not env.Bit('nacl_glibc'):
+  Return()
+
+# This tests the obsolete nacl-glibc ad hoc mechanism for overriding
+# its socket-related functions.  The new glibc (currently ARM only)
+# will only support the nacl_interface_ext_supply mechanism.
+if not env.Bit('build_x86'):
+  Return()
+
+test_sock_nexe = env.ComponentProgram('test_sock', 'test_sock.c')
+
+test_sock = env.CommandSelLdrTestNacl(
+    'test_sock.out',
+     test_sock_nexe,
+     args=[env.File('test_sock_data')])
+
+env.AddNodeToTestSuite(test_sock, ['small_tests'], 'run_sock_test')

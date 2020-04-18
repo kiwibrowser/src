@@ -1,0 +1,181 @@
+/* Copyright 2013 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ *
+ * This contains common styling for all the OOBE screens. */
+
+:root {
+  --oobe-roboto-medium: 500 12px Roboto;
+  --oobe-roboto-bold: 700 12px Roboto;
+  --oobe-text-button-focused-border-color:
+      rgba(66, 133, 244, 0.4); /* #4284f4 */
+}
+
+.step {
+  box-sizing: border-box;
+  position: absolute;
+}
+
+.step.animated:not(.faded) {
+  transition: transform 200ms ease-in-out,
+              opacity 200ms ease-in-out,
+              visibility 200ms ease-in-out;
+}
+
+.step.hidden {
+  visibility: hidden;
+}
+
+.faded,
+.left,
+.right {
+  opacity: 0;
+}
+
+.step.right {
+  transform: translateX(50px);
+}
+
+.step.left {
+  transform: translateX(-50px)
+}
+
+.step.fullscreen {
+  height: 100%;
+  left: 0;
+  right: 0;
+  top: 0;
+  width: 100%;
+}
+
+.step-controls {
+  bottom: 21px;
+  box-sizing: border-box;
+  display: flex;
+  height: 28px;
+  justify-content: flex-end;
+  padding-right: 34px;  /* Double the padding of .step */
+  position: absolute;
+  width: 100%;
+}
+
+html[dir=rtl] .step-controls {
+  /* Hack as -webkit-padding-end doesn't catch direction. crbug.com/363836 */
+  padding-left: 34px;
+}
+
+.animation .step-controls button {
+  /* Don't grey out disabled buttons during animation. */
+  color: buttontext !important;
+}
+
+.step.loading .step-contents,
+.step.loading .step-controls,
+.step.loading .step-extra-controls {
+  visibility: hidden;
+}
+
+.step:not(.loading) #user-images-loading {
+  visibility: hidden;
+}
+
+.step:not(.loading) #eula-busy {
+  visibility: hidden;
+}
+
+.step-loading {
+  align-items: center;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+/* Fixes perfomance problem caused by http://crbug.com/229405 . */
+.step.hidden .throbber,
+.step.hidden .spinner,
+.step.hidden .inline-spinner {
+  display: none;
+}
+
+#security-info a,
+#eula a,
+.step-extra-controls a {
+  color: rgb(49, 106, 197); /* same as 'Learn more' link */
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.step-extra-controls {
+  bottom: 26px;
+  left: 49px;
+  position: absolute;
+}
+
+/* EULA screen extra controls have 2 elements
+   so they require different alignment. */
+#eula-extra-controls {
+  bottom: 17px;
+}
+
+#security-info a:focus,
+#eula a:focus,
+.step-extra-controls a:focus {
+  /* Note: May use 1px solid here. */
+  outline-color: rgb(77, 144, 254);
+  transition: outline-color 200ms;
+}
+
+.step-extra-controls > *:not(:first-child) {
+  margin-top: 7px;
+}
+
+html[dir=rtl] .step-extra-controls {
+  left: auto;
+  right: 49px;
+}
+
+#oobe.autolaunch #autolaunch-confirm-button,
+#oobe.autolaunch #autolaunch-cancel-button,
+#oobe.connect #continue-button,
+#oobe.eula #accept-button,
+#oobe.eula #back-button,
+#oobe.kiosk-enable #kiosk-cancel-button,
+#oobe.kiosk-enable #kiosk-enable-button,
+#oobe.user-image #ok-button {
+  display: block;
+}
+
+#autolaunch-confirm-button,
+#back-button,
+#kiosk-enable-button,
+#reset-button,
+#password-changed-back-button,
+#tos-back-button {
+  -webkit-margin-end: 8px;
+}
+
+.menu-area {
+  margin: 5px;
+}
+
+.menu-control {
+  color: #444;
+  font-family: inherit;
+  line-height: 20px;
+  position: relative;
+  width: 250px;
+}
+
+html[highlight=strong] #security-info a:focus,
+html[highlight=strong] #eula a:focus,
+html[highlight=strong] .step-extra-controls a:focus,
+html[highlight=strong] .menu-control:focus,
+html[highlight=strong] input[type='button']:focus,
+html[highlight=strong] button:focus {
+  box-shadow: 0 0 23px rgb(77, 144, 254) !important;
+}
+

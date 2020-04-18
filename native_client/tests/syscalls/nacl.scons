@@ -1,0 +1,308 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import multiprocessing
+import os
+
+Import('env')
+
+time_test_is_broken_on_this_os=False
+if 'TRUSTED_ENV' in env and env['TRUSTED_ENV'].Bit('windows'):
+  time_test_is_broken_on_this_os=True
+
+env.ComponentLibrary('syscall_test_framework', ['test.cc'])
+
+env.Append(CPPDEFINES=[['NONSFI_MODE',
+                        str(int(env.Bit('pnacl_unsandboxed') or
+                                env.Bit('nonsfi_nacl')))]])
+
+# The syscall tests need to know if they are compiling with the IRT
+# since glibc only partially functions without the IRT and therefore
+# some tests don't make sense.
+env.Append(CPPDEFINES=[['TESTS_USE_IRT', str(int(env.Bit('tests_use_irt')))]])
+
+syscalls_nexe = env.ComponentProgram('syscalls',
+                                     'syscalls.cc',
+                                     EXTRA_LIBS=['${PTHREAD_LIBS}',
+                                                 '${NONIRT_LIBS}'])
+
+# Creating a R/W test file in the output directory.
+# Because this test gets built on one platform and run on another (arm),
+# explaining to scons that this file is a dependency of the build and not
+# a test is tricky. As a simple work-around, the test inputs have been made
+# a 'default' scons target.
+# TODO(bradnelson): find a better way to make the plumbing on this work.
+inputs = env.Command(env.File('file_ok_rdwr.txt'), env.File('file_ok.txt'),
+           [Copy(env.File('file_ok_rdwr.txt'), env.File('file_ok.txt')),
+            Chmod(env.File('file_ok_rdwr.txt'), 0644)])
+Default(inputs)
+
+# syscalls_test exercise open/read/write, so need filesystem access
+# via the debug flag to sel_ldr
+node = env.CommandSelLdrTestNacl(
+    'syscalls_test.out',
+    syscalls_nexe,
+    # Arg 1) Test file name
+    # Arg 2) 'w' if running on windows, else 'p'.
+    args=[env.File('file_ok_rdwr.txt'),
+          'w' if env.Bit('host_windows') else 'p'],
+    sel_ldr_flags=['-a'])
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_syscall_test')
+
+# getpid() works with nacl-glibc, but only via the IRT (there is no
+# direct syscall version).
+getpid_is_broken = env.Bit('nacl_glibc') and not env.Bit('tests_use_irt')
+
+getpid_test_nexe = env.ComponentProgram('getpid_test',
+                                        ['getpid_test.cc'],
+                                        EXTRA_LIBS=['syscall_test_framework',
+                                                    '${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl(
+    'getpid_test.out',
+    getpid_test_nexe,
+    # Pass '-a' to enable the getpid() syscall.
+    sel_ldr_flags=['-a'])
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_getpid_test',
+                       is_broken=getpid_is_broken)
+
+raw_syscall_objects = env.RawSyscallObjects(['getpid_test.cc'])
+raw_getpid_test_nexe = env.ComponentProgram(
+                           'raw_getpid_test',
+                           raw_syscall_objects,
+                           EXTRA_LIBS=['syscall_test_framework',
+                                       '${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl('raw_getpid_test.out',
+                                 raw_getpid_test_nexe,
+                                 # Pass '-a' to enable the getpid() syscall.
+                                 sel_ldr_flags=['-a'])
+
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_raw_getpid_test')
+
+# some tests need to run without -a, but glibc requires -a.
+secure_tests_broken = (
+    'TRUSTED_ENV' in env and
+    env['TRUSTED_ENV'].Bit('coverage_enabled') and
+    env.Bit('host_mac')) or env.Bit('nacl_glibc')
+
+getpid_disabled_test_nexe = env.ComponentProgram(
+    'getpid_disabled_test', ['getpid_disabled_test.c'],
+    EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl('getpid_disabled_test.out',
+                                 getpid_disabled_test_nexe)
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_getpid_disabled_test',
+                       is_broken=secure_tests_broken)
+
+syscalls_secure_nexe = env.ComponentProgram('syscalls_secure_test',
+                                            ['syscalls_secure.c'],
+                                            EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl('syscalls_secure.out', syscalls_secure_nexe)
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_syscall_secure_test',
+                       is_broken=secure_tests_broken)
+
+# The next few tests test the exit syscall.
+# The first one checks for exit success.
+exit_test_nexe = env.ComponentProgram('exit_test', ['exit_test.cc'],
+                                      EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl('exit_success_test.out', exit_test_nexe)
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_exit_success_test')
+
+# The next two test positive and negative return values.
+node = env.CommandSelLdrTestNacl(
+    'exit_one_test.out',
+    exit_test_nexe,
+    args=['1'],
+    exit_status='1',
+    )
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_exit_one_test')
+
+# The last one tests some unusually large number.
+node = env.CommandSelLdrTestNacl(
+    'exit_large_test.out',
+    exit_test_nexe,
+    args=['123'],
+    exit_status='123',
+    )
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_exit_large_test')
+
+# Test the semaphore system calls.
+semaphore_tests_nexe = env.ComponentProgram(
+    'semaphore_tests',
+    ['semaphore_tests.cc'],
+    EXTRA_LIBS=['${PTHREAD_LIBS}', 'syscall_test_framework', '${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+      'semaphore_tests.out',
+      semaphore_tests_nexe,
+      )
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_semaphore_tests',
+# This test is flaky on mac10.7-newlib-dbg-asan.
+# See https://code.google.com/p/nativeclient/issues/detail?id=3906
+                         is_broken=(env.Bit('asan') and env.Bit('host_mac')))
+
+mem_test_nexe = env.ComponentProgram('mem_test',
+                                     ['mem_test.cc'],
+                                     EXTRA_LIBS=['syscall_test_framework',
+                                                 '${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl('mem_test.out',
+                                 mem_test_nexe)
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_mem_test')
+
+nonstable_env = env.Clone()
+if nonstable_env.SetNonStableBitcodeIfAllowed():
+  if nonstable_env.Bit('bitcode'):
+    # sysbrk_test.cc has an external reference to "end", a symbol
+    # defined by the native linker, which is disallowed by PNaCl's
+    # ABI.
+    nonstable_env.Append(LINKFLAGS=['--pnacl-disable-abi-check'])
+  sysbrk_test_nexe = nonstable_env.ComponentProgram(
+      'sysbrk_test', ['sysbrk_test.cc'],
+      EXTRA_LIBS=['syscall_test_framework',
+                  '${NONIRT_LIBS}',
+                  'nacl_sys_private'])
+  node = nonstable_env.CommandSelLdrTestNacl('sysbrk_test.out',
+                                             sysbrk_test_nexe)
+  nonstable_env.AddNodeToTestSuite(node,
+                                   ['small_tests', 'sel_ldr_tests'],
+                                   'run_sysbrk_test')
+
+# These are timing tests, so we only run on real hardware
+is_on_vm = env.Bit('running_on_vm')
+
+# additions to add syscall tests 40-42
+timefuncs_test_nexe = env.ComponentProgram(
+    'timefuncs_test',
+    ['timefuncs_test.cc'],
+    EXTRA_LIBS=['${PTHREAD_LIBS}', 'syscall_test_framework', '${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+    'timefuncs_test.out',
+    timefuncs_test_nexe)
+
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_timefuncs_test',
+                       is_broken=is_on_vm or time_test_is_broken_on_this_os
+                       )
+
+raw_syscall_timefunc_objects = env.RawSyscallObjects(['timefuncs_test.cc'])
+raw_timefuncs_test_nexe = env.ComponentProgram(
+    'raw_timefuncs_test',
+    raw_syscall_timefunc_objects,
+    EXTRA_LIBS=['syscall_test_framework', '${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl('raw_timefuncs_test.out',
+                                 raw_timefuncs_test_nexe)
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_raw_timefuncs_test',
+                       is_broken=is_on_vm or time_test_is_broken_on_this_os)
+
+sysconf_pagesize_nexe = env.ComponentProgram('sysconf_pagesize_test',
+                                             ['sysconf_pagesize.c'],
+                                             EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl('sysconf_pagesize_test.out',
+                                 sysconf_pagesize_nexe)
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_sysconf_pagesize_test')
+
+# We create the temporary file at runtime rather than insisting on an
+# empty file as checked-in testdata.  Unfortunately, our trybot
+# infrastructure doesn't like empty files as a patch, so try jobs
+# would always fail.
+
+file_path = env.MakeEmptyFile(prefix='tmp_syscalls')
+
+sysconf_nprocessors_nexe = env.ComponentProgram('sysconf_nprocessors_test',
+                                                ['sysconf_nprocessors.c'],
+                                                EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+    'sysconf_nprocessors_test.out',
+    sysconf_nprocessors_nexe,
+    filter_regex='"= ' + str(multiprocessing.cpu_count()) + ' processors"',
+    filter_inverse=True,
+    stdout_golden=file_path)
+
+# TODO(jfb): Remove the conditional.  The OSX coverage bots are
+# failing due to library versioning issues.  See
+# https://code.google.com/p/nativeclient/issues/detail?id=3333 for
+# more info.
+if not env.Bit('coverage_enabled'):
+  env.AddNodeToTestSuite(node,
+                         ['small_tests', 'sel_ldr_tests'],
+                         'run_sysconf_nprocessors_test')
+
+if not env.Bit('nacl_glibc'):
+  sysconf_cpu_feature_nexe = env.ComponentProgram('sysconf_cpu_feature_test',
+                                                  ['sysconf_cpu_feature.c'],
+                                                  EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+  node = env.CommandSelLdrTestNacl('sysconf_cpu_feature_test.out',
+                                   sysconf_cpu_feature_nexe)
+  env.AddNodeToTestSuite(node,
+                         ['small_tests', 'sel_ldr_tests'],
+                         'run_sysconf_cpu_feature_test')
+
+filepos_nexe = env.ComponentProgram('filepos_test',
+                                    ['filepos_test.c'],
+                                    EXTRA_LIBS=['imc_syscalls',
+                                                '${NONIRT_LIBS}',
+                                                '${PTHREAD_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+  'filepos_test.out',
+  filepos_nexe,
+  ['-t', env.MakeTempDir(prefix='tmp_syscalls')],
+  sel_ldr_flags=['-a'])
+
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_filepos_test')
+
+
+file_access_disabling_nexe = env.ComponentProgram(
+    'file_access_disabling', ['file_access_disabling.cc'],
+    EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+# Not all of the syscalls that this tests are hooked up in nacl-glibc.  Also,
+# some of the filesystem syscalls are not implemented for Windows.
+fs_disabling_test_is_broken = env.Bit('nacl_glibc') or env.Bit('host_windows')
+
+node = env.CommandSelLdrTestNacl(
+    'file_access_enabled.out',
+    file_access_disabling_nexe,
+    ['--enabled', env.MakeTempDir(prefix='tmp_file_access_enabled_test')],
+    sel_ldr_flags=['-a'])
+env.AddNodeToTestSuite(node, ['small_tests', 'sel_ldr_tests'],
+                       'run_file_access_enabled_test',
+                       is_broken=fs_disabling_test_is_broken)
+
+node = env.CommandSelLdrTestNacl(
+    'file_access_disabled.out',
+    file_access_disabling_nexe,
+    ['--disabled', env.MakeTempDir(prefix='tmp_file_access_disabled_test')])
+env.AddNodeToTestSuite(node, ['small_tests', 'sel_ldr_tests'],
+                       'run_file_access_disabled_test',
+                       is_broken=fs_disabling_test_is_broken)

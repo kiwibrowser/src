@@ -1,0 +1,28 @@
+<!DOCTYPE HTML>
+<html style="height:100%; overflow:scroll;">
+<head>
+<script src="../../resources/js-test.js"></script>
+<script>
+jsTestIsAsync = true;
+
+function finishTest() {
+  if (window.scrollY == 100 && window.scrollX == 0)
+    finishJSTest();
+  else
+    requestAnimationFrame(finishTest);
+}
+
+function test() {
+    if (window.eventSender) {
+        eventSender.mouseMoveTo(50, 50);
+        eventSender.continuousMouseScrollBy(0, -100);
+        finishTest();
+    }
+}
+</script>
+</head>
+<body onload="test()">
+<div style="height:1000px;">
+</div>
+</body>
+</html>

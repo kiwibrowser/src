@@ -1,0 +1,37 @@
+{
+  "manifest_version": 1,
+  "name": "service_manager",
+  "display_name": "Service Manager",
+  "interface_provider_specs": {
+    "service_manager:connector": {
+      // NOTE: This manifest is for documentation purposes only. Relevant
+      // capability spec is defined inline in the ServiceManager implementation.
+      //
+      // TODO(rockot): Fix this. We can bake this file into ServiceManager at
+      // build time or something. Same with service:catalog.
+      "provides": {
+        // Clients requesting this class are able to connect to other clients as
+        // specific users other than their own.
+        "service_manager:user_id": [ ],
+        // Clients requesting this class are allowed to register clients for
+        // processes they launch themselves.
+        "service_manager:client_process": [ ],
+        // Clients requesting this class are allowed to connect to other clients
+        // in specific process instance groups.
+        "service_manager:instance_name": [ ],
+        // Clients requesting this class are run as a unique user id which is
+        // visible to clients run as any user.
+        "service_manager:all_users": [ ],
+        "service_manager:block_wildcard": [ ],
+
+        "service_manager:service_manager": [
+          "service_manager.mojom.ServiceManager"
+        ]
+      },
+      "requires": {
+        "*": [ "service_manager:service_factory" ],
+        "tracing": [ "app" ]
+      }
+    }
+  }
+}

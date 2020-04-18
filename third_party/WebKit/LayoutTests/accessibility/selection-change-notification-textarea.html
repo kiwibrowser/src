@@ -1,0 +1,43 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<script src="../resources/js-test.js"></script>
+</head>
+<body id="static_eventTarget">
+
+<textarea id="textarea">textarea</textarea>
+
+<div id="console"></div>
+<script>
+description("Tests that a 'selected text changed' notification fires on an textarea element when the user moves the cursor.");
+window.jsTestIsAsync = true;
+
+function runTest() {
+    // This forces building the accessibility tree, because selection change
+    // events only fire on elements that already exist.
+    accessibilityController.accessibleElementById('dummy');
+
+    var element = document.getElementById('textarea');
+    var axElement = accessibilityController.accessibleElementById('textarea');
+    element.focus();
+
+    axElement.addNotificationListener(function(notification) {
+        if (notification == 'SelectedTextChanged') {
+            debug('Got SelectedTextChanged notification on textarea element.');
+            axElement.removeNotificationListener();
+            finishJSTest();
+        }
+    });
+
+    element.setSelectionRange(0, 1);
+}
+
+if (window.testRunner && window.accessibilityController) {
+    testRunner.dumpAsText();
+    window.onload = runTest();
+}
+
+</script>
+
+</body>
+</html>

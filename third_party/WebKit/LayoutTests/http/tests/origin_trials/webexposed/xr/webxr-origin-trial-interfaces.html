@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<!-- Generate token with the command:
+generate_token.py http://127.0.0.1:8000 WebXRDevice --expire-timestamp=2000000000
+
+To test whether the token is working, run virtual/origin-trials-runtimeflags-disabled/http/tests/origin_trials/xr tests.
+-->
+<title>WebXRDevice - interfaces exposed by origin trial</title>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+<script src="../../../resources/origin-trials-helper.js"></script>
+<script>
+
+let token = "AhQSpjyHBWIyc+JFceIXXbRu6uibOv1f3BsZBP4sc3JNyuINgalHc4xBSLNvlJ7uR4p+qMI0kVWc5yHljKHTWQEAAABTeyJvcmlnaW4iOiAiaHR0cDovLzEyNy4wLjAuMTo4MDAwIiwgImZlYXR1cmUiOiAiV2ViWFJEZXZpY2UiLCAiZXhwaXJ5IjogMjAwMDAwMDAwMH0=";
+
+let properties_to_check = {'Navigator': ['xr']};
+
+// Skip this test if flags are not set properly.
+if(!self.internals.runtimeFlags.webXREnabled) {
+  test(t => {
+    OriginTrialsHelper.check_properties_missing(this, properties_to_check);
+  }, "WebXR's entrypoint properties are not available without a token.");
+}
+
+OriginTrialsHelper.add_token(token);
+
+test(t => {
+  OriginTrialsHelper.check_properties(this, properties_to_check);
+}, "WebXR's entrypoint properties are available.");
+</script>

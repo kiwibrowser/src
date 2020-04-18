@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<script src="../../resources/js-test.js"></script>
+<script>
+  var numScrolls;
+  var pageHeight = 2000;
+  var pageWidth = 2000;
+
+  if (testRunner)
+    testRunner.waitUntilDone();
+
+  function reset()
+  {
+    window.scrollTo(0, 0);
+    internals.setPageScaleFactor(2);
+  }
+
+  // Test Document scroll separately so we ensure it scrolls all the way in one
+  // shot.
+  function testDocumentScroll() {
+    internals.executeCommand(document, 'ScrollToEndOfDocument', '');
+    shouldBe('window.scrollY', 'pageHeight - window.innerHeight');
+    shouldBe('window.scrollX', '0');
+
+    internals.executeCommand(document, 'ScrollToBeginningOfDocument', '');
+    shouldBe('window.scrollY', '0');
+    shouldBe('window.scrollX', '0');
+  }
+
+  function testScroll(forwardCmd, backwardCmd) {
+    internals.executeCommand(document, forwardCmd, '');
+
+    if (internals.visualViewportScrollY() === 0) {
+        debug('FAIL: Command ' + forwardCmd + ' failed to scroll page at all.');
+        return;
+    }
+
+    numScrolls = Math.ceil((pageHeight - internals.visualViewportHeight()) / internals.visualViewportScrollY());
+
+    for(var i = 0; i < numScrolls - 1; ++i) {
+      internals.executeCommand(document, forwardCmd, '');
+    }
+
+    shouldBe('internals.visualViewportScrollY()', 'pageHeight - internals.visualViewportHeight()');
+    shouldBe('internals.visualViewportScrollX()', '0');
+
+    for(var i = 0; i < numScrolls; ++i) {
+      internals.executeCommand(document, backwardCmd, '');
+    }
+
+    shouldBe('internals.visualViewportScrollY()', '0');
+    shouldBe('internals.visualViewportScrollX()', '0');
+  }
+
+  function runTest()
+  {
+    description(
+        'Test that scrolling editor commands while pinch-zoomed scrolls ' +
+        'both viewports. To test manually, pinch zoom into the page and ' +
+        'use the arrow keys, page up/down, home/end to scroll the page. ' +
+        'You should be able to reach the end of the page bounds (i.e. ' +
+        'scroll to see the divs at the bounds.)');
+
+    if (window.internals) {
+      internals.settings.setScrollAnimatorEnabled(false);
+      reset();
+      debug('');
+      debug('Testing Document Scrolling:');
+      testDocumentScroll();
+
+      reset();
+      debug('');
+      debug('Testing Page Scrolling:');
+      testScroll('ScrollPageForward', 'ScrollPageBackward');
+
+      reset();
+      debug('');
+      debug('Testing Line Scrolling:');
+      testScroll('ScrollLineDown', 'ScrollLineUp');
+
+      if (testRunner)
+        testRunner.notifyDone();
+    }
+  }
+
+  // Run after rAF to ensure the viewports are registered which happens after a
+  // full lifecycle update (and rAF comes before lifecycle update so X2).
+  addEventListener('load', () => {
+    requestAnimationFrame(() => { requestAnimationFrame(runTest); } );
+  });
+</script>
+<style>
+  ::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+  }
+
+  div {
+    width: 200px;
+    height: 20px;
+    background-color: red;
+  }
+
+  html{
+    padding: 0px;
+    margin: 0px;
+    width: 2000px;
+    height: 2000px;
+  }
+
+  .top {
+    position: absolute;
+    top: 0px;
+    left: 300px;
+  }
+
+  .middle{
+    position: absolute;
+    top: 975px;
+    left: 300px;
+  }
+
+  .bottom {
+    position: absolute;
+    top: 1980px;
+    left: 300px;
+
+  }
+
+  .left {
+    position: absolute;
+    top: 275px;
+    left: 0px;
+  }
+
+  .right {
+    position: absolute;
+    top: 275px;
+    left: 1800px;
+  }
+</style>
+<p id="description" style="width: 800px"></p>
+<p id="console" style="width: 800px"></p>
+<div class="top">Top of page</div>
+<div class="bottom">Bottom of page</div>
+<div class="left">Left of page</div>
+<div class="right">Right of page</div>
+<div class="middle">Middle of page</div>

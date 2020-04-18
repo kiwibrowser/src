@@ -1,0 +1,98 @@
+# -*- python -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This is a basic functionality test to exercise the irt plumbing.
+
+import platform
+
+Import('env')
+
+time_check = env.File('${SCONSTRUCT_DIR}/tools/time_check.py')
+
+if env.Bit('tests_use_irt'):
+  clock_irt_test_nexe = env.ComponentProgram('clock_irt_test',
+                                             'clock_irt_test.c',
+                                             EXTRA_LIBS=['${NONIRT_LIBS}'],
+                                             )
+
+  node = env.CommandSelLdrTestNacl(
+      'clock_irt_test.out',
+      clock_irt_test_nexe,
+      wrapper_program_prefix = [
+        '${PYTHON}', time_check, '-S',
+        '-r',
+        '"Realtime\sclock\svalue[^\d]*(\d+\.\d*|\d*\.\d+)"',
+        '--'])
+
+  env.AddNodeToTestSuite(node, ['small_tests'], 'run_clock_irt_test')
+
+# The clock_gettime function is provided in librt in the glibc-based
+# toolchain, whereas in the newlib-based toolchain it is in libc.
+# This is because the clock_gettime etc functions were part of the
+# "Advanced Real Time" portion of POSIX, and on normal glibc-based
+# systems the Advanced Real Time functions are all in the rt library.
+# In newlib, there is no librt, and everything got put into libc
+# instead.
+
+if env.Bit('nacl_glibc'):
+  env.Append(LIBS=['-lrt'])
+
+clock_get_test_nexe = env.ComponentProgram('clock_get_test',
+                                           'clock_get_test.c',
+                                           EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl(
+    'clock_get_test.out',
+    clock_get_test_nexe,
+    wrapper_program_prefix = [
+      '${PYTHON}', time_check, '-S',
+      '-r',
+      '"Realtime\sclock\svalue[^\d]*(\d+\.\d*|\d*\.\d+)"',
+      '--'])
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_clock_get_test')
+
+clock_test_nexe = env.ComponentProgram('clock_test',
+                                       'clock_test.c',
+                                       EXTRA_LIBS=['${PTHREAD_LIBS}',
+                                                   '${NONIRT_LIBS}'])
+
+# On OSX and Windows, we have observed sleep returning early.  The
+# time_slop_args is used in clock_test to permit some extra slop
+# in the elapsed time (in ms).
+time_slop_args = []
+
+# On Linux the older scheduler implementation did not account properly
+# for the time process spent waiting on the futex in thread join. This
+# affects the CLOCK_PROCESS/THREAD_CPUTIME_ID clock test and we therefore
+# disable this test on older kernels.
+cputime_test_enabled = True
+
+if env.Bit('host_windows') or env.Bit('host_mac'):
+  time_slop_args += [ '-s', '10' ]
+elif env.Bit('host_linux'):
+  kernel_version = map(int, platform.release().split('.', 2)[:2])
+  if kernel_version < [3, 0]:
+    cputime_test_enabled = False
+# This test is flaky on mac10.7-newlib-dbg-asan.
+# See https://code.google.com/p/nativeclient/issues/detail?id=3906
+if env.Bit('asan') and env.Bit('host_mac'):
+  cputime_test_enabled = False
+
+node = env.CommandSelLdrTestNacl(
+    'clock_test.out',
+    clock_test_nexe,
+    time_slop_args)
+
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_clock_test')
+
+node = env.CommandSelLdrTestNacl(
+    'clock_cputime_test.out',
+    clock_test_nexe,
+    ['-c'],
+    size='large')
+
+env.AddNodeToTestSuite(node, ['large_tests'], 'run_clock_cputime_test',
+                        is_broken=not cputime_test_enabled)

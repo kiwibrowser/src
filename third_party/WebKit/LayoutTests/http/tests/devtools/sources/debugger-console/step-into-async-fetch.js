@@ -1,0 +1,21 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(async function test() {
+  TestRunner.addResult('Checks stepInto fetch');
+  await TestRunner.loadModule('sources_test_runner');
+  await TestRunner.loadModule('console_test_runner');
+  await TestRunner.showPanel('sources');
+
+  await SourcesTestRunner.startDebuggerTestPromise();
+  ConsoleTestRunner.evaluateInConsole(`
+    debug(fetch);
+    fetch("../debugger/resources/script1.js");
+    //# sourceURL=test.js`);
+  await SourcesTestRunner.waitUntilPausedPromise();
+  SourcesTestRunner.stepIntoAsync();
+  let callFrames = await SourcesTestRunner.waitUntilPausedPromise();
+  SourcesTestRunner.captureStackTrace(callFrames);
+  SourcesTestRunner.completeDebuggerTest();
+})();

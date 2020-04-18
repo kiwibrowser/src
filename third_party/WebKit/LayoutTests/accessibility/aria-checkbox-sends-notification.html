@@ -1,0 +1,42 @@
+<html>
+<head>
+<script src="../resources/js-test.js"></script>
+<script>
+    function runTest() {
+        window.jsTestIsAsync = true;
+
+        description("This tests that checking of an aria checkbox sends a notification.");
+
+        var accessibleCheckbox = accessibilityController.accessibleElementById("checkbox1");
+        var notificationCount = 0;
+
+        function listener(notification) {
+            if (notification == "CheckedStateChanged")
+                notificationCount++;
+
+            debug("Got notification: " + notification);
+
+            if (notificationCount == 2) {
+                accessibleCheckbox.removeNotificationListener(listener);
+                finishJSTest();
+            }
+        }
+        accessibleCheckbox.addNotificationListener(listener);
+
+        // Check the checkbox.
+        document.getElementById('checkbox1').setAttribute('aria-checked', 'true');
+        document.getElementById('checkbox1').setAttribute('aria-checked', 'false');
+    };
+</script>
+</head>
+<body>
+
+<div id="checkbox1" tabindex=0 role="checkbox" aria-checked="false">Test Checkbox</div>
+
+<p id="description"></p>
+<div id="console"></div>
+<script>
+    runTest();
+</script>
+</body>
+</html>

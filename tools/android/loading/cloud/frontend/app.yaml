@@ -1,0 +1,25 @@
+runtime: python27
+api_version: 1
+threadsafe: yes
+instance_class: F4_1G
+
+builtins:
+- deferred: on
+
+handlers:
+
+- url: /_ah/queue/deferred
+  # For the deferred API (https://cloud.google.com/appengine/articles/deferred).
+  script: google.appengine.ext.deferred.deferred.application
+  login: admin
+
+- url: /static
+  # Static content.
+  static_dir: static
+
+- url: .*
+  script: clovis_frontend.app
+
+libraries:
+- name: ssl
+  version: latest

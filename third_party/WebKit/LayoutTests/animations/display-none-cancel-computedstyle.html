@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<script src="../resources/js-test.js"></script>
+<style>
+#child {
+    width: 50px;
+    height: 50px;
+    background: red;
+    border: 1px solid red;
+}
+
+.animate {
+    animation: flash 0.2s infinite;
+}
+
+@keyframes flash {
+    0% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+</style>
+<div id="container">
+    <div id="child"></div>
+</div>
+<script>
+description("Canceling an animation should not leave dirty bits on display none elements.");
+
+window.jsTestIsAsync = true;
+if (window.testRunner) {
+    testRunner.waitUntilDone();
+    testRunner.dumpAsText();
+}
+
+var child = document.getElementById("child");
+var container = document.getElementById("container");
+
+child.addEventListener("animationstart", function(event) {
+    container.style.display = "none";
+    child.style.borderWidth = "10px";
+    shouldBeEqualToString("getComputedStyle(child).borderWidth", "10px");
+    child.style.borderWidth = "5px";
+    shouldBeEqualToString("getComputedStyle(child).borderWidth", "5px");
+    finishJSTest();
+});
+
+child.classList.add("animate");
+</script>
+

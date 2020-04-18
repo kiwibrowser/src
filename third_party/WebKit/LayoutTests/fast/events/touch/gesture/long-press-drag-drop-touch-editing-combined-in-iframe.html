@@ -1,0 +1,43 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+<script src="../../../../resources/js-test.js"></script>
+</head>
+<body>
+<iframe src="resources/drag-inside-iframe2.html" id=testIframe></iframe>
+<p>This test checks long press behavior inside an iframe when both touch drag/drop and touch editing are enabled.<br>
+1. Check that long press on a draggable element starts drag.<br>
+2. Check that long press on non-draggable text selects the text.<br>
+3. Check that long press on selected text starts drag.</p>
+<div id="text">Testing</div>
+<div id="draggableDivResult">FAIL</div>
+<div id="draggableTextResult">FAIL</div>
+<script>
+function onTextDivDrag() {
+    document.getElementById("draggableTextResult").innerHTML = "PASS";
+}
+function onDragStart() {
+    document.getElementById("draggableDivResult").innerHTML = "PASS";
+}
+function runTest()
+{
+    if (window.testRunner)
+        testRunner.dumpAsText();
+
+    if (window.internals)
+        internals.settings.setTouchDragDropEnabled(true);
+
+    if (!window.eventSender)
+        return;
+    if (eventSender.gestureLongPress) {
+        eventSender.gestureLongPress(50, 50);
+        eventSender.gestureLongPress(20, 110);
+        eventSender.gestureLongPress(20, 110);
+    } else {
+        debug("gestureLongPress not implemented by this platform");
+        return;
+    }
+}
+</script>
+</body>
+</html>

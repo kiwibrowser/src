@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Security-Policy" content="img-src 'none'">
+<script>
+    if (window.testRunner) {
+        testRunner.dumpAsText();
+        testRunner.waitUntilDone();
+    }
+
+    tests = 6;
+    window.addEventListener("message", function(message) {
+        tests -= 1;
+        test();
+    }, false);
+
+    function setup() {
+        // This is needed because isolated worlds are not reset between test
+        // runs and a previous test's CSP may interfere with this test. See
+        // https://crbug.com/415845.
+        testRunner.setIsolatedWorldContentSecurityPolicy(1, '');
+        var img = document.getElementById('testimg');
+        img.onload = function () {
+            alert('LOADED');
+            window.postMessage("next", "*");
+        };
+        img.onerror = function () {
+            alert('BLOCKED');
+            window.postMessage("next", "*");
+        };
+        test();
+    }
+
+    function test() {
+        function setImgSrc(isolated, num) {
+            var img = document.getElementById('testimg');
+            img.src = "../resources/abe.png?" + num;
+        }
+
+        alert("Running test #" + tests + "\n");
+        switch (tests) {
+            case 6:
+                setImgSrc(false, 6);
+                break;
+            case 5:
+                testRunner.evaluateScriptInIsolatedWorld(1, String(eval("setImgSrc")) + "\nsetImgSrc(true, 5);");
+                break;
+            case 4:
+                alert("Starting to bypass main world's CSP:");
+                testRunner.setIsolatedWorldContentSecurityPolicy(1, 'img-src *');
+                testRunner.evaluateScriptInIsolatedWorld(1, String(eval("setImgSrc")) + "\nsetImgSrc(true, 4);");
+                break;
+            case 3:
+                // Main world, then isolated world -> should load
+                setImgSrc(false, 3);
+                testRunner.evaluateScriptInIsolatedWorld(1, String(eval("setImgSrc")) + "\nsetImgSrc(true, 3);");
+                break;
+            case 2:
+                // Isolated world, then main world -> should block
+                testRunner.evaluateScriptInIsolatedWorld(1, String(eval("setImgSrc")) + "\nsetImgSrc(true, 2);");
+                setImgSrc(false, 2);
+                break;
+            case 1:
+                setImgSrc(false, 1);
+                break;
+            case 0:
+                testRunner.setIsolatedWorldContentSecurityPolicy(1, '');
+                testRunner.notifyDone();
+                break;
+        }
+    }
+</script>
+</head>
+<body onload='setup();'>
+    <p>
+        <img id="testimg">
+        This test ensures that scripts run in isolated worlds marked with their
+        own Content Security Policy aren't affected by the page's content
+        security policy. Extensions, for example, should be able to load any
+        resource they like.
+    </p>
+</body>
+</html>

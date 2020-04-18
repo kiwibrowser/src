@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<title>Hide the overlay play button on play, show it on tap</title>
+<script src="../../../resources/testharness.js"></script>
+<script src="../../../resources/testharnessreport.js"></script>
+<script src="../../media-controls.js"></script>
+<body>
+<video id=video width=400 controls preload=metadata></video>
+<script>
+async_test((t) => {
+  const video = document.getElementById('video');
+  const button = mediaControlsOverlayPlayButtonInternal(video);
+  const controls = mediaControls(video);
+  const overlay = mediaControlsOverlayPlayButton(video);
+
+  // Make sure the overlay button is not hidden.
+  assert_false(overlay.classList.contains('hidden'));
+
+  // Wait until we have loaded the video and tap on the button.
+  video.addEventListener('canplay', t.step_func(() => {
+    singleTapOnControl(button);
+  }), { once: true });
+
+  // When we start playing make sure the overlay button is hidden.
+  video.addEventListener('play', t.step_func(() => {
+    assert_true(overlay.classList.contains('hidden'));
+
+    // Now tap anywhere on the controls and make sure the button
+    // unhides itself.
+    singleTapOnControl(controls, t.step_func(() => {
+      overlay.addEventListener('transitionend', t.step_func_done(() => {
+        assert_false(overlay.classList.contains('hidden'));
+      }));
+    }));
+  }), { once: true });
+
+  video.src = '../../content/test.webm';
+});
+</script>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<body onload="dropFrame()">
+This represents not an extension, but an HTML page within the test harness
+webstore origin (www.example.com), for which the response headers have been
+misconfigured to allow framing by the 127.0.0.1 origin.
+<script>
+var interval_id = -1;
+var check_count = 0;
+function dropFrame() {
+  var s = location.href.toString();
+  if (s.indexOf('127.0.0.1') > 0) {
+    // try to frame a copy of ourselves from the webstore origin.
+    var f = document.createElement('iframe');
+    f.src = s.replace('127.0.0.1', 'www.example.com');
+    f.onload = checkFrame;
+    f.onerror = checkFrame;
+    document.body.appendChild(f);
+    // There's an open issue in WK where neither onload or onerror fires
+    // when interrupted by XFO, so use a setInterval() workaround.  Remove
+    // this workaround when resolved, but in the mean time, mark the test
+    // FLAKY, because there is no reason to believe the server will respond
+    // within the time frame.
+    interval_id = setInterval("checkFrame()", 500);
+  }
+}
+
+function checkFrame() {
+  try {
+    // If the frame was blocked, we instead have an about:blank frame which we
+    // can access.
+    x = window.frames[0].document.location.href;
+    document.title = 'PASS: ' + x;
+    clearInterval(interval_id);
+  }
+  catch (e) {
+    // Frame was not yet blocked, so we have no access.
+    if (++check_count > 40) {
+      document.title = 'FAIL';
+      clearInterval(interval_id);
+    }
+  }
+}
+</script>
+</html>

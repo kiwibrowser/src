@@ -1,0 +1,74 @@
+<script src="../../../resources/js-test.js"></script>
+<div id="target">Target</div>
+<div id="description">Test user gesture behavior during touch events.</div>
+<div id="console"></div>
+
+<script>
+
+var cancelEvent = false;
+var openedPopup = undefined;
+function handler(e) {
+    if (openedPopup !== undefined)
+        testFailed("Handler invoked multiple times");
+
+    var w = window.open("about:blank", "_blank");
+    if (w) {
+        w.close();
+        openedPopup = true;
+    } else {
+        openedPopup = false;
+    }
+
+    if (cancelEvent)
+        e.preventDefault;
+}
+
+var target = document.getElementById('target');
+
+function testPopupOnEventDuring(eventType, expectPopup, operation) {
+    openedPopup = undefined;
+    target.addEventListener(eventType, handler);
+
+    operation();
+
+    if (openedPopup===undefined)
+        testFailed(eventType + ' handler was not invoked');
+    else if (expectPopup)
+        shouldBeTrue("openedPopup");
+    else
+        shouldBeFalse("openedPopup");
+
+    target.removeEventListener(eventType, handler);
+}
+
+if (window.testRunner) {
+    testRunner.setCloseRemainingWindowsWhenComplete(true);
+    testRunner.setCanOpenWindows();
+    testRunner.setPopupBlockingEnabled(true);
+}
+
+
+var rect = target.getBoundingClientRect();
+var targetX = rect.left + rect.width / 2;
+var targetY = rect.top + rect.height / 2;
+
+debug("During a scroll, no touch events are user gestures");
+cancelEvent = false;
+eventSender.addTouchPoint(targetX, targetY);
+testPopupOnEventDuring('touchstart', false, function() { eventSender.touchStart(); });
+eventSender.updateTouchPoint(0, targetX + 10, targetY);
+testPopupOnEventDuring('touchmove', false, function() { eventSender.touchMove(); });
+eventSender.notifyStartOfTouchScroll();
+eventSender.releaseTouchPoint(0);
+testPopupOnEventDuring('touchend', false, function() { eventSender.touchEnd(); });
+
+debug("During a drag that isn't a scroll, only touchend is a user gesture");
+cancelEvent = true;
+eventSender.addTouchPoint(targetX, targetY);
+testPopupOnEventDuring('touchstart', false, function() { eventSender.touchStart(); });
+eventSender.updateTouchPoint(0, targetX + 10, targetY);
+testPopupOnEventDuring('touchmove', false, function() { eventSender.touchMove(); });
+eventSender.releaseTouchPoint(0);
+testPopupOnEventDuring('touchend', true, function() { eventSender.touchEnd(); });
+
+</script>

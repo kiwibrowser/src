@@ -1,0 +1,303 @@
+@hex:
+  # lock add %eax,(%rsp)
+  F0 01 04 24
+  # mov %edi,%edi
+  # lea (%r15,%rdi),%rdi
+  # rep stos %eax,%es:(%rdi)
+  89 FF \\
+  49 8D 3C 3F \\
+  F3 AB
+  # mov %edi,%edi
+  # lea (%r15,%rdi),%rdi
+  # repne scas %es:(%rdi),%al
+  89 FF \\
+  49 8D 3C 3F \\
+  F2 AE
+  # mov %ax, %ax
+  66 89 C0
+  # rex jmp $
+  40 EB FD
+@dis:
+     0:	f0 01 04 24                                  	lock add %eax,(%rsp)
+     4:	89 ff                                        	mov    %edi,%edi
+     6:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     a:	f3 ab                                        	rep stos %eax,%es:(%rdi)
+     c:	89 ff                                        	mov    %edi,%edi
+     e:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+    12:	f2 ae                                        	repnz scas %es:(%rdi),%al
+    14:	66 89 c0                                     	mov    %ax,%ax
+    17:	40 eb fd                                     	rex jmp 0x17
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Branch prediction prefixes. (for jz).
+  2e 74 00
+  3e 74 00
+@dis:
+     0:	2e 74 00                                     	je,pn  0x3
+     3:	3e 74 00                                     	je,pt  0x6
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE
+----------------------------------------------------------------------
+@hex:
+  # Forbidden prefixes.
+  F3 50
+@dis:
+     0:	f3 50                                        	repz push %rax
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('prefix repz is not allowed', Instruction(0x0: f3 50  repz push %rax))
+----------------------------------------------------------------------
+@hex:
+  # stos allows rep, not repnz
+  89 FF
+  49 8D 3C 3F
+  F2 AB
+@dis:
+     0:	89 ff                                        	mov    %edi,%edi
+     2:	49 8d 3c 3f                                  	lea    (%r15,%rdi,1),%rdi
+     6:	f2 ab                                        	repnz stos %eax,%es:(%rdi)
+@rdfa_output:
+  6: unrecognized instruction
+  return code: 1
+@spec:
+  6: ('prefix repnz is not allowed', Instruction(0x6: f2 ab  repnz stos %eax,%es:(%rdi)))
+----------------------------------------------------------------------
+@hex:
+  # MOVs with segment prefixes
+  64 89 C0
+@dis:
+     0:	64                                           	fs
+     1:	89 c0                                        	mov    %eax,%eax
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: unrecognized instruction 'fs'
+----------------------------------------------------------------------
+@hex:
+  65 89 C0
+@dis:
+     0:	65                                           	gs
+     1:	89 c0                                        	mov    %eax,%eax
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: unrecognized instruction 'gs'
+----------------------------------------------------------------------
+@hex:
+  2E 89 04 24
+@dis:
+     0:	2e 89 04 24                                  	mov    %eax,%cs:(%rsp)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('segments in memory references are not allowed', Instruction(0x0: 2e 89 04 24  mov %eax,%cs:(%rsp)))
+----------------------------------------------------------------------
+@hex:
+  36 89 04 24
+@dis:
+     0:	36 89 04 24                                  	mov    %eax,%ss:(%rsp)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('segments in memory references are not allowed', Instruction(0x0: 36 89 04 24  mov %eax,%ss:(%rsp)))
+----------------------------------------------------------------------
+@hex:
+  3E 89 04 24
+@dis:
+     0:	3e 89 04 24                                  	mov    %eax,%ds:(%rsp)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('segments in memory references are not allowed', Instruction(0x0: 3e 89 04 24  mov %eax,%ds:(%rsp)))
+----------------------------------------------------------------------
+@hex:
+  26 89 04 24
+@dis:
+     0:	26 89 04 24                                  	mov    %eax,%es:(%rsp)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('segments in memory references are not allowed', Instruction(0x0: 26 89 04 24  mov %eax,%es:(%rsp)))
+----------------------------------------------------------------------
+@hex:
+  64 89 04 24
+@dis:
+     0:	64 89 04 24                                  	mov    %eax,%fs:(%rsp)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('segments in memory references are not allowed', Instruction(0x0: 64 89 04 24  mov %eax,%fs:(%rsp)))
+----------------------------------------------------------------------
+@hex:
+  65 89 04 24
+@dis:
+     0:	65 89 04 24                                  	mov    %eax,%gs:(%rsp)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('segments in memory references are not allowed', Instruction(0x0: 65 89 04 24  mov %eax,%gs:(%rsp)))
+----------------------------------------------------------------------
+@hex:
+  67 89 04 24
+@dis:
+     0:	67 89 04 24                                  	mov    %eax,(%esp)
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('addr prefix is not allowed', Instruction(0x0: 67 89 04 24  mov %eax,(%esp)))
+----------------------------------------------------------------------
+@hex:
+  # Jumps with segment prefixes.
+  2E EB FD
+@dis:
+     0:	2e                                           	cs
+     1:	eb fd                                        	jmp    0x0
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: unrecognized instruction 'cs'
+----------------------------------------------------------------------
+@hex:
+  36 EB FD
+@dis:
+     0:	36                                           	ss
+     1:	eb fd                                        	jmp    0x0
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: unrecognized instruction 'ss'
+----------------------------------------------------------------------
+@hex:
+  3E EB FD
+@dis:
+     0:	3e                                           	ds
+     1:	eb fd                                        	jmp    0x0
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: unrecognized instruction 'ds'
+----------------------------------------------------------------------
+@hex:
+  26 EB FD
+@dis:
+     0:	26                                           	es
+     1:	eb fd                                        	jmp    0x0
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: unrecognized instruction 'es'
+----------------------------------------------------------------------
+@hex:
+  64 EB FD
+@dis:
+     0:	64                                           	fs
+     1:	eb fd                                        	jmp    0x0
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: unrecognized instruction 'fs'
+----------------------------------------------------------------------
+@hex:
+  65 EB FD
+@dis:
+     0:	65                                           	gs
+     1:	eb fd                                        	jmp    0x0
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: unrecognized instruction 'gs'
+----------------------------------------------------------------------
+@hex:
+  66 EB FD
+@dis:
+     0:	66                                           	data16
+     1:	eb fd                                        	jmp    0x0
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: ('dangling legacy prefixes', Instruction(0x0: 66  data16))
+----------------------------------------------------------------------
+@hex:
+  36 74 00
+@dis:
+     0:	36                                           	ss
+     1:	74 00                                        	je     0x3
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: unrecognized instruction 'ss'
+----------------------------------------------------------------------
+@hex:
+  64 74 00
+@dis:
+     0:	64                                           	fs
+     1:	74 00                                        	je     0x3
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: unrecognized instruction 'fs'
+----------------------------------------------------------------------
+@hex:
+  65 74 00
+@dis:
+     0:	65                                           	gs
+     1:	74 00                                        	je     0x3
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: unrecognized instruction 'gs'
+----------------------------------------------------------------------
+@hex:
+  26 74 00
+@dis:
+     0:	26                                           	es
+     1:	74 00                                        	je     0x3
+@rdfa_output:
+  0: unrecognized instruction
+  return code: 1
+@spec:
+  0: unrecognized instruction 'es'
+----------------------------------------------------------------------
+@hex:
+  # Mandatory prefix.
+  # phaddw %xmm0,%xmm1
+  66 0f 38 01 c8
+  # addsd %xmm0,%xmm1
+  f2 0f 58 c8
+  # cmpeqss %xmm0,%xmm1
+  f3 0f c2 c8 00
+@dis:
+     0:	66 0f 38 01 c8                               	phaddw %xmm0,%xmm1
+     5:	f2 0f 58 c8                                  	addsd  %xmm0,%xmm1
+     9:	f3 0f c2 c8 00                               	cmpeqss %xmm0,%xmm1
+@rdfa_output:
+  return code: 0
+@spec:
+  SAFE

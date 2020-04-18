@@ -1,0 +1,61 @@
+/* Copyright 2014 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file. */
+
+/* Container for the elements that make up the search bubble. */
+.search-bubble {
+  left: 0;
+  margin-top: 5px;
+  pointer-events: none;
+  position: absolute;
+  top: -1000px;  /* Minor hack: position off-screen by default. */
+  /* Create a z-context for search-bubble-innards, its after and before. */
+  z-index: 1;
+}
+
+/* Contains the text content of the bubble.  */
+.search-bubble-innards {
+  background: linear-gradient(rgba(255, 248, 172, 0.9),
+                              rgba(255, 243, 128, 0.9));
+  border-radius: 2px;
+  overflow: hidden;
+  padding: 4px 10px;
+  text-align: center;
+  text-overflow: ellipsis;
+  width: 100px;
+}
+
+/* Provides the border around the bubble (has to be behind ::after). */
+.search-bubble-innards::before {
+  border: 1px solid rgb(220, 198, 72);
+  border-radius: 2px;
+  bottom: -1px;
+  content: '';
+  left: -1px;
+  position: absolute;
+  right: -1px;
+  top: -1px;
+  z-index: -2;
+}
+
+/* Provides the arrow which points at the anchor element. */
+.search-bubble-innards::after {
+  background: linear-gradient(-45deg, rgb(251, 255, 181),
+                                      rgb(255, 248, 172) 50%,
+                                      rgba(255, 248, 172, 0));
+  border: 1px solid rgb(220, 198, 72);
+  border-bottom-color: transparent;
+  border-right-color: transparent;
+  content: '';
+  height: 12px;
+  left: 53px;
+  position: absolute;
+  top: -7px;
+  transform: rotate(45deg);
+  width: 12px;
+  z-index: -1;
+}
+
+.search-bubble-wrapper {
+  position: relative;
+}

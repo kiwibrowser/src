@@ -1,0 +1,69 @@
+<link rel="import" href="chrome://resources/polymer/v1_0/polymer/polymer.html">
+
+<!--
+UI for the SAML interstitial page.
+Example:
+  <saml-interstitial></saml-interstitial>
+
+Attributes:
+  'domain' - The enterprise domain the device is enrolled to.
+  'showDomainMessages' - If true, the messages showing the enrollment domain
+                         will be shown. Its value is set automatically when
+                         'domain' is set, and is true as long as 'domain' is
+                         not empty.
+  'changeAccountLink' - A reference to the change account link so that it can be
+                        used in testing.
+
+Functions:
+  'submit' - Submits the saml interstitial form for tests. Equivalent to the
+             user clicking next.
+
+Events:
+  'samlPageNextClicked' - Fired when the "Next" button is clicked indicating
+                          that the user would like to proceed with
+                          authentication via their enrollement SAML IdP.
+  'samlPageChangeAccountClicked' - Fired when the user clicks the sign in with
+                                   a differnt account link. GAIA Minute Maid
+                                   screen will be shown.
+-->
+<dom-module id="saml-interstitial">
+
+<template>
+  <style>
+    :host {
+      display: block;
+      line-height: 150%;
+    }
+  </style>
+
+  <gaia-card id="samlInterstitialCard" class="fit">
+    <div id="samlInterstitialHeader"
+        class="header flex vertical layout end-justified start">
+      <h1 class="welcome-message" i18n-content="loginWelcomeMessage">
+      </h1>
+      <p id="managedBy" class="enterprise-info"
+         hidden$="[[!showDomainMessages_]]">
+      </p>
+    </div>
+
+    <div class="footer flex vertical layout justified">
+      <!-- This message contains a <strong> tag inside. -->
+      <html-echo id="message" hidden$="[[!showDomainMessages_]]"></html-echo>
+
+      <gaia-input-form id="samlInterstitialForm"
+                       on-submit="onSamlPageNextClicked_"
+                       i18n-values="button-text:samlInterstitialNextBtn">
+        <gaia-button id="changeAccountLink" type="link"
+                     on-tap="onSamlPageChangeAccountClicked_"
+                     i18n-content="samlInterstitialChangeAccountLink">
+        </gaia-button>
+      </gaia-input-form>
+
+      <img id="logo-img" src="chrome://theme/IDR_LOGO_GOOGLE_COLOR_90"
+           class="self-center" alt="">
+    </div>
+  </gaia-card>
+
+</template>
+
+</dom-module>

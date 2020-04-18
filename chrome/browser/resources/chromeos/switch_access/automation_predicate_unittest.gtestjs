@@ -1,0 +1,196 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+/**
+ * Test fixture for automation_predicate.js.
+ * @constructor
+ * @extends {testing.Test}
+ */
+function AutomationPredicateUnitTest () {
+  testing.Test.call(this);
+};
+
+AutomationPredicateUnitTest.prototype = {
+  __proto__: testing.Test.prototype,
+
+  /** @override */
+  extraLibraries: [
+    'automation_predicate.js',
+    'test_support.js'
+  ],
+
+  /** @override */
+  browsePreload: DUMMY_URL,
+
+  /** @override */
+  setUp: function() {
+    chrome.automation = {
+      RoleType: {
+        CLIENT: 'client', DESKTOP: 'desktop', ROOT_WEB_AREA: 'rootWebArea',
+        TAB: 'tab', TAB_LIST: 'tabList', WEB_VIEW: 'webView'
+      },
+      StateType: {FOCUSABLE: 'focusable', OFFSCREEN: 'offscreen'}
+    };
+  },
+
+  fakeLoc: function(x) {
+    return {left: x, top: x, width: x, height: x};
+  },
+
+  getSampleTree: function() {
+    // - = interesting, (g) = group
+    // root (g)
+    //   upper1 (g)
+    //     lower1 (g)
+    //       leaf1 -
+    //       leaf2
+    //       leaf3 -
+    //     lower2
+    //       leaf4
+    //       leaf5 -
+    //   upper2 -
+    //     lower3
+    //       leaf6
+    //       leaf7
+    let root = {location: this.fakeLoc(0), state: {}};
+    let upper1 = {location: this.fakeLoc(1), state: {}};
+    let upper2 = {location: this.fakeLoc(2), state: {focusable: true}};
+    let lower1 = {location: this.fakeLoc(3), state: {}};
+    let lower2 = {location: this.fakeLoc(4), state: {}};
+    let lower3 = {location: this.fakeLoc(5), state: {}};
+    let leaf1 = {location: this.fakeLoc(6), state: {focusable: true}};
+    let leaf2 = {location: this.fakeLoc(7), state: {}};
+    let leaf3 = {location: this.fakeLoc(8), state: {focusable: true}};
+    let leaf4 = {location: this.fakeLoc(9), state: {}};
+    let leaf5 = {location: this.fakeLoc(10), state: {focusable: true}};
+    let leaf6 = {location: this.fakeLoc(11), state: {}};
+    let leaf7 = {location: this.fakeLoc(12), state: {}};
+
+    let ts = new TestSupport();
+    ts.setChildren(root, [upper1, upper2]);
+    ts.setChildren(upper1, [lower1, lower2]);
+    ts.setChildren(upper2, [lower3]);
+    ts.setChildren(lower1, [leaf1, leaf2, leaf3]);
+    ts.setChildren(lower2, [leaf4, leaf5]);
+    ts.setChildren(lower3, [leaf6, leaf7]);
+
+    return {
+      root: root,
+      upper1: upper1,
+      upper2: upper2,
+      lower1: lower1,
+      lower2: lower2,
+      lower3: lower3,
+      leaf1: leaf1,
+      leaf2: leaf2,
+      leaf3: leaf3,
+      leaf4: leaf4,
+      leaf5: leaf5,
+      leaf6: leaf6,
+      leaf7: leaf7,
+    };
+  },
+};
+
+TEST_F('AutomationPredicateUnitTest', 'IsSubtreeLeaf', function() {
+  let t = this.getSampleTree();
+
+  // Make t.leaf6 and t.leaf7 interesting. t.lower3 becomes a group.
+  t.leaf6.state = {focusable: true};
+  t.leaf7.state = {focusable: true};
+
+  assertTrue(AutomationPredicate.isSubtreeLeaf(t.root, t.root));
+  assertTrue(AutomationPredicate.isSubtreeLeaf(t.upper1, t.root));
+  assertTrue(AutomationPredicate.isSubtreeLeaf(t.upper2, t.root));
+  assertTrue(AutomationPredicate.isSubtreeLeaf(t.lower1, t.upper1));
+  assertFalse(AutomationPredicate.isSubtreeLeaf(t.lower2, t.upper1));
+  assertTrue(AutomationPredicate.isSubtreeLeaf(t.lower3, t.root));
+  assertTrue(AutomationPredicate.isSubtreeLeaf(t.leaf1, t.lower1));
+  assertFalse(AutomationPredicate.isSubtreeLeaf(t.leaf2, t.lower1));
+  assertTrue(AutomationPredicate.isSubtreeLeaf(t.leaf3, t.lower1));
+  assertFalse(AutomationPredicate.isSubtreeLeaf(t.leaf4, t.upper1));
+  assertTrue(AutomationPredicate.isSubtreeLeaf(t.leaf5, t.upper1));
+  assertTrue(AutomationPredicate.isSubtreeLeaf(t.leaf6, t.lower3));
+  assertTrue(AutomationPredicate.isSubtreeLeaf(t.leaf7, t.lower3));
+});
+
+TEST_F('AutomationPredicateUnitTest', 'IsGroup', function() {
+  let t = this.getSampleTree();
+
+  // Make t.leaf6 and t.leaf7 interesting. t.lower3 becomes a group.
+  t.leaf6.state = {focusable: true};
+  t.leaf7.state = {focusable: true};
+
+  assertTrue(AutomationPredicate.isGroup(t.root, t.root));
+  assertTrue(AutomationPredicate.isGroup(t.upper1, t.root));
+  assertFalse(AutomationPredicate.isGroup(t.upper2, t.root));
+  assertTrue(AutomationPredicate.isGroup(t.lower1, t.upper1));
+  assertFalse(AutomationPredicate.isGroup(t.lower2, t.upper1));
+  assertTrue(AutomationPredicate.isGroup(t.lower3, t.root));
+  assertFalse(AutomationPredicate.isGroup(t.leaf1, t.lower1));
+  assertFalse(AutomationPredicate.isGroup(t.leaf2, t.lower1));
+  assertFalse(AutomationPredicate.isGroup(t.leaf3, t.lower1));
+  assertFalse(AutomationPredicate.isGroup(t.leaf4, t.upper1));
+  assertFalse(AutomationPredicate.isGroup(t.leaf5, t.upper1));
+  assertFalse(AutomationPredicate.isGroup(t.leaf6, t.lower3));
+  assertFalse(AutomationPredicate.isGroup(t.leaf7, t.lower3));
+
+  // Set location of t.upper1 to equal location of t.root
+  t.upper1.location = this.fakeLoc(0);
+  assertFalse(AutomationPredicate.isGroup(t.upper1, t.root));
+});
+
+TEST_F('AutomationPredicateUnitTest', 'IsInterestingSubtree', function() {
+  let t = this.getSampleTree();
+
+  assertTrue(AutomationPredicate.isInterestingSubtree(t.root));
+  assertTrue(AutomationPredicate.isInterestingSubtree(t.upper1));
+  assertTrue(AutomationPredicate.isInterestingSubtree(t.upper2));
+  assertTrue(AutomationPredicate.isInterestingSubtree(t.lower1));
+  assertTrue(AutomationPredicate.isInterestingSubtree(t.lower2));
+  assertFalse(AutomationPredicate.isInterestingSubtree(t.lower3));
+  assertTrue(AutomationPredicate.isInterestingSubtree(t.leaf1));
+  assertFalse(AutomationPredicate.isInterestingSubtree(t.leaf2));
+  assertTrue(AutomationPredicate.isInterestingSubtree(t.leaf3));
+  assertFalse(AutomationPredicate.isInterestingSubtree(t.leaf4));
+  assertTrue(AutomationPredicate.isInterestingSubtree(t.leaf5));
+  assertFalse(AutomationPredicate.isInterestingSubtree(t.leaf6));
+  assertFalse(AutomationPredicate.isInterestingSubtree(t.leaf7));
+});
+
+TEST_F('AutomationPredicateUnitTest', 'IsInteresting', function() {
+  // Testing focusable.
+  let loc1 = {left: 0, top: 0, width: 0, height: 0};
+  let node1 = {location: loc1, state: {}};
+  let node2 = {location: loc1, state: {focusable: false}};
+  let node3 = {location: loc1, state: {focusable: true}};
+  assertFalse(AutomationPredicate.isInteresting(node1));
+  assertFalse(AutomationPredicate.isInteresting(node2));
+  assertTrue(AutomationPredicate.isInteresting(node3));
+
+  // Testing onscreen.
+  let loc2 = {left: -1, top: 0, width: 0, height: 0};
+  let loc3 = {left: 0, top: -1, width: 0, height: 0};
+  let node4 = {location: loc2, state: {focusable: true}};
+  let node5 = {location: loc3, state: {focusable: true}};
+  let node6 = {location: loc1, state: {focusable: true, offscreen: true}}
+  assertFalse(AutomationPredicate.isInteresting(node4));
+  assertFalse(AutomationPredicate.isInteresting(node5));
+  assertFalse(AutomationPredicate.isInteresting(node6));
+
+  // Testing if tab.
+  let node7 = {location: loc1, role: 'desktop', state: {}};
+  let node8 = {location: loc1, role: 'tabList', state: {}};
+  let node9 =
+      {location: loc1, parent: node8, root: node7, role: 'tab', state: {}};
+  assertFalse(AutomationPredicate.isInteresting(node7));
+  assertFalse(AutomationPredicate.isInteresting(node8));
+  assertTrue(AutomationPredicate.isInteresting(node9));
+
+  // Testing if webView or rootWebArea.
+  let node10 = {location: loc1, role: 'webView', state: {focusable: true}};
+  let node11 = {location: loc1, role: 'rootWebArea', state: {focusable: true}};
+  assertFalse(AutomationPredicate.isInteresting(node10));
+  assertFalse(AutomationPredicate.isInteresting(node11));
+});

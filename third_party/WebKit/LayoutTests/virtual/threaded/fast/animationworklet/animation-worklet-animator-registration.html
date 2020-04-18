@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+
+<!--
+TODO(majidvp): The try/catch in above test cases should not be needed but at the moment
+threaded worklet does not correctly pass error to its parent context. It crashes in
+https://codesearch.chromium.org/chromium/src/third_party/WebKit/Source/bindings/core/v8/WorkerOrWorkletScriptController.cpp?sq=package:chromium&dr&l=320
+-->
+<script id="duplicate" type="text/worklet">
+try {
+  registerAnimator("duplicate", class { animate() {} });
+  registerAnimator("duplicate", class { animate() {} });
+} catch(e) { console.log(e); }
+</script>
+
+<script id="no_class" type="text/worklet">
+try {
+  registerAnimator("no_class", "");
+} catch(e) { console.log(e); }
+</script>
+
+<script id="empty_string" type="text/worklet">
+try {
+  registerAnimator("", class { animate() {} });
+} catch(e) { console.log(e); }
+</script>
+
+<script id="empty_string" type="text/worklet">
+registerAnimator("test", class {
+  constructor() {
+    console.log("test animator constructor called.");
+  }
+  animate() {}
+});
+</script>
+
+<script src="resources/animation-worklet-tests.js"></script>
+<script>
+  runAnimationWorkletTests();
+</script>

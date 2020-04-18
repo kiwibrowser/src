@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script>
+        if (window.testRunner) {
+            testRunner.dumpFrameLoadCallbacks();
+            testRunner.dumpAsText();
+            testRunner.waitUntilDone();
+        }
+
+        function testFragmentNavigation() {
+            window.postMessage("postmessage", "*");
+            document.querySelector('iframe').src = "http://127.0.0.1:8000/navigation/resources/postmessage-on-hashchange.html#anchor1";
+        }
+
+        var receivedScheduledPostMessage = false;
+        var receivedHashchangeMessage = false;
+        window.addEventListener('message', function (e) {
+            if (e.data === 'postmessage') {
+                receivedScheduledPostMessage = true;
+                if (receivedHashchangeMessage)
+                    alert('FAIL: hashchange already triggered!');
+                else
+                    alert('PASS: scheduled postMessage() before hashchange triggered.');
+            } else {
+                receivedHashchangeMessage = true;
+                if (receivedScheduledPostMessage)
+                    alert('PASS: hashchange triggered after postMessage().');
+                else
+                    alert('FAIL: hashchange triggered before postMessage().');
+                testRunner.notifyDone();
+            }
+        });
+    </script>
+</head>
+<body>
+    <p>This tests that same-origin fragment navigations are synchronous. It does
+    so by scheduling a postMessage before scheduling the navigation. If the
+    navigation is synchronous, the frame load callback for the load's commit will
+    happen before the message is handled. This isn't as flaky as it sounds, though
+    it does rely on this postMessage behavior (which seems reasonable to do).</p>
+    <p>This test passes if the didChangeLocationWithinPageForFrame callback
+    fires before the postMessage alert() fires.</p>
+    <iframe src="http://127.0.0.1:8000/navigation/resources/postmessage-on-hashchange.html" onload='testFragmentNavigation()'></iframe>
+</body>
+</html>

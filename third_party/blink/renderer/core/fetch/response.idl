@@ -1,0 +1,33 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// https://fetch.spec.whatwg.org/#response-class
+
+enum ResponseType { "basic", "cors", "default", "error", "opaque", "opaqueredirect" };
+
+[
+    ActiveScriptWrappable,
+    // TODO(yhirano): We use "any" for body because the IDL processor doesn't
+    // recognize ReadableStream implemented with V8 extras. Fix it.
+    Constructor(optional any body, optional ResponseInit init),
+    ConstructorCallWith=ScriptState,
+    Exposed=(Window,Worker),
+    RaisesException=Constructor
+] interface Response {
+    [CallWith=ScriptState, NewObject] static Response error();
+    [CallWith=ScriptState, NewObject, RaisesException] static Response redirect(USVString url, optional unsigned short status = 302);
+    readonly attribute ResponseType type;
+    readonly attribute USVString url;
+    readonly attribute boolean redirected;
+    readonly attribute unsigned short status;
+    readonly attribute boolean ok;
+    readonly attribute ByteString statusText;
+    [SameObject] readonly attribute Headers headers;
+
+    [RaisesException, CallWith=ScriptState, DoNotTestNewObject, NewObject] Response clone();
+
+    [CallWith=ScriptState, MeasureAs=FetchBodyStream] readonly attribute any body;
+};
+
+Response implements Body;

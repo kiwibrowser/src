@@ -1,0 +1,22 @@
+# compile failure, syntax error (this appears to tests a gcc  extension)
+# so not a biggy
+spec5.C
+# runtime failure: the problem here is that we are throwing an exception
+# during the contruction of an object on the stack, llvm does not seem
+# to call the destructor
+init-temp1.C
+
+# TODO(jfb) New failure with libc++, didn't fail with libstdc++. The
+# first copy construction doesn't see std::uncaught_exception as true,
+# all other test states are correct. The __cxa_* bookkeeping for
+# uncaughtExceptions seems different.
+uncaught1.C
+
+
+# ======================================================================
+# NOTE: the tests below fail on a regular gcc as well
+# ======================================================================
+# terminate called after throwing an instance of 'A'
+cast1.C
+# terminate called after throwing an instance of 'int'
+init-temp2.C

@@ -1,0 +1,32 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+nexe = env.ComponentProgram('file',
+                            'file.cc',
+                            EXTRA_LIBS=['pthread'])
+
+# TODO: add tests back in
+# NOTE: this smoke tests currently fails in "test17"
+#       when opening "././file/testdata256"
+#       it creates files in the current directory and below
+#       which should be avoided
+#       so for now we invoke file.py (see below)
+
+# node = env.CommandSelLdrTestNacl('file_test.out',
+#                                  nexe,
+#                                  flags='-d',
+#                                  )
+# AlwaysBuild(node)
+# env.AddNodeToSmokeTestSuite(node)
+
+
+# node = env.Command('file_test.out',
+#                    'file.py',
+#                    '${PYTHON} %s > ${TARGET}' % env.File('file.py')
+#                    )
+# AlwaysBuild(node)
+# env.AddNodeToSmokeTestSuite(node)

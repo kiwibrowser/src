@@ -1,0 +1,11 @@
+# -*- python -*-
+# Copyright (c) 2011 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+bigalloc_nexe = env.ComponentProgram('bigalloc', 'bigalloc.c',
+                                     EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl('bigalloc.out', bigalloc_nexe)
+env.AddNodeToTestSuite(node, ['small_tests'], 'run_bigalloc_test')

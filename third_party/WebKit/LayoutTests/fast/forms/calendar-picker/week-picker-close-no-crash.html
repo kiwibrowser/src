@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+<head>
+<script src=../../../resources/testharness.js></script>
+<script src=../../../resources/testharnessreport.js></script>
+<script src=../resources/picker-common.js></script>
+</head>
+<body>
+<input type=week id=week>
+<script>
+if (window.testRunner) {
+    testRunner.waitUntilDone();
+    testRunner.dumpAsText();
+}
+var test = async_test('Accessing popup window controller after detach should not crash.');
+
+function noCrashOnDetach() {
+    // Controller not accessible on a detached/closed window.
+    assert_equals(popupWindow.pagePopupController, null);
+    test.done();
+}
+
+test.step(() => {
+    openPicker(document.getElementById('week'), () => {
+        setTimeout(noCrashOnDetach);
+        popupWindow.close();
+    });
+});
+</script>
+</body>
+</html>
