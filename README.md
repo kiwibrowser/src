@@ -50,7 +50,7 @@ You can use a virtual machine, or a Google Cloud VM.
 
 To build Kiwi Browser you can directly clone the repository, as we have packed all dependencies already:
 
-1. In ~ (your home directory) run:
+In ~ (your home directory) run:
 
     git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
 
@@ -58,21 +58,19 @@ and edit the file ~/.bashrc to add at the very end
 
     export PATH=$HOME/depot_tools:$PATH
     
-Run:
+Validate the changes by running:
 
     source ~/.bashrc
 
 This will give you access to one utility called gclient (as in "Google client")
 
-2. Create a directory called ~/chromium/
-
-In this newly created directory run:
+Create a directory called ~/chromium/, and in this newly created directory run:
 
     git clone https://github.com/kiwibrowser/dependencies.git .cipd
     cp ~/chromium/.cipd/.gclient ~/chromium/
     cp ~/chromium/.cipd/.gclient_entries ~/chromium/
 
-3. Enter ~/chromium/ and run:
+Enter ~/chromium/ and run:
 
     git clone https://github.com/kiwibrowser/src.git
 
@@ -80,19 +78,17 @@ At this stage, in ~/chromium/ you will have the .cipd folder, and a folder with 
 
 ### Setting-up dependencies
 
-4. Run:
+To be able to build Kiwi Browser, you need python:
 
     sudo apt-get install python
 
-5. In ~/chromium/src/:
-
-Run the following commands:
+then run the following commands:
 
     bash install-build-deps.sh --no-chromeos-fonts
     build/linux/sysroot_scripts/install-sysroot.py --arch=i386
     build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
 
-This script will install all necessary system packages using apt-get and gather a minimal build filesystem.
+These commands will install all necessary system packages using apt-get and gather a minimal build filesystem.
 
 ### Preparing a signing key
 
@@ -104,7 +100,7 @@ To generate a key:
 
 ### Configuring the build type and platform
 
-6. In ~/chromium/src/, create a folder named "android_arm" and in this folder create a file called args.gn with this content:
+In ~/chromium/src/, create a folder named "android_arm" and in this folder create a file called args.gn with this content:
 
 args.gn:
 
@@ -158,7 +154,9 @@ args.gn:
     enable_plugins = true
 
 
-Replace Android keystore password and Android keystore keypath with the data for your Android keystore (or you can generate a new key)
+You can replace Android keystore password and Android keystore keypath with the data for your Android keystore (or you can generate a new key)
+
+### Prepare the first build
 
 To prepare initial setup run:
 
