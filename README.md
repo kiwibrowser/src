@@ -44,7 +44,7 @@ The reference build machine is using Ubuntu 19.04 (also tested using Ubuntu 18.0
 
 Minimum system requirements is 2 vCPUs, 7.5 GB Memory.
 
-You can use a virtual machine, or a Google Cloud VM.
+You can use a virtual machine, an AWS VM or a Google Cloud VM.
 
 ### Getting the source-code and environment
 
