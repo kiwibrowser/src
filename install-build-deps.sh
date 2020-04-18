@@ -5,25 +5,20 @@
 # Script to install everything needed to build chromium (well, ideally, anyway)
 # See https://chromium.googlesource.com/chromium/src/+/master/docs/linux/build_instructions.md
 usage() {
-  echo "Usage: $0 [--options]"
-  echo "Options:"
-  echo "--[no-]syms: enable or disable installation of debugging symbols"
-  echo "--lib32: enable installation of 32-bit libraries, e.g. for V8 snapshot"
-  echo "--[no-]arm: enable or disable installation of arm cross toolchain"
-  echo "--[no-]chromeos-fonts: enable or disable installation of Chrome OS"\
-       "fonts"
-  echo "--[no-]nacl: enable or disable installation of prerequisites for"\
-       "building standalone NaCl and all its toolchains"
-  echo "--[no-]backwards-compatible: enable or disable installation of packages
-        that are no longer currently needed and have been removed from this
-        script.  Useful for bisection."
-  echo "--no-prompt: silently select standard options/defaults"
-  echo "--quick-check: quickly try to determine if dependencies are installed"
-  echo "               (this avoids interactive prompts and sudo commands,"
-  echo "               so might not be 100% accurate)"
-  echo "--unsupported: attempt installation even on unsupported systems"
-  echo "Script will prompt interactively if options not given."
-  exit 1
+  cat <<-'  EOF' | sed -r 's/^ {4}//'
+    Usage: $0 [OPTION]
+
+    Options:
+      --[no-]syms                    enable or disable installation of debugging symbols
+      --lib32                        enable installation of 32-bit libraries, e.g. for V8 snapshot
+      --[no-]arm                     enable or disable installation of arm cross toolchain
+      --[no-]chromeos-fonts          enable or disable installation of Chrome OS fonts
+      --[no-]nacl                    enable or disable installation of prerequisites for building standalone NaCl and all its toolchains
+      --[no-]backwards-compatible    enable or disable installation of packages that are no longer currently needed and have been removed from this script. Useful for bisection.
+      --no-prompt                    silently select standard options/defaults
+      --quick-check                  quickly try to determine if dependencies are installed (this avoids interactive prompts and sudo commands, so might not be 100% accurate)
+      --unsupported                  attempt installation even on unsupported systems Script will prompt interactively if options not given.
+  EOF
 }
 # Build list of apt packages in dpkg --get-selections format.
 build_apt_package_list() {
