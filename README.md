@@ -167,12 +167,13 @@ then generate the build files:
     Done. Made 19910 targets from 1626 files in 21974ms
 
 
-===
+### Compiling Kiwi Browser
 
 To compile, use the command:
-ninja -C out/android_arm chrome_public_apk
 
-you'll have the output APK in ./out/android_arm/apks/ChromePublic.apk
+    ninja -C out/android_arm chrome_public_apk
+
+you'll have the output APK in ~/chromium/src/out/android_arm/apks/ChromePublic.apk
 
 then you can run the APK on your phone.
 
