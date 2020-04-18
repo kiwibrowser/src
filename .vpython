@@ -1,0 +1,176 @@
+# This is a vpython "spec" file.
+#
+# It describes patterns for python wheel dependencies of the python scripts in
+# the chromium repo, particularly for dependencies that have compiled components
+# (since pure-python dependencies can be easily vendored into third_party).
+#
+# When vpython is invoked, it finds this file and builds a python VirtualEnv,
+# containing all of the dependencies described in this file, fetching them from
+# CIPD (the "Chrome Infrastructure Package Deployer" service). Unlike `pip`,
+# this never requires the end-user machine to have a working python extension
+# compilation environment. All of these packages are built using:
+#   https://chromium.googlesource.com/infra/infra/+/master/infra/tools/dockerbuild/
+#
+# All python scripts in the repo share this same spec, to avoid dependency
+# fragmentation.
+#
+# If you have depot_tools installed in your $PATH, you can invoke python scripts
+# in this repo by running them as you normally would run them, except
+# substituting `vpython` instead of `python` on the command line, e.g.:
+#   vpython path/to/script.py some --arguments
+#
+# Read more about `vpython` and how to modify this file here:
+#   https://chromium.googlesource.com/infra/infra/+/master/doc/users/vpython.md
+
+python_version: "2.7"
+
+# Used by:
+#   third_party/catapult
+#
+# This version must be compatible with the version range specified by
+# //third_party/catapult/telemetry/telemetry/internal/util/external_modules.py
+wheel: <
+  name: "infra/python/wheels/psutil/${vpython_platform}"
+  version: "version:5.2.2"
+>
+
+# Used by:
+#   third_party/catapult
+#
+# This version must be compatible with the version range specified by
+# //third_party/catapult/telemetry/telemetry/internal/util/external_modules.py
+#
+# This version must also be compatible with the "numpy" version, as "cv2"
+# depends on "numpy". In this case, OpenCV@2.4.13.2 has been built against
+# numpy@1.11.3.
+wheel: <
+  name: "infra/python/wheels/opencv_python/${vpython_platform}"
+  version: "version:2.4.13.2"
+  match_tag: <
+    platform: "win32"
+  >
+  match_tag: <
+    platform: "win_amd64"
+  >
+  match_tag: <
+    abi: "cp27mu"
+    platform: "manylinux1_i686"
+  >
+  match_tag: <
+    abi: "cp27mu"
+    platform: "manylinux1_x86_64"
+  >
+  match_tag: <
+    platform: "macosx_10_6_intel"
+  >
+>
+
+# Used by:
+#   third_party/catapult
+#   chrome/test/vr/perf/latency/run_latency_test.py
+#
+# This version must be compatible with the version range specified by
+# //third_party/catapult/telemetry/telemetry/internal/util/external_modules.py
+wheel: <
+  name: "infra/python/wheels/numpy/${vpython_platform}"
+  version: "version:1.11.3"
+>
+
+# Used by:
+#   third_party/catapult
+wheel: <
+  name: "infra/python/wheels/pypiwin32/${vpython_platform}"
+  version: "version:219"
+  match_tag: <
+    platform: "win32"
+  >
+  match_tag: <
+    platform: "win_amd64"
+  >
+>
+
+# Used by:
+#   tools/perf/fetch_benchmark_deps.py
+wheel: <
+  name: "infra/python/wheels/google_compute_engine-py2_py3"
+  version: "version:2.6.2"
+>
+wheel: <
+  name: "infra/python/wheels/boto-py2_py3"
+  version: "version:2.48.0"
+>
+
+# Used by:
+#   testing/buildbot/generate_buildbot_json_coveragetest.py
+wheel: <
+  name: "infra/python/wheels/coverage/${vpython_platform}"
+  version: "version:4.3.4"
+>
+
+# Used by:
+#   chrome/browser/policy/test/policy_testserver.py
+wheel: <
+  name: "infra/python/wheels/protobuf-py2_py3"
+  version: "version:3.2.0"
+>
+wheel: <
+  name: "infra/python/wheels/six-py2_py3"
+  version: "version:1.10.0"
+>
+wheel: <
+  name: "infra/python/wheels/pyftpdlib-py2_py3"
+  version: "version:0.7.0"
+>
+wheel: <
+  name: "infra/python/wheels/simplejson/${vpython_platform}"
+  version: "version:3.13.2"
+>
+
+# Used by:
+#   tools/perf/core/results_dashboard.py
+wheel: <
+  name: "infra/python/wheels/httplib2-py2_py3"
+  version: "version:0.10.3"
+>
+
+# Used by:
+#   chrome/test/vr/perf/latency/run_latency_test.py
+wheel: <
+  name: "infra/python/wheels/peakutils-py2_py3"
+  version: "version:1.0.3"
+  match_tag: <
+    abi: "cp27mu"
+    platform: "manylinux1_i686"
+  >
+  match_tag: <
+    abi: "cp27mu"
+    platform: "manylinux1_x86_64"
+  >
+>
+wheel: <
+  name: "infra/python/wheels/pyserial-py2_py3"
+  version: "version:3.4"
+>
+wheel: <
+  name: "infra/python/wheels/scipy/${vpython_platform}"
+  version: "version:0.19.0"
+  match_tag: <
+    abi: "cp27mu"
+    platform: "manylinux1_i686"
+  >
+  match_tag: <
+    abi: "cp27mu"
+    platform: "manylinux1_x86_64"
+  >
+>
+
+# Used by:
+#   content/test/gpu/gpu_tests/color_profile_manager_mac.py
+# Note: there's a version of this wheel for even older OS versions,
+# but we don't need it for the GPU tests, and it looks like there are
+# bugs in the not_match_tag implementation.
+wheel: <
+  name: "infra/python/wheels/pyobjc/${vpython_platform}"
+  version: "version:4.1"
+  match_tag: < platform: "macosx_10_10_intel" >
+>
