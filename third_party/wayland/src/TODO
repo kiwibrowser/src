@@ -1,0 +1,149 @@
+Core wayland protocol
+
+ - Maybe try to make remote wayland actually happen, to see if there
+   is something in the protocol/architecture that makes it harder than
+   it should be.
+
+ICCCM
+
+ - mime-type guidelines for data_source (ie, both dnd and selection):
+   recommended types for text or images, types that a clipboard
+   manager must support, mime-types must be listed in preferred order
+
+ - we need a "no kb focus please" mechanism.  Or should this be
+   implicit in a specific surface type?
+
+EWMH
+
+ - configure should provide dx_left, dx_right, dy_top, dy_bottom, or
+   dx, dy, width and height.
+
+ - move to workspace, keep on top, on all workspaces, minimize etc
+   requests for implementing client side window menu? or just make a
+   "show window menu" request to let the compositor display and manage
+   a popup window?
+
+ - window move and resize functionality for kb and touch.
+
+ - Protocol for specifying title bar rectangle (for moving
+   unresponsive apps).  Rectangle for close button, so we can popup
+   force-close dialog if application doesn't respond to ping event
+   when user clicks there.  We could use the region mechanism here
+   too.
+
+ - popup placement protocol logic.
+
+ - subsurface mechanism.  we need this for cases where we would use an
+   X subwindow for gl or video other different visual type.
+
+EGL/gbm
+
+ - Land Robert Braggs EGL extensions: frame age, swap with damage
+
+ - Make it possible to share buffers from compositor to clients.
+   Tricky part here is how to indicate to EGL on the server side that
+   it should make an EGLImage available to a client.  We'll need a
+   "create a wl_buffer for this EGLImage for this client" kind of
+   entry point.
+
+ - Protocol for arbitrating access to scanout buffers (physically
+   contiguous memory).  When a client goes fullscreen (or ideally as
+   the compositor starts the animation that will make it fullscreen)
+   we send a "give up your scanout buffer" to the current fullscreen
+   client (if any) and when the client acks that we send a "try to
+   allocate a scanout buffer now" event to the fullscreen-to-be
+   client.
+
+
+Misc
+
+ - glyph cache
+
+    - Needs a mechanism to pass buffers to client.
+
+      buffer = drm.create_buffer(); /* buffer with stuff in it */
+
+      cache.upload(buffer, x, y, width, height, int hash)
+
+      drm.buffer: id, name, stride etc /* event to announce cache buffer */
+
+      cache.image: hash, buffer, x, y, stride /* event to announce
+					      * location in cache */
+
+      cache.reject: hash   /* no upload for you! */
+
+      cache.retire: buffer /* cache has stopped using buffer, please
+			    * reupload whatever you had in that buffer */
+
+ - A "please suspend" event from the compositor, to indicate to an
+   application that it's no longer visible/active.  Or maybe discard
+   buffer, as in "wayland discarded your buffer, it's no longer
+   visible, you can stop updating it now.", reattach, as in "oh hey,
+   I'm about to show your buffer that I threw away, what was it
+   again?".  for wayland system compositor vt switcing, for example,
+   to be able to throw away the surfaces in the session we're
+   switching away from.  for minimized windows that we don't want live
+   thumb nails for. etc.
+
+
+Clients and ports
+
+ - port gtk+
+
+    - draw window decorations in gtkwindow.c
+
+    - Details about pointer grabs. wayland doesn't have active grabs,
+      menus will behave subtly different.  Under X, clicking a menu
+      open grabs the pointer and clicking outside the window pops down
+      the menu and swallows the click.  without active grabs we can't
+      swallow the click.  I'm sure there much more...
+
+    - dnd, copy-paste
+
+ - Investigate DirectFB on Wayland (or is that Wayland on DirectFB?)
+
+ - SDL port, bnf has work in progress here:
+   http://cgit.freedesktop.org/~bnf/sdl-wayland/
+
+
+Ideas
+
+ - A wayland settings protocol to tell clients about themes (icons,
+   cursors, widget themes), fonts details (family, hinting
+   preferences) etc.  Just send all settings at connect time, send
+   updates when a setting change.  Getting a little close to gconf
+   here, but could be pretty simple:
+
+     interface "settings":
+       event int_value(string name, int value)
+       event string_value(string name, string value)
+
+   but maybe it's better to just require that clients get that from
+   somewhere else (gconf/dbus).
+
+
+Crazy ideas
+
+ - AF_WAYLAND - A new socket type.  Eliminate compositor context
+   switch by making kernel understand enough of wayland that it can
+   forward input events as wayland events and do page flipping in
+   response to surface_attach requests:
+
+    - ioctl(wayland_fd, "surface_attach to object 5 should do a kms page
+			 flip on ctrc 2");
+
+    - what about multiple crtcs? what about frame event for other
+      clients?
+
+    - forward these input devices to the client
+
+    - "scancode 124 pressed or released with scan codes 18,22 and 30
+       held down gives control back to userspace wayland.
+
+    - what about maintaining cursor position? what about pointer
+      acceleration?  maybe this only works in "client cursor mode",
+      where wayland hides the cursor and only sends relative events?
+      Solves the composited cursor problem.  How does X show its
+      cursor then?
+
+    - Probably not worth it.

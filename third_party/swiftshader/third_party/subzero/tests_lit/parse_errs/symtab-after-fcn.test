@@ -1,0 +1,22 @@
+; Test if we detect if the value symbol table appears after a function block.
+
+; REQUIRES: no_minimal_build
+
+; RUN: not %pnacl_sz -bitcode-as-text %p/Inputs/symtab-after-fcn.tbc \
+; RUN:     -bitcode-format=pnacl -notranslate -build-on-read \
+; RUN:     -allow-externally-defined-symbols 2>&1 \
+; RUN:   | FileCheck %s
+
+; CHECK: Module valuesymtab not allowed after function blocks
+
+; RUN: pnacl-bcfuzz -bitcode-as-text %p/Inputs/symtab-after-fcn.tbc \
+; RUN:   -output - | not pnacl-bcdis -no-records \
+; RUN:             | FileCheck -check-prefix=ASM %s
+
+; ASM: module {  // BlockID = 8
+; ASM:   function void @f0() {  // BlockID = 12
+; ASM:   }
+; ASM:   valuesymtab {  // BlockID = 14
+; ASM: Error({{.*}}): Module symbol table must appear before function blocks
+; ASM:   }
+; ASM: }

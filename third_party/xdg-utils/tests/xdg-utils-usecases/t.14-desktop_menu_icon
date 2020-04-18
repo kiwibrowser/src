@@ -1,0 +1,66 @@
+#!/bin/bash
+
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+test_desktop_menu_icon() {
+
+test_start "$FUNCNAME: ensure that icons show up correctly in menu."
+
+ICON_SIZES="16 22 24 32 48 64 128"
+
+test_init
+
+# get icon files
+for i in $ICON_SIZES; do
+	use_file "$XDG_TEST_DIR/icons/red-$i.png" TMP
+done
+
+# get & edit desktop file
+use_file "$XDG_TEST_DIR/xdg-utils-usecases/data/icon_test.desktop" DESKTOP
+use_file "$XDG_TEST_DIR/xdg-utils-usecases/data/menu_item_dummy.desktop" DESKTOP2
+use_file "$XDG_TEST_DIR/xdg-utils-usecases/data/menu_install.directory" DIRECTORY
+
+edit_file "$DESKTOP" 'Icon Test' ITEM_TEXT "TEST $XDG_TEST_SHORTID"
+edit_file "$DESKTOP" 'red' ICON_NAME "red-$XDG_TEST_SHORTID"
+
+edit_file "$DIRECTORY" 'XDG UTILS TEST' MENU_NAME "MENU $XDG_TEST_SHORTID"
+edit_file "$DIRECTORY" 'red' ICON_NAME "red-$XDG_TEST_SHORTID"
+
+assert_file "$DESKTOP"
+assert_file "$DESKTOP2"
+assert_file "$DIRECTORY"
+
+test_procedure
+
+# install icons of all sizes
+for i in $ICON_SIZES; do
+	assert_exit 0 xdg-icon-resource install --size "$i" "xdgtestdata-$XDG_TEST_ID-red-$i.png" "$ICON_NAME"
+	assert_nostdout
+	assert_nostderr
+done
+
+assert_exit 0 xdg-desktop-menu install "$DIRECTORY" "$DESKTOP" "$DESKTOP2"
+assert_nostdout
+assert_nostderr
+
+# Wait a little for caches to update
+sleep 1
+
+assert_interactive "Is there a menu in <main> called '$MENU_NAME'?" y
+assert_interactive "Does the menu '$MENU_NAME' have a red number as its icon?" y
+assert_interactive "Does the menu entry '$ITEM_TEXT' in '<main>/$MENU_NAME' have a red number as its icon?" y
+
+## cleanup
+
+xdg-desktop-menu uninstall "$DIRECTORY" "$DESKTOP" "$DESKTOP2" > /dev/null 2> /dev/null
+
+# remove icons
+for i in $ICON_SIZES; do
+	xdg-icon-resource uninstall --size "$i" "$ICON_NAME" > /dev/null 2> /dev/null
+done
+
+test_result
+}
+
+run_test test_desktop_menu_icon

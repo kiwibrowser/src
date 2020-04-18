@@ -1,0 +1,113 @@
+group invalid_redefinitions "Invalid Redefinitions Tests"
+
+	case invalid_identifier_2
+		version 440
+		expect compile_fail
+		both ""
+			#version 440
+			precision mediump float;
+			${DECLARATIONS}
+			# define GL_VALUE	1.0
+
+			void main()
+			{
+				${POSITION_FRAG_COLOR} = vec4(GL_VALUE);
+			}
+		""
+	end
+
+end # invalid_redefinitions
+
+group line_continuation "Line Continuation Tests"
+
+	case comment
+		version 440
+		values { output float out0 = 1.0; }
+		both ""
+			#version 440
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main ()
+			{
+				out0 = 1.0;
+				// comment \\
+				out0 = -1.0;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case define
+		version 440
+		values { output float out0 = 1.0; }
+		both ""
+			#version 440
+			precision mediump float;
+			${DECLARATIONS}
+			#define A(X) \\
+				(-1.0*(X))
+
+			void main ()
+			{
+				out0 = A(-1.0);
+				${OUTPUT}
+			}
+		""
+	end
+
+	case preprocessing_token
+		version 440
+		values { output float out0 = 1.0; }
+		both ""
+			#version 440
+			precision mediump float;
+			${DECLARATIONS}
+			#def\\
+			ine A(X) (-1.0*(X))
+
+			void main ()
+			{
+				out0 = A(-1.0);
+				${OUTPUT}
+			}
+		""
+	end
+
+	case token
+		version 440
+		values { output float out0 = 1.0; }
+		both ""
+			#version 440
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main ()
+			{
+				float f\\
+			oo = 1.0;
+				out0 = foo;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case middle_of_line
+		version 440
+		values { output float out0 = 1.0; }
+		both ""
+			#version 440
+			precision mediump float;
+			${DECLARATIONS}
+			#define A a \\ b
+			#define B 1.0
+
+			void main ()
+			{
+				out0 = B;
+				${OUTPUT}
+			}
+		""
+	end
+
+end # line_continuation

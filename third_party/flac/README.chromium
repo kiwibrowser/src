@@ -1,0 +1,27 @@
+Name: flac
+URL: http://downloads.xiph.org/releases/flac/flac-1.3.1.tar.xz
+Version: 1.3.1
+License: BSD
+License File: COPYING.Xiph
+Security Critical: yes
+
+Description:
+This contains a copy of flac-1.3.1
+
+This library is required for the browser to compress and encode recorded audio
+before sending to Google servers for speech recognition. This is a straight dump
+of flac-1.3.1 with all the unused files removed and the following changes:
+
+- Added flac.gyp, flac.h, README.chromium and src/libFLAC/alloc.c
+- Replaced include/share/alloc.h with a new file.
+- include/libFLAC/private/macros.h: don't conditionalize on GCC version >= 4.3;
+  Clang looks like GCC 4.2, but we want these defines.
+- src/share/win_utf8_io/win_utf8_io.c: call LoadLibraryA instead of just
+  LoadLibrary since the argument is a non-wide string.
+- src/share/libFLAC/bitwriter.c: add extern declaration of inline
+  function FLAC__bitwriter_write_raw_uint32 to fix link errors. Upstream:
+  https://git.xiph.org/?p=flac.git;a=commit;h=28817ba52fdd92b0a49f84b2e8848199efc00242
+- src/libFLAC/lpc.c: Restore missing conditional. Upstream:
+  https://git.xiph.org/?p=flac.git;a=commit;h=ef9f7998fd358b2812a7296fe1c5aed221bade5f
+- Include limits.h on Android to work around NDK deficiency. Upstream:
+  https://git.xiph.org/?p=flac.git;a=commit;h=b762a20ace7c7771f87f63478bcee3cf51268cff

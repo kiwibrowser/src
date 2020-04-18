@@ -1,0 +1,399 @@
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+
+DROP TABLE IF EXISTS `annotationsTable`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `annotationsTable` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `build_id` int(11) NOT NULL,
+  `last_updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `last_annotator` varchar(80) DEFAULT NULL,
+  `failure_category` enum('bad_cl','bug_in_tot','merge_conflict','tree_closed','scheduled_abort','cl_not_ready','bad_chrome','infra_failure','test_flake','gerrit_failure','gs_failure','lab_failure','bad_binary_package','build_flake','mystery') DEFAULT 'mystery',
+  `failure_message` varchar(1024) DEFAULT NULL,
+  `blame_url` varchar(512) DEFAULT NULL,
+  `notes` varchar(1024) DEFAULT NULL,
+  `deleted` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `build_id` (`build_id`),
+  KEY `last_updated` (`last_updated`),
+  CONSTRAINT `annotationsTable_ibfk_1` FOREIGN KEY (`build_id`) REFERENCES `buildTable` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+
+DROP TABLE IF EXISTS `boardPerBuildTable`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `boardPerBuildTable` (
+  `build_id` int(11) NOT NULL,
+  `board` varchar(80) NOT NULL,
+  `main_firmware_version` varchar(80) DEFAULT NULL,
+  `ec_firmware_version` varchar(80) DEFAULT NULL,
+  `last_updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `final` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`build_id`,`board`),
+  KEY `build_id` (`build_id`),
+  KEY `last_updated_index` (`last_updated`),
+  CONSTRAINT `boardPerBuildTable_ibfk_1` FOREIGN KEY (`build_id`) REFERENCES `buildTable` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+
+DROP TABLE IF EXISTS `buildMessageTable`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `buildMessageTable` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `build_id` int(11) NOT NULL,
+  `message_type` varchar(240) DEFAULT NULL,
+  `message_subtype` varchar(240) DEFAULT NULL,
+  `message_value` varchar(480) DEFAULT NULL,
+  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `board` varchar(240) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `build_id` (`build_id`),
+  CONSTRAINT `buildMessageTable_ibfk_1` FOREIGN KEY (`build_id`) REFERENCES `buildTable` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+
+DROP TABLE IF EXISTS `buildRequestTable`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `buildRequestTable` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `build_id` int(11) NOT NULL,
+  `request_build_config` varchar(80) NOT NULL,
+  `request_build_args` varchar(240) DEFAULT NULL,
+  `request_buildbucket_id` varchar(80) DEFAULT NULL,
+  `request_reason` enum('sanity-pre-cq','important_cq_slave','experimental_cq_slave') NOT NULL,
+  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `build_id` (`build_id`),
+  KEY `timestamp` (`timestamp`),
+  CONSTRAINT `buildRequestTable_ibfk_1` FOREIGN KEY (`build_id`) REFERENCES `buildTable` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+
+DROP TABLE IF EXISTS `buildStageTable`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `buildStageTable` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `build_id` int(11) NOT NULL,
+  `name` varchar(80) NOT NULL,
+  `board` varchar(80) DEFAULT NULL,
+  `status` enum('fail','pass','inflight','missing','aborted','planned','skipped','forgiven','waiting') DEFAULT NULL,
+  `last_updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `start_time` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `finish_time` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `final` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `build_id` (`build_id`),
+  KEY `last_updated` (`last_updated`),
+  CONSTRAINT `buildStageTable_ibfk_1` FOREIGN KEY (`build_id`) REFERENCES `buildTable` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+
+DROP TABLE IF EXISTS `buildTable`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `buildTable` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `last_updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `master_build_id` int(11) DEFAULT NULL,
+  `buildbot_generation` int(11) NOT NULL,
+  `builder_name` varchar(80) NOT NULL,
+  `waterfall` varchar(80) DEFAULT NULL,
+  `build_number` int(11) NOT NULL,
+  `build_config` varchar(80) NOT NULL,
+  `bot_hostname` varchar(80) NOT NULL,
+  `start_time` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `finish_time` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `status` enum('fail','pass','inflight','missing','aborted') NOT NULL DEFAULT 'inflight',
+  `status_pickle` blob,
+  `build_type` varchar(80) DEFAULT NULL,
+  `chrome_version` varchar(80) DEFAULT NULL,
+  `milestone_version` varchar(80) DEFAULT NULL,
+  `platform_version` varchar(80) DEFAULT NULL,
+  `full_version` varchar(80) DEFAULT NULL,
+  `sdk_version` varchar(80) DEFAULT NULL,
+  `toolchain_url` varchar(240) DEFAULT NULL,
+  `final` tinyint(1) NOT NULL DEFAULT '0',
+  `metadata_url` varchar(240) DEFAULT NULL,
+  `summary` varchar(1024) DEFAULT NULL,
+  `deadline` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `important` tinyint(1) DEFAULT NULL,
+  `buildbucket_id` varchar(80) DEFAULT NULL,
+  `unibuild` tinyint(1) NOT NULL DEFAULT '0',
+  `suite_scheduling` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `buildbucket_id_index` (`buildbucket_id`),
+  UNIQUE KEY `unique_externals` (`buildbot_generation`,`builder_name`,`waterfall`,`build_number`,`buildbucket_id`),
+  KEY `master_build_id` (`master_build_id`),
+  KEY `build_config_index` (`build_config`),
+  KEY `last_updated_index` (`last_updated`),
+  KEY `start_time` (`start_time`),
+  CONSTRAINT `buildTable_ibfk_1` FOREIGN KEY (`master_build_id`) REFERENCES `buildTable` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+
+DROP TABLE IF EXISTS `childConfigPerBuildTable`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `childConfigPerBuildTable` (
+  `build_id` int(11) NOT NULL,
+  `child_config` varchar(80) NOT NULL,
+  `last_updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `status` enum('fail','pass','inflight','missing','aborted') NOT NULL DEFAULT 'inflight',
+  `final` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`build_id`,`child_config`),
+  KEY `build_id` (`build_id`),
+  KEY `last_updated_index` (`last_updated`),
+  CONSTRAINT `childConfigPerBuildTable_ibfk_1` FOREIGN KEY (`build_id`) REFERENCES `buildTable` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+
+DROP TABLE IF EXISTS `clActionTable`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `clActionTable` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `build_id` int(11) DEFAULT NULL,
+  `change_number` int(11) NOT NULL,
+  `patch_number` int(11) NOT NULL,
+  `change_source` enum('internal','external') NOT NULL,
+  `action` enum('picked_up','submitted','kicked_out','submit_failed','verified','pre_cq_inflight','pre_cq_passed','pre_cq_failed','pre_cq_launching','pre_cq_waiting','pre_cq_ready_to_submit','requeued','screened_for_pre_cq','validation_pending_pre_cq','irrelevant_to_slave','trybot_launching','speculative','forgiven','pre_cq_fully_verified','pre_cq_reset','trybot_cancelled','relevant_to_slave','exonerated') NOT NULL,
+  `reason` varchar(80) DEFAULT NULL,
+  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `buildbucket_id` varchar(80) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `build_id` (`build_id`),
+  KEY `change_number` (`change_number`,`change_source`),
+  KEY `change_number_2` (`change_number`,`patch_number`,`change_source`),
+  KEY `timestamp_index` (`timestamp`),
+  CONSTRAINT `clActionTable_ibfk_1` FOREIGN KEY (`build_id`) REFERENCES `buildTable` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+
+DROP TABLE IF EXISTS `clActionView`;
+/*!50001 DROP VIEW IF EXISTS `clActionView`*/;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+/*!50001 CREATE TABLE `clActionView` (
+  `id` tinyint NOT NULL,
+  `build_id` tinyint NOT NULL,
+  `change_number` tinyint NOT NULL,
+  `patch_number` tinyint NOT NULL,
+  `change_source` tinyint NOT NULL,
+  `action` tinyint NOT NULL,
+  `reason` tinyint NOT NULL,
+  `timestamp` tinyint NOT NULL,
+  `last_updated` tinyint NOT NULL,
+  `master_build_id` tinyint NOT NULL,
+  `buildbot_generation` tinyint NOT NULL,
+  `builder_name` tinyint NOT NULL,
+  `waterfall` tinyint NOT NULL,
+  `build_number` tinyint NOT NULL,
+  `build_config` tinyint NOT NULL,
+  `bot_hostname` tinyint NOT NULL,
+  `start_time` tinyint NOT NULL,
+  `finish_time` tinyint NOT NULL,
+  `status` tinyint NOT NULL,
+  `build_type` tinyint NOT NULL,
+  `chrome_version` tinyint NOT NULL,
+  `milestone_version` tinyint NOT NULL,
+  `platform_version` tinyint NOT NULL,
+  `full_version` tinyint NOT NULL,
+  `sdk_version` tinyint NOT NULL,
+  `toolchain_url` tinyint NOT NULL,
+  `final` tinyint NOT NULL,
+  `metadata_url` tinyint NOT NULL,
+  `summary` tinyint NOT NULL,
+  `deadline` tinyint NOT NULL,
+  `important` tinyint NOT NULL
+) ENGINE=MyISAM */;
+SET character_set_client = @saved_cs_client;
+
+
+DROP TABLE IF EXISTS `failureTable`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `failureTable` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `build_stage_id` int(11) NOT NULL,
+  `outer_failure_id` int(11) DEFAULT NULL,
+  `exception_type` varchar(240) DEFAULT NULL,
+  `exception_message` varchar(240) DEFAULT NULL,
+  `exception_category` enum('unknown','build','test','infra','lab') NOT NULL DEFAULT 'unknown',
+  `extra_info` varchar(240) DEFAULT NULL,
+  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `build_stage_id` (`build_stage_id`),
+  KEY `outer_failure_id` (`outer_failure_id`),
+  CONSTRAINT `failureTable_ibfk_1` FOREIGN KEY (`build_stage_id`) REFERENCES `buildStageTable` (`id`),
+  CONSTRAINT `failureTable_ibfk_2` FOREIGN KEY (`outer_failure_id`) REFERENCES `failureTable` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+
+DROP TABLE IF EXISTS `failureView`;
+/*!50001 DROP VIEW IF EXISTS `failureView`*/;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+/*!50001 CREATE TABLE `failureView` (
+  `id` tinyint NOT NULL,
+  `build_stage_id` tinyint NOT NULL,
+  `outer_failure_id` tinyint NOT NULL,
+  `exception_type` tinyint NOT NULL,
+  `exception_message` tinyint NOT NULL,
+  `exception_category` tinyint NOT NULL,
+  `extra_info` tinyint NOT NULL,
+  `timestamp` tinyint NOT NULL,
+  `stage_name` tinyint NOT NULL,
+  `board` tinyint NOT NULL,
+  `stage_status` tinyint NOT NULL,
+  `stage_last_updated` tinyint NOT NULL,
+  `stage_start_time` tinyint NOT NULL,
+  `stage_finish_time` tinyint NOT NULL,
+  `stage_final` tinyint NOT NULL,
+  `build_id` tinyint NOT NULL,
+  `build_last_updated` tinyint NOT NULL,
+  `master_build_id` tinyint NOT NULL,
+  `buildbot_generation` tinyint NOT NULL,
+  `builder_name` tinyint NOT NULL,
+  `waterfall` tinyint NOT NULL,
+  `build_number` tinyint NOT NULL,
+  `build_config` tinyint NOT NULL,
+  `bot_hostname` tinyint NOT NULL,
+  `build_start_time` tinyint NOT NULL,
+  `build_finish_time` tinyint NOT NULL,
+  `build_status` tinyint NOT NULL,
+  `build_type` tinyint NOT NULL,
+  `chrome_version` tinyint NOT NULL,
+  `milestone_version` tinyint NOT NULL,
+  `platform_version` tinyint NOT NULL,
+  `full_version` tinyint NOT NULL,
+  `sdk_version` tinyint NOT NULL,
+  `toolchain_url` tinyint NOT NULL,
+  `build_final` tinyint NOT NULL,
+  `metadata_url` tinyint NOT NULL,
+  `summary` tinyint NOT NULL,
+  `deadline` tinyint NOT NULL,
+  `important` tinyint NOT NULL,
+  `buildbucket_id` tinyint NOT NULL
+) ENGINE=MyISAM */;
+SET character_set_client = @saved_cs_client;
+
+
+DROP TABLE IF EXISTS `hwTestResultTable`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `hwTestResultTable` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `build_id` int(11) NOT NULL,
+  `test_name` varchar(240) NOT NULL,
+  `status` enum('fail','pass','abort','other') NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `build_id` (`build_id`),
+  CONSTRAINT `hwTestResultTable_ibfk_1` FOREIGN KEY (`build_id`) REFERENCES `buildTable` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+
+DROP TABLE IF EXISTS `keyvalTable`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `keyvalTable` (
+  `k` varchar(240) NOT NULL,
+  `v` varchar(240) DEFAULT NULL,
+  PRIMARY KEY (`k`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+
+DROP TABLE IF EXISTS `modelPerBoardTable`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `modelPerBoardTable` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `build_id` int(11) DEFAULT NULL,
+  `board` varchar(80) NOT NULL,
+  `model_name` varchar(80) NOT NULL,
+  `main_firmware_version` varchar(80) DEFAULT NULL,
+  `ec_firmware_version` varchar(80) DEFAULT NULL,
+  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `build_id` (`build_id`,`board`),
+  CONSTRAINT `modelPerBoardTable_ibfk_1` FOREIGN KEY (`build_id`, `board`) REFERENCES `boardPerBuildTable` (`build_id`, `board`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+
+DROP TABLE IF EXISTS `schemaVersionTable`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `schemaVersionTable` (
+  `schemaVersion` int(11) NOT NULL,
+  `scriptName` varchar(80) DEFAULT NULL,
+  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`schemaVersion`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+
+/*!50001 DROP TABLE IF EXISTS `clActionView`*/;
+/*!50001 DROP VIEW IF EXISTS `clActionView`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8 */;
+/*!50001 SET character_set_results     = utf8 */;
+/*!50001 SET collation_connection      = utf8_general_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
+/*!50001 VIEW `clActionView` AS select `c`.`id` AS `id`,`c`.`build_id` AS `build_id`,`c`.`change_number` AS `change_number`,`c`.`patch_number` AS `patch_number`,`c`.`change_source` AS `change_source`,`c`.`action` AS `action`,`c`.`reason` AS `reason`,`c`.`timestamp` AS `timestamp`,`b`.`last_updated` AS `last_updated`,`b`.`master_build_id` AS `master_build_id`,`b`.`buildbot_generation` AS `buildbot_generation`,`b`.`builder_name` AS `builder_name`,`b`.`waterfall` AS `waterfall`,`b`.`build_number` AS `build_number`,`b`.`build_config` AS `build_config`,`b`.`bot_hostname` AS `bot_hostname`,`b`.`start_time` AS `start_time`,`b`.`finish_time` AS `finish_time`,`b`.`status` AS `status`,`b`.`build_type` AS `build_type`,`b`.`chrome_version` AS `chrome_version`,`b`.`milestone_version` AS `milestone_version`,`b`.`platform_version` AS `platform_version`,`b`.`full_version` AS `full_version`,`b`.`sdk_version` AS `sdk_version`,`b`.`toolchain_url` AS `toolchain_url`,`b`.`final` AS `final`,`b`.`metadata_url` AS `metadata_url`,`b`.`summary` AS `summary`,`b`.`deadline` AS `deadline`,`b`.`important` AS `important` from (`clActionTable` `c` join `buildTable` `b` on((`c`.`build_id` = `b`.`id`))) */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+
+/*!50001 DROP TABLE IF EXISTS `failureView`*/;
+/*!50001 DROP VIEW IF EXISTS `failureView`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8 */;
+/*!50001 SET character_set_results     = utf8 */;
+/*!50001 SET collation_connection      = utf8_general_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
+/*!50001 VIEW `failureView` AS select `f`.`id` AS `id`,`f`.`build_stage_id` AS `build_stage_id`,`f`.`outer_failure_id` AS `outer_failure_id`,`f`.`exception_type` AS `exception_type`,`f`.`exception_message` AS `exception_message`,`f`.`exception_category` AS `exception_category`,`f`.`extra_info` AS `extra_info`,`f`.`timestamp` AS `timestamp`,`bs`.`name` AS `stage_name`,`bs`.`board` AS `board`,`bs`.`status` AS `stage_status`,`bs`.`last_updated` AS `stage_last_updated`,`bs`.`start_time` AS `stage_start_time`,`bs`.`finish_time` AS `stage_finish_time`,`bs`.`final` AS `stage_final`,`b`.`id` AS `build_id`,`b`.`last_updated` AS `build_last_updated`,`b`.`master_build_id` AS `master_build_id`,`b`.`buildbot_generation` AS `buildbot_generation`,`b`.`builder_name` AS `builder_name`,`b`.`waterfall` AS `waterfall`,`b`.`build_number` AS `build_number`,`b`.`build_config` AS `build_config`,`b`.`bot_hostname` AS `bot_hostname`,`b`.`start_time` AS `build_start_time`,`b`.`finish_time` AS `build_finish_time`,`b`.`status` AS `build_status`,`b`.`build_type` AS `build_type`,`b`.`chrome_version` AS `chrome_version`,`b`.`milestone_version` AS `milestone_version`,`b`.`platform_version` AS `platform_version`,`b`.`full_version` AS `full_version`,`b`.`sdk_version` AS `sdk_version`,`b`.`toolchain_url` AS `toolchain_url`,`b`.`final` AS `build_final`,`b`.`metadata_url` AS `metadata_url`,`b`.`summary` AS `summary`,`b`.`deadline` AS `deadline`,`b`.`important` AS `important`,`b`.`buildbucket_id` AS `buildbucket_id` from ((`failureTable` `f` join `buildStageTable` `bs` on((`f`.`build_stage_id` = `bs`.`id`))) join `buildTable` `b` on((`bs`.`build_id` = `b`.`id`))) */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;

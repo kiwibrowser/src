@@ -1,0 +1,56 @@
+#######################################################################
+# SConscript for EGL
+
+
+Import('*')
+
+env = env.Clone()
+
+env.Append(CPPDEFINES = [
+    '_EGL_BUILT_IN_DRIVER_GALLIUM',
+    '_EGL_DRIVER_SEARCH_DIR=\\"\\"',
+])
+
+if env['platform'] == 'windows':
+    env.Append(CPPDEFINES = [
+        '_EGL_NATIVE_PLATFORM=_EGL_PLATFORM_WINDOWS',
+        '_EGL_OS_WINDOWS',
+        '_EGL_GET_CORE_ADDRESSES',
+        'KHRONOS_DLL_EXPORTS',
+    ])
+else:
+    env.Append(CPPDEFINES = [
+        '_EGL_NATIVE_PLATFORM=_EGL_PLATFORM_X11',
+        '_EGL_OS_UNIX',
+    ])
+
+env.Append(CPPPATH = [
+    '#/include',
+])
+
+egl_sources = [
+    'eglapi.c',
+    'eglarray.c',
+    'eglconfig.c',
+    'eglcontext.c',
+    'eglcurrent.c',
+    'egldisplay.c',
+    'egldriver.c',
+    'eglfallbacks.c',
+    'eglglobals.c',
+    'eglimage.c',
+    'egllog.c',
+    'eglmisc.c',
+    'eglmode.c',
+    'eglscreen.c',
+    'eglstring.c',
+    'eglsurface.c',
+    'eglsync.c',
+]
+
+egl = env.ConvenienceLibrary(
+    target = 'egl',
+    source = egl_sources,
+)
+
+Export('egl')

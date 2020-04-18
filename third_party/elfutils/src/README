@@ -1,0 +1,19 @@
+Fundamental design decision:
+
+- the sizes of external and internal types are assumed to be the same.
+  This leaves byte ordering aside.  While assuming this the code can be
+  greatly simplified and speed increases.  Since no change violating this
+  assumption is in sight this is believed to be a worthwhile optimization.
+
+- the ABI of the backend modules is not guaranteed.  Really, not guarantee
+  whatsoever.  We are enforcing this in the code.  The modules and their
+  users must match.  No third-party EBL module are supported or allowed.
+  The only reason there are separate modules is to not have the code for
+  all architectures in all the binaries.
+
+- although the public libraries (libasm, libdw) have a stable API and are
+  backwards ABI compatible they, and the elfutils tools, do depend on each
+  others internals, and on internals of libelf to provide their interfaces.
+  So they should always be upgraded in lockstep when packaging the tools
+  and libraries separately. For one example of how to do that, see the
+  config/elfutils.spec.

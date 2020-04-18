@@ -1,0 +1,103 @@
+Conformance Test
+
+    CTS_ARB_shader_group_vote
+
+Contributors
+
+    Filip Demczewski, Mobica
+
+Contacts
+
+    Filip Demczewski, Mobica (filip.demczewski 'at' mobica.com)
+
+Status
+
+    In review
+
+Version
+
+    March 8, 2017 (version 1)
+
+Dependencies
+
+    OpenGL 4.3 is required.
+
+    ARB_shader_group_vote extension is required.
+    ARB_compute_shader extension is required.
+
+    This specification is written against:
+      - ARB_shader_group_vote specification,
+      - OpenGL 4.3 (Compatibility Profile) specification.
+
+Overview
+
+    Test is validating new built-in functions that can allow
+    shader invocations within one group to generate single result
+    for different input data in each invocation. This collective
+    choice can be achieved by using three new functions:
+     - bool anyInvocationARB(bool value);
+     - bool allInvocationsARB(bool value);
+     - bool allInvocationsEqualARB(bool value);
+
+New Tests
+
+    Availability test
+
+      * Check if extension is supported
+
+      * Check if GL_ARB_shader_group_vote GLSL preprocessor define is
+        available
+
+      * Check if new built-in functions are available to call
+
+    All test cases below are composed from the following steps:
+      - Compose shader with use one of new built-in functions
+      - Render primitive where final color of each pixel is
+        related to the function's returned value: (1, 1, 1, 1) if
+        function returned true and (0, 0, 0, 1) otherwise
+      - Validate all pixels within the invocation's group against
+        desired colors
+      - Repeat test with functions called in conditionally
+        executed code and expect same results
+        (when condition is not met pixel should be filled with
+        expected color to simplify validation)
+
+    Function allInvocationsARB test
+
+      * Test new built-in function allInvocationsARB. Condition passed
+        as a parameter should diverge between invocations. All pixels
+        should have (0, 0, 0, 1) color.
+
+      * Test new built-in function allInvocationsARB. Condition passed
+        as a parameter should be true for all invocations. All pixels
+        should have (1, 1, 1, 1) color.
+
+    Function anyInvocationARB test
+
+      * Test new built-in function anyInvocationARB. Condition passed
+        as a parameter should be true for one invocation within the
+        group. All pixels should have (1, 1, 1, 1) color.
+
+      * Test new build-in function anyInvocationARB. Condition passed
+        as a parameter should be false for every invocation within the
+        group. All pixels should have (0, 0, 0, 1) color.
+
+    Function allInvocationsEqualARB test
+
+      * Test new built-in function allInvocationsEqualARB. Condition
+        passed as a parameter should diverge between invocations.
+        All pixels should have (0, 0, 0, 1) color.
+
+      * Test new built-in function allInvocationsEqualARB. Condition
+        passed as a parameter should be true for all invocations.
+        All pixels should have (1, 1, 1, 1) color.
+
+      * Test new built-in function allInvocationsEqualARB. Condition
+        passed as a parameter should be false for all invocations.
+        All pixels should have (1, 1, 1, 1) color.
+
+
+Revision History
+
+    Revision 1, 8 March, 2017 (Filip Demczewski)
+      - Intial version;

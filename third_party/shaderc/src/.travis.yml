@@ -1,0 +1,98 @@
+# Linux Build Configuration for Travis
+
+language: cpp
+
+os:
+  - linux
+  - osx
+
+# Use Ubuntu 14.04 LTS (Trusty) as the Linux testing environment.
+sudo: required
+dist: trusty
+
+env:
+  - SHADERC_BUILD_TYPE=Release
+  - SHADERC_BUILD_TYPE=Debug
+
+compiler:
+  - clang
+  - gcc
+
+matrix:
+  fast_finish: true # Show final status immediately if a test fails.
+  exclude:
+    # Skip GCC builds on Mac OS X.
+    - os: osx
+      compiler: gcc
+  include:
+    # Additional GCC builds for code coverage.
+    - os: linux
+      compiler: gcc
+      env: SHADERC_CODE_COVERAGE=ON
+
+
+cache:
+  apt: true
+
+branches:
+  only:
+    - master
+
+addons:
+  apt:
+    packages:
+      - clang-3.6
+      - ninja-build
+      - lcov
+
+before_install:
+  # Install ninja on Mac OS X.
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update && brew install ninja; fi
+
+install:
+  - pip install --user nose
+  - pip install --user cpp-coveralls
+
+  - export PATH=$HOME/.local/bin:$PATH # Make sure we can find the above Python packages
+    # Make sure that clang-3.6 is selected.
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$CC" == "clang" ]]; then
+      export CC=clang-3.6 CXX=clang++-3.6;
+    fi
+
+before_script:
+  - git clone https://github.com/google/googletest.git        third_party/googletest
+  - git clone https://github.com/google/glslang.git           third_party/glslang
+  - git clone https://github.com/KhronosGroup/SPIRV-Tools.git third_party/spirv-tools
+
+script:
+  - mkdir build && cd build
+  - cmake -GNinja -DCMAKE_BUILD_TYPE=${SHADERC_BUILD_TYPE:-Debug} -DENABLE_CODE_COVERAGE=${SHADERC_CODE_COVERAGE:-OFF} ..
+  - ninja
+  - ctest -j`nproc` --output-on-failure
+
+after_success:
+  # Collect coverage and push to coveralls.info.
+  # Ignore third party source code and tests.
+  - if [[ "$CC" == "gcc" && "$SHADERC_CODE_COVERAGE" == "ON" ]]; then
+      coveralls
+        --root ../
+        --build-root ./
+        --exclude-pattern '.+/third_party/'
+        --exclude-pattern '.+/.+_test\.cc'
+        --exclude-pattern '.+/CMakeFiles/'
+        --gcov /usr/bin/gcov
+        --gcov-options '\--long-file-names --preserve-paths'
+        --verbose;
+    fi
+
+
+notifications:
+  email:
+    recipients:
+      - antiagainst@google.com
+      - awoloszyn@google.com
+      - deki@google.com
+      - dneto@google.com
+      - qining@google.com
+    on_success: change
+    on_failure: always

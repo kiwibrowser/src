@@ -1,0 +1,145 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>xdg-mime</title><meta name="generator" content="DocBook XSL Stylesheets V1.75.2"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" title="xdg-mime"><a name="xdg-mime"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>xdg-mime &#8212; command line tool for querying information about file type handling
+and adding descriptions for new file types</p></div><div class="refsynopsisdiv" title="Synopsis"><h2>Synopsis</h2><div class="cmdsynopsis"><p><code class="command">xdg-mime</code>   query  { filetype  |   default }  ... </p></div><div class="cmdsynopsis"><p><code class="command">xdg-mime</code>   default   <em class="replaceable"><code>application</code></em>   <em class="replaceable"><code>mimetype(s)</code></em> </p></div><div class="cmdsynopsis"><p><code class="command">xdg-mime</code>   install  [<code class="option">--mode <em class="replaceable"><code>mode</code></em></code>] [<code class="option">--novendor</code>]  <em class="replaceable"><code>mimetypes-file</code></em> </p></div><div class="cmdsynopsis"><p><code class="command">xdg-mime</code>   uninstall  [<code class="option">--mode <em class="replaceable"><code>mode</code></em></code>]  <em class="replaceable"><code>mimetypes-file</code></em> </p></div><div class="cmdsynopsis"><p><code class="command">xdg-mime</code>  { <code class="option">--help</code>  |   <code class="option">--manual</code>  |   <code class="option">--version</code> }</p></div></div><div class="refsect1" title="Description"><a name="description"></a><h2>Description</h2><p>
+      The xdg-mime program can be used to query information about file types
+      and to add descriptions for new file types.
+    </p></div><div class="refsect1" title="Commands"><a name="commands"></a><h2>Commands</h2><div class="variablelist"><dl><dt><span class="term">query</span></dt><dd><p class="simpara">
+	    Returns information related to file types.
+	  </p><p class="simpara">
+            The <span class="emphasis"><em>query</em></span> option is for use inside a desktop session only.
+            It is not recommended to use xdg-mime query as root.
+	  </p><p class="simpara">
+            The following queries are supported:
+	  </p><p class="simpara">query filetype <em class="replaceable"><code>FILE</code></em>:
+	    Returns the file type of <em class="replaceable"><code>FILE</code></em> in the form of a MIME type.
+	  </p><p class="simpara">query default <em class="replaceable"><code>mimetype</code></em>:
+	    Returns the default application that the desktop environment uses for opening
+	    files of type <em class="replaceable"><code>mimetype</code></em>. The default application is
+            identified by its *.desktop file.
+	  </p></dd><dt><span class="term">default</span></dt><dd><p class="simpara">
+	    Ask the desktop environment to make <em class="replaceable"><code>application</code></em>
+	    the default application for opening
+	    files of type <em class="replaceable"><code>mimetype</code></em>. An
+            application can be made the default for several file types by
+            specifying multiple mimetypes.
+	  </p><p class="simpara">
+	    <em class="replaceable"><code>application</code></em> is the desktop file
+	    id of the application and has the form vendor-name.desktop
+	    <em class="replaceable"><code>application</code></em> must already be installed
+	    in the desktop menu before it can be made the default handler.
+	    The aplication's desktop file must list support for all the
+	    MIME types that it wishes to be the default handler for.
+	  </p><p class="simpara">
+	    Requests to make an application a default handler may be
+	    subject to system policy or approval by the end-user. xdg-mime
+            query can be used to verify whether an application is the
+            actual default handler for a specific file type.   
+	  </p><p class="simpara">
+            The <span class="emphasis"><em>default</em></span> option is for use inside a desktop session only.
+            It is not recommended to use xdg-mime default as root.
+	  </p></dd><dt><span class="term">install</span></dt><dd>
+	    Adds the file type descriptions provided in <em class="replaceable"><code>mimetypes-file</code></em>
+            to the desktop environment. <em class="replaceable"><code>mimetypes-file</code></em>
+            must be a XML file that follows the freedesktop.org
+            Shared MIME-info Database specification
+            and that has a mime-info element as its document root. For
+            each new file type one or more icons with name
+            <em class="replaceable"><code>type</code></em>-<em class="replaceable"><code>subtype</code></em>
+            must be installed with the <span class="command"><strong>xdg-icon-resource</strong></span>
+            command in the <span class="emphasis"><em>mimetypes</em></span> context. For example the
+            filetype application/vnd.oasis.opendocument.text requires an
+            icon named application-vnd.oasis.opendocument.text
+            to be installed (unless the file type recommends another icon name).
+	  </dd><dt><span class="term">uninstall</span></dt><dd>
+	    Removes the file type descriptions provided in <em class="replaceable"><code>mimetypes-file</code></em>
+            and previously added with <span class="command"><strong>xdg-mime install</strong></span> from the
+            desktop environment. <em class="replaceable"><code>mimetypes-file</code></em>
+            must be a XML file that follows the freedesktop.org
+            Shared MIME-info Database specification
+            and that has a mime-info element as its document root.
+	  </dd></dl></div></div><div class="refsect1" title="Options"><a name="options"></a><h2>Options</h2><div class="variablelist"><dl><dt><span class="term"><code class="option">--mode</code> <em class="replaceable"><code>mode</code></em></span></dt><dd><p class="simpara"><em class="replaceable"><code>mode</code></em> can be
+            <span class="emphasis"><em>user</em></span> or <span class="emphasis"><em>system</em></span>.
+            In user mode the file is (un)installed for the current user
+            only. In system mode the file is (un)installed for all users
+            on the system. Usually only root is allowed to install in
+            system mode.
+	  </p><p class="simpara">
+	    The default is to use system mode when called by root
+	    and to use user mode when called by a non-root user.
+	  </p></dd><dt><span class="term"><code class="option">--novendor</code></span></dt><dd><p class="simpara">
+	    Normally, xdg-mime checks to ensure that the
+	    <em class="replaceable"><code>mimetypes-file</code></em> to be installed
+	    has a proper vendor prefix. This option can be
+	    used to disable that check.
+	  </p><p class="simpara">
+            A vendor prefix consists of alpha characters ([a-zA-Z]) and is
+            terminated with a dash ("-").
+            Companies and organizations are encouraged to use a word
+            or phrase, preferably the organizations name, for which they hold
+            a trademark as their vendor prefix.
+            The purpose of the vendor prefix is to prevent name conflicts.
+          </p></dd><dt><span class="term"><code class="option">--help</code></span></dt><dd>
+	    Show command synopsis.
+	  </dd><dt><span class="term"><code class="option">--manual</code></span></dt><dd>
+	    Show this manualpage.
+	  </dd><dt><span class="term"><code class="option">--version</code></span></dt><dd>
+            Show the xdg-utils version information.
+          </dd></dl></div></div><div class="refsect1" title="Environment Variables"><a name="env_vars"></a><h2>Environment Variables</h2><p>
+      xdg-mime honours the following environment variables:
+    </p><div class="variablelist"><dl><dt><span class="term">XDG_UTILS_DEBUG_LEVEL</span></dt><dd>
+	    Setting this environment variable to a non-zero numerical value
+	    makes xdg-mime do more verbose reporting on stderr.
+	    Setting a higher value increases the verbosity.
+	  </dd><dt><span class="term">XDG_UTILS_INSTALL_MODE</span></dt><dd>
+	    This environment variable can be used by the user or
+            administrator to override the installation mode.
+	    Valid values are <span class="emphasis"><em>user</em></span> and
+            <span class="emphasis"><em>system</em></span>.  
+	  </dd></dl></div></div><div class="refsect1" title="Exit Codes"><a name="exitcodes"></a><h2>Exit Codes</h2><p>
+      An exit code of 0 indicates success while a non-zero exit code
+      indicates failure. The following failure codes can be returned:
+    </p><div class="variablelist"><dl><dt><span class="term"><code class="option">1</code></span></dt><dd>
+	    Error in command line syntax.
+	  </dd><dt><span class="term"><code class="option">2</code></span></dt><dd>
+	    One of the files passed on the command line did not exist.
+	  </dd><dt><span class="term"><code class="option">3</code></span></dt><dd>
+	    A required tool could not be found. 
+	  </dd><dt><span class="term"><code class="option">4</code></span></dt><dd>
+	    The action failed. 
+	  </dd><dt><span class="term"><code class="option">5</code></span></dt><dd>
+	    No permission to read one of the files passed on the command
+            line.
+	  </dd></dl></div></div><div class="refsect1" title="See Also"><a name="seealso"></a><h2>See Also</h2><p><span class="citerefentry"><span class="refentrytitle">xdg-icon-resource</span>(1)</span>,
+      <span class="citerefentry"><span class="refentrytitle">xdg-desktop-menu</span>(1)</span>
+    </p></div><div class="refsect1" title="Examples"><a name="examples"></a><h2>Examples</h2><p>
+</p><pre class="programlisting">
+xdg-mime query filetype /tmp/foobar.png
+</pre><p>Prints the MIME type of the file /tmp/foobar.png, in this
+case image/png
+    </p><p>
+</p><pre class="programlisting">
+xdg-mime query default image/png
+</pre><p>Prints the .desktop filename of the application which is
+      registered to open PNG files.
+    </p><p>
+</p><pre class="programlisting">
+xdg-mime install shinythings-shiny.xml
+</pre><p>Adds a file type description for "shiny"-files.
+      "shinythings-" is used as the vendor prefix.
+      The file type description could look as folows.  
+</p><pre class="programlisting">
+shinythings-shiny.xml:
+
+&lt;?xml version="1.0"?&gt;
+&lt;mime-info xmlns='http://www.freedesktop.org/standards/shared-mime-info'&gt;
+  &lt;mime-type type="text/x-shiny"&gt;
+    &lt;comment&gt;Shiny new file type&lt;/comment&gt;
+    &lt;glob pattern="*.shiny"/&gt;
+    &lt;glob pattern="*.shi"/&gt;
+  &lt;/mime-type&gt;
+&lt;/mime-info&gt;
+</pre><p>An icon for this new file type must also be installed, for
+example with:
+</p><pre class="programlisting">
+xdg-icon-resource install --context mimetypes --size 64 shiny-file-icon.png text-x-shiny
+</pre><p>
+    </p></div></div></body></html>

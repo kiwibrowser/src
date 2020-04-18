@@ -1,0 +1,40 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_plain_file_uninstall() {
+## Begin the test.
+test_start "$FUNCNAME: verify $FILE is uninstalled correctly from the desktop"
+
+# Dependencies section
+test_init
+
+INSFILE="xdgtestdata-$XDG_TEST_SHORTID.txt"
+DESKTOP="$HOME/Desktop"
+
+set_no_display
+echo "Some more boring text" > "$INSFILE"
+assert_file "$INSFILE" 
+
+# Verify the test icon is not installed already.
+assert_exit 0 xdg-desktop-icon install  "$INSFILE"
+assert_file_in_path "$INSFILE" "$DESKTOP"
+assert_interactive_notroot "Is an icon named '$INSFILE' present on the desktop?" y
+
+# Test steps section
+test_procedure
+
+assert_exit 0 xdg-desktop-icon uninstall "$INSFILE"
+assert_nostdout
+assert_nostderr
+
+assert_file_not_in_path "$INSFILE" "$DESKTOP"
+assert_interactive_notroot "Is an icon named '$INSFILE' still present on the desktop?" n
+
+test_result
+} 
+
+run_test test_plain_file_uninstall

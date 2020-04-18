@@ -1,0 +1,216 @@
+Conformance Test
+
+    CTS_ARB_sparse_texture
+
+Contributors
+
+    Adam Czupryna, Mobica
+
+Contacts
+
+    Adam Czupryna, Mobica (adam.czupryna 'at' mobica.com)
+
+Status
+
+    In review
+
+Version
+
+    August 4, 2016 (version 1)
+
+Dependencies
+
+    OpenGL 1.1 is required.
+
+    ARB_sparse_texture extension is required.
+
+    GL_EXT_direct_state_access extension is required.
+
+    This specification is written against:
+      - ARB_sparse_texture specification,
+      - OpenGL 4.3 (core) specification.
+
+Overview
+
+    This test verifies the separation of the graphics processor's address
+    space (reservation) from the requirement that all textures must be
+    physically backed (commitment).
+
+New Tests
+
+    New State Queries Test
+
+      * Test TexParameter{if}{v}, TexParameterI{u}v, GetTexParameter{if}v
+        and GetTexParameterIi{u}v queries for <pname>:
+
+          - TEXTURE_SPARSE_ARB,
+          - VIRTUAL_PAGE_SIZE_INDEX_ARB
+
+        Check default values and set manually.
+
+        Errors verification:
+
+            INVALID_VALUE
+
+              - Use TexParameter* function to set TEXTURE_SPARSE_ARB parameter
+                to TRUE on a texture binded to target not supporting
+                TEXTURE_SPARSE_ARB
+
+      * Test GetTexParameter{if}v and GetTexParameterIi{u}v queries for <pname>:
+
+          - NUM_SPARSE_LEVELS_ARB
+
+        Check default values.
+
+      * Test GetInternalformativ query for formats from Table 8.12 and <pname>:
+
+          - NUM_VIRTUAL_PAGE_SIZES_ARB,
+          - VIRTUAL_PAGE_SIZE_X_ARB,
+          - VIRTUAL_PAGE_SIZE_Y_ARB,
+          - VIRTUAL_PAGE_SIZE_Z_ARB
+
+        Check default values.
+
+      * Test GetIntegerv, GetFloatv, GetDoublev, GetInteger64v,
+        and GetBooleanv queries for <pname>:
+
+          - MAX_SPARSE_TEXTURE_SIZE_ARB,
+          - MAX_SPARSE_3D_TEXTURE_SIZE_ARB,
+          - MAX_SPARSE_ARRAY_TEXTURE_LAYERS_ARB,
+          - SPARSE_TEXTURE_FULL_ARRAY_CUBE_MIPMAPS_ARB
+
+        Check default values.
+
+    Sparse Allocation Test
+
+        Use TexStorage* for all targets and sized internal formats
+
+        Errors verification:
+
+            INVALID_OPERATION
+
+              - Use TexParameter* function to set TEXTURE_SPARSE_ARB parameter
+                to TRUE on a texture for which TEXTURE_IMMUTABLE_FORMAT
+                parameter is set to TRUE.
+
+              - Use TexParameter* function to set VIRTUAL_PAGE_SIZE_INDEX_ARB
+                parameter to TRUE on a texture for which TEXTURE_IMMUTABLE_FORMAT
+                parameter is set to TRUE.
+
+              - Use TexStorage* on a texture for which TEXTURE_SPARSE_ARB parameter
+                is TRUE and VIRTUAL_PAGE_SIZE_INDEX_ARB parameter is greater
+                than NUM_VIRTUAL_PAGE_SIZES_ARB.
+
+              - Use TexStorage* on a texture for which
+                SPARSE_TEXTURE_FULL_ARRAY_CUBE_MIPMAPS_ARB parameter is FALSE and:
+                  * TEXTURE_SPARSE_ARB parameter is TRUE
+                  * <target> is one of TEXTURE_1D_ARRAY, TEXTURE_2D_ARRAY,
+                    TEXTURE_CUBE_MAP, or TEXTURE_CUBE_MAP_ARRAY,
+                  * For the virtual page size corresponding to the
+                    VIRTUAL_PAGE_SIZE_INDEX_ARB parameter, either of the following
+                    is true:
+                      - <width> is not a multiple of VIRTUAL_PAGE_SIZE_X_ARB *
+                        2^(<levels>-1),
+                      - <height> is not a multiple of VIRTUAL_PAGE_SIZE_Y_ARB *
+                        2^(<levels>-1).
+
+            INVALID_VALUE
+
+              - Use TexStorage* on a texture for which TEXTURE_SPARSE_ARB parameter
+                is TRUE and:
+                  * <target> is TEXTURE_3D, and <width>, <height>, or
+                    <depth> is greater than MAX_SPARSE_3D_TEXTURE_SIZE_ARB.
+                  * <target> is not TEXTURE_3D, and <width> or <height> is
+                    greater than MAX_SPARSE_TEXTURE_SIZE_ARB.
+                  * <target> is TEXTURE_2D_ARRAY or TEXTURE_CUBE_MAP_ARRAY
+                    and <depth> is greater than MAX_SPARSE_TEXTURE_ARRAY_LAYERS_ARB.
+                  * <width> or <height> is greater than the value of
+                    MAX_SPARSE_3D_TEXTURE_SIZE_ARB when <target> is TEXTURE_3D, or
+                    if <height> or <depth> is greater than the value of
+                    MAX_SPARSE_ARRAY_TEXTURE_LAYERS_ARB if <target> is a 1D or 2D
+                    array texture target, respectively.
+                  * <width>, <height> or <depth> is not an integer
+                    multiple of the page size in the corresponding dimension.
+
+    Sparse Texture Commitment Test
+
+        Iterate through all targets and supported sized internal formats.
+            Sparse allocate TexStorage*.
+            Write data to texture storage using TexSubImage*.
+            Verify if no error is generated.
+            Commit texture pages region with TexPageCommitmentARB.
+            Write data to texture storage using TexSubImage*.
+            Verify if data stored is as expected.
+
+        Errors verification:
+
+            INVALID_OPERATION
+
+              - Use TexPageCommitmentARB with <xoffset> + <width> or
+                <yoffset> + <height> greater than the width or height, respectively,
+                of level <level> for the texture bound to <target>.
+
+              - Use TexPageCommitmentARB with <zoffset> + <depth> greater than:
+                  * the depth of level <level> for the texture bound to <target>, if
+                    <target> is TEXTURE_3D,
+                  * the number of layers of level <level> for the texture bound to
+                    <target>, if <target> is TEXTURE_2D_ARRAY,
+                  * six times the number of layers of level <level> for the texture
+                    bound to <target>, if <target> is TEXTURE_CUBE_MAP_ARRAY,
+                  * one, for all other targets.
+
+              - Use TexPageCommitmentARB with <width> that is not an integer
+                multiple of VIRTUAL_PAGE_SIZE_X_ARB and <width> plus <xoffset> not
+                equal to the width of level <level> for the texture bound to <target>.
+
+              - Use TexPageCommitmentARB with <height> that is not an integer
+                multiple of VIRTUAL_PAGE_SIZE_Y_ARB and <height> plus <yoffset> not
+                equal to the height of level <level> for the texture bound to <target>.
+
+              - Use TexPageCommitmentARB with <depth> that is not an integer
+                multiple of VIRTUAL_PAGE_SIZE_Z_ARB and <depth> plus <zoffset> not
+                equal to:
+                  * the depth of level <level> for the texture bound to <target>, if
+                    <target> is TEXTURE_3D,
+                  * the number of layers of level <level> for the texture bound to
+                    <target>, if <target> is TEXTURE_2D_ARRAY,
+                  * six times the number of layers of level <level> for the texture
+                    bound to <target>, if <target> is TEXTURE_CUBE_MAP_ARRAY,
+                  * one, for all other targets.
+
+              - Use TexPageCommitmentARB on a texture for which the value of
+                TEXTURE_IMMUTABLE_FORMAT or TEXTURE_SPARSE_ARB is FALSE.
+
+            INVALID_VALUE
+
+              - Use TexPageCommitmentARB with <xoffset>, <yoffset>, or
+                <zoffset> that is not a multiple of VIRTUAL_PAGE_SIZE_X_ARB,
+                VIRTUAL_PAGE_SIZE_Y_ARB, or VIRTUAL_PAGE_SIZE_Z_ARB, respectively, for
+                the texture bound to <target>.
+
+    Direct State Access Commitment Test
+
+        Iterate through all targets and supported sized internal formats.
+            Sparse allocate TesStorage*.
+            Write data to texture storage using TexSubImage*.
+            Verify if no error is generated.
+            Commit texture pages region with TexturePageCommitmentEXT.
+            Write data to texture storage using TexSubImage*.
+            Verify if data stored is as expected.
+
+        Errors verification:
+
+            INVALID_OPERATION
+              - Use TexturePageCommitmentEXT with <texture> that is not the name of
+                an existing texture.
+
+            All other errors listed for TexPageCommitmentARB also apply to
+            TexturePageCommitmentEXT, except that references to "the texture bound
+            to <target>" should be replaced with "the texture <texture>", and all
+            other references to "<target>" should be replaced with "the target of
+            texture <texture>".
+
+Revision History
+
+    Revision 1, 4 August, 2016 (Adam Czupryna)
+     - Intial version;

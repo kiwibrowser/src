@@ -1,0 +1,95 @@
+Conformance Test
+
+    GL_ARB_shader_draw_parameters
+
+Contributors
+
+    Adam Czupryna, Mobica
+
+Contacts
+
+    Adam Czupryna, Mobica (adam.czupryna 'at' mobica.com)
+
+Status
+
+    In review
+
+Version
+
+    March 22, 2017 (version 1)
+
+Dependencies
+
+    OpenGL 3.1 is required.
+
+    ARB_shader_draw_parameters extension is required.
+
+    This specification is written against:
+    - OpenGL 4.3 Core Profile Specification,
+    - version 4.30 Shading Language Specification,
+    - ARB_shader_draw_parameters extension Specification.
+
+    The ARB_multi_draw_indirect and ARB_indirect_parameters affects
+    definition of this test.
+
+Overview
+
+    This test verifies if new GLSL built-in variables added by this
+    extension contain correct data.
+
+    It is expected that:
+    gl_BaseVertexARB - contain value passed in baseVertex parameter,
+    gl_BaseInstanceARB - contain value passed in baseInstance parameter.
+    gl_DrawIDARB - contain the index of the draw currently being
+      processed by a Multi* variant of drawing command.
+
+Tests
+
+    Shader Extension Test
+
+      * Create shader that require ARB_shader_draw_parameters extension
+        and check if ARB_shader_draw_parameters is defined and equal 1.
+        Check if shader compiles with no error.
+
+    Draw Paramaters Test
+
+      * Create vertex shader that adds offset to currently processed
+        vertex using gl_baseVertexARB and gl_baseInstanceARB for x and y
+        dimensions respectively. Additionally color variable which components
+        are function of gl_DrawIDARB value should be passed to the fragment
+        shader.
+
+        Color components function could be:
+        color.r = (gl_DrawIDARB % 3 == 0 ? 1.0 : 0.0);
+        color.g = (gl_DrawIDARB % 3 == 1 ? 1.0 : 0.0);
+        color.b = (gl_DrawIDARB % 3 == 2 ? 1.0 : 0.0);
+
+      * Create fragment shader that puts out color passed by vertex shader.
+
+      * Set clear color to black, enable blending and perform different
+        drawing commands to draw triangle strips. Use different parameters
+        values for each command. Create separated test cases for each drawing
+        command.
+
+        List of drawing commands:
+
+          - drawArrays/drawElements
+          - drawArraysIndirect/drawElementsIndirect
+          - drawArraysInstanced/drawElementsInstanced
+          - multiDrawArrays/multiDrawElements
+          - multiDrawArraysIndirect/multiDrawElementsIndirect
+          - multiDrawArraysIndirectCountARB/multiDrawElementsIndirectCountARB
+
+        Verify if drawing result is as expected by reading pixels from the
+        framebuffer. Make sure that each triangle is drawn with correct offset
+        and with proper color value.
+
+Revision History
+
+    Revision 1, 22 March, 2017 (Adam Czupryna)
+     - Initial version.
+
+    Revision 2, 3 April, 2017 (Adam Czupryna)
+     - Changed Draw Parameters Test definition,
+     - Updated list of drawing commands.
+

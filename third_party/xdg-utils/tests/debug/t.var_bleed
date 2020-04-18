@@ -1,0 +1,55 @@
+#!/bin/bash
+
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+test_var_bleed_set() {
+test_start "$FUNCNAME: set the BLEEDTEST variable"
+
+test_procedure
+
+export BLEED1=i_am_set
+BLEED2=set
+assert_exit 0 export BLEED3="set_within_assert_exit"
+
+test_result
+}
+
+test_var_bleed_read() {
+test_start "$FUNCNAME: read the BLEEDTEST variable"
+
+
+test_procedure
+
+assert_exit 0 echo -n "$BLEED1"
+assert_nostdout
+assert_nostderr
+
+assert_exit 0 echo -n "$BLEED2"
+assert_nostdout
+assert_nostderr
+
+assert_exit 0 echo -n "$BLEED3"
+assert_nostdout
+assert_nostderr
+
+assert_exit 0 echo -n "$BLEED4"
+assert_nostdout
+assert_nostderr
+
+test_result
+}
+
+test_stdout_capture() {
+test_start "$FUNCNAME: stdout capture test. note: FAIL=PASS"
+
+assert_exit 0 echo -n "some output"
+assert_nostdout
+assert_nostderr
+
+test_result
+}
+
+run_test test_var_bleed_set
+run_test test_var_bleed_read
+run_test test_stdout_capture

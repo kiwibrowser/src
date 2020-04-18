@@ -1,0 +1,36 @@
+#!/bin/bash
+
+## FILL THIS IN or be sure environment is correct.
+#XDG_TEST_DIR=
+#TET_ROOT= 
+
+export XDG_TEST_NO_INTERACTIVE="true"
+
+if [ -z "$XDG_TEST_DIR" ] ; then
+	# User didn't follow directions, make a guess.
+	XDG_TEST_DIR=`pwd`	
+fi
+if [ -z "$TET_ROOT" ] ; then
+	# can't really guess
+	echo "TET_ROOT is not defined!!"
+	exit 1
+fi
+USING_TET="true"
+TEST_GROUPS=`find "$XDG_TEST_DIR" -type d -name 'xdg-*'`
+TEST_FILES=`find $TEST_GROUPS -name 't.*'`
+
+## load all the tests. 
+for t in $TEST_FILES; do
+	. "$t"
+done
+
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+tet_startup="test_setup"
+tet_cleanup="test_cleanup"
+
+## $iclist and all $ic1 ... $icN variables are now defined.
+echo "iclist: $iclist"
+
+## Launch TET
+. "$TET_ROOT/lib/xpg3sh/tcm.sh"

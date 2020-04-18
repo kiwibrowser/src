@@ -1,0 +1,79 @@
+
+include_directories(
+	..
+	)
+
+set(DEQP_VK_PIPELINE_SRCS
+	vktPipelineBlendTests.cpp
+	vktPipelineBlendTests.hpp
+	vktPipelineClearUtil.cpp
+	vktPipelineClearUtil.hpp
+	vktPipelineCombinationsIterator.hpp
+	vktPipelineDepthTests.cpp
+	vktPipelineDepthTests.hpp
+	vktPipelineImageSamplingInstance.cpp
+	vktPipelineImageSamplingInstance.hpp
+	vktPipelineImageTests.cpp
+	vktPipelineImageTests.hpp
+	vktPipelinePushConstantTests.cpp
+	vktPipelinePushConstantTests.hpp
+	vktPipelineSpecConstantTests.hpp
+	vktPipelineSpecConstantTests.cpp
+	vktPipelineSpecConstantUtil.hpp
+	vktPipelineSpecConstantUtil.cpp
+	vktPipelineImageUtil.cpp
+	vktPipelineImageUtil.hpp
+	vktPipelineImageViewTests.cpp
+	vktPipelineImageViewTests.hpp
+	vktPipelineMultisampleTestsUtil.cpp
+	vktPipelineMultisampleTestsUtil.hpp
+	vktPipelineMultisampleTests.cpp
+	vktPipelineMultisampleTests.hpp
+	vktPipelineMultisampleBase.cpp
+	vktPipelineMultisampleBase.hpp
+	vktPipelineMultisampleBaseResolve.cpp
+	vktPipelineMultisampleBaseResolve.hpp
+	vktPipelineMultisampleBaseResolveAndPerSampleFetch.cpp
+	vktPipelineMultisampleBaseResolveAndPerSampleFetch.hpp
+	vktPipelineMultisampleInterpolationTests.cpp
+	vktPipelineMultisampleInterpolationTests.hpp
+	vktPipelineMultisampleShaderBuiltInTests.cpp
+	vktPipelineMultisampleShaderBuiltInTests.hpp
+	vktPipelineMultisampleImageTests.cpp
+	vktPipelineMultisampleImageTests.hpp
+	vktPipelineInputAssemblyTests.cpp
+	vktPipelineInputAssemblyTests.hpp
+	vktPipelineReferenceRenderer.cpp
+	vktPipelineReferenceRenderer.hpp
+	vktPipelineRenderToImageTests.cpp
+	vktPipelineRenderToImageTests.hpp
+	vktPipelineFramebufferAttachmentTests.cpp
+	vktPipelineFramebufferAttachmentTests.hpp
+	vktPipelineSamplerTests.cpp
+	vktPipelineSamplerTests.hpp
+	vktPipelineStencilTests.cpp
+	vktPipelineStencilTests.hpp
+	vktPipelineTests.cpp
+	vktPipelineTests.hpp
+	vktPipelineUniqueRandomIterator.hpp
+	vktPipelineVertexInputTests.cpp
+	vktPipelineVertexInputTests.hpp
+	vktPipelineTimestampTests.cpp
+	vktPipelineTimestampTests.hpp
+	vktPipelineVertexUtil.cpp
+	vktPipelineVertexUtil.hpp
+	vktPipelineCacheTests.cpp
+	vktPipelineCacheTests.hpp
+	vktPipelineMakeUtil.cpp
+	vktPipelineMakeUtil.hpp
+	)
+
+set(DEQP_VK_PIPELINE_LIBS
+	tcutil
+	vkutil
+	referencerenderer
+	)
+
+add_library(deqp-vk-pipeline STATIC ${DEQP_VK_PIPELINE_SRCS})
+target_link_libraries(deqp-vk-pipeline ${DEQP_VK_PIPELINE_LIBS})
+

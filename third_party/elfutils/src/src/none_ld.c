@@ -1,0 +1,1 @@
+/* Nothing here.  This is just a testimony of automake inflexibility.  */

@@ -1,0 +1,132 @@
+// Copyright 2018 The Feed Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+
+package search.now.ui.piet;
+
+option optimize_for=LITE_RUNTIME;
+
+option java_package = "com.google.search.now.ui.piet";
+option java_outer_classname = "BindingRefsProto";
+option cc_enable_arenas = true;
+
+// A BindingRef (binding reference) identifies a BindingValue of a specific type
+// in a Binding. This is used when defining Templates, to bind to content.
+//
+// It is acceptable for multiple BindingRefs with the same binding_id to exist
+// within the same binding context, e.g. if the same text were to be used more
+// than once in the same Frame.
+//
+// It is NOT acceptable for multiple BindingValues in the same binding context
+// to have the same binding_id; ERR_DUPLICATE_BINDING_VALUE will be raised.
+//
+// Some types of BindingRefs may be optional. If an optional binding is not
+// provided, the element containing that binding will be omitted from the
+// resulting view hierarchy. If a required binding is not provided,
+// ERR_MISSING_BINDING_VALUE is raised.
+
+message CustomBindingRef {
+  // The unique ID for this binding. See comments at the top of the file.
+  optional string binding_id = 1;
+
+  // Indicates whether this binding reference is optional.
+  optional bool is_optional = 2;
+}
+
+message ModuleBindingRef {
+  // The unique ID for this binding. See comments at the top of the file.
+  optional string binding_id = 1;
+
+  // Indicates whether this binding reference is optional.
+  optional bool is_optional = 2;
+}
+
+message ParameterizedTextBindingRef {
+  // The unique ID for this binding. See comments at the top of the file.
+  optional string binding_id = 1;
+
+  // Indicates whether this binding reference is optional.
+  optional bool is_optional = 2;
+}
+
+message ChunkedTextBindingRef {
+  // The unique ID for this binding. See comments at the top of the file.
+  optional string binding_id = 1;
+
+  // Indicates whether this binding reference is optional.
+  optional bool is_optional = 2;
+}
+
+message ImageBindingRef {
+
+  // The unique ID for this binding. See comments at the top of the file.
+  optional string binding_id = 1;
+
+  // Indicates whether this binding reference is optional.
+  optional bool is_optional = 2;
+}
+
+// GridCellWidthBindings are always optional. If not provided, the default is
+// [width.weight = 1].
+message GridCellWidthBindingRef {
+  // The unique ID for this binding. See comments at the top of the file.
+  optional string binding_id = 1;
+}
+
+// DEPRECATED: Use ElementBindingRef instead
+message ElementListBindingRef {
+  option deprecated = true;
+
+  // The unique ID for this binding. See comments at the top of the file.
+  optional string binding_id = 1;
+
+  // Indicates whether this binding reference is optional.
+  optional bool is_optional = 2;
+}
+
+message ElementBindingRef {
+  // The unique ID for this binding. See comments at the top of the file.
+  optional string binding_id = 1;
+
+  // Indicates whether this binding reference is optional.
+  optional bool is_optional = 2;
+}
+
+// VED binding references are always optional.
+message VedBindingRef {
+  // The unique ID for this binding. See comments at the top of the file.
+  optional string binding_id = 1;
+}
+
+message TemplateBindingRef {
+  // The unique ID for this binding. See comments at the top of the file.
+  optional string binding_id = 1;
+
+  // Indicates whether this binding reference is optional.
+  optional bool is_optional = 2;
+}
+
+// Actions binding references are always optional.
+message ActionsBindingRef {
+  // The unique ID for this binding. See comments at the top of the file.
+  optional string binding_id = 1;
+}
+
+// Style binding references are always optional.
+message StyleBindingRef {
+  // The unique ID for this binding. See comments at the top of the file.
+  optional string binding_id = 1;
+}

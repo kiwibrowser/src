@@ -1,0 +1,13 @@
+; Test that we handle functions that don't end with a terminator instruction.
+; See issue: https://code.google.com/p/nativeclient/issues/detail?id=4214
+
+; Don't run in minimal build, since error messages are in generic form
+  when minimal.
+
+; REQUIRES: no_minimal_build
+
+RUN: %p2i --expect-fail --tbc -i %p/Input/no-terminator-inst.tbc --insts \
+RUN:      --args -allow-externally-defined-symbols \
+RUN:        | FileCheck --check-prefix=NO-TERM-INST %s
+
+; NO-TERM-INST: Last instruction in function not terminator

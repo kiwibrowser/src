@@ -1,0 +1,707 @@
+liblouis NEWS -- history of user-visible changes.  	-*- org -*-
+
+* Noteworthy changes in release 2.6.0 (2014-9-1)
+This is the first release by the new maintainer team. A lot of work by
+people from across the community contributed to this release. There
+are massive additions and updates to the Braille tables (e.g.
+Afrikaans, Hebrew, many Indian languages, Korean) and also changes to
+the C API to enable call backs for error messages and warnings.
+
+** New features
+*** New Braille tables
+- Tables for Afrikaans, Cherokee, Hawaiian, Maori, Sotho and Tswana
+  were donated by Greg Kearney. Afrikaans, Cherokee, Maori and Hawaiian
+  all are grade 1 tables and with the exception of Cherokee were
+  derived from World Braille Usage 2013. The Cherokee was taken from
+  the specification published at www.cbtbc.org/cherokee/.
+*** Logging callback
+There is now a callback system in place to get error messages and
+warnings. This can be used from programs that use liblouis to log
+warnings for example.
+
+** Bug fixes
+- fix back translation problems when word gets split in unusual places
+  causing back translation of whole words for example K5 back
+  translates to Knowledgeen, M>k back translates to Moreark, and M5
+  back translates to Moren.  This caused over 8400 extra back
+  translation errors in en-us-g2 and 5000 in en-ueb-g2. Thanks to Ken
+  Perry.
+- Fixed bug to prevent removal of \xffff between largesign rules. This
+  solves a Liblouisutdml bug where \xffff is used as a segment
+  delimiter.
+- Fixed a bug in back translation, when a letsign was encountered, the
+  letsign was being applied beyond the element it applied to.
+- Fix memory leaks in the default table resolver introduced in the
+  previous release.
+- Fixes to the build system by Simon Aittamaa
+
+** Braille table improvements
+- Major improvements to Indian tables thanks to the Indian National
+  Institute for Visually Handicapped, in particular Dipendra Manocha,
+  Mesar Hameed, Dinesh Kaushall and Sreeja Parameswaran:
+  - Corrected opcodes for letters, punctuation marks, digits, signs
+    etc.
+  - Updated braille codes according to prescribed braille codes for
+    each Unicode character by the Braille Council of India for all
+    Indian languages.
+  - defined rules for dealing with Nukhta character in Hindi table
+  - defined rule to insert dot-1 between consonant followed by full
+    vowel character in all Indian Languages
+  - defined rules for shifting of halant character before the
+    consonant. This character is placed after the consonant in normal
+    typing but need to be before the consonant in braille. This rule
+    is applicable for all Indian languages.
+  - defined rules for two conjunct characters "ksha and gya" used in
+    all Indian Languages for which there are specific codes in
+    Braille.
+- New Hebrew table that is based on the new unified Hebrew Braille
+  code standard that was put together on January 2014 after a
+  conference with all of the specialists in this field in Israel. It
+  includes improved representation of Hebrew letters, special letters
+  that are called Nikud, and punctuation symbols. The old Braille
+  standard is not relevant any more. Thanks to Adi Kushnir.
+- UEB table fixes: Fix ity contraction, fixed the missing end word
+  contraction ;n ;d sign 46. thanks to Ken Perry.
+- Fix for Norwegian where letsign is affecting some extra characters
+  thanks to Lars Bjørndal
+- Much improved hyphenation for Norwegian thanks to Lars Bjørndal
+- Korean Grade 2 now includes support for reading English text using
+  grade 2.
+- en-us-g1.ctb and en-ueb.g1.ctb are now able to display 8 dot Unicode
+  braille.
+
+* Noteworthy changes in release 2.5.4 (2014-3-3)
+This release contains nine months worth of braille table improvements
+for example for Danish, UEB, en-us, Nemeth, Bulgarian, Slovenian and
+many more. Also there are fixes to the core for table path resolving
+and back-translation.
+
+** New features
+   - Added function lou_registerTableResolver for plugging in a table
+     resolver callback from your host language.
+
+** Bug fixes
+   - Fixed ENDSEGMENT indicator in computer Braille thanks to John
+     Boyer.
+   - Emphasized words should now be contracted consistently thanks to
+     John Boyer.
+   - Fixed several problems with back-translation. A slash within a
+     number and strings such as 5-inch-diameter and 25-year-old-man
+     should now back-translate correctly. Thanks to John Boyer.
+   - Fixed a problem with syllable opcode. Thanks to John Boyer.
+   - Fix warnings with gcc 4.8.2. Thanks to Peter Lundblad.
+   - When a table is specified with an absolute or relative path, the
+     "includes" in that table will now work as expected, meaning files
+     in the same directory will be found.
+
+** Braille table improvements
+   - fr-bfu-comp8.utb: corrections, zero was wrongly displayed in some
+     instances.
+   - en-us-g2.ctb, en-ueb-g2.ctb: Fixes for that's, can't and s'
+     thanks to Ken Perry.
+   - en-us-g2.ctb: Fix for back-translation of things like
+     http://address.com, words including after, capsigns. thanks to
+     Ken Perry.
+   - Further corrections and testcases to the Hungarian tables thanks
+     to Hammer Attila
+   - Fixed letter sign in en-us and en-ueb tables. Thanks to John
+     Boyer and Ken Perry.
+   - UEB Fixes thanks to Mesar Hameed, Ken Perry and Joseph Lee:
+     - chardefs - correct title and fixed a long standing bug
+       where dots 46 was inserted between letters (especially for web
+       addresses).
+     - Fix problem with at sign.
+     - Removed section of accented letters, that were left behind from
+       US table.
+     - Added todo for accents, to define according to the formal docs.
+     - Corrected mathematical forall symbol.
+     - Modified emphasis dot combinations to follow UEB standard.
+     - Corrected the display of period when used as a midword.
+     - Ensure 'inin' is correctly back-translated in words such as
+       asinine, feminine and others.
+   - Bulgarian bg.ctb: updated to meet modern standards (added Latin
+     letters, corrected punctuation/mathematical symbols, misc typos).
+     Thanks to Rumiana Kamenska
+   - en-gb-g1.utb: Fixes thanks to Paul Wood
+   - Fix for the lich sign in the German tables. Thanks to Halim
+     Sahin.
+   - Nemeth improvements thanks to John Boyer.
+     - Spaces in nemethdefs.cti were changed to unbreakable spaces.
+       This was done so that Nemeth expressions would not be broken
+       between lines.
+     - The number sign is now inserted between the minus sign and the
+       number at the beginning of an expression. Some problems with
+       pass2 opcodes have also been corrected.
+   - The Esperanto table has additional punctuation characters and a
+     test harness. Thanks to Aaron Cannon.
+   - Added missing symbols to the US English BRF display table. Thanks
+     to Aaron Cannon.
+   - Improvements to the Slovenian table and a new Slovenian eight dot
+     computer table provided by Jožef Gregorc.
+   - Fixes to the Norwegian tables thanks to Lars Bjørndal
+     - Fixes for less than / greater than.
+     - Add entries for URLs, domains and file names.
+   - Added ne.utb, an alternative Nepali braille table. One of ne.utb
+     or ne.ctb will be removed/merged in a future version. Keeping
+     both for the time being so that users can test and give feedback
+     on which is most correct. Thanks to Him Prasad Gautam, and Mesar
+     Hameed
+   - Much improved danish grade 1 and grade 2 6 and 8 dot braille,
+     thanks to Bue Vester-Andersen and Mesar Hameed
+
+** Backwards incompatible changes
+   - Delete the table chardefs-ueb.cti as these rules are now provided
+     by en-ueb-chardefs.uti
+
+** Invisible changes
+   - Refactoring in compileTranslationTable.c: separated more clearly
+     the compilation from the table resolving, removed duplicate code,
+     etc.
+
+* Noteworthy changes in release 2.5.3 (2013-6-21)
+** New features
+*** New Braille tables
+    - Korean grade 1 and grade 2 thanks to Joseph Lee
+    - U.K. English 8 dot computer braille table thanks to David
+      Reynolds
+    - New Russian literary and computer braille tables thanks to Igor
+      B. Poretsky. These replace the older Russian tables which are
+      left for backwards compatibility.
+    - New hyphenation dictionary for Russian thanks to Igor B.
+      Poretsky.
+    - Updated hyphenation tables for the Norwegian language (nynorsk
+      and bokmål) thanks to Lars Bjørndal.
+    - New hyphenation dictionary for Esperanto thanks to Aaron Cannon.
+    - New Esperanto grade 1 table, using the x system for accented
+      letters, thanks to Aaron Cannon.
+
+*** runHarness.py: 
+    Accept filename globs on the commandline to run specific harness files.
+    In tests/harness, one can do make <filename> or make runall
+    Removed from make check because these checks are checking the validity
+    of our tables, rather than validity of the code.
+
+** Braille Table Improvements
+   - da-dk-g2.ctb, mostly rewritten to use nocross and hyphenation
+     table.
+   - Most tables: removed the default collapse whitespace statements,
+     if you need to compress whitespace, consider adding compress.ctb
+     to the list of tables when processing.
+   - Corrections to Unified English Braille Code (Grade 1 and 2),
+     thanks to Joseph Lee
+   - Corrections to apostrophes in the Computer Spanish 8 dots Braille
+     table (Es-Es-G0.utb). Thanks to Juan C. Buno.
+   - Corrections for double angle quotation marks and emphasis marks
+     in the Norwegian Grade 0 Braille Table. Thanks to Knut Arne
+     Bjørndal.
+   - Fixes for a minor problem regarding the noletsign in Norwegian
+     contracted braille. Thanks to Lars Bjørndal.
+   - Corrections to the Italian table thanks to Igor B. Poretsky.
+   - Corrections to the Hungarian grade 1 table thanks to Hammer
+     Attila
+   - Corrections to English, U.S. Grade 2 (ABAE) table. Thanks to Ken
+     Perry for reporting the bug and John J. Boyer for fixing it.
+   - Further reorganization of the tables to remove duplication. Move
+     litdigit opcode common parts and include where needed.
+   - Removed obsolete en-us-g1.utb, which has been replaced by
+     en-us-g1.ctb.
+   - Added dictionary harness tests for: en-ueb-g2.ctb, en-us-g2.ctb.
+   - Corrections to Nemeth character definitions thanks to Neil
+     Soiffer.
+   - Corrections to the Esperanto table thanks to Aaron Cannon.
+
+** Bug Fixes
+   - Cursor position calculation is now based on the same code that
+     calculates inpos and outpos. This probably solves a number of
+     bugs.
+   - Fix nocross opcode processing.
+   - Fix several buffer over/under runs in
+     lou_translateString.c:hyphenate.
+   - Fix the '=' problem, i.e. fix inputPositions calculation for the
+     case where the equals sign is used as the dots operand. Thanks to
+     Bert Frees
+   - Fix a bug when resizing a table. Previously not all references to
+     this table were updated.
+
+** Backwards incompatible changes
+   - The feature that allowed a mapping between language code and
+     Braille table was removed as it contained a out-of-bounds access
+     bug, was never documented and probably never used. Thanks to
+     Peter Nilsson Lundblad and Jeremy Roman for analyzing this
+     problem and providing a patch.
+
+* Noteworthy changes in release 2.5.2 (2012-12-18)
+
+While initially planned as mainly a bug fix release this release
+contains some notable new features: There is a new tool to trace which
+rules have been used to perform a translation. Also along with other
+new tables the long awaited table for UEB is finally here.
+
+** New features
+*** New tool to trace rule application
+    There is a new tool (lou_trace) which helps to trace which rules
+    have been used to perform a Braille translation. This is helpful
+    for writing Braille tables. See the documentation for more
+    information.
+*** New Braille tables
+    - Inuktitut grade 1, thanks to Greg Kearney.
+    - UEB grade 1 and 2, thanks to Joseph Lee. These tables replace
+      the old UEB tables (UEBC-g1.utb and UEBC-g2.ctb).
+    - Korean table thanks to Joseph Lee
+
+** Braille Table Improvements
+   - da-dk-g2.ctb, fixes for transposed â, å, æ, ä, ø  and ö,
+     corrected/improved harness tests.
+   - Corrections for en-GB-g2.ctb thanks to Paul Wood
+   - Corrections to the Hungarian grade 1 table thanks to Hammer
+     Attila
+
+** Bug Fixes
+   - Update gnulib
+   - Fix a bug in the correct opcode which causes sometimes random
+     results when translating. Thanks to Bert Frees.
+   - Fixes for compiler warnings.
+   - Fix some Valgrind warnings about invalid reads
+ 
+* Noteworthy changes in release 2.5.1 (2012-9-24)
+
+** Braille Table Improvements
+- Fix encoding problem in italian table and added more character
+  definitions. Thanks to Simone Dal Maso <simone.dalmaso@juvox.it>.
+- Rename it-it-g1.utb to it-it-comp6.utb and it-it-g1.utb2 to
+  it-it-comp8.utb.
+
+** Bug fixes
+- Fix outputPos and inlen where an input character generates multiple
+  output characters.
+
+* Noteworthy changes in release 2.5.0 (2012-9-10)
+
+This release contains a tremendous amount of work many developers.
+Many long standing bugs have been fixed. The tables can finally be in
+UTF-8. A grand table cleanup removed duplication from the tables.
+There are now two extensive test frameworks for table writers. A
+number of new tables have been contributed on top of the usual
+assortment of table improvements. Thanks to all of this liblouis has
+already seen quite a bit of uptake in a number of places, notably the
+new DAISY pipeline will ship with this release of liblouis.
+
+NOTE: If you have private tables you might want to migrate them to
+utf-8. To do this just use iconv as follows:
+
+  $ iconv -f latin-1 -t utf-8 <input >output
+
+** New features
+*** New Braille tables
+    - Estonian grade 0, thanks to Jürgen Dengo.
+    - Portuguese 8 dot Computer braille, Thanks to Rui Fontes
+*** UTF-8 support in tables
+    Braille tables can now contain UTF-8 in the opcode arguments.
+*** Improvements to the python bindings
+    All constants defined in liblouis.h are now exposed in the bindings.
+*** Add a doctest infrastructure
+    These tests are based on the Python doctest framework and are only
+    run if there is a Python interpreter on the system
+*** Add a test harness
+    This test infrastructure allows the user to do table tests in a
+    simple and concise syntax. These tests are based on the Python
+    nose testing framework and are only run if either Python 2.x or
+    3.x with the related nose python module is installed on the
+    system. See the documentation for more information. Thanks to
+    Mesar Hameed.
+*** Add a test harness generator
+    A harness generator that uses simple text files with a little
+    formatting to help to generate the json harness files. The purpose
+    of this tool is to make it much easier and faster to add checks
+    for a given table. You are expected to read the generated harness
+    file and make necessary changes, the tool only helps you to get
+    the tests into the harness format, not check their validity.
+*** Support for Python 3 in the Python bindings
+    The Python bindings now work for both Python 2 and Python 3.
+    Thanks to Michael Whapples.
+
+** Improved C-based test framework
+   - Improved the test framework to be able to test translations
+     involving Unicode.
+   - Added numerous tests, e.g. for lowercase and Unicode, for the
+     input position, for repeated, etc.
+
+** Improved the documentation
+   - Document the test harness (json format, fields, flags).
+   - Document the use of Valgrind to find memory leaks
+   - Improve the documentation on the display opcode
+
+** Bug fixes
+   - lou_allround and lou_translate now properly handle Unicode
+     characters
+   - Fix some issues reported by Valgrind
+   - Fix inputPos for situation where context and multipass opcodes
+     are involved
+   - Fixed a number of bugs with the letter, uppercase and lowercase
+     opcodes when dealing with Unicode
+   - Fixed a couple of bugs with hyphenation (documentation, Python
+     bindings and a number of buffer overruns in the C library).
+     Thanks Milan Zamazal <pdm@brailcom.org> for reporting this.
+   - Fix a bug in the $a. matcher in the multipass rules where only 32
+     chars were matched. It now matches 0xffff chars.
+   - Fix a bug reported by James Teh related to pass1Only
+
+** Braille Table Improvements
+   - all table files have consistent encoding, UTF-8.
+   - The grand table cleanup: Reorganize the tables to remove
+     duplication. Move common parts such as Latin letter, eight and
+     six dot digit definitions to separate files which are then
+     included. This should ease table maintenance. Thanks to Mesar Hameed. 
+   - Fixes to de-de-comp8.ctb thanks to Aliminator83@gmail.com
+   - hu1.ctb renamed to hu-hu-g1.ctb
+   - hu.ctb renamed to hu-hu-comp8.ctb
+   - eo.ctb renamed to eo-g1.ctb
+   - Fixes to eo-g1.ctb thanks to Aaron Cannon <cannona@fireantproductions.com>
+   - hu-hu-g1.ctb: improvements and extensive test harness, with
+     working back-translation, Thanks to Hammer Attila
+   - Fixes to fr-bfu-comp6.utb and fr-bfu-comp8.utb thanks to Michel
+     Such <michel.such@free.fr>
+   - Reworked and extended Ethiopic braille table ethio-g1.ctb,
+     superseeds gez*, thanks to Dr. Tamru E. Belay
+     <g.braille@sympatico.ca>
+   - Fixes to no-no-g3.ctb thanks to Lars Bjørndal <lars@lamasti.net>
+
+* Noteworthy changes in release 2.4.1 (2012-2-22)
+
+** New features
+   - Czech hyphenation table thanks to Jan Hegr
+   - Spanish grade 1 table provided by José Enrique Fernández del
+     Campo and Juan Carlos Buño Suárez
+   - New Tamil table thanks to Mesar Hameed
+
+** Braille Table Improvements
+   - Improvements to the Portuguese grade1 braille tables
+   - Updates and additions to Icelandic 8-dot braille table.
+   - Improvements to the uncontracted Spanish computer braille table.
+   - Improvements to the Norwegian braille table thanks to David Hole.
+
+* Noteworthy changes in release 2.4.0 (2012-01-31)
+
+** New features
+   - New Generic Farsi Grade 1 table: A new table for Generic Farsi
+     Grade 1 braille has been provided by Mesar Hameed.
+   - Emacs mode for editing Braille tables thanks to Christian Egli
+
+** Braille Table Improvements
+   - Improvements to the French comp6 and comp8 braille tables
+   - Improvements to the Romanian braille table
+   - Improvements to the Generic Arabic Grade 1 table
+   - Improvements to the Czech tables thanks to Jan Halousek and to
+     Jan Hegr
+
+* Noteworthy changes in release 2.3.0 (2011-05-09)
+
+This release contains support for many more languages than before
+(Swedish, Kurdish, Ethiopic, Serbian, many Indian languages). The
+search path for tables is now a list of paths. Finally there is the
+usual assortment of bug fixes.
+
+** New features
+*** Multiple table search path
+    The environment variable LOUIS_TABLEPATH can now contain a list of
+    paths (separated by commas) where liblouis should look for tables.
+    This allows the user to keep local tables.
+*** New --quiet option for lou_checktable
+    lou_checktable writes to stderr even in the case of success. This
+    can now be suppressed with the new option --quiet.
+*** New Swedish table
+    A new table for Swedish braille has been provided by Samuel
+    Thibault.
+*** New table for Sorani (Kurdish)
+    A new table for Sorani (Kurdish) Braille has been donated by Peter
+    Engström from Index Braille
+*** New table for Ethiopic
+    A new table for Ethiopic Braille has been donated by Tamru E.
+    Belay PH.D from Adaptive Technology Center for the Blind (ATCB)
+*** New table for Serbian
+    A new table for Serbian Braille has been donated by Peter Engström
+    from Index Braille
+
+** Improved the documentation
+   The deprecated opcodes have been moved to a separate section
+
+** Bug fixes
+   - Fixed a long standing bug with an infinite loop in the table
+     compiler
+
+** Braille Table Improvements
+   - Improvements to the Chinese braille table
+   - Improvements to the Flemish Braille Math Code tables
+   - Improvements to the Dutch	Braille tables
+   - Improvements to the Spanish Braille tables.
+   - Fixes for the uncontracted French 6 and 8 dot tables
+   - Improved support for Italian 8 dot
+   - Improvements to the Generic Arabic Grade 1 table
+
+* Noteworthy changes in release 2.2.0 (????-??-??)
+
+** New features
+*** New tables
+    - Support for many indian languages
+    - Support for Icelandic 6- and 8-dot
+    - Support for Catalan
+    - Support for Dutch Braille (for Belgium and the Netherlands)
+    - Support for Flemish Braille Math Code (a.k.a. Woluwe code)
+
+
+*** New functions to make libraries relocatable
+    Two new functions, to set the search path for tables and files.
+    They make the library relocatable. See the in the documentation
+    for lou_setDataPath and lou_getDataPath.
+
+** Bug fixes
+    - Improved support for Spanish
+    - Improved Norwegian tables
+
+* Noteworthy changes in release 2.1.1 (2010-8-23)
+
+** Bug fixes
+   - Fixed problems with the Danish grade 2 table
+   - Fixed problems with the Marburg maths table for mathematics and
+     the UK maths table for mathematics
+
+* Noteworthy changes in release 2.1.0 (2010-8-19)
+
+** New features
+*** New tables
+    - Added tables for Portuguese grade 1 and 2
+    - Added unicode.dis for Unicode braille
+*** Modified tables
+    - Updated Danish tables
+*** Implemented language to table mapping
+*** New format of error messages
+    The error messages are now reported in a format similar to the one
+    used in gcc. 
+*** New opcode
+    - added undefined opcode
+*** Python bindings
+    - Allow the user to configure the maximum output length by
+      specifying a number by which the input length is multiplied
+      using the outlenMultiplier module variable. The default will
+      handle the case where every input character is undefined in the
+      translation table. Previously, this was hard-coded to 2, which
+      was insufficient in some cases.
+    - Add compbrlLeftCursor mode constant.
+    - Add compileString function which wraps lou_compileString.
+    - Corrections/clarifications to docstrings.
+    - Add python binding for the lou_hyphenate function.
+    - Added python wrapper for lou_backTranslateString and lou_backTranslate.
+
+*** liblouisxslt as an example
+    Add liblouisxslt as an example to python/examples. This is
+    basically an extension of libxslt that lets you invoke liblouis
+    from an xslt stylesheet to do Braille translation on text nodes
+    for example. 
+*** compbrlLeftCursor
+    Added a patch provided by Volker Bijewitz to implement
+    compbrlLeftCursor.
+
+** Bug fixes
+*** output cursorPos
+    Fix the output cursorPos when the compbrlAtCursor mode is enabled
+    and the characters around the cursor translate to multiple braille
+    cells, such as in the Chinese braille tables.
+*** outpos when doing back translation
+    Include a patch by Timothy Lee to fix outpos when doing back translation
+      (issue 11)
+*** inputPos/outputPos for undefined characters
+    Fix the input/output position arrays for characters in the input
+      which are undefined in the translation table.
+*** table fixes
+    - Fixed a bug with back translation of '*n'. (issue 13)
+    - Fixes to the en-us-g2.ctb table
+*** Python bindings
+    - Remove unnecessary imports, allowing the bindings to run in Python
+      2.7. (issue 12)
+    - lou_translate* writes output information in typeform, so
+      allocate enough bytes for it. Fixes possible buffer overruns and
+      resultant crashes.
+*** Miscellaneous
+    - Fixes to the man page generation to fix issues that were
+      reported by the Debian packaging builder
+    - Do not invoke help2man when cross-compiling 
+    - Documentation updates (issue 10)
+    - Removing noletsign defaults
+    - Many small fixes
+
+* Noteworthy changes in release 2.0.0 (2010-7-6)
+
+** New features
+*** New functions
+    - Adding lou_charSize function
+
+* Noteworthy changes in release 1.9.0 (2010-6-29)
+
+** New features
+*** New functions
+    - lou_dotsToChar and lou_charToDots function
+    - Added lou_compileString for adding entries to tables at
+      run-time.
+
+* Noteworthy changes in release 1.8.0 (2009-11-23)
+
+This release contains a number of improvements notably the integration
+of gnulib, the automatic generation of man pages and the addition of
+tables for German grade 2.
+
+** New features
+*** New tables
+    - Tables German Grade 2
+    - Swiss German
+    - Swedish (1989 standard)
+    - Swedish (1996 standard)
+
+*** Modified tables
+    - Updated Norwegian tables
+    - Updated Chinese braille table
+
+*** man pages
+    All tools accept the --version and --help options and are
+    documented in man pages
+
+*** Corpus based test cases for tables
+    You can now have corpus based tests for tables. See the README in
+    tests/table_test_corpuses.
+
+** Bug fixes
+   - config.h is no longer exported
+   - Many small fixes
+
+* Noteworthy changes in release 1.7.0 (2009-08-21)
+
+The main new feature of this release is the support for UK and Marburg
+math. Other changes include a new tool to check hyphenation and the
+usual improvement and addition of tables. Also The test suite has been
+enhanced and finally passes.
+
+** New features
+*** New tables
+    - Tables for UK and Marburg math
+    - Hong Kong Cantonese
+    - Hebrew
+    - Hungarian
+    - Slovene
+    - Tibetan
+    - Irish
+    - Maltese
+
+*** Modified tables
+    - Updated Norwegian tables
+    - Bug fixes in Russian tables
+    - Updated French tables
+
+*** lou_checkhyphens tool
+    New tool to check hyphenation
+*** rpm spec file
+*** Test cases for tables
+    The tables can now be tested with `make check'
+*** New opcodes
+    - noback and nofor opcode prefixes
+    - grouping opcode
+    - multipass subopcodes
+
+** Bug fixes
+   - Fix for library name and Python bindings
+   - Documentation fixes
+   - Many small fixes
+
+* Noteworthy changes in release 1.6.2 (2009-05-01)
+
+This release contains a new opcode for Malaysian Braille. See the
+documentation for a description of the new opcode.
+
+** New features
+
+*** repword opcode 
+The repword opcode is needed for Malaysian Braille
+
+* Noteworthy changes in release 1.6.1 (2009-04-21)
+
+This is mostly a bug fix release. It contains many bug fixes that were
+discovered in the course of developing UK Math tables.
+
+** Bug fixes
+
+*** bug fixes for correct, context and multipass opcodes
+*** bug fixes for largesign opcode
+*** fixed bug with French back-translation
+*** fixed the installation path for docs
+*** documentation improvement
+
+* Noteworthy changes in release 1.6 (2009-03-04)
+
+This release features support for Danish and Russian and updated
+tables for French and Norwegian. The search path for tables can now be
+specified using an environment variable. Finally there is the usual
+assortment of bug fixes.
+
+** New features
+
+*** exactdots opcode
+The exactdots opcode is intended for use in liblouisxml
+semantic-action files to specify exact dot patterns, as in
+mathematical codes.
+*** LOUIS_TABLEPATH env variable
+You can now specify where liblouis is to look for tables with the
+LOUIS_TABLEPATH environment variable.
+*** New Tables for Danish and Russian
+There is now support for Danish and Russian.
+
+** Bug fixes
+
+*** Updated French and Norwegian tables
+*** Use stdcall calling convention if building for Windows
+
+** Changes in behavior
+
+None
+
+* Noteworthy changes in release 1.5 (2009-01-21)
+
+This is a big release for liblouis. It's the first time that it is
+done from the Google code page. A number of people have contributed,
+namely John Boyer (table debugger, bug fixes), Eitan Isaacson (Python
+bindings), James Teh (Python bindings, bug fixes), Christian Egli
+(documentation) and Michel Such (table for French grade 2).
+
+
+** New features
+
+*** Python bindings
+The liblouis library can now be used from Python. For more info
+consult the README file in the python directory.
+
+*** Table debugger
+liblouis now comes with a debugger that can help to find problems with
+translation tables.
+
+*** French table for grade 2
+There is now a translation table for French grade 2.
+
+*** pass1Only mode bit
+The new pass1Only mode bit will help developers of screen readers as
+the cursor will stay where it is expected to.
+
+** Bug fixes
+
+Fix the inpos array values for the case where a rule has an output
+length which is larger than its input length.
+
+fixed multi-word phrases
+
+fixed bug in character display
+
+fixed bug in findOpcodeName
+
+lou_version now returns the correct liblouis version
+
+** Changes in behavior
+
+None
+
+#+OPTIONS: toc:nil num:nil

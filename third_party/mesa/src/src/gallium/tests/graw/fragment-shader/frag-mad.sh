@@ -1,0 +1,11 @@
+FRAG
+
+DCL IN[0], COLOR, LINEAR
+DCL OUT[0], COLOR
+
+IMM FLT32 { 0.5, 0.4, 0.6, 1.0 }
+IMM FLT32 { 0.5, 0.4, 0.6, 0.0 }
+
+MAD OUT[0], IN[0], IMM[0], IMM[1]
+
+END

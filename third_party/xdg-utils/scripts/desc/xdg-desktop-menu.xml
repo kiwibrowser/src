@@ -1,0 +1,685 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl"
+   href="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+    "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
+]>
+<refentry id="xdg-desktop-menu">
+  <refentryinfo>
+    <title>xdg-desktop-menu Manual</title>
+    <copyright>
+      <year>2006</year>
+    </copyright>
+    <author>
+      <firstname>Kevin</firstname>
+      <surname>Krammer</surname>
+    </author>
+    <address><email>kevin.krammer@gmx.at</email></address>
+    <author>
+      <firstname>Jeremy</firstname>
+      <surname>White</surname>
+    </author>
+    <address><email>jwhite@codeweavers.com</email></address>
+    <releaseinfo>xdg-utils 1.0</releaseinfo>
+  </refentryinfo>
+
+  <refmeta>
+    <refentrytitle>xdg-desktop-menu</refentrytitle>
+    <manvolnum>1</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname>xdg-desktop-menu</refname>
+    <refpurpose>command line tool for (un)installing desktop menu items</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+    <cmdsynopsis>
+      <command>xdg-desktop-menu</command>
+      <arg choice="plain">install</arg>
+      <arg><option>--noupdate</option></arg>
+      <arg><option>--novendor</option></arg>
+      <arg><option>--mode <replaceable>mode</replaceable></option></arg>
+      <arg choice="plain"><replaceable>directory-file(s)</replaceable></arg>
+      <arg choice="plain"><replaceable>desktop-file(s)</replaceable></arg>
+    </cmdsynopsis>
+    <cmdsynopsis>
+      <command>xdg-desktop-menu</command>
+      <arg choice="plain">uninstall</arg>
+      <arg><option>--noupdate</option></arg>
+      <arg><option>--mode <replaceable>mode</replaceable></option></arg>
+      <arg choice="plain"><replaceable>directory-file(s)</replaceable></arg>
+      <arg choice="plain"><replaceable>desktop-file(s)</replaceable></arg>
+    </cmdsynopsis>
+    <cmdsynopsis>
+      <command>xdg-desktop-menu</command>
+      <arg choice="plain">forceupdate</arg>
+      <arg><option>--mode <replaceable>mode</replaceable></option></arg>
+    </cmdsynopsis>
+    <cmdsynopsis>
+      <command>xdg-desktop-menu</command>
+      <group choice="req">
+	<arg choice="plain"><option>--help</option></arg>
+        <arg choice="plain"><option>--manual</option></arg>
+	<arg choice="plain"><option>--version</option></arg>
+      </group>
+    </cmdsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1 id="description">
+    <title>Description</title>
+    <para>
+      The xdg-desktop-menu program can be used to install new menu entries
+      to the desktop's application menu.
+    </para>
+    <para>
+      The application menu works according to the
+      XDG Desktop Menu Specification at
+      http://www.freedesktop.org/Standards/menu-spec
+    </para>
+  </refsect1>
+  <refsect1 id="commands">
+    <title>Commands</title>
+    <variablelist>
+      <varlistentry>
+	<term>install</term>
+	<listitem>
+	  <simpara>
+	    Install one or more applications in a submenu of
+	    the desktop menu system.
+	  </simpara>
+	  <simpara><replaceable>desktop-file</replaceable>:
+            A desktop file represents a single menu entry in the menu.
+            Desktop files are defined by the freedesktop.org Desktop Entry
+            Specification. The most important aspects of *.desktop
+            files are summarized below.
+	  </simpara>
+	  <simpara>
+            Menu entries can be added to the menu system in two different
+            ways. They can either be added to a predefined submenu in the
+            menu system based on one or more category keywords, or they can
+            be added to a new submenu. 
+	  </simpara>
+	  <simpara>
+	    To add a menu entry to a predefined submenu the desktop file
+	    that represents the menu entry must have a Categories= entry
+	    that lists one or more keywords. The menu item will be included
+	    in an appropriate submenu based on the included keywords.
+	  </simpara>
+	  <simpara>
+            To add menu items to a new submenu the desktop-files must be
+            preceded by a directory-file that describes the submenu.
+            If multiple desktop-files are specified, all entries will
+            be added to the same menu. If entries are installed to a menu
+            that has been created with a previous call to
+            <command>xdg-desktop-menu</command> the entries will be
+            installed in addition to any already existing entries.
+	  </simpara>
+	  <simpara><replaceable>directory-file</replaceable>:
+	    The *.directory file indicated by
+	    <replaceable>directory-file</replaceable> represents a submenu.
+	    The directory file provides the name and icon for a submenu. The
+	    name of the directory file is used to identify the submenu. 
+	  </simpara>
+	  <simpara>
+	    If multiple directory files are provided each file will
+	    represent a submenu within the menu that preceeds it, creating
+	    a nested menu hierarchy (sub-sub-menus).
+	    The menu entries themselves will be added to the last submenu.
+	  </simpara>
+	  <simpara>
+            Directory files follow the syntax defined by the freedesktop.org
+            Desktop Entry Specification.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>uninstall</term>
+	<listitem>
+	  <simpara>
+	    Remove applications or submenus from the desktop menu system
+            previously installed with <command>xdg-desktop-menu install</command>.
+	  </simpara>
+	  <simpara>
+	    A submenu and the associated directory file is only removed
+	    when the submenu no longer contains any menu entries.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>forceupdate</term>
+	<listitem>
+	  <simpara>
+	    Force an update of the menu system.
+	  </simpara>
+	  <simpara>
+	    This command is only useful if the last call to
+	    xdg-desktop-menu included the <option>--noupdate</option> option.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+  <refsect1 id="options">
+    <title>Options</title>
+    <variablelist>
+      <varlistentry>
+	<term><option>--noupdate</option></term>
+	<listitem>
+	  <simpara>
+	    Postpone updating the menu system. If multiple updates to the
+            menu system are made in sequence this flag can be used to
+            indicate that additional changes will follow and that it is not
+            necassery to update the menu system right away.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term><option>--novendor</option></term>
+	<listitem>
+	  <simpara>
+	    Normally, xdg-desktop-menu checks to ensure that any *.directory
+	    and *.desktop files to be installed has a vendor prefix.
+	    This option can be used to disable that check.
+	  </simpara>
+	  <simpara>
+            A vendor prefix consists of alpha characters ([a-zA-Z]) and is
+            terminated with a dash ("-").
+            Companies and organizations are encouraged to use a word
+            or phrase, preferably the organizations name, for which they hold
+            a trademark as their vendor prefix.
+            The purpose of the vendor prefix is to prevent name conflicts.
+          </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term><option>--mode</option> <replaceable>mode</replaceable></term>
+	<listitem>
+	  <simpara><replaceable>mode</replaceable> can be
+            <emphasis>user</emphasis> or <emphasis>system</emphasis>.
+            In user mode the file is (un)installed for the current user
+            only. In system mode the file is (un)installed for all users
+            on the system. Usually only root is allowed to install in
+            system mode.
+	  </simpara>
+	  <simpara>
+	    The default is to use system mode when called by root
+	    and to use user mode when called by a non-root user.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term><option>--help</option></term>
+	<listitem>
+	  <simpara>
+	    Show command synopsis.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term><option>--manual</option></term>
+	<listitem>
+	  <simpara>
+	    Show this manualpage.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>--version</option></term>
+        <listitem>
+          <simpara>
+            Show the xdg-utils version information.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+    </variablelist>
+  </refsect1>
+  <refsect1 id="desktopfiles">
+    <title>Desktop Files</title>
+    <para>
+      An application item in the application menu is represented by a
+      *.desktop file. A *.desktop file consists of a
+      <emphasis>[Desktop Entry]</emphasis> header followed by several
+      <replaceable>Key</replaceable>=<replaceable>Value</replaceable> lines.
+    </para>
+    <para>
+      A *.desktop file can provide a name and description for an application
+      in several different languages. This is done by adding a language
+      code as used by LC_MESSAGES in square brackets behind the 
+      <replaceable>Key</replaceable>. This way one can specify different
+      values for the same <replaceable>Key</replaceable> depending on the
+      currently selected language.
+    </para>
+    <para>
+      The following keys are often used:
+    </para>
+    <variablelist>
+      <varlistentry>
+	<term>Value=1.0</term>
+	<listitem>
+	  <simpara>
+	    This is a mandatory field to indicate that the *.desktop file
+	    follows the 1.0 version of the specification.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>Type=Application</term>
+	<listitem>
+	  <simpara>
+	    This is a mandatory field that indicates that the *.desktop file
+	    describes an application launcher.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>Name=<replaceable>Application Name</replaceable></term>
+	<listitem>
+	  <simpara>
+	    The name of the application.
+	    For example <emphasis>Mozilla</emphasis>
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>GenericName=<replaceable>Generic Name</replaceable></term>
+	<listitem>
+	  <simpara>
+	    A generic description of the application.
+	    For example <emphasis>Web Browser</emphasis>
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>Comment=<replaceable>Comment</replaceable></term>
+	<listitem>
+	  <simpara>
+	    Optional field to specify a tooltip for the application. 
+	    For example <emphasis>Visit websites on the Internet</emphasis>
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>Icon=<replaceable>Icon File</replaceable></term>
+	<listitem>
+	  <simpara>
+	    The icon to use for the application. This can either be
+	    an absolute path to an image file or an icon-name.
+	    If an icon-name is provided an image lookup by name is done
+	    in the user's current icon theme. The <command>xdg-icon-resource</command>
+	    command can be used to install image files into icon themes.
+	    The advantage of using an icon-name instead of an absolute
+	    path is that with an icon-name the application icon can be
+	    provided in several different sizes as well as in several
+	    differently themed styles.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>Exec=<replaceable>Command Line</replaceable></term>
+	<listitem>
+	  <simpara>
+	    The command line to start the application. If the application
+	    can open files the %f placeholder should be specified. When
+	    a file is dropped on the application launcher the %f is replaced
+	    with the file path of the dropped file. If multiple files
+	    can be specified on the command line the %F placeholder should
+	    be used instead of %f. If the application is able to open URLs
+	    in addition to local files then  %u or %U can be used instead
+	    of %f or %F.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>Categories=<replaceable>Categories</replaceable></term>
+	<listitem>
+	  <simpara>
+	    A list of categories separated by semi-colons. A category is
+	    a keyword that describes and classifies the application.
+	    By default applications are organized in the application menu
+            based on category. When menu entries are explicitly assigned
+            to a new submenu it is not necassery to list any categories.
+          </simpara>
+          <simpara>
+            When using categories it is recommended to include
+            one of the following categories:
+            AudioVideo, Development, Education, Game, Graphics, Network, 
+            Office, Settings, System, Utility.
+          </simpara>
+          <simpara>
+            See Appendix A of the XDG Desktop Menu Specification
+            for information about additional categories. 
+            http://standards.freedesktop.org/menu-spec/menu-spec-1.0.html
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>MimeType=<replaceable>Mimetypes</replaceable></term>
+	<listitem>
+	  <simpara>
+	    A list of mimetypes separated by semi-colons. This field is
+	    used to indicate which file types the application is able to
+	    open.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    <para>
+      For a complete oveview of the *.desktop file format please
+      visit http://www.freedesktop.org/wiki/Standards/desktop-entry-spec
+    </para>
+  </refsect1>
+  <refsect1 id="directoryfiles">
+    <title>Directory Files</title>
+    <para>
+      The appearance of submenu in the application menu is
+      provided by a *.directory file. In particular it provides the title
+      of the submenu and a possible icon. A *.directory file consists of a
+      <emphasis>[Desktop Entry]</emphasis> header followed by several
+      <replaceable>Key</replaceable>=<replaceable>Value</replaceable> lines.
+    </para>
+    <para>
+      A *.directory file can provide a title (name) for the submenu
+      in several different languages. This is done by adding a language
+      code as used by LC_MESSAGES in square brackets behind the 
+      <replaceable>Key</replaceable>. This way one can specify different
+      values for the same <replaceable>Key</replaceable> depending on the
+      currently selected language.
+    </para>
+    <para>
+      The following keys are relevqnt for submenus:
+    </para>
+    <variablelist>
+      <varlistentry>
+	<term>Value=1.0</term>
+	<listitem>
+	  <simpara>
+	    This is a mandatory field to indicate that the *.directory file
+	    follows the 1.0 version of the Desktop Entry specification.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>Type=Directory</term>
+	<listitem>
+	  <simpara>
+	    This is a mandatory field that indicates that the *.directory file
+	    describes a submenu.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>Name=<replaceable>Menu Name</replaceable></term>
+	<listitem>
+	  <simpara>
+	    The title of submenu.
+	    For example <emphasis>Mozilla</emphasis>
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>Comment=<replaceable>Comment</replaceable></term>
+	<listitem>
+	  <simpara>
+	    Optional field to specify a tooltip for the submenu. 
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>Icon=<replaceable>Icon File</replaceable></term>
+	<listitem>
+	  <simpara>
+	    The icon to use for the submenu. This can either be
+	    an absolute path to an image file or an icon-name.
+	    If an icon-name is provided an image lookup by name is done
+	    in the user's current icon theme.
+	    The <command>xdg-icon-resource</command>
+	    command can be used to install image files into icon themes.
+	    The advantage of using an icon-name instead of an absolute
+	    path is that with an icon-name the submenu icon can be
+	    provided in several different sizes as well as in several
+	    differently themed styles.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+    </variablelist>
+  </refsect1>
+  <refsect1 id="env_vars">
+    <title>Environment Variables</title>
+    <para>
+      xdg-desktop-menu honours the following environment variables:
+    </para>
+    <variablelist>
+      <varlistentry>
+	<term>XDG_UTILS_DEBUG_LEVEL</term>
+	<listitem>
+	  <simpara>
+	    Setting this environment variable to a non-zero numerical value
+	    makes xdg-desktop-menu do more verbose reporting on stderr.
+	    Setting a higher value increases the verbosity.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>XDG_UTILS_INSTALL_MODE</term>
+	<listitem>
+	  <simpara>
+	    This environment variable can be used by the user or
+            administrator to override the installation mode.
+	    Valid values are <emphasis>user</emphasis> and
+            <emphasis>system</emphasis>.  
+	  </simpara>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+
+  <refsect1 id="exitcodes">
+    <title>Exit Codes</title>
+    <para>
+      An exit code of 0 indicates success while a non-zero exit code
+      indicates failure. The following failure codes can be returned:
+    </para>
+    <variablelist>
+      <varlistentry>
+	<term><option>1</option></term>
+	<listitem>
+	  <simpara>
+	    Error in command line syntax.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><option>2</option></term>
+	<listitem>
+	  <simpara>
+	    One of the files passed on the command line did not exist.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><option>3</option></term>
+	<listitem>
+	  <simpara>
+	    A required tool could not be found. 
+	  </simpara>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><option>4</option></term>
+	<listitem>
+	  <simpara>
+	    The action failed. 
+	  </simpara>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><option>5</option></term>
+	<listitem>
+	  <simpara>
+	    No permission to read one of the files passed on the command
+            line.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+  <refsect1 id="seealso">
+    <title>See Also</title>
+    <para><citerefentry><refentrytitle>xdg-desktop-icon</refentrytitle>
+        <manvolnum>1</manvolnum>
+      </citerefentry>,
+      <citerefentry><refentrytitle>xdg-icon-resource</refentrytitle>
+        <manvolnum>1</manvolnum>
+      </citerefentry>,
+      <citerefentry><refentrytitle>xdg-mime</refentrytitle>
+        <manvolnum>1</manvolnum>
+      </citerefentry>
+    </para>
+  </refsect1>
+  <refsect1 id="examples">
+    <title>Examples</title>
+
+    <para>
+      The company ShinyThings Inc. has developed an application named
+      "WebMirror" and would like to add it to the application menu.
+      The company will use "shinythings" as its vendor id.
+      In order to add the application to the menu there needs to be a
+      .desktop file with a suitable <emphasis>Categories</emphasis> entry:
+<programlisting>
+shinythings-webmirror.desktop:
+
+  [Desktop Entry]
+  Encoding=UTF-8
+  Type=Application
+
+  Exec=webmirror
+  Icon=webmirror
+
+  Name=WebMirror
+  Name[nl]=WebSpiegel
+
+  Categories=Network;WebDevelopment;
+</programlisting>
+    </para>
+    <para>Now the xdg-desktop-menu tool can be used to add the
+    shinythings-webmirror.desktop file to the desktop application menu:
+<programlisting>
+xdg-desktop-menu install ./shinythings-webmirror.desktop
+</programlisting>
+    </para>
+    <para>
+      Note that for the purpose of this example the menu items are available
+      in two languages, English and Dutch.
+      The language code for Dutch is nl.
+    </para>
+    <para>
+      In the next example the company ShinyThings Inc. will add its own
+      submenu to the desktop application menu consisting of a
+      "WebMirror" menu item and a "WebMirror Admin Tool" menu item.
+    </para>
+    <para>
+      First the company needs to create two .desktop files that describe
+      the two menu items. Since the items are to be added to a new submenu
+      it is not necassery to include a Categories= line:
+<programlisting>
+shinythings-webmirror.desktop:
+
+  [Desktop Entry]
+  Encoding=UTF-8
+  Type=Application
+
+  Exec=webmirror
+  Icon=shinythings-webmirror
+
+  Name=WebMirror
+  Name[nl]=WebSpiegel
+
+
+shinythings-webmirror-admin.desktop:
+
+  [Desktop Entry]
+  Encoding=UTF-8
+  Type=Application
+
+  Exec=webmirror-admintool
+  Icon=shinythings-webmirror-admintool
+
+  Name=WebMirror Admin Tool
+  Name[nl]=WebSpiegel Administratie Tool
+</programlisting>
+    </para>
+    <para>
+      In addition a .directory file needs to be created to provide a title and icon
+      for the sub-menu itself:
+<programlisting>
+shinythings-webmirror.directory:
+
+  [Desktop Entry]
+  Encoding=UTF-8
+
+  Icon=shinythings-webmirror-menu
+
+  Name=WebMirror
+  Name[nl]=WebSpiegel
+</programlisting>
+    </para>
+    <para>
+      These file can now be installed with:
+<programlisting>
+xdg-desktop-menu install ./shinythings-webmirror.directory \
+      ./shinythings-webmirror.desktop ./shinythings-webmirror-admin.desktop
+</programlisting>
+    </para>
+    <para>
+      The menu entries could also be installed one by one:
+<programlisting>
+xdg-desktop-menu install --noupdate ./shinythings-webmirror.directory \
+      ./shinythings-webmirror.desktop
+xdg-desktop-menu install --noupdate ./shinythings-webmirror.directory \
+      ./shinythings-webmirror-admin.desktop
+xdg-desktop-menu forceupdate
+</programlisting>
+    </para>
+    <para>
+      Although the result is the same it is slightly more efficient to
+      install all files at the same time.
+    </para>
+    <para>
+      The *.desktop and *.directory files reference icons with the names
+      webmirror, webmirror-admin and webmirror-menu which should also be
+      installed. In this example the icons are installed in two different
+      sizes, once with a size of 22x22 pixels and once with a size
+      of 64x64 pixels:
+<programlisting>
+xdg-icon-resource install --size 22 ./wmicon-22.png shinythings-webmirror
+xdg-icon-resource install --size 22 ./wmicon-menu-22.png shinythings-webmirror-menu
+xdg-icon-resource install --size 22 ./wmicon-admin-22.png shinythings-webmirror-admin
+xdg-icon-resource install --size 64 ./wmicon-64.png shinythings-webmirror
+xdg-icon-resource install --size 64 ./wmicon-menu-64.png shinythings-webmirror-menu
+xdg-icon-resource install --size 64 ./wmicon-admin-64.png shinythings-webmirror-admin
+</programlisting>
+    </para>
+  </refsect1>
+</refentry>

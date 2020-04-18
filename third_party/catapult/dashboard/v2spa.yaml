@@ -1,0 +1,40 @@
+# See dashboard/docs/v2spa.md
+
+runtime: python27
+api_version: 1
+threadsafe: true
+instance_class: F4_1G
+
+libraries:
+- name: jinja2
+  version: "2.6"
+- name: pycrypto
+  version: "2.6"
+- name: webapp2
+  version: "2.5.1"
+
+builtins:
+- remote_api: on
+- appstats: on
+- deferred: on
+
+inbound_services:
+- warmup
+
+handlers:
+- url: /favicon.ico
+  static_files: dashboard/static/favicon.ico
+  upload: dashboard/static/favicon.ico
+  secure: always
+
+- url: /
+  static_files: index.vulcanized.html
+  upload: index.vulcanized.html
+  secure: always
+
+- url: /.+
+  script: dashboard.dispatcher.APP
+  secure: always
+
+includes:
+- scripts.yaml

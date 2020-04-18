@@ -1,0 +1,34 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_su_basic() {
+test_start "$FUNCNAME: basic su - up-privilege"
+
+test_init
+
+## Require a running X server
+require_notroot
+require_interactive
+
+assert_display
+
+echo "root" >out.expected
+
+test_procedure
+
+assert_interactive "Please make sure there no open password prompt windows.\n\tEnter the admin password when prompted."
+
+assert_exit 0 xdg-su -c 'whoami'
+assert_stdout out.expected
+assert_nostderr
+
+assert_interactive "Were you prompted for the admin password?" y
+
+test_result
+}
+
+run_test test_su_basic

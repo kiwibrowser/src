@@ -1,0 +1,84 @@
+#!/usr/bin/python
+# Copyright 2018 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import re
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+
+
+def _AddToPathIfNeeded(path):
+  if path not in sys.path:
+    sys.path.insert(0, path)
+
+NODE_VULCANIZE = os.path.abspath(os.path.join(
+  os.path.dirname(__file__), '..', '..',
+  'common/node_runner/node_runner/node_modules/vulcanize/bin/vulcanize'))
+
+MINIFY = os.path.abspath(os.path.join(
+  os.path.dirname(__file__), '..', '..',
+  'common/node_runner/node_runner/minify'))
+
+
+def _TimestampScript():
+  # V2SPA displays its version as this timestamp in this format to make it easy
+  # to check whether a change is visible.
+  now = time.time()
+  print 'vulcanized', time.strftime(
+      '%Y-%m-%d %H:%M:%S', time.gmtime(now - (60 * 60 * 7)))
+  return '<script>VULCANIZED_TIMESTAMP = new Date(%d);</script>' % (now * 1000)
+
+
+def VulcanizeIndex(temp_dir, dashboard_path):
+  filename = os.path.join(temp_dir, 'index.vulcanized.html')
+  html = subprocess.check_output([
+    NODE_VULCANIZE, '--strip-comments', '--inline-scripts', '-p', dashboard_path,
+    'dashboard/spa/index.html',
+  ])
+  html += _TimestampScript()
+  open(filename, 'w').write(html)
+  subprocess.check_output([MINIFY, filename])
+  return filename
+
+
+def VulcanizeHistogramsViewer(temp_dir):
+  from tracing_build import vulcanize_histograms_viewer
+  viewer_dir_path = os.path.join(temp_dir, 'vulcanized_histograms_viewer')
+  viewer_html_path = os.path.join(viewer_dir_path, 'vulcanized_histograms_viewer.html')
+  os.mkdir(viewer_dir_path)
+  with open(viewer_html_path, 'w') as f:
+    s = vulcanize_histograms_viewer.VulcanizeHistogramsViewer()
+    f.write(s.encode('utf-8'))
+  return viewer_dir_path
+
+
+def Main():
+  dashboard_path = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+  _AddToPathIfNeeded(dashboard_path)
+  catapult_path = os.path.dirname(dashboard_path)
+  _AddToPathIfNeeded(catapult_path)
+  tracing_path = os.path.join(catapult_path, 'tracing')
+  _AddToPathIfNeeded(tracing_path)
+  import dashboard
+
+  temp_dir = tempfile.mkdtemp()
+  deployment_paths = dashboard.PathsForDeployment()
+  deployment_paths.append(VulcanizeHistogramsViewer(temp_dir))
+  deployment_paths.append(VulcanizeIndex(temp_dir, dashboard_path))
+
+  from catapult_build import appengine_deploy
+  appengine_deploy.Deploy(deployment_paths, ['v2spa.yaml'], 'v2spa')
+
+  try:
+    shutil.rmtree(temp_dir)
+  except OSError as e:
+    logging.error('Error cleaning up temp dir %s: %s', temp_dir, e)
+
+
+if __name__ == '__main__':
+  Main()

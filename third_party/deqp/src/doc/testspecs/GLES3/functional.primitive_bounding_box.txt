@@ -1,0 +1,104 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    GL_EXT_primitive_bounding_box extension tests
+
+Tests:
+ + dEQP-GLES31.functional.primitive_bounding_box.*
+
+Includes:
+ + State query tests
+ + Primitive render tests
+   - All basic primitives: triangles, (wide) lines, (wide) points
+   - Set bounding box with gl_BoundingBoxEXT and PrimitiveBoundingBoxEXT
+   - Rendering with and without tessellation and/or geometry stages
+   - Rendering with correct, too large, and too small bounding boxes
+ + Depth render tests
+   - Render pattern and hint the final depth range with bounding box
+   - Test with built-in depth and user defined (gl_FragDepth) depth
+ + Blit tests
+   - Blit should not be affected by the bounding box
+ + Clear tests
+   - Clears should not be affected by the bounding box
+
+Excludes:
+ + Special floating point values (NaN, Inf, etc.)
+ + Rendering with separate shader pipelines
+ + Rendering discardable geometry with fragment shaders that have
+   side-effects (memory writes)
+ + Rendering discardable geometry with active transform feedback
+
+Description:
+
+state_query.* cases test the global PRIMITIVE_BOUNDING_BOX_EXT state.
+Tests set the state to certain values and then query the state using
+different methods.
+
+triangles.*, (wide_)lines.*, (wide_)points.* cases set the primitive
+bounding box and render a test pattern. Rendering results within the
+bounding box are then verified.
+
+"global_state.*" cases set the bounding box of the whole test pattern
+using the PRIMITIVE_BOUNDING_BOX_EXT state. "tessellation_set_per_draw.*"
+cases set the bounding box of the whole test pattern using
+gl_BoundingBoxEXT output variable. "tessellation_set_per_draw.*" cases
+set the bounding box for each (tessellation input) primitive separately.
+
+"*_bbox_equal" cases set the bounding box to tightly cover the primitive
+or the whole pattern. In "*_bbox_larger" cases, the bounding box is set
+to be larger than the rendered pattern/primitive and in "*_bbox_smaller"
+cases, the bounding box is set to cover only a subset of the pattern.
+In these subset cases, only the area covered by the bounding box is
+verified.
+
+triangles.* cases render a grid with yellow and green cells. Cells are
+in random order. Result image verification is done by simply checking
+that the viewport does not contain any background-colored pixels within
+the pattern area.
+
+(wide_)points.* cases render a pattern of green and blue points.
+Verification checks that no points within the bounding box area are
+missing and have the correct size. Size test is intended to prevent
+partially rendered points from passing the test.
+
+(wide_)lines.* cases render a pattern of green and blue lines.
+Verification checks the number and the width of separate lines within
+bounding box area. Number-of-lines check prevents accepting rendering
+results with missing lines and the line width check prevents accepting
+partially rendered lines.
+
+depth.* cases render multiple layers with varying depth values while
+hint the resulting depth range with primitive bounding box. In
+"builtin_depth.*" cases, depth is set by the rasterizer. In
+"user_defined_depth.*" cases, depth is set in the fragment shader using
+gl_FragDepth. Verification checks that only the topmost layer is visible.
+
+blit_fbo.* cases do framebuffer blits with different bounding box values.
+Bounding box values should not affect blitting.
+
+clear.* cases do full and scissored framebuffer clears. Since clears are
+not affected by the bounding box, verification is done by simply comparing
+rendering result with bounding box set to cover full viewport and rendering
+result with bounding box set to arbitrary values. In *_with_triangles cases,
+some geometry is rendered between clears with properly set bounding box.
+
+call_order.* cases render a scene with different relative order of
+glViewport and glPrimitiveBoundingBox. Tests verify that the bounding box
+for a draw command is calculated from the current state when draw command
+is issued (i.e. changing call order of state setting functions does not
+change ther result).

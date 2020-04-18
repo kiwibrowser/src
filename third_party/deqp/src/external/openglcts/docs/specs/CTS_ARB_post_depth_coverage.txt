@@ -1,0 +1,111 @@
+Conformance Test
+
+    GL_ARB_post_depth_coverage
+
+Contributors
+
+    Michal Butterweck, Mobica
+
+Contacts
+
+    Michal Butterweck, Mobica (michal.butterweck 'at' mobica.com)
+
+Status
+
+    In review
+
+Version
+
+    August 31, 2016 (version 1)
+
+Dependencies
+
+    This specification is written against:
+    - OpenGL 4.5 Core Profile specification,
+    - ARB_post_depth_coverage extension specification.
+
+Overview
+
+    The test verifies that when ARB_post_depth_coverage is available one can
+    use post_depth_coverage layout and gl_SampleMaskIn​ is affected according
+    to the extension specification.
+
+Tests
+
+    Shader
+
+        Check that macro construction:
+            #extension GL_ARB_post_depth_coverage : <behavior>
+        is allowed in the shader.
+
+        Check that a new preprocessor #define GL_ARB_post_depth_coverage is
+        available and equal to 1.
+
+        Prepare a proper shader with following layout setup:
+            layout(early_fragment_tests) in;
+            layout(post_depth_coverage) in;
+        Expect it builds without error.
+
+        Prepare a proper shader with following layout setup:
+            layout(post_depth_coverage) in;
+        Expect it builds without error.
+
+    Sample Mask
+
+        Prepare multisample framebuffer with integer color and depth attachments
+		1x1 pixels in size. A color attachment must be a texture. Clear it.
+
+        Prepare framebuffer with integer color attachment 1x(number of samples)
+        pixels in size. Clear it.
+
+		Prepare shader program which passes gl_SampleMaskIn to the output as a
+		color.
+
+		Prepare shader program which passes samples from multisample texture to
+		the output fragment.
+
+        Turn on depth test.
+
+        Enable multisampling.
+
+        Use multisample framebuffer.
+
+		Use first program.
+
+        Draw a figure which partially covers the pixels samples but does not
+        cover the pixel center. The dimensions of the figure may be dependent
+        on the results of GetMultisamplefv called with SAMPLE_POSITION pname.
+        The figure shall be placed at near view (eg. depth equal 0.25).
+
+		Clear the color attachment.
+
+        Draw a figure which fully covers the pixel area but is placed behind the
+        previous polygon (eg. at depth equal to 0.75). Do not use post depth
+        coverage. Output gl_SampleMaskIn to the the fragment.
+
+		Turn off depth test.
+
+		Use second framebuffer.
+
+		Use second program.
+
+		Bind first's frambuffer color attachment texture as an input to the
+		fragment shader.
+
+		Copy data from the multisample framebuffer to the second framebuffer
+		using the second program and draw call.	Fetch value of gl_SampleMaskIn
+		from the second framebuffer using ReadPixels. Expect that for all
+		enabled samples corresponding gl_SampleMaskIn bit is set.
+
+        Repeat the test using post depth coverage layout for the second draw
+        call. Expect that bits in the gl_SampleMaskIn are only set for the
+        samples which are not covered by the first primitive.
+
+        Repeat both test cases substituting the depth test with the stencil
+        test.
+
+Revision History
+
+    Revision 1, 31 August, 2016 (Michal Butterweck)
+     - Initial version.
+

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta http-equiv="X-UA-Compatible" content="chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"></meta>
+<script type="text/javascript">
+/**/
+
+function $$(x) {
+    return document.getElementById(x);
+}
+
+var canvas, gl;
+
+function launchLogo() {
+    gl.clearColor(0, 1, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+}
+
+function removeClass(element, clas) {
+    var cs = element.getAttribute("class").split(/\s+/);
+    if (cs.indexOf(clas) != -1) {
+	cs.splice(cs.indexOf(clas), 1);
+    }
+    element.setAttribute("class", cs.join(" "));
+}
+
+function pageLoaded() {
+    canvas = document.getElementById("dummy");
+    var experimental = false;
+    try { gl = canvas.getContext("webgl"); }
+    catch (x) { gl = null; }
+
+    if (gl == null) {
+	try { gl = canvas.getContext("experimental-webgl"); experimental = true; }
+	catch (x) { gl = null; }
+    }
+
+    if (gl) {
+	// hide/show phrase for webgl-experimental
+	$$("webgl-experimental").style.display = experimental ? "auto" : "none";
+
+	// show webgl supported div, and launch webgl demo
+	removeClass($$("webgl-yes"), "webgl-hidden");
+	launchLogo();
+    } else if ("WebGLRenderingContext" in window) {
+	// not a foolproof way to check if the browser
+	// might actually support WebGL, but better than nothing
+	removeClass($$("webgl-disabled"), "webgl-hidden");
+    } else {
+	randomizeBrowsers();
+	removeClass($$("webgl-no"), "webgl-hidden");
+    }
+}
+
+function randomizeBrowsers() {
+    var bl = $$("webgl-browser-list");
+
+    var browsers = [];
+    var bc = bl.firstChild;
+    while (bc) {
+	if (bc.tagName == "DIV") {
+	    browsers.push(bc);
+	    bc.weight = Math.random();
+	}
+	bc = bc.nextSibling;
+    }
+
+    while (bl.firstChild)
+	bl.removeChild(bl.firstChild);
+
+    browsers = browsers.sort(function(a, b) {
+	if (a.weight < b.weight) return -1;
+	if (a.weight > b.weight) return 1;
+	return 0;
+    });
+
+    for (var i = 0; i < browsers.length; ++i) {
+	bl.appendChild(browsers[i]);
+    }
+}
+
+window.addEventListener("load", pageLoaded, false);
+</script>
+
+<style type="text/css">
+
+body {
+    background: #333;
+    background-image:url(background.jpg);
+    font-family: sans-serif;
+}
+
+iframe {
+    width:100%;
+    height:400px;
+}
+
+.roundbox {
+    width: 800px;
+    height: 600px;
+    margin: 1em auto 1em auto;
+    padding: 0em 0.5em 0em 0.5em;
+
+    border: 2px solid #ccc;
+    background: #eee;
+
+    -moz-border-radius: 10px 10px;
+    -webkit-border-radius: 10px 10px;
+    -o-border-radius: 10px 10px;
+    border-radius: 10px 10px;
+}
+
+.webgl-div {
+}
+
+.webgl-bottom {
+    background: #aaa;
+}
+
+h1 {
+    background: transparent;
+    color: #850000;
+    text-shadow: #ccc 0px 0px 10px;
+    text-align: center;
+    padding-bottom:10px;
+}
+
+#webgl-logo {
+}
+
+.webgl-hidden {
+    display: none;
+}
+
+#webgl-logo {
+    margin-bottom: -30px;
+}
+
+</style>
+</head>
+
+<body>
+
+<canvas width="1" height="1" id="dummy"></canvas>
+
+<h1>Can I use <img id="webgl-logo" alt="WebGL" src="webgl-logo.png"/>?</h1>
+
+<div class="roundbox">
+<div class="webgl-hidden webgl-div" id="webgl-yes">
+  <p>Yes!  Your browser supports WebGL!  <span id="webgl-experimental">(However, it indicates that support is experimental; you might see issues with some content.)  </span>You should see an animated WebGL logo below.  If you don't, please visit the support site for your browser.</p>
+
+<p style="text-align: center"></p>
+<iframe src="webgl-logo.html"></iframe>
+
+<p>To learn more about WebGL go to the <a href="http://khronos.org/webgl/wiki/">WebGL Wiki</a>.</p>
+
+<div class="webgl-hidden webgl-div" id="webgl-disabled">
+<p>Hmm.  While your browser seems to support WebGL, it is disabled or unavailable.  If possible, please ensure that you're running the latest drivers for your video card.  For more help, please visit the support site for your browser.</p>
+</div>
+
+<div class="webgl-hidden webgl-div" id="webgl-no">
+<p>Oh no!  We're sorry, but your browser doesn't seem to support WebGL.  You may want to download one of the following browsers to view WebGL content.</p>
+
+<p>The following browsers support WebGL:</p>
+
+<div id="webgl-browser-list">
+<div><a href="http://www.mozilla.com/firefox/beta/">Mozilla Firefox 4 Beta</a></div>
+<div><a href="http://www.google.com/chrome/">Google Chrome</a></div>
+<div><a href="http://www.webkit.org/">WebKit Developer Builds</a></div>
+</div>
+</div>
+
+</div>
+</body>
+</html>
+

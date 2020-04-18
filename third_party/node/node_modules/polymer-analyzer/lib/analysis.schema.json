@@ -1,0 +1,868 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "definitions": {
+        "Attribute": {
+            "properties": {
+                "defaultValue": {
+                    "description": "The default value of the attribute, if any.\n\nAs attributes are always strings, this is the actual value, not a human\nreadable description.",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "A markdown description for the attribute.",
+                    "type": "string"
+                },
+                "inheritedFrom": {
+                    "description": "The identifier of the class or mixin that declared this property.",
+                    "type": "string"
+                },
+                "metadata": {
+                    "description": "An extension point for framework-specific metadata, as well as any\nmetadata not yet standardized here such as what polyfills are needed,\nbehaviors and mixins used, the framework that the element was written in,\ntags/categories, links to specs that the element implements, etc.\n\nFramework-specific metadata should be put into a sub-object with the name\nof that framework."
+                },
+                "name": {
+                    "description": "The name of the attribute. e.g. `value`, `icon`, `should-collapse`.",
+                    "type": "string"
+                },
+                "sourceRange": {
+                    "$ref": "#/definitions/SourceRange",
+                    "description": "Where this feature is defined in source code."
+                },
+                "type": {
+                    "description": "The type that the attribute will be serialized/deserialized as.\n\ne.g. `string`, `number`, `boolean`, `RegExp`, `Array`, `Object`.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "type": "object"
+        },
+        "Class": {
+            "properties": {
+                "demos": {
+                    "description": "Paths, relative to the base directory of the package, to demo pages for\nthis feauture.\n\ne.g. `[{url: 'demos/index.html', description: 'How it works'}, ...]`",
+                    "items": {
+                        "$ref": "#/definitions/Demo"
+                    },
+                    "type": "array"
+                },
+                "description": {
+                    "description": "A markdown description.",
+                    "type": "string"
+                },
+                "metadata": {
+                    "description": "An extension point for framework-specific metadata, as well as any\nmetadata not yet standardized here such as what polyfills are needed,\nbehaviors and mixins used, the framework that the element was written in,\ntags/categories, links to specs that the element implements, etc.\n\nFramework-specific metadata should be put into a sub-object with the name\nof that framework."
+                },
+                "methods": {
+                    "description": "The instance methods that this feature has.",
+                    "items": {
+                        "$ref": "#/definitions/Method"
+                    },
+                    "type": "array"
+                },
+                "mixins": {
+                    "description": "Names of mixins applied.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "name": {
+                    "description": "The name of the class.",
+                    "type": "string"
+                },
+                "path": {
+                    "description": "The path, relative to the base directory of the package.\n\ne.g. `paper-input.html` or `app-toolbar/app-toolbar.html` (given that\napp-toolbar lives in the app-layout package).",
+                    "type": "string"
+                },
+                "privacy": {
+                    "$ref": "#/definitions/Privacy"
+                },
+                "properties": {
+                    "description": "The properties that this feature has.",
+                    "items": {
+                        "$ref": "#/definitions/Property"
+                    },
+                    "type": "array"
+                },
+                "sourceRange": {
+                    "$ref": "#/definitions/SourceRange",
+                    "description": "Where this feature is defined in source code."
+                },
+                "staticMethods": {
+                    "description": "The static, class-level methods that this feature has.",
+                    "items": {
+                        "$ref": "#/definitions/Method"
+                    },
+                    "type": "array"
+                },
+                "summary": {
+                    "description": "A markdown summary.",
+                    "type": "string"
+                },
+                "superclass": {
+                    "description": "The class, if any, that this class extends.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "path",
+                "description",
+                "summary",
+                "demos",
+                "privacy"
+            ],
+            "type": "object"
+        },
+        "Demo": {
+            "properties": {
+                "description": {
+                    "description": "A markdown description of the demo.",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "Relative URL of the demo.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "url"
+            ],
+            "type": "object"
+        },
+        "Element": {
+            "properties": {
+                "attributes": {
+                    "description": "The attributes that this element is known to understand.",
+                    "items": {
+                        "$ref": "#/definitions/Attribute"
+                    },
+                    "type": "array"
+                },
+                "demos": {
+                    "description": "Paths, relative to the base directory of the package, to demo pages for\nthis feauture.\n\ne.g. `[{url: 'demos/index.html', description: 'How it works'}, ...]`",
+                    "items": {
+                        "$ref": "#/definitions/Demo"
+                    },
+                    "type": "array"
+                },
+                "description": {
+                    "description": "A markdown description.",
+                    "type": "string"
+                },
+                "events": {
+                    "description": "The events that this element fires.",
+                    "items": {
+                        "$ref": "#/definitions/Event"
+                    },
+                    "type": "array"
+                },
+                "extends": {
+                    "description": "The tagname that the element extends, if any. The value of the `extends`\noption that's passed into `customElements.define`.\n\ne.g. `input`, `paper-button`, `my-super-element`",
+                    "type": "string"
+                },
+                "metadata": {
+                    "description": "An extension point for framework-specific metadata, as well as any\nmetadata not yet standardized here such as what polyfills are needed,\nbehaviors and mixins used, the framework that the element was written in,\ntags/categories, links to specs that the element implements, etc.\n\nFramework-specific metadata should be put into a sub-object with the name\nof that framework."
+                },
+                "methods": {
+                    "description": "The instance methods that this feature has.",
+                    "items": {
+                        "$ref": "#/definitions/Method"
+                    },
+                    "type": "array"
+                },
+                "mixins": {
+                    "description": "Names of mixins applied.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "name": {
+                    "description": "The class name for this element.\n\ne.g. `MyElement`, `Polymer.PaperInput`",
+                    "type": "string"
+                },
+                "path": {
+                    "description": "The path, relative to the base directory of the package.\n\ne.g. `paper-input.html` or `app-toolbar/app-toolbar.html` (given that\napp-toolbar lives in the app-layout package).",
+                    "type": "string"
+                },
+                "privacy": {
+                    "$ref": "#/definitions/Privacy"
+                },
+                "properties": {
+                    "description": "The properties that this feature has.",
+                    "items": {
+                        "$ref": "#/definitions/Property"
+                    },
+                    "type": "array"
+                },
+                "slots": {
+                    "description": "The shadow dom content slots that this element accepts.",
+                    "items": {
+                        "$ref": "#/definitions/Slot"
+                    },
+                    "type": "array"
+                },
+                "sourceRange": {
+                    "$ref": "#/definitions/SourceRange",
+                    "description": "Where this feature is defined in source code."
+                },
+                "staticMethods": {
+                    "description": "The static, class-level methods that this feature has.",
+                    "items": {
+                        "$ref": "#/definitions/Method"
+                    },
+                    "type": "array"
+                },
+                "styling": {
+                    "description": "Information useful for styling the element and its children.",
+                    "properties": {
+                        "cssVariables": {
+                            "description": "CSS Variables that the element understands.",
+                            "items": {
+                                "properties": {
+                                    "description": {
+                                        "description": "A markdown description of the variable.",
+                                        "type": "string"
+                                    },
+                                    "fallbackBehavior": {
+                                        "description": "A markdown description of how the element will fallback if the variable\nisn't defined.",
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "description": "The name of the variable. e.g. `--header-color`, `--my-element-size`",
+                                        "type": "string"
+                                    },
+                                    "type": {
+                                        "description": "The type of the variable. Advisory. e.g. `color`, `size`",
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "name"
+                                ],
+                                "type": "object"
+                            },
+                            "type": "array"
+                        },
+                        "needsExplicitSize": {
+                            "description": "If true, the element must be given an explicit size by its context.",
+                            "type": "boolean"
+                        },
+                        "selectors": {
+                            "description": "CSS selectors that the element recognizes on itself for styling.",
+                            "items": {
+                                "properties": {
+                                    "description": {
+                                        "description": "A markdown description of the effect of this selector matching\non the element.",
+                                        "type": "string"
+                                    },
+                                    "value": {
+                                        "description": "The CSS selector. e.g. `.bright`, `[height=5]`, `[cascade]`.",
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "value",
+                                    "description"
+                                ],
+                                "type": "object"
+                            },
+                            "type": "array"
+                        }
+                    },
+                    "required": [
+                        "selectors",
+                        "cssVariables"
+                    ],
+                    "type": "object"
+                },
+                "summary": {
+                    "description": "A markdown summary.",
+                    "type": "string"
+                },
+                "superclass": {
+                    "description": "The class that this element extends.\n\nThis is non-optional, as every custom element must have HTMLElement in\nits prototype change.\n\ne.g. `HTMLElement`, `HTMLInputElement`, `MyNamespace.MyBaseElement`",
+                    "type": "string"
+                },
+                "tagname": {
+                    "description": "The tagname that the element registers itself as. e.g. `paper-input`",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "superclass",
+                "slots",
+                "styling",
+                "path",
+                "description",
+                "summary",
+                "demos",
+                "privacy"
+            ],
+            "type": "object"
+        },
+        "ElementMixin": {
+            "properties": {
+                "attributes": {
+                    "description": "The attributes that this element is known to understand.",
+                    "items": {
+                        "$ref": "#/definitions/Attribute"
+                    },
+                    "type": "array"
+                },
+                "demos": {
+                    "description": "Paths, relative to the base directory of the package, to demo pages for\nthis feauture.\n\ne.g. `[{url: 'demos/index.html', description: 'How it works'}, ...]`",
+                    "items": {
+                        "$ref": "#/definitions/Demo"
+                    },
+                    "type": "array"
+                },
+                "description": {
+                    "description": "A markdown description.",
+                    "type": "string"
+                },
+                "events": {
+                    "description": "The events that this element fires.",
+                    "items": {
+                        "$ref": "#/definitions/Event"
+                    },
+                    "type": "array"
+                },
+                "metadata": {
+                    "description": "An extension point for framework-specific metadata, as well as any\nmetadata not yet standardized here such as what polyfills are needed,\nbehaviors and mixins used, the framework that the element was written in,\ntags/categories, links to specs that the element implements, etc.\n\nFramework-specific metadata should be put into a sub-object with the name\nof that framework."
+                },
+                "methods": {
+                    "description": "The instance methods that this feature has.",
+                    "items": {
+                        "$ref": "#/definitions/Method"
+                    },
+                    "type": "array"
+                },
+                "mixins": {
+                    "description": "Names of mixins applied.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "name": {
+                    "description": "The name for this mixin.\n\ne.g. `MyMixin`, `Polymer.PaperInputMixin`",
+                    "type": "string"
+                },
+                "path": {
+                    "description": "The path, relative to the base directory of the package.\n\ne.g. `paper-input.html` or `app-toolbar/app-toolbar.html` (given that\napp-toolbar lives in the app-layout package).",
+                    "type": "string"
+                },
+                "privacy": {
+                    "$ref": "#/definitions/Privacy"
+                },
+                "properties": {
+                    "description": "The properties that this feature has.",
+                    "items": {
+                        "$ref": "#/definitions/Property"
+                    },
+                    "type": "array"
+                },
+                "slots": {
+                    "description": "The shadow dom content slots that this element accepts.",
+                    "items": {
+                        "$ref": "#/definitions/Slot"
+                    },
+                    "type": "array"
+                },
+                "sourceRange": {
+                    "$ref": "#/definitions/SourceRange",
+                    "description": "Where this feature is defined in source code."
+                },
+                "staticMethods": {
+                    "description": "The static, class-level methods that this feature has.",
+                    "items": {
+                        "$ref": "#/definitions/Method"
+                    },
+                    "type": "array"
+                },
+                "styling": {
+                    "description": "Information useful for styling the element and its children.",
+                    "properties": {
+                        "cssVariables": {
+                            "description": "CSS Variables that the element understands.",
+                            "items": {
+                                "properties": {
+                                    "description": {
+                                        "description": "A markdown description of the variable.",
+                                        "type": "string"
+                                    },
+                                    "fallbackBehavior": {
+                                        "description": "A markdown description of how the element will fallback if the variable\nisn't defined.",
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "description": "The name of the variable. e.g. `--header-color`, `--my-element-size`",
+                                        "type": "string"
+                                    },
+                                    "type": {
+                                        "description": "The type of the variable. Advisory. e.g. `color`, `size`",
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "name"
+                                ],
+                                "type": "object"
+                            },
+                            "type": "array"
+                        },
+                        "needsExplicitSize": {
+                            "description": "If true, the element must be given an explicit size by its context.",
+                            "type": "boolean"
+                        },
+                        "selectors": {
+                            "description": "CSS selectors that the element recognizes on itself for styling.",
+                            "items": {
+                                "properties": {
+                                    "description": {
+                                        "description": "A markdown description of the effect of this selector matching\non the element.",
+                                        "type": "string"
+                                    },
+                                    "value": {
+                                        "description": "The CSS selector. e.g. `.bright`, `[height=5]`, `[cascade]`.",
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "value",
+                                    "description"
+                                ],
+                                "type": "object"
+                            },
+                            "type": "array"
+                        }
+                    },
+                    "required": [
+                        "selectors",
+                        "cssVariables"
+                    ],
+                    "type": "object"
+                },
+                "summary": {
+                    "description": "A markdown summary.",
+                    "type": "string"
+                },
+                "superclass": {
+                    "description": "The class, if any, that this class extends.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name",
+                "slots",
+                "styling",
+                "path",
+                "description",
+                "summary",
+                "demos",
+                "privacy"
+            ],
+            "type": "object"
+        },
+        "Event": {
+            "properties": {
+                "description": {
+                    "description": "A markdown description of the event.",
+                    "type": "string"
+                },
+                "detail": {
+                    "description": "Information about the `detail` field of the event.",
+                    "properties": {
+                        "properties": {
+                            "items": {
+                                "$ref": "#/definitions/Property"
+                            },
+                            "type": "array"
+                        }
+                    },
+                    "required": [
+                        "properties"
+                    ],
+                    "type": "object"
+                },
+                "inheritedFrom": {
+                    "description": "The identifier of the class or mixin that declared this property.",
+                    "type": "string"
+                },
+                "metadata": {
+                    "description": "An extension point for framework-specific metadata, as well as any\nmetadata not yet standardized here such as what polyfills are needed,\nbehaviors and mixins used, the framework that the element was written in,\ntags/categories, links to specs that the element implements, etc.\n\nFramework-specific metadata should be put into a sub-object with the name\nof that framework."
+                },
+                "name": {
+                    "description": "The name of the event.",
+                    "type": "string"
+                },
+                "sourceRange": {
+                    "$ref": "#/definitions/SourceRange",
+                    "description": "Where this feature is defined in source code."
+                },
+                "type": {
+                    "description": "The type of the event object that's fired.\n\ne.g. `Event`, `CustomEvent`, `KeyboardEvent`, `MyCustomEvent`.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name",
+                "description",
+                "type"
+            ],
+            "type": "object"
+        },
+        "Function": {
+            "properties": {
+                "description": {
+                    "description": "A markdown description for the namespace.",
+                    "type": "string"
+                },
+                "metadata": {
+                    "description": "An extension point for framework-specific metadata, as well as any\nmetadata not yet standardized here such as what polyfills are needed,\nbehaviors and mixins used, the framework that the element was written in,\ntags/categories, links to specs that the element implements, etc.\n\nFramework-specific metadata should be put into a sub-object with the name\nof that framework."
+                },
+                "name": {
+                    "description": "The globally accessible property-path of the namespace. e.q. `Polymer.dom`",
+                    "type": "string"
+                },
+                "params": {
+                    "items": {
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "type": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "privacy": {
+                    "$ref": "#/definitions/Privacy"
+                },
+                "return": {
+                    "properties": {
+                        "desc": {
+                            "type": "string"
+                        },
+                        "type": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "desc"
+                    ],
+                    "type": "object"
+                },
+                "sourceRange": {
+                    "$ref": "#/definitions/SourceRange",
+                    "description": "Where this feature is defined in source code."
+                },
+                "summary": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name",
+                "privacy"
+            ],
+            "type": "object"
+        },
+        "Method": {
+            "properties": {
+                "description": {
+                    "description": "A markdown description of the property.",
+                    "type": "string"
+                },
+                "inheritedFrom": {
+                    "description": "The identifier of the class or mixin that declared this property.",
+                    "type": "string"
+                },
+                "metadata": {
+                    "description": "An extension point for framework-specific metadata, as well as any\nmetadata not yet standardized here such as what polyfills are needed,\nbehaviors and mixins used, the framework that the element was written in,\ntags/categories, links to specs that the element implements, etc.\n\nFramework-specific metadata should be put into a sub-object with the name\nof that framework."
+                },
+                "name": {
+                    "description": "The name of the property. e.g. `value`, `icon`, `shouldCollapse`.",
+                    "type": "string"
+                },
+                "params": {
+                    "description": "An array of data objects describing the method signature. This data may be\nincomplete. For example, only argument names can be detected from an\nundocumented JavaScript function. Argument types can only be read from\nassociated JSDoc via @param tags",
+                    "items": {
+                        "$ref": "#/definitions/Parameter"
+                    },
+                    "type": "array"
+                },
+                "privacy": {
+                    "$ref": "#/definitions/Privacy"
+                },
+                "return": {
+                    "description": "Data describing the method return type. This data may be incomplete.\nFor example, the return type can be detected from a documented JavaScript\nfunction with associated JSDoc and a @return tag.",
+                    "properties": {
+                        "desc": {
+                            "type": "string"
+                        },
+                        "type": {
+                            "type": "string"
+                        }
+                    },
+                    "type": "object"
+                },
+                "sourceRange": {
+                    "$ref": "#/definitions/SourceRange",
+                    "description": "Where this feature is defined in source code."
+                }
+            },
+            "required": [
+                "name",
+                "description",
+                "privacy"
+            ],
+            "type": "object"
+        },
+        "Namespace": {
+            "properties": {
+                "classes": {
+                    "items": {
+                        "$ref": "#/definitions/Class"
+                    },
+                    "type": "array"
+                },
+                "description": {
+                    "description": "A markdown description for the namespace.",
+                    "type": "string"
+                },
+                "elements": {
+                    "items": {
+                        "$ref": "#/definitions/Element"
+                    },
+                    "type": "array"
+                },
+                "functions": {
+                    "items": {
+                        "$ref": "#/definitions/Function"
+                    },
+                    "type": "array"
+                },
+                "metadata": {
+                    "description": "An extension point for framework-specific metadata, as well as any\nmetadata not yet standardized here such as what polyfills are needed,\nbehaviors and mixins used, the framework that the element was written in,\ntags/categories, links to specs that the element implements, etc.\n\nFramework-specific metadata should be put into a sub-object with the name\nof that framework."
+                },
+                "mixins": {
+                    "items": {
+                        "$ref": "#/definitions/ElementMixin"
+                    },
+                    "type": "array"
+                },
+                "name": {
+                    "description": "The globally accessible property-path of the namespace. e.q. `Polymer.dom`",
+                    "type": "string"
+                },
+                "namespaces": {
+                    "items": {
+                        "$ref": "#/definitions/Namespace"
+                    },
+                    "type": "array"
+                },
+                "sourceRange": {
+                    "$ref": "#/definitions/SourceRange",
+                    "description": "Where this feature is defined in source code."
+                },
+                "summary": {
+                    "description": "A markdown summary for the namespace.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "type": "object"
+        },
+        "Parameter": {
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "type": "object"
+        },
+        "Position": {
+            "properties": {
+                "column": {
+                    "description": "Column offset within the line, starting from zero.",
+                    "type": "number"
+                },
+                "line": {
+                    "description": "Line number, starting from zero.",
+                    "type": "number"
+                }
+            },
+            "required": [
+                "line",
+                "column"
+            ],
+            "type": "object"
+        },
+        "Privacy": {
+            "enum": [
+                "private",
+                "protected",
+                "public"
+            ],
+            "type": "string"
+        },
+        "Property": {
+            "properties": {
+                "defaultValue": {
+                    "description": "A string representation of the default value. Intended only to be human\nreadable, so may be a description, an identifier name, etc.",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "A markdown description of the property.",
+                    "type": "string"
+                },
+                "inheritedFrom": {
+                    "description": "The identifier of the class or mixin that declared this property.",
+                    "type": "string"
+                },
+                "metadata": {
+                    "description": "An extension point for framework-specific metadata, as well as any\nmetadata not yet standardized here such as what polyfills are needed,\nbehaviors and mixins used, the framework that the element was written in,\ntags/categories, links to specs that the element implements, etc.\n\nFramework-specific metadata should be put into a sub-object with the name\nof that framework."
+                },
+                "name": {
+                    "description": "The name of the property. e.g. `value`, `icon`, `shouldCollapse`.",
+                    "type": "string"
+                },
+                "privacy": {
+                    "$ref": "#/definitions/Privacy"
+                },
+                "properties": {
+                    "description": "Nested subproperties hanging off of this property.",
+                    "items": {
+                        "$ref": "#/definitions/Property"
+                    },
+                    "type": "array"
+                },
+                "sourceRange": {
+                    "$ref": "#/definitions/SourceRange",
+                    "description": "Where this feature is defined in source code."
+                },
+                "type": {
+                    "description": "The javascript type of the property.\n\nThere's no standard here. Common choices are closure compiler syntax\nand typescript syntax.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name",
+                "description",
+                "type",
+                "privacy"
+            ],
+            "type": "object"
+        },
+        "Slot": {
+            "properties": {
+                "description": {
+                    "description": "A markdown description of the slot.",
+                    "type": "string"
+                },
+                "metadata": {
+                    "description": "An extension point for framework-specific metadata, as well as any\nmetadata not yet standardized here such as what polyfills are needed,\nbehaviors and mixins used, the framework that the element was written in,\ntags/categories, links to specs that the element implements, etc.\n\nFramework-specific metadata should be put into a sub-object with the name\nof that framework."
+                },
+                "name": {
+                    "description": "The name of the slot. e.g. `banner`, `body`, `tooltipContents`",
+                    "type": "string"
+                },
+                "sourceRange": {
+                    "$ref": "#/definitions/SourceRange",
+                    "description": "Where this feature is defined in source code."
+                }
+            },
+            "required": [
+                "name",
+                "description"
+            ],
+            "type": "object"
+        },
+        "SourceRange": {
+            "properties": {
+                "end": {
+                    "$ref": "#/definitions/Position"
+                },
+                "file": {
+                    "description": "Path to the file containing the definition of the feature,\nrelative to the parent feature, or the package if the feature has no parent\n(e.g. elements).\n\nIf blank, the feature is defined in the same file as its parent.",
+                    "type": "string"
+                },
+                "start": {
+                    "$ref": "#/definitions/Position"
+                }
+            },
+            "required": [
+                "start",
+                "end"
+            ],
+            "type": "object"
+        }
+    },
+    "description": "The global namespace of features contained in an analysis.\n\nTop-level members are unnamespaced, everything else is contained\nin a namespace. Often an analysis will contain only one namespace at\nthe root.",
+    "properties": {
+        "classes": {
+            "description": "All toplevel classes found that were not covered by one of the other types.\n\ne.g. classes that are elements are only found in `elements`",
+            "items": {
+                "$ref": "#/definitions/Class"
+            },
+            "type": "array"
+        },
+        "elements": {
+            "description": "All elements found.",
+            "items": {
+                "$ref": "#/definitions/Element"
+            },
+            "type": "array"
+        },
+        "functions": {
+            "description": "All toplevel functions found.",
+            "items": {
+                "$ref": "#/definitions/Function"
+            },
+            "type": "array"
+        },
+        "metadata": {
+            "description": "An extension point for framework-specific metadata, as well as any\nmetadata not yet standardized here such as what polyfills are needed,\nbehaviors and mixins used, the framework that the package was written in,\ntags/categories, framework config files, etc.\n\nFramework-specific metadata should be put into a sub-object with the name\nof that framework."
+        },
+        "mixins": {
+            "description": "All element mixins found.",
+            "items": {
+                "$ref": "#/definitions/ElementMixin"
+            },
+            "type": "array"
+        },
+        "namespaces": {
+            "description": "All toplevel namespaces found.",
+            "items": {
+                "$ref": "#/definitions/Namespace"
+            },
+            "type": "array"
+        },
+        "schema_version": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "schema_version"
+    ],
+    "type": "object"
+}
+

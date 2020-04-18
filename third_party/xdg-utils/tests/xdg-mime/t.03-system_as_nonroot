@@ -1,0 +1,50 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_system_as_nonroot() {
+# TODO: should follow the filename tests.
+
+## Begin the test.
+test_start "$FUNCNAME: verify error for --mode system when run as a normal user"
+
+# Dependencies section
+test_init
+
+require_notroot
+
+use_file "$XDG_TEST_DIR/xdg-mime/data/testmime.xml" INPUT_FILE
+edit_file "$INPUT_FILE" "x-xdg-testpattern" TEST_MIME "x-$XDG_TEST_ID"
+assert_file "$INPUT_FILE"
+echo "text/x-$XDG_TEST_ID" >xdgmime.expected
+
+QUERY_FILE="testfile.xdgtest"
+echo "Some text." > $QUERY_FILE
+assert_file "$QUERY_FILE"
+
+# Verify the test type is not installed already.
+assert_exit 0 xdg-mime query filetype $QUERY_FILE
+assert_stdout
+mv out.stdout out.saved1
+
+# Test steps section
+test_procedure
+
+assert_exit 3 xdg-mime install --mode system "$INPUT_FILE"
+assert_nostdout
+assert_stderr
+
+assert_exit 0 xdg-mime query filetype "$QUERY_FILE"
+assert_stdout out.saved1
+assert_nostderr
+
+assert_exit 3 xdg-mime uninstall --mode system "$INPUT_FILE"
+assert_nostdout
+assert_stderr
+
+test_result
+} 
+run_test test_system_as_nonroot

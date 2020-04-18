@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>Off-screen Rendering</title>
+  <link rel="stylesheet" type="text/css" href="mesa.css">
+</head>
+<body>
+
+<h1>Off-screen Rendering</h1>
+
+
+<p>
+Mesa's off-screen rendering interface is used for rendering into
+user-allocated blocks of memory.
+That is, the GL_FRONT colorbuffer is actually a buffer in main memory,
+rather than a window on your display.
+There are no window system or operating system dependencies.
+One potential application is to use Mesa as an off-line, batch-style renderer.
+</p>
+
+<p>
+The <b>OSMesa</b> API provides three basic functions for making off-screen
+renderings: OSMesaCreateContext(), OSMesaMakeCurrent(), and
+OSMesaDestroyContext().  See the Mesa/include/GL/osmesa.h header for
+more information about the API functions.
+</p>
+
+<p>
+There are several examples of OSMesa in the <code>progs/osdemos/</code>
+directory.
+</p>
+
+
+<h2>Deep color channels</h2>
+
+<p>
+For some applications 8-bit color channels don't have sufficient
+precision.
+OSMesa supports 16-bit and 32-bit color channels through the OSMesa interface.
+When using 16-bit channels, channels are GLushorts and RGBA pixels occupy
+8 bytes.
+When using 32-bit channels, channels are GLfloats and RGBA pixels occupy
+16 bytes.
+</p>
+
+<p>
+Before version 6.5.1, Mesa had to be recompiled to support exactly
+one of 8, 16 or 32-bit channels.
+With Mesa 6.5.1, Mesa can be compiled for either 8, 16 or 32-bit channels
+and render into any of the smaller size channels.
+For example, if Mesa's compiled for 32-bit channels, you can also render
+16 and 8-bit channel images.
+</p>
+
+<p>
+To build Mesa/OSMesa for 16 and 8-bit color channel support:
+<pre>
+      make realclean
+      make linux-osmesa16
+</pre>
+
+<p>
+To build Mesa/OSMesa for 32, 16 and 8-bit color channel support:
+<pre>
+      make realclean
+      make linux-osmesa32
+</pre>
+
+<p>
+You'll wind up with a library named libOSMesa16.so or libOSMesa32.so.
+Otherwise, most Mesa configurations build an 8-bit/channel libOSMesa.so library
+by default.
+</p>
+
+<p>
+If performance is important, compile Mesa for the channel size you're
+most interested in.
+</p>
+
+<p>
+If you need to compile on a non-Linux platform, copy Mesa/configs/linux-osmesa16
+to a new config file and edit it as needed.  Then, add the new config name to
+the top-level Makefile.  Send a patch to the Mesa developers too, if you're
+inclined.
+</p>
+
+</body>
+</html>

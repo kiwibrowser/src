@@ -1,0 +1,42 @@
+cc_defaults {
+    name: "libsync_defaults",
+    srcs: ["sync.c"],
+    local_include_dirs: ["include"],
+    export_include_dirs: ["include"],
+    cflags: ["-Werror"],
+}
+
+cc_library_shared {
+    name: "libsync",
+    vendor_available: true,
+    defaults: ["libsync_defaults"],
+}
+
+// libsync_recovery is only intended for the recovery binary.
+// Future versions of the kernel WILL require an updated libsync, and will break
+// anything statically linked against the current libsync.
+cc_library_static {
+    name: "libsync_recovery",
+    defaults: ["libsync_defaults"],
+}
+
+cc_test {
+    name: "sync_test",
+    defaults: ["libsync_defaults"],
+    gtest: false,
+    srcs: ["sync_test.c"],
+}
+
+cc_test {
+    name: "sync-unit-tests",
+    shared_libs: ["libsync"],
+    srcs: ["tests/sync_test.cpp"],
+    cflags: [
+        "-g",
+        "-Wall",
+        "-Werror",
+        "-Wno-missing-field-initializers",
+        "-Wno-sign-compare",
+    ],
+    clang: true,
+}

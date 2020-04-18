@@ -1,0 +1,60 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Title
+
+Tests:
+ + dEQP-GLES31.functional.fbo.no_attachments.*
+ + dEQP-GLES31.functional.fbo.completeness.no_attachments
+
+Includes:
+ + Framebuffer completeness
+ + Rendering
+   - Multiple sizes
+   - Multisampled
+ + Limits
+
+Excludes:
+ + Most usefull forms of output
+   - Atomic counter use (none guaranteed in fragment shader)
+   - Image read/write (no image units guaranteed in fragment shader)
+ + Fixed sample locations (no way to verify)
+
+Description:
+
+Framebuffer completenss is tested trivially
+
+Rendering is verified to happen with occlusion queries. This rather limited
+method has been chosen since there is a general shortage of guaranteed valid
+ways of outputting data from a fragment shader without a color/depth/stencil
+buffer. Namely all relevant minimum maximums (atomic counters, atomic counter
+buffers, shader storage blocks and image uniforms) are zero.
+
+Basic functioning of the framebuffer is tested by rendering a full buffer quad
+and verifying its presence with an occlusion query. Size of the framebuffer
+is verified by running a shader that discard all fragments that are not within
+a given pixel's boundaries with several pixels placed around the edge of the
+framebuffer and checking for that these fragments were (not) rendered with
+an occlusion query. Each tested pixel has its own render call and occlusion
+query.
+
+Basic functionality tests iterate a number of size & sampling parameters,
+including the required maximum and implementation reported limits
+
+The completeness test verifies that a framebuffer with both widht and height
+set is considered complete.

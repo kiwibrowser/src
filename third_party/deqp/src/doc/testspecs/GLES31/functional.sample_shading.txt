@@ -1,0 +1,64 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Sample shading tests
+
+Tests:
+ + dEQP-GLES31.functional.sample_shading
+
+Includes:
+ + Visual verification of OES_sample_shading
+    - per sample color
+	- per sample discard
+ + State queries
+
+Excludes:
+ + Rendering to every supported render buffer sample count / format
+ + Rendering to every supported multisample texture sample count / format
+
+Description:
+
+state_query.* tests verify that the state returned by different query functions
+is valid. state_query.min_sample_shading_value_clamping test verifies
+MIN_SAMPLE_SHADING state is clamped when it is specified with glMinSampleShading
+function.
+
+min_sample_shading.* tests render a high frequency pattern with different
+MIN_SAMPLE_SHADING values. *_color cases render pattern by rendering black or
+white in the fragment shader depending on the pattern function sign. *_discard
+cases render pattern by the clearing image to black, outputting white in the
+fragment shader, and discarding the fragment if function sign is negative. Each
+test iteration sets MIN_SAMPLE_SHADING_VALUE to guarantee a certain number of
+individual samples and draws the pattern.
+
+Averaging N uniformly random binary values (pattern output function) and
+averaging them will result in a discrete normal-like distribution. The number of
+samples N can now be calculated from the distribution with: the number of
+distinct points with non-zero probability - 1. A sufficiently high frequency
+function is assumed to have similar effect to the uniform random. Hence, if the
+number of different shades in the result image is less or equal to the
+guaranteed sample count, the pixels did not contain the guaranteed amount of
+independent samples, i.e. result image is invalid.
+
+Since the tests analyze the resolved multisample image when rendering to the
+default framebuffer or to a renderbuffer, implementations that do not resolve
+multisample buffers with a box filter (simple average) may result in false
+positives. False positive may occur if distinct pixels with identical filter
+sample coverage ratios can be mapped to distinct values. Tests rendering to a
+multisample texture do not use an implementation defined multisample resolution
+and thus do not produce false positives.

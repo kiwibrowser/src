@@ -1,0 +1,861 @@
+# The following variables will likely need to be modified, depending on where
+# and how you built LLVM & Clang. They can be overridden in a command-line
+# invocation of make, like:
+#
+#   make LLVM_SRC_PATH=<path> LIBCXX_INSTALL_PATH=<path> CLANG_PATH=<path> \
+#        PNACL_BIN_PATH=<path> ...
+#
+
+# LLVM_SRC_PATH is the path to the root of the checked out source code. This
+# directory should contain the configure script, the include/ and lib/
+# directories of LLVM, Clang in tools/clang/, etc.
+# Alternatively, if you're building vs. a binary download of LLVM, then
+# LLVM_SRC_PATH can point to the main untarred directory.
+LLVM_SRC_PATH ?= ../llvm
+
+# The x86-32-specific sandboxed translator directory.
+# It holds sandboxed versions of libraries and binaries.
+SB_LLVM_PATH ?= $(shell readlink -e \
+  ../../out/sandboxed_translators_work/translator-i686/llvm-sb/Release)
+
+# NACL_ROOT is the root of the native client repository.
+NACL_ROOT ?= $(shell python -c "import sys; sys.path.insert(0, 'pydir'); \
+  import utils; print utils.FindBaseNaCl()")
+
+# TOOLCHAIN_ROOT is the location of NaCl/PNaCl toolchains and other
+# tools like qemu.
+TOOLCHAIN_ROOT ?= $(shell readlink -e $(NACL_ROOT)/toolchain/linux_x86)
+
+# PNACL_TOOLCHAIN_ROOT is the location of the PNaCl toolchain.
+# This is used as the default root for finding binutils, libcxx, etc.
+PNACL_TOOLCHAIN_ROOT ?= $(shell readlink -e $(TOOLCHAIN_ROOT)/pnacl_newlib_raw)
+
+# The location of PNaCl tools (e.g., binutils objdump, pnacl-clang++, etc.).
+PNACL_BIN_PATH ?= $(shell readlink -e $(PNACL_TOOLCHAIN_ROOT)/bin)
+
+# Allow tests to be overridden, e.g.:
+#   make -f Makefile.standalone check-lit \
+#     CHECK_LIT_TESTS="tests_lit/llvm2ice_tests/{alloc,arith}.ll"
+#   make -f Makefile.standalone check-xtest \
+#     CHECK_XTEST_TESTS=crosstest/Output/simple_loop_x8632_native_O2_sse2.xtest
+CHECK_LIT_TESTS ?= tests_lit
+CHECK_XTEST_TESTS ?= crosstest/Output
+
+# Hack to auto-detect autoconf versus cmake build of LLVM.  If the LLVM tools
+# were dynamically linked with something like libLLVM-3.7svn.so, it is an
+# autoconf build, otherwise it is a cmake build.  AUTOCONF is set to 0 for
+# cmake, nonzero for autoconf.
+AUTOCONF ?= $(shell ldd $(PNACL_BIN_PATH)/opt | grep -c libLLVM-)
+
+# CLANG_PATH is the location of the clang compiler to use for building
+# the host binaries.
+CLANG_PATH ?= $(shell readlink -e \
+  $(NACL_ROOT)/../third_party/llvm-build/Release+Asserts/bin)
+
+# LIBCXX_INSTALL_PATH is the directory where libc++ is located. It should
+# contain header files and corresponding libraries. This is used for
+# building the host binaries in conjuction with clang.
+LIBCXX_INSTALL_PATH ?= $(PNACL_TOOLCHAIN_ROOT)
+STDLIB_FLAGS := -stdlib=libc++ -I$(LIBCXX_INSTALL_PATH)/include/c++/v1
+
+HOST_ARCH ?= x86_64
+ifeq ($(HOST_ARCH),x86_64)
+  HOST_FLAGS = -m64
+else
+  ifeq ($(HOST_ARCH),x86)
+    HOST_FLAGS = -m32
+  endif
+endif
+
+ifdef DEBUG
+  OBJDIR = build/Debug
+  OPTLEVEL = -O0
+  LINKOPTLEVEL = -O0
+else
+  OBJDIR = build/Release
+  OPTLEVEL = -O2 -ffunction-sections -fdata-sections
+  LINKOPTLEVEL = -O2
+endif
+
+# The list of CXX defines that are dependent on build parameters.
+BASE_CXX_DEFINES =
+CXX_EXTRA =
+LD_EXTRA =
+
+ifdef MINIMAL
+  NOASSERT = 1
+  NODUMP = 1
+  OBJDIR := $(OBJDIR)+Min
+  BASE_CXX_DEFINES += -DALLOW_LLVM_CL=0 -DALLOW_LLVM_IR=0 \
+    -DALLOW_LLVM_IR_AS_INPUT=0 -DALLOW_TIMERS=0 -DALLOW_MINIMAL_BUILD=1
+else
+  BASE_CXX_DEFINES += -DALLOW_LLVM_CL=1 -DALLOW_LLVM_IR=1 \
+    -DALLOW_LLVM_IR_AS_INPUT=1 -DALLOW_TIMERS=1 -DALLOW_MINIMAL_BUILD=0
+endif
+
+ifdef NODUMP
+  OBJDIR := $(OBJDIR)+NoDump
+  BASE_CXX_DEFINES += -DALLOW_DUMP=0
+else
+  BASE_CXX_DEFINES += -DALLOW_DUMP=1
+endif
+
+# Restrict to a single supported target.  Current options:
+#   SZTARGET=ARM32
+#   SZTARGET=MIPS32
+#   SZTARGET=X8632
+#   SZTARGET=X8664
+ifdef SZTARGET
+  OBJDIR := $(OBJDIR)+T_$(SZTARGET)
+  BASE_CXX_DEFINES += -DSZTARGET=$(SZTARGET)
+endif
+
+BASE_CXX_DEFINES += -DPNACL_LLVM
+SZ_COMMIT_COUNT := $(shell git rev-list --count HEAD)
+SZ_GIT_HASH := $(shell git rev-parse HEAD)
+BASE_CXX_DEFINES += -DSUBZERO_REVISION=$(SZ_COMMIT_COUNT)_$(SZ_GIT_HASH)
+
+CXX_DEFINES := $(BASE_CXX_DEFINES) -DPNACL_BROWSER_TRANSLATOR=0
+
+ifdef NOASSERT
+  ASSERTIONS = -DNDEBUG
+else
+  ASSERTIONS =
+  OBJDIR := $(OBJDIR)+Asserts
+endif
+
+ifdef UBSAN
+  OBJDIR := $(OBJDIR)+UBSan
+  CXX_EXTRA += -fsanitize=undefined -fno-sanitize=vptr \
+               -fno-sanitize=nonnull-attribute
+  LD_EXTRA += -fsanitize=undefined
+endif
+
+ifdef UBSAN_TRAP
+  OBJDIR := $(OBJDIR)+UBSan_Trap
+  CXX_EXTRA += -fsanitize=undefined-trap -fsanitize-undefined-trap-on-error \
+               -fno-sanitize=vptr -fno-sanitize=nonnull-attribute
+  LD_EXTRA += -fsanitize=undefined-trap
+endif
+
+ifdef TSAN
+  OBJDIR := $(OBJDIR)+TSan
+  CXX_EXTRA += -fsanitize=thread
+  LD_EXTRA += -fsanitize=thread
+endif
+
+ifdef ASAN
+  OBJDIR := $(OBJDIR)+ASan
+  CXX_EXTRA += -fsanitize=address
+  LD_EXTRA += -fsanitize=address
+endif
+
+ifdef MSAN
+  # TODO(ascull): this has an as yet undiagnosed uninitialized memory access
+  OBJDIR := $(OBJDIR)+MSan
+  CXX_EXTRA += -fsanitize=memory
+  LD_EXTRA += -fsanitize=memory
+endif
+
+ifdef FORCEASM
+  FORCEASM_FLAG = --filetype=asm
+  # With --filetype=asm and --sandbox, the llvm-mc assembler emits the lock and
+  # 16-bit prefixes in the "wrong" order, causing the validator to reject the
+  # resulting nexe.  So we just disable those tests for now.
+  FORCEASM_XTEST_EXCLUDES = -e x8632,sandbox,test_sync_atomic
+  FORCEASM_LIT_PARAM = --param=FORCEASM
+  # x86 sandboxing lit tests are disabled because filetype=asm does not
+  # handle bundle_lock pad-to-end correctly.
+  # TODO(jpp): fix this.
+  FORCEASM_LIT_TEST_EXCLUDES = --filter='^(?!.*/x86/sandboxing.ll).*'
+else
+  FORCEASM_FLAG =
+  FORCEASM_XTEST_EXCLUDES =
+  FORCEASM_LIT_PARAM =
+  FORCEASM_LIT_TEST_EXCLUDES =
+endif
+
+ifdef LINUX_MALLOC_PROFILE
+  OBJDIR := $(OBJDIR)+MalProf
+  CXX_EXTRA += -DALLOW_LINUX_MALLOC_PROFILE=1
+  LD_EXTRA += -Wl,--export-dynamic
+endif
+
+SB_OBJDIR := $(OBJDIR)+Sandboxed
+SBB_OBJDIR := $(OBJDIR)+SandboxedBrowser
+
+V8_DIR = $(NACL_ROOT)/../v8
+V8_CXXFLAGS := -I$(V8_DIR)
+
+$(info -----------------------------------------------)
+$(info Using LLVM_SRC_PATH = $(LLVM_SRC_PATH))
+$(info Using SB_LLVM_PATH = $(SB_LLVM_PATH))
+$(info Using NACL_ROOT = $(NACL_ROOT))
+$(info Using TOOLCHAIN_ROOT = $(TOOLCHAIN_ROOT))
+$(info Using PNACL_TOOLCHAIN_ROOT = $(PNACL_TOOLCHAIN_ROOT))
+$(info Using PNACL_BIN_PATH = $(PNACL_BIN_PATH))
+$(info Using CLANG_PATH = $(CLANG_PATH))
+$(info Using LIBCXX_INSTALL_PATH = $(LIBCXX_INSTALL_PATH))
+$(info Using HOST_ARCH     = $(HOST_ARCH))
+$(info -----------------------------------------------)
+
+LLVM_CXXFLAGS := `$(PNACL_BIN_PATH)/llvm-config --cxxflags`
+SB_LLVM_CXXFLAGS := $(LLVM_CXXFLAGS)
+
+# Listing specific libraries that are needed for pnacl-sz
+# and the unittests, since we build "tools-only" for the
+# sandboxed_translators (which doesn't include every library
+# listed by llvm-config).
+
+LLVM_LIBS_LIST := -lLLVMIRReader -lLLVMBitReader -lLLVMNaClBitTestUtils \
+    -lLLVMNaClBitReader -lLLVMNaClBitAnalysis -lLLVMNaClBitWriter \
+    -lLLVMAsmParser -lLLVMNaClAnalysis -lLLVMCore -lLLVMSupport
+
+ifeq ($(AUTOCONF), 0)
+  # LLVM cmake build
+  LLVM_LIBS := $(LLVM_LIBS_LIST)
+  # For the cmake build, the gtest libs end up in the same place as the LLVM
+  # libs, so no "-L..." arg is needed.
+  GTEST_LIB_PATH ?=
+  CLANG_FORMAT_PATH ?= $(PNACL_BIN_PATH)
+else
+  # LLVM autoconf build
+  LLVM_LIBS := -lLLVM-3.7svn
+  GTEST_LIB_PATH ?= -L../../out/llvm_x86_64_linux_work/Release+Asserts/lib
+  ifneq ($(wildcard \
+           ../../out/llvm_x86_64_linux_work/Release+Asserts/bin/clang-format),)
+    CLANG_FORMAT_PATH ?= ../../out/llvm_x86_64_linux_work/Release+Asserts/bin
+  else
+    CLANG_FORMAT_PATH ?= \
+                     ../../out/llvm_x86_64_linux_debug_work/Debug+Asserts/bin
+  endif
+endif
+
+LLVM_LDFLAGS := $(LLVM_LIBS) \
+                `$(PNACL_BIN_PATH)/llvm-config --ldflags` \
+                `$(PNACL_BIN_PATH)/llvm-config --system-libs`
+SB_LLVM_LDFLAGS := -Wl,--start-group $(LLVM_LIBS_LIST) -Wl,--end-group \
+                   -L$(SB_LLVM_PATH)/lib
+
+CCACHE := `command -v ccache`
+CXX := CCACHE_CPP2=yes $(CCACHE) $(CLANG_PATH)/clang++
+SB_CXX := CCACHE_CPP2=yes $(CCACHE) $(PNACL_BIN_PATH)/pnacl-clang++
+SB_TRANSLATE := $(PNACL_BIN_PATH)/pnacl-translate
+SB_FINALIZE := $(PNACL_BIN_PATH)/pnacl-finalize --no-strip-syms
+
+# Extra warnings that LLVM's build system adds in addition to -Wall.
+LLVM_EXTRA_WARNINGS := -Wcovered-switch-default
+
+# Use g++ to compile, to check for errors/warnings that clang++ might have
+# missed.  It's unlikely to link, unless LLVM was also built with g++, so the
+# compile_only target should be used.  Note: This ifdef section is deliberately
+# placed here instead of with the other ifdef sections, so that its redefinition
+# of CXX/STDLIB_FLAGS/LLVM_EXTRA_WARNINGS follows their normal definitions.
+ifdef GPLUSPLUS
+  CXX := CCACHE_CPP2=yes $(CCACHE) g++
+  STDLIB_FLAGS :=
+  LLVM_EXTRA_WARNINGS := \
+    -Wcast-qual \
+    -Wno-comment \
+    -Wno-long-long \
+    -Wno-maybe-uninitialized \
+    -Wno-missing-field-initializers \
+    -Wno-unused-parameter \
+    -Wwrite-strings
+  OBJDIR := $(OBJDIR)+Gplusplus
+endif
+
+BASE_CXXFLAGS := -std=gnu++11 -Wall -Wextra -fno-rtti \
+  -fno-exceptions $(OPTLEVEL) $(ASSERTIONS) -g -pedantic \
+  $(LLVM_EXTRA_WARNINGS) $(CXX_EXTRA) -MP -MD -Werror
+
+ifdef WASM
+  BASE_CXXFLAGS := $(BASE_CXXFLAGS) $(V8_CXXFLAGS) -DALLOW_WASM=1
+  OBJDIR := $(OBJDIR)+Wasm
+else
+  BASE_CXXFLAGS := $(BASE_CXXFLAGS) -DALLOW_WASM=0
+endif
+
+# TODO(stichnot,jpp): Restructure static fields in template classes to avoid
+# needing -Wno-undefined-var-template .
+CXXFLAGS := $(LLVM_CXXFLAGS) $(BASE_CXXFLAGS) $(CXX_DEFINES) $(HOST_FLAGS) \
+  $(STDLIB_FLAGS) -Wno-undefined-var-template
+SB_CXXFLAGS := $(SB_LLVM_CXXFLAGS) $(BASE_CXXFLAGS) $(BASE_CXX_DEFINES) \
+               -Wno-unknown-pragmas -I$(NACL_ROOT) -I$(NACL_ROOT)/..
+
+LDFLAGS := $(HOST_FLAGS) -L$(LIBCXX_INSTALL_PATH)/lib -Wl,--gc-sections \
+  $(LD_EXTRA) $(STDLIB_FLAGS)
+# Not specifying -Wl,--gc-sections but instead doing bitcode linking GC w/ LTO.
+SB_LDFLAGS := $(LINKOPTLEVEL) $(LD_EXTRA)
+
+# List the target-specific source files first, which generally take longer to
+# compile, in the hope of improving parallel build time.
+SRCS = \
+  IceAssemblerARM32.cpp \
+  IceAssemblerMIPS32.cpp \
+  IceInstARM32.cpp \
+  IceInstMIPS32.cpp \
+  IceInstX8632.cpp \
+  IceInstX8664.cpp \
+  IceTargetLowering.cpp \
+  IceTargetLoweringARM32.cpp \
+  IceTargetLoweringMIPS32.cpp \
+  IceTargetLoweringX86.cpp \
+  IceTargetLoweringX8632.cpp \
+  IceTargetLoweringX8664.cpp \
+  IceAssembler.cpp \
+  IceBrowserCompileServer.cpp \
+  IceCfg.cpp \
+  IceCfgNode.cpp \
+  IceClFlags.cpp \
+  IceCompiler.cpp \
+  IceCompileServer.cpp \
+  IceELFObjectWriter.cpp \
+  IceELFSection.cpp \
+  IceFixups.cpp \
+  IceGlobalContext.cpp \
+  IceGlobalInits.cpp \
+  IceInst.cpp \
+  IceIntrinsics.cpp \
+  IceLiveness.cpp \
+  IceLoopAnalyzer.cpp \
+  IceMangling.cpp \
+  IceMemory.cpp \
+  IceOperand.cpp \
+  IceRangeSpec.cpp \
+  IceRegAlloc.cpp \
+  IceRevision.cpp \
+  IceRNG.cpp \
+  IceSwitchLowering.cpp \
+  IceThreading.cpp \
+  IceTimerTree.cpp \
+  IceTranslator.cpp \
+  IceTypes.cpp \
+  IceVariableSplitting.cpp \
+  LinuxMallocProfiling.cpp \
+  main.cpp \
+  PNaClTranslator.cpp
+
+ifndef MINIMAL
+  SRCS += \
+    IceASanInstrumentation.cpp \
+    IceConverter.cpp \
+    IceInstrumentation.cpp \
+    IceTypeConverter.cpp
+endif
+
+ifdef WASM
+  SRCS += \
+    WasmTranslator.cpp
+endif
+
+OBJS=$(patsubst %.cpp, $(OBJDIR)/%.o, $(SRCS))
+SB_OBJS=$(patsubst %.cpp, $(SB_OBJDIR)/%.o, $(SRCS))
+SBB_OBJS=$(patsubst %.cpp, $(SBB_OBJDIR)/%.o, $(SRCS))
+
+UNITTEST_SRCS = \
+  BitcodeMunge.cpp \
+  IceELFSectionTest.cpp \
+  IceParseInstsTest.cpp
+
+# The X86 assembler tests take too long to compile. Given how infrequently the
+# assembler will change, we disable them.
+ifdef CHECK_X86_ASM
+  ifndef DEBUG
+  $(error Run check-unit with DEBUG=1 lest your machine perish)
+  endif
+  UNITTEST_SRCS += AssemblerX8632/LowLevel.cpp \
+    AssemblerX8632/DataMov.cpp \
+    AssemblerX8632/Locked.cpp \
+    AssemblerX8632/GPRArith.cpp \
+    AssemblerX8632/XmmArith.cpp \
+    AssemblerX8632/ControlFlow.cpp \
+    AssemblerX8632/Other.cpp \
+    AssemblerX8632/X87.cpp \
+    AssemblerX8664/LowLevel.cpp \
+    AssemblerX8664/DataMov.cpp \
+    AssemblerX8664/Locked.cpp \
+    AssemblerX8664/GPRArith.cpp \
+    AssemblerX8664/XmmArith.cpp \
+    AssemblerX8664/ControlFlow.cpp \
+    AssemblerX8664/Other.cpp
+endif
+
+UNITTEST_OBJS = $(patsubst %.cpp, $(OBJDIR)/unittest/%.o, $(UNITTEST_SRCS))
+UNITTEST_LIB_OBJS = $(filter-out $(OBJDIR)/main.o,$(OBJS))
+
+NEXES = $(SB_OBJDIR)/pnacl-sz.x8632.nexe \
+        $(SB_OBJDIR)/pnacl-sz.x8664.nexe \
+        $(SBB_OBJDIR)/pnacl_public_x86_32_pnacl_sz_nexe \
+        $(SBB_OBJDIR)/pnacl_public_x86_64_pnacl_sz_nexe
+NEXES_LITE = $(SB_OBJDIR)/pnacl-sz.x8664.nexe
+
+# Keep all the first target so it's the default.
+all: $(OBJDIR)/pnacl-sz make_symlink runtime
+
+ifdef TSAN
+sb sb-lite:
+	@echo "Skipping pnacl-sz.*.nexe: TSAN isn't supported under NaCl."
+else
+sb: $(NEXES) sb_make_symlink exists-sbtc
+sb-lite: $(NEXES_LITE) exists-sbtc
+endif
+
+# SHOW_BUILD_ATTS is an executable that is run to show what build
+# attributes were used to build pnacl-sz.
+SHOW_BUILD_ATTS = $(OBJDIR)/pnacl-sz --build-atts
+
+# Creates symbolic link so that testing is easier. Also runs
+# pnacl-sz to verify that the defines flags have valid values,
+# as well as describe the corresponding build attributes.
+make_symlink: $(OBJDIR)/pnacl-sz
+	rm -rf pnacl-sz
+	ln -s $(OBJDIR)/pnacl-sz
+	@echo "Build Attributes:"
+	@$(SHOW_BUILD_ATTS)
+
+sb_make_symlink: $(NEXES)
+	$(foreach nexe,$(NEXES),rm -rf $(notdir $(nexe)); ln -s $(nexe);)
+
+%.pexe : %.nonfinal.pexe
+	$(SB_FINALIZE) -o $@ $<
+
+.PHONY: all compile_only make_symlink runtime bloat sb docs help \
+  help-check-lit help-check-xtest exists-nonsfi-x8632 \
+  exists-nonsfi-arm32 exists-sbtc exists-spec
+
+compile_only: $(OBJS)
+
+V8_LIBDIR=$(V8_DIR)/out/native/lib.target
+
+ifdef WASM
+  V8_LIBS := \
+    $(V8_LIBDIR)/libv8.so \
+    $(V8_LIBDIR)/libicuuc.so \
+    $(V8_LIBDIR)/libicui18n.so
+endif
+
+$(OBJDIR)/pnacl-sz: $(OBJS)
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LLVM_LDFLAGS) \
+          -Wl,-rpath=$(abspath $(LIBCXX_INSTALL_PATH)/lib) $(V8_LIBS)
+
+$(SB_OBJDIR)/pnacl-sz.nonfinal.pexe: $(SB_OBJS)
+	$(SB_CXX) $(SB_LDFLAGS) -o $@ $^ $(SB_LLVM_LDFLAGS)
+
+$(SBB_OBJDIR)/pnacl-sz.nonfinal.pexe: $(SBB_OBJS)
+	$(SB_CXX) $(SB_LDFLAGS) -o $@ $^ $(SB_LLVM_LDFLAGS) \
+          --pnacl-disable-abi-check
+
+$(SB_OBJDIR)/pnacl-sz.x8632.nexe: $(SB_OBJDIR)/pnacl-sz.pexe
+	$(SB_TRANSLATE) -arch x86-32 $^ -o $@
+
+$(SB_OBJDIR)/pnacl-sz.x8664.nexe: $(SB_OBJDIR)/pnacl-sz.pexe
+	$(SB_TRANSLATE) -arch x86-64 $^ -o $@
+
+$(SBB_OBJDIR)/pnacl_public_x86_32_pnacl_sz_nexe: $(SBB_OBJDIR)/pnacl-sz.pexe
+	$(SB_TRANSLATE) -arch x86-32 $^ -o $@
+
+$(SBB_OBJDIR)/pnacl_public_x86_64_pnacl_sz_nexe: $(SBB_OBJDIR)/pnacl-sz.pexe
+	$(SB_TRANSLATE) -arch x86-64 $^ -o $@
+
+src/IceRegistersARM32.def: pydir/gen_arm32_reg_tables.py
+	python $< > $@
+
+-include $(foreach dep,$(SRCS:.cpp=.d),$(OBJDIR)/$(dep))
+$(OBJS): $(OBJDIR)/%.o: src/%.cpp
+	$(CXX) -c $(CXXFLAGS) $< -o $@
+
+-include $(foreach dep,$(SRCS:.cpp=.d),$(SB_OBJDIR)/$(dep))
+$(SB_OBJS): $(SB_OBJDIR)/%.o: src/%.cpp
+	$(SB_CXX) -c $(SB_CXXFLAGS) -DPNACL_BROWSER_TRANSLATOR=0 $< -o $@
+
+-include $(foreach dep,$(SRCS:.cpp=.d),$(SBB_OBJDIR)/$(dep))
+$(SBB_OBJS): $(SBB_OBJDIR)/%.o: src/%.cpp
+	$(SB_CXX) -c $(SB_CXXFLAGS) -DPNACL_BROWSER_TRANSLATOR=1 $< -o $@
+
+$(OBJDIR)/run_unittests: $(UNITTEST_OBJS) $(UNITTEST_LIB_OBJS)
+	$(CXX) $(GTEST_LIB_PATH) $(LDFLAGS) -o $@ $^ $(LLVM_LDFLAGS) \
+          -lgtest -lgtest_main -ldl \
+          -Wl,-rpath=$(abspath $(LIBCXX_INSTALL_PATH)/lib)
+
+-include $(foreach dep,$(UNITTEST_SRCS:.cpp=.d),$(OBJDIR)/unittest/$(dep))
+$(UNITTEST_OBJS): $(OBJDIR)/unittest/%.o: unittest/%.cpp
+	$(CXX) -c $(CXXFLAGS) \
+          -Isrc/ \
+          -Iunittest/ \
+          -I$(LLVM_SRC_PATH)/utils/unittest/googletest/include \
+          -I$(LLVM_SRC_PATH) \
+          -DGTEST_HAS_RTTI=0 -DGTEST_USE_OWN_TR1_TUPLE \
+          -Wno-expansion-to-defined \
+          $< -o $@
+
+$(OBJS): | $(OBJDIR)
+$(SB_OBJS): | $(SB_OBJDIR)
+$(SBB_OBJS): | $(SBB_OBJDIR)
+
+$(UNITTEST_OBJS): | $(OBJDIR)/unittest $(OBJDIR)/unittest/AssemblerX8632 \
+                    $(OBJDIR)/unittest/AssemblerX8664
+
+$(OBJDIR):
+	@mkdir -p $@
+$(SB_OBJDIR):
+	@mkdir -p $@
+$(SBB_OBJDIR):
+	@mkdir -p $@
+
+$(OBJDIR)/unittest: $(OBJDIR)
+	@mkdir -p $@
+
+$(OBJDIR)/unittest/AssemblerX8632: $(OBJDIR)/unittest
+	@mkdir -p $@
+$(OBJDIR)/unittest/AssemblerX8664: $(OBJDIR)/unittest
+	@mkdir -p $@
+
+RT_SRC := runtime/szrt.c runtime/szrt_ll.ll runtime/szrt_profiler.c \
+          runtime/szrt_asm_x8632.s runtime/szrt_asm_x8664.s \
+          runtime/szrt_asm_arm32.s runtime/szrt_asan.c
+RT_OBJ := build/runtime/szrt_native_x8632.o build/runtime/szrt_sb_x8632.o \
+          build/runtime/szrt_nonsfi_x8632.o \
+          build/runtime/szrt_native_x8664.o build/runtime/szrt_sb_x8664.o \
+          build/runtime/szrt_nonsfi_x8664.o \
+          build/runtime/szrt_native_arm32.o build/runtime/szrt_sb_arm32.o \
+          build/runtime/szrt_nonsfi_arm32.o \
+          build/runtime/szrt_asan_x8632.o build/runtime/szrt_asan_x8664.o \
+          build/runtime/szrt_asan_arm32.o
+
+EXCLUDED_RT :=
+ifdef MIPS
+RT_SRC += runtime/szrt_asm_mips32.s
+RT_OBJ += build/runtime/szrt_native_mips32.o build/runtime/szrt_sb_mips32.o
+else
+EXCLUDED_RT += --exclude-target=mips32
+endif
+
+runtime: $(RT_OBJ)
+
+# Use runtime.is.built so that build-runtime.py is invoked only once
+# even in a parallel build.
+.INTERMEDIATE: runtime.is.built
+$(RT_OBJ): runtime.is.built
+runtime.is.built: $(RT_SRC) pydir/build-runtime.py
+	@echo ================ Building Subzero runtime ================
+	./pydir/build-runtime.py -v --pnacl-root $(PNACL_TOOLCHAIN_ROOT) \
+            $(EXCLUDED_RT)
+
+check-lit: $(OBJDIR)/pnacl-sz make_symlink runtime
+	PNACL_BIN_PATH=$(PNACL_BIN_PATH) \
+	$(LLVM_SRC_PATH)/utils/lit/lit.py -sv $(CHECK_LIT_TESTS) \
+            $(FORCEASM_LIT_TEST_EXCLUDES) $(FORCEASM_LIT_PARAM)
+
+ifdef MINIMAL
+check-xtest check-xtest-lite: $(OBJDIR)/pnacl-sz make_symlink runtime
+	@echo "Crosstests disabled, minimal build"
+else
+ifdef MIPS
+check-xtest check-xtest-lite: $(OBJDIR)/pnacl-sz make_symlink runtime \
+  crosstest/test_arith_ll.ll
+       # Do all x8664/native/sse2 tests as a smoke test.
+       # Add in mips32 tests as they come online.
+	./pydir/crosstest_generator.py -v --lit \
+          --toolchain-root $(TOOLCHAIN_ROOT) \
+          $(FORCEASM_FLAG) \
+          $(FORCEASM_XTEST_EXCLUDES) \
+          -i x8664,native,sse2 \
+          -i mips32,native,Om1,simple_loop \
+          -i mips32,native,Om1,test_strengthreduce
+	PNACL_BIN_PATH=$(PNACL_BIN_PATH) \
+	$(LLVM_SRC_PATH)/utils/lit/lit.py -sv $(CHECK_XTEST_TESTS)
+else
+check-xtest: $(OBJDIR)/pnacl-sz make_symlink runtime \
+  exists-nonsfi-x8632 exists-nonsfi-arm32 crosstest/test_arith_ll.ll
+       # Do all native/sse2 tests, but only test_vector_ops for native/sse4.1.
+       # For (slow) sandboxed tests, limit to Om1/sse4.1.
+       # run.py (used to run the sandboxed xtests) does not support
+       # specifying -cpu cortex-a15 to qemu, hence we disable the
+       # hwdiv-arm tests.
+	./pydir/crosstest_generator.py -v --lit \
+          --toolchain-root $(TOOLCHAIN_ROOT) \
+          $(FORCEASM_FLAG) \
+          $(FORCEASM_XTEST_EXCLUDES) \
+          -i x8632,native,sse2 \
+          -i x8632,native,sse4.1,test_vector_ops \
+          -i x8632,sandbox,sse4.1,Om1 \
+          -i x8632,nonsfi,sse2,O2 \
+          -i x8664,native,sse2 \
+          -i x8664,native,sse4.1,test_vector_ops \
+          -i x8664,sandbox,sse4.1,Om1 \
+          -i arm32 \
+          -e arm32,sandbox,hwdiv-arm
+	PNACL_BIN_PATH=$(PNACL_BIN_PATH) \
+	$(LLVM_SRC_PATH)/utils/lit/lit.py -sv $(CHECK_XTEST_TESTS)
+check-xtest-lite: $(OBJDIR)/pnacl-sz make_symlink runtime \
+  exists-nonsfi-x8632 exists-nonsfi-arm32 crosstest/test_arith_ll.ll
+       # Do all native/sse2/neon tests, which are relatively fast.
+       # Limit to test_global+mem_intrin for sandbox+nonsfi because sandbox and
+       # nonsfi builds are slow, and test_global and mem_intrin are the most
+       # common sources of problems.
+	./pydir/crosstest_generator.py -v --lit \
+          --toolchain-root $(TOOLCHAIN_ROOT) \
+          $(FORCEASM_FLAG) \
+          $(FORCEASM_XTEST_EXCLUDES) \
+          -i x8632,native,sse2,O2 \
+          -i x8664,native,sse2,O2 \
+          -i arm32,native,neon,O2 \
+	  -i x8632,sse2,O2,test_global \
+	  -i x8632,sse2,O2,mem_intrin \
+	  -i x8664,sse2,O2,test_global \
+	  -i x8664,sse2,O2,mem_intrin \
+	  -i arm32,neon,O2,test_global \
+	  -i arm32,neon,O2,mem_intrin \
+          -e x8664,nonsfi
+	PNACL_BIN_PATH=$(PNACL_BIN_PATH) \
+	$(LLVM_SRC_PATH)/utils/lit/lit.py -sv $(CHECK_XTEST_TESTS)
+crosstest/test_arith_ll.ll: pydir/gen_test_arith_ll.py
+	python $< > $@
+endif
+endif
+
+check-unit: $(OBJDIR)/run_unittests
+	$(OBJDIR)/run_unittests
+
+# List the spec2k components in roughly reverse order of runtime, to help with
+# parallel execution speed.
+ALLSPEC := 253.perlbmk 177.mesa 188.ammp 256.bzip2 164.gzip 179.art 183.equake \
+           175.vpr 176.gcc 181.mcf 186.crafty 197.parser 254.gap 255.vortex \
+           300.twolf 252.eon
+.PHONY: $(ALLSPEC)
+
+TARGET := x8632
+ifeq ($(TARGET),x8632)
+  TARGETFLAG=x8632
+  SETUP=SetupGccX8632Opt
+  SPEC := --filetype=obj
+endif
+ifeq ($(TARGET),x8664)
+  TARGETFLAG=x8664
+  SETUP=SetupGccX8664Opt
+  SPEC := --filetype=obj
+endif
+ifeq ($(TARGET),arm32)
+  TARGETFLAG=arm32
+  SETUP=SetupGccArmOpt
+  SPEC := --filetype=obj
+endif
+ifeq ($(TARGET),mips32)
+  # native_client/tests/spec2k/{Makefile.common,run_all.sh} do not currently
+  # have MIPS configs, so those would need to be added for proper Subzero
+  # testing.
+  TARGETFLAG=mips32
+  SETUP=SetupGccMipsOpt
+  SPEC := --filetype=asm
+endif
+SPECFLAGS := -O2
+SPECRUN := --run
+%.spec2k: % $(OBJDIR)/pnacl-sz make_symlink runtime
+	./pydir/szbuild_spec2k.py -v \
+          $(SPECFLAGS) --target=$(TARGETFLAG) $(SPEC) $< $(SPECRUN)
+
+ifdef MIPS
+# Don't test spec2k on mips32, at least not yet.
+check-spec:
+else
+check-spec: exists-spec $(ALLSPEC:=.spec2k)
+endif
+
+check: check-lit check-unit check-xtest
+
+NONSFI_LOADER_X8632 = \
+  $(NACL_ROOT)/scons-out/opt-linux-x86-32/obj/src/nonsfi/loader/nonsfi_loader
+NONSFI_LOADER_ARM32 = \
+  $(NACL_ROOT)/scons-out/opt-linux-arm/obj/src/nonsfi/loader/nonsfi_loader
+SBTC_LIBFILE = $(SB_LLVM_PATH)/lib/libLLVMSupport.a
+SPEC_SAMPLE_PEXE = $(NACL_ROOT)/tests/spec2k/176.gcc/gcc.opt.stripped.pexe
+
+exists-nonsfi-x8632:
+	@if [ ! -f $(NONSFI_LOADER_X8632) ] ; then \
+          echo "Missing file $(NONSFI_LOADER_X8632)"; \
+          echo "Consider running './scons nonsfi_loader'" \
+               "in the native_client directory."; \
+          exit 1 ; \
+        fi
+
+exists-nonsfi-arm32:
+	@if [ ! -f $(NONSFI_LOADER_ARM32) ] ; then \
+          echo "Missing file $(NONSFI_LOADER_ARM32)"; \
+          echo "Consider running './scons platform=arm nonsfi_loader'" \
+               "in the native_client directory."; \
+          exit 1 ; \
+        fi
+
+exists-sbtc:
+	@if [ ! -f $(SBTC_LIBFILE) ] ; then \
+          echo "Missing file $(SBTC_LIBFILE)"; \
+          echo "Consider running 'toolchain_build_pnacl.py --build-sbtc'."; \
+          exit 1 ; \
+        fi
+
+exists-spec:
+	@if [ ! -f $(SPEC_SAMPLE_PEXE) ] ; then \
+          echo "Missing file $(SPEC_SAMPLE_PEXE)"; \
+          echo "Consider running" \
+               "'./run_all.sh BuildBenchmarks 0 SetupPnaclX8632Opt'" \
+               "in the native_client/tests/spec2k directory."; \
+          exit 1 ; \
+        fi
+
+ifdef MIPS
+check-presubmit presubmit: exists-sbtc
+# Make sure clang-format gets run.
+	+make -f Makefile.standalone format
+# Verify MINIMAL build, plus proper usage of REQUIRES in lit tests.
+	+make -f Makefile.standalone \
+          MINIMAL=1 check
+# Check that there are no g++ build errors or warnings.
+	+make -f Makefile.standalone \
+	  GPLUSPLUS=1 compile_only
+# Run lit tests, cross tests, and unit tests.
+	+make -f Makefile.standalone \
+          check
+# Check a sandboxed translator build.
+	+make -f Makefile.standalone \
+          DEBUG=1 sb
+# Provide validation of user awesomeness!
+	echo Success
+else
+check-presubmit presubmit: exists-nonsfi-x8632 exists-nonsfi-arm32 \
+  exists-sbtc exists-spec
+# Make sure clang-format gets run.
+	+make -f Makefile.standalone format
+# Verify MINIMAL build, plus proper usage of REQUIRES in lit tests.
+	+make -f Makefile.standalone \
+          MINIMAL=1 check
+# Check that there are no g++ build errors or warnings.
+	+make -f Makefile.standalone \
+	  GPLUSPLUS=1 compile_only
+# Check the x86 assembler unit tests.
+	+make -f Makefile.standalone \
+          DEBUG=1 CHECK_X86_ASM=1 check-unit sb
+# Run lit tests, cross tests, unit tests, and spec2k/x86-32.
+	+make -f Makefile.standalone \
+          check check-spec
+# Run spec2k/x86-64.
+	+make -f Makefile.standalone \
+          TARGET=x8664 check-spec
+# Run spec2k/x86-64 with sandboxing.
+	+make -f Makefile.standalone \
+          SPECFLAGS='-O2 --sandbox' TARGET=x8664 check-spec
+# Build spec2k under -Om1/x86-32, to check for liveness errors.
+	+make -f Makefile.standalone \
+          SPECFLAGS='-Om1' SPECRUN= check-spec
+# Build spec2k under -Om1/x86-64, to check for liveness errors.
+	+make -f Makefile.standalone \
+          SPECFLAGS='-Om1' TARGET=x8664 SPECRUN= check-spec
+# Run spec2k for x86-32 without advanced phi lowering.
+	+make -f Makefile.standalone \
+          SPECFLAGS='-O2 --sz=--phi-edge-split=0' check-spec
+# Run spec2k for x86-64 without advanced phi lowering.
+	+make -f Makefile.standalone \
+          SPECFLAGS='-O2 --sz=--phi-edge-split=0' TARGET=x8664 check-spec
+# Run cross tests and lit tests to validate filetype=asm output.
+	+make -f Makefile.standalone \
+          FORCEASM=1 check-xtest check-lit
+# Build spec2k for arm32.
+	+make -f Makefile.standalone \
+          TARGET=arm32 SPECRUN= check-spec
+# Build spec2k under -Om1/arm32.
+	+make -f Makefile.standalone \
+          TARGET=arm32 SPECFLAGS='-Om1' SPECRUN= check-spec
+# Run a few spec2k tests for arm32 using qemu. Keep the list sorted in
+# roughly reverse order of runtime.
+	+make -f Makefile.standalone \
+          TARGET=arm32 ALLSPEC='252.eon 254.gap 176.gcc 181.mcf' check-spec
+# Provide validation of user awesomeness!
+	echo Success
+endif
+
+presubmit-lite: exists-nonsfi-x8632 exists-nonsfi-arm32 \
+  exists-sbtc exists-spec
+# Make sure clang-format gets run.
+	+make -f Makefile.standalone format
+# Verify MINIMAL build, plus proper usage of REQUIRES in lit tests.
+	+make -f Makefile.standalone \
+          MINIMAL=1 check sb-lite
+# Check that there are no g++ build errors or warnings.
+	+make -f Makefile.standalone \
+	  GPLUSPLUS=1 compile_only
+# Run lit tests, cross tests, unit tests, and spec2k/x86-32.
+	+make -f Makefile.standalone \
+          check-lit check-unit check-spec
+	+make -f Makefile.standalone \
+          check-xtest-lite
+# Run spec2k/x86-64.
+	+make -f Makefile.standalone \
+          TARGET=x8664 check-spec
+# Build spec2k under -Om1/x86-32, to check for liveness errors.
+	+make -f Makefile.standalone \
+          SPECFLAGS='-Om1' SPECRUN= check-spec
+# Build spec2k under -Om1/x86-64, to check for liveness errors.
+	+make -f Makefile.standalone \
+          SPECFLAGS='-Om1' TARGET=x8664 SPECRUN= check-spec
+# Run cross tests and lit tests to validate filetype=asm output.
+	+make -f Makefile.standalone \
+          FORCEASM=1 check-lit
+	+make -f Makefile.standalone \
+          FORCEASM=1 check-xtest-lite
+# Build spec2k under -Om1/arm32.
+	+make -f Makefile.standalone \
+          TARGET=arm32 SPECFLAGS='-Om1' SPECRUN= check-spec
+# Run a few spec2k tests for arm32 using qemu. Keep the list sorted in
+# roughly reverse order of runtime.
+	+make -f Makefile.standalone \
+          TARGET=arm32 ALLSPEC='254.gap 176.gcc 181.mcf' check-spec
+# Provide validation of user awesomeness!
+	echo Success
+
+FORMAT_BLACKLIST =
+# Add one of the following lines for each source file to ignore.
+FORMAT_BLACKLIST += ! -name IceParseInstsTest.cpp
+FORMAT_BLACKLIST += ! -name IceParseTypesTest.cpp
+FORMAT_BLACKLIST += ! -name assembler_arm.h
+FORMAT_BLACKLIST += ! -name assembler_arm.cc
+FORMAT_BLACKLIST += ! -path "./wasm-install/*"
+FORMAT_BLACKLIST += ! -path "./pnacl-llvm/*"
+format:
+	$(CLANG_FORMAT_PATH)/clang-format -style=LLVM -i \
+          `find . -regex '.*\.\(c\|h\|cpp\)' $(FORMAT_BLACKLIST)`
+
+format-diff:
+	git diff -U0 `git merge-base HEAD master` | \
+          PATH=$(PNACL_BIN_PATH):$(PATH) \
+          $(LLVM_SRC_PATH)/../clang/tools/clang-format/clang-format-diff.py \
+          -p1 -style=LLVM -i
+
+bloat: make_symlink
+	nm -C -S -l pnacl-sz | \
+          bloat/bloat.py --nm-output=/dev/stdin syms > build/pnacl-sz.bloat.json
+	@echo See Subzero size breakdown in bloat/pnacl-sz.bloat.html
+
+bloat-sb: sb_make_symlink
+	$(foreach nexe,$(NEXES),nm -C -S -l $(nexe) | bloat/bloat.py \
+          --nm-output=/dev/stdin syms > build/$(notdir $(nexe)).bloat.json;)
+	@echo "See Subzero size breakdown in:"
+	@$(foreach nexe,$(NEXES),echo "  bloat/$(notdir $(nexe)).bloat.html";)
+
+docs:
+	make -C docs -f Makefile.standalone
+
+help:
+	@cat Makefile.standalone-help/help.txt
+
+help-check-lit:
+	@cat Makefile.standalone-help/check-lit.txt
+
+help-check-xtest:
+	@cat Makefile.standalone-help/check-xtest.txt
+
+clean:
+	rm -rf pnacl-sz *.o $(foreach nexe,$(NEXES),$(notdir $(nexe))) \
+          $(OBJDIR) $(SB_OBJDIR) $(SBB_OBJDIR) build/*.bloat.json
+
+clean-all: clean
+	rm -rf build/ crosstest/Output/

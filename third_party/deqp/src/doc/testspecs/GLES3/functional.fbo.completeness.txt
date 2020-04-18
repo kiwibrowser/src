@@ -1,0 +1,117 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Framebuffer completeness tests.
+
+Tests:
+ + dEQP-GLES3.functional.fbo.completeness.renderable.*
+ + dEQP-GLES3.functional.fbo.completeness.attachment_combinations.*
+ + dEQP-GLES3.functional.fbo.completeness.size.zero
+ + dEQP-GLES3.functional.fbo.completeness.size.distinct
+ + dEQP-GLES3.functional.fbo.completeness.size.layer.*
+ + dEQP-GLES3.functional.fbo.completeness.size.samples.*
+
+Includes:
+ + glCheckFramebufferStatus return value check
+ + Single attachments with all standard (and many extension) formats
+ + All combinations of color, depth and stencil attachments
+ + Zero-sized attachment
+ + Differently sized attachments
+ + Multilayer attachments
+ + Compatibility of multisample attachments
+
+Excludes:
+ + Trying FBO operations on in/complete FBOs.
+ + Completeness status changes after the FBO is modified.
+
+Description:
+
+These tests check that the implementation reports framebuffer completeness
+status correctly. Most test cases create a single framebuffer object, create
+some renderbuffers and/or textures and attach them to the FBO, and then call
+glCheckFramebufferStatus on it. The returned value is compared against a set
+of legal return values that is calculated from the arguments given to image
+creation and attachment functions. The test passes if the return value is
+found in this set. Some test cases may also expect image creation to fail
+before it can be attached.
+
+For each test case, the test log shows the configurations of the created
+images and attachments, the set of expected status values and the actual
+returned status value.
+
+
+The "renderable.*" test cases iterate through all the texture formats and
+attachment points and attach a single texture or renderbuffer with that format
+at that attachment point.
+
+The purpose of these tests is to check that the implementation's notion of
+color/depth/stencil-renderability adheres to the GLES specification and
+extensions. Both renderability and non-renderability of unexpected formats are
+reported as test failures.
+
+
+The "attachment_combination.*" test cases attach some textures and/or
+renderbuffers with suitable formats to none, some or all of the framebuffer's
+attachment points. The expected status values are as follows:
+
+* If there are no attachments, GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
+  must be returned.
+
+* If there is both a depth and a stencil attachment and one is a texture and
+  the other is a renderbuffer, GL_FRAMEBUFFER_UNSUPPORTED must be returned.
+
+* Otherwise, GL_FRAMEBUFFER_COMPLETE must be returned.
+
+Note that GLES3 requires the depth and stencil attachments to be the same
+image. When a test case has both a depth and a stencil attachment and either
+both are textures or both are renderbuffers, the same image is used for both
+attachments.
+
+
+The "size.*" test cases check that attachment sizes are treated correctly.
+
+The "size.zero" test case creates a framebuffer object with a single
+zero-sized renderbuffer attachment. The glCheckFramebufferStatus call is
+expected to return GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT. Note that creating
+and attaching the zero-sized renderbuffer is still expected to succeed.
+
+The "size.distinct" test case creates a framebuffer object with two
+attachments with different sizes. The glCheckFramebufferStatus call is
+expected to return GL_FRAMEBUFFER_COMPLETE.
+
+
+The "layer.*" test cases create various layered textures (two-dimensional
+array textures or 3D textures) and attach them to framebuffer objects with
+glFramebufferTextureLayer. The framebuffer status is expected to be
+GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT when the attached layer number is
+greater than or equal to the number of layers in the texture.
+
+
+The "samples.*" test cases attach textures and/or renderbuffers with various
+numbers of samples. The framebuffer status is expected to be
+GL_FRAMEBUFFER_COMPLETE when the attachments have the same number of samples
+(taking textures to have zero samples), or
+GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE otherwise.
+
+Because implementations are allowed to allocate more samples than
+requested, a framebuffer object whose attachments have requested a
+different, but non-zero, number of samples, is allowed to check either
+as complete or incomplete.
+
+If a test case requests more samples than the implementation supports,
+the case is reported as "not supported".

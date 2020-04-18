@@ -1,0 +1,77 @@
+#!/bin/bash
+
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+test_default_mime_launch() {
+
+test_start "$FUNCNAME: verify we can install a mime type & associate it with an application"
+
+test_init
+require_notroot
+
+# Set up files
+use_file "$XDG_TEST_DIR/xdg-utils-usecases/data/mime_launch.xml" MIME_FILE
+edit_file "$MIME_FILE" "x-xdg-testpattern" MIME2ND "x-$XDG_TEST_ID"
+edit_file "$MIME_FILE" xdgtest EXTEN "xdgt-$XDG_TEST_SHORTID"
+
+use_file "$XDG_TEST_DIR/xdg-utils-usecases/data/mime_launch.sh" SHELL_FILE
+
+use_file "$XDG_TEST_DIR/xdg-utils-usecases/data/mime_launch.desktop" DESKTOP_FILE
+edit_file "$DESKTOP_FILE" "x-xdg-testpattern" TMP "$MIME2ND"
+edit_file "$DESKTOP_FILE" '/tmp' TMP "$XDG_TEST_TMPDIR"
+edit_file "$DESKTOP_FILE" 'include' TMP "$XDG_TEST_DIR/include"
+edit_file "$DESKTOP_FILE" 'mime_launch.sh' TMP "$XDG_TEST_TMPDIR/$SHELL_FILE"
+
+TEST_FILE="testfile.$EXTEN"
+echo "Some text to make the textfile not empty" >"$TEST_FILE"
+
+MIME_TYPE="text/$MIME2ND"
+
+test_procedure
+
+# Install Desktop file
+assert_exit 0 xdg-desktop-menu install "$DESKTOP_FILE"
+assert_nostdout
+assert_nostderr
+
+# Install Mime file
+assert_exit 0 xdg-mime install "$MIME_FILE"
+assert_nostdout
+assert_nostderr
+
+# Verify mimetype 
+echo "$MIME_TYPE" >out.expected
+assert_exit 0 xdg-mime query filetype "$TEST_FILE"
+MIME_INPUT=`cat out.stdout`
+assert_stdout out.expected
+assert_nostderr
+
+# Verify application is as expected
+echo "$DESKTOP_FILE" >out.expected
+assert_exit 0 xdg-mime query default "$MIME_TYPE"
+assert_stdout out.expected
+assert_nostderr
+
+# Verify correct application opens
+assert_exit 0 xdg-open "$TEST_FILE"
+assert_nostdout
+assert_nostderr
+
+echo "file: $XDG_TEST_TMPDIR/$TEST_FILE" >out.expect
+
+# exec.out is created by xdg-open
+assert_file "$XDG_TEST_TMPDIR/exec.out" 'out.expect'
+
+#cleanup
+assert_exit 0 xdg-desktop-menu uninstall "$DESKTOP_FILE"
+assert_nostdout
+assert_nostderr
+
+assert_exit 0 xdg-mime uninstall "$MIME_FILE"
+assert_nostdout
+assert_nostderr
+
+test_result
+}
+run_test test_default_mime_launch

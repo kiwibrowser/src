@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<!--
+Copyright 2018 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/base/math/range.html">
+<link rel="import" href="/tracing/base/math/range_utils.html">
+<link rel="import" href="/tracing/base/math/statistics.html">
+<link rel="import" href="/tracing/base/unit.html">
+<link rel="import" href="/tracing/metrics/metric_registry.html">
+<link rel="import" href="/tracing/model/user_model/animation_expectation.html">
+<link rel="import" href="/tracing/value/diagnostics/breakdown.html">
+
+<script>
+'use strict';
+
+/**
+ * @fileoverview This file contains implementations of rendering metrics.
+ *
+ * cores_per_second_{thread group}_thread
+ * ======================================
+ * This set of metrics show how much a thread group was busy during animation.
+ * More precisely, it shows the amount of CPU cores per seconds the thread group
+ * consumes during animation.
+ *
+ * These metrics replace old thread_{thread group}_cpu_time_per_frame metrics.
+ * Per frame CPU times are problematic because, different animations may have
+ * different frame rates, intentionally, and dividing CPU time by the number of
+ * frames will be meaningless when we have a combination of animations with
+ * different rates.
+ *
+ * Secondly, we (will) have metrics for measuring throughput/FPS. So, instead of
+ * measuring CPU per frame which is a combination of CPU time and FPS, it is
+ * less confusing to measure just CPU time.
+ */
+tr.exportTo('tr.metrics.rendering', function() {
+  const UNKNOWN_THREAD_NAME = 'Unknown';
+
+  const CATEGORY_THREAD_MAP = new Map();
+  CATEGORY_THREAD_MAP.set('all', [/.*/]);
+  CATEGORY_THREAD_MAP.set(
+      'browser', [/^Browser Compositor$/, /^CrBrowserMain$/]);
+  CATEGORY_THREAD_MAP.set('display_compositor', [/^VizCompositorThread$/]);
+  CATEGORY_THREAD_MAP.set(
+      'fast_path', [
+        /^Browser Compositor$/, /^Chrome_InProcGpuThread$/, /^Compositor$/,
+        /^CrBrowserMain$/, /^CrGpuMain$/, /IOThread/, /^VizCompositorThread$/]);
+  CATEGORY_THREAD_MAP.set('gpu', [/^Chrome_InProcGpuThread$/, /^CrGpuMain$/]);
+  CATEGORY_THREAD_MAP.set('io', [/IOThread/]);
+  CATEGORY_THREAD_MAP.set('raster', [/CompositorTileWorker/]);
+  CATEGORY_THREAD_MAP.set('renderer_compositor', [/^Compositor$/]);
+  CATEGORY_THREAD_MAP.set('renderer_main', [/^CrRendererMain$/]);
+
+  function addValueToMap_(map, key, value) {
+    const oldValue = map.get(key) || 0;
+    map.set(key, oldValue + value);
+  }
+
+  function* getCategories_(threadName) {
+    let isOther = true;
+    for (const [category, regexps] of CATEGORY_THREAD_MAP) {
+      for (const regexp of regexps) {
+        if (regexp.test(threadName)) {
+          if (category !== 'all') isOther = false;
+          yield category;
+          break;
+        }
+      }
+    }
+    if (isOther) yield 'other';
+  }
+
+  function renderingMetric(histograms, model) {
+    // Find animation ranges and their total duration.
+    const animationSegments = model.userModel.segments.filter(
+        segment => segment.expectations.find(
+            ue => ue instanceof tr.model.um.AnimationExpectation));
+    const totalDuration = tr.b.math.Statistics.sum(
+        animationSegments, segment => segment.duration);
+
+    // Compute and store CPU times per categories and thread name.
+    const threadValues = new Map();
+    for (const thread of model.getAllThreads()) {
+      addValueToMap_(
+          threadValues,
+          thread.name || UNKNOWN_THREAD_NAME,
+          tr.b.math.Statistics.sum(
+              animationSegments,
+              segment => thread.getCpuTimeForRange(segment.boundsRange)) /
+              totalDuration);
+    }
+    const categoryValues = new Map();
+    const breakdowns = new Map();
+    for (const [threadName, coresPerSec] of threadValues) {
+      for (const category of getCategories_(threadName)) {
+        addValueToMap_(categoryValues, category, coresPerSec);
+        if (!breakdowns.has(category)) {
+          breakdowns.set(category, new tr.v.d.Breakdown());
+        }
+        // TODO(chiniforooshan): We break down the CPU usage of each category by
+        // the thread name here. It will be more useful if we could add task
+        // names too. On the other hand, breaking down at task level may be too
+        // granular and we may end up with a ton of tiny slices that will not be
+        // that useful.  Maybe we can break down by just top x tasks, or top x
+        // (thread, task) pairs?
+        //
+        // Another possbility to investigate is to break down by initiator type
+        // of the animation expectation.
+        breakdowns.get(category).set(threadName, coresPerSec);
+      }
+    }
+
+    // Build histograms.
+    for (const [category, coresPerSec] of categoryValues) {
+      histograms.createHistogram(
+          `cores_per_second_${category}_thread`,
+          tr.b.Unit.byName.unitlessNumber_smallerIsBetter,
+          {
+            value: coresPerSec,
+            diagnostics: { breakdown: breakdowns.get(category) }
+          },
+          { description: 'CPU cores per second of threads during animation' });
+    }
+  }
+
+  tr.metrics.MetricRegistry.register(renderingMetric);
+
+  return {
+    renderingMetric,
+  };
+});
+</script>

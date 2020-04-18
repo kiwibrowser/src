@@ -1,0 +1,185 @@
+// Copyright 2018 The Feed Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+import "src/main/proto/search/now/proto/ui/stream/stream_structure.proto";
+import "src/main/proto/search/now/proto/wire/feed/piet_shared_state_item.proto";
+import "src/main/proto/search/now/proto/wire/feed/content_id.proto";
+
+package search.now.feed.client;
+
+option optimize_for=LITE_RUNTIME;
+
+option java_package = "com.google.search.now.feed.client";
+option java_outer_classname = "StreamDataProto";
+
+// A StreamFeature represents a node within the tree forming the Stream.  The
+// stream contains structure and content at multiple levels.  This
+// structure is represented as a tree of features.  These features include
+// Clusters, Hero Cards, Carousels, Piet Content, etc.  Nodes internal to the
+// tree may have both content and children.
+message StreamFeature {
+
+  // The content id of this feature.
+  optional string content_id = 1;
+
+  // The parent feature if defined.  Most features will have a parent, the root
+  // feature is the exception.
+  optional string parent_id = 2;
+
+  // Define the payloads for the various types of nodes present in the tree.
+  oneof feature_payload {
+    // Stream structure which defines how a stream will work and look.
+    search.now.ui.stream.Stream stream = 4;
+
+    // Card stream structure which defines how a card will work and look.
+    search.now.ui.stream.Card card = 5;
+
+    // Content stream structure.  Describes information which will be rendered
+    // on screen.
+    search.now.ui.stream.Content content = 6;
+
+    // Cluster stream structure which defines a logical grouping of Content and
+    // Cards.
+    search.now.ui.stream.Cluster cluster = 7;
+  }
+}
+
+message StreamToken {
+
+  // The content id of this feature.
+  optional string content_id = 1;
+
+  // The parent feature if defined.  Most features will have a parent, the root
+  // feature is the exception.
+  optional string parent_id = 2;
+
+  // The Token
+  optional bytes next_page_token = 3;
+}
+
+// This represents a shared state item.
+message StreamSharedState {
+
+  optional string content_id = 1;
+  oneof share_state {
+    // A Piet shared state item.
+    search.now.proto.wire.feed.PietSharedStateItem piet_shared_state_item = 2;
+  }
+}
+
+// This is the structure of the stream.  It is defined through the parent/child
+// relationship and an operation.  This message will be journaled.  Reading
+// the journal from start to end will fully define the structure of the stream.
+message StreamStructure {
+
+  // The defined set of DataOperations
+  // These operations align with the Operation enum defined in
+  // data_operation.proto.
+  enum Operation {
+
+    UNKNOWN = 0;
+    CLEAR_ALL = 1;
+    UPDATE_OR_APPEND = 2;
+    REMOVE = 3;
+  }
+  optional Operation operation = 1;
+  optional string content_id = 2;
+  optional string parent_content_id = 3;
+}
+
+// The internal version of a DataOperation.
+message StreamDataOperation {
+
+  // Defines the structure of the stream
+  optional StreamStructure stream_structure = 1;
+
+  // The payload (content) of the DataOperation.
+  optional StreamPayload stream_payload = 2;
+}
+
+// This defines the content payload associated with a StreamDataOperation.
+// Payload is what is stored in the Content portion of the persisted storage
+// layer.  Each of the items defined here are persisted using the
+// StreamContentId (String) as the key to the payload.  By default, the
+// StreamContentId is formed by concatenation of the ContentId Table, followed
+// by ContentDomain, then Id.  In addition, for content requiring prefix based
+// queries, the Store will prefix the StreamContentId.
+message StreamPayload {
+
+  oneof payload {
+    // This contains a feature within the tree.  These are stored based upon
+    // the server defined StreamContentId (created by the ProtocolAdapter).
+    StreamFeature stream_feature = 3;
+
+    // This contains a shared state, such as the Piet shared state.  The
+    // Feed store prepends a prefix (see FeedStore.SHARED_STATE_PREFIX) so these
+    // can be retrieved through a prefix query.
+    StreamSharedState stream_shared_state = 4;
+
+    // Continuation Token for a parent.  These are stored in the same way other
+    // the stream_feature are stored.  They are treated the same as other
+    // feature content when persisted.
+    StreamToken stream_token = 5;
+
+    // This is stored as a single content record.  It contains information about
+    // each known session including $HEAD.  This is a list of the individual
+    // sessions which are currently active.  This has a StreamContentId defined
+    // by the SessionManager (see FeedSessionManager.STREAM_SESSION_CONTENT_ID).
+    StreamSessions stream_sessions = 6;
+
+    // The semantic data associated with a Feature.  These are stored as content
+    // with a prefix added by the Store (see
+    // FeedStore.SEMANTIC_PROPERTIES_PREFIX) allowing prefix queries.
+    bytes semantic_data = 7;
+  }
+}
+
+// This message allows a Cursor to be serialized.
+message StreamCursor {
+
+  // The Parent of the cursor.
+  optional string parent_content_id = 1;
+
+  // This is the ContentId of the last accessed Child in the cursor.
+  optional string last_accessed_content = 2;
+}
+
+// List of all the sessions.
+message StreamSessions {
+  // Represents the current sessions
+  repeated StreamSession stream_sessions = 1;
+}
+
+// Persistence for a Session.  This allows the UI to create a ModelProvider
+// from an existing session.
+message StreamSession {
+  // Unique identifier for the session.
+  optional string stream_token = 1;
+
+  // This is the ms of the last time the session was accessed, used to manage
+  // the lifetime of a session.
+  optional int64 last_accessed = 2;
+}
+
+message StreamAction {
+  // See ActionMutation.ActionType
+  optional int32 action = 1;
+
+  optional string feature_content_id = 2;
+
+  // When the action was recorded
+  optional int64 timestamp_seconds = 3;
+}

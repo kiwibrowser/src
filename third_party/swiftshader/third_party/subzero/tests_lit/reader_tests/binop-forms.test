@@ -1,0 +1,19 @@
+; Test if we recognize both the old and the new forms of a binary instruction.
+
+; REQUIRES: no_minimal_build
+
+; Checks that the new form of binary add (without flags argument) works.
+; RUN: %pnacl_sz -verbose inst,global_init -notranslate \
+; RUN:   -threads=0 -bitcode-as-text %p/Inputs/binop-newform.tbc \
+; RUN: | FileCheck %s
+
+; Checks that the old form of binary add (with flags argument) works.
+; RUN: %pnacl_sz -verbose inst,global_init -notranslate \
+; RUN:   -threads=0 -bitcode-as-text %p/Inputs/binop-oldform.tbc \
+; RUN: | FileCheck %s
+
+; CHECK: define internal i32 @Function(i32 %__0, i32 %__1) {
+; CHECK: __0:
+; CHECK:   %__2 = add i32 %__0, %__1
+; CHECK:   ret i32 %__2
+; CHECK: }

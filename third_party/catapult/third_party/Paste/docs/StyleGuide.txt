@@ -1,0 +1,102 @@
++++++++++++++++++++
+Paste Style Guide
++++++++++++++++++++
+
+Generally you should follow the recommendations in `PEP 8`_, the
+Python Style Guide.  Some things to take particular note of:
+
+.. _PEP 8: http://www.python.org/peps/pep-0008.html
+
+* **No tabs**.  Not anywhere.  Always indent with 4 spaces.
+
+* I don't stress too much on line length.  But try to break lines up
+  by grouping with parenthesis instead of with backslashes (if you
+  can).  Do asserts like::
+
+    assert some_condition(a, b), (
+        "Some condition failed, %r isn't right!" % a)
+
+* But if you are having problems with line length, maybe you should
+  just break the expression up into multiple statements.
+
+* Blank lines between methods, unless they are very small and closely
+  bound to each other.
+
+* Don't use the form ``condition and trueValue or falseValue``.  Break
+  it out and use a variable.
+
+* I (Ian Bicking) am very picky about whitespace.  There's one and
+  only one right way to do it.  Good examples::
+
+    short = 3
+    longerVar = 4
+
+    if x == 4:
+        do stuff
+
+    func(arg1='a', arg2='b')
+    func((a + b)*10)
+
+  **Bad** examples::
+
+    short    =3
+    longerVar=4
+
+    if x==4: do stuff
+
+    func(arg1 = 'a', arg2 = 'b')
+    func(a,b)
+    func( a, b )
+    [ 1, 2, 3 ]
+
+  If the whitespace isn't right, it'll annoy me and I'll feel a need
+  to fix it.  Really, this whitespace stuff shouldn't be that
+  controversial should it?  Some particular points that I feel
+  strongly about:
+
+  * No space after a function name (bad: ``func (arg)``).
+  * No space after or before  a parenthesis (bad: ``func( arg )``).
+  * Always one space after a comma (bad: ``func(a,b)``).
+
+* Use ``@@`` to mark something that is suboptimal, or where you have a
+  concern that it's not right.  Try to also date it and put your
+  username there.
+
+* Docstrings are good.  They should look like::
+
+    class AClass(object):
+        """
+        doc string...
+        """
+
+  Don't use single quotes (''') -- they tend to cause problems in
+  Emacs.  Don't bother trying make the string less vertically compact.
+
+* Comments go right before the thing they are commenting on.
+
+* Methods never, ever, ever start with capital letters.  Generally
+  only classes are capitalized.  But definitely never methods.
+
+* Use ``cls`` to refer to a class.  Use ``meta`` to refer to a
+  metaclass (which also happens to be a class, but calling a metaclass
+  ``cls`` will be confusing).
+
+* Use ``isinstance`` instead of comparing types.  E.g.::
+
+    if isinstance(var, str): ...
+    # Bad:
+    if type(var) is StringType: ...
+
+* Never, ever use two leading underscores.  This is annoyingly
+  private.  If name clashes are a concern, use explicit name mangling
+  instead (e.g., ``_MyThing_blahblah``).  This is essentially the same
+  thing as double-underscore, only it's transparent where double
+  underscore obscures.
+
+* Module names should be unique in the package.  Subpackages shouldn't
+  share module names with sibling or parent packages.  Sadly this
+  isn't possible for ``__init__.py``, but it's otherwise easy enough.
+
+* Module names should be all lower case, and probably have no
+  underscores (smushedwords).
+

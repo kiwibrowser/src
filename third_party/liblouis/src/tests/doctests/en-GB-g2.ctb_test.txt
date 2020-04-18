@@ -1,0 +1,24 @@
+Liblouis tests
+==============
+
+This is an example test file in reStructuredText format
+
+Define the table you want to test and initiate the test helper
+
+    >>> tables = ['en-GB-g2.ctb']
+    >>> t = TestHelper(tables)
+
+Now do some tests.
+
+Check that "the" is correctly contracted
+    >>> t.braille('the cat sat on the mat')
+    u'! cat sat on ! mat'
+
+Make sure that "to" is contracted correctly and joined to next word.
+    >>> t.braille('to the moon')
+    u'6! moon'
+
+Check that "to" at end of line doesn't get contracted, and that "went"
+is expanded when cursor is positioned within the word.
+    >>> t.cursor('you went to', 4)
+    (u'y went to', 2)

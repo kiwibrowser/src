@@ -1,0 +1,29 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_su_basic_asroot() {
+test_start "$FUNCNAME: basic su already root"
+
+test_init
+
+require_root
+assert_display
+
+echo "root" >out.expected
+
+test_procedure
+
+assert_exit 0 xdg-su -c whoami
+assert_stdout out.expected
+assert_nostderr
+
+assert_interactive "Were you prompted for the admin password?" n
+
+test_result
+}
+
+run_test test_su_basic_asroot

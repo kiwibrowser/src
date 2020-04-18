@@ -1,0 +1,28 @@
+#######################################################################
+# SConscript for dri state_tracker
+
+Import('*')
+
+env = env.Clone()
+
+env.PkgUseModules(['DRM'])
+
+env.Append(CPPPATH = [
+    '#/src/mapi',
+    '#/src/mesa',
+    '#/src/gallium/state_trackers/dri/common',
+    '#/src/mesa/drivers/dri/common',
+])
+
+sources = [
+    'dri_context.c',
+    'dri_drawable.c',
+    'dri_screen.c',
+    'dri2.c',
+]
+
+st_dri = env.ConvenienceLibrary(
+    target = 'st_dri',
+    source = sources,
+)
+Export('st_dri')

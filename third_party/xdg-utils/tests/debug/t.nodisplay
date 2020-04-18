@@ -1,0 +1,35 @@
+#!/bin/bash
+
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+
+test_nodisplay() {
+
+test_start "$FUNCNAME: verify display is not set."
+
+test_init
+
+echo '#!/bin/bash' > showdisp.sh
+echo '(echo "DISPLAY:($DISPLAY)")' >> showdisp.sh
+
+chmod 755 showdisp.sh
+
+echo "Display before: '$DISPLAY'"
+set_no_display
+echo "Display after: '$DISPLAY'"
+
+test_procedure
+
+echo "Display in procedure: '$DISPLAY'"
+
+assert_exit 0  ./showdisp.sh
+assert_stdout
+assert_nostderr
+
+cat out.stdout
+
+test_result
+}
+
+run_test test_nodisplay

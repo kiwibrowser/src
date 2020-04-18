@@ -1,0 +1,56 @@
+#!/bin/bash
+
+## This script modified from one supplied by Bryce Harrington at OSDL
+
+which kde-config >/dev/null 2>&1
+if [ "$?" -eq 0 ]; then
+	# From Sutoka on FreeNode/#kde
+	kde_version=`kde-config --version | grep KDE | cut -d' ' -f2 2> /dev/null`
+	kde_running=$KDE_FULL_SESSION
+	if [ ! -z "$KDE_FULL_SESSION" ]; then
+		running="kde $running"
+	fi
+    	echo "kde: $kde_version"
+else
+	echo "kde: not present (didn't find kde-config)"
+fi
+
+# From kees on #osdl
+which gnome-session >/dev/null 2>&1
+if [ "$?" -eq 0 ] ; then
+    gnome_version=`gnome-session --version | cut -d ' ' -f3 2>/dev/null`
+    echo "gnome: $gnome_version"
+
+   if [ ! -z "$GNOME_DESKTOP_SESSION_ID" ]; then
+   	running="gnome $running"
+   fi
+else
+    echo "gnome: not present (didn't find gnome-session)"
+fi
+
+which xfce4-session >/dev/null 2>&1
+if [ "$?" -eq 0 ] ; then 
+        xfce_version=`xfce4-session --version | grep '(Xfce ' | cut -d '(' -f 2 | cut -d ' ' -f2 | cut -d ')' -f1`
+	# From massonnet on FreeNode/#xfce
+	#if [ `pidof xfce4-session` ]; then
+	if [ "$GDMSESSION" = 'xfce4' ] ; then
+		running="xfce $running"
+	fi
+
+	echo "xfce: $xfce_version"
+else
+	echo "xfce: not present (didn't find xfce4-session)"
+fi
+
+if [ -z "$running" ] ; then
+	running='none'
+fi
+
+
+echo "running: $running "
+if [ `whoami` = 'root' ] ; then
+	echo "user: root"
+else
+	echo "user: normal"
+fi
+

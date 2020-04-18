@@ -1,0 +1,77 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Texture format sets
+
+Tests:
+ + dEQP-GLES3.functional.texture.format.*
+
+Includes:
+ + Unsized color texture formats:
+   - GLES2: ALPHA, LUMINANCE, LUMINANCE_ALPHA, RGB, RGBA
+   - GLES3: RED, RG, INTEGER variants
+ + Unsized depth and stencil formats:
+   - DEPTH_COMPONENT, DEPTH_STENCIL
+ + All sized color texture formats
+ + All sized depth and stencil texture formats
+ + sRGB texture formats
+ + Following compressed texture formats:
+   - ETC1
+   - ETC2
+   - EAC
+ + Power-of-two and non-power-of-two texture sizes
+ + Texture access from fragment shader with following parameters:
+   - Nearest-neighbor filtering
+   - Clamp-to-edge wrap mode
+   - Single texture, unit 0
+   - Named texture object
+   - Coordinates in range (0, 0) -> (1, 1)
+ + 2D textures
+ + Cube map textures
+ + 2D array textures
+ + 3D textures
+
+Excludes:
+ + Other texture wrap and filtering modes
+   - Covered in functional.texture.filtering and functional.texture.wrap
+ + Vertex-side texture access
+   - Will be covered in functional.texture.vertex tests
+ + Texture format conversions in upload
+   - Will be covered in functional.texture.conversion
+
+Description:
+
+Texture format tests create a single texture with pre-configured dimensions
+and format. Uncompressed images will be filled with gradient that exercises
+the maximum value range allowed by the format. For compressed formats
+randomized input bits are used to thoroughly exercise all decoding paths.
+
+Each test case renders one or more times a plain quad that samples a slice
+of the image:
+
+ * 2D textures: Single quad that samples the full texture is rendered.
+ * Cubemaps: Each cube face is rendered separately.
+ * 2D array textures: Each layer is rendered separately.
+ * 3D textures: Each slice is rendered separately.
+
+The viewport is configured to match the slice size. Texture coordinates
+yield a 1:1 mapping from texels to framebuffer pixels. Thus filtering
+shouldn't affect the resulting images.
+
+The rendered image is compared against a reference that is produced by
+reference renderer. A simple threshold-based comparison is used.

@@ -1,0 +1,71 @@
+# Python Application Configuration
+# https://developers.google.com/appengine/docs/python/config/appconfig
+
+runtime: python27
+api_version: 1
+threadsafe: false
+instance_class: F4_1G
+
+libraries:
+- name: jinja2
+  version: "2.6"
+- name: pycrypto
+  version: "2.6"
+- name: webapp2
+  version: "2.5.1"
+
+builtins:
+- remote_api: on
+- appstats: on
+- deferred: on
+
+inbound_services:
+- warmup
+
+handlers:
+- url: /favicon.ico
+  static_files: dashboard/static/favicon.ico
+  upload: dashboard/static/favicon.ico
+  secure: always
+
+- url: /dashboard/static/
+  static_dir: dashboard/static/
+  secure: always
+  application_readable: true
+
+- url: /dashboard/elements/(.*\.html)$
+  static_files: dashboard/elements/\1
+  upload: dashboard/elements/.*\.html$
+  secure: always
+
+- url: /components/(.*)/(.*\.(html|js|css))$
+  static_files: polymer/components/\1/\2
+  upload: polymer/components/.*/.*\.(html|js|css)$
+  secure: always
+
+- url: /tracing/(.*)/(.*\.(html|js|css))$
+  static_files: tracing/\1/\2
+  upload: tracing/.*/.*\.(html|js|css)$
+  secure: always
+
+- url: /flot/(.*\.js)$
+  static_files: flot/\1
+  upload: flot/.*\.js$
+  secure: always
+
+- url: /jquery/(.*\.js)$
+  static_files: jquery/\1
+  upload: jquery/.*\.js$
+  secure: always
+
+- url: /gl-matrix-min.js
+  static_files: gl-matrix-min.js
+  upload: gl-matrix-min.js
+  secure: always
+
+- url: /.*
+  script: dashboard.dispatcher.APP
+  secure: always
+
+includes:
+- scripts.yaml

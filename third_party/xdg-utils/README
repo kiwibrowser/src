@@ -1,0 +1,100 @@
+xdg-utils
+---------
+
+    The xdg-utils package is a set of simple scripts that provide
+basic desktop integration functions for any Free Desktop, such as Linux.
+
+    They are intended to provide a set of defacto standards.  This
+means that:
+    *  Third party software developers can rely on these xdg-utils
+       for all of their simple integration needs.
+
+    *  Developers of desktop environments can make sure that their
+       environments are well supported
+
+       If a desktop developer wants to be certain that their environment
+       functions with all third party software, then can simply
+       make sure that these utilities work properly in their environment.
+
+       This will hopefully mean that 'third tier' window managers
+       such as XFCE and Blackbox can reach full parity with Gnome and KDE
+       in terms of third party ISV support.
+
+    *  Distribution vendors can provide custom versions of these utilities
+
+       If a distribution vendor wishes to have unusual systems,
+       they can provide custom scripts, and the third party software
+       should still continue to work.
+
+
+OVERVIEW:
+---------
+
+    The following tools are included in xdg-utils 1.0:
+
+xdg-desktop-menu	Install desktop menu items
+xdg-desktop-icon	Install icons to the desktop
+xdg-icon-resource	Install icon resources
+xdg-mime		Query information about file type handling and
+			install descriptions for new file types
+xdg-open		Open a file or URL in the user's preferred application
+xdg-email		Send mail using the user's preferred e-mail composer
+xdg-screensaver		Control the screensaver
+
+
+BUILD:
+------
+
+    Building is not required, all tools are located in the
+scripts/ subdirectory and are ready to be used.
+
+    You can optionally choose to install the scripts
+to a target directory.  To do this, you could issue
+the following commands:
+         ./configure [--prefix=<your-place-here>]
+        make install
+that would cause the scripts to be installed to
+  <your-place-here>/bin
+
+
+USE:
+----
+
+    Although we expect that these scripts will generally come as part
+of the operating system, we recommend that you package the scripts
+that your application needs along with your product as a fallback. For
+this purpose please obtain the original version of the xdg-utils from
+http://portland.freedesktop.org. The xdg-utils scripts that are
+distributed by operating systems vendors may have been tuned for their
+particular operating system and may not work on the same broad variety
+of operating systems as the original version.
+
+    We recommend that you place these scripts in a directory, and
+then add that directory to the end of the PATH.  So, let's say that
+you're writing your post installation script, and you want to create
+a menu on any xdg-util compliant environment.  Let's further assume
+that you've just installed to $INSTALL_DIR, and that your menu
+desktop file is in $INSTALL_DIR/desktop/icon.desktop.  Finally, let's
+say that you've included the xdg-utils package in your installation
+in $INSTALL_DIR/xdg-utils.
+
+    Then a simple post install script could look like this:
+
+        export PATH=$PATH:$INSTALL_DIR/xdg-utils
+        xdg-desktop-menu install $INSTALL_DIR/mycompany-myapp.desktop
+
+    And now your product has a menu on any XDG compliant desktop!
+
+Note that we strongly recommend using this method - that is,
+putting your copy of the xdg-utils at the end of the path,
+and then invoking them without a specific path name.
+
+That will allow your users and their system providers to
+use custom versions of the xdg-utils to adjust for system spsecific
+differences.
+
+If you wish to absolutely force the issue and only use the versions
+you shipped, you could instead hard code the path to the version
+you bundle with your application.  We strongly recommend against
+this, as it will make your product obsolete more quickly than is
+necessary.

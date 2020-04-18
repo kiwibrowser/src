@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<!--
+Copyright 2016 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<html>
+<head>
+  <link rel="import" href="/dashboard/static/base.html">
+  <link rel="import" href="/dashboard/elements/nav-bar.html">
+  <title>Edit Bug Labels</title>
+  <script>
+  'use strict';
+  // The user's XSRF token string, required to submit the form.
+  const XSRF_TOKEN = '{{xsrf_token}}';
+
+  /**
+   * Initializes the event listeners for events on the form.
+   */
+  function initialize() {
+    const addListener = function(elementId, eventName, callback) {
+      const element = document.getElementById(elementId);
+      element.addEventListener(eventName, callback, true);
+    };
+    addListener('add-radio', 'change', onRadioChange);
+    addListener('remove-radio', 'change', onRadioChange);
+    onRadioChange();
+  }
+
+  /**
+   * Hides or shows some form elements when the "add" or "remove" radio buttons
+   * are checked.
+   * @param {Event} _ The focus event for the input, not used.
+   */
+  function onRadioChange(_) {
+    const addRadio = document.getElementById('add-radio');
+    const addInputs = document.getElementById('add-inputs');
+    const removeInputs = document.getElementById('remove-inputs');
+    if (addRadio.checked) {
+      addInputs.style.display = 'block';
+      removeInputs.style.display = 'none';
+    } else {
+      addInputs.style.display = 'none';
+      removeInputs.style.display = 'block';
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', initialize, true);
+  </script>
+</head>
+<body>
+  <nav-bar></nav-bar>
+  <h1>Edit Bug Labels</h1>
+
+  <form method="POST">
+    {{xsrf_input | safe}}
+    <label>
+      <input type="radio" name="action" id="add-radio"
+             value="add_buglabel_pattern" checked>
+      Set a bug label to automatically apply to a group of tests.
+    </label>
+    <br>
+    <label>
+      <input type="radio" name="action" id="remove-radio"
+             value="remove_buglabel_pattern">
+      Remove a bug label that automatically applies to a group of tests.
+    </label>
+    <div id="add-inputs">
+      <label>
+        Enter a test path pattern:
+        <input name="pattern" id="add-buglabel-pattern" size="100">
+      </label>
+      <br>
+      <label>
+        Name of the new bug label pattern to add:
+        <input name="buglabel_to_add" placeholder="Cr-Blink-Performance">
+      </label>
+    </div>
+    <div id="remove-inputs">
+      <label>
+        Select bug label:
+        <select name="buglabel_to_remove">
+        {% for bug_label in bug_labels %}
+          <option value="{{bug_label}}">{{bug_label}}</option>
+        {% endfor %}
+        </select>
+      </label>
+    </div>
+    <input type="submit">
+  </form>
+
+  <h2>Current Bug Labels</h2>
+  <pre>{{bug_labels_json}}</pre>
+</body>
+</html>

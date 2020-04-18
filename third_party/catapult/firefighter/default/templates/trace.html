@@ -1,0 +1,102 @@
+<!doctype html>
+<!--
+Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<title>Trace</title>
+<meta charset="utf-8">
+
+<script src="/components/webcomponentsjs/webcomponents.js"></script>
+<link rel="import" href="/components/polymer/polymer.html">
+
+<link rel="import" href="/tracing/base/xhr.html">
+<link rel="import" href="/tracing/extras/full_config.html">
+<link rel="import" href="/tracing/ui/timeline_view.html">
+
+<style>
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    -webkit-flex-direction: column;
+            flex-direction: column;
+    display: -webkit-flex;
+    display: flex;
+    margin: 0;
+    padding: 0;
+  }
+
+  body > tr-ui-timeline-view {
+    -webkit-flex: 1 1 auto;
+            flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  body > tr-ui-timeline-view:focus {
+    outline: none;
+  }
+  
+</style>
+
+<tr-ui-timeline-view>
+  <track-view-container id='track_view_container'></track-view-container>
+</tr-ui-timeline-view>
+
+<script>
+'use strict';
+
+var timelineViewEl;
+
+function loadTraces(filenames, onTracesLoaded) {
+  var traces = [];
+  for (var i = 0; i < filenames.length; i++) {
+    traces.push(undefined);
+  }
+  var numTracesPending = filenames.length;
+
+  filenames.forEach(function(filename, i) {
+    getAsync(filename, function(trace) {
+      traces[i] = trace;
+      numTracesPending--;
+      if (numTracesPending == 0)
+        onTracesLoaded(filenames, traces);
+    });
+  });
+}
+
+function getAsync(url, cb) {
+  tr.b.getAsync(url).then(cb);
+}
+
+function createViewFromTraces(filenames, traces) {
+  var m = timelineViewEl.model || new tr.Model();
+  var i = new tr.importer.Import(m);
+  var p = i.importTracesWithProgressDialog(traces);
+  p.then(
+    function() {
+      timelineViewEl.model = m;
+      timelineViewEl.updateDocumentFavicon();
+      timelineViewEl.globalMode = true;
+      timelineViewEl.viewTitle = '';
+    },
+    function(err) {
+      var overlay = new tr.ui.b.Overlay();
+      overlay.textContent = tr.b.normalizeException(err).message;
+      overlay.title = 'Import error';
+      overlay.visible = true;
+    });
+}
+
+function onLoad() {
+  timelineViewEl = document.querySelector('tr-ui-timeline-view');
+  timelineViewEl.globalMode = true;
+
+  var file = '/query?{{ query_string }}';
+  var filenames = [file];
+  loadTraces(filenames, createViewFromTraces);
+}
+window.addEventListener('load', onLoad);
+</script>

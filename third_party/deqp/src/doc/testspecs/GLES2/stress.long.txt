@@ -1,0 +1,104 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Long-running stress tests
+
+Tests:
+ + dEQP-GLES2.stress.long.*
+
+Includes:
+ + Long-running stress testing with various application behaviors
+ + Memory object handling
+   - Buffers and textures
+   - Allocation, uploading
+ + Shader program
+   - Switching between several programs
+   - Re-compile frequently
+ + Draw calls
+   - Client-memory data for vertex indices and attributes
+   - Big draw calls
+
+Excludes:
+ + Functional verification
+
+Description:
+
+The long-running stress tests are meant to be run for a long time to detect
+deterioration (e.g. crash) in the program's behavior. The tests are supposed
+to be run with the command-line tools instead of Candy. The test case uses
+the --deqp-test-iteration-count=<num> command line option to choose the number
+of iterations it runs; this should be set to either a very big number, or
+alternatively a negative number, in which case it runs indefinitely. When
+this option is not given, the number of iterations is only 5; this is only
+useful to check that the test case's basic requisites are fulfilled (e.g.
+that its shader programs compile successfully).
+
+The basic structure of one iteration of the stress cases is as follows.
+
+First, if the case uses more than one program, it randomly picks one of them
+as the program for the current iteration. It then chooses whether or not to
+re-compile the program if it hasn't yet been compiled. When a program is re-
+compiled, attribute, uniform and varying names in the shader sources may
+be mangled with a unique suffix, thus attempting to avoid shader caching.
+
+Next, the textures used by the program are generated and uploaded or, if
+they already exist, they may be re-uploaded with either glTexImage*() or
+glTexSubImage*(). Texture parameters (wrapping etc.) are also set.
+
+Then, buffers are generated and (re-)uploaded in a manner similar to that of
+the textures described above. The buffers that may be used are vertex index
+and attribute buffers. If, however, the case decides to use client-side memory
+for index or attribute data, the respective buffer is not created.
+
+Next, the program's uniforms are set, and a case-dependent amount of primitives
+is drawn (note that this amount also affects the size of the buffers). This is
+repeated for a case-dependent number of times. The draw command used can be
+either glDrawElements() or glDrawArrays().
+
+After drawing, the case may delete some textures and/or buffers.
+
+This concludes an iteration. Between iterations, the usual post-iteration
+operations are done by the framework; this generally contains draw buffer
+swapping.
+
+A stress case's behavior is determined by its parameters:
+ + Program context(s)
+   - Vertex and fragment shader sources
+   - Value ranges for each attribute and uniform
+   - Texture information (size, format etc.)
+ + Approximate GPU memory usage limits that the case shouldn't exceed
+   - Texture memory
+   - Buffer memory
+ + Number of draw calls per iteration
+ + Number of triangles per draw call
+ + A set of probabilities that enable the following per-iteration actions:
+   - Re-build program
+   - Re-upload texture
+   - Re-upload buffer
+   - When re-uploading texture, use glTexImage*() instead of glTexSubImage*()
+   - When re-uploading buffer, use glBufferData() instead of glBufferSubData()
+   - Delete texture at end of iteration
+   - Delete buffer at end of iteration
+   - Don't re-use texture, but delay its deletion until memory limit is hit
+   - Don't re-use buffer, but delay its deletion until memory limit is hit
+   - Use random 'target' argument when uploading buffer
+   - Use random 'usage' argument when uploading buffer
+   - Use glDrawArrays() (and no index buffer) instead of glDrawElements()
+   - Use separate buffers for different attributes (instead of one big buffer)
+   (Note: the texture- or buffer-specific actions above are randomized both
+   per-iteration but also per-object.)

@@ -1,0 +1,25 @@
+Import('*')
+
+env = drienv.Clone()
+
+env.Append(CPPDEFINES = ['GALLIUM_RBUG', 'GALLIUM_TRACE'])
+
+env.Prepend(LIBS = [
+    st_dri,
+    radeonwinsys,
+    radeonsi,
+    trace,
+    rbug,
+    mesa,
+    glsl,
+    gallium,
+    COMMON_DRI_DRM_OBJECTS
+])
+
+module = env.SharedLibrary(
+    target ='radeonsi_dri.so',
+    source = 'target.c',
+    SHLIBPREFIX = '',
+)
+
+env.Alias('dri-radeonsi', module)

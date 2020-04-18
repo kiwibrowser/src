@@ -1,0 +1,55 @@
+# Copyright 2015 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+runtime: python27
+vm: true
+api_version: 1
+threadsafe: true
+
+resources:
+  cpu: .5
+  memory_gb: 1.3
+  disk_size_gb: 10
+
+automatic_scaling:
+  min_num_instances: 2
+  max_num_instances: 20
+  cool_down_period_sec: 60
+  cpu_utilization:
+    target_utilization: 0.5
+
+handlers:
+- url: /favicon\.ico
+  static_files: static/favicon.ico
+  upload: static/favicon\.ico
+  secure: always
+
+# Tracing and its dependencies.
+- url: /tracing
+  static_dir: tracing/tracing
+  secure: always
+
+- url: /components
+  static_dir: tracing/third_party/components
+  secure: always
+
+- url: /d3.min.js
+  static_files: tracing/third_party/d3/d3.min.js
+  upload: tracing/third_party/d3/d3\.min\.js
+  secure: always
+
+- url: /gl-matrix-min.js
+  static_files: tracing/third_party/gl-matrix/dist/gl-matrix-min.js
+  upload: tracing/third_party/gl-matrix/dist/gl-matrix-min\.js
+  secure: always
+
+- url: /pako.min.js
+  static_files: tracing/third_party/pako/pako.min.js
+  upload: tracing/third_party/pako/pako\.min\.js
+  secure: always
+
+# Catch-all.
+- url: /.*
+  script: main.app
+  secure: always

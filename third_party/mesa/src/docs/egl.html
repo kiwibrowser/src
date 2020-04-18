@@ -1,0 +1,321 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>Mesa EGL</title>
+  <link rel="stylesheet" type="text/css" href="mesa.css">
+</head>
+<body>
+
+<h1>Mesa EGL</h1>
+
+<p>The current version of EGL in Mesa implements EGL 1.4.  More information
+about EGL can be found at
+<a href="http://www.khronos.org/egl/" target="_parent">
+http://www.khronos.org/egl/</a>.</p>
+
+<p>The Mesa's implementation of EGL uses a driver architecture.  The main
+library (<code>libEGL</code>) is window system neutral.  It provides the EGL
+API entry points and helper functions for use by the drivers.  Drivers are
+dynamically loaded by the main library and most of the EGL API calls are
+directly dispatched to the drivers.</p>
+
+<p>The driver in use decides the window system to support.</p>
+
+<h2>Build EGL</h2>
+
+<ol>
+<li>
+<p>Run <code>configure</code> with the desired client APIs and enable
+the driver for your hardware.  For example</p>
+
+<pre>
+  $ ./configure --enable-gles1 --enable-gles2 \
+                --with-dri-drivers=... \
+                --with-gallium-drivers=...
+</pre>
+
+<p>The main library and OpenGL is enabled by default.  The first two options
+above enables <a href="opengles.html">OpenGL ES 1.x and 2.x</a>.  The last two
+options enables the listed classic and and Gallium drivers respectively.</p>
+
+</li>
+
+<li>Build and install Mesa as usual.</li>
+</ol>
+
+<p>In the given example, it will build and install <code>libEGL</code>,
+<code>libGL</code>, <code>libGLESv1_CM</code>, <code>libGLESv2</code>, and one
+or more EGL drivers.</p>
+
+<h3>Configure Options</h3>
+
+<p>There are several options that control the build of EGL at configuration
+time</p>
+
+<ul>
+<li><code>--enable-egl</code>
+
+<p>By default, EGL is enabled.  When disabled, the main library and the drivers
+will not be built.</p>
+
+</li>
+
+<li><code>--with-egl-driver-dir</code>
+
+<p>The directory EGL drivers should be installed to.  If not specified, EGL
+drivers will be installed to <code>${libdir}/egl</code>.</p>
+
+</li>
+
+<li><code>--enable-gallium-egl</code>
+
+<p>Enable the optional <code>egl_gallium</code> driver.</p>
+
+</li>
+
+<li><code>--with-egl-platforms</code>
+
+<p>List the platforms (window systems) to support.  Its argument is a comma
+seprated string such as <code>--with-egl-platforms=x11,drm</code>.  It decides
+the platforms a driver may support.  The first listed platform is also used by
+the main library to decide the native platform: the platform the EGL native
+types such as <code>EGLNativeDisplayType</code> or
+<code>EGLNativeWindowType</code> defined for.</p>
+
+<p>The available platforms are <code>x11</code>, <code>drm</code>,
+<code>fbdev</code>, and <code>gdi</code>.  The <code>gdi</code> platform can
+only be built with SCons.  Unless for special needs, the build system should
+select the right platforms automatically.</p>
+
+</li>
+
+<li><code>--enable-gles1</code> and <code>--enable-gles2</code>
+
+<p>These options enable OpenGL ES support in OpenGL.  The result is one big
+internal library that supports multiple APIs.</p>
+
+</li>
+
+<li><code>--enable-shared-glapi</code>
+
+<p>By default, <code>libGL</code> has its own copy of <code>libglapi</code>.
+This options makes <code>libGL</code> use the shared <code>libglapi</code>.  This
+is required if applications mix OpenGL and OpenGL ES.</p>
+
+</li>
+
+<li><code>--enable-openvg</code>
+
+<p>OpenVG must be explicitly enabled by this option.</p>
+
+</li>
+
+</ul>
+
+<h2>Use EGL</h2>
+
+<h3>Demos</h3>
+
+<p>There are demos for the client APIs supported by EGL.  They can be found in
+mesa/demos repository.</p>
+
+<h3>Environment Variables</h3>
+
+<p>There are several environment variables that control the behavior of EGL at
+runtime</p>
+
+<ul>
+<li><code>EGL_DRIVERS_PATH</code>
+
+<p>By default, the main library will look for drivers in the directory where
+the drivers are installed to.  This variable specifies a list of
+colon-separated directories where the main library will look for drivers, in
+addition to the default directory.  This variable is ignored for setuid/setgid
+binaries.</p>
+
+<p>This variable is usually set to test an uninstalled build.  For example, one
+may set</p>
+
+<pre>
+  $ export LD_LIBRARY_PATH=$mesa/lib
+  $ export EGL_DRIVERS_PATH=$mesa/lib/egl
+</pre>
+
+<p>to test a build without installation</p>
+
+</li>
+
+<li><code>EGL_DRIVER</code>
+
+<p>This variable specifies a full path to or the name of an EGL driver.  It
+forces the specified EGL driver to be loaded.  It comes in handy when one wants
+to test a specific driver.  This variable is ignored for setuid/setgid
+binaries.</p>
+
+</li>
+
+<li><code>EGL_PLATFORM</code>
+
+<p>This variable specifies the native platform.  The valid values are the same
+as those for <code>--with-egl-platforms</code>.  When the variable is not set,
+the main library uses the first platform listed in
+<code>--with-egl-platforms</code> as the native platform.</p>
+
+<p>Extensions like <code>EGL_MESA_drm_display</code> define new functions to
+create displays for non-native platforms.  These extensions are usually used by
+applications that support non-native platforms.  Setting this variable is
+probably required only for some of the demos found in mesa/demo repository.</p>
+
+</li>
+
+<li><code>EGL_LOG_LEVEL</code>
+
+<p>This changes the log level of the main library and the drivers.  The valid
+values are: <code>debug</code>, <code>info</code>, <code>warning</code>, and
+<code>fatal</code>.</p>
+
+</li>
+
+<li><code>EGL_SOFTWARE</code>
+
+<p>For drivers that support both hardware and software rendering, setting this
+variable to true forces the use of software rendering.</p>
+
+</li>
+</ul>
+
+<h2>EGL Drivers</h2>
+
+<ul>
+<li><code>egl_dri2</code>
+
+<p>This driver supports both <code>x11</code> and <code>drm</code> platforms.
+It functions as a DRI driver loader.  For <code>x11</code> support, it talks to
+the X server directly using (XCB-)DRI2 protocol.</p>
+
+<p>This driver can share DRI drivers with <code>libGL</code>.</p>
+
+</li>
+
+<li><code>egl_gallium</code>
+
+<p>This driver is based on Gallium3D.  It supports all rendering APIs and
+hardwares supported by Gallium3D.  It is the only driver that supports OpenVG.
+The supported platforms are X11, DRM, FBDEV, and GDI.</p>
+
+<p>This driver comes with its own hardware drivers
+(<code>pipe_&lt;hw&gt;</code>) and client API modules
+(<code>st_&lt;api&gt;</code>).</p>
+
+</li>
+
+<li><code>egl_glx</code>
+
+<p>This driver provides a wrapper to GLX.  It uses exclusively GLX to implement
+the EGL API.  It supports both direct and indirect rendering when the GLX does.
+It is accelerated when the GLX is.  As such, it cannot provide functions that
+is not available in GLX or GLX extensions.</p>
+</li>
+</ul>
+
+<h2>Packaging</h2>
+
+<p>The ABI between the main library and its drivers are not stable.  Nor is
+there a plan to stabilize it at the moment.  Of the EGL drivers,
+<code>egl_gallium</code> has its own hardware drivers and client API modules.
+They are considered internal to <code>egl_gallium</code> and there is also no
+stable ABI between them.  These should be kept in mind when packaging for
+distribution.</p>
+
+<p>Generally, <code>egl_dri2</code> is preferred over <code>egl_gallium</code>
+when the system already has DRI drivers.  As <code>egl_gallium</code> is loaded
+before <code>egl_dri2</code> when both are available, <code>egl_gallium</code>
+is disabled by default.</p>
+
+<h2>Developers</h2>
+
+<p>The sources of the main library and the classic drivers can be found at
+<code>src/egl/</code>.  The sources of the <code>egl</code> state tracker can
+be found at <code>src/gallium/state_trackers/egl/</code>.</p>
+
+<p>The suggested way to learn to write a EGL driver is to see how other drivers
+are written.  <code>egl_glx</code> should be a good reference.  It works in any
+environment that has GLX support, and it is simpler than most drivers.</p>
+
+<h3>Lifetime of Display Resources</h3>
+
+<p>Contexts and surfaces are examples of display resources.  They might live
+longer than the display that creates them.</p>
+
+<p>In EGL, when a display is terminated through <code>eglTerminate</code>, all
+display resources should be destroyed.  Similarly, when a thread is released
+throught <code>eglReleaseThread</code>, all current display resources should be
+released.  Another way to destory or release resources is through functions
+such as <code>eglDestroySurface</code> or <code>eglMakeCurrent</code>.</p>
+
+<p>When a resource that is current to some thread is destroyed, the resource
+should not be destroyed immediately.  EGL requires the resource to live until
+it is no longer current.  A driver usually calls
+<code>eglIs&lt;Resource&gt;Bound</code> to check if a resource is bound
+(current) to any thread in the destroy callbacks.  If it is still bound, the
+resource is not destroyed.</p>
+
+<p>The main library will mark destroyed current resources as unlinked.  In a
+driver's <code>MakeCurrent</code> callback,
+<code>eglIs&lt;Resource&gt;Linked</code> can then be called to check if a newly
+released resource is linked to a display.  If it is not, the last reference to
+the resource is removed and the driver should destroy the resource.  But it
+should be careful here because <code>MakeCurrent</code> might be called with an
+uninitialized display.</p>
+
+<p>This is the only mechanism provided by the main library to help manage the
+resources.  The drivers are responsible to the correct behavior as defined by
+EGL.</p>
+
+<h3><code>EGL_RENDER_BUFFER</code></h3>
+
+<p>In EGL, the color buffer a context should try to render to is decided by the
+binding surface.  It should try to render to the front buffer if the binding
+surface has <code>EGL_RENDER_BUFFER</code> set to
+<code>EGL_SINGLE_BUFFER</code>;  If the same context is later bound to a
+surface with <code>EGL_RENDER_BUFFER</code> set to
+<code>EGL_BACK_BUFFER</code>, the context should try to render to the back
+buffer.  However, the context is allowed to make the final decision as to which
+color buffer it wants to or is able to render to.</p>
+
+<p>For pbuffer surfaces, the render buffer is always
+<code>EGL_BACK_BUFFER</code>.  And for pixmap surfaces, the render buffer is
+always <code>EGL_SINGLE_BUFFER</code>.  Unlike window surfaces, EGL spec
+requires their <code>EGL_RENDER_BUFFER</code> values to be honored.  As a
+result, a driver should never set <code>EGL_PIXMAP_BIT</code> or
+<code>EGL_PBUFFER_BIT</code> bits of a config if the contexts created with the
+config won't be able to honor the <code>EGL_RENDER_BUFFER</code> of pixmap or
+pbuffer surfaces.</p>
+
+<p>It should also be noted that pixmap and pbuffer surfaces are assumed to be
+single-buffered, in that <code>eglSwapBuffers</code> has no effect on them.  It
+is desirable that a driver allocates a private color buffer for each pbuffer
+surface created.  If the window system the driver supports has native pbuffers,
+or if the native pixmaps have more than one color buffers, the driver should
+carefully attach the native color buffers to the EGL surfaces, re-route them if
+required.</p>
+
+<p>There is no defined behavior as to, for example, how
+<code>glDrawBuffer</code> interacts with <code>EGL_RENDER_BUFFER</code>.  Right
+now, it is desired that the draw buffer in a client API be fixed for pixmap and
+pbuffer surfaces.  Therefore, the driver is responsible to guarantee that the
+client API renders to the specified render buffer for pixmap and pbuffer
+surfaces.</p>
+
+<h3><code>EGLDisplay</code> Mutex</h3>
+
+The <code>EGLDisplay</code> will be locked before calling any of the dispatch
+functions (well, except for GetProcAddress which does not take an
+<code>EGLDisplay</code>).  This guarantees that the same dispatch function will
+not be called with the sample display at the same time.  If a driver has access
+to an <code>EGLDisplay</code> without going through the EGL APIs, the driver
+should as well lock the display before using it.
+
+</body>
+</html>

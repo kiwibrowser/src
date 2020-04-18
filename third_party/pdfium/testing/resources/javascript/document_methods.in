@@ -1,0 +1,357 @@
+{{header}}
+{{object 1 0}} <<
+  /Type /Catalog
+  /Pages 2 0 R
+  /OpenAction 10 0 R
+>>
+endobj
+{{object 2 0}} <<
+  /Type /Pages
+  /Count 4
+  /Kids [
+    3 0 R
+    4 0 R
+    5 0 R
+    6 0 R
+  ]
+>>
+endobj
+% Page number 0.
+{{object 3 0}} <<
+  /Type /Page
+  /Parent 2 0 R
+  /Resources <<
+    /Font <</F1 15 0 R>>
+  >>
+  /MediaBox [0 0 612 792]
+  /Contents 8 0 R
+>>
+% Page number 1.
+{{object 4 0}} <<
+  /Type /Page
+  /Parent 2 0 R
+  /Resources <<
+    /Font <</F1 15 0 R>>
+  >>
+  /MediaBox [0 0 612 792]
+>>
+% Page number 2.
+{{object 5 0}} <<
+  /Type /Page
+  /Parent 2 0 R
+  /Resources <<
+    /Font <</F1 15 0 R>>
+  >>
+  /MediaBox [0 0 612 792]
+>>
+% Page number 3.
+{{object 6 0}} <<
+  /Type /Page
+  /Parent 2 0 R
+  /Resources <<
+    /Font <</F1 15 0 R>>
+  >>
+  /MediaBox [0 0 612 792]
+>>
+% Contents of the page.
+{{object 8 0}} <<
+  {{streamlen}}
+>>
+stream
+BT
+20 50 Td
+/F1 12 Tf
+(Hello, world!) Tj
+0 50 Td
+endstream
+endobj
+% Info
+{{object 9 0}} <<
+  /Author (Joe Random Author)
+  /Creator (Joe Random Creator)
+>>
+endobj
+% OpenAction action
+{{object 10 0}} <<
+  /Type /Action
+  /S /JavaScript
+  /JS 11 0 R
+>>
+endobj
+% JS program to exexute
+{{object 11 0}} <<
+  {{streamlen}}
+>>
+stream
+function expect(str, expected) {
+  try {
+    var result = eval(str);
+    if (result == expected) {
+      app.alert('PASS: ' + str + ' = ' + result);
+    } else {
+      app.alert('FAIL: ' + str + ' = ' + result + ', expected = ' + expected);
+    }
+  } catch (e) {
+    app.alert('ERROR: ' + e.toString());
+  }
+}
+
+function expectError(str) {
+  try {
+    var result = eval(str);
+    app.alert('FAIL: ' + str + ' = ' + result + ', expected to throw error');
+  } catch (e) {
+    app.alert('PASS: ' + str + ' threw error ' + e.toString());
+  }
+}
+
+// "Unsupported" methods are present in the document object, but not
+// implemented. They always return |undefined| regardless of arguments.
+function testUnsupported(str) {
+  expect('typeof ' + str, 'function');
+  expect(str + '()', undefined);
+  expect(str + '(1, 2, "clams", [1, 2, 3])', undefined);
+}
+
+function testAddIcon() {
+   // Method is present.
+   expect('typeof this.addIcon', 'function');
+
+   // Method takes exactly two arguments.
+   expectError('this.addIcon()');
+   expectError('this.addIcon(1)');
+   expectError('this.addIcon(1, 2, 3)');
+
+   // Second argument must actually be an icon.
+   expectError('this.addIcon("myicon", 3)');
+   expectError('this.addIcon("myicon", undefined)');
+
+   // TODO(tsepez): test success cases.
+}
+
+function testCalculateNow() {
+   // Method is present.
+   expect('typeof this.calculateNow', 'function');
+
+   // TODO(tsepez): test with no permissions.
+   // TODO(tsepez): test success cases.
+}
+
+function testGetAnnot() {
+   // Method is present.
+   expect('typeof this.getAnnot', 'function');
+
+   // Method needs two arguments.
+   expectError('this.getAnnot()');
+   expectError('this.getAnnot(0)');
+   expectError('this.getAnnot(0, "test", 0)');
+
+   // TODO(tonikitoo): test success cases.
+}
+
+function testGetAnnots() {
+   // Method is present.
+   expect('typeof this.getAnnots', 'function');
+
+   // TODO(tonikitoo): test success cases.
+}
+
+function testGetField() {
+   // Method is present.
+   expect('typeof this.getField', 'function');
+
+   // Method needs at least one argument.
+   expectError('this.getField()');
+
+   // TODO(tsepez): test success cases.
+}
+
+function testGetIcon() {
+   // Method is present.
+   expect('typeof this.getIcon', 'function');
+
+   // Method needs exactly one argument.
+   expectError('this.getIcon()');
+   expectError('this.getIcon(1, 2)');
+
+  // TODO(tsepez): test success cases.
+}
+
+function testGetNthFieldName() {
+  // Method is present.
+  expect('typeof this.getNthFieldName', 'function');
+
+  // Method needs at least one argument.
+  expectError('this.getNthFieldName()');
+
+  // Argument can not be negative.
+  expectError('this.getNthFieldName(-1)');
+
+  // TODO(tsepez): test success cases.
+}
+
+function testGetPageNthWord() {
+  // Method is present.
+  expect('typeof this.getPageNthWord', 'function');
+
+  // Method accepts any number of parameters.
+  expect('this.getPageNthWord(0, 0, true, "clams", [1, 2])', 'Hello,');
+
+  // Arguments can't be negative or out of range.
+  expectError('this.getPageNthWord(-1, 0, true)');
+  expectError('this.getPageNthWord(6, 0, true)');
+
+  // TODO(tsepez): test with no permissions.
+  // TODO(tsepez): test success cases.
+}
+
+function testGetPageNthWordQuads() {
+   // Method is present.
+   expect('typeof this.getPageNthWordQuads', 'function');
+
+  // TODO(tsepez): test with no permissions.
+  // TODO(tsepez): test success cases.
+}
+
+function testGetPageNumWords() {
+   // Method is present.
+   expect('typeof this.getPageNumWords', 'function');
+
+  // Method accepts any number of parameters.
+  expect('this.getPageNumWords(0, "clams", [1, 2])', 2);
+
+  // Arguments can't be negative or out of range.
+  expectError('this.getPageNumWords(-1)');
+  expectError('this.getPageNumWords(6)');
+
+  // TODO(tsepez): test with no permissions.
+  // TODO(tsepez): test success cases.
+}
+
+function testGetPrintParams() {
+   // Method is present.
+   expect('typeof this.getPrintParams', 'function');
+
+  // TODO(tsepez): test success cases.
+}
+
+function testGotoNamedDest() {
+   // Method is present.
+   expect('typeof this.gotoNamedDest', 'function');
+
+   // Method needs exactly one argument.
+   expectError('this.gotoNamedDest()');
+   expectError('this.gotoNamedDest(1, 2)');
+
+   // TODO(tonikitoo): test success cases.
+}
+
+function testMailDoc() {
+   // Method is present.
+   expect('typeof this.mailDoc', 'function');
+
+  // TODO(tsepez): test with no permissions.
+  // TODO(tsepez): test success cases.
+}
+
+function testMailForm() {
+   // Method is present.
+   expect('typeof this.mailForm', 'function');
+
+  // TODO(tsepez): test with no permissions.
+  // TODO(tsepez): test success cases.
+}
+
+function testPrint() {
+   // Method is present.
+   expect('typeof this.print', 'function');
+
+  // TODO(tsepez): test success cases.
+}
+
+function testRemoveField() {
+  // Method is present.
+  expect('typeof this.removeField', 'function');
+
+  // Method requires at least one argument.
+  expectError('this.removeField()');
+
+  // TODO(tsepez): test with no permissions.
+  // TODO(tsepez): test success cases.
+}
+
+function testResetForm() {
+   // Method is present.
+   expect('typeof this.resetForm', 'function');
+
+  // TODO(tsepez): test with no permissions.
+  // TODO(tsepez): test success cases.
+}
+
+function testSubmitForm() {
+   // Method is present.
+   expect('typeof this.submitForm', 'function');
+
+  // Method requires at least one argument.
+  expectError('this.submitForm()');
+
+  // TODO(tsepez): test success cases.
+}
+
+try {
+  app.alert('*** Testing Unsupported Methods ***');
+  testUnsupported('this.addAnnot');
+  testUnsupported('this.addField');
+  testUnsupported('this.addLink');
+  testUnsupported('this.closeDoc');
+  testUnsupported('this.createDataObject');
+  testUnsupported('this.deletePages');
+  testUnsupported('this.exportAsFDF');
+  testUnsupported('this.exportAsText');
+  testUnsupported('this.exportAsXFDF');
+  testUnsupported('this.extractPages');
+  testUnsupported('this.getAnnot3D');
+  testUnsupported('this.getLinks');
+  testUnsupported('this.getOCGs');
+  testUnsupported('this.getPageBox');
+  testUnsupported('this.getURL');
+  testUnsupported('this.importAnFDF');
+  testUnsupported('this.importAnXFDF');
+  testUnsupported('this.importTextData');
+  testUnsupported('this.insertPages');
+  testUnsupported('this.removeIcon');
+  testUnsupported('this.replacePages');
+  testUnsupported('this.saveAs');
+  testUnsupported('this.syncAnnotScan');
+
+  app.alert('*** Testing Supported Methods ***');
+  testAddIcon();
+  testCalculateNow();
+  testGetAnnot();
+  testGetAnnots();
+  testGetField();
+  testGetIcon();
+  testGetNthFieldName();
+  testGetPageNthWord();
+  testGetPageNthWordQuads();
+  testGetPageNumWords();
+  testGetPrintParams();
+  testGotoNamedDest();
+  testMailDoc();
+  testMailForm();
+  testPrint();
+  testRemoveField();
+  testResetForm();
+  testSubmitForm();
+} catch (e) {
+  app.alert('FATAL: ' + e.toString());
+}
+endstream
+endobj
+{{xref}}
+trailer <<
+  /Root 1 0 R
+  /Info 9 0 R
+>>
+{{startxref}}
+%%EOF

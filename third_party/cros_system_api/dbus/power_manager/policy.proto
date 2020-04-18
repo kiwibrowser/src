@@ -1,0 +1,168 @@
+// Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package power_manager;
+
+// Power management policy sent from Chrome to powerd.
+//
+// New settings take effect immediately.  For example, if |idle_ms| is
+// currently set to 15 minutes, the user has been inactive for 12 minutes,
+// and a message setting |idle_ms| to 10 minutes is received,
+// |idle_action| will be performed immediately.  If |lid_closed_action| is
+// DO_NOTHING, the lid is closed, and |lid_closed_action| is then set to
+// SHUT_DOWN, the system will shut down immediately.
+//
+// In the case of an unset field, powerd will restore a default value (as
+// opposed to continuing to use a value set by a previous message).  An
+// empty message will restore all settings to their defaults.
+//
+// Next ID to use: 19
+message PowerManagementPolicy {
+
+  enum Action {
+    // Suspends the system.  Chrome may lock the screen first depending on
+    // its "Require password to wake from sleep" setting and the type of
+    // user that is logged in.
+    SUSPEND = 0;
+
+    // Ends the current user's session.  Does nothing at the login screen.
+    STOP_SESSION = 1;
+
+    // Shuts the system down.
+    SHUT_DOWN = 2;
+
+    // Does nothing.
+    DO_NOTHING = 3;
+
+    // Next value to use: 4
+  }
+
+  message Delays {
+    // Delay after which |idle_action| is performed, in milliseconds.  The
+    // inactivity timeout is reset in response to things like user activity
+    // (including the lid being opened, the power source changing, an
+    // external display being connected, etc.), resuming from suspend, or
+    // the session state changing.
+    optional int64 idle_ms = 1;
+
+    // Delay after which the screen will be turned off, in milliseconds.  0
+    // disables turning the screen off.  Capped to be less than or equal to
+    // |idle_ms|.  The same events that cause the inactivity timeout to be
+    // reset cause the screen to be turned back on.
+    optional int64 screen_off_ms = 2;
+
+    // Delay after which the screen will be dimmed, in milliseconds.  0
+    // disables dimming.  Capped to be less than or equal to
+    // |screen_off_ms| if |screen_off_ms| is set or less than or equal to
+    // |idle_ms| otherwise.  The same events that cause the inactivity
+    // timeout to be reset cause the screen to be undimmed.
+    optional int64 screen_dim_ms = 3;
+
+    // Delay after which the screen will be locked, in milliseconds.  0
+    // disables locking.  Capped to be less than |idle_ms|.  Note that
+    // lock-on-suspend is implemented within Chrome; this delay is provided
+    // for cases where the screen must be locked a significant amount of
+    // time before the device is suspended.
+    optional int64 screen_lock_ms = 4;
+
+    // Delay after which an IdleActionImminent signal will be emitted, in
+    // milliseconds. If the inactivity timeout is then reset before the idle
+    // action is performed, an IdleActionDeferred signal will be emitted. If the
+    // idle delay is changed after IdleActionImminent has been emitted, an
+    // additional signal will be emitted. 0 disables the signal. Capped to be
+    // less than or equal to |idle_ms|.
+    optional int64 idle_warning_ms = 5;
+
+    // Next ID to use: 6
+  }
+
+  // Action to perform when |idle_ms| (see Delays) is reached without any
+  // user activity while the system is on AC power.
+  optional Action ac_idle_action = 1;
+
+  // Idle action when the system is on battery power.
+  optional Action battery_idle_action = 11;
+
+  // Action to perform when the lid is closed.
+  optional Action lid_closed_action = 2;
+
+  // Delays used while the system is on AC power.
+  optional Delays ac_delays = 3;
+
+  // Delays used while the system is on battery power.
+  optional Delays battery_delays = 4;
+
+  // True if at least one full-brightness, dimmed-but-on, or system-level wake
+  // lock is currently held.
+  optional bool screen_wake_lock = 16;
+  optional bool dim_wake_lock = 17;
+  optional bool system_wake_lock = 18;
+
+  // Should audio activity be honored?  If true, audio activity will
+  // prevent |idle_action| from being performed, although the screen
+  // dimming, off, and lock delays will still be in effect.  Once the audio
+  // has stopped, |idle_action| will be performed if no user or audio
+  // activity is observed for |idle_ms|.
+  optional bool use_audio_activity = 5;
+
+  // Should video activity be honored?  If true, video activity will
+  // prevent |idle_action| from being performed and the screen from being
+  // automatically dimmed, turned off, or locked.  All these timeouts will
+  // be reset once the video has stopped.
+  optional bool use_video_activity = 6;
+
+  // Backlight brightness in the range [0.0, 100.0] to use when on AC or battery
+  // power. When a message containing these fields is received, the backlight is
+  // set to the requested brightness. The updated brightness persists until the
+  // user manually changes it or a new policy containing the currently-relevant
+  // field is received.
+  optional double ac_brightness_percent = 13;
+  optional double battery_brightness_percent = 14;
+
+  // Factor by which |screen_dim_ms| will be scaled while the device is in
+  // presentation mode.  Other delays' distances from |screen_dim_ms| are
+  // preserved after scaling.  A value of 1.0 (or less) leaves delays
+  // unchanged. If the conditions used for both this field and
+  // |user_activity_screen_dim_delay_factor| are true, this field takes
+  // precedence.
+  optional double presentation_screen_dim_delay_factor = 10;
+
+  // Factor by which |screen_dim_ms| will be scaled if user activity is
+  // observed while the screen is dimmed or soon after it is turned off.
+  // Other delays' distances from |screen_dim_ms| are preserved after
+  // scaling.  The delays will return to their original values at the end
+  // of the current user session.  A value of 1.0 (or less) or an unset
+  // |screen_dim_ms| delay leaves delays unchanged.
+  optional double user_activity_screen_dim_delay_factor = 9;
+
+  // If true, instructs the power manager not to perform any
+  // delay-triggered actions while in a user session until user activity
+  // has been observed. After activity is seen, the inactivity timeout
+  // starts. The actions are deferred again after a new session starts.
+  // Note that this has no immediate effect if activity has already been
+  // seen within an already-started session (activity that took place
+  // before the policy change is honored) and also that it has no effect at
+  // the login screen.
+  optional bool wait_for_initial_user_activity = 12;
+
+  // If true, force the panel backlight to a non-zero brightness level in
+  // response to user activity if it was previously manually set to zero by the
+  // user.
+  optional bool force_nonzero_brightness_for_user_activity = 15;
+
+  // Human-readable description of the factors contributing to this policy.
+  // Logged by the power manager to aid in debugging.
+  optional string reason = 8;
+}
+
+// Message included in IdleActionImminent signals.
+message IdleActionImminent {
+  // Time until the idle action will be performed as given by
+  // base::TimeDelta::ToInternalValue().
+  optional int64 time_until_idle_action = 1;
+}

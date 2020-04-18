@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<!--
+Copyright 2016 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<html>
+<head>
+  <link rel="import" href="/dashboard/static/base.html">
+  <link rel="import" href="/dashboard/elements/nav-bar.html">
+  <title>Edit Anomaly Configs</title>
+  <script>
+    'use strict';
+    // This should be an Object mapping anomaly config names to Objects
+    // which have the properties "config" and "patterns".
+    var ANOMALY_CONFIG_DATA = {{anomaly_config_json | safe}};
+    var XSRF_TOKEN = '{{xsrf_token}}';
+
+    /**
+     * Initializes the event listeners for events on the form.
+     */
+    function initialize() {
+      var addListener = function(elementId, eventName, callback) {
+        var element = document.getElementById(elementId);
+        element.addEventListener(eventName, callback, true);
+      };
+      addListener('edit-name', 'change', onEditConfigSelect);
+      addListener('edit-name', 'focus', onEditConfigSelect);
+      addListener('add-name', 'focus', onAddConfigFocus);
+    }
+
+    /**
+     * Updates the interface when a new anomaly config is selected to be edited.
+     * @param {Event} e The change event for the select.
+     */
+    function onEditConfigSelect(e) {
+      // Update the radio, which indicates we're editing an existing config.
+      document.getElementById('edit-radio').checked = true;
+
+      // Get the config information and fill in the text areas.
+      var dropDown = e.target;
+      var selectedConfigName = dropDown.options[dropDown.selectedIndex].value;
+      var selectedConfig = window.ANOMALY_CONFIG_DATA[selectedConfigName];
+      var configTextarea = document.getElementById('config-textarea');
+      var patternsTextarea = document.getElementById('patterns-textarea');
+      configTextarea.value = selectedConfig['config'];
+      patternsTextarea.value = selectedConfig['patterns'];
+    }
+
+    /**
+     * Updates the interface when the user focuses the add config name field.
+     * @param {Event} _ The focus event for the input, not used.
+     */
+    function onAddConfigFocus(_) {
+      document.getElementById('add-radio').checked = true;
+    }
+
+    window.addEventListener('DOMContentLoaded', initialize, true);
+  </script>
+</head>
+<body>
+  <nav-bar></nav-bar>
+  <h1>Edit Anomaly Configs</h1>
+
+  <p><b>Note</b>: If the test path patterns of two different anomaly
+  threshold configurations both match some test, then the anomaly config
+  pattern whose name comes first according to lexicographical sort
+  order will apply. You can use this to create "higher priority" anomaly
+  threshold configurations which applies to a smaller subset of tests.</p>
+
+  <p><b>Warning</b>: If a test path pattern matches too many tests,
+  this page may time out. If you try to add a test path pattern,
+  e.g. <code>ChromiumPerf/*/foo*/*/*</code>, and it times out,
+  try separating the pattern into multiple patterns that match
+  fewer tests, e.g. <code>ChromiumPerf/*/foo.bar/*/*</code> and
+  <code>ChromiumPerf/*/foo.baz/*/*.</code></p>
+
+  <form method="POST">
+    {{xsrf_input | safe}}
+    <label>
+      <input type="radio" name="add-edit" id="add-radio" value="add" checked>
+      Add a new config named:
+    </label>
+    <input type="text" name="add-name" id="add-name"><br>
+    <label>
+      <input type="radio" name="add-edit" id="edit-radio" value="edit">
+      Edit existing config:
+    </label>
+    <select name="edit-name" id="edit-name">
+    {% for name in anomaly_config_names %}
+      <option value="{{name}}">{{name}}</option>
+    {% endfor %}
+    </select><br>
+    <textarea name="config" id="config-textarea"
+              rows="8" cols="72">{}</textarea><br>
+    <textarea name="patterns" id="patterns-textarea"
+              rows="20" cols="72"></textarea><br>
+    <input type="submit">
+  </form>
+</body>
+</html>

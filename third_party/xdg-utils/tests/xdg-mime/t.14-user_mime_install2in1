@@ -1,0 +1,61 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_user_mime_install2in1() {
+
+## Begin the test.
+test_start "$FUNCNAME: install user mime type 2 in 1 file"
+test_purpose "Verify that new mime types get installed into the user space correctly when they are in the same file"
+
+# Dependencies section
+test_init
+
+require_notroot
+
+use_file "$XDG_TEST_DIR/xdg-mime/data/test2mime.xml" INPUT_FILE
+edit_file "$INPUT_FILE" "x-xdg-testpattern"  TEST1_MIME "x-xdg-01-$XDG_TEST_ID"
+edit_file "$INPUT_FILE" "x-xdg-test2pattern" TEST2_MIME "x-xdg-02-$XDG_TEST_ID"
+
+assert_file "$INPUT_FILE"
+echo "text/$TEST1_MIME" >out.expect1
+echo "text/$TEST2_MIME" >out.expect2
+
+echo "Some text." >testfile.xdg1test
+echo "Some text." >testfile.xdg2test
+assert_file testfile.xdg1test
+assert_file testfile.xdg2test
+
+
+# Verify the test type is not installed already.
+assert_exit 0 xdg-mime query filetype testfile.xdg1test
+assert_stdout 
+mv out.stdout out.save1
+assert_exit 1 diff out.save1 out.expect1
+
+# Test steps section
+test_procedure
+
+assert_exit 0 xdg-mime install --mode user "$INPUT_FILE"
+assert_nostdout
+assert_nostderr
+
+sleep 1
+
+assert_exit 0 xdg-mime query filetype testfile.xdg1test
+assert_stdout out.expect1
+assert_nostderr
+
+assert_exit 0 xdg-mime query filetype testfile.xdg2test
+assert_stdout out.expect2
+assert_nostderr
+
+# Cleanup
+xdg-mime uninstall --mode user "$INPUT_FILE" >/dev/null 2>&1
+
+test_result
+} 
+run_test test_user_mime_install2in1 

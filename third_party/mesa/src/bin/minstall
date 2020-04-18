@@ -1,0 +1,112 @@
+#!/bin/sh
+
+
+# A minimal replacement for 'install' that supports installing symbolic links.
+# Only a limited number of options are supported:
+# -d dir          Create a directory
+# -m mode         Sets a file's mode when installing
+
+
+# If these commands aren't portable, we'll need some "if (arch)" type stuff
+SYMLINK="ln -s"
+MKDIR="mkdir -p"
+RM="rm -f"
+
+MODE=""
+
+if [ "$1" = "-d" ] ; then
+	# make a directory path
+	$MKDIR "$2"
+	exit 0
+fi
+
+if [ "$1" = "-m" ] ; then
+	# set file mode
+	MODE=$2
+	shift 2
+fi
+
+# install file(s) into destination
+if [ $# -ge 2 ] ; then
+
+	# Last cmd line arg is the dest dir
+	for FILE in $@ ; do
+		DESTDIR="$FILE"
+	done
+
+	# Loop over args, moving them to DEST directory
+	I=1
+	for FILE in $@ ; do
+		if [ $I = $# ] ; then
+			# stop, don't want to install $DEST into $DEST
+			exit 0
+		fi
+
+                DEST=$DESTDIR
+
+                # On CYGWIN, because DLLs are loaded by the native Win32 loader,
+                # they are installed in the executable path.  Stub libraries used
+                # only for linking are installed in the library path
+                case `uname` in
+                    CYGWIN*)
+                        case $FILE in
+                            *.dll)
+                                DEST="$DEST/../bin"
+                                ;;
+                            *)
+                                ;;
+                        esac
+	                ;;
+                    *)
+                        ;;
+                esac
+
+		PWDSAVE=`pwd`
+
+		# determine file's type
+		if [ -h "$FILE" ] ; then
+			#echo $FILE is a symlink
+			# Unfortunately, cp -d isn't universal so we have to
+			# use a work-around.
+
+			# Use ls -l to find the target that the link points to
+			LL=`ls -l "$FILE"`
+			for L in $LL ; do
+				TARGET=$L
+			done
+			#echo $FILE is a symlink pointing to $TARGET
+
+			FILE=`basename "$FILE"`
+			# Go to $DEST and make the link
+			cd "$DEST"        # pushd
+				$RM "$FILE"
+				$SYMLINK "$TARGET" "$FILE"
+			cd "$PWDSAVE"     # popd
+
+		elif [ -f "$FILE" ] ; then
+			#echo "$FILE" is a regular file
+			# Only copy if the files differ
+			if ! cmp -s $FILE $DEST/`basename $FILE`; then
+				$RM "$DEST/`basename $FILE`"
+				cp "$FILE" "$DEST"
+			fi
+			if [ $MODE ] ; then
+				FILE=`basename "$FILE"`
+				chmod $MODE "$DEST/$FILE"
+			fi
+		else
+			echo "Unknown type of argument: " "$FILE"
+			exit 1
+		fi
+
+		I=`expr $I + 1`
+	done
+
+	exit 0
+fi
+
+# If we get here, we didn't find anything to do
+echo "Usage:"
+echo "  install -d dir                      Create named directory"
+echo "  install [-m mode] file [...] dest   Install files in destination"
+

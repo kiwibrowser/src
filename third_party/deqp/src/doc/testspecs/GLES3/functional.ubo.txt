@@ -1,0 +1,78 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Uniform Buffer Object tests
+
+Tests:
+ + dEQP-GLES3.functional.ubo.*
+ + dEQP-GLES3.functional.shaders.linkage.uniform_block*
+ + dEQP-GLES3.functional.shaders.declarations.invalid_declarations.uniform_block*
+
+Includes:
+ + Basic uniform buffer object usage
+   - Binding and unbinding uniform buffers
+   - Writing uniform buffer data with glBufferData()
+ + Binding uniform buffers to uniform blocks
+   - glBindBufferRange()
+   - glBindBufferBase()
+   - glUniformBlockBinding()
+ + Querying uniform block memory layout
+ + std140 memory layout
+ + Uniform blocks GLSL
+   - Basic scalar, vector and matrix types in uniform blocks
+   - Samplers in uniform blocks - as negative case!
+   - Structures and arrays in uniform blocks
+   - Uniform block instance names
+   - Uniform block arrays
+   - Layout qualifiers: shared, packed, std140, row_major, column_major
+   - Negative tests for syntax and semantic errors in declarations
+   - Negative tests for uniform block linking
+   - Unused uniforms in uniform blocks
+ + Sharing uniform blocks between vertex and fragment shaders
+
+Excludes:
+ + Mapping uniform buffers
+   - Will be covered in buffer mapping tests
+ + Negative tests for uniform buffer API
+   - Will be covered in negative API tests
+
+Description:
+
+Uniform block tests define a set of uniforms and uniform blocks. In addition two
+subsets are computed: uniforms accessed from vertex shader and uniforms accessed
+from fragment shader respectively. The uniform sets are either specified manually
+or choosen randomly. Values for each uniform are choosen.
+
+Shaders are generated based on uniform declarations and use set. Each uniform that
+is in "used set" is read and compared against expected value in the shader. Final
+result is a boolean value: true if all uniforms contained expected values and false
+otherwise. Vertex shader result controls green channel: output is 1 if values were
+correct and 0 otherwise. Fragment shader result controls blue channel in the same
+manner.
+
+Shaders are compiled and linked together. Uniform block layout is queried and
+values are stored into one or more uniform buffers. If std140 memory layout is used,
+a reference memory layout is used instead and queries are made to validate the
+layout computed by implementation prior to issuing any draw calls.
+
+A single quad consisting of two triangles is rendered and resulting framebuffer
+pixels are checked. If all pixels are white and uniform layout queries didn't
+return any unexpected values or errors, test case passes.
+
+Negative tests for compiler and linker use a pair of hand-written shaders. Compile
+or link is verified to return failure.

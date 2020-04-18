@@ -1,0 +1,45 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Shadow compare tests
+
+Tests:
+ + dEQP-GLES3.functional.texture.shadow.*
+
+Includes:
+ + All depth comparison modes
+ + Texture formats with depth and depth_stencil internal formats
+ + All texture filtering modes with minification and magnification.
+ + 2D, 2D array and cube map textures
+
+Excludes:
+
+Description:
+
+Shadow compare tests render two adjecent quads. Left one has texture
+coordinates choosed to trigger minification while right one tests
+magnification. Reference value for depth comparison is uniform.
+
+The rendered image is compared against a reference that is produced by
+reference renderer. A simple threshold-based comparison is used.
+
+In tests where filtering mode is not NEAREST or NEAREST_MIPMAP_NEAREST
+all r values are accepted if reference image contains r that is not
+exactly 0 or 1. Reference is computed using executing comparisons
+for all texels and combining results in same fashion as in regular
+texture lookups.

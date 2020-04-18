@@ -1,0 +1,67 @@
+{{header}}
+{{object 1 0}} <<
+  /Type /Catalog
+  /Pages 2 0 R
+  /OpenAction 10 0 R
+>>
+endobj
+{{object 2 0}} <<
+  /Type /Pages
+  /Count 1
+  /Kids [
+    3 0 R
+  ]
+>>
+endobj
+% Page number 0.
+{{object 3 0}} <<
+  /Type /Page
+  /Parent 2 0 R
+  /Resources <<
+    /Font <</F1 15 0 R>>
+  >>
+  /Contents [21 0 R]
+  /MediaBox [0 0 612 792]
+>>
+% OpenAction action
+{{object 10 0}} <<
+  /Type /Action
+  /S /JavaScript
+  /JS 11 0 R
+>>
+endobj
+% JS program to exexute
+{{object 11 0}} <<
+  {{streamlen}}
+>>
+stream
+app.alert("This test attempts to make array buffers until exhausted");
+
+function test(size) {
+  var i, ab, ia;
+  app.alert("Trying size " + size);
+  ab = new ArrayBuffer(size);
+  ia = new Int32Array(ab);
+  for (i = 0; i < size / 4; ++i) {
+    ia[i] = i;
+  }
+  for (i = 0; i < size / 4; ++i) {
+    if (ia[i] != i) {
+      throw('aaaaaaah');
+    }
+  }
+}
+
+try {
+  test(1000);
+  test(2000000);
+  test(4000000000);
+} catch (e) {
+  app.alert("Caught error " + e);
+}
+endstream
+endobj
+{{xref}}
+{{trailer}}
+{{startxref}}
+%%EOF

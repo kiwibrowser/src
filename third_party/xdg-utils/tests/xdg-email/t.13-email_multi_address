@@ -1,0 +1,43 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_multi_address() {
+test_start "$FUNCNAME: verify multiple to/cc/bcc arguments work"
+
+addr="$XDG_TEST_SHORTID@portland.freedesktop.org"
+TO1="to-1-$addr"
+TO2="to-2-$addr"
+CC1="cc-1-$addr"
+CC2="cc-2-$addr"
+BCC1="bcc-1-$addr"
+BCC2="bcc-2-$addr"
+
+test_init
+
+require_notroot
+## Require a running X server
+assert_display
+
+test_procedure
+
+assert_exit 0 xdg-email --cc "$CC1" --bcc "$BCC1" \
+ --cc "$CC2" --bcc "$BCC2" --subject 'I am the subject' \
+ --body 'I am the body' "$TO1" "$TO2"
+
+assert_nostdout
+assert_nostderr
+
+assert_interactive "Did an email open to both '$TO1' and '$TO2'?" y
+assert_interactive "Are both '$CC1' and '$CC2' CC'd?" y
+assert_interactive "Are both '$BCC1' and '$BCC2' BCC'd?" y
+
+assert_interactive "Please close any email windows opened by the test." C
+
+test_result
+}
+
+repeat_test test_multi_address 1 PRE "t"

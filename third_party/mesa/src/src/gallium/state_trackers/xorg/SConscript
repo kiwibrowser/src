@@ -1,0 +1,42 @@
+#######################################################################
+# SConscript for xorg state_tracker
+
+Import('*')
+
+env = env.Clone()
+
+env.Append(CPPPATH = [
+    '#/src/mesa',
+])
+
+env.PkgUseModules(['DRM', 'XORG'])
+
+if env['HAVE_KMS']:
+    env.Append(CPPDEFINES = ['HAVE_LIBKMS'])
+    env.PkgUseModules(['KMS'])
+
+conf = env.Configure()
+
+if conf.CheckHeader('X11/extensions/dpmsconst.h'):
+    env.Append(CPPDEFINES = [('HAVE_XEXTPROTO_71', '1')])
+
+conf.Finish()
+
+sources = [
+    'xorg_composite.c',
+    'xorg_crtc.c',
+    'xorg_dri2.c',
+    'xorg_driver.c',
+    'xorg_exa.c',
+    'xorg_exa_tgsi.c',
+    'xorg_output.c',
+    'xorg_renderer.c',
+    'xorg_xv.c',
+    'xorg_xvmc.c',
+]
+
+st_xorg = env.ConvenienceLibrary(
+    target = 'st_xorg',
+    source = sources,
+)
+Export('st_xorg')

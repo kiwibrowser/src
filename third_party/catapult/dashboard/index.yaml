@@ -1,0 +1,318 @@
+# Datastore Composite Index Configuration.
+# https://developers.google.com/appengine/docs/python/config/indexconfig
+#
+# Below, most indexes come in pairs; one with the internal_only property,
+# one without. This is because all queries when the user is not logged in
+# have the filter internal_only == False.
+#
+# Composite index properties must be listed differently depending on how the
+# properties are used. There are three main ways to use properties in a query:
+#   (1) In an equality filter.
+#   (2) In an inequality filter.
+#   (3) In a sort order.
+# The properties below must be listed in this order. The "direction" only needs
+# to be specified for properties used for sort order.
+#
+# To update the indexes in production after editing them here, you must run
+# appcfg.py vacuum_indexes or appcfg.py update_indexes.
+
+indexes:
+
+# Used in main.py when fetching top improvements/regressions in past N days.
+- kind: Anomaly
+  properties:
+  - name: sheriff
+  - name: timestamp
+- kind: Anomaly
+  properties:
+  - name: internal_only
+  - name: sheriff
+  - name: timestamp
+
+# Used in alerts.py for fetching recent un-triaged regressions for one sheriff.
+- kind: Anomaly
+  properties:
+  - name: bug_id
+  - name: is_improvement
+  - name: recovered
+  - name: sheriff
+  - name: timestamp
+    direction: desc
+- kind: Anomaly
+  properties:
+  - name: internal_only
+  - name: bug_id
+  - name: is_improvement
+  - name: recovered
+  - name: sheriff
+  - name: timestamp
+    direction: desc
+
+# Used in alerts.py for fetching recent un-triaged anomalies, both regressions
+# and improvements, for one sheriff, i.e. when the improvements button is on.
+- kind: Anomaly
+  properties:
+  - name: bug_id
+  - name: recovered
+  - name: sheriff
+  - name: timestamp
+    direction: desc
+- kind: Anomaly
+  properties:
+  - name: internal_only
+  - name: bug_id
+  - name: recovered
+  - name: sheriff
+  - name: timestamp
+    direction: desc
+
+# Used in alerts.py for fetching recent regressions for one sheriff, regardless
+# of triaged vs un-triaged status, i.e. when the triaged button is on.
+- kind: Anomaly
+  properties:
+  - name: is_improvement
+  - name: sheriff
+  - name: timestamp
+    direction: desc
+- kind: Anomaly
+  properties:
+  - name: internal_only
+  - name: is_improvement
+  - name: sheriff
+  - name: timestamp
+    direction: desc
+
+# Used in alerts.py for fetching recent anomalies for one sheriff, including
+# improvements and triaged, i.e. both improvements and triaged buttons are on.
+- kind: Anomaly
+  properties:
+  - name: sheriff
+  - name: timestamp
+    direction: desc
+- kind: Anomaly
+  properties:
+  - name: internal_only
+  - name: sheriff
+  - name: timestamp
+    direction: desc
+
+# Used in group_report.py when querying for anomalies around a revision.
+# No composite index is required without internal_only because then the
+# query uses only one (indexed) property, end_revision.
+- kind: Anomaly
+  properties:
+  - name: internal_only
+  - name: end_revision
+
+# Used in speed_releasing.py to find anomalies that match a specific master
+# and benchmark and are between a specified range (usually a milestone).
+- kind: Anomaly
+  properties:
+  - name: benchmark_name
+  - name: master_name
+  - name: end_revision
+- kind: Anomaly
+  properties:
+  - name: internal_only
+  - name: benchmark_name
+  - name: master_name
+  - name: end_revision
+
+# Used in benchmark_health_report for querying benchmark by name
+# and master.
+- kind: Anomaly
+  properties:
+  - name: benchmark_name
+  - name: is_improvement
+  - name: master_name
+  - name: timestamp
+    direction: desc
+
+- kind: Anomaly
+  properties:
+  - name: benchmark_name
+  - name: internal_only
+  - name: is_improvement
+  - name: master_name
+  - name: timestamp
+    direction: desc
+
+# Used in API to query for named benchmarks.
+- kind: Anomaly
+  properties:
+  - name: benchmark_name
+  - name: sheriff
+  - name: timestamp
+    direction: desc
+
+- kind: Anomaly
+  properties:
+  - name: benchmark_name
+  - name: internal_only
+  - name: sheriff
+  - name: timestamp
+    direction: desc
+
+# Used to query for "My Jobs".
+- kind: Job
+  properties:
+  - name: user
+  - name: created
+    direction: desc
+
+# Might be unused!
+# This index would enable querying for points for a particular test,
+# filtering or sorting by revision, and possibly doing a projection
+# query including value.
+- kind: Row
+  properties:
+  - name: parent_test
+  - name: revision
+  - name: value
+
+# Used in find_anomalies.GetRowsToAnalyze when getting latest points,
+# with projection query for properties revision and value.
+- kind: Row
+  properties:
+  - name: parent_test
+  - name: revision
+    direction: desc
+  - name: value
+
+# Used in graph_revisions.py to do a projection query for timestamp, revision
+# and value for points from a particular test.
+- kind: Row
+  properties:
+  - name: parent_test
+  - name: revision
+  - name: timestamp
+  - name: value
+
+# Used in several modules (graph_json.py and graph_csv.py) to fetch the latest
+# points for a test.
+- kind: Row
+  properties:
+  - name: parent_test
+  - name: revision
+    direction: desc
+
+# This composite index enables querying for points for a particular test,
+# filtering or sorting by revision. This may be unused, but it may be useful
+# for queries on the interactive console.
+- kind: Row
+  properties:
+  - name: parent_test
+  - name: revision
+
+# May be unused!
+# Likely used in new_points.py to query newest points for a particular test.
+# However listing the latest points for a test also works when not logged in
+# currently, although there appears to be no index in this file for that.
+- kind: Row
+  properties:
+  - name: parent_test
+  - name: timestamp
+    direction: desc
+
+# Used for returning timeseries of diagnostics.
+- kind: SparseDiagnostic
+  properties:
+  - name: start_revision
+    direction: desc
+  - name: end_revision
+    direction: desc
+
+- kind: SparseDiagnostic
+  properties:
+  - name: start_revision
+    direction: desc
+  - name: end_revision
+    direction: desc
+  - name: internal_only
+
+# Used in update_test_suites to query keys of test suites (parent_test == None)
+# with deprecated and description projection. Two separate lists of
+# test suites are kept, one for external and one for internal.
+- kind: Test
+  properties:
+  - name: parent_test
+  - name: deprecated
+  - name: description
+- kind: Test
+  properties:
+  - name: internal_only
+  - name: parent_test
+  - name: deprecated
+  - name: description
+
+# Used in update_test_suites to query keys of test suites (parent_test == None)
+# with monitored projection. Two separate lists of test suites are kept, one for
+# external and one for internal.
+- kind: Test
+  properties:
+  - name: parent_test
+  - name: monitored
+- kind: Test
+  properties:
+  - name: internal_only
+  - name: parent_test
+  - name: monitored
+
+# Used in list_tests.py to query Test by test path pattern.
+- kind: Test
+  properties:
+  - name: master_name
+  - name: bot_name
+  - name: suite_name
+  - name: test_part1_name
+  - name: test_part2_name
+  - name: test_part3_name
+  - name: test_part4_name
+- kind: Test
+  properties:
+  - name: internal_only
+  - name: master_name
+  - name: bot_name
+  - name: suite_name
+  - name: test_part1_name
+  - name: test_part2_name
+  - name: test_part3_name
+  - name: test_part4_name
+
+# Used in update_test_suites to query keys of test suites (parent_test == None)
+# with deprecated and description projection. Two separate lists of
+# test suites are kept, one for external and one for internal.
+- kind: TestMetadata
+  properties:
+  - name: parent_test
+  - name: deprecated
+  - name: description
+- kind: TestMetadata
+  properties:
+  - name: internal_only
+  - name: parent_test
+  - name: deprecated
+  - name: description
+
+# Used in list_tests.py to query Test by test path pattern.
+- kind: TestMetadata
+  properties:
+  - name: master_name
+  - name: bot_name
+  - name: suite_name
+  - name: test_part1_name
+  - name: test_part2_name
+  - name: test_part3_name
+  - name: test_part4_name
+  - name: test_part5_name
+- kind: TestMetadata
+  properties:
+  - name: internal_only
+  - name: master_name
+  - name: bot_name
+  - name: suite_name
+  - name: test_part1_name
+  - name: test_part2_name
+  - name: test_part3_name
+  - name: test_part4_name
+  - name: test_part5_name

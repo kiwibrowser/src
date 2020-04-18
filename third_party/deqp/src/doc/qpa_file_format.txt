@@ -1,0 +1,171 @@
+
+***** QPA FILE FORMAT ******
+
+Date: 21st March 2013
+
+The QPA file is a combination of two formats:
+- Container format is the outer format that runs through test
+  executable life time
+- Per case XML-based log is stored for each test case within
+  the container format
+
+The best additional reference is the code used to handle the logs as
+well as sample .qpa file. See framework/qphelper/qpTestLog.c, for
+example. Also, executor/xeTestLogParser.cpp will be a helful.
+
+The descriptions below flow in the order the items appear in normal
+log files. Comments are prefixed with an asterisk ('*').
+
+=== Container format ===
+
+* Container format starts with multiple entries of form:
+
+#sessionInfo [key] [value]
+
+* The session info entries do not have fixed order.
+* Info header keys written by a test binary are listed below.
+releaseName
+releaseId
+targetName
+
+* Candy writes and reads the following additional keys:
+candyTargetName
+resultName
+timestamp
+configName
+
+* Additional header values will be added as needed.
+
+* The test binary starts actual execution by outputting:
+#beginSession
+
+* Each test case looks like:
+#beginTestCaseResult <name of the test case>
+<Test Case Log - see the separate section below>
+#endTestCaseResult or #terminateTestCaseResult <cause>
+
+* Execution done
+#endSession
+
+
+=== Test Case Log ===
+
+* XML log can be incomplete due to, e.g., crash. Please, use a SAX
+  parser as they can work with incomplete XML.
+
+* First start the XML stream and open the TestCaseResult element. All
+  other elements go into the TestCaseResult element.
+
+<?xml version="1.0"?>
+
+<TestCaseResult Version="0.3.2" CasePath="[path]" CaseType="[type]">
+[path] = Full name of the test case. Groups separated with periods ('.')
+[type] = SelfValidate,Performance,Accuracy,Capability
+The version will be increased any time changes to the format are made.
+
+* After this point there'll be a mix of following elements. Order
+  corresponds to the execution of the test case.  All of the elements
+  below may contain attributes Name and Description, which will have
+  appropriate strings as values. Not all elements will have Name and
+  Description.
+
+
+<Text>[string]</Text>
+
+
+<Number Tag="[tag]" Unit="[string]">[float]</Number>
+[tag] = Performance,Quality,Precision,Time
+
+
+<ShaderProgram LinkStatus="[status]">
+    <VertexShader CompileStatus="[status]">
+        <ShaderSource>[string]</ShaderSource>
+		<InfoLog>[string]</InfoLog>
+    </VertexShader>
+    <FragmentShader CompileStatus="[status]">
+        <ShaderSource>[string]</ShaderSource>
+		<InfoLog>[string]</InfoLog>
+    </FragmentShader>
+    <InfoLog>[string]</InfoLog>
+</ShaderProgram>
+[status] = OK,Fail
+InfoLogs are the outputs from the GLES log query functions.
+
+
+<EglConfigSet>
+    <EglConfig BufferSize="[int]"
+			   RedSize="[int]"
+			   GreenSize="[int]"
+			   BlueSize="[int]"
+			   LuminanceSize="[int]"
+			   AlphaSize="[int]"
+			   AlphaMaskSize="[int]"
+			   BindToTextureRGB="[bool]"
+			   BindToTextureRGBA="[bool]"
+			   ColorBufferType="[string]"
+			   ConfigCaveat="[string]"
+			   ConfigID="[int]"
+			   Conformant="[string]"
+			   DepthSize="[int]"
+			   Level="[int]"
+			   MaxPBufferWidth="[int]"
+			   MaxPBufferHeight="[int]"
+			   MaxPBufferPixels="[int]"
+			   MaxSwapInterval="[int]"
+			   MinSwapInterval="[int]"
+			   NativeRenderable="[bool]"
+			   RenderableType="[string]"
+			   SampleBuffers="[int]"
+			   Samples="[int]"
+			   StencilSize="[int]"
+			   SurfaceTypes="[int]"
+			   TransparentType="[int]"
+			   TransparentRedValue="[int]"
+			   TransparentGreenValue="[int]"
+			   TransparentBlueValue="[int]"/>
+</EglConfigSet>
+[bool] = True,False
+
+
+<KernelSource>[string]</KernelSource>
+OpenCL kernel
+
+
+<CompileInfo CompileStatus="[status]">[string]</CompileInfo>
+[status] = OK,Fail
+Compile info for OpenCL kernel
+
+
+<ImageSet>[One or more related images]</ImageSet>
+
+
+<Image Width="[int]"
+       Height="[int]"
+	   Format="[format]"
+	   CompressionMode="[compression]">
+    [base64 encoded data]
+</Image>
+[format] = RGB888,RGBA8888
+[compression] = None,PNG
+
+
+<Section>[any of the above log elements and section elements]</Section>
+
+
+* If the test finishes so that the framework has control, the Result
+  element is inserted.
+
+ <Result StatusCode="[status]">[Details string]</Result>
+[status] =
+		Pass,					// Test case passed.
+		Fail,					// Test case failed (not passed).
+		QualityWarning,			// Result within specification, but suspicious quality wise
+		CompatibilityWarning,	// Result within specification, but likely to cause fragmentation
+		NotSupported,			// Some feature was not supported in the implementation.
+		ResourceError,			// A resource error has occurred.
+		InternalError,			// An internal error has occurred.
+[Details string] = Further details or measured value as float for Performance and Accuracy cases.
+
+* We are done, let's close the TestCaseResult element
+
+</TestCaseResult>

@@ -1,0 +1,180 @@
+# Default/template configuration
+
+# This is included by other config files which may override some
+# of these variables.
+# Think of this as a base class from which configs are derived.
+
+
+CONFIG_NAME = default
+
+# Version info
+MESA_MAJOR=9
+MESA_MINOR=0
+MESA_TINY=3
+MESA_VERSION = $(MESA_MAJOR).$(MESA_MINOR).$(MESA_TINY)
+
+# external projects.  This should be useless now that we use libdrm.
+DRM_SOURCE_PATH=$(TOP)/../drm
+
+# Compiler and flags
+CC = cc
+CXX = CC
+CFLAGS = -O
+CXXFLAGS = -O
+LDFLAGS =
+GLU_CFLAGS = 
+GLX_TLS = no
+
+# Compiler for building demos/tests/etc
+APP_CC = $(CC)
+APP_CXX = $(CXX)
+
+# Misc tools and flags
+SHELL = /bin/sh
+MKLIB = $(SHELL) $(TOP)/bin/mklib
+MKLIB_OPTIONS = 
+MKDEP = makedepend
+MKDEP_OPTIONS = -fdepend
+MAKE = make
+FLEX = flex
+BISON = bison
+PKG_CONFIG = pkg-config
+
+# Use MINSTALL for installing libraries, INSTALL for everything else
+MINSTALL = $(SHELL) $(TOP)/bin/minstall
+INSTALL = $(MINSTALL)
+
+# Tools for regenerating glapi (generally only needed by the developers)
+PYTHON2 = python
+PYTHON_FLAGS = -t -O -O
+INDENT = indent
+INDENT_FLAGS = -i4 -nut -br -brs -npcs -ce -T GLubyte -T GLbyte -T Bool
+
+# Library names (base name)
+GL_LIB = GL
+GLU_LIB = GLU
+GLW_LIB = GLw
+OSMESA_LIB = OSMesa
+EGL_LIB = EGL
+GLESv1_CM_LIB = GLESv1_CM
+GLESv2_LIB = GLESv2
+VG_LIB = OpenVG
+GLAPI_LIB = glapi
+
+# Library names (actual file names)
+GL_LIB_NAME = lib$(GL_LIB).so
+GLU_LIB_NAME = lib$(GLU_LIB).so
+GLW_LIB_NAME = lib$(GLW_LIB).so
+OSMESA_LIB_NAME = lib$(OSMESA_LIB).so
+EGL_LIB_NAME = lib$(EGL_LIB).so
+GLESv1_CM_LIB_NAME = lib$(GLESv1_CM_LIB).so
+GLESv2_LIB_NAME = lib$(GLESv2_LIB).so
+VG_LIB_NAME = lib$(VG_LIB).so
+GLAPI_LIB_NAME = lib$(GLAPI_LIB).so
+
+# globs used to install the lib and all symlinks
+GL_LIB_GLOB = $(GL_LIB_NAME)*
+GLU_LIB_GLOB = $(GLU_LIB_NAME)*
+GLW_LIB_GLOB = $(GLW_LIB_NAME)*
+EGL_LIB_GLOB = $(EGL_LIB_NAME)*
+GLESv1_CM_LIB_GLOB = $(GLESv1_CM_LIB_NAME)*
+GLESv2_LIB_GLOB = $(GLESv2_LIB_NAME)*
+VG_LIB_GLOB = $(VG_LIB_NAME)*
+GLAPI_LIB_GLOB = $(GLAPI_LIB_NAME)*
+
+# Optional assembly language optimization files for libGL
+MESA_ASM_FILES =
+
+# GLw widget sources (Append "GLwMDrawA.c" here and add -lXm to GLW_LIB_DEPS in
+# order to build the Motif widget too)
+GLW_SOURCES = GLwDrawA.c
+MOTIF_CFLAGS = -I/usr/include/Motif1.2
+
+
+# Directories to build
+LIB_DIR = lib
+SRC_DIRS = glsl mapi/glapi mapi/vgapi mesa \
+	gallium egl gallium/winsys gallium/targets
+DRIVER_DIRS = x11 osmesa
+
+# Gallium directories and
+GALLIUM_DIRS = auxiliary drivers state_trackers
+GALLIUM_AUXILIARIES = $(TOP)/src/gallium/auxiliary/libgallium.a
+GALLIUM_DRIVERS_DIRS = softpipe trace rbug noop identity galahad i915 svga r300 nvfx nv50
+GALLIUM_DRIVERS = $(foreach DIR,$(GALLIUM_DRIVERS_DIRS),$(TOP)/src/gallium/drivers/$(DIR)/lib$(DIR).a)
+GALLIUM_WINSYS_DIRS = sw sw/xlib
+GALLIUM_TARGET_DIRS = libgl-xlib
+GALLIUM_STATE_TRACKERS_DIRS = glx vega
+
+# native platforms EGL should support
+EGL_PLATFORMS = x11
+EGL_CLIENT_APIS = $(GL_LIB)
+
+# Library dependencies
+#EXTRA_LIB_PATH ?=
+GL_LIB_DEPS     = -lX11 -lXext -lm -lpthread
+EGL_LIB_DEPS    = -ldl -lpthread
+OSMESA_LIB_DEPS = -L$(TOP)/$(LIB_DIR) -l$(GL_LIB)
+GLU_LIB_DEPS    = -L$(TOP)/$(LIB_DIR) -l$(GL_LIB) -lm
+GLW_LIB_DEPS    = -L$(TOP)/$(LIB_DIR) -l$(GL_LIB) -lXt -lX11
+GLESv1_CM_LIB_DEPS = -lpthread
+GLESv2_LIB_DEPS = -lpthread
+VG_LIB_DEPS    = -lpthread
+GLAPI_LIB_DEPS = -lpthread
+
+# Program dependencies - specific GL libraries added in Makefiles
+X11_LIBS = -lX11
+
+DLOPEN_LIBS = -ldl
+
+# Installation directories (for make install)
+INSTALL_DIR = /usr/local
+INSTALL_LIB_DIR = $(INSTALL_DIR)/$(LIB_DIR)
+INSTALL_INC_DIR = $(INSTALL_DIR)/include
+DRI_DRIVER_INSTALL_DIR = $(INSTALL_LIB_DIR)/dri
+
+# Where libGL will look for DRI hardware drivers
+DRI_DRIVER_SEARCH_DIR = $(DRI_DRIVER_INSTALL_DIR)
+
+# EGL driver install directory
+EGL_DRIVER_INSTALL_DIR = $(INSTALL_LIB_DIR)/egl
+
+# Xorg driver install directory (for xorg state-tracker)
+XORG_DRIVER_INSTALL_DIR = $(INSTALL_LIB_DIR)/xorg/modules/drivers
+
+# pkg-config substitutions
+GL_PC_REQ_PRIV =
+GL_PC_LIB_PRIV =
+GL_PC_CFLAGS =
+DRI_PC_REQ_PRIV =
+GLU_PC_REQ = gl
+GLU_PC_REQ_PRIV =
+GLU_PC_LIB_PRIV =
+GLU_PC_CFLAGS =
+GLW_PC_REQ_PRIV =
+GLW_PC_LIB_PRIV =
+GLW_PC_CFLAGS =
+OSMESA_PC_REQ =
+OSMESA_PC_LIB_PRIV =
+GLESv1_CM_PC_REQ_PRIV =
+GLESv1_CM_PC_LIB_PRIV =
+GLESv1_CM_PC_CFLAGS =
+GLESv2_PC_REQ_PRIV =
+GLESv2_PC_LIB_PRIV =
+GLESv2_PC_CFLAGS =
+VG_PC_REQ_PRIV =
+VG_PC_LIB_PRIV =
+VG_PC_CFLAGS =
+
+# default targets
+# this helps reduce the mismatch between our automake Makefiles and the old
+# custom Makefiles while we transition.
+
+all: default
+
+am--refresh:
+
+distclean: clean
+
+check:
+test:

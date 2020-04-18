@@ -1,0 +1,57 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>Gallium Post-processing</title>
+  <link rel="stylesheet" type="text/css" href="mesa.css">
+</head>
+<body>
+
+<h1>Gallium Post-processing</h1>
+
+<p>
+The Gallium drivers support user-defined image post-processing.
+At the end of drawing a frame a post-processing filter can be applied to
+the rendered image.
+Example filters include morphological antialiasing and cell shading.
+</p>
+
+<p>
+The filters can be toggled per-app via driconf, or per-session via the
+corresponding environment variables.
+</p>
+
+<p>
+Multiple filters can be used together.
+</p>
+
+
+<h2>PP environment variables</h2>
+
+<ul>
+<li>PP_DEBUG - If defined debug information will be printed to stderr.
+</ul>
+
+<h2>Current filters</h2>
+
+<ul>
+<li>pp_nored, pp_nogreen, pp_noblue - set to 1 to remove the corresponding color channel.
+These are basic filters for easy testing of the PP queue.
+<li>pp_jimenezmlaa, pp_jimenezmlaa_color -
+<a href="http://www.iryokufx.com/mlaa/" target=_blank>Jimenez's MLAA</a>
+is a morphological antialiasing filter.
+The two versions use depth and color data, respectively.
+Which works better depends on the app - depth will not blur text, but it will
+miss transparent textures for example.
+Set to a number from 2 to 32, roughly corresponding to quality.
+Numbers higher than 8 see minimizing gains.
+<li>pp_celshade - set to 1 to enable cell shading (a more complex color filter).
+</ul>
+
+
+<br>
+<br>
+
+
+</body>
+</html>

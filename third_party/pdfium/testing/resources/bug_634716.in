@@ -1,0 +1,126 @@
+{{header}}
+{{object 1 0}} <<
+  /Type /Catalog
+  /Pages 2 0 R
+  /AcroForm 6 0 R
+  /Names <</JavaScript 13 0 R>>
+>>
+endobj
+{{object 2 0}} <<
+  /Type /Pages
+  /Count 1
+  /Kids [4 0 R]
+>>
+endobj
+{{object 4 0}} <<
+  /Type /Page
+  /Parent 2 0 R
+  /MediaBox [0 0 612 792]
+  /CropBox [0 0 612 792]
+  /Resources  <<>>
+>>
+endobj
+{{object 6 0}} <<
+  /DR <<
+    /Font <</Helv 7 0 R>>
+  >>
+  /DA (/Helv 0 Tf 0 g)
+  /Fields [5 0 R]
+>>
+endobj
+{{object 7 0}} <<
+  /Type /Font
+  /Subtype /Type1
+  /BaseFont /Helvetica
+  /Encoding /WinAnsiEncoding
+>>
+endobj
+{{object 8 0}} <<
+  /Type /XObject
+  /Subtype /Form
+  /FormType 1
+  /Matrix [1 0 0 1 0 0]
+  /BBox [0 0 75.907 28.472]
+  /Resources  <<
+    /Font <</FXF0 7 0 R>>
+  >>
+>>
+stream
+q
+Q
+
+
+endstream
+endobj
+{{object 11 0}} <<
+  /Type /Action
+  /S /JavaScript
+  /JS 50 0 R
+>>
+endobj
+{{object 13 0}} <<
+  /Names [(startDelay) 11 0 R]
+>>
+endobj
+{{object 50 0}} <<
+>>
+stream
+var timeOut = 0;
+var array = new Array(1024*4);
+var doc = this;
+
+function myFunction() {
+  try {
+    // Free the Timer Objects
+    app.clearTimeOut(timeOut);
+    for (var i=0; i<array.length; i++) {
+      for (var j=0; j<array[i].length; j++) {
+        app.clearTimeOut(array[i][j]);
+      }
+    }
+
+    // Trigger the Garbage Collection
+    array.length = 0;
+    array.push(new ArrayBuffer(1024*1024));
+    array.length=0;
+    array.length=1024*4;
+    var str = 'AA';
+    for (var i = 0; i < array.length ; i++) {
+      for (var j = 0; j < 10; j++ ) {
+        doc.addIcon(str + "-" + str + str + str + str + str, doc.icons);
+      }
+    }
+  } catch(err) {
+    app.alert(err);
+  }
+}
+
+function main() {
+  try {
+    for (var i = 0; i < array.length ; i++) {
+      if (i == array.length / 2) {
+        timeOut = app.setTimeOut("myFunction()", 1000);
+      }
+      array[i] = new Array(4);
+      for (var j = 0; j < array[i].length ; j++ ) {
+        array[i][j] = app.setTimeOut("aaaaaaaaaa()", 100000);
+      }
+    }
+  } catch(err) {
+    app.alert(err);
+  }
+}
+
+// Execute the JS.
+app.setTimeOut("main()", 1000);
+
+// Be sure all of this code ran to completion.
+app.alert("done");
+endstream
+endobj
+{{xref}}
+trailer <<
+  /Root 1 0 R
+>>
+{{startxref}}
+%%EOF

@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# The following symbols (past the first five) are taken from the public headers.
+# A list of the latter should be available Makefile.sources/LIBDRM_NOUVEAU_H_FILES
+
+FUNCS=$(nm -D --format=bsd --defined-only ${1-.libs/libdrm_nouveau.so} | awk '{print $3}'| while read func; do
+( grep -q "^$func$" || echo $func )  <<EOF
+__bss_start
+_edata
+_end
+_fini
+_init
+nouveau_bo_map
+nouveau_bo_name_get
+nouveau_bo_name_ref
+nouveau_bo_new
+nouveau_bo_prime_handle_ref
+nouveau_bo_ref
+nouveau_bo_set_prime
+nouveau_bo_wait
+nouveau_bo_wrap
+nouveau_bufctx_del
+nouveau_bufctx_mthd
+nouveau_bufctx_new
+nouveau_bufctx_refn
+nouveau_bufctx_reset
+nouveau_client_del
+nouveau_client_new
+nouveau_device_del
+nouveau_device_new
+nouveau_device_open
+nouveau_device_open_existing
+nouveau_device_wrap
+nouveau_drm_del
+nouveau_drm_new
+nouveau_getparam
+nouveau_object_del
+nouveau_object_mclass
+nouveau_object_mthd
+nouveau_object_new
+nouveau_object_sclass_get
+nouveau_object_sclass_put
+nouveau_pushbuf_bufctx
+nouveau_pushbuf_data
+nouveau_pushbuf_del
+nouveau_pushbuf_kick
+nouveau_pushbuf_new
+nouveau_pushbuf_refd
+nouveau_pushbuf_refn
+nouveau_pushbuf_reloc
+nouveau_pushbuf_space
+nouveau_pushbuf_validate
+nouveau_setparam
+EOF
+done)
+
+test ! -n "$FUNCS" || echo $FUNCS
+test ! -n "$FUNCS"

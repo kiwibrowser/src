@@ -1,0 +1,96 @@
+Conformance Test
+
+    CTS_ARB_shader_ballot
+
+Contributors
+
+    Filip Demczewski, Mobica
+
+Contacts
+
+    Filip Demczewski, Mobica (filip.demczewski 'at' mobica.com)
+
+Status
+
+    In review
+
+Version
+
+    January 4, 2017 (version 1)
+
+Dependencies
+
+    ARB_shader_ballot extension is required.
+    ARB_gpu_shader_int64 extension is required.
+
+    This specification is written against:
+      - ARB_shader_ballot specification,
+      - Revision 5 of the version 4.50 of the OpenGL Shading Language Specification
+
+Overview
+
+    This tests verifies if functionality provided by ARB_shader_ballot
+    works as expected:
+
+      * Verify new GLSL built-in variables:
+            - gl_SubGroupInvocationARB
+            - gl_SubGroup*MaskARB
+      * Verify gl_SubGroupSizeARB uniform
+      * Verify new GLSL built-in functions:
+            - ballotARB
+            - readInvocationARB
+            - readFirstInvocationARB
+
+New Tests
+
+    Availability test
+
+      * Iterate through all supported shaders.
+            Compile shader containing calls to all new built-in features
+            just to check if those are available.
+            Render primitive.
+            Expect no error.
+
+    Bitmasks verification test
+
+      * Iterate through all supported shaders.
+            Check each bitmask value according to the equation provided
+            in the specification (each bitmask contains bit values related
+            to the gl_SubGroupInvocationARB variable)
+
+    Function ballotARB test
+
+      * Iterate through all supported shaders.
+            a) Call ballotARB(false) - verify that returned value equals 0.
+
+            b) Call ballotARB(true) - verify that returned value is a bitfield
+            where the corresponding bits are set for all active invocations
+            in the sub-group.
+
+            c) Call ballotARB(X), where X is not dynamically uniform expression
+            that return true in some invocations and false in others. Perform
+            many calls for some practical distributions of true/false values
+            across invocations. Verify returned value.
+
+    Read functions test
+
+      * Iterate through all supported shaders.
+            a) Calculate color value for primitive dependent on invocation index.
+            Call readFirstInvocationARB with calculated color as a default value
+            passed as parameter. Final color should be same for all invocations -
+            first invocation completed dictates result for other invocations.
+
+            b) Save first invocation index to the SSBO. Calculate color value for
+            primitive dependent on invocation index. Call readInvocationARB with
+            calculated color as a default value passed as first parameter and
+            the saved invocation index as second. Final color should be same
+            for all invocations - first invocation completed dictates result
+            for other invocations.
+
+Revision History
+
+    Revision 1, 4 January, 2017 (Filip Demczewski)
+      - Initial version;
+
+    Revision 2, 3 February, 2017 (Filip Demczewski)
+      - Tweaks to ballotARB and read functions tests;

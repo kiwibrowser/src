@@ -1,0 +1,113 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+package dom_distiller.proto;
+option optimize_for = LITE_RUNTIME;
+option java_package = "org.chromium.distiller.proto";
+option java_outer_classname = "DomDistillerProtos";
+
+message DistilledContent {
+  optional string html = 1;
+}
+
+message PaginationInfo {
+  optional string next_page = 1;
+  optional string prev_page = 2;
+  optional string canonical_page = 3;
+}
+
+message MarkupArticle {
+  optional string published_time = 1;
+  optional string modified_time = 2;
+  optional string expiration_time = 3;
+  optional string section = 4;
+  repeated string authors = 5;
+}
+
+message MarkupImage {
+  optional string url = 1;
+  optional string secure_url = 2;
+  optional string type = 3;
+  optional string caption = 4;
+  optional int32 width = 5;
+  optional int32 height = 6;
+}
+
+message MarkupInfo {
+  optional string title = 1;
+  optional string type = 2;
+  optional string url = 3;
+  optional string description = 4;
+  optional string publisher = 5;
+  optional string copyright = 6;
+  optional string author = 7;
+  optional MarkupArticle article = 8;
+  repeated MarkupImage images = 9;
+}
+
+message TimingEntry {
+  optional string name = 1;
+  optional double time = 2;
+}
+
+message TimingInfo {
+  optional double markup_parsing_time = 1;
+  optional double document_construction_time = 2;
+  optional double article_processing_time = 3;
+  optional double formatting_time = 4;
+  optional double total_time = 5;
+
+  // A place to hold arbitrary breakdowns of time. The perf scoring/server
+  // should display these entries with appropriate names.
+  repeated TimingEntry other_times = 6;
+}
+
+message DebugInfo {
+  optional string log = 1;
+}
+
+message StatisticsInfo {
+  optional int32 word_count = 1;
+}
+
+message DomDistillerResult {
+  optional string title = 1;
+  optional DistilledContent distilled_content = 2;
+  optional PaginationInfo pagination_info = 3;
+  optional MarkupInfo markup_info = 5;
+  optional TimingInfo timing_info = 6;
+  optional DebugInfo debug_info = 7;
+  optional StatisticsInfo statistics_info = 8;
+  optional string text_direction = 9;
+
+  // Represents an image found in the content of a page.
+  message ContentImage {
+    optional string url = 1;
+  }
+
+  repeated ContentImage content_images = 10;
+}
+
+message DomDistillerOptions {
+  // Whether to extract only the text (or to include the containing html).
+  optional bool extract_text_only = 1;
+
+  // How much debug output to dump to window.console.
+  // (0): Logs nothing
+  // (1): Text Node data for each stage of processing
+  // (2): (1) and some node visibility information
+  // (3): (2) and extracted paging information
+  optional int32 debug_level = 2;
+
+  // The original URL of the page, which is used in the heuristics in
+  // detecting next/prev page links.
+  optional string original_url = 3;
+
+  // Which algorithm to use for next page detection:
+  // "next" : detect anchors with "next" text
+  // "pagenum" : detect anchors with numeric page numbers
+  optional string pagination_algo = 4;
+}

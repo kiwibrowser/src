@@ -1,0 +1,100 @@
+// Copyright 2018 The Feed Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+package search.now.ui.action;
+
+option optimize_for=LITE_RUNTIME;
+import "src/main/proto/search/now/proto/ui/action/feed_action_payload.proto";
+import "src/main/proto/search/now/proto/wire/feed/content_id.proto";
+import "src/main/proto/search/now/proto/wire/feed/data_operation.proto";
+option java_package = "com.google.search.now.ui.action";
+option java_outer_classname = "FeedActionProto";
+
+// Specification of an action to be taken within the feed.
+message FeedAction {
+  extend FeedActionPayload {
+    optional FeedAction feed_action_extension = 192348469;
+  }
+
+  // The metadata, which is used by the client to update the client UI in
+  // real-time.
+  optional FeedActionMetadata metadata = 1;
+
+  // The message to show the user when displaying a prompt that allows them to
+  // undo this action for a short time after executing it.
+  optional string undo_text = 2;
+}
+
+// Metadata needed by the host to handle the action.
+message FeedActionMetadata {
+  // The type of action, used by the host to perform any custom logic needed for
+  // a specific type of action.
+  enum Type {
+
+    UNKNOWN = 0;
+    OPEN_URL = 1;
+    OPEN_URL_INCOGNITO = 2;
+    OPEN_URL_NEW_WINDOW = 3;
+    OPEN_CONTEXT_MENU = 4;
+    DISMISS = 5;
+    DOWNLOAD = 6;
+  }
+  optional Type type = 1;
+
+  oneof data {
+    // The data needed by the client to open the url for any OPEN_URL action
+    // including OPEN_URL_INCOGNITO and OPEN_URL_NEW_WINDOW.
+    OpenUrlData open_url_data = 2;
+
+    // The data needed by the Stream to open a context menu.
+    OpenContextMenuData open_context_menu_data = 3;
+
+    // The data needed by the Stream to perform a dismiss.
+    DismissData dismiss_data = 4;
+
+    // The data needed by the Stream to perform a download
+    DownloadData download_data = 5;
+  }
+}
+
+// Data needed by the host to handle an OPEN_URL action.
+message OpenUrlData {
+
+  // The Url to open.
+  optional string url = 1;
+}
+
+// Data needed by Stream to open a context menu.
+message OpenContextMenuData {
+  repeated LabelledFeedActionData context_menu_data = 1;
+}
+
+// Data needed by Stream to perform a dismiss.
+message DismissData {
+  optional search.now.proto.wire.feed.ContentId content_id = 1;
+  repeated search.now.proto.wire.feed.DataOperation data_operations = 2;
+}
+
+// FeedActionMetadata with a label to show in a context menu.
+message LabelledFeedActionData {
+  optional string label = 1;
+  optional FeedActionPayload feed_action_payload = 2;
+}
+
+// Data needed by Stream to perform a download.
+message DownloadData {
+  optional string url = 1;
+}

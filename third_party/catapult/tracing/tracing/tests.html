@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<!--
+Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<head>
+  <title>Trace-Viewer Tests: loading...</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+  <link rel="shortcut icon" href="data:image/x-icon;base64,"
+        type="image/x-icon">
+
+  <link rel="import" href="/tracing/ui/base/base.html" data-suppress-import-order>
+  <link rel="import" href="/tracing/base/unittest/interactive_test_runner.html">
+  <style>
+    html, body {
+      box-sizing: border-box;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      margin: 0px;
+    }
+  </style>
+</head>
+<body>
+  <script>
+    'use strict';
+
+    window.addEventListener('load', function() {
+      tr.b.unittest.loadAndRunTests({
+        title: 'All Trace-Viewer Tests',
+        getAllSuiteRelPathsAsync() {
+          return tr.b.getAsync('/tracing/tests').then(function(json) {
+            return JSON.parse(json).test_relpaths;
+          }).catch(function(e) {
+            throw e;
+          });
+        },
+        testLinks: [
+          {linkPath: '/tracing_examples/skia_debugger.html',
+            title: 'Skia Debugger'},
+          {linkPath: '/tracing_examples/trace_viewer.html',
+            title: 'Trace File Viewer'}
+        ]
+      });
+    });
+  </script>
+</body>
+</html>

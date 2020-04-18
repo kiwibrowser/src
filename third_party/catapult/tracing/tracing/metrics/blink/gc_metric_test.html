@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<!--
+Copyright 2016 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/core/test_utils.html">
+<link rel="import" href="/tracing/extras/importer/trace_event_importer.html">
+<link rel="import" href="/tracing/metrics/blink/gc_metric.html">
+<link rel="import" href="/tracing/model/slice_group.html">
+<link rel="import" href="/tracing/value/histogram_set.html">
+
+<script>
+'use strict';
+
+tr.b.unittest.testSuite(function() {
+  function createModel(start, end, slices) {
+    const opts = {
+      customizeModelCallback(model) {
+        const process = model.getOrCreateProcess(1);
+        const thread = process.getOrCreateThread(2);
+        const group = thread.sliceGroup;
+        slices.forEach(function(slice) {
+          group.pushSlice(tr.c.TestUtils.newSliceEx(slice));
+        });
+        group.createSubSlices();
+      }
+    };
+    const model = tr.c.TestUtils.newModelWithEvents([], opts);
+    return model;
+  }
+
+  function constructName(name, suffix) {
+    return name + '_' + suffix;
+  }
+
+  function run(slices) {
+    const histograms = new tr.v.HistogramSet();
+    const startTime = slices.reduce(
+        (acc, slice) => (Math.min(acc, slice.start)));
+    const endTime = slices.reduce((acc, slice) => (Math.max(acc, slice.end)));
+    const model = createModel(startTime - 1, endTime + 1, slices);
+    tr.metrics.blink.blinkGcMetric(histograms, model);
+    return histograms;
+  }
+
+  test('topEvents', function() {
+    const events = {
+      'BlinkGCMarking': 'blink-gc-marking',
+      'ThreadState::completeSweep': 'blink-gc-complete-sweep',
+      'ThreadState::performIdleLazySweep': 'blink-gc-idle-lazy-sweep'
+    };
+    for (const [timelineName, telemetryName] of Object.entries(events)) {
+      const slices = [
+        {
+          title: timelineName, args: {}, start: 100, end: 200,
+          cpuStart: 100, cpuEnd: 200
+        }
+      ];
+      const actual = run(slices);
+
+      let value = actual.getHistogramNamed(telemetryName);
+      assert.strictEqual(value.running.sum, 100);
+      assert.strictEqual(value.numValues, 1);
+      assert.strictEqual(value.average, 100);
+      assert.strictEqual(value.running.max, 100);
+      assert.closeTo(value.getApproximatePercentile(0.90), 100, 1);
+
+      value = actual.getHistogramNamed(
+          `${telemetryName}_idle_deadline_overrun`);
+      assert.strictEqual(value.running.sum, 0);
+      assert.strictEqual(value.numValues, 1);
+      assert.strictEqual(value.average, 0);
+      assert.strictEqual(value.running.max, 0);
+
+      value = actual.getHistogramNamed(`${telemetryName}_outside_idle`);
+      assert.strictEqual(value.running.sum, 100);
+      assert.strictEqual(value.numValues, 1);
+      assert.strictEqual(value.average, 100);
+
+      value = actual.getHistogramNamed(`${telemetryName}_percentage_idle`);
+      assert.strictEqual(value.average, 0);
+    }
+  });
+
+  test('idleTimes', function() {
+    const histograms = new tr.v.HistogramSet();
+    const slices = [
+      {
+        title: 'SingleThreadIdleTaskRunner::RunTask',
+        args: {'allotted_time_ms': 100}, start: 100, end: 200,
+        cpuStart: 100, cpuEnd: 200
+      },
+      {
+        title: 'BlinkGCMarking', args: {}, start: 110, end: 190,
+        cpuStart: 110, cpuEnd: 190
+      }
+    ];
+    const actual = run(slices);
+
+    let value = actual.getHistogramNamed('blink-gc-marking');
+    assert.strictEqual(value.running.sum, 80);
+    assert.strictEqual(value.numValues, 1);
+    assert.strictEqual(value.average, 80);
+    assert.strictEqual(value.running.max, 80);
+
+    value = actual.getHistogramNamed('blink-gc-marking_idle_deadline_overrun');
+    assert.strictEqual(value.running.sum, 0);
+    assert.strictEqual(value.average, 0);
+    assert.strictEqual(value.running.max, 0);
+
+    value = actual.getHistogramNamed('blink-gc-marking_outside_idle');
+    assert.strictEqual(value.running.sum, 0);
+    assert.strictEqual(value.average, 0);
+    assert.strictEqual(value.running.max, 0);
+
+    value = actual.getHistogramNamed('blink-gc-marking_percentage_idle');
+    assert.strictEqual(value.average, 1);
+  });
+
+  test('idleTimeOverrun', function() {
+    const histograms = new tr.v.HistogramSet();
+    const slices = [
+      {
+        title: 'SingleThreadIdleTaskRunner::RunTask',
+        args: {'allotted_time_ms': 10}, start: 100, end: 200,
+        cpuStart: 100, cpuEnd: 200
+      },
+      {
+        title: 'BlinkGCMarking', args: {}, start: 110, end: 190,
+        cpuStart: 110, cpuEnd: 190
+      }
+    ];
+    const actual = run(slices);
+
+    let value = actual.getHistogramNamed('blink-gc-marking');
+    assert.strictEqual(value.running.sum, 80);
+    assert.strictEqual(value.numValues, 1);
+    assert.strictEqual(value.average, 80);
+    assert.strictEqual(value.running.max, 80);
+
+    value = actual.getHistogramNamed('blink-gc-marking_idle_deadline_overrun');
+    assert.strictEqual(value.running.sum, 70);
+    assert.strictEqual(value.average, 70);
+    assert.strictEqual(value.running.max, 70);
+
+    value = actual.getHistogramNamed('blink-gc-marking_outside_idle');
+    assert.strictEqual(value.running.sum, 70);
+    assert.strictEqual(value.average, 70);
+    assert.strictEqual(value.running.max, 70);
+
+    value = actual.getHistogramNamed('blink-gc-marking_percentage_idle');
+    assert.closeTo(value.average, 1 / 8, 1e-6);
+  });
+
+  test('total', function() {
+    const histograms = new tr.v.HistogramSet();
+    const slices = [
+      {
+        title: 'BlinkGCMarking', args: {}, start: 100, end: 200,
+        cpuStart: 100, cpuEnd: 200
+      },
+      {
+        title: 'ThreadState::performIdleLazySweep', args: {}, start: 210,
+        end: 290, cpuStart: 210, cpuEnd: 290
+      }
+    ];
+    const actual = run(slices);
+
+    let value = actual.getHistogramNamed('blink-gc-total');
+    assert.strictEqual(value.running.sum, 180);
+    assert.strictEqual(value.numValues, 2);
+    assert.strictEqual(value.average, 90);
+    assert.strictEqual(value.running.max, 100);
+
+    value = actual.getHistogramNamed('blink-gc-total_idle_deadline_overrun');
+    assert.strictEqual(value.running.sum, 0);
+    assert.strictEqual(value.average, 0);
+    assert.strictEqual(value.running.max, 0);
+
+    value = actual.getHistogramNamed('blink-gc-total_outside_idle');
+    assert.strictEqual(value.running.sum, 180);
+    assert.strictEqual(value.average, 90);
+    assert.strictEqual(value.running.max, 100);
+
+    value = actual.getHistogramNamed('blink-gc-total_percentage_idle');
+    assert.strictEqual(value.average, 0);
+  });
+});
+</script>

@@ -1,0 +1,100 @@
+// Copyright 2018 The Feed Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+package search.now.ui.piet;
+
+option optimize_for=LITE_RUNTIME;
+
+option java_package = "com.google.search.now.ui.piet";
+option java_outer_classname = "ImagesProto";
+option cc_enable_arenas = true;
+
+// An image, photo, or icon asset. All three types are represented using the
+// same proto message, with properties specific to each type as optional fields.
+// Specific features like tinting might only be applicable to specific types
+// of Images, e.g. icons only.
+message Image {
+  // Image sources are `repeated` so that a feature author can specify multiple
+  // image sources in the order that they should be attempted to be fetched.
+  // Clients can go through the list until they find one they wish to fetch,
+  // based either on the type of URL (e.g. `https://` versus `asset://`) or
+  // based on the size of the raw image (e.g. 1x DPI or 2x DPI). Feature
+  // authors are responsible for ensuring that at least one image source is
+  // valid and accessible (https://gstatic.com URLs are recommended as the
+  // ultimate fallback).
+  // See [INTERNAL LINK] for more details on Image handling.
+  repeated ImageSource sources = 1;
+
+  // The type of scaling to apply.
+  enum ScaleType {
+    // When scale type is unspecified, we err on the side of preserving all
+    // areas of the image, so this is equivalent to CENTER_INSIDE.
+    SCALE_TYPE_UNSPECIFIED = 0;
+
+    // Scale the image uniformly such that width or height will be equal to the
+    // size of its view. The image will not be cropped.
+    CENTER_INSIDE = 1;
+
+    // Scale the image uniformly to fill its view. Some portion of the image
+    // will be cropped.
+    CENTER_CROP = 2;
+  }
+  // How the image should be scaled.
+  optional ScaleType scale_type = 2 [default = CENTER_INSIDE];
+
+  // The tint to be applied to this icon. If this optional field is not
+  // provided, then no tint will be applied. See [INTERNAL LINK]
+  optional fixed32 tint_color = 3;
+
+  // Please use CL numbers you own for extension numbers.
+  extensions 10000 to max;
+}
+
+// A single physical image, as contained in a single image file or embedded
+// resource. To accommodate devices with varying Device Pixel Ratios, each image
+// in a different DPI bucket can be represented as a separate `ImageSource`.
+// E.g. the same image can be offered as multiple resources as:
+//     ImageSource{
+//       url="ic_icon_24@1x.png",
+//       width=24,
+//       height=24
+//     }
+// and:
+//     ImageSource{
+//       url="ic_icon_24@2x.png",
+//       width=48,
+//       height=48
+//     }
+// This enables clients to choose which image to fetch based on the expected
+// width and height, without actually having to fetch it first.
+message ImageSource {
+  // URLs can be "https://" or "asset://".
+  // HTTPS URLs can be fetched by a regular network communication library.
+  // Asset URLs can be fetched by implementation-specific asset helpers.
+  // Asset URLs must be specified in an implementation-agnostic manner.
+  // If missing, ERR_IMAGE_URL_EMPTY is raised.
+  optional string url = 1;
+
+  // The intrinsic width of this image, expressed in raw pixels. This may be
+  // different from the width of the container in which this image should be
+  // displayed.
+  optional int32 width_px = 4;
+
+  // The intrinsic height of this image, expressed in raw pixels. This may be
+  // different from the height of the container in which this image should be
+  // displayed.
+  optional int32 height_px = 5;
+}

@@ -1,0 +1,25 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## test function
+test_menu_system_forceupdate() {
+test_start "$FUNCNAME: verify forceupdate doesn't error for --mode system"
+
+test_init
+
+set_no_display
+require_root
+
+test_procedure
+
+assert_exit 0 xdg-desktop-menu forceupdate --mode system
+assert_nostdout
+assert_nostderr
+
+test_result
+}
+
+run_test test_menu_system_forceupdate

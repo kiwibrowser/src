@@ -1,0 +1,32 @@
+#######################################################################
+# SConscript for xlib winsys
+
+Import('*')
+
+env = env.Clone()
+
+graw_util = env.SharedObject(
+    source = ['graw_util.c'],
+)
+
+env = env.Clone()
+
+sources = [
+    'graw_null.c',
+    graw_util,
+]
+
+env.Prepend(LIBS = [gallium])
+
+# TODO: write a wrapper function http://www.scons.org/wiki/WrapperFunctions
+graw = env.SharedLibrary(
+    target = 'graw',
+    source = sources,
+)
+
+if env['platform'] == 'windows':
+    graw = env.FindIxes(graw, 'LIBPREFIX', 'LIBSUFFIX')
+else:
+    graw = env.FindIxes(graw, 'SHLIBPREFIX', 'SHLIBSUFFIX')
+
+Export('graw_util', 'graw')

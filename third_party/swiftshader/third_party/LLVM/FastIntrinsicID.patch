@@ -1,0 +1,67 @@
+Index: include/llvm/Function.h
+===================================================================
+--- include/llvm/Function.h	(revision 3710)
++++ include/llvm/Function.h	(working copy)
+@@ -93,6 +93,8 @@
+   // The Calling Convention is stored in Value::SubclassData.
+   /*CallingConv::ID CallingConvention;*/
+ 
++  unsigned intrinsicID;                   ///< ID of intrinsic, 0 otherwise
++
+   friend class SymbolTableListTraits<Function, Module>;
+ 
+   void setParent(Module *parent);
+@@ -109,6 +111,8 @@
+       BuildLazyArguments();
+   }
+   void BuildLazyArguments() const;
++
++  unsigned initIntrinsicID() const;
+   
+   Function(const Function&); // DO NOT IMPLEMENT
+   void operator=(const Function&); // DO NOT IMPLEMENT
+@@ -146,8 +150,8 @@
+   /// The particular intrinsic functions which correspond to this value are
+   /// defined in llvm/Intrinsics.h.
+   ///
+-  unsigned getIntrinsicID() const LLVM_ATTRIBUTE_READONLY;
+-  bool isIntrinsic() const { return getIntrinsicID() != 0; }
++  unsigned getIntrinsicID() const { return intrinsicID; }
++  bool isIntrinsic() const { return intrinsicID != 0; }
+ 
+   /// getCallingConv()/setCallingConv(CC) - These method get and set the
+   /// calling convention of this function.  The enum values for the known
+Index: lib/VMCore/Function.cpp
+===================================================================
+--- lib/VMCore/Function.cpp	(revision 3710)
++++ lib/VMCore/Function.cpp	(working copy)
+@@ -178,9 +178,9 @@
+     ParentModule->getFunctionList().push_back(this);
+ 
+   // Ensure intrinsics have the right parameter attributes.
+-  if (unsigned IID = getIntrinsicID())
+-    setAttributes(Intrinsic::getAttributes(Intrinsic::ID(IID)));
+-
++  intrinsicID = initIntrinsicID();
++  if (intrinsicID)
++    setAttributes(Intrinsic::getAttributes(Intrinsic::ID(intrinsicID)));
+ }
+ 
+ Function::~Function() {
+@@ -310,14 +310,14 @@
+     clearGC();
+ }
+ 
+-/// getIntrinsicID - This method returns the ID number of the specified
++/// initIntrinsicID - This method returns the ID number of the specified
+ /// function, or Intrinsic::not_intrinsic if the function is not an
+ /// intrinsic, or if the pointer is null.  This value is always defined to be
+ /// zero to allow easy checking for whether a function is intrinsic or not.  The
+ /// particular intrinsic functions which correspond to this value are defined in
+ /// llvm/Intrinsics.h.
+ ///
+-unsigned Function::getIntrinsicID() const {
++unsigned Function::initIntrinsicID() const {
+   const ValueName *ValName = this->getValueName();
+   if (!ValName)
+     return 0;

@@ -1,0 +1,139 @@
+<?xml version='1.0'?> <!--*-nxml-*-->
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+          "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
+
+<!--
+  Written 2012 by David Herrmann <dh.herrmann@googlemail.com>
+  Dedicated to the Public Domain
+-->
+
+<refentry id="drmModeGetResources">
+  <refentryinfo>
+    <title>Direct Rendering Manager</title>
+    <productname>libdrm</productname>
+    <date>September 2012</date>
+    <authorgroup>
+      <author>
+        <contrib>Developer</contrib>
+        <firstname>David</firstname>
+        <surname>Herrmann</surname>
+        <email>dh.herrmann@googlemail.com</email>
+      </author>
+    </authorgroup>
+  </refentryinfo>
+
+  <refmeta>
+    <refentrytitle>drmModeGetResources</refentrytitle>
+    <manvolnum>3</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname>drmModeGetResources</refname>
+    <refpurpose>retrieve current display configuration information</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+
+    <funcsynopsis>
+      <funcsynopsisinfo>#include &lt;xf86drm.h&gt;</funcsynopsisinfo>
+      <funcsynopsisinfo>#include &lt;xf86drmMode.h&gt;</funcsynopsisinfo>
+
+      <funcprototype>
+        <funcdef>drmModeResPtr <function>drmModeGetResources</function></funcdef>
+        <paramdef>int <parameter>fd</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>Description</title>
+    <para><function>drmModeGetResources</function> allocates, populates, and
+          returns a <structname>drmModeRes</structname> structure containing
+          information about the current display configuration. The structure
+          contains the following fields:
+
+<programlisting>
+typedef struct _drmModeRes {
+    int count_fbs;
+    uint32_t *fbs;
+
+    int count_crtcs;
+    uint32_t *crtcs;
+
+    int count_connectors;
+    uint32_t *connectors;
+
+    int count_encoders;
+    uint32_t *encoders;
+
+    uint32_t min_width, max_width;
+    uint32_t min_height, max_height;
+} drmModeRes, *drmModeResPtr;
+</programlisting>
+
+          </para>
+
+    <para>The <structfield>count_fbs</structfield> and
+          <structfield>fbs</structfield> fields indicate the number of currently
+          allocated framebuffer objects (i.e., objects that can be attached to
+          a given CRTC or sprite for display).</para>
+
+    <para>The <structfield>count_crtcs</structfield> and
+          <structfield>crtcs</structfield> fields list the available CRTCs in
+          the configuration. A CRTC is simply an object that can scan out a
+          framebuffer to a display sink, and contains mode timing and relative
+          position information. CRTCs drive encoders, which are responsible for
+          converting the pixel stream into a specific display protocol (e.g.,
+          MIPI or HDMI).</para>
+
+    <para>The <structfield>count_connectors</structfield> and
+          <structfield>connectors</structfield> fields list the available
+          physical connectors on the system. Note that some of these may not be
+          exposed from the chassis (e.g., LVDS or eDP). Connectors are attached
+          to encoders and contain information about the attached display sink
+          (e.g., width and height in mm, subpixel ordering, and various other
+          properties).</para>
+
+    <para>The <structfield>count_encoders</structfield> and
+          <structfield>encoders</structfield> fields list the available encoders
+          on the device. Each encoder may be associated with a CRTC, and may be
+          used to drive a particular encoder.</para>
+
+    <para>The <structfield>min*</structfield> and
+          <structfield>max*</structfield> fields indicate the maximum size of a
+          framebuffer for this device (i.e., the scanout size limit).</para>
+  </refsect1>
+
+  <refsect1>
+    <title>Return Value</title>
+    <para><function>drmModeGetResources</function> returns a drmModeRes
+          structure pointer on success, <literal>NULL</literal> on failure. The
+          returned structure must be freed with
+          <citerefentry><refentrytitle>drmModeFreeResources</refentrytitle><manvolnum>3</manvolnum></citerefentry>.</para>
+  </refsect1>
+
+  <refsect1>
+    <title>Reporting Bugs</title>
+    <para>Bugs in this function should be reported to
+      https://bugs.freedesktop.org/enter_bug.cgi?product=DRI&amp;component=libdrm
+      under the "DRI" product, component "libdrm"</para>
+  </refsect1>
+
+  <refsect1>
+    <title>See Also</title>
+    <para>
+      <citerefentry><refentrytitle>drm</refentrytitle><manvolnum>7</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drm-kms</refentrytitle><manvolnum>7</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drmModeGetFB</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drmModeAddFB</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drmModeAddFB2</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drmModeRmFB</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drmModeDirtyFB</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drmModeGetCrtc</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drmModeSetCrtc</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drmModeGetEncoder</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drmModeGetConnector</refentrytitle><manvolnum>3</manvolnum></citerefentry>
+    </para>
+  </refsect1>
+</refentry>

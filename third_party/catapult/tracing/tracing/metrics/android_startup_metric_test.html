@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<!--
+Copyright 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/core/test_utils.html">
+<link rel="import" href="/tracing/metrics/android_startup_metric.html">
+<link rel="import" href="/tracing/value/histogram_set.html">
+
+<script>
+'use strict';
+
+tr.b.unittest.testSuite(function() {
+  function makeTestModel() {
+    return tr.c.TestUtils.newModel(function(model) {
+      const browserProcess = model.getOrCreateProcess(1);
+      const mainThread = browserProcess.getOrCreateThread(2);
+      // Initializing the thread name is necessary to pass validation checks
+      // made by the ChromeModelHelper.
+      mainThread.name = 'CrBrowserMain';
+      // In order for the tests below to succeed with strictEqual, the floating
+      // point values should have exact representation as IEEE754 float.
+      mainThread.asyncSliceGroup.push(tr.c.TestUtils.newAsyncSliceEx({
+        cat: 'startup',
+        title: 'Startup.BrowserMessageLoopStartTimeFromMainEntry3',
+        start: 6800.125,
+        duration: 1700.0625
+      }));
+      mainThread.asyncSliceGroup.push(tr.c.TestUtils.newAsyncSliceEx({
+        cat: 'navigation',
+        title: 'Navigation timeToNetworkStack',
+        start: 7502.50,
+        duration: 12.25
+      }));
+
+      const rendererProcess = model.getOrCreateProcess(3);
+      const rendererMainThread = rendererProcess.getOrCreateThread(4);
+      rendererMainThread.name = 'CrRendererMain';
+      rendererMainThread.sliceGroup.pushSlice(tr.c.TestUtils.newSliceEx({
+        cat: 'loading,rail,devtools.timeline',
+        title: 'firstContentfulPaint',
+        start: 8400.125,
+        duration: 0.0,
+        args: {frame: '0x0'}
+      }));
+    });
+  }
+
+  test('androidStartupMetric_simple', function() {
+    const histograms = new tr.v.HistogramSet();
+    tr.metrics.sh.androidStartupMetric(histograms, makeTestModel());
+    const messageLoopStartHistogram = histograms.getHistogramNamed(
+        'messageloop_start_time');
+    assert.strictEqual(1, messageLoopStartHistogram.numValues);
+    assert.strictEqual(1700.0625, messageLoopStartHistogram.average);
+    const requestStartHistogram = histograms.getHistogramNamed(
+        'request_start_time');
+    assert.strictEqual(1, requestStartHistogram.numValues);
+    assert.strictEqual(714.625, requestStartHistogram.average);
+    const firstContentfulPaintHistogram = histograms.getHistogramNamed(
+        'first_contentful_paint_time');
+    assert.strictEqual(1, firstContentfulPaintHistogram.numValues);
+    assert.strictEqual(1600, firstContentfulPaintHistogram.average);
+  });
+});
+</script>

@@ -1,0 +1,32 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_screensave_status() {
+test_start "$FUNCNAME: verify screensaver status returns 'enabled' or 'disabled'"
+test_purpose "The screensaver may have status 'enabled' or 'disabled'. (Not both as bug 7592.)"
+
+test_init
+
+require_notroot
+## Require a running X server
+assert_display
+
+test_procedure
+
+# TODO: check for exactly one of disabled or enabled on output
+assert_exit 0 xdg-screensaver status
+assert_stdout
+assert_nostderr
+
+## See bug 7592
+screenstat=`cat out.stdout`
+assert_exit 0 test "$screenstat" = 'enabled' -o "$screenstat" = 'disabled'
+
+test_result
+}
+
+run_test test_screensave_status

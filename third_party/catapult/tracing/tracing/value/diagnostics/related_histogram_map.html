@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<!--
+Copyright 2016 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/base/utils.html">
+<link rel="import" href="/tracing/value/diagnostics/diagnostic.html">
+<link rel="import" href="/tracing/value/diagnostics/histogram_ref.html">
+
+<script>
+'use strict';
+
+tr.exportTo('tr.v.d', function() {
+  class RelatedHistogramMap extends tr.v.d.Diagnostic {
+    constructor() {
+      super();
+      this.histogramsByName_ = new Map();
+    }
+
+    canAddDiagnostic(otherDiagnostic) {
+      return otherDiagnostic instanceof RelatedHistogramMap;
+    }
+
+    addDiagnostic(otherDiagnostic) {
+      // Related Histograms might not exist yet.
+    }
+
+    mergeRelationships(otherDiagnostic, parentHist, otherParentHist) {
+      /*
+        Modify |this| to contain Histograms that should be related to
+        |parentHist|.
+
+        |otherParentHist| was merged to |parentHist|.
+        |otherDiagnostic| contains Histograms that are related to
+        |otherParentHist|.
+
+        Since mergeRelationships() is called after all Histograms are merged,
+        then the MERGED_TO diagnostics of the Histograms in |otherDiagnostic|
+        contain Histograms that should be related to |parentHist| via |this|
+        RelatedHistogramMap.
+
+        otherParentHist -----------------------------> parentHist
+        |               merged to RelatedHistogramMap   |
+        |                                               |
+        | otherDiagnostic                               | this
+        | RelatedHistogramMap                           | RelatedHistogramMap
+        v                                               v
+        otherRelatedHist -----------------------------> relatedHist
+                         merged to RelatedHistogramMap
+
+        However, |otherRelatedHist| may have been merged to Histograms using
+        different grouping keys, so if |relatedHist|'s merge path is different
+        from |parentHist|'s merge path, then |relatedHist| should not be related
+        to |parentHist|.
+       */
+
+      const parentGroupingPath = tr.v.d.GroupingPath.getFromHistogram(
+          parentHist);
+
+      for (const [name, otherRelatedHist] of otherDiagnostic) {
+        const mergedTo = otherRelatedHist.diagnostics.get(
+            tr.v.d.RESERVED_NAMES.MERGED_TO);
+        if (mergedTo === undefined) continue;
+
+        for (const relatedHist of mergedTo.histogramsByName_.values()) {
+          const relatedGroupingPath = tr.v.d.GroupingPath.getFromHistogram(
+              relatedHist);
+          if (relatedGroupingPath === undefined) continue;
+          if (!parentGroupingPath.equals(relatedGroupingPath)) continue;
+
+          this.set(name, relatedHist);
+        }
+      }
+    }
+
+    /**
+     * Lookup a Histogram by name. Returns undefined if |name| is not found.
+     *
+     * @param {string} name
+     * @return {!tr.v.d.HistogramRef|!tr.v.Histogram|undefined}
+     */
+    get(name) {
+      return this.histogramsByName_.get(name);
+    }
+
+    /**
+     * Add a Histogram by an explicit name to this map.
+     *
+     * @param {string} name
+     * @param {!(tr.v.d.HistogramRef|tr.v.Histogram)} hist
+     */
+    set(name, hist) {
+      if (!(hist instanceof tr.v.Histogram) &&
+          !(hist instanceof tr.v.d.HistogramRef)) {
+        throw new Error('Must be instanceof Histogram or HistogramRef: ' +
+            hist);
+      }
+
+      this.histogramsByName_.set(name, hist);
+    }
+
+    /**
+     * Add a Histogram implicitly by its own name to this map.
+     *
+     * @param {!(tr.v.d.HistogramRef|tr.v.Histogram)} hist
+     */
+    add(hist) {
+      this.set(hist.name, hist);
+    }
+
+    get length() {
+      return this.histogramsByName_.size;
+    }
+
+    * [Symbol.iterator]() {
+      for (const pair of this.histogramsByName_) {
+        yield pair;
+      }
+    }
+
+    /**
+     * Resolve all HistogramRefs into Histograms by looking up their guids in
+     * |histograms|.
+     * If a Histogram cannot be found and |opt_required| is true, then throw an
+     * Error.
+     * If a Histogram cannot be found and |opt_required| is false, then the
+     * HistogramRef will remain a HistogramRef.
+     *
+     * @param {!tr.v.HistogramSet} histograms
+     * @param {boolean=} opt_required
+     */
+    resolve(histograms, opt_required) {
+      for (const [name, value] of this) {
+        if (!(value instanceof tr.v.d.HistogramRef)) continue;
+
+        const guid = value.guid;
+        const hist = histograms.lookupHistogram(guid);
+        if (hist instanceof tr.v.Histogram) {
+          this.histogramsByName_.set(name, hist);
+        } else if (opt_required) {
+          throw new Error('Unable to find Histogram ' + guid);
+        }
+      }
+    }
+
+    asDictInto_(d) {
+      d.values = {};
+      for (const [name, hist] of this) {
+        d.values[name] = hist.guid;
+      }
+    }
+
+    static fromDict(d) {
+      const map = new RelatedHistogramMap();
+      for (const [name, guid] of Object.entries(d.values)) {
+        map.set(name, new tr.v.d.HistogramRef(guid));
+      }
+      return map;
+    }
+  }
+
+  tr.v.d.Diagnostic.register(RelatedHistogramMap, {
+    elementName: 'tr-v-ui-related-histogram-map-span'
+  });
+
+  return {
+    RelatedHistogramMap,
+  };
+});
+</script>

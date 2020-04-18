@@ -1,0 +1,46 @@
+// Copyright 2018 The Feed Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+
+package search.now.ui.piet;
+
+option optimize_for=LITE_RUNTIME;
+
+option java_package = "com.google.search.now.ui.piet";
+option java_outer_classname = "PietAndroidSupport";
+option cc_enable_arenas = true;
+
+// Define extensions and other supporting messages used by the Android
+// implementation of the Piet protocol.
+
+// This allows the Host to control the granularity of slices by returning
+// only slices specified instead of generating all the slices within the
+// full Card message.
+// TODO: Is this still relevant?
+message ShardingControl {
+  // The first slice to render, if this is undefined we will render the
+  // full card.
+  optional int32 start_slice = 1;
+
+  // The last slice to render.
+  optional int32 end_slice = 2;
+
+  // If we are rendering a list, this is the first index in the list.
+  optional int32 list_start = 3;
+
+  // if we are rendering a list, this is the last index in the list.
+  optional int32 list_end = 4;
+}

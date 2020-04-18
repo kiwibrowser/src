@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<!--
+Copyright 2016 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/value/diagnostics/related_histogram_map.html">
+
+<script>
+'use strict';
+
+tr.exportTo('tr.v.d', function() {
+  const COLOR_SCHEME_CHROME_USER_FRIENDLY_CATEGORY_DRIVER =
+    'ChromeUserFriendlyCategory';
+
+  /**
+   * RelatedHistogramBreakdown encapsulates an additive relationship between
+   * Histograms: the Histogram that contains this RelatedHistogramBreakdown
+   * diagnostic is composed of the Histograms referenced by this
+   * RelatedHistogramBreakdown diagnostic. RelatedHistogramBreakdown is a
+   * "breakdown" of its containing Histogram into its contained Histograms. This
+   * additive relationship can apply to groups of other things besides Events,
+   * such as memory allocations. RelatedHistogramBreakdowns over groups of
+   * Events is expected to be the most common way of building
+   * RelatedHistogramBreakdowns, though it is not the only way. See
+   * buildFromEvents() for an example of how to build a
+   * RelatedHistogramBreakdown from an EventSet and a grouping function.
+   */
+  class RelatedHistogramBreakdown extends tr.v.d.RelatedHistogramMap {
+    constructor() {
+      super();
+      this.colorScheme = undefined;
+    }
+
+    clone() {
+      const clone = new RelatedHistogramBreakdown();
+      clone.colorScheme = this.colorScheme;
+      // RelatedHistogramMap.addDiagnostic() is no-op.
+      return clone;
+    }
+
+    canAddDiagnostic(otherDiagnostic) {
+      return otherDiagnostic instanceof RelatedHistogramBreakdown &&
+        otherDiagnostic.colorScheme === this.colorScheme;
+    }
+
+    /**
+     * Add a Histogram by an explicit name to this map.
+     *
+     * @param {string} name
+     * @param {!(tr.v.d.HistogramRef|tr.v.Histogram)} hist
+     */
+    set(name, hist) {
+      if (!(hist instanceof tr.v.d.HistogramRef)) {
+        if (!(hist instanceof tr.v.Histogram)) {
+          throw new Error(
+              'RelatedHistogramBreakdown can only contain Histograms');
+        }
+
+        if ((this.length > 0) &&
+            (hist.unit !==
+             tr.b.getFirstElement(this)[1].unit)) {
+          throw new Error('Units mismatch', tr.b.getFirstElement(this)[1].unit,
+              hist.unit);
+        }
+      }
+
+      tr.v.d.RelatedHistogramMap.prototype.set.call(this, name, hist);
+    }
+
+    asDictInto_(d) {
+      tr.v.d.RelatedHistogramMap.prototype.asDictInto_.call(this, d);
+      if (this.colorScheme) d.colorScheme = this.colorScheme;
+    }
+
+    static fromDict(d) {
+      const diagnostic = new RelatedHistogramBreakdown();
+      for (const [name, guid] of Object.entries(d.values)) {
+        diagnostic.set(name, new tr.v.d.HistogramRef(guid));
+      }
+      if (d.colorScheme) diagnostic.colorScheme = d.colorScheme;
+      return diagnostic;
+    }
+
+    /**
+    * Build a RelatedHistogramBreakdown and its Histograms from |events|.  Group
+    * events using |categoryForEvent|. Add the Histograms to |histograms|.
+    * Histograms' names are prefixed with |namePrefix|. Histograms are built
+    * with |opt_binBoundaries|. The numeric sample for each Event is derived
+    * from |opt_sampleForEvent|, which defaults to event.cpuSelfTime. The caller
+    * must add the result RelatedHistogramBreakdown to their Histogram's
+    * diagnostics.
+    *
+    * @param {!tr.v.HistogramSet} histograms
+    * @param {string} namePrefix
+    * @param {!tr.model.EventSet} events
+    * @param {!function(!tr.model.Event):string} categoryForEvent
+    * @param {!tr.b.Unit} unit
+    * @param {!function(!tr.model.Event):number=} opt_sampleForEvent
+    * @param {!tr.v.HistogramBinBoundaries=} opt_binBoundaries
+    * @param {*=} opt_this
+    * @return {!RelatedHistogramBreakdown}
+    */
+    static buildFromEvents(histograms, namePrefix, events, categoryForEvent,
+        unit, opt_sampleForEvent, opt_binBoundaries, opt_this) {
+      const sampleForEvent = opt_sampleForEvent ||
+        ((event) => event.cpuSelfTime);
+
+      const diagnostic = new RelatedHistogramBreakdown();
+      for (const event of events) {
+        const sample = sampleForEvent.call(opt_this, event);
+        if (sample === undefined) continue;
+
+        const eventCategory = categoryForEvent.call(opt_this, event);
+        let hist = diagnostic.get(eventCategory);
+        if (hist === undefined) {
+          hist = new tr.v.Histogram(
+              namePrefix + eventCategory, unit, opt_binBoundaries);
+          histograms.addHistogram(hist);
+          diagnostic.set(eventCategory, hist);
+        }
+
+        hist.addSample(sample,
+            {relatedEvents: new tr.v.d.RelatedEventSet([event])});
+      }
+      return diagnostic;
+    }
+  }
+
+  tr.v.d.Diagnostic.register(RelatedHistogramBreakdown, {
+    elementName: 'tr-v-ui-breakdown-span'
+  });
+
+  return {
+    COLOR_SCHEME_CHROME_USER_FRIENDLY_CATEGORY_DRIVER,
+    RelatedHistogramBreakdown,
+  };
+});
+</script>

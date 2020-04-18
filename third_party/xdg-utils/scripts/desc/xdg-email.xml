@@ -1,0 +1,281 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl"
+   href="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+    "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
+]>
+<refentry id="xdg-email">
+  <refentryinfo>
+    <title>xdg-email Manual</title>
+    <copyright>
+      <year>2006</year>
+    </copyright>
+    <author>
+      <firstname>Kevin</firstname>
+      <surname>Krammer</surname>
+    </author>
+    <address><email>kevin.krammer@gmx.at</email></address>
+    <author>
+      <firstname>Jeremy</firstname>
+      <surname>White</surname>
+    </author>
+    <address><email>jwhite@codeweavers.com</email></address>
+    <releaseinfo>xdg-utils 1.0</releaseinfo>
+  </refentryinfo>
+
+  <refmeta>
+    <refentrytitle>xdg-email</refentrytitle>
+    <manvolnum>1</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname>xdg-email</refname>
+    <refpurpose>command line tool for sending mail using the user's preferred e-mail composer</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+    <cmdsynopsis>
+      <command>xdg-email</command>
+      <arg><option>--utf8</option></arg>
+      <arg><option>--cc</option> <replaceable>address</replaceable></arg>
+      <arg><option>--bcc</option> <replaceable>address</replaceable></arg>
+      <arg><option>--subject</option> <replaceable>text</replaceable></arg>
+      <arg><option>--body</option> <replaceable>text</replaceable></arg>
+      <arg><option>--attach</option> <replaceable>file</replaceable></arg>
+      <group choice="opt">
+        <arg choice="plain"><replaceable>mailto-uri</replaceable></arg>
+        <arg choice="plain"><replaceable>address(es)</replaceable></arg>
+      </group>
+    </cmdsynopsis>
+    <cmdsynopsis>
+      <command>xdg-email</command>
+      <group choice="req">
+        <arg choice="plain"><option>--help</option></arg>
+        <arg choice="plain"><option>--manual</option></arg>
+        <arg choice="plain"><option>--version</option></arg>
+      </group>
+    </cmdsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1 id="description">
+    <title>Description</title>
+    <para>
+      xdg-email opens the user's preferred e-mail composer in order to send
+      a mail to <replaceable>address(es)</replaceable> or
+      <replaceable>mailto-uri</replaceable>. RFC2368 defines mailto:
+      URIs. xdg-email limits support to, cc, subject and body fields in
+      <replaceable>mailto-uri</replaceable>, all other fields are silently
+      ignored. <replaceable>address(es)</replaceable> must follow the
+      syntax of RFC822. Multiple addresses may be provided as 
+      separate arguments.
+    </para>
+    <para>
+      All information provided on the command line is used to
+      prefill corresponding fields in the user's e-mail composer. The user
+      will have the opportunity to change any of this information before
+      actually sending the e-mail.
+    </para>
+    <para>
+      xdg-email is for use inside a desktop session only.
+      It is not recommended to use xdg-email as root.
+    </para>
+    <para>
+      See http://portland.freedesktop.org/EmailConfig for information on
+      how the user can change the e-mail composer that is used.
+    </para>
+  </refsect1>
+  <refsect1 id="options">
+    <title>Options</title>
+    <variablelist>
+      <varlistentry>
+	<term><option>--utf8</option></term>
+	<listitem>
+	  <simpara>
+	    Indicates that all command line options that follow are in utf8.
+	    Without this option, command line options are expected to be
+	    encoded according to locale.
+            If the locale already specifies utf8 this option has no effect.
+            This option does not affect mailto URIs that are passed on the
+            command line.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term><option>--cc</option> <replaceable>address</replaceable></term>
+	<listitem>
+	  <simpara>
+	    Specify a recipient to be copied on the e-mail.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term><option>--bcc</option> <replaceable>address</replaceable></term>
+	<listitem>
+	  <simpara>
+	    Specify a recipient to be blindly copied on the e-mail.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term><option>--subject</option> <replaceable>text</replaceable></term>
+	<listitem>
+	  <simpara>
+	    Specify a subject for the e-mail.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term><option>--body</option> <replaceable>text</replaceable></term>
+	<listitem>
+	  <simpara>
+	    Specify a body for the e-mail. Since the user will be able to 
+	    make changes before actually sending the e-mail, this can be 
+	    used to provide the user with a template for the e-mail.
+	    <replaceable>text</replaceable> may contain linebreaks. 
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term><option>--attach</option> <replaceable>file</replaceable></term>
+	<listitem>
+	  <simpara>
+	    Specify an attachment for the e-mail. <replaceable>file</replaceable>
+	    must point to an existing file.
+	  </simpara>
+	  <simpara>
+	    Some e-mail applications require the file to remain present
+            after xdg-email returns.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+      
+      <varlistentry>
+	<term><option>--help</option></term>
+	<listitem>
+	  <simpara>
+	    Show command synopsis.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term><option>--manual</option></term>
+	<listitem>
+	  <simpara>
+	    Show this manualpage.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>--version</option></term>
+        <listitem>
+          <simpara>
+            Show the xdg-utils version information.
+          </simpara>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+  <refsect1 id="env_vars">
+    <title>Environment Variables</title>
+    <para>
+      xdg-email honours the following environment variables:
+    </para>
+    <variablelist>
+      <varlistentry>
+	<term>XDG_UTILS_DEBUG_LEVEL</term>
+	<listitem>
+	  <simpara>
+	    Setting this environment variable to a non-zero numerical value
+	    makes xdg-email do more verbose reporting on stderr.
+	    Setting a higher value increases the verbosity.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+  <refsect1 id="exitcodes">
+    <title>Exit Codes</title>
+    <para>
+      An exit code of 0 indicates success while a non-zero exit code
+      indicates failure. The following failure codes can be returned:
+    </para>
+    <variablelist>
+      <varlistentry>
+	<term><option>1</option></term>
+	<listitem>
+	  <simpara>
+	    Error in command line syntax.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><option>2</option></term>
+	<listitem>
+	  <simpara>
+	    One of the files passed on the command line did not exist.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><option>3</option></term>
+	<listitem>
+	  <simpara>
+	    A required tool could not be found. 
+	  </simpara>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><option>4</option></term>
+	<listitem>
+	  <simpara>
+	    The action failed. 
+	  </simpara>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><option>5</option></term>
+	<listitem>
+	  <simpara>
+	    No permission to read one of the files passed on the command
+            line.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+  <refsect1 id="configuration">
+    <title>Configuration</title>
+    <para>Visit http://portland.freedesktop.org/EmailConfig for information
+      how to configure xdg-email to use the email client of your choice.
+    </para>
+  </refsect1>
+  <refsect1 id="examples">
+    <title>Examples</title>
+    <para>
+<programlisting>
+xdg-email 'Jeremy White &lt;jwhite@example.com&gt;'
+</programlisting>
+    </para>
+    <para>
+<programlisting>
+xdg-email --attach /tmp/logo.png \
+          --subject 'Logo contest' \
+          --body 'Attached you find the logo for the contest.' \
+          'jwhite@example.com'
+</programlisting>
+    </para>
+    <para>
+<programlisting>
+xdg-email --subject 'Your password is about to expire' \
+          'jwhite@example.com' 'bastian@example.com' 'whipple@example.com'
+</programlisting>
+    </para>
+  </refsect1>
+</refentry>

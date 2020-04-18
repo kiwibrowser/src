@@ -1,0 +1,31 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_email_basic() {
+test_start "$FUNCNAME: verify basic email compose"
+
+ADDR="$XDG_TEST_SHORTID@portland.freedesktop.org"
+
+test_init
+
+require_notroot
+## Require a running X server
+assert_display
+
+test_procedure
+
+assert_exit 0 xdg-email "$PRE$ADDR"
+assert_nostdout
+assert_nostderr
+
+assert_interactive "Did a new email open to '$ADDR' with only the to: field complete?" y
+assert_interactive "Please close any email windows opened by the test." C
+
+test_result
+}
+
+repeat_test test_email_basic 1 PRE "" "mailto:"

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<!--
+Copyright 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/components/app-route/app-route.html">
+<link rel="import" href="/components/paper-tooltip/paper-tooltip.html">
+
+<link rel="import" href="/elements/base-style.html">
+<link rel="import" href="/elements/job-page/change-details.html">
+<link rel="import" href="/elements/job-page/job-chart-icon.html">
+<link rel="import" href="/elements/job-page/job-charts.html">
+<link rel="import" href="/elements/job-page/job-details.html">
+<link rel="import" href="/elements/job-page/job-menu-fab.html">
+<link rel="import" href="/elements/loading-wrapper.html">
+
+<dom-module id="job-page">
+  <template>
+    <style include="base-style">
+      #failed {
+        background: var(--paper-red-50);
+        color: var(--paper-red-500);
+        cursor: pointer;
+      }
+
+      #failed-tooltip {
+        max-width: 50em;
+        white-space: pre-wrap;
+      }
+
+      #running {
+        background: var(--paper-indigo-50);
+        color: var(--paper-indigo-500);
+      }
+
+      h1 {
+        margin-bottom: 0.1em;
+      }
+
+      .columns {
+        display: flex;
+        margin: 0 -0.5em;
+      }
+
+      #details-column {
+        flex: 1;
+        margin: 0 0.5em;
+      }
+
+      #main-column {
+        flex: 3;
+        margin: 0 0.5em;
+      }
+    </style>
+
+    <app-route route="{{route}}" pattern="/:jobId" data="{{routeData}}"></app-route>
+
+    <h1 id="testing">
+      Job [[routeData.jobId]]
+      <template is="dom-if" if="[[failed(job)]]">
+        <span id="failed" class="badge">Error</span>
+        <paper-tooltip for="failed" animation-delay="0">
+          <div id="failed-tooltip">[[job.exception]]</div>
+        </paper-tooltip>
+      </template>
+      <template is="dom-if" if="[[running(job)]]">
+        <span id="running" class="badge">Running</span>
+      </template>
+    </h1>
+    <loading-wrapper url="/api/job/[[routeData.jobId]]?o=STATE" response="{{job}}">
+      <p class="byline">
+        For [[job.user]]
+        <span class="middle-dot"></span>
+        [[duration(job)]]
+        <span class="middle-dot"></span>
+        [[start(job)]]
+      </p>
+      <div class="columns">
+        <div id="details-column">
+          <job-details job="[[job]]"></job-details>
+        </div>
+        <div id="main-column">
+          <job-charts job="[[job]]" change-index="{{changeIndex}}"></job-charts>
+          <change-details job="[[job]]" change-index="[[changeIndex]]"></change-details>
+        </div>
+      </div>
+      <job-menu-fab job="[[job]]" auth-headers="[[authHeaders]]"></job-menu-fab>
+    </loading-wrapper>
+  </template>
+
+  <script>
+    'use strict';
+    Polymer({
+      is: 'job-page',
+
+      properties: {
+        job: {
+          type: Object,
+        },
+
+        changeIndex: {
+          type: Number
+        }
+      },
+
+      failed(job) {
+        return job.status.toLowerCase() === 'failed';
+      },
+
+      running(job) {
+        return job.status.toLowerCase() === 'running';
+      },
+
+      start(job) {
+        return new Date(job.created + 'Z').toLocaleString();
+      },
+
+      duration(job) {
+        const created = new Date(job.created + 'Z');
+        const updated = new Date(job.updated + 'Z');
+        const durationMs = updated - created;
+
+        const seconds = durationMs / 1000;
+        if (seconds < 60) {
+          return seconds.toFixed(1) + ' seconds';
+        }
+
+        const minutes = durationMs / (1000 * 60);
+        if (minutes < 60) {
+          return minutes.toFixed(1) + ' minutes';
+        }
+
+        const hours = durationMs / (1000 * 60 * 60);
+        return hours.toFixed(1) + ' hours';
+      },
+    });
+  </script>
+</dom-module>

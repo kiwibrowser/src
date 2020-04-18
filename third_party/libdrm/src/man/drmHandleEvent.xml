@@ -1,0 +1,102 @@
+<?xml version='1.0'?> <!--*-nxml-*-->
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+          "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
+
+<!--
+  Written 2012 by David Herrmann <dh.herrmann@googlemail.com>
+  Dedicated to the Public Domain
+-->
+
+<refentry id="drmHandleEvent">
+  <refentryinfo>
+    <title>Direct Rendering Manager</title>
+    <productname>libdrm</productname>
+    <date>September 2012</date>
+    <authorgroup>
+      <author>
+        <contrib>Developer</contrib>
+        <firstname>David</firstname>
+        <surname>Herrmann</surname>
+        <email>dh.herrmann@googlemail.com</email>
+      </author>
+    </authorgroup>
+  </refentryinfo>
+
+  <refmeta>
+    <refentrytitle>drmHandleEvent</refentrytitle>
+    <manvolnum>3</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname>drmHandleEvent</refname>
+    <refpurpose>read and process pending DRM events</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+
+    <funcsynopsis>
+      <funcsynopsisinfo>#include &lt;xf86drm.h&gt;</funcsynopsisinfo>
+
+      <funcprototype>
+        <funcdef>int <function>drmHandleEvent</function></funcdef>
+        <paramdef>int <parameter>fd</parameter></paramdef>
+        <paramdef>drmEventContextPtr <parameter>evctx</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>Description</title>
+    <para><function>drmHandleEvent</function> processes outstanding DRM events
+          on the DRM file-descriptor passed as <parameter>fd</parameter>. This
+          function should be called after the DRM file-descriptor has polled
+          readable; it will read the events and use the passed-in
+          <parameter>evctx</parameter> structure to call function pointers
+          with the parameters noted below:
+
+<programlisting>
+typedef struct _drmEventContext {
+    int version;
+    void (*vblank_handler) (int fd,
+                            unsigned int sequence,
+                            unsigned int tv_sec,
+                            unsigned int tv_usec,
+                            void *user_data)
+    void (*page_flip_handler) (int fd,
+                               unsigned int sequence,
+                               unsigned int tv_sec,
+                               unsigned int tv_usec,
+                               void *user_data)
+} drmEventContext, *drmEventContextPtr;
+</programlisting>
+
+          </para>
+
+  </refsect1>
+
+  <refsect1>
+    <title>Return Value</title>
+    <para><function>drmHandleEvent</function> returns <literal>0</literal> on
+          success, or if there is no data to read from the file-descriptor.
+          Returns <literal>-1</literal> if the read on the file-descriptor fails
+          or returns less than a full event record.</para>
+  </refsect1>
+
+  <refsect1>
+    <title>Reporting Bugs</title>
+    <para>Bugs in this function should be reported to
+      https://bugs.freedesktop.org/enter_bug.cgi?product=DRI&amp;component=libdrm
+      under the "DRI" product, component "libdrm"</para>
+  </refsect1>
+
+  <refsect1>
+    <title>See Also</title>
+    <para>
+      <citerefentry><refentrytitle>drm</refentrytitle><manvolnum>7</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drm-kms</refentrytitle><manvolnum>7</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drmModePageFlip</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drmWaitVBlank</refentrytitle><manvolnum>3</manvolnum></citerefentry>
+    </para>
+  </refsect1>
+</refentry>

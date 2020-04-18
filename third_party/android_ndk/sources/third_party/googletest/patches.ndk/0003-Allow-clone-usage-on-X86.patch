@@ -1,0 +1,32 @@
+From 535dc4bfad5b6796c567274af9fc97661cbabba4 Mon Sep 17 00:00:00 2001
+From: Lai Wei-Chih <Robert.Lai@mediatek.com>
+Date: Wed, 26 Jun 2013 09:52:00 +0800
+Subject: Allow clone() usage on X86.
+
+Since https://android-review.googlesource.com/#/c/61106/,
+the missing clone has been added to x86.
+
+Change-Id: Id1987f462d978dcff0b6307f929019456bc24a6d
+---
+include/gtest/internal/gtest-port.h |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/include/gtest/internal/gtest-port.h b/include/gtest/internal/gtest-port.h
+index a3f363f..5af0f45 100644
+--- a/include/gtest/internal/gtest-port.h
++++ b/include/gtest/internal/gtest-port.h
+@@ -611,9 +611,8 @@ using ::std::tuple_size;
+ 
+ # if GTEST_OS_LINUX && !defined(__ia64__)
+ #  if GTEST_OS_LINUX_ANDROID
+-// On Android, clone() is only available starting with Gingerbread, except
+-// on x86, for some reason.
+-#    if !defined(__i386__) && __ANDROID_API__ >= 9
++// On Android, clone() is only available starting with Gingerbread.
++#    if __ANDROID_API__ >= 9
+ #     define GTEST_HAS_CLONE 1
+ #    else
+ #     define GTEST_HAS_CLONE 0
+-- 
+1.7.9.5
+

@@ -1,0 +1,95 @@
+#!/usr/bin/env node
+/**
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+*/
+const polycss = require('../').polymerCssBuild;
+const cliArgs = require('command-line-args');
+const getCliUsage = require('command-line-usage');
+const options = [
+  {
+    name: 'file',
+    type: String,
+    alias: 'f',
+    defaultOption: true,
+    description: 'Files to apply Polymer styling build. Files will be overwritten unless "--output" is given',
+    multiple: true,
+    defaultValue: []
+  },
+  {
+    name: 'help',
+    type: Boolean,
+    description: 'Print this message',
+    alias: 'h'
+  },
+  {
+    name: 'build-for-shady',
+    type: Boolean,
+    description: 'Perform Shady DOM shimming. This will make the build no longer compatible with Shadow DOM'
+  },
+  {
+    name: 'output',
+    alias: 'o',
+    type: String,
+    multiple: true,
+    defaultValue: [],
+    description: 'Output file names, must be in same order as input files. If not specified, files will be overwritten'
+  },
+  {
+    name: 'no-inline-includes',
+    type: Boolean,
+    description: 'Disable inlining <style include> elements'
+  }
+];
+
+const args = cliArgs(options);
+
+function printHelp() {
+  console.log(getCliUsage([
+    {
+      header: 'Pre-apply Polymer CSS tasks',
+      content: 'polymer-css-build'
+    },
+    {
+      header: 'Options',
+      optionList: options
+    }
+  ]));
+}
+
+if (args.help) {
+  printHelp();
+  process.exit(0);
+}
+
+if (args.file.length === 0) {
+  console.error('No files given!');
+  printHelp();
+  process.exit(1);
+}
+
+if (args.output.length > 0 && args.output.length !== args.file.length) {
+  console.error('Expected %d, or 0, files in --output, got %d files', args.file.length, args.output.length);
+  printHelp();
+  process.exit(1);
+}
+
+const fs = require('fs');
+const docs = args.file.map(f => ({
+  url: f,
+  content: fs.readFileSync(f, 'utf8')
+}));
+const outputFiles = args.output.length ? args.output : args.file;
+polycss(docs, args).then(docs => {
+  docs.forEach((d, idx) => {
+    fs.writeFileSync(outputFiles[idx], d.content, 'utf8');
+  });
+}).catch(err => {
+  console.error(err.stack);
+  process.exit(1);
+})

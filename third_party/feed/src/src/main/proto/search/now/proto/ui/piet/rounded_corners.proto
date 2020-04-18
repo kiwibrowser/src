@@ -1,0 +1,64 @@
+// Copyright 2018 The Feed Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+
+package search.now.ui.piet;
+
+option optimize_for=LITE_RUNTIME;
+
+option java_package = "com.google.search.now.ui.piet";
+option java_outer_classname = "RoundedCornersProto";
+option cc_enable_arenas = true;
+
+// Rounded corners for Views, expressed as a bit mask. If a container view has
+// rounded corners applied to it, then the contents of that view SHOULD also be
+// cropped to fit within the rounded rectangle bounding box established by the
+// container. Specifically, content within such a view SHOULD be cropped too,
+// without having to explicitly specify rounded corners on the child content.
+// Check [INTERNAL LINK] for any client-specific limitations that apply to the
+// current version of the implementation.
+message RoundedCorners {
+  // Represents the set of values for a bitmask to specify which corners should
+  // be rounded. Values start at top-left and continue clock-wise.
+  enum Corners {
+    // If unspecified, then all corners will be rounded.
+    CORNERS_UNSPECIFIED = 0;
+
+    // Indicates that the top left corner should be rounded.
+    TOP_LEFT = 0x1;
+
+    // Indicates that the top right corner should be rounded.
+    TOP_RIGHT = 0x2;
+
+    // Indicates that the bottom right corner should be rounded.
+    BOTTOM_RIGHT = 0x4;
+
+    // Indicates that the bottom left corner should be rounded.
+    BOTTOM_LEFT = 0x8;
+  }
+
+  // A bitmask representing which corners should be rounded. Bit values are
+  // defined by the `Corners` enum. If no corners are specified, then this will
+  // be applied to all corners.
+  optional int32 bitmask = 1;
+
+  // The radius of the rounding applied to the specified corners, specified in
+  // DP. This value must be non-zero, otherwise it’s a no-op.
+  optional int32 radius = 2;
+
+  // Please use CL numbers you own for extension numbers.
+  extensions 10000 to max;
+}

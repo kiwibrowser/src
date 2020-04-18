@@ -1,0 +1,766 @@
+// asciidoc -b html5 -d book -f apitests.conf apitests.adoc
+
+:toc:
+:numbered:
+:docinfo:
+:revnumber: 4
+
+Vulkan API Test Plan
+====================
+
+This document currently outlines Vulkan API testing plan. The document splits API into features, and for each the important testing objectives are described. The technical implementation is not currently planned or documented here, except in select cases.
+
+In the future this document will likely evolve into a description of various tests and test coverage.
+
+Test framework
+--------------
+
+Test framework will provide tests access to Vulkan platform interface. In addition a library of generic utilties will be provided.
+
+Test case base class
+~~~~~~~~~~~~~~~~~~~~
+
+Vulkan test cases will use a slightly different interface from traditional +tcu::TestCase+ to facilitate following:
+
+ * Ability to generate shaders in high-level language, and pre-compile them without running the tests
+ * Cleaner separation between test case parameters and execution instance
+
+[source,cpp]
+----
+class TestCase : public tcu::TestCase
+{
+public:
+                            TestCase        (tcu::TestContext& testCtx, const std::string& name, const std::string& description);
+                            TestCase        (tcu::TestContext& testCtx, tcu::TestNodeType type, const std::string& name, const std::string& description);
+    virtual                 ~TestCase       (void) {}
+
+    virtual void            initPrograms    (vk::ProgramCollection<glu::ProgramSources>& programCollection) const;
+    virtual TestInstance*   createInstance  (Context& context) const = 0;
+
+    IterateResult           iterate         (void) { DE_ASSERT(false); return STOP; } // Deprecated in this module
+};
+
+class TestInstance
+{
+public:
+                                TestInstance    (Context& context) : m_context(context) {}
+    virtual                     ~TestInstance   (void) {}
+
+    virtual tcu::TestStatus     iterate         (void) = 0;
+
+protected:
+    Context&                    m_context;
+};
+----
+
+In addition for simple tests a utility to wrap a function as a test case is provided:
+
+[source,cpp]
+----
+tcu::TestStatus createSamplerTest (Context& context)
+{
+    TestLog&                log         = context.getTestContext().getLog();
+    const DefaultDevice     device      (context.getPlatformInterface(), context.getTestContext().getCommandLine());
+    const VkDevice          vkDevice    = device.getDevice();
+    const DeviceInterface&  vk          = device.getInterface();
+
+    {
+        const struct VkSamplerCreateInfo        samplerInfo =
+        {
+            VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,  //  VkStructureType sType;
+            DE_NULL,                                //  const void*     pNext;
+            VK_TEX_FILTER_NEAREST,                  //  VkTexFilter     magFilter;
+            VK_TEX_FILTER_NEAREST,                  //  VkTexFilter     minFilter;
+            VK_TEX_MIPMAP_MODE_BASE,                //  VkTexMipmapMode mipMode;
+            VK_TEX_ADDRESS_CLAMP,                   //  VkTexAddress    addressU;
+            VK_TEX_ADDRESS_CLAMP,                   //  VkTexAddress    addressV;
+            VK_TEX_ADDRESS_CLAMP,                   //  VkTexAddress    addressW;
+            0.0f,                                   //  float           mipLodBias;
+            0u,                                     //  deUint32        maxAnisotropy;
+            VK_COMPARE_OP_ALWAYS,                   //  VkCompareOp     compareOp;
+            0.0f,                                   //  float           minLod;
+            0.0f,                                   //  float           maxLod;
+            VK_BORDER_COLOR_TRANSPARENT_BLACK,      //  VkBorderColor   borderColor;
+        };
+
+        Move<VkSamplerT>    tmpSampler  = createSampler(vk, vkDevice, &samplerInfo);
+    }
+
+    return tcu::TestStatus::pass("Creating sampler succeeded");
+}
+
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+{
+    de::MovePtr<tcu::TestCaseGroup> apiTests    (new tcu::TestCaseGroup(testCtx, "api", "API Tests"));
+
+    addFunctionCase(apiTests.get(), "create_sampler",   "", createSamplerTest);
+
+    return apiTests.release();
+}
+----
+
++vkt::Context+, which is passed to +vkt::TestInstance+ will provide access to Vulkan platform interface, and a default device instance. Most test cases should use default device instance:
+
+ * Creating device can take up to tens of milliseconds
+ * --deqp-vk-device-id=N command line option can be used to change device
+ * Framework can force validation layers (--deqp-vk-layers=validation,...)
+
+Other considerations:
+
+ * Rather than using default header, deqp uses custom header & interface wrappers
+ ** See +vk::PlatformInterface+ and +vk::DeviceInterface+
+ ** Enables optional run-time dependency to Vulkan driver (required for Android, useful in general)
+ ** Various logging & other analysis facilities can be layered on top of that interface
+ * Expose validation state to tests to be able to test validation
+ * Extensions are opt-in, some tests will require certain extensions to work
+ ** --deqp-vk-extensions? enable all by default?
+ ** Probably good to be able to override extensions as well (verify that tests report correct results without extensions)
+
+Common utilities
+~~~~~~~~~~~~~~~~
+
+Test case independent Vulkan utilities will be provided in +vk+ namespace, and can be found under +framework/vulkan+. These include:
+
+ * +Unique<T>+ and +Move<T>+ wrappers for Vulkan API objects
+ * Creating all types of work with configurable parameters:
+ ** Workload "size" (not really comparable between types)
+ ** Consume & produce memory contents
+ *** Simple checksumming / other verification against reference data typically fine
+
+.TODO
+ * Document important utilities (vkRef.hpp for example).
+ * Document Vulkan platform port.
+
+Object management
+-----------------
+
+Object management tests verify that the driver is able to create and destroy objects of all types. The tests don't attempt to use the objects (unless necessary for testing object construction) as that is covered by feature-specific tests. For all object types the object management tests cover:
+
+ * Creating objects with a relevant set of parameters
+ ** Not exhaustive, guided by what might actually make driver to take different path
+ * Allocating multiple objects of same type
+ ** Reasonable limit depends on object type
+ * Creating objects from multiple threads concurrently (where possible)
+ * Freeing objects from multiple threads
+
+NOTE: tests for various +vkCreate*()+ functions are documented in feature-specific sections.
+
+Multithreaded scaling
+---------------------
+
+Vulkan API is free-threaded and suggests that many operations (such as constructing command buffers) will scale with number of app threads. Tests are needed for proving that such scalability actually exists, and there are no locks in important functionality preventing that.
+
+NOTE: Khronos CTS has not traditionally included any performance testing, and the tests may not be part of conformance criteria. The tests may however be useful for IHVs for driver optimization, and could be enforced by platform-specific conformance tests, such as Android CTS.
+
+Destructor functions
+~~~~~~~~~~~~~~~~~~~~
+
+API Queries
+-----------
+
+Objective of API query tests is to validate that various +vkGet*+ functions return correct values. Generic checks that apply to all query types are:
+
+ * Returned value size is equal or multiple of relevant struct size
+ * Query doesn't write outside the provided pointer
+ * Query values (where expected) don't change between subsequent queries
+ * Concurrent queries from multiple threads work
+
+Platform queries
+~~~~~~~~~~~~~~~~
+
+Platform query tests will validate that all queries work as expected and return sensible values.
+
+ * Sensible device properties
+ ** May have some Android-specific requirements
+ *** TBD queue 0 must be universal queue (all command types supported)
+ * All required functions present
+ ** Both platform (physicalDevice = 0) and device-specific
+ ** Culled based on enabled extension list?
+
+Device queries
+~~~~~~~~~~~~~~
+
+Object queries
+~~~~~~~~~~~~~~
+
+ * Memory requirements: verify that for buffers the returned size is at least the size of the buffer
+
+Format & image capabilities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Memory management
+-----------------
+
+Memory management tests cover memory allocation, sub-allocation, access, and CPU and GPU cache control. Testing some areas such as cache control will require stress-testing memory accesses from CPU and various pipeline stages.
+
+Memory allocation
+~~~~~~~~~~~~~~~~~
+
+ * Test combination of:
+ ** Various allocation sizes
+ ** All heaps
+ * Allocations that exceed total available memory size (expected to fail)
+ * Concurrent allocation and free from multiple threads
+ * Memory leak tests (may not work on platforms that overcommit)
+ ** Allocate memory until fails, free all and repeat
+ ** Total allocated memory size should remain stable over iterations
+ ** Allocate and free in random order
+
+.Spec issues
+
+What are the alignment guarantees for the returned memory allocation? Will it satisfy alignment requirements for all object types? If not, app needs to know the alignment, or alignment parameter needs to be added to +VkMemoryAllocInfo+.
+
+Minimum allocation size? If 1, presumably implementation has to round it up to next page size at least? Is there a query for that? What happens when accessing the added padding?
+
+Mapping memory and CPU access
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ * Verify that mapping of all host-visible allocations succeed and accessing memory works
+ * Verify mapping of sub-ranges
+ * Access still works after un-mapping and re-mapping memory
+ * Attaching or detaching memory allocation from buffer/image doesn't affect mapped memory access or contents
+ ** Images: test with various formats, mip-levels etc.
+
+.Spec issues
+ * Man pages say vkMapMemory is thread-safe, but to what extent?
+ ** Mapping different VkDeviceMemory allocs concurrently?
+ ** Mapping different sub-ranges of same VkDeviceMemory?
+ ** Mapping overlapping sub-ranges of same VkDeviceMemory?
+ * Okay to re-map same or overlapping range? What pointers should be returned in that case?
+ * Can re-mapping same block return different virtual address?
+ * Alignment of returned CPU pointer?
+ ** Access using SIMD instructions can benefit from alignment
+
+CPU cache control
+~~~~~~~~~~~~~~~~~
+
+ * TODO Semantics discussed at https://cvs.khronos.org/bugzilla/show_bug.cgi?id=13690
+ ** Invalidate relevant for HOST_NON_COHERENT_BIT, flushes CPU read caches
+ ** Flush flushes CPU write caches?
+ * Test behavior with all possible mem alloc types & various sizes
+ * Corner-cases:
+ ** Empty list
+ ** Empty ranges
+ ** Same range specified multiple times
+ ** Partial overlap between ranges
+
+.Spec issues
+ * Thread-safety? Okay to flush different ranges concurrently?
+
+GPU cache control
+~~~~~~~~~~~~~~~~~
+
+Validate that GPU caches are invalidated where instructed. This includes visibility of memory writes made by both CPU and GPU to both CPU and GPU pipeline stages.
+
+ * Image layout transitions may need special care
+
+Binding memory to objects
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ * Buffers and images only
+ * Straightforward mapping where allocation size matches object size and memOffset = 0
+ * Sub-allocation of larger allocations
+ * Re-binding object to different memory allocation
+ * Binding multiple objects to same or partially overlapping memory ranges
+ ** Aliasing writable resources? Access granularity?
+ * Binding various (supported) types of memory allocations
+
+.Spec issues
+ * When binding multiple objects to same memory, will data in memory be visible for all objects?
+ ** Reinterpretation rules?
+ * Memory contents after re-binding memory to a different object?
+
+Sparse resources
+----------------
+
+Sparse memory resources are treated as separate feature from basic memory management. Details TBD still.
+
+Binding model
+-------------
+
+The objective of the binding model tests is to verify:
+
+ * All valid descriptor sets can be created
+ * Accessing resources from shaders using various layouts
+ * Descriptor updates
+ * Descriptor set chaining
+ * Descriptor set limits
+
+As a necessary side effect, the tests will provide coverage for allocating and accessing all types of resources from all shader stages.
+
+Descriptor set functions
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Pipeline layout functions
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Pipeline layouts will be covered mostly by tests that use various layouts, but in addition some corner-case tests are needed:
+
+ * Creating empty layouts for shaders that don't use any resources
+ ** For example: vertex data generated with +gl_VertexID+ only
+
+Multipass
+---------
+
+Multipass tests will verify:
+
+ * Various possible multipass data flow configurations
+ ** Target formats, number of targets, load, store, resolve, dependencies, ...
+ ** Exhaustive tests for selected dimensions
+ ** Randomized tests
+ * Interaction with other features
+ ** Blending
+ ** Tessellation, geometry shaders (esp. massive geometry expansion)
+ ** Barriers that may cause tiler flushes
+ ** Queries
+ * Large passes that may require tiler flushes
+
+Device initialization
+---------------------
+
+Device initialization tests verify that all reported devices can be created, with various possible configurations.
+
+ - +VkApplicationInfo+ parameters
+   * Arbitrary +pAppName+ / +pEngineName+ (spaces, utf-8, ...)
+   * +pAppName+ / +pEngineName+ = NULL?
+   * +appVersion+ / +engineVersion+ for 0, ~0, couple of values
+   * Valid +apiVersion+
+   * Invalid +apiVersion+ (expected to fail?)
+ - +VkAllocCallbacks+
+   * Want to be able to run all tests with and without callbacks?
+   ** See discussion about default device in framework section
+   * Custom allocators that provide guardbands and check them at free
+   * Override malloc / free and verify that driver doesn't call if callbacks provided
+   ** As part of object mgmt tests
+   * Must be inherited to all devices created from instance
+ - +VkInstanceCreateInfo+
+   * Empty extension list
+   * Unsupported extensions (expect VK_UNSUPPORTED)
+   * Various combinations of supported extensions
+   ** Any dependencies between extensions (enabling Y requires enabling X)?
+
+.Spec issues
+ * Only VkPhysicalDevice is passed to vkCreateDevice, ICD-specific magic needed for passing callbacks down to VkDevice instance
+
+ * Creating multiple devices from single physical device
+ * Different queue configurations
+ ** Combinations of supported node indexes
+ ** Use of all queues simultaneously for various operations
+ ** Various queue counts
+ * Various extension combinations
+ * Flags
+ ** Enabling validation (see spec issues)
+ ** VK_DEVICE_CREATE_MULTI_DEVICE_IQ_MATCH_BIT not relevant for Android
+
+.Spec issues
+ * Can same queue node index used multiple times in +pRequestedQueues+ list?
+ * VK_DEVICE_CREATE_VALIDATION_BIT vs. layers
+
+Queue functions
+---------------
+
+Queue functions (one currently) will have a lot of indicental coverage from other tests, so only targeted corner-case tests are needed:
+
+ * +cmdBufferCount+ = 0
+ * Submitting empty VkCmdBuffer
+
+.Spec issues
+ * Can +fence+ be +NULL+ if app doesn't need it?
+
+Synchronization
+---------------
+
+Synchronization tests will verify that all execution ordering primitives provided by the API will function as expected. Testing scheduling and synchronization robustness will require generating non-trivial workloads and possibly randomization to reveal potential issues.
+
+ * Verify that all sync objects signaled after *WaitIdle() returns
+ ** Fences (vkGetFenceStatus)
+ ** Events (vkEventGetStatus)
+ ** No way to query semaphore status?
+ * Threads blocking at vkWaitForFences() must be resumed
+ * Various amounts of work queued (from nothing to large command buffers)
+ * vkDeviceWaitIdle() concurrently with commands that submit more work
+ * all types of work
+
+Fences
+~~~~~~
+
+ * Basic waiting on fences
+ ** All types of commands
+ ** Waiting on a different thread than the thread that submitted the work
+ * Reusing fences (vkResetFences)
+ * Waiting on a fence / querying status of a fence before it has been submitted to be signaled
+ * Waiting on a fence / querying status of a fence has just been created with CREATE_SIGNALED_BIT
+ ** Reuse in different queue
+ ** Different queues
+
+.Spec issues
+ * Using same fence in multiple vkQueueSubmit calls without waiting/resetting in between
+ ** Completion of first cmdbuf will reset fence and others won't do anything?
+ * Waiting on same fence from multiple threads?
+
+Semaphores
+~~~~~~~~~~
+
+ * All types of commands waiting & signaling semaphore
+ * Cross-queue semaphores
+ * Queuing wait on initially signaled semaphore
+ * Queuing wait immediately after queuing signaling
+ * vkQueueWaitIdle & vkDeviceWaitIdle waiting on semaphore
+ * Multiple queues waiting on same semaphore
+
+NOTE: Semaphores might change; counting is causing problems for some IHVs.
+
+Events
+~~~~~~
+
+ * All types of work waiting on all types of events
+ ** Including signaling from CPU side (vkSetEvent)
+ ** Memory barrier
+ * Polling event status (vkGetEventStatus)
+ * Memory barriers (see also GPU cache control)
+ * Corner-cases:
+ ** Re-setting event before it has been signaled
+ ** Polling status of event concurrently with signaling it or re-setting it from another thread
+ ** Multiple commands (maybe multiple queues as well) setting same event
+ *** Presumably first set will take effect, rest have no effect before event is re-set
+
+Pipeline queries
+----------------
+
+Pipeline query test details TBD. These are of lower priority initially.
+
+NOTE: Currently contains only exact occlusion query as mandatory. Might be problematic for some, and may change?
+
+Buffers
+-------
+
+Buffers will have a lot of coverage from memory management and access tests. Targeted buffer tests need to verify that various corner-cases and more exotic configurations work as expected.
+
+ * All combinations of create and usage flags work
+ ** There are total 511 combinations of usage flags and 7 combinations of create flags
+ * Buffers of various sizes can be created and they report sensible memory requirements
+ ** Test with different sizes:
+ *** 0 Byte
+ *** 1181 Byte
+ *** 15991 Byte
+ *** 16 kByte
+ *** Device limit (maxTexelBufferSize)
+ * Sparse buffers: very large (limit TBD) buffers can be created
+
+Buffer views
+~~~~~~~~~~~~
+
+ * Buffer views of all (valid) types and formats can be created from all (compatible) buffers
+ ** There are 2 buffer types and 173 different formats.
+ * Various view sizes
+ ** Complete buffer
+ ** Partial buffer
+ * View can be created before and after attaching memory to buffer
+ ** 2 tests for each bufferView
+ * Changing memory binding makes memory contents visible in already created views
+ ** Concurrently changing memory binding and creating views
+
+.Spec issues
+ * Alignment or size requirements for buffer views?
+
+Images
+------
+
+Like buffers, images will have significant coverage from other test groups that focus on various ways to access image data. Additional coverage not provided by those tests will be included in this feature group.
+
+Image functions
+~~~~~~~~~~~~~~~
+
+.Spec issues
+ * +VK_IMAGE_USAGE_GENERAL+?
+
+ * All valid and supported combinations of image parameters
+ ** Sampling verification with nearest only (other modes will be covered separately)
+ * Various image sizes
+ * Linear-layout images & writing data from CPU
+ * Copying data between identical opaque-layout images on CPU?
+
+Image view functions
+~~~~~~~~~~~~~~~~~~~~
+
+.Spec issues
+ * What are format compatibility rules?
+ * Can color/depth/stencil attachments to write to image which has different format?
+ ** Can I create DS view of RGBA texture and write to only one component by creating VkDepthStencilView for example?
+ * Image view granularity
+ ** All sub-rects allowed? In all use cases (RTs for example)?
+ * Memory access granularity
+ ** Writing concurrently to different areas of same memory backed by same/different image or view
+
+ * Image views of all (valid) types and formats can be created from all (compatible) images
+ * Channel swizzles
+ * Depth- and stencil-mode
+ * Different formats
+ * Various view sizes
+ ** Complete image
+ ** Partial image (mip- or array slice)
+ * View can be created before and after attaching memory to image
+ * Changing memory binding makes memory contents visible in already created views
+ ** Concurrently changing memory binding and creating views
+
+Render target views
+^^^^^^^^^^^^^^^^^^^
+
+ * Writing to color/depth/stencil attachments in various view configurations
+ ** Multipass tests will contain some coverage for this
+ ** Image layout
+ ** View size
+ ** Image mip- or array sub-range
+ * +msaaResolveImage+
+ ** TODO What is exactly this?
+
+Shaders
+-------
+
+Shader API test will verify that shader loading functions behave as expected. Verifying that various SPIR-V constructs are accepted and executed correctly however is not an objective; that will be covered more extensively by a separate SPIR-V test set.
+
+Pipelines
+---------
+
+Construction
+~~~~~~~~~~~~
+
+Pipeline tests will create various pipelines and verify that rendering results appear to match (resulting HW pipeline is correct). Fixed-function unit corner-cases nor accuracy is verified. It is not possible to exhaustively test all pipeline configurations so tests have to test some areas in isolation and extend coverage with randomized tests.
+
+Pipeline caches
+^^^^^^^^^^^^^^^
+
+Extend pipeline tests to cases to use pipeline caches, test that pipelines created from pre-populated cache still produce identical results to pipelines created with empty cache.
+
+Verify that maximum cache size is not exceeded.
+
+Pipeline state
+~~~~~~~~~~~~~~
+
+Pipeline tests, as they need to verify rendering results, will provide a lot of coverage for pipeline state manipulation. In addition some corner-case tests are needed:
+
+ * Re-setting pipeline state bits before use
+ * Carrying / manipulating only part of state over draw calls
+ * Submitting command buffers that have only pipeline state manipulation calls (should be no-op)
+
+.Spec issues
+ * Does vkCmdBindPipeline invalidate other state bits?
+
+Samplers
+--------
+
+Sampler tests verify that sampler parameters are mapped to correct HW state. That will be verified by sampling various textures in certain configurations (as listed below). More exhaustive texture filtering verification will be done separately.
+
+ * All valid sampler state configurations
+ * Selected texture formats (RGBA8, FP16, integer textures)
+ * All texture types
+ * Mip-mapping with explicit and implicit LOD
+
+Dynamic state objects
+---------------------
+
+Pipeline tests will include coverage for most dynamic state object usage as some pipeline configurations need corresponding dynamic state objects. In addition there are couple of corner-cases worth exploring separately:
+
+ * Re-setting dynamic state bindings one or more times before first use
+ * Dynamic state object binding persistence over pipeline changes
+ * Large amounts of unique dynamic state objects in a command buffer, pass, or multipass
+
+Command buffers
+---------------
+
+Tests for various rendering features will provide significant coverage for command buffer recording. Additional coverage will be needed for:
+
+ * Re-setting command buffers
+ * Very small (empty) and large command buffers
+ * Various optimize flags combined with various command buffer sizes and contents
+ ** Forcing optimize flags in other tests might be useful for finding cases that may break
+
+Command Pools (5.1 in VK 1.0 Spec)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[cols="1,4,8,8", options="header"]
+|===
+|No. | Tested area | Test Description | Relevant specification text
+|1  | Creation | Call vkCreateCommandPool with all parameters that can be NULL having that value | If pAllocator is not NULL, pAllocator must be a pointer to a valid VkAllocationCallbacks structure
+|2  | | ... with pAllocator != NULL |
+|3  | | ... with VK_COMMAND_POOL_CREATE_TRANSIENT_BIT set in pCreateInfo's flags | flags is a combination of bitfield flags indicating usage behavior for the pool and command buffers allocated from it.
+|4  | | ... with VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT set in pCreateInfo's flags |
+|5  | Resetting | Call vkResetCommandPool with VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT set |
+|6  | | ... without any bits set |
+|===
+
+Command Buffer Lifetime (5.2 in VK 1.0 Spec)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[cols="1,4,8,8", options="header"]
+|===
+|No. | Tested area | Test Description | Relevant specification text
+|1  | Allocation | Allocate a single primary  buffer |
+|2  | | Allocate a large number of primary buffers |
+|3  | | Allocate no primary buffers (bufferCount == 0) |
+|4  | | Allocate a single secondary buffer |
+|5  | | Allocate a large number of secondary buffers |
+|6  | | Allocate no secondary buffers (bufferCount == 0) |
+|7  | Execution | Execute a small primary buffer |
+|8  | | Execute a large primary buffer |
+|9  | Resetting - implicit | Reset a command buffer by calling vkBeginCommandBuffer on a buffer that has already been recorded |
+|===
+
+Command Buffer Recording (5.3 in VK 1.0 Spec)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[cols="1,4,8,8", options="header"]
+|===
+|No. | Tested area | Test Description | Relevant specification text
+|1  | Recording to buffers  | Record a single command in a primary buffer |
+|2  | | Record a large number of commands in a primary buffer |
+|3  | | Record a single command in a secondary buffer |
+|4  | | Record a large number of commands in a secondary buffer |
+|5  | | Record a primary command buffer without VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT. Submit it twice in a row. |
+|6  | | Record a secondary command buffer without VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT. Submit it twice in a row. |
+|7  | Recording for one time usage | Record a primary command buffer with VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT. Submit it, reset, record, and submit again. |
+|8  | | Record a secondary command buffer with VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT. Submit it, reset, record, and submit again. |
+|9  | Render pass in seconday command buffer  | if VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT flag is not set, the values of renderPass, framebuffer, and subpass members of the VkCommandBufferBeginInfo should be ignored | If flags has VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT set, the entire secondary command buffer is considered inside a render pass. In this case, the renderPass, framebuffer, and subpass members of the VkCommandBufferBeginInfo structure must be set as described below. Otherwise the renderPass, framebuffer, and subpass members of the VkCommandBufferBeginInfo structure are ignored, and the secondary command buffer may not contain commands that are only allowed inside a render pass.
+|10  | Simultaneous use – primary buffers | Set flag VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT and submit two times simultanously | If flags does not have VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT set, the command buffer must not be pending execution more than once at any given time. A primary command buffer is considered to be pending execution from the time it is submitted via vkQueueSubmit until that submission completes.
+|11  | Simultaneous use – secondary buffers | Set VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT on secondary buffer, and use the secondary buffer twice in primary buffer | If VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT is not set on a secondary command buffer, that command buffer cannot be used more than once in a given primary command buffer.
+|12 | Recording with an active occlusion query | Recond a secondary command buffer with occlusionQueryEnable == VK_TRUE and queryFlags == VK_QUERY_CONTROL_PRECISE_BIT and execute it in a primary buffer with an active precise occlusion query |
+|13 | | ... imprecise occlusion query |
+|14 | | ... queryFlags == 0x00000000, imprecise occlusion query |
+|===
+
+Command Buffer Submission (5.4 in VK 1.0 Spec)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[cols="1,4,8,8", options="header"]
+|===
+|No. | Tested area | Test Description | Relevant specification text
+|1  | Submission correctness | Call vkQueueSubmit with submitCount equal to the actual count of submits | pSubmits must be an array of submitCount valid VkSubmitInfo structures. If submitCount is 0 though, pSubmits is ignored
+|2  | | ... submitCount == 0 |
+|3  | Submission with semaphores | Call vkQueueSubmit that waits for a single semaphore |
+|4  | | ... for multiple semaphores |
+|5  | | ... notifies a single semaphore |
+|6  | | ... notifies multiple semaphores |
+|7  | Submission without a fence | Call vkQueueSubmit with VK_NULL_HANDLE passed as fence. | If fence is not VK_NULL_HANDLE, fence must be a valid VkFence handle
+|===
+
+Secondary Command Buffer Execution (5.6 in VK 1.0 Spec)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[cols="1,4,8,8", options="header"]
+|===
+|No. | Tested area | Test Description | Relevant specification text
+|1  | Secondary buffers execution | Check if secondary command buffers are executed | Secondary command buffers may be called from primary command buffers, and are not directly submitted to queues.
+|2  | Simultaneous use | Call vkCmdExecuteCommands with pCommandBuffers such that its element is already pending execution in commandBuffer and was created with the VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT flag | Any given element of pCommandBuffers must not be already pending execution in commandBuffer, or appear twice in pCommandBuffers, unless it was created with the VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT flag
+|3  | | Call vkCmdExecuteCommands with pCommandBuffers such that its element appears twice in pCommandBuffers and was created with the VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT flag |
+|4  | Call from within a VkRenderPass | Call vkCmdExecuteCommands within a VkRenderPass with all elements of pCommandBuffers recorded with the VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | If vkCmdExecuteCommands is being called within a VkRenderPass, any given element of pCommandBuffers must have been recorded with the VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT
+|===
+
+Commands Allowed Inside Command Buffers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[cols="1,4,8,8", options="header"]
+|===
+|No. | Tested area | Test Description | Relevant specification text
+|1  | Order of execution | Check if vkCmdBindPipeline commands are executed in-order  |
+|2  | | Check if vkCmdBindDescriptorSets commands are executed in-order  |
+|3  | | Check if vkCmdBindIndexBuffer commands are executed in-order |
+|4  | | Check if vkCmdBindVertexBuffers commands are executed in-order |
+|5  | | Check if vkCmdResetQueryPool, vkCmdBeginQuery, vkCmdEndQuery, vkCmdCopyQueryPoolResults commands are executed in-order relative to each other |
+|===
+
+Draw commands
+-------------
+
+Draw command tests verify that all draw parameters are respected (including vertex input state) and various draw call sizes work correctly. The tests won't however validate that all side effects of shader invocations happen as intended (covered by feature-specific tests) nor that primitive rasterization is fully correct (will be covered by separate targeted tests).
+
+Compute
+-------
+
+Like draw tests, compute dispatch tests will validate that call parameters have desired effects. In addition compute tests need to verify that various dispatch parameters (number of work groups, invocation IDs) are passed correctly to the shader invocations.
+
+NOTE: Assuming that compute-specific shader features, such as shared memory access, is covered by SPIR-V tests.
+
+Copies and blits
+----------------
+
+Buffer copies
+~~~~~~~~~~~~~
+
+Buffer copy tests need to validate that copies and updates happen as expected for both simple and more complex cases:
+
+ * Whole-buffer, partial copies
+ * Small (1 byte) to very large copies and updates
+ * Copies between objects backed by same memory
+
+NOTE: GPU cache control tests need to verify copy source and destination visibility as well.
+
+Image copies
+~~~~~~~~~~~~
+
+Image copy and blitting tests need to validate that copies and updates happen as expected for both simple and more complex cases:
+
+* Image copies should cover
+** Whole and partial copies
+** Source and destination are backed by the same Image
+** Compressed and uncompressed copies
+** Multiple copy regions in one command
+** Copies between different but compatible formats
+* Blitting should cover
+** Whole and partial copies
+** With and without scaling
+** Copies between different but compatible formats (format conversions)
+
+Copies between buffers and images
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The copies between buffers and images are used for checking the rendering result across the vulkancts so it
+is well tested. This tests should cover corner cases.
+
+* Various sizes
+** Whole and partial copies
+* Multiple copies in one command
+
+Clearing images
+~~~~~~~~~~~~~~~
+
+Clearing tests need to validate that clearing happen as expected for both simple and more complex cases:
+
+* Clear the attachments.
+** Whole and partial clear.
+
+Multisample resolve
+~~~~~~~~~~~~~~~~~~~
+
+Multisample tests need to validate that image resolving happen as expected for both simple and more complex cases.
+
+* Various multisample counts.
+** All possible sample counts: 2, 4, 8, 16, 32 and 64.
+* Whole and partial image.
+** Regions with different offsets and extents.
+** Use multiple regions.
+
+Push constants
+--------------
+
+ * Range size, including verify various size of a single range from minimum to maximum
+ * Range count, including verify all the valid shader stages
+ * Data update, including verify a sub-range update, multiple times of updates
+
+ ? Invalid usages specified in spec NOT tested
+
+GPU timestamps
+--------------
+
+ * All timestamp stages
+ * record multiple timestamps in single command buffer
+ * timestamps in/out of render pass
+ * Command buffers that only record timestamps
+
+.Spec issues
+
+Validation layer tests
+----------------------
+
+Validation layer tests exercise all relevant invalid API usage patterns and verify that correct return values and error messages are generated. In addition validation tests would try to load invalid SPIR-V binaries and verify that all generic SPIR-V, and Vulkan SPIR-V environment rules are checked.
+
+Android doesn't plan to ship validation layer as part of the system image so validation tests are not required by Android CTS and thus are of very low priority currently.

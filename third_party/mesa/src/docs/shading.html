@@ -1,0 +1,257 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>Shading Language Support</title>
+  <link rel="stylesheet" type="text/css" href="mesa.css">
+</head>
+<body>
+
+<h1>Shading Language Support</h1>
+
+<p>
+This page describes the features and status of Mesa's support for the
+<a href="http://opengl.org/documentation/glsl/" target="_parent">
+OpenGL Shading Language</a>.
+</p>
+
+<p>
+Contents
+</p>
+<ul>
+<li><a href="#envvars">Environment variables</a>
+<li><a href="#glsl120">GLSL 1.20 support</a>
+<li><a href="#unsup">Unsupported Features</a>
+<li><a href="#notes">Implementation Notes</a>
+<li><a href="#hints">Programming Hints</a>
+<li><a href="#standalone">Stand-alone GLSL Compiler</a>
+<li><a href="#implementation">Compiler Implementation</a>
+<li><a href="#validation">Compiler Validation</a>
+</ul>
+
+
+<h2 id="envvars">Environment Variables</h2>
+
+<p>
+The <b>MESA_GLSL</b> environment variable can be set to a comma-separated
+list of keywords to control some aspects of the GLSL compiler and shader
+execution.  These are generally used for debugging.
+</p>
+<ul>
+<li><b>dump</b> - print GLSL shader code to stdout at link time
+<li><b>log</b> - log all GLSL shaders to files.
+    The filenames will be "shader_X.vert" or "shader_X.frag" where X
+    the shader ID.
+<li><b>nopt</b> - disable compiler optimizations
+<li><b>opt</b> - force compiler optimizations
+<li><b>uniform</b> - print message to stdout when glUniform is called
+<li><b>nopvert</b> - force vertex shaders to be a simple shader that just transforms
+    the vertex position with ftransform() and passes through the color and
+    texcoord[0] attributes.
+<li><b>nopfrag</b> - force fragment shader to be a simple shader that passes
+    through the color attribute.
+<li><b>useprog</b> - log glUseProgram calls to stderr
+</ul>
+<p>
+Example:  export MESA_GLSL=dump,nopt
+</p>
+
+
+<h2 id="glsl120">GLSL Version</h2>
+
+<p>
+The GLSL compiler currently supports version 1.20 of the shading language.
+</p>
+
+<p>
+Several GLSL extensions are also supported:
+</p>
+<ul>
+<li>GL_ARB_draw_buffers
+<li>GL_ARB_texture_rectangle
+<li>GL_ARB_fragment_coord_conventions
+<li>GL_EXT_texture_array
+</ul>
+
+
+<h2 id="unsup">Unsupported Features</h2>
+
+<p>XXX update this section</p>
+
+<p>
+The following features of the shading language are not yet fully supported
+in Mesa:
+</p>
+
+<ul>
+<li>Linking of multiple shaders does not always work.  Currently, linking
+    is implemented through shader concatenation and re-compiling.  This
+    doesn't always work because of some #pragma and preprocessor issues.
+<li>gl_ClipVertex
+<li>The gl_Color and gl_SecondaryColor varying vars are interpolated
+    without perspective correction
+</ul>
+
+<p>
+All other major features of the shading language should function.
+</p>
+
+
+<h2 id="notes">Implementation Notes</h2>
+
+<ul>
+<li>Shading language programs are compiled into low-level programs
+    very similar to those of GL_ARB_vertex/fragment_program.
+<li>All vector types (vec2, vec3, vec4, bvec2, etc) currently occupy full
+    float[4] registers.
+<li>Float constants and variables are packed so that up to four floats
+    can occupy one program parameter/register.
+<li>All function calls are inlined.
+<li>Shaders which use too many registers will not compile.
+<li>The quality of generated code is pretty good, register usage is fair.
+<li>Shader error detection and reporting of errors (InfoLog) is not
+    very good yet.
+<li>The ftransform() function doesn't necessarily match the results of
+    fixed-function transformation.
+</ul>
+
+<p>
+These issues will be addressed/resolved in the future.
+</p>
+
+
+<h2 id="hints">Programming Hints</h2>
+
+<ul>
+<li>Use the built-in library functions whenever possible.
+    For example, instead of writing this:
+<pre>
+        float x = 1.0 / sqrt(y);
+</pre>
+    Write this:
+<pre>
+        float x = inversesqrt(y);
+</pre>
+</li>
+</ul>
+
+
+<h2 id="standalone">Stand-alone GLSL Compiler</h2>
+
+<p>
+The stand-alone GLSL compiler program can be used to compile GLSL shaders
+into low-level GPU code.
+</p>
+
+<p>
+This tool is useful for:
+</p>
+<ul>
+<li>Inspecting GPU code to gain insight into compilation
+<li>Generating initial GPU code for subsequent hand-tuning
+<li>Debugging the GLSL compiler itself
+</ul>
+
+<p>
+After building Mesa, the compiler can be found at src/glsl/glsl_compiler
+</p>
+
+<p>
+Here's an example of using the compiler to compile a vertex shader and
+emit GL_ARB_vertex_program-style instructions:
+</p>
+<pre>
+    src/glsl/glsl_compiler --dump-ast myshader.vert
+</pre>
+
+Options include
+<ul>
+<li><b>--dump-ast</b> - dump GPU code
+<li><b>--dump-hir</b> - dump high-level IR code
+<li><b>--dump-lir</b> - dump low-level IR code
+<li><b>--link</b> - ???
+</ul>
+
+
+<h2 id="implementation">Compiler Implementation</h2>
+
+<p>
+The source code for Mesa's shading language compiler is in the
+<code>src/glsl/</code> directory.
+</p>
+
+<p>
+XXX provide some info about the compiler....
+</p>
+
+<p>
+The final vertex and fragment programs may be interpreted in software
+(see prog_execute.c) or translated into a specific hardware architecture
+(see drivers/dri/i915/i915_fragprog.c for example).
+</p>
+
+<h3>Code Generation Options</h3>
+
+<p>
+Internally, there are several options that control the compiler's code
+generation and instruction selection.
+These options are seen in the gl_shader_state struct and may be set
+by the device driver to indicate its preferences:
+
+<pre>
+struct gl_shader_state
+{
+   ...
+   /** Driver-selectable options: */
+   GLboolean EmitHighLevelInstructions;
+   GLboolean EmitCondCodes;
+   GLboolean EmitComments;
+};
+</pre>
+
+<dl>
+<dt>EmitHighLevelInstructions</dt>
+<dd>
+This option controls instruction selection for loops and conditionals.
+If the option is set high-level IF/ELSE/ENDIF, LOOP/ENDLOOP, CONT/BRK
+instructions will be emitted.
+Otherwise, those constructs will be implemented with BRA instructions.
+</dd>
+
+<dt>EmitCondCodes</dt>
+<dd>
+If set, condition codes (ala GL_NV_fragment_program) will be used for
+branching and looping.
+Otherwise, ordinary registers will be used (the IF instruction will
+examine the first operand's X component and do the if-part if non-zero).
+This option is only relevant if EmitHighLevelInstructions is set.
+</dd>
+
+<dt>EmitComments</dt>
+<dd>
+If set, instructions will be annoted with comments to help with debugging.
+Extra NOP instructions will also be inserted.
+</dd>
+</dl>
+
+
+<h2 id="validation">Compiler Validation</h2>
+
+<p>
+Developers working on the GLSL compiler should test frequently to avoid
+regressions.
+</p>
+
+<p>
+The <a href="http://piglit.freedesktop.org/" target="_parent">Piglit</a> project
+has many GLSL tests and the
+<a href="http://glean.sf.net" target="_parent">Glean</a> glsl1 test 
+tests GLSL features.
+</p>
+
+<p>
+The Mesa demos repository also has some good GLSL tests.
+</p>
+
+</body>
+</html>

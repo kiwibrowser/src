@@ -1,0 +1,205 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>llvmpipe</title>
+  <link rel="stylesheet" type="text/css" href="mesa.css">
+</head>
+<body>
+
+<h1>Introduction</h1>
+
+<p>
+The Gallium llvmpipe driver is a software rasterizer that uses LLVM to
+do runtime code generation.
+Shaders, point/line/triangle rasterization and vertex processing are
+implemented with LLVM IR which is translated to x86 or x86-64 machine
+code.
+Also, the driver is multithreaded to take advantage of multiple CPU cores
+(up to 8 at this time).
+It's the fastest software rasterizer for Mesa.
+</p>
+
+
+<h1>Requirements</h1>
+
+<ul>
+<li>
+   <p>An x86 or amd64 processor; 64-bit mode recommended.</p>
+   <p>
+   Support for SSE2 is strongly encouraged.  Support for SSSE3 and SSE4.1 will
+   yield the most efficient code.  The fewer features the CPU has the more
+   likely is that you run into underperforming, buggy, or incomplete code.
+   </p>
+   <p>
+   See /proc/cpuinfo to know what your CPU supports.
+   </p>
+</li>
+<li>
+   <p>LLVM: version 2.9 recommended; 2.6 or later required.</p>
+   <p><b>NOTE</b>: LLVM 2.8 and earlier will not work on systems that support the
+   Intel AVX extensions (e.g. Sandybridge).  LLVM's code generator will
+   fail when trying to emit AVX instructions.  This was fixed in LLVM 2.9.
+   </p>
+   <p>
+   For Linux, on a recent Debian based distribution do:
+   </p>
+<pre>
+     aptitude install llvm-dev
+</pre>
+   <p>
+   For a RPM-based distribution do:
+   </p>
+<pre>
+     yum install llvm-devel
+</pre>
+
+   <p>
+	 For Windows you will need to build LLVM from source with MSVC or MINGW
+	 (either natively or through cross compilers) and CMake, and set the LLVM
+	 environment variable to the directory you installed it to.
+
+   LLVM will be statically linked, so when building on MSVC it needs to be
+   built with a matching CRT as Mesa, and you'll need to pass
+   -DLLVM_USE_CRT_RELEASE=MTd for debug and checked builds,
+   -DLLVM_USE_CRT_RELEASE=MTd for profile and release builds.
+
+   You can build only the x86 target by passing -DLLVM_TARGETS_TO_BUILD=X86
+   to cmake.
+   </p>
+</li>
+
+<li>
+   <p>scons (optional)</p>
+</li>
+</ul>
+
+
+<h1>Building</h1>
+
+To build everything on Linux invoke scons as:
+
+<pre>
+  scons build=debug libgl-xlib
+</pre>
+
+Alternatively, you can build it with GNU make, if you prefer, by invoking it as
+
+<pre>
+  make linux-llvm
+</pre>
+
+but the rest of these instructions assume that scons is used.
+
+For Windows the procedure is similar except the target:
+
+<pre>
+  scons build=debug libgl-gdi
+</pre>
+
+
+<h1>Using</h1>
+
+On Linux, building will create a drop-in alternative for libGL.so into
+
+<pre>
+  build/foo/gallium/targets/libgl-xlib/libGL.so
+</pre>
+or
+<pre>
+  lib/gallium/libGL.so
+</pre>
+
+To use it set the LD_LIBRARY_PATH environment variable accordingly.
+
+For performance evaluation pass debug=no to scons, and use the corresponding
+lib directory without the "-debug" suffix.
+
+On Windows, building will create a drop-in alternative for opengl32.dll. To use
+it put it in the same directory as the application. It can also be used by
+replacing the native ICD driver, but it's quite an advanced usage, so if you
+need to ask, don't even try it.
+
+
+<h1>Profiling</h1>
+
+To profile llvmpipe you should pass the options
+
+<pre>
+  scons build=profile &lt;same-as-before&gt;
+</pre>
+
+This will ensure that frame pointers are used both in C and JIT functions, and
+that no tail call optimizations are done by gcc.
+
+To better profile JIT code you'll need to build LLVM with oprofile integration.
+
+<pre>
+  ./configure \
+      --prefix=$install_dir \
+      --enable-optimized \
+      --disable-profiling \
+      --enable-targets=host-only \
+      --with-oprofile
+
+  make -C "$build_dir"
+  make -C "$build_dir" install
+
+  find "$install_dir/lib" -iname '*.a' -print0 | xargs -0 strip --strip-debug
+</pre>
+
+The you should define
+
+<pre>
+  export LLVM=/path/to/llvm-2.6-profile
+</pre>
+
+and rebuild.
+
+
+<h1>Unit testing</h1>
+
+<p>
+Building will also create several unit tests in
+build/linux-???-debug/gallium/drivers/llvmpipe:
+</p>
+
+<ul>
+<li> lp_test_blend: blending
+<li> lp_test_conv: SIMD vector conversion
+<li> lp_test_format: pixel unpacking/packing
+</ul>
+
+<p>
+Some of this tests can output results and benchmarks to a tab-separated-file
+for posterior analysis, e.g.:
+</p>
+<pre>
+  build/linux-x86_64-debug/gallium/drivers/llvmpipe/lp_test_blend -o blend.tsv
+</pre>
+
+
+<h1>Development Notes</h1>
+
+<ul>
+<li>
+  When looking to this code by the first time start in lp_state_fs.c, and 
+  then skim through the lp_bld_* functions called in there, and the comments
+  at the top of the lp_bld_*.c functions.
+</li>
+<li>
+  The driver-independent parts of the LLVM / Gallium code are found in
+  src/gallium/auxiliary/gallivm/.  The filenames and function prefixes
+  need to be renamed from "lp_bld_" to something else though.
+</li>
+<li>
+  We use LLVM-C bindings for now. They are not documented, but follow the C++
+  interfaces very closely, and appear to be complete enough for code
+  generation. See 
+  http://npcontemplation.blogspot.com/2008/06/secret-of-llvm-c-bindings.html
+  for a stand-alone example.  See the llvm-c/Core.h file for reference.
+</li>
+</ul>
+
+</body>
+</html>

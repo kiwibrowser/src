@@ -1,0 +1,106 @@
+Conformance Test
+
+    CTS_ARB_sparse_texture_clamp
+
+Contributors
+
+    Adam Czupryna, Mobica
+
+Contacts
+
+    Adam Czupryna, Mobica (adam.czupryna 'at' mobica.com)
+
+Status
+
+    In review
+
+Version
+
+    December 19, 2016 (version 1)
+
+Dependencies
+
+    OpenGL 4.5 is required.
+
+    ARB_sparse_texture2 extension is required.
+
+    This specification is written against:
+      - ARB_sparse_texture_clamp specification,
+      - OpenGL 4.5 (core) specification.
+
+Overview
+
+    This test verifies if functionality provided by ARB_sparse_texture_clamp
+    works as expected:
+
+      * Check if new built-in GLSL texture lookup functions that are provided
+        by this extension could specify a minimum level of detail to use for
+        lookups where level of detail is computed automatically.
+
+New Tests
+
+    Shader Extension Test
+
+      * Create shader that require ARB_sparse_texture_clamp extension
+        and check if ARB_sparse_texture_clamp is defined and equal 1.
+        Check if shader compiles with no error.
+
+    Sparse Texture Clamp Lookup Residency Tests
+
+      * Iterate through all sparse supported targets.
+        Allocate sparse texture for current <target> with committed and
+          uncommitted regions.
+        Create multiple fragment shaders that enable ARB_sparse_texture_clamp
+          extension and each uses one of the function from list below
+          (if supported by <target>):
+
+          - sparseTextureClampARB
+          - sparseTextureOffsetClampARB
+          - sparseTextureGradClampARB
+          - sparseTextureGradOffsetClampARB
+
+        Shaders should check texture access residency information and pass
+          vec4(1, 1, 1, 1) to the output if access committed region and
+          vec4(0, 0, 0, 1) otherwise.
+
+        Iterate through shaders, create and use program for current iteration
+          and draw a full screen quad.
+
+        Read back the contents of the color attachment on the CPU side. The test expects
+          that the texels will be filled with (1, 1, 1, 1) if the areas of the sparse texture accessed
+          in the shader would be in committed regions, (0, 0, 0, 1) otherwise.
+
+        Run the test for different values of <lodClamp> argument.
+
+    Sparse and Non-sparse Texture Clamp Lookup Color Tests
+
+      * Iterate through all sparse and non-sparse supported targets.
+        Allocate texture for current <target>.
+        Fill the texture with different values for miplevels [0, lodClamp) that for miplevels [lodClamp, lastMipLevel].
+
+        Create multiple fragment shaders that enables ARB_sparse_texture_clamp
+          extension and each use one of the function from list below
+          (if supported by <target>):
+
+          - textureClampARB
+          - textureOffsetClampARB
+          - textureGradClampARB
+          - textureGradOffsetClampARB
+          - sparseTextureClampARB
+          - sparseTextureOffsetClampARB
+          - sparseTextureGradClampARB
+          - sparseTextureGradOffsetClampARB
+
+        Iterate through shaders, create and use program for current iteration
+          and draw a full screen quad. In the shader sample the texture with the value lodClamp as <lodClamp> argument.
+
+        Verify that the <lodClamp> argument was taken into account during automatic lod computations
+          by reading pixels from framebuffer and checking if their values are as equal to the ones
+          from the region [lodClamp, lastMipLevel].
+
+        Run the test for different values of <lodClamp> argument.
+
+Revision History
+
+    Revision 1, 19th December, 2016 (Adam Czupryna)
+     - Intial version;

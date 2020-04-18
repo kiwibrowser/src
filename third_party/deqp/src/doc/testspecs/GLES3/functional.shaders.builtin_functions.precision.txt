@@ -1,0 +1,183 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Precision tests for built-in functions
+
+Tests:
+ + dEQP-GLES3.functional.shaders.builtin_functions.precision.*
+
+
+These tests check that the GLSL built-in numerical functions produce
+results that are compliant with the range and precision requirements in
+the GLSL ES specification.
+
+The tests operate by calling the functions with predefined (mostly
+random) input values in either the vertex or the fragment shader. The
+result is stored in a transform feedback buffer or in a framebuffer
+pixel, and then read and compared to a reference interval of acceptable
+values. Functions are tested with all possible vector and matrix sizes.
+In the test log floating point numbers are printed out as hexadecimal
+constants of the form used in e.g. C99.
+
+Where the GLSL specification does not specify a particular precision,
+the tests try to make reasonable requirements. When behavior at
+infinities hasn't been otherwise specified, C99 Appendix F is used as a
+reference. Moreover, the highp precision requirements have been adapted
+to lowp and mediump precisions even though the GLSL specification
+doesn't provide any guarantees about them. For instance, mediump and
+lowp operations are expected to produce either an infinity or the
+maximum/minimum value on overflow.
+
+The acceptable results are constrained further by only allowing values
+from within the codomain of the function. Thus, for instance, sin(x) is
+not allowed to return a number greater than 1 even when when the nominal
+error bound would be greater.
+
+A number of functions have been defined as derived forms. This means
+that they are required to produce only results that their expansions
+could produce, given the precision requirements for the constituent
+
+operations.
+
+* Arithmetic operations
+
+These are as defined in the GLSL ES specification.
+
+| operation | precision | domain                      |
+|-----------+-----------+-----------------------------|
+| x + y     | < 1 ULP   |                             |
+| x / y     | 2.5 ULP   | 2^-126 <= abs(y) <= 2^127-1 |
+| x - y     | < 1 ULP   |                             |
+| x * y     | < 1 ULP   |                             |
+
+
+* Trigonometric functions
+
+The precisions for trigonometric functions have been adapted from OpenCL
+fast relaxed math and half-float specifications. Hyperbolic functions
+take their precisions from standard formulae as derived forms.
+
+Primitives:
+
+| function   | precision      | domain              | prec qual     |
+|------------+----------------+---------------------+---------------|
+| sin(x)     | 2^-11          | -pi <= x <= pi      | highp         |
+|            | 2^-12 * abs(x) | elsewhere           | highp         |
+|            | 2 ULP          |                     | mediump, lowp |
+| cos(x)     | 2^-11          | -pi <= x <= pi      | highp         |
+|            | 2^-12 * abs(x) | elsewhere           | highp         |
+|            | 2 ULP          |                     | mediump, lowp |
+| asin(x)    | 4 ULP          | -1 <= x <= 1        | highp         |
+|            | 2 ULP          | -1 <= x <= 1        | mediump, lowp |
+| acos(x)    | 4 ULP          | -1 <= x <= 1        | highp         |
+|            | 2 ULP          | -1 <= x <= 1        | mediump, lowp |
+| atan(x, y) | 6 ULP          | !(x == 0 && y == 0) | highp         |
+|            | 2 ULP          | !(x == 0 && y == 0) | mediump, lowp |
+| atan(x)    | 5 ULP          |                     | highp         |
+|            | 2 ULP          |                     | mediump, lowp |
+
+Derived functions:
+
+| function   | defined as                       |
+|------------+----------------------------------|
+| radians(x) | (pi / 180.0) * x                 |
+| degrees(x) | (180.0 / pi) * x                 |
+| tan(x)     | sin(x) * (1.0 / cos(x))          |
+| sinh(x)    | (exp(x) - exp(-x)) / 2.0         |
+| cosh(x)    | (exp(x) + exp(-x)) / 2.0         |
+| tanh(x)    | sinh(x) / cosh(x)                |
+| asinh(x)   | log(x + sqrt(x * x + 1.0))       |
+| acosh(x)   | log(x + sqrt((x+1.0) * (x-1.0))) |
+| atanh(x)   | 0.5 * log(1.0 + x / (1.0 - x))   |
+
+
+* Exponential functions
+
+The precisions for exponential functions for mediump and lowp have been
+adapted from the OpenCL half-float specification.
+
+Primitives:
+
+| function       | precision            | domain               | prec qual |
+|----------------+----------------------+----------------------+-----------|
+| exp(x)         | (3 + 2 * abs(x)) ULP |                      | highp     |
+|                | (2 + 2 * abs(x)) ULP |                      | mediump   |
+|                | 2 ULP                |                      | lowp      |
+| log(x)         | 2^-21                | 0.5 <= x && x <= 0.5 | highp     |
+|                | 3 ULP                | elsewhere            | highp     |
+|                | 2^-7                 | 0.5 <= x && x <= 0.5 | mediump   |
+|                | 2 ULP                | elsewhere            | mediump   |
+|                | 2 ULP                |                      | lowp      |
+| exp(x)         | (3 + 2 * abs(x)) ULP |                      | highp     |
+|                | (2 + 2 * abs(x)) ULP |                      | mediump   |
+|                | 2 ULP                |                      | lowp      |
+| log2(x)        | 2^-21                | 0.5 <= x && x <= 0.5 | highp     |
+|                | 3 ULP                | elsewhere            | highp     |
+|                | 2^-7                 | 0.5 <= x && x <= 0.5 | mediump   |
+|                | 2 ULP                | elsewhere            | mediump   |
+|                | 2 ULP                |                      | lowp      |
+| inversesqrt(x) | 2 ULP                |                      |           |
+
+Derived functions:
+
+| function | defined as           |
+|----------+----------------------|
+| pow(x)   | exp2(y * log2(x))    |
+| sqrt(x)  | 1.0 / inversesqrt(x) |
+
+
+* Common functions
+
+The operations that don't do any arithmetic are required to produce
+exact results. The round() function is allowed to round in either
+direction on a tie.
+
+Primitives:
+
+| function         | precision |
+|------------------+-----------|
+| abs(x)           |         0 |
+| sign(x)          |         0 |
+| floor(x)         |         0 |
+| trunc(x)         |         0 |
+| round(x)         |   special |
+| roundEven(x)     |         0 |
+| ceil(x)          |         0 |
+| modf(x, i)       |         0 |
+| min(x, y)        |         0 |
+| max(x, y)        |         0 |
+| clamp(x, lo, hi) |         0 |
+| step(edge, x)    |         0 |
+
+Derived functions:
+
+| function              | defined as                                     |
+|-----------------------+------------------------------------------------|
+| fract(x)              | x - floor(x)                                   |
+| mod(x, y)             | x - y * floor(x / y)                           |
+| mix(x, y, a)          | x * (1 - a) + y * a                            |
+| smoothstep(e0, e1, x) | { float t = clamp((x - e0) / (e1 - e0),0,1);   |
+|                       |   return t * t * (3 - 2*t);                  } |
+
+
+* Geometric and matrix functions
+
+These are generally defined as derived forms with reference algorithms.
+For determinant and inverse operations only 2x2 matrices are tested:
+there are a number of possible algorithms for larger matrices, and the
+specification does not provide precision requirements for these operations.

@@ -1,0 +1,140 @@
+Import('*')
+
+if not env['x11'] or not env['xcb'] or not env['drm']:
+    Return()
+
+from sys import executable as python_cmd
+
+env = env.Clone()
+
+env.Prepend(CPPPATH = [
+	'.',           # the build/<platform>/glx/ directory
+	'#include',
+	'#include/GL/internal',
+	'#src/mesa',
+	'#src/mapi',
+	'#src/mapi/glapi',
+	#$(LIBDRM_CFLAGS)
+	#$(DRI2PROTO_CFLAGS)
+	#$(GLPROTO_CFLAGS)
+	#$(X11_INCLUDES)
+])
+
+env.Append(CPPDEFINES = [
+    '_REENTRANT',
+    #('DEFAULT_DRIVER_DIR', 'DRI_DRIVER_SEARCH_DIR')
+])
+
+env.Prepend(LIBS = [
+    glapi
+])
+
+env.PkgUseModules('X11')
+env.PkgUseModules('XCB')
+env.PkgUseModules('DRM')
+
+if env['HAVE_XF86VIDMODE']:
+    env.Append(CPPDEFINES = ['XF86VIDMODE'])
+    env.PkgUseModules('XF86VIDMODE')
+
+if False: # XXX: SHARED_GLAPI
+    env.Append(CPPDEFINES = ['GLX_SHARED_GLAPI'])
+
+sources = [
+    'clientattrib.c',
+    'clientinfo.c',
+    'create_context.c',
+    'compsize.c',
+    'eval.c',
+    'glx_error.c',
+    'glxconfig.c',
+    'glxcmds.c',
+    'glxcurrent.c',
+    'glxext.c',
+    'glxextensions.c',
+    'indirect_glx.c',
+    'indirect.c',
+    'indirect_init.c',
+    'indirect_size.c',
+    'indirect_window_pos.c',
+    'indirect_texture_compression.c',
+    'indirect_transpose_matrix.c',
+    'indirect_vertex_array.c',
+    'indirect_vertex_program.c',
+    'pixel.c',
+    'pixelstore.c',
+    'render2.c',
+    'renderpix.c',
+    'single2.c',
+    'singlepix.c',
+    'vertarr.c',
+    'xfont.c',
+    'glx_pbuffer.c',
+    'glx_query.c',
+    'drisw_glx.c',
+    'dri_common.c',
+    'dri_glx.c',
+    'XF86dri.c',
+    'glxhash.c',
+    'dri2_glx.c',
+    'dri2.c',
+    'applegl_glx.c',
+]
+
+libgl = env.SharedLibrary(
+    target ='GL',
+    source = sources,
+)
+
+
+# Generate GLX-specific .c and .h files here.  Other GL API-related
+# files are used, but they're generated in mapi/glapi/gen/ since they're
+# used by other targets as well.
+
+GLAPI = '#src/mapi/glapi/'
+
+env.CodeGenerate(
+    target = 'indirect.c',
+    script = GLAPI + 'gen/glX_proto_send.py',
+    source = GLAPI + 'gen/gl_and_es_API.xml',
+    command = python_cmd + ' $SCRIPT -f $SOURCE -m proto > $TARGET'
+    )
+
+env.CodeGenerate(
+    target = 'indirect_size.c', 
+    script = GLAPI + 'gen/glX_proto_size.py',
+    source = GLAPI + 'gen/gl_API.xml',
+    command = python_cmd + ' $SCRIPT -f $SOURCE -m size_c --only-set > $TARGET'
+)
+
+env.CodeGenerate(
+    target = 'indirect_init.c', 
+    script = GLAPI + 'gen/glX_proto_send.py',
+    source = GLAPI + 'gen/gl_API.xml',
+    command = python_cmd + ' $SCRIPT -f $SOURCE -m init_c > $TARGET'
+)
+
+headers = []
+
+headers += env.CodeGenerate(
+    target = 'indirect_size.h',
+    script = GLAPI + 'gen/glX_proto_size.py',
+    source = GLAPI + 'gen/gl_API.xml',
+    command = python_cmd + ' $SCRIPT -f $SOURCE -m size_h --only-set -h _INDIRECT_SIZE_H > $TARGET'
+)
+
+headers += env.CodeGenerate(
+    target = 'indirect.h',
+    script = GLAPI + 'gen/glX_proto_send.py',
+    source = GLAPI + 'gen/gl_API.xml',
+    command = python_cmd + ' $SCRIPT -m init_h -f $SOURCE > $TARGET',
+    )
+
+
+env.Depends(sources, headers)
+
+
+libgl = env.InstallSharedLibrary(libgl, version=(1, 2))
+
+env.Alias('glx', libgl)
+env.Alias('libgl', libgl)

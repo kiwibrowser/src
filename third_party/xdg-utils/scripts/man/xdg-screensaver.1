@@ -1,0 +1,154 @@
+'\" t
+.\"     Title: xdg-screensaver
+.\"    Author: Bryce Harrington
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
+.\"      Date: 12/31/2010
+.\"    Manual: xdg-screensaver Manual
+.\"    Source: xdg-utils 1.0
+.\"  Language: English
+.\"
+.TH "XDG\-SCREENSAVER" "1" "12/31/2010" "xdg-utils 1.0" "xdg-screensaver Manual"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+xdg-screensaver \- command line tool for controlling the screensaver
+.SH "SYNOPSIS"
+.HP \w'\fBxdg\-screensaver\fR\ 'u
+\fBxdg\-screensaver\fR \fBsuspend\ \fR\fB\fIWindowID\fR\fR
+.HP \w'\fBxdg\-screensaver\fR\ 'u
+\fBxdg\-screensaver\fR \fBresume\ \fR\fB\fIWindowID\fR\fR
+.HP \w'\fBxdg\-screensaver\fR\ 'u
+\fBxdg\-screensaver\fR {\fBactivate\fR | \fBlock\fR | \fBreset\fR | \fBstatus\fR}
+.HP \w'\fBxdg\-screensaver\fR\ 'u
+\fBxdg\-screensaver\fR {\fB\-\-help\fR | \fB\-\-manual\fR | \fB\-\-version\fR}
+.SH "DESCRIPTION"
+.PP
+xdg\-screensaver provides commands to control the screensaver\&.
+.PP
+xdg\-screensaver is for use inside a desktop session only\&. It is not recommended to use xdg\-screensaver as root\&.
+.SH "COMMANDS"
+.PP
+\fBsuspend \fR\fB\fIWindowID\fR\fR
+.RS 4
+Suspends the screensaver and monitor power management\&.
+\fIWindowID\fR
+must be the X Window ID of an existing window of the calling application\&. The window must remain in existance for the duration of the suspension\&.
+.sp
+WindowID can be represented as either a decimal number or as a hexadecimal number consisting of the prefix
+\fI0x\fR
+followed by one or more hexadecimal digits\&.
+.sp
+The screensaver can be suspended in relation to multiple windows at the same time\&. In that case screensaver operation is only restored once the screensaver has been resumed in relation to each of the windows
+.RE
+.PP
+\fBresume \fR\fB\fIWindowID\fR\fR
+.RS 4
+Resume the screensaver and monitor power management after being suspended\&.
+\fIWindowID\fR
+must be the same X Window ID that was passed to a previous call of
+\fBxdg\-screensaver suspend\fR
+.RE
+.PP
+\fBactivate\fR
+.RS 4
+Turns the screensaver on immediately\&. This may result in the screen getting locked, depending on existing system policies\&.
+.RE
+.PP
+\fBlock\fR
+.RS 4
+Lock the screen immediately\&.
+.RE
+.PP
+\fBreset\fR
+.RS 4
+Turns the screensaver off immediately\&. If the screen was locked the user may be asked to authenticate first\&.
+.RE
+.PP
+\fBstatus\fR
+.RS 4
+Prints
+\fIenabled\fR
+to stdout if the screensaver is enabled to turn on after a period of inactivity and prints
+\fIdisabled\fR
+if the screensaver is not enabled\&.
+.RE
+.SH "OPTIONS"
+.PP
+\fB\-\-help\fR
+.RS 4
+Show command synopsis\&.
+.RE
+.PP
+\fB\-\-manual\fR
+.RS 4
+Show this manualpage\&.
+.RE
+.PP
+\fB\-\-version\fR
+.RS 4
+Show the xdg\-utils version information\&.
+.RE
+.SH "EXIT CODES"
+.PP
+An exit code of 0 indicates success while a non\-zero exit code indicates failure\&. The following failure codes can be returned:
+.PP
+\fB1\fR
+.RS 4
+Error in command line syntax\&.
+.RE
+.PP
+\fB3\fR
+.RS 4
+A required tool could not be found\&.
+.RE
+.PP
+\fB4\fR
+.RS 4
+The action failed\&.
+.RE
+.SH "EXAMPLES"
+.PP
+
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+xdg\-screensaver suspend 0x1c00007
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+Causes the screensaver to be disabled till
+\fBxdg\-screensaver resume 0x1c00007\fR
+is called\&.
+\fI0x1c00007\fR
+must be the X Window ID of an existing window\&.
+.SH "AUTHOR"
+.PP
+\fBBryce Harrington\fR
+.RS 4
+Author.
+.RE
+.SH "COPYRIGHT"
+.br
+Copyright \(co 2006
+.br

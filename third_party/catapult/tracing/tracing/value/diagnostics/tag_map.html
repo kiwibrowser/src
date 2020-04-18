@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<!--
+Copyright 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/base/utils.html">
+<link rel="import" href="/tracing/value/diagnostics/diagnostic.html">
+
+<script>
+'use strict';
+
+tr.exportTo('tr.v.d', function() {
+  class TagMap extends tr.v.d.Diagnostic {
+    constructor(opt_info) {
+      super();
+      this.tagsToStoryNames_ = new Map();
+
+      if (opt_info) {
+        for (const [tag, storyDisplayNames] of Object.entries(
+            opt_info.tagsToStoryNames || {})) {
+          this.tagsToStoryNames.set(tag, new Set(storyDisplayNames));
+        }
+      }
+    }
+
+    clone() {
+      const clone = new TagMap();
+      clone.addDiagnostic(this);
+      return clone;
+    }
+
+    addToHistogram(hist) {
+      hist.diagnostics.set(tr.v.d.RESERVED_NAMES.TAG_MAP, this);
+    }
+
+    equals(other) {
+      if (!(other instanceof TagMap)) return false;
+
+      const keys1 = new Set(this.tagsToStoryNames.keys());
+      const keys2 = new Set(other.tagsToStoryNames.keys());
+      if (!tr.b.setsEqual(keys1, keys2)) {
+        return false;
+      }
+
+      for (const key of keys1) {
+        if (!tr.b.setsEqual(
+            this.tagsToStoryNames.get(key),
+            other.tagsToStoryNames.get(key))) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    canAddDiagnostic(otherDiagnostic) {
+      return otherDiagnostic instanceof TagMap;
+    }
+
+    addDiagnostic(otherDiagnostic) {
+      for (const [name, storyDisplayNames] of
+        otherDiagnostic.tagsToStoryNames) {
+        if (!this.tagsToStoryNames.has(name)) {
+          this.tagsToStoryNames.set(name, new Set());
+        }
+        for (const t of storyDisplayNames) {
+          this.tagsToStoryNames.get(name).add(t);
+        }
+      }
+
+      return this;
+    }
+
+    asDictInto_(d) {
+      d.tagsToStoryNames = {};
+      for (const [name, value] of this.tagsToStoryNames) {
+        d.tagsToStoryNames[name] = Array.from(value);
+      }
+    }
+
+    /**
+     * @returns {Map.<string, Set.<string>>} A map of tag names to sets of story
+     * display names.
+     */
+    get tagsToStoryNames() {
+      return this.tagsToStoryNames_;
+    }
+
+    static fromDict(d) {
+      const info = new TagMap();
+
+      for (const [name, values] of
+        Object.entries(d.tagsToStoryNames || {})) {
+        info.tagsToStoryNames.set(name, new Set(values));
+      }
+
+      return info;
+    }
+  }
+
+  tr.v.d.Diagnostic.register(TagMap, {
+    elementName: 'tr-v-ui-tag-map-span'
+  });
+
+  return {
+    TagMap,
+  };
+});
+</script>

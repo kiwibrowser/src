@@ -1,0 +1,43 @@
+GDB pretty printers for STLport
+===============================
+
+This python module provides GDB pretty printers for the containers from
+STLport. It is based on a similar python module for libstdc++ [1]. It has
+been tested with GDB 7.0.1/7.2 and STLport 4.6.2/5.0.3/5.1.7/5.2.1.
+
+[1] svn://gcc.gnu.org/svn/gcc/trunk/libstdc++-v3/python
+
+
+Installation
+------------
+
+To install the python module copy the "stlport" subdirectory to some place.
+To enable the pretty printer add the following code to $HOME/.gdbinit:
+
+    python
+    import sys
+
+    sys.path.insert (0, '/path/to/dir/containing/the/stlport/dir')
+    import stlport.printers
+    stlport.printers.register_stlport_printers (None)
+
+    # see the python module for a description of these options
+    # stlport.printers.stlport_version           = 5.2
+    # stlport.printers.print_vector_with_indices = False
+    
+    end
+
+
+Testing
+-------
+
+To test the pretty printers, go to the test directory and set up the STLport
+directory in the Makefile. Calling make should then compile two executables
+(with and without -D_STLP_DEBUG) and invoke GDB with the supplied script. If
+the pretty printers work the variables from test.cpp should be displayed in a
+convenient way.
+
+Note that GDB prefers python modules from $HOME/.gdbinit over those from
+.gdbinit in the current working directory. If you adapted $HOME/.gdbinit as
+described above the location there will be used. Otherwise, test/.gdbinit will
+load stlport/printers.py.

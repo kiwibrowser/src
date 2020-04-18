@@ -1,0 +1,160 @@
+// Copyright 2018 The Feed Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+import "src/main/proto/search/now/proto/ui/piet/elements.proto";
+import "src/main/proto/search/now/proto/ui/piet/images.proto";
+import "src/main/proto/search/now/proto/ui/piet/piet.proto";
+import "src/main/proto/search/now/proto/ui/piet/rounded_corners.proto";
+import "src/main/proto/search/now/proto/ui/piet/styles.proto";
+import "src/main/proto/search/now/proto/ui/piet/text.proto";
+
+package search.now.ui.piet;
+
+option optimize_for=LITE_RUNTIME;
+
+option java_package = "com.google.search.now.ui.piet";
+option java_outer_classname = "PietHtmlSupport";
+option cc_enable_arenas = true;
+
+// Define extensions and other supporting messages used by the HTML renderer
+// implementation of the Piet protocol.
+
+// Style to be used on Elements that define only the style_id. This is filled
+// with the content of the style whose key is given on the element.
+message InlineStyle {
+  optional Style style = 1;
+
+  // Indicates if the current style has block attributes (for example, border,
+  // height, background, etc.).
+  optional bool has_block_attributes = 2;
+
+  extend Frame {
+    optional InlineStyle inline_frame_style = 167122045;
+  }
+  extend Template {
+    optional InlineStyle inline_template_style = 167732514;
+  }
+  extend ImageElement {
+    optional InlineStyle inline_image_element_style = 167717277;
+  }
+  extend SpacerElement {
+    optional InlineStyle inline_spacer_element_style = 167552611;
+  }
+  extend TextElement {
+    optional InlineStyle inline_text_element_style = 167550691;
+  }
+  extend GridRow {
+    optional InlineStyle inline_grid_row_style = 167505035;
+  }
+  extend Element {
+    optional InlineStyle inline_element_style = 194909264;
+  }
+  extend StyledImageChunk {
+    optional InlineStyle inline_styled_image_chunk_style = 179383826;
+  }
+  extend StyledTextChunk {
+    optional InlineStyle inline_styled_text_chunk_style = 178939830;
+  }
+  extend CustomElement {
+    optional InlineStyle inline_custom_element_style = 183949706;
+  }
+}
+
+// Information for easier embeding of styles from StylesIdsStack.
+message StyleIdsStackHelper {
+  // Whether The element that holds this StyleIdsStack should be rendered, but
+  // not visible (opacity == 0).
+  optional bool is_invisible = 1;
+
+  // The BoundStyle that is bound to the StyleIdsStack
+  optional BoundStyle bound_style = 2;
+
+  extend StyleIdsStack {
+    optional StyleIdsStackHelper style_ids_stack_helper = 183958037;
+  }
+}
+
+// Information for easier creation of CSS styles from the definitions in the
+// Style message.
+message CssStyleHelper {
+  // String represention of the foreground color (e.g. for text or any other
+  // foreground element). color in CSS format.
+  // For example: 'rgba(255,100,50,1.0)', 'red', '#CCDDEE'
+  optional string css_color = 1;
+
+  // String representation of the padding, in CSS format. This is the string
+  // that is given to the "padding" CSS attribute.
+  // For example: '0', '1px 2px', '1px 2px 3px'.
+  optional string css_padding = 2;
+
+  // String represention of the background in CSS format.
+  // For example: 'rgba(255,100,50,1.0)', '#CCDDEE', 'linear-gradient(...)'
+  optional string css_background = 3;
+
+  // String representing a single borders value for CSS, which will be put on
+  // the "border" css attribute.
+  // For example: '1px solid black'.
+  optional string css_border = 4;
+
+  // String representation of the margins, in CSS format. This is the string
+  // that is given to the "margin" CSS attribute.
+  // For example: '0', '1px 2px', '1px 2px 3px'.
+  optional string css_margin = 5;
+
+  // String representation of the box-shadow, in CSS format. This is the string
+  // that is given to the "box-shadow" CSS attribute.
+  // For example: '20px 20px 50px 10px #ABC inset'.
+  optional string css_box_shadow = 6;
+
+  extend Style {
+    optional CssStyleHelper css_style_helper = 167122045;
+  }
+}
+
+// Information for easier creation of CSS styles from the definitions in the
+// Border message.
+message CssBorderHelper {
+  // String represention of border, in CSS format.
+  // For example: '1px solid black', '1px', '1px dotted #CCDDEE'
+  optional string css_border = 1;
+
+  extend Border {
+    optional CssBorderHelper css_border_helper = 167122045;
+  }
+}
+
+// Information for easier creation of CSS styles from the definitions in the
+// Border message.
+message CssRoundedCornersHelper {
+  // String representation of the rounded corners, in CSS format. This is the
+  // string that is given to the "border-radius" CSS attribute.
+  // For example: "5px", '5px 20px', '10px 20px 30px'.
+  optional string css_border_radius = 1;
+
+  extend RoundedCorners {
+    optional CssRoundedCornersHelper css_rounded_corners_helper = 167122045;
+  }
+}
+
+// The ImageSource to show in Web.
+extend Image {
+  optional ImageSource selected_image_source = 180140320;
+}
+
+// Information on Element regarding its visibility.
+extend Element {
+  optional bool omit_element = 193827472;
+}

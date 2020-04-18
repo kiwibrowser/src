@@ -1,0 +1,75 @@
+###################################
+# SConcscript file for dri targets
+
+Import('*')
+
+if not env['dri']:
+    Return()
+
+drienv = env.Clone()
+
+drienv.Replace(CPPPATH = [
+    '#src/mesa/drivers/dri/common',
+    '#include',
+    '#include/GL/internal',
+    '#src/mapi',
+    '#src/gallium/include',
+    '#src/gallium/auxiliary',
+    '#src/gallium/drivers',
+    '#src/gallium/winsys',
+    '#src/mesa',
+    '#src/mesa/main',
+    '#src/mesa/glapi',
+    '#src/mesa/math',
+    '#src/mesa/transform',
+    '#src/mesa/shader',
+    '#src/mesa/swrast',
+    '#src/mesa/swrast_setup',
+    '#src/egl/main',
+    '#src/egl/drivers/dri',
+])
+
+drienv.PkgUseModules('DRM')
+
+dri_common_utils = drienv.SharedObject(
+    target = 'utils.o',
+    source = '#src/mesa/drivers/dri/common/utils.c'
+)
+
+dri_common_xmlconfig = drienv.SharedObject(
+    target = 'xmlconfig.o',
+    source = '#src/mesa/drivers/dri/common/xmlconfig.c'
+)
+
+dri_common_dri_util = drienv.SharedObject(
+    target = 'dri_util.o',
+    source = '#src/mesa/drivers/dri/common/dri_util.c'
+)
+
+dri_common_drisw_util = drienv.SharedObject(
+    target = 'drisw_util.o',
+    source = '#src/mesa/drivers/dri/common/drisw_util.c'
+)
+
+
+COMMON_DRI_SW_OBJECTS = [
+    dri_common_utils,
+    dri_common_xmlconfig,
+    dri_common_drisw_util,
+]
+
+COMMON_DRI_DRM_OBJECTS = [
+    dri_common_utils,
+    dri_common_xmlconfig,
+    dri_common_dri_util,
+]
+
+drienv.AppendUnique(LIBS = [
+    'expat',
+])
+
+Export([
+    'drienv',
+    'COMMON_DRI_SW_OBJECTS',
+    'COMMON_DRI_DRM_OBJECTS',
+])

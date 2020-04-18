@@ -1,0 +1,653 @@
+JSON-RPC Example
+================
+
+.. contents::
+
+:author: Ian Bicking
+
+Introduction
+------------
+
+This is an example of how to write a web service using WebOb.  The
+example shows how to create a `JSON-RPC <http://json-rpc.org/>`_
+endpoint using WebOb and the `simplejson
+<http://www.undefined.org/python/#simplejson>`_ JSON library.  This
+also shows how to use WebOb as a client library using `WSGIProxy
+<http://pythonpaste.org/wsgiproxy/>`_.
+
+While this example presents JSON-RPC, this is not an endorsement of
+JSON-RPC.  In fact I don't like JSON-RPC.  It's unnecessarily
+un-RESTful, and modelled too closely on `XML-RPC
+<http://www.xmlrpc.com/>`_.
+
+Code
+----
+
+The finished code for this is available in
+`docs/json-example-code/jsonrpc.py
+<https://github.com/Pylons/webob/tree/master/docs/jsonrpc-example-code/jsonrpc.py>`_
+-- you can run that file as a script to try it out, or import it.
+
+Concepts
+--------
+
+JSON-RPC wraps an object, allowing you to call methods on that object
+and get the return values.  It also provides a way to get error
+responses.
+
+The `specification
+<http://json-rpc.org/wd/JSON-RPC-1-1-WD-20060807.html>`_ goes into the
+details (though in a vague sort of way).  Here's the basics:
+
+* All access goes through a POST to a single URL.
+
+* The POST contains a JSON body that looks like::
+
+   {"method": "methodName",
+    "id": "arbitrary-something",
+    "params": [arg1, arg2, ...]}
+
+* The ``id`` parameter is just a convenience for the client to keep
+  track of which response goes with which request.  This makes
+  asynchronous calls (like an XMLHttpRequest) easier.  We just send
+  the exact same id back as we get, we never look at it.
+
+* The response is JSON.  A successful response looks like::
+
+    {"result": the_result,
+     "error": null,
+     "id": "arbitrary-something"}
+
+* The error response looks like::
+
+    {"result": null,
+     "error": {"name": "JSONRPCError",
+               "code": (number 100-999),
+               "message": "Some Error Occurred",
+               "error": "whatever you want\n(a traceback?)"},
+     "id": "arbitrary-something"}
+
+* It doesn't seem to indicate if an error response should have a 200
+  response or a 500 response.  So as not to be completely stupid about
+  HTTP, we choose a 500 resonse, as giving an error with a 200
+  response is irresponsible.
+
+Infrastructure
+--------------
+
+To make this easier to test, we'll set up a bit of infrastructure.
+This will open up a server (using `wsgiref
+<http://python.org/doc/current/lib/module-wsgiref.simpleserver.html>`_)
+and serve up our application (note that *creating* the application is
+left out to start with):
+
+.. code-block:: python
+
+    import sys
+
+    def main(args=None):
+        import optparse
+        from wsgiref import simple_server
+        parser = optparse.OptionParser(
+            usage="%prog [OPTIONS] MODULE:EXPRESSION")
+        parser.add_option(
+            '-p', '--port', default='8080',
+            help='Port to serve on (default 8080)')
+        parser.add_option(
+            '-H', '--host', default='127.0.0.1',
+            help='Host to serve on (default localhost; 0.0.0.0 to make public)')
+        if args is None:
+            args = sys.argv[1:]
+        options, args = parser.parse_args()
+        if not args or len(args) > 1:
+            print 'You must give a single object reference'
+            parser.print_help()
+            sys.exit(2)
+        app = make_app(args[0])
+        server = simple_server.make_server(
+            options.host, int(options.port),
+            app)
+        print 'Serving on http://%s:%s' % (options.host, options.port)
+        server.serve_forever()
+
+    if __name__ == '__main__':
+        main()
+
+I won't describe this much.  It starts a server, serving up just the
+app created by ``make_app(args[0])``.  ``make_app`` will have to load
+up the object and wrap it in our WSGI/WebOb wrapper.  We'll be calling
+that wrapper ``JSONRPC(obj)``, so here's how it'll go:
+
+.. code-block:: python
+
+    def make_app(expr):
+        module, expression = expr.split(':', 1)
+        __import__(module)
+        module = sys.modules[module]
+        obj = eval(expression, module.__dict__)
+        return JsonRpcApp(obj)
+
+We use ``__import__(module)`` to import the module, but its return
+value is wonky.  We can find the thing it imported in ``sys.modules``
+(a dictionary of all the loaded modules).  Then we evaluate the second
+part of the expression in the namespace of the module.  This lets you
+do something like ``smtplib:SMTP('localhost')`` to get a fully
+instantiated SMTP object.
+
+That's all the infrastructure we'll need for the server side.  Now we
+just have to implement ``JsonRpcApp``.
+
+The Application Wrapper
+-----------------------
+
+Note that I'm calling this an "application" because that's the
+terminology WSGI uses.  Everything that gets *called* is an
+"application", and anything that calls an application is called a
+"server".
+
+The instantiation of the server is already figured out:
+
+.. code-block:: python
+
+    class JsonRpcApp(object):
+
+        def __init__(self, obj):
+            self.obj = obj
+
+        def __call__(self, environ, start_response):
+            ... the WSGI interface ...
+
+So the server is an instance bound to the particular object being
+exposed, and ``__call__`` implements the WSGI interface.
+
+We'll start with a simple outline of the WSGI interface, using a kind
+of standard WebOb setup:
+
+.. code-block:: python
+
+    from webob import Request, Response
+    from webob import exc
+
+    class JsonRpcApp(object):
+        ...
+        def __call__(self, environ, start_response):
+            req = Request(environ)
+            try:
+                resp = self.process(req)
+            except ValueError, e:
+                resp = exc.HTTPBadRequest(str(e))
+            except exc.HTTPException, e:
+                resp = e
+            return resp(environ, start_response)
+
+We first create a request object.  The request object just wraps the
+WSGI environment.  Then we create the response object in the
+``process`` method (which we still have to write).  We also do some
+exception catching.  We'll turn any ``ValueError`` into a ``400 Bad
+Request`` response.  We'll also let ``process`` raise any
+``web.exc.HTTPException`` exception.  There's an exception defined in
+that module for all the HTTP error responses, like ``405 Method Not
+Allowed``.  These exceptions are themselves WSGI applications (as is
+``webob.Response``), and so we call them like WSGI applications and
+return the result.
+
+The ``process`` method
+----------------------
+
+The ``process`` method of course is where all the fancy stuff
+happens.  We'll start with just the most minimal implementation, with
+no error checking or handling:
+
+.. code-block:: python
+
+    from simplejson import loads, dumps
+
+    class JsonRpcApp(object):
+        ...
+        def process(self, req):
+            json = loads(req.body)
+            method = json['method']
+            params = json['params']
+            id = json['id']
+            method = getattr(self.obj, method)
+            result = method(*params)
+            resp = Response(
+                content_type='application/json',
+                body=dumps(dict(result=result,
+                                error=None,
+                                id=id)))
+            return resp
+
+As long as the request is properly formed and the method doesn't raise
+any exceptions, you are pretty much set.  But of course that's not a
+reasonable expectation.  There's a whole bunch of things that can go
+wrong.  For instance, it has to be a POST method:
+
+.. code-block:: python
+
+    if not req.method == 'POST':
+        raise exc.HTTPMethodNotAllowed(
+            "Only POST allowed",
+            allowed='POST')
+
+And maybe the request body doesn't contain valid JSON:
+
+.. code-block:: python
+
+    try:
+        json = loads(req.body)
+    except ValueError, e:
+        raise ValueError('Bad JSON: %s' % e)
+
+And maybe all the keys aren't in the dictionary:
+
+.. code-block:: python
+
+    try:
+        method = json['method']
+        params = json['params']
+        id = json['id']
+    except KeyError, e:
+        raise ValueError(
+            "JSON body missing parameter: %s" % e)
+
+And maybe it's trying to acces a private method (a method that starts
+with ``_``) -- that's not just a bad request, we'll call that case
+``403 Forbidden``.
+
+.. code-block:: python
+
+    if method.startswith('_'):
+        raise exc.HTTPForbidden(
+            "Bad method name %s: must not start with _" % method)
+
+And maybe ``json['params']`` isn't a list:
+
+.. code-block:: python
+
+    if not isinstance(params, list):
+        raise ValueError(
+            "Bad params %r: must be a list" % params)
+
+And maybe the method doesn't exist:
+
+.. code-block:: python
+
+    try:
+        method = getattr(self.obj, method)
+    except AttributeError:
+        raise ValueError(
+            "No such method %s" % method)
+
+The last case is the error we actually can expect: that the method
+raises some exception.
+
+.. code-block:: python
+
+    try:
+        result = method(*params)
+    except:
+        tb = traceback.format_exc()
+        exc_value = sys.exc_info()[1]
+        error_value = dict(
+            name='JSONRPCError',
+            code=100,
+            message=str(exc_value),
+            error=tb)
+        return Response(
+            status=500,
+            content_type='application/json',
+            body=dumps(dict(result=None,
+                            error=error_value,
+                            id=id)))
+
+That's a complete server.
+
+The Complete Code
+-----------------
+
+Since we showed all the error handling in pieces, here's the complete
+code:
+
+.. code-block:: python
+
+    from webob import Request, Response
+    from webob import exc
+    from simplejson import loads, dumps
+    import traceback
+    import sys
+
+    class JsonRpcApp(object):
+        """
+        Serve the given object via json-rpc (http://json-rpc.org/)
+        """
+
+        def __init__(self, obj):
+            self.obj = obj
+
+        def __call__(self, environ, start_response):
+            req = Request(environ)
+            try:
+                resp = self.process(req)
+            except ValueError, e:
+                resp = exc.HTTPBadRequest(str(e))
+            except exc.HTTPException, e:
+                resp = e
+            return resp(environ, start_response)
+
+        def process(self, req):
+            if not req.method == 'POST':
+                raise exc.HTTPMethodNotAllowed(
+                    "Only POST allowed",
+                    allowed='POST')
+            try:
+                json = loads(req.body)
+            except ValueError, e:
+                raise ValueError('Bad JSON: %s' % e)
+            try:
+                method = json['method']
+                params = json['params']
+                id = json['id']
+            except KeyError, e:
+                raise ValueError(
+                    "JSON body missing parameter: %s" % e)
+            if method.startswith('_'):
+                raise exc.HTTPForbidden(
+                    "Bad method name %s: must not start with _" % method)
+            if not isinstance(params, list):
+                raise ValueError(
+                    "Bad params %r: must be a list" % params)
+            try:
+                method = getattr(self.obj, method)
+            except AttributeError:
+                raise ValueError(
+                    "No such method %s" % method)
+            try:
+                result = method(*params)
+            except:
+                text = traceback.format_exc()
+                exc_value = sys.exc_info()[1]
+                error_value = dict(
+                    name='JSONRPCError',
+                    code=100,
+                    message=str(exc_value),
+                    error=text)
+                return Response(
+                    status=500,
+                    content_type='application/json',
+                    body=dumps(dict(result=None,
+                                    error=error_value,
+                                    id=id)))
+            return Response(
+                content_type='application/json',
+                body=dumps(dict(result=result,
+                                error=None,
+                                id=id)))
+
+The Client
+----------
+
+It would be nice to have a client to test out our server.  Using
+`WSGIProxy`_ we can use WebOb
+Request and Response to do actual HTTP connections.
+
+The basic idea is that you can create a blank Request:
+
+.. code-block:: python
+
+    >>> from webob import Request
+    >>> req = Request.blank('http://python.org')
+
+Then you can send that request to an application:
+
+.. code-block:: python
+
+    >>> from wsgiproxy.exactproxy import proxy_exact_request
+    >>> resp = req.get_response(proxy_exact_request)
+
+This particular application (``proxy_exact_request``) sends the
+request over HTTP:
+
+.. code-block:: python
+
+    >>> resp.content_type
+    'text/html'
+    >>> resp.body[:10]
+    '<!DOCTYPE '
+
+So we're going to create a proxy object that constructs WebOb-based
+jsonrpc requests, and sends those using ``proxy_exact_request``.
+
+The Proxy Client
+----------------
+
+The proxy client is instantiated with its base URL.  We'll also let
+you pass in a proxy application, in case you want to do local requests
+(e.g., to do direct tests against a ``JsonRpcApp`` instance):
+
+.. code-block:: python
+
+    class ServerProxy(object):
+
+        def __init__(self, url, proxy=None):
+            self._url = url
+            if proxy is None:
+                from wsgiproxy.exactproxy import proxy_exact_request
+                proxy = proxy_exact_request
+            self.proxy = proxy
+
+This ServerProxy object itself doesn't do much, but you can call methods on
+it.  We can intercept any access ``ServerProxy(...).method`` with the
+magic function ``__getattr__``.  Whenever you get an attribute that
+doesn't exist in an instance, Python will call
+``inst.__getattr__(attr_name)`` and return that.  When you *call* a
+method, you are calling the object that ``.method`` returns.  So we'll
+create a helper object that is callable, and our ``__getattr__`` will
+just return that:
+
+.. code-block:: python
+
+    class ServerProxy(object):
+        ...
+        def __getattr__(self, name):
+            # Note, even attributes like __contains__ can get routed
+            # through __getattr__
+            if name.startswith('_'):
+                raise AttributeError(name)
+            return _Method(self, name)
+
+    class _Method(object):
+        def __init__(self, parent, name):
+            self.parent = parent
+            self.name = name
+
+Now when we call the method we'll be calling ``_Method.__call__``, and
+the HTTP endpoint will be ``self.parent._url``, and the method name
+will be ``self.name``.
+
+Here's the code to do the call:
+
+.. code-block:: python
+
+    class _Method(object):
+        ...
+
+        def __call__(self, *args):
+            json = dict(method=self.name,
+                        id=None,
+                        params=list(args))
+            req = Request.blank(self.parent._url)
+            req.method = 'POST'
+            req.content_type = 'application/json'
+            req.body = dumps(json)
+            resp = req.get_response(self.parent.proxy)
+            if resp.status_code != 200 and not (
+                resp.status_code == 500
+                and resp.content_type == 'application/json'):
+                raise ProxyError(
+                    "Error from JSON-RPC client %s: %s"
+                    % (self._url, resp.status),
+                    resp)
+            json = loads(resp.body)
+            if json.get('error') is not None:
+                e = Fault(
+                    json['error'].get('message'),
+                    json['error'].get('code'),
+                    json['error'].get('error'),
+                    resp)
+                raise e
+            return json['result']
+
+We raise two kinds of exceptions here.  ``ProxyError`` is when
+something unexpected happens, like a ``404 Not Found``.  ``Fault`` is
+when a more expected exception occurs, i.e., the underlying method
+raised an exception.
+
+In both cases we'll keep the response object around, as that can be
+interesting.  Note that you can make exceptions have any methods or
+signature you want, which we'll do:
+
+.. code-block:: python
+
+    class ProxyError(Exception):
+        """
+        Raised when a request via ServerProxy breaks
+        """
+        def __init__(self, message, response):
+            Exception.__init__(self, message)
+            self.response = response
+
+    class Fault(Exception):
+        """
+        Raised when there is a remote error
+        """
+        def __init__(self, message, code, error, response):
+            Exception.__init__(self, message)
+            self.code = code
+            self.error = error
+            self.response = response
+        def __str__(self):
+            return 'Method error calling %s: %s\n%s' % (
+                self.response.request.url,
+                self.args[0],
+                self.error)
+
+Using Them Together
+-------------------
+
+Good programmers start with tests.  But at least we'll end with a
+test.  We'll use `doctest
+<http://python.org/doc/current/lib/module-doctest.html>`_ for our
+tests.  The test is in `docs/json-example-code/test_jsonrpc.txt
+<https://github.com/Pylons/webob/tree/master/docs/jsonrpc-example-code/test_jsonrpc.txt>`_
+and you can run it with `docs/json-example-code/test_jsonrpc.py
+<https://github.com/Pylons/webob/tree/master/docs/jsonrpc-example-code/test_jsonrpc.py>`_,
+which looks like:
+
+.. code-block:: python
+
+    if __name__ == '__main__':
+        import doctest
+        doctest.testfile('test_jsonrpc.txt')
+
+As you can see, it's just a stub to run the doctest.  We'll need a
+simple object to expose.  We'll make it real simple:
+
+.. code-block:: python
+
+    >>> class Divider(object):
+    ...     def divide(self, a, b):
+    ...        return a / b
+
+Then we'll get the app setup:
+
+.. code-block:: python
+
+    >>> from jsonrpc import *
+    >>> app = JsonRpcApp(Divider())
+
+And attach the client *directly* to it:
+
+.. code-block:: python
+
+    >>> proxy = ServerProxy('http://localhost:8080', proxy=app)
+
+Because we gave the app itself as the proxy, the URL doesn't actually
+matter.
+
+Now, if you are used to testing you might ask: is this kosher?  That
+is, we are shortcircuiting HTTP entirely.  Is this a realistic test?
+
+One thing you might be worried about in this case is that there are
+more shared objects than you'd have with HTTP.  That is, everything
+over HTTP is serialized to headers and bodies.  Without HTTP, we can
+send stuff around that can't go over HTTP.  This *could* happen, but
+we're mostly protected because the only thing the application's share
+is the WSGI ``environ``.  Even though we use a ``webob.Request``
+object on both side, it's not the *same* request object, and all the
+state is studiously kept in the environment.  We *could* share things
+in the environment that couldn't go over HTTP.  For instance, we could
+set ``environ['jsonrpc.request_value'] = dict(...)``, and avoid
+``simplejson.dumps`` and ``simplejson.loads``.  We *could* do that,
+and if we did then it is possible our test would work even though the
+libraries were broken over HTTP.  But of course inspection shows we
+*don't* do that.  A little discipline is required to resist playing clever
+tricks (or else you can play those tricks and do more testing).
+Generally it works well.
+
+So, now we have a proxy, lets use it:
+
+.. code-block:: python
+
+    >>> proxy.divide(10, 4)
+    2
+    >>> proxy.divide(10, 4.0)
+    2.5
+
+Lastly, we'll test a couple error conditions.  First a method error:
+
+.. code-block:: python
+
+    >>> proxy.divide(10, 0) # doctest: +ELLIPSIS
+    Traceback (most recent call last):
+       ...
+    Fault: Method error calling http://localhost:8080: integer division or modulo by zero
+    Traceback (most recent call last):
+      File ...
+        result = method(*params)
+      File ...
+        return a / b
+    ZeroDivisionError: integer division or modulo by zero
+    <BLANKLINE>
+
+It's hard to actually predict this exception, because the test of the
+exception itself contains the traceback from the underlying call, with
+filenames and line numbers that aren't stable.  We use ``# doctest:
++ELLIPSIS`` so that we can replace text we don't care about with
+``...``.  This is actually figured out through copy-and-paste, and
+visual inspection to make sure it looks sensible.
+
+The other exception can be:
+
+.. code-block:: python
+
+    >>> proxy.add(1, 1)
+    Traceback (most recent call last):
+        ...
+    ProxyError: Error from JSON-RPC client http://localhost:8080: 400 Bad Request
+
+Here the exception isn't a JSON-RPC method exception, but a more basic
+ProxyError exception.
+
+Conclusion
+----------
+
+Hopefully this will give you ideas about how to implement web services
+of different kinds using WebOb.  I hope you also can appreciate the
+elegance of the symmetry of the request and response objects, and the
+client and server for the protocol.
+
+Many of these techniques would be better used with a `RESTful
+<http://en.wikipedia.org/wiki/Representational_State_Transfer>`_
+service, so do think about that direction if you are implementing your
+own protocol.

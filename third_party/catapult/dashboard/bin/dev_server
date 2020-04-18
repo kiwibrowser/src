@@ -1,0 +1,29 @@
+#!/usr/bin/python
+# Copyright 2015 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import os
+import sys
+
+
+def _AddToPathIfNeeded(path):
+  if path not in sys.path:
+    sys.path.insert(0, path)
+
+
+def Main():
+  catapult_path = os.path.abspath(os.path.join(
+      os.path.dirname(__file__), '..', '..'))
+
+  _AddToPathIfNeeded(os.path.join(catapult_path, 'dashboard'))
+  import dashboard
+  paths = dashboard.PathsForDeployment()
+
+  _AddToPathIfNeeded(catapult_path)
+  from catapult_build import appengine_dev_server
+  appengine_dev_server.DevAppserver(paths, sys.argv[1:])
+
+
+if __name__ == '__main__':
+  Main()

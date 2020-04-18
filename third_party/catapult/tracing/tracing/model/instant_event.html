@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<!--
+Copyright (c) 2013 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/base/unit.html">
+<link rel="import" href="/tracing/model/timed_event.html">
+
+<script>
+'use strict';
+
+tr.exportTo('tr.model', function() {
+  const InstantEventType = {
+    GLOBAL: 1,
+    PROCESS: 2
+  };
+
+  /**
+   * An InstantEvent is a zero-duration event.
+   *
+   * @constructor
+   */
+  function InstantEvent(category, title, colorId, start, args) {
+    tr.model.TimedEvent.call(this, start);
+
+    this.category = category || '';
+    this.title = title;
+    this.colorId = colorId;
+    this.args = args;
+
+    this.type = undefined;
+  }
+
+  InstantEvent.prototype = {
+    __proto__: tr.model.TimedEvent.prototype
+  };
+
+  /**
+   * A GlobalInstantEvent is a zero-duration event that's not tied to any
+   * particular process.
+   *
+   * An example is a trace event that's issued when a new USB device is plugged
+   * into the machine.
+   *
+   * @constructor
+   */
+  function GlobalInstantEvent(category, title, colorId, start, args) {
+    InstantEvent.apply(this, arguments);
+    this.type = InstantEventType.GLOBAL;
+  }
+
+  GlobalInstantEvent.prototype = {
+    __proto__: InstantEvent.prototype,
+    get userFriendlyName() {
+      return 'Global instant event ' + this.title + ' @ ' +
+          tr.b.Unit.byName.timeStampInMs.format(start);
+    }
+  };
+
+  /**
+   * A ProcessInstantEvent is a zero-duration event that's tied to a
+   * particular process.
+   *
+   * An example is a trace event that's issued when a kill signal is received.
+   *
+   * @constructor
+   */
+  function ProcessInstantEvent(category, title, colorId, start, args) {
+    InstantEvent.apply(this, arguments);
+    this.type = InstantEventType.PROCESS;
+  }
+
+  ProcessInstantEvent.prototype = {
+    __proto__: InstantEvent.prototype,
+
+    get userFriendlyName() {
+      return 'Process-level instant event ' + this.title + ' @ ' +
+          tr.b.Unit.byName.timeStampInMs.format(start);
+    }
+  };
+
+  tr.model.EventRegistry.register(
+      InstantEvent,
+      {
+        name: 'instantEvent',
+        pluralName: 'instantEvents'
+      });
+
+  return {
+    GlobalInstantEvent,
+    ProcessInstantEvent,
+
+    InstantEventType,
+    InstantEvent,
+  };
+});
+</script>
+

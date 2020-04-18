@@ -1,0 +1,45 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+
+    // Available variables which can be used inside of strings.
+    // ${workspaceRoot}: the root folder of the team
+    // ${file}: the current opened file
+    // ${fileBasename}: the current opened file's basename
+    // ${fileDirname}: the current opened file's dirname
+    // ${fileExtname}: the current opened file's extension
+    // ${cwd}: the current working directory of the spawned process
+
+    "version": "0.1.0",
+    "command": "sh",
+    "isShellCommand": true,
+    "args": ["-c"],
+    "showOutput": "always",
+    "suppressTaskName": true,
+    "options": {
+        "cwd": "${workspaceRoot}/debug"
+    },
+    "tasks": [
+        {
+            "taskName": "cmake",
+            "args": ["cmake ."]
+        },
+        {
+            "taskName": "make",
+            "args" : ["make -j4"],
+            "isBuildCommand": true,
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": "absolute",
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            }
+        }
+    ]
+}

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<!--
+Copyright 2016 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<html>
+<head>
+  <link rel="import" href="/dashboard/static/base.html">
+  <link rel="import" href="/dashboard/elements/nav-bar.html">
+  <title>Edit Sheriff Rotations</title>
+  <script>
+  'use strict';
+  // This should be an Object mapping sheriff names to Objects which
+  // have the properties for each sheriff rotation, including
+  // "url", "email", "patterns", "internal_only", and "summarize".
+  var SHERIFF_DATA = {{sheriffs_json | safe}};
+  var XSRF_TOKEN = '{{xsrf_token}}';
+
+  /**
+   * Initializes the event listeners for events on the form.
+   */
+  function initialize() {
+    var addListener = function(elementId, eventName, callback) {
+      var element = document.getElementById(elementId);
+      element.addEventListener(eventName, callback, true);
+    };
+    addListener('edit-name', 'change', onEditFocus);
+    addListener('edit-name', 'focus', onEditFocus);
+    addListener('edit-radio', 'focus', onEditFocus);
+    addListener('add-name', 'focus', onAddFocus);
+    addListener('add-radio', 'focus', onAddFocus);
+    addListener('list-tests-button', 'click', listTests);
+  }
+
+  /**
+   * Handler for when "Edit existing sheriff" is checked.
+   * Updates the form with the properties of the selected existing sheriff.
+   */
+  function onEditFocus() {
+    document.getElementById('edit-radio').checked = true;
+    var selectMenu = document.getElementById('edit-name');
+    var sheriffName = selectMenu.options[selectMenu.selectedIndex].value;
+    var sheriff = SHERIFF_DATA[sheriffName];
+
+    document.getElementById('url').value = sheriff['url'];
+    document.getElementById('email').value = sheriff['email'];
+
+    var internalOnly = sheriff['internal_only'] ? 'yes' : 'no';
+    document.getElementById('internal-only-' + internalOnly).checked = true;
+
+    var summarize = sheriff['summarize'] ? 'yes' : 'no';
+    document.getElementById('summarize-' + summarize).checked = true;
+
+    document.getElementById('patterns-textarea').value = sheriff['patterns'];
+    document.getElementById('labels').value = sheriff['labels'];
+    document.getElementById('list-tests-button').hidden = false;
+  }
+
+  /**
+   * Handler for when "Add a new config" is checked; clears the form.
+   */
+  function onAddFocus() {
+    document.getElementById('add-radio').checked = true;
+    document.getElementById('url').value = '';
+    document.getElementById('email').value = '';
+    document.getElementById('internal-only-yes').checked = true;
+    document.getElementById('summarize-no').checked = true;
+    document.getElementById('patterns-textarea').textContent = '';
+    document.getElementById('labels').value = '';
+    document.getElementById('list-tests-button').hidden = true;
+  }
+
+  /**
+   * Shows a list of all the tests for a given sheriff.
+   * @param {Event} clickEvent The click event that this function handles.
+   */
+  function listTests(clickEvent) {
+    var selectMenu = document.getElementById('edit-name');
+    var sheriffName = selectMenu.options[selectMenu.selectedIndex].value;
+    if (sheriffName == '') {
+      console.error('Sheriff name is empty, cannot list tests.');
+      return;
+    }
+    var xhr = new XMLHttpRequest();
+    xhr.onload = function showSheriffs() {
+      var arr = JSON.parse(xhr.responseText);
+      document.getElementById('matching-list').innerHTML = arr.join('<br>');
+    };
+    xhr.open(
+        'GET', '/list_monitored_tests?get-sheriffed-by=' +
+        encodeURIComponent(sheriffName));
+    xhr.send();
+    document.getElementById('matching-list').innerHTML =
+        '<img src="//www.google.com/images/loading.gif">';
+    clickEvent.preventDefault();
+  }
+
+  window.addEventListener('DOMContentLoaded', initialize, true);
+  </script>
+</head>
+<body>
+  <nav-bar></nav-bar>
+  <h1>Edit Sheriffs</h1>
+
+  <p><b>Note</b>: If the test path patterns of two different sheriffs
+  threshold configurations both match some test, then the sheriff whose
+  name comes first according to lexicographical sort order will apply.</p>
+
+  <form method="POST">
+    {{xsrf_input | safe}}
+    <label>
+      <input type="radio" name="add-edit" id="add-radio" value="add" checked>
+      Add a new config named:
+    </label>
+    <input type="text" name="add-name" id="add-name"><br>
+    <label>
+      <input type="radio" name="add-edit" id="edit-radio" value="edit">
+      Edit existing config:
+    </label>
+    <select name="edit-name" id="edit-name">
+    {% for name in sheriff_names %}
+      <option value="{{name}}">{{name}}</option>
+    {% endfor %}
+    </select><br>
+    <table>
+      <tr>
+        <td><label for="url">Rotation URL:</label></td>
+        <td><input type="url" name="url" id="url" size=75> </td>
+      </tr>
+        <td><label for="email">Notification Email:</label></td>
+        <td><input type="email" name="email" id="email" size=75></td>
+      </tr>
+      <tr>
+        <td><label for="labels">Bug labels to add (comma-separated):</label></td>
+        <td><input type="text" name="labels" id="labels" size=75></td>
+      </tr>
+      <tr>
+        <td>Internal-only:</td>
+        <td>
+          <label><input type="radio" name="internal-only" id="internal-only-yes"
+                        value="true" checked>yes</label>
+          <label><input type="radio" name="internal-only" id="internal-only-no"
+                        value="false">no</label>
+        </td>
+      </tr>
+      <tr>
+        <td>Summarize Email:</td>
+        <td>
+          <label><input type="radio" name="summarize" id="summarize-yes"
+                        value="true">yes</label>
+          <label><input type="radio" name="summarize" id="summarize-no"
+                        value="false" checked>no</label>
+        </td>
+      </tr>
+    </table>
+    Patterns:<br>
+    <textarea name="patterns" id="patterns-textarea"
+              rows="15" cols="72"></textarea><br>
+            <button type="submit">Submit</button><br><br>
+    <button id="list-tests-button" hidden>List monitored tests</button>
+    <div id="matching-list"></div>
+  </form>
+</body>
+</html>

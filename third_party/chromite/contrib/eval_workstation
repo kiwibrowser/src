@@ -1,0 +1,225 @@
+#!/bin/bash
+
+# Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# The purpose of this script is to run through a few steps of a typical
+# chromeos development flow, tracking the runtime of each step, in order
+# to evaluate a development machine.
+
+CROS_SDK="./chromite/bin/cros_sdk"
+BOARD="link"
+BRANCH="stabilize-4886.B"
+
+# Run a given command, printing a concise start and stop line along with
+# the given command description.
+function run() {
+  local description="${1}"
+  local cmd="${2}"
+
+  # Prepare a temporary file to hold output.
+  log_basename=$(echo ${description} | sed -e 's/ /_/g')
+  logfile="${TEMPDIR}"/"${log_basename}"
+
+  local start_time=$(date +%s)
+
+  echo "Running '${description}' now, output to ${logfile}"
+  ${cmd} >& "${logfile}"
+  local result=$?
+
+  local end_time=$(date +%s)
+  local elapsed_seconds=$(( end_time - start_time ))
+  echo "Running '${description}' took ${elapsed_seconds}s"
+
+  if [[ "${result}" -ne 0 ]]; then
+    echo "  Failed '${description}'.  Check log."
+    exit 1
+  fi
+}
+
+# Completely delete the given directory.
+function nuke_dir() {
+  local dir="${1}"
+  if [[ -d "${dir}" ]]; then
+    echo "Deleting existing ${dir}."
+    rm -rf "${dir}" >& /dev/null
+  fi
+  if [[ -d "${dir}" ]]; then
+    echo "Failed to delete ${dir}."
+    exit 1
+  fi
+}
+
+# TODO(mtennant): I am sure there is a clever way to combine this
+# function with the non-sudo one above.
+# Completely delete the given directory using sudo privileges.
+function sudo_nuke_dir() {
+  local dir="${1}"
+  if [[ -d "${dir}" ]]; then
+    echo "Deleting existing ${dir}, using sudo."
+    sudo rm -rf "${dir}" >& /dev/null
+  fi
+  if [[ -d "${dir}" ]]; then
+    echo "Failed to delete ${dir}, using sudo!"
+    exit 1
+  fi
+}
+
+function nuke_repo() {
+  nuke_dir ".repo"
+}
+
+# Delete any file or directory other than .repo.
+# The assumption is that any chroot should have been already deleted.
+function nuke_source() {
+  echo "Deleting all contents except .repo"
+  find . -maxdepth 1 ! -regex './.repo' ! -regex '.' | xargs rm -rf
+}
+
+# Delete all caches.
+function nuke_cache() {
+  sudo_nuke_dir ".cache"
+  sudo_nuke_dir "chroot/var/cache/chromeos-cache"
+}
+
+# Delete the build root for $BOARD.
+function nuke_build() {
+  build="chroot/build/${BOARD}"
+  sudo_nuke_dir "${build}"
+}
+
+# Delete the chroot for $BOARD.
+function nuke_chroot() {
+  if [[ -d "chroot" ]]; then
+    echo "Deleting existing chroot"
+    ${CROS_SDK} --delete >& /dev/null
+  fi
+  nuke_cache
+}
+
+# Delete everything to start with a clean slate.
+function nuke_all() {
+  nuke_chroot
+  nuke_source
+  nuke_repo
+}
+
+function repo_init() {
+  echo
+  nuke_repo
+
+  # Run repo init step
+  local cmd="repo init --repo-url https://chromium.googlesource.com/external/repo --manifest-url https://chrome-internal-review.googlesource.com/chromeos/manifest-internal --manifest-name default.xml --manifest-branch ${BRANCH}"
+  run "repo init" "${cmd}"
+}
+
+function repo_sync() {
+  echo
+  nuke_source
+
+  local cmd="repo sync --jobs=16"
+  run "repo sync" "${cmd}"
+}
+
+function make_chroot() {
+  echo
+  nuke_chroot
+
+  local cmd="${CROS_SDK} -- exit"
+  run "cros_sdk" "${cmd}"
+}
+
+function build_packages_plain() {
+  echo
+  nuke_cache
+  nuke_build
+
+  local cmd="${CROS_SDK} -- ./build_packages --board=${BOARD}"
+  run "build_packages plain" "${cmd}"
+}
+
+function build_packages_source() {
+  echo
+  nuke_cache
+  nuke_build
+
+  local cmd="${CROS_SDK} -- ./build_packages --board=${BOARD} --nousepkg"
+  run "build_packages source" "${cmd}"
+}
+
+function build_image() {
+  echo
+
+  local cmd="${CROS_SDK} -- ./build_image --board=${BOARD}"
+  run "build_image" "${cmd}"
+}
+
+usage() {
+  cat <<EOF
+Usage: eval_workstation [--help] run_count
+
+Run through the full ChromeOS workstation evaluation flow run_count
+times.
+
+To adjust which steps are run you must edit the main loop code.
+
+Options:
+  -h, --help    This help output
+EOF
+
+  if [[ $# -gt 0 ]]; then
+    printf '\nerror: %s\n' "$*" >&2
+    exit 1
+  else
+    exit 0
+  fi
+}
+
+main() {
+  run_count=0
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+    -h|--help)    usage;;
+    -*)           usage "unknown option $1";;
+    *)            run_count="$1";;
+    esac
+    shift
+  done
+
+  if [[ "${run_count}" -eq 0 ]]; then
+    usage "missing run count argument"
+  fi
+
+  sudo true
+
+  # Offer the user a chance to kill.
+  # TODO(mtennant): A yes/no prompt would be a better solution here.
+  echo "This script will run through a few ChromeOS build steps."
+  echo "Doing so will NUKE THE CONTENTS OF CURRENT DIRECTORY."
+  echo "If that is not okay then kill this script now."
+  sleep 10
+
+  for (( i=1; i<=${run_count}; i++ )); do
+    echo
+    echo "*** Starting run ${i} of ${run_count} now. ***"
+    echo
+
+    TEMPDIR=$(mktemp -d /tmp/workstation_eval.XXXX)
+    echo "Using temporary dir: ${TEMPDIR}"
+
+    sudo true
+    nuke_all
+    repo_init
+    repo_sync
+    make_chroot
+    build_packages_plain
+    build_packages_source
+    build_image
+
+    echo
+    echo "Any logs created for run ${i} are under ${TEMPDIR}"
+  done
+}
+
+main "$@"

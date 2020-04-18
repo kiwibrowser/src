@@ -1,0 +1,61 @@
+// Copyright 2017 The Chromium OS Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package login_manager;
+
+// ARC start options sent from Chrome to session manager. This message is used
+// in the SessionManagerInterface.StartArcMiniContainer method.
+message StartArcMiniContainerRequest {
+  optional bool native_bridge_experiment = 1 [default = false];
+}
+
+// ARC upgrade options sent from Chrome to session manager. This message is used
+// in the SessionManagerInterface.UpgradeArcContainer method.
+message UpgradeArcContainerRequest {
+  enum PackageCacheMode {
+    // Performs packages cache setup if the pre-generated cache exists.
+    DEFAULT = 0;
+    // Performs packages cache setup if the pre-generated cache exists and
+    // copies resulting packages.xml to the temporary location after
+    // SystemServer initialized the package manager.
+    COPY_ON_INIT = 1;
+    // Skips packages cache setup and copies resulting packages.xml to the
+    // temporary location after SystemServer initialized the package manager.
+    SKIP_SETUP_COPY_ON_INIT = 2;
+  }
+
+  enum SupervisionTransition {
+    // No transition necessary.
+    NO_TRANSITION = 0;
+    // Child user is transitioning to regular account, need to lift supervision.
+    CHILD_TO_REGULAR = 1;
+    // Regular user is transitioning to child account, need to enable
+    // supervision.
+    REGULAR_TO_CHILD = 2;
+  }
+
+  // Account ID of the user to start ARC for. This must be the same as the
+  // one given in StartSession.
+  required string account_id = 1;
+
+  // Option to disable ACTION_BOOT_COMPLETED broadcast for 3rd party apps.
+  optional bool skip_boot_completed_broadcast = 2 [default = false];
+
+  // Option to enable package manager service to scan /vendor/priv-app
+  // directory.
+  optional bool scan_vendor_priv_app = 3 [default = false];
+
+  // Optional mode for packages cache tests.
+  optional PackageCacheMode packages_cache_mode = 4 [default = DEFAULT];
+
+  // Option to notify ARC that it should transition from a supervised state to
+  // a non-supervised state, and vice-versa.
+  optional SupervisionTransition supervision_transition = 5;
+
+  // Next ID to use: 6
+}

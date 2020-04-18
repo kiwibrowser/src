@@ -1,0 +1,120 @@
+/*
+ * Copyright (C) 2017 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto2";
+option optimize_for = LITE_RUNTIME;
+
+import "perfetto/config/trace_config.proto";
+
+package perfetto.protos;
+
+// IPC interface definition for the consumer port of the tracing service.
+service ConsumerPort {
+  // Creates the ring buffers that will be used for the tracing session.
+  // TODO(primiano): not implemented yet. EnableTracing will implicitly create
+  // the required buffer. This is to allow Enabling/Disabling tracing with
+  // different configs without losing the contents of the buffers for the
+  // previous tracing session.
+  // rpc CreateBuffers(CreateBuffersRequest) returns (CreateBuffersResponse) {}
+
+  // Enables tracing for one or more data sources. At least one buffer must have
+  // been previously created. The EnableTracingResponse is sent when tracing is
+  // disabled (either explicitly or because of the |duration_ms| expired).
+  rpc EnableTracing(EnableTracingRequest) returns (EnableTracingResponse) {}
+
+  // Disables tracing for one or more data sources.
+  rpc DisableTracing(DisableTracingRequest) returns (DisableTracingResponse) {}
+
+  // Streams back the contents of one or more buffers. One call is enough to
+  // drain all the buffers. The response consists in a sequence of
+  // ReadBufferResponse messages (hence the "stream" in the return type), each
+  // carrying one or more TracePacket(s). An EOF flag is attached to the last
+  // ReadBufferResponse through the |has_more| == false field.
+  rpc ReadBuffers(ReadBuffersRequest) returns (stream ReadBuffersResponse) {}
+
+  // Destroys the buffers previously created. Note: all buffers are destroyed
+  // implicitly if the Consumer disconnects.
+  rpc FreeBuffers(FreeBuffersRequest) returns (FreeBuffersResponse) {}
+
+  // Asks the service to request to all data sources involved in the tracing
+  // session to commit their data into the trace buffer. The FlushResponse is
+  // sent only:
+  // - After the data has been committed (in which case FlushResponse succeeds)
+  // or
+  // - After FlushRequest.timeout_ms milliseconds (in which case the
+  //   FlushResponse is rejected and fails).
+  rpc Flush(FlushRequest) returns (FlushResponse) {}
+
+  // TODO rpc ListDataSources(), for the UI.
+}
+
+// Arguments for rpc EnableTracing().
+message EnableTracingRequest {
+  optional protos.TraceConfig trace_config = 1;
+}
+
+message EnableTracingResponse {
+  oneof state { bool disabled = 1; }
+}
+
+// Arguments for rpc DisableTracing().
+message DisableTracingRequest {
+  // TODO: not supported yet, selectively disable only some data sources.
+  // repeated string data_source_name;
+}
+
+message DisableTracingResponse {}
+
+// Arguments for rpc ReadBuffers().
+message ReadBuffersRequest {
+  // The |id|s of the buffer, as passed to CreateBuffers().
+  // TODO: repeated uint32 buffer_ids = 1;
+}
+
+message ReadBuffersResponse {
+  // TODO: uint32 buffer_id = 1;
+
+  // Each streaming reply returns one or more slices for one or more trace
+  // packets, or even just a portion of it (if it's too big to fit within one
+  // IPC). The returned slices are ordered and contiguous: packets' slices are
+  // not interleaved and slices are sent only once all slices for a packet are
+  // available (i.e. the consumer will never see any gap).
+  message Slice {
+    optional bytes data = 1;
+
+    // When true, this is the last slice for the packet. A ReadBufferResponse
+    // might have no slices marked as |last_slice_for_packet|==true, in the case
+    // of a very large packet that gets chunked into several IPCs (in which case
+    // only the last IPC for the packet will have this flag set).
+    optional bool last_slice_for_packet = 2;
+  }
+  repeated Slice slices = 2;
+}
+
+// Arguments for rpc FreeBuffers().
+message FreeBuffersRequest {
+  // The |id|s of the buffer, as passed to CreateBuffers().
+  repeated uint32 buffer_ids = 1;
+}
+
+message FreeBuffersResponse {}
+
+// Arguments for rpc Flush().
+message FlushRequest {
+  optional uint32 timeout_ms = 1;
+}
+
+message FlushResponse {}

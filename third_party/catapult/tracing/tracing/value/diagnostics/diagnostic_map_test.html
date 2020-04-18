@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<!--
+Copyright 2016 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/core/test_utils.html">
+<link rel="import" href="/tracing/value/diagnostics/diagnostic_map.html">
+<link rel="import" href="/tracing/value/histogram_set.html">
+
+<script>
+'use strict';
+
+tr.b.unittest.testSuite(function() {
+  test('clone', function() {
+    const diagnostics = new tr.v.d.DiagnosticMap();
+    diagnostics.set('generic', new tr.v.d.GenericSet([{a: ['b', 3]}]));
+    diagnostics.set('breakdown', new tr.v.d.Breakdown());
+    diagnostics.set('events', new tr.v.d.RelatedEventSet());
+    diagnostics.set('map', new tr.v.d.RelatedHistogramMap());
+    diagnostics.set('histogram breakdown',
+        new tr.v.d.RelatedHistogramBreakdown());
+
+    const clone = tr.v.d.DiagnosticMap.fromDict(diagnostics.asDict());
+    assert.instanceOf(clone.get('generic'), tr.v.d.GenericSet);
+    assert.deepEqual(tr.b.getOnlyElement(clone.get('generic')),
+        tr.b.getOnlyElement(diagnostics.get('generic')));
+    assert.instanceOf(clone.get('breakdown'), tr.v.d.Breakdown);
+    assert.instanceOf(clone.get('events'), tr.v.d.RelatedEventSet);
+    assert.instanceOf(clone.get('map'), tr.v.d.RelatedHistogramMap);
+    assert.instanceOf(clone.get('histogram breakdown'),
+        tr.v.d.RelatedHistogramBreakdown);
+  });
+
+  test('fromObject', function() {
+    assert.strictEqual(tr.v.d.DiagnosticMap.fromObject(
+        {a: new tr.v.d.GenericSet([])}).size, 1);
+    assert.strictEqual(tr.v.d.DiagnosticMap.fromObject(
+        new Map([['a', new tr.v.d.GenericSet([])]])).size, 1);
+  });
+
+  test('cloneWithRef', function() {
+    const diagnostics = new tr.v.d.DiagnosticMap();
+    diagnostics.set('ref', new tr.v.d.DiagnosticRef('abc'));
+
+    const clone = tr.v.d.DiagnosticMap.fromDict(diagnostics.asDict());
+    assert.instanceOf(clone.get('ref'), tr.v.d.DiagnosticRef);
+    assert.strictEqual(clone.get('ref').guid, 'abc');
+  });
+
+  test('requireFromDict', function() {
+    class MissingFromDict extends tr.v.d.Diagnostic { }
+    assert.throws(() => tr.v.d.Diagnostic.register(MissingFromDict));
+
+    class InvalidFromDict extends tr.v.d.Diagnostic {
+      static fromDict() {
+      }
+    }
+    assert.throws(() => tr.v.d.Diagnostic.register(InvalidFromDict));
+  });
+
+  test('merge', function() {
+    const event = tr.c.TestUtils.newSliceEx({
+      title: 'event',
+      start: 0,
+      duration: 1,
+    });
+    event.parentContainer = {
+      sliceGroup: {
+        stableId: 'fake_thread',
+        slices: [event],
+      },
+    };
+    const generic = new tr.v.d.GenericSet(['generic diagnostic']);
+    const generic2 = new tr.v.d.GenericSet(['generic diagnostic 2']);
+    const relatedMap = new tr.v.d.RelatedHistogramMap();
+    const events = new tr.v.d.RelatedEventSet([event]);
+
+    // When Histograms are merged, first an empty clone is created with an empty
+    // DiagnosticMap.
+    const hist = new tr.v.Histogram('', tr.b.Unit.byName.count);
+
+    const hist2 = new tr.v.Histogram('', tr.b.Unit.byName.count);
+    hist2.diagnostics.set('a', generic);
+    hist.diagnostics.addDiagnostics(hist2.diagnostics);
+    assert.strictEqual(tr.b.getOnlyElement(generic),
+        tr.b.getOnlyElement(hist.diagnostics.get('a')));
+
+    // Separate keys are not merged.
+    const hist3 = new tr.v.Histogram('', tr.b.Unit.byName.count);
+    hist3.diagnostics.set('b', generic2);
+    hist.diagnostics.addDiagnostics(hist3.diagnostics);
+    assert.strictEqual(
+        tr.b.getOnlyElement(generic),
+        tr.b.getOnlyElement(hist.diagnostics.get('a')));
+    assert.strictEqual(
+        tr.b.getOnlyElement(generic2),
+        tr.b.getOnlyElement(hist.diagnostics.get('b')));
+
+    // Merging unmergeable diagnostics should produce an
+    // UnmergeableDiagnosticSet.
+    const hist4 = new tr.v.Histogram('', tr.b.Unit.byName.count);
+    hist4.diagnostics.set('a', relatedMap);
+    hist.diagnostics.addDiagnostics(hist4.diagnostics);
+    assert.instanceOf(hist.diagnostics.get('a'),
+        tr.v.d.UnmergeableDiagnosticSet);
+    let diagnostics = Array.from(hist.diagnostics.get('a'));
+    assert.strictEqual(
+        tr.b.getOnlyElement(generic), tr.b.getOnlyElement(diagnostics[0]));
+    // Don't test merging relationships here.
+    assert.instanceOf(diagnostics[1], tr.v.d.RelatedHistogramMap);
+
+    // UnmergeableDiagnosticSets are mergeable.
+    const hist5 = new tr.v.Histogram('', tr.b.Unit.byName.count);
+    hist5.diagnostics.set('a', new tr.v.d.UnmergeableDiagnosticSet([
+      events, generic2]));
+    hist.diagnostics.addDiagnostics(hist5.diagnostics);
+    assert.instanceOf(hist.diagnostics.get('a'),
+        tr.v.d.UnmergeableDiagnosticSet);
+    diagnostics = Array.from(hist.diagnostics.get('a'));
+    assert.lengthOf(diagnostics, 3);
+    assert.instanceOf(diagnostics[0], tr.v.d.GenericSet);
+    assert.deepEqual(Array.from(diagnostics[0]), [...generic, ...generic2]);
+    assert.instanceOf(diagnostics[1], tr.v.d.RelatedHistogramMap);
+    assert.instanceOf(diagnostics[2], tr.v.d.CollectedRelatedEventSet);
+  });
+
+  test('mergeRelationships', function() {
+    const aHist0 = new tr.v.Histogram('a', tr.b.Unit.byName.count);
+    const bHist0 = new tr.v.Histogram('b', tr.b.Unit.byName.count);
+
+    let map = new tr.v.d.RelatedHistogramMap();
+    map.set('c', bHist0);
+    aHist0.diagnostics.set('map', map);
+    let breakdown = new tr.v.d.RelatedHistogramBreakdown();
+    breakdown.set('d', bHist0);
+    aHist0.diagnostics.set('breakdown', breakdown);
+    aHist0.diagnostics.set('unmergeable',
+        new tr.v.d.GenericSet(['unmergeable']));
+
+    const histograms0 = new tr.v.HistogramSet([aHist0, bHist0]);
+
+    histograms0.addSharedDiagnosticToAllHistograms(
+        tr.v.d.RESERVED_NAMES.LABELS, new tr.v.d.GenericSet(['0']));
+
+    const aHist1 = new tr.v.Histogram('a', tr.b.Unit.byName.count);
+    const bHist1 = new tr.v.Histogram('b', tr.b.Unit.byName.count);
+
+    map = new tr.v.d.RelatedHistogramMap();
+    map.set('c', bHist1);
+    aHist1.diagnostics.set('map', map);
+    breakdown = new tr.v.d.RelatedHistogramBreakdown();
+    breakdown.set('d', bHist1);
+    aHist1.diagnostics.set('breakdown', breakdown);
+    aHist1.diagnostics.set('unmergeable', new tr.v.d.RelatedHistogramMap());
+
+    const histograms1 = new tr.v.HistogramSet([aHist1, bHist1]);
+
+    histograms1.addSharedDiagnosticToAllHistograms(
+        tr.v.d.RESERVED_NAMES.LABELS, new tr.v.d.GenericSet(['1']));
+
+    const aMergedHist = aHist0.clone();
+    aMergedHist.addHistogram(aHist1);
+    new tr.v.d.GroupingPath([]).addToHistogram(aMergedHist);
+
+    const bMergedHist = bHist0.clone();
+    bMergedHist.addHistogram(bHist1);
+    new tr.v.d.GroupingPath([]).addToHistogram(bMergedHist);
+
+    const mergedHists = new tr.v.HistogramSet([aMergedHist, bMergedHist]);
+    mergedHists.deduplicateDiagnostics();
+
+    aMergedHist.diagnostics.mergeRelationships(aMergedHist);
+    bMergedHist.diagnostics.mergeRelationships(bMergedHist);
+
+    const aMergedMap = aMergedHist.diagnostics.get('map');
+    assert.instanceOf(aMergedMap, tr.v.d.RelatedHistogramMap);
+    assert.lengthOf(aMergedMap, 1);
+    assert.strictEqual(bMergedHist, aMergedMap.get('c'));
+
+    const aMergedBreakdown = aMergedHist.diagnostics.get('breakdown');
+    assert.instanceOf(aMergedBreakdown, tr.v.d.RelatedHistogramBreakdown);
+    assert.lengthOf(aMergedBreakdown, 1);
+    assert.strictEqual(bMergedHist, aMergedBreakdown.get('d'));
+
+    const aMergedUnmergeable = aMergedHist.diagnostics.get('unmergeable');
+    assert.instanceOf(aMergedUnmergeable, tr.v.d.UnmergeableDiagnosticSet);
+  });
+
+  test('validateDiagnosticTypes', function() {
+    const hist = new tr.v.Histogram('', tr.b.Unit.byName.count);
+    function addInvalidDiagnosticType() {
+      hist.diagnostics.set(
+          tr.v.d.RESERVED_NAMES.GROUPING_PATH, new tr.v.d.GenericSet());
+    }
+    assert.throw(addInvalidDiagnosticType, Error,
+        `Diagnostics named "${tr.v.d.RESERVED_NAMES.GROUPING_PATH}" must be ` +
+        'GroupingPath, not GenericSet');
+  });
+});
+</script>

@@ -1,0 +1,61 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_menu_user_uninstall() {
+## Begin the test.
+test_start "$FUNCNAME: verify a user menu is removed correctly"
+
+# Dependencies section
+test_init
+
+USERPATH="$HOME/.local:$HOME/.config:$HOME/.gnome:$HOME/.kde"
+
+set_no_display
+
+# Generate .desktop file
+use_file "$XDG_TEST_DIR/xdg-desktop-menu/data/menu_item_test.desktop" DESKTOP
+use_file "$XDG_TEST_DIR/xdg-desktop-menu/data/menu_item_dummy.desktop" DESKTOP2
+use_file "$XDG_TEST_DIR/xdg-desktop-menu/data/menu_install.directory" DIRECTORY
+
+edit_file "$DIRECTORY" 'XDG UTILS TEST' MENU_NAME "MENU $XDG_TEST_SHORTID"
+
+edit_file "$DESKTOP" 'xdg-test-menu-item-install.tmp' CREATEFILE
+edit_file "$DESKTOP" 'Test Menu Item Install' ITEM_TEXT "TEST $XDG_TEST_SHORTID"
+
+assert_file "$DESKTOP"
+assert_file "$DIRECTORY"
+
+assert_exit 0 xdg-desktop-menu install --mode user "$DIRECTORY" "$DESKTOP" "$DESKTOP2"
+
+assert_file_in_path "$DESKTOP" "$USERPATH"
+assert_file_in_path "$DESKTOP" "$USERPATH2"
+assert_file_in_path "$DIRECTORY" "$USERPATH"
+
+assert_interactive_notroot "Is the menu '<main>/$MENU_NAME present with items 'EXTRA_ITEM' and '$ITEM_TEXT'\n\t(NOTE: If you are using KDE, it may take a few seconds to appear.)" y
+
+# Test steps section
+test_procedure
+
+assert_exit 0 xdg-desktop-menu uninstall --mode user "$DIRECTORY" "$DESKTOP" "$DESKTOP2"
+assert_nostdout
+assert_nostderr
+
+assert_file_not_in_path "$DESKTOP" "$USERPATH"
+assert_file_not_in_path "$DESKTOP2" "$USERPATH"
+assert_file_not_in_path "$DIRECTORY" "$USERPATH"
+
+assert_interactive_notroot "Is the menu '<main>/$MENU_NAME' still present?" n
+assert_interactive_notroot "Is '$ITEM_TEXT' present anywhere in the menu tree?" n
+
+test_result
+
+# Cleanup
+xdg-desktop-menu uninstall --mode user "$DIRECTORY" "$DESKTOP" "$DESKTOP2" > /dev/null 2> /dev/null
+
+} 
+
+run_test test_menu_user_uninstall

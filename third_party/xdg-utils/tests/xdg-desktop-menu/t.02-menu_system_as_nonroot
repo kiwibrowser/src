@@ -1,0 +1,40 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_menu_system_as_nonroot() {
+USERPATH="${XDG_DATA_DIRS-/usr/local/share:/usr/share}:$HOME/.local:$HOME/.config:$XDG_DATA_HOME"
+
+## Begin the test.
+test_start "$FUNCNAME: verify error for --mode system when run as a normal user"
+
+# Dependencies section
+test_init
+
+require_notroot
+set_no_display
+
+use_file "$XDG_TEST_DIR/xdg-desktop-menu/data/menu_item_test.desktop" DESKTOP
+edit_file "$DESKTOP" 'xdg-test-menu-item-install.tmp' CREATEFILE
+assert_file "$DESKTOP"
+
+# Test steps section
+test_procedure
+
+assert_exit 3 xdg-desktop-menu install --mode system "$DESKTOP"
+assert_nostdout
+assert_stderr
+
+assert_file_not_in_path "$DESKTOP" "$USERPATH"
+
+assert_exit 3 xdg-desktop-menu uninstall --mode system "$DESKTOP"
+assert_nostdout
+assert_stderr 
+
+test_result
+} 
+run_test test_menu_system_as_nonroot

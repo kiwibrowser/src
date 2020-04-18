@@ -1,0 +1,51 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Depth test
+
+Tests:
+ + dEQP-GLES2.functional.depth.*
+
+Includes:
+ + Depth buffer update when rendering triangles with GL_ALWAYS
+ + Depth test when rendering triangles
+ + All depth comparison functions
+
+Excludes:
+ + Lines and points
+ + Depth mask
+ + glPolygonOffset()
+ + Overlapping primitives in single draw call
+ + Interaction with stencil test
+
+Description:
+
+Each test case renders 4 pairs of quads, arranged in a 2x2 grid. First
+quad is rendered with GL_ALWAYS depth test mode, while the second uses
+the depth test mode stated in test case name. First pair of quads have
+exactly same z, in the second pair z1 < z2 and in the third pair z2 < z1.
+In the fourth pair z1 = 0 and z2 is interpolated between -1.0 and 1.0,
+e.g. the quads are intersecting.
+
+The first quad in each pair is red, while the second one is green.
+The resulting image depends on the depth test mode used when rendering
+the second quads.
+
+Test results are verified by comparing the rendered image against a
+reference image. The reference is rendered using a simplified model
+of the GL rendering pipe.

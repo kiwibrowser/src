@@ -1,0 +1,188 @@
+#!/bin/sh
+#---------------------------------------------
+#   xdg-terminal
+#
+#   Utility script to open the registered terminal emulator
+#
+#   Refer to the usage() function below for usage.
+#
+#   Copyright 2009-2010, Fathi Boudra <fabo@freedesktop.org>
+#   Copyright 2009-2010, Rex Dieter <rdieter@fedoraproject.org>
+#   Copyright 2006, Kevin Krammer <kevin.krammer@gmx.at>
+#
+#   LICENSE:
+#
+#---------------------------------------------
+
+manualpage()
+{
+cat << _MANUALPAGE
+_MANUALPAGE
+}
+
+usage()
+{
+cat << _USAGE
+_USAGE
+}
+
+#@xdg-utils-common@
+
+terminal_kde()
+{
+    terminal=`kreadconfig --file kdeglobals --group General --key TerminalApplication --default konsole`
+
+    terminal_exec=`which $terminal 2>/dev/null`
+
+    if [ -x "$terminal_exec" ]; then
+        if [ x"$1" == x"" ]; then
+            $terminal_exec
+        else
+            $terminal_exec -e "$1"
+        fi
+
+        if [ $? -eq 0 ]; then
+            exit_success
+        else
+            exit_failure_operation_failed
+        fi
+    else
+        exit_failure_operation_impossible "configured terminal program '$terminal' not found or not executable"
+    fi
+}
+
+terminal_gnome()
+{
+    term_exec_key="/desktop/gnome/applications/terminal/exec"
+    term_exec_arg_key="/desktop/gnome/applications/terminal/exec_arg"
+
+    term_exec=`gconftool-2 --get ${term_exec_key}`
+    term_exec_arg=`gconftool-2 --get ${term_exec_arg_key}`
+
+    terminal_exec=`which $term_exec 2>/dev/null`
+
+    if [ -x "$terminal_exec" ]; then
+        if [ x"$1" == x"" ]; then
+            $terminal_exec
+        else
+            if [ x"$term_exec_arg" == x"" ]; then
+                $terminal_exec "$1"
+            else
+                $terminal_exec "$term_exec_arg" "$1"
+            fi
+        fi
+
+        if [ $? -eq 0 ]; then
+            exit_success
+        else
+            exit_failure_operation_failed
+        fi
+    else
+        exit_failure_operation_impossible "configured terminal program '$term_exec' not found or not executable"
+    fi
+}
+
+terminal_xfce()
+{
+    if [ x"$1" == x"" ]; then
+        exo-open --launch TerminalEmulator
+    else
+        exo-open --launch TerminalEmulator "$1"
+    fi
+
+    if [ $? -eq 0 ]; then
+        exit_success
+    else
+        exit_failure_operation_failed
+    fi
+}
+
+terminal_generic()
+{
+    # if $TERM is not set, try xterm
+    if [ x"$TERM" == x"" ]; then
+        TERM=xterm
+    fi
+
+    terminal_exec=`which $TERM >/dev/null 2>/dev/null`
+
+    if [ -x "$terminal_exec" ]; then
+        if [ $? -eq 0 ]; then
+            exit_success
+        else
+            exit_failure_operation_failed
+        fi
+    else
+        exit_failure_operation_impossible "configured terminal program '$TERM' not found or not executable"
+    fi
+}
+
+terminal_lxde()
+{
+    if which lxterminal &>/dev/null; then
+        if [ x"$1" == x"" ]; then
+            lxterminal
+        else
+            lxterminal -e "$1"
+        fi
+    else
+        terminal_generic "$1"
+    fi
+}
+
+#[ x"$1" != x"" ] || exit_failure_syntax
+
+command=
+while [ $# -gt 0 ] ; do
+    parm="$1"
+    shift
+
+    case "$parm" in
+      -*)
+        exit_failure_syntax "unexpected option '$parm'"
+        ;;
+
+      *)
+        if [ -n "$command" ] ; then
+            exit_failure_syntax "unexpected argument '$parm'"
+        fi
+        command="$parm"
+        ;;
+    esac
+done
+
+detectDE
+
+if [ x"$DE" = x"" ]; then
+    # if TERM variable is not set, try xterm
+    if [ x"$TERM" = x"" ]; then
+        TERM=xterm
+    fi
+    DE=generic
+fi
+
+case "$DE" in
+    kde)
+    terminal_kde "$command"
+    ;;
+
+    gnome*)
+    terminal_gnome "$command"
+    ;;
+
+    xfce)
+    terminal_xfce "$command"
+    ;;
+
+    lxde)
+    terminal_lxde "$command"
+    ;;
+
+    generic)
+    terminal_generic "$command"
+    ;;
+
+    *)
+    exit_failure_operation_impossible "no terminal emulator available"
+    ;;
+esac

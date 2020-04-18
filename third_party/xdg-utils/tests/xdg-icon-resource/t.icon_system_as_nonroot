@@ -1,0 +1,42 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_icon_system_as_nonroot() {
+ICON_PATH="$HOME/.icons:${XDG_DATA_DIRS-/usr/local/share:/usr/share}:/usr/share/pixmaps:$HOME/.local/icons:$XDG_DATA_HOME"
+
+## Begin the test.
+test_start "$FUNCNAME: verify error for --mode system when run as a normal user"
+
+# Dependencies section
+test_init
+
+require_notroot
+set_no_display
+
+use_file "$XDG_TEST_DIR/icons/red-32.png" ICONFILE
+assert_file "$ICONFILE"
+
+# Verify the test icon is not installed already.
+assert_file_not_in_path "$ICONFILE" "$ICON_PATH"
+
+# Test steps section
+test_procedure
+
+assert_exit 3 xdg-icon-resource install --mode system --size 32 "$ICONFILE"
+assert_nostdout
+assert_stderr
+
+assert_file_not_in_path "$ICONFILE" "$ICON_PATH"
+
+assert_exit 3 xdg-icon-resource uninstall --mode system --size 32 "$ICONFILE"
+assert_nostdout
+assert_stderr
+
+test_result
+} 
+run_test test_icon_system_as_nonroot

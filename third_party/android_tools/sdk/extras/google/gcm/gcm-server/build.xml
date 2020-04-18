@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  - Copyright 2012 Google Inc.
+  -
+  - Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  - use this file except in compliance with the License. You may obtain a copy
+  - of the License at
+  -
+  - http://www.apache.org/licenses/LICENSE-2.0
+  -
+  - Unless required by applicable law or agreed to in writing, software
+  - distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  - WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  - License for the specific language governing permissions and limitations
+  - under the License.
+-->
+<project name="gcm-server" default="dist">
+
+  <property name="version" value="1.0.2"/>
+  <property name="src" location="src"/>
+  <property name="test" location="test"/>
+  <property name="lib"  location="lib"/>
+  <property name="build" location="build"/>
+  <property name="classes" location="${build}/classes"/>
+  <property name="test-classes" location="${build}/test-classes"/>
+  <property name="test-reports" location="${build}/test-reports"/>
+  <property name="dist"  location="dist"/>
+  <property name="jar" value="${dist}/gcm-server.jar"/>
+  <property name="src-jar" value="${dist}/gcm-server-src.jar"/>
+  <property name="demo-dir" value="${basedir}/../samples/gcm-demo-server"/>
+  <property name="demo-appengine-dir" value="${basedir}/../samples/gcm-demo-appengine"/>
+
+  <path id="compile.classpath">
+    <fileset dir="${lib}">
+      <include name="*.jar"/>
+    </fileset>
+  </path>
+
+  <path id="compile.test.classpath">
+    <path refid="compile.classpath"/>
+    <pathelement location="${classes}"/>
+
+  </path>
+
+  <path id="test.classpath">
+    <path refid="compile.test.classpath"/>
+    <pathelement location="${test-classes}"/>
+  </path>
+
+  <target name="clean" description="Clean all artifacts except the dist files.">
+    <delete dir="${build}"/>
+  </target>
+
+  <target name="full-clean" depends="clean" description="Clean all artifacts including the dist files.">
+    <delete dir="${dist}"/>
+  </target>
+
+  <target name="init">
+    <mkdir dir="${classes}"/>
+    <mkdir dir="${test-classes}"/>
+    <mkdir dir="${test-reports}"/>
+    <mkdir dir="${dist}"/>
+  </target>
+
+  <target name="compile" depends="init" description="Compile the Java classes.">
+    <javac destdir="${classes}" debug="true" srcdir="${src}" target="1.5"
+      includeantruntime="false">
+      <classpath refid="compile.classpath"/>
+    </javac>
+  </target>
+
+  <target name="compile-tests" depends="compile" description="Compile the unit tests.">
+    <javac destdir="${test-classes}" debug="true" srcdir="${test}" target="1.5"
+      includeantruntime="false">
+      <classpath refid="compile.test.classpath"/>
+    </javac>
+  </target>
+
+  <target name="tests" depends="compile-tests" description="Run the unit tests.">
+    <junit printsummary="yes" haltonfailure="yes">
+      <classpath refid="test.classpath"/>
+      <formatter type="plain"/>
+      <formatter type="xml"/>
+      <batchtest fork="yes" todir="${test-reports}">
+        <fileset dir="${test}">
+          <include name="**/*Test*.java"/>
+        </fileset>
+      </batchtest>
+    </junit>
+  </target>
+
+  <target name="jar" depends="compile, tests" description="Generate the GCM server library.">
+    <antcall target="_jar">
+      <param name="_destfile" value="${jar}"/>
+      <param name="_basedir" value="${classes}"/>
+    </antcall>
+  </target>
+
+  <target name="src-jar" description="Generate a JAR with the GCM server library source files.">
+    <antcall target="_jar">
+      <param name="_destfile" value="${src-jar}"/>
+      <param name="_basedir" value="${src}"/>
+    </antcall>
+  </target>
+
+  <target name="_jar">
+    <jar destfile="${_destfile}" basedir="${_basedir}">
+      <manifest>
+        <attribute name="Implementation-Vendor" value="Google"/>
+        <attribute name="Implementation-Title" 
+          value="Google Cloud Messaging - server support"/>
+        <attribute name="Implementation-Version" value="${version}"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="dist" depends="jar, src-jar" description="Generate all artifacts."/>
+
+  <target name="update-demo" depends="jar" description="Generates a new GCM server library JAR and copy it to the demo project.">
+    <copy file="${jar}" todir="${demo-dir}/WebContent/WEB-INF/lib"/>
+    <copy file="${jar}" todir="${demo-appengine-dir}/WebContent/WEB-INF/lib"/>
+  </target>
+
+</project>
+

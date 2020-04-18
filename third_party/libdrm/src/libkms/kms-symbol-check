@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# The following symbols (past the first five) are taken from the public headers.
+# A list of the latter should be available Makefile.sources/LIBKMS_H_FILES
+
+FUNCS=$(nm -D --format=bsd --defined-only ${1-.libs/libkms.so} | awk '{print $3}'| while read func; do
+( grep -q "^$func$" || echo $func )  <<EOF
+__bss_start
+_edata
+_end
+_fini
+_init
+kms_bo_create
+kms_bo_destroy
+kms_bo_get_prop
+kms_bo_map
+kms_bo_unmap
+kms_create
+kms_destroy
+kms_get_prop
+EOF
+done)
+
+test ! -n "$FUNCS" || echo $FUNCS
+test ! -n "$FUNCS"

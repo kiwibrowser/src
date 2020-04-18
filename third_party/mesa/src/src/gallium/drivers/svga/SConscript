@@ -1,0 +1,34 @@
+Import('*')
+
+env = env.Clone()
+
+if env['suncc']:
+	print 'warning: not building svga'
+	Return()
+
+if env['platform'] in ['linux']:
+	env.Append(CCFLAGS = ['-fvisibility=hidden'])
+
+if env['gcc']:
+	env.Append(CPPDEFINES = [
+		'HAVE_STDINT_H', 
+		'HAVE_SYS_TYPES_H',
+	])
+	
+env.Prepend(CPPPATH = [
+	'include',
+])
+
+env.Append(CPPDEFINES = [
+])
+
+sources = env.ParseSourceList('Makefile.sources', 'C_SOURCES')
+
+svga = env.ConvenienceLibrary(
+	target = 'svga',
+	source = sources,
+)
+
+env.Alias('svga', svga)
+
+Export('svga')

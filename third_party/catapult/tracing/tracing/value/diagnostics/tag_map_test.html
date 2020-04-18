@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<!--
+Copyright 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/core/test_utils.html">
+<link rel="import" href="/tracing/value/diagnostics/generic_set.html">
+<link rel="import" href="/tracing/value/diagnostics/tag_map.html">
+
+<script>
+'use strict';
+
+tr.b.unittest.testSuite(function() {
+  test('merge', function() {
+    const t0 = new tr.v.d.TagMap({
+      tagsToStoryNames: {
+        press: ['story0', 'story1'],
+        desktop: ['story0', 'story1', 'story2']
+      }
+    });
+
+    const t1 = new tr.v.d.TagMap({
+      tagsToStoryNames: {
+        press: ['story3', 'story4'],
+        android: ['story3', 'story4', 'story5']
+      }
+    });
+
+    assert.isFalse(t0.canAddDiagnostic(new tr.v.d.GenericSet()));
+    assert.isTrue(t0.canAddDiagnostic(t1));
+
+    const m0 = t0.clone();
+    assert.instanceOf(m0, tr.v.d.TagMap);
+    assert.isFalse(m0.canAddDiagnostic(new tr.v.d.GenericSet()));
+    assert.isTrue(m0.canAddDiagnostic(t1));
+
+    m0.addDiagnostic(t1);
+
+    const m1 = t1.clone();
+    m1.addDiagnostic(t0);
+
+    assert.isTrue(m1.equals(m0));
+    assert.isTrue(m0.equals(m1));
+
+    const m2 = t1.clone();
+
+    assert.isFalse(m2.equals(m0));
+    assert.isFalse(m0.equals(m2));
+
+    // Test round-tripping of non-merged diagnostic
+    const clonet0 = tr.v.d.Diagnostic.fromDict(t0.asDict()).clone();
+
+    assert.isTrue(clonet0.equals(t0.clone()));
+
+    // Test round-tripping of merged diagnostic
+    const clone = tr.v.d.Diagnostic.fromDict(m0.asDict());
+
+    assert.deepEqual(Array.from(clone.tagsToStoryNames.keys()), [
+      'press', 'desktop', 'android']);
+    assert.deepEqual(Array.from(clone.tagsToStoryNames.get('press')), [
+      'story0', 'story1', 'story3', 'story4']);
+    assert.deepEqual(Array.from(clone.tagsToStoryNames.get('desktop')), [
+      'story0', 'story1', 'story2']);
+    assert.deepEqual(Array.from(clone.tagsToStoryNames.get('android')), [
+      'story3', 'story4', 'story5']);
+  });
+});
+</script>

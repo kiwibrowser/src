@@ -1,0 +1,36 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_email_mix_args_uri() {
+test_start "$FUNCNAME: verify an email is generated correctly when called with both a uri and not."
+
+ADDR="$XDG_TEST_SHORTID@portland.freedesktop.org"
+
+test_init
+
+require_notroot
+## Require a running X server
+assert_display
+
+test_procedure
+
+assert_exit 0 xdg-email --cc "ccarg-$ADDR" --subject "Subject arg"  "mailto:$ADDR?cc=ccuri-$ADDR&body=Body%20URI" "t2-$ADDR"
+
+assert_nostdout
+assert_nostderr
+
+assert_interactive "Did an email open to both '$ADDR' and 't2-$ADDR'?" y
+assert_interactive "Are both 'ccarg-$ADDR' and 'ccuri-$ADDR' in the CC'd?" y
+assert_interactive "Is the subject 'Subject arg'?" y
+assert_interactive "Is the body 'Body URI'?" y
+
+assert_interactive "Please close any email windows opened by the test." C
+
+test_result
+}
+
+run_test test_email_mix_args_uri

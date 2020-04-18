@@ -1,0 +1,44 @@
+Import('*')
+
+env = drienv.Clone()
+
+env.Append(CPPPATH = [
+    '#/src/gallium/winsys/sw/dri',
+])
+
+env.Prepend(LIBS = [
+    st_drisw,
+    ws_dri,
+    trace,
+    rbug,
+    mesa,
+    glsl,
+    gallium,
+    COMMON_DRI_SW_OBJECTS
+])
+
+if True:
+    env.Append(CPPDEFINES = [
+        'GALLIUM_SOFTPIPE',
+        'GALLIUM_RBUG',
+        'GALLIUM_TRACE',
+    ])
+    env.Prepend(LIBS = [softpipe])
+
+if env['llvm']:
+    env.Append(CPPDEFINES = 'GALLIUM_LLVMPIPE')
+    env.Prepend(LIBS = [llvmpipe])
+
+swrast_sources = [
+    'swrast_drm_api.c'
+]
+
+module = env.LoadableModule(
+    target ='swrast_dri.so',
+    source = swrast_sources,
+    SHLIBPREFIX = '',
+)
+
+module = env.InstallSharedLibrary(module)
+
+env.Alias('dri-swrast', module)

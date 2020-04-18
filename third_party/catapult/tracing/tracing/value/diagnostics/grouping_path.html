@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<!--
+Copyright 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/base/utils.html">
+<link rel="import" href="/tracing/value/diagnostics/diagnostic.html">
+
+<script>
+'use strict';
+
+tr.exportTo('tr.v.d', function() {
+  /*
+   * Histograms are merged using trees of maps produced by
+   * HistogramSet.groupHistogramsRecursively().
+   * GroupingPath diagnostics record the path through that tree so that
+   * RelatedHistogram{Set,Map}.mergeRelationships() can relate merged source
+   * Histograms that pertain to specific stories for example to merged related
+   * Histograms that also pertain to those specific stories.
+   */
+  class GroupingPath extends tr.v.d.Diagnostic {
+    /**
+     * @param {!Array.<string>} groupingPath
+     */
+    constructor(groupingPath) {
+      super();
+      this.groupingPath_ = groupingPath;
+    }
+
+    clone() {
+      return new GroupingPath(Array.from(this.groupingPath_));
+    }
+
+    addToHistogram(hist) {
+      hist.diagnostics.set(tr.v.d.RESERVED_NAMES.GROUPING_PATH, this);
+    }
+
+    static getFromHistogram(hist) {
+      return hist.diagnostics.get(tr.v.d.RESERVED_NAMES.GROUPING_PATH);
+    }
+
+    equals(other) {
+      return 0 === tr.b.compareArrays(
+          this.groupingPath_, other.groupingPath_,
+          (x, y) => x.localeCompare(y));
+    }
+
+    asDictInto_(d) {
+      d.groupingPath = this.groupingPath_;
+    }
+
+    static fromDict(d) {
+      return new GroupingPath(d.groupingPath);
+    }
+  }
+
+  tr.v.d.Diagnostic.register(GroupingPath);
+
+  return {
+    GroupingPath,
+  };
+});
+</script>

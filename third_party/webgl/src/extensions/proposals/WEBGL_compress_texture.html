@@ -1,0 +1,182 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+        "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="en">
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <title>WebGL WEBGL_compress_texture Extension Draft Specification</title>
+    <link rel="stylesheet" type="text/css" href="../../resources/Khronos-WD.css" />
+    <script src="../../resources/jquery-1.3.2.min.js" type="text/javascript"></script>
+</head>
+    <!--begin-logo-->
+    <div>
+      <a href="http://webgl.org/"><img alt=WebGL height=72 src="../../resources/WebGL-Logo.png" width=156></a>
+      <div class=right>
+  <a href="http://khronos.org/"><img alt=Khronos height=60 src="../../resources/KhronosGroup-3D.png" width=220></a>
+      </div>
+    </div>
+    <!--end-logo-->
+
+    <h1>WebGL WEBGL_compress_texture Extension Draft Specification</h1>
+
+    <h2 class="no-toc">Name</h2>
+    <p> WEBGL_compress_texture </p>
+
+    <h2 class="no-toc">Contact</h2>
+    <p> <a href="https://www.khronos.org/webgl/public-mailing-list/">WebGL working group</a> (public_webgl 'at' khronos.org) </p>
+
+    <h2 class="no-toc">Contributors</h2>
+    <p> Members of the WebGL working group </p>
+
+    <h2 class="no-toc">Version</h2>
+    <p> Last modified date: April 5, 2011
+    </p>
+
+    <h2 class="no-toc">Number</h2>
+    <p> WebGL extension #8 </p>
+
+    <h2 class="no-toc">Dependencies</h2>
+    <p> Written against the WebGL API 1.0 specification. </p>
+
+    <h2 class="no-toc">Overview</h2>
+    <p>
+      This extension exposes compressed texture functionality to WebGL.
+    </p>
+    <p>
+      In WebGL we can not expose compressed texture formats directly to authors because web content
+      is supposed to work everywhere. This proposal leaves the compression formats up to the WebGL
+      implementation in an opaque way. The user provides hints to the implemenation on what kind of compression
+      is appropriate and it is up to the WebGL implemenation to decide on a compression format
+      or possibly no compression at all.
+    </p>
+    <p>
+      Because compression can be a slow the process of compression is handled asynchronously. The
+      user provides that data as an image, video, canvas or ArrayBufferView. The implementation then
+      compressed the image and returns a WebGLCompressedTexture object. That object can then be
+      passed to the standard compressedTexImage2D function although with unneeded argements removed.
+    </p>
+    <h2 class="no-toc">IDL</h2>
+    <p>
+<pre class="idl">
+interface WebGLCompressedTexture : WebGLObject {
+    readonly attribute long size;
+    readonly attribute GLenum error;
+};
+
+interface WEBGL_compress_texture {
+    const GLenum PRESERVE_ALPHA = 0x0001;
+    const GLenum PRESERVE_TRANSPARENCY = 0x0002;
+    const GLenum PRESERVE_RGB = 0x0004;
+
+    compressTexture(GLenum usage, GLsizei width, GLsizei height, GLenum format, GLenum type,
+                    ArrayBufferView pixels, Function callback);
+    compressTexture(GLenum usage, ImageData pixels, Function callback);
+    compressTexture(GLenum usage, HTMLImageElement image, Function callback);
+    compressTexture(GLenum usage, HTMLCanvasElement canvas, Function callback);
+    compressTexture(GLenum usage, HTMLVideoElement video, Function callback);
+
+    compressedTexImage2D(GLenum target, GLint level, GLint border, WebGLCompressedTexture pixels);
+};
+</pre>
+    <h2 class="no-toc">Description</h2>
+    <p>
+    All forms are asynchronous. When compression is finished the <code>callback</code>
+    is called and passed a <code>WebGLCompressedTexture</code>
+    object which can then be used with <code>compressedTexImage2D</code>.
+    </p>
+    <p>
+    <code>compressTexture</code> takes 5 forms. The first form takes an <code>ArrayBufferView</code>.
+    The <code>width</code>, <code>height</code>, <code>format</code>, and <code>type</code>
+    arguments have the same meaning as they do in <code>texImage2D</code>. They describe the format
+    of the pixels in the <code>ArrayBufferView</code>.
+    </p>
+    <p>
+    The other 4 forms of <code>compressTexture</code> take an <code>ImageData</code>,
+    <code>HTMLImageElement</code>, <code>HTMLCanvasElement</code>, or an <code>HTMLVideoElement</code>
+    repsectively. As such they derive width, height, type and format from the element.
+    </p>
+    <p>
+    <code>usage</code> is a kind of hint to the implementation to help it choose a
+    compression format. <code>usage</code> is some logical OR of the following bits
+    </p>
+    <dl>
+    <dt><code>PRESERVE_ALPHA</code></dt>
+    <dd>The compression format chosen must support alpha more than 1 bit of alpha.
+    </dd>
+    <dt><code>PRESERVE_TRANSPARENCY</code></dt>
+    <dd>The compression format chosen must have at least 1 bit of alpha
+    </dd>
+    <dt><code>PRESERVE_RGB</code></dt>
+    <dd>The compression format chosen must not be lossy to a specific
+        color. In other words, it can not weight R less than G because
+        the intended use of the texture is not for color.
+    </dd>
+    </dl>
+    <p>
+    The implementation must choose a compression format that respects the <code>usage</code> argument.
+    If no such compression format is available the implementation must choose an uncompressed format.
+    </p>
+    <p class="issue">
+    Should the spec define what is acceptable compression? For example PRESERVE_TRANSPARENCY basically means use DXT1 where as
+    PRESERVE_ALPHA means use DXT5 on systems that support those formats. On systems with no compression
+    using 5_6_5 or 5_5_5_1 is also fine assuming PRESERVE_ALPHA is not requested.
+    Is 5_6_5 okay for PRESERVE_RGB? Is 4_4_4_4 ok for PRESERVE_ALPHA?
+    </p>
+    <p>The <code>callback</code> is always called and passed a <code>WebGLCompressedTexture</code> object. If there was an error
+    the <code>error</code> attribute will be set to standard GL error value. Otherwise it is set to <code>NO_ERROR</code>.
+    </p>
+    <p><code>size</code> is the number of bytes used by the compressed texture. It will be 0
+    if there was an error.
+    </p>
+    <p>Passing a <code>WebGLCompressedTexture</code> who's <code>error</code> attribute is not <code>NO_ERROR</code> to <code>compressTexImage2D</code> generates
+    <code>INVALID_OPERATION</code>.</p>
+    <h2 class="no-toc">Errors</h2>
+    <p>
+    Errors are returned on the WebGLCompressedTexture object's <code>error</code> attribute.
+    </p>
+    <p>
+    <code>error</code> is set to <code>INVALID_VALUE</code> if
+    <code>width</code> or <code>height</code> would generate an <code>INVALID_VALUE</code> when calling
+    texImage2D.
+    </p>
+    <p>
+    <code>error</code> is set to <code>INVALID_ENUM</code>  if type or format is not one of the types
+    or formats excepted by texImage2D.
+    </p>
+    <p>
+    <code>error</code> is set to <code>INVALID_OPERATION</code> if the size of the <code>ArrayBufferView</code> is
+    not greater than or equal to the size of the data described by width, height, format and type.
+    </p>
+    <h2 class="no-toc">Notes</h2>
+    <p>
+      compressedTexSubImage2D is not implemented.
+    </p>
+    <p>
+      <code>texSubImage2D</code> and <code>copyTexSubImage2D</code> must both fail on textures created with <code>compressedTexImage2D</code>.
+      For consistency this is true even if the implementation did not actually compress the texture.
+    </p>
+    <p>
+      Rendering to a framebuffer object with an attached texture created by <code>compressedTexImage2D</code> must fail
+      with <code>INVALID_FRAMEBUFFER_OPERATION</code> even if the implemenation did not actually compress the texture.
+    </p>
+    <p>
+      <code>compressTexture</code> must succeed for all valid dimensions defined by <code>gl.getParameter(gl.MAX_TEXTURE_SIZE).</code>
+      That means for example a 7x5 texture passed to compressTexture on a system who's texture compression
+      format requires textures that are a multiple of 4 or 8 in each dimension would choose not to compress
+      a 7x5 texture but instead provide it uncompressed or in some other format that can handle a 7x5 texture.
+    </p>
+    <p>
+    If both <code>PRESERVE_ALPHA</code> and <code>PRESERVE_TRANSPARENCY</code> are specified
+    <code>PRESERVE_ALPHA</code> takes precedence. In other words the implemention must choose
+    a compression format with more than 1 bit of alpha.
+    </p>
+    <h2 class="no-toc">Unresolved issues</h2>
+    <h2 class="no-toc">Revision History</h2>
+    <p>
+      <ul>
+      <li> 2011/04/04 Initial draft.</li>
+      <li> 2011/04/05 Fixed typos. Changed error mechanism. Added size.</li>
+      <li> 2012/01/03 Removed webgl module per changes to Web IDL spec</li>
+      </ul>
+    </p>
+</body>
+</html>

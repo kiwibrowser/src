@@ -1,0 +1,1536 @@
+<html>
+
+<head>
+<title>drawElements Coding Guidelines</title>
+
+<style type="text/css">
+	div.body {
+		width:				800px;
+		margin-top:			50px;
+		margin-left:		auto;
+		margin-right:		auto;
+		border:				1px solid silver;
+		background-color:	#eee;
+	}
+
+	div.title {
+		text-align:		center;
+		font-size:		24pt;
+		margin-top:		1.5em;
+		margin-bottom:	0.5em;
+	}
+
+	div.quote {
+		font-style:		italic;
+		text-align:		center;
+		width:			48%;
+		margin-left:	auto;
+		margin-right:	auto;
+	}
+
+	div.copyright {
+		font-style:		italic;
+		text-align:		center;
+		margin-top:		3em;
+		margin-left:	auto;
+		margin-right:	auto;
+	}
+
+	div.author {
+		font-style:		italic;
+		text-align:		center;
+		margin-bottom:	2em;
+		margin-left:	auto;
+		margin-right:	auto;
+	}
+
+	/* All heading elements */
+	ol > li > .heading {
+		font-family:	arial;
+	}
+
+	/* Heading 1 elements */
+	ol.h1 {
+		font-size:				15pt;
+		margin-top:				1em;
+		padding-left:			1em;
+		list-style:				upper-roman;
+		list-style-position:	inside;
+	}
+
+	ol.h1 > li {
+		margin-top:		2.0em;
+	}
+
+	ol.h1 > li > .heading {
+	}
+
+	/* Heading 2 elements */
+	ol.h2 {
+		font-size:		13pt;
+		margin-top:		1.0em;
+		margin-bottom:	0.5em;
+
+		padding-left:	1em;
+	}
+
+	ol.h2 > li {
+		margin-top:		1.25em;
+	}
+
+	ol.h2 > li > .heading {
+
+	}
+
+	ul {
+		margin-bottom:	0.5em;
+	}
+
+	p {
+		font-size:		12pt;
+		margin:			0.6em;
+		margin-left:	1.3em;
+		border:			0px;
+	}
+
+	table {
+		font-size:		12pt;
+		margin:			0.6em;
+		margin-left:	1.6em;
+		border:			0px;
+	}
+
+	table td {
+        padding-right:        10px;
+	}
+
+	.prettyprint {
+		font-size:			10pt;
+		margin:				0px;
+		margin-left:		2.0em;
+		margin-bottom:		1.0em;
+		padding:			0.1em;
+		padding-left:		0.2em;
+		border:				1px solid black;
+		background-color:	#ddd;
+		width:				93%;
+	}
+
+	.codeTitle {
+		font-style:		italic;
+		font-size:		11pt;
+		margin-top:		0.5em;
+		margin-left:	2.0em;
+		margin-bottom:	0px;
+	}
+
+</style>
+
+<!-- \todo embed -->
+<link href="prettify.css" type="text/css" rel="stylesheet" />
+<script type="text/javascript" src="prettify.js"></script>
+
+</head>
+
+<body onLoad="prettyPrint()">
+
+<div class="body">
+
+<div class="title">drawElements Coding Guidelines</div>
+<hr width="50%" />
+<div class="quote">&quot;Always code as if the person who will maintain your code is a maniac serial killer that knows where you live.&quot;</div>
+
+<div class="copyright">Copyright © 2014 The Android Open Source Project</div>
+
+<ol class="h1">
+	<li><span class="heading">Table of Contents</span>
+		<ol class="h2">
+			TODO: fill in, with links (use JavaScript?)
+		</ol>
+	</li>
+
+	<li><span class="heading">Introduction</span>
+		<ol class="h2">
+			<li><span class="heading">Goal and philosophy</span>
+				<p>This document describes the drawElements coding style for C and C++ languages.</p>
+
+				<p>The intention of the drawElements coding guidelines is to allow us to produce code written in a
+				consistent fashion, so that our product line will look similar throughout the line. The guiding
+				philosophy for choosing the described coding style is to avoid bugs when writing code, keep the code
+				maintainable, and also aim to make it beautiful. Some of the decisions are purely a matter of taste,
+				but have been made to keep the code consistent overall (say, camelCasing versus underscore_usage in
+				variable names.</p>
+
+				<p>There are also many areas which are not covered by this document and there is some room to bring
+				your own style into the soup. Some of the ways of writing code are just purely matters of opinion.
+				The use of whitespace in code is a good example.</p>
+
+				<p>This document is *not* the law of drawElements. If there is a good reason to deviate from it, you
+				should do that. However, if the reason is purely a matter of taste, then please follow the rules set
+				in here. Also, we want to encourage discussion about these guidelines and contributing to them, in
+				case you disagree or know a way of doing something better. This is meant to be an evolving document
+				that follows us as we learn as a group.</p>
+
+				<p>A lot of examples are included in this document to make things easily readable and unambiguous.
+				For more source material, feel free to browse the source code of whichever drawElements projects
+				you have visibility to. You should see at least <i>debase</i> and <i>depool</i> libraries, if nothing
+				else.</p>
+			</li>
+
+			<li><span class="heading">Languages of choice</span>
+				<p>The main languages at drawElements are Ansi C89 and ISO C++ 98. Ansi C is used for developing
+				driver or middleware IP, while C++ can be used for stand-alone applications.</p>
+
+				<p>The reason for using C for middleware IP development is that we build software for
+				mobile devices and the compilers there are often of dubious quality, especially when it comes to
+				support of C++. Same goes for C99. In addition C++ runtime library is a non-trivial dependency.</p>
+
+				<p>Stand-alone userspace applications can be written in C++. By now almost all relevant
+				platforms have reasonable C++ support. While all ISO C++ 1998 features, including standard template
+				library, can be used, C++11 features must not be exercised.</p>
+
+				<p>For utility and tool development, other languages may also be used. So far, Python has been used
+				for all such development and is encouraged to be used in future tools as well. If there are strong
+				reasons, other languages may also be considered.</p>
+			</li>
+
+			<li><span class="heading">C code example</span>
+
+				<p>Let's get started with some sample drawElements code. The code files below show a simple random
+				"class" implemented in C89. The code is taken from the drawElements base portability library, debase.</p>
+				<div class="codeTitle">deRandom.h: The header file.</div>
+<pre class="prettyprint">
+#ifndef _DERANDOM_H
+#define _DERANDOM_H
+/*-------------------------------------------------------------------------
+ * drawElements Base Portability Library
+ * -------------------------------------
+ *
+ * Copyright 2014 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Id: $Id$
+ *//*!
+ * \file
+ * \brief Random number generation.
+ *//*--------------------------------------------------------------------*/
+
+#ifndef _DEDEFS_H
+#   include "deDefs.h"
+#endif
+
+DE_BEGIN_EXTERN_C
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Random number generator.
+ *
+ * Uses the Xorshift algorithm for producing pseudo-random numbers. The
+ * values are generated based on an initial seed and the same seed always
+ * produces the same sequence of numbers.
+ *
+ * See: http://en.wikipedia.org/wiki/Xorshift
+ *//*--------------------------------------------------------------------*/
+typedef struct deRandom_s
+{
+    deUint32	x;      /*!&lt; Current random state.  */
+    deUint32	y;
+    deUint32	z;
+    deUint32	w;
+} deRandom;
+
+void        deRandom_init           (deRandom* rnd, deUint32 seed);
+deUint32    deRandom_getUint32      (deRandom* rnd);
+float       deRandom_getFloat       (deRandom* rnd);
+deBool      deRandom_getBool        (deRandom* rnd);
+
+DE_END_EXTERN_C
+
+#endif /* _DERANDOM_H */
+</pre>
+				<div class="codeTitle">deRandom.c: The implementation file.</div>
+<pre class="prettyprint">
+/*-------------------------------------------------------------------------
+ * drawElements Base Portability Library
+ * -------------------------------------
+ *
+ * Copyright 2014 The Android Open Source Project
+ * \todo insert legalese here.
+ *
+ * Id: $Id$
+ *//*!
+ * \file
+ * \brief Random number generation.
+ *//*--------------------------------------------------------------------*/
+
+#include "deRandom.h"
+
+#include <float.h>
+#include <math.h>
+
+DE_BEGIN_EXTERN_C
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Initialize a random number generator with a given seed.
+ * \param rnd	RNG to initialize.
+ * \param seed	Seed value used for random values.
+ *//*--------------------------------------------------------------------*/
+void deRandom_init (deRandom* rnd, deUint32 seed)
+{
+    rnd->x = (deUint32)(-(int)seed ^ 123456789);
+    rnd->y = (deUint32)(362436069 * seed);
+    rnd->z = (deUint32)(521288629 ^ (seed >> 7));
+    rnd->w = (deUint32)(88675123 ^ (seed &lt;&lt; 3));
+}
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Get a pseudo random uint32.
+ * \param rnd	Pointer to RNG.
+ * \return Random uint32 number.
+ *//*--------------------------------------------------------------------*/
+deUint32 deRandom_getUint32 (deRandom* rnd)
+{
+    const deUint32  w = rnd->w;
+    deUint32        t;
+
+    t = rnd->x ^ (rnd->x &lt;&lt; 11);
+    rnd->x = rnd->y;
+    rnd->y = rnd->z;
+    rnd->z = w;
+    rnd->w = w = (w ^ (w >> 19)) ^ (t ^ (t >> 8));
+    return w;
+}
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Get a pseudo random float in range [0, 1[.
+ * \param rnd	Pointer to RNG.
+ * \return Random float number.
+ *//*--------------------------------------------------------------------*/
+float deRandom_getFloat (deRandom* rnd)
+{
+    return (deRandom_getUint32(rnd) &amp; 0xFFFFFFFu) / (float)(0xFFFFFFFu+1);
+}
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Get a pseudo random boolean value (DE_FALSE or DE_TRUE).
+ * \param rnd	Pointer to RNG.
+ * \return Random float number.
+ *//*--------------------------------------------------------------------*/
+deBool deRandom_getBool (deRandom* rnd)
+{
+    deUint32 val = deRandom_getUint32(rnd);
+    return ((val &amp; 0xFFFFFF) &lt; 0x800000);
+}
+
+DE_END_EXTERN_C
+</pre>
+			</li>
+			<li><span class="heading">C++ code example</span>
+
+				<p>The following code, taken from deutil demonstrates how C++ classes should look like.</p>
+				<div class="codeTitle">deUniquePtr.hpp: Unique pointer template.</div>
+<pre class="prettyprint">
+#ifndef _DEUNIQUEPTR_HPP
+#define _DEUNIQUEPTR_HPP
+/*-------------------------------------------------------------------------
+ * drawElements C++ Base Library
+ * -----------------------------
+ *
+ * Copyright 2014 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *//*!
+ * \file
+ * \brief Unique pointer.
+ *//*--------------------------------------------------------------------*/
+
+#ifndef _DEDEFS_HPP
+#   include "deDefs.hpp"
+#endif
+
+namespace de
+{
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Unique pointer
+ *
+ * UniquePtr is smart pointer that retains sole ownership of a pointer
+ * and destroys it when UniquePtr is destroyed (for example when UniquePtr
+ * goes out of scope).
+ *
+ * UniquePtr is not copyable or assignable. Pointer ownership cannot be
+ * transferred between UniquePtr's.
+ *//*--------------------------------------------------------------------*/
+template&lt;typename T, class Deleter = DefaultDeleter&lt;T&gt; &gt;
+class UniquePtr
+{
+public:
+    explicit    UniquePtr       (T* const ptr, Deleter deleter = Deleter());
+                ~UniquePtr      (void);
+
+    T*          get             (void) const throw() { return m_ptr;    }   //!&lt; Get stored pointer.
+    T*          operator->      (void) const throw() { return m_ptr;    }   //!&lt; Get stored pointer.
+    T&amp;          operator*       (void) const throw() { return *m_ptr;   }   //!&lt; De-reference stored pointer.
+
+    operator    bool            (void) const throw() { return !!m_ptr;  }
+
+private:
+                UniquePtr       (const UniquePtr&lt;T&gt;&amp; other); // Not allowed!
+    UniquePtr   operator=       (const UniquePtr&lt;T&gt;&amp; other); // Not allowed!
+
+    T* const    m_ptr;
+    Deleter     m_deleter;
+};
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Construct unique pointer.
+ * \param ptr Pointer to be managed.
+ *
+ * Pointer ownership is transferred to the UniquePtr.
+ *//*--------------------------------------------------------------------*/
+template&lt;typename T, class Deleter&gt;
+inline UniquePtr&lt;T, Deleter&gt;::UniquePtr (T* const ptr, Deleter deleter)
+    : m_ptr     (ptr)
+    , m_deleter (deleter)
+{
+}
+
+template&lt;typename T, class Deleter&gt;
+inline UniquePtr&lt;T, Deleter&gt;::~UniquePtr (void)
+{
+    m_deleter(m_ptr);
+}
+
+} // de
+
+#endif // _DEUNIQUEPTR_HPP
+</pre>
+			</li>
+		</ol>
+	</li>
+
+	<li><span class="heading">Naming conventions and formatting</span>
+		<ol class="h2">
+			<li><span class="heading">Basic naming conventions</span>
+				<p>Each project should have a prefix of its own. For drawElements base libraries,
+				the prefix <i>de</i> is used. Other projects should use a different, arbitrary prefix.
+				For instance, the stitcher project uses the <i>xo</i> prefix.</p>
+
+				<p>Anything which has a reasonable possibility of causing a naming conflict should be
+				prefixed. This includes files, structs, enums, functions (except private ones), macros, etc.
+				In C projects, just about everything in the code needs to be prefixed (files, struct, enums,
+				global functions, etc.), but in C++ code, namespaces remove the need for most prefixing.
+				File names and macros should still be prefixed in C++ code as well. Note that members
+				of classes (either C or C++), or structs or unions do not need to be prefixed with the
+				package prefix.</p>
+
+				<p>Identifiers are generally typed in camelCase. This applies to file names, structs,
+				enums, local variables, and struct members. In some cases, prefixes are used to clarify
+				the behavior of a variable. Static variables are prefixed with <i>s_</i>, global variables
+				with <i>g_</i>, and C++ class member variables with <i>m_</i>. Macros and enum entries should
+				always be written in UPPER_CASE with underscores separating the words. Members of C classes
+				don't need to be prefixed.</p>
+
+				<p>When emulating classes in C, the class name itself should be written in CamelCase, but
+				starting with a upper-case letter. Usually the classes are prefixed: <i>xoArmEmu</i>,
+				<i>deRandom</i>, but if the class only exists within a single .c file, the prefix can be
+				omitted: <i>StringBuilder</i>. The member functions of the class should be prefixed with
+				the full class name and an underscore, followed by a camelCased function name:
+				<i>xoArmEmu_emulateCode().</i></p>
+
+				<p>Examples of correctly named identifiers:</p>
+				<ul>
+					<li><i>dePool.c, dePool.h, deUniquePtr.hpp, deThread.cpp</i> -- file names</li>
+					<li><i>deRandom, xoStitcher</i> -- structs / classes</li>
+					<li><i>deMemPoolFlag, xoConditionCode</i> -- enums</li>
+					<li><i>DE_COMPILER_MSC</i> -- macros</li>
+					<li><i>XO_BACKEND_NEON</i> -- enum entry</li>
+					<li><i>setTableSize()</i> -- local (static) function</li>
+					<li><i>xoArmEmu_emulateCode()</i> -- C class member function</li>
+					<li><i>numVariables</i> -- local variable</li>
+					<li><i>m_itemHash</i> -- member variable in a C++ class</li>
+					<li><i>s_rcpTable</i> -- static variable in a function</li>
+					<li><i>g_debugFlag</i> -- global variable</li>
+				</ul>
+			</li>
+
+			<li><span class="heading">Choosing good names</span>
+				<p>Naming your variables is somewhat of a black art, but the main goal of giving a name should
+				be clarity. You want to communicate what the contents of the variable mean. The more obscure
+				the purpose of a variable is, the longer (and more descriptive) a name you should invent for it.
+				Also, the longer the life time of a variable is, the longer a name it deserves. For example, a
+				loop counter which is alive for page worth of code should be named something like <i>vertexNdx</i>,
+				whereas a loop counter which lives only a couple of lines can be named simply <i>i</i> or <i>ndx</i>.</p>
+
+				<p>Most variables should be declared const and never changed (see coding philosophy section).
+				Thus one often successful approach for variable naming is to give name for the value instead.
+				For example when querying first child of node and storing it in variable, that should be named
+				as <i>firstChild</i> instead of <i>node</i>.</p>
+
+				<p>Consistency is one important factor in naming variables. When a similar kind of name is needed
+				in multiple places, choose a way of devising the name and stick to that. E.g., if you query the
+				number of elements in an array to a local variable in several functions, always use the same name
+				in each of the functions.</p>
+
+				<p>When dealing with counts or numbers (number of elements in an array, etc.), you should always
+				clearly indicate with the name that this is the case, e.g., <i>numElements</i> (preferred),
+				<i>elementCount</i>, etc. Which ever prefix or postfix you choose to use, stick to it.</p>
+
+				<p>Function parameters that have an unit of measure (e.g. seconds or bytes) should have the unit
+				as part of the name, for example <i>timeLimitMs</i> and <i>chunkSizeKb</i>.</p>
+
+				<p>Use American English instead of English English. Choose gray over grey, color over colour,
+				and so forth.</p>
+			</li>
+			<li><span class="heading">Canonical abbreviations</span>
+			  <table border="0" cellspacing="0">
+				<tr><td>buffer			</td>	<td>buf</td></tr>
+				<tr><td>destination		</td>	<td>dst</td></tr>
+				<tr><td>index			</td>	<td>ndx</td></tr>
+				<tr><td>source			</td>	<td>src</td></tr>
+				<tr><td>variable		</td>	<td>var</td></tr>
+			  </table>
+			</li>
+
+			<li><span class="heading">Struct and enum typedeffing</span>
+				<p>For enums and structs, the types should always be typedeffed and used without the struct or
+				enum prefix in actual code.</p>
+
+				<div class="codeTitle">Example.</div>
+<pre class="prettyprint">
+/* Declaration. */
+typedef enum xoConditionCode_e
+{
+    ...
+} xoConditionCode;
+
+typedef struct deMempool_s
+{
+    ...
+} deMemPool;
+
+/* Usage. */
+deMemPool*        memPool;
+xoConditionCode   condCode;
+</pre>
+			</li>
+
+			<li><span class="heading">Header files and including</span>
+				<p>All header files should have include guards in them to avoid processing them multiple times
+				in case they are included from multiple places. The style used for the macro is <i>_FILENAME_H</i>,
+				for example: <i>_DEDEFS_H</i>. Whenever including other headers from a header file, you should
+				always use external include guards as well. The external include guards considerably reduce the
+				number of file accesses that the compiler needs to make, resulting in faster compile times.</p>
+
+				<p>Each implementation file should have matching header file and vice versa. The implementation
+				file must include the corresponding header file first. By doing that, it is guaranteed that the
+				header file includes all of its dependencies.</p>
+
+				<p>Each header file should first include <i>deDefs.h</i>, or alternatively project-specific
+				<i>xxDefs.h/hpp</i> file that in turn includes deDefs.h. That way all the usual types and macros
+				are always properly defined.</p>
+
+				<div class="codeTitle">External include guard example.</div>
+<pre class="prettyprint">
+#ifndef _DEDEFS_H
+#   include "deDefs.h"
+#endif
+#ifndef _DEINT32_H
+#   include "deInt32.h"
+#endif
+#ifndef _DEUNIQUEPTR_HPP
+#   include "deUniquePtr.hpp"
+#endif
+</pre>
+
+				<p>The include order of files should start from <i>debase</i> (esp. <i>deDefs.h</i>), go thru
+				other base libraries, then your own project header files, and lastly the system header files.
+				Also, a <i>.c</i> file must include its own header file first. E.g., <i>deMemPool.c</i> must
+				first include <i>deMemPool.h</i>.</p>
+
+				<p>Every include path must also end up including <i>deDefs.h</i> before any actual code is processed.
+				This ensures that the basic portability macros (<i>DE_OS</i>, <i>DE_COMPILE</i>, etc.) have been
+				defined.</p>
+			</li>
+
+			<li><span class="heading">Indenting and whitespace</span>
+				<p>Code should be indented with tabs (instead of spaces) and a tab-width of 4 characters should
+				be used.</p>
+
+				<p>Always put braces on their own lines. This applies to functions, structs, enums, ifs, loops,
+				everything. The only exception are single-line scopes. For one-statement ifs or loops, braces
+				should not be used. Also, put <i>else</i> and <i>else if</i> on their own lines as well.</p>
+
+				<div class="codeTitle">Brace usage</div>
+<pre class="prettyprint">
+void main (int argc, const char** argv)
+{
+    if (argc > 1)
+        parseArgs(argv[1]);
+    else
+    {
+        printf("Usage:\n");
+        printf("...\n");
+    }
+}
+</pre>
+
+				<p>In addition to only indenting your code, things like variable names in a list of
+				declarations or comments at the end of line, should also be aligned such that they start at
+				the same column. Compare the following two examples of the same code, only with differing
+				alignments in the text.</p>
+
+				<div class="codeTitle">Aligned variable declarations and comments.</div>
+<pre class="prettyprint">
+struct deMemPool_s
+{
+    deUint32        flags;         /*!&lt; Flags.                                      */
+    deMemPool*      parent;        /*!&lt; Pointer to parent (null for root pools).    */
+    deMemPoolUtil*  util;          /*!&lt; Utilities (callbacks etc.).                 */
+    int             numChildren;   /*!&lt; Number of child pools.                      */
+    deMemPool*      firstChild;    /*!&lt; Pointer to first child pool in linked list. */
+    deMemPool*      prevPool;      /*!&lt; Previous pool in parent's linked list.      */
+    deMemPool*      nextPool;      /*!&lt; Next pool in parent's linked list.          */
+    ...
+};
+</pre>
+
+				<div class="codeTitle">No alignments used.</div>
+<pre class="prettyprint">
+struct deMemPool_s
+{
+    deUint32 flags; /*!&lt; Flags. */
+    deMemPool* parent; /*!&lt; Pointer to parent (null for root pools). */
+    deMemPoolUtil* util; /*!&lt; Utilities (callbacks etc.). */
+    int numChildren; /*!&lt; Number of child pools. */
+    deMemPool* firstChild; /*!&lt; Pointer to first child pool in linked list. */
+    deMemPool* prevPool; /*!&lt; Previous pool in parent's linked list. */
+    deMemPool* nextPool; /*!&lt; Next pool in parent's linked list. */
+    ...
+};
+</pre>
+			</li>
+
+			<li><span class="heading">Other formatting</span>
+
+				<p>Always use C-style comments in C code: /* This is a C comment. */ Only use
+				the C++ // end-of-line comments in C++ code.</p>
+
+				<div class="codeTitle">Comment styles.</div>
+<pre class="prettyprint">
+/* Use this kind of comments in C code. */
+
+// This kind of comments may only be used in C++ code.
+</pre>
+
+				<div class="codeTitle">Pointer and references.</div>
+<pre class="prettyprint">
+// Good: pointers and references are a part of the type
+void*          ptr;
+deInt32*       colorBuffer;
+xoArmEmu*      armEmu;
+Array&lt;int&gt;&amp;    intArray;
+void doBlend (deUint32* dst, const deUint32* src);
+
+// Bad: pointer symbol should not be a part of the name
+void *ptr;
+void doBlend (deUint32 *dst, const deUint32 * src);
+</pre>
+
+				<div class="codeTitle">Formatting of function declarations.</div>
+<pre class="prettyprint">
+// Good: void if empty param list, empty space after name, braces on own line
+void doStuff (void)
+{
+}
+
+// Bad: horrible function name!
+void doStuff() {
+}
+
+// Good: separate arguments with spaces, function name
+ShapeList getIntersectingShapes (float x, float y, float z)
+{
+}
+
+// Bad: function name (list of what volumes?), no space after commas in arg list
+ShapeList getShapeList (float x,float y,float z)
+{
+}
+
+// Exception: sometimes simple function are best written as one-liners
+float deFloatAbs (float f) { return (f &lt; 0.0f) ? -f : f; }
+
+</pre>
+
+				<div class="codeTitle">Formatting of control statements.</div>
+<pre class="prettyprint">
+// Good: no extra braces for one-liner if cases
+if (a.isZero)
+    result = 0.0f;
+else
+    result = a.value * (1.0 / 65536.0f);
+
+// Bad: extraneous braces, bad whitespace usage
+if (a.isZero)
+{
+    result=0.0f;
+}
+else
+{
+    result=a.value*(1.0 / 65536.0f);
+}
+
+// Good: expression easy to read
+if (a.isZero &amp;&amp; b.isZero)
+{
+    ...
+}
+
+// Bad: missing spaces around &amp;&amp; operator, missing space after 'if'
+if(a.isZero&amp;&amp;b.isZero)
+{
+    ...
+}
+
+// Good: else on its own line
+if (alpha == 0)
+{
+    ...
+}
+else if (alpha == 255)
+{
+    ...
+}
+else
+{
+    ...
+}
+
+// Bad: else on same line as closing brace
+if (alpha == 0)
+{
+    ...
+} else if (...)
+{
+    ...
+} else
+{
+    ...
+}
+
+// Good: note space after 'while'
+while (numTriangles--)
+{
+    ...
+}
+
+// Bad: whitespace usage
+while(numTriangles --)
+{
+    ...
+}
+
+// Good: while on same line as closing brace
+do
+{
+    ...
+} while (--numTriangles);
+
+// Bad: while on its own line, missing whitespace after 'while'
+do
+{
+    ...
+}
+while(--numTriangles);
+
+// Good: easy to read
+for (ndx = 0; ndx &lt; numTriangles; ndx++)
+
+// Bad: missing spaces all over (whitespace should be used to separate expressions)
+for(ndx=0;ndx&lt;numTriangles;ndx ++)
+
+// Good: note missing braces for while, correct usage of whitespace
+while (numTriangles--)
+    area += computeArea(triangle[ndx++]);
+
+// Bad: don't put unnecessary braces, avoid extraneous whitespace in expressions
+while (numTriangles--)
+{
+    area+=computeArea( triangle [ndx++] );
+}
+</pre>
+
+				<div class="codeTitle">Formatting switch cases.</div>
+<pre class="prettyprint">
+// Good: case-statements indented, code indented another level (including breaks)
+switch (blendMode)
+{
+    case XX_BLENDMODE_NORMAL: // no variable declarations
+        ...
+        break;
+
+    case XX_BLENDMODE_SRC_OVER: // need braces if declaring variables inside
+    {
+        int alpha = ...;
+        break;
+    }
+
+    case XX_BLENDMODE_XYZ:
+        ...
+        // FALLTHRU! -- make non-breaked cases very explicit!
+
+    default: // handles the final blendmode (DISABLED) with an assertion!
+        DE_ASSERT(blendMode == XX_BLENDMODE_DISABLED);
+
+        break; // always put break!
+}
+
+// Bad:
+switch(blendMode)
+{
+case XX_BLENDMODE_NORMAL: // always indent case labels
+    ...
+break; // put break on same level as indented code!
+
+case XX_BLENDMODE_SRC_OVER:
+    {
+        ...
+        break;
+    }
+
+case XX_BLENDMODE_XYZ:
+    ...
+
+case XX_BLENDMODE_DISABLED: // always comment the case fall-through (like above)
+    ...
+} // default case missing! always need to handle it (and assert if illegal!)
+</pre>
+
+				<div class="codeTitle">Formatting of expressions.</div>
+<pre class="prettyprint">
+// Good: parenthesis or whitespace used to indicate evaluation order
+array[(a * b) + c];
+array[a*b + c];
+
+// Bad: order unclear
+array[a*b+c];
+
+// Good: parenthesis (or whitespace) makes evaluation order unambiguous
+array[(a &amp;&amp; b) || (c == 0)]
+array[a==0 || b==0 || c==0] // in some cases spaces can be used instead of parenthesis
+
+// Bad: unclear evaluation order
+array[a&amp;&amp;b || c==0] // does this even work?
+array[a == 0 || b == 0 || c == 0]
+
+// Good: easy to see different parts of evaluation (whitespace where it matters)
+array[triangle->index0 - cache.baseIndex];
+
+// Bad: hard to read (whitespace around brackets doesn't help readability!)
+array[ triangle->index0-cache.baseIndex ];
+array [triangle -> index0 - cache.baseIndex];
+
+// Good: easy to see all function arguments
+computeArea(vtx0.x, vtx0.y, vtx1.x, vtx1.y, vtx2.x, vtx2.y);
+
+// Bad: missing spaces makes it hard to read, no space after function name when calling
+computeArea ( vtx0.x,vtx0.y,vtx1.x,vtx1.y,vtx2.x,vtx2.y );
+
+// Good: readable (the code itself is a made-up example and thus incomprehensible)
+// Consider: would probably make more readable code to use temporary variables here
+if (sizeArray[a+5] &gt; getSize(getFoo()+2))
+if (sizeArray[a + 5] &gt; getSize(getFoo() + 2))
+
+// Bad: whitespace usage confuses rather than helps
+if(sizeArray[a+5]&gt;getSize(getFoo()+2))
+if ( sizeArray [ a + 5 ] &gt; getSize ( getFoo () + 2 ) )
+
+// Bad: unclear (and wrong) evaluation order
+if (bitMask &amp; (1&lt;&lt;bit) == 0)
+</pre>
+
+				<div class="codeTitle">Other formatting.</div>
+<pre class="prettyprint">
+#if defined(DE_DEBUG)      // prefer #if defined() to #ifdef
+    ...
+#endif /* DE_DEBUG */      // only put ending comment if #if is far away
+
+</pre>
+			</li>
+		</ol>
+	</li>
+
+	<li><span class="heading">Base library services</span>
+		<p>TODO: explain all of these</p>
+
+		<ol class="h2">
+			<li><span class="heading"><b>debase</b>/deDefs.h</span>
+				<pre>
+- DE_COMPILER, DE_OS, DE_CPU
+- basic types (deUint8, deIntptr, deBool==int, ..)
+- DE_NULL
+- DE_DEBUG -- #if defined(DE_DEBUG)
+- DE_INLINE
+- DE_ASSERT(), DE_VERIFY(), DE_TEST_ASSERT(), DE_STATIC_ASSERT()
+- DE_BREAKPOINT()
+- DE_SWAP()
+- DE_LENGTH_OF_ARRAY()
+- DE_OFFSET_OF()
+- DE_UNREF()
+- DE_BEGIN_EXTERN_C, DE_END_EXTERN_C
+- DE_NULL_STATEMENT</pre>
+			</li>
+
+			<li><span class="heading">Other <b>debase</b> headers</span>
+				<pre>
+- deInt32.h: deInRange32(), deInBounds32(), hashing
+- deFloat16.h: fp16&lt;-&gt;fp32
+- deMath.h: generic float math
+- deRandom.h: random number generation
+- deMemory.h: allocating memory, deMemset(), deMemcpy(), DE_NEW(), DE_DELETE()
+- deString.h:</pre>
+			</li>
+
+			<li><span class="heading"><b>depool</b> services</span>
+				<pre>
+- memory pools (deMemPool)
+- pooled data structures
+  * Array
+  * Set
+  * Hash
+  * HashArray
+  * HashSet</pre>
+			</li>
+		</ol>
+	</li>
+
+	<li><span class="heading">Commenting code</span>
+		<ol class="h2">
+			<li><span class="heading">File comment boxes</span>
+				<p>Each source file should contain the following comment box. In header files the comment is placed after
+				the #ifdef-#endif pair. On implementation files the comment box is placed at the beginning.</p>
+<pre class="prettyprint">
+/*-------------------------------------------------------------------------
+ * Full Module Name
+ * ----------------
+ *
+ * Copyright 2014 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *//*!
+ * \file
+ * \brief Short description of the contents.
+ *
+ * Followed by longer description if necessary (such as high-level algorithm
+ * description).
+ *//*--------------------------------------------------------------------*/
+<pre>
+			</li>
+
+			<li><span class="heading">Structs/classes/enums comment boxes</span>
+				<p>TODO: </p>
+			</li>
+
+			<li><span class="heading">Other Doxygen comment boxes (/** ... */ and /*!&lt; ... */)</span>
+				<p>TODO: single-line, multi-line</p>
+			</li>
+
+			<li><span class="heading">Code comments</span>
+			  <p>Below and example of code commenting for C. When doing C++, you can replace C-style comments with C++-comments.</p>
+			  <pre class="prettyprint">
+callFoo(&amp;a);
+
+/* Comment about following block (Note empty line before and after)*/
+
+callBar(&amp;b);
+c = a + b; /* Why we need to do this op */
+doItAll(a, b, c);
+
+/* Badness starts with this comment */
+callBar(&amp;b);
+/* Why we need to do this op */
+c = a + b;
+doItAll(a, b, c);
+
+			  </pre>
+			</li>
+
+			<li><span class="heading">Tags</span>
+				<p>Todo-comments should use the following syntax:</p>
+<pre class="prettyprint">
+/* \todo [2012-01-26 pyry] Give a longer description of todo-usage in code. */
+</pre>
+				<p>If you wish to communicate to fellow developer about some unexpected behavior or corner-case
+				that is not obvious, <i>\note</i> tag can be used.</p>
+<pre class="prettyprint">
+/* \note Tangent may be zero. */
+</pre>
+			</li>
+		</ol>
+	</li>
+
+	<li><span class="heading">Generic programming</span>
+		<ol class="h2">
+			<li><span class="heading">Classes in C</span>
+				<p>TODO: explain</p>
+			</li>
+
+			<li><span class="heading">Const correctness</span>
+				<p>When declaring function arguments, local variables, or class members, all non-mutable ones
+				must be declared const. Declaring variable const communicates clearly your intent to not modify
+				the given value. This is especially important in function argument lists.</p>
+
+				<p>Declaring local variables, or function arguments that are passed by value, const, may be a bit
+				controversial. There are indeed a lots of existing code that doesn't follow this rule. However,
+				adding extra constness has proven to improve code readability a quite bit and thus all new code
+				must use const correctly. The only exception is function arguments passed by value; for those
+				const keyword can be omitted. By-value function arguments are however considered to be const
+				for all purposes.</p>
+
+				<div class="codeTitle">Example.</div>
+<pre class="prettyprint">
+// Function example. Note const qualifier on maxDepth as well which is passed by value.
+static glu::VarType generateRandomType (const int maxDepth, int&amp; curStructIdx, vector&lt;const StructType*&gt;&amp; structTypesDst, Random&amp; rnd)
+{
+    const bool isStruct     = maxDepth > 0 &amp;&amp; rnd.getFloat() &lt; 0.2f;
+    const bool isArray      = rnd.getFloat() &lt; 0.3f;
+
+    ...
+}
+
+// Class members
+class Node
+{
+public:
+                   Node      (Node* const parent);
+                   ~Node     (void);
+
+    ...
+private:
+    Node* const    m_parent;
+};
+
+Node::Node (Node* const parent)
+    : m_parent(parent) // Const members can be initialized
+{
+}
+</pre>
+			</li>
+
+			<li><span class="heading">Declaring variables</span>
+				<p>All variables should be declared at the beginning of a block. If variables are introduced in
+				the middle of code, nested block must be used. This is what ANSI C requires, and the same style must
+				be used in C++ code as well. The only exception for this is loop counters in C++; they may be
+				declared in loop init expression.</p>
+
+				<p>Having variable declarations always at the beginning of the block makes code easier to read
+				as no new state is introduced in the middle of code. It also guides towards writing smaller
+				functions that don't use too many variables.</p>
+
+				<div class="codeTitle">Example.</div>
+<pre class="prettyprint">
+static void logTransformFeedbackVaryings (TestLog&amp; log, const glw::Functions&amp; gl, const deUint32 program)
+{
+    int numTfVaryngs    = 0;
+    int	maxNameLen      = 0;
+
+    gl.getProgramiv(program, GL_TRANSFORM_FEEDBACK_VARYINGS, &amp;numTfVaryngs);
+    gl.getProgramiv(program, GL_TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH, &amp;maxNameLen);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Query TF varyings");
+
+    {
+        vector&lt;char&gt; nameBuf(maxNameLen+1);
+
+        for (int ndx = 0; ndx &lt; numTfVaryngs; ndx++)
+        {
+            ...
+</pre>
+			</li>
+
+			<li><span class="heading">Variable life-time</span>
+				<p>TODO: minimize life-time of a variable (may sometimes need additional scopes in C)</p>
+			</li>
+
+			<li><span class="heading">Enumerations</span>
+				<p>TODO: assign zero to first, let compiler assign others (in typical lists)</p>
+				<p>TODO: use ENUM_LAST</p>
+				<p>TODO: mask values</p>
+				<p>TODO: use instead of #defines</p>
+				<p>TODO: typedef xxEnumName_e trick (already explained above?)</p>
+			</li>
+
+			<li><span class="heading">Error handling</span>
+				<p>There are generally two types of errors that can occur in code; errors that stem from environment
+				or bad input, and errors that are caused by logic error in the code. Former ones are typically
+				outside our control (such as running into a network error) and latter are simply programming mistakes.</p>
+
+				<p>External errors must be handled in a graceful way. Depending on the project it may include handling
+				out-of-memory situations as well (most certainly when doing drivers or middleware). In C function return
+				value should be used for communicating whether external error was hit. In C++ code exceptions can
+				be used as well. Assertions must not be used for checking external error conditions.</p>
+
+				<p>Internal logic errors must be checked with assertions. See next section.</p>
+			</li>
+
+			<li><span class="heading">Assertions</span>
+				<p>Assertions are a form of code documentation. They explicitly declare what the code expects from
+				input values or current state. They are tremendously useful when trying to understand how certain
+				piece of code should be used. In addition they are a very nice debugging aid as they help catch logic
+				errors early on before those errors get chance to corrupt program state.</p>
+
+				<p>Functions should assert all non-trivial input data and conditions. The one notorious exception is
+				that pointer validity doesn't need to be asserted if the pointer is dereferenced immediately.
+				Non-trivial computation results should also be checked with assertions.</p>
+
+				<div class="codeTitle">Example.</div>
+<pre class="prettyprint">
+// Examples of good assertions:
+void* deMemPool_alignedAlloc (deMemPool* pool, int numBytes, deUint32 alignBytes)
+{
+    void* ptr;
+    DE_ASSERT(pool); // Must be asserted since not dereferenced but passed to another function
+    DE_ASSERT(numBytes > 0); // Assertion on input data condition
+    DE_ASSERT(deIsPowerOfTwo32((int)alignBytes)); // Non-trivial input condition
+    ptr = deMemPool_allocInternal(pool, numBytes, alignBytes);
+    DE_ASSERT(deIsAlignedPtr(ptr, alignBytes)); // Assertion on computation result
+    return ptr;
+}
+
+// Badness starts here
+
+void getTextureWidth (const Texture* texture)
+{
+    DE_ASSERT(texture); // Bad: unnecessary, will crash anyway if texture is null
+    return texture->width;
+}
+
+void doStuff (void)
+{
+    int i = 3;
+    i += 2;
+    DE_ASSERT(i == 5); // Bad: assertion on trivial computation result
+
+    FILE* f = fopen("myfile.txt", "rb");
+    DE_ASSERT(f); // Bad: there are legitimate reasons for failure
+}
+</pre>
+
+			</li>
+
+			<li><span class="heading">Lookup tables</span>
+				<p>TODO: DE_STATIC_ASSERT lookup table size - should usually match to ENUM_TYPE_LAST</p>
+
+<pre class="prettyprint">
+typedef enum xxBlendEquation_e
+{
+    XX_BLEND_EQUATION_ADD = 0,
+    XX_BLEND_EQUATION_SUBTRACT,
+    XX_BLEND_EQUATION_REVERSE_SUBTRACT,
+
+    XX_BLEND_EQUATION_LAST
+} xxBlendEquation;
+
+// Note: size is left for compiler to figure out
+static const s_blendModeMap[] =
+{
+    GL_FUNC_ADD,                // XX_BLEND_EQUATION_ADD
+    GL_FUNC_SUBTRACT,           // XX_BLEND_EQUATION_SUBTRACT
+    GL_FUNC_REVERSE_SUBTRACT    // XX_BLEND_EQUATION_REVERSE_SUBTRACT
+};
+// This will cause compilation failure lookup table size gets out of date
+DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_blendModeMap) == XX_BLEND_EQUATION_LAST);
+</pre>
+			</li>
+
+			<li><span class="heading">Struct size</span>
+				<p>TODO: DE_STATIC_ASSERT of struct sizes</p>
+				<p>TODO: use small datatypes (deUint8 instead of deBool) when size matters.</p>
+			</li>
+
+			<li><span class="heading">Extraneous code</span>
+				<p>TODO: avoid too verbose code.</p>
+
+				<div class="codeTitle">Example.</div>
+<pre class="prettyprint">
+// Good: compact without sacrificing readability
+return (a &lt; 0.0f) ? -a : a;
+
+// Bad: waste of space
+float result;
+if (a &lt; 0.0f)
+{
+    result = -a;
+}
+else
+{
+    result = a;
+}
+return result;
+</pre>
+
+			</li>
+		</ol>
+	</li>
+
+	<li><span class="heading">C++ topics</span>
+		<ol class="h2">
+			<li><span class="heading">Class declarations</span>
+				<p>TODO: how declaration looks like (already shown in example..)</p>
+				<p>TODO: function definitions inside class ok if single-line, other special cases</p>
+			</li>
+
+			<li><span class="heading">Class boilerplate</span>
+				<p>TODO: copy ctor, assignment operator</p>
+			</li>
+
+			<li><span class="heading">Code Formatting</span>
+<pre class="prettyprint">
+
+// Constructors
+FooAtom::FooAtom(int proton, float electron)
+	: m_proton    (proton)   // Note aligning member initializers.
+	, m_electron  (electron)
+{
+
+}
+
+// Remember to add the name of the namespace at the end of the namespace
+namespace foo
+{
+
+// Namespaces aren't indented
+class Proton;
+
+...
+} // foo
+</pre>
+			</li>
+			<li><span class="heading">RAII</span>
+				<p>Everyone should get familiar with RAII. In a nutshell, "resource acquisition is initialization"
+				means that a class destructor must always release all resources (such as memory or OS handles)
+				that have been allocated during the whole lifetime of the object.</p>
+
+				<p>RAII is essential for exception-safe code. You should always make sure that if an exception is
+				thrown, including out-of-memory cases, your code behaves properly and releases all allocated resources.</p>
+			</li>
+
+			<li><span class="heading">Pointers and references</span>
+				<p>In C++ references should be generally preferred over pointers. The main difference between pointers
+				and references is that references can not change, and are not expected to be null. References should be
+				used instead of pointers for passing objects when both conditions hold; object can not be null nor
+				reference won't be modified once initialized.</p>
+				<p>Pointers are used when there is need to change the address, or it can be null for a valid reason.
+				Additionally, pointers are always used for passing basic type or object arrays.</p>
+			</li>
+
+			<li><span class="heading">Containers</span>
+				<p>TODO: describe stl container usage policies</p>
+			</li>
+
+			<li><span class="heading">Exceptions</span>
+				<p>TODO: exceptions can be used, custom ones must be based on std::exception</p>
+			</li>
+
+			<li><span class="heading">Polymorphism</span>
+				<p>TODO: when to use virtual functions, virtual destructor</p>
+			</li>
+
+			<li><span class="heading">Namespaces</span>
+				<p>TODO: namespace naming</p>
+				<p>TODO: using statement, never using in headers</p>
+			</li>
+
+		</ol>
+	</li>
+
+	<li><span class="heading">Tools</span>
+		<ol class="h2">
+			<li><span class="heading">Git</span>
+				<p>Git is currently the weapon of choice for source control management. Even though it is
+				not the perfect solution, it gets job done well, or at least better than most other solutions.</p>
+
+				<p>Our repositories are hosted on github.com. You are allowed and encouraged to push any number
+				of new branches to the github repositories. Remember to clean up the obsolete ones after they
+				have been merged to master. But never delete a remote branch that hasn't been created by you.</p>
+
+				<p>Before you commit anything, make sure <i>user.name</i> and <i>user.email</i> are properly set up.</p>
+<pre class="prettyprint">
+git config --global user.name "Veijo Elements"
+git config --global user.email "veijo.elements@drawelements.com"
+</pre>
+
+				<p>The standard line ending format for all text files is Unix-style. The best way to handle
+				line endings on Windows systems is to set <i>core.autocrlf</i> to <i>input</i>. That causes
+				conversion to Unix-style line endings on commit only (i.e. not in checkout).</p>
+<pre class="prettyprint">
+git config --global core.autocrlf input
+</pre>
+
+				<p>In order to keep trailing whitespace out of source tree, a standard pre-commit hook must
+				be placed in each local clone of any source repositories.</p>
+<pre class="prettyprint">
+# in repository directory
+cp ~/Dropbox/drawElements/Misc/git/pre-commit .git/hooks/
+</pre>
+			</li>
+
+			<li><span class="heading">Build systems and IDEs</span>
+				<p>CMake is used as an official project file generator. CMake can be used to generate makefiles
+				or project files for most IDEs. Unless there is a good reason, you should use project files
+				generated by CMake.</p>
+
+				<p>You are free to choose any IDE or editor you like. At least Visual Studio, vim and
+				emacs have been successfully used in the past. Good debugger integration is strongly recommended.</p>
+			</li>
+		</ol>
+	</li>
+
+	<li><span class="heading">Coding philosophy</span>
+		<ol class="h2">
+			<li><span class="heading">Designing classes</span>
+				<p>Each class should have only a single purpose to fulfill, and it should encapsulate that
+				entirely. All functionality that is secondary and doesn't require access to classes' internal
+				implementation should not be part of that class. This is called <a href="http://en.wikipedia.org/wiki/Single_responsibility_principle">
+				single responsibility principle</a>. It is probably easier to grasp it with an example.</p>
+
+				<p>Consider a <i>Texture2D</i> class that manages 2D-dimensional texture data. Such class is clearly
+				responsible for managing lifetime of the associated memory, and storing properties such as
+				size and format. Now, one could need a function for blitting (copying) portion of one texture
+				to some position in an another texture. This could be added as a method to texture class, but
+				it most certainly isn't core responsibility of that class. So correct way to implement that
+				is either as a plain function operating on publicly accessible methods of <i>Texture2D</i> class,
+				or as a separate <i>Blitter</i> class. Same applies to things such as reading texture from a file,
+				clearing the texture to a certain color and so forth.</p>
+
+				<div class="codeTitle">Texture class example.</div>
+<pre class="prettyprint">
+class Texture2D
+{
+public:
+                        Texture2D       (const TextureFormat format, const int width, const int height);
+                        Texture2D       (const char* const filename); // Bad: not core functionality
+                        ~Texture2D      (void);
+
+    // Good methods: essential functionality
+    Vec4                getPixel        (const int x, const int y) const;
+    void                setPixel        (const int x, const int y, const Vec4&amp; c);
+    const deUint8*      getPixelPtr     (void) const;
+
+    // Bad: non-essential
+    void                clear           (const Vec4&amp; c);
+    bool                containsColor   (const Vec4&amp; c) const;
+    void                setInitialized  (void); // Why texture would store bit that belongs outside?
+
+private:
+    // Good: essential, minimum data set
+    vector&lt;deUint8&gt;     m_pixels;
+    TextureFormat       m_format;
+    int                 m_width;
+    int                 m_height;
+
+//  deUint8*            m_pixels; // Bad: explicit mem. mgmt, not core functionality
+    bool                m_initialized; // Bad: extraneous information
+};
+
+// Good: independent functions operating on textures
+void        clearTexture    (Texture2D&amp; texture, const Vec4&amp; color);
+Texture2D*  createFromFile  (const char* const filename);
+</pre>
+				<p>One sign of a successful class design is that the interface feels natural to use. Thus when
+				designing a new class from a scratch, you should start by writing the use cases first. Class
+				interface can be refined until it suits the most important use cases, and only then the
+				implementation is filled in. Doing things in reverse order often leads to interfaces that are
+				later found to be inadequate.</p>
+
+				<p>When writing the internal implementation a lot of thought should be put on maintaining
+				consistent state, or more formally, <a href="http://en.wikipedia.org/wiki/Class_invariant">class invariant</a>.
+				Member variables in a class are a form of global state and thus special care must be taken
+				when manipulating that state. If class requires a lot of state, it can be helpful to group
+				some of the members into separate state-only classes whose sole responsibility is maintaining
+				the class invariant for that set of members. Another good pattern is to write a state validation
+				function that is called in debug builds after each non-trivial state change.</p>
+
+				<p>Only a minimal set of class member variables should ever be used. If some value can be derived
+				with a relatively little effort from the minimal set of members, it must not be stored as a
+				member variable. In the <i>Texture2D</i> class example, length of a pixel row or image size can
+				be derived from size and format and thus member variables must not be used for them.</i>
+
+				<!-- TODO: code example -->
+
+			</li>
+
+			<li><span class="heading">Global state</span>
+				<p>Pretty much everyone can agree that relying on global state is undesirable. However, what
+				is not always obvious is what counts as a global state. Global variables are clearly such state,
+				but many more can be considered as well. For example state encapsulated in shared objects, state
+				retained in library API, or even state passed in member variables between member functions
+				could be counted as a form global state. Another way to define global state is that it is anything
+				that can be passed from one function to another without including it in function call arguments.</p>
+
+				<p>All forms of global state should be used only when necessary. Excluding some very rare cases,
+				mutable global variables are never necessary. Singletons are really just a fancier version of
+				global variables. Instead of using for example singleton for application log object, it should be
+				passed in explicitly to all objects and functions that require logging.</p>
+
+
+			</li>
+
+			<li><span class="heading">Variables vs. immutable values</span>
+				<p>Traditional imperative programming puts emphasis on variables. They are thought of being
+				limited resource, used for storing immediate computation results for brief periods of time.
+				In early C days it was even common to declare variable <i>register</i> in order to communicate
+				the compiler that it should place the variable into a register. Things have changed a lot since
+				then, and it is no longer necessary to limit use of variables for performance reasons.</p>
+
+				<p>Functional languages declare variables immutable, i.e. they are not really <i>var</i>ying
+				values, but instead named values. This often greatly improves code clarity and correctness,
+				as variables can not change unexpectedly. While imperative languages certainly need some amout
+				of mutability, the concept of immutable values certainly has advantages.</p>
+
+				<p>As discussed in variable naming section, you often should name a single value, not some
+				storage slot for arbitrary set of values. In such case it makes a lot of sense to treat that
+				as immutable named value, not mutable varibale. In C and C++ that can be explicitly declared
+				with use of <i>const</i> qualifier.</p>
+
+				<p>In general the amount of state that is considered mutable in any given context should be
+				minimized. Understanding code is a much more easier if number of things that can change is
+				small. This also guides code towards natural separation into smaller functions.</p>
+
+				<p>Limiting number of mutable variables leads to a more functional programming style, where a
+				lot of computation done in initializer expressions at the beginning of a block. This is not
+				necessarily a bad thing as it requires separating any non-trivial computation into separate
+				functions. Most often we only need the result of such computation anyway, and how the
+				value itself is computed is not important for the problem at hand.</i>
+
+				<div class="codeTitle">Complex code example.</div>
+<pre class="prettyprint">
+std::vector&lt;Node*&gt; topologicalSortFromRoot (Node* const root)
+{
+    // Returning containers is OK if called functions are local and compiler
+    // can easily do return value optimization.
+    const std::vector&lt;Node*&gt;    allNodes    = collectAllNodesFromRoot(root); // Reduce number of mutables by computing outside
+    std::map&lt;Node*, int&gt;        useCounts   = computeUseCounts(allNodes); // Uses allNodes value, mutable
+    std::vector&lt;Node*&gt;          liveSet;        // Mutable as well
+    std::vector&lt;Node*&gt;          sortedNodes;    // Used as return value - only appended to
+
+    // We have multiple mutables here. Invariant is that each node that has zero in useCount
+    // must be either in liveSet or sortedNodes, but not in both.
+
+    for (std::vector&lt;Node*&gt;::iterator nodeIter = allNodes.begin();
+         nodeIter != allNodes.end();
+         ++nodeIter)
+    {
+        // Note that nodeIter is not considered mutable here - instead it is iteration-specific
+        // immutable value.
+        if (useCounts[*nodeIter] == 0)
+            liveSet.push_back(*nodeIter); // liveSet is used as return value here
+    }
+
+    while (!liveSet.empty())
+    {
+        Node* const curNode = liveSet.back();
+        liveSet.pop_back();
+
+        sortedNodes.push_back(curNode);
+
+        ...
+    }
+
+    return sortedNodes;
+}
+</pre>
+			</li>
+
+			<li><span class="heading">Pure functions</span>
+				<p>Pure functions have two properties. Firstly, the result depends only on the input values and
+				always produces same output value given same set of input values. Secondly, the function does not
+				cause any observable side effects or changes to global state. For example <i>sin(x)</i> is pure
+				function as it always returns the same value for same argument value and does not cause any side effects.</p>
+
+				<p>As much of the code as possible should be kept pure. Moving pure parts of logic and computation
+				into separate functions is recommended. Unit testing those pure functions is then much easier.</p>
+
+				<p>Mutating objects passed in counts as a side effect. Instead pure functions must return a completely
+				new value. This may not always be feasible and some functions may need to be impure for performance
+				reasons. One way to work around that while remaining as pure as possible is to use separate output-only
+				argument for output value. Perhaps the most ubiquitous example of such function is <i>memcpy()</i>.</p>
+
+				<div class="codeTitle">Examples</div>
+<pre class="prettyprint">
+// Good: pure function (assuming that it doesn't touch global state)
+vector&lt;int&gt; findUniqueNumbers (const vector&lt;int&gt;&amp; numbers);
+
+// Good: single output-only parameter
+void        findUniqueNumbers (vector&lt;int&gt;&amp; dst, const vector&lt;int&gt;&amp; numbers);
+
+// Bad: copying a lot of data for sake of pureness
+LargeStateObject setStateX (const LargeStateObject&amp; state, const int value);
+
+// Bad: manipulates input for no reason
+void        removeDuplicates  (vector&lt;string&gt;&amp; words);
+
+</pre>
+			</li>
+		</ol>
+
+<!--
+Coding philosophy TODO:
+ - composition vs. inheritance
+ - dependency injection
+ - function design
+ - do not duplicate state (local or remote)
+
+Patterns TODO:
+ - iterator pattern
+ - iterate() pattern for long computation
+   + state machines for interactive processing?
+ - accessor class pattern
+-->
+
+	</li>
+
+<!---
+	<li><span class="heading">Something else</span>
+	</li>
+-->
+
+</ol> <!-- h1 -->
+
+</div> <!-- body -->
+
+</body>
+
+</html>

@@ -1,0 +1,63 @@
+// Copyright 2018 The Feed Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+
+package search.now.ui.piet;
+
+option optimize_for=LITE_RUNTIME;
+
+option java_package = "com.google.search.now.ui.piet";
+option java_outer_classname = "ShadowsProto";
+option cc_enable_arenas = true;
+
+// Defines a shadow for a given element. This message has sub-messages that
+// correspond to different methods that define shadows. Each client might
+// support a subset of the methodologies, and will ignore the ones it does not
+// support. See [INTERNAL LINK]
+message Shadow {
+  // BoxShadow definition. Supported by the web client.
+  optional BoxShadow box_shadow = 1;
+}
+
+// Defines a box shadow, as described in the CSS spec:
+// https://developer.mozilla.org/en-US/do[INTERNAL LINK]/CSS/box-shadow.
+message BoxShadow {
+  // Defines the horizontal offset of the shadow.
+  //  * A positive value puts the shadow on the right side of the box (does not
+  //    flip in RTL presentation).
+  //  * A negative value puts the shadow on the left side of the box.
+  optional int32 offset_x = 1;
+
+  // Defines the vertical offset of the shadow.
+  //  * A positive value puts the shadow below the box.
+  //  * A negative value puts the shadow above the box.
+  optional int32 offset_y = 2;
+
+  // The blur radius of the shadow. The higher the number, the more blurred the
+  // shadow will be.
+  optional int32 blur_radius = 3;
+
+  // The spread radius of the shadow. A positive value increases the size of the
+  // shadow, a negative value decreases the size of the shadow.
+  optional int32 spread_radius = 4;
+
+  // Defines whether the shadow should appear on the inside (is_inset == true),
+  // or the outside (is_inset == false).
+  optional bool is_inset = 5;
+
+  // The color of the shadow.
+  optional fixed32 color = 6;
+}

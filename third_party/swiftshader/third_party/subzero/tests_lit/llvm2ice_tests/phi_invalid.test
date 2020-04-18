@@ -1,0 +1,9 @@
+; Test that a bad phi instruction is caught.
+; https://code.google.com/p/nativeclient/issues/detail?id=4304
+
+RUN: %p2i --expect-fail --tbc -i %p/Input/phi-invalid.tbc --insts 2>&1 \
+RUN:        --filetype=obj --output /dev/null \
+RUN:        --args -allow-externally-defined-symbols \
+RUN:        | FileCheck --check-prefix=BADPHI %s
+
+; BADPHI: Phi error:

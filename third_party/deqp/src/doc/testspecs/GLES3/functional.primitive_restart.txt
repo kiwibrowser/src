@@ -1,0 +1,57 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Primitive restart tests
+
+Tests:
+ + dEQP-GLES3.functional.primitive_restart.*
+
+Includes:
+ + Draw using:
+   - glDrawElements()
+   - glDrawElementsInstanced()
+   - glDrawRangeElements()
+ + All primitive types
+ + All index types
+ + Primitive restart index placing special cases:
+   - Use/don't use two consecutive primitive restarts
+   - Restarts/no restarts as first value of index array
+   - Restarts/no restarts as last value of index array
+   - Combinations of above
+
+Excludes:
+ + Test for correctness of rasterization
+
+Description:
+
+Vertex positions and indices are generated such that multiple primitives are
+defined with the same index array, using the fixed primitive restart index to
+separate the primitives. Various sizes (in terms of index count between
+restarts) of primitives are generated.
+
+Special cases are generated such that there are indices at the beginning or end
+of the index array, or the index array contains two consecutive restarts
+where there would normally be one. These cases are otherwise equivalent and
+should render identically.
+
+For glDrawElementsInstanced(), an instance count of 1 is used. For
+glDrawRangeElements(), the start parameter is 0, and the end parameter is the
+largest non-restart index in the index array.
+
+The result is compared to an image produced by doing multiple ordinary draw
+calls instead of using primitive restarts.

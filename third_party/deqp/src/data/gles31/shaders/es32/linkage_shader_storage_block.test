@@ -1,0 +1,434 @@
+# -------------------------------------------------
+# drawElements Quality Program OpenGL ES 3.2 Module
+# -------------------------------------------------
+#
+# Copyright 2016 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+case mismatch_number_of_declarations
+	version 320 es
+	desc "Shader storage block mismatch: different number of declarations"
+	require limit "GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS" > 0
+	require limit "GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS" > 0
+	expect link_fail
+	vertex ""
+		#version 320 es
+		${VERTEX_DECLARATIONS}
+		layout(binding=0) buffer BufferBlockName
+		{
+			mediump float variable1;
+		};
+
+		out mediump float vtx_val;
+		void main()
+		{
+			vtx_val = variable1;
+			${VERTEX_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 320 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		layout(binding=0) buffer BufferBlockName
+		{
+			mediump float variable1;
+			mediump float variable2;
+		};
+
+		in mediump float vtx_val;
+		void main()
+		{
+			${FRAG_COLOR} = vec4(vtx_val + variable1 + variable2);
+		}
+	""
+end
+
+case mismatch_order
+	version 320 es
+	desc "Shader storage block mismatch: different number of declarations"
+	require limit "GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS" > 0
+	require limit "GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS" > 0
+	expect link_fail
+	vertex ""
+		#version 320 es
+		${VERTEX_DECLARATIONS}
+		layout(binding=0) buffer BufferBlockName
+		{
+			mediump float variable1;
+			mediump float variable2;
+		};
+
+		out mediump float vtx_val;
+		void main()
+		{
+			vtx_val = variable1 + variable2;
+			${VERTEX_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 320 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		layout(binding=0) buffer BufferBlockName
+		{
+			mediump float variable2;
+			mediump float variable1;
+		};
+
+		in mediump float vtx_val;
+		void main()
+		{
+			${FRAG_COLOR} = vec4(vtx_val + variable1 + variable2);
+		}
+	""
+end
+
+case mismatch_type
+	version 320 es
+	desc "Shader storage block mismatch: different number of declarations"
+	require limit "GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS" > 0
+	require limit "GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS" > 0
+	expect link_fail
+	vertex ""
+		#version 320 es
+		${VERTEX_DECLARATIONS}
+		layout(binding=0) buffer BufferBlockName
+		{
+			mediump vec2 variable;
+		};
+
+		out mediump float vtx_val;
+		void main()
+		{
+			vtx_val = variable.y;
+			${VERTEX_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 320 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		layout(binding=0) buffer BufferBlockName
+		{
+			mediump float variable;
+		};
+
+		in mediump float vtx_val;
+		void main()
+		{
+			${FRAG_COLOR} = vec4(vtx_val + variable);
+		}
+	""
+end
+
+case mismatch_member_name
+	version 320 es
+	desc "Shader storage block mismatch: different number of declarations"
+	require limit "GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS" > 0
+	require limit "GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS" > 0
+	expect link_fail
+	vertex ""
+		#version 320 es
+		${VERTEX_DECLARATIONS}
+		layout(binding=0) buffer BufferBlockName
+		{
+			mediump float variable1;
+		};
+
+		out mediump float vtx_val;
+		void main()
+		{
+			vtx_val = variable1;
+			${VERTEX_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 320 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		layout(binding=0) buffer BufferBlockName
+		{
+			mediump float variable2;
+		};
+
+		in mediump float vtx_val;
+		void main()
+		{
+			${FRAG_COLOR} = vec4(vtx_val + variable2);
+		}
+	""
+end
+
+case mismatch_member_unsized_sized_array
+	version 320 es
+	desc "Shader storage block mismatch: different number of declarations"
+	require limit "GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS" > 0
+	require limit "GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS" > 0
+	expect link_fail
+	vertex ""
+		#version 320 es
+		${VERTEX_DECLARATIONS}
+		layout(binding=0) buffer BufferBlockName
+		{
+			mediump float variable[];
+		};
+
+		out mediump float vtx_val;
+		void main()
+		{
+			vtx_val = variable[0];
+			${VERTEX_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 320 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		layout(binding=0) buffer BufferBlockName
+		{
+			mediump float variable[1];
+		};
+
+		in mediump float vtx_val;
+		void main()
+		{
+			${FRAG_COLOR} = vec4(vtx_val + variable[0]);
+		}
+	""
+end
+
+case mismatch_member_array_size
+	version 320 es
+	desc "Shader storage block mismatch: different number of declarations"
+	require limit "GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS" > 0
+	require limit "GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS" > 0
+	expect link_fail
+	vertex ""
+		#version 320 es
+		${VERTEX_DECLARATIONS}
+		layout(binding=0) buffer BufferBlockName
+		{
+			mediump float variable[1];
+		};
+
+		out mediump float vtx_val;
+		void main()
+		{
+			vtx_val = variable[0];
+			${VERTEX_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 320 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		layout(binding=0) buffer BufferBlockName
+		{
+			mediump float variable[2];
+		};
+
+		in mediump float vtx_val;
+		void main()
+		{
+			${FRAG_COLOR} = vec4(vtx_val + variable[0]);
+		}
+	""
+end
+
+case mismatch_with_and_without_instance_name
+	version 320 es
+	desc "Shader storage block mismatch: different number of declarations"
+	require limit "GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS" > 0
+	require limit "GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS" > 0
+	expect link_fail
+	vertex ""
+		#version 320 es
+		${VERTEX_DECLARATIONS}
+		layout(binding=0) buffer BufferBlockName
+		{
+			mediump float variable;
+		} instanceName;
+
+		out mediump float vtx_val;
+		void main()
+		{
+			vtx_val = instanceName.variable;
+			${VERTEX_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 320 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		layout(binding=0) buffer BufferBlockName
+		{
+			mediump float variable;
+		};
+
+		in mediump float vtx_val;
+		void main()
+		{
+			${FRAG_COLOR} = vec4(vtx_val + variable);
+		}
+	""
+end
+
+case mismatch_block_array_size
+	version 320 es
+	desc "Shader storage block mismatch: different number of declarations"
+	require limit "GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS" > 0
+	require limit "GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS" > 0
+	expect link_fail
+	vertex ""
+		#version 320 es
+		${VERTEX_DECLARATIONS}
+		layout(binding=0) buffer BufferBlockName
+		{
+			mediump float variable;
+		} instanceName[1];
+
+		out mediump float vtx_val;
+		void main()
+		{
+			vtx_val = instanceName[0].variable;
+			${VERTEX_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 320 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		layout(binding=0) buffer BufferBlockName
+		{
+			mediump float variable;
+		} instanceName[2];
+
+		in mediump float vtx_val;
+		void main()
+		{
+			${FRAG_COLOR} = vec4(vtx_val + instanceName[0].variable + instanceName[1].variable);
+		}
+	""
+end
+
+case ambiguous_variable_name_1
+	version 320 es
+	desc "Unnamed shader storage block variable and global variable with identical names"
+	require limit "GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS" > 0
+	expect compile_or_link_fail
+	vertex ""
+		#version 320 es
+		${VERTEX_DECLARATIONS}
+		float variable;
+		layout(binding=0) buffer BufferBlockName
+		{
+			mediump float variable;
+		};
+
+		out mediump float vtx_val;
+		void main()
+		{
+			vtx_val = variable;
+			${VERTEX_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 320 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		in mediump float vtx_val;
+		void main()
+		{
+			${FRAG_COLOR} = vec4(vtx_val);
+		}
+	""
+end
+
+case ambiguous_variable_name_2
+	version 320 es
+	desc "Two unnamed shader storage blocks with variables with identical names"
+	require limit "GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS" > 1
+	expect compile_or_link_fail
+	vertex ""
+		#version 320 es
+		${VERTEX_DECLARATIONS}
+		layout(binding=0) buffer BufferBlockNameA
+		{
+			mediump float variable;
+		};
+		layout(binding=1) buffer BufferBlockNameB
+		{
+			mediump float variable;
+		};
+
+		out mediump float vtx_val;
+		void main()
+		{
+			vtx_val = variable;
+			${VERTEX_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 320 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		in mediump float vtx_val;
+		void main()
+		{
+			${FRAG_COLOR} = vec4(vtx_val);
+		}
+	""
+end
+
+case ambiguous_variable_name_3
+	version 320 es
+	desc "Two unnamed shader storage blocks in different stages with variables with identical names"
+	require limit "GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS" > 0
+	require limit "GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS" > 0
+	# language to make link error explicitly defined. ("Within an interface, ...")
+	require extension { "GL_OES_shader_io_blocks" | "GL_EXT_shader_io_blocks" } in { vertex, fragment }
+	expect link_fail
+	vertex ""
+		#version 320 es
+		${VERTEX_DECLARATIONS}
+		layout(binding=0) buffer BufferBlockNameA
+		{
+			mediump float variable;
+		};
+
+		out mediump float vtx_val;
+		void main()
+		{
+			vtx_val = variable;
+			${VERTEX_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 320 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		layout(binding=1) buffer BufferBlockNameB
+		{
+			mediump float variable;
+		};
+
+		in mediump float vtx_val;
+		void main()
+		{
+			${FRAG_COLOR} = vec4(vtx_val + variable);
+		}
+	""
+end

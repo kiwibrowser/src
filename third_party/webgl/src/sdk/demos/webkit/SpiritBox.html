@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<!--
+/*
+ * Copyright (C) 2009 Apple Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY APPLE INC. ``AS IS'' AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL APPLE INC. OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+ -->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Spinning WebGL Box</title>
+<style>
+body, html {
+  margin: 0px;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+#framerate {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: rgba(0,0,0,0.3);
+  padding: 1em;
+  color: white;
+}
+#example {
+  width: 100%;
+  height: 100%;
+}
+</style>
+<script type="application/javascript" src="../common/webgl-utils.js"></script>
+<script type="application/javascript" src="../../devtools/src/debug/webgl-debug.js"></script>
+<script src="resources/J3DI.js"> </script>
+<script src="resources/J3DIMath.js" type="application/javascript"> </script>
+<script id="vshader" type="x-shader/x-vertex">
+    uniform mat4 u_modelViewProjMatrix;
+    uniform mat4 u_normalMatrix;
+    uniform vec3 lightDir;
+
+    attribute vec3 vNormal;
+    attribute vec4 vTexCoord;
+    attribute vec4 vPosition;
+
+    varying float v_Dot;
+    varying vec2 v_texCoord;
+
+    void main()
+    {
+        gl_Position = u_modelViewProjMatrix * vPosition;
+        v_texCoord = vTexCoord.st;
+        vec4 transNormal = u_normalMatrix * vec4(vNormal, 1);
+        v_Dot = max(dot(transNormal.xyz, lightDir), 0.0);
+    }
+</script>
+
+<script id="fshader" type="x-shader/x-fragment">
+    precision mediump float;
+
+    uniform sampler2D sampler2d;
+
+    varying float v_Dot;
+    varying vec2 v_texCoord;
+
+    void main()
+    {
+        vec2 texCoord = vec2(v_texCoord.s, 1.0 - v_texCoord.t);
+        vec4 color = texture2D(sampler2d, texCoord);
+        color += vec4(0.1, 0.1, 0.1, 1);
+        gl_FragColor = vec4(color.xyz * v_Dot, color.a);
+    }
+</script>
+
+<script>
+    var g = {};
+
+    function init()
+    {
+        // Initialize
+        var gl = initWebGL(
+            // The id of the Canvas Element
+            "example");
+        if (!gl) {
+          return;
+        }
+        var program = simpleSetup(
+            gl,
+            // The ids of the vertex and fragment shaders
+            "vshader", "fshader",
+            // The vertex attribute names used by the shaders.
+            // The order they appear here corresponds to their index
+            // used later.
+            [ "vNormal", "vColor", "vPosition"],
+            // The clear color and depth values
+            [ 0, 0, 0.5, 1 ], 10000);
+
+        // Set some uniform variables for the shaders
+        gl.uniform3f(gl.getUniformLocation(program, "lightDir"), 0, 0, 1);
+        gl.uniform1i(gl.getUniformLocation(program, "sampler2d"), 0);
+
+        // Create a box. On return 'gl' contains a 'box' property with
+        // the BufferObjects containing the arrays for vertices,
+        // normals, texture coords, and indices.
+        g.box = makeBox(gl);
+
+        // Load an image to use. Returns a WebGLTexture object
+        spiritTexture = loadImageTexture(gl, "resources/spirit.jpg");
+
+        // Create some matrices to use later and save their locations in the shaders
+        g.mvMatrix = new J3DIMatrix4();
+        g.u_normalMatrixLoc = gl.getUniformLocation(program, "u_normalMatrix");
+        g.normalMatrix = new J3DIMatrix4();
+        g.u_modelViewProjMatrixLoc =
+                gl.getUniformLocation(program, "u_modelViewProjMatrix");
+        g.mvpMatrix = new J3DIMatrix4();
+
+        // Enable all of the vertex attribute arrays.
+        gl.enableVertexAttribArray(0);
+        gl.enableVertexAttribArray(1);
+        gl.enableVertexAttribArray(2);
+
+        // Set up all the vertex attributes for vertices, normals and texCoords
+        gl.bindBuffer(gl.ARRAY_BUFFER, g.box.vertexObject);
+        gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, g.box.normalObject);
+        gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, g.box.texCoordObject);
+        gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 0, 0);
+
+        // Bind the index array
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, g.box.indexObject);
+
+        return gl;
+    }
+
+    var requestId;
+
+    function reshape(gl)
+    {
+        // change the size of the canvas's backing store to match the size it is displayed.
+        var canvas = document.getElementById('example');
+        if (canvas.clientWidth == canvas.width && canvas.clientHeight == canvas.height)
+            return;
+
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+
+        // Set the viewport and projection matrix for the scene
+        gl.viewport(0, 0, canvas.clientWidth, canvas.clientHeight);
+        g.perspectiveMatrix = new J3DIMatrix4();
+        g.perspectiveMatrix.perspective(30, canvas.clientWidth / canvas.clientHeight, 1, 10000);
+        g.perspectiveMatrix.lookat(0, 0, 7, 0, 0, 0, 0, 1, 0);
+    }
+
+    function drawPicture(gl)
+    {
+        // Make sure the canvas is sized correctly.
+        reshape(gl);
+
+        // Clear the canvas
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        // Make a model/view matrix.
+        g.mvMatrix.makeIdentity();
+        g.mvMatrix.rotate(20, 1,0,0);
+        g.mvMatrix.rotate(currentAngle, 0,1,0);
+
+        // Construct the normal matrix from the model-view matrix and pass it in
+        g.normalMatrix.load(g.mvMatrix);
+        g.normalMatrix.invert();
+        g.normalMatrix.transpose();
+        g.normalMatrix.setUniform(gl, g.u_normalMatrixLoc, false);
+
+        // Construct the model-view * projection matrix and pass it in
+        g.mvpMatrix.load(g.perspectiveMatrix);
+        g.mvpMatrix.multiply(g.mvMatrix);
+        g.mvpMatrix.setUniform(gl, g.u_modelViewProjMatrixLoc, false);
+
+        // Bind the texture to use
+        gl.bindTexture(gl.TEXTURE_2D, spiritTexture);
+
+        // Draw the cube
+        gl.drawElements(gl.TRIANGLES, g.box.numIndices, gl.UNSIGNED_BYTE, 0);
+
+        // Show the framerate
+        framerate.snapshot();
+
+        currentAngle += incAngle;
+        if (currentAngle > 360)
+            currentAngle -= 360;
+    }
+
+    function start()
+    {
+        var c = document.getElementById("example");
+
+        //c = WebGLDebugUtils.makeLostContextSimulatingCanvas(c);
+        // tell the simulator when to lose context.
+        //c.loseContextInNCalls(1);
+
+        c.addEventListener('webglcontextlost', handleContextLost, false);
+        c.addEventListener('webglcontextrestored', handleContextRestored, false);
+
+        var gl = init();
+        if (!gl) {
+           return;
+        }
+
+        currentAngle = 0;
+        incAngle = 0.5;
+        framerate = new Framerate("framerate");
+        var f = function() {
+            drawPicture(gl);
+            requestId = window.requestAnimFrame(f, c);
+        };
+        f();
+
+        function handleContextLost(e) {
+            e.preventDefault();
+            clearLoadingImages();
+            if (requestId !== undefined) {
+                window.cancelAnimFrame(requestId);
+                requestId = undefined;
+            }
+        }
+
+        function handleContextRestored() {
+            init();
+            f();
+        }
+    }
+</script>
+<style type="text/css">
+    canvas {
+        border: 2px solid black;
+    }
+</style>
+</head>
+
+<body onload="start()">
+<canvas id="example">
+    If you're seeing this your web browser doesn't support the &lt;canvas>&gt; element. Ouch!
+</canvas>
+<div id="framerate"></div>
+</body>
+
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<!--
+Copyright 2018 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/core/test_utils.html">
+<link rel="import" href="/tracing/metrics/rendering_metric.html">
+<link rel="import" href="/tracing/model/user_model/animation_expectation.html">
+<link rel="import" href="/tracing/model/user_model/user_expectation.html">
+
+<script>
+'use strict';
+
+tr.b.unittest.testSuite(function() {
+  test('renderingMetric_coresPerSecond', function() {
+    const model = tr.c.TestUtils.newModel((model) => {
+      model.userModel.expectations.push(new tr.model.um.AnimationExpectation(
+          model, tr.model.um.INITIATOR_TYPE.SCROLL, 0, 10));
+
+      const browserMain = model.getOrCreateProcess(0).getOrCreateThread(0);
+      browserMain.name = 'CrBrowserMain';
+      // A slice during the animation with CPU duration 2.
+      browserMain.sliceGroup.pushSlice(tr.c.TestUtils.newSliceEx(
+          { start: 1, end: 4, cpuStart: 0, cpuEnd: 2 }));
+      // A slice after the animation.
+      browserMain.sliceGroup.pushSlice(tr.c.TestUtils.newSliceEx(
+          { start: 10, end: 12, cpuStart: 2, cpuEnd: 3 }));
+
+
+      const rendererMain = model.getOrCreateProcess(1).getOrCreateThread(0);
+      rendererMain.name = 'CrRendererMain';
+      // A slice half of which intersects with the animation.
+      rendererMain.sliceGroup.pushSlice(tr.c.TestUtils.newSliceEx(
+          { start: 5, end: 15, cpuStart: 0, cpuEnd: 8 }));
+
+      const rendererIO = model.getOrCreateProcess(1).getOrCreateThread(1);
+      rendererIO.name = 'Chrome_ChildIOThread';
+      rendererIO.sliceGroup.pushSlice(tr.c.TestUtils.newSliceEx(
+          { start: 5, end: 6, cpuStart: 1, cpuEnd: 2 }));
+    });
+    const histograms = new tr.v.HistogramSet();
+    tr.metrics.rendering.renderingMetric(histograms, model);
+
+    // Verify the browser and renderer main threads and IO threads CPU usage.
+    let hist = histograms.getHistogramNamed('cores_per_second_browser_thread');
+    assert.closeTo(0.2, hist.min, 1e-6);
+    assert.closeTo(0.2, hist.max, 1e-6);
+    assert.closeTo(0.2, hist.average, 1e-6);
+
+    hist = histograms.getHistogramNamed(
+        'cores_per_second_renderer_main_thread');
+    assert.closeTo(0.4, hist.min, 1e-6);
+    assert.closeTo(0.4, hist.max, 1e-6);
+    assert.closeTo(0.4, hist.average, 1e-6);
+
+    hist = histograms.getHistogramNamed('cores_per_second_io_thread');
+    assert.closeTo(0.1, hist.min, 1e-6);
+    assert.closeTo(0.1, hist.max, 1e-6);
+    assert.closeTo(0.1, hist.average, 1e-6);
+
+    // Also, verify fast_path threads, that includs IO threads and the browser
+    // main thread, but not the renderer main thread.
+    hist = histograms.getHistogramNamed('cores_per_second_fast_path_thread');
+    assert.closeTo(0.3, hist.min, 1e-6);
+    assert.closeTo(0.3, hist.max, 1e-6);
+    assert.closeTo(0.3, hist.average, 1e-6);
+
+    // Verify sum of all threads.
+    hist = histograms.getHistogramNamed('cores_per_second_all_thread');
+    assert.closeTo(0.7, hist.min, 1e-6);
+    assert.closeTo(0.7, hist.max, 1e-6);
+    assert.closeTo(0.7, hist.average, 1e-6);
+  });
+});
+</script>

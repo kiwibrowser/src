@@ -1,0 +1,80 @@
+<div id={{serviceId}} class="health-container">
+  <div class="health-container-header">
+    {{#if healthchecks.length}}
+      {{#if health}}
+        <div class="circle-quasi-healthy health-container-header-element"></div>
+        <div class="health-container-header-element"><b>{{service}}</b> is <font class="color-quasi-healthy">healthy</font>.</div>
+      {{else}}
+        <div class="circle-unhealthy health-container-header-element"></div>
+        <div class="health-container-header-element"><b>{{service}}</b> is <font class="color-unhealthy">unhealthy</font>.</div>
+      {{/if}}
+    {{else}}
+        <div class="circle-healthy health-container-header-element"></div>
+        <div class="health-container-header-element"><b>{{service}}</b> is <font class="color-healthy">healthy</font>.</div>
+    {{/if}}
+
+    <!--
+      Clear must be used or else floating causes the height of other
+      divs to warp.
+    -->
+    <div style="clear:both;"</div>
+  </div>
+
+  {{#if healthchecks.length}}
+    <div class="health-container-content">
+      {{#if errors.length}}
+        <b>Errors:</b>
+        <table class="healthcheck-table">
+          <tr>
+            <td class="bold healthcheck-table-column1">Issue Description</td>
+            <td class="bold healthcheck-table-column2">Recommended Action(s)</td>
+          </tr>
+          {{#each errors}}
+            <tr class="healthcheck-info" hcname="{{name}}">
+              <td>{{description}}</td>
+              <td>
+                <ul>
+                  {{#each actions}}
+                    <li>
+                      <button class="run-repair-action" action="{{this}}">Run</button>
+                      {{this}}
+                    </li>
+                  {{/each}}
+                </ul>
+              </td>
+            </tr>
+          {{/each}}
+        </table>
+      {{/if}}
+
+      {{#if warnings.length}}
+        {{#if errors.length}}
+          <br>
+        {{/if}}
+        <b>Warnings:</b>
+        <table class="healthcheck-table">
+          <tr>
+            <td class="bold healthcheck-table-column1">Issue Description</td>
+            <td class="bold healthcheck-table-column2">Recommended Action(s)</td>
+          </tr>
+          {{#each warnings}}
+            <tr class="healthcheck-info" hcname="{{name}}">
+              <td>{{description}}</td>
+              <td>
+                <ul>
+                  {{#each actions}}
+                    <li>
+                      <button class="run-repair-action" action="{{this}}">Run</button>
+                      {{this}}
+                    </li>
+                  {{/each}}
+                </ul>
+              </td>
+            </tr>
+          {{/each}}
+        </table>
+      {{/if}}
+    </div>
+  {{/if}}
+
+</div>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<!--
+Copyright (c) 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/base/guid.html">
+<link rel="import" href="/tracing/base/utils.html">
+<link rel="import" href="/tracing/model/event_set.html">
+<link rel="import" href="/tracing/model/selection_state.html">
+
+<script>
+'use strict';
+
+tr.exportTo('tr.ui.b', function() {
+  const EventSet = tr.model.EventSet;
+  const SelectionState = tr.model.SelectionState;
+
+  function BrushingState() {
+    this.guid_ = tr.b.GUID.allocateSimple();
+    this.selection_ = new EventSet();
+    this.findMatches_ = new EventSet();
+    this.analysisViewRelatedEvents_ = new EventSet();
+    this.analysisLinkHoveredEvents_ = new EventSet();
+    this.appliedToModel_ = undefined;
+    this.viewSpecificBrushingStates_ = {};
+  }
+  BrushingState.prototype = {
+    get guid() {
+      return this.guid_;
+    },
+
+    clone() {
+      const that = new BrushingState();
+      that.selection_ = this.selection_;
+      that.findMatches_ = this.findMatches_;
+      that.analysisViewRelatedEvents_ = this.analysisViewRelatedEvents_;
+      that.analysisLinkHoveredEvents_ = this.analysisLinkHoveredEvents_;
+      that.viewSpecificBrushingStates_ = this.viewSpecificBrushingStates_;
+
+      return that;
+    },
+
+    equals(that) {
+      if (!this.selection_.equals(that.selection_)) {
+        return false;
+      }
+      if (!this.findMatches_.equals(that.findMatches_)) {
+        return false;
+      }
+      if (!this.analysisViewRelatedEvents_.equals(
+          that.analysisViewRelatedEvents_)) {
+        return false;
+      }
+      if (!this.analysisLinkHoveredEvents_.equals(
+          that.analysisLinkHoveredEvents_)) {
+        return false;
+      }
+      // We currently do not take the view-specific brushing states into
+      // account. If we did, every change of the view-specific brushing state
+      // of any view would cause a redraw of the whole UI (see the
+      // BrushingStateController.currentBrushingState setter).
+      return true;
+    },
+
+    get selectionOfInterest() {
+      if (this.selection_.length) {
+        return this.selection_;
+      }
+
+      if (this.highlight_.length) {
+        return this.highlight_;
+      }
+
+      if (this.analysisViewRelatedEvents_.length) {
+        return this.analysisViewRelatedEvents_;
+      }
+
+      if (this.analysisLinkHoveredEvents_.length) {
+        return this.analysisLinkHoveredEvents_;
+      }
+
+      return this.selection_;
+    },
+
+    get selection() {
+      return this.selection_;
+    },
+
+    set selection(selection) {
+      if (this.appliedToModel_) {
+        throw new Error('Cannot mutate this state right now');
+      }
+      if (selection === undefined) {
+        selection = new EventSet();
+      }
+      this.selection_ = selection;
+    },
+
+    get findMatches() {
+      return this.findMatches_;
+    },
+
+    set findMatches(findMatches) {
+      if (this.appliedToModel_) {
+        throw new Error('Cannot mutate this state right now');
+      }
+      if (findMatches === undefined) {
+        findMatches = new EventSet();
+      }
+      this.findMatches_ = findMatches;
+    },
+
+    get analysisViewRelatedEvents() {
+      return this.analysisViewRelatedEvents_;
+    },
+
+    set analysisViewRelatedEvents(analysisViewRelatedEvents) {
+      if (this.appliedToModel_) {
+        throw new Error('Cannot mutate this state right now');
+      }
+      if (analysisViewRelatedEvents === undefined) {
+        analysisViewRelatedEvents = new EventSet();
+      }
+      this.analysisViewRelatedEvents_ = analysisViewRelatedEvents;
+    },
+
+    get analysisLinkHoveredEvents() {
+      return this.analysisLinkHoveredEvents_;
+    },
+
+    set analysisLinkHoveredEvents(analysisLinkHoveredEvents) {
+      if (this.appliedToModel_) {
+        throw new Error('Cannot mutate this state right now');
+      }
+      if (analysisLinkHoveredEvents === undefined) {
+        analysisLinkHoveredEvents = new EventSet();
+      }
+      this.analysisLinkHoveredEvents_ = analysisLinkHoveredEvents;
+    },
+
+    get isAppliedToModel() {
+      return this.appliedToModel_ !== undefined;
+    },
+
+    get viewSpecificBrushingStates() {
+      return this.viewSpecificBrushingStates_;
+    },
+
+    set viewSpecificBrushingStates(viewSpecificBrushingStates) {
+      this.viewSpecificBrushingStates_ = viewSpecificBrushingStates;
+    },
+
+    get dimmedEvents_() {
+      const dimmedEvents = new EventSet();
+      dimmedEvents.addEventSet(this.findMatches);
+      dimmedEvents.addEventSet(this.analysisViewRelatedEvents_);
+      return dimmedEvents;
+    },
+
+    get brightenedEvents_() {
+      const brightenedEvents = new EventSet();
+      brightenedEvents.addEventSet(this.selection_);
+      brightenedEvents.addEventSet(this.analysisLinkHoveredEvents_);
+      return brightenedEvents;
+    },
+
+    /**
+     * This function sets the SelectionStates according to these rules:
+     *
+     * - Events in ONE of findMatches or analysisViewRelatedEvents
+     * are set to SelectionState.BRIGHTENED0.
+     * - Events in BOTH of findMatches and analysisViewRelatedEvents
+     * are set to SelectionState.BRIGHTENED1.
+     * - Events in ONE of selection or analysisLinkHoveredEvents
+     * are set to SelectionState.DIMMED1.
+     * - Events in BOTH selection and analysisLinkHoveredEvents
+     * are set to SelectionState.DIMMED2.
+     * - Events not in any of the above are set to SelectionState.NONE
+     * if there are no events in selection or analysisLinkHoveredEvents
+     * (i.e. model is "default bright") or SelectionState.DIMMED0 (i.e.
+     * model is "default dimmed").
+     *
+     * It is up to the caller to assure that all of the SelectionStates
+     * are the same before calling this function. Normally,
+     * this is done by calling unapplyFromModelSelectionState on the
+     * old brushing state first.
+     */
+    applyToEventSelectionStates(model) {
+      this.appliedToModel_ = model;
+
+      const dimmedEvents = this.dimmedEvents_;
+
+      // It's possible for this to get called with an undefined model pointer.
+      // If so, skip adjusting the defaults.
+      if (model) {
+        const newDefaultState = (
+          dimmedEvents.length ? SelectionState.DIMMED0 : SelectionState.NONE);
+
+        // Since all the states are the same, we can get the current default
+        // state by looking at the first element.
+        const currentDefaultState = tr.b.getFirstElement(
+            model.getDescendantEvents()).selectionState;
+
+        // If the default state was changed, then we have to iterate through
+        // and reset all the events to the new default state.
+        if (currentDefaultState !== newDefaultState) {
+          for (const e of model.getDescendantEvents()) {
+            e.selectionState = newDefaultState;
+          }
+        }
+      }
+
+      // Now we apply the other rules above.
+      let score;
+      for (const e of dimmedEvents) {
+        score = 0;
+        if (this.findMatches_.contains(e)) {
+          score++;
+        }
+        if (this.analysisViewRelatedEvents_.contains(e)) {
+          score++;
+        }
+        e.selectionState = SelectionState.getFromDimmingLevel(score);
+      }
+
+      for (const e of this.brightenedEvents_) {
+        score = 0;
+        if (this.selection_.contains(e)) {
+          score++;
+        }
+        if (this.analysisLinkHoveredEvents_.contains(e)) {
+          score++;
+        }
+        e.selectionState = SelectionState.getFromBrighteningLevel(score);
+      }
+    },
+
+    transferModelOwnershipToClone(that) {
+      if (!this.appliedToModel_) {
+        throw new Error('Not applied');
+      }
+      // Assumes this.equals(that).
+      that.appliedToModel_ = this.appliedToModel_;
+      this.appliedToModel_ = undefined;
+    },
+
+    /**
+     * Unapplies this brushing state from the model selection state.
+     * Resets all the SelectionStates to their default value (DIMMED0 or NONE)
+     * and returns the default selection states. The caller should store this
+     * value and pass it into applyFromModelSelectionStat when that is called.
+     */
+    unapplyFromEventSelectionStates() {
+      if (!this.appliedToModel_) {
+        throw new Error('Not applied');
+      }
+      const model = this.appliedToModel_;
+      this.appliedToModel_ = undefined;
+
+      const dimmedEvents = this.dimmedEvents_;
+      const defaultState = (
+        dimmedEvents.length ? SelectionState.DIMMED0 : SelectionState.NONE);
+
+      for (const e of this.brightenedEvents_) {
+        e.selectionState = defaultState;
+      }
+      for (const e of dimmedEvents) {
+        e.selectionState = defaultState;
+      }
+      return defaultState;
+    }
+  };
+
+  return {
+    BrushingState,
+  };
+});
+</script>

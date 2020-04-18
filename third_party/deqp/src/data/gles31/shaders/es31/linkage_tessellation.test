@@ -1,0 +1,2745 @@
+
+group varying "Varying linkage"
+	group rules "Rules"
+
+		case input_type_mismatch
+			version 310 es
+			desc "Tessellation control shader input type mismatch"
+			expect link_fail
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump vec2 tc_in[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID].x;
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case output_type_mismatch
+			version 310 es
+			desc "Tessellation evaluation shader output type mismatch"
+			expect link_fail
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float tc_in[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump vec2 te_out;
+				void main()
+				{
+					out0 = te_out.x + te_out.y;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case internal_type_mismatch
+			version 310 es
+			desc "Tessellation control and evaluation shader varying type mismatch"
+			expect link_fail
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float tc_in[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump vec2 tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2].x + tc_out[0].y;
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case input_different_precision
+			version 310 es
+			desc "Tessellation control shader input precisions different"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out highp float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in lowp float tc_in[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case output_different_precision
+			version 310 es
+			desc "Tessellation evaluation shader output precisions different"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float tc_in[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out highp float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in lowp float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case internal_different_precision
+			version 310 es
+			desc "Tessellation control and evaluation shader varying precisions different"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float tc_in[];
+				out highp float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in lowp float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case input_no_declaration
+			version 310 es
+			desc "Tessellation control shader input with no matching output"
+			expect link_fail
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float tc_in[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case output_no_declaration
+			version 310 es
+			desc "Tessellation evaluation shader without output for an fragment shader input"
+			expect link_fail
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				void main()
+				{
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				void main()
+				{
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case internal_no_declaration
+			version 310 es
+			desc "Tessellation evaluation shader input without matching output"
+			expect link_fail
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				void main()
+				{
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case input_superfluous_declaration
+			version 310 es
+			desc "Tessellation control has no input for an output"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float tc_in;
+				out mediump float tc_in_unused;
+				void main()
+				{
+					tc_in = in0;
+					tc_in_unused = in0 + 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float tc_in[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case output_superfluous_declaration
+			version 310 es
+			desc "Tessellation has an output without a matching input"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float tc_in[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				out mediump float te_out_unused;
+				void main()
+				{
+					te_out = tc_out[2];
+					te_out_unused = tc_out[0];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case internal_superfluous_declaration
+			version 310 es
+			desc "Tessellation control has an output without a matching input"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float tc_in[];
+				out mediump float tc_out[];
+				out mediump float tc_out_unused[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+					tc_out_unused[gl_InvocationID] = tc_in[gl_InvocationID] + 1.0;
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case vertex_fragment_same_varying_name_1
+			version 310 es
+			desc "Tessellation control has an output without a matching input"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 2.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float sharedVaringName;
+				void main()
+				{
+					sharedVaringName = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float sharedVaringName[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = sharedVaringName[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float sharedVaringName;
+				void main()
+				{
+					sharedVaringName = 2.0 * tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float sharedVaringName;
+				void main()
+				{
+					out0 = sharedVaringName;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case vertex_fragment_same_varying_name_2
+			version 310 es
+			desc "Tessellation control has an output without a matching input"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input vec2 in0 = vec2(1.0, 3.0);
+				output float out0 = 4.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump vec2 sharedVaringName;
+				void main()
+				{
+					sharedVaringName = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump vec2 sharedVaringName[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = sharedVaringName[gl_InvocationID].x + sharedVaringName[gl_InvocationID].y;
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float sharedVaringName;
+				void main()
+				{
+					sharedVaringName = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float sharedVaringName;
+				void main()
+				{
+					out0 = sharedVaringName;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case invalid_vertex_index
+			version 310 es
+			desc "Tessellation control output not indexed with gl_InvocationID"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			expect compile_or_link_fail
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[2 - gl_InvocationID] = float(gl_InvocationID);
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(te_out);
+				}
+			""
+		end
+
+		case input_non_array
+			version 310 es
+			desc "Tessellation control input in not an array"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			expect compile_or_link_fail
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float tc_in;
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in;
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case output_non_array
+			version 310 es
+			desc "Tessellation control output out not an array"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			expect compile_or_link_fail
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float tc_in[];
+				out mediump float tc_out; // not an array
+				void main()
+				{
+					tc_out = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case input_array_size_mismatch
+			version 310 es
+			desc "Tessellation control input array size is not gl_MaxPatchVertices"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			expect compile_or_link_fail
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float tc_in[2]; // not gl_MaxPatchVertices
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case internal_array_size_mismatch
+			version 310 es
+			desc "Tessellation control output array size is not consistent with layout qualifier"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			expect compile_or_link_fail
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float tc_in[];
+				out mediump float tc_out[2]; // does not match output layout qualifier
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[2];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[1];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case invalid_patch_in_usage
+			version 310 es
+			desc "Invalid use of the patch_in qualifier in a non-tessellation shader"
+			expect compile_or_link_fail
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float frag_in;
+				out mediump float var;
+				void main()
+				{
+					frag_in = in0;
+					var = 2.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				patch in mediump float var; // invalid use of patch_in
+				in mediump float frag_in;
+				void main()
+				{
+					out0 = frag_in * var;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case invalid_patch_out_usage
+			version 310 es
+			desc "Invalid use of the patch_out qualifier in a non-tessellation shader"
+			expect compile_or_link_fail
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float frag_in;
+				patch out mediump float var;
+				void main()
+				{
+					frag_in = in0;
+					var = 2.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float var; // invalid use of patch_out
+				in mediump float frag_in;
+				void main()
+				{
+					out0 = frag_in * var;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case invalid_per_patch_qualifier_usage
+			version 310 es
+			desc "Invalid use of per-patch qualifier on input variable in tessellation control shader"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			expect compile_or_link_fail
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				patch in mediump float tc_in; // patch in not allowed in TCS
+				patch out mediump float tc_out;
+				void main()
+				{
+					tc_out = tc_in;
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				patch in mediump float tc_out;
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out;
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case per_patch_qualifier_mismatch_1
+			version 310 es
+			desc "Tessellation control output is per-patch qualified, evaluation input is not"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			expect compile_or_link_fail
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float tc_in[];
+				patch out mediump float tc_out[gl_MaxPatchVertices];
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[gl_MaxPatchVertices];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case per_patch_qualifier_mismatch_2
+			version 310 es
+			desc "Tessellation control output is not per-patch qualified, evaluation input is"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			expect compile_or_link_fail
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float tc_in[];
+				out mediump float tc_out[gl_MaxPatchVertices];
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				patch in mediump float tc_out[gl_MaxPatchVertices];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case input_block
+			version 310 es
+			desc "Tessellation control shader input block"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			require extension { "GL_OES_shader_io_blocks" | "GL_EXT_shader_io_blocks" } in { vertex }
+			values { output float out0 = 1.0; }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out IOBlockName
+				{
+					mediump float var;
+				} outputInstanceName;
+				void main()
+				{
+					outputInstanceName.var = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in IOBlockName
+				{
+					mediump float var;
+				} inputInstanceName[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = inputInstanceName[gl_InvocationID].var;
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case input_block_non_array
+			version 310 es
+			desc "Tessellation control shader input block without explicit array"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			require extension { "GL_OES_shader_io_blocks" | "GL_EXT_shader_io_blocks" } in { vertex }
+			expect compile_or_link_fail
+			values { output float out0 = 1.0; }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out IOBlockName
+				{
+					mediump float var;
+				} outputInstanceName;
+				void main()
+				{
+					outputInstanceName.var = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in IOBlockName
+				{
+					mediump float var;
+				} inputInstanceName;
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = inputInstanceName.var;
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case output_block_non_array
+			version 310 es
+			desc "Tessellation control shader output block without explicit array"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			require extension { "GL_OES_shader_io_blocks" | "GL_EXT_shader_io_blocks" } in { vertex }
+			expect compile_or_link_fail
+			values { output float out0 = 1.0; }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float tc_in;
+				void main()
+				{
+					tc_in = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float tc_in[];
+				out IOBlockName
+				{
+					mediump float var;
+				} outputInstanceName; // not an array
+				void main()
+				{
+					outputInstanceName.var = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in IOBlockName
+				{
+					mediump float var;
+				} outputInstanceName[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = outputInstanceName[2].var;
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case input_block_array_size_mismatch
+			version 310 es
+			desc "Tessellation control shader input block array, size not gl_MaxPatchVertices"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			require extension { "GL_OES_shader_io_blocks" | "GL_EXT_shader_io_blocks" } in { vertex }
+			expect compile_or_link_fail
+			values { output float out0 = 1.0; }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out IOBlockName
+				{
+					mediump float var;
+				} outputInstanceName;
+				void main()
+				{
+					outputInstanceName.var = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in IOBlockName
+				{
+					mediump float var;
+				} inputInstanceName[4]; // not gl_MaxPatchVertices
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = inputInstanceName[gl_InvocationID + 1].var;
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case output_block
+			version 310 es
+			desc "Tessellation shader output block"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			require extension { "GL_OES_shader_io_blocks" | "GL_EXT_shader_io_blocks" } in { fragment }
+			values { output float out0 = 1.0; }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				void main()
+				{
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				out IOBlockName
+				{
+					mediump float var;
+				} outputInstanceName;
+				void main()
+				{
+					outputInstanceName.var = 1.0;
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in IOBlockName
+				{
+					mediump float var;
+				} inputInstanceName;
+				void main()
+				{
+					out0 = inputInstanceName.var;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case output_block_array
+			version 310 es
+			desc "Tessellation shader output block array"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			require extension { "GL_OES_shader_io_blocks" | "GL_EXT_shader_io_blocks" } in { fragment }
+			values { output float out0 = 1.0; }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				void main()
+				{
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				out IOBlockName
+				{
+					mediump float var;
+				} outputInstanceName[2];
+				void main()
+				{
+					outputInstanceName[0].var = 2.0;
+					outputInstanceName[1].var = 1.0;
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in IOBlockName
+				{
+					mediump float var;
+				} inputInstanceName[2];
+				void main()
+				{
+					out0 = inputInstanceName[0].var - inputInstanceName[1].var;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case unspecified_vertex_count
+			version 310 es
+			desc "Tessellation shader unspecified vertex count"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			expect compile_or_link_fail
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				void main()
+				{
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				void main()
+				{
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				void main()
+				{
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case unspecified_primitive_mode
+			version 310 es
+			desc "Tessellation shader unspecified vertex count"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			expect compile_or_link_fail
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				void main()
+				{
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				void main()
+				{
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				void main()
+				{
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+	end
+
+	group qualifiers "Varying qualifiers"
+		case smooth
+			version 310 es
+			desc "Smooth varying"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				smooth out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				smooth in mediump float tc_in[];
+				smooth out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				smooth in mediump float tc_out[];
+				smooth out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				smooth in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case flat
+			version 310 es
+			desc "Flat varying"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				flat out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				flat in mediump float tc_in[];
+				flat out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				flat in mediump float tc_out[];
+				flat out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				flat in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case centroid
+			version 310 es
+			desc "Centroid varying"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				centroid out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				centroid in mediump float tc_in[];
+				centroid out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				centroid in mediump float tc_out[];
+				centroid out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				centroid in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case sample
+			version 310 es
+			desc "Sample varying"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			require extension { "GL_OES_shader_multisample_interpolation" }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				sample out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				sample in mediump float tc_in[];
+				sample out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				sample in mediump float tc_out[];
+				sample out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				sample in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case patch
+			version 310 es
+			desc "Pre-patch varying"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float tc_in[];
+				patch out mediump float tc_out;
+				void main()
+				{
+					tc_out = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				patch in mediump float tc_out;
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out;
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+	end
+
+	import "linkage_tessellation_varying_types.test"
+end
+
+group uniform "Uniform"
+	group rules "Rules"
+		case type_mismatch_1
+			version 310 es
+			desc "uniform type mismatch between vertex and tessellation control shaders"
+			expect link_fail
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				uniform mediump float val;
+				out mediump float vtx_out;
+				void main()
+				{
+					vtx_out = val;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				uniform mediump vec2 val;
+				in mediump float vtx_out[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = vtx_out[0] + val.x + val.y;
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(te_out);
+				}
+			""
+		end
+
+		case type_mismatch_2
+			version 310 es
+			desc "uniform type mismatch between fragment and tessellation eval shaders"
+			expect link_fail
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float vtx_out;
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				void main()
+				{
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				uniform mediump vec3 val;
+				out mediump float te_out;
+				void main()
+				{
+					te_out = val.x + val.y + val.z;
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				uniform mediump vec4 val;
+				in mediump float te_out;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(te_out) + val;
+				}
+			""
+		end
+
+		case type_mismatch_3
+			version 310 es
+			desc "uniform type mismatch between tessellation control and eval shaders"
+			expect link_fail
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float vtx_out;
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				uniform mediump vec4 val;
+				out mediump vec4 tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = val;
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				uniform mediump vec3 val;
+				in mediump vec4 tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[0].w * val.z;
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(te_out);
+				}
+			""
+		end
+
+		case type_mismatch_4
+			version 310 es
+			desc "uniform type mismatch between vertex and tessellation control shaders"
+			expect link_fail
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			require limit "GL_MAX_VERTEX_ATOMIC_COUNTERS" > 0
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				layout(binding=0) uniform atomic_uint u_var;
+				out mediump float vtx_out;
+				void main()
+				{
+					uint result = atomicCounterIncrement(u_var);
+					vtx_out = float(result);
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				uniform mediump float u_var;
+				in mediump float vtx_out[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = vtx_out[0] + u_var;
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(te_out);
+				}
+			""
+		end
+
+		case type_mismatch_5
+			version 310 es
+			desc "uniform type mismatch between vertex and tessellation control shaders"
+			expect link_fail
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			require limit "GL_MAX_VERTEX_IMAGE_UNIFORMS" > 0
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				layout(binding=0) layout(rgba8i) uniform readonly highp iimage2D u_var;
+				out mediump float vtx_out;
+				void main()
+				{
+					int result = imageSize(u_var).x;
+					vtx_out = float(result);
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				uniform mediump float u_var;
+				in mediump float vtx_out[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = vtx_out[0] + u_var;
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(te_out);
+				}
+			""
+		end
+
+		case precision_mismatch_1
+			version 310 es
+			desc "uniform precision mismatch between tessellation control and eval shaders"
+			expect link_fail
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float vtx_out;
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				uniform mediump vec4 val;
+				out mediump vec4 tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = val;
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				uniform highp vec4 val;
+				in mediump vec4 tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[0].w * val.z;
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(te_out);
+				}
+			""
+		end
+
+		case precision_mismatch_2
+			version 310 es
+			desc "uniform precision mismatch between vertex and tessellation control shaders"
+			expect link_fail
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				uniform highp float val;
+				out mediump float vtx_out;
+				void main()
+				{
+					vtx_out = val;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				uniform mediump float val;
+				in mediump float vtx_out[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = vtx_out[0] + val;
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(te_out);
+				}
+			""
+		end
+
+		case struct_partial_usage
+			version 310 es
+			desc "uniform is partially used in different shader stages"
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				uniform float val.vtxVal	= 1.5;
+				uniform float val.tcVal		= 2.5;
+				uniform float val.teVal		= 6.0;
+				uniform float val.fragVal	= 11.0;
+				output float out0			= 68.5;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				struct S
+				{
+					mediump float vtxVal;
+					mediump float tcVal;
+					mediump float teVal;
+					mediump float fragVal;
+				};
+				uniform S val;
+				out mediump float vtx_out;
+				void main()
+				{
+					vtx_out = val.vtxVal;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				struct S
+				{
+					mediump float vtxVal;
+					mediump float tcVal;
+					mediump float teVal;
+					mediump float fragVal;
+				};
+				uniform S val;
+				in mediump float vtx_out[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = vtx_out[0] + 2.0 * val.tcVal;
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				struct S
+				{
+					mediump float vtxVal;
+					mediump float tcVal;
+					mediump float teVal;
+					mediump float fragVal;
+				};
+				uniform S val;
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2] + 3.0 * val.teVal;
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				struct S
+				{
+					mediump float vtxVal;
+					mediump float tcVal;
+					mediump float teVal;
+					mediump float fragVal;
+				};
+				uniform S val;
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out + 4.0 * val.fragVal;
+					${FRAGMENT_OUTPUT};
+				}
+			""
+		end
+	end
+
+	import "linkage_tessellation_uniform_types.test"
+end
+
+group layout_declarations "Layout linkage"
+	group rules "Rules"
+
+		case primitive_mode_mismatch
+			version 310 es
+			desc "Tessellation evaluation shader primitive mode mismatch"
+			expect compile_or_link_fail
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float tc_in[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				layout (triangles) in;
+				layout (isolines) in;
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case spacing_mode_mismatch
+			version 310 es
+			desc "Tessellation evaluation shader spacing mode mismatch"
+			expect compile_or_link_fail
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float tc_in[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				layout (triangles, equal_spacing) in;
+				layout (triangles, fractional_odd_spacing) in;
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case vertex_order_mismatch
+			version 310 es
+			desc "Tessellation evaluation shader vertex order mismatch"
+			expect compile_or_link_fail
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float tc_in[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				layout (triangles, cw) in;
+				layout (triangles, ccw) in;
+				    in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case vertex_count_mismatch
+			version 310 es
+			desc "Tessellation control shader vertex count mismatch"
+			expect compile_or_link_fail
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				layout (vertices=3) out;
+				layout (vertices=4) out;
+				in mediump float tc_in[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+	end
+end
+
+group barriers "Barriers"
+	group rules "Rules"
+
+		case invalid_barrier_usage_within_control_flow
+			version 310 es
+			desc "Tessellation control shader invalid barrier usage within control flow statement"
+			expect compile_or_link_fail
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float tc_in[];
+				out mediump float tc_out[];
+
+				void main()
+				{
+					if (gl_InvocationID == 0)
+						barrier(); // error: within control flow
+
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case invalid_barrier_usage_after_return
+			version 310 es
+			desc "Tessellation control shader invalid barrier usage after main() returns"
+			expect compile_or_link_fail
+			require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float tc_in;
+				void main()
+				{
+					tc_in = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 310 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float tc_in[];
+				out mediump float tc_out[];
+
+				void main()
+				{
+					tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+
+					return;
+					barrier(); // error: barrier() after return
+				}
+			""
+			tessellation_evaluation ""
+				#version 310 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float te_out;
+				void main()
+				{
+					out0 = te_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+	end
+end

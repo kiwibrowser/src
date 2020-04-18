@@ -1,0 +1,124 @@
+README: xdg-utils tests
+
+Created 6/27/2006 by Tom Whipple <tom.whipple@intel.com>
+
+
+RUNNING XDG-UTILS TESTS
+-----------------------
+At a minimum, you must have your current directory be the same as the
+directory containing this README. Then, simply execute:
+
+$ ./testrun
+WARNING: guessed XDG_TEST_DIR to be /home/tw/portland/xdg-utils/tests
+TEST_LIST:  generic_bogus_arg-1-1 ... generic_version-1-50
+...
+FAIL: test_user_mime_install
+NORESULT: test_system_mime_install
+71 of 92 tests passed. (114 attempted)
+See xdg-test.log for details.
+NOT OK!
+
+FAIL     indicates (not suprisingly) a test failure. 
+NORESULT indicates that the test prerequisites failed for some reason. 
+         (e.g. the install phase of an uninstall test failed)
+UNTESTED means that something needed was not found. This is fine and should
+         be ignored. These tests are not counted in the total, only attempted. 
+         (e.g. test requires root, but we are not running as root)
+
+NOTE: The test runner makes guesses about appropriate values of XDG_TEST_DIR
+      and PATH. These values can be overriden explicitly.
+
+To run tests individually, or as smaller groups do something like
+
+$ ./testrun xdg-mime
+
+OR
+
+$ ./testrun xdg-mime/t.10-user_mime_install
+
+OR (if you have defined XDG_TEST_DIR and PATH correctly)
+
+$ xdg-mime/t.10-user_mime_install
+
+
+BACKUPS
+-------
+THESE TESTS CHANGE YOUR USER ENVIRONMENT. Effort is made to keep pollution
+to a minimum, but we make no guarantees!! Back up your environment/system
+early and often. This is especially critical if you run tests as root. You
+have been warned. 
+
+
+INTERACTIVE TESTS
+-----------------
+Because it is difficult to verify the way things appear to the user, some
+tests are interactive and require the user to verify or perform actions.
+This is sometimes annoying, so interactive tests can be disabled with the
+-I flag. Note that if you run tests non-interactively, some tests
+(xdg-email) may generate strange errors on the screen, since the test
+cleans up support files before the email client tries to read them. Use
+the -C option to work around this.
+
+
+PRIVILEGED TESTS
+---------------
+BACK UP YOUR SYSTEM. See above.
+
+Some tests require root (e.g. those commands with a --system option). So,
+tests in this group return UNTESTED if they are not run as root. 
+
+The test runner will ask for the root password in order to run these tests
+as the root user.
+
+
+CLEANUP
+-------
+Tests should clean up after themselves. However, this sometimes fails,
+so use 'sudo make tests-clean' or 'make tests-userclean'.
+(Note that you must have generated a makefile via 'cd .. && ./configure'
+at some point.) 
+
+ 
+DIRECTORY STRUCTURE
+-------------------
+xdg-*		tests for each util
+include		"library" code used by most tests
+generic		generic tests to be run on most utilities.
+		See xdg-mime/t.apply_generic
+
+
+WRITING XDG-UTILS TESTS
+-----------------------
+See xdg-mime/t.10-user_mime_install as an example.
+
+Each test is as follows
+
+test_function() {		-- Tests are functions for TET integration.
+
+test_start "test description"	-- required to begin a test
+test_purpose "verbose text"	-- optionally provide a verbose description.
+				   not used.
+test_init			-- optionally begin a prerequisite section.
+				   assertions that fail here cause NORESULT
+				   rather than FAIL
+<pre-assertions>
+test_procedure			-- required to begin the actuall test
+				   assertions
+<test-assertions>
+
+test_result			-- required to generate result codes.
+				   Must be last.
+}
+
+run_test test_function
+  - OR -
+repeat_test test_function NVARS V1 ... VN V1val1 ... V1valM ... VNval1 ... VNvalM
+				-- one of the above is required. 
+				   see include/testcontrol.sh for detail
+				
+
+For questions or feedback, please use the Portland mailinglist at
+http://lists.freedesktop.org/mailman/listinfo/portland
+
+Test results can be submitted on
+http://portland.freedesktop.org/testreport.html

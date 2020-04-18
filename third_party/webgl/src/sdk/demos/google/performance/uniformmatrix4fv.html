@@ -1,0 +1,92 @@
+<!--
+Copyright (c) 2012 The Chromium Authors. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+   * Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+   * Redistributions in binary form must reproduce the above
+copyright notice, this list of conditions and the following disclaimer
+in the documentation and/or other materials provided with the
+distribution.
+   * Neither the name of Google Inc. nor the names of its
+contributors may be used to endorse or promote products derived from
+this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<html>
+<head>
+<title>Test how many uniform matrices we can update in a frame</title>
+<script type="application/javascript" src="../../common/webgl-utils.js"></script>
+<script type="application/javascript" src="../../../devtools/src/debug/webgl-debug.js"></script>
+<script type="application/javascript" src="../resources/webgl-boilerplate.js"></script>
+<script type="application/javascript" src="../resources/perf-harness.js"></script>
+<script>
+window.onload = main;
+
+var gl;
+var g_canvas;
+
+function main() {
+    var countElem = document.getElementById("count");
+    g_canvas = document.getElementById("canvas");
+    gl = WebGLUtils.setupWebGL(g_canvas);
+    if (!gl)
+        return;
+
+    var program = createProgramFromScripts(gl, ["vs", "fs"]);
+    var matLoc = gl.getUniformLocation(program, "u_uniform");
+    var matrix = new Float32Array([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]);
+
+    var then = Date.now() * 0.001;
+    var target = 1/57;
+
+    function test(count, averageCount, elapsedTime) {
+        gl.clearColor(Math.random(), 0, 0, 1);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        for (var ii = 0; ii < count; ++ii) {
+            gl.uniformMatrix4fv(matLoc, false, matrix);
+        }
+
+        countElem.innerHTML = averageCount + ": " + (1 / elapsedTime).toFixed(2);
+    }
+
+    PerfHarness.start(g_canvas, test);
+}
+
+</script>
+</head>
+<body>
+<pre>number of uniform matrices updated per frame</pre>
+<pre id="count"></pre>
+<canvas id="canvas"></canvas>
+<script id="vs" type="x-shader/x-vertex">
+attribute vec4 a_position;
+uniform mat4 u_matrix;
+void main() {
+    gl_Position = u_matrix * a_position;
+}
+</script>
+<script id="fs" type="x-shader/x-fragment">
+precision mediump float;
+void main() {
+    gl_FragColor = vec4(0, 1, 0, 1);
+}
+</script>
+</script>
+</body>
+</html>

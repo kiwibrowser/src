@@ -1,0 +1,69 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Texture gather tests
+
+Tests:
+ + dEQP-GLES31.functional.texture.gather.*
+
+Includes:
+ + textureGather, textureGatherOffset and textureGatherOffsets tests
+   - Also dynamic-offset variant of textureGatherOffset
+ + All supported texture types
+   - 2D
+   - 2D array
+   - Cube map for offset-less variant only (not defined for others)
+ + rgba8 unorm, uint and int color formats
+ + depth32f format for shadow variants
+   - LESS and GREATER comparison functions
+ + For color textures, test each value (0 to 3) for the color component
+   argument, as well as no argument (implicit 0)
+ + Power-of-two and non-power-of-two texture sizes
+   - Test each wrap mode (clamp to edge, repeat, mirrored repeat) for both S and
+     T coordinates
+ + Texture swizzle (for color formats)
+   - Test each swizzle source for each color component
+ + Test that filter modes have no effect (assuming texture is still complete)
+ + Base level
+ + For color textures, test gathering from incomplete texture
+ + For offset(s) variants, test various offsets from both the spec-required
+   minimum range as well as implementation's range
+
+Excludes:
+ + Rest of texture formats
+ + Rest of depth comparison functions
+ + Negative tests
+
+Description:
+
+The texture gather test group contains tests for the textureGather* group of
+functions.
+
+Each test case creates and sets up a 2d, 2d array or cube texture with unorm,
+int, uint or depth format. A shader program is created that uses the appropriate
+textureGather* on that texture in the fragment shader, and outputs the resulting
+color as a fragment output. A framebuffer object with a renderbuffer object as
+its color attachment is used; the renderbuffer's format matches that of the
+texture (except for depth formats, for which rgba8 is used). The resulting image
+is read with glReadPixels(), and verified with routines that take coordinate
+imprecisions into account. Multiple shaders and rendering iterations are used,
+so that different color component and/or offset arguments to the textureGather*
+function can be tested.
+
+The textureGatherOffsets functions, as well as textureGatherOffset with dynamic
+offset, are tested if the GL_EXT_gpu_shader5 extension is supported.

@@ -1,0 +1,93 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    GL 3 conditional render
+
+Tests:
+ + dEQP-GL3.functional.conditional_render.*
+
+Includes:
+ + All valid rendering commands included/excluded by query
+   - DrawArrays
+   - DrawArraysInstanced
+   - MultiDrawArrays
+
+   - DrawElements
+   - DrawElementsInstanced
+   - DrawElementsInstancedBaseVertex
+   - DrawElementsBaseVertex
+   - DrawRangeElements
+   - DrawRangeElementsBaseVertex
+   - MultiDrawElements
+   - MultiDrawElementsBaseVertex
+   - Clear
+   - ClearBuffer*
+ + All depth comparison modes
+ + Framebuffer swap between query & render
+   - Excluding BY_REGION query modes
+ + All modes
+   - QUERY_(BY_REGION_)(NO_)WAIT
+ + Dependent queries
+
+Excludes:
+ + Immediate mode rendering
+ + Primitives other than triangles
+ + Negative tests
+ + Tests for NO_WAIT and BY_REGION modes are very limited
+
+Description:
+
+Conditional rendering is tested with various depth function/primitive
+overlap conditions. Each query test renders a scene with one conditional
+render call and verifies the result against the same scene with the
+previously GL controlled conditional render call controlled by the test.
+
+Draw calls (excluding clears) are tested with the same method, with the
+conditional call indicated by the test name. The occlusion query used in
+these tests is trivially true/false.
+
+Clears are tested by rendering some geometry for an occlusion query and then
+conditionally clearing the framebuffer. The verification used depends on the
+expected result of the occlusion query. If the query is expected to pass, the
+framebuffer is verified to contain only the color it was cleared to.
+Otherwise the contents of the framebuffer are verified to match its contents
+before the conditional clear.
+
+Depth/stencil clear tests unconditionally clear the color buffer after
+rendering the occlusion geometry. After the conditional depth/stencil clear
+a full framebuffer triangle is rendered with depth/stencil tests setup
+to pass if the clear took place. The resulting framebuffer is read out and
+compared to the color of the intermediate clear or the filling triangle as
+appropriate for the expected occlusion query result.
+
+All clear tests use non-default framebuffers, all others use the default.
+
+Framebuffer swap cases use a trivial occlusion query but change the bound
+(read & write) FBO between the occludion query and the conditional rendering.
+The occlusion query is performed with the default framebuffer.
+
+Wait mode test render geometry that is not dependent on the result of the
+occlusion queries. These tests thus only test for false positive occlusion
+query results.
+
+Dependent queries render a number of primitives where each conditionally
+rendered primitive (excluding the first) is also used for an occlusion query
+that controls the rendering of the next primitive, which in turn is used for
+the next occlusion query and so on. In some of these test one primitive in
+this chain is placed in an occluded location, starting a cascade of failing
+occlusion queries.

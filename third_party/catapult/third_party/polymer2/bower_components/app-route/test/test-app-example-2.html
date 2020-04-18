@@ -1,0 +1,76 @@
+<!doctype html>
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<html>
+<head>
+  <title>app-route</title>
+
+  <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+  <script src="../../web-component-tester/browser.js"></script>
+  <script src="../../url/url.js"></script>
+
+  <link rel="import" href="../../polymer/polymer.html">
+  <link rel="import" href="./app-example-2.html">
+</head>
+<body>
+  <test-fixture id="ExampleApp2">
+    <template>
+      <app-example-2></app-example-2>
+    </template>
+  </test-fixture>
+<script>
+  'use strict';
+
+  function setLocation(url) {
+    window.history.pushState({}, '', url);
+    Polymer.Base.fire('location-changed', {}, {node: window});
+  }
+
+  suite('<test-app-example-2>', function() {
+    var originalLocation;
+    var exampleApp;
+
+    setup(function() {
+      originalLocation = window.location.href;
+      exampleApp = fixture('ExampleApp2');
+    });
+
+    teardown(function() {
+      window.history.replaceState({}, '', originalLocation);
+    });
+
+    test('runs through basic usage', function() {
+      // Navigate to /subroutepage
+      setLocation('/');
+
+      expect(exampleApp.data).to.be.deep.eq({page: 'subroutepage'});
+
+      expect(exampleApp.route)
+          .to.be.deep.eq(
+              {prefix: '', path: '/subroutepage/subview', __queryParams: {}});
+
+      expect(exampleApp.subroute)
+          .to.be.deep.eq(
+              {prefix: '/subroutepage', path: '/subview', __queryParams: {}});
+    });
+
+    test('changing the data to tail changing', function() {
+      // Navigate to /foo/bar
+      setLocation('/foo/bar');
+
+      expect(exampleApp.route)
+          .to.be.deep.eq({prefix: '', path: '/foo/bar', __queryParams: {}});
+
+      expect(exampleApp.subroute)
+          .to.be.deep.eq({prefix: '/foo', path: '/bar', __queryParams: {}});
+    });
+  });
+</script>
+</body>

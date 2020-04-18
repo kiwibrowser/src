@@ -1,0 +1,112 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Sample variable tests
+
+Tests:
+ + dEQP-GLES31.functional.shaders.sample_variables.*
+
+Includes:
+ + Rendering to default framebuffer, multi- and single sample
+   textures and renderbuffers
+ + Built-in variables:
+    - gl_NumSamples
+    - gl_MaxSamples
+    - gl_SampleID
+    - gl_SamplePos
+    - gl_SampleMaskIn
+ + Writing to gl_SampleMask
+ + Interaction with OES_sample_shading
+
+Excludes:
+ + Rendering to every supported render buffer sample count / format
+ + Rendering to every supported multisample texture sample count / format
+
+Description:
+
+num_samples.* cases test gl_NumSamples built-in value with different render
+target configurations. max_samples.* cases test gl_MaxSamples built-in variable.
+Values are verified with verifier fragment shader.
+
+sample_id.* cases verify gl_SampleID values. A quad is drawn with a shader
+program. With texture targets, each sample encodes its gl_SampleID to the
+fragment output value and then texture contents are verified. With default
+framebuffer and renderbuffer targets, render area is partitioned to a grid so
+that in each grid cell only the fragment shader invocations with a certain
+gl_SampleID output a non-zero green value. Result image is then verified to
+contain only non-zero green values. The test with framebuffer and renderbuffer
+thus only guarantees that for each pixel there exist a fragment shader
+invocation for every valid gl_SampleID value, but not that a matching fragment
+shader invocation is unique.
+
+sample_pos.correctness.* cases verify gl_SamplePosition built-in variable
+contains the position in which varyings were interpolated. Cases render a quad
+with a verifier fragment shader. Fragment shader compares gl_SamplePosition
+values against a per-sample interpolated screen-space location (in pixels)
+varying. gl_SamplePosition should be equal to the fractional part of the
+interpolated varying value.
+
+sample_pos.distribution.* cases verify the distribution of gl_SamplePositions
+within a pixel. The tests render a quad with a fragment shader that encodes the
+gl_SamplePosition value and value legality (range check) to the color channels.
+With texture render targets, the texture contents are read and positions are
+verified for legality, uniqueness and distribution. With framebuffer and
+renderbuffer render targets only the legality and distribution are verified.
+Distribution is verified by averaging sample position values (texture) or by
+resolving with an implementation defined method (framebuffer, renderbuffer).
+Averaged/resolved value should be reasonably close to the pixel center. Too
+large a bias away from the expected value will result in a quality warning.
+
+sample_mask_in.* cases test reading gl_SampleMaskIn built-in variable and
+sample_mask_in.* cases write values to gl_SampleMask built-in variable. Sample
+mask operations are multisample operations and should not have effect with
+single sample render targets. *_per_pixel variations test value when fragment
+shader is executed once per pixel, and *_per_sample when shader is executed per
+sample. *_per_two_samples variations use OES_sample_shading, with sample
+shading value set to 50%, i.e. there should be AT LEAST one invocation per two
+samples.
+
+sample_mask_in.sample_mask cases test gl_SampleMaskIn that with multisampled
+render targets gl_SampleMaskIn does not contain any bits not set in
+GL_SAMPLE_MASK. With single sample render targets gl_SampleMaskIn should not
+depend on GL_SAMPLE_MASK value.
+
+sample_mask_in.bit_count cases test gl_SampleMaskIn contains only a certain
+number of set bits. In the per pixel variation, gl_SampleMaskIn should contain
+[1, numSamples] set bits. In per sample cases, the gl_SampleMaskIn should only
+contain one set bit. In per two samples cases, there should be [1, numSamples/2]
+bits (all but one invocation gets one sample, one invocation gets the other
+samples).
+
+sample_mask_in.bits_unique_per_sample cases tests that the single set bit in
+gl_SampleMaskIn is unique. sample_mask_in.bits_unique_per_two_samples cases test
+that each bit is set only in a single gl_SampleMaskIn bitset and that number of
+distinct gl_SampleMaskIn bitsets matches the number guaranteed by
+OES_sample_shading. Tests render to a multisample texture, encode
+gl_SampleMaskIn to the color channel, and then read back the texture contents.
+
+sample_mask.discard_half tests discard half of the samples by writing 0xAAAA...
+to gl_SampleMask output variable. With single sample targets, writing to
+gl_SampleMask should have no effect. With multisample targets the result image
+color intensity should decrease. With multisample targets with sample count = 1,
+all fragments should be discarded.
+
+sample_mask.inverse cases set gl_SampleMask to the inverse of current
+SAMPLE_MASK. With multisample render targets, all fragments should be discarded.
+With single sample render targets, writing to gl_SampleMask should have no
+effect.

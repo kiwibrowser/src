@@ -1,0 +1,239 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>Compilation and Installation using Autoconf</title>
+  <link rel="stylesheet" type="text/css" href="mesa.css">
+</head>
+<body>
+
+<h1>Compilation and Installation using Autoconf</h1>
+
+<ol>
+<li><p><a href="#basic">Basic Usage</a></li>
+<li><p><a href="#driver">Driver Options</a>
+  <ul>
+  <li><a href="#xlib">Xlib Driver Options</a></li>
+  <li><a href="#dri">DRI Driver Options</a></li>
+  <li><a href="#osmesa">OSMesa Driver Options</a></li>
+  </ul>
+<li><p><a href="#demos">Demo Program Options</a>
+</ol>
+
+
+<h2 id="basic">1. Basic Usage</h2>
+
+<p>
+The autoconf generated configure script can be used to guess your
+platform and change various options for building Mesa. To use the
+configure script, type:
+</p>
+
+<pre>
+    ./configure
+</pre>
+
+<p>
+To see a short description of all the options, type <code>./configure
+--help</code>. If you are using a development snapshot and the configure
+script does not exist, type <code>./autogen.sh</code> to generate it
+first. If you know the options you want to pass to
+<code>configure</code>, you can pass them to <code>autogen.sh</code>. It
+will run <code>configure</code> with these options after it is
+generated. Once you have run <code>configure</code> and set the options
+to your preference, type:
+</p>
+
+<pre>
+    make
+</pre>
+
+<p>
+This will produce libGL.so and several other libraries depending on the
+options you have chosen. Later, if you want to rebuild for a different
+configuration run <code>make realclean</code> before rebuilding.
+</p>
+
+<p>
+Some of the generic autoconf options are used with Mesa:
+
+<ul>
+<li><code>--prefix=PREFIX</code> - This is the root directory where
+files will be installed by <code>make install</code>. The default is
+<code>/usr/local</code>.
+</li>
+<li><code>--exec-prefix=EPREFIX</code> - This is the root directory
+where architecture-dependent files will be installed. In Mesa, this is
+only used to derive the directory for the libraries. The default is
+<code>${prefix}</code>.
+</li>
+<li><code>--libdir=LIBDIR</code> - This option specifies the directory
+where the GL libraries will be installed. The default is
+<code>${exec_prefix}/lib</code>. It also serves as the name of the
+library staging area in the source tree. For instance, if the option
+<code>--libdir=/usr/local/lib64</code> is used, the libraries will be
+created in a <code>lib64</code> directory at the top of the Mesa source
+tree.
+</li>
+<li><code>--enable-static, --disable-shared</code> - By default, Mesa
+will build shared libraries. Either of these options will force static
+libraries to be built. It is not currently possible to build static and
+shared libraries in a single pass.
+</li>
+<li><code>CC, CFLAGS, CXX, CXXFLAGS</code> - These environment variables
+control the C and C++ compilers used during the build. By default,
+<code>gcc</code> and <code>g++</code> are used with the options
+<code>"-g -O2"</code>.
+</li>
+<li><code>LDFLAGS</code> - An environment variable specifying flags to
+pass when linking programs. These are normally empty, but can be used
+to direct the linker to use libraries in nonstandard directories. For
+example, <code>LDFLAGS="-L/usr/X11R6/lib"</code>.
+</li>
+<li><code>PKG_CONFIG_PATH</code> - When available, the
+<code>pkg-config</code> utility is used to search for external libraries
+on the system. This environment variable is used to control the search
+path for <code>pkg-config</code>. For instance, setting
+<code>PKG_CONFIG_PATH=/usr/X11R6/lib/pkgconfig</code> will search for
+package metadata in <code>/usr/X11R6</code> before the standard
+directories.
+</li>
+</ul>
+
+<p>
+There are also a few general options for altering the Mesa build:
+<ul>
+<li><code>--with-x</code> - When the X11 development libraries are
+needed, the <code>pkg-config</code> utility <a href="#pkg-config">will
+be used</a> for locating them. If they cannot be found through
+<code>pkg-config</code> a fallback routing using <code>imake</code> will
+be used. In this case, the <code>--with-x</code>,
+<code>--x-includes</code> and <code>--x-libraries</code> options can
+control the use of X for Mesa.
+</li>
+<li><code>--enable-gl-osmesa</code> - The <a href="osmesa.html">OSMesa
+library</a> can be built on top of libGL for drivers that provide it.
+This option controls whether to build libOSMesa. By default, this is
+enabled for the Xlib driver and disabled otherwise. Note that this
+option is different than using OSMesa as the driver.
+</li>
+<li><code>--enable-debug</code> - This option will enable compiler
+options and macros to aid in debugging the Mesa libraries.
+</li>
+<li><code>--disable-asm</code> - There are assembly routines
+available for a few architectures. These will be used by default if
+one of these architectures is detected. This option ensures that
+assembly will not be used.
+</li>
+<li><code>--enable-32-bit, --enable-64-bit</code> - By default, the
+build will compile code as directed by the environment variables
+<code>CC</code>, <code>CFLAGS</code>, etc. If the compiler is
+<code>gcc</code>, these options offer a helper to add the compiler flags
+to force 32- or 64-bit code generation as used on the x86 and x86_64
+architectures.
+</li>
+</ul>
+
+
+<h2 id="driver">2. Driver Options</h2>
+
+<p>
+There are several different driver modes that Mesa can use. These are
+described in more detail in the <a href="install.html">basic
+installation instructions</a>. The Mesa driver is controlled through the
+configure option --with-driver. There are currently three supported
+options in the configure script.
+</p>
+
+<h3 id="xlib">Xlib</h3><p>This is the default mode for building Mesa.
+It uses Xlib as a software renderer to do all rendering. It corresponds
+to the option <code>--with-driver=xlib</code>. The libX11 and libXext
+libraries, as well as the X11 development headers, will be need to
+support the Xlib driver.
+
+<h3 id="dri">DRI</h3><p>This mode uses the DRI hardware drivers for
+accelerated OpenGL rendering. Enable the DRI drivers with the option
+<code>--with-driver=dri</code>. See the <a href="install.html">basic
+installation instructions</a> for details on prerequisites for the DRI
+drivers.
+
+<!-- DRI specific options -->
+<dl>
+<dt><code>--with-dri-driverdir=DIR</code>
+<dd><p> This option specifies the
+location the DRI drivers will be installed to and the location libGL
+will search for DRI drivers. The default is <code>${libdir}/dri</code>.
+<dt><code>--with-dri-drivers=DRIVER,DRIVER,...</code>
+<dd><p> This option
+allows a specific set of DRI drivers to be built. For example,
+<code>--with-dri-drivers="swrast,i965,radeon,nouveau"</code>. By
+default, the drivers will be chosen depending on the target platform.
+See the directory <code>src/mesa/drivers/dri</code> in the source tree
+for available drivers. Beware that the swrast DRI driver is used by both
+libGL and the X.Org xserver GLX module to do software rendering, so you
+may run into problems if it is not available.
+<!-- This explanation might be totally bogus. Kristian? -->
+<dt><code>--disable-driglx-direct</code>
+<dd><p> Disable direct rendering in
+GLX. Normally, direct hardware rendering through the DRI drivers and
+indirect software rendering are enabled in GLX. This option disables
+direct rendering entirely. It can be useful on architectures where
+kernel DRM modules are not available.
+<dt><code>--enable-glx-tls</code> <dd><p>
+Enable Thread Local Storage (TLS) in
+GLX.
+<dt><code>--with-expat=DIR</code> <dd> The DRI-enabled libGL uses expat to
+parse the DRI configuration files in <code>/etc/drirc</code> and
+<code>~/.drirc</code>. This option allows a specific expat installation
+to be used. For example, <code>--with-expat=/usr/local</code> will
+search for expat headers and libraries in <code>/usr/local/include</code>
+and <code>/usr/local/lib</code>, respectively.
+</dl>
+
+<h3 id="osmesa">OSMesa </h3><p> No libGL is built in this
+mode. Instead, the driver code is built into the Off-Screen Mesa
+(OSMesa) library. See the <a href="osmesa.html">Off-Screen Rendering</a>
+page for more details.
+
+<!-- OSMesa specific options -->
+<dl>
+<dt><code>--with-osmesa-bits=BITS</code>
+<dd><p> This option allows the size
+of the color channel in bits to be specified. By default, an 8-bit
+channel will be used, and the driver will be named libOSMesa. Other
+options are 16- and 32-bit color channels, which will add the bit size
+to the library name. For example, <code>--with-osmesa-bits=16</code>
+will create the libOSMesa16 library with a 16-bit color channel.
+</dl>
+
+
+<h2 id="library">3. Library Options</h2>
+
+<p>
+The configure script provides more fine grained control over the GL
+libraries that will be built. More details on the specific GL libraries
+can be found in the <a href="install.html">basic installation
+instructions</a>.
+
+
+<h2 id="demos">4. Demo Program Options</h2>
+
+<p>
+There are many demonstration programs in the MesaDemos tarball. If the
+programs are available when <code>./configure</code> is run, a subset of
+the programs will be built depending on the driver and library options
+chosen. See the directory <code>progs</code> for the full set of demos.
+
+<dl>
+<dt><code>--with-demos=DEMOS,DEMOS,...</code>
+<dd><p> This option allows a
+specific set of demo programs to be built. For example,
+<code>--with-demos="xdemos,slang"</code>. Beware that if this option is
+used, it will not be ensured that the necessary GL libraries will be
+available.
+<dt><code>--without-demos</code> <dd><p> This completely disables building the
+demo programs. It is equivalent to <code>--with-demos=no</code>.
+</dl>
+
+</body>
+</html>

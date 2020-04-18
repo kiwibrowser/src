@@ -1,0 +1,226 @@
+#!/bin/bash
+
+# Defaults.
+ROOT_TEST_GROUPS="xdg-desktop-icon xdg-desktop-menu xdg-icon-resource xdg-mime xdg-utils-usecases"
+USER_TEST_GROUPS="$ROOT_TEST_GROUPS xdg-email xdg-open xdg-screensaver"
+
+usage() {
+cat << _ENDUSAGE_ 
+Usage:
+$0 [-iIcChRSd:p:f:a] [test|testgroup] [...]
+
+Options:
+     [-h]      Show this message and exit.
+
+     [-I|-i]   Turn off/on interactive tests. Default: on
+               (overrides XDG_TEST_NO_INTERACTIVE)
+  
+     [-C|-c]   Turn off/on deletion of tempfiles. Default: on
+               (overrides XDG_TEST_DONT_CLEANUP)
+
+     [-R]      Turn off su to root tests.
+	       You will not be prompted for the root password at the beginning of the testrun.
+
+     [-S]      Use sudo instead of su.
+
+     [-a]      Run all tests. (i.e xdg-*/) Has no effect if tests are specified explicitly.
+
+     [-d dir]  Set XDG_TEST_DIR to dir
+
+     [-p path] Reset PATH to path. Recommended for internal use only.
+
+     [-f pid]  RESERVED -- state flag for self reference. DON'T USE.
+
+Arguments:
+
+After options, all arguments correspond to tests to run. The default is to run all tests, which consist of all files matching 'xdg-*/t.*'.
+
+Supplied testgroups can be a list of directories or a list of individual tests.
+
+_ENDUSAGE_
+exit 1
+}
+MYARGS="$@"
+
+if [ `whoami` == root ] ; then
+	XDG_TEST_DONT_SU="set"
+	DEFAULT_TEST_GROUPS="$ROOT_TEST_GROUPS"
+	RUNNING_AS="root"
+else
+	DEFAULT_TEST_GROUPS="$USER_TEST_GROUPS"
+	RUNNING_AS="normal"
+fi
+
+## Read options
+while getopts "iIcChRSf:d:p:a" opt; do
+	case $opt in
+		I ) export XDG_TEST_NO_INTERACTIVE="set" ;;
+		i ) unset XDG_TEST_NO_INTERACTIVE ;;
+		C ) export XDG_TEST_DONT_CLEANUP="set" ;;
+		c ) unset XDG_TEST_DONT_CLEANUP ;;
+		R ) XDG_TEST_DONT_SU="set" ;;
+		S ) XDG_TEST_USE_SUDO="set" ;;
+		f ) XDG_TEST_SELF_LAUNCH="$OPTARG" ;;
+		d ) export XDG_TEST_DIR="$OPTARG" ;;
+		p ) export PATH="$OPTARG" ;;
+		a ) DEFAULT_TEST_GROUPS=`ls -d $XDG_TEST_DIR/xdg-*` ;;
+		h ) usage ;;
+		\? ) usage ;;
+	esac
+done
+shift $(($OPTIND - 1))
+
+## Set up prerequisites
+if [ -z "$XDG_TEST_DIR" ] ; then
+	export XDG_TEST_DIR="$PWD"
+	echo "WARNING: guessed XDG_TEST_DIR to be $XDG_TEST_DIR"
+fi
+if [ -z `which xdg-mime 2>/dev/null` ] && [ -d "$XDG_TEST_DIR/../scripts" ] ; then
+	export PATH="$PATH:$XDG_TEST_DIR/../scripts"
+	echo "WARNING: modified PATH to add '$XDG_TEST_DIR/../scripts'"
+fi
+
+## Read test groups
+if [ $# -eq 0 ] ; then
+	TEST_GROUPS="$DEFAULT_TEST_GROUPS"
+else
+	TEST_GROUPS="$@"
+fi
+
+TEST_FILES=`find $TEST_GROUPS -name 't.*[^~]' | sort`
+
+declare -i PASS=0
+declare -i FAILCOUNT=0
+declare -i TOTAL=0
+declare -i ATTEMPT=0
+TEST_LOG="$XDG_TEST_DIR/xdg-test.log"
+
+export USING_TEST_RUNNER="true"
+
+for MY_TEST_FILE in $TEST_FILES; do
+	. "$MY_TEST_FILE" 
+done
+
+if [ -z "$XDG_TEST_SELF_LAUNCH"  ] ; then  # not self launched
+	test -d "$XDG_TEST_DIR/tmp" || mkdir "$XDG_TEST_DIR/tmp"
+	touch "$XDG_TEST_DIR/tmp/shortid"
+	chmod 666 "$XDG_TEST_DIR/tmp/shortid"
+
+	if [ "$RUNNING_AS" == root -a -z "$*" ] ; then
+		echo "WARNING: Tests are incomplete unless run as a normal (non-root) user."
+		echo "The test runner will SU as needed to run root cases."
+	fi
+
+	echo "======================================================"  >> "$TEST_LOG"
+ 	echo "[`date`] TEST RUN START: $*" >> "$TEST_LOG"
+	"$XDG_TEST_DIR/include/system_info" >>"$TEST_LOG"
+
+	if [ -z "$XDG_TEST_DONT_SU" ] ; then
+		if [ -z "$XDG_TEST_USE_SUDO" ] ; then
+			SUCMD=
+			echo "Running su for system tests. (Use testrun -S to use sudo instead)"
+			echo "Please enter the root password when requested."
+		else
+			SUCMD=`which sudo 2>/dev/null`
+			echo "Running ${SUCMD-su} for system tests."
+			echo "Please enter an apropriate password if requested."
+		fi
+		# Note if sudo is not found, $SUCMD will be blank, so run su directly.
+		# We cannot assume su works since systems like Ubuntu require sudo
+		# Yet, systems like Debian do not ship with sudo by default.
+		$SUCMD su - -c "cd $PWD && XDG_UTILS_DEBUG_LEVEL=$XDG_UTILS_DEBUG_LEVEL $0 -f $$ -d '$XDG_TEST_DIR' -p '$PATH' $MYARGS"
+	fi
+
+	TEST_STATUS_FILE="$XDG_TEST_DIR/tmp/xdgtest_status-$$"
+	USERCLASS="normal user"
+else 
+	TEST_STATUS_FILE="$XDG_TEST_DIR/tmp/xdgtest_status-$XDG_TEST_SELF_LAUNCH"
+	USERCLASS="root"
+fi
+
+echo "[`date`] ---- $USERCLASS run start: $*" >> "$TEST_LOG"
+#echo "TEST_LIST: $TEST_LIST"
+
+for t in $TEST_LIST; do
+	TOTAL=$((TOTAL + 1 ))
+	ATTEMPT=$((ATTEMPT + 1 ))
+
+	echo -n "$t: "
+	
+	test_setup
+
+	# Run test - subshell is necessary to keep things contained.
+	( "$t" ) >> "$TEST_LOG"
+	CODE="$?"
+
+	test_cleanup
+
+	# Report result
+	case "$CODE" in
+		0 ) PASS=$((PASS + 1))
+		    RESULT=PASS
+		    ;;
+
+		1 ) RESULT=FAIL
+		    FAILCOUNT=$((FAILCOUNT +1))
+		    ;;
+		5 ) RESULT=UNTESTED
+		    TOTAL=$((TOTAL - 1 )) ## HACK: we don't want to count tests that don't run.
+		    ;;
+		7 ) RESULT=NORESULT ;; 
+		10 ) RESULT=WARN ;; 
+		* ) RESULT="UNKNOWN($CODE)";;
+	esac
+	echo "$RESULT"
+	test "$RESULT" == FAIL && echo "" >> "$TEST_LOG"
+done
+
+echo -n "[`date`] ---- " >> "$TEST_LOG"
+echo "$USERCLASS run end: $FAILCOUNT tests failed, $PASS of $TOTAL tests passed. ($ATTEMPT attempted)" | tee -a "$TEST_LOG"
+
+if [ -z "$XDG_TEST_SELF_LAUNCH" ] ; then # not su'd
+	if [ -f "$TEST_STATUS_FILE" ] ; then
+		RFAIL=`grep 'FAIL' "$TEST_STATUS_FILE" | cut -d ':' -f2`
+		RPASS=`grep 'PASS' "$TEST_STATUS_FILE" | cut -d ':' -f2`
+		RTOTAL=`grep 'TOTAL' "$TEST_STATUS_FILE" | cut -d ':' -f2`
+		RATTEMPT=`grep 'ATTEMPT' "$TEST_STATUS_FILE" | cut -d ':' -f2`
+
+		rm -f "$TEST_STATUS_FILE"
+	fi
+
+	GFAIL=$(( $FAILCOUNT + ${RFAIL-0} ))
+	GPASS=$(( $PASS + ${RPASS-0} ))
+	GTOTAL=$(( $TOTAL + ${RTOTAL-0} ))
+	GATTEMPT=$(( $ATTEMPT + ${RATTEMPT-0} ))
+
+	echo -n "[`date`] TEST RUN END: $* - " >> "$TEST_LOG"
+	echo -n "TOTAL: "
+	echo "$GFAIL tests failed, $GPASS of $GTOTAL tests passed. ($GATTEMPT attempted)" | tee -a "$TEST_LOG"
+
+	if [ $(( $GTOTAL - $GPASS )) -gt 0 ]; then
+		EC=1
+		echo "NOT OK!  --  See $TEST_LOG for details."
+	else
+		EC=0
+		echo "ok"
+	fi
+	if [ -z "$*" -a -z "$XDG_TEST_NO_INTERACTIVE" ] ; then
+		echo "Please consider submitting your test report to"
+		echo "http://portland.freedesktop.org/testreport.html"
+		echo ""
+	fi
+
+	exit "$EC"
+else ## Running su'd. save results.
+	echo "FAIL:$FAILCOUNT" 	> $TEST_STATUS_FILE
+	echo "PASS:$PASS" 	>> $TEST_STATUS_FILE
+	echo "TOTAL:$TOTAL" 	>> $TEST_STATUS_FILE
+	echo "ATTEMPT:$ATTEMPT"	>> $TEST_STATUS_FILE
+
+	if [ $(( $TOTAL - $PASS)) -gt 0 ] ; then
+		exit -1
+	else
+		exit 0
+	fi
+fi
+

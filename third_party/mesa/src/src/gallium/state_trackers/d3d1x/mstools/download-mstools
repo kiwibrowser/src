@@ -1,0 +1,73 @@
+#!/bin/bash
+ok=1
+for i in fxc.exe D3DCompiler_43.dll d3dx9_43.dll d3dx10_43.dll d3dx11_43.dll; do
+	if ! test -e "$i"; then
+		ok=
+	fi
+done
+
+if test -n "$ok"; then
+	exit 0
+fi
+
+echo "To compile HLSL shaders, the Microsoft HLSL compiler needs to be downloaded."
+echo
+echo "Downloading Microsoft DirectX June 2010 SDK and extracting files..."
+echo "Please wait, this will need to download and unpack a 600 MB file..."
+echo
+echo "The contribution of a free HLSL compiler would be greatly appreciated!"
+echo
+
+ok=1
+if ! which wget >/dev/null; then
+        echo "Error: wget is required to download the files"
+        echo "On Debian or Ubuntu, run the following command to install it:"
+        echo "sudo apt-get install wget"
+	echo
+	ok=
+fi
+
+if ! which cabextract >/dev/null; then
+	echo "Error: cabextract is required to unpack the files"
+	echo "On Debian or Ubuntu, run the following command to install it:"
+	echo "sudo apt-get install cabextract"
+	echo
+	ok=
+fi
+
+if test -z "$ok"; then
+	exit 1
+fi
+
+dxsdk_file="DXSDK_Jun10.exe"
+dxsdk_url="http://download.microsoft.com/download/A/E/7/AE743F1F-632B-4809-87A9-AA1BB3458E31/DXSDK_Jun10.exe"
+dxsdk_size=599452800
+
+fxc_path="DXSDK/Utilities/bin/x86/fxc.exe"
+d3dcompiler_cab_path="DXSDK/Redist/Jun2010_D3DCompiler_43_x86.cab"
+d3dx9_cab_path="DXSDK/Redist/Jun2010_d3dx9_43_x86.cab"
+d3dx10_cab_path="DXSDK/Redist/Jun2010_d3dx10_43_x86.cab"
+d3dx11_cab_path="DXSDK/Redist/Jun2010_d3dx11_43_x86.cab"
+
+if test "$(stat -c '%s' "$dxsdk_file" 2>/dev/null)" != $dxsdk_size; then
+	wget --continue "$dxsdk_url"
+	if test "$(stat -c '%s' "$dxsdk_file" 2>/dev/null)" != $dxsdk_size; then
+		echo "Failed to download DirectX SDK: expected $dxsdk_file with size $dxsdk_size"
+		echo "Download manually from $dxsdk_url"
+		exit 1
+	fi
+fi
+
+for i in "$fxc_path" "$d3dcompiler_cab_path" "$d3dx9_cab_path" "$d3dx10_cab_path" "$d3dx11_cab_path"; do
+	if ! test -e "$i"; then
+		echo "Please wait, this may take several minutes because a 600 MB archive may need to be fully decompressed..."
+		cabextract -F "$i" "$dxsdk_file"
+	fi
+done
+
+for i in "$d3dcompiler_cab_path" "$d3dx9_cab_path" "$d3dx10_cab_path" "$d3dx11_cab_path"; do
+	cabextract -F "*.dll" "$i"
+done
+
+/bin/cp -dpf "$fxc_path" .
+

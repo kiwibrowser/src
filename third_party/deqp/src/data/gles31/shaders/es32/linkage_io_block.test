@@ -1,0 +1,370 @@
+# -------------------------------------------------
+# drawElements Quality Program OpenGL ES 3.2 Module
+# -------------------------------------------------
+#
+# Copyright 2016 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+case mismatch_number_of_declarations
+	version 320 es
+	desc "Shader io block mismatch: different number of declarations"
+	expect link_fail
+	vertex ""
+		#version 320 es
+		${VERTEX_DECLARATIONS}
+		out IOBlockName
+		{
+			mediump float variable1;
+		};
+
+		void main()
+		{
+			variable1 = float(gl_VertexID);
+			${VERTEX_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 320 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		in IOBlockName
+		{
+			mediump float variable1;
+			mediump float variable2;
+		};
+
+		void main()
+		{
+			${FRAG_COLOR} = vec4(variable1 + variable2);
+		}
+	""
+end
+
+case mismatch_order
+	version 320 es
+	desc "Shader io block mismatch: different member declaration order"
+	expect link_fail
+	vertex ""
+		#version 320 es
+		${VERTEX_DECLARATIONS}
+		out IOBlockName
+		{
+			mediump float variable1;
+			mediump float variable2;
+		};
+
+		void main()
+		{
+			variable1 = float(gl_VertexID);
+			${VERTEX_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 320 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		in IOBlockName
+		{
+			mediump float variable2;
+			mediump float variable1;
+		};
+
+		void main()
+		{
+			${FRAG_COLOR} = vec4(variable1 + variable2);
+		}
+	""
+end
+
+case mismatch_type
+	version 320 es
+	desc "Shader io block mismatch: different member type"
+	expect link_fail
+	vertex ""
+		#version 320 es
+		${VERTEX_DECLARATIONS}
+		out IOBlockName
+		{
+			mediump vec2 variable;
+		};
+
+		void main()
+		{
+			variable.x = float(gl_VertexID);
+			variable.y = float(gl_InstanceID);
+			${VERTEX_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 320 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		in IOBlockName
+		{
+			mediump float variable;
+		};
+
+		void main()
+		{
+			${FRAG_COLOR} = vec4(variable);
+		}
+	""
+end
+
+case mismatch_member_name
+	version 320 es
+	desc "Shader io block mismatch: different member name"
+	expect link_fail
+	vertex ""
+		#version 320 es
+		${VERTEX_DECLARATIONS}
+		out IOBlockName
+		{
+			mediump float variable1;
+		};
+
+		void main()
+		{
+			variable1 = float(gl_VertexID);
+			${VERTEX_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 320 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		in IOBlockName
+		{
+			mediump float variable2;
+		};
+
+		void main()
+		{
+			${FRAG_COLOR} = vec4(variable2);
+		}
+	""
+end
+
+case mismatch_member_array_size
+	version 320 es
+	desc "Shader io block mismatch: different member array size"
+	expect link_fail
+	vertex ""
+		#version 320 es
+		${VERTEX_DECLARATIONS}
+		out IOBlockName
+		{
+			mediump float variable[1];
+		};
+
+		void main()
+		{
+			variable[0] = float(gl_VertexID);
+			${VERTEX_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 320 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		in IOBlockName
+		{
+			mediump float variable[2];
+		};
+
+		void main()
+		{
+			${FRAG_COLOR} = vec4(variable[0] + variable[1]);
+		}
+	""
+end
+
+case with_and_without_instance_name
+	version 320 es
+	desc "Shader io block: with and without instance name"
+	values
+	{
+		input float in0 = 1.0;
+		output float out0 = 1.0;
+	}
+	vertex ""
+		#version 320 es
+		${VERTEX_DECLARATIONS}
+		out IOBlockName
+		{
+			mediump float variable;
+		} instanceName;
+
+		void main()
+		{
+			instanceName.variable = in0;
+			${VERTEX_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 320 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		in IOBlockName
+		{
+			mediump float variable;
+		};
+
+		void main()
+		{
+			out0 = variable;
+			${FRAGMENT_OUTPUT}
+		}
+	""
+end
+
+case mismatch_block_array_size
+	version 320 es
+	desc "Shader io block mismatch: different array size"
+	expect link_fail
+	vertex ""
+		#version 320 es
+		${VERTEX_DECLARATIONS}
+		out IOBlockName
+		{
+			mediump float variable;
+		} instanceName[1];
+
+		void main()
+		{
+			instanceName[0].variable = float(gl_VertexID);
+			${VERTEX_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 320 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		in IOBlockName
+		{
+			mediump float variable;
+		} instanceName[2];
+
+		void main()
+		{
+			${FRAG_COLOR} = vec4(instanceName[0].variable + instanceName[1].variable);
+		}
+	""
+end
+
+case missing_output_block
+	version 320 es
+	desc "Shader io block mismatch: missing output block"
+	expect link_fail
+	vertex ""
+		#version 320 es
+		${VERTEX_DECLARATIONS}
+		void main()
+		{
+			${VERTEX_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 320 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		in IOBlockName
+		{
+			mediump float variable;
+		};
+
+		void main()
+		{
+			${FRAG_COLOR} = vec4(variable);
+		}
+	""
+end
+
+case ambiguous_variable_name_1
+	version 320 es
+	desc "Unnamed io block variable and global variable with identical names"
+	expect compile_or_link_fail
+	vertex ""
+		#version 320 es
+		${VERTEX_DECLARATIONS}
+		float variable;
+		out IOBlockName
+		{
+			mediump float variable;
+		};
+
+		void main()
+		{
+			variable = float(gl_VertexID);
+			${VERTEX_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 320 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		in IOBlockName
+		{
+			mediump float variable;
+		};
+
+		void main()
+		{
+			${FRAG_COLOR} = vec4(variable);
+		}
+	""
+end
+
+case ambiguous_variable_name_2
+	version 320 es
+	desc "Two unnamed io blocks with variables with identical names"
+	expect compile_or_link_fail
+	vertex ""
+		#version 320 es
+		${VERTEX_DECLARATIONS}
+		out IOBlockNameA
+		{
+			mediump float variable;
+		};
+		out IOBlockNameB
+		{
+			mediump float variable;
+		};
+
+		void main()
+		{
+			variable = float(gl_VertexID);
+			${VERTEX_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 320 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		in IOBlockNameA
+		{
+			mediump float variable;
+		};
+		in IOBlockNameB
+		{
+			mediump float variable;
+		};
+
+		void main()
+		{
+			${FRAG_COLOR} = vec4(variable);
+		}
+	""
+end

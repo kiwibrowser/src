@@ -1,0 +1,115 @@
+.TH @APPNAME@ "1" "July 2017" "@appname@ @appversion@"
+.SH NAME
+@appname@ \- OpenGL (ES) 2.0 benchmark suite
+.SH SYNOPSIS
+.B @appname@ [options]
+.SH DESCRIPTION
+\fB@appname@\fP is a benchmark for OpenGL (ES) 2.0. It only uses the subset of
+the OpenGL 2.0 API that is compatible with OpenGL ES 2.0.
+.SH OPTIONS
+.TP
+\fB\-b\fR, \fB\-\-benchmark\fR BENCH
+A benchmark to run: 'scene(:opt1=val1)*'
+(the option can be used multiple times)
+.TP
+\fB\-f\fR, \fB\-\-benchmark-file\fR FILE
+Load benchmarks to run from a file containing a
+list of benchmark descriptions (one per line)
+(the option can be used multiple times)
+.TP
+\fB\-\-validate\fR
+Run a quick output validation test instead of
+running the benchmarks
+.TP
+\fB\-\-frame-end\fR METHOD
+How to end a frame [default,none,swap,finish,readpixels]
+.TP
+\fB\-\-off-screen\fR
+Render to an off-screen surface
+.TP
+\fB--visual-config\fR
+The visual configuration to use for the rendering target:
+\'red=R:green=G:blue=B:alpha=A:buffer=BUF'. The parameters may be defined
+in any order, and any omitted parameters assume a default value of '1'
+.TP
+\fB\-\-reuse\-context\fR
+Use a single context for all scenes
+(by default, each scene gets its own context)
+.TP
+\fB\-s\fR, \fB\-\-size\fR WxH
+Size of the output window (default: 800x600)
+.TP
+\fB\-\-fullscreen\fR
+Run in fullscreen mode (equivalent to --size -1x-1)
+.TP
+\fB\-l\fR, \fB\-\-list\-scenes\fR
+Display information about the available scenes
+and their options
+.TP
+\fB\-\-show-all-options\fR
+Show all scene option values used for benchmarks
+(only explicitly set options are shown by default)
+.TP
+\fB\-\-run-forever\fR
+Run indefinitely, looping from the last benchmark
+back to the first
+.TP
+\fB\-\-annotate\fR
+Annotate the benchmarks with on-screen information
+(same as -b :show-fps=true:title=#info#)
+.TP
+\fB\-d\fR, \fB\-\-debug\fR
+Display debug messages
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Display help
+.SH BENCHMARKS
+@appname@ offers a suite of scenes that can be used to measure many aspects
+of OpenGL (ES) 2.0 performance. The way in which each scene is rendered is
+configurable through a set of options. To get the available scenes and their
+acceptable options you can use the \fB\-l\fR, \fB\-\-list\-scenes\fR command
+line option.
+
+In @appname@, a benchmark is defined as a scene plus a set of option values.
+You can specify the list and order of the benchmarks to run by using the
+\fB\-b\fR, \fB\-\-benchmark\fR command line option (possibly multiple times).
+If no benchmarks are specified, a default set of benchmarks is used. If a
+benchmark option is not specified it assumes its default value (listed with
+\fB\-l\fR, \fB\-\-list\-scenes\fR).
+
+As a special case, a benchmark description string is allowed to not contain a
+scene name (i.e. to start with ':'). In this case, any specified option values
+are used as the default values for benchmarks following this description
+string.
+
+.SH EXAMPLES
+To run the default benchmarks:
+.PP
+.RS
+\fB@appname@\fR
+.RE
+.PP
+To run a benchmark using scene 'shading' with a 'duration' of '5.0' seconds and
+ 'shading' of type 'phong':
+.PP
+.RS
+\fB@appname@ -b shading:duration=5.0:shading=phong\fR
+.RE
+.PP
+To run a series of benchmarks use the \fB\-b\fR, \fB\-\-benchmark\fR command
+line option multiple times:
+.PP
+.RS
+\fB@appname@ -b shading:duration=5.0 -b build:use-vbo=false -b texture\fR
+.RE
+.PP
+To set default option values for benchmarks:
+.PP
+.RS
+\fB@appname@ -b :duration=2.0 -b shading -b build -b :duration=5.0 -b texture\fR
+.RE
+.PP
+
+.SH AUTHOR
+@appname@ was written by Alexandros Frantzis and Jesse Barker based on the original
+glmark by Ben Smith.

@@ -1,0 +1,160 @@
+# Copyright (C) 2017 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+notifications:
+  email: false
+
+language: cpp
+
+# The |CFG| variable name is hooked up by the perfetto-ci.appspot.com frontend.
+# Please keep infra/perfetto-ci.appspot.com/ updated when adding/removing
+# entries below.
+matrix:
+  include:
+# OS X builds are processing too slow and block the queue.
+# Commenting out until the problem is resolved.
+#    - os: osx
+#      osx_image: xcode8.3
+#      compiler: clang
+#      env: CFG=mac-clang-x86_64-release GN_ARGS="is_debug=false"
+#    - os: osx
+#      osx_image: xcode8.3
+#      compiler: clang
+#      env: CFG=mac-clang-x86_64-debug GN_ARGS="is_debug=true"
+#    - os: osx
+#      osx_image: xcode8.3
+#      compiler: clang
+#      env: CFG=mac-clang-x86_64-asan GN_ARGS="is_debug=false is_asan=true"
+#    - os: osx
+#      osx_image: xcode8.3
+#      compiler: clang
+#      env: CFG=mac-clang-x86_64-tsan GN_ARGS="is_debug=false is_tsan=true"
+#    - os: osx
+#      osx_image: xcode8.3
+#      compiler: clang
+#      env: CFG=mac-clang-x86_64-ubsan GN_ARGS="is_debug=false is_ubsan=true"
+    - os: linux
+      dist: trusty
+      sudo: false
+      # When setting compiler: clang Travis pull a newer version of clang than
+      # the version that is shipped with Trusty. This is good for all the other
+      # configs, but we want to keep at least one target in the matrix to match
+      # the default version of clang that we have on our workstations.
+      addons:
+        apt:
+          packages:
+            - clang
+      env: CFG=linux_trusty-clang-x86_64-debug GN_ARGS="is_debug=true is_hermetic_clang=false"
+    - os: linux
+      dist: trusty
+      sudo: false
+      compiler: clang
+      env: CFG=linux_trusty-clang-x86_64-tsan GN_ARGS="is_debug=false is_tsan=true"
+    - os: linux
+      dist: trusty
+      sudo: false
+      compiler: clang
+      env: CFG=linux_trusty-clang-x86_64-msan GN_ARGS="is_debug=false is_msan=true"
+    - os: linux
+      dist: trusty
+      sudo: true
+      compiler: clang
+      env: CFG=linux_trusty-clang-x86_64-ubsan_asan_lsan GN_ARGS="is_debug=false is_ubsan=true is_asan=true is_lsan=true"
+    - os: linux
+      dist: trusty
+      sudo: false
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-7
+      env: CFG=linux_trusty-gcc7-x86_64-release GN_ARGS="is_debug=false is_clang=false use_custom_libcxx=false cc=\"gcc-7\" cxx=\"g++-7\""
+    - os: linux
+      dist: trusty
+      sudo: false
+      compiler: clang
+      env: CFG=android-clang-arm-release GN_ARGS="is_debug=false target_os=\"android\" target_cpu=\"arm\""
+    - os: linux
+      dist: trusty
+      sudo: true
+      compiler: clang
+      env: CFG=android-clang-arm-asan GN_ARGS="is_debug=false target_os=\"android\" target_cpu=\"arm\" is_asan=true"
+    - os: linux
+      dist: trusty
+      sudo: true
+      compiler: clang
+      env: CFG=linux_trusty-clang-x86_64-libfuzzer GN_ARGS="is_clang=true is_debug=false use_libfuzzer=true is_asan=true"
+
+# Cache the deps that get git-pulled to avoid hitting quota limits (b/68252114).
+# Do not cache NDK/SDK and things that come from .zip files rather than git.
+# Doing that is discouraged (https://docs.travis-ci.com/user/caching/).
+cache:
+  timeout: 1800  # 30 mins
+  directories:
+    - buildtools/benchmark
+    - buildtools/emulator
+    - buildtools/googletest
+    - buildtools/libbacktrace
+    - buildtools/libcxx
+    - buildtools/libcxxabi
+    - buildtools/libunwind
+
+before_install:
+  - set -e
+  - echo "$CFG" && echo "$GN_ARGS"
+  - export ASAN_SYMBOLIZER_PATH="$(which llvm-symbolizer
+      || echo /usr/bin/llvm-symbolizer-*)"
+
+install:
+  - |
+    if [[ "$CFG" != android-* ]]; then
+      tools/install-build-deps --no-android
+    else
+      tools/install-build-deps
+    fi
+  - |
+    if [[ -e buildtools/clang/bin/llvm-symbolizer ]]; then
+      export ASAN_SYMBOLIZER_PATH="buildtools/clang/bin/llvm-symbolizer"
+    fi
+
+script:
+  - tools/gn gen out/dist --args="${GN_ARGS}" --check
+  - tools/ninja -C out/dist -j8
+  - |
+    TEST_TARGETS="
+    perfetto_integrationtests
+    perfetto_unittests
+    "
+    if [[ "$CFG" != android-* ]]; then
+      for TEST_TARGET in $TEST_TARGETS; do
+        "out/dist/$TEST_TARGET"
+      done
+      BENCHMARK_FUNCTIONAL_TEST_ONLY=true out/dist/perfetto_benchmarks
+      if [[ "$CFG" == *-libfuzzer ]]; then
+        # Run a single iteration each to make sure they are not crashing.
+        out/dist/end_to_end_shared_memory_fuzzer -runs=1
+        out/dist/buffered_frame_deserializer_fuzzer -runs=1
+      fi
+    else
+      TARGET_ARCH=$(echo $CFG | cut -d- -f3)
+      tools/run_android_emulator --pid /tmp/emulator.pid -v &
+      for TEST_TARGET in $TEST_TARGETS; do
+        tools/run_android_test out/dist "$TEST_TARGET"
+      done
+      tools/run_android_test --env BENCHMARK_FUNCTIONAL_TEST_ONLY=true out/dist "perfetto_benchmarks"
+    fi
+
+after_script:
+  - test -f /tmp/emulator.pid && kill -9 $(cat /tmp/emulator.pid); true

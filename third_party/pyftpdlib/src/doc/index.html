@@ -1,0 +1,100 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<style>
+.section_anchor {
+    font-size:0px;
+}
+</style>
+
+
+
+ <title>Home</title>
+ </head><body>
+
+
+
+
+ <div id="wikicontent">
+ <table border="0" cellpadding="0" cellspacing="0" width="100%">
+ <tbody><tr>
+
+ <td class="vt" id="wikimaincol" width="100%">
+
+ <div id="wikiheader" style="margin-bottom: 1em;">
+
+ &nbsp;
+ <span style="font-size: 120%; font-weight: bold;">Home</span>
+ &nbsp;
+
+
+ </div>
+ <h1><a name="Python_FTP_server_library_(pyftpdlib)"></a>Python FTP server library (pyftpdlib)<a href="#Python_FTP_server_library_%28pyftpdlib%29" class="section_anchor">¶</a></h1><h2><a name="About"></a>About<a href="#About" class="section_anchor">¶</a></h2><p>Python FTP server library provides a high-level portable interface to easily write asynchronous FTP servers with Python.<br>pyftpdlib is currently the most complete <a href="http://www.faqs.org/rfcs/rfc959.html" rel="nofollow">RFC-959</a> FTP server implementation available for <a href="http://www.python.org/" rel="nofollow">Python</a> programming language.<br>It is used in projects like <a href="http://www.code.google.com/chromium/" rel="nofollow">Google Chromium</a> and <a href="http://bazaar-vcs.org/" rel="nofollow">Bazaar</a> and included in <a href="http://packages.debian.org/sid/python-pyftpdlib" rel="nofollow">Debian</a>, <a href="https://admin.fedoraproject.org/pkgdb/packages/name/pyftpdlib" rel="nofollow">Fedora</a> and <a href="http://www.freshports.org/ftp/py-pyftpdlib/" rel="nofollow">FreeBSD</a> package repositories. </p><h2><a name="Features"></a>Features<a href="#Features" class="section_anchor">¶</a></h2><ul><li>Support for <strong><a href="http://en.wikipedia.org/wiki/FTPS" rel="nofollow">FTPS</a></strong> (FTP over TLS/SSL). <i><strong>New in 0.6.0</strong></i> </li><li>Native support for virtual users and virtual filesystem. </li><li>Support for recent FTP commands like <strong>MLSD</strong> and <strong>MLST</strong> (<a href="http://www.faqs.org/rfcs/rfc3659.html" rel="nofollow">RFC-3659</a>). </li><li>Support for <strong><a href="http://www.proftpd.org/docs/howto/FXP.html" rel="nofollow">FXP</a></strong>, site-to-site transfers. </li><li>Support for <strong>IPv6</strong> (<a href="ftp://ftp.rfc-editor.org/in-notes/rfc2428.txt" rel="nofollow">RFC-2428</a>). </li><li>NAT/Firewall support with <strong>PASV/EPSV</strong> passive mode connections. </li><li>Bandwidth throttling. </li><li>Support for resumed transfers. </li><li>Per-user permissions configurability. </li><li>Maximum connections limit. </li><li>Per-source-IP limits. </li><li>Configurable idle timeouts for both control and data channels. </li><li>Compact: main library is distributed as a single stand-alone module (<a href="http://pyftpdlib.googlecode.com/svn/trunk/pyftpdlib/ftpserver.py" rel="nofollow">ftpserver.py</a>). </li><li>High portability: </li><ul><li>Entirely written in pure Python, no third party modules are used. It works on any system where <i>select( )</i> or <i>poll( )</i> is available. </li><li>Extremely flexible system of "authorizers" able to manage both "virtual" and "real" users on different platforms (<strong>Windows</strong>, <strong>UNIX</strong>, <strong>OSX</strong>). </li><li>Works with Python 2.4, 2.5, 2.6 and 2.7. </li></ul></ul><h2><a name="Quick_start"></a>Quick start<a href="#Quick_start" class="section_anchor">¶</a></h2><pre class="prettyprint">&gt;&gt;&gt; from pyftpdlib import ftpserver
+&gt;&gt;&gt; authorizer = ftpserver.DummyAuthorizer()
+&gt;&gt;&gt; authorizer.add_user("user", "12345", "/home/user", perm="elradfmw")
+&gt;&gt;&gt; authorizer.add_anonymous("/home/nobody")
+&gt;&gt;&gt; handler = ftpserver.FTPHandler
+&gt;&gt;&gt; handler.authorizer = authorizer
+&gt;&gt;&gt; address = ("127.0.0.1", 21)
+&gt;&gt;&gt; ftpd = ftpserver.FTPServer(address, handler)
+&gt;&gt;&gt; ftpd.serve_forever()
+Serving FTP on 127.0.0.1:21
+[]127.0.0.1:2503 connected.
+127.0.0.1:2503 ==&gt; 220 Ready.
+127.0.0.1:2503 &lt;== USER anonymous
+127.0.0.1:2503 ==&gt; 331 Username ok, send password.
+127.0.0.1:2503 &lt;== PASS ******
+127.0.0.1:2503 ==&gt; 230 Login successful.
+[anonymous]@127.0.0.1:2503 User anonymous logged in.
+127.0.0.1:2503 &lt;== TYPE A
+127.0.0.1:2503 ==&gt; 200 Type set to: ASCII.
+127.0.0.1:2503 &lt;== PASV
+127.0.0.1:2503 ==&gt; 227 Entering passive mode (127,0,0,1,9,201).
+127.0.0.1:2503 &lt;== LIST
+127.0.0.1:2503 ==&gt; 150 File status okay. About to open data connection.
+[anonymous]@127.0.0.1:2503 OK LIST "/". Transfer starting.
+127.0.0.1:2503 ==&gt; 226 Transfer complete.
+[anonymous]@127.0.0.1:2503 Transfer complete. 706 bytes transmitted.
+127.0.0.1:2503 &lt;== QUIT
+127.0.0.1:2503 ==&gt; 221 Goodbye.
+[anonymous]@127.0.0.1:2503 Disconnected.</pre><h2><a name="Discussion_group"></a>Discussion group<a href="#Discussion_group" class="section_anchor">¶</a></h2><p><a href="http://groups.google.com/group/pyftpdlib/topics" rel="nofollow">http://groups.google.com/group/pyftpdlib/topics</a> </p><h2><a name="Timeline"></a>Timeline<a href="#Timeline" class="section_anchor">¶</a></h2><ul><li>2010-11-07: version <a href="http://pyftpdlib.googlecode.com/files/pyftpdlib-0.6.0.tar.gz" rel="nofollow">0.6.0</a> released. </li><li>2010-08-24: pyftpdlib included in <a href="http://www.peerscape.org/" rel="nofollow">peerscape</a> project. </li><li>2010-07-15: pyftpdlib included in <a href="http://tomatohater.com/faetus/" rel="nofollow">Faetus</a> project. </li><li>2010-07-11: pyftpdlib included in <a href="http://code.google.com/p/pyfilesystem" rel="nofollow">Pyfilesystem</a> project. </li><li>2010-06-28: pyftpdlib has been <a href="http://packages.debian.org/sid/python-pyftpdlib" rel="nofollow">packaged for Debian</a> </li><li>2010-04-28: pyftpdlib included in <a href="http://forge.openbravo.com/plugins/mwiki/index.php/MobilePOS" rel="nofollow">sierramodulepos</a> project. </li><li>2010-03-20: <a href="http://www.smartfile.com/" rel="nofollow">http://www.smartfile.com</a> uses pyftpdlib. </li><li>2010-01-13: pyftpdlib included in <a href="http://code.irondojo.com/" rel="nofollow">zenftp</a> project. </li><li>2009-12-26: pyftpdlib included in <a href="http://code.google.com/p/sypftp" rel="nofollow">Symbian Python FTP server</a> project. </li><li>2009-11-04: <a href="http://www.netplay.it/" rel="nofollow">www.netplay.it</a> uses pyftpdlib. </li><li>2009-11-04: <a href="http://www.adcast.tv/" rel="nofollow">www.adcast.tv</a> uses pyftpdlib. </li><li>2009-11-04: <a href="http://www.bitsontherun.com/" rel="nofollow">www.bitsontherun.com</a> uses pyftpdlib. </li><li>2009-11-02: pyftpdlib included in <a href="http://github.com/chmouel/ftp-cloudfs" rel="nofollow">ftp-cloudfs</a> project. </li><li>2009-09-14: version <a href="http://pyftpdlib.googlecode.com/files/pyftpdlib-0.5.2.tar.gz" rel="nofollow">0.5.2</a> released. </li><li>2009-08-10: pyftpdlib included in <a href="http://github.com/wuzhe/imgserve/tree/master" rel="nofollow">Imgserve</a> project. </li><li>2009-07-22: pyftpdlib included in  <a href="http://plumi.org/wiki" rel="nofollow">Plumi</a> project. </li><li>2009-04-02: pyftpdlib RPM-packaged and ported on <a href="https://admin.fedoraproject.org/pkgdb/packages/name/pyftpdlib" rel="nofollow">Fedora</a> to make users can easily install on it via <i>yum install pyftpdlib</i>. </li><li>2009-03-28: pyftpdlib included in  <a href="http://bazaar-vcs.org/" rel="nofollow">Bazaar</a> project. </li><li>2009-02-23: pyftpdlib included in <a href="http://git.logfish.net/shareftp.git/" rel="nofollow">ShareFTP</a> project. </li><li>2009-01-21: version <a href="http://pyftpdlib.googlecode.com/files/pyftpdlib-0.5.1.tar.gz" rel="nofollow">0.5.1</a> released. </li><li>2008-12-27: pyftpdlib included in <a href="http://code.google.com/intl/it-IT/chromium/" rel="nofollow">Google Chromium</a>, the open source project behind <a href="http://www.google.com/chrome" rel="nofollow">Google Chrome</a>. </li><li>2008-12-27: pyftpdlib ported on <a href="http://www.gnu-darwin.org/" rel="nofollow">GNU Darwin</a> systems to make users can easily install on it. </li><li>2008-11-26: pyftpdlib included in <a href="http://openerp.com/" rel="nofollow">OpenERP</a>. </li><li>2008-10-26: pyftpdlib included in <a href="http://www.vmspython.org/" rel="nofollow">Python for OpenVMS</a> as standard package. </li><li>2008-10-09: pyftpdlib included in <a href="http://bbs.archlinux.org/viewtopic.php?pid=431474" rel="nofollow">Shareme</a> project. </li><li>2008-09-20: version <a href="http://pyftpdlib.googlecode.com/files/pyftpdlib-0.5.0.tar.gz" rel="nofollow">0.5.0</a> released. </li><li>2008-08-10: pyftpdlib included in <a href="http://trac.manent-backup.com/" rel="nofollow">Manent</a> project. </li><li>2008-05-16: version <a href="http://pyftpdlib.googlecode.com/files/pyftpdlib-0.4.0.tar.gz" rel="nofollow">0.4.0</a> released. </li><li>2008-04-09: pyftpdlib used as backend for <a href="http://arkadiusz-wahlig.blogspot.com/2008/04/hosting-files-on-google.html" rel="nofollow">gpftpd</a>, an FTP server for managing files hosted on <a href="http://pages.google.com/" rel="nofollow">Google Pages</a>. </li><li>2008-01-17: version <a href="http://pyftpdlib.googlecode.com/files/pyftpdlib-0.3.0.tar.gz" rel="nofollow">0.3.0</a> released. </li><li>2007-10-14: pyftpdlib included in <a href="http://walco.n--tree.net/projects/aksy/wiki" rel="nofollow">Aksy</a> project. </li><li>2007-09-17: version <a href="http://pyftpdlib.googlecode.com/files/pyftpdlib_0.2.0.tar.gz" rel="nofollow">0.2.0</a> released. </li><li>2007-09-08: pyftpdlib included as <a href="http://farmanager.com/" rel="nofollow">FarManager</a> <a href="http://www.farmanager.com/enforum/viewtopic.php?t=640&amp;highlight=&amp;sid=12d4d90f27f421243bcf7a0e3c516efb" rel="nofollow">plug-in</a>. </li><li>2007-03-06: pyftpdlib <a href="http://www.freshports.org/ftp/py-pyftpdlib/" rel="nofollow">ported on FreeBSD</a> systems to make users can easily install on it. </li><li>2007-03-07: version <a href="http://pyftpdlib.googlecode.com/files/pyftpdlib_0.1.1.tar.gz" rel="nofollow">0.1.1</a> released. </li><li>2007-02-26: version <a href="http://pyftpdlib.googlecode.com/files/pyftpdlib_0.1.tar.gz" rel="nofollow">0.1.0</a> released. </li></ul><h2><a name="Contribute"></a>Contribute<a href="#Contribute" class="section_anchor">¶</a></h2><p>If you want to help or just give us suggestions about the project and other related things,  subscribe to the <a href="http://groups.google.com/group/pyftpdlib" rel="nofollow">discussion mailing list</a>.
+ If you want to talk with project team members about pyftpdlib and other
+ related things feel free to contact us at the following addresses: </p><p><table><tbody><tr><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> <strong>Name</strong> </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> <strong>Country</strong> </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> <strong>E-mail</strong> </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> <strong>Description</strong> </td></tr> <tr><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> Giampaolo Rodola' </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> Turin (Italy) </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> g.rodola at gmail dot com </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> Original pyftpdlib author and main maintainer. </td></tr> <tr><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> Jay Loden </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> New Jersey (USA) </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> jloden at gmail dot com  </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> OS X and Linux platform development/testing </td></tr> <tr><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> Janos Guljas </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> janos at janos.in dot rs </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> Debian package maintainer </td></tr> <tr><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> Silas Sewell </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> Denver (USA) </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> silas at sewell dot ch  </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> Fedora package maintainer </td></tr> <tr><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> Li-Wen Hsu </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> Taiwan </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> lwhsu at freebsd dot org </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> FreeBSD package maintainer </td></tr> </tbody></table></p><p>Feedbacks and suggestions are greatly appreciated as well as new testers and coders willing to join the development.<br> For any bug report, patch proposal or feature request, add an entry into the <a href="http://code.google.com/p/pyftpdlib/issues/list" rel="nofollow">Issue Tracker</a>.<br> In case you're using pyftpdlib into a software or website of yours, please update the pyftpdlib <a href="http://code.google.com/p/pyftpdlib/wiki/Adoptions" rel="nofollow">Adoptions List</a> by adding a comment in the Wiki. </p><p>Thank you. </p><h2><a name="Statistics"></a>Statistics<a href="#Statistics" class="section_anchor">¶</a></h2><p><table><tbody><tr><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;">
+<script src="index_files/rpc.js"></script>
+<script type="text/javascript">
+function resizeIframeHandler(opt_height) {
+  var elem = document.getElementById(this.f);
+  if (!elem) return;
+  if (!opt_height) {
+    elem.style.height = undefined;
+  }
+  else {
+    opt_height = Math.max(10, opt_height);
+    elem.style.height = opt_height + 'px';
+  }
+}
+gadgets.rpc.register("resize_iframe", resizeIframeHandler);
+
+gadgets.rpc.register('set_title', function(title) {
+ var elem = document.getElementById(this.f + '_title');
+ if (elem) {
+   elem.innerHTML = gadgets.util.escape(title);
+ }
+});
+</script>
+<h2 id="gadget0_title" class="gadget-title"></h2><iframe src="index_files/ifr.html" id="gadget0" name="gadget0" frameborder="0" height="200" width="340"></iframe> </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> <h2 id="gadget1_title" class="gadget-title"></h2><iframe src="index_files/ifr_002.html" id="gadget1" name="gadget1" frameborder="0" height="220"></iframe> </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> <h2 id="gadget2_title" class="gadget-title"></h2><iframe src="index_files/ifr_003.html" id="gadget2" name="gadget2" frameborder="0" height="250"></iframe> </td></tr> </tbody></table></p><h2><a name="Trademarks"></a>Trademarks<a href="#Trademarks" class="section_anchor">¶</a></h2><p>Some famous trademarks which adopted pyftpdlib (<a href="http://code.google.com/p/pyftpdlib/wiki/Adoptions" rel="nofollow">complete list</a>). </p><p><p></p><p></p><p></p><p></p><p></p><table> <tbody><tr><td valign="bottom"> <a href="http://www.google.com/chrome" title="Google Chrome" rel="nofollow"> <img src="index_files/logo_sm.jpg" alt="Google Chrome"> </a> <br><br><br><br> </td> <td valign="bottom"> <a href="http://www.debian.org/" title="Linux Debian" rel="nofollow"> <img src="index_files/100px_debian_logo.png" alt="Linux Debian"> </a> </td> <td valign="bottom"> <a href="http://fedoraproject.org/" title="Linux Fedora" rel="nofollow"> <img src="index_files/fedora-logo.png" alt="Linux Fedora"> </a> </td> <td valign="bottom"> <a href="http://www.freebsd.org/" title="Free BSD" rel="nofollow"> <img src="index_files/beastie.gif" alt="Free BSD"> </a> </td> <td valign="bottom"> <a href="http://openerp.com/" title="Open ERP" rel="nofollow"> <blockquote><img src="index_files/openlogo.png" alt="Open ERP">
+</blockquote></a> </td> </tr></tbody></table> </p><p><p></p><p></p><p></p><p></p><p></p><table> <tbody><tr><td valign="top"> <br><br> <a href="http://bazaar-vcs.org/" title="Bazaar control revision system" rel="nofollow"> <img src="index_files/bazaar-logo.jpg" alt="Bazaar control revision system"> </a> </td> <td valign="top"> <a href="http://www.bitsontherun.com/" title="Bits On The Run" rel="nofollow"> <blockquote><img src="index_files/bits-on-the-run-logo-200x411.xml" alt="Bits On The Run">
+</blockquote></a> </td> <td> <a href="http://www.bitsontherun.com/" title="Python for OpenVMS" rel="nofollow"> <img src="index_files/wwwovmsorg_logo.png" alt="Python for OpenVMS"> </a> </td> <td> <a href="http://www.smartfile.com/" title="Smartfile" rel="nofollow"> <blockquote><img src="index_files/logo.gif" alt="Smartfile">
+</blockquote></a> </td> </tr></tbody></table> </p>
+ </td>
+ </tr>
+ </tbody></table>
+ </div>
+
+
+
+
+<script type="text/javascript" src="index_files/dit_scripts.js"></script>
+
+
+
+ </body></html>

@@ -1,0 +1,10 @@
+; Test if we recognize a forward reference that can't be in function block.
+
+; REQUIRES: no_minimal_build
+
+; RUN: not %pnacl_sz -bitcode-as-text %p/Inputs/bad-var-fwdref.tbc \
+; RUN:     -bitcode-format=pnacl -notranslate -build-on-read \
+; RUN:     -allow-externally-defined-symbols 2>&1 \
+; RUN:   | FileCheck %s
+
+; CHECK: Forward reference @3105555534 too big. Have 1 globals and function contains 16 bytes

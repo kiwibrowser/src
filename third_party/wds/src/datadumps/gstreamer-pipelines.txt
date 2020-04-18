@@ -1,0 +1,22 @@
+WFD source:
+
+ Only video:
+ gst-launch-1.0 videotestsrc ! x264enc ! mpegtsmux ! rtpmp2tpay ! udpsink host=127.0.0.1 port=5000
+
+ Only audio:
+ gst-launch-1.0 audiotestsrc ! avenc_ac3 ! mpegtsmux ! rtpmp2tpay ! udpsink host=127.0.0.1 port=5000
+
+ Both:
+ gst-launch-1.0 videotestsrc ! x264enc ! muxer.  audiotestsrc ! avenc_ac3 ! muxer.  mpegtsmux name=muxer ! rtpmp2tpay ! udpsink host=127.0.0.1 port=5000
+
+WFD sink:
+
+ Only audio:
+ gst-launch-1.0 udpsrc port=5000 caps="application/x-rtp" ! rtpmp2tdepay ! decodebin ! autoaudiosink
+
+ Only video:
+ gst-launch-1.0 udpsrc port=5000 caps="application/x-rtp" ! rtpmp2tdepay ! decodebin ! autovideosink
+
+ Both:
+ gst-launch-1.0 udpsrc port=5000 caps="application/x-rtp" ! rtpmp2tdepay ! decodebin name=decoder ! autoaudiosink  decoder. ! autovideosink
+

@@ -1,0 +1,136 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>Mesa Release Notes</title>
+  <link rel="stylesheet" type="text/css" href="mesa.css">
+</head>
+<body>
+
+<h1>Mesa 7.9 Release Notes / October 4, 2010</h1>
+
+<p>
+Mesa 7.9 is a new development release.
+People who are concerned with stability and reliability should stick
+with a previous release or wait for Mesa 7.9.1.
+</p>
+<p>
+Mesa 7.9 implements the OpenGL 2.1 API, but the version reported by
+glGetString(GL_VERSION) depends on the particular driver being used.
+Some drivers don't support all the features required in OpenGL 2.1.
+</p>
+<p>
+See the <a href="install.html">Compiling/Installing page</a> for prerequisites
+for DRI hardware acceleration.
+</p>
+
+
+<h2>MD5 checksums</h2>
+<pre>
+ed65ab425b25895c7f473d0a5e6e64f8  MesaLib-7.9.tar.gz
+82c740c49d572baa6da2b1a1eee90bca  MesaLib-7.9.tar.bz2
+cd2b6ecec759b0457475e94bbb38fedb  MesaLib-7.9.zip
+7b54af9fb9b1f6a1a65db2520f50848f  MesaGLUT-7.9.tar.gz
+20d07419d1929f833fdb36bced290ad5  MesaGLUT-7.9.tar.bz2
+62a7edecd7c92675cd6029b05217eb0a  MesaGLUT-7.9.zip
+</pre>
+
+
+<h2>New features</h2>
+<ul>
+<li>New, improved GLSL compiler written by Intel.
+    See the <a href="shading.html"> Shading Language</a> page for
+    more information.
+<li>New, very experimental Gallium driver for R600-R700 Radeons.
+<li>Support for AMD Evergreen-based Radeons (HD 5xxx)
+<li>GL_EXT_timer_query extension (i965 driver and softpipe only)
+<li>GL_EXT_framebuffer_multisample extension (intel drivers, MAX_SAMPLES = 1)
+<li>GL_ARB_texture_swizzle extension (alias of GL_EXT_texture_swizzle)
+<li>GL_ARB_draw_elements_base_vertex, GL_ARB_fragment_program_shadow,
+    GL_ARB_window_pos, GL_EXT_gpu_program_parameters,
+    GL_ATI_texture_env_combine3, GL_MESA_pack_invert, and GL_OES_EGL_image
+    extensions in Gallium drivers
+<li>GL_ARB_depth_clamp and GL_NV_depth_clamp extensions (in nv50 and r600
+    Gallium drivers)
+<li>GL_ARB_half_float_vertex extension (in nvfx, r300, r600, softpipe,
+    and llvmpipe Gallium drivers)
+<li>GL_EXT_draw_buffers2 (in nv50, r600, softpipe, and llvmpipe Gallium
+    drivers)
+<li>GL_EXT_texture_swizzle (in nvfx, r300, r600, softpipe, and llvmpipe
+    Gallium drivers)
+<li>GL_ATI_texture_mirror_once (in nvfx, nv50, r300, r600, softpipe, and
+    llvmpipe Gallium drivers)
+<li>GL_NV_conditional_render (in r300 Gallium driver)
+<li>Initial "signs of life" support for Sandybridge hardware in i965 DRI
+    driver.
+</ul>
+
+
+<h2>Bug fixes</h2>
+<p>This list is likely incomplete.</p>
+<ul>
+<li>Massive improvements to the Gallium driver for R300-R500 Radeons; this
+    driver is now considered stable for use as a DRI (OpenGL) driver.
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=10908">Bug 10908</a> - GLSL: gl_FogParamaters gl_Fog built-in uniform not functioning</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=13753">Bug 13753</a> - Numerous bugs in GLSL uniform handling</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=16854">Bug 16854</a> - GLSL function call at global scope causes SEGV</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=16856">Bug 16856</a> - GLSL indexing of unsized array results in assertion failure</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=18659">Bug 18659</a> - Crash in shader/slang/slang_codegen.c _slang_gen_function_call_name()</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=19089">Bug 19089</a> - [GLSL] glsl1/shadow2D() cases fail</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=22622">Bug 22622</a> - [GM965 GLSL] noise*() cause GPU lockup</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=23743">Bug 23743</a> - For loop from 0 to 0 not optimized out</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=24553">Bug 24553</a> - shader compilation times explode when using more () pairs</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=25664">Bug 25664</a> - [GLSL] re-declaring an empty array fails to compile</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=25769">Bug 25769</a> - [GLSL] "float" can be implicitly converted to "int"</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=25808">Bug 25808</a> - [GLSL] const variable is modified successfully</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=25826">Bug 25826</a> - [GLSL] declaring an unsized array then re-declaring with a size fails</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=25827">Bug 25827</a> - [GLSL] vector constructor accepts too many arguments successfully</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=25829">Bug 25829</a> - [GLSL] allowing non-void function without returning value</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=25830">Bug 25830</a> - [GLSL] allowing non-constant-expression as const declaration initializer</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=25877">Bug 25877</a> - [GLSL 1.10] implicit conversion from "int" to "float" should not be allowed</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=25878">Bug 25878</a> - [GLSL] sampler is converted to int successfully</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=25994">Bug 25994</a> - [GM45][GLSL] 'return' statement in vertex shader unsupported</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=25999">Bug 25999</a> - [GLSL] embedded structure constructor fails to compile</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=26000">Bug 26000</a> - [GLSL] allowing different parameter qualifier between the function definition and declaration</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=26001">Bug 26001</a> - [GLSL 1.10] constructing matrix from matrix succeeds</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=26224">Bug 26224</a> - [GLSL] Cannot get location of a uniform struct member</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=26990">Bug 26990</a> - [GLSL] variable declaration in "while" fails to compile</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=27004">Bug 27004</a> - [GLSL] allowing macro redefinition</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=27060">Bug 27060</a> - [965] piglit glsl-fs-raytrace failure due to lack of function calls.</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=27216">Bug 27216</a> - Assignment with a function call in an if statement causes an assertion failure</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=27261">Bug 27261</a> - GLSL Compiler fails on the following vertex shader</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=27265">Bug 27265</a> - GLSL Compiler doesnt link the attached vertex shader</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=27388">Bug 27388</a> - [i965] piglit glsl-vs-arrays failure</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=27403">Bug 27403</a> - GLSL struct causing "Invalid src register file ..." error</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=27914">Bug 27914</a> - GLSL compiler uses MUL+ADD where it could use MAD</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=28055">Bug 28055</a> - glsl-texcoord-array fails GLSL compilation</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=28374">Bug 28374</a> - SIGSEGV shader/slang/slang_typeinfo.c:534</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=28748">Bug 28748</a> - [i965] uninlined function calls support</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=28833">Bug 28833</a> - piglit/shaders/glsl-texcoord-array fail</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=28834">Bug 28834</a> - Add support for system fpclassify to GL_OES_query_matrix function for OpenBSD / NetBSD</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=28837">Bug 28837</a> - varying vec4 index support</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=28845">Bug 28845</a> - The GLU tesselator code has some warnings</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=28889">Bug 28889</a> - [regression] wine game crash</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=28894">Bug 28894</a> - slang build fails if absolute path contains spaces</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=28913">Bug 28913</a> - [GLSL] allowing two version statements</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=28931">Bug 28931</a> - Floating Point Exception in Warzone2100 Trunk version</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=28966">Bug 28966</a> - [r300g] Dynamic branching 3 demo does not run</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=28967">Bug 28967</a> - slang/slang_emit.c:350: storage_to_src_reg: Assertion `index &gt;= 0' failed.</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=29013">Bug 29013</a> - [r300g] translate_rgb_op: unknown opcode ILLEGAL OPCODE</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=29020">Bug 29020</a> - [r300g] Wine d3d9 tests hardlock</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=29910">Bug 29910</a> - Mesa advertises bogus GL_ARB_shading_language_120</li>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=30196">Bug 30196</a> - [GLSL] gl_TextureMatrix{Inverse,Transpose,InverseTranspose} unsupported</li>
+</ul>
+
+
+<h2>Changes</h2>
+<ul>
+<li>The Mesa demo/test programs have been moved into a separate git
+repository.
+<li>GL/glext.h file upgraded to version 64
+<li>GL/glxext.h file upgraded to version 32
+<li>GL/wglext.h file upgraded to version 22
+</ul>
+
+</body>
+</html>

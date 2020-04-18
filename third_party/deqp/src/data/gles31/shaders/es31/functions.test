@@ -1,0 +1,38 @@
+group overloading "Function Overloading"
+
+	case arrays_of_arrays_size
+		version 310 es
+		values
+		{
+			output float out0	= [ 1.0 ];
+		}
+
+		both ""
+			#version 310 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			float func (float f[4][3])
+			{
+				return f[0][0];
+			}
+
+			float func (float f[4][4])
+			{
+				return f[1][1];
+			}
+
+			void main ()
+			{
+				${SETUP}
+				float[4][4] x = float[4][4] (	float[4] (0.0, 0.0, -1.0, 1.0),
+												float[4] (-1.0, 1.0, 0.0, 0.0),
+												float[4] (0.0, 0.0, -1.0, 1.0),
+												float[4] (-1.0, 1.0, 0.0, 0.0) );
+				out0 = func(x);
+				${OUTPUT}
+			}
+		""
+	end
+
+end # overloading

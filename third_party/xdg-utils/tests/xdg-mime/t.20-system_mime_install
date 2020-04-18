@@ -1,0 +1,47 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_system_mime_install() {
+
+## Begin the test.
+test_start "$FUNCNAME: install system mime type"
+test_purpose "Verify that new mime types get installed into the system space correctly"
+
+# Dependencies section
+test_init
+
+require_root
+
+set_no_display
+use_file "$XDG_TEST_DIR/xdg-mime/data/testmime.xml" INPUT_FILE
+edit_file "$INPUT_FILE" "x-xdg-testpattern" TEST_MIME "x-$XDG_TEST_ID"
+assert_file "$INPUT_FILE"
+
+
+echo "text/$TEST_MIME" >testmime.expected
+
+echo "Some text." >testfile.xdgtest
+assert_file testfile.xdgtest
+
+# Test steps section
+test_procedure
+
+assert_exit 0 xdg-mime install --mode system "$INPUT_FILE"
+assert_nostdout
+assert_nostderr
+
+# TODO: query requires a running desktop
+#assert_exit 0 xdg-mime query filetype testfile.xdgtest
+#assert_stdout testmime.expected
+#assert_nostderr
+
+xdg-mime uninstall --mode system "$INPUT_FILE" >/dev/null 2>&1
+
+test_result
+} 
+run_test test_system_mime_install 

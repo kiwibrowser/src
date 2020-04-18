@@ -1,0 +1,260 @@
+----------------------------------
+----------------------------------
+Details on using the Mob* Monitor:
+----------------------------------
+----------------------------------
+
+
+Overview:
+---------
+
+The Mob* Monitor provides a way to monitor the health state of a particular
+service. Service health is defined by a set of satisfiable checks, called
+health checks.
+
+The Mob* Monitor executes health checks that are written for a particular
+service and collects information on the health state. Users can query
+the health state of a service via an RPC/RESTful interface.
+
+When a service is unhealthy, the Mob* Monitor can be requested to execute
+repair actions that are defined in the service's check file package.
+
+
+Check Files and Check File Packages:
+------------------------------------
+
+Check file packages are located in the check file directory. Each 'package'
+is a Python package.
+
+The layout of the checkfile directory is as follows:
+
+checkfile_directory:
+    service1:
+        __init__.py
+        service_actions.py
+        more_service_actions.py
+        easy_check.py
+        harder_check.py
+        ...
+    service2:
+        __init__.py
+        service2_actions.py
+        service_check.py
+        ....
+    .
+    .
+    .
+    serviceN:
+        ...
+
+Each service check file package should be flat, that is, no subdirectories will
+be walked to collect health checks.
+
+Check files define health checks and must end in '_check.py'. The Mob* Monitor
+does not enforce how or where in the package you define repair actions.
+
+
+Health Checks:
+--------------
+
+Health checks are the basic conditions that altogether define whether or not a
+service is healthy from the perspective of the Mob* Monitor.
+
+A health check is a python object that implements the following interface:
+
+  - Check()
+
+    Tests the health condition.
+
+    -> Returns 0 if the health check was completely satisfied.
+    -> Returns a positive integer if the check was successfuly, but could
+       have been better.
+    -> Returns a negative integer if the check was unsuccessful.
+
+  - Diagnose(errocode)
+
+    Maps an error code to a description and a set of actions that can be
+    used to repair or improve the condition.
+
+    -> Returns a tuple of (description, actions) where:
+         description is a string describing the state.
+         actions is a list of repair functions.
+
+
+Health checks can (optionally) also define the following attributes:
+
+  - CHECK_INTERVAL: Defines the interval (in seconds) between health check
+                    executions. This defaults to 30 seconds if not defined.
+
+
+A check file may contain as many health checks as the writer feels is
+necessary. There is no restriction on what else may be included in the
+check file. The writer is free to write many health check files.
+
+
+Repair Actions:
+---------------
+
+Repair actions are used to repair or improve the health state of a service. The
+appropriate repair actions to take are returned in a health check's Diagnose
+method.
+
+Repair actions are functions and can be defined anywhere in the service check
+package.
+
+It is suggested that repair actions are defined in files ending in 'actions.py'
+which are imported by health check files.
+
+
+Health Check and Action Example:
+--------------------------------
+
+Suppose we have a service named 'myservice'. The check file package should have
+the following layout:
+
+checkdir:
+    myservice:
+        __init__.py
+        myservice_check.py
+        repair_actions.py
+
+
+The 'myservice_check.py' file should look like the following:
+
+    from myservice import repair_actions
+
+    def IsKeyFileInstalled():
+      """Checks if the key file is installed.
+
+      Returns:
+        True if USB key is plugged in, False otherwise.
+      """
+      ....
+      return result
+
+
+    class MyHealthCheck(object):
+
+      CHECK_INTERVAL = 10
+
+      def Check(self):
+        if IsKeyFileInstalled():
+          return 0
+
+        return -1
+
+      def Diagnose(self, errcode):
+        if -1 == errcode:
+          return ('Key file is missing.' [repair_actions.InstallKeyFile])
+
+        return ('Unknown failure.', [])
+
+
+And the 'repair_actions.py' file should look like:
+
+
+    def InstallKeyFile(**kwargs):
+      """Installs the key file."""
+      ...
+
+
+
+Communicating with the Mob* Monitor:
+------------------------------------
+
+A small RPC library is provided for communicating with the Mob* Monitor
+which can be found in the module 'chromite.mobmonitor.rpc.rpc'.
+
+Communication is done via the RpcExecutor class defined in the above module.
+The RPC interface provided by RpcExecutor is as follows:
+
+  - GetServiceList()
+
+    Returns a list of the names of the services that are being monitored.
+    There will be one name for each recognized service check directory.
+
+  - GetStatus(service)
+
+    Returns the health status of a service with name |service|. The |service|
+    name may be omitted, in this case, the status of every service is
+    retrieved.
+
+    A service's health status is a named tuple with the following fields:
+      - service: The name of the service.
+      - health: A boolean as to whether or not the service is healthy.
+      - healthchecks: A list of healthchecks that did not succeed. Referring
+          back to the 'Health Checks' section above, a check writer can
+          specify return codes for health checks that tell the monitor that
+          the health check result was satisfactory, but not optimal. These
+          quasi-healthy checks will also be listed here.
+
+    A healthcheck returned in a service's health status is a named tuple with
+    the following fields:
+      - name: The name of the health check.
+      - health: A boolean as to whether or not the health check succeeded.
+      - description: A description of the health check's state.
+      - actions: A list of the names of actions that may be taken to repair or
+          improve this health condition.
+
+    A service is unhealthy if at least one health check failed. A failed health
+    check will have its health field marked as False.
+
+    A healthy service will display its health field as True and will not list
+    any health checks.
+
+    A service may also be quasi-healthy. In this case, the health field will
+    be True, but health conditions that could be improved are listed.
+
+  - RepairService(service, action, args, kwargs)
+
+    Request the Mob* Monitor to execute a repair action for the specified
+    service. |args| is a list of positional arguments and |kwargs| is a
+    dict of keyword arguments.
+
+    The monitor will return the status of the service post repair execution.
+
+
+Using the RPC library:
+
+    from chromite.mobmonitor.rpc import rpc
+
+    def testStatus():
+      # RpcExecutor takes optional keyword args for |host| and |port|.
+      # They default to 'localhost' and 9991 respectively.
+      rpcexec = rpc.RpcExecutor()
+      service_list = rpcexec.GetServiceList()
+      for service in service_list:
+        print(rpcexec.GetStatus(service))
+      rpcexec.RepairService('someservice', 'someaction', [1, 2], {'z': 3})
+
+
+Using the mobmoncli:
+
+  A command line interface is provided for communicating with the Mob* Monitor.
+  The mobmoncli script is installed and part of the PATH on moblabs.
+  It provides the same interface discussed above for the RpcExecutor.
+
+  See chromite.mobmonitor.scripts.mobmoncli for a list of options that can be
+  passed.
+
+  Usage examples:
+
+    Getting a list of every service:
+      $ mobmoncli GetServiceList
+
+    Getting every service status:
+      $ mobmoncli GetStatus
+
+    Getting a particular service status
+      $ mobmoncli GetStatus -s myservice
+
+    Repairing a service:
+      $ mobmoncli RepairService -s myservice -a myaction
+
+    Passing arguments to a repair action:
+      $ mobmoncli RepairService -s myservice -a myotheraction -i 1,2,a=3
+
+      The inputs are a comma-separated list. Each item in the list may or
+      may not be equal-sign separated. If they are equal-sign separated,
+      that item is treated as a keyword argument, else as a positional
+      argument to the repair function.

@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<!--
+ Copyright (c) 2009  Mozilla Corp
+
+ Permission is hereby granted, free of charge, to any person
+ obtaining a copy of this software and associated documentation
+ files (the "Software"), to deal in the Software without
+ restriction, including without limitation the rights to use,
+ copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following
+ conditions:
+
+ The above copyright notice and this permission notice shall be
+ included in all copies or substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ OTHER DEALINGS IN THE SOFTWARE.
+-->
+<html>
+<head>
+<title>Spore Creature Viewer</title>
+
+<script type="application/javascript" src="../../common/webgl-utils.js"></script>
+<script type="application/javascript" src="../../../devtools/src/debug/webgl-debug.js"></script>
+<script type="application/javascript" src="sylvester.js"></script>
+<script type="application/javascript" src="glUtils.js"></script>
+
+<script type="application/javascript" src="SporeFile.js"></script>
+
+<script type="application/javascript" src="sporeview.js"></script>
+
+<!-- shaders -->
+<script id="shader-vs" type="x-shader/x-vertex">
+attribute vec3 aVertex;
+attribute vec3 aNormal;
+attribute vec2 aTexCoord0;
+
+uniform mat4 uPMatrix;
+uniform mat4 uMVMatrix;
+uniform vec4 uViewPosition;
+
+varying vec3 vNormal;
+varying vec3 vViewVec;
+varying vec2 vTexCoord0;
+
+void main(void) {
+    gl_Position = uPMatrix * uMVMatrix * vec4(aVertex, 1.0);
+
+    vNormal = aNormal;
+    vViewVec = uViewPosition.xyz - aVertex.xyz;
+    vTexCoord0 = aTexCoord0;
+}
+</script>
+
+<script id="shader-fs" type="x-shader/x-fragment">
+precision mediump float;
+varying vec3 vNormal;
+varying vec3 vViewVec;
+varying vec2 vTexCoord0;
+
+uniform vec4 uColor;
+uniform sampler2D uTexture0;
+
+void main(void) {
+    float v = 0.5 * (1.0 + dot(normalize(vViewVec), vNormal));
+
+    gl_FragColor = texture2D(uTexture0, vTexCoord0.st);
+}
+</script>
+
+<style type="text/css">
+body {
+  background: #aaaaaa;
+  padding: 10px;
+  font-family: sans-serif;
+}
+
+#canvas {
+  border: 5px solid #000033;
+  margin-right: 15px;
+  float: left;
+}
+
+#words {
+  padding: 15px;
+}
+
+</style>
+</head>
+
+<body>
+<div>
+ <canvas id="canvas" width="500" height="500"></canvas>
+ <div id="words">
+   <h3>Spore Creature View</h3>
+   <p>EA's <a href="http://www.spore.com/">Spore</a> recently gained the
+   ability to <a
+   href="http://oceanquigley.blogspot.com/2009/07/how-to-export-spore-creatures-to-maya.html">export
+   creatures as COLLADA</a> files.
+   This is a simple example of loading the <a href="http://www.collada.org/">COLLADA</a> file and rendering
+   it using WebGL.  The COLLADA parser here is tailored to support
+   only the explicit format that Spore uses, but a general COLLADA parser is certainly possible.</p>
+   <p>Click and drag to rotate the model.  Can't see anything?  See <a href="http://blog.vlad1.com/2009/09/21/webgl-samples/">this post</a> for more info.</p>
+   <p>(Might take a bit to load, as this web server isn't serving compressed COLLADA.)</p>
+   <p style="font-size: small;">(This example only uses the diffuse texture map; it should really also render the bump map and specular texture -- patches accepted!)</p>
+   <p style="font-size: small;"><i>vladimir at mozilla dot com</i></p>
+ </div>
+</div>
+
+ <div style="font-family: fixed-width; font-size: small;" id="log"></div>
+</body>
+</html>

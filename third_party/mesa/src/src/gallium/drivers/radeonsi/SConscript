@@ -1,0 +1,17 @@
+Import('*')
+
+env = env.Clone()
+
+env.Append(CPPPATH = [
+    '#/include',
+    '#/src/gallium/drivers/radeon',
+])
+
+radeonsi = env.ConvenienceLibrary(
+    target = 'radeonsi',
+    source = env.ParseSourceList('Makefile.sources', 'C_SOURCES')
+    )
+
+env.Alias('radeonsi', radeonsi)
+
+Export('radeonsi')

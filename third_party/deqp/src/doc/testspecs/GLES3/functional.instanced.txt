@@ -1,0 +1,55 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Instanced rendering tests
+
+Tests:
+ + dEQP-GLES3.functional.instanced.*
+
+Includes:
+ + Draw using:
+   - glDrawArraysInstanced()
+   - glDrawElementsInstanced()
+ + Do instancing using:
+   - gl_InstanceID vertex shader input
+   - glVertexAttribDivisor()
+   - Mixture of the above
+ + Instance counts 1, 2, 4, 20
+ + Instanced attribute tests with different types
+
+Description:
+
+For each instance a rectangle-shaped grid of triangles is drawn. Instanced
+variables are rectangle offset and color components R, G and B. Offsets are
+chosen such that the rectangles are drawn next to each other.
+
+In the cases that test draw function, instancing method and instance count, the
+instance variables are either calculated based on gl_InstanceID in the vertex
+shader or given to the vertex shader as attributes instanced with
+glVertexAttribDivisor(). In a mixed case different methods are used for
+different variables. Instanced attributes are of type float, except for the
+offset attribute, which is of type vec3.
+
+In the tests for instanced attribute types, only the vertex attribute divisor
+method is used. The instanced attributes for color components R, G and B are
+all int, uint, float or corresponding vectors, or matrices. The instance offset
+attribute is of type vec3. In these cases, draw function and instance count are
+fixed to glDrawArraysInstanced() and 4, respectively.
+
+In all cases, the resulting image is compared against a reference image
+produced by a reference renderer.

@@ -1,0 +1,59 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Opaque Type Indexing
+
+Tests:
+ + dEQP-GLES31.functional.shaders.opaque_type_indexing.*
+
+Includes:
+ + Indexing of sampler arrays
+   - all sampler types
+   - single sampler array
+   - 1x1 texture per unit, unique color per texture
+ + Indexing of Uniform Block instance arrays
+   - single uint var in each block
+ + Indexing of SSBO instance arrays
+   - single uint var in each block
+   - read only
+ + Indexing of atomic counter arrays
+   - single array
+ + Vertex, fragment and compute shaders
+ + Indexing with constant literals
+ + Indexing with uniform values (XXX_gpu_shader5)
+ + Indexing with dynamically uniform values (XXX_gpu_shader5)
+
+Excludes (will be added later):
+ + SSBO writes, atomic ops, unsized array length queries
+ + Different texture sizes and filtering modes
+ + Indexing inside complex control flow (loop iterator var)
+ + Indexing with non-trivial constant expressions
+ + Negative tests
+
+Description:
+
+Opaque type indexing tests generate a shader that does multiple reads from a
+specific opaque type array. The indexing expression depends on the test case
+type. Constant literal cases simply index with constant literal values,
+uniform cases with values read directly from a list of uniforms, and
+dynamically uniform cases using attribute/varying/SSBO variables depending on
+the shader type.
+
+Results from the indexing operations are collected using transform feedback,
+fragment shader outputs, or written into a SSBO depending on the shader type.
+Results are validated against reference values.

@@ -1,0 +1,103 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Multisample interpolation tests
+
+Tests:
+ + dEQP-GLES31.functional.shaders.multisample_interpolation.*
+ + dEQP-GLES31.functional.state_query.multisample_interpolation.*
+
+Includes:
+ + Sample qualifier
+ + interpolateAtSample
+ + interpolateAtCentroid
+ + interpolateAtOffset
+ + Rendering to the default framebuffer, multi- and single sample
+   textures and renderbuffers
+ + Implementation limit queries for
+    - MIN_FRAGMENT_INTERPOLATION_OFFSET
+	- MAX_FRAGMENT_INTERPOLATION_OFFSET
+	- FRAGMENT_INTERPOLATION_OFFSET_BITS
+
+Excludes:
+ + interpolateAtSample() with non dynamically uniform sample index.
+ + Rendering to every supported render buffer sample count / format
+ + Rendering to every supported multisample texture sample count / format
+
+Description:
+
+sample_qualifier.* cases test sample qualifier by rendering a high frequency
+test pattern with a sample-qualified varying. Using the same reasoning as in
+sample shading test specification, the result image should contain numSamples +
+1 different shades of gray, e.g. single sampled render target should contain two
+shades (black and white) and 2x sampled three shades.
+
+interpolate_at_sample.* cases test interpolateAtSample() function with different
+inputs and render target configurations.
+
+interpolate_at_sample.static_sample_number and
+interpolate_at_sample.dynamic_sample_number cases sample a high frequency
+function with at every sample position and average the result. static cases use
+integer literals at which samples values are interpolated, in dynamic cases the
+sample index "depends" (all samples are sampled anyway) on uniform values.
+
+interpolate_at_sample.non_multisample_buffer cases test that using
+interpolateAtSample() with a non-multisample render target with any sample index
+will result in a value interpolated at the center of the pixel. Value is
+verified by interpolating a varying containing screen-space location in pixels.
+
+interpolate_at_sample.centroid_qualifier cases interpolate a centroid-qualified
+varying with interpolateAtSample(). The tests render narrow triangles and
+compare results of interpolateAtSample of two identical varyings, but with
+different centroid-qualification. The centroid qualifier should not have any
+effect on the values returned by interpolateAtSample().
+
+interpolate_at_sample.at_sample_id cases test that sample index used by
+interpolateAtSample is the same as in gl_SampleID. Tests compare value
+per-sample qualified varying and the value returned by
+interpolateAtSample(v_varying, gl_SampleID). Values should be equal.
+
+interpolate_at_centroid.* cases test interpolateAtCentroid() function with
+different inputs and render target configurations.
+
+interpolate_at_centroid.consistency cases test that values returned by
+interpolateAtCentroid are equal to the values of a centroid qualified varying.
+Tests render multiple narrow triangles, assign the same value to a
+centroid-qualified and non-centroid-qualified varying and then compares the
+values of centroid-qualified varying and interpolateAtCentroid function return
+value when given the non-centroid-qualified varying as an input.
+
+interpolate_at_centroid.array_element cases test interpolateAtCentroid function
+when given a varying array element as an input. Tests render multiple narrow
+triangles, and the frament shader verifies that values returned by
+interpolateAtCentroid() were interpolated within the primitive area.
+
+interpolate_at_offset.* cases test interpolateAtOffset() function with different
+inputs and render target configurations.
+
+interpolate_at_offset.no_qualifiers, .centroid_qualifier, and .sample_qualifier
+cases test interpolateAtOffset() function targeting a varying without
+qualifiers, with centroid qualifier and with per-sample qualifier.
+.array_element cases test interpolateAtOffset targeting an array element. Tests
+render a quad and in the fragment shader use interpolateAtOffset to a
+screen-space location (in pixels) varying. The fractional part of the returned
+value should be equal to the interpolation offset.
+
+interpolate_at_offset.at_sample_position cases test that using
+interpolateAtOffset to interpolate a value at the sample location returns the
+same value as a per-sample interpolated varying.

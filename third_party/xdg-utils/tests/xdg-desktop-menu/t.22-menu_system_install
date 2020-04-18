@@ -1,0 +1,67 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_menu_system_install() {
+## Begin the test.
+test_start "$FUNCNAME: verify a system menu is created correctly"
+
+# Dependencies section
+test_init
+
+USERPATH="${XDG_DATA_DIRS-/usr/local/share:/usr/share}:${XDG_CONFIG_DIRS-/etc/xdg}"
+
+require_root
+set_no_display
+
+# Generate .desktop file
+use_file "$XDG_TEST_DIR/xdg-desktop-menu/data/menu_item_test.desktop" DESKTOP
+use_file "$XDG_TEST_DIR/xdg-desktop-menu/data/menu_item_dummy.desktop" DESKTOP2
+use_file "$XDG_TEST_DIR/xdg-desktop-menu/data/menu_install.directory" DIRECTORY
+
+edit_file "$DIRECTORY" 'XDG UTILS TEST' MENU_NAME "MENU $XDG_TEST_SHORTID"
+
+edit_file "$DESKTOP" 'xdg-test-menu-item-install.tmp' CREATEFILE
+edit_file "$DESKTOP" 'Test Menu Item Install' ITEM_TEXT "TEST $XDG_TEST_SHORTID"
+edit_file "$DESKTOP" '/tmp' WORK_DIR "$XDG_TEST_TMPDIR"
+
+assert_file "$DESKTOP"
+assert_file "$DIRECTORY"
+
+# Verify the test icon is not installed already.
+assert_file_not_in_path "$DESKTOP" "$USERPATH"
+assert_file_not_in_path "$DIRECTORY" "$USERPATH"
+
+# Test steps section
+test_procedure
+
+assert_exit 0 xdg-desktop-menu install --mode system "$DIRECTORY" "$DESKTOP" "$DESKTOP2"
+assert_nostdout
+assert_nostderr
+
+assert_file_in_path "$DESKTOP" "$USERPATH"
+assert_file_in_path "$DESKTOP2" "$USERPATH"
+assert_file_in_path "$DIRECTORY" "$USERPATH"
+
+
+if [ -z "$XDG_TEST_NO_INTERACTIVE" ]; then
+
+assert_interactive "Is there a menu in <main> called '$MENU_NAME'?\n\t(NOTE: If you are using KDE, it may take a few seconds for the menu to appear.)" y
+assert_interactive "Are there exactly 2 items in '<main>/$MENU_NAME' called 'EXTRA ITEM' and '$ITEM_TEXT'?" y
+assert_interactive "Please select the menu item '<main>/$MENU_NAME/$ITEM_TEXT'"
+
+## Double clicking will result in the command 'touch xdg-test-menu-item-install.tmp' to be run
+assert_file "$WORK_DIR/$CREATEFILE"
+
+fi
+
+## Cleanup
+xdg-desktop-menu uninstall --mode system "$DIRECTORY" "$DESKTOP" "$DESKTOP2">/dev/null 2>&1
+
+test_result
+} 
+
+run_test test_menu_system_install

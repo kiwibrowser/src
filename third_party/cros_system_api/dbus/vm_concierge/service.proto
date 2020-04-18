@@ -1,0 +1,414 @@
+// Copyright 2017 The Chromium OS Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+option optimize_for = LITE_RUNTIME;
+
+// This file defines messages used for starting, stopping, and managing VMs.
+package vm_tools.concierge;
+option go_package = "vm_concierge";
+
+// Specification of the key components of a VM.
+message VirtualMachineSpec {
+  // Path to the kernel that should be used for the VM.
+  string kernel = 1;
+
+  // Path to the disk image that should be used as the root file system for
+  // the VM.
+  string rootfs = 2;
+}
+
+// The type of disk image.
+enum DiskImageType {
+  // A raw file.
+  DISK_IMAGE_RAW = 0;
+
+  // A qcow2-compatible disk image.
+  DISK_IMAGE_QCOW2 = 1;
+}
+
+// Describes any additional disk images that should be mounted inside the VM.
+message DiskImage {
+  // Path to the disk image on the host.
+  string path = 1;
+
+  // Path where this disk image will be mounted inside the VM.
+  string mount_point = 2;
+
+  // The file system type for this disk image.
+  string fstype = 3;
+
+  // Any special flags to be used when mounting the file system.  Specified the
+  // same way as in mount(2).
+  uint64 flags = 4;
+
+  // Any additional data associated with the mount.
+  string data = 5;
+
+  // If true, the disk image will be mounted writable.
+  bool writable = 6;
+
+  // If true, the disk image will be mounted.
+  bool do_mount = 7;
+
+  // Image type of the disk.
+  DiskImageType image_type = 8;
+}
+
+// Information about a particular VM.
+message VmInfo {
+  // The IPv4 address assigned to the VM, in network byte order.
+  fixed32 ipv4_address = 1;
+
+  // The process ID of the main crosvm process for the VM.
+  int32 pid = 2;
+
+  // The virtual socket context id assigned to the VM.
+  int64 cid = 3;
+}
+
+// Information that must be included with every StartVm dbus message.
+message StartVmRequest {
+  // The VM that should be started. This is ignored if starting a termina VM,
+  // which will always use the latest component from imageloader.
+  VirtualMachineSpec vm = 1;
+
+  // Any additional disks that should be mounted inside the VM.
+  repeated DiskImage disks = 2;
+
+  // Path to a shared directory that will be mounted via NFS inside the VM.
+  string shared_directory = 3;
+
+  // The human-readable name to be assigned to this VM.
+  string name = 4;
+
+  // If true, concierge should also perform termina-specific setup.
+  bool start_termina = 5;
+
+  // If true, a file descriptor must be passed along with the message and that
+  // file descriptor will be used for storage.
+  // Ignored unless |start_termina| is true.
+  bool use_fd_for_storage = 6;
+
+  // The owner of the vm.
+  string owner_id = 7;
+}
+
+// Information sent back by vm_concierge in response to a StartVm dbus message.
+message StartVmResponse {
+  // If true, the VM was started successfully.  |vm_info| will have non-default
+  // values only if this is true.
+  bool success = 1;
+
+  // If the VM failed to start, the reason for the failure.
+  string failure_reason = 2;
+
+  // Information about the VM that was started, if successful.
+  VmInfo vm_info = 3;
+}
+
+// Information that must be included with every StopVm dbus message.
+message StopVmRequest {
+  // The name of the VM to be stopped.
+  string name = 1;
+
+  // The owner of the vm.
+  string owner_id = 2;
+}
+
+// Response sent back by vm_concierge when it receives a StopVm dbus message.
+message StopVmResponse {
+  // If true, the requested VM was stopped.
+  bool success = 1;
+
+  // The failure_reason if the requested VM could not be stopped.
+  string failure_reason = 2;
+}
+
+// Request for information about the VM.
+message GetVmInfoRequest {
+  // The name of the VM to query.
+  string name = 1;
+
+  // The owner of the vm.
+  string owner_id = 2;
+}
+
+// Response sent back by vm_concierge for a GetVmInfo dbus message.
+message GetVmInfoResponse {
+  // If true, the requested VM exists and info was returned.
+  bool success = 1;
+
+  // Information about the VM that was requested.
+  VmInfo vm_info = 2;
+}
+
+// The type of storage location for a disk image.
+enum StorageLocation {
+  // Subdirectory under /home/root/<id>/crosvm.
+  STORAGE_CRYPTOHOME_ROOT = 0;
+
+  // The user's Downloads directory, under /home/user/<id>/Downloads.
+  STORAGE_CRYPTOHOME_DOWNLOADS = 1;
+}
+
+enum DiskImageStatus {
+  // Unknown status.
+  DISK_STATUS_UNKNOWN = 0;
+
+  // The disk image was created.
+  DISK_STATUS_CREATED = 1;
+
+  // The disk already existed.
+  DISK_STATUS_EXISTS = 2;
+
+  // Unable to create the disk image.
+  DISK_STATUS_FAILED = 3;
+
+  // Specified Disk does not exist.
+  DISK_STATUS_DOES_NOT_EXIST = 4;
+
+  // The specified disk was destroyed.
+  DISK_STATUS_DESTROYED = 5;
+}
+
+// Request to concierge to create a disk image.
+message CreateDiskImageRequest {
+  // The cryptohome id for the user's encrypted storage.
+  string cryptohome_id = 1;
+
+  // The path to the disk image. This must be a relative path, and any
+  // directories must already exist.
+  string disk_path = 2;
+
+  // The logical size of the new disk image, in bytes.
+  uint64 disk_size = 3;
+
+  // The type of disk image to be created.
+  DiskImageType image_type = 4;
+
+  // The storage location for the disk image.
+  StorageLocation storage_location = 5;
+}
+
+// Response to a CreateDiskImageRequest.
+message CreateDiskImageResponse {
+  // If true, the disk image has been successfully created.
+  DiskImageStatus status = 1;
+
+  // The absolute path to the created disk image, if it was successfully
+  // created or already existed.
+  string disk_path = 2;
+
+  // The failure reason if the disk image could not be created or doesn't exist.
+  string failure_reason = 3;
+}
+
+// Request to concierge to destroy a disk image.
+message DestroyDiskImageRequest {
+  // The cryptohome id for the user's encrypted storage.
+  string cryptohome_id = 1;
+
+  // The path to the disk image. This must be a relative path.
+  string disk_path = 2;
+
+  // The storage location for the disk image.
+  StorageLocation storage_location = 3;
+}
+
+// Response to a DestroyDiskImageRequest.
+message DestroyDiskImageResponse {
+  // If DISK_STATUS_DESTROYED, the disk image has been successfully destroyed.
+  // If DISK_STATUS_DOES_NOT_EXIST, the disk image had already been removed.
+  DiskImageStatus status = 1;
+
+  // The failure reason if the disk image could not be destroyed or doesn't exist.
+  string failure_reason = 3;
+}
+
+// Request to list all VM disk images in the given storage area.
+message ListVmDisksRequest {
+  // The cryptohome id for the user's encrypted storage.
+  string cryptohome_id = 1;
+
+  // The storage location to check.
+  StorageLocation storage_location = 2;
+}
+
+// Response to ListVmDisks {
+message ListVmDisksResponse {
+  // If true, the images array is valid.
+  bool success = 1;
+
+  // List of disk images.
+  repeated string images = 2;
+
+  // The failure reason if the disks could not be listed.
+  string failure_reason = 3;
+}
+
+// Message used in the signal for when a container has started up or failed to
+// startup.
+message ContainerStartedSignal {
+  // Name of the VM the container is in.
+  string vm_name = 1;
+
+  // Name of the container within the VM.
+  string container_name = 2;
+
+  // The owner of the vm and container.
+  string owner_id = 3;
+}
+
+// Request to start a specified container image within a VM. If the container
+// does not exist in the VM it will be created. Used with the StartContainer
+// D-Bus message into vm_concierge.
+message StartContainerRequest {
+  // Name of the VM to start the container in.
+  string vm_name = 1;
+
+  // Name of the container to start within the VM. If empty, the default
+  // container name will be used.
+  string container_name = 2;
+
+  // Username for the default user in the container. This is only used if the
+  // container has not been created yet.
+  string container_username = 3;
+
+  // Async mode is always used now.
+  bool async = 4 [deprecated=true];
+
+  // The cryptohome id for the user's encrypted storage. This is used for SSH
+  // key storage.
+  string cryptohome_id = 5;
+}
+
+enum ContainerStatus {
+  // Unknown status.
+  CONTAINER_STATUS_UNKNOWN = 0;
+
+  // The container is already running.
+  CONTAINER_STATUS_RUNNING = 1;
+
+  // The container is currently starting up.
+  CONTAINER_STATUS_STARTING = 2;
+
+  // The container failed to startup.
+  CONTAINER_STATUS_FAILURE = 3;
+}
+
+// Response sent back by vm_concierge when it receives a StartContaienr D-Bus
+// message.
+message StartContainerResponse {
+  // Use the status field instead.
+  bool success = 1 [deprecated=true];
+
+  // The failure_reason if the status is CONTAINER_STATUS_FAILURE.
+  string failure_reason = 2;
+
+  // The status of the container as a result of the StartContainer call. If the
+  // status is CONTAINER_STATUS_STARTING then a D-Bus signal will be sent to
+  // indicate whether success or failure occurred. The signal should be
+  // registered for before the StartContainer call is made because it may be
+  // sent before the call returns.
+  ContainerStatus status = 3;
+}
+
+// Request to launch on application in the specified VM/container. Used with the
+// LaunchContainerApplication D-Bus message into vm_concierge.
+message LaunchContainerApplicationRequest {
+  // Name of the VM to target.
+  string vm_name = 1;
+
+  // Name of the container within the VM to target, if empty the default
+  // container name will be used.
+  string container_name = 2;
+
+  // ID of the application to launch, should map to the desktop_file_id that
+  // is in the application list sent back from the container.
+  string desktop_file_id = 3;
+
+  // The owner of the vm and container.
+  string owner_id = 4;
+}
+
+// Response sent back by vm_concierge when it receives a
+// LaunchContainerApplication D-Bus message.
+message LaunchContainerApplicationResponse {
+  // If true, the requested application launched successfully.
+  bool success = 1;
+
+  // The failure_reason if the requested application could not be started.
+  string failure_reason = 2;
+}
+
+// Request to get application icons in the specified VM/container. Used with the
+// GetContainerAppIcon D-Bus message into vm_concierge.
+message ContainerAppIconRequest {
+  // Name of the VM to target.
+  string vm_name = 1;
+
+  // Name of the container within the VM to target, if empty the default
+  // container name will be used.
+  string container_name = 2;
+
+  // IDs of the application to get icons for, should map to the desktop_file_id
+  // that is in the application list sent back from the container.
+  repeated string desktop_file_ids = 3;
+
+  // The icon size with both its height and width equals to this number.
+  int32 size = 4;
+
+  // The target scale of this icon. This is the scale at which this icon is
+  // designed to be used.
+  int32 scale = 5;
+
+  // The owner of the vm and container.
+  string owner_id = 6;
+}
+
+// One desktop file ID with its icon.
+message DesktopIcon {
+  string desktop_file_id = 1;
+  bytes icon = 2;
+}
+
+// Response sent back by vm_concierge when it receives a
+// GetContainerAppIcon D-Bus message.
+// Some desktop_file_id may not have an icon.
+message ContainerAppIconResponse {
+  repeated DesktopIcon icons = 1;
+}
+
+// Request to get the SSH keys associated with the host and a specific
+// container for the GetContainerSshKeys call. These keys will be generated
+// when StartContainer is called the first time for a container, so this should
+// not be called until after that call is invoked.
+message ContainerSshKeysRequest {
+  // Name of the VM to target.
+  string vm_name = 1;
+
+  // Name of the container within the VM to target, if empty the default
+  // container name will be used.
+  string container_name = 2;
+
+  // The cryptohome id for the user's encrypted storage.
+  string cryptohome_id = 3;
+}
+
+// Response sent back by vm_concierge when it receives a GetContainerSshKeys
+// call. If either of the keys do not exist, the empty string will be set for
+// that value.
+message ContainerSshKeysResponse {
+  // Public key of the container for verification of it as a known host. This
+  // will be a single line string equivalent to the contents in the ssh-keygen
+  // generated file.
+  string container_public_key = 1;
+
+  // Private key for the host, counterpart fo the public key which is stored in
+  // the container as an authorized host. This will be a multiline string that
+  // is equivalent to the contents in the ssh-keygen generated file. This will
+  // be the same for all VMs/containers.
+  string host_private_key = 2;
+}

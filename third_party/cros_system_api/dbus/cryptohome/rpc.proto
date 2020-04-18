@@ -1,0 +1,428 @@
+// Copyright (c) 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+//
+// The messages in this file comprise the DBus/Proto interface for
+// Cryptohome where there is an AccountIdentifer argument, an
+// AuthorizationRequest (if needed for the call), and the call's
+// parameters as <Call>Request.
+//
+// 'optional' annotations are used heavily in the RPC definition
+// because the RPC endpoints most properly sanity check the contents
+// for application-specific logic, and the more optional-with-default
+// parameters exist, the less data is actually transferred on the wire
+// in "default" situations.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package cryptohome;
+
+import "key.proto";
+
+// Error codes do not need to be sequential per-call.
+// Prefixes by Request/Reply type should be used to help
+// callers know if specialized errors apply.
+enum CryptohomeErrorCode {
+  // 0 is the default value of BaseReply::error. It
+  // should never be used.
+  CRYPTOHOME_ERROR_NOT_SET = 0;
+
+  CRYPTOHOME_ERROR_ACCOUNT_NOT_FOUND = 1;
+  CRYPTOHOME_ERROR_AUTHORIZATION_KEY_NOT_FOUND = 2;
+  CRYPTOHOME_ERROR_AUTHORIZATION_KEY_FAILED = 3;
+  CRYPTOHOME_ERROR_NOT_IMPLEMENTED = 4;
+  CRYPTOHOME_ERROR_MOUNT_FATAL = 5;
+  CRYPTOHOME_ERROR_MOUNT_MOUNT_POINT_BUSY = 6;
+  CRYPTOHOME_ERROR_TPM_COMM_ERROR = 7;
+  CRYPTOHOME_ERROR_TPM_DEFEND_LOCK = 8;
+  CRYPTOHOME_ERROR_TPM_NEEDS_REBOOT = 9;
+  CRYPTOHOME_ERROR_AUTHORIZATION_KEY_DENIED = 10;
+  CRYPTOHOME_ERROR_KEY_QUOTA_EXCEEDED = 11;
+  CRYPTOHOME_ERROR_KEY_LABEL_EXISTS = 12;
+  CRYPTOHOME_ERROR_BACKING_STORE_FAILURE = 13;
+  CRYPTOHOME_ERROR_UPDATE_SIGNATURE_INVALID = 14;
+  CRYPTOHOME_ERROR_KEY_NOT_FOUND = 15;
+  CRYPTOHOME_ERROR_LOCKBOX_SIGNATURE_INVALID = 16;
+  CRYPTOHOME_ERROR_LOCKBOX_CANNOT_SIGN = 17;
+  CRYPTOHOME_ERROR_BOOT_ATTRIBUTE_NOT_FOUND = 18;
+  CRYPTOHOME_ERROR_BOOT_ATTRIBUTES_CANNOT_SIGN = 19;
+  CRYPTOHOME_ERROR_TPM_EK_NOT_AVAILABLE = 20;
+  CRYPTOHOME_ERROR_ATTESTATION_NOT_READY = 21;
+  CRYPTOHOME_ERROR_CANNOT_CONNECT_TO_CA = 22;
+  CRYPTOHOME_ERROR_CA_REFUSED_ENROLLMENT = 23;
+  CRYPTOHOME_ERROR_CA_REFUSED_CERTIFICATE = 24;
+  CRYPTOHOME_ERROR_INTERNAL_ATTESTATION_ERROR = 25;
+  CRYPTOHOME_ERROR_FIRMWARE_MANAGEMENT_PARAMETERS_INVALID = 26;
+  CRYPTOHOME_ERROR_FIRMWARE_MANAGEMENT_PARAMETERS_CANNOT_STORE = 27;
+  CRYPTOHOME_ERROR_FIRMWARE_MANAGEMENT_PARAMETERS_CANNOT_REMOVE = 28;
+  CRYPTOHOME_ERROR_MOUNT_OLD_ENCRYPTION = 29;
+  CRYPTOHOME_ERROR_MOUNT_PREVIOUS_MIGRATION_INCOMPLETE = 30;
+}
+
+message AccountIdentifier {
+  // |email| is deprecated. Don't use it.
+  optional string email = 1;
+
+  optional string account_id = 2;
+}
+
+// Parameters for connecting and making requests to a key delegate service.
+// This is currently used for making challenge requests for keys of the
+// |KEY_TYPE_CHALLENGE_RESPONSE| type.
+message KeyDelegate {
+  // D-Bus service name of the key delegate service that exports the key
+  // delegate object.
+  optional string dbus_service_name = 1;
+  // D-Bus object path of the key delegate object that implements the
+  // org.chromium.CryptohomeKeyDelegateInterface interface.
+  optional string dbus_object_path = 2;
+}
+
+message AuthorizationRequest {
+  // |key| must supply at least a |key.secret()|.  If no |key.data()| or
+  // |key.data().label()| is supplied, the |key.secret()| will be tested
+  // against all compatible |key.data().type()| keys, where
+  // KEY_TYPE_PASSWORD is the default type.  If
+  // |key.data().label()| is supplied, then the |key.secret()| will only be
+  // tested against the matching VaultKeyset.
+  optional Key key = 1;
+  // Describes delegate service that should be used for operations with the
+  // |key| key.
+  // Should be set only for keys with the |KEY_TYPE_CHALLENGE_RESPONSE| type.
+  optional KeyDelegate key_delegate = 2;
+}
+
+// These parameters are for inbound data to Cryptohome RPC
+// interfaces.  When calls are added that return data, a
+// <Call>Response should be defined.
+message MountRequest {
+  // Perform an ephemeral mount only.
+  optional bool require_ephemeral = 1 [default=false];
+  // If defined, the account will be created if it does not exist.
+  // Additionally, a failed AuthorizationRequest will be expected as
+  // there will be no existing keys.
+  optional CreateRequest create = 2;
+  // If set to true, and cryptohomed supports the new "dircrypto" encryption,
+  // forces to use the new encryption. That is, makes it an error to mount
+  // an existing home directory encrypted in the old way (ecryptfs).
+  optional bool force_dircrypto_if_available = 3;
+  // If set to true, mounts the existing ecryptfs vault to a temporary location
+  // while setting up a new dircrypto directory.
+  optional bool to_migrate_from_ecryptfs = 4;
+  // Performs a public mount, which is used for a Kiosk session. Credentials are
+  // not needed in the request; they are synthesized by cryptohomed from id.
+  optional bool public_mount = 5;
+  // If set to true, mounts the vault to a temporary location. The mount is not
+  // exposed to the usual locations (/home/user, /home/root).
+  optional bool hidden_mount = 6;
+}
+
+// A BaseReply type is used for all cryptohomed responses. A shared base class
+// is used because all calls will always reply with no-error or an error value.
+// A centralized definition allows for a reusable reply handler for cases where
+// there is no Request-specific reply data.  Any specialized data will live in
+// an extension as per MountReply below:
+//   if (reply.HasExtension(MountReply::reply)) { ... }
+//
+message BaseReply {
+  // If a call was successful, error will not be defined (clear_error()).
+  // If a call failed, it must set an error code (set_error(CODE)).
+  // In either case, call-specific data may be added as an extension.
+  optional CryptohomeErrorCode error = 1;
+
+  extensions 1000 to max;
+  // Next ID to use for extensions: 1011
+}
+
+// The MountRequest call may return more than just success or failure
+// so it embeds itself in a BaseReply as an extension.
+message MountReply {
+  extend BaseReply {
+    optional MountReply reply = 1000;
+  }
+  // |recreated| is set when the cryptohome had to be wiped
+  // because the key or data was an unrecoverable.  It does not imply
+  // failure to Mount nor is it 'true' when a CreateRequest creates
+  // a cryptohome for the first time.
+  optional bool recreated = 1 [default=false];
+  // Returns the filesystem-sanitized username.
+  optional string sanitized_username = 2;
+}
+
+message CreateRequest {
+  repeated Key keys = 1;
+  // Explicitly use the |key| from the AuthorizationRequest.
+  // Setting this value means that the KeyData is filled as it
+  // would be with a Key above or in an AddKeyRequest.
+  optional bool copy_authorization_key = 2 [default=false];
+  // If set to true, always use eCryptfs as the encryption method.
+  optional bool force_ecryptfs = 3 [default=false];
+  // In the future, this will contain account-wide data like
+  // the deletion priority or the IdP's origin.
+}
+
+message AddKeyRequest {
+  optional Key key = 1;
+  optional bool clobber_if_exists = 2 [default=false];
+}
+
+message UpdateKeyRequest {
+  optional Key changes = 1;
+  optional bytes authorization_signature = 2;
+}
+
+message CheckKeyRequest {
+}
+
+message RemoveKeyRequest {
+  // Only key.data().label() is used at present.
+  optional Key key = 1;
+}
+
+message SignBootLockboxRequest {
+  // The data to be signed.
+  optional bytes data = 1;
+}
+
+message SignBootLockboxReply {
+  extend BaseReply {
+    optional SignBootLockboxReply reply = 1001;
+  }
+  optional bytes signature = 1;
+}
+
+message VerifyBootLockboxRequest {
+  // The signed data to be verified.
+  optional bytes data = 1;
+  // The signature to be verified.
+  optional bytes signature = 2;
+}
+
+message FinalizeBootLockboxRequest {
+}
+
+message GetKeyDataRequest {
+  // |key| must supply at least one attribute and all others will be treated as
+  // wildcards.  Currently only |key.data().label()| may be supplied.  Like
+  // AuthorizationRequest, support can be added for queries by
+  // |key.data().type()| to return all keys of a certain class, testing
+  // |key.secret()|, or |key.data().provider_data()| entries.
+  optional Key key = 1;
+}
+
+message GetKeyDataReply {
+  extend BaseReply {
+    optional GetKeyDataReply reply = 1002;
+  }
+  repeated KeyData key_data = 1;
+}
+
+message GetBootAttributeRequest {
+  optional string name = 1;
+}
+
+message GetBootAttributeReply {
+  extend BaseReply {
+    optional GetBootAttributeReply reply = 1003;
+  }
+  optional bytes value = 1;
+}
+
+message SetBootAttributeRequest {
+  optional string name = 1;
+  optional bytes value = 2;
+}
+
+message FlushAndSignBootAttributesRequest {
+}
+
+message ListKeysRequest {
+  // The default behavior is by label so any extension here should honor that.
+}
+
+message ListKeysReply {
+  extend BaseReply {
+    optional ListKeysReply reply = 1004;
+  }
+  repeated string labels = 1;
+}
+
+message GetLoginStatusRequest {
+}
+
+message GetLoginStatusReply {
+  extend BaseReply {
+    optional GetLoginStatusReply reply = 1005;
+  }
+  optional bool owner_user_exists=1;
+  optional bool boot_lockbox_finalized=2;
+}
+
+message GetTpmStatusRequest {
+}
+
+message GetTpmStatusReply {
+  extend BaseReply {
+    optional GetTpmStatusReply reply = 1006;
+  }
+  // Whether a TPM is enabled on the system.
+  optional bool enabled = 1;
+  // Whether the TPM has been owned.
+  optional bool owned = 2;
+  // Whether the TPM initialization flow has completed. This includes taking
+  // ownership, preparing attestation data, and finalizing lockbox NVRAM.
+  optional bool initialized = 3;
+  // The TPM owner password. This is only available when (owned &&
+  // !initialized) and sometimes not even then.
+  optional string owner_password = 4;
+  // Whether attestation data has been prepared. This includes reading the
+  // endorsement certificate out of NVRAM and generating an identity key. This
+  // does not include any kind of enrollment with a Privacy CA.
+  optional bool attestation_prepared = 7;
+  // Whether the device has enrolled with a Privacy CA. This means the identity
+  // key has been successfully certified.
+  optional bool attestation_enrolled = 8;
+  // The current dictionary attack counter value.
+  optional int32 dictionary_attack_counter = 9;
+  // The current dictionary attack counter threshold.
+  optional int32 dictionary_attack_threshold = 10;
+  // Whether the TPM is in some form of dictionary attack lockout.
+  optional bool dictionary_attack_lockout_in_effect = 11;
+  // The number of seconds remaining in the lockout.
+  optional int32 dictionary_attack_lockout_seconds_remaining = 12;
+  // Whether the install lockbox has been finalized.
+  optional bool install_lockbox_finalized = 13;
+  // Whether the boot lockbox has been finalized.
+  optional bool boot_lockbox_finalized = 14;
+  // Whether the current PCR values show a verified boot.
+  optional bool verified_boot_measured = 15;
+}
+
+message GetEndorsementInfoRequest {
+}
+
+message GetEndorsementInfoReply {
+  extend BaseReply {
+    optional GetEndorsementInfoReply reply = 1007;
+  }
+  // The endorsement public key (PKCS #1 RSAPublicKey).
+  optional bytes ek_public_key = 1;
+  // The endorsement certificate (X.509).
+  optional bytes ek_certificate = 2;
+}
+
+message InitializeCastKeyRequest {
+}
+
+// Flags for GetFirmwareManagementParametersReply and
+// SetFirmwareManagementParametersRequest
+enum FirmwareManagementParametersFlags {
+  NONE = 0;
+  DEVELOPER_DISABLE_BOOT = 1;
+  DEVELOPER_DISABLE_RECOVERY_INSTALL = 2;
+  DEVELOPER_DISABLE_RECOVERY_ROOTFS = 4;
+  DEVELOPER_ENABLE_USB = 8;
+  DEVELOPER_ENABLE_LEGACY = 16;
+  DEVELOPER_USE_KEY_HASH = 32;
+  DEVELOPER_DISABLE_CASE_CLOSED_DEBUGGING_UNLOCK = 64;
+}
+
+message GetFirmwareManagementParametersRequest {
+}
+
+message GetFirmwareManagementParametersReply {
+  extend BaseReply {
+    optional GetFirmwareManagementParametersReply reply = 1008;
+  }
+
+  // Flags (zero or more from FirmwareManagementParametersFlags)
+  optional int32 flags = 1;
+  optional bytes developer_key_hash = 2;
+}
+
+message SetFirmwareManagementParametersRequest {
+  // Flags (zero or more from FirmwareManagementParametersFlags)
+  optional int32 flags = 1;
+  optional bytes developer_key_hash = 2;
+}
+
+message RemoveFirmwareManagementParametersRequest {
+}
+
+message GetAccountDiskUsageReply {
+  extend BaseReply {
+    optional GetAccountDiskUsageReply reply = 1009;
+  }
+  // The size of cryptohome in bytes.
+  optional int64 size = 1;
+}
+
+// Request parameters for MigrateToDircrypto.
+message MigrateToDircryptoRequest {
+  // Next ID to use: 2
+
+  // If true, only a few paths (specified in cryptohomed) that are necessary for
+  // a working profile will be migrated. Most user data will be wiped.
+  optional bool minimal_migration = 1;
+}
+
+// Request parameters for challenge requests for keys of the
+// |KEY_TYPE_CHALLENGE_RESPONSE| type.
+message KeyChallengeRequest {
+  // Specifies challenge types.
+  enum ChallengeType {
+    // Challenge is a request of a cryptographic signature of the specified data
+    // using the specified key.
+    CHALLENGE_TYPE_SIGNATURE = 1;
+  }
+  // Type of the requested challenge.
+  optional ChallengeType challenge_type = 1;
+  // Is set when |challenge_type| is |CHALLENGE_TYPE_SIGNATURE|. Contains the
+  // challenge request data.
+  optional SignatureKeyChallengeRequestData signature_request_data = 2;
+}
+
+// Request data for challenge requests of the |CHALLENGE_TYPE_SIGNATURE| request
+// type.
+message SignatureKeyChallengeRequestData {
+  // The blob of data for which the signature is asked.
+  optional bytes data_to_sign = 1;
+  // Specifies the key which is asked to sign the data. Contains the DER-encoded
+  // blob of the X.509 Subject Public Key Info.
+  optional bytes public_key_spki_der = 2;
+  // Specifies the signature algorithm that has to be used.
+  optional ChallengeSignatureAlgorithm signature_algorithm = 3;
+}
+
+// Response for challenge requests.
+message KeyChallengeResponse {
+  // Is set for responses to challenge requests of the
+  // |CHALLENGE_TYPE_SIGNATURE| challenge type. Contains the challenge response
+  // data.
+  optional SignatureKeyChallengeResponseData signature_response_data = 1;
+}
+
+// Response data for challenge requests of the |CHALLENGE_TYPE_SIGNATURE|
+// challenge type.
+message SignatureKeyChallengeResponseData {
+  // The signature blob of the requested data.
+  optional bytes signature = 1;
+}
+
+// Request a GetSupportedKeyPoliciesReply from cryptohome.
+message GetSupportedKeyPoliciesRequest {
+}
+
+// Response that informs the caller which KeyPolicy features are supported.
+message GetSupportedKeyPoliciesReply {
+  // Next ID to use: 2
+
+  extend BaseReply {
+    optional GetSupportedKeyPoliciesReply reply = 1010;
+  }
+
+  // Does it support low entropy credentials.
+  optional bool low_entropy_credentials = 1;
+}

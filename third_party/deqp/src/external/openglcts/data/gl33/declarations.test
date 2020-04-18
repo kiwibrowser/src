@@ -1,0 +1,71 @@
+group declarations "Declarations"
+
+	case missing_variable_name
+		version 330
+		both ""
+			#version 330
+			${DECLARATIONS}
+			void main()
+			{
+				int;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case comma_preceding_variable
+		version 330
+		both ""
+			#version 330
+			${DECLARATIONS}
+			void main()
+			{
+				int ,a;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case comma_following_variable
+		version 330
+		expect compile_fail
+		both ""
+			#version 330
+			${DECLARATIONS}
+			void main()
+			{
+				int a,;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case struct_missing_attribute_name
+		version 330
+		expect compile_fail
+		both ""
+			#version 330
+			${DECLARATIONS}
+			void main()
+			{
+				struct Data { int; };
+				${OUTPUT}
+			}
+		""
+	end
+
+	case struct_comma_preceding_attribute
+		version 330
+		expect compile_fail
+		both ""
+			#version 330
+			${DECLARATIONS}
+			void main()
+			{
+				struct Data { int ,a; };
+				${OUTPUT}
+			}
+		""
+	end
+
+end # invalid_declarations

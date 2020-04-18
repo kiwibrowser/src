@@ -1,0 +1,49 @@
+Name: libjpeg-turbo
+URL: https://github.com/libjpeg-turbo/libjpeg-turbo/
+Version: 1.4.90
+License: Custom license
+License File: LICENSE.md
+Security Critical: yes
+License Android Compatible: yes
+
+Description:
+This consists of the components:
+* libjpeg-turbo 1.4.90
+* Cherry picked clang fix for Arm32 assembly from upstream master:
+  https://github.com/libjpeg-turbo/libjpeg-turbo/commit/5e576386b57663bbe9d934edf7c276eb0150cd59
+  https://github.com/libjpeg-turbo/libjpeg-turbo/commit/2e480fa2a3285d9ff83a780ab3417badeb3f2d37
+* Cherry picked uninitialized memory fix from upstream master:
+  https://github.com/libjpeg-turbo/libjpeg-turbo/commit/a572622dd654305c86585724c2a1ea34e22c2103
+* This file (README.chromium)
+* A build file (libjpeg.gyp)
+* Patched header files used by Chromium
+* Deleted unused directories: cmakescripts, doc, java, md5, release, sharedlib,
+* testimages, and win
+
+This libjpeg-turbo can replace our libjpeg-6b without any modifications in the
+Chromium code.
+
+Same as our copy of libjpeg-6b, this libjpeg-turbo also added a new file
+jpeglibmangler.h and included it from jpeglib.h that changes the names of all
+externally visible functions to chromium_* so that we can avoid conflicts that
+arise when system libraries attempt to use our libjpeg. Also, we applied the
+following changes which are not merged to upstream:
+
+* Added the 'private_extern' flags on Mac (or the 'hidden' flags on Linux) to
+  all the global symbols in '.asm' files to prevent making them external ones.
+  http://crbug.com/608347
+* Fix libjpeg_turbo svn r64 libjpeg6b compat issue: make the fast path Huffman
+  decoder fallback to slow decoding if the Huffman decoding bit sentinel > 16,
+  this to match the exact behavior of jpeg_huff_decode().
+  http://crbug.com/398235
+* Fixed an issue with the ARM NEON build.
+  http://crbug.com/451035
+* Configuration files jconfig.h and jconfigint.h were written manually to be
+  compatible on all of Chromium's platforms.
+  http://crbug.com/608347
+
+Refer to working-with-nested-repos [1] for details of how to setup your git
+svn client to update the code (for making local changes, cherry picking from
+upstream, etc).
+
+[1] https://www.chromium.org/developers/how-tos/get-the-code/working-with-nested-repos

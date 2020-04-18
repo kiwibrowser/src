@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<!--
+Copyright 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/value/histogram_importer.html">
+<link rel="import" href="/tracing/value/ui/histogram_set_view.html">
+
+<script>
+'use strict';
+tr.b.unittest.testSuite(function() {
+  test('importHistograms', function() {
+    const loadingEl = document.createElement('div');
+    this.addHTMLOutput(loadingEl);
+    const importer = new tr.v.HistogramImporter(loadingEl);
+
+    const hist = new tr.v.Histogram('foo', tr.b.Unit.byName.count);
+    hist.addSample(42);
+    hist.customizeSummaryOptions({
+      count: false,
+      max: false,
+      min: false,
+      std: false,
+      sum: false,
+    });
+    const htmlString = '<script>throw new Error("oops");<' + '/script>';
+    hist.diagnostics.set('html', new tr.v.d.GenericSet([
+      // RenderHistogramsViewer escapes html characters.
+      htmlString.replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+    ]));
+    const jsonEl = document.createElement('div');
+    jsonEl.innerHTML = JSON.stringify(hist.asDict());
+    jsonEl.style.display = 'none';
+    this.addHTMLOutput(jsonEl);
+
+    const view = document.createElement('tr-v-ui-histogram-set-view');
+    view.style.display = 'none';
+    this.addHTMLOutput(view);
+
+    return importer.importHistograms([jsonEl], view).then(() => {
+      assert.strictEqual('none', loadingEl.style.display);
+      assert.strictEqual('block', view.style.display);
+      assert.lengthOf(view.histograms, 1);
+      const hist2 = view.histograms.getHistogramNamed('foo');
+      assert.strictEqual(htmlString, tr.b.getOnlyElement(
+          hist2.diagnostics.get('html')));
+    });
+  });
+});
+</script>

@@ -1,0 +1,18 @@
+#!/bin/bash
+# Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This is a simple wrapper around pylint that allows imports to work.
+# The import path is unusual because these python files normally run
+# as an AppEngine instance, so the import paths are set up to find
+# libraries when run there.  They are not set up to find libraries
+# rooted at 'chromite'.
+
+# Run in appengine project directory.  Example:
+# cd chromiumos-build-stats ; ../ae_pylint main.py
+# Or run from this directory.  Example:
+# ./ae_pylint cq_stats/main.py
+
+ROOT=$(realpath $(dirname $0))
+PYTHONPATH="${ROOT}"/google_appengine pylint --rcfile="${ROOT}"/../pylintrc $@

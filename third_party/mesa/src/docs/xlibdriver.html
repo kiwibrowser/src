@@ -1,0 +1,276 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>Xlib Software Driver</title>
+  <link rel="stylesheet" type="text/css" href="mesa.css">
+</head>
+<body>
+
+<h1>Xlib Software Driver</h1>
+
+<p>
+Mesa's Xlib driver provides an emulation of the GLX interface so that
+OpenGL programs which use the GLX API can render to any X display, even
+those that don't support the GLX extension.
+Effectively, the Xlib driver converts all OpenGL rendering into Xlib calls.
+</p>
+
+<p>
+The Xlib driver is the oldest Mesa driver and the most mature of Mesa's
+software-only drivers.
+</p>
+
+<p>
+Since the Xlib driver <em>emulates</em> the GLX extension, it's not
+totally conformant with a true GLX implementation.
+The differences are fairly obscure, however.
+</p>
+
+<p>
+The unique features of the Xlib driver follows.
+</p>
+
+
+<h2>X Visual Selection</h2>
+<p>
+Mesa supports RGB(A) rendering into almost any X visual type and depth.
+</p>
+<p>
+The glXChooseVisual function tries to choose the best X visual
+for the given attribute list.  However, if this doesn't suit your needs
+you can force Mesa to use any X visual you want (any supported by your
+X server that is) by setting the <b>MESA_RGB_VISUAL</b> and
+<b>MESA_CI_VISUAL</b>
+environment variables.
+When an RGB visual is requested, glXChooseVisual
+will first look if the MESA_RGB_VISUAL variable is defined.
+If so, it will try to use the specified visual.
+Similarly, when a color index visual is requested, glXChooseVisual will
+look for the MESA_CI_VISUAL variable.
+</p>
+
+<p>
+The format of accepted values is:  <code>visual-class depth</code>
+</p>
+<p>
+Here are some examples:
+</p>
+<pre>
+   using csh:
+	% setenv MESA_RGB_VISUAL "TrueColor 8"		// 8-bit TrueColor
+	% setenv MESA_CI_VISUAL "PseudoColor 12"	// 12-bit PseudoColor
+	% setenv MESA_RGB_VISUAL "PseudoColor 8"	// 8-bit PseudoColor
+
+   using bash:
+	$ export MESA_RGB_VISUAL="TrueColor 8"
+	$ export MESA_CI_VISUAL="PseudoColor 12"
+	$ export MESA_RGB_VISUAL="PseudoColor 8"
+</pre>
+
+
+<h2>Double Buffering</h2>
+<p>
+Mesa can use either an X Pixmap or XImage as the back color buffer when in
+double-buffer mode.
+The default is to use an XImage.
+The <b>MESA_BACK_BUFFER</b> environment variable can override this.
+The valid values for <b>MESA_BACK_BUFFER</b> are:  <b>Pixmap</b> and
+<b>XImage</b> (only the first letter is checked, case doesn't matter).
+</p>
+
+<p>
+Using XImage is almost always faster than a Pixmap since it resides in
+the application's address space.
+When glXSwapBuffers() is called, XPutImage() or XShmPutImage() is used
+to transfer the XImage to the on-screen window.
+</p>
+<p>
+A Pixmap may be faster when doing remote rendering of a simple scene.
+Some OpenGL features will be very slow with a Pixmap (for example, blending
+will require a round-trip message for pixel readback.)
+</p>
+<p>
+Experiment with the MESA_BACK_BUFFER variable to see which is faster
+for your application.
+</p>
+
+
+<h2>Colormaps</h2>
+<p>
+When using Mesa directly or with GLX, it's up to the application
+writer to create a window with an appropriate colormap.  The GLUT
+toolkit tris to minimize colormap <em>flashing</em> by sharing
+colormaps when possible.  Specifically, if the visual and depth of the
+window matches that of the root window, the root window's colormap
+will be shared by the Mesa window.  Otherwise, a new, private colormap
+will be allocated.
+</p>
+
+<p>
+When sharing the root colormap, Mesa may be unable to allocate the colors
+it needs, resulting in poor color quality.  This can happen when a
+large number of colorcells in the root colormap are already allocated.
+To prevent colormap sharing in GLUT, set the 
+<b>MESA_PRIVATE_CMAP</b> environment variable.  The value isn't
+significant.
+</p>
+
+
+<h2>Gamma Correction</h2>
+<p>
+To compensate for the nonlinear relationship between pixel values
+and displayed intensities, there is a gamma correction feature in
+Mesa.  Some systems, such as Silicon Graphics, support gamma
+correction in hardware (man gamma) so you won't need to use Mesa's
+gamma facility.  Other systems, however, may need gamma adjustment
+to produce images which look correct.  If you believe that 
+Mesa's images are too dim, read on.
+</p>
+
+<p>
+Gamma correction is controlled with the <b>MESA_GAMMA</b> environment
+variable.  Its value is of the form <b>Gr Gg Gb</b> or just <b>G</b> where
+Gr is the red gamma value, Gg is the green gamma value, Gb is the
+blue gamma value and G is one gamma value to use for all three
+channels.  Each value is a positive real number typically in the
+range 1.0 to 2.5.
+The defaults are all 1.0, effectively disabling gamma correction.
+Examples:
+</p>
+<pre>
+	% export MESA_GAMMA="2.3 2.2 2.4"	// separate R,G,B values
+	% export MESA_GAMMA="2.0"		// same gamma for R,G,B
+</pre>
+<p>
+The progs/demos/gamma.c program may help you to determine reasonable gamma
+value for your display.  With correct gamma values, the color intensities
+displayed in the top row (drawn by dithering) should nearly match those
+in the bottom row (drawn as grays).
+</p>
+
+<p>
+Alex De Bruyn reports that gamma values of 1.6, 1.6 and 1.9 work well
+on HP displays using the HP-ColorRecovery technology.
+</p>
+
+<p>
+Mesa implements gamma correction with a lookup table which translates
+a "linear" pixel value to a gamma-corrected pixel value.  There is a
+small performance penalty.  Gamma correction only works in RGB mode.
+Also be aware that pixel values read back from the frame buffer will
+not be "un-corrected" so glReadPixels may not return the same data
+drawn with glDrawPixels.
+</p>
+
+<p>
+For more information about gamma correction see:
+<a href="http://www.inforamp.net/~poynton/notes/colour_and_gamma/GammaFAQ.html">
+the Gamma FAQ</a>
+</p>
+
+
+<h2>Overlay Planes</h2>
+<p>
+Hardware overlay planes are supported by the Xlib driver.  To
+determine if your X server has overlay support you can test for the
+SERVER_OVERLAY_VISUALS property:
+</p>
+<pre>
+	xprop -root | grep SERVER_OVERLAY_VISUALS
+</pre>
+
+
+<h2>HPCR Dithering</h2>
+<p>
+If you set the <b>MESA_HPCR_CLEAR</b> environment variable then dithering
+will be used when clearing the color buffer.  This is only applicable
+to HP systems with the HPCR (Color Recovery) feature.
+This incurs a small performance penalty.
+</p>
+
+
+<h2>Extensions</h2>
+<p>
+The following MESA-specific extensions are implemented in the Xlib driver.
+</p>
+
+<h3>GLX_MESA_pixmap_colormap</h3>
+
+<p>
+This extension adds the GLX function:
+</p>
+<pre>
+    GLXPixmap glXCreateGLXPixmapMESA( Display *dpy, XVisualInfo *visual,
+                                      Pixmap pixmap, Colormap cmap )
+</pre>
+<p>
+It is an alternative to the standard glXCreateGLXPixmap() function.
+Since Mesa supports RGB rendering into any X visual, not just True-
+Color or DirectColor, Mesa needs colormap information to convert RGB
+values into pixel values.  An X window carries this information but a
+pixmap does not.  This function associates a colormap to a GLX pixmap.
+See the xdemos/glxpixmap.c file for an example of how to use this
+extension.
+</p>
+<p>
+<a href="MESA_pixmap_colormap.spec">GLX_MESA_pixmap_colormap specification</a>
+</p>
+
+
+<h3>GLX_MESA_release_buffers</h3>
+<p>
+Mesa associates a set of ancillary (depth, accumulation, stencil and
+alpha) buffers with each X window it draws into.  These ancillary
+buffers are allocated for each X window the first time the X window
+is passed to glXMakeCurrent().  Mesa, however, can't detect when an
+X window has been destroyed in order to free the ancillary buffers.
+</p>
+<p>
+The best it can do is to check for recently destroyed windows whenever
+the client calls the glXCreateContext() or glXDestroyContext()
+functions.  This may not be sufficient in all situations though.
+</p>
+<p>
+The GLX_MESA_release_buffers extension allows a client to explicitly
+deallocate the ancillary buffers by calling glxReleaseBuffersMESA()
+just before an X window is destroyed.  For example:
+</p>
+<pre>
+         #ifdef GLX_MESA_release_buffers
+            glXReleaseBuffersMESA( dpy, window );
+         #endif
+         XDestroyWindow( dpy, window );
+</pre>
+<p>
+<a href="MESA_release_buffers.spec">GLX_MESA_release_buffers specification</a>
+</p>
+<p>
+This extension was added in Mesa 2.0.
+</p>
+
+<h3>GLX_MESA_copy_sub_buffer</h3>
+<p>
+This extension adds the glXCopySubBufferMESA() function.  It works
+like glXSwapBuffers() but only copies a sub-region of the window
+instead of the whole window.
+</p>
+<p>
+<a href="MESA_copy_sub_buffer.spec">GLX_MESA_copy_sub_buffer specification</a>
+</p>
+<p>
+This extension was added in Mesa 2.6
+</p>
+
+<h2>Summary of X-related environment variables</h2>
+<pre>
+   MESA_RGB_VISUAL - specifies the X visual and depth for RGB mode (X only)
+   MESA_CI_VISUAL - specifies the X visual and depth for CI mode (X only)
+   MESA_BACK_BUFFER - specifies how to implement the back color buffer (X only)
+   MESA_PRIVATE_CMAP - force aux/tk libraries to use private colormaps (X only)
+   MESA_GAMMA - gamma correction coefficients (X only)
+</pre>
+
+
+</body>
+</html>

@@ -1,0 +1,33 @@
+Import('*')
+
+env = env.Clone()
+
+env.Prepend(LIBS = [gallium])
+
+if env['platform'] in ('freebsd8', 'sunos'):
+    env.Append(LIBS = ['m'])
+
+if env['platform'] == 'freebsd8':
+    env.Append(LIBS = ['pthread'])
+
+progs = [
+    'pipe_barrier_test',
+    'u_cache_test',
+    'u_format_test',
+    'u_format_compatible_test',
+    'u_half_test',
+    'translate_test'
+]
+
+for progname in progs:
+    prog = env.Program(
+        target = progname,
+        source = progname + '.c',
+    )
+    
+    env.Alias(progname, env.InstallProgram(prog))
+
+    # http://www.scons.org/wiki/UnitTests
+    test_alias = env.Alias('unit', [prog], prog[0].abspath)
+    AlwaysBuild(test_alias)
+

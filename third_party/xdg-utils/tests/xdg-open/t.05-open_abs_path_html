@@ -1,0 +1,34 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+FILE=testfile.html
+test_open_abs_path_html() {
+test_start "$FUNCNAME: open absolute path of the form '$PRE/path/file.html'"
+
+test_init
+
+require_notroot
+
+## Require a running X server
+assert_display
+
+echo '<html><body>I am an HTML file!</body></html>' >"$FILE"
+assert_file "$FILE"
+
+test_procedure
+
+assert_exit 0 xdg-open "$PRE$XDG_TEST_TMPDIR/$FILE"
+assert_nostdout
+assert_nostderr
+
+assert_interactive "Did an HTML file open containing the text 'I am an HTML file!'?" y
+assert_interactive "Please close any windows opened by this test." C
+
+test_result
+}
+
+repeat_test test_open_abs_path_html 1 PRE '' 'file://' 

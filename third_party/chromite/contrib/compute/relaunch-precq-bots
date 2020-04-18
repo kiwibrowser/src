@@ -1,0 +1,65 @@
+#!/bin/bash
+# Copyright 2015 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+testing_bots() {
+  for i in {1..5}; do
+    BOTS[i]="cros-testing$i-c2"
+  done
+}
+
+prod_bots() {
+  local bot_ids=( {1..50} 101 102 )
+  for i in ${bot_ids[@]}; do
+    BOTS[i]="cros$i-c2"
+  done
+}
+
+# Change this to work on different BOT groups.
+# declare -a BOTS
+# testing_bots
+# **********YOU ARE RELAUNCHING PROD BOTS! REALLY! *************
+# prod_bots
+
+ssh_command() {
+  local -r instance_id=$1
+  shift
+  gcloud compute ssh --project chromeos-bot --zone us-east1-a -q \
+    "${instance_id}" --ssh-flag=-q --command "$*"
+}
+
+remote_uname() {
+  ssh_command "$1" echo $(hostname && uname -a)
+}
+
+relaunch_instance() {
+  local -r ip=$(gcloud compute instances describe --project chromeos-bot --zone us-east1-a $1 | awk '{if ($1 == "natIP:") print $2}')
+  ../../compute/cros_compute instances delete -q --instance $1
+  ../../compute/cros_compute instances create --instance $1 --address "${ip}" --config cros-bot
+}
+
+print_image_tag() {
+  image=$(gcloud compute instances describe --project chromeos-bot --zone us-east1-a \
+    "$i" | grep value)
+  echo $i: $image
+}
+
+for_all_bots() {
+  for i in "${BOTS[@]}"; do
+    echo "parallel: $* $i"
+    $* $i &
+  done
+  echo "Waiting for parallel processes to finish"
+  wait
+  echo "Done!"
+}
+
+BOTS=( "$@" )
+for_all_bots relaunch_instance
+
+echo
+echo
+echo "Please verify that all instances were launched with the new image:"
+for_all_bots print_image_tag
+

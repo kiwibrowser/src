@@ -1,0 +1,38 @@
+
+<project name="JSR305-ri" default="build">
+
+
+	<target name="build" depends="clean,classes,jars"/>
+	<target name="classes">
+		<mkdir dir="build/classes"/>
+		<javac  destdir="build/classes" source="1.5" target="1.5" debug="on">
+			<src path="src/main/java"/>
+			<classpath>
+				<pathelement location="build/classes"/>
+			</classpath>
+		</javac>
+	</target>
+
+        <target name="clean">
+                <delete dir="build/classes"/>
+        </target>
+	<target name="jars" depends="classes">
+        <delete quiet="true">
+            <fileset dir="build/jsr305.jar"/>
+            <fileset dir="build/jsr305-src.jar"/>
+        </delete>
+        <jar destfile="build/jsr305.jar">
+            <fileset dir="src/main/java"/>
+            <fileset dir="build/classes"/>
+        </jar>
+        <jar destfile="build/jsr305-pure.jar">
+            <fileset dir="build/classes"/>
+        </jar>
+        <jar destfile="build/jsr305-src.jar">
+            <fileset dir="src/main/java"/>
+            <fileset dir="src/main/resources"/>
+        </jar>
+ 	</target>
+</project>
+
+<!-- vim:set ts=4: -->

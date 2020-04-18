@@ -1,0 +1,40 @@
+; Test if we detect duplicate names in a symbol table.
+
+; REQUIRES: no_minimal_build
+
+; RUN: not %pnacl_sz -bitcode-as-text %p/Inputs/duplicate-fcn-name.tbc \
+; RUN:     -bitcode-format=pnacl -notranslate -build-on-read 2>&1 \
+; RUN:   | FileCheck %s
+
+; CHECK: Module valuesymtab defines duplicate value name: 'f'
+
+; RUN: pnacl-bcfuzz -bitcode-as-text %p/Inputs/duplicate-fcn-name.tbc -output - \
+; RUN:   | pnacl-bcdis -no-records | FileCheck -check-prefix=ASM %s
+
+; ASM: module {  // BlockID = 8
+; ASM:   version 1;
+; ASM:   types {  // BlockID = 17
+; ASM:     count 2;
+; ASM:     @t0 = void;
+; ASM:     @t1 = void ();
+; ASM:   }
+; ASM:   define external void @f0();
+; ASM:   define external void @f1();
+; ASM:   globals {  // BlockID = 19
+; ASM:     count 0;
+; ASM:   }
+; ASM:   valuesymtab {  // BlockID = 14
+; ASM:     @f0 : "f";
+; ASM:     @f1 : "f";
+; ASM:   }
+; ASM:   function void @f0() {  // BlockID = 12
+; ASM:     blocks 1;
+; ASM:   %b0:
+; ASM:     ret void;
+; ASM:   }
+; ASM:   function void @f1() {  // BlockID = 12
+; ASM:     blocks 1;
+; ASM:   %b0:
+; ASM:     ret void;
+; ASM:   }
+; ASM: }

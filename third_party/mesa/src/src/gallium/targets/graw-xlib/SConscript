@@ -1,0 +1,42 @@
+#######################################################################
+# SConscript for xlib winsys
+
+Import('*')
+
+env = env.Clone()
+
+env.Prepend(LIBS = [
+    ws_xlib,
+    gallium,
+])
+
+env.Prepend(LIBS = env['X11_LIBS'])
+
+env.Append(CPPPATH = [
+    '#src/gallium/drivers',
+    '#src/gallium/include/state_tracker',
+])
+
+env.Append(CPPDEFINES = ['GALLIUM_RBUG', 'GALLIUM_TRACE', 'GALLIUM_GALAHAD'])
+
+sources = [
+    'graw_xlib.c',
+    graw_util
+]
+
+if True:
+    env.Append(CPPDEFINES = ['GALLIUM_TRACE', 'GALLIUM_RBUG', 'GALLIUM_GALAHAD', 'GALLIUM_SOFTPIPE'])
+    env.Prepend(LIBS = [trace, rbug, galahad, softpipe])
+
+if env['llvm']:
+    env.Append(CPPDEFINES = 'GALLIUM_LLVMPIPE')
+    env.Prepend(LIBS = [llvmpipe])
+
+graw = env.SharedLibrary(
+    target ='graw',
+    source = sources,
+)
+
+graw = env.InstallSharedLibrary(graw, version=(1, 0))
+
+env.Alias('graw-xlib', graw)

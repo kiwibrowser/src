@@ -1,0 +1,47 @@
+diff --git a/pngset.c b/pngset.c
+index cccd9cd..83d6ce2 100644
+--- a/pngset.c
++++ b/pngset.c
+@@ -283,17 +283,29 @@ png_set_pCAL(png_const_structrp png_ptr, png_inforpinfo_ptr,
+ 
+    /* Check that the type matches the specification. */
+    if (type < 0 || type > 3)
+-      png_error(png_ptr, "Invalid pCAL equation type");
++   {
++      png_chunk_report(png_ptr, "Invalid pCAL equation type",
++            PNG_CHUNK_WRITE_ERROR);
++      return;
++   }
+ 
+    if (nparams < 0 || nparams > 255)
+-      png_error(png_ptr, "Invalid pCAL parameter count");
++   {
++      png_chunk_report(png_ptr, "Invalid pCAL parameter count",
++            PNG_CHUNK_WRITE_ERROR);
++      return;
++   }
+ 
+    /* Validate params[nparams] */
+    for (i=0; i<nparams; ++i)
+    {
+       if (params[i] == NULL ||
+           !png_check_fp_string(params[i], strlen(params[i])))
+-         png_error(png_ptr, "Invalid format for pCAL parameter");
++      {
++         png_chunk_report(png_ptr, "Invalid format for pCAL parameter",
++               PNG_CHUNK_WRITE_ERROR);
++         return;
++      }
+    }
+ 
+    info_ptr->pcal_purpose = png_voidcast(png_charp,
+@@ -301,8 +313,8 @@ png_set_pCAL(png_const_structrp png_ptr, png_inforpinfo_ptr,
+ 
+    if (info_ptr->pcal_purpose == NULL)
+    {
+-      png_warning(png_ptr, "Insufficient memory for pCAL purpose");
+-
++      png_chunk_report(png_ptr, "Insufficient memory for pCAL purpose",
++            PNG_CHUNK_WRITE_ERROR);
+       return;
+    }

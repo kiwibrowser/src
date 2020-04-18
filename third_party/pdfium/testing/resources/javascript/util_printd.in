@@ -1,0 +1,135 @@
+{{header}}
+{{object 1 0}} <<
+  /Type /Catalog
+  /Pages 2 0 R
+  /OpenAction 10 0 R
+>>
+endobj
+{{object 2 0}} <<
+  /Type /Pages
+  /Count 1
+  /Kids [
+    3 0 R
+  ]
+>>
+endobj
+% Page number 0.
+{{object 3 0}} <<
+  /Type /Page
+  /Parent 2 0 R
+  /Resources <<
+    /Font <</F1 15 0 R>>
+  >>
+  /Contents [21 0 R]
+  /MediaBox [0 0 612 792]
+>>
+% OpenAction action
+{{object 10 0}} <<
+  /Type /Action
+  /S /JavaScript
+  /JS 11 0 R
+>>
+endobj
+% JS program to exexute
+{{object 11 0}} <<
+  {{streamlen}}
+>>
+stream
+function TestOneFormat(str, d) {
+  try {
+    app.alert(str + ": " + util.printd(str, d));
+  }
+  catch (e) {
+    app.alert(str + ": Caught error: " + e);
+  }
+}
+function TestOneXFAFormat(str, d, flag) {
+  try {
+    app.alert(str + ": " + util.printd(str, d, flag));
+  }
+  catch (e) {
+    app.alert(str + ": Caught error: " + e);
+  }
+}
+// July 4th, 2014 11:59:59 AM local time.
+var d1 = new Date(2014, 06, 04, 15, 59, 58);
+TestOneFormat("mm/dd/yyyy HH:MM:ss", d1);
+TestOneFormat(0, d1);
+TestOneFormat(1, d1);
+TestOneFormat(2, d1);
+TestOneFormat(3, d1);
+TestOneFormat("mmmm", d1);
+TestOneFormat("mmm", d1);
+TestOneFormat("mm", d1);
+TestOneFormat("m", d1);
+TestOneFormat("dddd", d1);
+TestOneFormat("ddd", d1);
+TestOneFormat("dd", d1);
+TestOneFormat("d", d1);
+TestOneFormat("yyyy", d1);
+TestOneFormat("yy", d1);
+TestOneFormat("HH", d1);
+TestOneFormat("H", d1);
+TestOneFormat("hh", d1);
+// "h" is inconsitent between platforms: " 3" vs. "3"
+TestOneFormat("MM", d1);
+TestOneFormat("M", d1);
+TestOneFormat("ss", d1);
+TestOneFormat("s", d1);
+// "tt" is inconsitent between platforms: "PM" vs, "pm" vs. "P"
+TestOneFormat("t", d1);
+TestOneFormat("abc.efg.i.kl.nopqr..uvwxyzABC.EFG.I.KL.NOPQR..UVWXYZ0123456780", d1);
+TestOneFormat("!@#$^&*()-_<>[];:~", d1);
+TestOneFormat("%z %d %%z %%d %%%z %%%d %%% hh:MM", d1);
+TestOneFormat("", d1);
+TestOneFormat("mm/dd/yyyy", d1);
+TestOneFormat("mm/dd/yyyy", new Date(1850, 0, 1));
+TestOneFormat("mm/dd/yyyy", new Date(2525, 11, 31));
+TestOneFormat("mm/dd/yyyy");
+TestOneFormat();
+TestOneFormat("mm/dd/yyyy", 42);
+TestOneFormat("mm/dd/yyyy", "clams");
+TestOneFormat("mm/dd/yyyy", {"clams": 3});
+TestOneFormat("mm/dd/yyyy", ["clams", 3]);
+TestOneFormat({"clams": 3}, d1);
+TestOneFormat(["clams", 3], d1);
+TestOneXFAFormat("mm", d1, false);
+TestOneXFAFormat("mm", d1, true);
+
+// Date with year 0.
+// TODO(thestig): Why is the output different from Acrobat?
+TestOneFormat("mm/dd/yyyy HH:MM:ss", new Date(0, 06, 04, 15, 59, 58));
+// Date with month 20.
+TestOneFormat("mm/dd/yyyy HH:MM:ss", new Date(2014, 20, 04, 15, 59, 58));
+// Date with day 100.
+TestOneFormat("mm/dd/yyyy HH:MM:ss", new Date(2014, 20, 100, 15, 59, 58));
+// Date with hour 50
+TestOneFormat("mm/dd/yyyy HH:MM:ss", new Date(2014, 06, 04, 50, 59, 58));
+// Date with minute 1234.
+TestOneFormat("mm/dd/yyyy HH:MM:ss", new Date(2014, 06, 04, 15, 1234, 58));
+// Date with second 65.
+TestOneFormat("mm/dd/yyyy HH:MM:ss", new Date(2014, 06, 04, 15, 59, 65));
+// Date with April 31th.
+TestOneFormat("mm/dd/yyyy HH:MM:ss", new Date(2014, 03, 31, 15, 59, 58));
+// Date with February 30th.
+TestOneFormat("mm/dd/yyyy HH:MM:ss", new Date(2014, 01, 30, 15, 59, 58));
+// Date with negative year.
+// Acrobat prints out "07/04/-001 15:59:58" but handling this rarely used case
+// outside of FXSYS_wcsftime() is a lot of work.
+TestOneFormat("mm/dd/yyyy HH:MM:ss", new Date(-1, 06, 04, 15, 59, 58));
+// Date with negative month.
+TestOneFormat("mm/dd/yyyy HH:MM:ss", new Date(2014, -1, 30, 15, 59, 58));
+// Date with negative day.
+TestOneFormat("mm/dd/yyyy HH:MM:ss", new Date(2014, 06, -1, 15, 59, 58));
+// Date with negative hour.
+TestOneFormat("mm/dd/yyyy HH:MM:ss", new Date(2014, 06, 04, -1, 59, 58));
+// Date with negative minute.
+TestOneFormat("mm/dd/yyyy HH:MM:ss", new Date(2014, 06, 04, 15, -1, 58));
+// Date with negative second.
+TestOneFormat("mm/dd/yyyy HH:MM:ss", new Date(2014, 06, 04, 15, 59, -1));
+endstream
+endobj
+{{xref}}
+{{trailer}}
+{{startxref}}
+%%EOF

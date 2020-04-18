@@ -1,0 +1,76 @@
+/**************************************************************************
+ *
+ * Copyright 2010 Luca Barbieri
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice (including the
+ * next paragraph) shall be included in all copies or substantial
+ * portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE COPYRIGHT OWNER(S) AND/OR ITS SUPPLIERS BE
+ * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ **************************************************************************/
+
+/* Header for all COM-based Gallium APIs and state trackers */
+
+import "oaidl.idl";
+import "ocidl.idl";
+
+[object, local, uuid("481c9372-795f-4630-bd5b-1f46d33cc28b")]
+interface IGalliumAdapter : IUnknown
+{
+	struct pipe_screen* GetGalliumScreen();
+	struct pipe_screen* GetGalliumReferenceSoftwareScreen();
+	struct pipe_screen* GetGalliumFastSoftwareScreen();
+}
+
+[object, local, uuid("2c0f7e72-d9fe-4e7b-9fee-d476695ad5d9")]
+interface IGalliumDevice : IUnknown
+{
+	// turn Gallium resource into API resource
+	HRESULT OpenGalliumResource(
+		[in] struct pipe_resource* resource,
+		[out] IUnknown** api_resource
+	);
+
+	/* returns the Gallium context used by the device
+	 * can return NULL if the device uses multiple contexts or doesn't want to implement GetGalliumContext()
+	 * we have this function because often using one context is faster than using more (or it's the only working option)
+	 */
+	struct pipe_context* GetGalliumContext();
+
+	// restore the context state after using the Gallium context for something else
+	// does nothing if GetGalliumContext returns null
+	void RestoreGalliumState();
+	
+	/* like RestoreGalliumState, but ignores:
+	 * - constant buffers
+	 * - non-PS samplers and shader resource views
+	 * - blend color, sample mask
+	 * - scissor
+	 * - index buffer
+	 * 
+	 * This is intended to restore state after a blit-like operation.
+	 */
+	void RestoreGalliumStateBlitOnly();
+};
+
+[object, local, uuid("61934787-7aea-412c-8c72-8afe6a33d622")]
+interface IGalliumResource : IUnknown
+{
+	struct pipe_resource* GetGalliumResource();
+};
+

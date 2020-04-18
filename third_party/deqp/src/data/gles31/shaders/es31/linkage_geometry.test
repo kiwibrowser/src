@@ -1,0 +1,1368 @@
+
+group varying "Varying linkage"
+	group rules "Rules"
+		case input_type_mismatch
+			version 310 es
+			desc "Geometry shader input type mismatch"
+			expect link_fail
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			values { output float out0 = 1.0; }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float geo_in;
+				void main()
+				{
+					geo_in = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				in mediump vec2 geo_in[];
+				out mediump float geo_out;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_out = geo_in[ndx].x + geo_in[ndx].y;
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case output_type_mismatch
+			version 310 es
+			desc "Geometry shader output type mismatch"
+			expect link_fail
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			values { output float out0 = 1.0; }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				out mediump float geo_out;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_out = 1.0;
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump vec2 geo_out;
+				void main()
+				{
+					out0 = geo_out.x + geo_out.y;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case input_different_precision
+			version 310 es
+			desc "Geometry shader input precision mismatch"
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			values { output float out0 = 1.0; }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out highp float geo_in;
+				void main()
+				{
+					geo_in = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				in lowp float geo_in[];
+				out mediump float geo_out;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_out = geo_in[ndx];
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case output_different_precision
+			version 310 es
+			desc "Geometry shader output precision mismatch"
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			values { output float out0 = 1.0; }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				out highp float geo_out;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_out = 1.0;
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in lowp float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case input_no_declaration
+			version 310 es
+			desc "Geometry shader input has no matching output"
+			expect link_fail
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			values { output float out0 = 1.0; }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				in lowp float geo_in[];
+				out mediump float geo_out;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_out = geo_in[ndx];
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case output_no_declaration
+			version 310 es
+			desc "Geometry shader has no output for an input"
+			expect link_fail
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			values { output float out0 = 1.0; }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case input_superfluous_declaration
+			version 310 es
+			desc "Geometry shader has no input for an output"
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			values { output float out0 = 1.0; }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float geo_in;
+				void main()
+				{
+					geo_in = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				out mediump float geo_out;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_out = 1.0;
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case output_superfluous_declaration
+			version 310 es
+			desc "Geometry shader has output without an matching input"
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			values { output float out0 = 1.0; }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				out mediump float geo_out;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_out = 1.0;
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				void main()
+				{
+					out0 = 1.0;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case input_array_explicit_size
+			version 310 es
+			desc "Geometry shader input is explicitly sized array"
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			values { output float out0 = 1.0; }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float geo_in;
+				void main()
+				{
+					geo_in = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				in mediump float geo_in[3];
+				out mediump float geo_out;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_out = geo_in[ndx];
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case input_non_array
+			version 310 es
+			desc "Geometry shader has no input for an output"
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			expect compile_or_link_fail
+			values { output float out0 = 1.0; }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float geo_in;
+				void main()
+				{
+					geo_in = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				in mediump float geo_in;
+				out mediump float geo_out;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_out = geo_in;
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case input_array_size_mismatch
+			version 310 es
+			desc "Geometry shader input is explicitly sized array, but size does not match input primitive"
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			expect compile_or_link_fail
+			values { output float out0 = 1.0; }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out mediump float geo_in;
+				void main()
+				{
+					geo_in = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				in mediump float geo_in[4];
+				out mediump float geo_out;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_out = geo_in[ndx+1];
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case input_block
+			version 310 es
+			desc "Geometry shader input block"
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			require extension { "GL_OES_shader_io_blocks" | "GL_EXT_shader_io_blocks" } in { vertex }
+			values { output float out0 = 1.0; }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out IOBlockName
+				{
+					mediump float var;
+				} outputInstanceName;
+				void main()
+				{
+					outputInstanceName.var = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				in IOBlockName
+				{
+					mediump float var;
+				} inputInstanceName[];
+				out mediump float geo_out;
+				void main()
+				{
+					geo_out = inputInstanceName[0].var;
+					gl_Position = gl_in[0].gl_Position;
+					EmitVertex();
+					geo_out = inputInstanceName[1].var;
+					gl_Position = gl_in[1].gl_Position;
+					EmitVertex();
+					geo_out = inputInstanceName[2].var;
+					gl_Position = gl_in[2].gl_Position;
+					EmitVertex();
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case input_block_explicit_size
+			version 310 es
+			desc "Geometry shader input block with explicit size"
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			require extension { "GL_OES_shader_io_blocks" | "GL_EXT_shader_io_blocks" } in { vertex }
+			values { output float out0 = 1.0; }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out IOBlockName
+				{
+					mediump float var;
+				} outputInstanceName;
+				void main()
+				{
+					outputInstanceName.var = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				in IOBlockName
+				{
+					mediump float var;
+				} inputInstanceName[3];
+				out mediump float geo_out;
+				void main()
+				{
+					geo_out = inputInstanceName[0].var;
+					gl_Position = gl_in[0].gl_Position;
+					EmitVertex();
+					geo_out = inputInstanceName[1].var;
+					gl_Position = gl_in[1].gl_Position;
+					EmitVertex();
+					geo_out = inputInstanceName[2].var;
+					gl_Position = gl_in[2].gl_Position;
+					EmitVertex();
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case input_block_non_array
+			version 310 es
+			desc "Geometry shader input block is non an array"
+			expect compile_or_link_fail
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			require extension { "GL_OES_shader_io_blocks" | "GL_EXT_shader_io_blocks" } in { vertex }
+			values { output float out0 = 1.0; }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out IOBlockName
+				{
+					mediump float var;
+				} outputInstanceName;
+				void main()
+				{
+					outputInstanceName.var = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				in IOBlockName
+				{
+					mediump float var;
+				} inputInstanceName;
+				out mediump float geo_out;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_out = inputInstanceName.var;
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case input_block_array_size_mismatch
+			version 310 es
+			desc "Geometry shader input block invalid array size"
+			expect compile_or_link_fail
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			require extension { "GL_OES_shader_io_blocks" | "GL_EXT_shader_io_blocks" } in { vertex }
+			values { output float out0 = 1.0; }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out IOBlockName
+				{
+					mediump float var;
+				} outputInstanceName;
+				void main()
+				{
+					outputInstanceName.var = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				in IOBlockName
+				{
+					mediump float var;
+				} inputInstanceName[4];
+				out mediump float geo_out;
+				void main()
+				{
+					geo_out = inputInstanceName[0].var;
+					gl_Position = gl_in[0].gl_Position;
+					EmitVertex();
+					geo_out = inputInstanceName[1].var;
+					gl_Position = gl_in[1].gl_Position;
+					EmitVertex();
+					geo_out = inputInstanceName[2].var + inputInstanceName[3].var;
+					gl_Position = gl_in[2].gl_Position;
+					EmitVertex();
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case output_block
+			version 310 es
+			desc "Geometry shader output block"
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			require extension { "GL_OES_shader_io_blocks" | "GL_EXT_shader_io_blocks" } in { fragment }
+			values { output float out0 = 1.0; }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				out IOBlockName
+				{
+					mediump float var;
+				} outputInstanceName;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						outputInstanceName.var = 1.0;
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in IOBlockName
+				{
+					mediump float var;
+				} inputInstanceName;
+				void main()
+				{
+					out0 = inputInstanceName.var;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case output_block_array
+			version 310 es
+			desc "Geometry shader output block array"
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			require extension { "GL_OES_shader_io_blocks" | "GL_EXT_shader_io_blocks" } in { fragment }
+			values { output float out0 = 1.0; }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				out IOBlockName
+				{
+					mediump float var;
+				} outputInstanceName[2];
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						outputInstanceName[0].var = 2.0;
+						outputInstanceName[1].var = 1.0;
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in IOBlockName
+				{
+					mediump float var;
+				} inputInstanceName[2];
+				void main()
+				{
+					out0 = inputInstanceName[0].var - inputInstanceName[1].var;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case unspecified_input_primitive_type
+			version 310 es
+			desc "Geometry shader input type unspecified"
+			expect compile_or_link_fail
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				layout (triangle_strip, max_vertices=3) out;
+				void main()
+				{
+					gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
+					EmitVertex();
+					gl_Position = vec4(0.0, 1.0, 0.0, 1.0);
+					EmitVertex();
+					gl_Position = vec4(1.0, 1.0, 0.0, 1.0);
+					EmitVertex();
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				void main()
+				{
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case unspecified_output_primitive_type
+			version 310 es
+			desc "Geometry shader output type unspecified"
+			expect compile_or_link_fail
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				layout (triangles) in;
+				layout (max_vertices=3) out;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				void main()
+				{
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case unspecified_output_primitive_num_vertices
+			version 310 es
+			desc "Geometry shader output type unspecified"
+			expect compile_or_link_fail
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				layout (triangles) in;
+				layout (triangle_strip) out;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				void main()
+				{
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		# access_more_than_available_input_vertices
+		case access_more_than_available_input_vertices
+			version 310 es
+			desc "Geometry shader input block with explicit size"
+			expect compile_or_link_fail
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				void main()
+				{
+					gl_Position = gl_in[0].gl_Position;
+					EmitVertex();
+					gl_Position = gl_in[1].gl_Position;
+					EmitVertex();
+					gl_Position = gl_in[4].gl_Position; // access more than available
+					EmitVertex();
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				void main()
+				{
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+	end
+
+	import "linkage_geometry_varying_types.test"
+
+	group qualifiers "Varying qualifiers"
+		case smooth
+			version 310 es
+			desc "varying with smooth interpolation"
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			values
+			{
+				input float in0		= 1.0;
+				output float out0	= 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				smooth out mediump float vtx_var;
+				void main()
+				{
+					vtx_var = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				smooth in mediump float vtx_var[];
+				smooth out mediump float geo_var;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_var = vtx_var[ndx];
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				smooth in float geo_var;
+				void main()
+				{
+					out0 = geo_var;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case flat
+			version 310 es
+			desc "varying with flat interpolation"
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			values
+			{
+				input float in0		= 1.0;
+				output float out0	= 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				flat out mediump float vtx_var;
+				void main()
+				{
+					vtx_var = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				flat in mediump float vtx_var[];
+				flat out mediump float geo_var;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_var = vtx_var[ndx];
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				flat in float geo_var;
+				void main()
+				{
+					out0 = geo_var;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case centroid
+			version 310 es
+			desc "varying declared with centroid qualifier"
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			values
+			{
+				input float in0		= 1.0;
+				output float out0	= 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				centroid out mediump float vtx_var;
+				void main()
+				{
+					vtx_var = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				centroid in mediump float vtx_var[];
+				centroid out mediump float geo_var;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_var = vtx_var[ndx];
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				centroid in float geo_var;
+				void main()
+				{
+					out0 = geo_var;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case sample
+			version 310 es
+			desc "varying declared with sample qualifier"
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			require extension { "GL_OES_shader_multisample_interpolation" }
+			values
+			{
+				input float in0		= 1.0;
+				output float out0	= 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				sample out mediump float vtx_var;
+				void main()
+				{
+					vtx_var = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				sample in mediump float vtx_var[];
+				sample out mediump float geo_var;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_var = vtx_var[ndx];
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				sample in float geo_var;
+				void main()
+				{
+					out0 = geo_var;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+	end
+end
+
+group uniform "Uniform linkage"
+	group rules "Rules"
+
+		case type_mismatch_1
+			version 310 es
+			desc "uniforms declared with different types"
+			expect link_fail
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				uniform mediump float u_var;
+				out mediump float vtx_var;
+				void main()
+				{
+					vtx_var = u_var;
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				uniform mediump vec4 u_var;
+				in mediump float vtx_var[];
+				out mediump float geo_var;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_var = vtx_var[ndx];
+						gl_Position = gl_in[ndx].gl_Position + u_var;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in float geo_var;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(geo_var);
+				}
+			""
+		end
+
+		case type_mismatch_2
+			version 310 es
+			desc "uniforms declared with different types"
+			expect link_fail
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			require limit "GL_MAX_VERTEX_ATOMIC_COUNTERS" > 0
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				layout(binding=0) uniform atomic_uint u_var;
+				out mediump float vtx_var;
+				void main()
+				{
+					uint result = atomicCounterIncrement(u_var);
+					vtx_var = float(result);
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				uniform mediump vec4 u_var;
+				in mediump float vtx_var[];
+				out mediump float geo_var;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_var = vtx_var[ndx];
+						gl_Position = gl_in[ndx].gl_Position + u_var;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in float geo_var;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(geo_var);
+				}
+			""
+		end
+
+		case type_mismatch_3
+			version 310 es
+			desc "uniforms declared with different types"
+			expect link_fail
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			require limit "GL_MAX_VERTEX_IMAGE_UNIFORMS" > 0
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				layout(binding=0) layout(rgba8i) uniform readonly highp iimage2D u_var;
+				out mediump float vtx_var;
+				void main()
+				{
+					int result = imageSize(u_var).x;
+					vtx_var = float(result);
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				uniform mediump vec4 u_var;
+				in mediump float vtx_var[];
+				out mediump float geo_var;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_var = vtx_var[ndx];
+						gl_Position = gl_in[ndx].gl_Position + u_var;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in float geo_var;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(geo_var);
+				}
+			""
+		end
+
+		case precision_mismatch
+			version 310 es
+			desc "uniforms declared with different precisions"
+			expect link_fail
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				uniform highp float u_var;
+				out mediump float vtx_var;
+				void main()
+				{
+					vtx_var = u_var;
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				uniform mediump float u_var;
+				in mediump float vtx_var[];
+				out mediump float geo_var;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_var = vtx_var[ndx];
+						gl_Position = gl_in[ndx].gl_Position + vec4(u_var);
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in float geo_var;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(geo_var);
+				}
+			""
+		end
+
+		case struct_partial_usage
+			version 310 es
+			desc "uniforms struct used partially in different stages"
+			require extension { "GL_OES_geometry_shader" | "GL_EXT_geometry_shader" } in { geometry }
+			values
+			{
+				uniform float val.vtxValue	= 1.0;
+				uniform float val.geoValue	= 1.0;
+				uniform float val.frgValue	= 1.0;
+			}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				struct S
+				{
+					mediump float vtxValue;
+					mediump float geoValue;
+					mediump float frgValue;
+				};
+				uniform S val;
+				out mediump float vtx_var;
+				void main()
+				{
+					vtx_var = val.vtxValue;
+					${VERTEX_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 310 es
+				${GEOMETRY_DECLARATIONS}
+				struct S
+				{
+					mediump float vtxValue;
+					mediump float geoValue;
+					mediump float frgValue;
+				};
+				uniform S val;
+				in mediump float vtx_var[];
+				out mediump float geo_var;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_var = vtx_var[ndx] + val.geoValue;
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 310 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				struct S
+				{
+					mediump float vtxValue;
+					mediump float geoValue;
+					mediump float frgValue;
+				};
+				uniform S val;
+				in float geo_var;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(geo_var + val.frgValue);
+				}
+			""
+		end
+	end
+
+	import "linkage_geometry_uniform_types.test"
+end

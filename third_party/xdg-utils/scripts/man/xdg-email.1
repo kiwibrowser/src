@@ -1,0 +1,199 @@
+'\" t
+.\"     Title: xdg-email
+.\"    Author: Kevin Krammer
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
+.\"      Date: 12/31/2010
+.\"    Manual: xdg-email Manual
+.\"    Source: xdg-utils 1.0
+.\"  Language: English
+.\"
+.TH "XDG\-EMAIL" "1" "12/31/2010" "xdg-utils 1.0" "xdg-email Manual"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+xdg-email \- command line tool for sending mail using the user\*(Aqs preferred e\-mail composer
+.SH "SYNOPSIS"
+.HP \w'\fBxdg\-email\fR\ 'u
+\fBxdg\-email\fR [\fB\-\-utf8\fR] [\fB\-\-cc\fR\ \fIaddress\fR] [\fB\-\-bcc\fR\ \fIaddress\fR] [\fB\-\-subject\fR\ \fItext\fR] [\fB\-\-body\fR\ \fItext\fR] [\fB\-\-attach\fR\ \fIfile\fR] [\fImailto\-uri\fR | \fIaddress(es)\fR]
+.HP \w'\fBxdg\-email\fR\ 'u
+\fBxdg\-email\fR {\fB\-\-help\fR | \fB\-\-manual\fR | \fB\-\-version\fR}
+.SH "DESCRIPTION"
+.PP
+xdg\-email opens the user\*(Aqs preferred e\-mail composer in order to send a mail to
+\fIaddress(es)\fR
+or
+\fImailto\-uri\fR\&. RFC2368 defines mailto: URIs\&. xdg\-email limits support to, cc, subject and body fields in
+\fImailto\-uri\fR, all other fields are silently ignored\&.
+\fIaddress(es)\fR
+must follow the syntax of RFC822\&. Multiple addresses may be provided as separate arguments\&.
+.PP
+All information provided on the command line is used to prefill corresponding fields in the user\*(Aqs e\-mail composer\&. The user will have the opportunity to change any of this information before actually sending the e\-mail\&.
+.PP
+xdg\-email is for use inside a desktop session only\&. It is not recommended to use xdg\-email as root\&.
+.PP
+See http://portland\&.freedesktop\&.org/EmailConfig for information on how the user can change the e\-mail composer that is used\&.
+.SH "OPTIONS"
+.PP
+\fB\-\-utf8\fR
+.RS 4
+Indicates that all command line options that follow are in utf8\&. Without this option, command line options are expected to be encoded according to locale\&. If the locale already specifies utf8 this option has no effect\&. This option does not affect mailto URIs that are passed on the command line\&.
+.RE
+.PP
+\fB\-\-cc\fR \fIaddress\fR
+.RS 4
+Specify a recipient to be copied on the e\-mail\&.
+.RE
+.PP
+\fB\-\-bcc\fR \fIaddress\fR
+.RS 4
+Specify a recipient to be blindly copied on the e\-mail\&.
+.RE
+.PP
+\fB\-\-subject\fR \fItext\fR
+.RS 4
+Specify a subject for the e\-mail\&.
+.RE
+.PP
+\fB\-\-body\fR \fItext\fR
+.RS 4
+Specify a body for the e\-mail\&. Since the user will be able to make changes before actually sending the e\-mail, this can be used to provide the user with a template for the e\-mail\&.
+\fItext\fR
+may contain linebreaks\&.
+.RE
+.PP
+\fB\-\-attach\fR \fIfile\fR
+.RS 4
+Specify an attachment for the e\-mail\&.
+\fIfile\fR
+must point to an existing file\&.
+.sp
+Some e\-mail applications require the file to remain present after xdg\-email returns\&.
+.RE
+.PP
+\fB\-\-help\fR
+.RS 4
+Show command synopsis\&.
+.RE
+.PP
+\fB\-\-manual\fR
+.RS 4
+Show this manualpage\&.
+.RE
+.PP
+\fB\-\-version\fR
+.RS 4
+Show the xdg\-utils version information\&.
+.RE
+.SH "ENVIRONMENT VARIABLES"
+.PP
+xdg\-email honours the following environment variables:
+.PP
+XDG_UTILS_DEBUG_LEVEL
+.RS 4
+Setting this environment variable to a non\-zero numerical value makes xdg\-email do more verbose reporting on stderr\&. Setting a higher value increases the verbosity\&.
+.RE
+.SH "EXIT CODES"
+.PP
+An exit code of 0 indicates success while a non\-zero exit code indicates failure\&. The following failure codes can be returned:
+.PP
+\fB1\fR
+.RS 4
+Error in command line syntax\&.
+.RE
+.PP
+\fB2\fR
+.RS 4
+One of the files passed on the command line did not exist\&.
+.RE
+.PP
+\fB3\fR
+.RS 4
+A required tool could not be found\&.
+.RE
+.PP
+\fB4\fR
+.RS 4
+The action failed\&.
+.RE
+.PP
+\fB5\fR
+.RS 4
+No permission to read one of the files passed on the command line\&.
+.RE
+.SH "CONFIGURATION"
+.PP
+Visit http://portland\&.freedesktop\&.org/EmailConfig for information how to configure xdg\-email to use the email client of your choice\&.
+.SH "EXAMPLES"
+.PP
+
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+xdg\-email \*(AqJeremy White <jwhite@example\&.com>\*(Aq
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+xdg\-email \-\-attach /tmp/logo\&.png \e
+          \-\-subject \*(AqLogo contest\*(Aq \e
+          \-\-body \*(AqAttached you find the logo for the contest\&.\*(Aq \e
+          \*(Aqjwhite@example\&.com\*(Aq
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+xdg\-email \-\-subject \*(AqYour password is about to expire\*(Aq \e
+          \*(Aqjwhite@example\&.com\*(Aq \*(Aqbastian@example\&.com\*(Aq \*(Aqwhipple@example\&.com\*(Aq
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.SH "AUTHORS"
+.PP
+\fBKevin Krammer\fR
+.RS 4
+Author.
+.RE
+.PP
+\fBJeremy White\fR
+.RS 4
+Author.
+.RE
+.SH "COPYRIGHT"
+.br
+Copyright \(co 2006
+.br

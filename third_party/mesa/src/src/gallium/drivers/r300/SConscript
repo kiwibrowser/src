@@ -1,0 +1,24 @@
+Import('*')
+
+env = env.Clone()
+
+env.PkgUseModules('DRM_RADEON')
+
+env.Append(CPPPATH = [
+    '#/include', 
+    '#/src/mesa',
+    '#/src/glsl',
+    '#/src/mapi',
+])
+
+r300 = env.ConvenienceLibrary(
+    target = 'r300',
+    source = env.ParseSourceList('Makefile.sources', 'C_SOURCES') + [
+        '#/src/glsl/ralloc.c',
+        '#/src/mesa/program/register_allocate.c'
+    ])
+
+env.Alias('r300', r300)
+
+Export('r300')
+

@@ -1,0 +1,23 @@
+#!/bin/bash
+
+parentdir=${0%/*}
+which perl >/dev/null 2>&1
+if [ "$?" ] ; then
+	distro=`perl $parentdir/linux_distro 2>&1`
+else
+	distro="not available (couldn't find perl)"
+fi
+
+echo "distribution: $distro"
+
+echo "xdg-utils:" `xdg-mime --version | cut -d ' ' -f 2`
+
+. "$parentdir/desktop_environment"
+
+detail=`uname -a`
+echo "uname: $detail"
+
+echo "xset data:"
+echo "-------------------------------------"
+xset q
+echo "-------------------------------------"

@@ -1,0 +1,286 @@
+Rules and lexer
+
+DIGIT = %x30-39
+HEXDIG = DIGIT / %x41-46
+SP = %x20
+CR = %x0D
+LF = %x0A
+CRLF = CR LF
+IPADDRESS = 1*3(DIGIT) “.” 1*3(DIGIT) “.” 1*3(DIGIT) “.” 1*3(DIGIT)
+IPPORT = 1*5(DIGIT)
+
+RULE wfd-audio-codecs
+
+wfd-audio-codecs = “wfd_audio_codecs:” SP sink-audio-cap CRLF
+sink-audio-cap = “none” / sink-audio-list; “none” if not supported at a
+sink-audio-list = audio-format SP modes SP latency *(“,” SP sink-audio-list)
+audio-format = “LPCM” / “AAC” / “AC3”
+modes = 8*8HEXDIG; see Table 5-21, Table 5-22 and Table 5-23
+latency = 2*2HEXDIG; decoder latency in units of 5 msecs, see LPCM decoder latency field for LPCM, see AAC decoder latency field for AAC and see AC3 decoder latency field in Table 5-20 for more detail
+
+RULE wfd-video-formats
+
+wfd-video-formats = “wfd_video_formats:” SP sink-video-list CRLF
+sink-video-list = “none” / (native SP preferred-display-mode-supported SP H.264-codec);the Secondary Sink shall return “none”
+native = 2*2HEXDIG; see Table 5-13
+preferred-display-mode-supported = 2*2HEXDIG; 0-not supported, 1-supported, 2-255 reserved
+H.264-codec = profile SP level SP misc-params SP max-hres SP max-vres *(“,” SP H.264-codec)
+profile = 2*2HEXDIG; see Table 5-14, only one bit set
+level = 2*2HEXDIG; see Table 5-15, only one bit set
+max-hres = “none” / (4*4HEXDIG); in M3 response and if preferred-display mode-supported is 0, then “none”. in M3 response and if preferred-display-mode- supported is 1, specifies the maximum horizontal resolution that the H.264 decoder supports in pixels. in M4 request, it is “none” and the recipient shall ignore this subparameter
+max-vres = “none” / (4*4HEXDIG); in M3 response and if preferred-display mode-supported is 0, then “none”. in M3 response and if preferred-display-mode- supported is 1, specifies the maximum vertical resolution that the H.264 decoder supports in pixels. in M4 request, it is “none” and the recipient shall ignore this subparameter
+misc-params = SP VESA-Support SP HH-Support SP latency SP min-slice-size SP slice-enc-params SP frame-rate-control-support CEA-Support
+CEA-Support = 8*8HEXDIG; see Table 5-10. when used inside preferred display mode in M4 request, this subfield should be set to 0x00000000 and the recipient shall ignore this subfield.
+VESA-Support = 8*8HEXDIG; see Table 5-11. when used inside preferred display mode in M4 request, this subfield should be set to 0x00000000 and the recipient shall ignore this subfield.
+HH-Support = 8*8HEXDIG; see Table 5-12. when used inside preferred display mode in M4 request, this subfield should be set to 0x00000000 and the recipient shall ignore this subfield.
+latency = 2*2HEXDIG; decoder latency in units of 5 msecs, see latency field in Table 5-9 for more detail
+min-slice-size = 4*4HEXDIG; number of macroblocks
+slice-enc-params = 4*4HEXDIG; see Table 5-16
+frame-rate-control-support = 2*2HEXDIG; see Table 5-17
+
+RULE wfd-3d-formats
+ 
+wfd-3d-formats = “wfd_3d_video_formats:” SP 3d-cap CRLF
+3d-cap = “none” / 3d-cap-list; if not supported then “none”
+3d-cap-list = native SP preferred-display-mode-supported SP H.264-codec
+native = 2*2HEXDIG; see Table 5-13 preferred-display-mode-supported = 2*2HEXDIG; 0-not supported, 1-supported, 2-255 reserved
+H.264-codec = profile SP level SP misc-params SP max-hres SP max-vres * (“,” SP H.264-codec)
+profile = 2*2HEXDIG; see Table 5-14, only one bit set
+level = 2*2HEXDIG; see Table 5-15, only one bit set
+max-hres = “none” / (4*4HEXDIG); in M3 response and if preferred-display mode-supported is 0, then “none”. in M3 response and if preferred-display-mode-supported is 1, specifies the maximum horizontal resolution that the H.264 decoder supports in pixels. in M4 request, it is “none” and the recipient shall ignore this subparameter
+max-vres = “none” / (4*4HEXDIG); in M3 response and if preferred-display mode-supported is 0, then “none”. in M3 response and if preferred-display-mode-supported is 1, specifies the maximum vertical resolution that the H.264 decoder supports in pixels. in M4 request, it is “none” and the recipient shall ignore this subparameter
+misc-params = 3d-video-capability SP latency SP min-slice-size SP slice-enc-params SP frame-rate-control-support
+3d-video-capability= 16*16HEXDIG; see Table 5-19.
+latency = 2*2HEXDIG; decoder latency in units of 5 msecs, see latency field in Table 5-9 for more detail
+min-slice-size = 4*4HEXDIG; number of macroblocks
+slice-enc-params = 4*4HEXDIG; see Table 5-16
+frame-rate-control-support = 2*2HEXDIG; see Table 5-17
+
+RULE wfd-content-protection
+
+wfd-content-protection = “wfd_content_protection:” SP cp-spec CRLF
+cp-spec = “none” / hdcp2-spec
+hdcp2-spec = (“HDCP2.0” / “HDCP2.1”) SP “port=” IPPORT ;TCP port
+
+RULE wfd-display-edid
+
+wfd-display-edid = “wfd_display_edid:” SP edid CRLF
+edid = “none” / (edid-block-count SP edid-payload)
+edid-block-count = 4*4HEXDIG; 0: if EDID is not available at the time that the WFD Sink responses to the parameter request. 1-256: number of 128-byte EDID blocks in edid-payload Other values: reserved
+edid-payload = “none” / 256*65536HEXDIG; “none” if edid-block-count is 0. Otherwise, edid-payload contains the entire EDID data structure available from the display device. Length of edid-payload shall be a multiple of 128 bytes. (length of edid-payload = edid-block-count * 128-byte)
+
+RULE wfd-coupled-sink
+
+wfd-coupled-sink = “wfd_coupled_sink:” SP coupled-sink-cap CRLF
+coupled-sink-cap = “none” /(status SP sink-address); “none” if Coupled Sink Operation is not supported
+status = 2*2HEXDIG; see Table 5-8
+sink-address = “none” / (12*12HEXDIG); WFD Sink’s MAC address if status is Coupled otherwise “none”.
+
+RULE wfd-trigger-method
+
+wfd-trigger-method = “wfd_trigger_method:” SP (“SETUP” / “PAUSE” / “TEARDOWN” / “PLAY”) CRLF
+
+RULE wfd-presentation-url
+
+wfd-presentation-url = “wfd_presentation_URL:” SP wfd-url0 SP wfd-url1 CRLF
+wfd-url0 = “none” / (“rtsp://” source-ip-address“/wfd1.0/streamid=0”)
+wfd-url1 = “none” / (“rtsp://” source-ip-address“/wfd1.0/streamid=1”)
+source-ip-address = IPADDRESS
+
+RULE wfd-client-rtp-ports
+
+wfd-client-rtp-ports = “wfd_client_rtp_ports:” SP profile SP rtp-port0 SP rtp-port1 SP mode CRLF
+profile = “RTP/AVP/UDP;unicast”
+rtp-port0 = IPPORT ; UDP port
+rtp-port1 = IPPORT ; UDP port
+mode = “mode=play”
+
+RULE wfd-route
+
+wfd-route = “wfd_route:” SP destination CRLF
+destination = “primary” / “secondary”
+
+RULE wfd-I2C
+
+wfd-I2C = “wfd_I2C:” SP I2C-port CRLF
+I2C-port = “none” / IPPORT; port where the device listens for I2C commands, “none” if not supported
+
+RULE wfd-av-format-change-timing
+
+wfd-av-format-change-timing = “wfd_av_format_change_timing:” SP PTS SP DTS CRLF
+PTS = 10*10HEXDIG; most-significant 33 bits indicating PTS value
+DTS = 10*10HEXDIG; most-significant 33 bits indicating DTS value
+
+RULE wfd-preferred-display-mode
+
+wfd-preferred-display-mode = “wfd_preferred_display_mode:” SP dinfo CRLF
+dinfo = p-clock SP H SP HB SP HSPOL-HSOFF SP HSW SP V SP VB SP VSPOL-VSOFF SP VSW SP VBS3D SP 2d-s3d-modes SP p-depth SP H.264-codec
+p-clock = 6*6HEXDIG; pixel clock in 10kHz units
+H = 4*4HEXDIG; horizontal active resolution in units of pixels
+HB = 4*4HEXDIG; horizontal blanking period in units of pixels
+HSPOL-HSOFF = 4*4HEXDIG; b15: horizontal sync polarity (0 negative, 1 positive) b14:b0 horizontal sync offset in units of pixels
+HSW = 4*4HEXDIG; horizontal sync width in units of pixels
+V = 4*4HEXDIG; vertical active resolution in units of lines
+VB = 4*4HEXDIG; vertical blanking period in units of lines
+VSPOL-VSOFF = 4*4HEXDIG; b15: vertical sync polarity (0 negative, 1 positive) b14:b0 vertical sync offset in units of lines
+VSW = 4*4HEXDIG; vertical sync width in units of lines
+VBS3D = 2*2HEXDIG; vertical blanking interval in units of lines (only used in stereoscopic 3D Frame Packing mode)
+2d-s3d-modes = 2*2HEXDIG; 2D/Stereoscopic 3D Modes (refer to Table 6-4)
+P-depth = 2*2HEXDIG; pixel depth (refer to Table 6-5). This is the pixel depth of the display output which is different from the codec pixel depth.
+H.264-codec = ; see section 6.1.3
+
+RULE wfd-uibc-capability
+
+wfd-uibc-capability = “wfd_uibc_capability:” SP (“none” / (input-category-val “;” generic-cap-val “;” hidc-cap-val “;” tcp-port)) CRLF; “none” if not supported
+input-category-val = “input_category_list=” (“none” / input-category-list)
+input-category-list = input-cat * (“,” SP input-category-list)
+input-cat = “GENERIC” / “HIDC”
+generic-cap-val = “generic_cap_list=” (“none” / generic-cap-list)
+generic-cap-list = inp-type *(“,” SP generic-cap-list)
+inp-type = “Keyboard” / “Mouse” / “SingleTouch” / “MultiTouch” / “Joystick” / “Camera” / “Gesture” / “RemoteControl”
+hidc-cap-val = “hidc_cap_list=” (“none” / hidc-cap-list)
+hidc-cap-list = detailed-cap *(“,” SP hidc-cap-list)
+detailed-cap = inp-type “/” inp-path
+inp-path = “Infrared” / “USB” / “BT” / “Zigbee” / “Wi-Fi” / “No-SP”
+tcp-port = “port=” (“none” / IPPORT)
+
+RULE wfd-uibc-setting
+
+wfd-uibc-setting = “wfd_uibc_setting:” SP uibc-setting CRLF
+uibc-setting = “disable” / “enable”
+
+RULE wfd-standby-resume-capability
+
+wfd-standby-resume-capability = “wfd_standby_resume_capability:” SP standby-resume-cap CRLF
+standby-resume-cap = “none” / “supported”; “none” if not supported
+
+RULE wfd-standby
+
+wfd-standby = “wfd_standby” CRLF
+
+RULE wfd-connector-type
+wfd-connector-type = “wfd_connector_type:” SP connector-type CRLF
+connector-type = “none” / (2*2HEXDIG); specifies the active display connector type (see Table 6-6), “none” if the WFD Sink dongle that is not acting as a WFD Sink with an integrated display is not connected to an external display
+
+RULE wfd-idr-request
+wfd-idr-request = “wfd_idr_request” CRLF
+
+RTSP Methods
+OPTIONS 
+org.wfa.wfd1.0 
+SET_PARAMETER 
+GET_PARAMETER 
+SETUP 
+PLAY 
+TEARDOWN 
+PAUSE  
+
+RULE RTSP SETUP
+
+Transport = “Transport:” SP profile port-numbers CRLF
+profile = “RTP/AVP/UDP;unicast;”
+port-numbers = client-port [“;” server-port]; client-port only at M6 request message, (client-port “;” server- port) at M6 response message.
+client-port = “client_port=” (rtp-port0 / rtp-port1) [“-” IPPORT]; rtp-port0 from a Primary Sink, rtp-port1 from a Secondary Sink. IPPORT here is rtp-port0 (or rtp-port1) plus 1 to be used for RTCP. [“-” IPPORT] can only appear in M6 request if the WFD Sink wants to use optional RTCP. [“-” IPPORT] can only appear in M6 response if the WFD Source accepts to use optional RTCP.
+server-port = “server_port=” IPPORT [“-” IPPORT]; server’s UDP port number for RTP. Optional IPPORT is server’s UDP port number for RTP plus 1 to be used for optional RTCP. [“-” IPPORT] can only appear in M6 response if the WFD Source accepts to use optional RTCP.
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Payload
+///////////////////////////////////////////////////////////////////////////////
+
+wfd-audio-codecs
+wfd-video-formats
+wfd-3d-formats
+wfd-content-protection
+wfd-display-edid
+wfd-coupled-sink
+wfd-trigger-method
+wfd-presentation-url
+wfd-client-rtp-ports
+wfd-route
+
+wfd-I2C
+wfd-av-format-change-timing
+wfd-preferred-display-mode
+wfd-uibc-capability
+wfd-uibc-setting
+wfd-standby-resume-capability
+wfd-standby
+wfd-connector-type
+wfd-idr-request
+
+///////////////////////////////////////////////////////////////////////////////
+// Messages
+///////////////////////////////////////////////////////////////////////////////
+
+M1 Request (src->snk)
+
+OPTIONS * RTSP/1.0
+CSeq: i
+Require: org.wfa.wfd1.0
+
+M1 Response (snk->src)
+
+RTSP/1.0 200 OK
+CSeq: i
+Date: Sun, Aug 21 2011 04:20:53 GMT
+Public: org.wfa.wfd1.0, GET_PARAMETER, SET_PARAMETER
+
+-------------------------------------------------------------------------------
+
+M2 Request (src->snk)
+
+OPTIONS * RTSP/1.0
+CSeq: j
+Require: org.wfa.wfd1.0
+
+M2 Response (snk->src)
+
+RTSP/1.0 200 OK
+CSeq: j
+Date: Sun, Aug 21 2011 04:20:53 GMT
+Public: org.wfa.wfd1.0, SETUP, TEARDOWN, PLAY, PAUSE, GET_PARAMETER, SET_PARAMETER
+
+-------------------------------------------------------------------------------
+
+M3 Request (src->snk)
+
+GET_PARAMETER rtsp://localhost/wfd1.0 RTSP/1.0
+CSeq: i+1
+Content-Type: text/parameters
+Content-Length: 141
+
+wfd_video_formats
+wfd_audio_codecs
+wfd_3d_video_formats
+wfd_content_protection
+wfd_display_edid
+wfd_coupled_sink
+wfd_client_rtp_ports
+
+M3 Response (snk->src)
+
+RTSP/1.0 200 OK
+CSeq: i+1
+Content-Length: 290
+Content-Type: text/parameters
+
+wfd_video_formats: 00 00 00 01 01 00000001 00000000 00000000 000000 0000 00 none none
+wfd_audio_codecs: LPCM 00000003 00
+wfd_3d_video_formats: none
+wfd_content_protection: none
+wfd_display_edid: none
+wfd_coupled_sink: none
+wfd_client_rtp_ports: RTP/AVP/UDP;unicast 1028 0 mode=play
+
+-------------------------------------------------------------------------------
+
+M4
+
+-------------------------------------------------------------------------------
+
+M5
+
+-------------------------------------------------------------------------------
+
+M6

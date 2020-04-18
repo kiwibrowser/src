@@ -1,0 +1,6 @@
+include_rules = [
+  "+call",
+  "+modules/audio_coding/audio_network_adaptor",
+  "+modules/remote_bitrate_estimator/include",
+  "+modules/rtp_rtcp",
+]

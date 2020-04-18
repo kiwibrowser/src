@@ -1,0 +1,27 @@
+# This file exist despite having .coveragerc in infra_libs because on Windows
+# bots, we only execute tests in certain modules of infra_libs (including this
+# one) and the latest version of coverage throws an exception when given a
+# non-existant config file.
+
+[run]
+include = ./packages/infra_libs/infra_libs/logs/*
+
+[report]
+exclude_lines =
+    # Have to re-enable the standard pragma
+    pragma: no cover
+
+    # Don't complain about missing debug-only code:
+    def __repr__
+    if self\.debug
+
+    # Don't complain if tests don't hit defensive assertion code:
+    raise AssertionError
+    raise NotImplementedError
+
+    # Don't complain if non-runnable code isn't run:
+    if 0:
+    if __name__ == ['"]__main__['"]:
+
+[expect_tests]
+expected_coverage_min = 100

@@ -1,0 +1,67 @@
+# GL-CTS.es31
+
+set(GLCTS_ES31_SRCS
+	es31cArrayOfArraysTests.cpp
+	es31cArrayOfArraysTests.hpp
+	es31cComputeShaderTests.cpp
+	es31cComputeShaderTests.hpp
+	es31cDrawIndirectTests.cpp
+	es31cDrawIndirectTests.hpp
+	es31cExplicitUniformLocationTest.cpp
+	es31cExplicitUniformLocationTest.hpp
+	es31cFramebufferNoAttachmentsTests.cpp
+	es31cFramebufferNoAttachmentsTests.hpp
+	es31cLayoutBindingTests.cpp
+	es31cLayoutBindingTests.hpp
+	es31cProgramInterfaceQueryTests.cpp
+	es31cProgramInterfaceQueryTests.hpp
+	es31cSampleShadingTests.cpp
+	es31cSampleShadingTests.hpp
+	es31cSeparateShaderObjsTests.cpp
+	es31cSeparateShaderObjsTests.hpp
+	es31cShaderAtomicCountersTests.cpp
+	es31cShaderAtomicCountersTests.hpp
+	es31cShaderBitfieldOperationTests.cpp
+	es31cShaderBitfieldOperationTests.hpp
+	es31cShaderImageLoadStoreTests.cpp
+	es31cShaderImageLoadStoreTests.hpp
+	es31cShaderImageSizeTests.cpp
+	es31cShaderImageSizeTests.hpp
+	es31cShaderStorageBufferObjectTests.cpp
+	es31cShaderStorageBufferObjectTests.hpp
+	es31cTestPackage.cpp
+	es31cTestPackage.hpp
+	es31cTextureGatherTests.cpp
+	es31cTextureGatherTests.hpp
+	es31cTextureStorageMultisampleDependenciesTests.cpp
+	es31cTextureStorageMultisampleDependenciesTests.hpp
+	es31cTextureStorageMultisampleFunctionalTests.cpp
+	es31cTextureStorageMultisampleFunctionalTests.hpp
+	es31cTextureStorageMultisampleGetActiveUniformTests.cpp
+	es31cTextureStorageMultisampleGetActiveUniformTests.hpp
+	es31cTextureStorageMultisampleGetMultisamplefvTests.cpp
+	es31cTextureStorageMultisampleGetMultisamplefvTests.hpp
+	es31cTextureStorageMultisampleGetTexLevelParameterifvTests.cpp
+	es31cTextureStorageMultisampleGetTexLevelParameterifvTests.hpp
+	es31cTextureStorageMultisampleGLCoverageTests.cpp
+	es31cTextureStorageMultisampleGLCoverageTests.hpp
+	es31cTextureStorageMultisampleSampleMaskiTests.cpp
+	es31cTextureStorageMultisampleSampleMaskiTests.hpp
+	es31cTextureStorageMultisampleTests.cpp
+	es31cTextureStorageMultisampleTests.hpp
+	es31cTextureStorageMultisampleTexStorage2DMultisampleTests.cpp
+	es31cTextureStorageMultisampleTexStorage2DMultisampleTests.hpp
+	es31cTextureStorageMultisampleTexStorage3DMultisampleTests.cpp
+	es31cTextureStorageMultisampleTexStorage3DMultisampleTests.hpp
+	es31cVertexAttribBindingTests.cpp
+	es31cVertexAttribBindingTests.hpp
+	)
+
+set(GLCTS_ES31_LIBS
+	glcts-common
+	glutil
+	tcutil
+	)
+
+add_library(glcts-es31 STATIC ${GLCTS_ES31_SRCS} ${GLCTS_DEQP_GLES31_SRCS})
+target_link_libraries(glcts-es31 ${GLCTS_ES31_LIBS})

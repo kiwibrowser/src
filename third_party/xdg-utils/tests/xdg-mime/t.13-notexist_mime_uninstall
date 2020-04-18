@@ -1,0 +1,44 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_notexist_mime_uninstall() {
+# TODO: should follow the filename tests.
+QUERY_FILE="testfile.xdgtest"
+
+## Begin the test.
+test_start "$FUNCNAME: uninstall mime type that is not present"
+
+# Dependencies section
+test_init
+
+require_notroot
+
+use_file "$XDG_TEST_DIR/xdg-mime/data/testmime.xml" INPUT_FILE
+edit_file "$INPUT_FILE" "x-xdg-testpattern" TEST_MIME "x-$XDG_TEST_ID" 
+assert_file $INPUT_FILE
+
+echo "Some text." > $QUERY_FILE
+assert_file "$QUERY_FILE"
+
+# Install & verify mime type is installed
+assert_exit 0 xdg-mime query filetype "$QUERY_FILE" >mimesave.expected
+
+# Test steps section
+test_procedure
+
+assert_exit 0 xdg-mime uninstall --mode user "$INPUT_FILE"
+assert_nostdout
+assert_nostderr
+
+## Verify no change
+assert_exit 0 xdg-mime query filetype "$QUERY_FILE"
+assert_stdout mimesave.expected
+
+test_result
+} 
+run_test test_notexist_mime_uninstall 

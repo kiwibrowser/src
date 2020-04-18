@@ -1,0 +1,269 @@
+/**************************************************************************
+ *
+ * Copyright 2010 Luca Barbieri
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice (including the
+ * next paragraph) shall be included in all copies or substantial
+ * portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE COPYRIGHT OWNER(S) AND/OR ITS SUPPLIERS BE
+ * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ **************************************************************************/
+
+import "d3d10.idl";
+
+cpp_quote("#define D3D10_TX_VERSION(a, b) (('T' << 24) | ('X' << 16) | ((a) << 8) | (b)))")
+
+const unsigned int D3D10_SHADER_DEBUG = (1 << 0);
+const unsigned int D3D10_SHADER_SKIP_VALIDATION = (1 << 1);
+const unsigned int D3D10_SHADER_SKIP_OPTIMIZATION = (1 << 2);
+const unsigned int D3D10_SHADER_PACK_MATRIX_ROW_MAJOR = (1 << 3);
+const unsigned int D3D10_SHADER_PACK_MATRIX_COLUMN_MAJOR = (1 << 4);
+const unsigned int D3D10_SHADER_PARTIAL_PRECISION = (1 << 5);
+const unsigned int D3D10_SHADER_FORCE_VS_SOFTWARE_NO_OPT = (1 << 6);
+const unsigned int D3D10_SHADER_FORCE_PS_SOFTWARE_NO_OPT = (1 << 7);
+const unsigned int D3D10_SHADER_NO_PRESHADER = (1 << 8);
+const unsigned int D3D10_SHADER_AVOID_FLOW_CONTROL = (1 << 9);
+const unsigned int D3D10_SHADER_PREFER_FLOW_CONTROL = (1 << 10);
+const unsigned int D3D10_SHADER_ENABLE_STRICTNESS = (1 << 11);
+const unsigned int D3D10_SHADER_ENABLE_BACKWARDS_COMPATIBILITY = (1 << 12);
+const unsigned int D3D10_SHADER_IEEE_STRICTNESS = (1 << 13);
+const unsigned int D3D10_SHADER_WARNINGS_ARE_ERRORS = (1 << 18);
+
+
+const unsigned int D3D10_SHADER_OPTIMIZATION_LEVEL0 = (1 << 14);
+const unsigned int D3D10_SHADER_OPTIMIZATION_LEVEL1 = 0;
+const unsigned int D3D10_SHADER_OPTIMIZATION_LEVEL2 = ((1 << 14) | (1 << 15));
+const unsigned int D3D10_SHADER_OPTIMIZATION_LEVEL3 = (1 << 15);
+
+typedef D3D_SHADER_MACRO D3D10_SHADER_MACRO;
+typedef D3D10_SHADER_MACRO* LPD3D10_SHADER_MACRO;
+
+
+typedef D3D_SHADER_VARIABLE_CLASS D3D10_SHADER_VARIABLE_CLASS;
+typedef D3D10_SHADER_VARIABLE_CLASS* LPD3D10_SHADER_VARIABLE_CLASS;
+typedef D3D_SHADER_VARIABLE_FLAGS D3D10_SHADER_VARIABLE_FLAGS;
+typedef D3D10_SHADER_VARIABLE_FLAGS* LPD3D10_SHADER_VARIABLE_FLAGS;
+typedef D3D_SHADER_VARIABLE_TYPE D3D10_SHADER_VARIABLE_TYPE;
+typedef D3D10_SHADER_VARIABLE_TYPE* LPD3D10_SHADER_VARIABLE_TYPE;
+typedef D3D_SHADER_INPUT_FLAGS D3D10_SHADER_INPUT_FLAGS;
+typedef D3D10_SHADER_INPUT_FLAGS* LPD3D10_SHADER_INPUT_FLAGS;
+typedef D3D_SHADER_INPUT_TYPE D3D10_SHADER_INPUT_TYPE;
+typedef D3D10_SHADER_INPUT_TYPE* LPD3D10_SHADER_INPUT_TYPE;
+typedef D3D_SHADER_CBUFFER_FLAGS D3D10_SHADER_CBUFFER_FLAGS;
+typedef D3D10_SHADER_CBUFFER_FLAGS* LPD3D10_SHADER_CBUFFER_FLAGS;
+typedef D3D_CBUFFER_TYPE D3D10_CBUFFER_TYPE;
+typedef D3D10_CBUFFER_TYPE* LPD3D10_CBUFFER_TYPE;
+typedef D3D_NAME D3D10_NAME;
+typedef D3D_RESOURCE_RETURN_TYPE D3D10_RESOURCE_RETURN_TYPE;
+typedef D3D_REGISTER_COMPONENT_TYPE D3D10_REGISTER_COMPONENT_TYPE;
+typedef D3D_INCLUDE_TYPE D3D10_INCLUDE_TYPE;
+typedef ID3DInclude* LPD3D10INCLUDE;
+
+cpp_quote("#define D3D10_SHVER_GET_TYPE(v) (((v) >> 16) & 0xffff)")
+cpp_quote("#define D3D10_SHVER_GET_MAJOR(v) (((v) >> 4) & 0xf)")
+cpp_quote("#define D3D10_SHVER_GET_MINOR(v) (((v) >> 0) & 0xf)")
+
+typedef struct _D3D10_SIGNATURE_PARAMETER_DESC
+{
+	LPCSTR SemanticName;
+	UINT SemanticIndex;
+	UINT Register;
+	D3D_NAME SystemValueType;
+	D3D_REGISTER_COMPONENT_TYPE ComponentType;
+	BYTE Mask;
+	BYTE ReadWriteMask;
+} D3D10_SIGNATURE_PARAMETER_DESC;
+
+typedef struct _D3D10_SHADER_BUFFER_DESC
+{
+	LPCSTR Name;
+	D3D_CBUFFER_TYPE Type;
+	UINT Variables;
+	UINT Size;
+	UINT uFlags;
+} D3D10_SHADER_BUFFER_DESC;
+
+typedef struct _D3D10_SHADER_VARIABLE_DESC
+{
+	LPCSTR Name;
+	UINT StartOffset;
+	UINT Size;
+	UINT uFlags;
+	LPVOID DefaultValue;
+	UINT StartTexture;
+	UINT TextureSize;
+	UINT StartSampler;
+	UINT SamplerSize;
+} D3D10_SHADER_VARIABLE_DESC;
+
+typedef struct _D3D10_SHADER_TYPE_DESC
+{
+	D3D_SHADER_VARIABLE_CLASS Class;
+	D3D_SHADER_VARIABLE_TYPE Type;
+	UINT Rows;
+	UINT Columns;
+	UINT Elements;
+	UINT Members;
+	UINT Offset;
+	LPCSTR Name;
+} D3D10_SHADER_TYPE_DESC;
+
+typedef D3D_TESSELLATOR_DOMAIN D3D10_TESSELLATOR_DOMAIN;
+typedef D3D_TESSELLATOR_PARTITIONING D3D10_TESSELLATOR_PARTITIONING;
+typedef D3D_TESSELLATOR_OUTPUT_PRIMITIVE D3D10_TESSELLATOR_OUTPUT_PRIMITIVE;
+
+typedef struct _D3D10_SHADER_DESC
+{
+	UINT Version;
+	LPCSTR Creator;
+	UINT Flags;
+
+	UINT ConstantBuffers;
+	UINT BoundResources;
+	UINT InputParameters;
+	UINT OutputParameters;
+
+	UINT InstructionCount;
+	UINT TempRegisterCount;
+	UINT TempArrayCount;
+	UINT DefCount;
+	UINT DclCount;
+	UINT TextureNormalInstructions;
+	UINT TextureLoadInstructions;
+	UINT TextureCompInstructions;
+	UINT TextureBiasInstructions;
+	UINT TextureGradientInstructions;
+	UINT FloatInstructionCount;
+	UINT IntInstructionCount;
+	UINT UintInstructionCount;
+	UINT StaticFlowControlCount;
+	UINT DynamicFlowControlCount;
+	UINT MacroInstructionCount;
+	UINT ArrayInstructionCount;
+	UINT CutInstructionCount;
+	UINT EmitInstructionCount;
+	D3D_PRIMITIVE_TOPOLOGY GSOutputTopology;
+	UINT GSMaxOutputVertexCount;
+} D3D10_SHADER_DESC;
+
+typedef struct _D3D10_SHADER_INPUT_BIND_DESC
+{
+	LPCSTR Name;
+	D3D_SHADER_INPUT_TYPE Type;
+	UINT BindPoint;
+	UINT BindCount;
+
+	UINT uFlags;
+	D3D_RESOURCE_RETURN_TYPE ReturnType;
+	D3D_SRV_DIMENSION Dimension;
+	UINT NumSamples;
+} D3D10_SHADER_INPUT_BIND_DESC;
+
+[local, object, uuid("C530AD7D-9B16-4395-A979-BA2ECFF83ADD")]
+interface ID3D10ShaderReflectionType
+{
+	HRESULT GetDesc(
+		[out] D3D10_SHADER_TYPE_DESC *a
+	);
+
+	ID3D10ShaderReflectionType* GetMemberTypeByIndex(
+		[in] UINT a
+	);
+
+	ID3D10ShaderReflectionType* GetMemberTypeByName(
+		[in] LPCSTR a
+	);
+
+	LPCSTR GetMemberTypeName(
+		[in] UINT a
+	);
+};
+
+interface ID3D10ShaderReflectionConstantBuffer;
+
+[object, local, uuid("1BF63C95-2650-405d-99C1-3636BD1DA0A1")]
+interface ID3D10ShaderReflectionVariable
+{
+	HRESULT GetDesc(
+		[out] D3D10_SHADER_VARIABLE_DESC *a
+	);
+
+	ID3D10ShaderReflectionType* GetType();
+};
+
+[object, local, uuid("66C66A94-DDDD-4b62-A66A-F0DA33C2B4D0")]
+interface ID3D10ShaderReflectionConstantBuffer
+{
+	HRESULT GetDesc(
+		[out] D3D10_SHADER_BUFFER_DESC *a
+	);
+
+	ID3D10ShaderReflectionVariable* GetVariableByIndex(
+		[in] UINT a
+	);
+
+	ID3D10ShaderReflectionVariable* GetVariableByName(
+		[in] LPCSTR a
+	);
+};
+
+[object,local,uuid("D40E20B6-F8F7-42ad-AB20-4BAF8F15DFAA")]
+interface ID3D10ShaderReflection : IUnknown
+{
+	HRESULT GetDesc(
+		[out] D3D10_SHADER_DESC *a
+	);
+
+	ID3D10ShaderReflectionConstantBuffer* GetConstantBufferByIndex(
+		[in] UINT a
+	);
+
+	ID3D10ShaderReflectionConstantBuffer* GetConstantBufferByName(
+		[in] LPCSTR a
+	);
+
+	HRESULT GetResourceBindingDesc(
+		[in] UINT a,
+		[out] D3D10_SHADER_INPUT_BIND_DESC *b
+	);
+
+	HRESULT GetInputParameterDesc(
+		[in] UINT a,
+		[out] D3D10_SIGNATURE_PARAMETER_DESC *b
+	);
+	
+	HRESULT GetOutputParameterDesc
+	(
+		[in] UINT a,
+		[out] D3D10_SIGNATURE_PARAMETER_DESC *b
+	);
+};
+
+HRESULT D3D10CompileShader(LPCSTR pSrcData, SIZE_T SrcDataLen, LPCSTR pFileName, const D3D10_SHADER_MACRO* pDefines, LPD3D10INCLUDE pInclude, 
+	LPCSTR pFunctionName, LPCSTR pProfile, UINT Flags, ID3D10Blob** ppShader, ID3D10Blob** ppErrorMsgs);
+HRESULT D3D10DisassembleShader(const void *pShader, SIZE_T BytecodeLength, BOOL EnableColorCode, LPCSTR pComments, ID3D10Blob** ppDisassembly);
+LPCSTR D3D10GetPixelShaderProfile(ID3D10Device *pDevice);
+LPCSTR D3D10GetVertexShaderProfile(ID3D10Device *pDevice);
+LPCSTR D3D10GetGeometryShaderProfile(ID3D10Device *pDevice);
+HRESULT D3D10ReflectShader(const void *pShaderBytecode, SIZE_T BytecodeLength, ID3D10ShaderReflection **ppReflector);
+HRESULT D3D10PreprocessShader(LPCSTR pSrcData, SIZE_T SrcDataSize, LPCSTR pFileName, const D3D10_SHADER_MACRO* pDefines, 
+	LPD3D10INCLUDE pInclude, ID3D10Blob** ppShaderText, ID3D10Blob** ppErrorMsgs);
+HRESULT D3D10GetInputSignatureBlob(const void *pShaderBytecode, SIZE_T BytecodeLength, ID3D10Blob **ppSignatureBlob);
+HRESULT D3D10GetOutputSignatureBlob(const void *pShaderBytecode, SIZE_T BytecodeLength, ID3D10Blob **ppSignatureBlob);
+HRESULT D3D10GetInputAndOutputSignatureBlob(const void *pShaderBytecode, SIZE_T BytecodeLength, ID3D10Blob **ppSignatureBlob);
+HRESULT D3D10GetShaderDebugInfo(const void *pShaderBytecode, SIZE_T BytecodeLength, ID3D10Blob** ppDebugInfo);

@@ -1,0 +1,46 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+	Fence sync tests
+
+Tests:
+ + dEQP-GLES3.functional.fence_sync.*
+
+Includes:
+ + Creating and deleting sync objects
+ + Calling glWaitSync
+	- With varying number of primitive draws
+ + Calling glClientWaitSync and verifying return values
+	- With varying number of primitive draws
+	- With varying timeouts
+	- Flushing or finishing before wait
+
+Description:
+
+Fence sync functionality is tested by drawing a small or large number of
+primitives with glDrawArrays(). Then a sync object is created, and
+optionally glFlush() or glFinish() are called.
+
+Wait is then performed with either glWaitSync() or glClientWaitSync(), and
+different timeout values as well as the flag GL_SYNC_FLUSH_COMMANDS_BIT
+are tested. Finally, errors are checked and the return value of
+glClientWaitSync() is verified.
+
+The testcase fails if errors are created or if glClientWaitSync() returns
+GL_WAIT_FAILED. Additionally, if glFinish() was called before wait, return
+value is required to be GL_ALREADY_SIGNALED.

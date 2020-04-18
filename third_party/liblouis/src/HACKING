@@ -1,0 +1,197 @@
+This HACKING file describes the development environment.  	-*- org -*-
+
+  Copyright (C) 2008, 2009, 2011 ViewPlus Technologies, Inc. and Abilitiessoft, Inc.
+  Copyright (C) 2012, 2013, 2014 Swiss Library for the Blind, Visually Impaired and Print Disabled 
+
+
+  Copying and distribution of this file, with or without modification,
+  are permitted in any medium without royalty provided the copyright
+  notice and this notice are preserved.
+
+This file attempts to describe the maintainer-specific notes to follow
+when hacking liblouis. 
+
+* Developing
+** Where to get it
+The development sources are available through git at github.com:
+
+  https://github.com/liblouis/liblouis
+
+** Build requirements
+This distribution uses Automake, Autoconf, and Libtool. If you are
+getting the sources from git (or change configure.ac), you'll need to
+have these tools installed to (re)build. Optionally (if you want to
+generate man pages) you'll also need help2man. All of these programs
+are available from ftp://ftp.gnu.org/gnu.
+
+** Gnulib
+This distribution also uses Gnulib (http://www.gnu.org/software/gnulib). If
+you want to update from the current gnulib, install gnulib, and then run
+gnulib-tool --import in the top-level directory.
+
+For the record, the first time invocation was
+  gnulib-tool --import --lib=libgnu --source-base=gnulib \
+  	      --m4-base=gnulib/m4 --aux-dir=build-aux --libtool \
+	      --macro-prefix=gl getopt-gnu progname version-etc
+More modules might have been added since. The currently-used gnulib
+modules and other gnulib information are recorded in
+gnulib/m4/gnulib-cache.m4. Given a source checkout of gnulib, you can
+update the files with gnulib-tool --import.
+
+** How to build
+After getting the sources from git, with 
+
+  git clone https://github.com/liblouis/liblouis.git
+
+and installing the tools above, change to the liblouis directory and
+and bootstrap the project with the following command
+
+  ./autogen.sh
+
+to do a fresh build. Then run configure as usual:
+
+  ./configure
+
+You have the choice to compile liblouis for either 16- or 32-bit
+Unicode. By default it is compiled for the former. To get 32-bit
+Unicode run configure with --enable-ucs4 .
+
+After running configure run "make" and then "make install". You must
+have root privileges for the installation step.
+
+** How to debug
+First you have to build liblouis with debugging info enabled.
+
+  $ ./configure CFLAGS='-g -O0 -Wall -Wextra'
+  $ make
+
+Starting the programs under the tools directory within gdb is a little
+tricky as they are linked with libtool. See the info page of libtool
+for more information. To start lou_checktable for table wiskunde.ctb
+for example you'd have to issue the following commands:
+
+  $ libtool --mode=execute gdb ./tools/lou_checktable
+  (gdb) run tables/wiskunde.ctb
+
+** How to find memory leaks
+Valgrind is a tool that can be used to find memory errors. It is
+recommended that you compile liblouis without any optimizations and
+with all warnings enabled before running it through Valgrind:
+
+  $ ./configure CFLAGS='-g -O0 -Wall'
+  $ make
+
+Then use Valgrind to analyze liblouis. For example you can run
+lou_translate trough Valgrind:
+
+  $ libtool --mode=execute valgrind -v --tool=memcheck \
+    --leak-check=full --leak-resolution=high --log-file=valgrind.log \
+    ./tools/lou_translate en-us-g2.ctb
+
+Type a few words at the prompt, check translation and terminate
+lou_translate. Now open the file valgrind.log and see if there are any
+memory leaks reported.
+
+You can also just run lou_checktable for example:
+
+  $ libtool --mode=execute valgrind -v --tool=memcheck \
+    --leak-check=full --leak-resolution=high --log-file=valgrind.log \
+    ./tools/lou_checktable tables/nl-BE-g1.ctb
+
+Again open valgrind.log to see if any memory leaks were reported.
+
+For the full experience run lou_allround under Valgrind:
+
+  $ libtool --mode=execute valgrind -v --tool=memcheck \
+    --leak-check=full --show-reachable=yes \
+    --leak-resolution=high --track-origins=yes \
+    --log-file=valgrind.log ./tools/lou_allround
+
+** How to analyze performance
+Gprof helps you analyze the performance of programs. You have to
+compile liblouis as follows:
+
+  $ ./configure --disable-shared
+  $ make clean all CFLAGS='-g -O0 -pg' LDFLAGS='-all-static'
+
+Then translate some stuff with a large table:
+
+  $ ./tools/lou_translate tests/tables/large.ctb 
+
+Finally look at the call profile:
+
+  $ libtool --mode=execute gprof ./tools/lou_translate gmon.out
+
+** How to build for win32
+See the README.windows file and the windows subdirectory.
+
+*** How to cross-compile for win32
+Use the mingw win32 cross compiler as shown below. Use the prefix
+option to install the binaries to a temporary place where you can
+create a zip file.
+
+  ./configure --build i686-pc-linux-gnu --host i586-mingw32msvc --prefix=/tmp/liblouis-mingw32msvc 
+  make
+  make install
+  zip -r liblouis-mingw32msvc.zip /tmp/liblouis-mingw32msvc
+
+
+* Release Procedure
+These steps describe what a maintainer does to make a release; they
+are not needed for ordinary patch submission.
+
+** Set the version number
+Update the version number in NEWS (with version, date, and release
+type), ChangeLog and configure.ac.
+
+Don't forget to update the libtool versioning info in configure.ac,
+i.e. LIBLOUIS_REVISION and possibly LIBLOUIS_CURRENT and LIBLOUIS_AGE.
+
+** Commit and tag
+Commit the changes and tag this version
+
+  git tag -s v2.6.0 -m "Release 2.6.0"
+  git push origin v2.6.0
+
+If you know the exact version number that needs to be tagged use
+
+  git tag -s v2.6.0 -m "Release 2.6.0" <commit>
+  git push origin v2.6.0
+
+** Make the release
+Check out a clean copy in a different directory, like /tmp. Run
+autogen.sh and configure with no special prefixes. Run make distcheck.
+This will make sure that all needed files are present, and do a
+general sanity check. Run make dist. This will produce a tarball.
+
+  ./autogen.sh && ./configure && make && make distcheck && make dist
+
+** Upload
+Add the tarball to the liblouis web site, i.e. add it under
+$WEBSITE/downloads and add a link to it in $WEBSITE/downloads/index.md.
+See below for instructions on how to update the web site.
+
+** Online documentation
+The online documentation is part of the liblouis web site. To add it to the
+site simply copy doc/liblouis.html to $WEBSITE/documentation/liblouis.html.
+Make sure you add the proper YAML front matter. Again see below for
+instructions on how to update the web site.
+
+** Web site maintenance
+The liblouis web site at liblouis.org is maintained with the help of
+github pages (https://pages.github.com/). To edit the site just check
+out the repo at https://github.com/liblouis/liblouis.github.io. You'll
+need to know a few things about Jekyll (http://jekyllrb.com/) and
+textile (http://redcloth.org/textile/) the markup that is used to edit
+the content. In order to update the site simply edit, commit and push.
+
+For the new release update the project web site. Add a post containing
+the current NEWS to the _posts directory.
+
+** Other web updates
+Also update the page on freshmeat (http://freshmeat.net/projects/liblouis/).
+
+** Announce
+Send an announcement to the liblouis list
+liblouis-liblouisxml@freelists.org. See ANNOUNCEMENT for an example.
+

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<!--
+Copyright 2016 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/core/test_utils.html">
+<link rel="import" href="/tracing/metrics/v8/utils.html">
+<link rel="import" href="/tracing/model/memory_dump_test_utils.html">
+
+<script>
+'use strict';
+
+tr.b.unittest.testSuite(function() {
+  function addDumpWithAllocator(model, process, allocator, start) {
+    const gmd = tr.model.MemoryDumpTestUtils.addGlobalMemoryDump(
+        model, {ts: start});
+    const pmd = tr.model.MemoryDumpTestUtils.addProcessMemoryDump(gmd, process);
+    pmd.memoryAllocatorDumps =
+        [tr.model.MemoryDumpTestUtils.newAllocatorDump(pmd, allocator)];
+  }
+
+  test('rangeForMemoryDumps', function() {
+    const model = tr.c.TestUtils.newModel(function(model) {
+      const process = model.getOrCreateProcess(1);
+      addDumpWithAllocator(model, process, 'dummy', 10);
+      addDumpWithAllocator(model, process, 'v8', 20);
+    });
+    const range = tr.metrics.v8.utils.rangeForMemoryDumps(model);
+    assert.isFalse(range.isEmpty);
+    assert.strictEqual(range.min, 20);
+    assert.strictEqual(range.max, Infinity);
+  });
+
+  test('rangeForMemoryDumpsEmpty', function() {
+    const model = tr.c.TestUtils.newModel(function(model) {
+      const process = model.getOrCreateProcess(1);
+      addDumpWithAllocator(model, process, 'dummy', 10);
+      addDumpWithAllocator(model, process, 'dummy', 20);
+    });
+    const range = tr.metrics.v8.utils.rangeForMemoryDumps(model);
+    assert.isTrue(range.isEmpty);
+  });
+});
+</script>

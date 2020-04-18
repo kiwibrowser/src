@@ -1,0 +1,64 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Basic Compute Shader Tests
+
+Tests:
+ + dEQP-GLES31.functional.compute.basic.*
+
+Includes:
+ + Empty compute shader
+ + Single and multiple compute shader invocations (1 to 4k invocations)
+ + Various work group sizes (1 to 30 items)
+ + Reading from and writing to SSBO
+   - variables with basic type
+   - sized array
+   - unsized array as a last member
+ + Atomic counter (atomicCounterIncrement)
+ + Image access
+   - r32ui format
+   - read, write
+   - atomic operation (imageAtomicAdd)
+ + Work-group barriers
+   - SSBO access
+   - shared variable access
+   - image access (3plus mandates read or write only?)
+ + API level barrier commands
+   - SSBO access
+   - image access
+ + Program interface query (incidental coverage)
+
+Excludes:
+ + This excludes all but a couple of possible variants of
+   - data types
+   - SSBO layouts
+   - image formats
+   - built-in functions (atomics etc.)
+   - ...
+
+Description:
+
+The objective of basic compute tests is to provide a simplest possible test
+case for each of the major compute-related features. The tests will not try to
+test all possible variants, such as data types. Separate targeted test sets
+will be developed to exhaustively test the features later.
+
+Tests typically operate by first compiling one or more programs with just a
+compute shader. One or more (in API-level barrier tests) compute invocations
+are made, and results are read back using buffer mapping. Comparison algorithm
+varies by test case.

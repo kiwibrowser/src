@@ -1,0 +1,6095 @@
+#X1. Constructor tests test constructing arrays of arrays with different declaration syntax and data types.
+#X2. Return value tests test arrays of arrays as function return values.
+#X3. Parameter tests test arrays of arrays as different types of function parameters (in, out, unnamed).
+#X4. Implicit size tests test constructing arrays of arrays with implicit size.
+#X5. Assignment tests test assigning an array of arrays to another array of arrays variable.
+#X6. Length tests test the length method of arrays of arrays.
+#X8. Array access tests test array element access at initialization with const/dynamic values
+
+group constructor "Array of arrays constructors"
+
+	group explicit "Testing constructors with explicit sizes"
+		case float_3x3
+			version 310 es
+			desc "Testing constructing explicitly sized arrays of arrays"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(7.4, -1.0, 2.0) | vec3(3.0, 1.6, -2.0) ];
+				output vec3 out0 = [ vec3(2.0, 0.5, 1.0) | vec3(2.0, 7.4, -1.0) | vec3(-2.0, 3.0, 1.6) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					float[3][3] x;
+					x = float[3][3] (	float[3] (in0.z, in0.x, in0.y),
+										float[3] (in0.z, in0.x, in0.y),
+										float[3] (in0.z, in0.x, in0.y) );
+					out0 = vec3(x[0][0], x[1][1], x[2][2]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case float_3x4
+			version 310 es
+			desc "Testing constructing explicitly sized arrays of arrays"
+			values
+			{
+				input vec4 in0 = [ vec4(0.5, 1.0, 2.0, 0.2) | vec4(7.4, -1.0, 2.0, -1.3) | vec4(3.0, 1.6, -2.0, 0.5) ];
+				output vec4 out0 = [ vec4(2.0, 0.5, 0.2, 1.0) | vec4(2.0, 7.4, -1.3, -1.0) | vec4(-2.0, 3.0, 0.5, 1.6) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					float[3][4] x;
+					x = float[3][4] (	float[4] (in0.z, in0.x, in0.w, in0.y),
+										float[4] (in0.z, in0.x, in0.w, in0.y),
+										float[4] (in0.z, in0.x, in0.w, in0.y) );
+					out0 = vec4(x[0][0], x[1][1], x[2][2], x[2][3]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case int_3x1
+			version 310 es
+			desc "Testing constructing explicitly sized arrays of arrays"
+			values
+			{
+				input ivec3 in0 = [ ivec3(0, 1, 2) | ivec3(7, -1, 2) | ivec3(3, 1, -2) ];
+				output ivec3 out0 = [ ivec3(2, 0, 1) | ivec3(2, 7, -1) | ivec3(-2, 3, 1) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					int x[3][1];
+					x = int[3][1] (	int[1] (in0.z),
+									int[1] (in0.x),
+									int[1] (in0.y) );
+					out0 = ivec3(x[0][0], x[1][0], x[2][0]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case int_4x4x4
+			version 310 es
+			desc "Testing constructing explicitly sized arrays of arrays"
+			values
+			{
+				input ivec4 in0 = [ ivec4(0, 1, 2, 0) | ivec4(7, -1, 2, -1) | ivec4(3, 1, -2, 0) ];
+				output ivec4 out0 = [ ivec4(2, 0, 0, 1) | ivec4(2, 7, -1, -1) | ivec4(-2, 3, 0, 1) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					int[4] x[4][4];
+					x = int[4][4][4] (	int[4][4] (	(int[4] (in0.z, in0.x, in0.w, in0.y)),
+													(int[4] (in0.z, in0.x, in0.w, in0.y)),
+													(int[4] (in0.z, in0.x, in0.w, in0.y)),
+													(int[4] (in0.z, in0.x, in0.w, in0.y))),
+
+										int[4][4] (	(int[4] (in0.z, in0.x, in0.w, in0.y)),
+													(int[4] (in0.z, in0.x, in0.w, in0.y)),
+													(int[4] (in0.z, in0.x, in0.w, in0.y)),
+													(int[4] (in0.z, in0.x, in0.w, in0.y))),
+
+										int[4][4] (	(int[4] (in0.z, in0.x, in0.w, in0.y)),
+													(int[4] (in0.z, in0.x, in0.w, in0.y)),
+													(int[4] (in0.z, in0.x, in0.w, in0.y)),
+													(int[4] (in0.z, in0.x, in0.w, in0.y))),
+
+										int[4][4] (	(int[4] (in0.z, in0.x, in0.w, in0.y)),
+													(int[4] (in0.z, in0.x, in0.w, in0.y)),
+													(int[4] (in0.z, in0.x, in0.w, in0.y)),
+													(int[4] (in0.z, in0.x, in0.w, in0.y))) );
+
+					out0 = ivec4(x[0][0][0], x[1][1][1], x[2][2][2], x[3][3][3]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case bool_3x3x3
+			version 310 es
+			desc "Testing constructing explicitly sized arrays of arrays"
+			values
+			{
+				input bvec3 in0 = [ bvec3(true, true, false) ];
+				output bvec3 out0 = [ bvec3(false, true, true) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					bool[3][3][3] x;
+					x = bool[3][3][3] (	bool[3][3] ((bool[3] (in0.y, in0.y, in0.y)),
+													(bool[3] (in0.z, in0.z, in0.z)),
+													(bool[3] (in0.x, in0.x, in0.x))),
+
+										bool[3][3] ((bool[3] (in0.y, in0.y, in0.y)),
+													(bool[3] (in0.z, in0.z, in0.z)),
+													(bool[3] (in0.x, in0.x, in0.x))),
+
+										bool[3][3] ((bool[3] (in0.y, in0.y, in0.y)),
+													(bool[3] (in0.z, in0.z, in0.z)),
+													(bool[3] (in0.x, in0.x, in0.x))) );
+
+					out0 = bvec3(x[1][1][1], x[0][0][0], x[2][2][2]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case bool_2x1x4
+			version 310 es
+			desc "Testing constructing explicitly sized arrays of arrays"
+			values
+			{
+				input bvec4 in0 = [ bvec4(true, true, false, false) ];
+				output bvec4 out0 = [ bvec4(false, true, true, false) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					bool x[2][1][4];
+					x = bool[2][1][4] ( bool[1][4] ((bool[4] (in0.z, in0.x, in0.y, in0.w))),
+										bool[1][4] ((bool[4] (in0.z, in0.x, in0.y, in0.w))) );
+					out0 = bvec4(x[0][0][0], x[0][0][1], x[1][0][2], x[1][0][3]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case struct_3x2
+			version 310 es
+			desc "Testing constructing explicitly sized arrays of arrays"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) ];
+				output vec3 out0 = [ vec3(2.0, -0.5, -1.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+					struct Test
+					{
+						float f;
+						vec3 v;
+					};
+
+					Test a = Test(in0.z, vec3(in0.x, in0.y, in0.z));
+					Test b = Test(in0.y, vec3(-in0.z, -in0.x, -in0.y));
+					Test c = Test(in0.x, vec3(-in0.y, in0.z, -in0.x));
+
+					Test[2] x[3] = Test[3][2] ( (Test[2] (a, b)),
+												(Test[2] (c, a)),
+											    (Test[2] (b, c)) );
+
+					out0 = vec3(x[0][0].f, x[0][1].v.y, x[2][1].v.x);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case struct_4x1x4
+			version 310 es
+			desc "Testing constructing explicitly sized arrays of arrays"
+			values
+			{
+				input vec4 in0 = [ vec4(0.5, 1.0, 2.0, 1.5) ];
+				output vec4 out0 = [ vec4(2.0, -0.5, -1.0, -1.5) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+					struct Test
+					{
+						float f;
+						vec3 v;
+					};
+
+					Test a = Test(in0.z, vec3(in0.x, in0.y, in0.z));
+					Test b = Test(in0.y, vec3(-in0.z, -in0.x, -in0.y));
+					Test c = Test(in0.x, vec3(-in0.y, in0.z, -in0.x));
+					Test d = Test(-in0.w, vec3(-in0.w, -in0.x, -in0.z));
+
+					Test[4] x[4][1] = Test[4][1][4] (	(Test[1][4] (Test[4] (a, b, c, d))),
+														(Test[1][4] (Test[4] (a, b, c, d))),
+														(Test[1][4] (Test[4] (a, b, c, d))),
+														(Test[1][4] (Test[4] (a, b, c, d))) );
+
+					out0 = vec4(x[0][0][0].f, x[1][0][1].v.y, x[2][0][2].v.x, x[3][0][3].v.x);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case vec3_4x3
+			version 310 es
+			desc "Testing constructing explicitly sized arrays of arrays"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(7.4, -1.0, 2.0) | vec3(3.0, 1.6, -2.0) ];
+				output vec3 out0 = [ vec3(0.5, -2.0, 1.0) | vec3(7.4, -2.0, -1.0) | vec3(3.0, 2.0, 1.6) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+					vec3[3] x[4];
+					x = vec3[4][3] (vec3[3] (	vec3(in0.x, in0.y, in0.z),
+												vec3(-in0.y, -in0.z, -in0.x),
+												vec3(in0.z, in0.x, in0.y)),
+									vec3[3] (	vec3(in0.x, in0.y, in0.z),
+												vec3(-in0.y, -in0.z, -in0.x),
+												vec3(in0.z, in0.x, in0.y)),
+									vec3[3] (	vec3(in0.x, in0.y, in0.z),
+												vec3(-in0.y, -in0.z, -in0.x),
+												vec3(in0.z, in0.x, in0.y)),
+									vec3[3] (	vec3(in0.x, in0.y, in0.z),
+												vec3(-in0.y, -in0.z, -in0.x),
+												vec3(in0.z, in0.x, in0.y)) );
+
+					out0 = vec3(x[0][0].x, x[1][1].y, x[3][2].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case ivec3_3x2x1
+			version 310 es
+			desc "Testing constructing explicitly sized arrays of arrays"
+			values
+			{
+				input ivec3 in0 = [ ivec3(5, 1, 2) | ivec3(7, -1, 2) | ivec3(3, 1, -2) ];
+				output ivec3 out0 = [ ivec3(5, -2, 1) | ivec3(7, -2, -1) | ivec3(3, 2, 1) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+					ivec3 x[3][2][1];
+					x = ivec3[3][2][1] (ivec3[2][1] (	ivec3[1] (ivec3(in0.x, in0.y, in0.z)),
+														ivec3[1] (ivec3(-in0.y, -in0.z, -in0.x))),
+										ivec3[2][1] (	ivec3[1] (ivec3(in0.z, in0.x, in0.y)),
+														ivec3[1] (ivec3(in0.x, in0.y, in0.z))),
+										ivec3[2][1] (	ivec3[1] (ivec3(-in0.y, -in0.z, -in0.x)),
+														ivec3[1] (ivec3(in0.z, in0.x, in0.y))) );
+
+					out0 = ivec3(x[0][0][0].x, x[2][0][0].y, x[1][0][0].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case bvec3_1x2x3
+			version 310 es
+			desc "Testing constructing explicitly sized arrays of arrays"
+			values
+			{
+				input bvec3 in0 = [ bvec3(true, false, true) ];
+				output bvec3 out0 = [ bvec3(true, true, false) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+					bvec3[3] x[1][2];
+					x = bvec3[1][2][3] ( bvec3[2][3] (	bvec3[3] (	bvec3(in0.x, in0.y, in0.z),
+																	bvec3(in0.y, in0.z, in0.x),
+																	bvec3(in0.z, in0.x, in0.y)),
+
+														bvec3[3] (	bvec3(in0.z, in0.x, in0.y),
+																	bvec3(in0.x, in0.y, in0.z),
+																	bvec3(in0.y, in0.z, in0.x)) ));
+
+					out0 = bvec3(x[0][0][0].x, x[0][0][1].y, x[0][1][0].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x2
+			version 310 es
+			desc "Testing constructing explicitly sized arrays of arrays"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(-1.5, 0.0, -2.3) ];
+				output vec3 out0 = [ vec3(0.5, -1.0, 1.0) | vec3(-1.5, 0.0, 0.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					mat3[3][2] a = mat3[3][2] (	mat3[2] (	mat3(	in0.x, in0.y, in0.z,
+																	in0.x, in0.y, in0.z,
+																	in0.x, in0.y, in0.z),
+															mat3(	in0.z, in0.x, -in0.y,
+																	in0.z, in0.x, -in0.y,
+																	in0.z, in0.x, -in0.y)),
+
+												mat3[2] (	mat3(	-in0.z, -in0.z, in0.z,
+																	-in0.y, -in0.y, in0.y,
+																	-in0.x, -in0.x, in0.x),
+															mat3(	in0.x, in0.y, in0.z,
+																	in0.x, in0.y, in0.z,
+																	in0.x, in0.y, in0.z)),
+
+												mat3[2] (	mat3(	in0.z, in0.x, -in0.y,
+																	in0.z, in0.x, -in0.y,
+																	in0.z, in0.x, -in0.y),
+															mat3(	-in0.z, -in0.z, in0.z,
+																	-in0.y, -in0.y, in0.y,
+																	-in0.x, -in0.x, in0.x)) );
+
+					mat3 a0 = a[0][0];
+					mat3 a1 = a[0][1];
+					mat3 a2 = a[2][1];
+
+					float ret0 = a0[2][0];
+					float ret1 = a1[0][2];
+					float ret2 = a2[1][2];
+
+					out0 = vec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x3x3
+			version 310 es
+			desc "Testing constructing explicitly sized arrays of arrays"
+			values
+			{
+				input ivec3 in0 = [ ivec3(0, 1, 2) | ivec3(-1, 0, -2) ];
+				output ivec3 out0 = [ ivec3(0, -1, 1) | ivec3(-1, 0, 0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 a = mat3(	in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z);
+					mat3 b = mat3(	in0.z, in0.x, -in0.y,
+									in0.z, in0.x, -in0.y,
+									in0.z, in0.x, -in0.y);
+					mat3 c = mat3(	-in0.z, -in0.z, in0.z,
+									-in0.y, -in0.y, in0.y,
+									-in0.x, -in0.x, in0.x);
+
+					mat3[3][3][3] x = mat3[3][3][3] (	mat3[3][3] (mat3[3] (a, a, a),
+																	mat3[3] (b, b, b),
+																	mat3[3] (c, c, c)),
+
+														mat3[3][3] (mat3[3] (b, b, b),
+																	mat3[3] (a, a, a),
+																	mat3[3] (c, c, c)),
+
+														mat3[3][3] (mat3[3] (c, c, c),
+																	mat3[3] (a, a, a),
+																	mat3[3] (b, b, b)) );
+
+					mat3 x0 = x[0][0][0];
+					mat3 x1 = x[1][0][0];
+					mat3 x2 = x[2][0][0];
+
+					float ret0 = x0[2][0];
+					float ret1 = x1[0][2];
+					float ret2 = x2[1][2];
+
+					out0 = ivec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x4
+			version 310 es
+			desc "Testing constructing explicitly sized arrays of arrays"
+			values
+			{
+				input bvec3 in0 = [ bvec3(true, false, true) ];
+				output bvec3 out0 = [ bvec3(true, false, false) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 a = mat3(	in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z);
+
+					mat3 b = mat3(	in0.z, in0.x, in0.y,
+									in0.z, in0.x, in0.y,
+									in0.z, in0.x, in0.y);
+
+					mat3 c = mat3(	in0.z, in0.z, in0.z,
+									in0.y, in0.y, in0.y,
+									in0.x, in0.x, in0.x);
+
+					mat3[4] x[3] = mat3[3][4] (	mat3[4] (a, b, c, a),
+												mat3[4] (b, c, a, b),
+												mat3[4] (c, a, b, c) );
+
+					mat3 x0 = x[0][0];
+					mat3 x1 = x[1][3];
+					mat3 x2 = x[2][0];
+
+					float ret0 = x0[2][0];
+					float ret1 = x1[0][2];
+					float ret2 = x2[1][2];
+
+					out0 = bvec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case high_dimensional_array
+			version 310 es
+			desc "Testing constructing explicitly sized arrays of arrays"
+			values
+			{
+				input ivec2 in0 = [ ivec2(1, -2) ];
+				output ivec2 out0 = [ ivec2(-2, 1) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+					int[1][1][1][2][1][1][1] x = int[1][1][1][2][1][1][1] ( int[1][1][2][1][1][1] (int [1][2][1][1][1] ( int[2][1][1][1] (	int[1][1][1] ( int[1][1] (int[1] (in0.y))),
+																																			int[1][1][1] ( int[1][1] (int[1] (in0.x)))))));
+
+					out0 = ivec2(x[0][0][0][0][0][0][0], x[0][0][0][1][0][0][0]);
+					${OUTPUT}
+				}
+			""
+		end
+
+	end # explicit
+
+	group implicit "Testing constructors with implicit size"
+
+		case float_3x3
+			version 310 es
+			desc "Testing constructing implicitly sized arrays of arrays"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(7.4, -1.0, 2.0) | vec3(3.0, 1.6, -2.0) ];
+				output vec3 out0 = [ vec3(2.0, 0.5, 1.0) | vec3(2.0, 7.4, -1.0) | vec3(-2.0, 3.0, 1.6) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					float[3][3] x;
+					x = float[][] ( float[](in0.z, in0.x, in0.y),
+									float[](in0.z, in0.x, in0.y),
+									float[](in0.z, in0.x, in0.y) );
+
+					out0 = vec3(x[0][0], x[1][1], x[2][2]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case float_3x4
+			version 310 es
+			desc "Testing constructing implicitly sized arrays of arrays"
+			values
+			{
+				input vec4 in0 = [ vec4(0.5, 1.0, 2.0, 0.2) | vec4(7.4, -1.0, 2.0, -1.3) | vec4(3.0, 1.6, -2.0, 0.5) ];
+				output vec4 out0 = [ vec4(2.0, 0.5, 0.2, 1.0) | vec4(2.0, 7.4, -1.3, -1.0) | vec4(-2.0, 3.0, 0.5, 1.6) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					float[3][4] x;
+					x = float[][] ( float[] (in0.z, in0.x, in0.w, in0.y),
+									float[] (in0.z, in0.x, in0.w, in0.y),
+									float[] (in0.z, in0.x, in0.w, in0.y) );
+
+					out0 = vec4(x[0][0], x[1][1], x[2][2], x[2][3]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case int_3x1
+			version 310 es
+			desc "Testing constructing implicitly sized arrays of arrays"
+			values
+			{
+				input ivec3 in0 = [ ivec3(0, 1, 2) | ivec3(7, -1, 2) | ivec3(3, 1, -2) ];
+				output ivec3 out0 = [ ivec3(2, 0, 1) | ivec3(2, 7, -1) | ivec3(-2, 3, 1) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					int x[3][1];
+					x = int[][] ( int[] (in0.z),
+								  int[] (in0.x),
+								  int[] (in0.y) );
+
+					out0 = ivec3(x[0][0], x[1][0], x[2][0]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case int_4x4x4
+			version 310 es
+			desc "Testing constructing implicitly sized arrays of arrays"
+			values
+			{
+				input ivec4 in0 = [ ivec4(0, 1, 2, 0) | ivec4(7, -1, 2, -1) | ivec4(3, 1, -2, 0) ];
+				output ivec4 out0 = [ ivec4(2, 0, 0, 1) | ivec4(2, 7, -1, -1) | ivec4(-2, 3, 0, 1) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					int[4] x[4][4];
+					x = int[][][] ( int[][] ((int[] (in0.z, in0.x, in0.w, in0.y)),
+											 (int[] (in0.z, in0.x, in0.w, in0.y)),
+											 (int[] (in0.z, in0.x, in0.w, in0.y)),
+											 (int[] (in0.z, in0.x, in0.w, in0.y))),
+
+									int[][] ((int[] (in0.z, in0.x, in0.w, in0.y)),
+											 (int[] (in0.z, in0.x, in0.w, in0.y)),
+											 (int[] (in0.z, in0.x, in0.w, in0.y)),
+											 (int[] (in0.z, in0.x, in0.w, in0.y))),
+
+									int[][] ((int[] (in0.z, in0.x, in0.w, in0.y)),
+											 (int[] (in0.z, in0.x, in0.w, in0.y)),
+											 (int[] (in0.z, in0.x, in0.w, in0.y)),
+											 (int[] (in0.z, in0.x, in0.w, in0.y))),
+
+									int[][] ((int[] (in0.z, in0.x, in0.w, in0.y)),
+											 (int[] (in0.z, in0.x, in0.w, in0.y)),
+											 (int[] (in0.z, in0.x, in0.w, in0.y)),
+											 (int[] (in0.z, in0.x, in0.w, in0.y))) );
+
+					out0 = ivec4(x[0][0][0], x[1][1][1], x[2][2][2], x[3][3][3]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case bool_3x3x3
+			version 310 es
+			desc "Testing constructing implicitly sized arrays of arrays"
+			values
+			{
+				input bvec3 in0 = [ bvec3(true, true, false) ];
+				output bvec3 out0 = [ bvec3(false, true, true) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					bool[3][3][3] x;
+					x = bool[][][] (bool[][] (	(bool[] (in0.y, in0.y, in0.y)),
+												(bool[] (in0.z, in0.z, in0.z)),
+												(bool[] (in0.x, in0.x, in0.x))),
+
+									bool[][] (	(bool[] (in0.y, in0.y, in0.y)),
+												(bool[] (in0.z, in0.z, in0.z)),
+												(bool[] (in0.x, in0.x, in0.x))),
+
+									bool[][] (	(bool[] (in0.y, in0.y, in0.y)),
+												(bool[] (in0.z, in0.z, in0.z)),
+												(bool[] (in0.x, in0.x, in0.x))) );
+
+					out0 = bvec3(x[1][1][1], x[0][0][0], x[2][2][2]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case bool_2x1x4
+			version 310 es
+			desc "Testing constructing implicitly sized arrays of arrays"
+			values
+			{
+				input bvec4 in0 = [ bvec4(true, true, false, false) ];
+				output bvec4 out0 = [ bvec4(false, true, true, false) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					bool x[2][1][4];
+					x = bool[2][1][4] ( bool[][] ((bool[] (in0.z, in0.x, in0.y, in0.w))),
+										bool[][] ((bool[] (in0.z, in0.x, in0.y, in0.w))) );
+					out0 = bvec4(x[0][0][0], x[0][0][1], x[1][0][2], x[1][0][3]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case struct_3x2
+			version 310 es
+			desc "Testing constructing implicitly sized arrays of arrays"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) ];
+				output vec3 out0 = [ vec3(2.0, -0.5, -1.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+					struct Test
+					{
+						float f;
+						vec3 v;
+					};
+
+					Test a = Test(in0.z, vec3(in0.x, in0.y, in0.z));
+					Test b = Test(in0.y, vec3(-in0.z, -in0.x, -in0.y));
+					Test c = Test(in0.x, vec3(-in0.y, in0.z, -in0.x));
+
+					Test[2] x[3] = Test[][] (	(Test[] (a, b)),
+												(Test[] (c, a)),
+											    (Test[] (b, c)) );
+
+					out0 = vec3(x[0][0].f, x[0][1].v.y, x[2][1].v.x);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case struct_4x1x4
+			version 310 es
+			desc "Testing constructing implicitly sized arrays of arrays"
+			values
+			{
+				input vec4 in0 = [ vec4(0.5, 1.0, 2.0, 1.5) ];
+				output vec4 out0 = [ vec4(2.0, -0.5, -1.0, -1.5) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+
+					struct Test
+					{
+						float f;
+						vec3 v;
+					};
+
+					Test a = Test(in0.z, vec3(in0.x, in0.y, in0.z));
+					Test b = Test(in0.y, vec3(-in0.z, -in0.x, -in0.y));
+					Test c = Test(in0.x, vec3(-in0.y, in0.z, -in0.x));
+					Test d = Test(-in0.w, vec3(-in0.w, -in0.x, -in0.z));
+
+					Test[4] x[4][1] = Test[][][] (	(Test[][] (Test[] (a, b, c, d))),
+													(Test[][] (Test[] (a, b, c, d))),
+													(Test[][] (Test[] (a, b, c, d))),
+													(Test[][] (Test[] (a, b, c, d))) );
+
+					out0 = vec4(x[0][0][0].f, x[1][0][1].v.y, x[2][0][2].v.x, x[3][0][3].v.x);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case vec3_4x3
+			version 310 es
+			desc "Testing constructing implicitly sized arrays of arrays"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(7.4, -1.0, 2.0) | vec3(3.0, 1.6, -2.0) ];
+				output vec3 out0 = [ vec3(0.5, -2.0, 1.0) | vec3(7.4, -2.0, -1.0) | vec3(3.0, 2.0, 1.6) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+					vec3[3] x[4];
+					x = vec3[][] (	vec3[]	(	vec3(in0.x, in0.y, in0.z),
+												vec3(-in0.y, -in0.z, -in0.x),
+												vec3(in0.z, in0.x, in0.y)),
+									vec3[]	(	vec3(in0.x, in0.y, in0.z),
+												vec3(-in0.y, -in0.z, -in0.x),
+												vec3(in0.z, in0.x, in0.y)),
+
+									vec3[]	(	vec3(in0.x, in0.y, in0.z),
+												vec3(-in0.y, -in0.z, -in0.x),
+												vec3(in0.z, in0.x, in0.y)),
+
+									vec3[]	(	vec3(in0.x, in0.y, in0.z),
+												vec3(-in0.y, -in0.z, -in0.x),
+												vec3(in0.z, in0.x, in0.y)) );
+
+					out0 = vec3(x[0][0].x, x[1][1].y, x[3][2].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case ivec3_3x2x1
+			version 310 es
+			desc "Testing constructing implicitly sized arrays of arrays"
+			values
+			{
+				input ivec3 in0 = [ ivec3(5, 1, 2) | ivec3(7, -1, 2) | ivec3(3, 1, -2) ];
+				output ivec3 out0 = [ ivec3(5, -2, 1) | ivec3(7, -2, -1) | ivec3(3, 2, 1) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+					ivec3 x[3][2][1];
+					x = ivec3[][][] (	ivec3[][] (	ivec3[] (ivec3(in0.x, in0.y, in0.z)),
+													ivec3[] (ivec3(-in0.y, -in0.z, -in0.x))),
+										ivec3[][] (	ivec3[] (ivec3(in0.z, in0.x, in0.y)),
+													ivec3[] (ivec3(in0.x, in0.y, in0.z))),
+										ivec3[][] (	ivec3[] (ivec3(-in0.y, -in0.z, -in0.x)),
+													ivec3[] (ivec3(in0.z, in0.x, in0.y))) );
+					out0 = ivec3(x[0][0][0].x, x[2][0][0].y, x[1][0][0].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case bvec3_1x2x3
+			version 310 es
+			desc "Testing constructing implicitly sized arrays of arrays"
+			values
+			{
+				input bvec3 in0 = [ bvec3(true, false, true) ];
+				output bvec3 out0 = [ bvec3(true, true, false) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+					bvec3[3] x[1][2];
+					x = bvec3[][][] (	bvec3[][] (	bvec3[] (bvec3(in0.x, in0.y, in0.z),
+															 bvec3(in0.y, in0.z, in0.x),
+															 bvec3(in0.z, in0.x, in0.y)),
+
+													bvec3[] (bvec3(in0.z, in0.x, in0.y),
+															 bvec3(in0.x, in0.y, in0.z),
+															 bvec3(in0.y, in0.z, in0.x)) ));
+
+					out0 = bvec3(x[0][0][0].x, x[0][0][1].y, x[0][1][0].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x2
+			version 310 es
+			desc "Testing constructing implicitly sized arrays of arrays"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(-1.5, 0.0, -2.3) ];
+				output vec3 out0 = [ vec3(0.5, -1.0, 1.0) | vec3(-1.5, 0.0, 0.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					mat3[3][2] a = mat3[][] (	mat3[] (mat3(	in0.x, in0.y, in0.z,
+																in0.x, in0.y, in0.z,
+																in0.x, in0.y, in0.z),
+														mat3(	in0.z, in0.x, -in0.y,
+																in0.z, in0.x, -in0.y,
+																in0.z, in0.x, -in0.y)),
+
+												mat3[] (mat3(	-in0.z, -in0.z, in0.z,
+																-in0.y, -in0.y, in0.y,
+																-in0.x, -in0.x, in0.x),
+														mat3(	in0.x, in0.y, in0.z,
+																in0.x, in0.y, in0.z,
+																in0.x, in0.y, in0.z)),
+
+												mat3[] (mat3(	in0.z, in0.x, -in0.y,
+																in0.z, in0.x, -in0.y,
+																in0.z, in0.x, -in0.y),
+														mat3(	-in0.z, -in0.z, in0.z,
+																-in0.y, -in0.y, in0.y,
+																-in0.x, -in0.x, in0.x)) );
+
+					mat3 a0 = a[0][0];
+					mat3 a1 = a[0][1];
+					mat3 a2 = a[2][1];
+
+					float ret0 = a0[2][0];
+					float ret1 = a1[0][2];
+					float ret2 = a2[1][2];
+
+					out0 = vec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x3x3
+			version 310 es
+			desc "Testing constructing implicitly sized arrays of arrays"
+			values
+			{
+				input ivec3 in0 = [ ivec3(0, 1, 2) | ivec3(-1, 0, -2) ];
+				output ivec3 out0 = [ ivec3(0, -1, 1) | ivec3(-1, 0, 0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 a = mat3(	in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z);
+					mat3 b = mat3(	in0.z, in0.x, -in0.y,
+									in0.z, in0.x, -in0.y,
+									in0.z, in0.x, -in0.y);
+					mat3 c = mat3(	-in0.z, -in0.z, in0.z,
+									-in0.y, -in0.y, in0.y,
+									-in0.x, -in0.x, in0.x);
+
+					mat3[3][3][3] x = mat3[][][] (	mat3[][] (	mat3[] (a, a, a),
+																mat3[] (b, b, b),
+																mat3[] (c, c, c)),
+
+													mat3[][] (	mat3[] (b, b, b),
+																mat3[] (a, a, a),
+																mat3[] (c, c, c)),
+
+													mat3[][] (	mat3[] (c, c, c),
+																mat3[] (a, a, a),
+																mat3[] (b, b, b)) );
+
+					mat3 x0 = x[0][0][0];
+					mat3 x1 = x[1][0][0];
+					mat3 x2 = x[2][0][0];
+
+					float ret0 = x0[2][0];
+					float ret1 = x1[0][2];
+					float ret2 = x2[1][2];
+
+					out0 = ivec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x4
+			version 310 es
+			desc "Testing constructing implicitly sized arrays of arrays"
+			values
+			{
+				input bvec3 in0 = [ bvec3(true, false, true) ];
+				output bvec3 out0 = [ bvec3(true, false, false) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 a = mat3(	in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z);
+
+					mat3 b = mat3(	in0.z, in0.x, in0.y,
+									in0.z, in0.x, in0.y,
+									in0.z, in0.x, in0.y);
+
+					mat3 c = mat3(	in0.z, in0.z, in0.z,
+									in0.y, in0.y, in0.y,
+									in0.x, in0.x, in0.x);
+
+					mat3[4] x[3] = mat3[][] (	mat3[] (a, b, c, a),
+												mat3[] (b, c, a, b),
+												mat3[] (c, a, b, c) );
+
+					mat3 x0 = x[0][0];
+					mat3 x1 = x[1][3];
+					mat3 x2 = x[2][0];
+
+					float ret0 = x0[2][0];
+					float ret1 = x1[0][2];
+					float ret2 = x2[1][2];
+
+					out0 = bvec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case int_high_dimensional_array
+			version 310 es
+			desc "Testing constructing implicitly sized arrays of arrays"
+			values
+			{
+				input ivec2 in0 = [ ivec2(1, -2) ];
+				output ivec2 out0 = [ ivec2(-2, 1) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+					int[][][][][][][] x = int[][][][][][][] ( int[][][][][][] (int [][][][][] ( int[][][][] (	int[][][] ( int[][] (int[] (in0.y))),
+																												int[][][] ( int[][] (int[] (in0.x)))))));
+
+					out0 = ivec2(x[0][0][0][0][0][0][0], x[0][0][0][1][0][0][0]);
+					${OUTPUT}
+				}
+			""
+		end
+
+	end # implicit
+
+end # constructor
+
+group return "Array of arrays as return value"
+
+	group explicit "Testing return value with explicit constructor"
+
+		case float_3x3
+			version 310 es
+			desc "Testing arrays of arrays as function return values with explicit array size"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(7.4, -1.0, 2.0) | vec3(3.0, 1.6, -2.0) ];
+				output vec3 out0 = [ vec3(2.0, -0.5, 1.0) | vec3(2.0, -7.4, -1.0) | vec3(-2.0, -3.0, 1.6) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				float[3][3] func(vec3 a)
+				{
+					return float[3][3] (float[3] (a.z, 0.0, 0.0),
+										float[3] (0.0, -a.x, 0.0),
+										float[3] (0.0, 0.0, a.y) );
+				}
+
+				void main()
+				{
+					${SETUP}
+					float[3][3] x = func(in0);
+					out0 = vec3(x[0][0], x[1][1], x[2][2]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case int_2x2x2
+			version 310 es
+			desc "Testing arrays of arrays as function return values with explicit array size"
+			values
+			{
+				input ivec2 in0 = [ ivec2(4, 1) | ivec2(7, -1) | ivec2(3, 1) ];
+				output ivec2 out0 =	[ ivec2(1, -4) | ivec2(-1, -7) | ivec2(1, -3) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				int[2][2][2] func(ivec2 a)
+				{
+					return int[2][2][2] (	int[2][2] (	int[2] (a.y, -a.x),
+														int[2] (0, 0)),
+											int[2][2] (	int[2] (0, 0),
+														int[2] (a.y, -a.x)) );
+				}
+
+				void main()
+				{
+					${SETUP}
+					int[2][2][2] x = func(in0);
+					out0 = ivec2(x[0][0][0], x[1][1][1]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case bool_3x2x3
+			version 310 es
+			desc "Testing arrays of arrays as function return values with explicit array size"
+			values
+			{
+				input bvec3 in0 =	[ bvec3(false, true, true) ];
+				output bvec3 out0 = [ bvec3(true, false, true) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				bool[3][2][3] func(bvec3 a)
+				{
+					return bool[3][2][3] (	bool[2][3] (bool[3] (a.z, a.x, a.y),
+														bool[3] (a.x, a.y, a.z)),
+											bool[2][3] (bool[3] (a.x, a.y, a.z),
+														bool[3] (a.z, a.x, a.y)),
+											bool[2][3] (bool[3] (a.y, a.z, a.x),
+														bool[3] (a.y, a.z, a.x)) );
+				}
+
+				void main()
+				{
+					${SETUP}
+					bool[3] x[3][2] = func(in0);
+					out0 = bvec3(x[0][0][0], x[1][1][1], x[2][1][0]);
+					${OUTPUT}
+				}
+			""
+		end
+
+
+		case vec3_2x3
+			version 310 es
+			desc "Testing arrays of arrays as function return values with explicit array size"
+			values
+			{
+				input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
+				output vec3 out0 = [ vec3(1.0, 0.5, -2.0) | vec3(11.2, -0.5, 1.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				vec3[2][3] func(vec3 p)
+				{
+					vec3[2][3] a = vec3[2][3](	vec3[3] (vec3(p.x, p.y, -p.z),
+														vec3(p.y, -p.z, p.x),
+														vec3(-p.z, p.x, p.y)),
+												vec3[3] (vec3(p.y, -p.z, p.x),
+														vec3(p.x, p.y, -p.z),
+														vec3(-p.z, p.x, p.y)) );
+
+					return vec3[2][3] ( vec3[3] (a[0][1], a[0][2], a[0][0]),
+										vec3[3] (a[1][1], a[1][2], a[1][0]));
+				}
+
+				void main()
+				{
+					${SETUP}
+
+					vec3[2][3] x = func(in0);
+					out0 = vec3(x[0][0].x, x[1][1].y, x[0][2].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case struct_3x1x3
+			version 310 es
+			desc "Testing arrays of arrays as function return values with explicit array size"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) ];
+				output vec3 out0 = [ vec3(-1.0, 2.0, 0.5) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				struct Test
+				{
+					float f;
+					vec3 v;
+				};
+
+				Test[3][1][3] func(vec3 p)
+				{
+					Test a = Test(p.z, vec3(p.x, p.y, p.z));
+					Test b = Test(p.y, vec3(-p.z, -p.x, -p.y));
+					Test c = Test(p.x, vec3(-p.y, p.z, -p.x));
+
+					return Test[3][1][3] (	Test[1][3] (Test[3] (b, b, b)),
+											Test[1][3] (Test[3] (a, a, a)),
+											Test[1][3] (Test[3] (c, c, c)) );
+				}
+
+				void main()
+				{
+					${SETUP}
+					Test[3][1][3] x = func(in0);
+					out0 = vec3(x[0][0][0].v.z, x[2][0][2].v.y, x[1][0][1].v.x);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case ivec3_3x3
+			version 310 es
+			desc "Testing arrays of arrays as function return values with explicit array size"
+			values
+			{
+				input ivec3 in0 = [ ivec3(5, 1, 2) | ivec3(-5, 11, -1) ];
+				output ivec3 out0 = [ ivec3(1, 5, -2) | ivec3(11, -5, 1) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				ivec3[3][3] func(ivec3 p)
+				{
+					ivec3[3][3] a = ivec3[3][3] (	ivec3[3] (	ivec3(p.x, p.y, -p.z),
+																ivec3(p.x, p.y, -p.z),
+																ivec3(p.x, p.y, -p.z)),
+
+													ivec3[3] (	ivec3(p.y, -p.z, p.x),
+																ivec3(p.y, -p.z, p.x),
+																ivec3(p.y, -p.z, p.x)),
+
+													ivec3[3] (	ivec3(-p.z, p.x, p.y),
+																ivec3(-p.z, p.x, p.y),
+																ivec3(-p.z, p.x, p.y)) );
+					return a;
+				}
+
+				void main()
+				{
+					${SETUP}
+					ivec3[3][3] x = func(in0);
+					out0 = ivec3(x[1][0].x, x[2][0].y, x[0][2].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case bvec4_4x2
+			version 310 es
+			desc "Testing arrays of arrays as function return values with explicit array size"
+			values
+			{
+				input bvec4 in0 =	[ bvec4(true, false, false, true) ];
+				output bvec4 out0 = [ bvec4(true, true, false, true) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				bvec4[4][2] func(bvec4 p)
+				{
+					bvec4[4] x = bvec4[4](	bvec4(p.x, p.y, p.z, p.w),
+											bvec4(p.w, p.y, p.z, p.x),
+											bvec4(p.z, p.w, p.x, p.y),
+											bvec4(p.y, p.x, p.z, p.w) );
+
+					return bvec4[4][2] ( bvec4[2] (bvec4(x[0]),
+												  bvec4(x[1])),
+
+										 bvec4[2] (bvec4(x[2]),
+												  bvec4(x[3])),
+
+										 bvec4[2] (bvec4(x[1]),
+												  bvec4(x[2])),
+
+										 bvec4[2] (bvec4(x[3]),
+												  bvec4(x[0])) );
+				}
+
+				void main()
+				{
+					${SETUP}
+					bvec4[4][2] x = func(in0);
+					out0 = bvec4(x[0][1].x, x[1][0].y, x[2][0].z, x[3][1].w);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x2
+			version 310 es
+			desc "Testing arrays of arrays as function return values with explicit array size"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(-1.5, 0.0, -2.3) ];
+				output vec3 out0 = [ vec3(0.5, -1.0, 1.0) | vec3(-1.5, 0.0, 0.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				mat3[3][2] func(vec3 p)
+				{
+					mat3[3][2] a = mat3[3][2] (	mat3[2] (mat3(	p.x, p.y, p.z,
+																p.x, p.y, p.z,
+																p.x, p.y, p.z),
+														mat3(	p.z, p.x, -p.y,
+																p.z, p.x, -p.y,
+																p.z, p.x, -p.y)),
+
+												mat3[2] (mat3(	-p.z, -p.z, p.z,
+																-p.y, -p.y, p.y,
+																-p.x, -p.x, p.x),
+														mat3(	p.x, p.y, p.z,
+																p.x, p.y, p.z,
+																p.x, p.y, p.z)),
+
+												mat3[2] (mat3(	p.z, p.x, -p.y,
+																p.z, p.x, -p.y,
+																p.z, p.x, -p.y),
+														mat3(	-p.z, -p.z, p.z,
+																-p.y, -p.y, p.y,
+																-p.x, -p.x, p.x)) );
+
+					return a;
+				}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 a[3][2] = func(in0);
+
+					mat3 a0 = a[0][0];
+					mat3 a1 = a[0][1];
+					mat3 a2 = a[2][1];
+
+					float ret0 = a0[2][0];
+					float ret1 = a1[0][2];
+					float ret2 = a2[1][2];
+
+					out0 = vec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x3x3
+			version 310 es
+			desc "Testing arrays of arrays as function return values with explicit array size"
+			values
+			{
+				input ivec3 in0 = [ ivec3(0, 1, 2) | ivec3(-1, 0, -2) ];
+				output ivec3 out0 = [ ivec3(0, -1, 1) | ivec3(-1, 0, 0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				mat3[3][3][3] func(ivec3 p)
+				{
+					mat3 a = mat3(	p.x, p.y, p.z,
+									p.x, p.y, p.z,
+									p.x, p.y, p.z);
+					mat3 b = mat3(	p.z, p.x, -p.y,
+									p.z, p.x, -p.y,
+									p.z, p.x, -p.y);
+					mat3 c = mat3(	-p.z, -p.z, p.z,
+									-p.y, -p.y, p.y,
+									-p.x, -p.x, p.x);
+
+					return mat3[3][3][3] (	mat3[3][3] (mat3[3] (a, a, a),
+														mat3[3] (b, b, b),
+														mat3[3] (c, c, c)),
+
+											mat3[3][3] (mat3[3] (b, b, b),
+														mat3[3] (a, a, a),
+														mat3[3] (c, c, c)),
+
+											mat3[3][3] (mat3[3] (c, c, c),
+														mat3[3] (a, a, a),
+														mat3[3] (b, b, b)) );
+				}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 x[3][3][3] = func(in0);
+
+					mat3 x0 = x[0][0][0];
+					mat3 x1 = x[1][0][0];
+					mat3 x2 = x[2][0][0];
+
+					float ret0 = x0[2][0];
+					float ret1 = x1[0][2];
+					float ret2 = x2[1][2];
+
+					out0 = ivec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x4
+			version 310 es
+			desc "Testing arrays of arrays as function return values with explicit array size"
+			values
+			{
+				input bvec3 in0 = [ bvec3(true, false, true) ];
+				output bvec3 out0 = [ bvec3(true, false, false) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				mat3[3][4] func(bvec3 p)
+				{
+					mat3 a = mat3(	p.x, p.y, p.z,
+									p.x, p.y, p.z,
+									p.x, p.y, p.z);
+
+					mat3 b = mat3(	p.z, p.x, p.y,
+									p.z, p.x, p.y,
+									p.z, p.x, p.y);
+
+					mat3 c = mat3(	p.z, p.z, p.z,
+									p.y, p.y, p.y,
+									p.x, p.x, p.x);
+
+					return mat3[3][4] (	mat3[4] (a, b, c, a),
+										mat3[4] (b, c, a, b),
+										mat3[4] (c, a, b, c) );
+				}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3[4] x[3] = func(in0);
+
+					mat3 x0 = x[0][0];
+					mat3 x1 = x[1][3];
+					mat3 x2 = x[2][0];
+
+					float ret0 = x0[2][0];
+					float ret1 = x1[0][2];
+					float ret2 = x2[1][2];
+
+					out0 = bvec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+	end # explicit
+
+	group implicit "Test return value with implicit constructor"
+
+		case float_3x3
+			version 310 es
+			desc "Testing arrays of arrays as function return values with implicit array size"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(7.4, -1.0, 2.0) | vec3(3.0, 1.6, -2.0) ];
+				output vec3 out0 = [ vec3(2.0, -0.5, 1.0) | vec3(2.0, -7.4, -1.0) | vec3(-2.0, -3.0, 1.6) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				float[3][3] func(vec3 a)
+				{
+					return float[][] (	float[] (a.z, 0.0, 0.0),
+										float[] (0.0, -a.x, 0.0),
+										float[] (0.0, 0.0, a.y) );
+				}
+
+				void main()
+				{
+					${SETUP}
+					float[3][3] x = func(in0);
+					out0 = vec3(x[0][0], x[1][1], x[2][2]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case int_2x2x2
+			version 310 es
+			desc "Testing arrays of arrays as function return values with implicit array size"
+			values
+			{
+				input ivec2 in0 = [ ivec2(4, 1) | ivec2(7, -1) | ivec2(3, 1) ];
+				output ivec2 out0 =	[ ivec2(1, -4) | ivec2(-1, -7) | ivec2(1, -3) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				int[2][2][2] func(ivec2 a)
+				{
+					return int[][][] (	int[][] (	int[] (a.y, -a.x),
+													int[] (0, 0)),
+										int[][] (	int[] (0, 0),
+													int[] (a.y, -a.x)) );
+				}
+
+				void main()
+				{
+					${SETUP}
+					int[2][2][2] x = func(in0);
+					out0 = ivec2(x[0][0][0], x[1][1][1]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case bool_3x2x3
+			version 310 es
+			desc "Testing arrays of arrays as function return values with implicit array size"
+			values
+			{
+				input bvec3 in0 =	[ bvec3(false, true, true) ];
+				output bvec3 out0 = [ bvec3(true, false, true) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				bool[3][2][3] func(bvec3 a)
+				{
+					return bool[][][] (	bool[][] (	bool[] (a.z, a.x, a.y),
+													bool[] (a.x, a.y, a.z)),
+										bool[][] (	bool[] (a.x, a.y, a.z),
+													bool[] (a.z, a.x, a.y)),
+										bool[][] (	bool[] (a.y, a.z, a.x),
+													bool[] (a.y, a.z, a.x)) );
+				}
+
+				void main()
+				{
+					${SETUP}
+					bool[3] x[3][2] = func(in0);
+					out0 = bvec3(x[0][0][0], x[1][1][1], x[2][1][0]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case vec3_2x3
+			version 310 es
+			desc "Testing arrays of arrays as function return values with implicit array size"
+			values
+			{
+				input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
+				output vec3 out0 = [ vec3(1.0, 0.5, -2.0) | vec3(11.2, -0.5, 1.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				vec3[2][3] func(vec3 p)
+				{
+					vec3[2][3] a = vec3[2][3](	vec3[3] (	vec3(p.x, p.y, -p.z),
+															vec3(p.y, -p.z, p.x),
+															vec3(-p.z, p.x, p.y)),
+												vec3[3] (	vec3(p.y, -p.z, p.x),
+															vec3(p.x, p.y, -p.z),
+															vec3(-p.z, p.x, p.y)) );
+
+					return vec3[][] (	vec3[] (a[0][1], a[0][2], a[0][0]),
+										vec3[] (a[1][1], a[1][2], a[1][0]));
+				}
+
+				void main()
+				{
+					${SETUP}
+
+					vec3[2][3] x = func(in0);
+					out0 = vec3(x[0][0].x, x[1][1].y, x[0][2].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case struct_3x1x3
+			version 310 es
+			desc "Testing arrays of arrays as function return values with implicit array size"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) ];
+				output vec3 out0 = [ vec3(-1.0, 2.0, 0.5) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				struct Test
+				{
+					float f;
+					vec3 v;
+				};
+
+				Test[3][1][3] func(vec3 p)
+				{
+					Test a = Test(p.z, vec3(p.x, p.y, p.z));
+					Test b = Test(p.y, vec3(-p.z, -p.x, -p.y));
+					Test c = Test(p.x, vec3(-p.y, p.z, -p.x));
+
+					return Test[][][] (	Test[][] (Test[] (b, b, b)),
+										Test[][] (Test[] (a, a, a)),
+										Test[][] (Test[] (c, c, c)) );
+				}
+
+				void main()
+				{
+					${SETUP}
+					Test[3][1][3] x = func(in0);
+					out0 = vec3(x[0][0][0].v.z, x[2][0][2].v.y, x[1][0][1].v.x);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case ivec3_3x3
+			version 310 es
+			desc "Testing arrays of arrays as function return values with implicit array size"
+			values
+			{
+				input ivec3 in0 = [ ivec3(5, 1, 2) | ivec3(-5, 11, -1) ];
+				output ivec3 out0 = [ ivec3(1, 5, -2) | ivec3(11, -5, 1) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				ivec3[3][3] func(ivec3 p)
+				{
+					return ivec3[][] (	ivec3[] (	ivec3(p.x, p.y, -p.z),
+													ivec3(p.x, p.y, -p.z),
+													ivec3(p.x, p.y, -p.z)),
+
+										ivec3[] (	ivec3(p.y, -p.z, p.x),
+													ivec3(p.y, -p.z, p.x),
+													ivec3(p.y, -p.z, p.x)),
+
+										ivec3[] (	ivec3(-p.z, p.x, p.y),
+													ivec3(-p.z, p.x, p.y),
+													ivec3(-p.z, p.x, p.y)) );
+				}
+
+				void main()
+				{
+					${SETUP}
+					ivec3[3][3] x = func(in0);
+					out0 = ivec3(x[1][0].x, x[2][0].y, x[0][2].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case bvec4_4x2
+			version 310 es
+			desc "Testing arrays of arrays as function return values with implicit array size"
+			values
+			{
+				input bvec4 in0 =	[ bvec4(true, false, false, true) ];
+				output bvec4 out0 = [ bvec4(true, true, false, true) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				bvec4[4][2] func(bvec4 p)
+				{
+					bvec4[4] x = bvec4[4](	bvec4(p.x, p.y, p.z, p.w),
+											bvec4(p.w, p.y, p.z, p.x),
+											bvec4(p.z, p.w, p.x, p.y),
+											bvec4(p.y, p.x, p.z, p.w) );
+
+					return bvec4[][] (	bvec4[] (bvec4(x[0]),
+												 bvec4(x[1])),
+
+										bvec4[] (bvec4(x[2]),
+												 bvec4(x[3])),
+
+										bvec4[] (bvec4(x[1]),
+												 bvec4(x[2])),
+
+										bvec4[] (bvec4(x[3]),
+												 bvec4(x[0])) );
+				}
+
+				void main()
+				{
+					${SETUP}
+					bvec4[4][2] x = func(in0);
+					out0 = bvec4(x[0][1].x, x[1][0].y, x[2][0].z, x[3][1].w);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x2
+			version 310 es
+			desc "Testing arrays of arrays as function return values with implicit array size"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(-1.5, 0.0, -2.3) ];
+				output vec3 out0 = [ vec3(0.5, -1.0, 1.0) | vec3(-1.5, 0.0, 0.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				mat3[3][2] func(vec3 p)
+				{
+					return mat3[][] (	mat3[] (mat3(	p.x, p.y, p.z,
+														p.x, p.y, p.z,
+														p.x, p.y, p.z),
+												mat3(	p.z, p.x, -p.y,
+														p.z, p.x, -p.y,
+														p.z, p.x, -p.y)),
+
+										mat3[] (mat3(	-p.z, -p.z, p.z,
+														-p.y, -p.y, p.y,
+														-p.x, -p.x, p.x),
+												mat3(	p.x, p.y, p.z,
+														p.x, p.y, p.z,
+														p.x, p.y, p.z)),
+
+										mat3[] (mat3(	p.z, p.x, -p.y,
+														p.z, p.x, -p.y,
+														p.z, p.x, -p.y),
+												mat3(	-p.z, -p.z, p.z,
+														-p.y, -p.y, p.y,
+														-p.x, -p.x, p.x)) );
+
+				}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 a[3][2] = func(in0);
+
+					mat3 a0 = a[0][0];
+					mat3 a1 = a[0][1];
+					mat3 a2 = a[2][1];
+
+					float ret0 = a0[2][0];
+					float ret1 = a1[0][2];
+					float ret2 = a2[1][2];
+
+					out0 = vec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x3x3
+			version 310 es
+			desc "Testing arrays of arrays as function return values with implicit array size"
+			values
+			{
+				input ivec3 in0 = [ ivec3(0, 1, 2) | ivec3(-1, 0, -2) ];
+				output ivec3 out0 = [ ivec3(0, -1, 1) | ivec3(-1, 0, 0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				mat3[3][3][3] func(ivec3 p)
+				{
+					mat3 a = mat3(	p.x, p.y, p.z,
+									p.x, p.y, p.z,
+									p.x, p.y, p.z);
+					mat3 b = mat3(	p.z, p.x, -p.y,
+									p.z, p.x, -p.y,
+									p.z, p.x, -p.y);
+					mat3 c = mat3(	-p.z, -p.z, p.z,
+									-p.y, -p.y, p.y,
+									-p.x, -p.x, p.x);
+
+					return mat3[][][] (	mat3[][] (	mat3[] (a, a, a),
+													mat3[] (b, b, b),
+													mat3[] (c, c, c)),
+
+										mat3[][] (	mat3[] (b, b, b),
+													mat3[] (a, a, a),
+													mat3[] (c, c, c)),
+
+										mat3[][] (	mat3[] (c, c, c),
+													mat3[] (a, a, a),
+													mat3[] (b, b, b)) );
+				}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 x[3][3][3] = func(in0);
+
+					mat3 x0 = x[0][0][0];
+					mat3 x1 = x[1][0][0];
+					mat3 x2 = x[2][0][0];
+
+					float ret0 = x0[2][0];
+					float ret1 = x1[0][2];
+					float ret2 = x2[1][2];
+
+					out0 = ivec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x4
+			version 310 es
+			desc "Testing arrays of arrays as function return values with implicit array size"
+			values
+			{
+				input bvec3 in0 = [ bvec3(true, false, true) ];
+				output bvec3 out0 = [ bvec3(true, false, false) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				mat3[3][4] func(bvec3 p)
+				{
+					mat3 a = mat3(	p.x, p.y, p.z,
+									p.x, p.y, p.z,
+									p.x, p.y, p.z);
+
+					mat3 b = mat3(	p.z, p.x, p.y,
+									p.z, p.x, p.y,
+									p.z, p.x, p.y);
+
+					mat3 c = mat3(	p.z, p.z, p.z,
+									p.y, p.y, p.y,
+									p.x, p.x, p.x);
+
+					return mat3[][] (	mat3[] (a, b, c, a),
+										mat3[] (b, c, a, b),
+										mat3[] (c, a, b, c) );
+				}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3[4] x[3] = func(in0);
+
+					mat3 x0 = x[0][0];
+					mat3 x1 = x[1][3];
+					mat3 x2 = x[2][0];
+
+					float ret0 = x0[2][0];
+					float ret1 = x1[0][2];
+					float ret2 = x2[1][2];
+
+					out0 = bvec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+	end # implicit
+
+end # return
+
+group parameter "Array of arrays as a function parameter"
+
+	# in
+	group in "Array of arrays as an in-function parameter"
+
+		case float_3x3
+			version 310 es
+			desc "Testing array of arrays as an in-function parameter"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(7.4, -1.0, 2.0) | vec3(3.0, 1.6, -2.0) ];
+				output vec3 out0 = [ vec3(2.0, -0.5, 1.0) | vec3(2.0, -7.4, -1.0) | vec3(-2.0, -3.0, 1.6) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				vec3 func(in float[3][3] x)
+				{
+					return vec3(x[0][0], x[1][1], x[2][2]);
+				}
+
+				void main()
+				{
+					${SETUP}
+					float[3][3] x = float[3][3] (	float[3] (in0.z, 0.0, 0.0),
+													float[3] (0.0, -in0.x, 0.0),
+													float[3] (0.0, 0.0, in0.y) );
+
+					out0 = func(x);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case int_2x2x2
+			version 310 es
+			desc "Testing array of arrays as an in-function parameter"
+			values
+			{
+				input ivec2 in0 = [ ivec2(4, 1) | ivec2(7, -1) | ivec2(3, 1) ];
+				output ivec2 out0 =	[ ivec2(1, -4) | ivec2(-1, -7) | ivec2(1, -3) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				ivec2 func(in int[2][2][2] x)
+				{
+					return ivec2(x[0][0][0], x[1][1][1]);
+				}
+
+				void main()
+				{
+					${SETUP}
+					int[2][2][2] x = int[2][2][2] (	int[2][2] (	int[2] (in0.y, -in0.x),
+																int[2] (0, 0)),
+													int[2][2] (	int[2] (0, 0),
+																int[2] (in0.y, -in0.x)) );
+
+					out0 = func(x);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case bool_3x2x3
+			version 310 es
+			desc "Testing array of arrays as an in-function parameter"
+			values
+			{
+				input bvec3 in0 =	[ bvec3(false, true, true) ];
+				output bvec3 out0 = [ bvec3(true, false, true) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				bvec3 func(in bool x[3][2][3])
+				{
+					return bvec3(x[0][0][0], x[1][1][1], x[2][1][0]);
+				}
+
+				void main()
+				{
+					${SETUP}
+					bool[3] x[3][2] = bool[3][2][3] (	bool[2][3] (bool[3] (in0.z, in0.x, in0.y),
+																	bool[3] (in0.x, in0.y, in0.z)),
+														bool[2][3] (bool[3] (in0.x, in0.y, in0.z),
+																	bool[3] (in0.z, in0.x, in0.y)),
+														bool[2][3] (bool[3] (in0.y, in0.z, in0.x),
+																	bool[3] (in0.y, in0.z, in0.x)) );
+
+					out0 = func(x);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case vec3_2x3
+			version 310 es
+			desc "Testing array of arrays as an in-function parameter"
+			values
+			{
+				input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
+				output vec3 out0 = [ vec3(1.0, 0.5, -2.0) | vec3(11.2, -0.5, 1.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				vec3 func(in vec3[3] x[2])
+				{
+					return vec3(x[0][0].x, x[1][1].y, x[0][2].z);
+				}
+
+				void main()
+				{
+					${SETUP}
+					vec3[2][3] x = vec3[2][3](	vec3[3] (	vec3(in0.x, in0.y, -in0.z),
+															vec3(in0.y, -in0.z, in0.x),
+															vec3(-in0.z, in0.x, in0.y)),
+												vec3[3] (	vec3(in0.y, -in0.z, in0.x),
+															vec3(in0.x, in0.y, -in0.z),
+															vec3(-in0.z, in0.x, in0.y)) );
+
+					x = vec3[2][3] (vec3[3] (x[0][1], x[0][2], x[0][0]),
+									vec3[3] (x[1][1], x[1][2], x[1][0]) );
+
+					out0 = func(x);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case struct_3x1x3
+			version 310 es
+			desc "Testing array of arrays as an in-function parameter"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) ];
+				output vec3 out0 = [ vec3(-1.0, 2.0, 0.5) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				struct Test
+				{
+					float f;
+					vec3 v;
+				};
+
+				vec3 func(in Test[3] x[3][1])
+				{
+					return vec3(x[0][0][0].v.z, x[2][0][2].v.y, x[1][0][1].v.x);
+				}
+
+				void main()
+				{
+					${SETUP}
+					Test a = Test(in0.z, vec3(in0.x, in0.y, in0.z));
+					Test b = Test(in0.y, vec3(-in0.z, -in0.x, -in0.y));
+					Test c = Test(in0.x, vec3(-in0.y, in0.z, -in0.x));
+
+					Test x[3][1][3] = Test[3][1][3] (	Test[1][3] (Test[3] (b, b, b)),
+														Test[1][3] (Test[3] (a, a, a)),
+														Test[1][3] (Test[3] (c, c, c)) );
+
+					out0 = func(x);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case ivec3_3x3
+			version 310 es
+			desc "Testing array of arrays as an in-function parameter"
+			values
+			{
+				input ivec3 in0 = [ ivec3(5, 1, 2) | ivec3(-5, 11, -1) ];
+				output ivec3 out0 = [ ivec3(1, 5, -2) | ivec3(11, -5, 1) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				ivec3 func(in ivec3 x[3][3])
+				{
+					return ivec3(x[1][0].x, x[2][0].y, x[0][2].z);
+				}
+
+				void main()
+				{
+					${SETUP}
+					ivec3[3][3] x = ivec3[3][3] (	ivec3[3] (	ivec3(in0.x, in0.y, -in0.z),
+																ivec3(in0.x, in0.y, -in0.z),
+																ivec3(in0.x, in0.y, -in0.z)),
+
+													ivec3[3] (	ivec3(in0.y, -in0.z, in0.x),
+																ivec3(in0.y, -in0.z, in0.x),
+																ivec3(in0.y, -in0.z, in0.x)),
+
+													ivec3[3] (	ivec3(-in0.z, in0.x, in0.y),
+																ivec3(-in0.z, in0.x, in0.y),
+																ivec3(-in0.z, in0.x, in0.y)) );
+
+					out0 = func(x);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case bvec4_4x2
+			version 310 es
+			desc "Testing array of arrays as an in-function parameter"
+			values
+			{
+				input bvec4 in0 =	[ bvec4(true, false, false, true) ];
+				output bvec4 out0 = [ bvec4(true, true, false, true) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				bvec4 func(in bvec4[4][2] x)
+				{
+					return bvec4(x[0][1].x, x[1][0].y, x[2][0].z, x[3][1].w);
+				}
+
+				void main()
+				{
+					${SETUP}
+					bvec4[4] a = bvec4[4](	bvec4(in0.x, in0.y, in0.z, in0.w),
+											bvec4(in0.w, in0.y, in0.z, in0.x),
+											bvec4(in0.z, in0.w, in0.x, in0.y),
+											bvec4(in0.y, in0.x, in0.z, in0.w) );
+
+					bvec4 x[4][2] = bvec4[4][2] (	bvec4[2] (bvec4(a[0]),
+															  bvec4(a[1])),
+
+													bvec4[2] (bvec4(a[2]),
+															  bvec4(a[3])),
+
+													bvec4[2] (bvec4(a[1]),
+															  bvec4(a[2])),
+
+													bvec4[2] (bvec4(a[3]),
+															  bvec4(a[0])) );
+
+					out0 = func(x);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x2
+			version 310 es
+			desc "Testing array of arrays as an in-function parameter"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(-1.5, 0.0, -2.3) ];
+				output vec3 out0 = [ vec3(0.5, -1.0, 1.0) | vec3(-1.5, 0.0, 0.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				vec3 func(in mat3[2] x[3])
+				{
+					mat3 a0 = x[0][0];
+					mat3 a1 = x[0][1];
+					mat3 a2 = x[2][1];
+
+					float ret0 = a0[2][0];
+					float ret1 = a1[0][2];
+					float ret2 = a2[1][2];
+
+					return vec3(ret0, ret1, ret2);
+				}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 a = mat3(	in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z);
+
+					mat3 b = mat3(	in0.z, in0.x, -in0.y,
+									in0.z, in0.x, -in0.y,
+									in0.z, in0.x, -in0.y);
+
+					mat3 c = mat3 (	-in0.z, -in0.z, in0.z,
+									-in0.y, -in0.y, in0.y,
+									-in0.x, -in0.x, in0.x);
+
+					mat3[3][2] x = mat3[3][2] (	mat3[2] (a, b),
+												mat3[2] (c, a),
+												mat3[2] (b, c) );
+
+					out0 = func(x);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x3x3
+			version 310 es
+			desc "Testing array of arrays as an in-function parameter"
+			values
+			{
+				input ivec3 in0 = [ ivec3(0, 1, 2) | ivec3(-1, 0, -2) ];
+				output ivec3 out0 = [ ivec3(0, -1, 1) | ivec3(-1, 0, 0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				ivec3 func(in mat3[3][3] x[3])
+				{
+					mat3 x0 = x[0][0][0];
+					mat3 x1 = x[1][0][0];
+					mat3 x2 = x[2][0][0];
+
+					float ret0 = x0[2][0];
+					float ret1 = x1[0][2];
+					float ret2 = x2[1][2];
+
+					return ivec3(ret0, ret1, ret2);
+				}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 a = mat3(	in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z);
+					mat3 b = mat3(	in0.z, in0.x, -in0.y,
+									in0.z, in0.x, -in0.y,
+									in0.z, in0.x, -in0.y);
+					mat3 c = mat3(	-in0.z, -in0.z, in0.z,
+									-in0.y, -in0.y, in0.y,
+									-in0.x, -in0.x, in0.x);
+
+					mat3 x[3][3][3] = mat3[3][3][3] (	mat3[3][3] (mat3[3] (a, a, a),
+																	mat3[3] (b, b, b),
+																	mat3[3] (c, c, c)),
+
+														mat3[3][3] (mat3[3] (b, b, b),
+																	mat3[3] (a, a, a),
+																	mat3[3] (c, c, c)),
+
+														mat3[3][3] (mat3[3] (c, c, c),
+																	mat3[3] (a, a, a),
+																	mat3[3] (b, b, b)) );
+
+					out0 = func(x);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x4
+			version 310 es
+			desc "Testing array of arrays as an in-function parameter"
+			values
+			{
+				input bvec3 in0 = [ bvec3(true, false, true) ];
+				output bvec3 out0 = [ bvec3(true, false, false) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				bvec3 func(in mat3[4] x[3])
+				{
+					mat3 x0 = x[0][0];
+					mat3 x1 = x[1][3];
+					mat3 x2 = x[2][0];
+
+					float ret0 = x0[2][0];
+					float ret1 = x1[0][2];
+					float ret2 = x2[1][2];
+
+					return bvec3(ret0, ret1, ret2);
+				}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 a = mat3(	in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z);
+
+					mat3 b = mat3(	in0.z, in0.x, in0.y,
+									in0.z, in0.x, in0.y,
+									in0.z, in0.x, in0.y);
+
+					mat3 c = mat3(	in0.z, in0.z, in0.z,
+									in0.y, in0.y, in0.y,
+									in0.x, in0.x, in0.x);
+
+					mat3 x[3][4] = mat3[3][4] (	mat3[4] (a, b, c, a),
+												mat3[4] (b, c, a, b),
+												mat3[4] (c, a, b, c) );
+
+					out0 = func(x);
+
+					${OUTPUT}
+				}
+			""
+		end
+
+	end # in
+
+	# out
+	group out "Array of arrays as an out-function paramter"
+
+		case float_3x3
+			version 310 es
+			desc "Testing array of arrays as an out-function parameter"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(7.4, -1.0, 2.0) | vec3(3.0, 1.6, -2.0) ];
+				output vec3 out0 = [ vec3(2.0, -0.5, 1.0) | vec3(2.0, -7.4, -1.0) | vec3(-2.0, -3.0, 1.6) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void func(out float[3][3] x, in vec3 p)
+				{
+					x = float[3][3] (	float[3] (p.z, 0.0, 0.0),
+										float[3] (0.0, -p.x, 0.0),
+										float[3] (0.0, 0.0, p.y) );
+				}
+
+				void main()
+				{
+					${SETUP}
+					float[3][3] x;
+					func(x, in0);
+					out0 = vec3(x[0][0], x[1][1], x[2][2]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case int_2x2x2
+			version 310 es
+			desc "Testing array of arrays as an out-function parameter"
+			values
+			{
+				input ivec2 in0 = [ ivec2(4, 1) | ivec2(7, -1) | ivec2(3, 1) ];
+				output ivec2 out0 =	[ ivec2(1, -4) | ivec2(-1, -7) | ivec2(1, -3) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void func(out int[2][2][2] x, in ivec2 p)
+				{
+					x = int[2][2][2] (	int[2][2] (	int[2] (p.y, -p.x),
+													int[2] (0, 0)),
+										int[2][2] (	int[2] (0, 0),
+													int[2] (p.y, -p.x)) );
+				}
+
+				void main()
+				{
+					${SETUP}
+					int[2][2][2] x;
+					func(x, in0);
+					out0 = ivec2(x[0][0][0], x[1][1][1]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case bool_3x2x3
+			version 310 es
+			desc "Testing array of arrays as an out-function parameter"
+			values
+			{
+				input bvec3 in0 =	[ bvec3(false, true, true) ];
+				output bvec3 out0 = [ bvec3(true, false, true) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void func(out bool x[3][2][3], in bvec3 p)
+				{
+					x = bool[3][2][3] (	bool[2][3] (bool[3] (p.z, p.x, p.y),
+													bool[3] (p.x, p.y, p.z)),
+										bool[2][3] (bool[3] (p.x, p.y, p.z),
+													bool[3] (p.z, p.x, p.y)),
+										bool[2][3] (bool[3] (p.y, p.z, p.x),
+													bool[3] (p.y, p.z, p.x)) );
+				}
+
+				void main()
+				{
+					${SETUP}
+					bool[3] x[3][2];
+					func(x, in0);
+					out0 = bvec3(x[0][0][0], x[1][1][1], x[2][1][0]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case vec3_2x3
+			version 310 es
+			desc "Testing array of arrays as an out-function parameter"
+			values
+			{
+				input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
+				output vec3 out0 = [ vec3(1.0, 0.5, -2.0) | vec3(11.2, -0.5, 1.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void func(out vec3[3] x[2], in vec3 p)
+				{
+					x = vec3[2][3](	vec3[3] (vec3(p.x, p.y, -p.z),
+											vec3(p.y, -p.z, p.x),
+											vec3(-p.z, p.x, p.y)),
+									vec3[3] (vec3(p.y, -p.z, p.x),
+											vec3(p.x, p.y, -p.z),
+											vec3(-p.z, p.x, p.y)) );
+
+					x = vec3[2][3] (vec3[3] (x[0][1], x[0][2], x[0][0]),
+									vec3[3] (x[1][1], x[1][2], x[1][0]) );
+				}
+
+				void main()
+				{
+					${SETUP}
+					vec3[2][3] x;
+					func(x, in0);
+					out0 = vec3(x[0][0].x, x[1][1].y, x[0][2].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case struct_3x1x3
+			version 310 es
+			desc "Testing array of arrays as an out-function parameter"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) ];
+				output vec3 out0 = [ vec3(-1.0, 2.0, 0.5) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				struct Test
+				{
+					float f;
+					vec3 v;
+				};
+
+				void func(out Test[3] x[3][1], in vec3 p)
+				{
+					Test a = Test(p.z, vec3(p.x, p.y, p.z));
+					Test b = Test(p.y, vec3(-p.z, -p.x, -p.y));
+					Test c = Test(p.x, vec3(-p.y, p.z, -p.x));
+
+					x = Test[3][1][3] (	Test[1][3] (Test[3] (b, b, b)),
+										Test[1][3] (Test[3] (a, a, a)),
+										Test[1][3] (Test[3] (c, c, c)) );
+				}
+
+				void main()
+				{
+					${SETUP}
+					Test x[3][1][3];
+					func(x, in0);
+					out0 = vec3(x[0][0][0].v.z, x[2][0][2].v.y, x[1][0][1].v.x);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case ivec3_3x3
+			version 310 es
+			desc "Testing array of arrays as an out-function parameter"
+			values
+			{
+				input ivec3 in0 = [ ivec3(5, 1, 2) | ivec3(-5, 11, -1) ];
+				output ivec3 out0 = [ ivec3(1, 5, -2) | ivec3(11, -5, 1) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void func(out ivec3 x[3][3], in ivec3 p)
+				{
+					x = ivec3[3][3] (ivec3[3] (	ivec3(p.x, p.y, -p.z),
+												ivec3(p.x, p.y, -p.z),
+												ivec3(p.x, p.y, -p.z)),
+
+									ivec3[3] (	ivec3(p.y, -p.z, p.x),
+												ivec3(p.y, -p.z, p.x),
+												ivec3(p.y, -p.z, p.x)),
+
+									ivec3[3] (	ivec3(-p.z, p.x, p.y),
+												ivec3(-p.z, p.x, p.y),
+												ivec3(-p.z, p.x, p.y)) );
+				}
+
+
+				void main()
+				{
+					${SETUP}
+					ivec3[3][3] x;
+					func(x, in0);
+					out0 = ivec3(x[1][0].x, x[2][0].y, x[0][2].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case bvec4_4x2
+			version 310 es
+			desc "Testing array of arrays as an out-function parameter"
+			values
+			{
+				input bvec4 in0 =	[ bvec4(true, false, false, true) ];
+				output bvec4 out0 = [ bvec4(true, true, false, true) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void func(out bvec4[4][2] x, in bvec4 p)
+				{
+					bvec4[4] a = bvec4[4](	bvec4(p.x, p.y, p.z, p.w),
+											bvec4(p.w, p.y, p.z, p.x),
+											bvec4(p.z, p.w, p.x, p.y),
+											bvec4(p.y, p.x, p.z, p.w) );
+
+					x = bvec4[4][2] (	bvec4[2] (bvec4(a[0]),
+												  bvec4(a[1])),
+
+										bvec4[2] (bvec4(a[2]),
+												  bvec4(a[3])),
+
+										bvec4[2] (bvec4(a[1]),
+												  bvec4(a[2])),
+
+										bvec4[2] (bvec4(a[3]),
+												  bvec4(a[0])) );
+				}
+
+				void main()
+				{
+					${SETUP}
+					bvec4 x[4][2];
+					func(x, in0);
+					out0 = bvec4(x[0][1].x, x[1][0].y, x[2][0].z, x[3][1].w);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x2
+			version 310 es
+			desc "Testing array of arrays as an out-function parameter"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(-1.5, 0.0, -2.3) ];
+				output vec3 out0 = [ vec3(0.5, -1.0, 1.0) | vec3(-1.5, 0.0, 0.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void func(out mat3[2] x[3], in vec3 p)
+				{
+					mat3 a = mat3(	p.x, p.y, p.z,
+									p.x, p.y, p.z,
+									p.x, p.y, p.z);
+
+					mat3 b = mat3(	p.z, p.x, -p.y,
+									p.z, p.x, -p.y,
+									p.z, p.x, -p.y);
+
+					mat3 c = mat3 (	-p.z, -p.z, p.z,
+									-p.y, -p.y, p.y,
+									-p.x, -p.x, p.x);
+
+					x = mat3[3][2] (mat3[2] (a, b),
+									mat3[2] (c, a),
+									mat3[2] (b, c) );
+				}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3[3][2] x;
+					func(x, in0);
+
+					mat3 a0 = x[0][0];
+					mat3 a1 = x[0][1];
+					mat3 a2 = x[2][1];
+
+					float ret0 = a0[2][0];
+					float ret1 = a1[0][2];
+					float ret2 = a2[1][2];
+
+					out0 = vec3(ret0, ret1, ret2);
+
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x3x3
+			version 310 es
+			desc "Testing array of arrays as an out-function parameter"
+			values
+			{
+				input ivec3 in0 = [ ivec3(0, 1, 2) | ivec3(-1, 0, -2) ];
+				output ivec3 out0 = [ ivec3(0, -1, 1) | ivec3(-1, 0, 0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void func(out mat3[3] x[3][3], in ivec3 p)
+				{
+					mat3 a = mat3(	p.x, p.y, p.z,
+									p.x, p.y, p.z,
+									p.x, p.y, p.z);
+					mat3 b = mat3(	p.z, p.x, -p.y,
+									p.z, p.x, -p.y,
+									p.z, p.x, -p.y);
+					mat3 c = mat3(	-p.z, -p.z, p.z,
+									-p.y, -p.y, p.y,
+									-p.x, -p.x, p.x);
+
+					x = mat3[3][3][3] (	mat3[3][3] (mat3[3] (a, a, a),
+													mat3[3] (b, b, b),
+													mat3[3] (c, c, c)),
+
+										mat3[3][3] (mat3[3] (b, b, b),
+													mat3[3] (a, a, a),
+													mat3[3] (c, c, c)),
+
+										mat3[3][3] (mat3[3] (c, c, c),
+													mat3[3] (a, a, a),
+													mat3[3] (b, b, b)) );
+				}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 x[3][3][3];
+					func(x, in0);
+
+					mat3 x0 = x[0][0][0];
+					mat3 x1 = x[1][0][0];
+					mat3 x2 = x[2][0][0];
+
+					float ret0 = x0[2][0];
+					float ret1 = x1[0][2];
+					float ret2 = x2[1][2];
+
+					out0 = ivec3(ret0, ret1, ret2);
+
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x4
+			version 310 es
+			desc "Testing array of arrays as an out-function parameter"
+			values
+			{
+				input bvec3 in0 = [ bvec3(true, false, true) ];
+				output bvec3 out0 = [ bvec3(true, false, false) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void func(out mat3[4] x[3], in bvec3 p)
+				{
+					mat3 a = mat3(	p.x, p.y, p.z,
+									p.x, p.y, p.z,
+									p.x, p.y, p.z);
+
+					mat3 b = mat3(	p.z, p.x, p.y,
+									p.z, p.x, p.y,
+									p.z, p.x, p.y);
+
+					mat3 c = mat3(	p.z, p.z, p.z,
+									p.y, p.y, p.y,
+									p.x, p.x, p.x);
+
+					x = mat3[3][4] (mat3[4] (a, b, c, a),
+									mat3[4] (b, c, a, b),
+									mat3[4] (c, a, b, c) );
+				}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 x[3][4];
+					func(x, in0);
+
+					mat3 x0 = x[0][0];
+					mat3 x1 = x[1][3];
+					mat3 x2 = x[2][0];
+
+					float ret0 = x0[2][0];
+					float ret1 = x1[0][2];
+					float ret2 = x2[1][2];
+
+					out0 = bvec3(ret0, ret1, ret2);
+
+					${OUTPUT}
+				}
+			""
+		end
+
+	end # out
+
+	group unnamed "Array of arrays as unnamed parameter of a function prototype"
+
+		case float_3x3
+			version 310 es
+			desc "Testing array of arrays as unnamed parameter of a function prototype"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(7.4, -1.0, 2.0) | vec3(3.0, 1.6, -2.0) ];
+				output vec3 out0 = [ vec3(2.0, -0.5, 1.0) | vec3(2.0, -7.4, -1.0) | vec3(-2.0, -3.0, 1.6) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				vec3 func(in float[3][3]);
+
+				void main()
+				{
+					${SETUP}
+					float[3][3] x = float[3][3] (	float[3] (in0.z, 0.0, 0.0),
+													float[3] (0.0, -in0.x, 0.0),
+													float[3] (0.0, 0.0, in0.y) );
+					out0 = func(x);
+					${OUTPUT}
+				}
+
+				vec3 func(in float[3][3] x)
+				{
+					return vec3(x[0][0], x[1][1], x[2][2]);
+				}
+			""
+		end
+
+		case int_2x2x2
+			version 310 es
+			desc "Testing array of arrays as unnamed parameter of a function prototype"
+			values
+			{
+				input ivec2 in0 = [ ivec2(4, 1) | ivec2(7, -1) | ivec2(3, 1) ];
+				output ivec2 out0 =	[ ivec2(1, -4) | ivec2(-1, -7) | ivec2(1, -3) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				ivec2 func(in int[2][2][2]);
+
+				void main()
+				{
+					${SETUP}
+					int[2][2][2] x = int[2][2][2] (	int[2][2] (	int[2] (in0.y, -in0.x),
+																int[2] (0, 0)),
+													int[2][2] (	int[2] (0, 0),
+																int[2] (in0.y, -in0.x)) );
+					out0 = func(x);
+					${OUTPUT}
+				}
+
+				ivec2 func(in int[2][2][2] x)
+				{
+					return ivec2(x[0][0][0], x[1][1][1]);
+				}
+
+			""
+		end
+
+		case bool_3x2x3
+			version 310 es
+			desc "Testing array of arrays as unnamed parameter of a function prototype"
+			values
+			{
+				input bvec3 in0 =	[ bvec3(false, true, true) ];
+				output bvec3 out0 = [ bvec3(true, false, true) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				bvec3 func(in bool[3][2][3]);
+
+				void main()
+				{
+					${SETUP}
+					bool[3] x[3][2] = bool[3][2][3] (	bool[2][3] (bool[3] (in0.z, in0.x, in0.y),
+																	bool[3] (in0.x, in0.y, in0.z)),
+														bool[2][3] (bool[3] (in0.x, in0.y, in0.z),
+																	bool[3] (in0.z, in0.x, in0.y)),
+														bool[2][3] (bool[3] (in0.y, in0.z, in0.x),
+																	bool[3] (in0.y, in0.z, in0.x)) );
+					out0 = func(x);
+					${OUTPUT}
+				}
+
+				bvec3 func(in bool x[3][2][3])
+				{
+					return bvec3(x[0][0][0], x[1][1][1], x[2][1][0]);
+				}
+			""
+		end
+
+		case vec3_2x3
+			version 310 es
+			desc "Testing array of arrays as unnamed parameter of a function prototype"
+			values
+			{
+				input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
+				output vec3 out0 = [ vec3(1.0, 0.5, -2.0) | vec3(11.2, -0.5, 1.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				vec3 func(in vec3[2][3]);
+
+				void main()
+				{
+					${SETUP}
+					vec3[2][3] x = vec3[2][3](	vec3[3] (	vec3(in0.x, in0.y, -in0.z),
+															vec3(in0.y, -in0.z, in0.x),
+															vec3(-in0.z, in0.x, in0.y)),
+												vec3[3] (	vec3(in0.y, -in0.z, in0.x),
+															vec3(in0.x, in0.y, -in0.z),
+															vec3(-in0.z, in0.x, in0.y)) );
+
+					x = vec3[2][3] (vec3[3] (x[0][1], x[0][2], x[0][0]),
+									vec3[3] (x[1][1], x[1][2], x[1][0]) );
+					out0 = func(x);
+					${OUTPUT}
+				}
+
+				vec3 func(in vec3[3] x[2])
+				{
+					return vec3(x[0][0].x, x[1][1].y, x[0][2].z);
+				}
+			""
+		end
+
+		case struct_3x1x3
+			version 310 es
+			desc "Testing array of arrays as unnamed parameter of a function prototype"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) ];
+				output vec3 out0 = [ vec3(-1.0, 2.0, 0.5) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				struct Test
+				{
+					float f;
+					vec3 v;
+				};
+
+				vec3 func(in Test[3] x[3][1])
+				{
+					return vec3(x[0][0][0].v.z, x[2][0][2].v.y, x[1][0][1].v.x);
+				}
+
+				void main()
+				{
+					${SETUP}
+					Test a = Test(in0.z, vec3(in0.x, in0.y, in0.z));
+					Test b = Test(in0.y, vec3(-in0.z, -in0.x, -in0.y));
+					Test c = Test(in0.x, vec3(-in0.y, in0.z, -in0.x));
+
+					Test x[3][1][3] = Test[3][1][3] (	Test[1][3] (Test[3] (b, b, b)),
+														Test[1][3] (Test[3] (a, a, a)),
+														Test[1][3] (Test[3] (c, c, c)) );
+
+					out0 = func(x);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case ivec3_3x3
+			version 310 es
+			desc "Testing array of arrays as unnamed parameter of a function prototype"
+			values
+			{
+				input ivec3 in0 = [ ivec3(5, 1, 2) | ivec3(-5, 11, -1) ];
+				output ivec3 out0 = [ ivec3(1, 5, -2) | ivec3(11, -5, 1) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				ivec3 func(in ivec3[3][3]);
+
+				void main()
+				{
+					${SETUP}
+					ivec3[3][3] x = ivec3[3][3] (	ivec3[3] (	ivec3(in0.x, in0.y, -in0.z),
+																ivec3(in0.x, in0.y, -in0.z),
+																ivec3(in0.x, in0.y, -in0.z)),
+
+													ivec3[3] (	ivec3(in0.y, -in0.z, in0.x),
+																ivec3(in0.y, -in0.z, in0.x),
+																ivec3(in0.y, -in0.z, in0.x)),
+
+													ivec3[3] (	ivec3(-in0.z, in0.x, in0.y),
+																ivec3(-in0.z, in0.x, in0.y),
+																ivec3(-in0.z, in0.x, in0.y)) );
+					out0 = func(x);
+					${OUTPUT}
+				}
+
+				ivec3 func(in ivec3 x[3][3])
+				{
+					return ivec3(x[1][0].x, x[2][0].y, x[0][2].z);
+				}
+
+			""
+		end
+
+		case bvec4_4x2
+			version 310 es
+			desc "Testing array of arrays as unnamed parameter of a function prototype"
+			values
+			{
+				input bvec4 in0 =	[ bvec4(true, false, false, true) ];
+				output bvec4 out0 = [ bvec4(true, true, false, true) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				bvec4 func(in bvec4[4][2]);
+
+				void main()
+				{
+					${SETUP}
+					bvec4[4] a = bvec4[4](	bvec4(in0.x, in0.y, in0.z, in0.w),
+											bvec4(in0.w, in0.y, in0.z, in0.x),
+											bvec4(in0.z, in0.w, in0.x, in0.y),
+											bvec4(in0.y, in0.x, in0.z, in0.w) );
+
+					bvec4 x[4][2] = bvec4[4][2] (	bvec4[2] (bvec4(a[0]),
+															  bvec4(a[1])),
+
+													bvec4[2] (bvec4(a[2]),
+															  bvec4(a[3])),
+
+													bvec4[2] (bvec4(a[1]),
+															  bvec4(a[2])),
+
+													bvec4[2] (bvec4(a[3]),
+															  bvec4(a[0])) );
+
+					out0 = func(x);
+					${OUTPUT}
+				}
+
+				bvec4 func(in bvec4[4][2] x)
+				{
+					return bvec4(x[0][1].x, x[1][0].y, x[2][0].z, x[3][1].w);
+				}
+			""
+		end
+
+		case mat3_3x2
+			version 310 es
+			desc "Testing array of arrays as unnamed parameter of a function prototype"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(-1.5, 0.0, -2.3) ];
+				output vec3 out0 = [ vec3(0.5, -1.0, 1.0) | vec3(-1.5, 0.0, 0.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				vec3 func(in mat3[3][2]);
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 a = mat3(	in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z);
+
+					mat3 b = mat3(	in0.z, in0.x, -in0.y,
+									in0.z, in0.x, -in0.y,
+									in0.z, in0.x, -in0.y);
+
+					mat3 c = mat3 (	-in0.z, -in0.z, in0.z,
+									-in0.y, -in0.y, in0.y,
+									-in0.x, -in0.x, in0.x);
+
+					mat3[3][2] x = mat3[3][2] (	mat3[2] (a, b),
+												mat3[2] (c, a),
+												mat3[2] (b, c) );
+
+					out0 = func(x);
+					${OUTPUT}
+				}
+
+				vec3 func(in mat3[2] x[3])
+				{
+					mat3 a0 = x[0][0];
+					mat3 a1 = x[0][1];
+					mat3 a2 = x[2][1];
+
+					float ret0 = a0[2][0];
+					float ret1 = a1[0][2];
+					float ret2 = a2[1][2];
+
+					return vec3(ret0, ret1, ret2);
+				}
+			""
+		end
+
+		case mat3_3x3x3
+			version 310 es
+			desc "Testing array of arrays as unnamed parameter of a function prototype"
+			values
+			{
+				input ivec3 in0 = [ ivec3(0, 1, 2) | ivec3(-1, 0, -2) ];
+				output ivec3 out0 = [ ivec3(0, -1, 1) | ivec3(-1, 0, 0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				ivec3 func(in mat3[3][3][3]);
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 a = mat3(	in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z);
+					mat3 b = mat3(	in0.z, in0.x, -in0.y,
+									in0.z, in0.x, -in0.y,
+									in0.z, in0.x, -in0.y);
+					mat3 c = mat3(	-in0.z, -in0.z, in0.z,
+									-in0.y, -in0.y, in0.y,
+									-in0.x, -in0.x, in0.x);
+
+					mat3 x[3][3][3] = mat3[3][3][3] (mat3[3][3] (mat3[3] (a, a, a),
+																mat3[3] (b, b, b),
+																mat3[3] (c, c, c)),
+
+													mat3[3][3] (mat3[3] (b, b, b),
+																mat3[3] (a, a, a),
+																mat3[3] (c, c, c)),
+
+													mat3[3][3] (mat3[3] (c, c, c),
+																mat3[3] (a, a, a),
+																mat3[3] (b, b, b)) );
+
+					out0 = func(x);
+					${OUTPUT}
+				}
+
+				ivec3 func(in mat3[3][3] x[3])
+				{
+					mat3 x0 = x[0][0][0];
+					mat3 x1 = x[1][0][0];
+					mat3 x2 = x[2][0][0];
+
+					float ret0 = x0[2][0];
+					float ret1 = x1[0][2];
+					float ret2 = x2[1][2];
+
+					return ivec3(ret0, ret1, ret2);
+				}
+			""
+		end
+
+		case mat3_3x4
+			version 310 es
+			desc "Testing array of arrays as unnamed parameter of a function prototype"
+			values
+			{
+				input bvec3 in0 = [ bvec3(true, false, true) ];
+				output bvec3 out0 = [ bvec3(true, false, false) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				bvec3 func(in mat3[3][4]);
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 a = mat3(	in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z);
+
+					mat3 b = mat3(	in0.z, in0.x, in0.y,
+									in0.z, in0.x, in0.y,
+									in0.z, in0.x, in0.y);
+
+					mat3 c = mat3(	in0.z, in0.z, in0.z,
+									in0.y, in0.y, in0.y,
+									in0.x, in0.x, in0.x);
+
+					mat3 x[3][4] = mat3[3][4] (	mat3[4] (a, b, c, a),
+												mat3[4] (b, c, a, b),
+												mat3[4] (c, a, b, c) );
+
+					out0 = func(x);
+
+					${OUTPUT}
+				}
+
+				bvec3 func(in mat3[4] x[3])
+				{
+					mat3 x0 = x[0][0];
+					mat3 x1 = x[1][3];
+					mat3 x2 = x[2][0];
+
+					float ret0 = x0[2][0];
+					float ret1 = x1[0][2];
+					float ret2 = x2[1][2];
+
+					return bvec3(ret0, ret1, ret2);
+				}
+			""
+		end
+
+	end # unnamed_parameter
+
+end # parameter
+
+group implicit_size "Declaring arrays of arrays with implicit size"
+
+	case float_3x3
+		version 310 es
+		desc "Testing declaring arrays of arrays with implicit size"
+		values
+		{
+			input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(7.4, -1.0, 2.0) | vec3(3.0, 1.6, -2.0) ];
+			output vec3 out0 = [ vec3(2.0, 0.5, 1.0) | vec3(2.0, 7.4, -1.0) | vec3(-2.0, 3.0, 1.6) ];
+		}
+
+		both ""
+			#version 310 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main()
+			{
+				${SETUP}
+				float x[][] = float[][] (	float[] (in0.z, in0.x, in0.y),
+											float[] (in0.z, in0.x, in0.y),
+											float[] (in0.z, in0.x, in0.y) );
+
+				out0 = vec3(x[0][0], x[1][1], x[2][2]);
+				${OUTPUT}
+			}
+		""
+	end
+
+	case int_2x3
+		version 310 es
+		desc "Testing declaring arrays of arrays with implicit size"
+		values
+		{
+			input ivec3 in0 = [ ivec3(0, 1, 2) | ivec3(7, -1, 2) | ivec3(3, 1, -2) ];
+			output ivec3 out0 = [ ivec3(2, 0, 1) | ivec3(2, 7, -1) | ivec3(-2, 3, 1) ];
+		}
+
+		both ""
+			#version 310 es
+			precision mediump int;
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main()
+			{
+				${SETUP}
+				int[][] x = int[][] (	int[] (in0.z, in0.x, in0.y),
+										int[] (in0.z, in0.x, in0.y) );;
+
+				out0 = ivec3(x[0][0], x[1][1], x[0][2]);
+				${OUTPUT}
+			}
+		""
+	end
+
+	case bool_3x3x3
+		version 310 es
+		desc "Testing declaring arrays of arrays with implicit size"
+		values
+		{
+			input bvec3 in0 = [ bvec3(false, true, true) ];
+			output bvec3 out0 = [ bvec3(true, false, true) ];
+		}
+
+		both ""
+			#version 310 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main()
+			{
+				${SETUP}
+				bool[][] x[] = bool[][][] ( bool[][] (	bool[](in0.z, in0.z, in0.z),
+														bool[](in0.z, in0.z, in0.z),
+														bool[](in0.z, in0.z, in0.z)),
+
+											bool[][] (	bool[](in0.x, in0.x, in0.x),
+														bool[](in0.x, in0.x, in0.x),
+														bool[](in0.x, in0.x, in0.x)),
+
+											bool[][] (	bool[](in0.y, in0.y, in0.y),
+														bool[](in0.y, in0.y, in0.y),
+														bool[](in0.y, in0.y, in0.y)) );
+
+				out0 = bvec3(x[0][0][0], x[1][1][1], x[2][2][2]);
+				${OUTPUT}
+			}
+		""
+	end
+
+	case struct_5x5x4
+		version 310 es
+		desc "Testing declaring arrays of arrays with implicit size"
+		values
+		{
+			input vec3 in0 = [ vec3(0.5, 1.0, 2.0) ];
+			output vec3 out0 = [ vec3(-1.0, -0.5, 2.0) ];
+		}
+
+		both ""
+			#version 310 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			struct Test
+			{
+				float f;
+				vec3 v;
+			};
+
+			void main()
+			{
+				${SETUP}
+
+				Test a = Test(in0.z, vec3(in0.x, in0.y, in0.z));
+				Test b = Test(in0.y, vec3(-in0.z, -in0.x, -in0.y));
+				Test c = Test(in0.x, vec3(-in0.y, in0.z, -in0.x));
+
+				Test[] x[][] = Test[][][] (	Test[][] (	Test[] (c, c, c, c),
+														Test[] (b, b, b, b),
+														Test[] (a, a, a, a),
+														Test[] (c, c, c, c),
+														Test[] (b, b, b, b) ),
+
+											Test[][] (	Test[] (a, a, a, a),
+														Test[] (b, b, b, b),
+														Test[] (c, c, c, c),
+														Test[] (a, a, a, a),
+														Test[] (b, b, b, b) ),
+
+											Test[][] (	Test[] (b, b, b, b),
+														Test[] (c, c, c, c),
+														Test[] (a, a, a, a),
+														Test[] (b, b, b, b),
+														Test[] (c, c, c, c) ),
+
+											Test[][] (	Test[] (c, c, c, c),
+														Test[] (b, b, b, b),
+														Test[] (a, a, a, a),
+														Test[] (c, c, c, c),
+														Test[] (b, b, b, b) ),
+
+											Test[][] (	Test[] (a, a, a, a),
+														Test[] (b, b, b, b),
+														Test[] (c, c, c, c),
+														Test[] (a, a, a, a),
+														Test[] (b, b, b, b) ) );
+
+				out0 = vec3(x[0][0][0].v.x, x[1][1][1].v.y, x[4][3][3].v.z);
+				${OUTPUT}
+			}
+		""
+	end
+
+	case vec3_1x3
+		version 310 es
+		desc "Testing declaring arrays of arrays with implicit size"
+		values
+		{
+			input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
+			output vec3 out0 = [ vec3(0.5, -2.0, 1.0) | vec3(-0.5, 1.0, 11.2) ];
+		}
+
+		both ""
+			#version 310 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main()
+			{
+				${SETUP}
+				vec3 x[][] = vec3[][] (	vec3[] (vec3(in0.x, in0.y, -in0.z)	,
+												vec3(in0.y, -in0.z, in0.x)	,
+												vec3(-in0.z, in0.x, in0.y)) );
+
+				out0 = vec3(x[0][0].x, x[0][1].y, x[0][2].z);
+				${OUTPUT}
+			}
+		""
+	end
+
+	case ivec3_3x1x3
+		version 310 es
+		desc "Testing declaring arrays of arrays with implicit size"
+		values
+		{
+			input ivec3 in0 =	[ ivec3(0, 1, 2) | ivec3(5, 11, -1) ];
+			output ivec3 out0 = [ ivec3(0, -2, 1) | ivec3(5, 1, 11) ];
+		}
+
+		both ""
+			#version 310 es
+			precision mediump int;
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main()
+			{
+				${SETUP}
+				ivec3[][][] x = ivec3[][][] (	ivec3[][] (	ivec3[] (	ivec3(in0.x, in0.y, -in0.z),
+																		ivec3(0.0, 0.0, 0.0),
+																		ivec3(0.0, 0.0, 0.0)) ),
+
+												ivec3[][] ( ivec3[] (	ivec3(0.0, 0.0, 0.0),
+																		ivec3(in0.y, -in0.z, in0.x),
+																		ivec3(0.0, 0.0, 0.0)) ),
+
+												ivec3[][] (	ivec3[] (	ivec3(0.0, 0.0, 0.0),
+																		ivec3(0.0, 0.0, 0.0),
+																		ivec3(-in0.z, in0.x, in0.y)) ) );
+
+				out0 = ivec3(x[0][0][0].x, x[1][0][1].y, x[2][0][2].z);
+				${OUTPUT}
+			}
+		""
+	end
+
+	case bvec3_3x1
+		version 310 es
+		desc "Testing declaring arrays of arrays with implicit size"
+		values
+		{
+			input bvec3 in0 =	[ bvec3(true, false, true) ];
+			output bvec3 out0 = [ bvec3(true, true, false) ];
+		}
+
+		both ""
+			#version 310 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main()
+			{
+				${SETUP}
+				bvec3[][] x = bvec3[][] (	bvec3[] ( bvec3(in0.x, in0.y, in0.z)),
+											bvec3[] ( bvec3(in0.y, in0.z, in0.x)),
+											bvec3[] ( bvec3(in0.z, in0.x, in0.y)) );
+
+				out0 = bvec3(x[0][0].x, x[1][0].y, x[2][0].z);
+				${OUTPUT}
+			}
+		""
+	end
+
+	case mat3_3x2
+		version 310 es
+		desc "Testing declaring arrays of arrays with implicit size"
+		values
+		{
+			input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(-1.5, 0.0, -2.3) ];
+			output vec3 out0 = [ vec3(0.5, -1.0, 1.0) | vec3(-1.5, 0.0, 0.0) ];
+		}
+
+		both ""
+			#version 310 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main()
+			{
+				${SETUP}
+				mat3[][] a = mat3[][] (	mat3[] ( mat3(	in0.x, in0.y, in0.z,
+														in0.x, in0.y, in0.z,
+														in0.x, in0.y, in0.z),
+												 mat3(	in0.z, in0.x, -in0.y,
+														in0.z, in0.x, -in0.y,
+														in0.z, in0.x, -in0.y)),
+
+										mat3[] ( mat3(	-in0.z, -in0.z, in0.z,
+														-in0.y, -in0.y, in0.y,
+														-in0.x, -in0.x, in0.x),
+												 mat3(	in0.x, in0.y, in0.z,
+														in0.x, in0.y, in0.z,
+														in0.x, in0.y, in0.z)),
+
+										mat3[] ( mat3(	in0.z, in0.x, -in0.y,
+														in0.z, in0.x, -in0.y,
+														in0.z, in0.x, -in0.y),
+												 mat3(	-in0.z, -in0.z, in0.z,
+														-in0.y, -in0.y, in0.y,
+														-in0.x, -in0.x, in0.x)) );
+
+				mat3 a0 = a[0][0];
+				mat3 a1 = a[0][1];
+				mat3 a2 = a[2][1];
+
+				float ret0 = a0[2][0];
+				float ret1 = a1[0][2];
+				float ret2 = a2[1][2];
+
+				out0 = vec3(ret0, ret1, ret2);
+				${OUTPUT}
+			}
+		""
+	end
+
+	case mat3_3x3x3
+		version 310 es
+		desc "Testing declaring arrays of arrays with implicit size"
+		values
+		{
+			input ivec3 in0 = [ ivec3(0, 1, 2) | ivec3(-1, 0, -2) ];
+			output ivec3 out0 = [ ivec3(0, -1, 1) | ivec3(-1, 0, 0) ];
+		}
+
+		both ""
+			#version 310 es
+			precision mediump int;
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main()
+			{
+				${SETUP}
+
+				mat3 a = mat3(	in0.x, in0.y, in0.z,
+								in0.x, in0.y, in0.z,
+								in0.x, in0.y, in0.z);
+				mat3 b = mat3(	in0.z, in0.x, -in0.y,
+								in0.z, in0.x, -in0.y,
+								in0.z, in0.x, -in0.y);
+				mat3 c = mat3(	-in0.z, -in0.z, in0.z,
+								-in0.y, -in0.y, in0.y,
+								-in0.x, -in0.x, in0.x);
+
+				mat3[][][] x = mat3[][][] (	mat3[][] (	mat3[] (a, a, a),
+														mat3[] (b, b, b),
+														mat3[] (c, c, c)),
+
+											mat3[][] (	mat3[] (b, b, b),
+														mat3[] (a, a, a),
+														mat3[] (c, c, c)),
+
+											mat3[][] (	mat3[] (c, c, c),
+														mat3[] (a, a, a),
+														mat3[] (b, b, b)) );
+
+				mat3 x0 = x[0][0][0];
+				mat3 x1 = x[1][0][0];
+				mat3 x2 = x[2][0][0];
+
+				float ret0 = x0[2][0];
+				float ret1 = x1[0][2];
+				float ret2 = x2[1][2];
+
+				out0 = ivec3(ret0, ret1, ret2);
+				${OUTPUT}
+			}
+		""
+	end
+
+	case mat3_3x4
+		version 310 es
+		desc "Testing declaring arrays of arrays with implicit size"
+		values
+		{
+			input bvec3 in0 = [ bvec3(true, false, true) ];
+			output bvec3 out0 = [ bvec3(true, false, false) ];
+		}
+
+		both ""
+			#version 310 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main()
+			{
+				${SETUP}
+
+				mat3 a = mat3(	in0.x, in0.y, in0.z,
+								in0.x, in0.y, in0.z,
+								in0.x, in0.y, in0.z);
+
+				mat3 b = mat3(	in0.z, in0.x, in0.y,
+								in0.z, in0.x, in0.y,
+								in0.z, in0.x, in0.y);
+
+				mat3 c = mat3(	in0.z, in0.z, in0.z,
+								in0.y, in0.y, in0.y,
+								in0.x, in0.x, in0.x);
+
+				mat3[] x[] = mat3[][] (	mat3[] (a, b, c, a),
+										mat3[] (b, c, a, b),
+										mat3[] (c, a, b, c) );
+
+				mat3 x0 = x[0][0];
+				mat3 x1 = x[1][3];
+				mat3 x2 = x[2][0];
+
+				float ret0 = x0[2][0];
+				float ret1 = x1[0][2];
+				float ret2 = x2[1][2];
+
+				out0 = bvec3(ret0, ret1, ret2);
+				${OUTPUT}
+			}
+		""
+	end
+
+end # implicit_size
+
+group assignment "Testing assignment of arrays of arrays"
+
+	group explicit_to_explicit "Declaring an array of arrays with explicit size and assigning it to another array of arrays with explicit size"
+
+		case float_3x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays with explicit size"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(7.4, -1.0, 2.0) | vec3(3.0, 1.6, -2.0) ];
+				output vec3 out0 = [ vec3(2.0, 0.5, 1.0) | vec3(2.0, 7.4, -1.0) | vec3(-2.0, 3.0, 1.6) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					float x[3][3] = float[3][3] (	float[3] (in0.z, in0.x, in0.y),
+													float[3] (in0.z, in0.x, in0.y),
+													float[3] (in0.z, in0.x, in0.y) );
+
+					float[3] y[3] = x;
+
+					out0 = vec3(y[0][0], y[1][1], y[2][2]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case int_2x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays with explicit size"
+			values
+			{
+				input ivec3 in0 = [ ivec3(0, 1, 2) | ivec3(7, -1, 2) | ivec3(3, 1, -2) ];
+				output ivec3 out0 = [ ivec3(2, 0, 1) | ivec3(2, 7, -1) | ivec3(-2, 3, 1) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					int[2][3] x = int[2][3] (	int[3] (in0.z, in0.x, in0.y),
+												int[3] (in0.z, in0.x, in0.y) );;
+					int y[2][3] = x;
+
+					out0 = ivec3(y[0][0], y[1][1], y[0][2]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case bool_3x3x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays with explicit size"
+			values
+			{
+				input bvec3 in0 = [ bvec3(false, true, true) ];
+				output bvec3 out0 = [ bvec3(true, false, true) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					bool[3][3] x[3] = bool[3][3][3] (bool[3][3] (bool[3](in0.z, in0.z, in0.z),
+																bool[3](in0.z, in0.z, in0.z),
+																bool[3](in0.z, in0.z, in0.z)),
+
+													bool[3][3] (bool[3](in0.x, in0.x, in0.x),
+																bool[3](in0.x, in0.x, in0.x),
+																bool[3](in0.x, in0.x, in0.x)),
+
+													bool[3][3] (bool[3](in0.y, in0.y, in0.y),
+																bool[3](in0.y, in0.y, in0.y),
+																bool[3](in0.y, in0.y, in0.y)) );
+
+					bool[3] y[3][3] = x;
+
+					out0 = bvec3(y[0][0][0], y[1][1][1], y[2][2][2]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case struct_5x5x4
+			version 310 es
+			desc "Testing assignment of arrays of arrays with explicit size"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) ];
+				output vec3 out0 = [ vec3(-1.0, -0.5, 2.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				struct Test
+				{
+					float f;
+					vec3 v;
+				};
+
+				void main()
+				{
+					${SETUP}
+
+					Test a = Test(in0.z, vec3(in0.x, in0.y, in0.z));
+					Test b = Test(in0.y, vec3(-in0.z, -in0.x, -in0.y));
+					Test c = Test(in0.x, vec3(-in0.y, in0.z, -in0.x));
+
+					Test[4] x[5][5] = Test[5][5][4] (	Test[5][4] (Test[4] (c, c, c, c),
+																	Test[4] (b, b, b, b),
+																	Test[4] (a, a, a, a),
+																	Test[4] (c, c, c, c),
+																	Test[4] (b, b, b, b) ),
+
+														Test[5][4] (Test[4] (a, a, a, a),
+																	Test[4] (b, b, b, b),
+																	Test[4] (c, c, c, c),
+																	Test[4] (a, a, a, a),
+																	Test[4] (b, b, b, b) ),
+
+														Test[5][4] (Test[4] (b, b, b, b),
+																	Test[4] (c, c, c, c),
+																	Test[4] (a, a, a, a),
+																	Test[4] (b, b, b, b),
+																	Test[4] (c, c, c, c) ),
+
+														Test[5][4] (Test[4] (c, c, c, c),
+																	Test[4] (b, b, b, b),
+																	Test[4] (a, a, a, a),
+																	Test[4] (c, c, c, c),
+																	Test[4] (b, b, b, b) ),
+
+														Test[5][4] (Test[4] (a, a, a, a),
+																	Test[4] (b, b, b, b),
+																	Test[4] (c, c, c, c),
+																	Test[4] (a, a, a, a),
+																	Test[4] (b, b, b, b) ) );
+
+					Test y[5][5][4] = x;
+
+					out0 = vec3(y[0][0][0].v.x, y[1][1][1].v.y, y[4][3][3].v.z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case vec3_1x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays with explicit size"
+			values
+			{
+				input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
+				output vec3 out0 = [ vec3(0.5, -2.0, 1.0) | vec3(-0.5, 1.0, 11.2) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					vec3 x[1][3] = vec3[1][3] (	vec3[3] (vec3(in0.x, in0.y, -in0.z),
+														vec3(in0.y, -in0.z, in0.x),
+														vec3(-in0.z, in0.x, in0.y)) );
+
+					vec3 y[1][3] = x;
+
+					out0 = vec3(y[0][0].x, y[0][1].y, y[0][2].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case ivec3_3x1x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays with explicit size"
+			values
+			{
+				input ivec3 in0 =	[ ivec3(0, 1, 2) | ivec3(5, 11, -1) ];
+				output ivec3 out0 = [ ivec3(0, -2, 1) | ivec3(5, 1, 11) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					ivec3[3][1][3] x = ivec3[3][1][3] (	ivec3[1][3] (ivec3[3] (	ivec3(in0.x, in0.y, -in0.z),
+																				ivec3(0.0, 0.0, 0.0),
+																				ivec3(0.0, 0.0, 0.0)) ),
+
+														ivec3[1][3] (ivec3[3] (	ivec3(0.0, 0.0, 0.0),
+																				ivec3(in0.y, -in0.z, in0.x),
+																				ivec3(0.0, 0.0, 0.0)) ),
+
+														ivec3[1][3] (ivec3[3] (	ivec3(0.0, 0.0, 0.0),
+																				ivec3(0.0, 0.0, 0.0),
+																				ivec3(-in0.z, in0.x, in0.y)) ) );
+
+					ivec3[3] y[3][1] = x;
+
+					out0 = ivec3(y[0][0][0].x, y[1][0][1].y, y[2][0][2].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case bvec3_3x1
+			version 310 es
+			desc "Testing assignment of arrays of arrays with explicit size"
+			values
+			{
+				input bvec3 in0 =	[ bvec3(true, false, true) ];
+				output bvec3 out0 = [ bvec3(true, true, false) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					bvec3[3][1] x = bvec3[3][1] (	bvec3[1] ( bvec3(in0.x, in0.y, in0.z)),
+													bvec3[1] ( bvec3(in0.y, in0.z, in0.x)),
+													bvec3[1] ( bvec3(in0.z, in0.x, in0.y)) );
+
+					bvec3[3][1] y = x;
+
+					out0 = bvec3(y[0][0].x, y[1][0].y, y[2][0].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x2
+			version 310 es
+			desc "Testing assignment of arrays of arrays with explicit size"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(-1.5, 0.0, -2.3) ];
+				output vec3 out0 = [ vec3(0.5, -1.0, 1.0) | vec3(-1.5, 0.0, 0.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					mat3[3][2] a = mat3[3][2] (	mat3[2] (mat3(	in0.x, in0.y, in0.z,
+																in0.x, in0.y, in0.z,
+																in0.x, in0.y, in0.z),
+														 mat3(	in0.z, in0.x, -in0.y,
+																in0.z, in0.x, -in0.y,
+																in0.z, in0.x, -in0.y)),
+
+												mat3[2] (mat3(	-in0.z, -in0.z, in0.z,
+																-in0.y, -in0.y, in0.y,
+																-in0.x, -in0.x, in0.x),
+														 mat3(	in0.x, in0.y, in0.z,
+																in0.x, in0.y, in0.z,
+																in0.x, in0.y, in0.z)),
+
+												mat3[2] (mat3(	in0.z, in0.x, -in0.y,
+																in0.z, in0.x, -in0.y,
+																in0.z, in0.x, -in0.y),
+														 mat3(	-in0.z, -in0.z, in0.z,
+																-in0.y, -in0.y, in0.y,
+																-in0.x, -in0.x, in0.x)) );
+
+					mat3[2] y[3] = a;
+
+					mat3 a0 = y[0][0];
+					mat3 a1 = y[0][1];
+					mat3 a2 = y[2][1];
+
+					float ret0 = a0[2][0];
+					float ret1 = a1[0][2];
+					float ret2 = a2[1][2];
+
+					out0 = vec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x3x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays with explicit size"
+			values
+			{
+				input ivec3 in0 = [ ivec3(0, 1, 2) | ivec3(-1, 0, -2) ];
+				output ivec3 out0 = [ ivec3(0, -1, 1) | ivec3(-1, 0, 0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 a = mat3(	in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z);
+					mat3 b = mat3(	in0.z, in0.x, -in0.y,
+									in0.z, in0.x, -in0.y,
+									in0.z, in0.x, -in0.y);
+					mat3 c = mat3(	-in0.z, -in0.z, in0.z,
+									-in0.y, -in0.y, in0.y,
+									-in0.x, -in0.x, in0.x);
+
+					mat3[3][3][3] x = mat3[3][3][3] (mat3[3][3] (mat3[3] (a, a, a),
+																mat3[3] (b, b, b),
+																mat3[3] (c, c, c)),
+
+													mat3[3][3] (mat3[3] (b, b, b),
+																mat3[3] (a, a, a),
+																mat3[3] (c, c, c)),
+
+													mat3[3][3] (mat3[3] (c, c, c),
+																mat3[3] (a, a, a),
+																mat3[3] (b, b, b)) );
+
+					mat3 y[3][3][3] = x;
+
+					mat3 x0 = y[0][0][0];
+					mat3 x1 = y[1][0][0];
+					mat3 x2 = y[2][0][0];
+
+					float ret0 = x0[2][0];
+					float ret1 = x1[0][2];
+					float ret2 = x2[1][2];
+
+					out0 = ivec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x4
+			version 310 es
+			desc "Testing assignment of arrays of arrays with explicit size"
+			values
+			{
+				input bvec3 in0 = [ bvec3(true, false, true) ];
+				output bvec3 out0 = [ bvec3(true, false, false) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 a = mat3(	in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z);
+
+					mat3 b = mat3(	in0.z, in0.x, in0.y,
+									in0.z, in0.x, in0.y,
+									in0.z, in0.x, in0.y);
+
+					mat3 c = mat3(	in0.z, in0.z, in0.z,
+									in0.y, in0.y, in0.y,
+									in0.x, in0.x, in0.x);
+
+					mat3[4] x[3] = mat3[3][4] (	mat3[4] (a, b, c, a),
+												mat3[4] (b, c, a, b),
+												mat3[4] (c, a, b, c) );
+
+					mat3 y[3][4] = x;
+
+					mat3 x0 = y[0][0];
+					mat3 x1 = y[1][3];
+					mat3 x2 = y[2][0];
+
+					float ret0 = x0[2][0];
+					float ret1 = x1[0][2];
+					float ret2 = x2[1][2];
+
+					out0 = bvec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+	end # explicit_to_explicit
+
+	group explicit_to_implicit "Declaring an array of arrays with explicit size and assigning it to another array of arrays with implicit size"
+
+		case float_3x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays from explicitly sized to implicitly sized"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(7.4, -1.0, 2.0) | vec3(3.0, 1.6, -2.0) ];
+				output vec3 out0 = [ vec3(2.0, 0.5, 1.0) | vec3(2.0, 7.4, -1.0) | vec3(-2.0, 3.0, 1.6) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					float x[3][3] = float[3][3] (	float[3] (in0.z, in0.x, in0.y),
+													float[3] (in0.z, in0.x, in0.y),
+													float[3] (in0.z, in0.x, in0.y) );
+
+					float[] y[] = x;
+
+					out0 = vec3(y[0][0], y[1][1], y[2][2]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case int_2x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays from explicitly sized to implicitly sized"
+			values
+			{
+				input ivec3 in0 = [ ivec3(0, 1, 2) | ivec3(7, -1, 2) | ivec3(3, 1, -2) ];
+				output ivec3 out0 = [ ivec3(2, 0, 1) | ivec3(2, 7, -1) | ivec3(-2, 3, 1) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					int[2][3] x = int[2][3] (	int[3] (in0.z, in0.x, in0.y),
+												int[3] (in0.z, in0.x, in0.y) );;
+					int y[][] = x;
+
+					out0 = ivec3(y[0][0], y[1][1], y[0][2]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case bool_3x3x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays from explicitly sized to implicitly sized"
+			values
+			{
+				input bvec3 in0 = [ bvec3(false, true, true) ];
+				output bvec3 out0 = [ bvec3(true, false, true) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					bool[3][3] x[3] = bool[3][3][3] (bool[3][3] (bool[3](in0.z, in0.z, in0.z),
+																bool[3](in0.z, in0.z, in0.z),
+																bool[3](in0.z, in0.z, in0.z)),
+
+													bool[3][3] (bool[3](in0.x, in0.x, in0.x),
+																bool[3](in0.x, in0.x, in0.x),
+																bool[3](in0.x, in0.x, in0.x)),
+
+													bool[3][3] (bool[3](in0.y, in0.y, in0.y),
+																bool[3](in0.y, in0.y, in0.y),
+																bool[3](in0.y, in0.y, in0.y)) );
+
+					bool[] y[][] = x;
+
+					out0 = bvec3(y[0][0][0], y[1][1][1], y[2][2][2]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case struct_5x5x4
+			version 310 es
+			desc "Testing assignment of arrays of arrays from explicitly sized to implicitly sized"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) ];
+				output vec3 out0 = [ vec3(-1.0, -0.5, 2.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				struct Test
+				{
+					float f;
+					vec3 v;
+				};
+
+				void main()
+				{
+					${SETUP}
+
+					Test a = Test(in0.z, vec3(in0.x, in0.y, in0.z));
+					Test b = Test(in0.y, vec3(-in0.z, -in0.x, -in0.y));
+					Test c = Test(in0.x, vec3(-in0.y, in0.z, -in0.x));
+
+					Test[4] x[5][5] = Test[5][5][4] (Test[5][4] (Test[4] (c, c, c, c),
+																Test[4] (b, b, b, b),
+																Test[4] (a, a, a, a),
+																Test[4] (c, c, c, c),
+																Test[4] (b, b, b, b) ),
+
+													Test[5][4] (Test[4] (a, a, a, a),
+																Test[4] (b, b, b, b),
+																Test[4] (c, c, c, c),
+																Test[4] (a, a, a, a),
+																Test[4] (b, b, b, b) ),
+
+													Test[5][4] (Test[4] (b, b, b, b),
+																Test[4] (c, c, c, c),
+																Test[4] (a, a, a, a),
+																Test[4] (b, b, b, b),
+																Test[4] (c, c, c, c) ),
+
+													Test[5][4] (Test[4] (c, c, c, c),
+																Test[4] (b, b, b, b),
+																Test[4] (a, a, a, a),
+																Test[4] (c, c, c, c),
+																Test[4] (b, b, b, b) ),
+
+													Test[5][4] (Test[4] (a, a, a, a),
+																Test[4] (b, b, b, b),
+																Test[4] (c, c, c, c),
+																Test[4] (a, a, a, a),
+																Test[4] (b, b, b, b) ) );
+
+					Test y[][][] = x;
+
+					out0 = vec3(y[0][0][0].v.x, y[1][1][1].v.y, y[4][3][3].v.z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case vec3_1x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays from explicitly sized to implicitly sized"
+			values
+			{
+				input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
+				output vec3 out0 = [ vec3(0.5, -2.0, 1.0) | vec3(-0.5, 1.0, 11.2) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					vec3 x[1][3] = vec3[1][3] (	vec3[3] (vec3(in0.x, in0.y, -in0.z),
+														vec3(in0.y, -in0.z, in0.x),
+														vec3(-in0.z, in0.x, in0.y)) );
+
+					vec3 y[][] = x;
+
+					out0 = vec3(y[0][0].x, y[0][1].y, y[0][2].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case ivec3_3x1x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays from explicitly sized to implicitly sized"
+			values
+			{
+				input ivec3 in0 =	[ ivec3(0, 1, 2) | ivec3(5, 11, -1) ];
+				output ivec3 out0 = [ ivec3(0, -2, 1) | ivec3(5, 1, 11) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					ivec3[3][1][3] x = ivec3[3][1][3] (	ivec3[1][3] (ivec3[3] (	ivec3(in0.x, in0.y, -in0.z),
+																				ivec3(0.0, 0.0, 0.0),
+																				ivec3(0.0, 0.0, 0.0)) ),
+
+														ivec3[1][3] (ivec3[3] (	ivec3(0.0, 0.0, 0.0),
+																				ivec3(in0.y, -in0.z, in0.x),
+																				ivec3(0.0, 0.0, 0.0)) ),
+
+														ivec3[1][3] (ivec3[3] (	ivec3(0.0, 0.0, 0.0),
+																				ivec3(0.0, 0.0, 0.0),
+																				ivec3(-in0.z, in0.x, in0.y)) ) );
+
+					ivec3[] y[][] = x;
+
+					out0 = ivec3(y[0][0][0].x, y[1][0][1].y, y[2][0][2].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case bvec3_3x1
+			version 310 es
+			desc "Testing assignment of arrays of arrays from explicitly sized to implicitly sized"
+			values
+			{
+				input bvec3 in0 =	[ bvec3(true, false, true) ];
+				output bvec3 out0 = [ bvec3(true, true, false) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					bvec3[3][1] x = bvec3[3][1] (	bvec3[1] ( bvec3(in0.x, in0.y, in0.z)),
+													bvec3[1] ( bvec3(in0.y, in0.z, in0.x)),
+													bvec3[1] ( bvec3(in0.z, in0.x, in0.y)) );
+
+					bvec3[][] y = x;
+
+					out0 = bvec3(y[0][0].x, y[1][0].y, y[2][0].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x2
+			version 310 es
+			desc "Testing assignment of arrays of arrays from explicitly sized to implicitly sized"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(-1.5, 0.0, -2.3) ];
+				output vec3 out0 = [ vec3(0.5, -1.0, 1.0) | vec3(-1.5, 0.0, 0.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					mat3[3][2] a = mat3[3][2] (	mat3[2] (mat3(	in0.x, in0.y, in0.z,
+																in0.x, in0.y, in0.z,
+																in0.x, in0.y, in0.z),
+														 mat3(	in0.z, in0.x, -in0.y,
+																in0.z, in0.x, -in0.y,
+																in0.z, in0.x, -in0.y)),
+
+												mat3[2] (mat3(	-in0.z, -in0.z, in0.z,
+																-in0.y, -in0.y, in0.y,
+																-in0.x, -in0.x, in0.x),
+														 mat3(	in0.x, in0.y, in0.z,
+																in0.x, in0.y, in0.z,
+																in0.x, in0.y, in0.z)),
+
+												mat3[2] (mat3(	in0.z, in0.x, -in0.y,
+																in0.z, in0.x, -in0.y,
+																in0.z, in0.x, -in0.y),
+														 mat3(	-in0.z, -in0.z, in0.z,
+																-in0.y, -in0.y, in0.y,
+																-in0.x, -in0.x, in0.x)) );
+
+					mat3[] y[] = a;
+
+					mat3 a0 = y[0][0];
+					mat3 a1 = y[0][1];
+					mat3 a2 = y[2][1];
+
+					float ret0 = a0[2][0];
+					float ret1 = a1[0][2];
+					float ret2 = a2[1][2];
+
+					out0 = vec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x3x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays from explicitly sized to implicitly sized"
+			values
+			{
+				input ivec3 in0 = [ ivec3(0, 1, 2) | ivec3(-1, 0, -2) ];
+				output ivec3 out0 = [ ivec3(0, -1, 1) | ivec3(-1, 0, 0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 a = mat3(	in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z);
+					mat3 b = mat3(	in0.z, in0.x, -in0.y,
+									in0.z, in0.x, -in0.y,
+									in0.z, in0.x, -in0.y);
+					mat3 c = mat3(	-in0.z, -in0.z, in0.z,
+									-in0.y, -in0.y, in0.y,
+									-in0.x, -in0.x, in0.x);
+
+					mat3[3][3][3] x = mat3[3][3][3] (mat3[3][3] (mat3[3] (a, a, a),
+																mat3[3] (b, b, b),
+																mat3[3] (c, c, c)),
+
+													mat3[3][3] (mat3[3] (b, b, b),
+																mat3[3] (a, a, a),
+																mat3[3] (c, c, c)),
+
+													mat3[3][3] (mat3[3] (c, c, c),
+																mat3[3] (a, a, a),
+																mat3[3] (b, b, b)) );
+
+					mat3 y[][][] = x;
+
+					mat3 x0 = y[0][0][0];
+					mat3 x1 = y[1][0][0];
+					mat3 x2 = y[2][0][0];
+
+					float ret0 = x0[2][0];
+					float ret1 = x1[0][2];
+					float ret2 = x2[1][2];
+
+					out0 = ivec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x4
+			version 310 es
+			desc "Testing assignment of arrays of arrays from explicitly sized to implicitly sized"
+			values
+			{
+				input bvec3 in0 = [ bvec3(true, false, true) ];
+				output bvec3 out0 = [ bvec3(true, false, false) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 a = mat3(	in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z);
+
+					mat3 b = mat3(	in0.z, in0.x, in0.y,
+									in0.z, in0.x, in0.y,
+									in0.z, in0.x, in0.y);
+
+					mat3 c = mat3(	in0.z, in0.z, in0.z,
+									in0.y, in0.y, in0.y,
+									in0.x, in0.x, in0.x);
+
+					mat3[4] x[3] = mat3[3][4] (	mat3[4] (a, b, c, a),
+												mat3[4] (b, c, a, b),
+												mat3[4] (c, a, b, c) );
+
+					mat3 y[][] = x;
+
+					mat3 x0 = y[0][0];
+					mat3 x1 = y[1][3];
+					mat3 x2 = y[2][0];
+
+					float ret0 = x0[2][0];
+					float ret1 = x1[0][2];
+					float ret2 = x2[1][2];
+
+					out0 = bvec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+	end # explicit_to_implicit
+
+	group implicit_to_explicit "Declaring an array of arrays with implicit size and assigning it to another array of arrays with explicit size"
+
+		case float_3x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays from implicitly sized to explicitly sized"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(7.4, -1.0, 2.0) | vec3(3.0, 1.6, -2.0) ];
+				output vec3 out0 = [ vec3(2.0, 0.5, 1.0) | vec3(2.0, 7.4, -1.0) | vec3(-2.0, 3.0, 1.6) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					float x[][] = float[][] (	float[] (in0.z, in0.x, in0.y),
+												float[] (in0.z, in0.x, in0.y),
+												float[] (in0.z, in0.x, in0.y) );
+
+					float[3] y[3] = x;
+
+					out0 = vec3(y[0][0], y[1][1], y[2][2]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case int_2x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays from implicitly sized to explicitly sized"
+			values
+			{
+				input ivec3 in0 = [ ivec3(0, 1, 2) | ivec3(7, -1, 2) | ivec3(3, 1, -2) ];
+				output ivec3 out0 = [ ivec3(2, 0, 1) | ivec3(2, 7, -1) | ivec3(-2, 3, 1) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					int[][] x = int[][] (	int[] (in0.z, in0.x, in0.y),
+											int[] (in0.z, in0.x, in0.y) );;
+					int y[2][3] = x;
+
+					out0 = ivec3(y[0][0], y[1][1], y[0][2]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case bool_3x3x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays from implicitly sized to explicitly sized"
+			values
+			{
+				input bvec3 in0 = [ bvec3(false, true, true) ];
+				output bvec3 out0 = [ bvec3(true, false, true) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					bool[][] x[] = bool[][][] ( bool[][] (	bool[](in0.z, in0.z, in0.z),
+															bool[](in0.z, in0.z, in0.z),
+															bool[](in0.z, in0.z, in0.z)),
+
+												bool[][] (	bool[](in0.x, in0.x, in0.x),
+															bool[](in0.x, in0.x, in0.x),
+															bool[](in0.x, in0.x, in0.x)),
+
+												bool[][] (	bool[](in0.y, in0.y, in0.y),
+															bool[](in0.y, in0.y, in0.y),
+															bool[](in0.y, in0.y, in0.y)) );
+
+					bool[3] y[3][3] = x;
+
+					out0 = bvec3(y[0][0][0], y[1][1][1], y[2][2][2]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case struct_5x5x4
+			version 310 es
+			desc "Testing assignment of arrays of arrays from implicitly sized to explicitly sized"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) ];
+				output vec3 out0 = [ vec3(-1.0, -0.5, 2.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				struct Test
+				{
+					float f;
+					vec3 v;
+				};
+
+				void main()
+				{
+					${SETUP}
+
+					Test a = Test(in0.z, vec3(in0.x, in0.y, in0.z));
+					Test b = Test(in0.y, vec3(-in0.z, -in0.x, -in0.y));
+					Test c = Test(in0.x, vec3(-in0.y, in0.z, -in0.x));
+
+					Test[] x[][] = Test[][][] (	Test[][] (	Test[] (c, c, c, c),
+															Test[] (b, b, b, b),
+															Test[] (a, a, a, a),
+															Test[] (c, c, c, c),
+															Test[] (b, b, b, b) ),
+
+												Test[][] (	Test[] (a, a, a, a),
+															Test[] (b, b, b, b),
+															Test[] (c, c, c, c),
+															Test[] (a, a, a, a),
+															Test[] (b, b, b, b) ),
+
+												Test[][] (	Test[] (b, b, b, b),
+															Test[] (c, c, c, c),
+															Test[] (a, a, a, a),
+															Test[] (b, b, b, b),
+															Test[] (c, c, c, c) ),
+
+												Test[][] (	Test[] (c, c, c, c),
+															Test[] (b, b, b, b),
+															Test[] (a, a, a, a),
+															Test[] (c, c, c, c),
+															Test[] (b, b, b, b) ),
+
+												Test[][] (	Test[] (a, a, a, a),
+															Test[] (b, b, b, b),
+															Test[] (c, c, c, c),
+															Test[] (a, a, a, a),
+															Test[] (b, b, b, b) ) );
+
+					Test y[5][5][4] = x;
+
+					out0 = vec3(y[0][0][0].v.x, y[1][1][1].v.y, y[4][3][3].v.z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case vec3_1x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays from implicitly sized to explicitly sized"
+			values
+			{
+				input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
+				output vec3 out0 = [ vec3(0.5, -2.0, 1.0) | vec3(-0.5, 1.0, 11.2) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					vec3 x[][] = vec3[][] (	vec3[] (vec3(in0.x, in0.y, -in0.z),
+													vec3(in0.y, -in0.z, in0.x),
+													vec3(-in0.z, in0.x, in0.y)) );
+
+					vec3 y[1][3] = x;
+
+					out0 = vec3(y[0][0].x, y[0][1].y, y[0][2].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case ivec3_3x1x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays from implicitly sized to explicitly sized"
+			values
+			{
+				input ivec3 in0 =	[ ivec3(0, 1, 2) | ivec3(5, 11, -1) ];
+				output ivec3 out0 = [ ivec3(0, -2, 1) | ivec3(5, 1, 11) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					ivec3[][][] x = ivec3[][][] (	ivec3[][] (	ivec3[] (	ivec3(in0.x, in0.y, -in0.z),
+																				ivec3(0.0, 0.0, 0.0),
+																				ivec3(0.0, 0.0, 0.0)) ),
+
+														ivec3[][] ( ivec3[] (	ivec3(0.0, 0.0, 0.0),
+																				ivec3(in0.y, -in0.z, in0.x),
+																				ivec3(0.0, 0.0, 0.0)) ),
+
+														ivec3[][] (	ivec3[] (	ivec3(0.0, 0.0, 0.0),
+																				ivec3(0.0, 0.0, 0.0),
+																				ivec3(-in0.z, in0.x, in0.y)) ) );
+
+					ivec3[3] y[3][1] = x;
+
+					out0 = ivec3(y[0][0][0].x, y[1][0][1].y, y[2][0][2].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case bvec3_3x1
+			version 310 es
+			desc "Testing assignment of arrays of arrays from implicitly sized to explicitly sized"
+			values
+			{
+				input bvec3 in0 =	[ bvec3(true, false, true) ];
+				output bvec3 out0 = [ bvec3(true, true, false) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					bvec3[][] x = bvec3[][] (	bvec3[] ( bvec3(in0.x, in0.y, in0.z)),
+												bvec3[] ( bvec3(in0.y, in0.z, in0.x)),
+												bvec3[] ( bvec3(in0.z, in0.x, in0.y)) );
+
+					bvec3[3][1] y = x;
+
+					out0 = bvec3(y[0][0].x, y[1][0].y, y[2][0].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x2
+			version 310 es
+			desc "Testing assignment of arrays of arrays from implicitly sized to explicitly sized"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(-1.5, 0.0, -2.3) ];
+				output vec3 out0 = [ vec3(0.5, -1.0, 1.0) | vec3(-1.5, 0.0, 0.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					mat3[][] a = mat3[][] (	mat3[] ( mat3(	in0.x, in0.y, in0.z,
+															in0.x, in0.y, in0.z,
+															in0.x, in0.y, in0.z),
+													 mat3(	in0.z, in0.x, -in0.y,
+															in0.z, in0.x, -in0.y,
+															in0.z, in0.x, -in0.y)),
+
+											mat3[] ( mat3(	-in0.z, -in0.z, in0.z,
+															-in0.y, -in0.y, in0.y,
+															-in0.x, -in0.x, in0.x),
+													 mat3(	in0.x, in0.y, in0.z,
+															in0.x, in0.y, in0.z,
+															in0.x, in0.y, in0.z)),
+
+											mat3[] ( mat3(	in0.z, in0.x, -in0.y,
+															in0.z, in0.x, -in0.y,
+															in0.z, in0.x, -in0.y),
+													 mat3(	-in0.z, -in0.z, in0.z,
+															-in0.y, -in0.y, in0.y,
+															-in0.x, -in0.x, in0.x)) );
+
+					mat3[2] y[3] = a;
+
+					mat3 a0 = y[0][0];
+					mat3 a1 = y[0][1];
+					mat3 a2 = y[2][1];
+
+					float ret0 = a0[2][0];
+					float ret1 = a1[0][2];
+					float ret2 = a2[1][2];
+
+					out0 = vec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x3x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays from implicitly sized to explicitly sized"
+			values
+			{
+				input ivec3 in0 = [ ivec3(0, 1, 2) | ivec3(-1, 0, -2) ];
+				output ivec3 out0 = [ ivec3(0, -1, 1) | ivec3(-1, 0, 0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 a = mat3(	in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z);
+					mat3 b = mat3(	in0.z, in0.x, -in0.y,
+									in0.z, in0.x, -in0.y,
+									in0.z, in0.x, -in0.y);
+					mat3 c = mat3(	-in0.z, -in0.z, in0.z,
+									-in0.y, -in0.y, in0.y,
+									-in0.x, -in0.x, in0.x);
+
+					mat3[][][] x = mat3[][][] (	mat3[][] (	mat3[] (a, a, a),
+															mat3[] (b, b, b),
+															mat3[] (c, c, c)),
+
+												mat3[][] (	mat3[] (b, b, b),
+															mat3[] (a, a, a),
+															mat3[] (c, c, c)),
+
+												mat3[][] (	mat3[] (c, c, c),
+															mat3[] (a, a, a),
+															mat3[] (b, b, b)) );
+
+					mat3 y[3][3][3] = x;
+
+					mat3 x0 = y[0][0][0];
+					mat3 x1 = y[1][0][0];
+					mat3 x2 = y[2][0][0];
+
+					float ret0 = x0[2][0];
+					float ret1 = x1[0][2];
+					float ret2 = x2[1][2];
+
+					out0 = ivec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x4
+			version 310 es
+			desc "Testing assignment of arrays of arrays from implicitly sized to explicitly sized"
+			values
+			{
+				input bvec3 in0 = [ bvec3(true, false, true) ];
+				output bvec3 out0 = [ bvec3(true, false, false) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 a = mat3(	in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z);
+
+					mat3 b = mat3(	in0.z, in0.x, in0.y,
+									in0.z, in0.x, in0.y,
+									in0.z, in0.x, in0.y);
+
+					mat3 c = mat3(	in0.z, in0.z, in0.z,
+									in0.y, in0.y, in0.y,
+									in0.x, in0.x, in0.x);
+
+					mat3[] x[] = mat3[][] (	mat3[] (a, b, c, a),
+											mat3[] (b, c, a, b),
+											mat3[] (c, a, b, c) );
+
+					mat3 y[3][4] = x;
+
+					mat3 x0 = y[0][0];
+					mat3 x1 = y[1][3];
+					mat3 x2 = y[2][0];
+
+					float ret0 = x0[2][0];
+					float ret1 = x1[0][2];
+					float ret2 = x2[1][2];
+
+					out0 = bvec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+	end # implicit_to_explicit
+
+	group implicit_to_implicit "Declaring an array of arrays with implicit size and assigning it to another array of arrays with implicit size"
+
+		case float_3x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays with implicit sizes"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(7.4, -1.0, 2.0) | vec3(3.0, 1.6, -2.0) ];
+				output vec3 out0 = [ vec3(2.0, 0.5, 1.0) | vec3(2.0, 7.4, -1.0) | vec3(-2.0, 3.0, 1.6) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					float x[][] = float[][] (	float[] (in0.z, in0.x, in0.y),
+												float[] (in0.z, in0.x, in0.y),
+												float[] (in0.z, in0.x, in0.y) );
+
+					float[] y[] = x;
+
+					out0 = vec3(y[0][0], y[1][1], y[2][2]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case int_2x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays with implicit sizes"
+			values
+			{
+				input ivec3 in0 = [ ivec3(0, 1, 2) | ivec3(7, -1, 2) | ivec3(3, 1, -2) ];
+				output ivec3 out0 = [ ivec3(2, 0, 1) | ivec3(2, 7, -1) | ivec3(-2, 3, 1) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					int[][] x = int[][] (	int[] (in0.z, in0.x, in0.y),
+											int[] (in0.z, in0.x, in0.y) );;
+					int y[][] = x;
+
+					out0 = ivec3(y[0][0], y[1][1], y[0][2]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case bool_3x3x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays with implicit sizes"
+			values
+			{
+				input bvec3 in0 = [ bvec3(false, true, true) ];
+				output bvec3 out0 = [ bvec3(true, false, true) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					bool[][] x[] = bool[][][] ( bool[][] (	bool[](in0.z, in0.z, in0.z),
+															bool[](in0.z, in0.z, in0.z),
+															bool[](in0.z, in0.z, in0.z)),
+
+												bool[][] (	bool[](in0.x, in0.x, in0.x),
+															bool[](in0.x, in0.x, in0.x),
+															bool[](in0.x, in0.x, in0.x)),
+
+												bool[][] (	bool[](in0.y, in0.y, in0.y),
+															bool[](in0.y, in0.y, in0.y),
+															bool[](in0.y, in0.y, in0.y)) );
+
+					bool[] y[][] = x;
+
+					out0 = bvec3(y[0][0][0], y[1][1][1], y[2][2][2]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case struct_5x5x4
+			version 310 es
+			desc "Testing assignment of arrays of arrays with implicit sizes"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) ];
+				output vec3 out0 = [ vec3(-1.0, -0.5, 2.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				struct Test
+				{
+					float f;
+					vec3 v;
+				};
+
+				void main()
+				{
+					${SETUP}
+
+					Test a = Test(in0.z, vec3(in0.x, in0.y, in0.z));
+					Test b = Test(in0.y, vec3(-in0.z, -in0.x, -in0.y));
+					Test c = Test(in0.x, vec3(-in0.y, in0.z, -in0.x));
+
+					Test[] x[][] = Test[][][] (	Test[][] (	Test[] (c, c, c, c),
+															Test[] (b, b, b, b),
+															Test[] (a, a, a, a),
+															Test[] (c, c, c, c),
+															Test[] (b, b, b, b) ),
+
+												Test[][] (	Test[] (a, a, a, a),
+															Test[] (b, b, b, b),
+															Test[] (c, c, c, c),
+															Test[] (a, a, a, a),
+															Test[] (b, b, b, b) ),
+
+												Test[][] (	Test[] (b, b, b, b),
+															Test[] (c, c, c, c),
+															Test[] (a, a, a, a),
+															Test[] (b, b, b, b),
+															Test[] (c, c, c, c) ),
+
+												Test[][] (	Test[] (c, c, c, c),
+															Test[] (b, b, b, b),
+															Test[] (a, a, a, a),
+															Test[] (c, c, c, c),
+															Test[] (b, b, b, b) ),
+
+												Test[][] (	Test[] (a, a, a, a),
+															Test[] (b, b, b, b),
+															Test[] (c, c, c, c),
+															Test[] (a, a, a, a),
+															Test[] (b, b, b, b) ) );
+
+					Test y[][][] = x;
+
+					out0 = vec3(y[0][0][0].v.x, y[1][1][1].v.y, y[4][3][3].v.z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case vec3_1x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays with implicit sizes"
+			values
+			{
+				input vec3 in0 =	[ vec3(0.5, 1.0, 2.0) | vec3(-0.5, 11.2, -1.0) ];
+				output vec3 out0 = [ vec3(0.5, -2.0, 1.0) | vec3(-0.5, 1.0, 11.2) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					vec3 x[][] = vec3[][] (	vec3[] (vec3(in0.x, in0.y, -in0.z)	,
+													vec3(in0.y, -in0.z, in0.x)	,
+													vec3(-in0.z, in0.x, in0.y)) );
+
+					vec3 y[][] = x;
+
+					out0 = vec3(y[0][0].x, y[0][1].y, y[0][2].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case ivec3_3x1x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays with implicit sizes"
+			values
+			{
+				input ivec3 in0 =	[ ivec3(0, 1, 2) | ivec3(5, 11, -1) ];
+				output ivec3 out0 = [ ivec3(0, -2, 1) | ivec3(5, 1, 11) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					ivec3[][][] x = ivec3[][][] (	ivec3[][] (	ivec3[] (	ivec3(in0.x, in0.y, -in0.z),
+																			ivec3(0.0, 0.0, 0.0),
+																			ivec3(0.0, 0.0, 0.0)) ),
+
+													ivec3[][] ( ivec3[] (	ivec3(0.0, 0.0, 0.0),
+																			ivec3(in0.y, -in0.z, in0.x),
+																			ivec3(0.0, 0.0, 0.0)) ),
+
+													ivec3[][] (	ivec3[] (	ivec3(0.0, 0.0, 0.0),
+																			ivec3(0.0, 0.0, 0.0),
+																			ivec3(-in0.z, in0.x, in0.y)) ) );
+
+					ivec3[] y[][] = x;
+
+					out0 = ivec3(y[0][0][0].x, y[1][0][1].y, y[2][0][2].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case bvec3_3x1
+			version 310 es
+			desc "Testing assignment of arrays of arrays with implicit sizes"
+			values
+			{
+				input bvec3 in0 =	[ bvec3(true, false, true) ];
+				output bvec3 out0 = [ bvec3(true, true, false) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					bvec3[][] x = bvec3[][] (	bvec3[] ( bvec3(in0.x, in0.y, in0.z)),
+												bvec3[] ( bvec3(in0.y, in0.z, in0.x)),
+												bvec3[] ( bvec3(in0.z, in0.x, in0.y)) );
+
+					bvec3[][] y = x;
+
+					out0 = bvec3(y[0][0].x, y[1][0].y, y[2][0].z);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x2
+			version 310 es
+			desc "Testing assignment of arrays of arrays with implicit sizes"
+			values
+			{
+				input vec3 in0 = [ vec3(0.5, 1.0, 2.0) | vec3(-1.5, 0.0, -2.3) ];
+				output vec3 out0 = [ vec3(0.5, -1.0, 1.0) | vec3(-1.5, 0.0, 0.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					mat3[][] a = mat3[][] (	mat3[] ( mat3(	in0.x, in0.y, in0.z,
+															in0.x, in0.y, in0.z,
+															in0.x, in0.y, in0.z),
+													 mat3(	in0.z, in0.x, -in0.y,
+															in0.z, in0.x, -in0.y,
+															in0.z, in0.x, -in0.y)),
+
+											mat3[] ( mat3(	-in0.z, -in0.z, in0.z,
+															-in0.y, -in0.y, in0.y,
+															-in0.x, -in0.x, in0.x),
+													 mat3(	in0.x, in0.y, in0.z,
+															in0.x, in0.y, in0.z,
+															in0.x, in0.y, in0.z)),
+
+											mat3[] ( mat3(	in0.z, in0.x, -in0.y,
+															in0.z, in0.x, -in0.y,
+															in0.z, in0.x, -in0.y),
+													 mat3(	-in0.z, -in0.z, in0.z,
+															-in0.y, -in0.y, in0.y,
+															-in0.x, -in0.x, in0.x)) );
+
+					mat3[] y[] = a;
+
+					mat3 a0 = y[0][0];
+					mat3 a1 = y[0][1];
+					mat3 a2 = y[2][1];
+
+					float ret0 = a0[2][0];
+					float ret1 = a1[0][2];
+					float ret2 = a2[1][2];
+
+					out0 = vec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x3x3
+			version 310 es
+			desc "Testing assignment of arrays of arrays with implicit sizes"
+			values
+			{
+				input ivec3 in0 = [ ivec3(0, 1, 2) | ivec3(-1, 0, -2) ];
+				output ivec3 out0 = [ ivec3(0, -1, 1) | ivec3(-1, 0, 0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 a = mat3(	in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z);
+					mat3 b = mat3(	in0.z, in0.x, -in0.y,
+									in0.z, in0.x, -in0.y,
+									in0.z, in0.x, -in0.y);
+					mat3 c = mat3(	-in0.z, -in0.z, in0.z,
+									-in0.y, -in0.y, in0.y,
+									-in0.x, -in0.x, in0.x);
+
+					mat3[][][] x = mat3[][][] (	mat3[][] (	mat3[] (a, a, a),
+															mat3[] (b, b, b),
+															mat3[] (c, c, c)),
+
+												mat3[][] (	mat3[] (b, b, b),
+															mat3[] (a, a, a),
+															mat3[] (c, c, c)),
+
+												mat3[][] (	mat3[] (c, c, c),
+															mat3[] (a, a, a),
+															mat3[] (b, b, b)) );
+
+					mat3 y[][][] = x;
+
+					mat3 x0 = y[0][0][0];
+					mat3 x1 = y[1][0][0];
+					mat3 x2 = y[2][0][0];
+
+					float ret0 = x0[2][0];
+					float ret1 = x1[0][2];
+					float ret2 = x2[1][2];
+
+					out0 = ivec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case mat3_3x4
+			version 310 es
+			desc "Testing assignment of arrays of arrays with implicit sizes"
+			values
+			{
+				input bvec3 in0 = [ bvec3(true, false, true) ];
+				output bvec3 out0 = [ bvec3(true, false, false) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+
+					mat3 a = mat3(	in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z,
+									in0.x, in0.y, in0.z);
+
+					mat3 b = mat3(	in0.z, in0.x, in0.y,
+									in0.z, in0.x, in0.y,
+									in0.z, in0.x, in0.y);
+
+					mat3 c = mat3(	in0.z, in0.z, in0.z,
+									in0.y, in0.y, in0.y,
+									in0.x, in0.x, in0.x);
+
+					mat3[] x[] = mat3[][] (	mat3[] (a, b, c, a),
+											mat3[] (b, c, a, b),
+											mat3[] (c, a, b, c) );
+
+					mat3 y[][] = x;
+
+					mat3 x0 = y[0][0];
+					mat3 x1 = y[1][3];
+					mat3 x2 = y[2][0];
+
+					float ret0 = x0[2][0];
+					float ret1 = x1[0][2];
+					float ret2 = x2[1][2];
+
+					out0 = bvec3(ret0, ret1, ret2);
+					${OUTPUT}
+				}
+			""
+		end
+
+	end # implicit_to_implicit
+
+end # assignment
+
+group length "Testing the array length property with arrays of arrays"
+
+	case float
+		version 310 es
+		desc "Testing the array length property with arrays of arrays"
+		values
+		{
+			input vec3 in0 = [ vec3(0.5, 1.0, 2.0) ];
+			output ivec2 out0 = [ ivec2(3, 5) ];
+			output ivec3 out1 = [ ivec3(3, 4, 5) ];
+			output ivec3 out2 = [ ivec3(1, 2, 13) ];
+		}
+
+		both ""
+			#version 310 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main()
+			{
+				${SETUP}
+				float[][] x = float[3][5] (	float[5] (in0.z, in0.x, in0.y, in0.x, in0.y),
+											float[5] (in0.z, in0.x, in0.y, in0.x, in0.y),
+											float[5] (in0.z, in0.x, in0.y, in0.x, in0.y) );
+
+				float[][] y[] = float[][][] (	float[][] ( float[] (in0.z, in0.x, in0.y, in0.x, in0.y),
+															float[] (in0.z, in0.x, in0.y, in0.x, in0.y),
+															float[] (in0.z, in0.x, in0.y, in0.x, in0.y),
+															float[] (in0.z, in0.x, in0.y, in0.x, in0.y) ),
+
+												float[][] ( float[] (in0.z, in0.x, in0.y, in0.x, in0.y),
+															float[] (in0.z, in0.x, in0.y, in0.x, in0.y),
+															float[] (in0.z, in0.x, in0.y, in0.x, in0.y),
+															float[] (in0.z, in0.x, in0.y, in0.x, in0.y) ),
+
+												float[][] ( float[] (in0.z, in0.x, in0.y, in0.x, in0.y),
+															float[] (in0.z, in0.x, in0.y, in0.x, in0.y),
+															float[] (in0.z, in0.x, in0.y, in0.x, in0.y),
+															float[] (in0.z, in0.x, in0.y, in0.x, in0.y) ) );
+
+				float[1][2][13] z;
+
+				out0 = ivec2(x.length(), x[0].length());
+				out1 = ivec3(y.length(), y[0].length(), y[0][0].length());
+				out2 = ivec3(z.length(), z[0].length(), z[0][0].length());
+				${OUTPUT}
+			}
+		""
+	end
+
+	case int
+		version 310 es
+		desc "Testing the array length property with arrays of arrays"
+		values
+		{
+			input ivec3 in0 = [ ivec3(0, 1, 2) ];
+			output ivec2 out0 = [ ivec2(2, 7) ];
+			output ivec3 out1 = [ ivec3(1, 2, 3) ];
+			output ivec3 out2 = [ ivec3(13, 7, 1) ];
+		}
+
+		both ""
+			#version 310 es
+			precision mediump int;
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main()
+			{
+				${SETUP}
+
+				int[] x[] = int[][] (	int[] (in0.z, in0.x, in0.y, in0.x, in0.y, in0.z, in0.x),
+										int[] (in0.z, in0.x, in0.y, in0.x, in0.y, in0.z, in0.x) );
+
+				int[] y[][] = int[1][2][3] ( int[2][3] (	int[3] (in0.z, in0.x, in0.y),
+															int[3] (in0.z, in0.x, in0.y) ));
+
+				int z[13][7][1];
+
+				out0 = ivec2(x.length(), x[0].length());
+				out1 = ivec3(y.length(), y[0].length(), y[0][0].length());
+				out2 = ivec3(z.length(), z[0].length(), z[0][0].length());
+				${OUTPUT}
+			}
+		""
+	end
+
+	case bool
+		version 310 es
+		desc "Testing the array length property with arrays of arrays"
+		values
+		{
+			input bvec3 in0 = [ bvec3(true, false, true) ];
+			output ivec2 out0 = [ ivec2(4, 3) ];
+			output ivec3 out1 = [ ivec3(2, 1, 3) ];
+			output ivec3 out2 = [ ivec3(7, 8, 9) ];
+		}
+
+		both ""
+			#version 310 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main()
+			{
+				${SETUP}
+				bool x[4][3] = bool[][] (	bool[] (in0.z, in0.x, in0.y),
+											bool[] (in0.z, in0.x, in0.y),
+											bool[] (in0.z, in0.x, in0.y),
+											bool[] (in0.z, in0.x, in0.y) );
+
+				bool y[2][1][3] = bool[][][] (	bool[][] (	bool[] (in0.z, in0.x, in0.y) ),
+												bool[][] (	bool[] (in0.z, in0.x, in0.y) ) );
+
+				int z[7][8][9];
+
+				out0 = ivec2(x.length(), x[0].length());
+				out1 = ivec3(y.length(), y[0].length(), y[0][0].length());
+				out2 = ivec3(z.length(), z[0].length(), z[0][0].length());
+				${OUTPUT}
+			}
+		""
+	end
+
+	case struct
+		version 310 es
+		desc "Testing the array length property with arrays of arrays"
+		values
+		{
+			input vec3 in0 = [ vec3(0.5, 1.0, 2.0) ];
+			output ivec2 out0 = [ ivec2(5, 1) ];
+			output ivec3 out1 = [ ivec3(5, 4, 2) ];
+			output ivec3 out2 = [ ivec3(100, 101, 102) ];
+		}
+
+		both ""
+			#version 310 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			struct Test
+			{
+				float f;
+				vec3 v;
+			};
+
+			void main()
+			{
+				${SETUP}
+
+				Test a = Test(in0.z, vec3(in0.x, in0.y, in0.z));
+				Test b = Test(in0.y, vec3(-in0.z, -in0.x, -in0.y));
+				Test c = Test(in0.x, vec3(-in0.y, in0.z, -in0.x));
+
+				Test x[5][1] = Test[5][1] (	Test[1] (a),
+											Test[1] (b),
+											Test[1] (c),
+											Test[1] (a),
+											Test[1] (b) );
+
+				Test y[][][] = Test[][][] ( Test[][] (	Test[] (a, b),
+														Test[] (a, b),
+														Test[] (a, b),
+														Test[] (a, b) ),
+											Test[][] (	Test[] (a, b),
+														Test[] (a, b),
+														Test[] (a, b),
+														Test[] (a, b) ),
+											Test[][] (	Test[] (a, b),
+														Test[] (a, b),
+														Test[] (a, b),
+														Test[] (a, b) ),
+											Test[][] (	Test[] (a, b),
+														Test[] (a, b),
+														Test[] (a, b),
+														Test[] (a, b) ),
+											Test[][] (	Test[] (a, b),
+														Test[] (a, b),
+														Test[] (a, b),
+														Test[] (a, b) ) );
+
+				int z[100][101][102];
+
+				out0 = ivec2(x.length(), x[0].length());
+				out1 = ivec3(y.length(), y[0].length(), y[0][0].length());
+				out2 = ivec3(z.length(), z[0].length(), z[0][0].length());
+				${OUTPUT}
+			}
+		""
+	end
+
+	case mat3
+		version 310 es
+		desc "Testing the array length property with arrays of arrays"
+		values
+		{
+			input ivec3 in0 = [ ivec3(0, 1, 2)];
+			output ivec2 out0 = [ ivec2(3, 4) ];
+			output ivec3 out1 = [ ivec3(1, 2, 4) ];
+			output ivec3 out2 = [ ivec3(3, 101, 88) ];
+		}
+
+		both ""
+			#version 310 es
+			precision mediump int;
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main()
+			{
+				${SETUP}
+
+				mat3 a = mat3(	in0.x, in0.y, in0.z,
+								in0.x, in0.y, in0.z,
+								in0.x, in0.y, in0.z);
+				mat3 b = mat3(	in0.z, in0.x, -in0.y,
+								in0.z, in0.x, -in0.y,
+								in0.z, in0.x, -in0.y);
+				mat3 c = mat3(	-in0.z, -in0.z, in0.z,
+								-in0.y, -in0.y, in0.y,
+								-in0.x, -in0.x, in0.x);
+
+				mat3[3][4] x = mat3[][] (	mat3[] (a, a, a, a),
+											mat3[] (b, b, b, b),
+											mat3[] (c, c, c, c) );
+
+				mat3 y[][][] = mat3[][][] ( mat3[][] (	mat3[] (a, a, a, a),
+														mat3[] (b, b, b, b) ) );
+
+
+				mat3 z[3][101][88];
+
+				out0 = ivec2(x.length(), x[0].length());
+				out1 = ivec3(y.length(), y[0].length(), y[0][0].length());
+				out2 = ivec3(z.length(), z[0].length(), z[0][0].length());
+				${OUTPUT}
+			}
+		""
+	end
+
+	case constant_expression
+		version 310 es
+		desc "Testing the array length property with arrays of arrays"
+		values
+		{
+			input ivec3 in0 = [ ivec3(0, 1, 2) ];
+			output ivec3 out0 = [ ivec3(2, 7, 3) ];
+		}
+
+		both ""
+			#version 310 es
+			precision mediump int;
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main()
+			{
+				${SETUP}
+
+				int[] x[] = int[][] (	int[] (in0.z, in0.x, in0.y, in0.x, in0.y, in0.z, in0.x),
+										int[] (in0.z, in0.x, in0.y, in0.x, in0.y, in0.z, in0.x) );
+
+				int[] y[][] = int[1][2][3] ( int[2][3] (	int[3] (in0.z, in0.x, in0.y),
+															int[3] (in0.z, in0.x, in0.y) ));
+
+				int z[13][7][1];
+
+				int ret[x.length()][z[0].length()][y[0][0].length()];
+				out0 = ivec3(ret.length(), ret[0].length(), ret[0][0].length());
+				${OUTPUT}
+			}
+		""
+	end
+
+end # length
+
+group array_access "Test accessing arrays of arrays"
+
+	case constant_expression_access
+		version 310 es
+		desc "Testing accessing arrays of arrays"
+		values
+		{
+			input vec3 in0 = [ vec3(0.5, 1.0, 2.0) ];
+			output vec3 out0 = [ vec3(-1.0, 0.5, -0.5) ];
+		}
+
+		both ""
+			#version 310 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			const int a = 1;
+
+			void main ()
+			{
+				${SETUP}
+				const int b = 2;
+				float x = float[2][6] ( float[] (in0.x, in0.y, in0.z, -in0.z, -in0.y, -in0.x),
+										float[] (-in0.z, -in0.y, -in0.x, in0.x, in0.y, in0.z) ) [a][a];
+
+				float y = float[][][] (	float[][] (		float[] (in0.x, in0.y, in0.z, -in0.z, -in0.y, -in0.x),
+														float[] (-in0.z, -in0.y, -in0.x, in0.x, in0.y, in0.z) ),
+										float[][] (		float[] (in0.x, in0.y, in0.z, -in0.z, -in0.y, -in0.x),
+														float[] (-in0.z, -in0.y, -in0.x, in0.x, in0.y, in0.z) ),
+										float[][] (		float[] (in0.x, in0.y, in0.z, -in0.z, -in0.y, -in0.x),
+														float[] (-in0.z, -in0.y, -in0.x, in0.x, in0.y, in0.z) ),
+										float[][] (		float[] (in0.x, in0.y, in0.z, -in0.z, -in0.y, -in0.x),
+														float[] (-in0.z, -in0.y, -in0.x, in0.x, in0.y, in0.z) ),
+										float[][] (		float[] (in0.x, in0.y, in0.z, -in0.z, -in0.y, -in0.x),
+														float[] (-in0.z, -in0.y, -in0.x, in0.x, in0.y, in0.z) )) [b+2][b-1][b+1];
+
+				float z = float[][] (	float[] (-in0.z, -in0.y, -in0.x, in0.x, in0.y, in0.z),
+										float[] (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+										float[] (in0.x, in0.y, in0.z, -in0.z, -in0.y, -in0.x) ) [2][5];
+
+				out0 = vec3(x, y, z);
+				${OUTPUT}
+			}
+		""
+	end # constant_expression_access
+
+	case dynamic_expression_access
+		version 310 es
+		desc "Testing accessing arrays of arrays"
+		values
+		{
+			input vec3 in0 = [ vec3(0.5, 1.0, 2.0) ];
+			input ivec3 in1 = ivec3(3, 2, 1);
+			output vec3 out0 = [ vec3(0.5, 2.0, -1.0) ];
+		}
+
+		both ""
+			#version 310 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main ()
+			{
+				${SETUP}
+				float x = float[2][6] ( float[] (in0.x, in0.y, in0.z, -in0.z, -in0.y, -in0.x),
+										float[] (-in0.z, -in0.y, -in0.x, in0.x, in0.y, in0.z) ) [in1.z][in1.x];
+
+				float y = float[][][] (	float[][] ( float[] (in0.x, in0.y, in0.z, -in0.z, -in0.y, -in0.x),
+													float[] (-in0.z, -in0.y, -in0.x, in0.x, in0.y, in0.z) ),
+										float[][] ( float[] (in0.x, in0.y, in0.z, -in0.z, -in0.y, -in0.x),
+													float[] (-in0.z, -in0.y, -in0.x, in0.x, in0.y, in0.z) ),
+										float[][] ( float[] (in0.x, in0.y, in0.z, -in0.z, -in0.y, -in0.x),
+													float[] (-in0.z, -in0.y, -in0.x, in0.x, in0.y, in0.z) ),
+										float[][] ( float[] (in0.x, in0.y, in0.z, -in0.z, -in0.y, -in0.x),
+													float[] (-in0.z, -in0.y, -in0.x, in0.x, in0.y, in0.z) ),
+										float[][] ( float[] (in0.x, in0.y, in0.z, -in0.z, -in0.y, -in0.x),
+													float[] (-in0.z, -in0.y, -in0.x, in0.x, in0.y, in0.z) )) [in1.x+1][in1.y-1][in1.z+4];
+
+				float z = float[][] (	float[] (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+										float[] (-in0.z, -in0.y, -in0.x, in0.x, in0.y, in0.z),
+										float[] (in0.x, in0.y, in0.z, -in0.z, -in0.y, -in0.x) ) [in1.x-in1.y][in1.z];
+
+				out0 = vec3(x, y, z);
+				${OUTPUT}
+			}
+		""
+	end # dynamic_expression_access
+
+end # array_access
+
+
+group single_statement_multiple_declarations "Testing multiple arrays of arrays declarations in a single statement"
+
+	group explicit_constructor "Testing single statement with multiple arrays of arrays with explicit constructor"
+
+		case float_2_dimensions
+			version 310 es
+			desc "Testing multiple two dimensional array declarations in a single statement"
+			values
+			{
+				input vec4 in0 = [ vec4(0.5, 1.0, 2.0, 0.2) | vec4(7.4, -1.0, 2.0, -1.3) | vec4(3.0, 1.6, -2.0, 0.5) ];
+				output vec4 out0 = [ vec4(2.5, 0.7, 2.0, 2.5) | vec4(9.4, 6.1, -2.0, 9.4) | vec4(1.0, 3.5, 3.2, 1.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					float[][] x = float[3][3] (	float[3] (in0.z, in0.x, in0.y),
+												float[3] (in0.z, in0.x, in0.y),
+												float[3] (in0.z, in0.x, in0.y) ),
+
+							  y = float[3][4] ( float[4] (in0.z, in0.x, in0.w, in0.y),
+												float[4] (in0.z, in0.x, in0.w, in0.y),
+												float[4] (in0.z, in0.x, in0.w, in0.y) );
+
+					out0 = vec4(x[0][0]+y[1][1], x[1][1]+y[2][2], x[2][2]+y[2][3], x[0][1]+y[0][0]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case int_3_dimensions
+			version 310 es
+			desc "Testing multiple three dimensional array declarations in a single statement"
+			values
+			{
+				input ivec4 in0 = [ ivec4(0, 1, 2, 0) | ivec4(7, -1, 2, -1) | ivec4(3, 1, -2, 0) ];
+				output ivec4 out0 = [ ivec4(2, 1, 2, 1) | ivec4(9, 6, 1, -2) | ivec4(1, 4, -2, 1) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					int[][][] x = int[4][4][4] (int[4][4] (	(int[4] (in0.z, in0.x, in0.w, in0.y)),
+															(int[4] (in0.z, in0.x, in0.w, in0.y)),
+															(int[4] (in0.z, in0.x, in0.w, in0.y)),
+															(int[4] (in0.z, in0.x, in0.w, in0.y))),
+
+												int[4][4] (	(int[4] (in0.z, in0.x, in0.w, in0.y)),
+															(int[4] (in0.z, in0.x, in0.w, in0.y)),
+															(int[4] (in0.z, in0.x, in0.w, in0.y)),
+															(int[4] (in0.z, in0.x, in0.w, in0.y))),
+
+												int[4][4] (	(int[4] (in0.z, in0.x, in0.w, in0.y)),
+															(int[4] (in0.z, in0.x, in0.w, in0.y)),
+															(int[4] (in0.z, in0.x, in0.w, in0.y)),
+															(int[4] (in0.z, in0.x, in0.w, in0.y))),
+
+												int[4][4] (	(int[4] (in0.z, in0.x, in0.w, in0.y)),
+															(int[4] (in0.z, in0.x, in0.w, in0.y)),
+															(int[4] (in0.z, in0.x, in0.w, in0.y)),
+															(int[4] (in0.z, in0.x, in0.w, in0.y))) ),
+
+							  y = int[2][2][4] (int[2][4] (	(int[4] (in0.x, in0.y, in0.z, in0.w)),
+															(int[4] (in0.x, in0.y, in0.z, in0.w))),
+
+												int[2][4] (	(int[4] (in0.x, in0.y, in0.z, in0.w)),
+															(int[4] (in0.x, in0.y, in0.z, in0.w))) );
+
+					out0 = ivec4(x[0][0][0] + y[0][0][0], x[1][1][1] + y[1][1][1], x[2][2][2] + y[0][0][2], x[3][3][3] + y[0][0][3]);
+					${OUTPUT}
+				}
+			""
+		end
+
+	end # explicit_constructor
+
+	group implicit_constructor "Testing single statement with multiple arrays of arrays with implicit constructor"
+
+		case float_2_dimensions
+			version 310 es
+			desc "Testing multiple two dimensional array declarations in a single statement"
+			values
+			{
+				input vec4 in0 = [ vec4(0.5, 1.0, 2.0, 0.2) | vec4(7.4, -1.0, 2.0, -1.3) | vec4(3.0, 1.6, -2.0, 0.5) ];
+				output vec4 out0 = [ vec4(2.5, 0.7, 2.0, 2.5) | vec4(9.4, 6.1, -2.0, 9.4) | vec4(1.0, 3.5, 3.2, 1.0) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					float[][] x = float[][] (float[] (in0.z, in0.x, in0.y),
+											float[] (in0.z, in0.x, in0.y),
+											float[] (in0.z, in0.x, in0.y) ),
+
+							  y = float[][] (float[] (in0.z, in0.x, in0.w, in0.y),
+											float[] (in0.z, in0.x, in0.w, in0.y),
+											float[] (in0.z, in0.x, in0.w, in0.y) );
+
+					out0 = vec4(x[0][0]+y[1][1], x[1][1]+y[2][2], x[2][2]+y[2][3], x[0][1]+y[0][0]);
+					${OUTPUT}
+				}
+			""
+		end
+
+		case int_3_dimensions
+			version 310 es
+			desc "Testing multiple three dimensional array declarations in a single statement"
+			values
+			{
+				input ivec4 in0 = [ ivec4(0, 1, 2, 0) | ivec4(7, -1, 2, -1) | ivec4(3, 1, -2, 0) ];
+				output ivec4 out0 = [ ivec4(2, 1, 2, 1) | ivec4(9, 6, 1, -2) | ivec4(1, 4, -2, 1) ];
+			}
+
+			both ""
+				#version 310 es
+				precision mediump int;
+				precision mediump float;
+				${DECLARATIONS}
+
+				void main()
+				{
+					${SETUP}
+					int[][][] x = int[][][] (int[][] (	(int[] (in0.z, in0.x, in0.w, in0.y)),
+														(int[] (in0.z, in0.x, in0.w, in0.y)),
+														(int[] (in0.z, in0.x, in0.w, in0.y)),
+														(int[] (in0.z, in0.x, in0.w, in0.y))),
+
+											int[][] (	(int[] (in0.z, in0.x, in0.w, in0.y)),
+														(int[] (in0.z, in0.x, in0.w, in0.y)),
+														(int[] (in0.z, in0.x, in0.w, in0.y)),
+														(int[] (in0.z, in0.x, in0.w, in0.y))),
+
+											int[][] (	(int[] (in0.z, in0.x, in0.w, in0.y)),
+														(int[] (in0.z, in0.x, in0.w, in0.y)),
+														(int[] (in0.z, in0.x, in0.w, in0.y)),
+														(int[] (in0.z, in0.x, in0.w, in0.y))),
+
+											int[][] (	(int[] (in0.z, in0.x, in0.w, in0.y)),
+														(int[] (in0.z, in0.x, in0.w, in0.y)),
+														(int[] (in0.z, in0.x, in0.w, in0.y)),
+														(int[] (in0.z, in0.x, in0.w, in0.y))) ),
+
+							  y = int[][][] (int[][] (	(int[] (in0.x, in0.y, in0.z, in0.w)),
+														(int[] (in0.x, in0.y, in0.z, in0.w))),
+
+												int[][] ((int[] (in0.x, in0.y, in0.z, in0.w)),
+														(int[] (in0.x, in0.y, in0.z, in0.w))) );
+
+					out0 = ivec4(x[0][0][0] + y[0][0][0], x[1][1][1] + y[1][1][1], x[2][2][2] + y[0][0][2], x[3][3][3] + y[0][0][3]);
+					${OUTPUT}
+				}
+			""
+		end
+
+	end # implicit_constructor
+
+end # single_statement_multiple_declarations
+
+
+group invalid "Invalid functions"
+
+	case dynamic_expression_array_size
+		version 310 es
+		desc "Testing that compiler doesn't allow dynamic expressions in arrays of arrays sizes"
+		expect compile_fail
+
+		both ""
+			#version 310 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main ()
+			{
+				int a = 5;
+				float[a][a] array;
+				${POSITION_FRAG_COLOR} = vec4(1.0);
+			}
+		""
+	end # dynamic_expression_array_size
+
+	case empty_declaration_without_var_name
+		version 310 es
+		desc "Testing that compiler doesn't allow only an empty declaration"
+		expect compile_or_link_fail
+
+		both ""
+			#version 310 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main ()
+			{
+				float[][];
+				${POSITION_FRAG_COLOR} = vec4(1.0);
+			}
+		""
+	end # empty_declaration_without_var_name
+
+	case empty_declaration_with_var_name
+		version 310 es
+		desc "Testing that compiler doesn't allow only an empty declaration"
+		expect compile_or_link_fail
+
+		both ""
+			#version 310 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main ()
+			{
+				int[][] a;
+				${POSITION_FRAG_COLOR} = vec4(1.0);
+			}
+		""
+	end # empty_declaration_with_var_name
+
+	case uniform_block
+		version 310 es
+		desc "Testing that compiler doesn't allow arrays of arrays of uniform blocks"
+		expect compile_or_link_fail
+
+		both ""
+			#version 310 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			layout(std140) uniform Transform {
+				mat4 modelViewMatrix;
+				mat4 modelViewProjectionMatrix;
+				mat3 normalMatrix;
+				float deformation;
+			} TransformInstance [2][2];
+
+			void main ()
+			{
+				${POSITION_FRAG_COLOR} = vec4(1.0);
+			}
+		""
+	end # uniform_block
+
+	case storage_block
+		version 310 es
+		desc "Testing that compiler doesn't allow arrays of arrays of SSBOs"
+		expect compile_or_link_fail
+
+		both ""
+			#version 310 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			layout(std430) buffer Transform {
+				mat4 modelViewMatrix;
+				mat4 modelViewProjectionMatrix;
+				mat3 normalMatrix;
+				float deformation;
+			} TransformInstance [2][2];
+
+			void main ()
+			{
+				${POSITION_FRAG_COLOR} = vec4(1.0);
+			}
+		""
+	end # storage_block
+
+end # negative

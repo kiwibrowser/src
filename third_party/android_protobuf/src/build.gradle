@@ -1,0 +1,128 @@
+/*
+ * Copyright (C) 2013 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: 'java'
+
+configurations {
+    micro
+    nano
+    lite
+}
+
+sourceSets {
+
+    micro {
+        java {
+            srcDirs = ['java/src/main/java/']
+            include("com/google/protobuf/micro/*")
+        }
+    }
+
+    lite {
+        java {
+            srcDirs = ['java/src/main/java/']
+            include 'com/google/protobuf/UninitializedMessageException.java'
+            include 'com/google/protobuf/MessageLite.java'
+            include 'com/google/protobuf/InvalidProtocolBufferException.java'
+            include 'com/google/protobuf/CodedOutputStream.java'
+            include 'com/google/protobuf/ByteString.java'
+            include 'com/google/protobuf/CodedInputStream.java'
+            include 'com/google/protobuf/ExtensionRegistryLite.java'
+            include 'com/google/protobuf/AbstractMessageLite.java'
+            include 'com/google/protobuf/AbstractParser.java'
+            include 'com/google/protobuf/FieldSet.java'
+            include 'com/google/protobuf/Internal.java'
+            include 'com/google/protobuf/WireFormat.java'
+            include 'com/google/protobuf/GeneratedMessageLite.java'
+            include 'com/google/protobuf/BoundedByteString.java'
+            include 'com/google/protobuf/LazyField.java'
+            include 'com/google/protobuf/LazyFieldLite.java'
+            include 'com/google/protobuf/LazyStringList.java'
+            include 'com/google/protobuf/LazyStringArrayList.java'
+            include 'com/google/protobuf/UnmodifiableLazyStringList.java'
+            include 'com/google/protobuf/LiteralByteString.java'
+            include 'com/google/protobuf/MessageLiteOrBuilder.java'
+            include 'com/google/protobuf/Parser.java'
+            include 'com/google/protobuf/ProtocolStringList.java'
+            include 'com/google/protobuf/RopeByteString.java'
+            include 'com/google/protobuf/SmallSortedMap.java'
+            include 'com/google/protobuf/Utf8.java'
+        }
+    }
+
+    nano {
+        java {
+            srcDirs = [
+                    'java/src/main/java/',
+                    'java/src/device/main/java/'
+            ]
+            include("com/google/protobuf/nano/**")
+        }
+    }
+}
+
+if (project == rootProject) {
+    ext.getAndroidPrebuilt = { apiLevel ->
+        files("$rootDir/../../prebuilts/sdk/$apiLevel/android.jar")
+    }
+}
+
+dependencies {
+    compile getAndroidPrebuilt('8')
+    nanoCompile getAndroidPrebuilt('8')
+}
+
+jar {
+    from sourceSets.nano.output, sourceSets.micro.output
+    baseName "libprotobuf"
+    appendix "java"
+    version "2.6"
+    classifier "micronano"
+}
+
+task nanoJar(type: Jar) {
+    from sourceSets.nano.output
+    dependsOn nanoClasses
+    baseName "libprotobuf"
+    appendix "java"
+    version "2.6"
+    classifier "nano"
+}
+
+task microJar(type: Jar) {
+    from sourceSets.micro.output
+    dependsOn microClasses
+    baseName "libprotobuf"
+    appendix "java"
+    version "2.6"
+    classifier "micro"
+}
+
+task liteJar(type: Jar) {
+    from sourceSets.lite.output
+    dependsOn liteClasses
+    baseName "libprotobuf"
+    appendix "java"
+    version "2.3"
+    classifier "lite"
+}
+
+artifacts {
+    micro microJar
+    nano nanoJar
+    lite liteJar
+}
+

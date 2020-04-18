@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<!--
+Copyright 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/elements/base-style.html">
+<link rel="import" href="/elements/job-page/change-info.html">
+<link rel="import" href="/elements/job-page/execution-details.html">
+
+<dom-module id="change-details">
+  <template>
+    <style include="base-style">
+      .columns {
+        display: flex;
+        margin: 0 -0.5em;
+      }
+
+      .column {
+        flex: 1;
+        margin: 0 0.5em;
+      }
+    </style>
+
+    <change-info change="[[change(job.state, changeIndex)]]"></change-info>
+
+    <div class="columns">
+      <template is="dom-repeat" items="[[job.quests]]">
+        <div class="column">
+          <h2>[[item]]</h2>
+          <execution-details attempts="[[attempts(job.state, changeIndex)]]"
+                             attempt-index="{{attemptIndex}}"
+                             quest-index="[[index]]"></execution-details>
+        </div>
+      </template>
+    </div>
+  </template>
+
+  <script>
+    'use strict';
+    Polymer({
+      is: 'change-details',
+
+      properties: {
+        job: {
+          type: Object
+        },
+
+        changeIndex: {
+          type: Number
+        },
+
+        attemptIndex: {
+          type: Number,
+          value: 0
+        },
+      },
+
+      change(jobState, changeIndex) {
+        return jobState[changeIndex].change;
+      },
+
+      attempts(jobState, changeIndex) {
+        return jobState[changeIndex].attempts;
+      },
+    });
+  </script>
+</dom-module>

@@ -1,0 +1,57 @@
+# Windows Build Configuration for AppVeyor
+# http://www.appveyor.com/docs/appveyor-yml
+
+# version format
+version: "{build}"
+
+platform:
+  - x64
+
+environment:
+  PYTHON_PATH: "C:/Python27"
+  PYTHON_PACKAGE_PATH: "C:/Python27/Scripts"
+
+configuration:
+  - Debug
+  - Release
+
+branches:
+  only:
+    - master
+
+# scripts that are called at very beginning, before repo cloning
+init:
+  - ps: (new-object net.webclient).DownloadFile('https://bootstrap.pypa.io/get-pip.py', 'C:/get-pip.py')
+  - "%PYTHON_PATH%/python.exe C:/get-pip.py"
+  - "%PYTHON_PACKAGE_PATH%/pip.exe install nose"
+
+# scripts that run after cloning repository
+install:
+  - git clone https://github.com/google/googletest.git third_party/googletest
+  - git clone https://github.com/google/glslang.git third_party/glslang
+  - git clone https://github.com/KhronosGroup/SPIRV-Tools.git third_party/spirv-tools
+
+build:
+  parallel: true  # enable MSBuild parallel builds
+  verbosity: minimal
+
+build_script:
+  - mkdir build && cd build
+  - cmake ..
+  - cmake --build . --config %CONFIGURATION%
+
+test_script:
+  - ctest -C %CONFIGURATION% --output-on-failure
+
+notifications:
+  - provider: Email
+    to:
+      - antiagainst@google.com
+      - awoloszyn@google.com
+      - deki@google.com
+      - dneto@google.com
+      - qining@google.com
+    subject: 'Shaderc Windows Build #{{buildVersion}}: {{status}}'
+    on_build_success: false
+    on_build_failure: true
+    on_build_status_changed: true

@@ -1,0 +1,67 @@
+//vanilla javadoc task does not work for us and it actually fails on java8
+tasks.javadoc.enabled = false
+
+task mockitoJavadoc(type: Javadoc) {
+    description "Creates javadoc html for Mockito API."
+    tasks.javadoc.dependsOn it //so that when the user invokes 'javadoc' right things happen
+
+    // For more details on the format
+    // see https://docs.oracle.com/javase/8/docs/technotes/tools/windows/javadoc.html
+
+    classpath = configurations.runtime + configurations.provided
+    source = sourceSets.main.allJava
+    destinationDir = file("$buildDir/javadoc")
+    title = "Mockito ${project.version} API"
+    def javadocJdk6Hack = "jdk6-project-version-insert.min.js"
+
+    options.doclet "org.mockito.javadoc.JavadocExclude"
+    options.docletpath = [rootProject.file('./buildSrc/build/classes/main/')]
+    options.docTitle = """<h1><a href="org/mockito/Mockito.html">Click to see examples</a>. Mockito ${project.version} API.</h1>"""
+    options.windowTitle = "Mockito ${project.version} API"
+    options.group("Main package", ["org.mockito"])
+    options.memberLevel = JavadocMemberLevel.PROTECTED
+    options.charSet = 'UTF-8'
+    options.encoding = 'UTF-8'
+    options.docEncoding = 'UTF-8'
+    options.use = true
+    options.splitIndex = true
+    options.noDeprecated = false
+    options.noDeprecatedList = false
+    options.noIndex = false
+    options.noNavBar = false
+    options.noTree = false
+    options.links('http://docs.oracle.com/javase/8/docs/api/')
+    options.header("""<em id="mockito-version-header-javadoc7-header"><strong>Mockito ${project.version} API</strong></em>""")
+    options.footer("""<em id="mockito-version-header-javadoc7-footer"><strong>Mockito ${project.version} API</strong></em>""")
+    options.bottom("""
+        <script type="text/javascript" src="{@docRoot}/js/${javadocJdk6Hack}"></script>
+        <script type="text/javascript" src="{@docRoot}/js/jquery-1.7.min.js"></script>
+        <script type="text/javascript" src="{@docRoot}/js/highlight-8.6-java/highlight.pack.js"></script>
+        <link rel="stylesheet" type="text/css" href="{@docRoot}/js/highlight-8.6-java/styles/obsidian.css"/>
+
+        <script type="text/javascript">
+          var usingOldIE = \$.browser.msie && parseInt(\$.browser.version) < 9;
+          if(!usingOldIE) {
+              \$("head").append("<link rel=\\"shortcut icon\\" href=\\"{@docRoot}/favicon.ico?v=cafebabe\\">");
+              \$("head", window.parent.document).append("<link rel=\\"shortcut icon\\" href=\\"{@docRoot}/favicon.ico?v=cafebabe\\">");
+              hljs.initHighlightingOnLoad();
+              \$("pre.code").css("font-size", "0.9em");
+              injectProjectVersionForJavadocJDK6("Mockito ${project.version} API",
+                                                 "em#mockito-version-header-javadoc7-header",
+                                                 "em#mockito-version-header-javadoc7-footer");
+          }
+        </script>
+    """.replaceAll(/\r|\n/, ""))
+//    options.stylesheetFile file("src/javadoc/stylesheet.css")
+//    options.addStringOption('top', 'some html')
+    if (JavaVersion.current().isJava8Compatible()) {
+        options.addStringOption('Xdoclint:none', '-quiet')
+    }
+
+    doLast {
+        copy {
+            from "src/javadoc"
+            into "$buildDir/javadoc"
+        }
+    }
+}

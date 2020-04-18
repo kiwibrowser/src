@@ -1,0 +1,22 @@
+=======================
+How to fuzz WDS parser
+=======================
+
+1) Get afl-fuzz from http://lcamtuf.coredump.cx/afl/ and follow
+   "QuickStartGuide" http://lcamtuf.coredump.cx/afl/QuickStartGuide.txt
+
+2) Build WDS with WDS_FUZZER support. Provide full path to afl-gcc / afl-g++
+   or add path containing afl-* binaries to your PATH environment variable.
+   CC=afl-gcc CXX=afl-g++ cmake -DWDS_FUZZER=ON --disable-shared .
+
+3) Run run_afl_fuzzer.sh script which is located under libwds/rtsp/tests folder
+   ./libwds/rtsp/tests/run_afl_fuzzer.sh PATH_TO_AFL_FUZZ TEST_RESULT_PATH
+   e.g. ./libwds/rtsp/tests/run_afl_fuzzer.sh afl-fuzz test_results
+   Four fuzzer jobs will be started (header, payload_request, payload_reply
+   and payload_error), each testing independent lexing / parsing code paths.
+
+4) Observe progress in separate xterm terminal or use afl-whatsup to get status
+   of fuzzing job with afl-whatsup.
+
+5) For more information check http://lcamtuf.coredump.cx/afl/README.txt or docs
+   folder under afl-fuzz source tree.

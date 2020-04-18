@@ -1,0 +1,23 @@
+TOP=../../../../../..
+D3D1X=../..
+include $(TOP)/configs/current
+CFLAGS=$(CXXFLAGS)
+
+default: lib$(LIBNAME).def lib$(LIBNAME).cross.a $(LIBNAME).dll.so
+
+%.dll.fake: %.spec $(OBJECTS) version.res
+	wineg++ -m32 -fasynchronous-unwind-tables -shared $^ -o $@ $(LDADD)
+
+%.dll.so: %.spec $(OBJECTS) version.res
+	wineg++ -m32 -fasynchronous-unwind-tables -shared $^ -o $@ $(LDADD)
+
+lib%.def: %.spec
+	winebuild -w --def -o $@ --export $<
+
+lib%.cross.a: %.spec
+	winebuild -m32  -b i586-mingw32msvc -w --implib -o $@ --export $<
+
+version.res: version.rc
+	wrc --nostdinc -I. -I. -I../../include -I../../include  -D__WINESRC__   -fo$@ $^
+
+include ../../../../Makefile.template

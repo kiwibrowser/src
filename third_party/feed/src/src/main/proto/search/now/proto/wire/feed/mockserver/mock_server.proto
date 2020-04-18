@@ -1,0 +1,56 @@
+// Copyright 2018 The Feed Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+import "src/main/proto/search/now/proto/wire/feed/response.proto";
+
+package search.now.wire.feed.mockserver;
+
+option optimize_for=LITE_RUNTIME;
+
+option java_package = "com.google.search.now.wire.feed.mockserver";
+option java_outer_classname = "MockServerProto";
+
+message MockServer {
+
+  // The initial response
+  optional search.now.proto.wire.feed.Response initial_response = 1;
+
+  // conditional responses represent responses for paged content
+  repeated ConditionalResponse conditional_responses = 2;
+
+  // Mock updates to existing cards
+  repeated MockUpdate mock_updates = 3;
+}
+
+/** This represents a response providing updates to the stream. */
+message MockUpdate {
+  // The response with the push update
+  optional search.now.proto.wire.feed.Response response = 1;
+
+  // The amount of time to wait, in milliseconds, before the push is triggered.
+  // This is relative to the time the GCL file is loaded.
+  optional int32 update_trigger_time = 2;
+}
+
+// Conditional responses are served based upon a continuation token.
+message ConditionalResponse {
+
+  // The continuation token in the request must match this value
+  optional bytes continuation_token = 1;
+
+  // The response to use
+  optional search.now.proto.wire.feed.Response response = 2;
+}

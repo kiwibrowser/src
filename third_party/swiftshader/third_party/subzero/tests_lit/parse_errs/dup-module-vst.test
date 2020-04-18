@@ -1,0 +1,21 @@
+; Test if we detect multiple module-level symbol tables in bitcode.
+
+; REQUIRES: no_minimal_build
+
+; RUN: not %pnacl_sz -bitcode-as-text %p/Inputs/dup-module-vst.tbc \
+; RUN:     -bitcode-format=pnacl -notranslate -build-on-read 2>&1 \
+; RUN:   | FileCheck %s
+
+; CHECK: Duplicate valuesymtab in module
+
+; RUN: pnacl-bcfuzz -bitcode-as-text %p/Inputs/dup-module-vst.tbc \
+; RUN:   -output - | pnacl-bcdis -no-records | FileCheck -check-prefix=ASM %s
+
+; ASM: module {  // BlockID = 8
+; ASM:   valuesymtab {  // BlockID = 14
+; ASM:     @f0 : "f";
+; ASM:   }
+; ASM:   valuesymtab {  // BlockID = 14
+; ASM:     @f0 : "f";
+; ASM:   }
+; ASM: }

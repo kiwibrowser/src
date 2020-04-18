@@ -1,0 +1,76 @@
+Conformance Test
+
+    CTS_EXT_polygon_offset_clamp
+
+Contributors
+
+    Filip Demczewski, Mobica
+
+Contacts
+
+    Filip Demczewski, Mobica (filip.demczewski 'at' mobica.com)
+
+Status
+
+    In review
+
+Version
+
+    March 22, 2017 (version 1)
+
+Dependencies
+
+    OpenGL 3.3 (either core or compatibility profile) is required.
+    OpenGL ES 3.1 is required.
+
+    EXT_polygon_offset_clamp extension is required.
+
+    This specification is written against:
+      - EXT_polygon_offset_clamp specification
+      - OpenGL 3.3 (Core Profile) specification
+
+Overview
+
+    Test is validating new polygon offset function that extends
+    existing one with a new parameter that clamps the calculated
+    offset to a minimum or maximum value.
+
+New Tests
+
+    Availability test
+
+      * Check if extension is supported.
+
+      * Check if GetBooleanv, GetIntegerv, GetInteger64v, GetFloatv
+        and GetDoublev can be called with POLYGON_OFFSET_CLAMP_EXT
+        passed as <pname> parameter.
+
+      * Check if new PolygonOffsetClampEXT function is available to call.
+
+    Clamp min/max test
+
+      * Render primitive.
+        Read depth buffer value and store it.
+        Disable depth test to ensure second primitive overwrites values
+        in depth buffer.
+        Call PolygonOffsetClampEXT.
+        Render the same primitive again.
+        Read depth buffer value again and compare it with previous one.
+        Check if offset is clamped correctly by validating it against
+        equation described in extension's specification.
+
+    Zero or inifinity parameter test
+
+      * Call PolygonOffset function.
+        Render primitive.
+        Read depth value and store it.
+        Clear depth buffer.
+        Call PolygonOffsetClampEXT function with 0 or infinity value
+        passed as <clamp> parameter.
+        Read depth value and compare it to the stored one.
+        Values should be equal as no clamping should occur.
+
+Revision History
+
+    Revision 1, 22 March, 2017 (Filip Demczewski)
+      - Intial version;

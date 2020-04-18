@@ -1,0 +1,172 @@
+<!--
+Copyright (c) 2012 The Chromium Authors. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+   * Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+   * Redistributions in binary form must reproduce the above
+copyright notice, this list of conditions and the following disclaimer
+in the documentation and/or other materials provided with the
+distribution.
+   * Neither the name of Google Inc. nor the names of its
+contributors may be used to endorse or promote products derived from
+this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<html>
+  <head>
+    <title>Multithreaded NVIDIA Vertex Buffer Object demo</title>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <script type="application/javascript" src="../../common/webgl-utils.js"></script>
+    <script type="application/javascript" src="../resources/o3djs/base.js"></script>
+    <script type="application/javascript" src="../resources/fpscounter.js"></script>
+    <script type="application/javascript" src="calculate.js"></script>
+    <script type="application/javascript" src="../nvidia-vertex-buffer-object/PeriodicIterator.js"></script>
+    <script type="application/javascript" src="benchmark.js"></script>
+    <script type="application/javascript" src="capabilities.js"></script>
+    <script type="application/javascript" src="demo-multicore.js"></script>
+    <script type="application/javascript">
+        function selectManual() {
+            document.querySelector('#manual').style.display = "block";
+            document.querySelector('#benchmark').style.display = "none";
+            document.querySelector('#manual-button').style.fontWeight = "bold";
+            document.querySelector('#benchmark-button').style.fontWeight = "normal";
+        }
+        function selectBenchmark() {
+            document.querySelector('#manual').style.display = "none";
+            document.querySelector('#benchmark').style.display = "block";
+            document.querySelector('#manual-button').style.fontWeight = "normal";
+            document.querySelector('#benchmark-button').style.fontWeight = "bold";
+        }
+        function onload() {
+            selectManual();
+            main();
+        }
+    </script>
+  </head>
+<body onload="onload()">
+  <H1>Multithreaded NVIDIA Vertex Buffer Object demo</H1>
+  <div id="header">
+    <ul>
+        <li> <a href="#" id="manual-button" onclick="selectManual()">Manual</a></li>
+        <li> <a href="#" id="benchmark-button" onclick="selectBenchmark()">Benchmark</a></li>
+    </ul>
+  </div>
+  <div id="manual" class="tabpage">
+    <h3>Settings</h3>
+    <input type="checkbox" id="workerBoolean" checked="checked" />
+    Use workers?<br />
+    <input type="checkbox" id="transferablesBoolean" checked="checked" />
+    Use transferrables (only relevant with workers and if browser supports)?
+    <br />
+    Worker count? <input type="text" id="workerCount" value="3" /><br /><br />
+    <input type="submit" value="use settings" onclick="updateSettings();" />
+    <h3>Stats</h3>
+    <div id="fps"></div>
+    <div id="vps"></div>
+    <br/>
+  </div>
+ <div id="benchmark" class="tabpage">
+    <h3>Benchmark</h3>
+    <p>This benchmark will run the demo in a number of configurations and print
+       the results below.</p>
+     <p>(If, after benchmarking, you want to go back to normal
+       fiddling first refresh the page).</p>
+    <input type="button" value="Benchmark" onclick="start_benchmark()" />
+    <div id="benchresults">Results will appear here</div>
+  </div>
+  <div id="container" style="text-align: center">
+    <canvas id="c" width="1024" height="1024">
+      </canvas>
+  </div>
+   <div>
+    <br /><br />
+
+    <h3>Keyboard Controls</h3>
+    'p': toggle points. <br>
+    'w': toggle wireframe. <br>
+    'h'/'H': increase/decrease high frequency scaling factor. <br>
+    'l'/'L': increase/decrease low frequency scaling factor. <br>
+    '1'/'2': increase/decrease low frequency. <br>
+    '3'/'4': increase/decrease high frequency. <br>
+    '5'/'6': increase/decrease low frequency phase rate. <br>
+    '7'/'8': increase/decrease high frequency phase rate. <br>
+    't'/'T': increase/decrease mesh density. <br /><br />
+
+
+ 
+    <script id="vertexShader" type="x-glsl-shader/x-vertex">
+// Per-vertex phong shader
+uniform mat4 worldViewProjection;
+uniform vec3 lightWorldPos;
+uniform vec4 lightColor;
+
+uniform mat4 world;
+uniform mat4 viewInverse;
+uniform mat4 worldInverseTranspose;
+
+uniform vec4 emissiveColor;
+uniform vec4 ambientColor;
+uniform vec4 diffuseColor;
+uniform vec4 specularColor;
+uniform float shininess;
+uniform float specularFactor;
+
+attribute vec3 g_Position;
+attribute vec3 g_Normal;
+
+varying vec4 v_color;
+
+vec4 lit(float n_dot_l, float n_dot_h, float m) {
+  return vec4(1.,
+              clamp(n_dot_l, 0., 1.),
+              // FIXME: approximation to
+              // (n_dot_l < 0) || (n_dot_h < 0)
+              pow(clamp(n_dot_h, 0., 1.), m),
+              1.);
+}
+
+void main() {
+  vec4 position = vec4(g_Position, 1.);
+  vec4 worldPosition = world * position;
+  vec3 normal = normalize((worldInverseTranspose *
+                           vec4(g_Normal, 0.)).xyz);
+  vec3 surfaceToLight = normalize(lightWorldPos - worldPosition.xyz);
+  vec3 surfaceToView = normalize((viewInverse[3] - worldPosition).xyz);
+  vec3 halfVector = normalize(surfaceToLight + surfaceToView);
+  vec4 litR = lit(dot(normal, surfaceToLight),
+                  dot(normal, halfVector), shininess);
+  v_color =
+      vec4((emissiveColor +
+            lightColor * (ambientColor * litR.x +
+                          diffuseColor * litR.y +
+                          specularColor * litR.z * specularFactor)).rgb,
+           diffuseColor.a);
+  gl_Position = worldViewProjection * position;
+}
+    </script>
+    <script id="fragmentShader" type="x-glsl-shader/x-fragment">
+precision mediump float;
+varying vec4 v_color;
+
+void main() {
+  gl_FragColor = v_color;
+}
+    </script>
+</body>
+</html>

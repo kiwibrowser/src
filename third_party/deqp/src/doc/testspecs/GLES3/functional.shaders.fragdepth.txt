@@ -1,0 +1,54 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    gl_FragDepth tests
+
+Tests:
+ + dEQP-GLES3.functional.shaders.fragdepth.*
+
+Includes:
+ + gl_FragDepth usage in following scenarios:
+   - Unconditional write
+   - Conditional write
+   - Write in loop
+   - Write in user-defined function
+   - Discard before and after write
+ + Depth comparison with gl_FragDepth write
+ + gl_FragDepth use when rendering triangles
+
+Excludes:
+ + Depth value conversion accuracy tests
+ + gl_FragDepth use when rendering points and lines
+
+Description:
+
+For comparison cases depth buffer is first initialized by rendering
+two adjecent quads. Left one will fill depth buffer with constant value,
+while right quad fills with value that is interpolated in range 0..1.
+Color buffer is filled with blue color.
+Single quad with a selected shader and depth comparison mode is rendered.
+Where depth test passes, green value will be written to color buffer.
+
+For depth write-only cases the selected shader is used to initialize
+the depth buffer by rendering a simple quad. After that depth buffer
+is visualized by rendering multiple viewport-sized quads with a different
+colors and depth values in such manner that each depth range slice
+will end up showing in color buffer with a distinct color.
+
+In both test types rendered image is compared against a reference image
+produced by a reference renderer.

@@ -1,0 +1,18 @@
+author: Armand Navabi
+email: navabi@chromium.org
+
+This file is checked in so that the add-ons directory does not need to be
+recreated during ant builds.  This was causing flaky failures (i.e. build
+breaks) on the bots when the android_tools directory was being deleted and then
+re-checked out.  Here is an example:
+
+http://build.chromium.org/p/chromium/builders/Android%20Builder/builds/12735/steps/compile/logs/stdio
+
+One possible reason is that multiple parallel processes are trying to create the
+directory and one fails. By having the directory checked in, the SDK build will
+not attempt to create the directory, and will not cause the error (it first
+checks if the directory exists and if so it goes to the next step).
+
+Besides providing an explanation for the add-ons directory, this README file is
+lets us checkin that directory since git will not allow checkins of empty
+directories.

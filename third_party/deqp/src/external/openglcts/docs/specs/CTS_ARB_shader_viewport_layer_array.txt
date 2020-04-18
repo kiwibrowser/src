@@ -1,0 +1,70 @@
+Conformance Test
+
+    CTS_ARB_shader_viewport_layer_array
+
+Contributors
+
+    Filip Demczewski, Mobica
+
+Contacts
+
+    Filip Demczewski, Mobica (filip.demczewski 'at' mobica.com)
+
+Status
+
+    In review
+
+Version
+
+    December 13, 2016 (version 1)
+
+Dependencies
+
+    OpenGL 4.1 is required.
+
+    ARB_shader_viewport_layer_array extension is required.
+
+    This specification is written against:
+      - ARB_shader_viewport_layer_array specification,
+      - OpenGL 4.5 (core) specification.
+
+Overview
+
+    This tests verifies if functionality provided by ARB_shader_viewport_layer_array
+    works as expected:
+
+      * Verify if gl_Layer and gl_ViewportIndex outputs can be written directly from
+        vertex and tessalation shaders
+
+New Tests
+
+    gl_ViewportIndex test
+
+      * Create multiple viewports (MAX_VIEWPORTS)
+        Iterate through all supported shader pipelines
+        a) vertex + fragment
+        b) vertex + tcs + tes + fragment
+        c) vertex + tcs + tes + geometry + fragment
+            Render primitive for each viewport with different output color.
+            Validate output color for each viewport.
+            Make sure that viewport index is taken from the gl_ViewportIndex output
+            of the last active vertex processing stage.
+
+    gl_Layer test
+
+      * Create framebuffer with multiple layers
+        Iterate through all supported shader pipelines
+        a) vertex + fragment
+        b) vertex + tcs + tes + fragment
+        c) vertex + tcs + tes + geometry + fragment
+            Render primitive for each layer with different output color.
+            Validate output color for each layer.
+            Make sure that layer is taken from the gl_Layer output
+            of the last active vertex processing stage.
+            Make sure that the layer number written by a vertex procesing
+            shader has no effect if the framebuffer is not layered.
+
+Revision History
+
+    Revision 1, 13 December, 2016 (Filip Demczewski)
+      - Intial version;

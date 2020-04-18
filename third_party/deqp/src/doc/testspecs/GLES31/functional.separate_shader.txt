@@ -1,0 +1,88 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Separate shader object tests
+
+Tests:
+ + dEQP-GLES31.separate_shader.*
+
+Includes:
+
+ + Single-program and two-program pipelines
+ + Replacement of pipeline stages
+ + Independence of homonymous uniforms and constants in the pipeline's
+   programs
+ + Interface compatibility between shader stages
+ + glProgramUniform on the pipeline's stages
+ + glCreateShaderProgram
+ + glActiveShaderProgram
+ + glBindProgramPipeline vs glUseProgram priority
+ + glGetProgramPipelineiv queries:
+   - GL_ACTIVE_PROGRAM
+   - GL_VERTEX_SHADER
+   - GL_FRAGMENT_SHADER
+
+Excludes:
+
+ + Testing pipeline rendering against a hardware-independent reference
+   renderer
+
+
+The "api.current_program_priority" test case checks that a bound pipeline
+has no effect when there is a current program. The test creates a program
+pipeline and a differently behaving monolithic program. It then calls
+glUseProgram and and glBindProgramPipeline and draws a triangle. The
+resulting image is compared to a reference image drawn with the program
+but without a bound program pipeline.
+
+The "api.active_program_uniform" test case creates a pipeline and a
+program, binds the pipeline and sets that program as the pipeline's active
+program. After this, glUniform is called and a triangle is drawn. The
+resulting image is compared to a reference image from a similar program
+whose uniform was set after glUseProgram.
+
+The "api.pipeline_programs" test case checks that glGetProgramPipelineiv
+returns the correct programs for vertex and shader stages.
+
+The "api.pipeline_active" test case checks that glGetProgramPipelineiv
+returns the program that was set as the pipeline's active program.
+
+
+The following tests create a program pipeline with one or two programs,
+and then possibly replace either or both of the stages with a new
+single-shader program. A triangle is drawn with the pipeline and the
+result is compared to a triangle drawn with an equivalent monolithic
+program.
+
+In the "pipeline.*" test cases the shaders have uniforms or constants, but
+no varyings. The variables in distinct programs may have the same name.
+
+In the "program_uniform.*" test cases the shaders have uniforms which are
+set with glProgramUniform.
+
+In the "create_shader_program.*" test cases the single-shader programs in
+the pipeline are created with glCreateShaderProgram.
+
+In the "interface.*" test cases there is a varying between the vertex and
+fragment shaders. The declarations of the vertex output and fragment input
+variables may have different qualifiers or names.
+
+The "random.*" test cases create random pipeline configurations that mix
+properties of the previous test case groups. The shaders may have zero,
+one or more varyings. The values of different varyings are rendered as
+diagonal stripes in the drawn triangle.

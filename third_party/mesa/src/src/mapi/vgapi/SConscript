@@ -1,0 +1,60 @@
+#######################################################################
+# SConscript for vgapi
+
+from sys import executable as python_cmd
+
+Import('*')
+
+env = env.Clone()
+
+vgapi_header = env.CodeGenerate(
+    target = '#src/mapi/vgapi/vgapi_tmp.h',
+    script = '../mapi/mapi_abi.py',
+    source = 'vgapi.csv',
+    command = python_cmd + ' $SCRIPT --printer vgapi --mode lib $SOURCE > $TARGET'
+)
+
+env.Append(CPPDEFINES = [
+    'MAPI_ABI_HEADER=\\"vgapi/vgapi_tmp.h\\"',
+    'MAPI_DLL_EXPORTS',
+    'KHRONOS_DLL_EXPORTS',
+])
+
+env.Append(CPPPATH = [
+    '#/include',
+    '#/src/mapi',
+])
+
+mapi_sources = [
+    'entry.c',
+    'mapi.c',
+    'stub.c',
+    'table.c',
+    'u_current.c',
+    'u_execmem.c',
+]
+
+vgapi_objects = []
+for s in mapi_sources:
+    o = env.SharedObject(s[:-2], '../mapi/' + s)
+    vgapi_objects.append(o)
+
+env.Depends(vgapi_objects, vgapi_header)
+
+# libOpenVG.dll
+env['LIBPREFIX'] = 'lib'
+env['SHLIBPREFIX'] = 'lib'
+
+openvg = env.SharedLibrary(
+    target = 'OpenVG',
+    source = vgapi_objects,
+)
+
+env.InstallSharedLibrary(openvg, version=(1, 0, 0))
+
+if env['platform'] == 'windows':
+    openvg = env.FindIxes(openvg, 'LIBPREFIX', 'LIBSUFFIX')
+else:
+    openvg = env.FindIxes(openvg, 'SHLIBPREFIX', 'SHLIBSUFFIX')
+
+Export(['openvg'])

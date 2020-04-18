@@ -1,0 +1,23 @@
+#! /usr/bin/env python
+# Copyright 2015 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import os
+import subprocess
+import sys
+
+sys.path.append(os.path.dirname(os.path.realpath(__file__)))
+import packaging
+
+
+def main():
+  root_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+  with packaging.TempAppDir(root_dir, symlinks=False) as temp_app_dir:
+    yaml_files = list(packaging.Yamls(temp_app_dir))
+    args = ['gcloud', 'app', 'deploy'] + yaml_files + sys.argv[1:]
+    subprocess.call(args, cwd=temp_app_dir)
+
+
+if __name__ == '__main__':
+  main()

@@ -1,0 +1,323 @@
+# -------------------------------------------------
+# drawElements Quality Program OpenGL ES 3.2 Module
+# -------------------------------------------------
+#
+# Copyright 2016 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+case duplicate_location
+	expect compile_or_link_fail
+	version 320 es
+	values { output float out0 = 0.0; }
+
+	both ""
+		#version 320 es
+		precision highp float;
+		layout(location = 0) uniform float uni0;
+		layout(location = 0) uniform float uni1;
+		${DECLARATIONS}
+
+		void main()
+		{
+			out0 = uni0 + uni1;
+			${OUTPUT}
+		}
+	""
+end
+
+case duplicate_location_unused
+	expect compile_or_link_fail
+	version 320 es
+	values { output float out0 = 0.0; }
+
+	both ""
+		#version 320 es
+		precision highp float;
+		layout(location = 0) uniform float uni0;
+		layout(location = 0) uniform float uni1;
+		${DECLARATIONS}
+
+		void main()
+		{
+			out0 = 0.0;
+			${OUTPUT}
+		}
+	""
+end
+
+case duplicate_location_split
+	expect compile_or_link_fail
+	version 320 es
+	values{ output float out0 = 0.0; }
+
+	vertex ""
+		#version 320 es
+		precision highp float;
+		layout(location = 0) uniform float uni0;
+
+		in highp vec4 dEQP_Position;
+
+		void main()
+		{
+			gl_Position = dEQP_Position;
+		}
+	""
+
+	fragment ""
+		#version 320 es
+		precision highp float;
+		layout(location = 0) uniform float uni1;
+
+		layout(location = 0) out mediump vec4 dEQP_FragColor;
+
+		void main()
+		{
+			dEQP_FragColor = vec4(1);
+		}
+	""
+end
+
+case array_overlap
+	expect compile_or_link_fail
+	version 320 es
+	values { output float out0 = 0.0; }
+
+	both ""
+		#version 320 es
+		precision highp float;
+		layout(location = 0) uniform float uni0[8];
+		layout(location = 5) uniform float uni1;
+		${DECLARATIONS}
+
+		void main()
+		{
+			out0 = uni0[0] + uni1;
+			${OUTPUT}
+		}
+	""
+end
+
+case array_overlap_unused
+	expect compile_or_link_fail
+	version 320 es
+	values { output float out0 = 0.0; }
+
+	both ""
+		#version 320 es
+		precision highp float;
+		layout(location = 0) uniform float uni0[8];
+		layout(location = 5) uniform float uni1;
+		${DECLARATIONS}
+
+		void main()
+		{
+			out0 = 0.0;
+			${OUTPUT}
+		}
+	""
+end
+
+case array_overlap_split
+	expect compile_or_link_fail
+	version 320 es
+	values{ output float out0 = 0.0; }
+
+	vertex ""
+		#version 320 es
+		precision highp float;
+		layout(location = 0) uniform float uni0[8];
+
+		in highp vec4 dEQP_Position;
+
+		void main()
+		{
+			gl_Position = dEQP_Position;
+		}
+	""
+
+	fragment ""
+		#version 320 es
+		precision highp float;
+		layout(location = 7) uniform float uni1[4];
+
+		layout(location = 0) out mediump vec4 dEQP_FragColor;
+
+		void main()
+		{
+			dEQP_FragColor = vec4(1);
+		}
+	""
+end
+
+case struct_overlap
+	expect compile_or_link_fail
+	version 320 es
+	values { output float out0 = 0.0; }
+
+	both ""
+		#version 320 es
+		precision highp float;
+
+		struct S
+		{
+			vec4 a;
+			int  b;
+			mat4 c;
+		};
+
+		layout(location = 0) uniform S uni0;
+		layout(location = 2) uniform float uni1;
+		${DECLARATIONS}
+
+		void main()
+		{
+			out0 = uni0.a.x + uni1;
+			${OUTPUT}
+		}
+	""
+end
+
+case struct_overlap_unused
+	expect compile_or_link_fail
+	version 320 es
+	values { output float out0 = 0.0; }
+
+	both ""
+		#version 320 es
+		precision highp float;
+
+		struct S
+		{
+			vec4 a;
+			int  b;
+			mat4 c;
+		};
+
+		layout(location = 0) uniform S uni0;
+		layout(location = 2) uniform float uni1;
+		${DECLARATIONS}
+
+		void main()
+		{
+			out0 = 0.0;
+			${OUTPUT}
+		}
+	""
+end
+
+case struct_overlap_split
+	expect compile_or_link_fail
+	version 320 es
+	values{ output float out0 = 0.0; }
+
+	vertex ""
+		#version 320 es
+		precision highp float;
+
+		struct S
+		{
+			vec4 a;
+			int  b;
+			uint c;
+			vec2 d;
+		};
+
+		layout(location = 7) uniform S uni0;
+		layout(location = 12) uniform float uni2;
+
+		in highp vec4 dEQP_Position;
+
+		void main()
+		{
+			gl_Position = dEQP_Position;
+		}
+	""
+
+	fragment ""
+		#version 320 es
+		precision highp float;
+		layout(location = 9) uniform float uni1[4];
+
+		layout(location = 0) out mediump vec4 dEQP_FragColor;
+
+		void main()
+		{
+			dEQP_FragColor = vec4(1);
+		}
+	""
+end
+
+case complex_overlap
+	expect compile_or_link_fail
+	version 320 es
+	values { output float out0 = 0.0; }
+
+	both ""
+		#version 320 es
+		precision highp float;
+
+		struct S // size 2
+		{
+			vec3 a;
+			float b;
+		};
+
+		struct T // size 5
+		{
+			S s[2];
+			mat2 a;
+		};
+
+		struct U // size 6
+		{
+			S s;
+			float a[4];
+		};
+
+		layout(location = 0) uniform S  uni0; // good
+		layout(location = 1) uniform T  uni1; // bad
+		layout(location = 6) uniform T  uni2; // good
+		layout(location = 11) uniform U uni3[3]; // good
+		layout(location = 20) uniform S uni4; // bad
+		layout(location = 28) uniform int uni5; // bad
+		${DECLARATIONS}
+
+		void main()
+		{
+			out0 = 0.0;
+			${OUTPUT}
+		}
+	""
+end
+
+case atomic
+	# \todo [2014-02-14 otto] invalid layout qualifier is generally a compiler error but spec does not yet say that this should be an error. Verify & fix once final 3.1 spec is out
+	expect compile_fail
+	version 320 es
+	values { output float out0 = 0.0; }
+
+	both ""
+		#version 320 es
+		precision highp float;
+		layout(location = 3, binding = 0, offset = 0) uniform atomic_uint uni0;
+		${DECLARATIONS}
+
+		void main()
+		{
+			out0 = 0.0;
+			${OUTPUT}
+		}
+	""
+end

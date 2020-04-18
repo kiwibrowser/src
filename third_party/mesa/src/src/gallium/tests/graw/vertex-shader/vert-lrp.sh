@@ -1,0 +1,14 @@
+VERT
+
+DCL IN[0]
+DCL IN[1]
+DCL OUT[0], POSITION
+DCL OUT[1], COLOR
+
+DCL TEMP[0]
+
+ABS TEMP[0], IN[0]
+MOV OUT[0], IN[0]
+LRP OUT[1], TEMP[0], IN[1].xxxx, IN[1].yyyy
+
+END

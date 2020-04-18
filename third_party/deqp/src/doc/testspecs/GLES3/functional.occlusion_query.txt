@@ -1,0 +1,50 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Occlusion query tests
+
+Tests:
+ + dEQP-GLES3.functional.occlusion_query.*
+
+Includes:
+ + Following occluder types are tested:
+	- Scissor boxes
+	- Depth writes and clears
+	- Stencil writes and clears
+ + Exact occlusion query result verification
+	- For query target ANY_SAMPLES_PASSED
+ + Conservative occlusion query result verification
+	- For query target ANY_SAMPLES_PASSED_CONSERVATIVE
+
+Excludes:
+
+Description:
+
+Occlusion query tests operate using the following steps. First, a number
+of occluders are drawn on screen. Occluders can be areas around scissor
+boxes, depth writes/clears or stencil writes/clears. Second, a number of
+target primitives are drawn in red. If any target is visible, i.e. red
+color appears in the framebuffer, the occlusion query should return true.
+If targets are invisible, i.e. red color does not appear in the
+framebuffer, the  occlusion query should return false. If these conditions
+are not met, the test fails.
+
+If the occlusion query target is ANY_SAMPLES_PASSED_CONSERVATIVE, the test
+allows false positives, i.e. the occlusion query can return true even if
+red color is not present in the framebuffer. The converse is not allowed:
+if red color is present in the framebuffer, the query must return true.

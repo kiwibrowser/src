@@ -1,0 +1,43 @@
+// Copyright 2018 The Chromium OS Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+option optimize_for = LITE_RUNTIME;
+
+package vm_tools.apps;
+
+// Corresponds to a .desktop file from the Desktop Entry Spec:
+// https://www.freedesktop.org/wiki/Specifications/desktop-entry-spec/
+message App {
+  // A "localestring". Entries with a locale should set the |locale| field to
+  // the value inside the [] and the default entry should leave it empty. The
+  // browser is responsible for mapping this to something it can use.
+  message LocaleString {
+    message Entry {
+      string locale = 1;
+      string value = 2;
+    }
+    repeated Entry values = 1;
+  }
+
+  string desktop_file_id = 1;
+
+  // These fields map directly to keys from the Desktop Entry spec.
+  LocaleString name = 2;
+  LocaleString comment = 3;
+  repeated string mime_types = 4;
+  bool no_display = 5;
+  string startup_wm_class = 6;
+  bool startup_notify = 7;
+}
+
+message ApplicationList {
+  repeated App apps = 1;
+
+  string vm_name = 2;
+  string container_name = 3;
+
+  // The owner of the vm and container.
+  string owner_id = 4;
+}

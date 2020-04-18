@@ -1,0 +1,198 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>VMware guest GL driver</title>
+  <link rel="stylesheet" type="text/css" href="mesa.css">
+</head>
+<body>
+
+<h1>VMware guest GL driver</h1>
+
+<p>
+This page describes how to build, install and use the
+<a href="http://www.vmware.com/" target="_parent">VMware</a> guest GL driver
+(aka the SVGA or SVGA3D driver) for Linux using the latest source code.
+This driver gives a Linux virtual machine access to the host's GPU for
+hardware-accelerated 3D.
+VMware Workstation running on Linux or Windows and VMware Fusion running on
+MacOS are all supported.
+</p>
+
+<p>
+End users shouldn't have to go through all these steps once the driver is
+included in newer Linux distributions.
+</p>
+
+<p>
+For more information about the X components see these wiki pages at x.org:
+</p>
+<ul>
+<li><a href="http://wiki.x.org/wiki/vmware" target="_parent">
+Driver Overview</a>
+<li><a href="http://wiki.x.org/wiki/vmware/vmware3D" target="_parent">
+xf86-video-vmware Details</a>
+</ul>
+
+
+<h2>Components</h2>
+
+The components involved in this include:
+<ul>
+<li>Linux kernel module: vmwgfx
+<li>X server 2D driver: xf86-video-vmware
+<li>User-space libdrm library
+<li>Mesa/gallium OpenGL driver: "svga"
+</ul>
+
+
+<h2>Prerequisites</h2>
+
+<ul>
+<li>Kernel version at least 2.6.25 
+<li>Xserver version at least 1.7 
+<li>Ubuntu: For ubuntu you need to install a number of build dependencies. 
+  <pre>
+  sudo apt-get install git-core
+  sudo apt-get install automake libtool libpthread-stubs0-dev
+  sudo apt-get install xserver-xorg-dev x11proto-xinerama-dev libx11-xcb-dev
+  sudo apt-get install libxcb-glx0-dev libxrender-dev
+  sudo apt-get build-dep libgl1-mesa-dri libxcb-glx0-dev
+  </pre>
+<li>Fedora: For Fedora you also need to install a number of build dependencies. 
+  <pre>
+  sudo yum install mesa-libGL-devel xorg-x11-server-devel xorg-x11-util-macros
+  sudo yum install libXrender-devel.i686
+  sudo yum install automake gcc libtool expat-devel kernel-devel git-core
+  sudo yum install makedepend flex bison
+  </pre>
+</ul>
+
+<p>
+Depending on your Linux distro, other packages may be needed.
+The configure scripts should tell you what's missing.
+</p>
+
+
+
+<h2>Getting the Latest Source Code</h2>
+
+Begin by saving your current directory location:
+  <pre>
+  export TOP=$PWD
+  </pre>
+
+<ul>
+<li>Mesa/Gallium master branch. This code is used to build libGL, and the direct rendering svga driver for libGL, vmwgfx_dri.so, and the X acceleration library libxatracker.so.x.x.x. 
+  <pre>
+  git clone git://anongit.freedesktop.org/git/mesa/mesa
+  </pre>
+<li>VMware Linux guest kernel module. Note that this repo contains the complete DRM and TTM code. The vmware-specific driver is really only the files prefixed with vmwgfx. 
+  <pre>
+  git clone git://anongit.freedesktop.org/git/mesa/vmwgfx
+  </pre>
+
+<li>libdrm, A user-space library that interfaces with drm. Most distros ship with this driver. Safest bet is really to replace the system one. Optionally you can point LIBDRM_CFLAGS and LIBDRM_LIBS to the libdrm-2.4.22 package in toolchain. But here, we replace: 
+  <pre>
+  git clone git://anongit.freedesktop.org/git/mesa/drm
+  </pre>
+<li>xf86-video-vmware. The chainloading driver, vmware_drv.so, the legacy driver vmwlegacy_drv.so, and the vmwgfx driver vmwgfx_drv.so. 
+  <pre>
+  git clone git://anongit.freedesktop.org/git/xorg/driver/xf86-video-vmware
+  </pre>
+</ul>
+
+
+<h2>Building the Code</h2>
+
+<ul>
+<li>Build libdrm: If you're on a 32-bit system, you should skip the --libdir configure option. Note also the comment about toolchain libdrm above. 
+  <pre>
+  cd $TOP/drm
+  ./autogen.sh --prefix=/usr --enable-vmwgfx-experimental-api --libdir=/usr/lib64
+  make
+  sudo make install
+  </pre>
+<li>Build Mesa and the vmwgfx_dri.so driver, the vmwgfx_drv.so xorg driver, the X acceleration library libxatracker.
+The vmwgfx_dri.so is used by the OpenGL libraries during direct rendering,
+and by the Xorg server during accelerated indirect GL rendering.
+The libxatracker library is used exclusively by the X server to do render,
+copy and video acceleration:
+<br>
+The following configure options doesn't build the EGL system.
+<br>
+As before, if you're on a 32-bit system, you should skip the --libdir
+configure option.
+  <pre>
+  cd $TOP/mesa
+  ./autogen.sh --prefix=/usr --libdir=/usr/lib64 --with-gallium-drivers=svga --with-dri-drivers= --enable-xa
+  make
+  sudo make install
+  </pre>
+
+Note that you may have to install other packages that Mesa depends upon
+if they're not installed in your system.  You should be told what's missing.
+<br>
+<br>
+
+<li>xf86-video-vmware: Now, once libxatracker is installed, we proceed with building and replacing the current Xorg driver. First check if your system is 32- or 64-bit. If you're building for a 32-bit system, you will not be needing the --libdir=/usr/lib64 option to autogen. 
+  <pre>
+  cd $TOP/xf86-video-vmware
+  ./autogen.sh --prefix=/usr --libdir=/usr/lib64
+  make
+  sudo make install
+  </pre>
+<li>vmwgfx kernel module. First make sure that any old version of this kernel module is removed from the system by issuing
+  <pre>
+  sudo rm /lib/modules/`uname -r`/kernel/drivers/gpu/drm/vmwgfx.ko*
+  </pre>
+Then 
+  <pre>
+  cd $TOP/vmwgfx
+  make
+  sudo make install
+  sudo cp 00-vmwgfx.rules /etc/udev/rules.d
+  sudo depmod -ae
+  </pre>
+</ul>
+
+
+Now try to load the kernel module by issuing
+  <pre>
+  sudo modprobe vmwgfx</pre>
+Then type 
+  <pre>
+  dmesg</pre>
+to watch the debug output. It should contain a number of lines prefixed with "[vmwgfx]". 
+
+<p>
+Then restart the Xserver (or reboot).
+The lines starting with "vmwlegacy" or "VMWARE" in the file /var/log/Xorg.0.log
+should now have been replaced with lines starting with "vmwgfx", indicating that
+the new Xorg driver is in use. 
+</p>
+
+
+<h2>Running OpenGL Programs</h2>
+
+<p>
+In a shell, run 'glxinfo' and look for the following to verify that the
+driver is working:
+</p>
+
+<pre>
+OpenGL vendor string: VMware, Inc.
+OpenGL renderer string: Gallium 0.4 on SVGA3D; build: RELEASE;
+OpenGL version string: 2.1 Mesa 8.0
+</pre>
+
+<p>
+If you don't see this, try setting this environment variable:
+  <pre>
+  export LIBGL_DEBUG=verbose</pre>
+<p>
+then rerun glxinfo and examine the output for error messages.
+</p>
+
+</body>
+</html>

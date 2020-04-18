@@ -1,0 +1,286 @@
+'\" t
+.\"     Title: xdg-mime
+.\"    Author: Kevin Krammer
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
+.\"      Date: 12/31/2010
+.\"    Manual: xdg-mime Manual
+.\"    Source: xdg-utils 1.0
+.\"  Language: English
+.\"
+.TH "XDG\-MIME" "1" "12/31/2010" "xdg-utils 1.0" "xdg-mime Manual"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+xdg-mime \- command line tool for querying information about file type handling and adding descriptions for new file types
+.SH "SYNOPSIS"
+.HP \w'\fBxdg\-mime\fR\ 'u
+\fBxdg\-mime\fR query {filetype | default} \&.\&.\&.
+.HP \w'\fBxdg\-mime\fR\ 'u
+\fBxdg\-mime\fR default \fIapplication\fR \fImimetype(s)\fR
+.HP \w'\fBxdg\-mime\fR\ 'u
+\fBxdg\-mime\fR install [\fB\-\-mode\ \fR\fB\fImode\fR\fR] [\fB\-\-novendor\fR] \fImimetypes\-file\fR
+.HP \w'\fBxdg\-mime\fR\ 'u
+\fBxdg\-mime\fR uninstall [\fB\-\-mode\ \fR\fB\fImode\fR\fR] \fImimetypes\-file\fR
+.HP \w'\fBxdg\-mime\fR\ 'u
+\fBxdg\-mime\fR {\fB\-\-help\fR | \fB\-\-manual\fR | \fB\-\-version\fR}
+.SH "DESCRIPTION"
+.PP
+The xdg\-mime program can be used to query information about file types and to add descriptions for new file types\&.
+.SH "COMMANDS"
+.PP
+query
+.RS 4
+Returns information related to file types\&.
+.sp
+The
+\fIquery\fR
+option is for use inside a desktop session only\&. It is not recommended to use xdg\-mime query as root\&.
+.sp
+The following queries are supported:
+.sp
+query filetype
+\fIFILE\fR: Returns the file type of
+\fIFILE\fR
+in the form of a MIME type\&.
+.sp
+query default
+\fImimetype\fR: Returns the default application that the desktop environment uses for opening files of type
+\fImimetype\fR\&. The default application is identified by its *\&.desktop file\&.
+.RE
+.PP
+default
+.RS 4
+Ask the desktop environment to make
+\fIapplication\fR
+the default application for opening files of type
+\fImimetype\fR\&. An application can be made the default for several file types by specifying multiple mimetypes\&.
+.sp
+
+\fIapplication\fR
+is the desktop file id of the application and has the form vendor\-name\&.desktop
+\fIapplication\fR
+must already be installed in the desktop menu before it can be made the default handler\&. The aplication\*(Aqs desktop file must list support for all the MIME types that it wishes to be the default handler for\&.
+.sp
+Requests to make an application a default handler may be subject to system policy or approval by the end\-user\&. xdg\-mime query can be used to verify whether an application is the actual default handler for a specific file type\&.
+.sp
+The
+\fIdefault\fR
+option is for use inside a desktop session only\&. It is not recommended to use xdg\-mime default as root\&.
+.RE
+.PP
+install
+.RS 4
+Adds the file type descriptions provided in
+\fImimetypes\-file\fR
+to the desktop environment\&.
+\fImimetypes\-file\fR
+must be a XML file that follows the freedesktop\&.org Shared MIME\-info Database specification and that has a mime\-info element as its document root\&. For each new file type one or more icons with name
+\fItype\fR\-\fIsubtype\fR
+must be installed with the
+\fBxdg\-icon\-resource\fR
+command in the
+\fImimetypes\fR
+context\&. For example the filetype application/vnd\&.oasis\&.opendocument\&.text requires an icon named application\-vnd\&.oasis\&.opendocument\&.text to be installed (unless the file type recommends another icon name)\&.
+.RE
+.PP
+uninstall
+.RS 4
+Removes the file type descriptions provided in
+\fImimetypes\-file\fR
+and previously added with
+\fBxdg\-mime install\fR
+from the desktop environment\&.
+\fImimetypes\-file\fR
+must be a XML file that follows the freedesktop\&.org Shared MIME\-info Database specification and that has a mime\-info element as its document root\&.
+.RE
+.SH "OPTIONS"
+.PP
+\fB\-\-mode\fR \fImode\fR
+.RS 4
+\fImode\fR
+can be
+\fIuser\fR
+or
+\fIsystem\fR\&. In user mode the file is (un)installed for the current user only\&. In system mode the file is (un)installed for all users on the system\&. Usually only root is allowed to install in system mode\&.
+.sp
+The default is to use system mode when called by root and to use user mode when called by a non\-root user\&.
+.RE
+.PP
+\fB\-\-novendor\fR
+.RS 4
+Normally, xdg\-mime checks to ensure that the
+\fImimetypes\-file\fR
+to be installed has a proper vendor prefix\&. This option can be used to disable that check\&.
+.sp
+A vendor prefix consists of alpha characters ([a\-zA\-Z]) and is terminated with a dash ("\-")\&. Companies and organizations are encouraged to use a word or phrase, preferably the organizations name, for which they hold a trademark as their vendor prefix\&. The purpose of the vendor prefix is to prevent name conflicts\&.
+.RE
+.PP
+\fB\-\-help\fR
+.RS 4
+Show command synopsis\&.
+.RE
+.PP
+\fB\-\-manual\fR
+.RS 4
+Show this manualpage\&.
+.RE
+.PP
+\fB\-\-version\fR
+.RS 4
+Show the xdg\-utils version information\&.
+.RE
+.SH "ENVIRONMENT VARIABLES"
+.PP
+xdg\-mime honours the following environment variables:
+.PP
+XDG_UTILS_DEBUG_LEVEL
+.RS 4
+Setting this environment variable to a non\-zero numerical value makes xdg\-mime do more verbose reporting on stderr\&. Setting a higher value increases the verbosity\&.
+.RE
+.PP
+XDG_UTILS_INSTALL_MODE
+.RS 4
+This environment variable can be used by the user or administrator to override the installation mode\&. Valid values are
+\fIuser\fR
+and
+\fIsystem\fR\&.
+.RE
+.SH "EXIT CODES"
+.PP
+An exit code of 0 indicates success while a non\-zero exit code indicates failure\&. The following failure codes can be returned:
+.PP
+\fB1\fR
+.RS 4
+Error in command line syntax\&.
+.RE
+.PP
+\fB2\fR
+.RS 4
+One of the files passed on the command line did not exist\&.
+.RE
+.PP
+\fB3\fR
+.RS 4
+A required tool could not be found\&.
+.RE
+.PP
+\fB4\fR
+.RS 4
+The action failed\&.
+.RE
+.PP
+\fB5\fR
+.RS 4
+No permission to read one of the files passed on the command line\&.
+.RE
+.SH "SEE ALSO"
+.PP
+\fBxdg-icon-resource\fR(1),
+\fBxdg-desktop-menu\fR(1)
+.SH "EXAMPLES"
+.PP
+
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+xdg\-mime query filetype /tmp/foobar\&.png
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+Prints the MIME type of the file /tmp/foobar\&.png, in this case image/png
+.PP
+
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+xdg\-mime query default image/png
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+Prints the \&.desktop filename of the application which is registered to open PNG files\&.
+.PP
+
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+xdg\-mime install shinythings\-shiny\&.xml
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+Adds a file type description for "shiny"\-files\&. "shinythings\-" is used as the vendor prefix\&. The file type description could look as folows\&.
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+shinythings\-shiny\&.xml:
+
+<?xml version="1\&.0"?>
+<mime\-info xmlns=\*(Aqhttp://www\&.freedesktop\&.org/standards/shared\-mime\-info\*(Aq>
+  <mime\-type type="text/x\-shiny">
+    <comment>Shiny new file type</comment>
+    <glob pattern="*\&.shiny"/>
+    <glob pattern="*\&.shi"/>
+  </mime\-type>
+</mime\-info>
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+An icon for this new file type must also be installed, for example with:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+xdg\-icon\-resource install \-\-context mimetypes \-\-size 64 shiny\-file\-icon\&.png text\-x\-shiny
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.SH "AUTHORS"
+.PP
+\fBKevin Krammer\fR
+.RS 4
+Author.
+.RE
+.PP
+\fBJeremy White\fR
+.RS 4
+Author.
+.RE
+.SH "COPYRIGHT"
+.br
+Copyright \(co 2006
+.br

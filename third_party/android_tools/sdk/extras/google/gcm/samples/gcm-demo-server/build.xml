@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  - Copyright 2012 Google Inc.
+  -
+  - Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  - use this file except in compliance with the License. You may obtain a copy
+  - of the License at
+  -
+  - http://www.apache.org/licenses/LICENSE-2.0
+  -
+  - Unless required by applicable law or agreed to in writing, software
+  - distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  - WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  - License for the specific language governing permissions and limitations
+  - under the License.
+-->
+<project name="gcm-demo-server" default="dist">
+
+  <property name="src" location="src"/>
+  <property name="lib" location="lib"/>
+  <property name="build" location="build"/>
+  <property name="classes" location="${build}/classes"/>
+  <property name="dist" location="dist"/>
+  <property name="war" value="${dist}/gcm-demo.war"/>
+  <property name="web-src" value="WebContent"/>
+  <property name="web-lib" value="${web-src}/WEB-INF/lib"/>
+
+  <path id="compile.classpath">
+    <fileset dir="${lib}">
+      <include name="*.jar"/>
+    </fileset>
+    <fileset dir="${web-lib}">
+      <include name="*.jar"/>
+    </fileset>
+  </path>
+
+  <target name="clean" description="Clean all artifacts except the dist files.">
+    <delete dir="${build}"/>
+  </target>
+
+  <target name="full-clean" depends="clean" description="Clean all artifacts including the dist files.">
+    <delete dir="${dist}"/>
+  </target>
+
+  <target name="init">
+    <mkdir dir="${classes}"/>
+    <mkdir dir="${dist}"/>
+  </target>
+
+  <target name="compile" depends="init" description="Compile the Java classes.">
+    <javac destdir="${classes}" debug="true" srcdir="${src}" target="1.5"
+      includeantruntime="false">
+      <classpath refid="compile.classpath"/>
+    </javac>
+  </target>
+
+  <target name="war" depends="compile" description="Generate the WAR file.">
+    <war destfile="${war}" webxml="${web-src}/WEB-INF/web.xml">
+      <fileset dir="${web-src}"/>
+      <classes dir="${classes}"/>
+    </war>
+  </target>
+
+  <target name="dist" depends="war" description="Generate all artifacts."/>
+
+</project>
+

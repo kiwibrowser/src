@@ -1,0 +1,58 @@
+<project name="sfntly" default="dist">
+
+  <import file="common.xml" />
+  <import file="javadoc.xml" />
+
+  <target name="compile-test" depends="compile">
+    <mkdir dir="${classes-test.dir}" />
+    <javac srcdir="${test.dir}" destdir="${classes-test.dir}" includeantruntime="false">
+      <classpath>
+        <fileset dir="${lib.dir}" includes="**/*.jar"/>
+        <pathelement location="${classes.dir}" />
+      </classpath>
+    </javac>
+  </target>
+
+  <target name="test" depends="compile-test">
+   <mkdir dir="${report-test.dir}" />
+    <junit printsummary="true" fork="yes">
+      <classpath>
+        <fileset dir="${lib.dir}" includes="**/*.jar"/>
+        <pathelement location="${classes.dir}" />
+        <pathelement location="${classes-test.dir}" />
+      </classpath>
+      <formatter type="xml" usefile="true" />
+      <batchtest fork="yes" todir="${report-test.dir}">
+        <fileset dir="${test.dir}">
+          <include name="**/*Test*.java"/>
+          <exclude name="**/TestFont.java" />
+          <exclude name="**/TestFontUtils.java" />
+          <exclude name="**/TestUtils.java" />
+        </fileset>
+      </batchtest>
+    </junit>
+  </target>
+
+  <target name="jar" depends="compile">
+    <antcall target="sfntly-jar" />
+  </target>
+
+  <target name="src-jar">
+    <mkdir dir="${dist_src.dir}" />
+    <jar destfile="${dist_src.dir}/${ant.project.name}-src.jar" 
+      basedir="${src.dir}" 
+      excludes="com/google/typography/font/tools/**,com/google/typography/font/sfntly/sample/**" />
+  </target>
+
+  <target name="dist" depends="compile">
+    <antcall target="jar" />
+    <antcall target="src-jar" />
+    <antcall target="doc-jar" />
+    <ant inheritAll="false" dir="${src.dir}/com/google/typography/font/sfntly/sample" />
+    <ant inheritAll="false" dir="${src.dir}/com/google/typography/font/tools/conversion" />
+    <ant inheritAll="false" dir="${src.dir}/com/google/typography/font/tools/fontinfo" />
+    <ant inheritAll="false" dir="${src.dir}/com/google/typography/font/tools/sfnttool" />
+    <ant inheritAll="false" dir="${src.dir}/com/google/typography/font/tools/subsetter" />
+  </target>
+
+</project>

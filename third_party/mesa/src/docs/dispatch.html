@@ -1,0 +1,270 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>GL Dispatch in Mesa</title>
+  <link rel="stylesheet" type="text/css" href="mesa.css">
+</head>
+<body>
+<h1>GL Dispatch in Mesa</h1>
+
+<p>Several factors combine to make efficient dispatch of OpenGL functions
+fairly complicated.  This document attempts to explain some of the issues
+and introduce the reader to Mesa's implementation.  Readers already familiar
+with the issues around GL dispatch can safely skip ahead to the <a
+href="#overview">overview of Mesa's implementation</a>.</p>
+
+<h2>1. Complexity of GL Dispatch</h2>
+
+<p>Every GL application has at least one object called a GL <em>context</em>.
+This object, which is an implicit parameter to ever GL function, stores all
+of the GL related state for the application.  Every texture, every buffer
+object, every enable, and much, much more is stored in the context.  Since
+an application can have more than one context, the context to be used is
+selected by a window-system dependent function such as
+<tt>glXMakeContextCurrent</tt>.</p>
+
+<p>In environments that implement OpenGL with X-Windows using GLX, every GL
+function, including the pointers returned by <tt>glXGetProcAddress</tt>, are
+<em>context independent</em>.  This means that no matter what context is
+currently active, the same <tt>glVertex3fv</tt> function is used.</p>
+
+<p>This creates the first bit of dispatch complexity.  An application can
+have two GL contexts.  One context is a direct rendering context where
+function calls are routed directly to a driver loaded within the
+application's address space.  The other context is an indirect rendering
+context where function calls are converted to GLX protocol and sent to a
+server.  The same <tt>glVertex3fv</tt> has to do the right thing depending
+on which context is current.</p>
+
+<p>Highly optimized drivers or GLX protocol implementations may want to
+change the behavior of GL functions depending on current state.  For
+example, <tt>glFogCoordf</tt> may operate differently depending on whether
+or not fog is enabled.</p>
+
+<p>In multi-threaded environments, it is possible for each thread to have a
+differnt GL context current.  This means that poor old <tt>glVertex3fv</tt>
+has to know which GL context is current in the thread where it is being
+called.</p>
+
+<h2 id="overview">2. Overview of Mesa's Implementation</h2>
+
+<p>Mesa uses two per-thread pointers.  The first pointer stores the address
+of the context current in the thread, and the second pointer stores the
+address of the <em>dispatch table</em> associated with that context.  The
+dispatch table stores pointers to functions that actually implement
+specific GL functions.  Each time a new context is made current in a thread,
+these pointers a updated.</p>
+
+<p>The implementation of functions such as <tt>glVertex3fv</tt> becomes
+conceptually simple:</p>
+
+<ul>
+<li>Fetch the current dispatch table pointer.</li>
+<li>Fetch the pointer to the real <tt>glVertex3fv</tt> function from the
+table.</li>
+<li>Call the real function.</li>
+</ul>
+
+<p>This can be implemented in just a few lines of C code.  The file
+<tt>src/mesa/glapi/glapitemp.h</tt> contains code very similar to this.</p>
+
+<blockquote>
+<table border="1">
+<tr><td><pre>
+void glVertex3f(GLfloat x, GLfloat y, GLfloat z)
+{
+    const struct _glapi_table * const dispatch = GET_DISPATCH();
+
+    (*dispatch-&gt;Vertex3f)(x, y, z);
+}</pre></td></tr>
+<tr><td>Sample dispatch function</td></tr></table>
+</blockquote>
+
+<p>The problem with this simple implementation is the large amount of
+overhead that it adds to every GL function call.</p>
+
+<p>In a multithreaded environment, a naive implementation of
+<tt>GET_DISPATCH</tt> involves a call to <tt>pthread_getspecific</tt> or a
+similar function.  Mesa provides a wrapper function called
+<tt>_glapi_get_dispatch</tt> that is used by default.</p>
+
+<h2>3. Optimizations</h2>
+
+<p>A number of optimizations have been made over the years to diminish the
+performance hit imposed by GL dispatch.  This section describes these
+optimizations.  The benefits of each optimization and the situations where
+each can or cannot be used are listed.</p>
+
+<h3>3.1. Dual dispatch table pointers</h3>
+
+<p>The vast majority of OpenGL applications use the API in a single threaded
+manner.  That is, the application has only one thread that makes calls into
+the GL.  In these cases, not only do the calls to
+<tt>pthread_getspecific</tt> hurt performance, but they are completely
+unnecessary!  It is possible to detect this common case and avoid these
+calls.</p>
+
+<p>Each time a new dispatch table is set, Mesa examines and records the ID
+of the executing thread.  If the same thread ID is always seen, Mesa knows
+that the application is, from OpenGL's point of view, single threaded.</p>
+
+<p>As long as an application is single threaded, Mesa stores a pointer to
+the dispatch table in a global variable called <tt>_glapi_Dispatch</tt>.
+The pointer is also stored in a per-thread location via
+<tt>pthread_setspecific</tt>.  When Mesa detects that an application has
+become multithreaded, <tt>NULL</tt> is stored in <tt>_glapi_Dispatch</tt>.</p>
+
+<p>Using this simple mechanism the dispatch functions can detect the
+multithreaded case by comparing <tt>_glapi_Dispatch</tt> to <tt>NULL</tt>.
+The resulting implementation of <tt>GET_DISPATCH</tt> is slightly more
+complex, but it avoids the expensive <tt>pthread_getspecific</tt> call in
+the common case.</p>
+
+<blockquote>
+<table border="1">
+<tr><td><pre>
+#define GET_DISPATCH() \
+    (_glapi_Dispatch != NULL) \
+        ? _glapi_Dispatch : pthread_getspecific(&_glapi_Dispatch_key)
+</pre></td></tr>
+<tr><td>Improved <tt>GET_DISPATCH</tt> Implementation</td></tr></table>
+</blockquote>
+
+<h3>3.2. ELF TLS</h3>
+
+<p>Starting with the 2.4.20 Linux kernel, each thread is allocated an area
+of per-thread, global storage.  Variables can be put in this area using some
+extensions to GCC.  By storing the dispatch table pointer in this area, the
+expensive call to <tt>pthread_getspecific</tt> and the test of
+<tt>_glapi_Dispatch</tt> can be avoided.</p>
+
+<p>The dispatch table pointer is stored in a new variable called
+<tt>_glapi_tls_Dispatch</tt>.  A new variable name is used so that a single
+libGL can implement both interfaces.  This allows the libGL to operate with
+direct rendering drivers that use either interface.  Once the pointer is
+properly declared, <tt>GET_DISPACH</tt> becomes a simple variable
+reference.</p>
+
+<blockquote>
+<table border="1">
+<tr><td><pre>
+extern __thread struct _glapi_table *_glapi_tls_Dispatch
+    __attribute__((tls_model("initial-exec")));
+
+#define GET_DISPATCH() _glapi_tls_Dispatch
+</pre></td></tr>
+<tr><td>TLS <tt>GET_DISPATCH</tt> Implementation</td></tr></table>
+</blockquote>
+
+<p>Use of this path is controlled by the preprocessor define
+<tt>GLX_USE_TLS</tt>.  Any platform capable of using TLS should use this as
+the default dispatch method.</p>
+
+<h3>3.3. Assembly Language Dispatch Stubs</h3>
+
+<p>Many platforms has difficulty properly optimizing the tail-call in the
+dispatch stubs.  Platforms like x86 that pass parameters on the stack seem
+to have even more difficulty optimizing these routines.  All of the dispatch
+routines are very short, and it is trivial to create optimal assembly
+language versions.  The amount of optimization provided by using assembly
+stubs varies from platform to platform and application to application.
+However, by using the assembly stubs, many platforms can use an additional
+space optimization (see <a href="#fixedsize">below</a>).</p>
+
+<p>The biggest hurdle to creating assembly stubs is handling the various
+ways that the dispatch table pointer can be accessed.  There are four
+different methods that can be used:</p>
+
+<ol>
+<li>Using <tt>_glapi_Dispatch</tt> directly in builds for non-multithreaded
+environments.</li>
+<li>Using <tt>_glapi_Dispatch</tt> and <tt>_glapi_get_dispatch</tt> in
+multithreaded environments.</li>
+<li>Using <tt>_glapi_Dispatch</tt> and <tt>pthread_getspecific</tt> in
+multithreaded environments.</li>
+<li>Using <tt>_glapi_tls_Dispatch</tt> directly in TLS enabled
+multithreaded environments.</li>
+</ol>
+
+<p>People wishing to implement assembly stubs for new platforms should focus
+on #4 if the new platform supports TLS.  Otherwise, implement #2 followed by
+#3.  Environments that do not support multithreading are uncommon and not
+terribly relevant.</p>
+
+<p>Selection of the dispatch table pointer access method is controlled by a
+few preprocessor defines.</p>
+
+<ul>
+<li>If <tt>GLX_USE_TLS</tt> is defined, method #4 is used.</li>
+<li>If <tt>HAVE_PTHREAD</tt> is defined, method #3 is used.</li>
+<li>If <tt>WIN32_THREADS</tt> is defined, method #2 is used.</li>
+<li>If none of the preceeding are defined, method #1 is used.</li>
+</ul>
+
+<p>Two different techniques are used to handle the various different cases.
+On x86 and SPARC, a macro called <tt>GL_STUB</tt> is used.  In the preamble
+of the assembly source file different implementations of the macro are
+selected based on the defined preprocessor variables.  The assmebly code
+then consists of a series of invocations of the macros such as:
+
+<blockquote>
+<table border="1">
+<tr><td><pre>
+GL_STUB(Color3fv, _gloffset_Color3fv)
+</pre></td></tr>
+<tr><td>SPARC Assembly Implementation of <tt>glColor3fv</tt></td></tr></table>
+</blockquote>
+
+<p>The benefit of this technique is that changes to the calling pattern
+(i.e., addition of a new dispatch table pointer access method) require fewer
+changed lines in the assembly code.</p>
+
+<p>However, this technique can only be used on platforms where the function
+implementation does not change based on the parameters passed to the
+function.  For example, since x86 passes all parameters on the stack, no
+additional code is needed to save and restore function parameters around a
+call to <tt>pthread_getspecific</tt>.  Since x86-64 passes parameters in
+registers, varying amounts of code needs to be inserted around the call to
+<tt>pthread_getspecific</tt> to save and restore the GL function's
+parameters.</p>
+
+<p>The other technique, used by platforms like x86-64 that cannot use the
+first technique, is to insert <tt>#ifdef</tt> within the assembly
+implementation of each function.  This makes the assembly file considerably
+larger (e.g., 29,332 lines for <tt>glapi_x86-64.S</tt> versus 1,155 lines for
+<tt>glapi_x86.S</tt>) and causes simple changes to the function
+implementation to generate many lines of diffs.  Since the assmebly files
+are typically generated by scripts (see <a href="#autogen">below</a>), this
+isn't a significant problem.</p>
+
+<p>Once a new assembly file is created, it must be inserted in the build
+system.  There are two steps to this.  The file must first be added to
+<tt>src/mesa/sources</tt>.  That gets the file built and linked.  The second
+step is to add the correct <tt>#ifdef</tt> magic to
+<tt>src/mesa/glapi/glapi_dispatch.c</tt> to prevent the C version of the
+dispatch functions from being built.</p>
+
+<h3 id="fixedsize">3.4. Fixed-Length Dispatch Stubs</h3>
+
+<p>To implement <tt>glXGetProcAddress</tt>, Mesa stores a table that
+associates function names with pointers to those functions.  This table is
+stored in <tt>src/mesa/glapi/glprocs.h</tt>.  For different reasons on
+different platforms, storing all of those pointers is inefficient.  On most
+platforms, including all known platforms that support TLS, we can avoid this
+added overhead.</p>
+
+<p>If the assembly stubs are all the same size, the pointer need not be
+stored for every function.  The location of the function can instead be
+calculated by multiplying the size of the dispatch stub by the offset of the
+function in the table.  This value is then added to the address of the first
+dispatch stub.</p>
+
+<p>This path is activated by adding the correct <tt>#ifdef</tt> magic to
+<tt>src/mesa/glapi/glapi.c</tt> just before <tt>glprocs.h</tt> is
+included.</p>
+
+<h2 id="autogen">4. Automatic Generation of Dispatch Stubs</h2>
+
+</body>
+</html>

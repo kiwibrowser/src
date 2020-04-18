@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+
+		<title>polymer-redux Demo</title>
+
+		<script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+
+		<link rel="import" href="./redux-mixin.html">
+	</head>
+	<body>
+		<dom-module id="parent-element">
+			<template>
+				<child-element bar="{{foo}}"></child-element>
+			</template>
+			<script>
+				class ParentElement extends ReduxMixin(Polymer.Element) {
+					static get is() { return 'parent-element'; }
+
+					static get properties() {
+						return {
+							foo: {
+								type: String,
+								observer: '_observeFoo'
+							},
+							baz: {
+								type: String,
+								statePath: 'foo'
+							}
+						};
+					}
+
+					_observeFoo(current, previous) {
+						console.assert(this.baz !== undefined);
+					}
+				}
+				window.customElements.define(ParentElement.is, ParentElement);
+			</script>
+		</dom-module>
+		<dom-module id="child-element">
+			<script>
+				class ChildElement extends ReduxMixin(Polymer.Element) {
+					static get is() { return 'child-element'; }
+
+					static get properties() {
+						return {
+							foo: {
+								type: String,
+								statePath: 'message',
+								observer: '_observeFoo'
+							},
+							bar: {
+								type: String,
+								notify: true,
+							}
+						};
+					}
+
+					_observeFoo(current, previous) {
+						this.bar = this.foo;
+					}
+				}
+				window.customElements.define(ChildElement.is, ChildElement);
+			</script>
+		</dom-module>
+		<parent-element></parent-element>
+	</body>
+</html>

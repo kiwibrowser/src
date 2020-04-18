@@ -1,0 +1,309 @@
+/** \mainpage
+
+  \section about About
+
+  Gallium3D is <a href="http://www.tungstengraphics.com/">Tungsten Graphics</a>'
+  new architecture for building 3D graphics drivers. Initially
+  supporting Mesa and Linux graphics drivers, Gallium3D is designed to allow
+  portability to all major operating systems and graphics interfaces.
+
+  Compared to existing Linux graphics drivers, Gallium3D will:
+
+  - Make drivers smaller and simpler.
+    Current DRI drivers are rather complicated. They're large, contain
+    duplicated code and are burdened with implementing many concepts tightly
+    tied to the OpenGL 1.x/2.x API. 
+
+  - Model modern graphics hardware.
+    The new driver architecture is an abstraction of modern graphics hardware,
+    rather than an OpenGL->hardware translator. The new driver interface will
+    assume the presence of programmable vertex/fragment shaders and flexible
+    memory objects. 
+
+  - Support multiple graphics APIs.
+    The OpenGL 3.0 API will be very different from OpenGL 1.x/2.x. We'd like a
+    driver model that is API-neutral so that it's not tied to a specific
+    graphics API.
+
+  \section contents Contents
+
+  - \ref overview
+
+  - \ref statetracker
+  
+  - Pipe drivers:
+    - \ref softpipe
+    - \ref i915g
+
+  - Winsys drivers:
+    - X11 winsys driver (xm_winsys.c)
+    - Intel DRI winsys driver (intel_context.h, intel_winsys_pipe.c)
+  
+  - Ancillary Modules:
+    - \ref draw
+    - \ref tgsi
+      - LLVM TGSI backend (gallivm.h)
+
+  - \ref callgraph
+
+  \section external External documentation
+
+  - <a href="http://www.tungstengraphics.com/gallium3D.htm">Gallium3D's Architectural Overview</a>
+  - <a href="http://www.tungstengraphics.com/wiki/index.php/Gallium3D">Technical Overview</a>
+  - <a href="http://www.tungstengraphics.com/wiki/files/gallium3d-xds2007.pdf">Gallium3D talk from XDS 2007</a>
+
+*/
+
+/** \page overview Overview
+
+  The public interface of a Gallium3D driver is described by the p_context.h
+  header file. The pipe_context structure is an abstract base class with
+  methods for:
+
+  - Setting rendering state (texture sampler state, vertex array info, drawing surfaces, etc.) 
+
+  - Setting shader state, using the TGSI binary shader representation. 
+
+  - Vertex array and indexed vertex array drawing. 
+
+  - Region (memory) management for textures, renderbuffers, vertex buffers, etc. 
+
+  - Hardware queries (number of texture units, max texture size, etc). 
+
+  The p_state.h header defines all the state objects (such as polygon
+  rasterization options, blend modes, etc) and resources (drawing surfaces,
+  textures, memory buffers). The pipe interface uses "constant state" objects.
+  That is, state objects are created once and are immutable. State objects are
+  put into effect by binding them. This allows Gallium3D drivers to create
+  corresponding hardware state objects which can be quickly handled.
+
+  The p_defines.h header defines numerous constants and tokens (blend modes,
+  texture wrap modes, surface formats, etc.
+
+  The p_winsys.h header defines the window system and OS facilities which
+  Gallium3D drivers rely upon. For example, memory allocation is typically a
+  service the OS provides while window size/position information is provided by
+  the window system. Pipe drivers use the winsys interface to handle these
+  things.
+
+  By abstracting OS and window system services, pipe drivers are portable to
+  other platforms (e.g. embedded devices).
+*/
+
+/** \page statetracker The State Tracker
+
+  The state tracker is the piece which interfaces core Mesa to the Gallium3D
+  interface. It's responsible for translating Mesa state (blend modes, texture
+  state, etc) and drawing commands (like glDrawArrays and glDrawPixels) into
+  pipe objects and operations.
+
+  Traditional fixed-function OpenGL components (such as lighting and texture
+  combining) are implemented with shaders. OpenGL commands such as glDrawPixels
+  are translated into textured quadrilateral rendering. Basically, any
+  rendering operation that isn't directly supported by modern graphics hardware
+  is translated into a hardware-friendly form.
+
+  Future state trackers will be created for OpenGL 3.0 and OpenGL-ES 2.x.
+*/
+
+/** \page softpipe Softpipe Driver
+
+  The softpipe driver is a software implementation of the Gallium3D interface.
+  It will be used as a reference implementation and as a fallback driver when a
+  hardware driver isn't available. The softpipe driver will make extensive use
+  of run-time code generation to efficiently execute vertex, fragment and
+  rasterization operations.
+  
+  \sa sp_winsys.h
+*/
+
+/** \page i915g i915 Driver
+
+  The i915 Gallium3D Driver is an initial hardware driver implementation within
+  the Gallium3D driver architecture. We expect that once complete this driver
+  will have equivalent functionality and performance to the current Mesa
+  i915tex driver, but from a much smaller codebase.
+
+  \sa i915_context.h
+  \sa i915_winsys.h
+*/
+
+/** \page draw Draw Module
+  The Draw module provides point/line/polygon rendering services such as
+  vertex transformation, polygon culling and clipping. It will be used by
+  drivers for hardware which lacks vertex transformation (such as the
+  i915/i945). It may also be instantiated and used directly by the state
+  tracker to implement some API functionality that doesn't map well to hardware
+  capabilities.
+
+  The interface of this module corresponds closely to the subset of the Gallium
+  Driver Interface which is relevent to these steps in the pipeline. Specifically
+  there are calls for:
+
+  - Vertex shader constant state objects
+  - Vertex buffer binding
+  - Vertex element layout (vertex fetch) constant state objects
+  - DrawArrays and DrawElements
+  - Rasterizer constant state objects. 
+
+  The Draw module is effectively the part of \ref softpipe which is concerned with
+  vertex processing, split off into a separate module so that it can be reused
+  by drivers for rasterization-only hardware. As such it is also instantiated
+  by the \ref i915g driver.
+
+  Additionally, there are cases in the Mesa OpenGL state_tracker where it is
+  required to obtain transformed vertices and yet it is anticipated that using
+  hardware transformation even if available would reduce performance, usually
+  because the setup costs or latency are prohibitive. For this reason the Mesa
+  state_tracker also instantiates a copy of this module. 
+
+  \sa draw_context.h
+*/
+
+/** \page tgsi TGSI
+
+  The TGSI module provides a universal representation of shaders and
+  CPU-based execution of shaders. All Mesa vertex/fragment programs and shaders
+  are translated into the TGSI representation before being passed to the
+  driver. In turn, the driver will convert the TGSI instructions into
+  GPU-specific instructions. For hardware that lacks vertex or fragment shader
+  support, the TGSI's executor can be used. The TGSI executor includes support
+  for SSE code generation. Support for other processors (such as Cell) will be
+  added in the future. 
+
+  \sa tgsi_parse.h
+  \sa <a href="http://www.tungstengraphics.com/wiki/files/tgsi.pdf">TGSI specification</a>
+*/
+
+/** \page callgraph Glxgears callgraph example
+
+  Below is a call graph of the glxgears application together with the Gallium3D's softpipe reference driver.
+  
+  \htmlonly
+  The functions in the graph below are clickable.
+  \endhtmlonly
+
+  \dot
+digraph {
+	graph [fontname=Arial, fontsize=10];
+	node [fontcolor=white, fontname=Arial, style=filled, fontsize=10, shape=box];
+	edge [fontname=Arial, fontsize=10];
+	1 [color="#ff0000", URL="\ref main", label="main\n100.00% (0.68%)\n0"];
+	1 -> 2 [color="#fe0400", fontcolor="#fe0400", label="99.32%\n1433"];
+	2 [color="#fe0400", URL="\ref do_draw", label="do_draw\n99.32% (0.00%)\n1433"];
+	2 -> 4 [color="#fa1201", fontcolor="#fa1201", label="96.67%\n4298"];
+	2 -> 39 [color="#0d4f76", fontcolor="#0d4f76", label="2.45%\n1433"];
+	3 [color="#fa1201", URL="\ref execute_list", label="execute_list\n96.67% (0.00%)\n4299"];
+	3 -> 5 [color="#f91301", fontcolor="#f91301", label="96.38%\n17196"];
+	4 [color="#fa1201", URL="\ref _mesa_CallList", label="_mesa_CallList\n96.67% (0.00%)\n4299"];
+	4 -> 3 [color="#fa1201", fontcolor="#fa1201", label="96.67%\n4299"];
+	5 [color="#f91301", URL="\ref vbo_save_playback_vertex_list", label="vbo_save_playback_vertex_list\n96.38% (0.10%)\n17196"];
+	5 -> 6 [color="#f91501", fontcolor="#f91501", label="96.09%\n17196"];
+	6 [color="#f91501", URL="\ref st_draw_vbo", label="st_draw_vbo\n96.09% (0.00%)\n17196"];
+	6 -> 10 [color="#ec3f03", fontcolor="#ec3f03", label="87.48%\n30093"];
+	6 -> 33 [color="#0d5f78", fontcolor="#0d5f78", label="3.72%\n34392"];
+	6 -> 34 [color="#0d5f78", fontcolor="#0d5f78", label="3.72%\n34392"];
+	6 -> 47 [color="#0d3a74", fontcolor="#0d3a74", label="1.17%\n17196"];
+	7 [color="#f71d01", URL="\ref draw_do_flush", label="draw_do_flush\n94.52% (0.20%)\n101744"];
+	7 -> 13 [color="#e74e04", fontcolor="#e74e04", label="84.25%\n1146400"];
+	7 -> 8 [color="#0d7d6c", fontcolor="#0d7d6c", label="8.32%\n114640"];
+	7 -> 46 [color="#0d4175", fontcolor="#0d4175", label="1.57%\n97444"];
+	8 [color="#f32702", URL="\ref clip_tri", label="clip_tri\n92.37% (0.49%)\n1261040"];
+	8 -> 9 [color="#f32a02", fontcolor="#f32a02", label="91.88%\n1261040"];
+	9 [color="#f32a02", URL="\ref cull_tri", label="cull_tri\n91.88% (0.20%)\n1261040"];
+	9 -> 15 [color="#e35d04", fontcolor="#e35d04", label="81.12%\n560810"];
+	9 -> 12 [color="#0d805e", fontcolor="#0d805e", label="10.57%\n560810"];
+	10 [color="#ec3f03", URL="\ref softpipe_draw_arrays", label="softpipe_draw_arrays\n87.48% (0.00%)\n30093"];
+	10 -> 11 [color="#ec3f03", fontcolor="#ec3f03", label="87.48%\n30093"];
+	11 [color="#ec3f03", URL="\ref softpipe_draw_elements", label="softpipe_draw_elements\n87.48% (0.10%)\n30093"];
+	11 -> 17 [color="#cf9507", fontcolor="#cf9507", label="67.61%\n30093"];
+	11 -> 27 [color="#0d844f", fontcolor="#0d844f", label="13.01%\n120372"];
+	11 -> 36 [color="#0d5a77", fontcolor="#0d5a77", label="3.33%\n30093"];
+	11 -> 23 [color="#0d5977", fontcolor="#0d5977", label="3.23%\n30093"];
+	12 [color="#ea4703", URL="\ref flush_spans", label="flush_spans\n85.91% (4.60%)\n4586176"];
+	12 -> 14 [color="#e35c04", fontcolor="#e35c04", label="81.31%\n15910811"];
+	13 [color="#e74e04", URL="\ref flatshade_tri", label="flatshade_tri\n84.25% (0.29%)\n1146400"];
+	13 -> 8 [color="#e75004", fontcolor="#e75004", label="83.95%\n1146400"];
+	14 [color="#e35c04", URL="\ref shade_quad", label="shade_quad\n81.31% (7.73%)\n15910811"];
+	14 -> 21 [color="#c0bb09", fontcolor="#c0bb09", label="57.24%\n13903725"];
+	14 -> 26 [color="#0c883c", fontcolor="#0c883c", label="16.24%\n15910811"];
+	15 [color="#e35d04", URL="\ref setup_tri", label="setup_tri\n81.12% (1.47%)\n560810"];
+	15 -> 16 [color="#e06505", fontcolor="#e06505", label="79.26%\n1121620"];
+	16 [color="#e06505", URL="\ref subtriangle", label="subtriangle\n79.26% (3.91%)\n1121620"];
+	16 -> 12 [color="#da7606", fontcolor="#da7606", label="75.34%\n4025366"];
+	17 [color="#cf9507", URL="\ref draw_arrays", label="draw_arrays\n67.61% (0.00%)\n30093"];
+	17 -> 19 [color="#cf9607", fontcolor="#cf9607", label="67.42%\n630520"];
+	18 [color="#cf9607", URL="\ref do_ef_triangle", label="do_ef_triangle\n67.42% (0.49%)\n1261040"];
+	18 -> 20 [color="#ce9807", fontcolor="#ce9807", label="66.83%\n1261040"];
+	19 [color="#cf9607", URL="\ref do_quad", label="do_quad\n67.42% (0.00%)\n630520"];
+	19 -> 18 [color="#cf9607", fontcolor="#cf9607", label="67.42%\n1261040"];
+	20 [color="#ce9807", URL="\ref get_queued_prim", label="get_queued_prim\n66.83% (0.10%)\n1261040"];
+	20 -> 7 [color="#cd9907", fontcolor="#cd9907", label="66.54%\n71650"];
+	21 [color="#c0bb09", URL="\ref depth_test_quad", label="depth_test_quad\n57.24% (1.08%)\n13903725"];
+	21 -> 22 [color="#40a00b", fontcolor="#40a00b", label="34.54%\n13074127"];
+	21 -> 24 [color="#0c8f1e", fontcolor="#0c8f1e", label="21.62%\n13903725"];
+	22 [color="#40a00b", URL="\ref output_quad", label="output_quad\n34.54% (3.91%)\n13074127"];
+	22 -> 25 [color="#0c8c2b", fontcolor="#0c8c2b", label="19.28%\n13074127"];
+	22 -> 28 [color="#0d8159", fontcolor="#0d8159", label="11.35%\n7223435"];
+	23 [color="#1c970c", URL="\ref draw_flush", label="draw_flush\n27.98% (0.00%)\n257944"];
+	23 -> 7 [color="#1c970c", fontcolor="#1c970c", label="27.98%\n30093"];
+	24 [color="#0c8f1e", URL="\ref sp_depth_test_quad", label="sp_depth_test_quad\n21.62% (16.14%)\n13903725"];
+	24 -> 37 [color="#0d5977", fontcolor="#0d5977", label="3.23%\n13903725"];
+	24 -> 44 [color="#0d4c76", fontcolor="#0d4c76", label="2.25%\n13903725"];
+	25 [color="#0c8c2b", URL="\ref write_quad_f_swz", label="write_quad_f_swz\n19.28% (16.14%)\n13074127"];
+	25 -> 38 [color="#0d5877", fontcolor="#0d5877", label="3.13%\n26148254"];
+	26 [color="#0c883a", URL="\ref tgsi_exec_machine_init", label="tgsi_exec_machine_init\n16.73% (10.27%)\n16326381"];
+	26 -> 30 [color="#0d6178", fontcolor="#0d6178", label="3.91%\n16326381"];
+	26 -> 45 [color="#0d4475", fontcolor="#0d4475", label="1.76%\n16326381"];
+	26 -> 52 [color="#0d3174", fontcolor="#0d3174", label="0.78%\n16326381"];
+	27 [color="#0d844f", URL="\ref draw_set_mapped_vertex_buffer", label="draw_set_mapped_vertex_buffer\n13.01% (0.00%)\n120372"];
+	27 -> 23 [color="#0d844f", fontcolor="#0d844f", label="13.01%\n120372"];
+	28 [color="#0d8159", URL="\ref read_quad_f_swz", label="read_quad_f_swz\n11.35% (5.87%)\n7223435"];
+	28 -> 29 [color="#0d737a", fontcolor="#0d737a", label="5.48%\n14446870"];
+	29 [color="#0d737a", URL="\ref get_row_rgba", label="get_row_rgba\n5.48% (5.48%)\n14446870"];
+	30 [color="#0d6178", URL="\ref tgsi_parse_init", label="tgsi_parse_init\n3.91% (3.52%)\n16326383"];
+	31 [color="#0d5f78", URL="\ref draw_set_vertex_buffer", label="draw_set_vertex_buffer\n3.72% (0.00%)\n34392"];
+	31 -> 23 [color="#0d5f78", fontcolor="#0d5f78", label="3.72%\n34392"];
+	32 [color="#0d5f78", URL="\ref draw_set_vertex_element", label="draw_set_vertex_element\n3.72% (0.00%)\n34392"];
+	32 -> 23 [color="#0d5f78", fontcolor="#0d5f78", label="3.72%\n34392"];
+	33 [color="#0d5f78", URL="\ref softpipe_set_vertex_buffer", label="softpipe_set_vertex_buffer\n3.72% (0.00%)\n34392"];
+	33 -> 31 [color="#0d5f78", fontcolor="#0d5f78", label="3.72%\n34392"];
+	34 [color="#0d5f78", URL="\ref softpipe_set_vertex_element", label="softpipe_set_vertex_element\n3.72% (0.00%)\n34392"];
+	34 -> 32 [color="#0d5f78", fontcolor="#0d5f78", label="3.72%\n34392"];
+	35 [color="#0d5d77", URL="\ref __i686.get_pc_thunk.bx", label="__i686.get_pc_thunk.bx\n3.52% (3.52%)\n0"];
+	36 [color="#0d5a77", URL="\ref draw_set_mapped_constant_buffer", label="draw_set_mapped_constant_buffer\n3.33% (0.10%)\n30093"];
+	36 -> 23 [color="#0d5977", fontcolor="#0d5977", label="3.23%\n30093"];
+	37 [color="#0d5977", URL="\ref s8z24_read_quad_z", label="s8z24_read_quad_z\n3.23% (3.23%)\n13903725"];
+	38 [color="#0d5877", URL="\ref put_row_8R8G8B_ximage", label="put_row_8R8G8B_ximage\n3.13% (3.13%)\n26148254"];
+	39 [color="#0d4f76", URL="\ref _mesa_Clear", label="_mesa_Clear\n2.45% (0.00%)\n1433"];
+	39 -> 40 [color="#0d4f76", fontcolor="#0d4f76", label="2.45%\n1433"];
+	40 [color="#0d4f76", URL="\ref st_clear", label="st_clear\n2.45% (0.00%)\n1433"];
+	40 -> 41 [color="#0d4d76", fontcolor="#0d4d76", label="2.35%\n2866"];
+	41 [color="#0d4d76", URL="\ref xmesa_clear", label="xmesa_clear\n2.35% (0.00%)\n2866"];
+	41 -> 42 [color="#0d4c76", fontcolor="#0d4c76", label="2.25%\n1433"];
+	42 [color="#0d4c76", URL="\ref softpipe_clear", label="softpipe_clear\n2.25% (0.00%)\n1433"];
+	42 -> 43 [color="#0d4c76", fontcolor="#0d4c76", label="2.25%\n1433"];
+	43 [color="#0d4c76", URL="\ref sp_region_fill", label="sp_region_fill\n2.25% (2.25%)\n1433"];
+	44 [color="#0d4c76", URL="\ref s8z24_write_quad_z", label="s8z24_write_quad_z\n2.25% (2.25%)\n13903725"];
+	45 [color="#0d4475", URL="\ref tgsi_parse_free", label="tgsi_parse_free\n1.76% (0.78%)\n16326383"];
+	45 -> 49 [color="#0d3674", fontcolor="#0d3674", label="0.98%\n16326383"];
+	46 [color="#0d4175", URL="\ref draw_vertex_shader_queue_flush", label="draw_vertex_shader_queue_flush\n1.57% (0.49%)\n97444"];
+	46 -> 53 [color="#0d2f74", fontcolor="#0d2f74", label="0.68%\n415570"];
+	46 -> 26 [color="#0d2973", fontcolor="#0d2973", label="0.49%\n415570"];
+	47 [color="#0d3b74", URL="\ref st_validate_state", label="st_validate_state\n1.27% (0.00%)\n18629"];
+	47 -> 48 [color="#0d3874", fontcolor="#0d3874", label="1.08%\n8599"];
+	48 [color="#0d3874", URL="\ref update_raster_state", label="update_raster_state\n1.08% (0.10%)\n8599"];
+	48 -> 51 [color="#0d3674", fontcolor="#0d3674", label="0.98%\n8599"];
+	49 [color="#0d3674", URL="\ref tgsi_full_token_free", label="tgsi_full_token_free\n0.98% (0.98%)\n16326412"];
+	50 [color="#0d3674", URL="\ref draw_set_rasterizer_state", label="draw_set_rasterizer_state\n0.98% (0.00%)\n8599"];
+	50 -> 23 [color="#0d3674", fontcolor="#0d3674", label="0.98%\n8599"];
+	51 [color="#0d3674", URL="\ref softpipe_bind_rasterizer_state", label="softpipe_bind_rasterizer_state\n0.98% (0.00%)\n8599"];
+	51 -> 50 [color="#0d3674", fontcolor="#0d3674", label="0.98%\n8599"];
+	52 [color="#0d3174", URL="\ref tgsi_align_128bit", label="tgsi_align_128bit\n0.78% (0.78%)\n16326381"];
+	53 [color="#0d2f74", URL="\ref draw_vertex_fetch", label="draw_vertex_fetch\n0.68% (0.68%)\n415570"];
+}
+
+  \enddot
+
+  The graph above was generated by the <a href="http://code.google.com/p/jrfonseca/wiki/Gprof2Dot">gprof2dot.py script</a>.
+*/

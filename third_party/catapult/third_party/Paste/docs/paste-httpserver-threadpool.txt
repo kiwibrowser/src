@@ -1,0 +1,150 @@
+The Paste HTTP Server Thread Pool
+=================================
+
+This document describes how the thread pool in ``paste.httpserver``
+works, and how it can adapt to problems.
+
+Note all of the configuration parameters listed here are prefixed with
+``threadpool_`` when running through a Paste Deploy configuration.
+
+Error Cases
+-----------
+
+When a WSGI application is called, it's possible that it will block
+indefinitely.  There's two basic ways you can manage threads:
+
+* Start a thread on every request, close it down when the thread stops
+
+* Start a pool of threads, and reuse those threads for subsequent
+  requests
+
+In both cases things go wrong -- if you start a thread every request
+you will have an explosion of threads, and with it memory and a loss
+of performance.  This can culminate in really high loads, swapping,
+and the whole site grinds to a halt.
+
+If you are using a pool of threads, all the threads can simply be used
+up.  New requests go into a queue to be processed, but since that
+queue never moves forward everyone will just block.  The site
+basically freezes, though memory usage doesn't generally get worse.
+
+Paste Thread Pool
+-----------------
+
+The thread pool in Paste has some options to walk the razor's edge
+between the two techniques, and to try to respond usefully in most
+cases.
+
+The pool tracks all workers threads.  Threads can be in a few states:
+
+* Idle, waiting for a request ("idle")
+
+* Working on a request
+
+  * For a reasonable amount of time ("busy")
+
+  * For an unreasonably long amount of time ("hung")
+
+* Thread that should die
+
+  * An exception has been injected that should kill the thread, but it
+    hasn't happened yet ("dying")
+
+  * An exception has been injected, but the thread has persisted for
+    an unreasonable amount of time ("zombie")
+
+When a request comes in, if there are no idle worker threads waiting
+then the server looks at the workers; all workers are busy or hung.
+If too many are hung, another thread is opened up.  The limit is if
+there are less than ``spawn_if_under`` busy threads.  So if you have
+10 workers, ``spawn_if_under`` is 5, and there are 6 hung threads and
+4 busy threads, another thread will be opened (bringing the number of
+busy threads back to 5).  Later those threads may be collected again
+if some of the threads become un-hung.  A thread is hung if it has
+been working for longer than ``hung_thread_limit`` (default 30
+seconds).
+
+Every so often, the server will check all the threads for error
+conditions.  This happens every ``hung_check_period`` requests
+(default 100).  At this time if there are more than enough threads
+(because of ``spawn_if_under``) some threads may be collected.  If any
+threads have been working for longer than ``kill_thread_limit``
+(default 1800 seconds, i.e., 30 minutes) then the thread will be
+killed.
+
+To kill a thread the ``ctypes`` module must be installed.  This will
+raise an exception (``SystemExit``) in the thread, which should cause
+the thread to stop.  It can take quite a while for this to actually
+take effect, sometimes on the order of several minutes.  This uses a
+non-public API (hence the ``ctypes`` requirement), and so it might not
+work in all cases.  I've tried it in pure Python code and with a hung
+socket, and in both cases it worked.  As soon as the thread is killed
+(before it is actually dead) another worker is added to the pool.
+
+If the killed thread lives longer than ``dying_thread_limit`` (default
+300 seconds, 5 minutes) then it is considered a zombie.
+
+Zombie threads are not handled specially unless you set
+``max_zombies_before_die``.  If you set this and there are more than
+this many zombie threads, then the entire process will be killed.
+This is useful if you are running the server under some process
+monitor, such as ``start-stop-daemon``, ``daemontools``, ``runit``, or
+with ``paster serve --monitor``.  To make the process die, it may run
+``os._exit``, which is considered an impolite way to exit a process
+(akin to ``kill -9``).  It *will* try to run the functions registered
+with ``atexit`` (except for the thread cleanup functions, which are
+the ones which will block so long as there are living threads).
+
+Notification
+------------
+
+If you set ``error_email`` (including setting it globally in a Paste
+Deploy ``[DEFAULT]`` section) then you will be notified of two error
+conditions: when hung threads are killed, and when the process is
+killed due to too many zombie threads.
+
+Missed Cases
+------------
+
+If you have a worker pool size of 10, and 11 slow or hung requests
+come in, the first 10 will get handed off but the server won't know
+yet that they will hang.  The last request will stay stuck in a queue
+until another request comes in.  When a later request comes later
+(after ``hung_thread_limit`` seconds) the server will notice the
+problem and add more threads, and the 11th request will come through.
+
+If a trickle of bad requests keeps coming in, the number of hung
+threads will keep increasing.  At 100 the ``hung_check_period`` may
+not clean them up fast enough.
+
+Killing threads is not something Python really supports.  Corruption
+of the process, memory leaks, or who knows what might occur.  For the
+most part the threads seem to be killed in a fairly simple manner --
+an exception is raised, and ``finally`` blocks do get executed.  But
+this hasn't been tried much in production, so there's not much
+experience with it.
+
+watch_threads
+-------------
+
+If you want to see what's going on in your process, you can install
+the application ``egg:Paste#watch_threads`` (in the
+``paste.debug.watchthreads`` module).  This lets you see requests and
+how long they have been running.  In Python 2.5 you can see tracebacks
+of the running requests; before that you can only see request data
+(URLs, User-Agent, etc).  If you set ``allow_kill = true`` then you
+can also kill threads from the application.  The thread pool is
+intended to run reliably without intervention, but this can help debug
+problems or give you some feeling of what causes problems in the site.
+
+This does open up privacy problems, as it gives you access to all the
+request data in the site, including cookies, IP addresses, etc.  It
+shouldn't be left on in a public setting.
+
+socket_timeout
+--------------
+
+The HTTP server (not the thread pool) also accepts an argument
+``socket_timeout``.  It is turned off by default.  You might find it
+helpful to turn it on.
+

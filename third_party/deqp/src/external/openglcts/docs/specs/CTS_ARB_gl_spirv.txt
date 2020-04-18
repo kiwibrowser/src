@@ -1,0 +1,258 @@
+Conformance Test
+
+    GL_ARB_gl_spirv
+
+Contributors
+
+    Adam Czupryna, Mobica
+
+Contacts
+
+    Adam Czupryna, Mobica (adam.czupryna 'at' mobica.com)
+
+Status
+
+    In review
+
+Version
+
+    July 5, 2017 (version 1)
+
+Dependencies
+
+    OpenGL 4.5 is required.
+
+    ARB_gl_spirv extension is required.
+
+    This specification is written against:
+    - OpenGL 4.5 Core Profile Specification,
+    - version 4.50 (revision 5) Shading Language Specification,
+    - ARB_gl_spirv extension Specification.
+
+Overview
+
+    This test verifies two things:
+
+    1. Verifies if OpenGL API allows a SPIR-V module to be specified as containing a
+       programmable shader stage, rather than using GLSL, whatever the source language
+       was used to create the SPIR-V module.
+
+    2. Verifies if GLSL is modified to be a source language for creating SPIR-V
+       modules for OpenGL consumption.
+
+Tests
+
+    SPIR-V Modules Tests
+
+      * Positive Tests
+
+        - Create GLSL shader for each shading stage. Each stage should receive color
+          vector from previous stage and multiply it by constant value greater than 1.
+          First stage should set color components to non zero values. Last stage should
+          draw color to the framebuffer.
+
+          Perform drawing and verify the result. Expect that color read from the
+          framebuffer will be correctly multiplied.
+
+        - Use glslang to compile GLSL shaders to SPIR-V binary modules. Create shader
+          objects using ShaderBinary function with binary format set to
+          SHADER_BINARY_FORMAT_SPIR_V_ARB and specialize it using SpecializeShader
+          function.
+
+          Perform drawing and verify the result. Expect the same result as for
+          previous case.
+
+      * Shader Binary Multiple Shader Objects
+
+        - Create GLSL shader for at least two shading stages. Use glslang to compile
+          GLSL shaders to single SPIR-V module. Create shader object for each stage and
+          perform ShaderBinary function passing shader set as an argument, use
+          SHADER_BINARY_FORMAT_SPIR_V_ARB binary format. Specialize shader objects
+          using SpecializeShader function with proper entry point argument for each
+          shader.
+
+          Perform drawing and verify if the result is as expected.
+
+      * State Queries
+
+        - Verify if GetShaderiv with <pname> set to SPIR_V_BINARY_ARB used on valid
+          shader created using SHADER_BINARY_FORMAT_SPIR_V_ARB binary format will
+          result in TRUE.
+
+        - Verify if ShaderSource function used on shader with SPIR_V_BINARY_ARB state
+          set to TRUE will result in changing SPIR_V_BINARY_ARB state to FALSE.
+
+        - Verify if ShaderSource function used on shader with SPIR_V_BINARY_ARB state
+          set to TRUE will result in changing SPIR_V_BINARY_ARB state to FALSE.
+
+        - Verify if shader compile status is set to TRUE if shader is specialized.
+
+        - Verify if GetShaderInfoLog function return information about the last
+          specialization attempt if SpecializeShader is use in a wrong way.
+
+        - Verify if GetProgramiv function return one for ACTIVE_ATTRIBUTE_MAX_LENGTH
+          <pname> when no name reflection information is available.
+
+        - Verify if GetProgramiv function return one for ACTIVE_UNIFORM_MAX_LENGTH
+          <pname> when no name reflection information is available.
+
+        - Verify if GetProgramiv function return one for TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH
+          <pname> when no name reflection information is available.
+
+        - Verify if GetProgramiv function return one for ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH
+          <pname> when no name reflection information is available.
+
+      * Error Verification
+
+        - Verify if CompileShader function used on shader with SPIR_V_BINARY_ARB state
+          will result in generating INVALID_OPERATION error.
+
+        - Verify if SpecializeShader function generate INVALID_VALUE error when
+          <shader> is not the name of either a program or shader object.
+
+        - Verify if SpecializeShader function generate INVALID_OPERATION error when
+          <shader> is the name of a program object.
+
+        - Verify if SpecializeShader function generate INVALID_OPERATION error when
+          SPIR_V_BINARY_ARB state for <shader> is not TRUE, or if the shader has
+          already been specialized.
+
+        - Verify if SpecializeShader function generate INVALID_VALUE when <pEntryPoint>
+          does not name a valid entry point for <shader>.
+
+        - Verify if SpecializeShader function generate INVALID_VALUE when any element
+          of <pConstantIndex> refers to a specialization constant that does not exist
+          in the shader module contained in <shader>.
+
+        - Verify if LinkProgram fail when one or more of the shader objects attached to
+          <program> are not specialized.
+
+        - Verify if LinkProgram fail when not all of shaders attached to <program> have
+          the same value for the SPIR_V_BINARY_ARB state.
+
+    GLSL to SPIR-V Features Tests
+
+      * Enable SPIR-V Features
+
+        - Create vertex shader that checks if GL_SPIRV is defined and returns error
+          message if not.
+
+      * Built-in Functions
+
+        - Create set of shaders that uses built-in functions listed in section 8 of
+          The OpenGL Shading Language 4.50 specification. Compile shader to SPIR-V
+          binary module using glslang and disassembly module.
+
+        - Verify if no error occured during compilation.
+
+        - Verify if built-in functions are converted from GLSL to SPIR-V as expected.
+
+        NOTE: noise* built-in functions are excluded from testing as they are deprecated.
+
+      * Specialization Constants
+
+        - Create fragment shader with specialized constant floats - one for each color
+          component and forward it to default fragment output as vec4. Compile shader
+          to SPIR-V binary module using glslang. Create shader object and specialize it
+          with different values.
+
+        - Render a fullscreen polygon and read back pixels from framebuffer.
+
+        - Expect that color components of read pixels follows values used in shader
+          specialization.
+
+    SPIR-V Validation
+
+      * SPIR-V Built-In Variable Decorations
+
+        Create SPIR-V modules set that uses built-in variable decorations listed below:
+
+        Built-in Variable Decoration    Minimum GL version (Extension)
+        ----------------------------    -----------------------------
+        NumWorkgroups                   GL 4.3 (ARB_compute_shader)
+        WorkgroupSize                   GL 4.3 (ARB_compute_shader)
+        WorkgroupId                     GL 4.3 (ARB_compute_shader)
+        LocalInvocationId               GL 4.3 (ARB_compute_shader)
+        GlobalInvocationId              GL 4.3 (ARB_compute_shader)
+        LocalInvocationIndex            GL 4.3 (ARB_compute_shader)
+        VertexId
+        InstanceId
+        Position
+        PointSize
+        ClipDistance
+        CullDistance                    GL 4.5 (ARB_cull_distance)
+        PrimitiveId
+        InvocationId                    GL 4.0 (ARB_tessellation_shader)
+        Layer
+        ViewportIndex                   GL 4.1 (ARB_viewport_array)
+        PatchVertices                   GL 4.0 (ARB_tessellation_shader)
+        TessLevelOuter                  GL 4.0 (ARB_tessellation_shader)
+        TessLevelInner                  GL 4.0 (ARB_tessellation_shader)
+        TessCoord                       GL 4.0 (ARB_tessellation_shader)
+        FragCoord
+        FrontFacing
+        PointCoord
+        SampleId                        GL 4.0 (ARB_sample_shading)
+        SamplePosition                  GL 4.0 (ARB_sample_shading)
+        SampleMask                      GL 4.0 (ARB_sample_shading)
+        HelperInvocation                GL 4.5 (ARB_ES3_1_compatibility)
+
+        Use SPIR-V modules in apropriate shader stage (adequate to variable it tests).
+          Create program objects and execute them. Make sure that no error occured and
+          the result of program execution is as expected.
+
+      * SPIR-V Capabilities
+
+        Create SPIR-V modules set that capabilities listed below:
+
+        OpCapability                        Minimum GL version (Extension)
+        ------------------------------      -----------------------------
+        Matrix
+        Shader
+        Geometry
+        Tessellation                        GL 4.0 (ARB_tessellation_shader)
+        Float64                             GL 4.0 (ARB_gpu_shader_fp64)
+        AtomicStorage                       GL 4.2 (ARB_shader_atomic_counters)
+        TessellationPointSize               GL 4.0 (ARB_tessellation_shader)
+        GeometryPointSize
+        ImageGatherExtended                 GL 4.0 (ARB_gpu_shader5)
+        StorageImageMultisample             GL 4.2 (ARB_shader_image_load_store)
+        UniformBufferArrayDynamicIndexing   GL 4.0 (ARB_gpu_shader5)
+        SampledImageArrayDynamicIndexing    GL 4.0 (ARB_gpu_shader5)
+        StorageBufferArrayDynamicIndexing   GL 4.3 (ARB_shader_storage_buffer_object)
+        StorageImageArrayDynamicIndexing    GL 4.2 (ARB_shader_image_load_store)
+        ClipDistance
+        CullDistance                        GL 4.5 (ARB_cull_distance)
+        ImageCubeArray                      GL 4.0 (ARB_texture_cube_map_array)
+        SampleRateShading                   GL 4.0 (ARB_sample_shading)
+        ImageRect
+        SampledRect
+        Sampled1D
+        Image1D
+        SampledCubeArray                    GL 4.0 (ARB_texture_cube_map_array)
+        SampledBuffer
+        ImageBuffer
+        ImageMSArray
+        StorageImageExtendedFormats         GL 4.2 (ARB_shader_image_load_store)
+        ImageQuery
+        DerivativeControl                   GL 4.5 (ARB_derivative_control)
+        InterpolationFunction               GL 4.0 (ARB_gpu_shader5)
+        TransformFeedback
+        GeometryStreams                     GL 4.0 (ARB_gpu_shader5)
+        StorageImageWriteWithoutFormat      GL 4.2 (ARB_shader_image_load_store)
+        MultiViewport                       GL 4.1 (ARB_viewport_array)
+        Int64                               (ARB_gpu_shader_int64)
+        SparseResidency                     (ARB_sparse_texture2)
+        MinLod                              (ARB_sparse_texture_clamp)
+        StorageImageReadWithoutFormat       (EXT_shader_image_load_formatted)
+        Int64Atomics                        (NV_shader_atomic_int64)
+
+        Use SPIR-V modules in apropriate shader stage (adequate to capability it tests).
+          Create program objects and execute them. Make sure that no error occured and
+          the result of program execution is as expected.
+
+Revision History
+
+    Revision 1, 5 July, 2017 (Adam Czupryna)
+     - Initial version.
+

@@ -1,0 +1,223 @@
+group if "If Statements"
+
+	case single_statement
+		version 310 es
+		values
+		{
+			input float in0 = [ 0.0 | 1.0 | 2.0 ];
+			output float out0 = [ 0.0 | 1.0 | 1.0 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			${DECLARATIONS}
+			void main()
+			{
+				out0 = 0.0;
+				if (in0 >= 1.0)
+					out0 = 1.0;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case compound_statement
+		version 310 es
+		values
+		{
+			input float in0 = [ 0.0 | 1.0 | 2.0 ];
+			output float out0 = [ 0.0 | 1.0 | 1.0 ];
+			output float out1 = [ 1.0 | 0.0 | 0.0 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			${DECLARATIONS}
+			void main()
+			{
+				out0 = 0.0;
+				out1 = 1.0;
+				if (in0 >= 1.0)
+				{
+					out0 = 1.0;
+					out1 = 0.0;
+				}
+				${OUTPUT}
+			}
+		""
+	end
+
+	case sequence_statements
+		version 310 es
+		values
+		{
+			input float in0 = [ 0.0 | 1.0 | 2.0 ];
+			output float out0 = [ 0.0 | 1.0 | 1.0 ];
+			output float out1 = [ 1.0 | 0.0 | 0.0 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			${DECLARATIONS}
+			void main()
+			{
+				out0 = 0.0;
+				out1 = 1.0;
+				if (in0 >= 1.0)
+					out0 = 1.0, out1 = 0.0;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case sequence_condition
+		version 310 es
+		values
+		{
+			input float in0 = [ 0.0 | 1.0 | 2.0 ];
+			output float out0 = [ 0.0 | 1.0 | 1.0 ];
+			output float out1 = [ 1.0 | 0.0 | 0.0 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			${DECLARATIONS}
+			void main()
+			{
+				out0 = 0.0;
+				out1 = 1.0;
+				if (false, in0 >= 1.0)
+					out0 = 1.0, out1 = 0.0;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case complex_condition
+		version 310 es
+		values
+		{
+			input float in0 = [ 0.0 | 1.0 | 2.0 ];
+			output float out0 = [ 0.0 | 1.0 | 1.0 ];
+			output float out1 = [ 1.0 | 0.0 | 0.0 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			${DECLARATIONS}
+			void main()
+			{
+				out0 = 0.0;
+				out1 = 1.0;
+				if (false || (in0 >= 1.0) && (in0 - 2.0*in0 < 0.0))
+					out0 = 1.0, out1 = 0.0;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case if_else
+		version 310 es
+		values
+		{
+			input float in0 = [ 0.0 | 1.0 | 2.0 ];
+			output float out0 = [ 0.0 | 1.0 | 1.0 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			${DECLARATIONS}
+			void main()
+			{
+				if (in0 >= 1.0)
+					out0 = 1.0;
+				else
+					out0 = 0.0;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case if_elseif
+		version 310 es
+		values
+		{
+			input float in0 = [ 0.0 | 1.0 | 2.0 ];
+			output float out0 = [ 0.0 | 1.0 | 2.0 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			${DECLARATIONS}
+			void main()
+			{
+				out0 = 0.0;
+				if (in0 >= 2.0)
+					out0 = 2.0;
+				else if (in0 >= 1.0)
+					out0 = 1.0;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case if_elseif_else
+		version 310 es
+		values
+		{
+			input float in0 = [ 0.0 | 1.0 | 2.0 ];
+			output float out0 = [ 0.0 | 1.0 | 2.0 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			${DECLARATIONS}
+			void main()
+			{
+				if (in0 >= 2.0)
+					out0 = 2.0;
+				else if (in0 >= 1.0)
+					out0 = 1.0;
+				else
+					out0 = 0.0;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case mixed_if_elseif_else
+		version 310 es
+		values
+		{
+			input float in0 = [ 0.0 | 1.0 | 2.0 ];
+			output float out0 = [ 0.0 | 1.0 | 2.0 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			${DECLARATIONS}
+			void main()
+			{
+				if (in0 >= 2.0)
+				{
+					out0 = 2.0;
+				}
+				else if (in0 >= 1.0)
+					out0 = 2.0, out0 = 1.0;
+				else
+					out0 = 0.0;
+				${OUTPUT}
+			}
+		""
+	end
+
+end # if

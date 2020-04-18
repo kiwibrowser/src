@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>Mesa Release Notes</title>
+  <link rel="stylesheet" type="text/css" href="mesa.css">
+</head>
+<body>
+
+<h1>Mesa 6.5.2 Release Notes / December 2, 2006</h1>
+
+<p>
+Mesa 6.5.2 is a 6.5 follow-on development release with a few new features
+but mostly consisting of bug fixes.
+</p>
+
+
+<h2>MD5 checksums</h2>
+<pre>
+11a033b078e090b3caaeb467234fe299  MesaLib-6.5.2.tar.gz
+e4d894181f1859651658b3704633e10d  MesaLib-6.5.2.tar.bz2
+63bf1d444fa738cca52ce1043e284021  MesaLib-6.5.2.zip
+2b8f1375d16bda5f5a2304174cd5bcf7  MesaDemos-6.5.2.tar.gz
+e870efe98d3a50be01ab211b9b2e25d9  MesaDemos-6.5.2.tar.bz2
+d92cc6f5fee5ca75af0be04f9f4908f0  MesaDemos-6.5.2.zip
+8d4d77e3a7132f4217bbc7c1ab157030  MesaGLUT-6.5.2.tar.gz
+e84edbb11c69c8e408dfadd2ed08e95b  MesaGLUT-6.5.2.tar.bz2
+c6d7134843ed5faf11f6686ecb5d2a2e  MesaGLUT-6.5.2.zip
+</pre>
+
+
+<h2>New features</h2>
+<ul>
+<li>New DRI memory manager system.  Currently used by the i915tex driver.
+Other DRI drivers will be updated to use the new memory manager in coming
+months.
+<br>
+To use the new driver you'll need the most recent DRM library and drivers
+(version 2.2 or later) and a recent xf86-video-intel driver module from X.org.
+<br>
+New features resulting from this work include:
+<ul>
+<li>EXT_framebuffer_objects, render to texture
+<li>ARB_pixel_buffer_objects
+<li>Accelerated CopyTexSubimage, DrawPixels, ReadPixels, CopyPixels
+<li>Accelerated texture uploads from pixel buffer objects
+<li>Potentially texturing directly from the pixel buffer object (zero 
+copy texturing).
+</ul>
+<li>New Intel i965 DRI driver
+<li>New <code>minstall</code> script to replace normal install program
+<li>Faster fragment program execution in software
+<li>Added (or fixed) support for <a href="http://www.opengl.org/registry/specs/SGI/make_current_read.txt">
+    GLX_SGI_make_current_read</a> to the following drivers:
+    <ul>
+    <li>radeon</li>
+    <li>savage</li>
+    <li>mga</li>
+    <li>tdfx</li>
+    </ul>
+<li>Added support for ARB_occlusion_query to the tdfx driver (Ian
+Romanick).</li>
+</ul>
+
+<h2>Bug fixes</h2>
+<ul>
+<li>fixed invalid memory read while rendering textured points (bug 8320)
+<li>fixed problems with freebsd-dri configuration (bug 8344)
+<li>Mesa's fake glxGetCurrentContext() wasn't thread-aware
+<li>OPTION NV_position_invariant didn't work in NV vertex programs
+<li>glDrawPixels into a user-created framebuffer object could crash Xlib driver
+<li>Line clipping was broken in some circumstances
+<li>fragment.fogcoord register didn't always contain the correct value
+<li>RGBA logicops didn't work reliably in some DRI drivers
+<li>Fixed broken RGBA LogicOps in Intel DRI drivers
+<li>Fixed some fragment program bugs in Intel i915 DRI driver
+<li>Fixed glGetVertexAttribfvARB bug 8883
+<li>Implemented glGetUniform[fi]vARB() functions
+<li>Fixed glDrawPixels(GL_COLOR_INDEX, GL_BITMAP) segfault (bug 9044)
+<li>Fixed some gluBuild2DMipmaps() bugs (Greg McGarragh)
+<li>Fixed broken "mgl" name mangling
+<li>Indirect rending was broken for glMap* functions (bug 8899)
+</ul>
+
+
+<h2>Internal code changes</h2>
+
+<ul>
+<li>The device driver functions ResizeBuffers and GetBufferSize have been
+decprecated.
+<li>OpenGL 2.0 and 2.1 support is nearly done.  We need to do quite a bit
+more testing of the shading language functions.
+</ul>
+
+
+<h2>To Do (someday) items</h2>
+<ul>
+<li>Switch to freeglut
+<li>Increase MAX_DRAWBUFFERS
+<li>Fix linux-glide target/driver.
+<li>Improved lambda and derivative calculation for frag progs.
+</ul>
+
+
+<h2>Driver Status</h2>
+
+<pre>
+Driver			Status
+----------------------	----------------------
+DRI drivers		varies with the driver
+XMesa/GLX (on Xlib)	implements OpenGL 1.5
+OSMesa (off-screen)	implements OpenGL 1.5
+Glide (3dfx Voodoo1/2)	implements OpenGL 1.3
+SVGA			implements OpenGL 1.3
+Wind River UGL		implements OpenGL 1.3
+Windows/Win32		implements OpenGL 1.5
+DJGPP			implements OpenGL 1.5
+GGI			implements OpenGL 1.3
+BeOS			implements OpenGL 1.5
+Allegro			needs updating
+D3D			needs updating
+</pre>
+
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<!--
+Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/dashboard/static/debug_alert.html">
+
+<link rel="import" href="/tracing/core/test_utils.html">
+
+<script>
+'use strict';
+
+tr.b.unittest.testSuite(function() {
+  const testOptions = {
+    setUp() {
+      // This is an example of what the embedded global variables might look
+      // like.
+      window.DATA = [
+        {
+          'color': '#666',
+          'lines': {'show': true},
+          'points': {'show': false},
+          'data': [[0, 46.89], [1, 46.96], [2, 47.27], [3, 47.45], [4, 47.30],
+            [5, 57.53], [6, 56.61], [7, 57.31], [8, 56.42], [9, 56.81]]
+        },
+        {
+          'color': '#f90',
+          'lines': {'show': false},
+          'points': {'radius': 4, 'show': true},
+          'data': [[5, 47.53]]
+        },
+        {
+          'color': '#f90',
+          'lines': {'show': true},
+          'points': {'show': false},
+          'data': [[0, null], [1, 47.27], [2, 47.27], [3, 47.27], [4, 47.27],
+            [5, null], [6, 57.31], [7, 57.31], [8, null]]
+        }
+      ];
+      window.ANOMALY_POINTS_INDEX = 1;
+      window.LOOKUP = [
+        30000, 30100, 30200, 30300, 30400,
+        30500, 30600, 30700, 30800, 30900
+      ];
+      window.ANOMALIES = [
+        {
+          'median_after': 47.31,
+          'median_before': 47.27,
+          'relative_change': 0.21,
+          'size_after': 3,
+          'size_before': 4,
+          'window_end': 8,
+          'window_start': 1,
+          'x_value': 5
+        }
+      ];
+    }
+  };
+
+  test('xAxisTickFormatter', function() {
+    // The tick formatter lookups up x-values in window.LOOKUP.
+    // The input can be non-integer.
+    assert.strictEqual(30000, debug_alert.xAxisTickFormatter(0));
+    assert.strictEqual(30000, debug_alert.xAxisTickFormatter(0.2));
+    assert.strictEqual(30100, debug_alert.xAxisTickFormatter(1));
+    assert.strictEqual(30900, debug_alert.xAxisTickFormatter(8.9));
+  }, testOptions);
+
+  test('xAxisTickFormatter with negative input returns first rev', function() {
+    assert.strictEqual(30000, debug_alert.xAxisTickFormatter(-2));
+  }, testOptions);
+
+  test('xAxisTickFormatter with out-of-bounds input -> undefined', function() {
+    assert.isUndefined(debug_alert.xAxisTickFormatter(10));
+  }, testOptions);
+
+  test('anomalyDescription with valid input', function() {
+    const anomaly = window.ANOMALIES[0];
+    assert.strictEqual(
+        '30500<br>21.00%', debug_alert.anomalyDescription(anomaly));
+  }, testOptions);
+
+  test('anomalyDescription with junk input', function() {
+    assert.strictEqual('undefined<br>NaN%', debug_alert.anomalyDescription({}));
+  }, testOptions);
+
+  test('makeLabel makes an HTML element', function() {
+    const labelElement = debug_alert.makeLabel('foo', 100, 200);
+    assert.isTrue(labelElement instanceof HTMLElement);
+    // The element should have its content and position set.
+    assert.notEqual('', labelElement.style.left);
+    assert.notEqual('', labelElement.style.top);
+    assert.notEqual('', labelElement.innerText);
+  }, testOptions);
+
+  test('addVerticalLine modifies options object', function() {
+    const options = {};
+    debug_alert.addVerticalLine(options, 30200);
+    assert.strictEqual(2, options.grid.markings[0].xaxis.from);
+    assert.strictEqual(2, options.grid.markings[0].xaxis.to);
+  }, testOptions);
+
+  test('addVerticalLine does nothing when given no revision', function() {
+    const options = {};
+    debug_alert.addVerticalLine(options, undefined);
+    assert.isUndefined(options.grid);
+  }, testOptions);
+});
+</script>

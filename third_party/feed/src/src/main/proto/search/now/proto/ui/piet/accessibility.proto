@@ -1,0 +1,48 @@
+// Copyright 2018 The Feed Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+import "src/main/proto/search/now/proto/ui/piet/text.proto";
+
+package search.now.ui.piet;
+
+option optimize_for=LITE_RUNTIME;
+
+option java_package = "com.google.search.now.ui.piet";
+option java_outer_classname = "AccessibilityProto";
+option cc_enable_arenas = true;
+
+// Defines accessibility related attributes for Piet elements.
+message Accessibility {
+  // A string that may be spoken by the system. (TalkBack on Android, VoiceOver
+  // on iOS, browser on Web)
+  optional ParameterizedText description = 1;
+
+  // Roles that this UI element plays in the UI. These annotations will be used
+  // by the accessibility framework for applying role-specific treatments.
+  repeated AccessibilityRole roles = 2;
+}
+
+// Semantic roles played by a UI element related to accessibility.
+enum AccessibilityRole {
+  // No special role. The default value, maps to 0.
+  ACCESSIBILITY_ROLE_UNSPECIFIED = 0;
+
+  // Indicates that the UI element is a list containing other elements.
+  LIST = 1;
+
+  // Indicates that the UI element is a header for a section.
+  HEADER = 2;
+}

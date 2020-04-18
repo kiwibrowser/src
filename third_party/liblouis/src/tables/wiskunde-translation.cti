@@ -1,0 +1,158 @@
+#
+#  Copyright (C) 2010, 2011 DocArch <http://www.docarch.be>.
+#
+#  This file is part of liblouis.
+#
+#  liblouis is free software: you can redistribute it and/or modify it
+#  under the terms of the GNU Lesser General Public License as
+#  published by the Free Software Foundation, either version 3 of the
+#  License, or (at your option) any later version.
+#
+#  liblouis is distributed in the hope that it will be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with liblouis. If not, see
+#  <http://www.gnu.org/licenses/>.
+#
+#-------------------------------------------------------------------------------
+#
+#  Flemish Braille Math Code (a.k.a. Woluwe code)
+#     Created and maintained by Bert Frees <bertfrees@gmail.com>
+#     See also: « Handleiding Braillesymbolen Wiskunde »
+#              (Gilbert Notaert, Marc Suij en Emmanuel Vandekerkhove, G.on Woluwe, 1984)
+#
+# ----------------------------------------------------------------------------------------------
+
+include litdigits6Dots.uti
+
+numsign 3456
+capsign 46
+begcaps 45
+midnum , 2
+midnum . 3
+
+repeated \x0020 0
+repeated \x00A0 a
+
+class  uppergreek          \x0391\x0392\x0393\x0394\x0395\x0396\x0397\x0398\x0399\x039A\x039B\x039C\x039D\x039E\x039F\x03A0\x03A1\x03A3\x03A4\x03A5\x03A6\x03A7\x03A8\x03A9
+class  lowergreek          \x03B1\x03B2\x03B3\x03B4\x03B5\x03B6\x03B7\x03B8\x03B9\x03BA\x03BB\x03BC\x03BD\x03BE\x03BF\x03C0\x03C1\x03C2\x03C3\x03C4\x03C5\x03C6\x03C7\x03C8\x03C9\x03D5
+class  operationkeyspace   \x002B\x002D\x002E\x003D\x007E\x00B1\x00D7\x00F7\x2190\x2191\x2192\x2193\x2194\x21D0\x21D2\x21D4\x2209\x220C\x2212\x2217\x2223\x2224\x2226\x2243\x2248\x2260\x2261\x2284\x2285\x2288\x2289\x22C5
+class  operationkey        \x002F\x003C\x2215\x2216\x2225\x2227\x2228\x2229\x222A\x2264\x2282\x2283\x2286\x2287\x22A5\x22D5
+class  operationnokey      \x003E\x00AF\x0302\x0303\x0304\x2191\x2193\x2208\x220B\x2265
+# class relation
+class  digitletter         abcdefghij
+swapcd dropped             0123456789                           356,2,23,25,256,26,235,2356,236,35
+swapdd upnum               245,1,12,14,145,15,124,1245,125,24   0,0,0,0,0,0,0,0,0,0
+swapdd lownum              356,2,23,25,256,26,235,2356,236,35   0,0,0,0,0,0,0,0,0,0
+
+exactdots @0
+exactdots @123456
+exactdots @1256
+exactdots @1456
+exactdots @23
+exactdots @5
+exactdots @56
+
+# Overgang van functie naar letter
+
+  context  "sin"["\es"]%uppergreek     ?
+  context  "cos"["\es"]%uppergreek     ?
+  context  "log"["\es"]%uppergreek     ?
+  context  "tan"["\es"]%uppergreek     ?
+  context  "tg"["\es"]%uppergreek      ?
+
+  context  "sin"["\es"]%lowergreek     ?
+  context  "cos"["\es"]%lowergreek     ?
+  context  "log"["\es"]%lowergreek     ?
+  context  "tan"["\es"]%lowergreek     ?
+  context  "tg"["\es"]%lowergreek      ?
+  
+  context  "sin"["\es"]$l              @6
+  context  "cos"["\es"]$l              @6
+  context  "log"["\es"]$l              @6
+  context  "tan"["\es"]$l              @6
+  context  "tg"["\es"]$l               @6
+  
+# Overgang tussen twee lettergedeeltes
+
+  context  %uppergreek["\es"]$u        @6
+  context  %lowergreek["\es"]$u        @6
+  context  $l["\es"]%uppergreek        ?
+  context  $l["\es"]%lowergreek        ?
+  context  $l["\es"]$l                 ?
+  
+# Overgang tussen coefficient en lettergedeelte waarbij verwarring kan ontstaan 
+
+  context  $d["\es"]%digitletter       @6
+  context  $d[]%digitletter            @6
+  
+# Niet-wiskundige tekst
+
+  context ["\et"]$p                    ?
+  context ["\et"]                      @0
+  
+# Wortelvormen
+
+  context ["\ev"]                      @146
+  
+# Lege exponenten en indices
+
+  context  ["\ei\e^r\en\ex"]           ?
+  context  ["\ei\e^c\en\ex"]           ?
+  context  ["\ei\e^l\en\ex"]           ?
+  context  ["\ei\e_r\en\ex"]           ?
+  context  ["\ei\e_c\en\ex"]           ?
+  context  ["\ei\e_l\en\ex"]           ?
+  context  ["\en"]                     ?
+  
+# Gezakte cijfers, exponenten, indices & breuken
+
+  context  "\ef\es"$d."\ed\es"[$d.]"\ex"            %dropped    # noemer van natuurlijke breuk in gezakte cijfers
+  context  "\e^r\es"[$d.]"\ex"                      %dropped    # natuurlijke exponenten en indices in gezakte cijfers
+  context  "\e^c\es"[$d.]"\ex"                      %dropped
+  context  "\e^l\es"[$d.]"\ex"                      %dropped
+  context  "\e_r\es"[$d.]"\ex"                      %dropped
+  context  "\e_c\es"[$d.]"\ex"                      %dropped
+  context  "\e_l\es"[$d.]"\ex"                      %dropped
+  
+  context  ["\ei"]"\e^r\es"%operationkeyspace"\ex"  ?           # accenten, bewerkings- en relatietekens als index midden of rechts boven
+  context  ["\ei"]"\e^r\es"%operationkey"\ex"       ?
+  context  ["\ei"]"\e^r\es"%operationnokey"\ex"     ?
+  context  ["\ei"]"\e^c\es"%operationkeyspace"\ex"  ?
+  context  ["\ei"]"\e^c\es"%operationkey"\ex"       ?
+  context  ["\ei"]"\e^c\es"%operationnokey"\ex"     ?
+  
+  context  "\e^r\es"%operationkeyspace["\ex"]       ?           # verwijder sluiter
+  context  "\e^r\es"%operationkey["\ex"]            ?
+  context  "\e^r\es"%operationnokey["\ex"]          ?
+  context  "\e^c\es"%operationkeyspace["\ex"]       ?
+  context  "\e^c\es"%operationkey["\ex"]            ?
+  context  "\e^c\es"%operationnokey["\ex"]          ?
+  
+  context  "\es"[]%operationkeyspace                @5          # sleutel voor bewerkingstekens
+  context  "\es"[]%operationkey                     @5
+  
+  context  ["\ef"]                                  @5@23       # begin van breuk  
+  pass2    %upnum.[@1b-145-1b-234]%lownum.          ?           # verwijder breukstreep
+  pass3    [@1b-124-1b-234]%upnum.%lownum.          @3456       # herstel cijferteken van teller  
+  pass3    @1b-145                                  @1256       # breukstreep \ed
+  pass3    @1b-124                                  ?           # \ef
+  pass3    @1b-234                                  ?           # \es
+  
+  pass3    @1b-24-1b-34-1235                        @34         # \ei\e^r
+  pass3    @1b-24-1b-34-14                          @456@34     # \ei\e^c
+  pass3    @1b-24-1b-34-123                         @3456@34    # \ei\e^l
+  pass3    @1b-24-1b-456-1235                       @16         # \ei\e_r
+  pass3    @1b-24-1b-456-14                         @456@16     # \ei\e_c
+  pass3    @1b-24-1b-456-123                        @3456@16    # \ei\e_l  
+  pass3    @1b-24                                   ?           # \ei
+  pass3    @1b-34-1235                              @4          # \e^r
+  pass3    @1b-34-14                                @45         # \e^c
+  
+  pass3    %lownum.[@1b-1346]                       ?           # verwijder sluiter na gezakte cijfers
+  pass4    @1b-1346                                 @156        # sluiter \ex
+  
+# ----------------------------------------------------------------------------------------------

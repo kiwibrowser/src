@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Polymer Redux, Ready State</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="../../../node_modules/redux/dist/redux.js"></script>
+
+    <link rel="import" href="../../iron-demo-helpers/demo-pages-shared-styles.html">
+    <link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
+    <link rel="import" href="../../vaadin-combo-box/vaadin-combo-box.html">
+
+    <link rel="import" href="../polymer-redux.html">
+
+    <style is="custom-style" include="demo-pages-shared-styles">
+    </style>
+  </head>
+  <body>
+
+    <div class="vertical-section-container">
+      <h3>Polymer Redux, Ready State</h3>
+      <demo-snippet>
+        <template>
+          <!-- friends list module -->
+          <dom-module id="friend-picker">
+            <template>
+              <h3>Choose a Friend:</h3>
+              <vaadin-combo-box id="friend-list"
+                                items="[[list]]"
+                                on-change="onFriendChange">
+              </vaadin-combo-box>
+              <template is="dom-if" if="[[friend]]">
+                <p>You choose: [[friend]].</p>
+              </template>
+            </template>
+          </dom-module>
+          <!-- demo -->
+          <friend-picker></friend-picker>
+        </template>
+      </demo-snippet>
+      <script>
+        // redux setup
+        const initialState = {
+            friends: ['Adam', 'Beth', 'Carl', 'Denise'],
+            chosenFriend: 'Beth',
+        };
+        const reducer = (state, action) => {
+          if (!state) return initialState;
+
+          switch (action.type) {
+            case 'CHOOSE_FRIEND':
+              return Object.assign({}, state, {
+                chosenFriend: action.friend
+              });
+          }
+
+          return state;
+        }
+        const store = Redux.createStore(
+          reducer,
+          window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
+        );
+        const ReduxBehavior = PolymerRedux(store);
+
+        Polymer({
+          is: 'friend-picker',
+          behaviors: [ ReduxBehavior ],
+          properties: {
+            list: {
+              type: Array,
+              statePath: 'friends'
+            },
+            friend: {
+              type: String,
+              statePath: 'chosenFriend'
+            }
+          },
+          actions: {
+            chooseFriend: function(friend) {
+              return {
+                type: 'CHOOSE_FRIEND',
+                friend: friend
+              };
+            }
+          },
+          onFriendChange: function() {
+            this.dispatch('chooseFriend', this.$['friend-list'].value);
+          }
+        });
+      </script>
+    </div>
+  </body>
+</html>

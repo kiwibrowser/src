@@ -1,0 +1,38 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_email_attach() {
+test_start "$FUNCNAME: verify attach argument works"
+
+ADDR="$XDG_TEST_SHORTID@portland.freedesktop.org"
+
+test_init
+
+require_notroot
+
+## Require a running X server
+assert_display
+
+get_unique_name TARG 'attach.txt'
+echo "I am an attachment." > $TARG
+assert_file "$TARG"
+
+test_procedure
+
+assert_exit 0 xdg-email --attach "$TARG" "$ADDR"
+assert_nostdout
+assert_nostderr
+
+assert_interactive "Did an email open to '$ADDR'?" y
+assert_interactive "Is there an attachment?" y
+
+assert_interactive "Please close any email windows opened by the test." C
+
+test_result
+}
+
+run_test test_email_attach

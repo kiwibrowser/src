@@ -1,0 +1,67 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Copy Image Tests (GL_EXT_copy_image)
+
+Tests:
+ + dEQP-GLES31.copy_image.*
+
+Includes:
+ + 2D texture images
+ + Cube map texture images
+ + 3D texture images
+ + 2D texture array images
+ + Renderbuffer images
+ + Copies between different formats
+ + Copies between different compressed formats
+ + Copies between compressed and non-compressed formats
+ + Using images for rendering before copy
+ + Not using images for rendering before copy
+ + Compressed ASTC formats
+ + Compressed ETC formats
+ + Compressed ETC2 formats
+
+Excludes:
+ + Copies between two float formats
+ + Invalid ASTC blocks
+ + HDR ASTC blocks
+ + 3D block ASTC formats
+ + Other compressed formats than ASTC, ETC and ETC2
+
+Description:
+
+Test creates two images and initializes them to random data. Both images have
+always npot size and texture images are always created so that they are mipmap
+complete. Random data is always generated so that it is valid for both formats
+e.g. no invalid ASTC blocks or NaNs exist before or after copying.
+
+Multiple copies are performed per test case. Texture levels 0, 1 and last level
+are used as source and destination levels. For each texture level top left and
+bottom right corners are used as source rectangle and destination rectangle.
+Also npot offset in the middle of the image is used. Some of the copied
+rectangles are npot size.
+
+Each test case does copying in two different ways. First they create images,
+use them for rendering, copy and perform verification. Second time they create
+images and immediately copy them without rendering and finally verify image
+contents.
+
+Instead of trying to isolate different smaller features and testing them
+separately, these tests try to test multiple cases for each format as there
+would be huge number of tests and it would take too long to run more than one
+case for each format and image combination.

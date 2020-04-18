@@ -1,0 +1,48 @@
+This README covers documentation on how to develop with and test against
+a local CIDB instance. Whenever you add or modify a cidb feature you should run
+cidb_integration_test.py. Specifically, there are two large sets of data that
+can be used for adding tests. Data for these are stored in individual json files
+that are stored in .test_data/. Each series has a readme that roughly describes
+what is in the data.
+
+However, when adding a new test, this may not be sufficient. The test launches a
+local mysqld instance that runs out of a temporary directory. To prevent this
+directory from disappearing at the end of the test, run the test with --no-wipe.
+
+  $ lib/cidb_integration_test --debug --no-wipe
+
+The test logs the path to the temporary working directory at the end.
+
+You can launch the mysqld server again to play with the database in its final
+state. You'll have to fish out the temp directory that it created -- it will
+be inside the logged directory (above) and will look something like:
+
+  /tmp/chromite.test_no_cleanup3WqzmO/chromite.testYypd_c/
+
+Set your local tmpdir variable to the path that you found, and run (inside the
+chroot):
+
+  $ tmpdir=/tmp/....
+  $ /usr/sbin/mysqld --no-defaults --datadir ${tmpdir}/mysqld_dir --socket \
+      ${tmpdir}/mysqld_dir/mysqld.socket --port 8440 --pid-file \
+      ${tmpdir}/mysqld_dir/mysqld.pid --tmpdir ${tmpdir}/mysqld_dir/tmp &
+
+You can connect to this instance using mysql client.
+
+  $ mysql -u root -S ${tmpdir}/mysqld_dir/mysqld.socket
+
+At this point you can run normal SQL. To double check, run:
+
+   > use cidb;
+   > show tables;
+
+You can then use the data here to create your own integration test to test
+something you added to CIDB.
+
+When you're done, remember to shutdown the mysqld instance, and delete the
+temporary directory.
+
+$ mysqladmin -u root -S ${tmpdir}/mysqld_dir/mysqld.socket shutdown
+$ rm -rf ${tmpdir}
+
+Please see ./schema.dump.readme for more information on how to read the schema.

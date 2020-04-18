@@ -1,0 +1,1 @@
+../../../../../../../../../.cipd/pkgs/82/_current/platform-tools/systrace/catapult/systrace/systrace/update_systrace_trace_viewer.py

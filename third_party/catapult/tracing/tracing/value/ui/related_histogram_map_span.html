@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<!--
+Copyright 2016 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/ui/analysis/analysis_link.html">
+<link rel="import" href="/tracing/ui/base/table.html">
+<link rel="import" href="/tracing/value/ui/diagnostic_span_behavior.html">
+<link rel="import" href="/tracing/value/ui/scalar_span.html">
+
+<dom-module id="tr-v-ui-related-histogram-map-span">
+  <template>
+    <tr-ui-b-table id="table"></tr-ui-b-table>
+  </template>
+</dom-module>
+
+<script>
+'use strict';
+tr.exportTo('tr.v.ui', function() {
+  Polymer({
+    is: 'tr-v-ui-related-histogram-map-span',
+    behaviors: [tr.v.ui.DIAGNOSTIC_SPAN_BEHAVIOR],
+
+    ready() {
+      this.$.table.showHeader = false;
+      this.$.table.tableColumns = [
+        {value: row => row[0]},
+        {value: row => row[1]},
+      ];
+    },
+
+    updateContents_() {
+      Polymer.dom(this).textContent = '';
+
+      const rows = [];
+
+      const histogramNames = new Set();
+      for (const [name, hist] of this.diagnostic) {
+        histogramNames.add(hist.name);
+      }
+      if (histogramNames.size > 1) {
+        const link = document.createElement('tr-ui-a-analysis-link');
+        link.setSelectionAndContent(Array.from(histogramNames), 'Select All');
+        rows.push([link, '']);
+      }
+
+      for (const [name, hist] of this.diagnostic) {
+        const link = document.createElement('tr-ui-a-analysis-link');
+        link.setSelectionAndContent([hist.name], name);
+        const scalarSpan = tr.v.ui.createScalarSpan(hist);
+        rows.push([link, scalarSpan]);
+      }
+      this.$.table.tableRows = rows;
+      this.$.table.rebuild();
+    }
+  });
+
+  return {};
+});
+</script>

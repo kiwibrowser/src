@@ -1,0 +1,55 @@
+# src/gbm/backends/Makefile.template
+#
+# Backends should define
+#
+# GBM_BACKEND, the driver name
+# GBM_SOURCES, the driver sources
+# GBM_INCLUDES, the include pathes
+# GBM_CFLAGS, additional CFLAGS
+# GBM_LIBS, additional LIBS
+#
+# before including this template.
+#
+
+
+GBM_BACKEND_PATH = $(TOP)/$(LIB_DIR)/gbm/$(GBM_BACKEND).so
+GBM_OBJECTS = $(GBM_SOURCES:.c=.o)
+
+GBM_TARGET = $(GBM_BACKEND_PATH)
+GBM_INSTALL = install-so
+
+default: depend $(GBM_TARGET) $(GBM_EXTRA_TARGETS)
+
+$(GBM_BACKEND_PATH): $(GBM_BACKEND).so
+	@$(INSTALL) -d $(TOP)/$(LIB_DIR)/gbm
+	$(INSTALL) $< $(TOP)/$(LIB_DIR)/gbm
+
+$(GBM_BACKEND).so: $(GBM_OBJECTS) Makefile $(TOP)/src/gbm/backends/Makefile.template
+	@$(MKLIB) -o $(GBM_BACKEND).so -noprefix \
+		-linker '$(CC)' -ldflags '-L$(TOP)/$(LIB_DIR) $(LDFLAGS)' \
+		$(MKLIB_OPTIONS) \
+		$(GBM_OBJECTS) $(GBM_LIBS) -lgbm
+
+.c.o:
+	$(CC) -c $(GBM_INCLUDES) $(CFLAGS) $(GBM_CFLAGS) $< -o $@
+
+install-so: $(GBM_BACKEND_PATH)
+	$(INSTALL) -d $(DESTDIR)$(INSTALL_LIB_DIR)/gbm
+	$(MINSTALL) $(GBM_BACKEND_PATH) $(DESTDIR)$(INSTALL_LIB_DIR)/gbm
+
+install: $(GBM_INSTALL) $(GBM_EXTRA_INSTALL)
+
+clean: $(GBM_EXTRA_CLEAN)
+	rm -f $(GBM_BACKEND).so
+	rm -f $(GBM_OBJECTS)
+	rm -f depend depend.bak
+
+depend: $(GBM_SOURCES) $(GBM_EXTRA_SOURCES)
+	@ echo "running $(MKDEP)"
+	@ rm -f depend
+	@ touch depend
+	$(MKDEP) $(MKDEP_OPTIONS) $(GBM_INCLUDES) $(GBM_SOURCES) \
+		$(GBM_EXTRA_SOURCES) >/dev/null 2>/dev/null
+
+sinclude depend
+# DO NOT DELETE

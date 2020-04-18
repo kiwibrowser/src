@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<!--
+Copyright 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/core/test_utils.html">
+<link rel="import" href="/tracing/value/diagnostics/add_related_names.html">
+<link rel="import" href="/tracing/value/histogram_set.html">
+
+<script>
+'use strict';
+
+tr.b.unittest.testSuite(function() {
+  test('addRelatedNames', function() {
+    const histograms = new tr.v.HistogramSet();
+    const aHist = histograms.createHistogram('a', tr.b.Unit.byName.count, []);
+    const bHist = histograms.createHistogram('b', tr.b.Unit.byName.count, [], {
+      diagnostics: {rel: new tr.v.d.RelatedHistogramBreakdown()},
+    });
+    bHist.diagnostics.get('rel').set('A', aHist);
+    tr.v.d.addRelatedNames(histograms);
+    assert.isUndefined(aHist.diagnostics.get(
+        tr.v.d.RESERVED_NAMES.RELATED_NAMES));
+    assert.strictEqual(tr.b.getOnlyElement(bHist.diagnostics.get(
+        tr.v.d.RESERVED_NAMES.RELATED_NAMES)), aHist.name);
+  });
+});
+</script>

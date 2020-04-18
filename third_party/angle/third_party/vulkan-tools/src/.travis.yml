@@ -1,0 +1,153 @@
+# Build Configuration for Travis CI
+# https://travis-ci.org
+
+dist: xenial
+sudo: required
+language: cpp
+
+matrix:
+  # Show final status immediately if a test fails.
+  fast_finish: true
+  allow_failures:
+    - env: CHECK_COMMIT_FORMAT=ON
+  include:
+    # Android build.
+    - os: linux
+      compiler: gcc
+      env: VULKAN_BUILD_TARGET=ANDROID ANDROID_TARGET=android-23 ANDROID_ABI=armeabi-v7a
+    # Android 64-bit build.
+    - os: linux
+      compiler: gcc
+      env: VULKAN_BUILD_TARGET=ANDROID ANDROID_TARGET=android-23 ANDROID_ABI=arm64-v8a
+    # Linux GCC debug build.
+    - os: linux
+      compiler: gcc
+      env: VULKAN_BUILD_TARGET=LINUX
+    # Linux clang debug build.
+    - os: linux
+      compiler: clang
+      env: VULKAN_BUILD_TARGET=LINUX
+    # Check for proper clang formatting in the pull request.
+    - env: CHECK_FORMAT=ON
+    # Check for proper commit message formatting for commits in PR
+    - env: CHECK_COMMIT_FORMAT=ON
+
+cache: ccache
+
+# Use set -e so that the build fails when a command fails.
+# The default action for Travis-CI is to continue running even if a command fails.
+# See https://github.com/travis-ci/travis-ci/issues/1066.
+# Use the YAML block scalar header (|) to allow easier multiline script coding.
+
+before_install:
+  - set -e
+  - |
+    if [[ "$VULKAN_BUILD_TARGET" == "LINUX" ]]; then
+      # Install the appropriate Linux packages.
+      sudo apt-get -qq update
+      sudo apt-get -y install libxkbcommon-dev libwayland-dev libmirclient-dev libxrandr-dev libx11-xcb-dev
+    fi
+  - |
+    if [[ "$VULKAN_BUILD_TARGET" == "ANDROID" ]]; then
+      # Install the Android NDK.
+      export ARCH=`uname -m`
+      wget http://dl.google.com/android/repository/android-ndk-r15c-linux-${ARCH}.zip
+      unzip -u -q android-ndk-r15c-linux-${ARCH}.zip
+      export ANDROID_NDK_HOME=`pwd`/android-ndk-r15c
+      export JAVA_HOME="/usr/lib/jvm/java-8-oracle"
+      export PATH="$ANDROID_NDK_HOME:$PATH"
+    fi
+  - |
+    if [[ "$CHECK_FORMAT" == "ON" && "$TRAVIS_PULL_REQUEST" != "false" ]]; then
+      # Install the clang format diff tool, but only for pull requests.
+      curl -L http://llvm.org/svn/llvm-project/cfe/trunk/tools/clang-format/clang-format-diff.py -o scripts/clang-format-diff.py;
+    fi
+  # Misc setup
+  - |
+  - export core_count=$(nproc || echo 4) && echo core_count = $core_count
+  - set +e
+
+script:
+  - set -e
+  - |
+    if [[ "$VULKAN_BUILD_TARGET" == "LINUX" ]]; then
+      # Build Vulkan-Headers
+      cd ${TRAVIS_BUILD_DIR}
+      git clone https://github.com/KhronosGroup/Vulkan-Headers.git
+      cd Vulkan-Headers
+      mkdir build
+      cd build
+      cmake -DCMAKE_INSTALL_PREFIX=install ..
+      make -j $core_count install
+      cd ${TRAVIS_BUILD_DIR}
+    fi
+  - |
+    if [[ "$VULKAN_BUILD_TARGET" == "LINUX" ]]; then
+      # Build Vulkan-Loader for Vulkan-Tools
+      cd ${TRAVIS_BUILD_DIR}
+      git clone https://github.com/KhronosGroup/Vulkan-Loader.git
+      cd Vulkan-Loader
+      mkdir build
+      cd build
+      cmake -DCMAKE_BUILD_TYPE=Debug -DVULKAN_HEADERS_INSTALL_DIR=${TRAVIS_BUILD_DIR}/Vulkan-Headers/build/install -DCMAKE_INSTALL_PREFIX=install ..
+      make -j $core_count install
+      cd ${TRAVIS_BUILD_DIR}
+    fi
+  - |
+    if [[ "$VULKAN_BUILD_TARGET" == "LINUX" ]]; then
+      # Build Vulkan-Tools
+      cd ${TRAVIS_BUILD_DIR}
+      mkdir build
+      cd build
+      cmake -DCMAKE_BUILD_TYPE=Debug -DVULKAN_HEADERS_INSTALL_DIR=${TRAVIS_BUILD_DIR}/Vulkan-Headers/build/install -DVULKAN_LOADER_INSTALL_DIR=${TRAVIS_BUILD_DIR}/Vulkan-Loader/build/install ..
+      make -j $core_count
+      cd ${TRAVIS_BUILD_DIR}
+    fi
+  - |
+    if [[ "$VULKAN_BUILD_TARGET" == "LINUX" ]]; then
+      # Run vulkaninfo as a test
+      cd ${TRAVIS_BUILD_DIR}
+      cd build/vulkaninfo
+      ldd vulkaninfo
+      VK_ICD_FILENAMES=../icd/VkICD_mock_icd.json ./vulkaninfo
+      cd ${TRAVIS_BUILD_DIR}
+    fi
+  - |
+    if [[ "$VULKAN_BUILD_TARGET" == "ANDROID" ]]; then
+      pushd ${TRAVIS_BUILD_DIR}/build-android
+      ./update_external_sources_android.sh  --abi $ANDROID_ABI --no-build
+      popd
+      pushd ${TRAVIS_BUILD_DIR}/cube/android
+      USE_CCACHE=1 NDK_CCACHE=ccache ndk-build APP_ABI=$ANDROID_ABI -j $core_count
+      popd
+    fi
+  - |
+    if [[ "$CHECK_FORMAT" == "ON" ]]; then
+      if [[ "$TRAVIS_PULL_REQUEST" != "false" ]]; then
+        # Run the clang format check only for pull request builds because the
+        # master branch is needed to do the git diff.
+        echo "Checking clang-format between TRAVIS_BRANCH=$TRAVIS_BRANCH and TRAVIS_PULL_REQUEST_BRANCH=$TRAVIS_PULL_REQUEST_BRANCH"
+        ./scripts/check_code_format.sh
+      else
+        echo "Skipping clang-format check since this is not a pull request."
+      fi
+    fi
+  - |
+    if [[ "$CHECK_COMMIT_FORMAT" == "ON" ]]; then
+      if [[ "$TRAVIS_PULL_REQUEST" != "false" ]]; then
+        echo "Checking commit message formats:  See CONTRIBUTING.md"
+        ./scripts/check_commit_message_format.sh
+      fi
+    fi
+  - set +e
+
+notifications:
+  email:
+    recipients:
+      - karl@lunarg.com
+      - cnorthrop@google.com
+      - tobine@google.com
+      - chrisforbes@google.com
+      - shannon@lunarg.com
+    on_success: change
+    on_failure: always

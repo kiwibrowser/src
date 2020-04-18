@@ -1,0 +1,52 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Mipmapping tests
+
+Tests:
+ + dEQP-GLES3.functional.texture.mipmap.*
+
+Includes:
+ + All mipmap filtering modes
+ + Lod computation verification
+ + Affine and projected transforms
+ + User-supplied bias to texture lookup
+ + Lod controls: min and max lod
+ + 2D and cube map textures
+
+Excludes:
+ + Only selected texture formats are exercised
+
+Description:
+
+Mipmapping tests render a pre-defined grid of quads. For 2D textures regular
+4x4 grid layout is used. For cube map textures the viewport is recursively
+subdivided into smaller areas and each is filled with samples from single
+cube face.
+
+Each texture level is filled with single color. However, each mipmap level
+gets assigned a different color from a continuous gradient. Thus it is possible
+to evaluate how accurately the lod was computed by inspecting the resulting
+colorbuffer.
+
+OpenGL ES specification allows approximating both derivate- and lod computation.
+Thus two reference images are rendered: one rendered according to the minimum
+bound for the approximation and another based on the maximum bound. The rendered
+pixels must be in between the two bounds in order to be valid. In order to
+compensate the derivate approximation the pixels are actually checked against
+a 3x3 neighbor around the pixel.

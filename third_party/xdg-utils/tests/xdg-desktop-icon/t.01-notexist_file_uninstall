@@ -1,0 +1,37 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_notexist_file_uninstall() {
+## Begin the test.
+FILE="pain_file_uninstall.txt"
+test_start "$FUNCNAME: verify uninstalling file does not cause an error if it is not installed."
+
+# Dependencies section
+test_init
+
+get_unique_name INSFILE "$FILE"
+set_no_display
+echo "Some more boring text" > "$INSFILE"
+assert_file "$INSFILE" 
+
+# Verify the test icon is not installed already.
+assert_file_not_in_path "$INSFILE" "$HOME/Desktop"
+
+# Test steps section
+test_procedure
+
+assert_exit 0 xdg-desktop-icon uninstall "$INSFILE"
+assert_nostdout
+assert_nostderr
+
+assert_file_not_in_path "$INSFILE" "$HOME/Desktop"
+
+test_result
+} 
+
+run_test test_notexist_file_uninstall

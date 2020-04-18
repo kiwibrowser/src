@@ -1,0 +1,45 @@
+MKDIR      	= mkdir -p
+RMDIR      	= rmdir
+INSTALL         = @INSTALL@ $(INSTALL_FLAGS)
+INSTALL_PROGRAM = @INSTALL_PROGRAM@ $(INSTALL_PROGRAM_FLAGS)
+INSTALL_LIBRARY = @INSTALL_PROGRAM@ $(INSTALL_PROGRAM_FLAGS)
+INSTALL_SCRIPT  = @INSTALL_SCRIPT@ $(INSTALL_SCRIPT_FLAGS)
+INSTALL_DATA    = @INSTALL_DATA@ $(INSTALL_DATA_FLAGS)
+XMLTO           = @XMLTO@
+
+prefix          = @prefix@
+exec_prefix     = @exec_prefix@
+bindir          = @bindir@
+mandir          = @mandir@
+
+all:
+
+release:
+	rm -rf xdg-su tmp
+	rm -f xdg-test.log *~
+
+test:
+	./testrun -IRC
+	rm -rf tmp/xdgt*
+
+distclean: clean
+	rm -f Makefile
+
+clean:
+	rm -rf tmp/xdgt*
+
+tests-userclean:
+	find ${HOME} -name 'xdgtestdata*' | xargs rm -rf
+	find ${HOME} -name 'x-xdg*.xml' | xargs rm -f
+	find ${HOME}/.kde/share/mimelnk -name 'x-xdg*.desktop' | xargs rm -f
+
+tests-clean:	tests-userclean
+	find `echo "${XDG_DATA_DIRS}:/usr/local/share/:/usr/share/:${XDG_CONFIG_DIRS}:/etc/xdg" | sed -e 's/:/ /g'` -name 'xdgtestdata*' | xargs rm -rf
+	find `echo "${XDG_DATA_DIRS}:/usr/local/share/:/usr/share/:${XDG_CONFIG_DIRS}:/etc/xdg" | sed -e 's|:| |g'` -name 'x-xdgt*' | xargs rm -f
+
+install:
+
+uninstall:
+
+doc:
+	perl doc_gen.pl

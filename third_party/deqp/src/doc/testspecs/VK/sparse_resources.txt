@@ -1,0 +1,160 @@
+Sparse resources tests
+
+Tests:
+
+dEQP-VK.sparse_resources.*
+
+Includes:
+
+1. Test fully resident buffer created with VK_BUFFER_CREATE_SPARSE_BINDING_BIT flag bit
+2. Test fully resident image created with VK_IMAGE_CREATE_SPARSE_BINDING_BIT flag bit
+3. Test partially resident buffer created with VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT flag bit
+4. Test partially resident image created with VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT flag bit
+5. Test partially resident image with mipmaps, put some mipmap levels in mip tail region
+6. Test memory aliasing for fully resident buffer objects
+7. Test memory aliasing for partially resident images
+8. Test OpImageSparse* shader intrinsics
+
+Description:
+
+1. Test fully resident buffer created with VK_BUFFER_CREATE_SPARSE_BINDING_BIT flag bit
+
+The test creates buffer object with VK_BUFFER_CREATE_SPARSE_BINDING_BIT flag bit. The size of the buffer is one
+of the test parameters. The memory requirements of the buffer are being checked. Device memory is allocated
+in chunks equal to the alignment parameter of buffer's memory requirements. The number of allocations is equal to
+bufferRequirements.size / bufferRequirements.alignment.
+
+The test creates two queues - one supporting sparse binding operations, the second one supporting compute and transfer operations.
+
+First queue is used to perform binding of device memory to sparse buffer. The binding operation signals semaphore
+used for synchronization.
+
+The second queue is used to perform transfer operations. The test creates two non-sparse buffer objects,
+one used as input and the second as output. The input buffer is used to transfer data to sparse buffer. The data is then
+transfered further from sparse buffer to output buffer. The transer queue waits on a semaphore, before transfer operations
+can be issued.
+
+The validation part retrieves data back from output buffer to host memory. The data is then compared with reference data,
+that was originally sent to input buffer. If the two data sets match, the test passes.
+
+2. Test fully resident image created with VK_IMAGE_CREATE_SPARSE_BINDING_BIT flag bit
+
+The test checks all supported types of images. It creates image with VK_IMAGE_CREATE_SPARSE_BINDING_BIT flag bit.
+The memory requirements of the image are being checked. Device memory is allocated in chunks equal to the alignment parameter
+of the image memory requirements. The number of allocations is equal to imageRequirements.size / imageRequirements.alignment.
+
+The test creates two queues - one supporting sparse binding operations, the second one supporting compute and transfer operations.
+
+First queue is used to perform binding of device memory to sparse image. The binding operation signals semaphore
+used for synchronization.
+
+The second queue is used to perform transfer operations. The test creates two non-sparse buffer objects,
+one used as input and the second as output. The input buffer is used to transfer data to sparse image. The data is then
+transfered further from sparse image to output buffer. The transfer queue waits on a semaphore, before transfer operations
+can be issued.
+
+The validation part retrieves data back from output buffer to host memory. The data is then compared with reference data,
+that was originally sent to input buffer. If the two data sets match, the test passes.
+
+3. Test partially resident buffer created with VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT flag bit
+
+The test creates buffer object with VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT flag bit. The size of the buffer is one
+of the test parameters. The sparse memory requirements of the buffer are being checked. Device memory is allocated
+in chunks equal to the alignment parameter of buffer's memory requirements. Memory is bound to the buffer object leaving gaps
+between bound blocks with the size equal to alignment.
+
+The test creates two queues - one supporting sparse binding operations, the second one supporting compute and transfer operations.
+
+First queue is used to perform binding of device memory to sparse buffer. The binding operation signals semaphore
+used for synchronization.
+
+The second queue is used to perform compute and transfer operations. A compute shader is invoked to fill the whole buffer with data.
+Afterwards the data is transfered from sparse buffer to non-sparse output buffer.
+
+The validation part retrieves data back from output buffer to host memory. The data is compared against the expected output
+from compute shader. For parts of the data that correspond to the regions of sparse buffer that have device memory bound, the comparison is done
+against expected output from compute shader. For parts that correspond to gaps, the data is random or should be filled with zeros if
+residencyNonResidentStrict device sparse property is set to TRUE.
+
+4. Test partially resident image created with VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT flag bit
+
+The test creates image with VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT flag bit. The sparse memory requirements of the image are being checked.
+Device memory is allocated in chunks equal to the alignment parameter of image's memory requirements.
+Memory is bound to the image leaving gaps between bound blocks with the size equal to alignment.
+
+The test creates two queues - one supporting sparse binding operations, the second one supporting compute and transfer operations.
+
+First queue is used to perform binding of device memory to sparse image. The binding operation signals semaphore
+used for synchronization.
+
+The second queue is used to perform compute and transfer operations. A compute shader is invoked to fill the whole image with data.
+Afterwards the data is transfered from sparse image to non-sparse output buffer.
+
+The validation part retrieves data back from output buffer to host memory. The data is compared against the expected output
+from compute shader. For parts of the data that correspond to the regions of image that have device memory bound, the comparison is done
+against expected output from compute shader. For parts that correspond to gaps, the data is random or should be filled with zeros if residencyNonResidentStrict
+device sparse property is set to TRUE.
+
+5. Test partially resident image with mipmaps, put some mipmap levels in mip tail region
+
+The test creates image with maximum allowed number of mipmap levels. The sparse memory requirements of the image are being checked.
+Each layer of each mipmap level receives a separate device memory binding. The mipmaps levels that end up in mip tail region receive one
+binding for each mipmap level or one binding for all levels, depending on the value of VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT.
+
+A compute shader is invoked to fill each mipmap level with data. Afterwards the data is transfered to a non-sparse buffer object.
+
+The validation part retrieves data back from output buffer to host memory. The data is compared against the expected output
+from compute shader. The test passes if the data sets are equal.
+
+6. Test memory aliasing for fully resident buffer objects
+
+The test creates two fully resident buffers (READ and WRITE) with VK_BUFFER_CREATE_SPARSE_ALIASED_BIT
+and VK_BUFFER_CREATE_SPARSE_BINDING_BIT flag bits. Both buffers have the same size.
+
+The test creates two queues - one supporting sparse binding operations, the second one supporting compute and transfer operations.
+
+First queue is used to perform binding of device memory to sparse buffers. One block of device memory is allocated
+and bound to both buffers (buffers share memory).
+
+The second queue is used to perform compute and transfer operations. A compute shader is invoked to fill the whole WRITE buffer with data.
+Afterwards the data from READ buffer is being transfered to non-sparse output buffer.
+
+The validation part retrieves data back from output buffer to host memory. The data is compared against the expected output
+from compute shader. The test passes if the data sets are equal.
+
+7. Test memory aliasing for partially resident images
+
+The test creates two partially resident images (READ and WRITE) with VK_IMAGE_CREATE_SPARSE_ALIASED_BIT and VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT flag bits.
+Both images have the same type, format and dimensions.
+
+The test creates two queues - one supporting sparse binding operations, the second one supporting compute and transfer operations.
+
+First queue is used to perform binding of device memory to sparse images. The memory bound via VkSparseImageMemoryBind is shared between
+both images. The mipmap levels that land in the mip tail region have separate memory regions for both images.
+
+The second queue is used to perform compute and transfer operations. The test creates two non-sparse buffer objects,
+one used as input and the second as output. The input buffer is used to transfer data to READ sparse image to create some initial state.
+Afterwards compute shaders are invoked to write data to each mipmap level of WRITE sparse image. The mipmap levels of READ image that share memory with
+WRITE image should be overwritten by this operation, the mip tail region should be left intact. Next the data is copied from the READ image to the output buffer.
+
+The validation part retrieves data back from output buffer to host memory. For each mipmap level that both images share memory for, the data is
+compared against the expected output from compute shader. On the other hand for each mipmap level that landed in the mip tail region, the data is compared
+against data stored in the input buffer (the compute shader could not have changed this data). The test passes if for each mipmap level
+the comparison results in both data sets being the same.
+
+8. Test OpImageSparse* shader intrinsics
+
+The test creates sparse partially resident image. The memory is bound to the image every second mipmap level.
+
+The test creates also a second non-sparse texels image with the same dimensions and format as the sparse one and
+a third residency image with the same dimensions as the sparse one and unsigned int format.
+
+For OpImageSparse* opcodes that are fed with float image coordinates the test creates a graphics queue, otherwise a compute queue is created.
+In both cases the commands submited to queue have the purpose of copying the data from sparse image to texels and residency images using one
+of the OpImageSparse* shader intrinsics. For graphics operations the data is copied via rendering to two color attachments, for compute operations
+the data is copied via image load/store.
+
+Data is retreived from the non-sparse images back to the CPU. Contents of the texels image are compared against the data originaly sent to the sparse image.
+For mipmap levels of the sparse image that do not have backing device memory, the fetched data is compared against zeroed memory if residencyNonResidentStrict is set to VK_TRUE,
+otherwise comparion for those mipmap levels is ommited. The data fetched from the residency image is checked, if for each mipmap level the OpImageSparseTexelsResident
+returned correct residency information.

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<!--
+Copyright 2016 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/value/diagnostics/related_histogram_map.html">
+<link rel="import" href="/tracing/value/histogram.html">
+<link rel="import" href="/tracing/value/ui/diagnostic_span.html">
+
+<script>
+'use strict';
+
+tr.b.unittest.testSuite(function() {
+  test('instantiate_RelatedHistogramMap', function() {
+    const aHist = new tr.v.Histogram('a', tr.b.Unit.byName.timeDurationInMs);
+    const bHist = new tr.v.Histogram('b', tr.b.Unit.byName.timeDurationInMs);
+    aHist.addSample(1);
+    bHist.addSample(2);
+    const diagnostic = new tr.v.d.RelatedHistogramMap();
+    diagnostic.set('foo', aHist);
+    diagnostic.set('bar', bHist);
+    const span = tr.v.ui.createDiagnosticSpan(diagnostic);
+    assert.strictEqual('TR-V-UI-RELATED-HISTOGRAM-MAP-SPAN', span.tagName);
+    this.addHTMLOutput(span);
+    assert.isDefined(
+        tr.ui.b.findDeepElementWithTextContent(span, /Select All/));
+    assert.isDefined(tr.ui.b.findDeepElementWithTextContent(span, /foo/));
+    assert.isDefined(tr.ui.b.findDeepElementWithTextContent(span, /bar/));
+    assert.isDefined(tr.ui.b.findDeepElementWithTextContent(span, /1\.000 ms/));
+    assert.isDefined(tr.ui.b.findDeepElementWithTextContent(span, /2\.000 ms/));
+  });
+});
+</script>

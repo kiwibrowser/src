@@ -1,0 +1,103 @@
+Conformance Test
+
+    GL_ARB_fragment_shader_interlock
+
+Contributors
+
+    Adam Czupryna, Mobica
+
+Contacts
+
+    Adam Czupryna, Mobica (adam.czupryna 'at' mobica.com)
+
+Status
+
+    In review
+
+Version
+
+    January 31, 2017 (version 1)
+
+Dependencies
+
+    OpenGL 4.5 is required.
+
+    ARB_fragment_shader_interlock extension is required.
+
+    This specification is written against:
+    - OpenGL 4.5 Core Profile Specification,
+    - version 4.50 (revision 5) Shading Language Specification,
+    - ARB_fragment_shader_interlock extension Specification.
+
+Overview
+
+    This test verifies if new GLSL built-in functions
+    beginInvocationInterlockARB() and endInvocationInterlockARB() provides
+    functionality for pairs of shader invocations with "overlapping"
+    coverage in a given pixel, which guarantee that the critical section of
+    the fragment shader will be executed for only one fragment at a time.
+    Test verifies also two ordered interlock modes supported by this
+    extension because testing unordered interlock modes would be
+    undeterministic.
+
+Tests
+
+    Shader Extension Test
+
+      * Create shader that require GL_ARB_fragment_shader_interlock extension
+        and check if GL_ARB_fragment_shader_interlock is defined and equal 1.
+        Check if shader compiles with no error.
+
+    Shader Execution Ordering Test
+
+      * Create 8x8 R8 texture and clear it.
+
+      * Create fragment shader for ordered layout qualifiers added by this
+        extension. Shader should read pixel value from the texture at current
+        position and compare it with gl_PrimitiveID value. If value read from
+        texture is lower then gl_PrimitiveID write (1, 1, 1, 1) into
+        renderbuffer and store gl_PrimitiveID in the texture at current
+        position, otherwise write (0, 0, 0, 0) into renderbuffer and value 255
+        into texture at current position. All operations should be executed
+        between beginInvocationInterlockARB and endInvocationInterlockARB
+        functions calls.
+
+      * Iterate through the fragment shaders, clear texture and for each shader
+        draw three triangles at once in the same position.
+
+      Expected result for ordered layout qualifires is renderbuffer filled with
+      (1, 1, 1, 1) if test passed.
+
+      In case of sample_interlock_* qualifier multisampled texture has to be
+      used.
+
+      There is no method to test if unordered qualifiers works correctly
+      because for those qualifiers fragment shader invocations are generally
+      executed in undefined order, which means that it could be either
+      ordered or unordered. Tests for unordered qualifiers would be
+      undeterministic.
+
+    Shader Critical Section Execution Test
+
+      * Create 1x1 R8UI texture.
+
+      * Create two fragment shaders for all layout qualifiers added by this
+        extension. Shader should read pixel value from the texture, increase it
+        and store. In first fragment shader all operations should be executed
+        between beginInvocationInterlockARB and endInvocationInterlockARB
+        functions calls, in second one those calls should be missed.
+
+      * Clear texture and draw 8x8 pixel sized polygon to the renderbuffer.
+
+      The expected result is value 64 stored in the texture if
+      beginInvocationInterlockARB and endInvocationInterlockARB functions were
+      used.
+
+      In case of sample_interlock_* qualifier multisampled texture has to be
+      used.
+
+Revision History
+
+    Revision 1, 31 January, 2016 (Adam Czupryna)
+     - Initial version.
+

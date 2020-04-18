@@ -1,0 +1,66 @@
+// Copyright 2018 The Feed Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+
+package search.now.ui.piet;
+
+option optimize_for=LITE_RUNTIME;
+
+option java_package = "com.google.search.now.ui.piet";
+option java_outer_classname = "GradientsProto";
+option cc_enable_arenas = true;
+
+// Represents a Fill to be used for a Piet element.
+message Fill {
+  // A fill can be either a solid color or a gradient.
+  oneof fill_type {
+    // A solid color fill. Colors are ARGB.
+    fixed32 color = 1;
+
+    // A linear gradient, expressed as multiple color stops.
+    LinearGradient linear_gradient = 2;
+  }
+}
+
+// A linear gradient interpolates the given color stops linearly.
+message LinearGradient {
+  // Multiple stops for this gradient. A valid gradient must have at least
+  // two stops, one at position 0 and another at position 100.
+  repeated ColorStop stops = 1;
+
+  // Direction towards which this gradient should be rendered, in degrees from
+  // the top.
+  //   0: ↑ From Bottom to Top.
+  //  90: → From Left to Right.
+  // 180: ↓ From Top to Bottom.
+  // 270: ← From Right to Left.
+  // Values must be in the range [0..360). Negative values are not valid.
+  optional uint32 direction_deg = 2;
+}
+
+// A GradientStop is one color in a gradient. A simple gradient is composed of
+// at least two stops: starting with `position_percent` 0 & ending with
+// `position_percent` 100. The linear gradient is interpolated between these two
+// endpoints. More complex gradients can be achieved by inserting more color
+// stops into the list.
+message ColorStop {
+  // ARGB color of the color stop.
+  optional fixed32 color = 1;
+
+  // Position of this color stop, expressed as a percent. It is an error for
+  // position_percent to be outside [0..100].
+  optional fixed32 position_percent = 2;
+}

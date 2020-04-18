@@ -1,0 +1,26 @@
+#!/bin/bash
+# Copyright 2015 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+TOPLVL="$(readlink -e "$(dirname "$0")")"
+APPENGINE_SDK_DIR="$1"
+PATCH_DIR="${TOPLVL}/appengine_sdk_patches"
+SDK_PATCHES=(
+  "${PATCH_DIR}/fix-dbshell-to-use-user-password-from-settings-file.patch"
+  "${PATCH_DIR}/fix-mysql-backend-to-pass-the-ssl-options-through.patch"
+)
+
+source ${TOPLVL}/../common.sh
+
+if [[ ! -d "${APPENGINE_SDK_DIR}" ]]; then
+  error "No appengine SDK at ${APPENGINE_SDK_DIR}"
+  exit ${E_GENERAL}
+fi
+
+for sdk_patch in "${SDK_PATCHES[@]}"; do
+  echo "Applying ${sdk_patch} to ${APPENGINE_SDK_DIR}"
+  if ! patch -t -d "${APPENGINE_SDK_DIR}" -p 1 < "${sdk_patch}"; then
+    error "Failed to apply patch ${sdk_patch}. Trying to continue anyway."
+  fi
+done

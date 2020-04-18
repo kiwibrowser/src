@@ -1,0 +1,1600 @@
+# -------------------------------------------------
+# drawElements Quality Program OpenGL ES 3.2 Module
+# -------------------------------------------------
+#
+# Copyright 2016 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+group types "Types"
+	case float
+		version 320 es
+		desc "varying of type float"
+		values
+		{
+			input float in0		= [ -1.25 | -25.65 | 1.0 | 2.25 | 3.4 | 16.0 ];
+			output float out0	= [ -1.25 | -25.65 | 1.0 | 2.25 | 3.4 | 16.0 ];
+		}
+		vertex ""
+			#version 320 es
+			${VERTEX_DECLARATIONS}
+			out mediump float vtx_var;
+			void main()
+			{
+				vtx_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 320 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			in mediump float vtx_var[];
+			out mediump float tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID] = vtx_var[gl_InvocationID];
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 320 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			in mediump float tc_out[];
+			out mediump float te_out;
+			void main()
+			{
+				te_out = tc_out[2];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 320 es
+			${GEOMETRY_DECLARATIONS}
+			in mediump float te_out[];
+			out mediump float geo_out;
+			void main()
+			{
+				for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+				{
+					geo_out = te_out[ndx];
+					gl_Position = gl_in[ndx].gl_Position;
+					EmitVertex();
+				}
+			}
+		""
+		fragment ""
+			#version 320 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float geo_out;
+			void main()
+			{
+				out0 = geo_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case vec2
+		version 320 es
+		desc "varying of type vec2"
+		values
+		{
+			input vec2 in0		= [ vec2(-1.25, 1.25) | vec2(-25.65, -7.25) | vec2(0.0, 1.0) | vec2(2.25, 2.25) | vec2(3.4, 9.5) | vec2(16.0, 32.0) ];
+			output vec2 out0	= [ vec2(-1.25, 1.25) | vec2(-25.65, -7.25) | vec2(0.0, 1.0) | vec2(2.25, 2.25) | vec2(3.4, 9.5) | vec2(16.0, 32.0) ];
+		}
+		vertex ""
+			#version 320 es
+			${VERTEX_DECLARATIONS}
+			out mediump vec2 vtx_var;
+			void main()
+			{
+				vtx_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 320 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			in mediump vec2 vtx_var[];
+			out mediump vec2 tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID] = vtx_var[gl_InvocationID];
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 320 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			in mediump vec2 tc_out[];
+			out mediump vec2 te_out;
+			void main()
+			{
+				te_out = tc_out[2];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 320 es
+			${GEOMETRY_DECLARATIONS}
+			in mediump vec2 te_out[];
+			out mediump vec2 geo_out;
+			void main()
+			{
+				for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+				{
+					geo_out = te_out[ndx];
+					gl_Position = gl_in[ndx].gl_Position;
+					EmitVertex();
+				}
+			}
+		""
+		fragment ""
+			#version 320 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in vec2 geo_out;
+			void main()
+			{
+				out0 = geo_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case vec3
+		version 320 es
+		desc "varying of type vec3"
+		values
+		{
+			input vec3 in0		= [ vec3(-1.25, 1.25, -9.5) | vec3(-25.65, -7.25, 14.21) | vec3(0.0, 1.0, -1.0) | vec3(2.25, 2.25, 22.5) | vec3(3.4, 9.5, 19.5) | vec3(16.0, 32.0, -64.0) ];
+			output vec3 out0	= [ vec3(-1.25, 1.25, -9.5) | vec3(-25.65, -7.25, 14.21) | vec3(0.0, 1.0, -1.0) | vec3(2.25, 2.25, 22.5) | vec3(3.4, 9.5, 19.5) | vec3(16.0, 32.0, -64.0) ];
+		}
+		vertex ""
+			#version 320 es
+			${VERTEX_DECLARATIONS}
+			out mediump vec3 vtx_var;
+			void main()
+			{
+				vtx_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 320 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			in mediump vec3 vtx_var[];
+			out mediump vec3 tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID] = vtx_var[gl_InvocationID];
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 320 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			in mediump vec3 tc_out[];
+			out mediump vec3 te_out;
+			void main()
+			{
+				te_out = tc_out[2];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 320 es
+			${GEOMETRY_DECLARATIONS}
+			in mediump vec3 te_out[];
+			out mediump vec3 geo_out;
+			void main()
+			{
+				for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+				{
+					geo_out = te_out[ndx];
+					gl_Position = gl_in[ndx].gl_Position;
+					EmitVertex();
+				}
+			}
+		""
+		fragment ""
+			#version 320 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in vec3 geo_out;
+			void main()
+			{
+				out0 = geo_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case vec4
+		version 320 es
+		desc "varying of type vec4"
+		values
+		{
+			input vec4 in0		= [ vec4(-1.25, 1.25, -9.5, -12.2) | vec4(-25.65, -7.25, 14.21, -77.7) | vec4(0.0, 1.0, -1.0, 2.0) | vec4(2.25, 2.25, 22.5, 225.0) | vec4(3.4, 9.5, 19.5, 29.5) | vec4(16.0, 32.0, -64.0, -128.0) ];
+			output vec4 out0	= [ vec4(-1.25, 1.25, -9.5, -12.2) | vec4(-25.65, -7.25, 14.21, -77.7) | vec4(0.0, 1.0, -1.0, 2.0) | vec4(2.25, 2.25, 22.5, 225.0) | vec4(3.4, 9.5, 19.5, 29.5) | vec4(16.0, 32.0, -64.0, -128.0) ];
+		}
+		vertex ""
+			#version 320 es
+			${VERTEX_DECLARATIONS}
+			out mediump vec4 vtx_var;
+			void main()
+			{
+				vtx_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 320 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			in mediump vec4 vtx_var[];
+			out mediump vec4 tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID] = vtx_var[gl_InvocationID];
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 320 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			in mediump vec4 tc_out[];
+			out mediump vec4 te_out;
+			void main()
+			{
+				te_out = tc_out[2];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 320 es
+			${GEOMETRY_DECLARATIONS}
+			in mediump vec4 te_out[];
+			out mediump vec4 geo_out;
+			void main()
+			{
+				for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+				{
+					geo_out = te_out[ndx];
+					gl_Position = gl_in[ndx].gl_Position;
+					EmitVertex();
+				}
+			}
+		""
+		fragment ""
+			#version 320 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in vec4 geo_out;
+			void main()
+			{
+				out0 = geo_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case mat2
+		version 320 es
+		desc "varying of type mat2"
+		values
+		{
+			input mat2 in0		= [ mat2(1.0, 1.0, 1.0, 1.0) | mat2(-1.25, 1.25, -9.5, -12.2) | mat2(-25.65, -7.25, 14.21, -77.7) | mat2(0.0, 1.0, -1.0, 2.0) | mat2(2.25, 2.25, 22.5, 225.0) | mat2(3.4, 9.5, 19.5, 29.5) | mat2(16.0, 32.0, -64.0, -128.0) ];
+			output mat2 out0	= [ mat2(1.0, 1.0, 1.0, 1.0) | mat2(-1.25, 1.25, -9.5, -12.2) | mat2(-25.65, -7.25, 14.21, -77.7) | mat2(0.0, 1.0, -1.0, 2.0) | mat2(2.25, 2.25, 22.5, 225.0) | mat2(3.4, 9.5, 19.5, 29.5) | mat2(16.0, 32.0, -64.0, -128.0) ];
+		}
+		vertex ""
+			#version 320 es
+			${VERTEX_DECLARATIONS}
+			out mediump mat2 vtx_var;
+			void main()
+			{
+				vtx_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 320 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			in mediump mat2 vtx_var[];
+			out mediump mat2 tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID] = vtx_var[gl_InvocationID];
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 320 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			in mediump mat2 tc_out[];
+			out mediump mat2 te_out;
+			void main()
+			{
+				te_out = tc_out[2];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 320 es
+			${GEOMETRY_DECLARATIONS}
+			in mediump mat2 te_out[];
+			out mediump mat2 geo_out;
+			void main()
+			{
+				for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+				{
+					geo_out = te_out[ndx];
+					gl_Position = gl_in[ndx].gl_Position;
+					EmitVertex();
+				}
+			}
+		""
+		fragment ""
+			#version 320 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in mat2 geo_out;
+			void main()
+			{
+				out0 = geo_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case mat2x3
+		version 320 es
+		desc "varying of type mat2x3"
+		values
+		{
+			input mat2x3 in0	= [ mat2x3(-1.25, 1.25, -9.5, -12.2, -25.65, -7.25) ];
+			output mat2x3 out0	= [ mat2x3(-1.25, 1.25, -9.5, -12.2, -25.65, -7.25) ];
+		}
+		vertex ""
+			#version 320 es
+			${VERTEX_DECLARATIONS}
+			out mediump mat2x3 vtx_var;
+			void main()
+			{
+				vtx_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 320 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			in mediump mat2x3 vtx_var[];
+			out mediump mat2x3 tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID] = vtx_var[gl_InvocationID];
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 320 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			in mediump mat2x3 tc_out[];
+			out mediump mat2x3 te_out;
+			void main()
+			{
+				te_out = tc_out[2];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 320 es
+			${GEOMETRY_DECLARATIONS}
+			in mediump mat2x3 te_out[];
+			out mediump mat2x3 geo_out;
+			void main()
+			{
+				for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+				{
+					geo_out = te_out[ndx];
+					gl_Position = gl_in[ndx].gl_Position;
+					EmitVertex();
+				}
+			}
+		""
+		fragment ""
+			#version 320 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in mat2x3 geo_out;
+			void main()
+			{
+				out0 = geo_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case mat2x4
+		version 320 es
+		desc "varying of type mat2x4"
+		values
+		{
+			input mat2x4 in0	= [ mat2x4(-1.25, 1.25, -9.5, -12.2, -25.65, -7.25, 14.21, -77.7) ];
+			output mat2x4 out0	= [ mat2x4(-1.25, 1.25, -9.5, -12.2, -25.65, -7.25, 14.21, -77.7) ];
+		}
+		vertex ""
+			#version 320 es
+			${VERTEX_DECLARATIONS}
+			out mediump mat2x4 vtx_var;
+			void main()
+			{
+				vtx_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 320 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			in mediump mat2x4 vtx_var[];
+			out mediump mat2x4 tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID] = vtx_var[gl_InvocationID];
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 320 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			in mediump mat2x4 tc_out[];
+			out mediump mat2x4 te_out;
+			void main()
+			{
+				te_out = tc_out[2];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 320 es
+			${GEOMETRY_DECLARATIONS}
+			in mediump mat2x4 te_out[];
+			out mediump mat2x4 geo_out;
+			void main()
+			{
+				for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+				{
+					geo_out = te_out[ndx];
+					gl_Position = gl_in[ndx].gl_Position;
+					EmitVertex();
+				}
+			}
+		""
+		fragment ""
+			#version 320 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in mat2x4 geo_out;
+			void main()
+			{
+				out0 = geo_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case mat3x2
+		version 320 es
+		desc "varying of type mat3x2"
+		values
+		{
+			input mat3x2 in0	= [ mat3x2(-1.25, 1.25, -9.5, -12.2, -25.65, -7.25) ];
+			output mat3x2 out0	= [ mat3x2(-1.25, 1.25, -9.5, -12.2, -25.65, -7.25) ];
+		}
+		vertex ""
+			#version 320 es
+			${VERTEX_DECLARATIONS}
+			out mediump mat3x2 vtx_var;
+			void main()
+			{
+				vtx_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 320 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			in mediump mat3x2 vtx_var[];
+			out mediump mat3x2 tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID] = vtx_var[gl_InvocationID];
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 320 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			in mediump mat3x2 tc_out[];
+			out mediump mat3x2 te_out;
+			void main()
+			{
+				te_out = tc_out[2];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 320 es
+			${GEOMETRY_DECLARATIONS}
+			in mediump mat3x2 te_out[];
+			out mediump mat3x2 geo_out;
+			void main()
+			{
+				for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+				{
+					geo_out = te_out[ndx];
+					gl_Position = gl_in[ndx].gl_Position;
+					EmitVertex();
+				}
+			}
+		""
+		fragment ""
+			#version 320 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in mat3x2 geo_out;
+			void main()
+			{
+				out0 = geo_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case mat3
+		version 320 es
+		desc "varying of type mat3"
+		values
+		{
+			input mat3 in0		= [ mat3(-1.25, 1.25, -9.5, -12.2, -25.65, -7.25, 14.21, -77.7, 9.9) | mat3(0.0, 1.0, -1.0, 2.0, 2.25, 2.25, 22.5, 225.0, -9.9) | mat3(3.4, 9.5, 19.5, 29.5, 16.0, 32.0, -64.0, -128.0, 256.0) ];
+			output mat3 out0	= [ mat3(-1.25, 1.25, -9.5, -12.2, -25.65, -7.25, 14.21, -77.7, 9.9) | mat3(0.0, 1.0, -1.0, 2.0, 2.25, 2.25, 22.5, 225.0, -9.9) | mat3(3.4, 9.5, 19.5, 29.5, 16.0, 32.0, -64.0, -128.0, 256.0) ];
+		}
+		vertex ""
+			#version 320 es
+			${VERTEX_DECLARATIONS}
+			out mediump mat3 vtx_var;
+			void main()
+			{
+				vtx_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 320 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			in mediump mat3 vtx_var[];
+			out mediump mat3 tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID] = vtx_var[gl_InvocationID];
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 320 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			in mediump mat3 tc_out[];
+			out mediump mat3 te_out;
+			void main()
+			{
+				te_out = tc_out[2];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 320 es
+			${GEOMETRY_DECLARATIONS}
+			in mediump mat3 te_out[];
+			out mediump mat3 geo_out;
+			void main()
+			{
+				for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+				{
+					geo_out = te_out[ndx];
+					gl_Position = gl_in[ndx].gl_Position;
+					EmitVertex();
+				}
+			}
+		""
+		fragment ""
+			#version 320 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in mat3 geo_out;
+			void main()
+			{
+				out0 = geo_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case mat3x4
+		version 320 es
+		desc "varying of type mat3x4"
+		values
+		{
+			input mat3x4 in0	= [ mat3x4(-1.25, 1.25, -9.5, -12.2, -25.65, -7.25, 14.21, -77.7, 0.0, 1.0, -1.0, 2.0) ];
+			output mat3x4 out0	= [ mat3x4(-1.25, 1.25, -9.5, -12.2, -25.65, -7.25, 14.21, -77.7, 0.0, 1.0, -1.0, 2.0) ];
+		}
+		vertex ""
+			#version 320 es
+			${VERTEX_DECLARATIONS}
+			out mediump mat3x4 vtx_var;
+			void main()
+			{
+				vtx_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 320 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			in mediump mat3x4 vtx_var[];
+			out mediump mat3x4 tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID] = vtx_var[gl_InvocationID];
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 320 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			in mediump mat3x4 tc_out[];
+			out mediump mat3x4 te_out;
+			void main()
+			{
+				te_out = tc_out[2];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 320 es
+			${GEOMETRY_DECLARATIONS}
+			in mediump mat3x4 te_out[];
+			out mediump mat3x4 geo_out;
+			void main()
+			{
+				for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+				{
+					geo_out = te_out[ndx];
+					gl_Position = gl_in[ndx].gl_Position;
+					EmitVertex();
+				}
+			}
+		""
+		fragment ""
+			#version 320 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in mat3x4 geo_out;
+			void main()
+			{
+				out0 = geo_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case mat4x2
+		version 320 es
+		desc "varying of type mat4x2"
+		values
+		{
+			input mat4x2 in0	= [ mat4x2(-1.25, 1.25, -9.5, -12.2, -25.65, -7.25, 14.21, -77.7) ];
+			output mat4x2 out0	= [ mat4x2(-1.25, 1.25, -9.5, -12.2, -25.65, -7.25, 14.21, -77.7) ];
+		}
+		vertex ""
+			#version 320 es
+			${VERTEX_DECLARATIONS}
+			out mediump mat4x2 vtx_var;
+			void main()
+			{
+				vtx_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 320 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			in mediump mat4x2 vtx_var[];
+			out mediump mat4x2 tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID] = vtx_var[gl_InvocationID];
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 320 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			in mediump mat4x2 tc_out[];
+			out mediump mat4x2 te_out;
+			void main()
+			{
+				te_out = tc_out[2];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 320 es
+			${GEOMETRY_DECLARATIONS}
+			in mediump mat4x2 te_out[];
+			out mediump mat4x2 geo_out;
+			void main()
+			{
+				for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+				{
+					geo_out = te_out[ndx];
+					gl_Position = gl_in[ndx].gl_Position;
+					EmitVertex();
+				}
+			}
+		""
+		fragment ""
+			#version 320 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in mat4x2 geo_out;
+			void main()
+			{
+				out0 = geo_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case mat4x3
+		version 320 es
+		desc "varying of type mat4x3"
+		values
+		{
+			input mat4x3 in0	= [ mat4x3(-1.25, 1.25, -9.5, -12.2, -25.65, -7.25, 14.21, -77.7, 0.0, 1.0, -1.0, 2.0) ];
+			output mat4x3 out0	= [ mat4x3(-1.25, 1.25, -9.5, -12.2, -25.65, -7.25, 14.21, -77.7, 0.0, 1.0, -1.0, 2.0) ];
+		}
+		vertex ""
+			#version 320 es
+			${VERTEX_DECLARATIONS}
+			out mediump mat4x3 vtx_var;
+			void main()
+			{
+				vtx_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 320 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			in mediump mat4x3 vtx_var[];
+			out mediump mat4x3 tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID] = vtx_var[gl_InvocationID];
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 320 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			in mediump mat4x3 tc_out[];
+			out mediump mat4x3 te_out;
+			void main()
+			{
+				te_out = tc_out[2];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 320 es
+			${GEOMETRY_DECLARATIONS}
+			in mediump mat4x3 te_out[];
+			out mediump mat4x3 geo_out;
+			void main()
+			{
+				for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+				{
+					geo_out = te_out[ndx];
+					gl_Position = gl_in[ndx].gl_Position;
+					EmitVertex();
+				}
+			}
+		""
+		fragment ""
+			#version 320 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in mat4x3 geo_out;
+			void main()
+			{
+				out0 = geo_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case mat4
+		version 320 es
+		desc "varying of type mat4"
+		values
+		{
+			input mat4 in0		= [ mat4(-1.25, 1.25, -9.5, -12.2, -25.65, -7.25, 14.21, -77.7, 0.0, 1.0, -1.0, 2.0, 2.25, 2.25, 22.5, 225.0) ];
+			output mat4 out0	= [ mat4(-1.25, 1.25, -9.5, -12.2, -25.65, -7.25, 14.21, -77.7, 0.0, 1.0, -1.0, 2.0, 2.25, 2.25, 22.5, 225.0) ];
+		}
+		vertex ""
+			#version 320 es
+			${VERTEX_DECLARATIONS}
+			out mediump mat4 vtx_var;
+			void main()
+			{
+				vtx_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 320 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			in mediump mat4 vtx_var[];
+			out mediump mat4 tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID] = vtx_var[gl_InvocationID];
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 320 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			in mediump mat4 tc_out[];
+			out mediump mat4 te_out;
+			void main()
+			{
+				te_out = tc_out[2];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 320 es
+			${GEOMETRY_DECLARATIONS}
+			in mediump mat4 te_out[];
+			out mediump mat4 geo_out;
+			void main()
+			{
+				for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+				{
+					geo_out = te_out[ndx];
+					gl_Position = gl_in[ndx].gl_Position;
+					EmitVertex();
+				}
+			}
+		""
+		fragment ""
+			#version 320 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in mat4 geo_out;
+			void main()
+			{
+				out0 = geo_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case int
+		version 320 es
+		desc "varying of type int"
+		values
+		{
+			input int in0		= [ -1 | -25 | 1 | 2 | 3 | 16 ];
+			output int out0		= [ -1 | -25 | 1 | 2 | 3 | 16 ];
+		}
+		vertex ""
+			#version 320 es
+			${VERTEX_DECLARATIONS}
+			flat out mediump int vtx_var;
+			void main()
+			{
+				${VERTEX_SETUP}
+				vtx_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 320 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			flat in mediump int vtx_var[];
+			flat out mediump int tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID] = vtx_var[gl_InvocationID];
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 320 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			flat in mediump int tc_out[];
+			flat out mediump int te_out;
+			void main()
+			{
+				te_out = tc_out[2];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 320 es
+			${GEOMETRY_DECLARATIONS}
+			flat in mediump int te_out[];
+			flat out mediump int geo_out;
+			void main()
+			{
+				for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+				{
+					geo_out = te_out[ndx];
+					gl_Position = gl_in[ndx].gl_Position;
+					EmitVertex();
+				}
+			}
+		""
+		fragment ""
+			#version 320 es
+			${FRAGMENT_DECLARATIONS}
+			flat in int geo_out;
+			void main()
+			{
+				out0 = geo_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case ivec2
+		version 320 es
+		desc "varying of type ivec2"
+		values
+		{
+			input ivec2 in0		= [ ivec2(-1, 1) | ivec2(-25, 25) | ivec2(1, 1) | ivec2(2, 3) | ivec2(16, 17) ];
+			output ivec2 out0	= [ ivec2(-1, 1) | ivec2(-25, 25) | ivec2(1, 1) | ivec2(2, 3) | ivec2(16, 17) ];
+		}
+		vertex ""
+			#version 320 es
+			${VERTEX_DECLARATIONS}
+			flat out mediump ivec2 vtx_var;
+			void main()
+			{
+				${VERTEX_SETUP}
+				vtx_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 320 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			flat in mediump ivec2 vtx_var[];
+			flat out mediump ivec2 tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID] = vtx_var[gl_InvocationID];
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 320 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			flat in mediump ivec2 tc_out[];
+			flat out mediump ivec2 te_out;
+			void main()
+			{
+				te_out = tc_out[2];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 320 es
+			${GEOMETRY_DECLARATIONS}
+			flat in mediump ivec2 te_out[];
+			flat out mediump ivec2 geo_out;
+			void main()
+			{
+				for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+				{
+					geo_out = te_out[ndx];
+					gl_Position = gl_in[ndx].gl_Position;
+					EmitVertex();
+				}
+			}
+		""
+		fragment ""
+			#version 320 es
+			${FRAGMENT_DECLARATIONS}
+			flat in ivec2 geo_out;
+			void main()
+			{
+				out0 = geo_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case ivec3
+		version 320 es
+		desc "varying of type ivec3"
+		values
+		{
+			input ivec3 in0		= [ ivec3(-1, 1, -2) | ivec3(-25, 25, -3) | ivec3(1, 1, 1) | ivec3(2, 3, 4) | ivec3(16, 17, 18) ];
+			output ivec3 out0	= [ ivec3(-1, 1, -2) | ivec3(-25, 25, -3) | ivec3(1, 1, 1) | ivec3(2, 3, 4) | ivec3(16, 17, 18) ];
+		}
+		vertex ""
+			#version 320 es
+			${VERTEX_DECLARATIONS}
+			flat out mediump ivec3 vtx_var;
+			void main()
+			{
+				${VERTEX_SETUP}
+				vtx_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 320 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			flat in mediump ivec3 vtx_var[];
+			flat out mediump ivec3 tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID] = vtx_var[gl_InvocationID];
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 320 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			flat in mediump ivec3 tc_out[];
+			flat out mediump ivec3 te_out;
+			void main()
+			{
+				te_out = tc_out[2];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 320 es
+			${GEOMETRY_DECLARATIONS}
+			flat in mediump ivec3 te_out[];
+			flat out mediump ivec3 geo_out;
+			void main()
+			{
+				for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+				{
+					geo_out = te_out[ndx];
+					gl_Position = gl_in[ndx].gl_Position;
+					EmitVertex();
+				}
+			}
+		""
+		fragment ""
+			#version 320 es
+			${FRAGMENT_DECLARATIONS}
+			flat in ivec3 geo_out;
+			void main()
+			{
+				out0 = geo_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case ivec4
+		version 320 es
+		desc "varying of type ivec4"
+		values
+		{
+			input ivec4 in0		= [ ivec4(-1, 1, -2, 2) | ivec4(-25, 25, -3, 3) | ivec4(1, 1, 1, 1) | ivec4(2, 3, 4, 5) | ivec4(16, 17, 18, 19) ];
+			output ivec4 out0	= [ ivec4(-1, 1, -2, 2) | ivec4(-25, 25, -3, 3) | ivec4(1, 1, 1, 1) | ivec4(2, 3, 4, 5) | ivec4(16, 17, 18, 19) ];
+		}
+		vertex ""
+			#version 320 es
+			${VERTEX_DECLARATIONS}
+			flat out mediump ivec4 vtx_var;
+			void main()
+			{
+				${VERTEX_SETUP}
+				vtx_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 320 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			flat in mediump ivec4 vtx_var[];
+			flat out mediump ivec4 tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID] = vtx_var[gl_InvocationID];
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 320 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			flat in mediump ivec4 tc_out[];
+			flat out mediump ivec4 te_out;
+			void main()
+			{
+				te_out = tc_out[2];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 320 es
+			${GEOMETRY_DECLARATIONS}
+			flat in mediump ivec4 te_out[];
+			flat out mediump ivec4 geo_out;
+			void main()
+			{
+				for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+				{
+					geo_out = te_out[ndx];
+					gl_Position = gl_in[ndx].gl_Position;
+					EmitVertex();
+				}
+			}
+		""
+		fragment ""
+			#version 320 es
+			${FRAGMENT_DECLARATIONS}
+			flat in ivec4 geo_out;
+			void main()
+			{
+				out0 = geo_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case uint
+		version 320 es
+		desc "varying of type int"
+		values
+		{
+			input uint in0			= [ 1 | 2 | 3 | 16 ];
+			output uint out0		= [ 1 | 2 | 3 | 16 ];
+		}
+		vertex ""
+			#version 320 es
+			${VERTEX_DECLARATIONS}
+			flat out mediump uint vtx_var;
+			void main()
+			{
+				${VERTEX_SETUP}
+				vtx_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 320 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			flat in mediump uint vtx_var[];
+			flat out mediump uint tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID] = vtx_var[gl_InvocationID];
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 320 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			flat in mediump uint tc_out[];
+			flat out mediump uint te_out;
+			void main()
+			{
+				te_out = tc_out[2];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 320 es
+			${GEOMETRY_DECLARATIONS}
+			flat in mediump uint te_out[];
+			flat out mediump uint geo_out;
+			void main()
+			{
+				for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+				{
+					geo_out = te_out[ndx];
+					gl_Position = gl_in[ndx].gl_Position;
+					EmitVertex();
+				}
+			}
+		""
+		fragment ""
+			#version 320 es
+			${FRAGMENT_DECLARATIONS}
+			flat in uint geo_out;
+			void main()
+			{
+				out0 = geo_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case uvec2
+		version 320 es
+		desc "varying of type uvec2"
+		values
+		{
+			input uvec2 in0		= [ uvec2(1, 1) | uvec2(25, 25) | uvec2(1, 1) | uvec2(2, 3) | uvec2(16, 17) ];
+			output uvec2 out0	= [ uvec2(1, 1) | uvec2(25, 25) | uvec2(1, 1) | uvec2(2, 3) | uvec2(16, 17) ];
+		}
+		vertex ""
+			#version 320 es
+			${VERTEX_DECLARATIONS}
+			flat out mediump uvec2 vtx_var;
+			void main()
+			{
+				${VERTEX_SETUP}
+				vtx_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 320 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			flat in mediump uvec2 vtx_var[];
+			flat out mediump uvec2 tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID] = vtx_var[gl_InvocationID];
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 320 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			flat in mediump uvec2 tc_out[];
+			flat out mediump uvec2 te_out;
+			void main()
+			{
+				te_out = tc_out[2];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 320 es
+			${GEOMETRY_DECLARATIONS}
+			flat in mediump uvec2 te_out[];
+			flat out mediump uvec2 geo_out;
+			void main()
+			{
+				for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+				{
+					geo_out = te_out[ndx];
+					gl_Position = gl_in[ndx].gl_Position;
+					EmitVertex();
+				}
+			}
+		""
+		fragment ""
+			#version 320 es
+			${FRAGMENT_DECLARATIONS}
+			flat in uvec2 geo_out;
+			void main()
+			{
+				out0 = geo_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case uvec3
+		version 320 es
+		desc "varying of type uvec3"
+		values
+		{
+			input uvec3 in0		= [ uvec3(1, 1, 2) | uvec3(25, 25, 3) | uvec3(1, 1, 1) | uvec3(2, 3, 4) | uvec3(16, 17, 18) ];
+			output uvec3 out0	= [ uvec3(1, 1, 2) | uvec3(25, 25, 3) | uvec3(1, 1, 1) | uvec3(2, 3, 4) | uvec3(16, 17, 18) ];
+		}
+		vertex ""
+			#version 320 es
+			${VERTEX_DECLARATIONS}
+			flat out mediump uvec3 vtx_var;
+			void main()
+			{
+				${VERTEX_SETUP}
+				vtx_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 320 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			flat in mediump uvec3 vtx_var[];
+			flat out mediump uvec3 tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID] = vtx_var[gl_InvocationID];
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 320 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			flat in mediump uvec3 tc_out[];
+			flat out mediump uvec3 te_out;
+			void main()
+			{
+				te_out = tc_out[2];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 320 es
+			${GEOMETRY_DECLARATIONS}
+			flat in mediump uvec3 te_out[];
+			flat out mediump uvec3 geo_out;
+			void main()
+			{
+				for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+				{
+					geo_out = te_out[ndx];
+					gl_Position = gl_in[ndx].gl_Position;
+					EmitVertex();
+				}
+			}
+		""
+		fragment ""
+			#version 320 es
+			${FRAGMENT_DECLARATIONS}
+			flat in uvec3 geo_out;
+			void main()
+			{
+				out0 = geo_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case uvec4
+		version 320 es
+		desc "varying of type uvec4"
+		values
+		{
+			input uvec4 in0		= [ uvec4(1, 1, 2, 2) | uvec4(25, 25, 3, 3) | uvec4(1, 1, 1, 1) | uvec4(2, 3, 4, 5) | uvec4(16, 17, 18, 19) ];
+			output uvec4 out0	= [ uvec4(1, 1, 2, 2) | uvec4(25, 25, 3, 3) | uvec4(1, 1, 1, 1) | uvec4(2, 3, 4, 5) | uvec4(16, 17, 18, 19) ];
+		}
+		vertex ""
+			#version 320 es
+			${VERTEX_DECLARATIONS}
+			flat out mediump uvec4 vtx_var;
+			void main()
+			{
+				${VERTEX_SETUP}
+				vtx_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 320 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			flat in mediump uvec4 vtx_var[];
+			flat out mediump uvec4 tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID] = vtx_var[gl_InvocationID];
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 320 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			flat in mediump uvec4 tc_out[];
+			flat out mediump uvec4 te_out;
+			void main()
+			{
+				te_out = tc_out[2];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 320 es
+			${GEOMETRY_DECLARATIONS}
+			flat in mediump uvec4 te_out[];
+			flat out mediump uvec4 geo_out;
+			void main()
+			{
+				for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+				{
+					geo_out = te_out[ndx];
+					gl_Position = gl_in[ndx].gl_Position;
+					EmitVertex();
+				}
+			}
+		""
+		fragment ""
+			#version 320 es
+			${FRAGMENT_DECLARATIONS}
+			flat in uvec4 geo_out;
+			void main()
+			{
+				out0 = geo_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case float_struct
+		version 320 es
+		desc "varying of struct type containing float"
+		values
+		{
+			input float in0		= [ -1.25 | -25.65 | 1.0 | 2.25 | 3.4 | 16.0 ];
+			output float out0	= [ -1.25 | -25.65 | 1.0 | 2.25 | 3.4 | 16.0 ];
+		}
+		vertex ""
+			#version 320 es
+			${VERTEX_DECLARATIONS}
+			struct S { mediump float val; };
+			out S vtx_var;
+			void main()
+			{
+				${VERTEX_SETUP}
+				vtx_var.val = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 320 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			struct S { mediump float val; };
+			in S vtx_var[];
+			out S tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID].val = vtx_var[gl_InvocationID].val;
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 320 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			struct S { mediump float val; };
+			in S tc_out[];
+			out S te_out;
+			void main()
+			{
+				te_out.val = tc_out[2].val;
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 320 es
+			${GEOMETRY_DECLARATIONS}
+			struct S { mediump float val; };
+			in S te_out[];
+			out S geo_out;
+			void main()
+			{
+				for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+				{
+					geo_out.val = te_out[ndx].val;
+					gl_Position = gl_in[ndx].gl_Position;
+					EmitVertex();
+				}
+			}
+		""
+		fragment ""
+			#version 320 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			struct S { mediump float val; };
+			in S geo_out;
+			void main()
+			{
+				out0 = geo_out.val;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case float_array
+		version 320 es
+		desc "varying of float array type"
+		values
+		{
+			input vec2 in0		= [ vec2(-1.25, 1.25) | vec2(-25.65, -7.25) | vec2(0.0, 1.0) | vec2(2.25, 2.25) | vec2(3.4, 9.5) | vec2(16.0, 32.0) ];
+			output vec2 out0	= [ vec2(-1.25, 1.25) | vec2(-25.65, -7.25) | vec2(0.0, 1.0) | vec2(2.25, 2.25) | vec2(3.4, 9.5) | vec2(16.0, 32.0) ];
+		}
+		vertex ""
+			#version 320 es
+			${VERTEX_DECLARATIONS}
+			out VtxOutBlockName { mediump float val[2]; } instanceName;
+			void main()
+			{
+				${VERTEX_SETUP}
+				instanceName.val[0] = in0.x;
+				instanceName.val[1] = in0.y;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 320 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			in VtxOutBlockName { mediump float val[2]; } inInstanceName[];
+			out TCOutBlockName { mediump float val[2]; } outInstanceName[];
+			void main()
+			{
+				outInstanceName[gl_InvocationID].val[0] = inInstanceName[gl_InvocationID].val[0];
+				outInstanceName[gl_InvocationID].val[1] = inInstanceName[gl_InvocationID].val[1];
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 320 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			in TCOutBlockName { mediump float val[2]; } inInstanceName[];
+			out TEOutBlockName { mediump float val[2]; } outInstanceName;
+			void main()
+			{
+				outInstanceName.val[0] = inInstanceName[2].val[0];
+				outInstanceName.val[1] = inInstanceName[2].val[1];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 320 es
+			${GEOMETRY_DECLARATIONS}
+			in TEOutBlockName { mediump float val[2]; } inInstanceName[];
+			out GeoOutBlockName { mediump float val[2]; } outInstanceName;
+			void main()
+			{
+				outInstanceName.val[0] = inInstanceName[0].val[0];
+				outInstanceName.val[1] = inInstanceName[0].val[1];
+				gl_Position = gl_in[0].gl_Position;
+				EmitVertex();
+				outInstanceName.val[0] = inInstanceName[1].val[0];
+				outInstanceName.val[1] = inInstanceName[1].val[1];
+				gl_Position = gl_in[1].gl_Position;
+				EmitVertex();
+				outInstanceName.val[0] = inInstanceName[2].val[0];
+				outInstanceName.val[1] = inInstanceName[2].val[1];
+				gl_Position = gl_in[2].gl_Position;
+				EmitVertex();
+			}
+		""
+		fragment ""
+			#version 320 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in GeoOutBlockName { mediump float val[2]; } inInstanceName;
+			void main()
+			{
+				out0 = vec2(inInstanceName.val[0], inInstanceName.val[1]);
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+end

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<!--
+Copyright 2016 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<html>
+<head>
+  <link rel="import" href="/dashboard/static/base.html">
+  <link rel="import" href="/dashboard/elements/nav-bar.html">
+  <style>
+    /* The content container contains everything after the title. */
+    #content {
+      margin-left: 10px;
+    }
+
+    /* Indent radio input elements to the right. */
+    input[type=radio] {
+      margin-bottom: -3px;
+      margin-left: 10px;
+    }
+
+    /* Indent checkbox elements to the left. */
+    input[type=checkbox] {
+      margin-right: 10px;
+    }
+
+    /* This class marks a container for a checkbox. */
+    .checkbox {
+      padding: 3px;
+      padding-left: 15px;
+    }
+  </style>
+</head>
+<body>
+  <nav-bar></nav-bar>
+  <h1>Change internal_only Property</h1>
+  <div id="content">
+
+    <p>We determine internal_only on a bot-by-bot basis. To change
+    whether bots are internal-only, select them below and choose a new
+    setting. All of the Tests and Rows for the Bot will be changed. Data
+    that is internal_only is only shown to users logged in with google.com
+    accounts.</p>
+
+    <form action="/change_internal_only" method="POST">
+      <b>Internal-only:</b>
+      <label>
+        <input type="radio" name="internal_only" value="true" required>
+        yes
+      </label>
+      <label>
+        <input type="radio" name="internal_only" value="false" required>
+        no
+      </label>
+      <br><br>
+      {% for master, bots in masters.iteritems() %}
+        <div><b>{{master}}</b></div>
+        {% for bot in bots %}
+        <div class="checkbox">
+          <label>
+            <input type="checkbox" name="bots" value="{{master}}/{{bot.name}}">
+              {{bot.name}}
+              {% if bot.internal_only %} (internal_only) {% endif %}
+          </label>
+        </div>
+        {% endfor %}
+      {% endfor %}
+      {{xsrf_input | safe}}
+      <br><input type="submit" class="kennedy-button-submit" value="Change">
+    </form>
+  </div>
+</body>
+</html>

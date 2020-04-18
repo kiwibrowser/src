@@ -1,0 +1,23 @@
+#######################################################################
+# SConscript for fbdev winsys
+
+
+Import('*')
+
+if env['platform'] == 'linux':
+
+    env = env.Clone()
+
+    env.Append(CPPPATH = [
+        '#/src/gallium/include',
+        '#/src/gallium/auxiliary',
+        '#/src/gallium/drivers',
+    ])
+
+    ws_fbdev = env.ConvenienceLibrary(
+        target = 'ws_fbdev',
+        source = [
+           'fbdev_sw_winsys.c',
+        ]
+    )
+    Export('ws_fbdev')

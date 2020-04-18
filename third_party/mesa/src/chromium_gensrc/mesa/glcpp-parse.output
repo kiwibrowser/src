@@ -1,0 +1,3095 @@
+Terminals unused in grammar
+
+   COMMA_FINAL
+   PLACEHOLDER
+
+
+Grammar
+
+    0 $accept: input $end
+
+    1 input: /* empty */
+    2      | input line
+
+    3 line: control_line
+    4     | text_line
+    5     | expanded_line
+    6     | HASH non_directive
+
+    7 expanded_line: IF_EXPANDED expression NEWLINE
+    8              | ELIF_EXPANDED expression NEWLINE
+    9              | LINE_EXPANDED integer_constant NEWLINE
+   10              | LINE_EXPANDED integer_constant integer_constant NEWLINE
+
+   11 control_line: HASH_DEFINE OBJ_IDENTIFIER replacement_list NEWLINE
+   12             | HASH_DEFINE FUNC_IDENTIFIER '(' ')' replacement_list NEWLINE
+   13             | HASH_DEFINE FUNC_IDENTIFIER '(' identifier_list ')' replacement_list NEWLINE
+   14             | HASH_UNDEF IDENTIFIER NEWLINE
+   15             | HASH_LINE pp_tokens NEWLINE
+   16             | HASH_IF conditional_tokens NEWLINE
+   17             | HASH_IF NEWLINE
+   18             | HASH_IFDEF IDENTIFIER junk NEWLINE
+   19             | HASH_IFNDEF IDENTIFIER junk NEWLINE
+   20             | HASH_ELIF conditional_tokens NEWLINE
+   21             | HASH_ELIF NEWLINE
+
+   22 $@1: /* empty */
+
+   23 control_line: HASH_ELSE $@1 NEWLINE
+
+   24 $@2: /* empty */
+
+   25 control_line: HASH_ENDIF $@2 NEWLINE
+   26             | HASH_VERSION integer_constant NEWLINE
+   27             | HASH NEWLINE
+
+   28 integer_constant: INTEGER_STRING
+   29                 | INTEGER
+
+   30 expression: integer_constant
+   31           | IDENTIFIER
+   32           | expression OR expression
+   33           | expression AND expression
+   34           | expression '|' expression
+   35           | expression '^' expression
+   36           | expression '&' expression
+   37           | expression NOT_EQUAL expression
+   38           | expression EQUAL expression
+   39           | expression GREATER_OR_EQUAL expression
+   40           | expression LESS_OR_EQUAL expression
+   41           | expression '>' expression
+   42           | expression '<' expression
+   43           | expression RIGHT_SHIFT expression
+   44           | expression LEFT_SHIFT expression
+   45           | expression '-' expression
+   46           | expression '+' expression
+   47           | expression '%' expression
+   48           | expression '/' expression
+   49           | expression '*' expression
+   50           | '!' expression
+   51           | '~' expression
+   52           | '-' expression
+   53           | '+' expression
+   54           | '(' expression ')'
+
+   55 identifier_list: IDENTIFIER
+   56                | identifier_list ',' IDENTIFIER
+
+   57 text_line: NEWLINE
+   58          | pp_tokens NEWLINE
+
+   59 non_directive: pp_tokens NEWLINE
+
+   60 replacement_list: /* empty */
+   61                 | pp_tokens
+
+   62 junk: /* empty */
+   63     | pp_tokens
+
+   64 conditional_token: DEFINED IDENTIFIER
+   65                  | DEFINED '(' IDENTIFIER ')'
+   66                  | preprocessing_token
+
+   67 conditional_tokens: conditional_token
+   68                   | conditional_tokens conditional_token
+
+   69 pp_tokens: preprocessing_token
+   70          | pp_tokens preprocessing_token
+
+   71 preprocessing_token: IDENTIFIER
+   72                    | INTEGER_STRING
+   73                    | operator
+   74                    | OTHER
+   75                    | SPACE
+
+   76 operator: '['
+   77         | ']'
+   78         | '('
+   79         | ')'
+   80         | '{'
+   81         | '}'
+   82         | '.'
+   83         | '&'
+   84         | '*'
+   85         | '+'
+   86         | '-'
+   87         | '~'
+   88         | '!'
+   89         | '/'
+   90         | '%'
+   91         | LEFT_SHIFT
+   92         | RIGHT_SHIFT
+   93         | '<'
+   94         | '>'
+   95         | LESS_OR_EQUAL
+   96         | GREATER_OR_EQUAL
+   97         | EQUAL
+   98         | NOT_EQUAL
+   99         | '^'
+  100         | '|'
+  101         | AND
+  102         | OR
+  103         | ';'
+  104         | ','
+  105         | '='
+  106         | PASTE
+
+
+Terminals, with rules where they appear
+
+$end (0) 0
+'!' (33) 50 88
+'%' (37) 47 90
+'&' (38) 36 83
+'(' (40) 12 13 54 65 78
+')' (41) 12 13 54 65 79
+'*' (42) 49 84
+'+' (43) 46 53 85
+',' (44) 56 104
+'-' (45) 45 52 86
+'.' (46) 82
+'/' (47) 48 89
+';' (59) 103
+'<' (60) 42 93
+'=' (61) 105
+'>' (62) 41 94
+'[' (91) 76
+']' (93) 77
+'^' (94) 35 99
+'{' (123) 80
+'|' (124) 34 100
+'}' (125) 81
+'~' (126) 51 87
+error (256)
+COMMA_FINAL (258)
+DEFINED (259) 64 65
+ELIF_EXPANDED (260) 8
+HASH (261) 6 27
+HASH_DEFINE (262) 11 12 13
+FUNC_IDENTIFIER (263) 12 13
+OBJ_IDENTIFIER (264) 11
+HASH_ELIF (265) 20 21
+HASH_ELSE (266) 23
+HASH_ENDIF (267) 25
+HASH_IF (268) 16 17
+HASH_IFDEF (269) 18
+HASH_IFNDEF (270) 19
+HASH_LINE (271) 15
+HASH_UNDEF (272) 14
+HASH_VERSION (273) 26
+IDENTIFIER (274) 14 18 19 31 55 56 64 65 71
+IF_EXPANDED (275) 7
+INTEGER (276) 29
+INTEGER_STRING (277) 28 72
+LINE_EXPANDED (278) 9 10
+NEWLINE (279) 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 23 25 26 27
+    57 58 59
+OTHER (280) 74
+PLACEHOLDER (281)
+SPACE (282) 75
+PASTE (283) 106
+OR (284) 32 102
+AND (285) 33 101
+NOT_EQUAL (286) 37 98
+EQUAL (287) 38 97
+GREATER_OR_EQUAL (288) 39 96
+LESS_OR_EQUAL (289) 40 95
+RIGHT_SHIFT (290) 43 92
+LEFT_SHIFT (291) 44 91
+UNARY (292)
+
+
+Nonterminals, with rules where they appear
+
+$accept (60)
+    on left: 0
+input (61)
+    on left: 1 2, on right: 0 2
+line (62)
+    on left: 3 4 5 6, on right: 2
+expanded_line (63)
+    on left: 7 8 9 10, on right: 5
+control_line (64)
+    on left: 11 12 13 14 15 16 17 18 19 20 21 23 25 26 27, on right:
+    3
+$@1 (65)
+    on left: 22, on right: 23
+$@2 (66)
+    on left: 24, on right: 25
+integer_constant (67)
+    on left: 28 29, on right: 9 10 26 30
+expression (68)
+    on left: 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47
+    48 49 50 51 52 53 54, on right: 7 8 32 33 34 35 36 37 38 39 40
+    41 42 43 44 45 46 47 48 49 50 51 52 53 54
+identifier_list (69)
+    on left: 55 56, on right: 13 56
+text_line (70)
+    on left: 57 58, on right: 4
+non_directive (71)
+    on left: 59, on right: 6
+replacement_list (72)
+    on left: 60 61, on right: 11 12 13
+junk (73)
+    on left: 62 63, on right: 18 19
+conditional_token (74)
+    on left: 64 65 66, on right: 67 68
+conditional_tokens (75)
+    on left: 67 68, on right: 16 20 68
+pp_tokens (76)
+    on left: 69 70, on right: 15 58 59 61 63 70
+preprocessing_token (77)
+    on left: 71 72 73 74 75, on right: 66 69 70
+operator (78)
+    on left: 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93
+    94 95 96 97 98 99 100 101 102 103 104 105 106, on right: 73
+
+
+state 0
+
+    0 $accept: . input $end
+
+    $default  reduce using rule 1 (input)
+
+    input  go to state 1
+
+
+state 1
+
+    0 $accept: input . $end
+    2 input: input . line
+
+    $end              shift, and go to state 2
+    ELIF_EXPANDED     shift, and go to state 3
+    HASH              shift, and go to state 4
+    HASH_DEFINE       shift, and go to state 5
+    HASH_ELIF         shift, and go to state 6
+    HASH_ELSE         shift, and go to state 7
+    HASH_ENDIF        shift, and go to state 8
+    HASH_IF           shift, and go to state 9
+    HASH_IFDEF        shift, and go to state 10
+    HASH_IFNDEF       shift, and go to state 11
+    HASH_LINE         shift, and go to state 12
+    HASH_UNDEF        shift, and go to state 13
+    HASH_VERSION      shift, and go to state 14
+    IDENTIFIER        shift, and go to state 15
+    IF_EXPANDED       shift, and go to state 16
+    INTEGER_STRING    shift, and go to state 17
+    LINE_EXPANDED     shift, and go to state 18
+    NEWLINE           shift, and go to state 19
+    OTHER             shift, and go to state 20
+    SPACE             shift, and go to state 21
+    PASTE             shift, and go to state 22
+    OR                shift, and go to state 23
+    AND               shift, and go to state 24
+    '|'               shift, and go to state 25
+    '^'               shift, and go to state 26
+    '&'               shift, and go to state 27
+    NOT_EQUAL         shift, and go to state 28
+    EQUAL             shift, and go to state 29
+    '<'               shift, and go to state 30
+    '>'               shift, and go to state 31
+    GREATER_OR_EQUAL  shift, and go to state 32
+    LESS_OR_EQUAL     shift, and go to state 33
+    RIGHT_SHIFT       shift, and go to state 34
+    LEFT_SHIFT        shift, and go to state 35
+    '+'               shift, and go to state 36
+    '-'               shift, and go to state 37
+    '*'               shift, and go to state 38
+    '/'               shift, and go to state 39
+    '%'               shift, and go to state 40
+    '('               shift, and go to state 41
+    ')'               shift, and go to state 42
+    '!'               shift, and go to state 43
+    '~'               shift, and go to state 44
+    ','               shift, and go to state 45
+    '['               shift, and go to state 46
+    ']'               shift, and go to state 47
+    '{'               shift, and go to state 48
+    '}'               shift, and go to state 49
+    '.'               shift, and go to state 50
+    ';'               shift, and go to state 51
+    '='               shift, and go to state 52
+
+    line                 go to state 53
+    expanded_line        go to state 54
+    control_line         go to state 55
+    text_line            go to state 56
+    pp_tokens            go to state 57
+    preprocessing_token  go to state 58
+    operator             go to state 59
+
+
+state 2
+
+    0 $accept: input $end .
+
+    $default  accept
+
+
+state 3
+
+    8 expanded_line: ELIF_EXPANDED . expression NEWLINE
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 69
+
+
+state 4
+
+    6 line: HASH . non_directive
+   27 control_line: HASH . NEWLINE
+
+    IDENTIFIER        shift, and go to state 15
+    INTEGER_STRING    shift, and go to state 17
+    NEWLINE           shift, and go to state 70
+    OTHER             shift, and go to state 20
+    SPACE             shift, and go to state 21
+    PASTE             shift, and go to state 22
+    OR                shift, and go to state 23
+    AND               shift, and go to state 24
+    '|'               shift, and go to state 25
+    '^'               shift, and go to state 26
+    '&'               shift, and go to state 27
+    NOT_EQUAL         shift, and go to state 28
+    EQUAL             shift, and go to state 29
+    '<'               shift, and go to state 30
+    '>'               shift, and go to state 31
+    GREATER_OR_EQUAL  shift, and go to state 32
+    LESS_OR_EQUAL     shift, and go to state 33
+    RIGHT_SHIFT       shift, and go to state 34
+    LEFT_SHIFT        shift, and go to state 35
+    '+'               shift, and go to state 36
+    '-'               shift, and go to state 37
+    '*'               shift, and go to state 38
+    '/'               shift, and go to state 39
+    '%'               shift, and go to state 40
+    '('               shift, and go to state 41
+    ')'               shift, and go to state 42
+    '!'               shift, and go to state 43
+    '~'               shift, and go to state 44
+    ','               shift, and go to state 45
+    '['               shift, and go to state 46
+    ']'               shift, and go to state 47
+    '{'               shift, and go to state 48
+    '}'               shift, and go to state 49
+    '.'               shift, and go to state 50
+    ';'               shift, and go to state 51
+    '='               shift, and go to state 52
+
+    non_directive        go to state 71
+    pp_tokens            go to state 72
+    preprocessing_token  go to state 58
+    operator             go to state 59
+
+
+state 5
+
+   11 control_line: HASH_DEFINE . OBJ_IDENTIFIER replacement_list NEWLINE
+   12             | HASH_DEFINE . FUNC_IDENTIFIER '(' ')' replacement_list NEWLINE
+   13             | HASH_DEFINE . FUNC_IDENTIFIER '(' identifier_list ')' replacement_list NEWLINE
+
+    FUNC_IDENTIFIER  shift, and go to state 73
+    OBJ_IDENTIFIER   shift, and go to state 74
+
+
+state 6
+
+   20 control_line: HASH_ELIF . conditional_tokens NEWLINE
+   21             | HASH_ELIF . NEWLINE
+
+    DEFINED           shift, and go to state 75
+    IDENTIFIER        shift, and go to state 15
+    INTEGER_STRING    shift, and go to state 17
+    NEWLINE           shift, and go to state 76
+    OTHER             shift, and go to state 20
+    SPACE             shift, and go to state 21
+    PASTE             shift, and go to state 22
+    OR                shift, and go to state 23
+    AND               shift, and go to state 24
+    '|'               shift, and go to state 25
+    '^'               shift, and go to state 26
+    '&'               shift, and go to state 27
+    NOT_EQUAL         shift, and go to state 28
+    EQUAL             shift, and go to state 29
+    '<'               shift, and go to state 30
+    '>'               shift, and go to state 31
+    GREATER_OR_EQUAL  shift, and go to state 32
+    LESS_OR_EQUAL     shift, and go to state 33
+    RIGHT_SHIFT       shift, and go to state 34
+    LEFT_SHIFT        shift, and go to state 35
+    '+'               shift, and go to state 36
+    '-'               shift, and go to state 37
+    '*'               shift, and go to state 38
+    '/'               shift, and go to state 39
+    '%'               shift, and go to state 40
+    '('               shift, and go to state 41
+    ')'               shift, and go to state 42
+    '!'               shift, and go to state 43
+    '~'               shift, and go to state 44
+    ','               shift, and go to state 45
+    '['               shift, and go to state 46
+    ']'               shift, and go to state 47
+    '{'               shift, and go to state 48
+    '}'               shift, and go to state 49
+    '.'               shift, and go to state 50
+    ';'               shift, and go to state 51
+    '='               shift, and go to state 52
+
+    conditional_token    go to state 77
+    conditional_tokens   go to state 78
+    preprocessing_token  go to state 79
+    operator             go to state 59
+
+
+state 7
+
+   23 control_line: HASH_ELSE . $@1 NEWLINE
+
+    $default  reduce using rule 22 ($@1)
+
+    $@1  go to state 80
+
+
+state 8
+
+   25 control_line: HASH_ENDIF . $@2 NEWLINE
+
+    $default  reduce using rule 24 ($@2)
+
+    $@2  go to state 81
+
+
+state 9
+
+   16 control_line: HASH_IF . conditional_tokens NEWLINE
+   17             | HASH_IF . NEWLINE
+
+    DEFINED           shift, and go to state 75
+    IDENTIFIER        shift, and go to state 15
+    INTEGER_STRING    shift, and go to state 17
+    NEWLINE           shift, and go to state 82
+    OTHER             shift, and go to state 20
+    SPACE             shift, and go to state 21
+    PASTE             shift, and go to state 22
+    OR                shift, and go to state 23
+    AND               shift, and go to state 24
+    '|'               shift, and go to state 25
+    '^'               shift, and go to state 26
+    '&'               shift, and go to state 27
+    NOT_EQUAL         shift, and go to state 28
+    EQUAL             shift, and go to state 29
+    '<'               shift, and go to state 30
+    '>'               shift, and go to state 31
+    GREATER_OR_EQUAL  shift, and go to state 32
+    LESS_OR_EQUAL     shift, and go to state 33
+    RIGHT_SHIFT       shift, and go to state 34
+    LEFT_SHIFT        shift, and go to state 35
+    '+'               shift, and go to state 36
+    '-'               shift, and go to state 37
+    '*'               shift, and go to state 38
+    '/'               shift, and go to state 39
+    '%'               shift, and go to state 40
+    '('               shift, and go to state 41
+    ')'               shift, and go to state 42
+    '!'               shift, and go to state 43
+    '~'               shift, and go to state 44
+    ','               shift, and go to state 45
+    '['               shift, and go to state 46
+    ']'               shift, and go to state 47
+    '{'               shift, and go to state 48
+    '}'               shift, and go to state 49
+    '.'               shift, and go to state 50
+    ';'               shift, and go to state 51
+    '='               shift, and go to state 52
+
+    conditional_token    go to state 77
+    conditional_tokens   go to state 83
+    preprocessing_token  go to state 79
+    operator             go to state 59
+
+
+state 10
+
+   18 control_line: HASH_IFDEF . IDENTIFIER junk NEWLINE
+
+    IDENTIFIER  shift, and go to state 84
+
+
+state 11
+
+   19 control_line: HASH_IFNDEF . IDENTIFIER junk NEWLINE
+
+    IDENTIFIER  shift, and go to state 85
+
+
+state 12
+
+   15 control_line: HASH_LINE . pp_tokens NEWLINE
+
+    IDENTIFIER        shift, and go to state 15
+    INTEGER_STRING    shift, and go to state 17
+    OTHER             shift, and go to state 20
+    SPACE             shift, and go to state 21
+    PASTE             shift, and go to state 22
+    OR                shift, and go to state 23
+    AND               shift, and go to state 24
+    '|'               shift, and go to state 25
+    '^'               shift, and go to state 26
+    '&'               shift, and go to state 27
+    NOT_EQUAL         shift, and go to state 28
+    EQUAL             shift, and go to state 29
+    '<'               shift, and go to state 30
+    '>'               shift, and go to state 31
+    GREATER_OR_EQUAL  shift, and go to state 32
+    LESS_OR_EQUAL     shift, and go to state 33
+    RIGHT_SHIFT       shift, and go to state 34
+    LEFT_SHIFT        shift, and go to state 35
+    '+'               shift, and go to state 36
+    '-'               shift, and go to state 37
+    '*'               shift, and go to state 38
+    '/'               shift, and go to state 39
+    '%'               shift, and go to state 40
+    '('               shift, and go to state 41
+    ')'               shift, and go to state 42
+    '!'               shift, and go to state 43
+    '~'               shift, and go to state 44
+    ','               shift, and go to state 45
+    '['               shift, and go to state 46
+    ']'               shift, and go to state 47
+    '{'               shift, and go to state 48
+    '}'               shift, and go to state 49
+    '.'               shift, and go to state 50
+    ';'               shift, and go to state 51
+    '='               shift, and go to state 52
+
+    pp_tokens            go to state 86
+    preprocessing_token  go to state 58
+    operator             go to state 59
+
+
+state 13
+
+   14 control_line: HASH_UNDEF . IDENTIFIER NEWLINE
+
+    IDENTIFIER  shift, and go to state 87
+
+
+state 14
+
+   26 control_line: HASH_VERSION . integer_constant NEWLINE
+
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+
+    integer_constant  go to state 88
+
+
+state 15
+
+   71 preprocessing_token: IDENTIFIER .
+
+    $default  reduce using rule 71 (preprocessing_token)
+
+
+state 16
+
+    7 expanded_line: IF_EXPANDED . expression NEWLINE
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 89
+
+
+state 17
+
+   72 preprocessing_token: INTEGER_STRING .
+
+    $default  reduce using rule 72 (preprocessing_token)
+
+
+state 18
+
+    9 expanded_line: LINE_EXPANDED . integer_constant NEWLINE
+   10              | LINE_EXPANDED . integer_constant integer_constant NEWLINE
+
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+
+    integer_constant  go to state 90
+
+
+state 19
+
+   57 text_line: NEWLINE .
+
+    $default  reduce using rule 57 (text_line)
+
+
+state 20
+
+   74 preprocessing_token: OTHER .
+
+    $default  reduce using rule 74 (preprocessing_token)
+
+
+state 21
+
+   75 preprocessing_token: SPACE .
+
+    $default  reduce using rule 75 (preprocessing_token)
+
+
+state 22
+
+  106 operator: PASTE .
+
+    $default  reduce using rule 106 (operator)
+
+
+state 23
+
+  102 operator: OR .
+
+    $default  reduce using rule 102 (operator)
+
+
+state 24
+
+  101 operator: AND .
+
+    $default  reduce using rule 101 (operator)
+
+
+state 25
+
+  100 operator: '|' .
+
+    $default  reduce using rule 100 (operator)
+
+
+state 26
+
+   99 operator: '^' .
+
+    $default  reduce using rule 99 (operator)
+
+
+state 27
+
+   83 operator: '&' .
+
+    $default  reduce using rule 83 (operator)
+
+
+state 28
+
+   98 operator: NOT_EQUAL .
+
+    $default  reduce using rule 98 (operator)
+
+
+state 29
+
+   97 operator: EQUAL .
+
+    $default  reduce using rule 97 (operator)
+
+
+state 30
+
+   93 operator: '<' .
+
+    $default  reduce using rule 93 (operator)
+
+
+state 31
+
+   94 operator: '>' .
+
+    $default  reduce using rule 94 (operator)
+
+
+state 32
+
+   96 operator: GREATER_OR_EQUAL .
+
+    $default  reduce using rule 96 (operator)
+
+
+state 33
+
+   95 operator: LESS_OR_EQUAL .
+
+    $default  reduce using rule 95 (operator)
+
+
+state 34
+
+   92 operator: RIGHT_SHIFT .
+
+    $default  reduce using rule 92 (operator)
+
+
+state 35
+
+   91 operator: LEFT_SHIFT .
+
+    $default  reduce using rule 91 (operator)
+
+
+state 36
+
+   85 operator: '+' .
+
+    $default  reduce using rule 85 (operator)
+
+
+state 37
+
+   86 operator: '-' .
+
+    $default  reduce using rule 86 (operator)
+
+
+state 38
+
+   84 operator: '*' .
+
+    $default  reduce using rule 84 (operator)
+
+
+state 39
+
+   89 operator: '/' .
+
+    $default  reduce using rule 89 (operator)
+
+
+state 40
+
+   90 operator: '%' .
+
+    $default  reduce using rule 90 (operator)
+
+
+state 41
+
+   78 operator: '(' .
+
+    $default  reduce using rule 78 (operator)
+
+
+state 42
+
+   79 operator: ')' .
+
+    $default  reduce using rule 79 (operator)
+
+
+state 43
+
+   88 operator: '!' .
+
+    $default  reduce using rule 88 (operator)
+
+
+state 44
+
+   87 operator: '~' .
+
+    $default  reduce using rule 87 (operator)
+
+
+state 45
+
+  104 operator: ',' .
+
+    $default  reduce using rule 104 (operator)
+
+
+state 46
+
+   76 operator: '[' .
+
+    $default  reduce using rule 76 (operator)
+
+
+state 47
+
+   77 operator: ']' .
+
+    $default  reduce using rule 77 (operator)
+
+
+state 48
+
+   80 operator: '{' .
+
+    $default  reduce using rule 80 (operator)
+
+
+state 49
+
+   81 operator: '}' .
+
+    $default  reduce using rule 81 (operator)
+
+
+state 50
+
+   82 operator: '.' .
+
+    $default  reduce using rule 82 (operator)
+
+
+state 51
+
+  103 operator: ';' .
+
+    $default  reduce using rule 103 (operator)
+
+
+state 52
+
+  105 operator: '=' .
+
+    $default  reduce using rule 105 (operator)
+
+
+state 53
+
+    2 input: input line .
+
+    $default  reduce using rule 2 (input)
+
+
+state 54
+
+    5 line: expanded_line .
+
+    $default  reduce using rule 5 (line)
+
+
+state 55
+
+    3 line: control_line .
+
+    $default  reduce using rule 3 (line)
+
+
+state 56
+
+    4 line: text_line .
+
+    $default  reduce using rule 4 (line)
+
+
+state 57
+
+   58 text_line: pp_tokens . NEWLINE
+   70 pp_tokens: pp_tokens . preprocessing_token
+
+    IDENTIFIER        shift, and go to state 15
+    INTEGER_STRING    shift, and go to state 17
+    NEWLINE           shift, and go to state 91
+    OTHER             shift, and go to state 20
+    SPACE             shift, and go to state 21
+    PASTE             shift, and go to state 22
+    OR                shift, and go to state 23
+    AND               shift, and go to state 24
+    '|'               shift, and go to state 25
+    '^'               shift, and go to state 26
+    '&'               shift, and go to state 27
+    NOT_EQUAL         shift, and go to state 28
+    EQUAL             shift, and go to state 29
+    '<'               shift, and go to state 30
+    '>'               shift, and go to state 31
+    GREATER_OR_EQUAL  shift, and go to state 32
+    LESS_OR_EQUAL     shift, and go to state 33
+    RIGHT_SHIFT       shift, and go to state 34
+    LEFT_SHIFT        shift, and go to state 35
+    '+'               shift, and go to state 36
+    '-'               shift, and go to state 37
+    '*'               shift, and go to state 38
+    '/'               shift, and go to state 39
+    '%'               shift, and go to state 40
+    '('               shift, and go to state 41
+    ')'               shift, and go to state 42
+    '!'               shift, and go to state 43
+    '~'               shift, and go to state 44
+    ','               shift, and go to state 45
+    '['               shift, and go to state 46
+    ']'               shift, and go to state 47
+    '{'               shift, and go to state 48
+    '}'               shift, and go to state 49
+    '.'               shift, and go to state 50
+    ';'               shift, and go to state 51
+    '='               shift, and go to state 52
+
+    preprocessing_token  go to state 92
+    operator             go to state 59
+
+
+state 58
+
+   69 pp_tokens: preprocessing_token .
+
+    $default  reduce using rule 69 (pp_tokens)
+
+
+state 59
+
+   73 preprocessing_token: operator .
+
+    $default  reduce using rule 73 (preprocessing_token)
+
+
+state 60
+
+   31 expression: IDENTIFIER .
+
+    $default  reduce using rule 31 (expression)
+
+
+state 61
+
+   29 integer_constant: INTEGER .
+
+    $default  reduce using rule 29 (integer_constant)
+
+
+state 62
+
+   28 integer_constant: INTEGER_STRING .
+
+    $default  reduce using rule 28 (integer_constant)
+
+
+state 63
+
+   53 expression: '+' . expression
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 93
+
+
+state 64
+
+   52 expression: '-' . expression
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 94
+
+
+state 65
+
+   54 expression: '(' . expression ')'
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 95
+
+
+state 66
+
+   50 expression: '!' . expression
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 96
+
+
+state 67
+
+   51 expression: '~' . expression
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 97
+
+
+state 68
+
+   30 expression: integer_constant .
+
+    $default  reduce using rule 30 (expression)
+
+
+state 69
+
+    8 expanded_line: ELIF_EXPANDED expression . NEWLINE
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+
+    NEWLINE           shift, and go to state 98
+    OR                shift, and go to state 99
+    AND               shift, and go to state 100
+    '|'               shift, and go to state 101
+    '^'               shift, and go to state 102
+    '&'               shift, and go to state 103
+    NOT_EQUAL         shift, and go to state 104
+    EQUAL             shift, and go to state 105
+    '<'               shift, and go to state 106
+    '>'               shift, and go to state 107
+    GREATER_OR_EQUAL  shift, and go to state 108
+    LESS_OR_EQUAL     shift, and go to state 109
+    RIGHT_SHIFT       shift, and go to state 110
+    LEFT_SHIFT        shift, and go to state 111
+    '+'               shift, and go to state 112
+    '-'               shift, and go to state 113
+    '*'               shift, and go to state 114
+    '/'               shift, and go to state 115
+    '%'               shift, and go to state 116
+
+
+state 70
+
+   27 control_line: HASH NEWLINE .
+
+    $default  reduce using rule 27 (control_line)
+
+
+state 71
+
+    6 line: HASH non_directive .
+
+    $default  reduce using rule 6 (line)
+
+
+state 72
+
+   59 non_directive: pp_tokens . NEWLINE
+   70 pp_tokens: pp_tokens . preprocessing_token
+
+    IDENTIFIER        shift, and go to state 15
+    INTEGER_STRING    shift, and go to state 17
+    NEWLINE           shift, and go to state 117
+    OTHER             shift, and go to state 20
+    SPACE             shift, and go to state 21
+    PASTE             shift, and go to state 22
+    OR                shift, and go to state 23
+    AND               shift, and go to state 24
+    '|'               shift, and go to state 25
+    '^'               shift, and go to state 26
+    '&'               shift, and go to state 27
+    NOT_EQUAL         shift, and go to state 28
+    EQUAL             shift, and go to state 29
+    '<'               shift, and go to state 30
+    '>'               shift, and go to state 31
+    GREATER_OR_EQUAL  shift, and go to state 32
+    LESS_OR_EQUAL     shift, and go to state 33
+    RIGHT_SHIFT       shift, and go to state 34
+    LEFT_SHIFT        shift, and go to state 35
+    '+'               shift, and go to state 36
+    '-'               shift, and go to state 37
+    '*'               shift, and go to state 38
+    '/'               shift, and go to state 39
+    '%'               shift, and go to state 40
+    '('               shift, and go to state 41
+    ')'               shift, and go to state 42
+    '!'               shift, and go to state 43
+    '~'               shift, and go to state 44
+    ','               shift, and go to state 45
+    '['               shift, and go to state 46
+    ']'               shift, and go to state 47
+    '{'               shift, and go to state 48
+    '}'               shift, and go to state 49
+    '.'               shift, and go to state 50
+    ';'               shift, and go to state 51
+    '='               shift, and go to state 52
+
+    preprocessing_token  go to state 92
+    operator             go to state 59
+
+
+state 73
+
+   12 control_line: HASH_DEFINE FUNC_IDENTIFIER . '(' ')' replacement_list NEWLINE
+   13             | HASH_DEFINE FUNC_IDENTIFIER . '(' identifier_list ')' replacement_list NEWLINE
+
+    '('  shift, and go to state 118
+
+
+state 74
+
+   11 control_line: HASH_DEFINE OBJ_IDENTIFIER . replacement_list NEWLINE
+
+    IDENTIFIER        shift, and go to state 15
+    INTEGER_STRING    shift, and go to state 17
+    OTHER             shift, and go to state 20
+    SPACE             shift, and go to state 21
+    PASTE             shift, and go to state 22
+    OR                shift, and go to state 23
+    AND               shift, and go to state 24
+    '|'               shift, and go to state 25
+    '^'               shift, and go to state 26
+    '&'               shift, and go to state 27
+    NOT_EQUAL         shift, and go to state 28
+    EQUAL             shift, and go to state 29
+    '<'               shift, and go to state 30
+    '>'               shift, and go to state 31
+    GREATER_OR_EQUAL  shift, and go to state 32
+    LESS_OR_EQUAL     shift, and go to state 33
+    RIGHT_SHIFT       shift, and go to state 34
+    LEFT_SHIFT        shift, and go to state 35
+    '+'               shift, and go to state 36
+    '-'               shift, and go to state 37
+    '*'               shift, and go to state 38
+    '/'               shift, and go to state 39
+    '%'               shift, and go to state 40
+    '('               shift, and go to state 41
+    ')'               shift, and go to state 42
+    '!'               shift, and go to state 43
+    '~'               shift, and go to state 44
+    ','               shift, and go to state 45
+    '['               shift, and go to state 46
+    ']'               shift, and go to state 47
+    '{'               shift, and go to state 48
+    '}'               shift, and go to state 49
+    '.'               shift, and go to state 50
+    ';'               shift, and go to state 51
+    '='               shift, and go to state 52
+
+    $default  reduce using rule 60 (replacement_list)
+
+    replacement_list     go to state 119
+    pp_tokens            go to state 120
+    preprocessing_token  go to state 58
+    operator             go to state 59
+
+
+state 75
+
+   64 conditional_token: DEFINED . IDENTIFIER
+   65                  | DEFINED . '(' IDENTIFIER ')'
+
+    IDENTIFIER  shift, and go to state 121
+    '('         shift, and go to state 122
+
+
+state 76
+
+   21 control_line: HASH_ELIF NEWLINE .
+
+    $default  reduce using rule 21 (control_line)
+
+
+state 77
+
+   67 conditional_tokens: conditional_token .
+
+    $default  reduce using rule 67 (conditional_tokens)
+
+
+state 78
+
+   20 control_line: HASH_ELIF conditional_tokens . NEWLINE
+   68 conditional_tokens: conditional_tokens . conditional_token
+
+    DEFINED           shift, and go to state 75
+    IDENTIFIER        shift, and go to state 15
+    INTEGER_STRING    shift, and go to state 17
+    NEWLINE           shift, and go to state 123
+    OTHER             shift, and go to state 20
+    SPACE             shift, and go to state 21
+    PASTE             shift, and go to state 22
+    OR                shift, and go to state 23
+    AND               shift, and go to state 24
+    '|'               shift, and go to state 25
+    '^'               shift, and go to state 26
+    '&'               shift, and go to state 27
+    NOT_EQUAL         shift, and go to state 28
+    EQUAL             shift, and go to state 29
+    '<'               shift, and go to state 30
+    '>'               shift, and go to state 31
+    GREATER_OR_EQUAL  shift, and go to state 32
+    LESS_OR_EQUAL     shift, and go to state 33
+    RIGHT_SHIFT       shift, and go to state 34
+    LEFT_SHIFT        shift, and go to state 35
+    '+'               shift, and go to state 36
+    '-'               shift, and go to state 37
+    '*'               shift, and go to state 38
+    '/'               shift, and go to state 39
+    '%'               shift, and go to state 40
+    '('               shift, and go to state 41
+    ')'               shift, and go to state 42
+    '!'               shift, and go to state 43
+    '~'               shift, and go to state 44
+    ','               shift, and go to state 45
+    '['               shift, and go to state 46
+    ']'               shift, and go to state 47
+    '{'               shift, and go to state 48
+    '}'               shift, and go to state 49
+    '.'               shift, and go to state 50
+    ';'               shift, and go to state 51
+    '='               shift, and go to state 52
+
+    conditional_token    go to state 124
+    preprocessing_token  go to state 79
+    operator             go to state 59
+
+
+state 79
+
+   66 conditional_token: preprocessing_token .
+
+    $default  reduce using rule 66 (conditional_token)
+
+
+state 80
+
+   23 control_line: HASH_ELSE $@1 . NEWLINE
+
+    NEWLINE  shift, and go to state 125
+
+
+state 81
+
+   25 control_line: HASH_ENDIF $@2 . NEWLINE
+
+    NEWLINE  shift, and go to state 126
+
+
+state 82
+
+   17 control_line: HASH_IF NEWLINE .
+
+    $default  reduce using rule 17 (control_line)
+
+
+state 83
+
+   16 control_line: HASH_IF conditional_tokens . NEWLINE
+   68 conditional_tokens: conditional_tokens . conditional_token
+
+    DEFINED           shift, and go to state 75
+    IDENTIFIER        shift, and go to state 15
+    INTEGER_STRING    shift, and go to state 17
+    NEWLINE           shift, and go to state 127
+    OTHER             shift, and go to state 20
+    SPACE             shift, and go to state 21
+    PASTE             shift, and go to state 22
+    OR                shift, and go to state 23
+    AND               shift, and go to state 24
+    '|'               shift, and go to state 25
+    '^'               shift, and go to state 26
+    '&'               shift, and go to state 27
+    NOT_EQUAL         shift, and go to state 28
+    EQUAL             shift, and go to state 29
+    '<'               shift, and go to state 30
+    '>'               shift, and go to state 31
+    GREATER_OR_EQUAL  shift, and go to state 32
+    LESS_OR_EQUAL     shift, and go to state 33
+    RIGHT_SHIFT       shift, and go to state 34
+    LEFT_SHIFT        shift, and go to state 35
+    '+'               shift, and go to state 36
+    '-'               shift, and go to state 37
+    '*'               shift, and go to state 38
+    '/'               shift, and go to state 39
+    '%'               shift, and go to state 40
+    '('               shift, and go to state 41
+    ')'               shift, and go to state 42
+    '!'               shift, and go to state 43
+    '~'               shift, and go to state 44
+    ','               shift, and go to state 45
+    '['               shift, and go to state 46
+    ']'               shift, and go to state 47
+    '{'               shift, and go to state 48
+    '}'               shift, and go to state 49
+    '.'               shift, and go to state 50
+    ';'               shift, and go to state 51
+    '='               shift, and go to state 52
+
+    conditional_token    go to state 124
+    preprocessing_token  go to state 79
+    operator             go to state 59
+
+
+state 84
+
+   18 control_line: HASH_IFDEF IDENTIFIER . junk NEWLINE
+
+    IDENTIFIER        shift, and go to state 15
+    INTEGER_STRING    shift, and go to state 17
+    OTHER             shift, and go to state 20
+    SPACE             shift, and go to state 21
+    PASTE             shift, and go to state 22
+    OR                shift, and go to state 23
+    AND               shift, and go to state 24
+    '|'               shift, and go to state 25
+    '^'               shift, and go to state 26
+    '&'               shift, and go to state 27
+    NOT_EQUAL         shift, and go to state 28
+    EQUAL             shift, and go to state 29
+    '<'               shift, and go to state 30
+    '>'               shift, and go to state 31
+    GREATER_OR_EQUAL  shift, and go to state 32
+    LESS_OR_EQUAL     shift, and go to state 33
+    RIGHT_SHIFT       shift, and go to state 34
+    LEFT_SHIFT        shift, and go to state 35
+    '+'               shift, and go to state 36
+    '-'               shift, and go to state 37
+    '*'               shift, and go to state 38
+    '/'               shift, and go to state 39
+    '%'               shift, and go to state 40
+    '('               shift, and go to state 41
+    ')'               shift, and go to state 42
+    '!'               shift, and go to state 43
+    '~'               shift, and go to state 44
+    ','               shift, and go to state 45
+    '['               shift, and go to state 46
+    ']'               shift, and go to state 47
+    '{'               shift, and go to state 48
+    '}'               shift, and go to state 49
+    '.'               shift, and go to state 50
+    ';'               shift, and go to state 51
+    '='               shift, and go to state 52
+
+    $default  reduce using rule 62 (junk)
+
+    junk                 go to state 128
+    pp_tokens            go to state 129
+    preprocessing_token  go to state 58
+    operator             go to state 59
+
+
+state 85
+
+   19 control_line: HASH_IFNDEF IDENTIFIER . junk NEWLINE
+
+    IDENTIFIER        shift, and go to state 15
+    INTEGER_STRING    shift, and go to state 17
+    OTHER             shift, and go to state 20
+    SPACE             shift, and go to state 21
+    PASTE             shift, and go to state 22
+    OR                shift, and go to state 23
+    AND               shift, and go to state 24
+    '|'               shift, and go to state 25
+    '^'               shift, and go to state 26
+    '&'               shift, and go to state 27
+    NOT_EQUAL         shift, and go to state 28
+    EQUAL             shift, and go to state 29
+    '<'               shift, and go to state 30
+    '>'               shift, and go to state 31
+    GREATER_OR_EQUAL  shift, and go to state 32
+    LESS_OR_EQUAL     shift, and go to state 33
+    RIGHT_SHIFT       shift, and go to state 34
+    LEFT_SHIFT        shift, and go to state 35
+    '+'               shift, and go to state 36
+    '-'               shift, and go to state 37
+    '*'               shift, and go to state 38
+    '/'               shift, and go to state 39
+    '%'               shift, and go to state 40
+    '('               shift, and go to state 41
+    ')'               shift, and go to state 42
+    '!'               shift, and go to state 43
+    '~'               shift, and go to state 44
+    ','               shift, and go to state 45
+    '['               shift, and go to state 46
+    ']'               shift, and go to state 47
+    '{'               shift, and go to state 48
+    '}'               shift, and go to state 49
+    '.'               shift, and go to state 50
+    ';'               shift, and go to state 51
+    '='               shift, and go to state 52
+
+    $default  reduce using rule 62 (junk)
+
+    junk                 go to state 130
+    pp_tokens            go to state 129
+    preprocessing_token  go to state 58
+    operator             go to state 59
+
+
+state 86
+
+   15 control_line: HASH_LINE pp_tokens . NEWLINE
+   70 pp_tokens: pp_tokens . preprocessing_token
+
+    IDENTIFIER        shift, and go to state 15
+    INTEGER_STRING    shift, and go to state 17
+    NEWLINE           shift, and go to state 131
+    OTHER             shift, and go to state 20
+    SPACE             shift, and go to state 21
+    PASTE             shift, and go to state 22
+    OR                shift, and go to state 23
+    AND               shift, and go to state 24
+    '|'               shift, and go to state 25
+    '^'               shift, and go to state 26
+    '&'               shift, and go to state 27
+    NOT_EQUAL         shift, and go to state 28
+    EQUAL             shift, and go to state 29
+    '<'               shift, and go to state 30
+    '>'               shift, and go to state 31
+    GREATER_OR_EQUAL  shift, and go to state 32
+    LESS_OR_EQUAL     shift, and go to state 33
+    RIGHT_SHIFT       shift, and go to state 34
+    LEFT_SHIFT        shift, and go to state 35
+    '+'               shift, and go to state 36
+    '-'               shift, and go to state 37
+    '*'               shift, and go to state 38
+    '/'               shift, and go to state 39
+    '%'               shift, and go to state 40
+    '('               shift, and go to state 41
+    ')'               shift, and go to state 42
+    '!'               shift, and go to state 43
+    '~'               shift, and go to state 44
+    ','               shift, and go to state 45
+    '['               shift, and go to state 46
+    ']'               shift, and go to state 47
+    '{'               shift, and go to state 48
+    '}'               shift, and go to state 49
+    '.'               shift, and go to state 50
+    ';'               shift, and go to state 51
+    '='               shift, and go to state 52
+
+    preprocessing_token  go to state 92
+    operator             go to state 59
+
+
+state 87
+
+   14 control_line: HASH_UNDEF IDENTIFIER . NEWLINE
+
+    NEWLINE  shift, and go to state 132
+
+
+state 88
+
+   26 control_line: HASH_VERSION integer_constant . NEWLINE
+
+    NEWLINE  shift, and go to state 133
+
+
+state 89
+
+    7 expanded_line: IF_EXPANDED expression . NEWLINE
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+
+    NEWLINE           shift, and go to state 134
+    OR                shift, and go to state 99
+    AND               shift, and go to state 100
+    '|'               shift, and go to state 101
+    '^'               shift, and go to state 102
+    '&'               shift, and go to state 103
+    NOT_EQUAL         shift, and go to state 104
+    EQUAL             shift, and go to state 105
+    '<'               shift, and go to state 106
+    '>'               shift, and go to state 107
+    GREATER_OR_EQUAL  shift, and go to state 108
+    LESS_OR_EQUAL     shift, and go to state 109
+    RIGHT_SHIFT       shift, and go to state 110
+    LEFT_SHIFT        shift, and go to state 111
+    '+'               shift, and go to state 112
+    '-'               shift, and go to state 113
+    '*'               shift, and go to state 114
+    '/'               shift, and go to state 115
+    '%'               shift, and go to state 116
+
+
+state 90
+
+    9 expanded_line: LINE_EXPANDED integer_constant . NEWLINE
+   10              | LINE_EXPANDED integer_constant . integer_constant NEWLINE
+
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    NEWLINE         shift, and go to state 135
+
+    integer_constant  go to state 136
+
+
+state 91
+
+   58 text_line: pp_tokens NEWLINE .
+
+    $default  reduce using rule 58 (text_line)
+
+
+state 92
+
+   70 pp_tokens: pp_tokens preprocessing_token .
+
+    $default  reduce using rule 70 (pp_tokens)
+
+
+state 93
+
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+   53           | '+' expression .
+
+    $default  reduce using rule 53 (expression)
+
+
+state 94
+
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+   52           | '-' expression .
+
+    $default  reduce using rule 52 (expression)
+
+
+state 95
+
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+   54           | '(' expression . ')'
+
+    OR                shift, and go to state 99
+    AND               shift, and go to state 100
+    '|'               shift, and go to state 101
+    '^'               shift, and go to state 102
+    '&'               shift, and go to state 103
+    NOT_EQUAL         shift, and go to state 104
+    EQUAL             shift, and go to state 105
+    '<'               shift, and go to state 106
+    '>'               shift, and go to state 107
+    GREATER_OR_EQUAL  shift, and go to state 108
+    LESS_OR_EQUAL     shift, and go to state 109
+    RIGHT_SHIFT       shift, and go to state 110
+    LEFT_SHIFT        shift, and go to state 111
+    '+'               shift, and go to state 112
+    '-'               shift, and go to state 113
+    '*'               shift, and go to state 114
+    '/'               shift, and go to state 115
+    '%'               shift, and go to state 116
+    ')'               shift, and go to state 137
+
+
+state 96
+
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+   50           | '!' expression .
+
+    $default  reduce using rule 50 (expression)
+
+
+state 97
+
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+   51           | '~' expression .
+
+    $default  reduce using rule 51 (expression)
+
+
+state 98
+
+    8 expanded_line: ELIF_EXPANDED expression NEWLINE .
+
+    $default  reduce using rule 8 (expanded_line)
+
+
+state 99
+
+   32 expression: expression OR . expression
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 138
+
+
+state 100
+
+   33 expression: expression AND . expression
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 139
+
+
+state 101
+
+   34 expression: expression '|' . expression
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 140
+
+
+state 102
+
+   35 expression: expression '^' . expression
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 141
+
+
+state 103
+
+   36 expression: expression '&' . expression
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 142
+
+
+state 104
+
+   37 expression: expression NOT_EQUAL . expression
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 143
+
+
+state 105
+
+   38 expression: expression EQUAL . expression
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 144
+
+
+state 106
+
+   42 expression: expression '<' . expression
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 145
+
+
+state 107
+
+   41 expression: expression '>' . expression
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 146
+
+
+state 108
+
+   39 expression: expression GREATER_OR_EQUAL . expression
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 147
+
+
+state 109
+
+   40 expression: expression LESS_OR_EQUAL . expression
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 148
+
+
+state 110
+
+   43 expression: expression RIGHT_SHIFT . expression
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 149
+
+
+state 111
+
+   44 expression: expression LEFT_SHIFT . expression
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 150
+
+
+state 112
+
+   46 expression: expression '+' . expression
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 151
+
+
+state 113
+
+   45 expression: expression '-' . expression
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 152
+
+
+state 114
+
+   49 expression: expression '*' . expression
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 153
+
+
+state 115
+
+   48 expression: expression '/' . expression
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 154
+
+
+state 116
+
+   47 expression: expression '%' . expression
+
+    IDENTIFIER      shift, and go to state 60
+    INTEGER         shift, and go to state 61
+    INTEGER_STRING  shift, and go to state 62
+    '+'             shift, and go to state 63
+    '-'             shift, and go to state 64
+    '('             shift, and go to state 65
+    '!'             shift, and go to state 66
+    '~'             shift, and go to state 67
+
+    integer_constant  go to state 68
+    expression        go to state 155
+
+
+state 117
+
+   59 non_directive: pp_tokens NEWLINE .
+
+    $default  reduce using rule 59 (non_directive)
+
+
+state 118
+
+   12 control_line: HASH_DEFINE FUNC_IDENTIFIER '(' . ')' replacement_list NEWLINE
+   13             | HASH_DEFINE FUNC_IDENTIFIER '(' . identifier_list ')' replacement_list NEWLINE
+
+    IDENTIFIER  shift, and go to state 156
+    ')'         shift, and go to state 157
+
+    identifier_list  go to state 158
+
+
+state 119
+
+   11 control_line: HASH_DEFINE OBJ_IDENTIFIER replacement_list . NEWLINE
+
+    NEWLINE  shift, and go to state 159
+
+
+state 120
+
+   61 replacement_list: pp_tokens .
+   70 pp_tokens: pp_tokens . preprocessing_token
+
+    IDENTIFIER        shift, and go to state 15
+    INTEGER_STRING    shift, and go to state 17
+    OTHER             shift, and go to state 20
+    SPACE             shift, and go to state 21
+    PASTE             shift, and go to state 22
+    OR                shift, and go to state 23
+    AND               shift, and go to state 24
+    '|'               shift, and go to state 25
+    '^'               shift, and go to state 26
+    '&'               shift, and go to state 27
+    NOT_EQUAL         shift, and go to state 28
+    EQUAL             shift, and go to state 29
+    '<'               shift, and go to state 30
+    '>'               shift, and go to state 31
+    GREATER_OR_EQUAL  shift, and go to state 32
+    LESS_OR_EQUAL     shift, and go to state 33
+    RIGHT_SHIFT       shift, and go to state 34
+    LEFT_SHIFT        shift, and go to state 35
+    '+'               shift, and go to state 36
+    '-'               shift, and go to state 37
+    '*'               shift, and go to state 38
+    '/'               shift, and go to state 39
+    '%'               shift, and go to state 40
+    '('               shift, and go to state 41
+    ')'               shift, and go to state 42
+    '!'               shift, and go to state 43
+    '~'               shift, and go to state 44
+    ','               shift, and go to state 45
+    '['               shift, and go to state 46
+    ']'               shift, and go to state 47
+    '{'               shift, and go to state 48
+    '}'               shift, and go to state 49
+    '.'               shift, and go to state 50
+    ';'               shift, and go to state 51
+    '='               shift, and go to state 52
+
+    $default  reduce using rule 61 (replacement_list)
+
+    preprocessing_token  go to state 92
+    operator             go to state 59
+
+
+state 121
+
+   64 conditional_token: DEFINED IDENTIFIER .
+
+    $default  reduce using rule 64 (conditional_token)
+
+
+state 122
+
+   65 conditional_token: DEFINED '(' . IDENTIFIER ')'
+
+    IDENTIFIER  shift, and go to state 160
+
+
+state 123
+
+   20 control_line: HASH_ELIF conditional_tokens NEWLINE .
+
+    $default  reduce using rule 20 (control_line)
+
+
+state 124
+
+   68 conditional_tokens: conditional_tokens conditional_token .
+
+    $default  reduce using rule 68 (conditional_tokens)
+
+
+state 125
+
+   23 control_line: HASH_ELSE $@1 NEWLINE .
+
+    $default  reduce using rule 23 (control_line)
+
+
+state 126
+
+   25 control_line: HASH_ENDIF $@2 NEWLINE .
+
+    $default  reduce using rule 25 (control_line)
+
+
+state 127
+
+   16 control_line: HASH_IF conditional_tokens NEWLINE .
+
+    $default  reduce using rule 16 (control_line)
+
+
+state 128
+
+   18 control_line: HASH_IFDEF IDENTIFIER junk . NEWLINE
+
+    NEWLINE  shift, and go to state 161
+
+
+state 129
+
+   63 junk: pp_tokens .
+   70 pp_tokens: pp_tokens . preprocessing_token
+
+    IDENTIFIER        shift, and go to state 15
+    INTEGER_STRING    shift, and go to state 17
+    OTHER             shift, and go to state 20
+    SPACE             shift, and go to state 21
+    PASTE             shift, and go to state 22
+    OR                shift, and go to state 23
+    AND               shift, and go to state 24
+    '|'               shift, and go to state 25
+    '^'               shift, and go to state 26
+    '&'               shift, and go to state 27
+    NOT_EQUAL         shift, and go to state 28
+    EQUAL             shift, and go to state 29
+    '<'               shift, and go to state 30
+    '>'               shift, and go to state 31
+    GREATER_OR_EQUAL  shift, and go to state 32
+    LESS_OR_EQUAL     shift, and go to state 33
+    RIGHT_SHIFT       shift, and go to state 34
+    LEFT_SHIFT        shift, and go to state 35
+    '+'               shift, and go to state 36
+    '-'               shift, and go to state 37
+    '*'               shift, and go to state 38
+    '/'               shift, and go to state 39
+    '%'               shift, and go to state 40
+    '('               shift, and go to state 41
+    ')'               shift, and go to state 42
+    '!'               shift, and go to state 43
+    '~'               shift, and go to state 44
+    ','               shift, and go to state 45
+    '['               shift, and go to state 46
+    ']'               shift, and go to state 47
+    '{'               shift, and go to state 48
+    '}'               shift, and go to state 49
+    '.'               shift, and go to state 50
+    ';'               shift, and go to state 51
+    '='               shift, and go to state 52
+
+    $default  reduce using rule 63 (junk)
+
+    preprocessing_token  go to state 92
+    operator             go to state 59
+
+
+state 130
+
+   19 control_line: HASH_IFNDEF IDENTIFIER junk . NEWLINE
+
+    NEWLINE  shift, and go to state 162
+
+
+state 131
+
+   15 control_line: HASH_LINE pp_tokens NEWLINE .
+
+    $default  reduce using rule 15 (control_line)
+
+
+state 132
+
+   14 control_line: HASH_UNDEF IDENTIFIER NEWLINE .
+
+    $default  reduce using rule 14 (control_line)
+
+
+state 133
+
+   26 control_line: HASH_VERSION integer_constant NEWLINE .
+
+    $default  reduce using rule 26 (control_line)
+
+
+state 134
+
+    7 expanded_line: IF_EXPANDED expression NEWLINE .
+
+    $default  reduce using rule 7 (expanded_line)
+
+
+state 135
+
+    9 expanded_line: LINE_EXPANDED integer_constant NEWLINE .
+
+    $default  reduce using rule 9 (expanded_line)
+
+
+state 136
+
+   10 expanded_line: LINE_EXPANDED integer_constant integer_constant . NEWLINE
+
+    NEWLINE  shift, and go to state 163
+
+
+state 137
+
+   54 expression: '(' expression ')' .
+
+    $default  reduce using rule 54 (expression)
+
+
+state 138
+
+   32 expression: expression . OR expression
+   32           | expression OR expression .
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+
+    AND               shift, and go to state 100
+    '|'               shift, and go to state 101
+    '^'               shift, and go to state 102
+    '&'               shift, and go to state 103
+    NOT_EQUAL         shift, and go to state 104
+    EQUAL             shift, and go to state 105
+    '<'               shift, and go to state 106
+    '>'               shift, and go to state 107
+    GREATER_OR_EQUAL  shift, and go to state 108
+    LESS_OR_EQUAL     shift, and go to state 109
+    RIGHT_SHIFT       shift, and go to state 110
+    LEFT_SHIFT        shift, and go to state 111
+    '+'               shift, and go to state 112
+    '-'               shift, and go to state 113
+    '*'               shift, and go to state 114
+    '/'               shift, and go to state 115
+    '%'               shift, and go to state 116
+
+    $default  reduce using rule 32 (expression)
+
+
+state 139
+
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   33           | expression AND expression .
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+
+    '|'               shift, and go to state 101
+    '^'               shift, and go to state 102
+    '&'               shift, and go to state 103
+    NOT_EQUAL         shift, and go to state 104
+    EQUAL             shift, and go to state 105
+    '<'               shift, and go to state 106
+    '>'               shift, and go to state 107
+    GREATER_OR_EQUAL  shift, and go to state 108
+    LESS_OR_EQUAL     shift, and go to state 109
+    RIGHT_SHIFT       shift, and go to state 110
+    LEFT_SHIFT        shift, and go to state 111
+    '+'               shift, and go to state 112
+    '-'               shift, and go to state 113
+    '*'               shift, and go to state 114
+    '/'               shift, and go to state 115
+    '%'               shift, and go to state 116
+
+    $default  reduce using rule 33 (expression)
+
+
+state 140
+
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   34           | expression '|' expression .
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+
+    '^'               shift, and go to state 102
+    '&'               shift, and go to state 103
+    NOT_EQUAL         shift, and go to state 104
+    EQUAL             shift, and go to state 105
+    '<'               shift, and go to state 106
+    '>'               shift, and go to state 107
+    GREATER_OR_EQUAL  shift, and go to state 108
+    LESS_OR_EQUAL     shift, and go to state 109
+    RIGHT_SHIFT       shift, and go to state 110
+    LEFT_SHIFT        shift, and go to state 111
+    '+'               shift, and go to state 112
+    '-'               shift, and go to state 113
+    '*'               shift, and go to state 114
+    '/'               shift, and go to state 115
+    '%'               shift, and go to state 116
+
+    $default  reduce using rule 34 (expression)
+
+
+state 141
+
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   35           | expression '^' expression .
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+
+    '&'               shift, and go to state 103
+    NOT_EQUAL         shift, and go to state 104
+    EQUAL             shift, and go to state 105
+    '<'               shift, and go to state 106
+    '>'               shift, and go to state 107
+    GREATER_OR_EQUAL  shift, and go to state 108
+    LESS_OR_EQUAL     shift, and go to state 109
+    RIGHT_SHIFT       shift, and go to state 110
+    LEFT_SHIFT        shift, and go to state 111
+    '+'               shift, and go to state 112
+    '-'               shift, and go to state 113
+    '*'               shift, and go to state 114
+    '/'               shift, and go to state 115
+    '%'               shift, and go to state 116
+
+    $default  reduce using rule 35 (expression)
+
+
+state 142
+
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   36           | expression '&' expression .
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+
+    NOT_EQUAL         shift, and go to state 104
+    EQUAL             shift, and go to state 105
+    '<'               shift, and go to state 106
+    '>'               shift, and go to state 107
+    GREATER_OR_EQUAL  shift, and go to state 108
+    LESS_OR_EQUAL     shift, and go to state 109
+    RIGHT_SHIFT       shift, and go to state 110
+    LEFT_SHIFT        shift, and go to state 111
+    '+'               shift, and go to state 112
+    '-'               shift, and go to state 113
+    '*'               shift, and go to state 114
+    '/'               shift, and go to state 115
+    '%'               shift, and go to state 116
+
+    $default  reduce using rule 36 (expression)
+
+
+state 143
+
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   37           | expression NOT_EQUAL expression .
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+
+    '<'               shift, and go to state 106
+    '>'               shift, and go to state 107
+    GREATER_OR_EQUAL  shift, and go to state 108
+    LESS_OR_EQUAL     shift, and go to state 109
+    RIGHT_SHIFT       shift, and go to state 110
+    LEFT_SHIFT        shift, and go to state 111
+    '+'               shift, and go to state 112
+    '-'               shift, and go to state 113
+    '*'               shift, and go to state 114
+    '/'               shift, and go to state 115
+    '%'               shift, and go to state 116
+
+    $default  reduce using rule 37 (expression)
+
+
+state 144
+
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   38           | expression EQUAL expression .
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+
+    '<'               shift, and go to state 106
+    '>'               shift, and go to state 107
+    GREATER_OR_EQUAL  shift, and go to state 108
+    LESS_OR_EQUAL     shift, and go to state 109
+    RIGHT_SHIFT       shift, and go to state 110
+    LEFT_SHIFT        shift, and go to state 111
+    '+'               shift, and go to state 112
+    '-'               shift, and go to state 113
+    '*'               shift, and go to state 114
+    '/'               shift, and go to state 115
+    '%'               shift, and go to state 116
+
+    $default  reduce using rule 38 (expression)
+
+
+state 145
+
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   42           | expression '<' expression .
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+
+    RIGHT_SHIFT  shift, and go to state 110
+    LEFT_SHIFT   shift, and go to state 111
+    '+'          shift, and go to state 112
+    '-'          shift, and go to state 113
+    '*'          shift, and go to state 114
+    '/'          shift, and go to state 115
+    '%'          shift, and go to state 116
+
+    $default  reduce using rule 42 (expression)
+
+
+state 146
+
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   41           | expression '>' expression .
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+
+    RIGHT_SHIFT  shift, and go to state 110
+    LEFT_SHIFT   shift, and go to state 111
+    '+'          shift, and go to state 112
+    '-'          shift, and go to state 113
+    '*'          shift, and go to state 114
+    '/'          shift, and go to state 115
+    '%'          shift, and go to state 116
+
+    $default  reduce using rule 41 (expression)
+
+
+state 147
+
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   39           | expression GREATER_OR_EQUAL expression .
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+
+    RIGHT_SHIFT  shift, and go to state 110
+    LEFT_SHIFT   shift, and go to state 111
+    '+'          shift, and go to state 112
+    '-'          shift, and go to state 113
+    '*'          shift, and go to state 114
+    '/'          shift, and go to state 115
+    '%'          shift, and go to state 116
+
+    $default  reduce using rule 39 (expression)
+
+
+state 148
+
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   40           | expression LESS_OR_EQUAL expression .
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+
+    RIGHT_SHIFT  shift, and go to state 110
+    LEFT_SHIFT   shift, and go to state 111
+    '+'          shift, and go to state 112
+    '-'          shift, and go to state 113
+    '*'          shift, and go to state 114
+    '/'          shift, and go to state 115
+    '%'          shift, and go to state 116
+
+    $default  reduce using rule 40 (expression)
+
+
+state 149
+
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   43           | expression RIGHT_SHIFT expression .
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+
+    '+'  shift, and go to state 112
+    '-'  shift, and go to state 113
+    '*'  shift, and go to state 114
+    '/'  shift, and go to state 115
+    '%'  shift, and go to state 116
+
+    $default  reduce using rule 43 (expression)
+
+
+state 150
+
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   44           | expression LEFT_SHIFT expression .
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+
+    '+'  shift, and go to state 112
+    '-'  shift, and go to state 113
+    '*'  shift, and go to state 114
+    '/'  shift, and go to state 115
+    '%'  shift, and go to state 116
+
+    $default  reduce using rule 44 (expression)
+
+
+state 151
+
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   46           | expression '+' expression .
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+
+    '*'  shift, and go to state 114
+    '/'  shift, and go to state 115
+    '%'  shift, and go to state 116
+
+    $default  reduce using rule 46 (expression)
+
+
+state 152
+
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   45           | expression '-' expression .
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+
+    '*'  shift, and go to state 114
+    '/'  shift, and go to state 115
+    '%'  shift, and go to state 116
+
+    $default  reduce using rule 45 (expression)
+
+
+state 153
+
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+   49           | expression '*' expression .
+
+    $default  reduce using rule 49 (expression)
+
+
+state 154
+
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   48           | expression . '/' expression
+   48           | expression '/' expression .
+   49           | expression . '*' expression
+
+    $default  reduce using rule 48 (expression)
+
+
+state 155
+
+   32 expression: expression . OR expression
+   33           | expression . AND expression
+   34           | expression . '|' expression
+   35           | expression . '^' expression
+   36           | expression . '&' expression
+   37           | expression . NOT_EQUAL expression
+   38           | expression . EQUAL expression
+   39           | expression . GREATER_OR_EQUAL expression
+   40           | expression . LESS_OR_EQUAL expression
+   41           | expression . '>' expression
+   42           | expression . '<' expression
+   43           | expression . RIGHT_SHIFT expression
+   44           | expression . LEFT_SHIFT expression
+   45           | expression . '-' expression
+   46           | expression . '+' expression
+   47           | expression . '%' expression
+   47           | expression '%' expression .
+   48           | expression . '/' expression
+   49           | expression . '*' expression
+
+    $default  reduce using rule 47 (expression)
+
+
+state 156
+
+   55 identifier_list: IDENTIFIER .
+
+    $default  reduce using rule 55 (identifier_list)
+
+
+state 157
+
+   12 control_line: HASH_DEFINE FUNC_IDENTIFIER '(' ')' . replacement_list NEWLINE
+
+    IDENTIFIER        shift, and go to state 15
+    INTEGER_STRING    shift, and go to state 17
+    OTHER             shift, and go to state 20
+    SPACE             shift, and go to state 21
+    PASTE             shift, and go to state 22
+    OR                shift, and go to state 23
+    AND               shift, and go to state 24
+    '|'               shift, and go to state 25
+    '^'               shift, and go to state 26
+    '&'               shift, and go to state 27
+    NOT_EQUAL         shift, and go to state 28
+    EQUAL             shift, and go to state 29
+    '<'               shift, and go to state 30
+    '>'               shift, and go to state 31
+    GREATER_OR_EQUAL  shift, and go to state 32
+    LESS_OR_EQUAL     shift, and go to state 33
+    RIGHT_SHIFT       shift, and go to state 34
+    LEFT_SHIFT        shift, and go to state 35
+    '+'               shift, and go to state 36
+    '-'               shift, and go to state 37
+    '*'               shift, and go to state 38
+    '/'               shift, and go to state 39
+    '%'               shift, and go to state 40
+    '('               shift, and go to state 41
+    ')'               shift, and go to state 42
+    '!'               shift, and go to state 43
+    '~'               shift, and go to state 44
+    ','               shift, and go to state 45
+    '['               shift, and go to state 46
+    ']'               shift, and go to state 47
+    '{'               shift, and go to state 48
+    '}'               shift, and go to state 49
+    '.'               shift, and go to state 50
+    ';'               shift, and go to state 51
+    '='               shift, and go to state 52
+
+    $default  reduce using rule 60 (replacement_list)
+
+    replacement_list     go to state 164
+    pp_tokens            go to state 120
+    preprocessing_token  go to state 58
+    operator             go to state 59
+
+
+state 158
+
+   13 control_line: HASH_DEFINE FUNC_IDENTIFIER '(' identifier_list . ')' replacement_list NEWLINE
+   56 identifier_list: identifier_list . ',' IDENTIFIER
+
+    ')'  shift, and go to state 165
+    ','  shift, and go to state 166
+
+
+state 159
+
+   11 control_line: HASH_DEFINE OBJ_IDENTIFIER replacement_list NEWLINE .
+
+    $default  reduce using rule 11 (control_line)
+
+
+state 160
+
+   65 conditional_token: DEFINED '(' IDENTIFIER . ')'
+
+    ')'  shift, and go to state 167
+
+
+state 161
+
+   18 control_line: HASH_IFDEF IDENTIFIER junk NEWLINE .
+
+    $default  reduce using rule 18 (control_line)
+
+
+state 162
+
+   19 control_line: HASH_IFNDEF IDENTIFIER junk NEWLINE .
+
+    $default  reduce using rule 19 (control_line)
+
+
+state 163
+
+   10 expanded_line: LINE_EXPANDED integer_constant integer_constant NEWLINE .
+
+    $default  reduce using rule 10 (expanded_line)
+
+
+state 164
+
+   12 control_line: HASH_DEFINE FUNC_IDENTIFIER '(' ')' replacement_list . NEWLINE
+
+    NEWLINE  shift, and go to state 168
+
+
+state 165
+
+   13 control_line: HASH_DEFINE FUNC_IDENTIFIER '(' identifier_list ')' . replacement_list NEWLINE
+
+    IDENTIFIER        shift, and go to state 15
+    INTEGER_STRING    shift, and go to state 17
+    OTHER             shift, and go to state 20
+    SPACE             shift, and go to state 21
+    PASTE             shift, and go to state 22
+    OR                shift, and go to state 23
+    AND               shift, and go to state 24
+    '|'               shift, and go to state 25
+    '^'               shift, and go to state 26
+    '&'               shift, and go to state 27
+    NOT_EQUAL         shift, and go to state 28
+    EQUAL             shift, and go to state 29
+    '<'               shift, and go to state 30
+    '>'               shift, and go to state 31
+    GREATER_OR_EQUAL  shift, and go to state 32
+    LESS_OR_EQUAL     shift, and go to state 33
+    RIGHT_SHIFT       shift, and go to state 34
+    LEFT_SHIFT        shift, and go to state 35
+    '+'               shift, and go to state 36
+    '-'               shift, and go to state 37
+    '*'               shift, and go to state 38
+    '/'               shift, and go to state 39
+    '%'               shift, and go to state 40
+    '('               shift, and go to state 41
+    ')'               shift, and go to state 42
+    '!'               shift, and go to state 43
+    '~'               shift, and go to state 44
+    ','               shift, and go to state 45
+    '['               shift, and go to state 46
+    ']'               shift, and go to state 47
+    '{'               shift, and go to state 48
+    '}'               shift, and go to state 49
+    '.'               shift, and go to state 50
+    ';'               shift, and go to state 51
+    '='               shift, and go to state 52
+
+    $default  reduce using rule 60 (replacement_list)
+
+    replacement_list     go to state 169
+    pp_tokens            go to state 120
+    preprocessing_token  go to state 58
+    operator             go to state 59
+
+
+state 166
+
+   56 identifier_list: identifier_list ',' . IDENTIFIER
+
+    IDENTIFIER  shift, and go to state 170
+
+
+state 167
+
+   65 conditional_token: DEFINED '(' IDENTIFIER ')' .
+
+    $default  reduce using rule 65 (conditional_token)
+
+
+state 168
+
+   12 control_line: HASH_DEFINE FUNC_IDENTIFIER '(' ')' replacement_list NEWLINE .
+
+    $default  reduce using rule 12 (control_line)
+
+
+state 169
+
+   13 control_line: HASH_DEFINE FUNC_IDENTIFIER '(' identifier_list ')' replacement_list . NEWLINE
+
+    NEWLINE  shift, and go to state 171
+
+
+state 170
+
+   56 identifier_list: identifier_list ',' IDENTIFIER .
+
+    $default  reduce using rule 56 (identifier_list)
+
+
+state 171
+
+   13 control_line: HASH_DEFINE FUNC_IDENTIFIER '(' identifier_list ')' replacement_list NEWLINE .
+
+    $default  reduce using rule 13 (control_line)

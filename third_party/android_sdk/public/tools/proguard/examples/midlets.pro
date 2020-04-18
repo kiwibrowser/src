@@ -1,0 +1,1 @@
+../../../../../../../.cipd/pkgs/85/_current/tools/proguard/examples/midlets.pro

@@ -1,0 +1,1 @@
+../../../../../../../../../../.cipd/pkgs/82/_current/platform-tools/systrace/catapult/common/eslint/rules/catapult-camelcase.js

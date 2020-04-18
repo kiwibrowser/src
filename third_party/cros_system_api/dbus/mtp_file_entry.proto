@@ -1,0 +1,55 @@
+// Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+// This protobuf is for sending file entries from a mtp/ptp device to the
+// browser.
+message MtpFileEntry {
+  // The id for the file on the mtp/ptp device.
+  optional uint32 item_id = 1;
+
+  // The id of this file's parent on the mtp/ptp device.
+  optional uint32 parent_id = 2;
+
+  // The file's name.
+  optional string file_name = 3;
+
+  // The file's size.
+  optional uint64 file_size = 4;
+
+  // The file's modification time. This is approximately the number of seconds
+  // since Unix epoch. However, it does not account for timezone offsets or
+  // daylight savings time.
+  optional int64 modification_time = 5;
+
+  // Values match libmtp values unless noted below.
+  enum FileType {
+    FILE_TYPE_FOLDER = 0;
+    FILE_TYPE_JPEG = 14;
+    FILE_TYPE_JFIF = 15;
+    FILE_TYPE_TIFF = 16;
+    FILE_TYPE_BMP = 17;
+    FILE_TYPE_GIF = 18;
+    FILE_TYPE_PICT = 19;
+    FILE_TYPE_PNG = 20;
+    FILE_TYPE_WINDOWSIMAGEFORMAT = 25;
+    FILE_TYPE_JP2 = 40;
+    FILE_TYPE_JPX = 41;
+    // Truly unknown file type.
+    FILE_TYPE_UNKNOWN = 44;
+    // There's more file types to map to, but right now they are not
+    // interesting. Just assign a dummy value for now.
+    FILE_TYPE_OTHER = 9999;
+  }
+
+  // The file's type.
+  optional FileType file_type = 6;
+}
+
+message MtpFileEntries {
+  repeated MtpFileEntry file_entries = 1;
+}

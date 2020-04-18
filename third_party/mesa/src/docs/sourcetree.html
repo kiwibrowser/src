@@ -1,0 +1,159 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>Mesa Source Tree</title>
+  <link rel="stylesheet" type="text/css" href="mesa.css">
+</head>
+<body>
+
+<h1>Mesa source code tree overview</h1>
+
+<p>
+This is a brief summary of Mesa's directory tree and what's contained in
+each directory.
+</p>
+
+
+<ul>
+<li><b>docs</b> - Documentation
+<li><b>include</b> - Public OpenGL header files
+<li><b>src</b>
+  <ul>
+  <li><b>egl</b> - EGL library sources
+    <ul>
+    <li><b>docs</b> - EGL documentation
+    <li><b>drivers</b> - EGL drivers
+    <li><b>glsl</b> - the GLSL compiler
+    <li><b>main</b> - main EGL library implementation.  This is where all
+        the EGL API functions are implemented, like eglCreateContext().
+    </ul>
+  <li><b>mesa</b> - Main Mesa sources
+    <ul>
+    <li><b>glapi</b> - OpenGL API dispatch layer.  This is where all the
+        GL entrypoints like glClear, glBegin, etc. are generated, as well as
+        the GL dispatch table.  All GL function calls jump through the
+        dispatch table to functions found in main/.
+    <li><b>main</b> - The core Mesa code (mainly state management)
+    <li><b>drivers</b> - Mesa drivers (not used with Gallium)
+        <ul>
+	<li><b>common</b> - code which may be shared by all drivers
+        <li><b>dri</b> - Direct Rendering Infrastructure drivers
+           <ul>
+	   <li><b>common</b> - code shared by all DRI drivers
+	   <li><b>i915</b> - driver for Intel i915/i945
+	   <li><b>i965</b> - driver for Intel i965
+	   <li><b>radeon</b> - driver for ATI R100
+	   <li><b>r200</b> - driver for ATI R200
+	   <li>XXX more
+           </ul>
+        <li><b>x11</b> - Xlib-based software driver
+        <li><b>osmesa</b> - off-screen software driver
+	<li><b>glslcompiler</b> - a stand-alone GLSL compiler driver
+        <li>XXX more
+        </ul>
+    <li><b>es</b> - OpenGL ES overlay, parallelly buildable with the core Mesa
+    <li><b>math</b> - vertex array translation and transformation code
+        (not used with Gallium)
+    <li><b>ppc</b> - Assembly code/optimizations for PPC systems
+        (not used with Gallium)
+    <li><b>shader</b> - Vertex/fragment shader and GLSL compiler code
+    <li><b>sparc</b> - Assembly code/optimizations for SPARC systems
+        (not used with Gallium)
+    <li><b>state_tracker</b> - State tracker / driver for Gallium.  This
+        is basically a Mesa device driver that speaks to Gallium.  This
+        directory may be moved to src/mesa/drivers/gallium at some point.
+    <li><b>swrast</b> - Software rasterization module.  For drawing points,
+        lines, triangles, bitmaps, images, etc. in software.
+        (not used with Gallium)
+    <li><b>swrast_setup</b> - Software primitive setup.  Does things like
+        polygon culling, glPolygonMode, polygon offset, etc.
+        (not used with Gallium)
+    <li><b>tnl</b> - Software vertex Transformation 'n Lighting.
+        (not used with Gallium)
+    <li><b>tnl_dd</b> - TNL code for device drivers.
+        (not used with Gallium)
+    <li><b>vbo</b> - Vertex Buffer Object code.  All drawing with
+        glBegin/glEnd, glDrawArrays, display lists, etc. goes through this
+        module.  The results is a well-defined set of vertex arrays which
+        are passed to the device driver (or tnl module) for rendering.
+    <li><b>vf</b> - vertex format conversion (currently unused)
+    <li><b>x86</b> - Assembly code/optimizations for 32-bit x86 systems
+        (not used with Gallium)
+    <li><b>x86-64</b> - Assembly code/optimizations for 64-bit x86 systems
+        (not used with Gallium)
+    </ul>
+  <li><b>gallium</b> - Gallium3D source code
+    <ul>
+    <li><b>include</b> - Gallium3D header files which define the Gallium3D
+        interfaces
+    <li><b>drivers</b> - Gallium3D device drivers
+      <ul>
+      <li><b>i915</b> - Driver for Intel i915/i945.
+      <li><b>llvmpipe</b> - Software driver using LLVM for runtime code generation.
+      <li><b>nv*</b> - Drivers for NVIDIA GPUs.
+      <li><b>radeonsi</b> - Driver for AMD Southern Island.
+      <li><b>r300</b> - Driver for ATI R300 - R500.
+      <li><b>r600</b> - Driver for ATI/AMD R600 - Northern Island.
+      <li><b>softpipe</b> - Software reference driver.
+      <li><b>svga</b> - Driver for VMware's SVGA virtual GPU.
+      <li><b>trace</b> - Driver for tracing Gallium calls.
+      <li>XXX more
+      </ul>
+    <li><b>auxiliary</b> - Gallium support code
+      <ul>
+      <li><b>draw</b> - Software vertex processing and primitive assembly
+          module.  This includes vertex program execution, clipping, culling
+          and optional stages for drawing wide lines, stippled lines,
+          polygon stippling, two-sided lighting, etc.
+          Intended for use by drivers for hardware that does not have
+          vertex shaders.
+          Geometry shaders will also be implemented in this module.
+      <li><b>cso_cache</b> - Constant State Objects Cache.  Used to filter out
+          redundant state changes between state trackers and drivers.
+      <li><b>gallivm</b> - LLVM module for Gallium.  For LLVM-based
+           compilation, optimization and code generation for TGSI shaders.
+           Incomplete.
+      <li><b>pipebuffer</b> - utility module for managing buffers
+      <li><b>rbug</b> - Gallium remote debug utility
+      <li><b>rtasm</b> - run-time assembly/machine code generation.
+          Currently there's run-time code generation for x86/SSE, PowerPC
+          and Cell SPU.
+      <li><b>tgsi</b> - TG Shader Infrastructure.  Code for encoding,
+          manipulating and interpretting GPU programs.
+      <li><b>translate</b> - module for translating vertex data from one format
+          to another.
+      <li><b>util</b> - assorted utilities for arithmetic, hashing, surface
+          creation, memory management, 2D blitting, simple rendering, etc.
+      </ul>
+    <li><b>state_trackers</b> -
+       <ul>
+       <li><b>dri</b> - Meta state tracker for DRI drivers
+       <li><b>egl</b> - Meta state tracker for EGL drivers
+       <li><b>es</b> - OpenGL ES 1.x and 2.x state trackers
+       <li><b>glx</b> - Meta state tracker for GLX
+       <li><b>vdpau</b> - VDPAU state tracker
+       <li><b>vega</b> - OpenVG 1.x state tracker
+       <li><b>wgl</b> -
+       <li><b>xorg</b> - Meta state tracker for Xorg video drivers
+       </ul>
+    <li><b>winsys</b> -
+       <ul>
+       <li><b>drm</b> -
+       <li><b>gdi</b> -
+       <li><b>xlib</b> -
+       </ul>
+    </ul>
+  </ul>
+  <ul>
+  <li><b>glx</b> - The GLX library code for building libGL.  This is used for
+         direct rendering drivers.  It will dynamically load one of the 
+         xxx_dri.so drivers.
+  </ul>
+<li><b>progs</b> - OpenGL test and demonstration programs
+<li><b>lib</b> - where the GL libraries are placed
+</ul>
+
+
+</body>
+</html>

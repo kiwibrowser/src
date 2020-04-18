@@ -1,0 +1,782 @@
+# -------------------------------------------------
+# drawElements Quality Program OpenGL ES 3.2 Module
+# -------------------------------------------------
+#
+# Copyright 2016 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+group varying "Varying linkage"
+	group rules "Rules"
+
+		case type_mismatch
+			version 320 es
+			desc "Tessellation output and geometry input type mismatch"
+			expect link_fail
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out mediump float vtx_out;
+				void main()
+				{
+					vtx_out = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 320 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float vtx_out[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = vtx_out[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 320 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 320 es
+				${GEOMETRY_DECLARATIONS}
+				in mediump vec2 te_out[];
+				out mediump float geo_out;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_out = te_out[ndx].y;
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 320 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case different_precision
+			version 320 es
+			desc "Tessellation output and geometry input precisions are different"
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out mediump float vtx_out;
+				void main()
+				{
+					vtx_out = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 320 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float vtx_out[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = vtx_out[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 320 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 320 es
+				${GEOMETRY_DECLARATIONS}
+				in highp float te_out[];
+				out mediump float geo_out;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_out = te_out[ndx];
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 320 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case no_output_declaration
+			version 320 es
+			desc "Geometry input has no matching output"
+			expect link_fail
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out mediump float vtx_out;
+				void main()
+				{
+					vtx_out = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 320 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float vtx_out[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = vtx_out[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 320 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				void main()
+				{
+					te_out = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 320 es
+				${GEOMETRY_DECLARATIONS}
+				in mediump float te_out[];
+				in mediump float te_out_nonexistent[];
+				out mediump float geo_out;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_out = te_out[ndx] + te_out_nonexistent[ndx];
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 320 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case superfluous_output_declaration
+			version 320 es
+			desc "Tessellation shader output is never used"
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out mediump float vtx_out;
+				void main()
+				{
+					vtx_out = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 320 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float vtx_out[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = vtx_out[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 320 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float te_out;
+				out mediump float te_out_nonexistent;
+				void main()
+				{
+					te_out = tc_out[2];
+					te_out_nonexistent = tc_out[0];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 320 es
+				${GEOMETRY_DECLARATIONS}
+				in mediump float te_out[];
+				out mediump float geo_out;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_out = te_out[ndx];
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 320 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case vertex_geometry_same_varying_name_1
+			version 320 es
+			desc "Vertex output and geometry input share the same name"
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out mediump float sharedVaringName;
+				void main()
+				{
+					sharedVaringName = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 320 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float sharedVaringName[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = sharedVaringName[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 320 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float sharedVaringName;
+				void main()
+				{
+					sharedVaringName = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 320 es
+				${GEOMETRY_DECLARATIONS}
+				in mediump float sharedVaringName[];
+				out mediump float geo_out;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_out = sharedVaringName[ndx];
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 320 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case vertex_geometry_same_varying_name_2
+			version 320 es
+			desc "Vertex output and geometry input share the same name"
+			values
+			{
+				input vec2 in0 = vec2(1.0, 1.0);
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out mediump vec2 sharedVaringName;
+				void main()
+				{
+					sharedVaringName = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 320 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump vec2 sharedVaringName[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = 2.0 * sharedVaringName[gl_InvocationID].x - sharedVaringName[gl_InvocationID].y;
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 320 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out mediump float sharedVaringName;
+				void main()
+				{
+					sharedVaringName = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 320 es
+				${GEOMETRY_DECLARATIONS}
+				in mediump float sharedVaringName[];
+				out mediump float geo_out;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_out = sharedVaringName[ndx];
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 320 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case io_block
+			version 320 es
+			desc "Use of io block between tessellation and geometry shaders"
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out mediump float vtx_out;
+				void main()
+				{
+					vtx_out = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 320 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float vtx_out[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = vtx_out[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 320 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out IOBlockName { mediump float val; } instanceName;
+				void main()
+				{
+					instanceName.val = tc_out[2];
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 320 es
+				${GEOMETRY_DECLARATIONS}
+				in IOBlockName { mediump float val; } instanceName[];
+				out mediump float geo_out;
+				void main()
+				{
+					geo_out = instanceName[0].val;
+					gl_Position = gl_in[0].gl_Position;
+					EmitVertex();
+
+					geo_out = instanceName[1].val;
+					gl_Position = gl_in[1].gl_Position;
+					EmitVertex();
+
+					geo_out = instanceName[2].val;
+					gl_Position = gl_in[2].gl_Position;
+					EmitVertex();
+				}
+			""
+			fragment ""
+				#version 320 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+
+		case array_in_io_block
+			version 320 es
+			desc "Float array in a io block between tessellation and geometry shaders"
+			values
+			{
+				input float in0 = 1.0;
+				output float out0 = 1.0;
+			}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out mediump float vtx_out;
+				void main()
+				{
+					vtx_out = in0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 320 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				in mediump float vtx_out[];
+				out mediump float tc_out[];
+				void main()
+				{
+					tc_out[gl_InvocationID] = vtx_out[gl_InvocationID];
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 320 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				in mediump float tc_out[];
+				out IOBlockName { mediump float val[2]; } instanceName;
+				void main()
+				{
+					instanceName.val[0] = tc_out[2] + 1.0;
+					instanceName.val[1] = -1.0;
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 320 es
+				${GEOMETRY_DECLARATIONS}
+				in IOBlockName { mediump float val[2]; } instanceName[];
+				out mediump float geo_out;
+				void main()
+				{
+					geo_out = instanceName[0].val[0] + instanceName[0].val[1];
+					gl_Position = gl_in[0].gl_Position;
+					EmitVertex();
+
+					geo_out = instanceName[1].val[0] + instanceName[1].val[1];
+					gl_Position = gl_in[1].gl_Position;
+					EmitVertex();
+
+					geo_out = instanceName[2].val[0] + instanceName[2].val[1];
+					gl_Position = gl_in[2].gl_Position;
+					EmitVertex();
+				}
+			""
+			fragment ""
+				#version 320 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+	end
+
+	import "linkage_tessellation_geometry_varying_types.test"
+end
+
+group uniform "Uniform linkage"
+	group rules "Rules"
+		case type_mismatch_1
+			version 320 es
+			desc "Uniform type mismatch"
+			expect link_fail
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 320 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				void main()
+				{
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 320 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				uniform mediump float u_value;
+				out mediump float te_out;
+				void main()
+				{
+					te_out = u_value;
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 320 es
+				${GEOMETRY_DECLARATIONS}
+				uniform mediump vec2 u_value;
+				in mediump float te_out[];
+				out mediump float geo_out;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_out = te_out[ndx] + u_value.y;
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 320 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(geo_out);
+				}
+			""
+		end
+
+		case precision_mismatch_1
+			version 320 es
+			desc "Uniform precision mismatch"
+			expect link_fail
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 320 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				void main()
+				{
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 320 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				uniform mediump float u_value;
+				out mediump float te_out;
+				void main()
+				{
+					te_out = u_value;
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 320 es
+				${GEOMETRY_DECLARATIONS}
+				uniform highp float u_value;
+				in mediump float te_out[];
+				out mediump float geo_out;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_out = te_out[ndx] + u_value;
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 320 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(geo_out);
+				}
+			""
+		end
+
+		case struct_partial_usage
+			version 320 es
+			desc "Uniform precision mismatch"
+			values
+			{
+				uniform float u_value.teVal = 1.0;
+				uniform float u_value.geoVal = 2.0;
+				output float out0 = 5.0;
+			}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+			tessellation_control ""
+				#version 320 es
+				${TESSELLATION_CONTROL_DECLARATIONS}
+				void main()
+				{
+					${TESSELLATION_CONTROL_OUTPUT}
+				}
+			""
+			tessellation_evaluation ""
+				#version 320 es
+				${TESSELLATION_EVALUATION_DECLARATIONS}
+				struct S
+				{
+					mediump float teVal;
+					mediump float geoVal;
+				};
+				uniform S u_value;
+				out mediump float te_out;
+				void main()
+				{
+					te_out = u_value.teVal;
+					${TESSELLATION_EVALUATION_OUTPUT}
+				}
+			""
+			geometry ""
+				#version 320 es
+				${GEOMETRY_DECLARATIONS}
+				struct S
+				{
+					mediump float teVal;
+					mediump float geoVal;
+				};
+				uniform S u_value;
+				in mediump float te_out[];
+				out mediump float geo_out;
+				void main()
+				{
+					for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+					{
+						geo_out = te_out[ndx] + 2.0 * u_value.geoVal;
+						gl_Position = gl_in[ndx].gl_Position;
+						EmitVertex();
+					}
+				}
+			""
+			fragment ""
+				#version 320 es
+				precision mediump float;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float geo_out;
+				void main()
+				{
+					out0 = geo_out;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+	end
+end

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<!--
+Copyright 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/metrics/metric_registry.html">
+<link rel="import" href="/tracing/value/histogram.html">
+
+<script>
+'use strict';
+
+tr.exportTo('tr.metrics.sh', function() {
+  const MESSAGE_LOOP_EVENT_NAME =
+      'Startup.BrowserMessageLoopStartTimeFromMainEntry3';
+  const NAVIGATION_TIME_TO_NETWORK_STACK_EVENT_NAME =
+      'Navigation timeToNetworkStack';
+  function androidStartupMetric(histograms, model) {
+    // Walk the browser slices, extract the browser start timestamp and the
+    // messageloop start histogram sample.
+    const messageLoopStartHistogram = histograms.createHistogram(
+        'messageloop_start_time',
+        tr.b.Unit.byName.timeDurationInMs_smallerIsBetter, []);
+    const chromeHelper =
+        model.getOrCreateHelper(tr.model.helpers.ChromeModelHelper);
+    let browserStart;
+    if (!chromeHelper) return;
+    for (const helper of chromeHelper.browserHelpers) {
+      for (const ev of helper.mainThread.asyncSliceGroup.childEvents()) {
+        if (ev.title === MESSAGE_LOOP_EVENT_NAME) {
+          messageLoopStartHistogram.addSample(ev.duration,
+              { events: new tr.v.d.RelatedEventSet([ev]) });
+          browserStart = ev.start;
+        }
+      }
+    }
+
+    // Extract the request start histogram sample from a navigation event. Due
+    // to browser main thread being jammed, the reporting is delayed. A better
+    // metric would be to take the time when the request headers hit the network
+    // (in particular, after turnaround through disk cache). This would require
+    // taking the HTTP_STREAM_JOB event from NetLog with the right URL.
+    // TODO(pasko): Find out how to pass the correct URL here and take events
+    // from the netlog.
+    const requestStartHistogram = histograms.createHistogram(
+        'request_start_time',
+        tr.b.Unit.byName.timeDurationInMs_smallerIsBetter, []);
+    for (const helper of chromeHelper.browserHelpers) {
+      for (const ev of helper.mainThread.asyncSliceGroup.childEvents()) {
+        if (ev.title === NAVIGATION_TIME_TO_NETWORK_STACK_EVENT_NAME) {
+          requestStartHistogram.addSample(ev.end - browserStart,
+              {events: new tr.v.d.RelatedEventSet([ev])});
+        }
+      }
+    }
+
+    // Walk the renderer slices and extract the first contentful paint histogram
+    // sample.
+    const firstContentfulPaintHistogram = histograms.createHistogram(
+        'first_contentful_paint_time',
+        tr.b.Unit.byName.timeDurationInMs_smallerIsBetter, []);
+    const rendererHelpers = chromeHelper.rendererHelpers;
+    const pids = Object.keys(rendererHelpers);
+    for (const rendererHelper of Object.values(chromeHelper.rendererHelpers)) {
+      for (const ev of rendererHelper.mainThread.sliceGroup.childEvents()) {
+        if (ev.title === 'firstContentfulPaint') {
+          firstContentfulPaintHistogram.addSample(ev.end - browserStart,
+              {events: new tr.v.d.RelatedEventSet([ev])});
+        }
+      }
+    }
+  }
+
+  tr.metrics.MetricRegistry.register(androidStartupMetric);
+
+  return {
+    androidStartupMetric,
+  };
+});
+</script>

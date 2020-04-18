@@ -1,0 +1,85 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    GLES 3.1 debug (KHR_debug)
+
+Tests:
+ + dEQP-GLES31.functional.debug.*
+
+Includes:
+ + Reporting basic API errors
+   - Callback
+   - Log
+   - glGetError
+ + Application generated messages
+   - InsertMessage
+   - Push/Pop
+ + Message filtering
+ + Debug groups
+ + Asynchronous output
+   - Most cases use synchronous
+ + Labels (for all valid object types)
+ + Handling for debug/non-debug contexts
+ + Limits (MAX_DEBUG_MESSAGE_LENGTH, MAX_DEBUG_LOGGED_MESSAGES)
+
+Excludes:
+ + Negative API tests for the extension itself
+ + Some API errors
+ + Labeled objects are not used for anything
+ + Initial state of DEBUG_OUTPUT
+
+
+Description:
+
+KHR_debug does not require generating messages if the GL context is not a
+debug context. The verification logic takes this into account and thus the
+tests have significantly lower criteria for passing when not running in a
+debug context. In situations that would not pass with a debug context (and
+some other suspect cases) a quality warning is generated instead.
+As such any real testing of this feature should be done in a debug context.
+
+Tests can be run in a debug context with the --deqp-gl-context-flags=debug
+command line argument
+
+Basic API error conditions are tested by calling the API in a manner that should
+generate errors and verifying that appropriate errors were generated.
+Verification is performed with a callback, querying the error log or GetError.
+Other than the fetching of errors (where necessary) the API usage is identical
+between equivalent test cases with different verification methods.
+
+Application generated messages are generated with DebugMessageInsert and
+Push/Pop DebugGroup and verified with a callback.
+
+Message filtering tests use a partially randomized set of API calls. The
+messages produced by these calls are first gathered without any filtering.
+Filtering is then enabled with a randomized set of changes from the base
+(unfiltered) state and the API calls are re-run. The messages from the second
+run are verified to be the correct subset of messages from the first run.
+
+Debug groups are tested with an extended version of filtering tests.
+Filtering tests are essentially run several times with the same set of API
+calls and with verification after every push/pop.
+
+Asynchronous message generation is tested by running the same set of API calls
+first with DEBUG_OUTPUT_SYNCHRONOUS enabled and then with it disabled and
+comparing the generated messages. The set of API calls used is randomized.
+Some async cases use callbacks while others query the debyg message log.
+Other than the calls necessari to query the log these cases use identical
+framework code.
+
+Labels are set and immediately read back.

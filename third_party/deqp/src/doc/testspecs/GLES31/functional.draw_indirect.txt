@@ -1,0 +1,70 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Indirect drawing tests
+
+Tests:
+ + dEQP-GLES31.functional.draw_indirect.*
+
+Includes:
+ + Draw all basic primitives
+   - Points, triangles, triangle strips, triangle fans, lines, line
+     strips, line loops
+ + DrawArraysIndirect firstVertex
+ + DrawElementsIndirect index array tests
+ + DrawElementsIndirect baseVertex
+   - Test positive and negative baseVertex values
+ + Instanced draw with a high instance count
+ + Negative tests
+    - Bad alignment
+	- Source data beyond the end of the buffer
+	- Use of client side attribute arrays
+
+Excludes:
+
+Description:
+
+Primitive drawing cases draw a group of primitives with random generated
+vertex attributes and compare the output to a reference image generated
+by a simple reference rasterizer. Each primitive is tested using a single
+(generated) attribute array, multiple attribute arrays, instanced
+attribute array (instance divisor > 0) and with a non-array current
+attribute.
+
+DrawArraysIndirect firstVertex cases draw random triangles using
+glDrawElementIndirect with firstVertex > 0 and compare results to a
+generated reference image.
+
+DrawElementsIndirect index array cases draw random triangles using
+glDrawElementIndirect with index types of unsigned byte, short and int
+with both firstIndex = 0 and firstIndex = 1 and compare results to
+generated reference images.
+
+DrawElementsIndirect baseVertex cases draw random triangles with index
+types of unsigned byte, short and int using both positive and negative
+baseVertex values and compare results to generated reference images.
+
+Instanced draw cases draw a grid by instancing a single tile. The result
+is verified by simply searching for background colored (black) pixels in
+the result image. Resulting image should not contain any background
+colored pixels.
+
+Negative cases test try to issue a bad indirect draw command expecting an
+INVALID_OPERATION. Bad commands tested are commands with bad alignment,
+commands only partially in the DRAW_INDIRECT_BUFFER buffer, and commands
+not even partially in the DRAW_INDIRECT_BUFFER buffer.

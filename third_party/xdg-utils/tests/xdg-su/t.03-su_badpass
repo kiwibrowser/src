@@ -1,0 +1,30 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_su_badpass() {
+test_start "$FUNCNAME: basic su password failure"
+
+test_init
+
+## Require a running X server
+require_notroot
+require_interactive
+
+assert_display
+
+test_procedure
+
+assert_interactive "Please make sure there no open password prompt windows.\n\tDO NOT enter the correct password when prompted. (Repeat as necessary)"
+
+assert_exit 4 xdg-su -c whoami
+assert_nostdout
+assert_nostderr
+
+test_result
+}
+
+run_test test_su_badpass

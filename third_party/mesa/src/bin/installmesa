@@ -1,0 +1,74 @@
+#!/bin/sh
+
+#
+# Simple shell script for installing Mesa's header and library files.
+# If the copy commands below don't work on a particular system (i.e. the
+# -f or -d flags), we may need to branch on `uname` to do the right thing.
+#
+
+
+TOP=.
+
+INCLUDE_DIR="/usr/local/include"
+LIB_DIR="/usr/local/lib"
+
+if [ "x$#" = "x0" ] ; then
+echo
+echo "***** Mesa installation - You may need root privileges to do this *****"
+echo
+echo "Default directory for header files is:" ${INCLUDE_DIR}
+echo "Enter new directory or press <Enter> to accept this default."
+
+read INPUT
+if [ "x${INPUT}" != "x" ] ; then
+	INCLUDE_DIR=${INPUT}
+fi
+
+echo
+echo "Default directory for library files is:" ${LIB_DIR}
+echo "Enter new directory or press <Enter> to accept this default."
+
+read INPUT
+if [ "x${INPUT}" != "x" ] ; then
+	LIB_DIR=${INPUT}
+fi
+
+echo
+echo "About to install Mesa header files (GL/*.h) in: " ${INCLUDE_DIR}/GL
+echo "and Mesa library files (libGL.*, etc) in: " ${LIB_DIR}
+echo "Press <Enter> to continue, or <ctrl>-C to abort."
+
+read INPUT
+
+else
+INCLUDE_DIR=$1/include
+LIB_DIR=$1/lib
+fi
+
+# flags:
+#  -f = force
+#  -d = preserve symlinks (does not work on BSD)
+
+if [ `uname` = "FreeBSD" ] ; then
+	CP_FLAGS="-f"
+elif [ `uname` = "Darwin" ] ; then
+	CP_FLAGS="-f"
+elif [ `uname` = "AIX" ] ; then
+	CP_FLAGS="-fh"
+else
+	CP_FLAGS="-fd"
+fi
+
+
+set -v
+
+mkdir -p ${INCLUDE_DIR}
+mkdir -p ${INCLUDE_DIR}/GL
+# NOT YET: mkdir -p ${INCLUDE_DIR}/GLES
+mkdir -p ${LIB_DIR}
+cp -f ${TOP}/include/GL/*.h ${INCLUDE_DIR}/GL
+cp -f ${TOP}/src/glw/*.h ${INCLUDE_DIR}/GL
+# NOT YET: cp -f ${TOP}/include/GLES/*.h ${INCLUDE_DIR}/GLES
+cp ${CP_FLAGS} ${TOP}/lib*/lib* ${LIB_DIR}
+
+echo "Done."

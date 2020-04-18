@@ -1,0 +1,44 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_screensave_lock() {
+test_start "$FUNCNAME: verify screensaver lock"
+
+test_init
+
+require_notroot
+require_interactive
+## Require a running X server
+assert_display
+
+test_procedure
+
+assert_interactive "I will lock the screensaver 1 second after you press enter. Please press shift after it does."
+
+assert_exit 0 xdg-screensaver status
+assert_stdout
+
+mv out.stdout out.stat
+
+sleep 1
+
+assert_exit 0 xdg-screensaver lock
+assert_nostdout
+assert_nostderr
+
+sleep 1
+
+assert_interactive "Did the screensaver activate?" y
+assert_interactive "Were you required to enter your password to de-activate it?" y
+
+assert_exit 0 xdg-screensaver status
+assert_stdout out.stat
+
+test_result
+}
+
+run_test test_screensave_lock

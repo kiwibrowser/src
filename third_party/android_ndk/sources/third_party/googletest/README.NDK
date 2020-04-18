@@ -1,0 +1,91 @@
+This is a working copy of GoogleTest for the Android NDK.
+
+Project: https://code.google.com/p/googletest/
+Checkout: svn checkout http://googletest.googlecode.com/svn/trunk@653
+Patches: See patches.ndk/
+Licensing: 3-clause BSD. See googletest/LICENSE file.
+
+Note that the latest official release to date (1.6.0) doesn't work
+too well with Android. This is based on a more recent revision that
+includes many needed bugfixes.
+
+Usage:
+------
+
+This directory contains several module definitions that can be imported
+into your project by using the following at the end of your Android.mk:
+
+  $(call import-module,third_party/googletest)
+
+The GoogleTest modules are the following:
+
+  googletest_static:
+    GoogleTest as a static library.
+
+  googletest_shared:
+    GoogleTest as a shared library.
+
+  googletest_main:
+    A small helper static library that provides a main() implementation
+    that starts all the GoogleTest tests. This also links against
+    googletest_static.
+
+  googletest_main_shared:
+    Same as googletest_main, but links against googletest_shared.
+
+In your source code, use #include <gtest/gtest.h> as usual after ensuring
+your module depends on one of the modules above.
+
+Here's an fictuous example:
+
+jni/Android.mk:
+  LOCAL_PATH := $(call my-dir)
+
+  include $(CLEAR_VARS)
+  LOCAL_MODULE := foo
+  LOCAL_SRC_FILES := foo.cpp
+  include $(BUILD_SHARED_LIBRARY)
+
+  include $(CLEAR_VARS)
+  LOCAL_MODULE := foo_unittest
+  LOCAL_SRC_FILES := foo_unittest.cpp
+  LOCAL_SHARED_LIBRARIES := foo
+  LOCAL_STATIC_LIBRARIES := googletest_main
+  include $(BUILD_EXECUTABLE)
+
+  $(call import-module,third_party/googletest)
+
+jni/Application.mk:
+  APP_STL := gnustl_shared
+
+jni/foo.cpp:
+  int foo(int x, int y) {
+    return x + y;
+  }
+
+jni/foo.h:
+  extern int foo(int x, int y);
+
+jni/foo_unittest.cc:
+  #include <gtest/gtest.h>
+
+  #include "foo.h"
+
+  TEST(FooTest,ZeroZero) {
+    EXPECT_EQ(0, foo(0, 0));
+  }
+
+  TEST(FooTest,OneOne) {
+    EXPECT_EQ(2, foo(1, 1));
+  }
+
+Invoking 'ndk-build' will build both 'libfoo.so' and 'foo_unittest' under
+$PROJECT/libs/$ABI/. After this, to run the unit test program push it to
+the device and execute it with ADB, e.g.:
+
+  adb push libs/armeabi/libfoo.so /data/local/tmp/
+  adb push libs/armeabi/libgnustl_shared.so /data/local/tmp/
+  adb push libs/armeabi/foo_unittest /data/local/tmp/
+  adb shell chmod 775 /data/local/tmp/foo_unittest
+  adb shell "LD_LIBRARY_PATH=/data/local/tmp /data/local/tmp/foo_unittest"
+

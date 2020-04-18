@@ -1,0 +1,58 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Indirect Compute Dispatch
+
+Tests:
+ + dEQP-GLES31.functional.compute.indirect_dispatch.*
+
+Includes:
+ + glDispatchComputeIndirect()
+ + Single and multiple dispatch calls from a single buffer
+ + One or several work groups
+ + One or several items per work group
+ + Offsets within buffer
+ + Empty dispatch commands (0 work groups)
+ + Buffers uploaded from application side
+ + Buffers generated using compute shaders
+   - Synchronization with GL_COMMAND_BARRIER_BIT
+
+Excludes:
+ + Negative tests
+ + Robustness tests
+
+Description:
+
+Indirect dispatch tests allocate a buffer and fill it with one or more
+dispatch commands. In upload_buffer cases commands are written using
+glBufferData(). In gen_in_compute cases a compute shader is first dispatches,
+that writes out the commands into the buffer by accessing the command buffer
+as a SSBO. Memory barrier is issued after the first compute shader in
+gen_in_compute cases.
+
+Actual indirect compute tasks use a simple compute shader, that has access to
+a SSBO with two fields. One is reference work group count (uvec3) and another
+is output uint field, that is incremented atomically for each invocation,
+where comparison between gl_NumWorkGroups and the reference count passed.
+
+Once the command buffer has been generated, one or more indirect dispatch
+calls are made. SSBO binding offset is adjusted between each call to allocate
+a different portion of the input/output buffer for each call. After calls have
+been issued, result buffer is mapped for reading and pass counts are verified.
+No explicit synchronization call is made prior to mapping the buffer so GL is
+responsible of synchronizing the tasks.

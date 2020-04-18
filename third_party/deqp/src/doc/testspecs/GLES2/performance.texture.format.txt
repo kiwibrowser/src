@@ -1,0 +1,56 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Texture format performance tests
+
+Tests:
+ + dEQP-GLES2.performance.texture.format.*
+
+Includes:
+ + Texture lookup performance with all uncompressed texture formats
+ + 2D and cubemap textures
+ + Texture lookup in vertex and fragment shaders
+ + Nearest neighbor -filtering and clamp to edge -wrap mode
+
+Excludes:
+ + Performance of other filtering or wrap modes
+   - Covered performance.texture.filtering and performance.texture.wrap
+
+Description:
+
+Test cases measure performance of 2D and cubemap texture lookups without
+filtering (nearest neighbor mode). Shader body is populated with one or
+more texture lookups, each targeting different texture unit. There are
+test cases for the most relevant texture lookup counts.
+
+Texture lookups use same coordinates and lookup results are multiplied
+together to produce the final color for vertex or fragment. Additive
+blending is used to force fragment shader execution for all fragments.
+
+Texture size is the same as viewport size. Each texture unit uses a unique
+texture object. Texture objects are however re-used across draw calls.
+Textures are sampled in range (0, 0) -> (1, 1). Vertex-side tests use
+2x2 pixel quads, e.g. each vertex gives a color for single pixel.
+In this configuration viewportW*viewportH*numTextures unique texels are
+sampled in each draw call.
+
+Per-iteration draw call count is automatically chosen so that rendering runs
+approximately 30fps. Result is MPix/s or MVert/s computed from number of draw
+calls and actual frame time.
+
+See performance.txt for more details on shader performance testing.

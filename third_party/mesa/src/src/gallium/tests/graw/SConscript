@@ -1,0 +1,42 @@
+Import('*')
+
+env = env.Clone()
+
+env.Prepend(LIBS = [gallium])
+
+env.Prepend(LIBPATH = [graw.dir])
+env.Prepend(LIBS = ['graw'])
+    
+
+if env['platform'] in ('freebsd8', 'sunos'):
+    env.Append(LIBS = ['m'])
+
+if env['platform'] == 'freebsd8':
+    env.Append(LIBS = ['pthread'])
+
+progs = [
+    'clear',
+    'fs-fragcoord',
+    'fs-frontface',
+    'fs-test',
+    'fs-write-z',
+    'gs-test',
+    'occlusion-query',
+    'quad-sample',
+    'quad-tex',
+    'shader-leak',
+    'tex-srgb',
+    'tex-swizzle',
+    'tri',
+    'tri-gs',
+    'tri-instanced',
+    'vs-test',
+]
+
+for name in progs:
+    program = env.Program(
+        target = name,
+        source = name + '.c',
+    )
+    #env.Depends(program, graw)
+    env.Alias('graw-progs', program)

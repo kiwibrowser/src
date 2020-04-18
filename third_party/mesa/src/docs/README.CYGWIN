@@ -1,0 +1,256 @@
+
+                          Mesa Cygwin/X11 Information
+
+
+WARNING
+=======
+
+If you installed X11 (packages xorg-x11-devel and xorg-x11-bin-dlls ) with the 
+latest setup.exe from Cygwin the GL (Mesa) libraries and include are already 
+installed in /usr/X11R6. 
+
+The following will explain how to "replace" them.
+
+Installation
+============
+
+How to compile Mesa on Cygwin/X11 systems:
+
+1. Shared libs:
+    type 'make cygwin-sl'.
+
+    When finished, the Mesa DLL will be in the Mesa-x.y/lib/ and 
+    Mesa-x.y/bin directories.
+
+
+2. Static libs:
+    type 'make cygwin-static'.
+    When finished, the Mesa libraries will be in the Mesa-x.y/lib/ directory.
+
+Header and library files:
+   After you've compiled Mesa and tried the demos I recommend the following
+   procedure for "installing" Mesa.
+
+   Copy the Mesa include/GL directory to /usr/X11R6/include:
+	cp -a include/GL /usr/X11R6/include
+
+   Copy the Mesa library files to /usr/X11R6/lib:
+	cp -a lib/* /usr/X11R6ocal/lib
+
+   Copy the Mesa bin files (used by the DLL stuff) to /usr/X11R6/bin:
+	cp -a lib/cyg* /usr/X11R6/bin
+
+Xt/Motif widgets:
+   If you want to use Mesa or OpenGL in your Xt/Motif program you can build
+   the widgets found in either the widgets-mesa or widgets-sgi directories.
+   The former were written for Mesa and the later are the original SGI
+   widgets.  Look in those directories for more information.
+   For the Motif widgets you must have downloaded the lesstif package.
+
+
+Using the library
+=================
+
+Configuration options:
+   The file src/mesa/main/config.h has many parameters which you can adjust
+   such as maximum number of lights, clipping planes, maximum texture size,
+   etc.  In particular, you may want to change DEPTH_BITS from 16 to 32
+   if a 16-bit depth buffer isn't precise enough for your application.
+
+
+Shared libraries:
+   If you compile shared libraries (Win32 DLLS) you may have to set an 
+   environment variable to specify where the Mesa libraries are located.  
+   Set the PATH variable to include /your-dir/Mesa-2.6/bin.   
+   Otherwise, when you try to run a demo it may fail with a message saying 
+   that one or more DLL couldn't be found.
+
+
+Xt/Motif Widgets:
+   Two versions of the Xt/Motif OpenGL drawing area widgets are included:
+
+      widgets-sgi/	SGI's stock widgets
+      widgets-mesa/	Mesa-tuned widgets
+
+   Look in those directories for details
+
+
+Togl:
+   Togl is an OpenGL/Mesa widget for Tcl/Tk.
+   See http://togl.sourceforge.net for more information.
+
+
+
+X Display Modes:
+   Mesa supports RGB(A) rendering into almost any X visual type and depth.
+
+   The glXChooseVisual function tries its best to pick an appropriate visual
+   for the given attribute list.  However, if this doesn't suit your needs
+   you can force Mesa to use any X visual you want (any supported by your
+   X server that is) by setting the MESA_RGB_VISUAL and MESA_CI_VISUAL
+   environment variables.  When an RGB visual is requested, glXChooseVisual
+   will first look if the MESA_RGB_VISUAL variable is defined.  If so, it
+   will try to use the specified visual.  Similarly, when a color index
+   visual is requested, glXChooseVisual will look for the MESA_CI_VISUAL
+   variable.
+
+   The format of accepted values is:  <visual-class> <depth>
+   Here are some examples:
+
+   using the C-shell:
+	% setenv MESA_RGB_VISUAL "TrueColor 8"		// 8-bit TrueColor
+	% setenv MESA_CI_VISUAL "PseudoColor 12"	// 12-bit PseudoColor
+	% setenv MESA_RGB_VISUAL "PseudoColor 8"	// 8-bit PseudoColor
+
+   using the KornShell:
+	$ export MESA_RGB_VISUAL="TrueColor 8"
+	$ export MESA_CI_VISUAL="PseudoColor 12"
+	$ export MESA_RGB_VISUAL="PseudoColor 8"
+
+
+Double buffering:
+   Mesa can use either an X Pixmap or XImage as the backbuffer when in
+   double buffer mode.  Using GLX, the default is to use an XImage.  The
+   MESA_BACK_BUFFER environment variable can override this.  The valid
+   values for MESA_BACK_BUFFER are:  Pixmap and XImage (only the first
+   letter is checked, case doesn't matter).
+
+   A pixmap is faster when drawing simple lines and polygons while an
+   XImage is faster when Mesa has to do pixel-by-pixel rendering.  If you
+   need depth buffering the XImage will almost surely be faster.  Exper-
+   iment with the MESA_BACK_BUFFER variable to see which is faster for
+   your application.  
+
+
+Colormaps:
+   When using Mesa directly or with GLX, it's up to the application writer
+   to create a window with an appropriate colormap.  The aux, tk, and GLUT
+   toolkits try to minimize colormap "flashing" by sharing colormaps when
+   possible.  Specifically, if the visual and depth of the window matches
+   that of the root window, the root window's colormap will be shared by
+   the Mesa window.  Otherwise, a new, private colormap will be allocated.
+
+   When sharing the root colormap, Mesa may be unable to allocate the colors
+   it needs, resulting in poor color quality.  This can happen when a
+   large number of colorcells in the root colormap are already allocated.
+   To prevent colormap sharing in aux, tk and GLUT, define the environment
+   variable MESA_PRIVATE_CMAP.  The value isn't significant.
+
+
+Gamma correction:
+   To compensate for the nonlinear relationship between pixel values
+   and displayed intensities, there is a gamma correction feature in
+   Mesa.  Some systems, such as Silicon Graphics, support gamma
+   correction in hardware (man gamma) so you won't need to use Mesa's
+   gamma facility.  Other systems, however, may need gamma adjustment
+   to produce images which look correct.  If in the past you thought
+   Mesa's images were too dim, read on.
+
+   Gamma correction is controlled with the MESA_GAMMA environment
+   variable.  Its value is of the form "Gr Gg Gb" or just "G" where
+   Gr is the red gamma value, Gg is the green gamma value, Gb is the
+   blue gamma value and G is one gamma value to use for all three
+   channels.  Each value is a positive real number typically in the
+   range 1.0 to 2.5.  The defaults are all 1.0, effectively disabling
+   gamma correction.  Examples using csh:
+
+	% setenv MESA_GAMMA "2.3 2.2 2.4"	// separate R,G,B values
+	% setenv MESA_GAMMA "2.0"		// same gamma for R,G,B
+
+   The demos/gamma.c program may help you to determine reasonable gamma
+   value for your display.  With correct gamma values, the color intensities
+   displayed in the top row (drawn by dithering) should nearly match those
+   in the bottom row (drawn as grays).
+
+   Alex De Bruyn reports that gamma values of 1.6, 1.6 and 1.9 work well
+   on HP displays using the HP-ColorRecovery technology.
+
+   Mesa implements gamma correction with a lookup table which translates
+   a "linear" pixel value to a gamma-corrected pixel value.  There is a
+   small performance penalty.  Gamma correction only works in RGB mode.
+   Also be aware that pixel values read back from the frame buffer will
+   not be "un-corrected" so glReadPixels may not return the same data
+   drawn with glDrawPixels.
+
+   For more information about gamma correction see:
+   http://www.inforamp.net/~poynton/notes/colour_and_gamma/GammaFAQ.html
+
+
+Overlay Planes
+
+   Overlay planes in the frame buffer are supported by Mesa but require
+   hardware and X server support.  To determine if your X server has
+   overlay support you can test for the SERVER_OVERLAY_VISUALS property:
+
+	xprop -root | grep SERVER_OVERLAY_VISUALS
+
+
+HPCR glClear(GL_COLOR_BUFFER_BIT) dithering
+
+   If you set the MESA_HPCR_CLEAR environment variable then dithering
+   will be used when clearing the color buffer.  This is only applicable
+   to HP systems with the HPCR (Color Recovery) system.
+
+
+Extensions
+==========
+   There are three Mesa-specific GLX extensions at this time.
+
+   GLX_MESA_pixmap_colormap 
+
+      This extension adds the GLX function:
+
+         GLXPixmap glXCreateGLXPixmapMESA( Display *dpy, XVisualInfo *visual,
+                                           Pixmap pixmap, Colormap cmap )
+
+      It is an alternative to the standard glXCreateGLXPixmap() function.
+      Since Mesa supports RGB rendering into any X visual, not just True-
+      Color or DirectColor, Mesa needs colormap information to convert RGB
+      values into pixel values.  An X window carries this information but a
+      pixmap does not.  This function associates a colormap to a GLX pixmap.
+      See the xdemos/glxpixmap.c file for an example of how to use this
+      extension.
+
+   GLX_MESA_release_buffers
+
+      Mesa associates a set of ancillary (depth, accumulation, stencil and
+      alpha) buffers with each X window it draws into.  These ancillary
+      buffers are allocated for each X window the first time the X window
+      is passed to glXMakeCurrent().  Mesa, however, can't detect when an
+      X window has been destroyed in order to free the ancillary buffers.
+
+      The best it can do is to check for recently destroyed windows whenever
+      the client calls the glXCreateContext() or glXDestroyContext()
+      functions.  This may not be sufficient in all situations though.
+
+      The GLX_MESA_release_buffers extension allows a client to explicitly
+      deallocate the ancillary buffers by calling glxReleaseBuffersMESA()
+      just before an X window is destroyed.  For example:
+
+         #ifdef GLX_MESA_release_buffers
+            glXReleaseBuffersMESA( dpy, window );
+         #endif
+         XDestroyWindow( dpy, window );
+
+      This extension is new in Mesa 2.0.
+
+   GLX_MESA_copy_sub_buffer
+
+      This extension adds the glXCopySubBufferMESA() function.  It works
+      like glXSwapBuffers() but only copies a sub-region of the window
+      instead of the whole window.
+
+      This extension is new in Mesa version 2.6
+
+
+
+Summary of X-related environment variables:
+   MESA_RGB_VISUAL - specifies the X visual and depth for RGB mode (X only)
+   MESA_CI_VISUAL - specifies the X visual and depth for CI mode (X only)
+   MESA_BACK_BUFFER - specifies how to implement the back color buffer (X only)
+   MESA_PRIVATE_CMAP - force aux/tk libraries to use private colormaps (X only)
+   MESA_GAMMA - gamma correction coefficients (X only)
+
+
+----------------------------------------------------------------------
+README.CYGWIN - lassauge April 2004 - based on README.X11

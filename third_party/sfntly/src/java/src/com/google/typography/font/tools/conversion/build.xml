@@ -1,0 +1,31 @@
+<project name="conversion" basedir="." default="all">
+
+  <import file="../../../../../../../common.xml" />
+
+  <target name="eotconverter" depends="sfntly-jar">
+    <mkdir dir="${dist_eotconverter.dir}" />
+    <jar destfile="${dist_eotconverter.dir}/eotconverter.jar" basedir="${classes.dir}" includes="com/google/typography/font/tools/conversion/eot/**">
+      <zipfileset src="${dist_lib.dir}/sfntly.jar" />
+      <zipfileset src="${lib.dir}/icu4j-charset-4_8_1_1.jar" />
+      <zipfileset src="${lib.dir}/icu4j-4_8_1_1.jar" />
+      <manifest>
+        <attribute name="Main-Class" value="com.google.typography.font.tools.conversion.eot.EOTWriter"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="woffconverter" depends="sfntly-jar">
+    <mkdir dir="${dist_woffconverter.dir}" />
+    <jar destfile="${dist_woffconverter.dir}/woffconverter.jar" basedir="${classes.dir}" includes="com/google/typography/font/tools/conversion/woff/**">
+      <zipfileset src="${dist_lib.dir}/sfntly.jar" />
+      <zipfileset src="${lib.dir}/icu4j-charset-4_8_1_1.jar" />
+      <zipfileset src="${lib.dir}/icu4j-4_8_1_1.jar" />
+      <manifest>
+        <attribute name="Main-Class" value="com.google.typography.font.tools.conversion.woff.WoffWriter"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="all" depends="eotconverter, woffconverter" />
+
+</project>

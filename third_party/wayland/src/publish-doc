@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -e
+
+[ -e doc ] || (echo "Run this from the project root" && exit 1)
+
+make
+
+DOC_HTML=./doc/publican/Wayland/en-US/html/
+
+[ -e "${DOC_HTML}" ] || (echo "HTML documentation failed to build at ${DOC_HTML}" && exit 1)
+
+chmod -R g+x ${DOC_HTML}
+
+rsync --delete -avz ${DOC_HTML} freedesktop.org:/srv/wayland.freedesktop.org/www/docs/html/

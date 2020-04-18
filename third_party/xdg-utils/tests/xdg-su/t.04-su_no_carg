@@ -1,0 +1,24 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_su_no_carg() {
+test_start "$FUNCNAME: expected error when -c has no option"
+
+test_procedure
+
+assert_interactive "Please close any open password prompt windows."
+
+assert_exit 1 xdg-su -c ''
+assert_nostdout
+assert_stderr
+
+assert_interactive "Did a password prompt window appear?" n
+
+test_result
+}
+
+run_test test_su_no_carg

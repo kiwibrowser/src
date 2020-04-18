@@ -1,0 +1,64 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Shader Shared Variable Tests
+
+Tests:
+ + dEQP-GLES31.functional.compute.shared_var.*
+
+Includes:
+ + All basic types, all precisions
+ + Single shared variable
+ + Various work group sizes
+   - 2x1x3 in basic type cases
+   - 1x1x1, 64x1x1, 1x64x1, 1x1x64, 256x1x1, 1x256x1, 17x5x9 for selected types
+ + All built-in atomic operation functions
+   + int, uint types
+   + all precisions
+ + Multiple work groups for atomic function cases
+
+Excludes:
+ + Multiple shared variables
+ + Complex types (arrays, structures)
+ + Negative tests
+
+Description:
+
+Basic type test cases declare a single shared variable of the appropriate
+type. In addition following input/output variables are used:
+ + buffer block containing an array of booleans, one for each item in work group
+ + u_val[], u_ref[] uniform arrays, filled with identical values
+ + u_numIters iteration count uniform, initialized with work group size
+
+The compute shader contains a loop that is limited by the u_numIters uniform.
+In each iteration one of the work items writes a value from u_val to the
+shared variable. A shared memory barrier is issued, and after that all work
+items read and compare shared var value to u_ref. If comparison passed for all
+iterations, true is set to appropriate element of the output array. Test case
+then maps the output SSBO and checks that all elements are true, meaning that
+all shader invocations passed the test.
+
+
+Atomic operation test cases issue multiple work groups of size 3x2x1. In each
+work group first invocation initializes shared variable to a certain value.
+Barrier is issued and after that each invocation issues atomic operation with
+per-invocation value. Resulting values are written out into SSBO. Finally, one
+invocation per work group writes out the final shared variable value.
+
+Resulting values from SSBO are read using buffer mapping and verified. The
+input values and validation logic depends on the type of the atomic operation.

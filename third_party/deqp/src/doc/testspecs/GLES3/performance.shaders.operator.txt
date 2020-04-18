@@ -1,0 +1,76 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Shader operator performance tests
+
+Tests:
+ + dEQP-GLES3.performance.shaders.operator.*
+
+Includes:
+ + Arithmetic operators in vertex and fragment shaders
+   - Scalar and vector types
+ + Computation-only built-in functions
+
+Excludes:
+ + Texture lookup built-in functions
+   - Covered in performance.texture.
+ + Certain built-in functions; to be added in the future
+   - modf
+   - functions with uint/uvec* return or parameter types
+   - matrix functions that also deal with non-matrices (e.g. outerProduct)
+
+Description:
+
+Each test case draws multiple times with different workload sizes. A workload
+size means the iteration count of a uniform loop in the shader. Time for each
+frame is measured, and the slope of the workload size vs frame time data is
+estimated. This slope tells us the estimated increase in frame time caused by
+a workload increase of 1 loop iteration.
+
+Generally, the shaders contain not just the operation we're interested in (e.g.
+addition) but also some other things (e.g. loop overhead). To eliminate this
+cost, we actually do the measurements described above paragraph with two
+programs, which contain different amounts of computation in the loop. Then we
+can compute the cost of just one operation by appropriately subtracting the
+estimated slopes, and dividing by the operation count difference between the
+two programs.
+
+At this point, the result tells us the increase in frame time caused by the
+addition of one operation. Dividing this by the amount of draw calls in a frame,
+and further by the amount of vertices or fragments in a draw call, we get the
+time cost of one operation.
+
+In reality, there sometimes isn't just a trivial linear dependence between
+workload size and frame time. Instead, there tends to be some amount of initial
+"free" operations. That is, it may be that all workload sizes below some number
+C yield the same frame time, and only workload sizes beyond C increase the frame
+time in a supposedly linear manner. Graphically, this means that there graph
+consists of two parts: a horizontal left part, and a linearly increasing right
+part; the right part starts where the left parts ends. The principal task of
+these tests is to look at the slope of the increasing right part. Additionally
+an estimate for the amount of initial free operations is calculated. Note that
+it is also normal to get graphs where the horizontal left part is of zero width,
+i.e. there are no free operations.
+
+Note that the tests use several fixed constants, such as the extent to which the
+loops in the shaders are unrolled. These may not be the most suitable for all
+platforms, and can be modified near the top of es2pShaderOperatorTests.cpp .
+
+The unit of the test result is millions of operations per second.
+
+See performance.txt for more details on shader performance testing.

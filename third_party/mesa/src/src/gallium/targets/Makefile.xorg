@@ -1,0 +1,86 @@
+# src/gallium/targets/Makefile.xorg
+
+# Template makefile for gallium xorg drivers.
+#
+# Usage:
+#   The minimum that the including makefile needs to define
+#   is TOP, LIBNAME and one of of the *_SOURCES.
+#
+# Optional defines:
+#   DRIVER_INCLUDES are appended to the list of includes directories.
+#   DRIVER_DEFINES is not used for makedepend, but for compilation.
+#   DRIVER_PIPES are pipe drivers and modules that the driver depends on.
+#   DRIVER_LINKS are flags given to the linker.
+
+### Basic defines ###
+
+OBJECTS = $(C_SOURCES:.c=.o) \
+	$(CPP_SOURCES:.cpp=.o) \
+	$(ASM_SOURCES:.S=.o)
+
+INCLUDES = \
+	$(shell $(PKG_CONFIG) --cflags-only-I pixman-1 xorg-server libdrm xproto) \
+	-I$(TOP)/src/gallium/include \
+	-I$(TOP)/src/gallium/drivers \
+	-I$(TOP)/src/gallium/auxiliary \
+	-I$(TOP)/src/gallium/winsys \
+	$(DRIVER_INCLUDES)
+
+LIBNAME_STAGING = $(TOP)/$(LIB_DIR)/gallium/$(LIBNAME)
+
+ifeq ($(MESA_LLVM),1)
+LDFLAGS += $(LLVM_LDFLAGS)
+DRIVER_LINKS += $(LLVM_LIBS) -lm -ldl
+LD=$(CXX)
+else
+  ifeq ($(LINK_WITH_CXX),1)
+    LD=$(CXX)
+  else
+    LD=$(CC)
+  endif
+endif
+
+
+##### TARGETS #####
+
+default: depend $(TOP)/$(LIB_DIR)/gallium $(LIBNAME) $(LIBNAME_STAGING)
+
+$(LIBNAME): $(OBJECTS) Makefile ../Makefile.xorg $(LIBS) $(DRIVER_PIPES) $(GALLIUM_AUXILIARIES)
+	$(MKLIB) -linker '$(LD)' -noprefix -o $@ -ldflags '$(LDFLAGS)' $(OBJECTS) $(DRIVER_PIPES) $(GALLIUM_AUXILIARIES) $(DRIVER_LINKS)
+
+depend: $(C_SOURCES) $(CPP_SOURCES) $(ASM_SOURCES) $(SYMLINKS) $(GENERATED_SOURCES)
+	rm -f depend
+	touch depend
+	$(MKDEP) $(MKDEP_OPTIONS) $(INCLUDES) $(C_SOURCES) $(CPP_SOURCES) $(ASM_SOURCES) $(GENERATED_SOURCES) 2> /dev/null
+
+$(LIBNAME_STAGING): $(LIBNAME)
+	$(INSTALL) $(LIBNAME) $(TOP)/$(LIB_DIR)/gallium
+
+$(TOP)/$(LIB_DIR)/gallium:
+	mkdir -p $@
+
+clean:
+	rm -f $(OBJECTS) $(GENERATED_SOURCES) $(LIBNAME) depend depend.bak
+
+install:
+	$(INSTALL) -d $(DESTDIR)/$(XORG_DRIVER_INSTALL_DIR)
+	$(MINSTALL) -m 755 $(LIBNAME) $(DESTDIR)/$(XORG_DRIVER_INSTALL_DIR)
+
+
+##### RULES #####
+
+%.s: %.c
+	$(CC) -S $(INCLUDES) $(CFLAGS) $(DRIVER_DEFINES) $< -o $@
+
+%.o: %.c
+	$(CC) -c $(INCLUDES) $(CFLAGS) $(DRIVER_DEFINES) $< -o $@
+
+%.o: %.cpp
+	$(CXX) -c $(INCLUDES) $(CXXFLAGS) $(DRIVER_DEFINES) $< -o $@
+
+%.o: %.S
+	$(CC) -c $(INCLUDES) $(CFLAGS) $(DRIVER_DEFINES)  $< -o $@
+
+sinclude depend
+
+.PHONY: default clean install

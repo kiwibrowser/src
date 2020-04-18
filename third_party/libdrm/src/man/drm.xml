@@ -1,0 +1,137 @@
+<?xml version='1.0'?> <!--*-nxml-*-->
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+          "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
+
+<!--
+  Written 2012 by David Herrmann <dh.herrmann@googlemail.com>
+  Dedicated to the Public Domain
+-->
+
+<refentry id="drm">
+  <refentryinfo>
+    <title>Direct Rendering Manager</title>
+    <productname>libdrm</productname>
+    <date>September 2012</date>
+    <authorgroup>
+      <author>
+        <contrib>Developer</contrib>
+        <firstname>David</firstname>
+        <surname>Herrmann</surname>
+        <email>dh.herrmann@googlemail.com</email>
+      </author>
+    </authorgroup>
+  </refentryinfo>
+
+  <refmeta>
+    <refentrytitle>drm</refentrytitle>
+    <manvolnum>7</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname>drm</refname>
+    <refpurpose>Direct Rendering Manager</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+    <funcsynopsis>
+      <funcsynopsisinfo>#include &lt;xf86drm.h&gt;</funcsynopsisinfo>
+    </funcsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>Description</title>
+    <para>The <emphasis>Direct Rendering Manager</emphasis> (DRM) is a framework
+          to manage <emphasis>Graphics Processing Units</emphasis> (GPUs). It is
+          designed to support the needs of complex graphics devices, usually
+          containing programmable pipelines well suited to 3D graphics
+          acceleration. Furthermore, it is responsible for memory management,
+          interrupt handling and DMA to provide a uniform interface to
+          applications.</para>
+
+    <para>In earlier days, the kernel framework was solely used to provide raw
+          hardware access to priviledged user-space processes which implement
+          all the hardware abstraction layers. But more and more tasks were
+          moved into the kernel. All these interfaces are based on
+          <citerefentry><refentrytitle>ioctl</refentrytitle><manvolnum>2</manvolnum></citerefentry>
+          commands on the DRM character device. The <emphasis>libdrm</emphasis>
+          library provides wrappers for these system-calls and many helpers to
+          simplify the API.</para>
+
+    <para>When a GPU is detected, the DRM system loads a driver for the detected
+          hardware type. Each connected GPU is then presented to user-space via
+          a character-device that is usually available as
+          <filename>/dev/dri/card0</filename> and can be accessed with
+          <citerefentry><refentrytitle>open</refentrytitle><manvolnum>2</manvolnum></citerefentry>
+          and
+          <citerefentry><refentrytitle>close</refentrytitle><manvolnum>2</manvolnum></citerefentry>.
+          However, it still depends on the grapics driver which interfaces are
+          available on these devices. If an interface is not available, the
+          syscalls will fail with <literal>EINVAL</literal>.</para>
+
+    <refsect2>
+      <title>Authentication</title>
+      <para>All DRM devices provide authentication mechanisms. Only a DRM-Master
+            is allowed to perform mode-setting or modify core state and only one
+            user can be DRM-Master at a time. See
+            <citerefentry><refentrytitle>drmSetMaster</refentrytitle><manvolnum>3</manvolnum></citerefentry>
+            for information on how to become DRM-Master and what the limitations
+            are. Other DRM users can be authenticated to the DRM-Master via
+            <citerefentry><refentrytitle>drmAuthMagic</refentrytitle><manvolnum>3</manvolnum></citerefentry>
+            so they can perform buffer allocations and rendering.</para>
+    </refsect2>
+
+    <refsect2>
+      <title>Mode-Setting</title>
+      <para>Managing connected monitors and displays and changing the current
+            modes is called <emphasis>Mode-Setting</emphasis>. This is
+            restricted to the current DRM-Master. Historically, this was
+            implemented in user-space, but new DRM drivers implement a kernel
+            interface to perform mode-setting called
+            <emphasis>Kernel Mode Setting</emphasis> (KMS). If your
+            hardware-driver supports it, you can use the KMS API provided by
+            DRM. This includes allocating framebuffers, selecting modes and
+            managing CRTCs and encoders. See
+            <citerefentry><refentrytitle>drm-kms</refentrytitle><manvolnum>7</manvolnum></citerefentry>
+            for more.</para>
+    </refsect2>
+
+    <refsect2>
+      <title>Memory Management</title>
+      <para>The most sophisticated tasks for GPUs today is managing memory
+            objects. Textures, framebuffers, command-buffers and all other kinds
+            of commands for the GPU have to be stored in memory. The DRM driver
+            takes care of managing all memory objects, flushing caches,
+            synchronizing access and providing CPU access to GPU memory. All
+            memory management is hardware driver dependent. However, two generic
+            frameworks are available that are used by most DRM drivers. These
+            are the <emphasis>Translation Table Manager</emphasis> (TTM) and the
+            <emphasis>Graphics Execution Manager</emphasis> (GEM). They provide
+            generic APIs to create, destroy and access buffers from user-space.
+            However, there are still many differences between the drivers so
+            driver-depedent code is still needed. Many helpers are provided in
+            <emphasis>libgbm</emphasis> (Graphics Buffer Manager) from the
+            <emphasis>mesa-project</emphasis>. For more information on DRM
+            memory-management, see
+            <citerefentry><refentrytitle>drm-memory</refentrytitle><manvolnum>7</manvolnum></citerefentry>.</para>
+    </refsect2>
+  </refsect1>
+
+  <refsect1>
+    <title>Reporting Bugs</title>
+    <para>Bugs in this manual should be reported to
+      https://bugs.freedesktop.org/enter_bug.cgi?product=DRI&amp;component=libdrm
+      under the "DRI" product, component "libdrm"</para>
+  </refsect1>
+
+  <refsect1>
+    <title>See Also</title>
+    <para>
+      <citerefentry><refentrytitle>drm-kms</refentrytitle><manvolnum>7</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drm-memory</refentrytitle><manvolnum>7</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drmSetMaster</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drmAuthMagic</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drmAvailable</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drmOpen</refentrytitle><manvolnum>3</manvolnum></citerefentry>
+    </para>
+  </refsect1>
+</refentry>

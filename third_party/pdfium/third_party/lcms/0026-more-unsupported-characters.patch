@@ -1,0 +1,73 @@
+diff --git a/third_party/lcms/src/cmsopt.c b/third_party/lcms/src/cmsopt.c
+index 23aa54402..abe26b93a 100644
+--- a/third_party/lcms/src/cmsopt.c
++++ b/third_party/lcms/src/cmsopt.c
+@@ -1756,8 +1756,8 @@ cmsBool OptimizeMatrixShaper(cmsPipeline** Lut, cmsUInt32Number Intent, cmsUInt3
+         _cmsStageToneCurvesData* mpeC1 = (_cmsStageToneCurvesData*) cmsStageData(Curve1);
+         _cmsStageToneCurvesData* mpeC2 = (_cmsStageToneCurvesData*) cmsStageData(Curve2);
+ 
+-        // In this particular optimization, cach<E9> does not help as it takes more time to deal with
+-        // the cach<E9> that with the pixel handling
++        // In this particular optimization, cache does not help as it takes more time to deal with
++        // the cache that with the pixel handling
+         *dwFlags |= cmsFLAGS_NOCACHE;
+ 
+         // Setup the optimizarion routines
+diff --git a/third_party/lcms/src/cmstypes.c b/third_party/lcms/src/cmstypes.c
+index 38091f159..5ea1d2d87 100644
+--- a/third_party/lcms/src/cmstypes.c
++++ b/third_party/lcms/src/cmstypes.c
+@@ -4194,7 +4194,7 @@ cmsBool  Type_MPEcurve_Write(struct _cms_typehandler_struct* self, cmsIOHANDLER*
+ // The matrix is organized as an array of PxQ+Q elements, where P is the number of input channels to the
+ // matrix, and Q is the number of output channels. The matrix elements are each float32Numbers. The array
+ // is organized as follows:
+-// array = [e11, e12, <85>, e1P, e21, e22, <85>, e2P, <85>, eQ1, eQ2, <85>, eQP, e1, e2, <85>, eQ]
++// array = [e11, e12, ..., e1P, e21, e22, ..., e2P, ..., eQ1, eQ2, ..., eQP, e1, e2, ..., eQ]
+ 
+ static
+ void *Type_MPEmatrix_Read(struct _cms_typehandler_struct* self, cmsIOHANDLER* io, cmsUInt32Number* nItems, cmsUInt32Number SizeOfTag)
+npm@npm0:~/pdfium/pdfium$ 
+npm@npm0:~/pdfium/pdfium$ 
+npm@npm0:~/pdfium/pdfium$ 
+npm@npm0:~/pdfium/pdfium$ git diff
+diff --git a/third_party/lcms/src/cmsopt.c b/third_party/lcms/src/cmsopt.c
+index 23aa54402..abe26b93a 100644
+--- a/third_party/lcms/src/cmsopt.c
++++ b/third_party/lcms/src/cmsopt.c
+@@ -1756,8 +1756,8 @@ cmsBool OptimizeMatrixShaper(cmsPipeline** Lut, cmsUInt32Number Intent, cmsUInt3
+         _cmsStageToneCurvesData* mpeC1 = (_cmsStageToneCurvesData*) cmsStageData(Curve1);
+         _cmsStageToneCurvesData* mpeC2 = (_cmsStageToneCurvesData*) cmsStageData(Curve2);
+ 
+-        // In this particular optimization, cach<E9> does not help as it takes more time to deal with
+-        // the cach<E9> that with the pixel handling
++        // In this particular optimization, cache does not help as it takes more time to deal with
++        // the cache that with the pixel handling
+         *dwFlags |= cmsFLAGS_NOCACHE;
+ 
+         // Setup the optimizarion routines
+diff --git a/third_party/lcms/src/cmstypes.c b/third_party/lcms/src/cmstypes.c
+index 38091f159..8b02f86ca 100644
+--- a/third_party/lcms/src/cmstypes.c
++++ b/third_party/lcms/src/cmstypes.c
+@@ -4194,7 +4194,7 @@ cmsBool  Type_MPEcurve_Write(struct _cms_typehandler_struct* self, cmsIOHANDLER*
+ // The matrix is organized as an array of PxQ+Q elements, where P is the number of input channels to the
+ // matrix, and Q is the number of output channels. The matrix elements are each float32Numbers. The array
+ // is organized as follows:
+-// array = [e11, e12, <85>, e1P, e21, e22, <85>, e2P, <85>, eQ1, eQ2, <85>, eQP, e1, e2, <85>, eQ]
++// array = [e11, e12, ..., e1P, e21, e22, ..., e2P, ..., eQ1, eQ2, ..., eQP, e1, e2, ..., eQ]
+ 
+ static
+ void *Type_MPEmatrix_Read(struct _cms_typehandler_struct* self, cmsIOHANDLER* io, cmsUInt32Number* nItems, cmsUInt32Number SizeOfTag)
+@@ -4713,10 +4713,10 @@ void *Type_vcgt_Read(struct _cms_typehandler_struct* self,
+             // Y = cX + f             | X < d
+ 
+             // vcgt formula is:
+-            // Y = (Max <96> Min) * (X ^ Gamma) + Min
++            // Y = (Max - Min) * (X ^ Gamma) + Min
+ 
+             // So, the translation is
+-            // a = (Max <96> Min) ^ ( 1 / Gamma)
++            // a = (Max - Min) ^ ( 1 / Gamma)
+             // e = Min
+             // b=c=d=f=0
+ 

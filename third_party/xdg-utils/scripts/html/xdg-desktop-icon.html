@@ -1,0 +1,133 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>xdg-desktop-icon</title><meta name="generator" content="DocBook XSL Stylesheets V1.75.2"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" title="xdg-desktop-icon"><a name="xdg-desktop-icon"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>xdg-desktop-icon &#8212; command line tool for (un)installing icons to the desktop</p></div><div class="refsynopsisdiv" title="Synopsis"><h2>Synopsis</h2><div class="cmdsynopsis"><p><code class="command">xdg-desktop-icon</code>   install  [<code class="option">--novendor</code>]  <em class="replaceable"><code>FILE</code></em> </p></div><div class="cmdsynopsis"><p><code class="command">xdg-desktop-icon</code>   uninstall   <em class="replaceable"><code>FILE</code></em> </p></div><div class="cmdsynopsis"><p><code class="command">xdg-desktop-icon</code>  { <code class="option">--help</code>  |   <code class="option">--manual</code>  |   <code class="option">--version</code> }</p></div></div><div class="refsect1" title="Description"><a name="description"></a><h2>Description</h2><p>
+      The xdg-desktop-icon program can be used to install an application launcher
+      or other file on the desktop of the current user.
+    </p><p>
+      An application launcher is represented by a *.desktop file.
+      Desktop files are defined by the freedesktop.org Desktop Entry
+      Specification. The most important aspects of *.desktop files
+      are summarized below.
+    </p></div><div class="refsect1" title="Commands"><a name="commands"></a><h2>Commands</h2><div class="variablelist"><dl><dt><span class="term">install</span></dt><dd>
+	    Installs <em class="replaceable"><code>FILE</code></em> to the desktop of the current user.
+	    <em class="replaceable"><code>FILE</code></em> can be a *.desktop file or any
+            other type of file.
+	  </dd><dt><span class="term">uninstall</span></dt><dd>
+	    Removes <em class="replaceable"><code>FILE</code></em> from the desktop
+            of the current user.
+	  </dd></dl></div></div><div class="refsect1" title="Options"><a name="options"></a><h2>Options</h2><div class="variablelist"><dl><dt><span class="term"><code class="option">--novendor</code></span></dt><dd><p class="simpara">
+	    Normally, xdg-desktop-icon checks to ensure that a *.desktop file
+	    to be installed has a vendor prefix. This option can be
+	    used to disable that check.
+	  </p><p class="simpara">
+            A vendor prefix consists of alpha characters ([a-zA-Z]) and is
+            terminated with a dash ("-").
+            Companies and organizations are encouraged to use a word
+            or phrase, preferably the organizations name, for which they hold
+            a trademark as their vendor prefix.
+            The purpose of the vendor prefix is to prevent name conflicts.
+          </p></dd><dt><span class="term"><code class="option">--help</code></span></dt><dd>
+	    Show command synopsis.
+	  </dd><dt><span class="term"><code class="option">--manual</code></span></dt><dd>
+	    Show this manualpage.
+	  </dd><dt><span class="term"><code class="option">--version</code></span></dt><dd>
+            Show the xdg-utils version information.
+          </dd></dl></div></div><div class="refsect1" title="Desktop Files"><a name="desktopfiles"></a><h2>Desktop Files</h2><p>
+      An application launcher can be added to the desktop by installing a
+      *.desktop file. A *.desktop file consists of a
+      <span class="emphasis"><em>[Desktop Entry]</em></span> header followed by several
+      <em class="replaceable"><code>Key</code></em>=<em class="replaceable"><code>Value</code></em> lines.
+    </p><p>
+      A *.desktop file can provide a name and description for an application
+      in several different languages. This is done by adding a language
+      code as used by LC_MESSAGES in square brackets behind the 
+      <em class="replaceable"><code>Key</code></em>. This way one can specify different
+      values for the same <em class="replaceable"><code>Key</code></em> depending on the
+      currently selected language.
+    </p><p>
+      The following keys are often used:
+    </p><div class="variablelist"><dl><dt><span class="term">Value=1.0</span></dt><dd>
+	    This is a mandatory field to indicate that the *.desktop file
+	    follows the 1.0 version of the specification.
+	  </dd><dt><span class="term">Type=Application</span></dt><dd>
+	    This is a mandatory field that indicates that the *.desktop file
+	    describes an application launcher.
+	  </dd><dt><span class="term">Name=<em class="replaceable"><code>Application Name</code></em></span></dt><dd>
+	    The name of the application.
+	    For example <span class="emphasis"><em>Mozilla</em></span>
+	  </dd><dt><span class="term">GenericName=<em class="replaceable"><code>Generic Name</code></em></span></dt><dd>
+	    A generic description of the application.
+	    For example <span class="emphasis"><em>Web Browser</em></span>
+	  </dd><dt><span class="term">Comment=<em class="replaceable"><code>Comment</code></em></span></dt><dd>
+	    Optional field to specify a tooltip for the application. 
+	    For example <span class="emphasis"><em>Visit websites on the Internet</em></span>
+	  </dd><dt><span class="term">Icon=<em class="replaceable"><code>Icon File</code></em></span></dt><dd>
+	    The icon to use for the application. This can either be
+	    an absolute path to an image file or an icon-name.
+	    If an icon-name is provided an image lookup by name is done
+	    in the user's current icon theme. The <span class="command"><strong>xdg-icon-resource</strong></span>
+	    command can be used to install image files into icon themes.
+	    The advantage of using an icon-name instead of an absolute
+	    path is that with an icon-name the application icon can be
+	    provided in several different sizes as well as in several
+	    differently themed styles.
+	  </dd><dt><span class="term">Exec=<em class="replaceable"><code>Command Line</code></em></span></dt><dd>
+	    The command line to start the application. If the application
+	    can open files the %f placeholder should be specified. When
+	    a file is dropped on the application launcher the %f is replaced
+	    with the file path of the dropped file. If multiple files
+	    can be specified on the command line the %F placeholder should
+	    be used instead of %f. If the application is able to open URLs
+	    in addition to local files then  %u or %U can be used instead
+	    of %f or %F.
+	  </dd></dl></div><p>
+      For a complete oveview of the *.desktop file format please
+      visit http://www.freedesktop.org/wiki/Standards/desktop-entry-spec
+    </p></div><div class="refsect1" title="Environment Variables"><a name="env_vars"></a><h2>Environment Variables</h2><p>
+      xdg-desktop-icon honours the following environment variables:
+    </p><div class="variablelist"><dl><dt><span class="term">XDG_UTILS_DEBUG_LEVEL</span></dt><dd>
+	    Setting this environment variable to a non-zero numerical value
+	    makes xdg-desktop-icon do more verbose reporting on stderr.
+	    Setting a higher value increases the verbosity.
+	  </dd></dl></div></div><div class="refsect1" title="Exit Codes"><a name="exitcodes"></a><h2>Exit Codes</h2><p>
+      An exit code of 0 indicates success while a non-zero exit code
+      indicates failure. The following failure codes can be returned:
+    </p><div class="variablelist"><dl><dt><span class="term"><code class="option">1</code></span></dt><dd>
+	    Error in command line syntax.
+	  </dd><dt><span class="term"><code class="option">2</code></span></dt><dd>
+	    One of the files passed on the command line did not exist.
+	  </dd><dt><span class="term"><code class="option">3</code></span></dt><dd>
+	    A required tool could not be found. 
+	  </dd><dt><span class="term"><code class="option">4</code></span></dt><dd>
+	    The action failed. 
+	  </dd><dt><span class="term"><code class="option">5</code></span></dt><dd>
+	    No permission to read one of the files passed on the command
+            line.
+	  </dd></dl></div></div><div class="refsect1" title="See Also"><a name="seealso"></a><h2>See Also</h2><p><span class="citerefentry"><span class="refentrytitle">xdg-icon-resource</span>(1)</span>
+    </p></div><div class="refsect1" title="Examples"><a name="examples"></a><h2>Examples</h2><p>
+      The company ShinyThings Inc. has developed an application named
+      "WebMirror" and would like to add a launcher for for on the desktop.
+      The company will use "shinythings" as its vendor id.
+      In order to add the application to the desktop there needs to be a
+      .desktop file for the application:
+</p><pre class="programlisting">
+shinythings-webmirror.desktop:
+
+  [Desktop Entry]
+  Encoding=UTF-8
+  Type=Application
+
+  Exec=webmirror
+  Icon=shinythings-webmirror
+
+  Name=WebMirror
+  Name[nl]=WebSpiegel
+</pre><p>
+    </p><p>Now the xdg-desktop-icon tool can be used to add the webmirror.desktop file
+    to the desktop:
+</p><pre class="programlisting">
+xdg-desktop-icon install ./shinythings-webmirror.desktop
+</pre><p>
+    </p><p>To add a README file to the desktop as well, the following command can be used:  
+</p><pre class="programlisting">
+xdg-desktop-icon install ./shinythings-README
+</pre><p>
+    </p></div></div></body></html>

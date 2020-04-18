@@ -1,0 +1,145 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>Mesa Release Notes</title>
+  <link rel="stylesheet" type="text/css" href="mesa.css">
+</head>
+<body>
+
+<h1>Mesa 7.8.2 Release Notes / June 17, 2010</h1>
+
+<p>
+Mesa 7.8.2 is a bug fix release which fixes bugs found since the 7.8.1 release.
+</p>
+<p>
+Mesa 7.8.2 implements the OpenGL 2.1 API, but the version reported by
+glGetString(GL_VERSION) depends on the particular driver being used.
+Some drivers don't support all the features required in OpenGL 2.1.
+</p>
+<p>
+See the <a href="install.html">Compiling/Installing page</a> for prerequisites
+for DRI hardware acceleration.
+</p>
+
+
+<h2>MD5 checksums</h2>
+<pre>
+c89b63d253605ed40e8ac370d25a833c  MesaLib-7.8.2.tar.gz
+6be2d343a0089bfd395ce02aaf8adb57  MesaLib-7.8.2.tar.bz2
+a04ad3b06ac5ff3969a003fa7bbf7d5b  MesaLib-7.8.2.zip
+7c213f92efeb471f0331670d5079d4c0  MesaDemos-7.8.2.tar.gz
+757d9e2e06f48b1a52848be9b0307ced  MesaDemos-7.8.2.tar.bz2
+8d0e5cfe68b8ebf90265d350ae2c48b1  MesaDemos-7.8.2.zip
+b74482e3f44f35ed395c4aada4fd8240  MesaGLUT-7.8.2.tar.gz
+a471807b65e49c325808ba4551be93ed  MesaGLUT-7.8.2.tar.bz2
+9f190268c42be582ef66e47365ee61e3  MesaGLUT-7.8.2.zip
+</pre>
+
+
+<h2>New features</h2>
+<p>None.</p>
+
+
+<h2>Changes</h2>
+<ul>
+<li>Upgraded glext.h to version 61, and upgraded glxext.h
+</ul>
+
+
+<h2>Bug fixes</h2>
+<ul>
+<li>Fixed Gallium glDrawPixels(GL_DEPTH_COMPONENT).
+<li>Fixed Gallium Cell driver to buildable, runable state
+<li>Fixed bad error checking for glFramebufferRenderbuffer(attachment=GL_DEPTH_STENCIL_ATTACHMENT).
+<li>Fixed incorrect Z coordinate handling in "meta" glDraw/CopyPixels.
+    <a href="https://bugs.freedesktop.org/show_bug.cgi?id=23670">Bug
+    #23670</a>.</li>
+
+<li>Assorted i965 driver fixes.
+    Including but not limited to:
+  <ul>
+    <li>Fix scissoring when width or height is
+    0.  <a href="https://bugs.freedesktop.org/show_bug.cgi?id=27643">Bug
+    #27643</a>.
+    <li>Fix bit allocation for number of color regions for
+    ARB_draw_buffers.</li>
+    <li>Set the correct provoking vertex for clipped first-mode
+    trifans.  <a href="https://bugs.freedesktop.org/show_bug.cgi?id=24470">Bug
+    #24470</a>.</li>
+    <li>Use <code>R16G16B16A16_FLOAT</code> for 3-component half-float.</li>
+    <li>Fix assertion for surface tile offset usage on Ironlake.</li>
+    <li>Fix cube map layouts on Ironlake.</li>
+    <li>When an RB gets a new region, clear the old from the state
+    cache.  <a href="https://bugs.freedesktop.org/show_bug.cgi?id=24119">Bug
+    #24119</a>.</li>
+    <li>Reject shaders with uninlined function calls instead of hanging.</li>
+  </ul>
+</li>
+
+<li>Assorted i915 driver fixes.  Including but not limited to:
+  <ul>
+    <li>Fixed texture LOD clamping in i915 driver.
+    <a href="https://bugs.freedesktop.org/show_bug.cgi?id=24846">Bug
+    #24846</a>.</li>
+    <li>Fix off-by-one for drawing rectangle.
+    <a href="https://bugs.freedesktop.org/show_bug.cgi?id=27408">Bug
+    #27408</a>.</li>
+  </ul>
+</li>
+
+<li>Fixed hangs in etracer on 830 and 845
+    chipsets.  <a href="https://bugs.freedesktop.org/show_bug.cgi?id=26557">Bug
+    #26557</a>.</li>
+<li>Fixed tiling of small textures on all Intel drivers.</li>
+<li>Fixed crash in Savage driver when using <code>_mesa_CopyTexImage2D</code>.
+    <a href="https://bugs.freedesktop.org/show_bug.cgi?id=27652">Bug
+    #27652</a>.</li>
+
+<li>Assorted GLX fixes.  Including but not limited to:
+  <ul>
+    <li>Fixed <code>__glXInitializeVisualConfigFromTags</code>'s handling of
+        unrecognized fbconfig tags.</li>
+    <li>Fixed regression with <code>GLX_USE_GL</code>.
+    <li>Fixed config chooser logic for 'mask' matching.</li>
+    <li>Report swap events correctly in direct rendered case (DRI2)</li>
+    <li>Fixed build with dri2proto which doesn't define
+        <code>X_DRI2SwapInterval</code>.</li>
+    <li>Get <code>GLX_SCREEN</code> first in <code>__glXQueryContextInfo</code>.
+        <a href="https://bugs.freedesktop.org/show_bug.cgi?id=14245">Bug
+	#14245</a>.</li>
+  </ul>
+</li>
+
+<li>Assorted GLSL fixes.  Including but not limited to:
+  <ul>
+    <li>Change variable declared assertion into conditional in GLSL
+        compiler.  <a href="https://bugs.freedesktop.org/show_bug.cgi?id=27921">Bug
+        #27921</a>.</li>
+    <li>Fix instruction indexing
+        bugs.  <a href="https://bugs.freedesktop.org/show_bug.cgi?id=27566">Bug
+        #27566</a>.</li>
+    <li>Updated uniform location / offset encoding to be more like
+        other implementations.</li>
+    <li>Don't overwrite a driver's shader infolog with generic failure
+        message.</li>
+  </ul>
+</li>
+
+<li>Fixed OSMesa build for 16 and 32-bit color channel depth.
+<li>Fixed OSMesa build with hidden symbol visibility. libOSMesa no longer links to libGL.
+    <a href="https://bugs.freedesktop.org/show_bug.cgi?id=28305">Bug
+    #28305</a>.
+<li>Fixed handling of multiple render targets in fixed-function
+    texture envrionmnent programs.</li>
+<li>Fixed conversion errors in <code>signed_rgba8888[rev]</code> texel
+    fetch.</li>
+<li>Don't set srcLevel on <code>GL_TEXTURE_RECTANGLE_ARB</code> targets.</li>
+<li>Various build fixes for OpenBSD.</li>
+<li>Various build fixes for OS X.</li>
+<li>Various build fixes for GCC 3.3.</li>
+</ul>
+
+
+</body>
+</html>

@@ -1,0 +1,11 @@
+; Test that we check that alignment on global variables can't be greater
+; than 2**29.
+
+
+; REQUIRES: no_minimal_build
+
+; RUN: not %pnacl_sz -bitcode-as-text %p/Inputs/bad-global-alignment.tbc \
+; RUN:     -bitcode-format=pnacl -notranslate -build-on-read 2>&1 \
+; RUN:   | FileCheck %s
+
+; CHECK: Global variable alignment greater than 2**29. Found: 2**30

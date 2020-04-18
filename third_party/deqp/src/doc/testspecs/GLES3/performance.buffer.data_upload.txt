@@ -1,0 +1,174 @@
+g-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Buffer upload performance tests
+
+Tests:
+ + dEQP-GLES3.performance.buffer.data_upload.*
+
+Includes:
+ + Memcpy performance tests for reference values
+ + Performance of glBufferData and glBufferSubData
+    - STREAM, STATIC and DYNAMIC buffer usages
+    - Target buffer in different states:
+        * BufferData:
+            ~ Just generated buffer
+            ~ Generated buffer with unspecified contents (bufferData(..., NULL))
+            ~ Generated buffer with specified contents
+            ~ Buffer (with the same size) that has been used in drawing earlier
+            ~ Buffer (with a larger size) that has been used in drawing earlier
+        * BufferSubData:
+            ~ Respecify whole buffer contents
+            ~ Respecify half of the buffer
+            ~ Invalidate buffer contents manually (bufferData(..., NULL)) before
+              calling bufferSubData
+ + Buffer mapping performance
+    - STREAM, STATIC and DYNAMIC buffer usages
+    - Full and partial (half of the buffer) mapping
+    - Different map bits:
+        * Write
+        * Write-Read
+        * Write-InvalidateRange
+        * Write-InvalidateBuffer
+        * Write-Unsynchronized
+        * Write-Unsynchronized-InvalidateBuffer
+        * Write-FlushExplicit
+    - Target buffer in different states:
+        * Generated buffer with unspecified contents (bufferData(..., NULL))
+        * Generated buffer with specified contents
+        * A buffer (with the same size) that has been used in drawing earlier
+    - Different mapping & flushing strategies:
+        * Map whole buffer and flush whole mapped area (in one call)
+        * Map buffer partially (half) and flush whole mapped area (in one call)
+        * Map whole buffer and flush buffer partially (half) (in one call)
+        * Map whole buffer and flush whole mapped area in 4 non-interleaving
+          flush calls
+ + Buffer upload performance after a draw call using the target buffer
+    - STREAM, STATIC and DYNAMIC buffer usages
+    - BufferData, BufferSubData, MapBufferRange methods
+ + Uploaded buffer rendering performance tests
+
+Excludes:
+ + Exhaustive testing of all combinations of usages, buffer states, and methods
+ + Complex buffer usage before upload (e.g transform feedback, copyBufferSubData)
+ + Sustained upload performance tests
+
+Description:
+
+Upload performance tests approximate upload speed by testing time usage of different
+buffer upload functions with multiple different buffer sizes. The time usage of these
+functions is expected to be of form t(x) = b * x + c, where x is the buffer size, b
+is the linear cost of the function and c is the constant cost of the function. Tests
+find suitable parameters b and c to fit the sampled values and then report these
+parameters. The test result of an upload test is the median transfer rate of the test
+samples unless stated otherwise.
+
+Additionally, test cases calculate "sample linearity" and "sample temporal stability"
+metrics. Sample linearity describes the curvature of the sampled values and it is
+calculated by comparing the line fitted to the first half of the samples (the half with
+smaller buffer sizes) to the line fitted to the second half of the samples. A straight
+line would result in 100% linearity. A linearity value less than 90% usually implies
+either large errors in sampling (noise), insufficient timer resolution, or non-linearity
+of the function.
+
+Sample temporal stability describes the stability of the function during the sampling.
+Samples are split to two categories: early and late samples. All early samples are tested
+before any late sample. A line is fitted to the early samples and it is compared to a
+line fitted to the late samples. If the samples get similar values in the beginning of
+the test and in the end of the test, the temporal stability will be 100%. A value less
+than 90% usually implies that test samples are not independent from other samples, or
+that there were large errors in sampling (noise).
+
+(Note that all logged data sizes are MiBs (mebibytes) even if they are marked with unit
+symbol "MB".)
+
+reference.* tests test memcpy with different sizes. The transfer rate may be useful as a
+reference value. "small_buffers" test case tests memcpy performance with transfer size
+in range 0 - 256KiB. The result is the median transfer rate of the test samples.
+"large_buffers" test case measures the transfer rate with the transfer size in range
+256KiB - 16 MiB. The result is the approximated transfer rate of an infinitely large
+transfer size calculated form the fitted line. (i.e c = 0).
+
+function_call.* tests measure the time taken by the corresponding command or the series of
+commands with different buffer sizes. The result is the median transfer rate of the test
+samples.
+
+modify_after_use.* tests are similar to the function_call.* test but they target a buffer
+that has been used in a draw operation just before the measured function call. "_repeated"
+variants repeat the "specify buffer contents, draw buffer" sequence a few times before
+the test target function is called.
+
+render_after_upload.* tests measure rendering time of a buffer in different scenarios. The
+tests measure time from rendering command issuance (glDraw* call) to finished rendering
+(return from glReadPixels call). The purpose of the tests is to measure the data transfer
+performance from the observation of a buffer upload completion (a return from a
+glBuffer(Sub)Data / glUnmap) to observation of finished rendering. This combined rate of
+data transfer and rendering is in these tests referred to as "processing rate". Note that
+"processing time" does not include the upload time. All tests and test samples have the
+same number of visible fragments but may have different number of vertices. The tests are
+NOT rendering performance tests and should not be treated as such.
+
+Each case's draw function, uploaded buffer type, and upload method is encoded to the case
+name. For example "draw_elements_upload_indices_with_buffer_data" would specify index
+(GL_ELEMENT_ARRAY_BUFFER) buffer contents with glBufferData, and issue render with
+glDrawElements call.
+
+render_after_upload.reference.draw.* tests produce baseline results for basic functions.
+"read_pixels" case measures the constant cost (in microseconds) of a single glReadPixels
+call with identical arguments as in other rendering tests. The result might used for
+excluding ReadPixels' constant cost from the total constant costs in the other test
+results. "draw_arrays" and "draw_elements" tests measure the processing rate in the case
+where there is no buffer uploading required. As such, they are expected to result in the
+highest processing rates. The results should be interpreted as a reference values for
+render_after_upload.upload_and_draw.* group tests.
+
+render_after_upload.reference.draw_upload_draw.* cases first render from an existing
+buffer, upload another buffer, and then render using the just uploaded buffer. The
+processing rate (excluding the upload time) is measured. The results are baseline
+reference results for render_after_upload.draw_modify_draw.* group tests.
+
+render_after_upload.upload_unrelated_and_draw.* tests upload an unrelated buffer and
+then render to the viewport. The rendering does not depend on the uploaded buffer. The
+unrelated upload size is equal to the rendering workload size.
+
+render_after_upload.upload_and_draw.* cases upload a buffer and then render using it. In
+used_buffer.* group cases, the buffer has been used in rendering before upload. In
+new_buffer.* group cases, the uploaded buffer is generated just before uploading. In this
+case if the upload method is not glBufferData, glBufferData is called with NULL data
+argument before using the actual upload method for specifying the buffer contents. In
+cases in test case groups "*_and_unrelated_upload", another buffer is uploaded after the
+target buffer upload with glBufferData. The rendering does not depend on this second
+upload. The unrelated upload size is equal to the rendering workload size.
+
+render_after_upload.draw_modify_draw.* cases draw from a buffer, respecify its contents,
+and draw again using the buffer. Cases are identical to
+render_after_upload.reference.draw_upload_draw.* cases with the exception that the upload
+target buffer is used in rendering just before issuing upload commands.
+
+render_after_upload.upload_wait_draw.* cases upload a buffer, wait a certain number of
+frames (buffer swaps), and then render using the buffer. The number of frames required
+for the render times to stabilize is measured and reported as a test result. For example,
+result value of 0 would indicate that rendering is just as fast just after upload than
+N frames later. A value of 1 would mean that performance of rendering from the buffer
+is different during the frame it was uploaded in, but does not change after one frame
+swap.
+
+Since the frame times during the "waiting" period may be significantly lower than in the
+upload frame or in the frame of the final rendering, in order to keep frame times
+consistent, the test code performs dummy calculations (busy waits) for 8 milliseconds in
+each frame. Also during the "dummy" frames, a simple grid pattern is drawn to the viewport.

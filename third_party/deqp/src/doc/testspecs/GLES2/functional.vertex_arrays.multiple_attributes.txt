@@ -1,0 +1,60 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+	Multiple vertex attribute vertex array tests
+
+Tests:
+ + dEQP-GLES2.functional.vertex_arrays.multiple_attributes.*
+
+Includes:
+ + Using different attribute counts.
+ + Multiple attributes from different sources(buffer, user pointer).
+ + Multiple attributes with different strides
+ + Multiple attributes with different input types.
+
+Excludes:
+
+Description:
+
+Testcases generate data that defines quads in testcase specifig format.
+This takes account stride, offsets and other parameters. First attribute is used
+as coordinates and must have two or more components to form distinct coordinates.
+First two components are coordinates and six subsequent attributes form two triangles
+which define a quad. Third and fourth component are same for each vertex in quad.
+Other attributes are used to define color for quad. These are generated to have
+same value for each vertex in quad. This data is uploaded to buffer or used from
+user pointer while rendering. Rendering uses simple shader that takes first
+attributes first two components and adds first to third component and second
+to fourth component, if more than two components are used. First and third component
+are used as x coordinate and second and fourth as y. These values are also scaled to
+range from -1.0 to 1.0. Other attributes are multiplied component wise and are scaled
+then to range from 0.0 to 1.0 and used as color. Test renders only once and result is
+checked against reference implementations result.
+
+Attribute count tests render simple float data from user pointer using vec2 in
+shader.
+
+Storage test render using three attributes from buffer or user pointer. Two component
+float data is used as vec2 in shader.
+
+Stride tests use three attributes with different strides. Two component float
+data is used as vec2 in shader. Strides test uses npot stride, pot stride and types
+own size as stride.
+
+Input type testcases use three attributes with different input types. Attributes
+are used as vec2 in shader.

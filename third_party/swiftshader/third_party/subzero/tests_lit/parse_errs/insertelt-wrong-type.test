@@ -1,0 +1,32 @@
+; Tests that we check if the element being inserted into a vector is of the
+; right type.
+
+; REQUIRES: no_minimal_build
+
+; RUN: not %pnacl_sz -bitcode-as-text -allow-externally-defined-symbols \
+; RUN:     %p/Inputs/insertelt-wrong-type.tbc \
+; RUN:     -bitcode-format=pnacl -notranslate -build-on-read 2>&1 \
+; RUN:   | FileCheck %s
+
+; CHECK: Insertelement: Element type i8 doesn't match vector type <16 x i1>
+
+; RUN: pnacl-bcfuzz -bitcode-as-text \
+; RUN:     %p/Inputs/insertelt-wrong-type.tbc -output - \
+; RUN:   | not pnacl-bcdis -no-records | FileCheck -check-prefix=ASM %s
+
+; ASM:   function void @f0(<16 x i1> %p0) {  // BlockID = 12
+; ASM:     blocks 1;
+; ASM:     constants {  // BlockID = 11
+; ASM:       i1:
+; ASM:         %c0 = i1 1;
+; ASM:       i8:
+; ASM:         %c1 = i8 1;
+; ASM:       i32:
+; ASM:         %c2 = i32 0;
+; ASM:       }
+; ASM:   %b0:
+; ASM:     %v0 = add i8 %c1, %c1;
+; ASM:     %v1  =  insertelement <16 x i1> %p0, i8 %c1, i32 %c2;
+; ASM: Error(128:0): insertelement: Illegal element type i8. Expected: i1
+; ASM:     ret void;
+; ASM:   }

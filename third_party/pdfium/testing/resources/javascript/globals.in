@@ -1,0 +1,158 @@
+{{header}}
+{{object 1 0}} <<
+  /Type /Catalog
+  /Pages 2 0 R
+  /OpenAction 10 0 R
+>>
+endobj
+{{object 2 0}} <<
+  /Type /Pages
+  /Count 1
+  /Kids [
+    3 0 R
+  ]
+>>
+endobj
+% Page number 0.
+{{object 3 0}} <<
+  /Type /Page
+  /Parent 2 0 R
+  /Resources <<
+    /Font <</F1 15 0 R>>
+  >>
+  /Contents [21 0 R]
+  /MediaBox [0 0 612 792]
+>>
+% OpenAction action
+{{object 10 0}} <<
+  /Type /Action
+  /S /JavaScript
+  /JS 11 0 R
+>>
+endobj
+% JS program to exexute
+{{object 11 0}} <<
+  {{streamlen}}
+>>
+stream
+// The "global" object stores data in a C-like manner, and
+// can theoretically persist them between sessions (though
+// pdfium deliberately excludes that functionality).
+
+var some_object = { "colors": [ "red", "green", "blue"] };
+
+var props_to_test = [
+  // Cover both bool values.
+  { "name": "true_var", "value": true },
+  { "name": "false_var", "value": false },
+
+  // Include both zero and a number with some fractional digits.
+  { "name": "zero_var", "value": 0 },
+  { "name": "number_var", "value": -3.918 },
+
+  // TODO(tsepez): unicode doesn't seem to survive.
+  { "name": "string_var", "value": "This is a string" },
+
+  // Try a complex object.
+  { "name": "object_var", "value": some_object },
+
+  // Test null and undefined.
+  { "name": "null_var", "value": null },
+  { "name": "undefined_var", "value": undefined }
+];
+
+function setup_global() {
+  for (var i = 0; i < props_to_test.length; ++i) {
+    var prop = props_to_test[i];
+    try {
+      global[prop.name] = prop.value;
+    } catch (e) {
+      app.alert("For " + prop.name + ": Setup: ERROR: " + e.toString());
+    }
+  }
+}
+
+function delete_global() {
+  for (var i = 0; i < props_to_test.length; ++i) {
+    var prop = props_to_test[i];
+    try {
+      delete global[prop.name];
+    } catch (e) {
+      app.alert("For " + prop.name + ": Delete: ERROR: " + e.toString());
+    }
+  }
+}
+
+function persist_global(should_persist) {
+  for (var i = 0; i < props_to_test.length; ++i) {
+    var prop = props_to_test[i];
+    try {
+      global.setPersistent(prop.name, should_persist);
+    } catch (e) {
+      app.alert("For " + prop.name +
+                ": Set Persistent: ERROR: " + e.toString());
+    }
+  }
+}
+
+function dump_global(msg) {
+  app.alert("************ " + msg + " ************");
+  app.alert("Enumerable Globals:");
+  for (var name in global) {
+    try {
+      app.alert("  " + name + " = " + global[name] +
+                ", own property = " + global.hasOwnProperty(name));
+    } catch (e) {
+      app.alert("For " + name + ": Dump: ERROR: " + e.toString());
+    }
+  }
+  app.alert("Expected Globals:");
+  for (var i = 0; i < props_to_test.length; ++i) {
+    var prop = props_to_test[i];
+    try {
+      var actual = global[prop.name];
+      app.alert("  " + prop.name + " = " + actual);
+      if (actual != null && typeof actual == "object") {
+        app.alert("    " + actual.colors[0]);
+        app.alert("    " + actual.colors[1]);
+        app.alert("    " + actual.colors[2]);
+      }
+    } catch (e) {
+      app.alert("For " + prop.name +
+                ": Dump Expected: ERROR: " + e.toString());
+    }
+  }
+}
+
+dump_global("Initial State");
+
+// Check that they all exist.
+setup_global();
+dump_global("After Setup");
+
+// Test deletion.
+delete_global();
+dump_global("After Deletion");
+
+// setPersistent() should be a no-op for pdfium.
+setup_global();
+persist_global(false);
+dump_global("After Setup and Persist false");
+
+// Test setting deleted variables as persistent.
+delete_global();
+persist_global(true);
+dump_global("After Delete and Persist");
+
+// Exit with variables marked as persistent to test whatever path
+// may exist to persist them (should be igonored on pdfium).
+setup_global();
+persist_global(true);
+dump_global("After Setup and Persist true");
+
+endstream
+endobj
+{{xref}}
+{{trailer}}
+{{startxref}}
+%%EOF

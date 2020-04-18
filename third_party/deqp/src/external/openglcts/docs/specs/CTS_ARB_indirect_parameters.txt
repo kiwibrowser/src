@@ -1,0 +1,89 @@
+Conformance Test
+
+    CTS_ARB_indirect_parameters
+
+Contributors
+
+    Adam Czupryna, Mobica
+
+Contacts
+
+    Adam Czupryna, Mobica (adam.czupryna 'at' mobica.com)
+
+Status
+
+    In review
+
+Version
+
+    March 1, 2017 (version 1)
+
+Dependencies
+
+    OpenGL 4.2 is required.
+
+    ARB_indirect_parameters extension is required.
+
+    This specification is written against:
+      - ARB_indirect_parameters extension specification,
+      - OpenGL 4.3 (Core Profile) specification.
+
+Overview
+
+    This test verifies if operations on new buffer object
+    PARAMETER_BUFFER_ARB which is a target allowing buffers to store
+    parameters for certain drawing commands works as expected.
+
+    This test also verifies if new vertex array drawing functions
+    MultiDrawArraysIndirectCountARB, MultiDrawElementsIndirectCountARB
+    that uses PARAMETER_BUFFER_ARB binding point works properly.
+
+New Tests
+
+    Parameter Buffer Operations Test
+
+      Create PARAMETER_BUFFER_ARB object and perform actions on it:
+        BindBuffer, BufferData, BufferSubData, MapBuffer, UnmapBuffer,
+        GetBufferSubData, GetBufferPointerv, MapBufferRange,
+        FlushMappedBufferRange, GetBufferParameteriv and
+        CopyBufferSubData.
+
+      Verify if results of those actions are as expected.
+
+      Verify if GetIntegerv, GetBooleanv, GetFloatv and GetDoublev
+        returns correct value for PARAMETER_BUFFER_BINDING_ARB <pname>.
+
+    Vertex Array Indirect Drawing Test
+
+      Initialize necessary data:
+      - Prepare vertex and fragment shader that are able to render
+        white primitive with alpha component value of 0.5.
+      - Create ARRAY_BUFFER and ELEMENT_ARRAY_BUFFER objects and fill it
+        with data needed to draw two polygons - one next to each other.
+        Polygons should cover whole framebuffer.
+      - Create DRAW_INDIRECT_BUFFER object to store draw arrays command
+        structure data and fill it with data needed to draw 4 triangles.
+      - Create DRAW_INDIRECT_BUFFER object to store draw elements command
+        structure data and also fill it with data needed to draw 4
+        triangles.
+      - Create PARAMETER_BUFFER_ARB to store draw count data and fill it
+        with data needed to draw arrays two times. First time with 2
+        draws and second with 4 draws.
+
+      Make sure that depth test and stencil test are disabled.
+
+      Clear color buffer with (0, 0, 0) color value and use
+        MultiDrawArraysIndirectCountARB function to render the scene.
+        Verify result by reading pixels from framebuffer.
+
+      Repeat last step using MultiDrawElementsIndirectCountARB function and
+        verify result in the same way.
+
+      In both cases rendering result should be half framebuffer filled with
+        (0.75, 0.75, 0.75) values and half with (0.5, 0.5, 0.5) values.
+
+
+Revision History
+
+    Revision 1, 1 March, 2017 (Adam Czupryna)
+     - Intial version;

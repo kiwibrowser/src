@@ -1,0 +1,84 @@
+Conformance Test
+
+    CTS_ARB_parallel_shader_compile
+
+Contributors
+
+    Adam Czupryna, Mobica
+
+Contacts
+
+    Adam Czupryna, Mobica (adam.czupryna 'at' mobica.com)
+
+Status
+
+    In review
+
+Version
+
+    September 21, 2016 (version 1)
+
+Dependencies
+
+    OpenGL 4.5 is required.
+
+    ARB_parallel_shader_compile extension is required.
+
+    This specification is written against:
+      - ARB_parallel_shader_compile extension specification,
+      - OpenGL 4.5 (CoreProfile) specification.
+
+Overview
+
+    This test verifies the API added in ARB_parallel_shader_compile extension that
+    provides mechanism to limit the number of threads application wants to be used
+    to compile shaders, as well as a query to determine if the compilation process
+    is complete.
+
+New Tests
+
+    Simple Queries Test
+
+      * Test GetBooleanv, GetIntegerv, GetInteger64v, GetFloatv, and GetDoublev
+        queries for <pname>:
+
+          - MAX_SHADER_COMPILER_THREADS_ARB
+
+        Verify if returned value is the same for all queries.
+
+    Max Shader Compile Threads Test
+
+      * Use MaxShaderCompilerThreadsARB function to set the number of threads
+        that application will use to compile shaders.
+        Check values:
+          - 0 (non parallel compilation)
+          - 0xFFFFFFFF (maximum threads parallel compilation)
+
+        Verify if values were set properly by quering
+        MAX_SHADER_COMPILER_THREADS_ARB value.
+
+    Compilation Completion Test
+
+      * Prepare vertex and fragment shaders and:
+
+          - Set max shader compiler threads to 0.
+            Create vertex shader, fragment shader and program objects.
+            Compile shaders and verify if GetShaderiv query with
+            COMPLETION_STATUS <pname> return TRUE value.
+            Link shaders into program and verify if GetProgramiv query
+            with COMPLETION_STATUS <pname> return TRUE value.
+
+          - Set max shader compiler threads to 8.
+            Create vertex shader object, fragment shader objects in amount of 8 and
+            program objects in amount of 8.
+            Compile shaders and monit completion status by using GetShaderiv
+            query with COMPLETION_STATUS <pname> in loop until the value
+            is TRUE. Set the loop timeout to 1s and fail test if timeout reached.
+            Link shaders into program and monit completion status by using
+            GetProgramiv query with COMPLETION_STATUS <pname> in loop until the value
+            is TRUE. Set the loop timeout to 1s and fail test if timeout reached.
+
+Revision History
+
+    Revision 1, 21 September, 2016 (Adam Czupryna)
+     - Intial version;

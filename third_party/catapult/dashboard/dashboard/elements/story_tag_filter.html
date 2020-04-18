@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<!--
+Copyright 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="/components/iron-icons/iron-icons.html">
+<link rel="import" href="/components/paper-checkbox/paper-checkbox.html">
+<link rel="import" href="/components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/components/paper-material/paper-material.html">
+<link rel="import" href="/tracing/value/diagnostics/tag_map.html">
+
+<dom-module id="story-tag-filter">
+  <template>
+    <style include="iron-flex">
+      #dropdown {
+        padding: 5px;
+      }
+
+      #dropdown-container {
+        position: absolute;
+        background-color: white;
+        border-radius: 2px;
+        z-index: var(--layer-menus);
+      }
+
+      #dropdown-container:focus {
+        outline: none;
+      }
+
+      .dropdown-scroller {
+        overflow-y: auto;
+        overflow-x: auto;
+        /* Ideally, the dropdown should not be allowed to extend below
+        the fold, but calculating that can be tricky. 500px is probably
+        a good first guess.*/
+        max-height: 500px;
+      }
+
+      .chip {
+        background-color: #9E9E9E;
+        white-space: nowrap;
+        color: white;
+        margin: 2px;
+        border-radius: 100px;
+        padding-top: 3px;
+        padding-bottom: 5px;
+        padding-left: 10px;
+      }
+
+      .chip-icon {
+        height: 1.25em;
+      }
+
+      #filter-button {
+        color: #616161;
+      }
+
+      .tag-checkbox-container {
+        margin: 0.5em;
+      }
+    </style>
+    <paper-icon-button id="filter-button"
+                       icon="filter-list"
+                       on-click="onFilterClick_"
+                       title="Filter stories by tag">
+    </paper-icon-button>
+    <template is="dom-repeat" items="[[selectedTags_]]">
+        <span class="chip">[[item]]
+          <iron-icon icon="cancel"
+                     on-click="onIconCancel_"
+                     class="chip-icon">
+          </iron-icon>
+        </span>
+    </template>
+    &nbsp;
+    <!-- tabindex="0" marks the element as one that can gain focus -->
+    <paper-material id="dropdown-container"
+                    hidden$="[[!dropdownOpen_]]"
+                    tabindex="0"
+                    on-blur="onBlurInput_">
+      <div class="dropdown-scroller" layered>
+        <div id="dropdown">
+          <b>Story Tags</b>
+          <template is="dom-repeat" items="[[tags_]]">
+            <div class="tag-checkbox-container">
+              <paper-checkbox
+                  type=checkbox
+                  item="checkbox-[[item]]"
+                  id="checkbox-[[item]]"
+                  on-change="onTagCheck_"
+                  on-blur="onBlurInput_">
+                  [[item]]
+              </paper-checkbox>
+            </div>
+          </template>
+        </div>
+      </div>
+    </paper-material>
+  </template>
+  <script>
+  'use strict';
+  Polymer({
+    is: 'story-tag-filter',
+    properties: {
+      dropdownOpen_: {
+        type: Boolean,
+        value: false
+      },
+
+      tags_: {
+        type: Array,
+        value: [],
+        notify: true
+      },
+
+      selectedTags_: {
+        type: Array,
+        value: [],
+        notify: true
+      }
+    },
+
+    created() {
+      this.tagMap_ = undefined;
+    },
+
+    get selectedStoryNames() {
+      const storyNames = new Set();
+      for (const tag of this.tags_) {
+        // Returns all stories if no tags are selected
+        if (this.selectedTags_.length && !this.isSelected_(tag)) continue;
+        for (const storyName of
+          this.tagMap_.tagsToStoryNames.get(tag)) {
+          storyNames.add(storyName);
+        }
+      }
+      return Array.from(storyNames).sort();
+    },
+
+    set tagMap(t) {
+      this.tagMap_ = t;
+      const keys = Array.from(this.tagMap_.tagsToStoryNames.keys());
+      keys.sort();
+      this.set('tags_', keys);
+      this.set('selectedTags_', []);
+    },
+
+    isSelected_(item) {
+      const checkbox = this.$$('#checkbox-' + item);
+      if (checkbox == undefined) return false;
+      return checkbox.checked;
+    },
+
+    onFilterClick_() {
+      this.set('dropdownOpen_', !this.dropdownOpen);
+      if (this.dropdownOpen_) this.$['dropdown-container'].focus();
+    },
+
+    onIconCancel_(event) {
+      this.$$('#checkbox-' + event.model.item).click();
+      this.onTagCheck_();
+    },
+
+    onBlurInput_(event) {
+      // Must be called by any element in the dropdown that can gain focus, so
+      // when focus is lost the dropdown closes.
+      if (!tr.ui.b.elementIsChildOf(event.relatedTarget,
+          this.$['dropdown-container']) &&
+          (event.relatedTarget !== this.$['dropdown-container'])) {
+        this.set('dropdownOpen_', false);
+      }
+    },
+
+    onTagCheck_() {
+      const newSelectedTags = [];
+      for (const tag of this.tags_) {
+        if (!this.isSelected_(tag)) continue;
+        newSelectedTags.push(tag);
+      }
+
+      this.set('selectedTags_', newSelectedTags);
+      this.fire('selected-stories-changed', newSelectedTags);
+    }
+  });
+  </script>
+</dom-module>

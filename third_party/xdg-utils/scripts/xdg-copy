@@ -1,0 +1,303 @@
+#!/bin/sh
+#---------------------------------------------
+#   xdg-copy
+#
+#   Utility script to copy files specified by URLs, including
+#   downloading and uploading from/to remote sites.
+#
+#   Refer to the usage() function below for usage.
+#
+#   Copyright 2006, Kevin Krammer <kevin.krammer@gmx.at>
+#   Copyright 2006, Jeremy White <jwhite@codeweavers.com>
+#
+#   LICENSE:
+#
+#   Permission is hereby granted, free of charge, to any person obtaining a
+#   copy of this software and associated documentation files (the "Software"),
+#   to deal in the Software without restriction, including without limitation
+#   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+#   and/or sell copies of the Software, and to permit persons to whom the
+#   Software is furnished to do so, subject to the following conditions:
+#
+#   The above copyright notice and this permission notice shall be included
+#   in all copies or substantial portions of the Software.
+#
+#   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+#   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+#   THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+#   OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+#   ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+#   OTHER DEALINGS IN THE SOFTWARE.
+#
+#---------------------------------------------
+
+manualpage()
+{
+cat << _MANUALPAGE
+Name
+
+   xdg-copy -- command line tool for copying files between desktop URIs
+
+Synopsis
+
+   xdg-copy source destination
+
+   xdg-copy { --help | --manual | --version }
+
+Description
+
+   xdg-copy copies source to destination and provides visual feedback to the
+   user during the operation. Both source and destination can either be a
+   file or URL. Supported URL types are file, ftp, http and https. Additional
+   URL types may be supported depending on the desktop environment.
+
+   xdg-copy is for use inside a desktop session only. It is not recommended
+   to use xdg-copy as root.
+
+Options
+
+   --help
+           Show command synopsis.
+
+   --manual
+           Show this manualpage.
+
+   --version
+           Show the xdg-utils version information.
+
+Exit Codes
+
+   An exit code of 0 indicates success while a non-zero exit code indicates
+   failure. The following failure codes can be returned:
+
+   1
+           Error in command line syntax.
+
+   2
+           One of the files passed on the command line did not exist.
+
+   3
+           A required tool could not be found.
+
+   4
+           The action failed.
+
+Examples
+
+ xdg-copy "http://portland.freedesktop.org/png/freedesktop-logo.png" .
+
+ xdg-copy "/tmp/foobar.png" "/home/user/foobar-copy.png"
+_MANUALPAGE
+}
+
+usage()
+{
+cat << _USAGE
+   xdg-copy -- command line tool for copying files between desktop URIs
+
+Synopsis
+
+   xdg-copy source destination
+
+   xdg-copy { --help | --manual | --version }
+
+_USAGE
+}
+
+#@xdg-utils-common@
+
+#----------------------------------------------------------------------------
+#   Common utility functions included in all XDG wrapper scripts
+#----------------------------------------------------------------------------
+
+#-------------------------------------------------------------
+# Exit script on successfully completing the desired operation
+
+exit_success()
+{
+    if [ $# -gt 0 ]; then
+        echo "$@"
+        echo
+    fi
+
+    exit 0
+}
+
+
+#-----------------------------------------
+# Exit script on malformed arguments, not enough arguments
+# or missing required option.
+# prints usage information
+
+exit_failure_syntax()
+{
+    if [ $# -gt 0 ]; then
+        echo "xdg-copy: $@" >&2
+        echo "Try 'xdg-copy --help' for more information." >&2
+    else
+        usage
+        echo "Use 'man xdg-copy' or 'xdg-copy --manual' for additional info." 
+    fi
+
+    exit 1
+}
+
+#-------------------------------------------------------------
+# Exit script on missing file specified on command line
+
+exit_failure_file_missing()
+{
+    if [ $# -gt 0 ]; then
+        echo "xdg-copy: $@" >&2
+    fi
+
+    exit 2
+}
+
+#-------------------------------------------------------------
+# Exit script on failure to locate necessary tool applications
+
+exit_failure_operation_impossible()
+{
+    if [ $# -gt 0 ]; then
+        echo "xdg-copy: $@" >&2
+    fi
+
+    exit 3
+}
+
+#-------------------------------------------------------------
+# Exit script on failure returned by a tool application
+
+exit_failure_operation_failed()
+{
+    if [ $# -gt 0 ]; then
+        echo "xdg-copy: $@" >&2
+    fi
+
+    exit 4
+}
+
+
+#----------------------------------------
+# Checks for shared commands, e.g. --help
+
+check_common_commands()
+{
+    while [ $# -gt 0 ] ; do
+        parm=$1
+        shift
+
+        case $parm in
+            --help)
+            usage
+            echo "Use 'man xdg-copy' or 'xdg-copy --manual' for additional info." 
+            exit_success
+            ;;
+
+            --manual)
+            manualpage
+            exit_success
+            ;;
+
+            --version)
+            echo "xdg-copy 1.0beta1"
+            exit_success
+            ;;
+        esac
+    done
+}
+
+check_common_commands "$@"
+
+#--------------------------------------
+# Checks for known desktop environments
+# set variable DE to the desktop environments name, lowercase
+
+detectDE()
+{
+    if [ x"$KDE_FULL_SESSION" = x"true" ]; then DE=kde;
+    elif [ x"$GNOME_DESKTOP_SESSION_ID" != x"" ]; then DE=gnome;
+    elif xprop -root _DT_SAVE_MODE | grep ' = \"xfce4\"$' >/dev/null 2>&1; then DE=xfce;
+    fi
+}
+
+#----------------------------------------------------------------------------
+
+
+
+copy_kde()
+{
+    kfmclient copy "$1" "$2"
+
+    if [ $? -eq 0 ]; then
+        exit_success
+    else
+        exit_failure_operation_failed
+    fi
+}
+
+copy_gnome()
+{
+    if gvfs-copy --help 2>/dev/null 1>&2; then
+        gvfs-copy "$1" "$2"
+    else
+        gnomevfs-copy "$1" "$2"
+    fi
+
+    if [ $? -eq 0 ]; then
+        exit_success
+    else
+        exit_failure_operation_failed
+    fi
+}
+
+[ x"$1" != x"" ] || exit_failure_syntax
+
+source=
+dest=
+while [ $# -gt 0 ] ; do
+    parm=$1
+    shift
+
+    case $parm in
+      -*)
+        exit_failure_syntax "unexpected option '$parm'"
+        ;;
+
+      *)
+        if [ -n "$dest" ] ; then
+            exit_failure_syntax "unexpected argument '$parm'"
+        fi
+        if [ -n "$source" ] ; then
+            dest=$parm
+        else
+            source=$parm
+        fi
+        ;;
+    esac
+done
+
+if [ -z "${source}" ] ; then
+    exit_failure_syntax "source argument missing"
+fi
+if [ -z "${dest}" ] ; then
+    exit_failure_syntax "destination argument missing"
+fi
+
+detectDE
+
+case "$DE" in
+    kde)
+    copy_kde "$source" "$dest"
+    ;;
+
+    gnome)
+    copy_gnome "$source" "$dest"
+    ;;
+
+    *)
+    exit_failure_operation_impossible "no method available for copying '$source' to '$dest'"
+    ;;
+esac

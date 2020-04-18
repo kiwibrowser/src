@@ -1,0 +1,94 @@
+{
+  "tables": [
+    "unicode.dis", 
+    "en-GB-g2.ctb"
+  ], 
+  "tests": [
+    {
+      "data": [
+        {
+          "comment": [
+            "an example of testing simple backtranslation."
+          ], 
+          "input": "⠮ ⠉⠁⠞ ⠎⠁⠞ ⠕⠝ ⠮ ⠍⠁⠞", 
+          "output": "the cat sat on the mat"
+        }, 
+        {
+          "comment": [
+            "same as above example."
+          ], 
+          "input": "⠖⠮ ⠍⠕⠕⠝", 
+          "output": "to the moon"
+        }, 
+        {
+          "brlCursorPos": 2, 
+          "comment": [
+            "an example where the text to be backtranslated is grade 2, but the word at the cursor is grade 1."
+          ], 
+          "cursorPos": 4, 
+          "input": "⠽ ⠺⠑⠝⠞ ⠞⠕", 
+          "mode": "compbrlAtCursor", 
+          "output": "you went to"
+        }
+      ], 
+      "flags": {
+        "outputUniBrl": true, 
+        "testmode": "backtranslate"
+      }
+    }, 
+    {
+      "data": [
+        {
+          "comment": [
+            "an example of a simple message being forward translated, and contractions expected."
+          ], 
+          "input": "the cat sat on the mat", 
+          "output": "⠮ ⠉⠁⠞ ⠎⠁⠞ ⠕⠝ ⠮ ⠍⠁⠞"
+        }, 
+        {
+          "comment": [
+            "same as above example."
+          ], 
+          "input": "to the moon", 
+          "output": "⠖⠮ ⠍⠕⠕⠝"
+        }, 
+        {
+          "brlCursorPos": 2, 
+          "comment": [
+            "an example of where text should generally be contracted, accept at the point of the cursor.", 
+            "also specify where the computer cursor is at, and where we expect the braille cursor to be."
+          ], 
+          "cursorPos": 4, 
+          "input": "you went to", 
+          "mode": "compbrlAtCursor", 
+          "output": "⠽ ⠺⠑⠝⠞ ⠞⠕"
+        }, 
+        {
+          "brlCursorPos": 15, 
+          "comment": [
+            "An example to reproduce:", 
+            "https://bugzilla.gnome.org/show_bug.cgi?id=651217", 
+            "note that the braille cursor is very squeued.", 
+            "computer cursor is at pos 13, expected braille cursor at 15, but actually at 17."
+          ], 
+          "cursorPos": 13, 
+          "input": "Pappa Pappa help me.", 
+          "mode": "compbrlAtCursor", 
+          "output": "⠠⠏⠁⠏⠏⠁ ⠠⠏⠁⠏⠏⠁ ⠓⠑⠇⠏ ⠍⠑⠲"
+        }, 
+        {
+          "brlCursorPos": 1, 
+          "comment": [
+            "this testcase tests cursor position when mode is 0. The word about is contracted to ab. The user presses cursor routing 1 on their display, which should land on letter b, but instead it lands on letter a (index 0)."
+          ], 
+          "cursorPos": 1, 
+          "input": "about", 
+          "output": "⠁⠃"
+        }
+      ], 
+      "flags": {
+        "outputUniBrl": true
+      }
+    }
+  ]
+}

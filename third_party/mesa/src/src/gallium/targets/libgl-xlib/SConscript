@@ -1,0 +1,62 @@
+#######################################################################
+# SConscript for xlib winsys
+
+Import('*')
+
+env = env.Clone()
+
+env.Append(CPPPATH = [
+    '#/src/mapi',
+    '#/src/mesa',
+    '#/src/mesa/main',
+    '#src/gallium/state_trackers/glx/xlib',
+])
+
+env.Append(CPPDEFINES = ['USE_XSHM'])
+
+env.Prepend(LIBS = env['X11_LIBS'])
+
+# when GLES is enabled, gl* and _glapi_* belong to bridge_glapi and
+# shared_glapi respectively
+if env['gles']:
+    env.Prepend(LIBPATH = [shared_glapi.dir])
+    glapi = [bridge_glapi, 'glapi']
+
+env.Prepend(LIBS = [
+    st_xlib,
+    ws_xlib,
+    glapi,
+    mesa,
+    glsl,
+    gallium,
+])
+
+sources = [
+    'xlib.c',
+]
+
+# The sources depend on the python-generated GL API files/headers.
+env.Depends(sources, glapi_headers)
+
+if True:
+    env.Append(CPPDEFINES = ['GALLIUM_TRACE', 'GALLIUM_RBUG', 'GALLIUM_GALAHAD', 'GALLIUM_SOFTPIPE'])
+    env.Prepend(LIBS = [trace, rbug, galahad, softpipe])
+
+if env['llvm']:
+    env.Append(CPPDEFINES = ['GALLIUM_LLVMPIPE'])
+    env.Prepend(LIBS = [llvmpipe])
+
+# libGL.so.1.5
+libgl_1_5 = env.SharedLibrary(
+    target ='GL',
+    source = sources,
+    SHLIBSUFFIX = env['SHLIBSUFFIX'] + '.1.5',
+)
+
+# libGL.so.1
+libgl = env.subst('${SHLIBPREFIX}GL${SHLIBSUFFIX}')
+libgl_1 = libgl + '.1'
+env.Command(libgl_1, libgl_1_5, "ln -sf ${SOURCE.file} ${TARGET}")
+env.Command(libgl, libgl_1, "ln -sf ${SOURCE.file} ${TARGET}")
+
+env.Alias('libgl-xlib', libgl)

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<!--
+Copyright (c) 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<link rel="import" href="/tracing/model/async_slice.html">
+
+<script>
+'use strict';
+
+tr.exportTo('tr.e.blink', function() {
+  class BlinkSchedulerAsyncSlice extends tr.model.AsyncSlice {
+    get viewSubGroupGroupingKey() {
+      if (this.title.startsWith('FrameScheduler.')) {
+        return 'Frame' + this.id;
+      }
+      // Deprecated (renamed in newer versions of Chrome).
+      // TODO(#4364): Remove after 30 May 2018.
+      if (this.title.startsWith('WebFrameScheduler.')) {
+        return 'WebFrame' + this.id;
+      }
+      return undefined;
+    }
+  }
+
+  tr.model.AsyncSlice.subTypes.register(BlinkSchedulerAsyncSlice, {
+    categoryParts: [
+      'renderer.scheduler',
+      'disabled-by-default-renderer.scheduler',
+    ]
+  });
+
+  return {
+    BlinkSchedulerAsyncSlice,
+  };
+});
+</script>

@@ -1,0 +1,196 @@
+#!/bin/sh
+
+# Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+. /usr/share/misc/shflags
+
+DEFINE_string out "testlog.txt" "Output log from replay"
+DEFINE_string only_honor "Tap Enable,Sensitivity" \
+    "Which properties from the log should be honored"
+
+FLAGS_HELP="usage: replay_log [--out testlog.txt] [--only_honor Props] \
+infile|feedback_url"
+
+FLAGS "$@" || exit 1
+eval set -- "${FLAGS_ARGV}"
+
+# Only now can we die on error.  shflags functions leak non-zero error codes,
+# so will die prematurely if 'set -e' is specified before now.
+set -e
+
+infile="${1}"
+if [ $# -ne 1 ]; then
+  echo $FLAGS_HELP
+  exit 1
+fi
+
+COOKIE_DIR="$(readlink -f "$(dirname "$0")/../cookies")"
+COOKIE_FILE="${COOKIE_DIR}/login.cookie"
+
+setup_login_cookie_dir() {
+  mkdir -p "$COOKIE_DIR"
+  chmod 0700 "$COOKIE_DIR"
+}
+
+login() {
+  setup_login_cookie_dir
+  read -p "Username (without @google.com): " USER
+  read -s -p "Password: " PASS
+  echo
+  read -p "OTP: " OTP
+  LOGIN_POST_FILE="$COOKIE_DIR/login.post"
+  LOGIN_RESULTS_FILE="$COOKIE_DIR/login.results"
+  echo "u=${USER}&pw=${PASS}&otp=${OTP}" > "$LOGIN_POST_FILE"
+  echo "Logging in..."
+  curl -s -c "$COOKIE_FILE" -L -d @"$LOGIN_POST_FILE" \
+    'https://login.corp.google.com/login?ssoformat=CORP_SSO' \
+    > $LOGIN_RESULTS_FILE
+  local should_abort="$FLAGS_FALSE"
+  if grep -i error ${LOGIN_RESULTS_FILE} >/dev/null; then
+    echo Login failure.
+    should_abort="$FLAGS_TRUE"
+  else
+    echo Login success
+  fi
+  rm -f "$LOGIN_POST_FILE"
+  rm -f "$LOGIN_RESULTS_FILE"
+  if [ $should_abort -eq $FLAGS_TRUE ]; then
+    exit 1
+  fi
+}
+
+if [[ "$infile" = "https://"* ]]; then
+  LOG_IDNUM=$(echo "$infile" | sed 's/.*[^0-9]\([0-9][0-9][0-9][0-9]*\).*/\1/')
+  LOG_FILE="report-${LOG_IDNUM}-system_logs.bz2"
+  LOG_URL="https://feedback.corp.googleusercontent.com/\
+binarydata/${LOG_FILE}?id=${LOG_IDNUM}&logIndex=0"
+  if [ -f "${LOG_FILE}" ]; then
+    echo already have file
+    infile=${LOG_FILE}
+  else
+    echo downloading log file
+    TRIES=0
+    while true; do
+      http_proxy=http://cache.corp.google.com:3128/ curl -b "$COOKIE_FILE" \
+        -L -o "$LOG_FILE" "$LOG_URL"
+      TYPE="$(file -b "$LOG_FILE" | cut -d ' ' -f 1)"
+      if [[ "$TYPE" = bzip2 || "$TYPE" = Zip ]]; then
+        # download success
+        infile="$LOG_FILE"
+        break
+      fi
+      rm -f "$LOG_FILE"
+      TRIES=$((TRIES + 1))
+      if [ $TRIES -eq 2 ]; then
+        echo Failed twice. Aborting
+        exit 1
+      fi
+      # login failure
+      echo 'Download failure. Logging in'
+      login
+    done
+  fi
+fi
+
+# Convert the infile from a relative path to the realpath since we will
+# change directory below.
+original_infile="$infile"
+infile="$(realpath $infile)"
+
+# Go to the Gestures source root
+cd $(dirname "$0")/..
+
+make -j $(fgrep processor /proc/cpuinfo | wc -l) test
+
+expand_input_file() {
+  # Get input filetype
+  intype="$(file -b "${infile}" | cut -d ' ' -f 1)"
+  # Extra check in case file gets ASCII wrong
+  if [ "$(head -n 1 "${infile}")" = "{" ]; then
+    intype="ASCII"
+  fi
+
+  if [ "$intype" = "bzip2" -o "$intype" = "Zip" ]; then
+    # Expand to the bzip2ed file within
+    local raw_text_log="raw_text_log.txt"
+    CAT=bzcat
+    if [ "$intype" = "Zip" ]; then
+      CAT=zcat
+    fi
+    $CAT "$infile" > "$raw_text_log"
+    cp "$raw_text_log" "full_feedback_log.txt"
+    if fgrep -q hack-33025-touchpad_activity "$raw_text_log"; then
+      # Expand the hack touchpad activity log
+      awk "/hack-33025-touchpad_activity/{found=1} found{print}" \
+          "$raw_text_log" > "$raw_text_log".tmp
+      mv "$raw_text_log".tmp "$raw_text_log"
+    fi
+
+    zlogs="$(cat "$raw_text_log" | uudecode -o - | tar xvf -)"
+    rm "$raw_text_log"
+    # take newest log and reduce to next case
+    cp "$(ls -t $zlogs | grep touchpad_activity | head -n 1)" log.gz
+
+    # Also expand evdev log
+    zcat "$(ls -t $zlogs | grep cmt_input_events | head -n 1)" > evlog.txt \
+        || true
+
+    rm -f $zlogs
+    infile="log.gz"
+    intype="gzip"
+  fi
+
+  if [ "$intype" = "gzip" ]; then
+    zcat "$infile" > log.txt
+    infile="log.txt"
+    intype="ASCII"
+  fi
+
+  if [ "$intype" != "ASCII" ]; then
+    echo "Unable to read input file"
+    exit 1
+  fi
+}
+
+run_test() {
+  expand_input_file
+  # We would like the shell to survive no matter whether ./test succeeds or not.
+  result=0
+  ./test --gtest_also_run_disabled_tests \
+    --gtest_filter="ActivityReplayTest.DISABLED_SimpleTest" \
+    --outfile="$FLAGS_out" --only_honor="$FLAGS_only_honor" --in="$infile" ||
+    result=$?
+}
+
+# If infile is a file, test this log as before and there is no redirection.
+# If infile is a directory, test all logs in the directory, and output
+# the test statistics at the end.
+if [ -f "$infile" ]; then
+  echo "$original_infile is a file."
+  run_test
+elif [ -d "$infile" ]; then
+  statistics_result="$(mktemp)"
+  echo -e "\nInput directory: $original_infile\n" > $statistics_result
+  indir="$infile"
+  files=$(ls "$indir")
+  count=0
+  passed=0
+  for file in $files; do
+    infile="$indir/$file"
+    if [ -f "$infile" ]; then
+      run_test
+      if [ $result -eq 0 ]; then
+        echo "[  PASSED  ] $original_infile/$file" >> $statistics_result
+        passed=$(($passed + 1))
+      else
+        echo "[  FAILED  ] $original_infile/$file" >> $statistics_result
+      fi
+      count=$(($count + 1))
+    fi
+  done
+  cat $statistics_result
+  rm -fr $statistics_result
+  echo -e "\n$passed out of $count tests passed.\n"
+fi

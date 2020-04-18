@@ -1,0 +1,49 @@
+; Show that we check parameter types of a function call against paramter types
+; of called function.
+
+; REQUIRES: no_minimal_build
+
+; RUN: not %pnacl_sz -bitcode-as-text %p/Inputs/call-fcn-bad-param-type.tbc \
+; RUN:     -bitcode-format=pnacl -notranslate -build-on-read \
+; RUN:     -allow-externally-defined-symbols 2>&1 \
+; RUN:   | FileCheck %s
+
+; RUN: pnacl-bcfuzz -bitcode-as-text -output - \
+; RUN:   %p/Inputs/call-fcn-bad-param-type.tbc \
+; RUN:   | not pnacl-bcdis -no-records | FileCheck %s --check-prefix=DIS
+
+; DIS:      module {  // BlockID = 8
+; DIS-NEXT:   version 1;
+; DIS-NEXT:   types {  // BlockID = 17
+; DIS-NEXT:     count 5;
+; DIS-NEXT:     @t0 = void;
+; DIS-NEXT:     @t1 = i32;
+; DIS-NEXT:     @t2 = i8;
+; DIS-NEXT:     @t3 = void (i32);
+; DIS-NEXT:     @t4 = void ();
+; DIS-NEXT:   }
+; DIS-NEXT:   declare external void @f0(i32);
+; DIS-NEXT:   define external void @f1();
+; DIS-NEXT:   globals {  // BlockID = 19
+; DIS-NEXT:     count 0;
+; DIS-NEXT:   }
+; DIS-NEXT:   valuesymtab {  // BlockID = 14
+; DIS-NEXT:     @f1 : "Test";
+; DIS-NEXT:     @f0 : "f";
+; DIS-NEXT:   }
+; DIS-NEXT:   function void @f1() {  // BlockID = 12
+; DIS-NEXT:     blocks 1;
+; DIS-NEXT:     constants {  // BlockID = 11
+; DIS-NEXT:       i32:
+; DIS-NEXT:         %c0 = i32 1;
+; DIS-NEXT:       i8:
+; DIS-NEXT:         %c1 = i8 1;
+; DIS-NEXT:       }
+; DIS-NEXT:   %b0:
+; DIS-NEXT:     %v0 = add i8 %c1, %c1;
+; DIS-NEXT:     call void @f0(i8 %c1);
+; DIS-NEXT: Error({{.*}}): Parameter 1 mismatch: i8 and i32
+; CHECK: Argument 1 of f expects i32. Found: i8
+; DIS-NEXT:     ret void;
+; DIS-NEXT:   }
+; DIS-NEXT: }

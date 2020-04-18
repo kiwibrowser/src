@@ -1,0 +1,53 @@
+message("*** Using nullws target")
+set(DEQP_TARGET_NAME "nullws")
+
+add_definitions(-DNULLWS)
+
+find_library(GLES2_LIBRARY		NAMES libGLESv2 GLESv2)
+find_library(GLES3_LIBRARY		NAMES libGLESv3 GLESv3)
+find_library(EGL_LIBRARY		NAMES libEGL EGL)
+
+if (NOT GLES3_LIBRARY)
+	find_library(GLES3_LIBRARY	NAMES libGLESv2 GLESv2)
+endif()
+
+find_path(GLES2_INCLUDE_PATH	GLES2/gl2.h)
+find_path(GLES3_INCLUDE_PATH	GLES3/gl3.h)
+find_path(GLES31_INCLUDE_PATH	GLES3/gl31.h)
+find_path(GLES32_INCLUDE_PATH	GLES3/gl32.h)
+find_path(EGL_INCLUDE_PATH	EGL/egl.h)
+
+if (GLES2_LIBRARY AND GLES2_INCLUDE_PATH)
+	set(DEQP_SUPPORT_GLES2		ON)
+	set(DEQP_GLES2_LIBRARIES	${GLES2_LIBRARY})
+	include_directories(BEFORE ${GLES2_INCLUDE_PATH})
+endif ()
+
+if (GLES3_LIBRARY AND GLES3_INCLUDE_PATH)
+	set(DEQP_SUPPORT_GLES3		ON)
+	set(DEQP_GLES3_LIBRARIES	${GLES3_LIBRARY})
+	include_directories(BEFORE ${GLES3_INCLUDE_PATH})
+endif ()
+
+if (GLES3_LIBRARY AND GLES31_INCLUDE_PATH)
+	set(DEQP_SUPPORT_GLES31		ON)
+	set(DEQP_GLES31_LIBRARIES	${GLES3_LIBRARY})
+	include_directories(${GLES31_INCLUDE_PATH})
+endif ()
+
+if (GLES3_LIBRARY AND GLES32_INCLUDE_PATH)
+	set(DEQP_SUPPORT_GLES32		ON)
+	set(DEQP_GLES32_LIBRARIES	${GLES3_LIBRARY})
+	include_directories(${GLES32_INCLUDE_PATH})
+endif ()
+
+if (EGL_LIBRARY AND EGL_INCLUDE_PATH)
+	set(DEQP_SUPPORT_EGL		ON)
+	set(DEQP_EGL_LIBRARIES		${EGL_LIBRARY})
+	include_directories(BEFORE ${EGL_INCLUDE_PATH})
+endif ()
+
+set(TCUTIL_PLATFORM_SRCS
+	nullws/tcuNullWSPlatform.cpp
+	nullws/tcuNullWSPlatform.hpp
+)

@@ -1,0 +1,46 @@
+apply plugin: 'com.jfrog.bintray'
+
+//if the build fails, we don't want to publish
+tasks.bintrayUpload.mustRunAfter "build"
+
+//if upload fails, don't increment version
+tasks.incrementVersion.mustRunAfter tasks.bintrayUpload
+
+def theVcsTag = "v" + project.version
+
+bintray {
+    user = 'szczepiq'
+    key = System.env.MOCKITO_BINTRAY_API_KEY
+
+    publications = ['mockitoCore']
+
+    dryRun = project.hasProperty('dryRun')
+    publish = true
+
+    pkg {
+        repo = 'maven'
+        //userOrg = 'org.mockito' // an optional organization name when the repo belongs to one of the user's orgs
+        name = 'mockito'
+        desc = 'Mockito library'
+        websiteUrl = 'http://mockito.org'
+        issueTrackerUrl = 'https://github.com/mockito/mockito/issues'
+        vcsUrl = 'https://github.com/mockito/mockito.git'
+        licenses = ['MIT']
+        labels = ['mocks', 'tdd', 'unit tests']
+        publicDownloadNumbers = true
+
+        // optional version attributes
+        version {
+            vcsTag = theVcsTag
+
+            gpg {
+               sign = true
+            }
+
+            mavenCentralSync {
+                user = 'mockito'
+                password = System.env.NEXUS_PWD
+            }
+        }
+    }
+}

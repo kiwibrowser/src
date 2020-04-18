@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<!--
+Copyright 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<dom-module id="values-histogram">
+  <template>
+    <style>
+      #plot {
+        height: 240px;
+        margin-top: 1em;
+        width: 100%;
+      }
+    </style>
+
+    <div id="plot"></div>
+  </template>
+
+  <script>
+    'use strict';
+    Polymer({
+      is: 'values-histogram',
+
+      properties: {
+        jobData: {
+          type: Object,
+          observer: '_jobDataChanged',
+        },
+
+        changeIndex: {
+          type: Number,
+          observer: '_changeIndexChanged',
+        },
+
+        // The Flot Plot object, returned by $.plot.
+        chart: {
+          value: null
+        }
+      },
+
+      _jobDataChanged() {
+        this.async(this.draw, 1);
+      },
+
+      _changeIndexChanged() {
+        this.async(this.draw, 1);
+      },
+
+      draw() {
+        if (this.changeIndex === null) {
+          return;
+        }
+        if (!this.jobData) {
+          return;
+        }
+
+        const values = this.jobData.state[this.changeIndex].result_values;
+
+        // Get bounds.
+        const min = this.jobData.bounds[0];
+        const max = this.jobData.bounds[1];
+
+        let barWidth = 1;
+        const seriesData = [];
+        if (values.length) {
+          // Calculate buckets.
+          // TODO: Calculate bucketCount based on the average number of values
+          // across all commits with values, to ensure it doesn't change from
+          // commit to commit.
+          const bucketCount =
+            Math.max(Math.round(Math.log(values.length) * 4 + 1), 10);
+          const buckets = new Array(bucketCount).fill(0);
+          for (const value of values) {
+            let index = Math.floor((value - min) / (max - min) * bucketCount);
+            if (index == bucketCount) {
+              index -= 1;
+            }
+            buckets[index] += 1;
+          }
+          barWidth = (max - min) / bucketCount;
+
+          // Convert buckets to a format that flot likes.
+          for (let i = 0; i < bucketCount; ++i) {
+            seriesData.push([buckets[i], i * (max - min) / bucketCount + min]);
+          }
+        }
+
+        const plotData = [{
+          bars: {
+            barWidth,
+            horizontal: true,
+            show: true
+          },
+          color: '#3f51b5',
+          data: seriesData
+        }];
+
+        // Chart options to be given when initializing the Flot chart.
+        // See: https://github.com/flot/flot/blob/master/API.md#plot-options
+        const options = {
+          grid: {
+            borderWidth: 1,
+            borderColor: 'rgba(0, 0, 0, 0.5)'
+          },
+          xaxis: {tickLength: 0},
+          yaxis: {min, max, tickFormatter: (val, axis) => ''}
+        };
+
+        // Plot the chart!
+        this.chart = $.plot(this.$.plot, plotData, options);
+      }
+    });
+  </script>
+</dom-module>

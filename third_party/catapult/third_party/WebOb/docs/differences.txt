@@ -1,0 +1,695 @@
+Differences Between WebOb and Other Systems
++++++++++++++++++++++++++++++++++++++++++++
+
+This document points out some of the API differences between the
+Request and Response object, and the objects in other systems.
+
+.. contents::
+
+paste.wsgiwrappers and Pylons
+=============================
+
+The Pylons ``request`` and ``response`` object are based on
+``paste.wsgiwrappers.WSGIRequest`` and ``WSGIResponse``
+
+There is no concept of ``defaults`` in WebOb.  In Paste/Pylons these
+serve as threadlocal settings that control certain policies on the
+request and response object.  In WebOb you should make your own
+subclasses to control policy (though in many ways simply being
+explicit elsewhere removes the need for this policy).
+
+Request
+-------
+
+``body``:
+    This is a file-like object in WSGIRequest.  In WebOb it is a
+    string (to match Response.body) and the file-like object is
+    available through ``req.body_file``
+
+``languages()``:
+    This is available through ``req.accept_language``, particularly
+    ``req.accept_language.best_match(supported_languages)``
+
+``match_accept(mimetypes)``:
+    This is available through ``req.accept.first_match(mimetypes)``;
+    or if you trust the client's quality ratings, you can use
+    ``req.accept.best_match(mimetypes)``
+
+``errors``:
+    This controls how unicode decode errors are handled; it is now
+    named ``unicode_errors``
+
+There are also many extra methods and attributes on WebOb Request
+objects.
+
+Response
+--------
+
+``determine_charset()``:
+    Is now available as ``res.charset``
+
+``has_header(header)``:
+    Should be done with ``header in res.headers``
+
+``get_content()`` and ``wsgi_response()``:
+    These are gone; you should use ``res.body`` or ``res(environ,
+    start_response)``
+
+``write(content)``:
+    Available in ``res.body_file.write(content)``.
+
+``flush()`` and ``tell()``:
+    Not available.
+
+There are also many extra methods and attributes on WebOb Response
+objects.
+
+Django
+======
+
+This is a quick summary from reading `the Django documentation
+<http://www.djangoproject.com/documentation/request_response/>`_.
+
+Request
+-------
+
+``encoding``:
+    Is ``req.charset``
+
+``REQUEST``:
+    Is ``req.params``
+
+``FILES``:
+    File uploads are ``cgi.FieldStorage`` objects directly in
+    ``res.POST``
+
+``META``:
+    Is ``req.environ``
+
+``user``:
+    No equivalent (too connected to application model for WebOb).
+    There is ``req.remote_user``, which is only ever a string.
+
+``session``:
+    No equivalent
+
+``raw_post_data``:
+    Available with ``req.body``
+
+``__getitem__(key)``:
+    You have to use ``req.params``
+
+``is_secure()``:
+    No equivalent; you could use ``req.scheme == 'https'``.
+
+QueryDict
+---------
+
+QueryDict is the way Django represents the multi-key dictionary-like
+objects that are request variables (query string and POST body
+variables).  The equivalent in WebOb is MultiDict.
+
+Mutability:
+    WebOb dictionaries are sometimes mutable (req.GET is,
+    req.params is not)
+
+Ordering:
+    I believe Django does not order the keys fully; MultiDict is a
+    full ordering.  Methods that iterate over the parameters iterate
+    over keys in their order in the original request.
+
+``keys()``, ``items()``, ``values()`` (plus ``iter*``):
+    These return all values in MultiDict, but only the last value for
+    a QueryDict.  That is, given ``a=1&a=2`` with MultiDict
+    ``d.items()`` returns ``[('a', '1'), ('a', '2')]``, but QueryDict
+    returns ``[('a', '1')]``
+
+``getlist(key)``:
+    Available as ``d.getall(key)``
+
+``setlist(key)``:
+    No direct equivalent
+
+``appendlist(key, value)``:
+    Available as ``d.add(key, value)``
+
+``setlistdefault(key, default_list)``:
+    No direct equivalent
+
+``lists()``:
+    Is ``d.dict_of_lists()``
+
+The MultiDict object has a ``d.getone(key)`` method, that raises
+KeyError if there is not exactly one key.  There is a method
+``d.mixed()`` which returns a version where values are lists *if*
+there are multiple values for a list.  This is similar to how many
+cgi-based request forms are represented.
+
+Response
+--------
+
+Constructor:
+    Somewhat different.  WebOb takes any keyword arguments as
+    attribute assignments.  Django only takes a couple arguments.  The
+    ``mimetype`` argument is ``content_type``, and ``content_type`` is
+    the entire ``Content-Type`` header (including charset).
+
+dictionary-like:
+    The Django response object is somewhat dictionary-like, setting
+    headers.  The equivalent dictionary-like object is
+    ``res.headers``.  In WebOb this is a MultiDict.
+
+``has_header(header)``:
+    Use ``header in res.headers``
+
+``flush()``, ``tell()``:
+    Not available
+
+``content``:
+    Use ``res.body`` for the ``str`` value, ``res.text`` for
+    the ``unicode`` value
+
+Response Subclasses
+-------------------
+
+These are generally like ``webob.exc`` objects.
+``HttpResponseNotModified`` is ``HTTPNotModified``; this naming
+translation generally works.
+
+CherryPy/TurboGears
+===================
+
+The `CherryPy request object
+<http://www.cherrypy.org/wiki/RequestObject>`_ is also used by
+TurboGears 1.x.
+
+Request
+-------
+
+``app``:
+    No equivalent
+
+``base``:
+    ``req.application_url``
+
+``close()``:
+    No equivalent
+
+``closed``:
+    No equivalent
+
+``config``:
+    No equivalent
+
+``cookie``:
+    A ``SimpleCookie`` object in CherryPy; a dictionary in WebOb
+    (``SimpleCookie`` can represent cookie parameters, but cookie
+    parameters are only sent with responses not requests)
+
+``dispatch``:
+    No equivalent (this is the object dispatcher in CherryPy).
+
+``error_page``, ``error_response``, ``handle_error``:
+    No equivalent
+
+``get_resource()``:
+    Similar to ``req.get_response(app)``
+
+``handler``:
+    No equivalent
+
+``headers``, ``header_list``:
+    The WSGI environment represents headers as a dictionary, available
+    through ``req.headers`` (no list form is available in the request).
+
+``hooks``:
+    No equivalent
+
+``local``:
+    No equivalent
+
+``methods_with_bodies``:
+    This represents methods where CherryPy will automatically try to
+    read the request body.  WebOb lazily reads POST requests with the
+    correct content type, and no other bodies.
+
+``namespaces``:
+    No equivalent
+
+``protocol``:
+    As ``req.environ['SERVER_PROTOCOL']``
+
+``query_string``:
+    As ``req.query_string``
+
+``remote``:
+    ``remote.ip`` is like ``req.remote_addr``.  ``remote.port`` is not
+    available.  ``remote.name`` is in
+    ``req.environ.get('REMOTE_HOST')``
+
+``request_line``:
+    No equivalent
+
+``respond()``:
+    A method that is somewhat similar to ``req.get_response()``.
+
+``rfile``:
+    ``req.body_file``
+
+``run``:
+    No equivalent
+
+``server_protocol``:
+    As ``req.environ['SERVER_PROTOCOL']``
+
+``show_tracebacks``:
+    No equivalent
+
+``throw_errors``:
+    No equivalent
+
+``throws``:
+    No equivalent
+
+``toolmaps``:
+    No equivalent
+
+``wsgi_environ``:
+    As ``req.environ``
+
+Response
+--------
+
+From information `from the wiki
+<http://www.cherrypy.org/wiki/ResponseObject>`_.
+
+``body``:
+    This is an iterable in CherryPy, a string in WebOb;
+    ``res.app_iter`` gives an iterable in WebOb.
+
+``check_timeout``:
+    No equivalent
+
+``collapse_body()``:
+    This turns a stream/iterator body into a single string.  Accessing
+    ``res.body`` will do this automatically.
+
+``cookie``:
+    Accessible through ``res.set_cookie(...)``, ``res.delete_cookie``,
+    ``res.unset_cookie()``
+
+``finalize()``:
+    No equivalent
+
+``header_list``:
+    In ``res.headerlist``
+
+``stream``:
+    This can make CherryPy stream the response body out directory.
+    There is direct no equivalent; you can use a dynamically generated
+    iterator to do something similar.
+
+``time``:
+    No equivalent
+
+``timed_out``:
+    No equivalent
+
+Yaro
+====
+
+`Yaro <http://lukearno.com/projects/yaro/>`_ is a small wrapper around
+the WSGI environment, much like WebOb in scope.
+
+The WebOb objects have many more methods and attributes.  The Yaro
+Response object is a much smaller subset of WebOb's Response.
+
+Request
+-------
+
+``query``:
+    As ``req.GET``
+
+``form``:
+    As ``req.POST``
+
+``cookie``:
+    A ``SimpleCookie`` object in Yaro; a dictionary in WebOb
+    (``SimpleCookie`` can represent cookie parameters, but cookie
+    parameters are only sent with responses not requests)
+
+``uri``:
+    Returns a URI object, no equivalent (only string URIs available).
+
+``redirect``:
+    Not available (response-related).  ``webob.exc.HTTPFound()`` can
+    be useful here.
+
+``forward(yaroapp)``, ``wsgi_forward(wsgiapp)``:
+    Available with ``req.get_response(app)`` and
+    ``req.call_application(app)``.  In both cases it is a WSGI
+    application in WebOb, there is no special kind of communication;
+    ``req.call_application()`` just returns a ``webob.Response`` object.
+
+``res``:
+    The request object in WebOb *may* have a ``req.response``
+    attribute.
+
+Werkzeug
+========
+
+An offshoot of `Pocoo <http://pocoo.org>`_,
+this library is based around WSGI, similar to Paste and Yaro.
+
+This is taken from the `wrapper documentation
+<http://werkzeug.pocoo.org/documentation/wrappers>`_.
+
+Request
+-------
+
+path:
+    As ``req.path_info``
+args:
+    As ``req.GET``
+form:
+    As ``req.POST``
+values:
+    As ``req.params``
+files:
+    In ``req.POST`` (as FieldStorage objects)
+data:
+    In ``req.body_file``
+
+Response
+--------
+
+response:
+    In ``res.body`` (settable as ``res.body`` or ``res.app_iter``)
+status:
+    In ``res.status_code``
+mimetype:
+    In ``res.content_type``
+
+Zope 3
+======
+
+From the Zope 3 interfaces for the `Request
+<http://apidoc.zope.org/++apidoc++/Interface/zope.publisher.interfaces.browser.IBrowserRequest/index.html>`_
+and `Response
+<http://apidoc.zope.org/++apidoc++/Interface/zope.publisher.interfaces.http.IHTTPResponse/index.html>`_.
+
+Request
+-------
+
+``locale``, ``setupLocale()``:
+    This is not fully calculated, but information is available in
+    ``req.accept_languages``.
+
+``principal``, ``setPrincipal(principal)``:
+    ``req.remote_user`` gives the username, but there is no standard
+    place for a user *object*.
+
+``publication``, ``setPublication()``,
+    These are associated with the object publishing system in Zope.
+    This kind of publishing system is outside the scope of WebOb.
+
+``traverse(object)``, ``getTraversalStack()``, ``setTraversalStack()``:
+    These all relate to traversal, which is part of the publishing
+    system.
+
+``processInputs()``, ``setPathSuffix(steps)``:
+    Also associated with traversal and preparing the request.
+
+``environment``:
+    In ``req.environ``
+
+``bodyStream``:
+    In ``req.body_file``
+
+``interaction``:
+    This is the security context for the request; all the possible
+    participants or principals in the request.  There's no
+    equivalent.
+
+``annotations``:
+    Extra information associated with the request.  This would
+    generally go in custom keys of ``req.environ``, or if you set
+    attributes those attributes are stored in
+    ``req.environ['webob.adhoc_attrs']``.
+
+``debug``:
+    There is no standard debug flag for WebOb.
+
+``__getitem__(key)``, ``get(key)``, etc:
+    These treat the request like a dictionary, which WebOb does not
+    do.  They seem to take values from the environment, not
+    parameters.  Also on the Zope request object is ``items()``,
+    ``__contains__(key)``, ``__iter__()``, ``keys()``, ``__len__()``,
+    ``values()``.
+
+``getPositionalArguments()``:
+    I'm not sure what the equivalent would be, as there are no
+    positional arguments during instantiation (it doesn't fit into
+    WSGI).  Maybe ``wsgiorg.urlvars``?
+
+``retry()``, ``supportsRetry()``:
+    Creates a new request that can be used to retry a request.
+    Similar to ``req.copy()``.
+
+``close()``, ``hold(obj)``:
+    This closes resources associated with the request, including any
+    "held" objects.  There's nothing similar.
+
+Response
+--------
+
+``authUser``:
+    Not sure what this is or does.
+
+``reset()``:
+    No direct equivalent; you'd have to do ``res.headers = [];
+    res.body = ''; res.status = 200``
+
+``setCookie(name, value, **kw)``:
+    Is ``res.set_cookie(...)``.
+
+``getCookie(name)``:
+    No equivalent.  Hm.
+
+``expireCookie(name)``:
+    Is ``res.delete_cookie(name)``.
+
+``appendToCookie(name, value)``:
+    This appends the value to any existing cookie (separating values
+    with a colon).  WebOb does not do this.
+
+``setStatus(status)``:
+    Availble by setting ``res.status`` (can be set to an integer or a
+    string of "code reason").
+
+``getHeader(name, default=None)``:
+    Is ``res.headers.get(name)``.
+
+``getStatus()``:
+    Is ``res.status_code`` (or ``res.status`` to include reason)
+
+``addHeader(name, value)``:
+    Is ``res.headers.add(name, value)`` (in Zope and WebOb, this does
+    not clobber any previous value).
+
+``getHeaders()``:
+    Is ``res.headerlist``.
+
+``setHeader(name, value)``:
+    Is ``res.headers[name] = value``.
+
+``getStatusString()``:
+    Is ``res.status``.
+
+``consumeBody()``:
+    This consumes any non-string body to turn the body into a single
+    string.  Any access to ``res.body`` will do this (e.g., when you
+    have set the ``res.app_iter``).
+
+``internalError()``:
+    This is available with ``webob.exc.HTTP*()``.
+
+``handleException(exc_info)``:
+    This is provided with a tool like ``paste.exceptions``.
+
+``consumeBodyIter()``:
+    This returns the iterable for the body, even if the body was a
+    string.  Anytime you access ``res.app_iter`` you will get an
+    iterable.  ``res.body`` and ``res.app_iter`` can be interchanged
+    and accessed as many times as you want, unlike the Zope
+    equivalents.
+
+``setResult(result)``:
+    You can achieve the same thing through ``res.body = result``, or
+    ``res.app_iter = result``.  ``res.body`` accepts None, a unicode
+    string (*if* you have set a charset) or a normal string.
+    ``res.app_iter`` only accepts None and an interable.  You can't
+    update all of a response with one call.
+
+    Like in Zope, WebOb updates Content-Length.  Unlike Zope, it does
+    not automatically calculate a charset.
+
+
+mod_python
+==========
+
+Some key attributes from the `mod_python
+<http://modpython.org/live/current/doc-html/pyapi-mprequest-mem.html>`_
+request object.
+
+Request
+-------
+
+``req.uri``:
+    In ``req.path``.
+
+``req.user``:
+    In ``req.remote_user``.
+
+``req.get_remote_host()``:
+    In ``req.environ['REMOTE_ADDR']`` or ``req.remote_addr``.
+
+``req.headers_in.get('referer')``:
+    In ``req.headers.get('referer')`` or ``req.referer`` (same pattern
+    for other request headers, presumably).
+
+Response
+--------
+
+``util.redirect`` or ``req.status = apache.HTTP_MOVED_TEMPORARILY``:
+
+.. code-block:: python
+
+    from webob.exc import HTTPTemporaryRedirect
+    exc = HTTPTemporaryRedirect(location=url)
+    return exc(environ, start_response)
+
+``req.content_type = "application/x-csv"`` and
+``req.headers_out.add('Content-Disposition', 'attachment;filename=somefile.csv')``:
+
+.. code-block:: python
+
+    res = req.ResponseClass()
+    res.content_type = 'application/x-csv'
+    res.headers.add('Content-Disposition', 'attachment;filename=somefile.csv')
+    return res(environ, start_response)
+
+webapp Response
+===============
+
+The Google App Engine `webapp
+<http://code.google.com/appengine/docs/python/tools/webapp/>`_
+framework uses the WebOb Request object, but does not use its Response
+object.
+
+The constructor for ``webapp.Response`` does not take any arguments.
+The response is created by the framework, so you don't use it like
+``return Response(...)``, instead you use ``self.response``.  Also the
+response object automatically has ``Cache-Control: no-cache`` set,
+while the WebOb response does not set any cache headers.
+
+``resp.set_status(code, message=None)``:
+    This is handled by setting the ``resp.status`` attribute.
+
+``resp.clear()``:
+    You'd do ``resp.body = ""``
+
+``resp.wsgi_write(start_response)``:
+    This writes the response using the ``start_response`` callback,
+    and using the ``start_response`` writer.  The WebOb response
+    object is called as a WSGI app (``resp(environ, start_response)``)
+    to do the equivalent.
+
+``resp.out.write(text)``:
+    This writes to an internal ``StringIO`` instance of the response.
+    This uses the ability of the standard StringIO object to hold
+    either unicode or ``str`` text, and so long as you are always
+    consistent it will encode your content (but it does not respect
+    your preferred encoding, it always uses UTF-8).  The WebOb method
+    ``resp.write(text)`` is basically equivalent, and also accepts
+    unicode (using ``resp.charset`` for the encoding).  You can also
+    write to ``resp.body_file``, but it does not allow unicode.
+
+Besides exposing a ``.headers`` attribute (based on
+`wsgiref.headers.Headers
+<http://docs.python.org/library/wsgiref.html#wsgiref.headers.Headers>`_)
+there is no other API for the webapp response object.  This means the
+response lacks:
+
+* A usefully readable body or status.
+* A useful constructor that makes it easy to treat responses like
+  objects.
+* Providing a non-string ``app_iter`` for the body (like a generator).
+* Parsing of the Content-Type charset.
+* Getter/setters for parsed forms of headers, specifically
+  cache_control and last_modified.
+* The ``cache_expires`` method
+* ``set_cookie``, ``delete_cookie``, and ``unset_cookie``.  Instead
+  you have to simply manually set the Set-Cookie header.
+* ``encode_content`` and ``decode_content`` for handling gzip encoding.
+* ``md5_etag()`` for generating an etag from the body.
+* Conditional responses that will return 304 based on the response and
+  request headers.
+* The ability to serve Range request automatically.
+
+PHP
+===
+
+PHP does not have anything really resembling a request and response
+object.  Instead these are encoded in a set of global objects for the
+request and functions for the response.
+
+``$_POST``, ``$_GET``, ``$_FILES``
+----------------------------------
+
+These represent ``req.POST`` and ``req.GET``.
+
+PHP uses the variable names to tell whether a variable can hold
+multiple values.  For instance ``$_POST['name[]']``, which will be an
+array.  In WebOb any variable can have multiple values, and you can
+get these through ``req.POST.getall('name')``.
+
+The files in ``$_FILES`` are simply in ``req.POST`` in WebOb, as
+FieldStorage instances.
+
+``$_COOKIES``
+-------------
+
+This is in ``req.cookies``.
+
+``$_SERVER``, ``$_REQUEST``, ``$_ENV``
+--------------------------------------
+
+These are all in ``req.environ``.  These are not split up like they
+are in PHP, it's all just one dictionary.  Everything that would
+typically be in ``$_ENV`` is technically optional, and outside of a
+couple CGI-standard keys in ``$_SERVER`` most of those are also
+optional, but it is common for WSGI servers to populate the request
+with similar information as PHP.
+
+``$HTTP_RAW_POST_DATA``
+-----------------------
+
+This contains the unparsed data in the request body.  This is in
+``req.body``.
+
+The response
+------------
+
+Response headers in PHP are sent with ``header("Header-Name:
+value")``.  In WebOb there is a dictionary in ``resp.headers`` that
+can have values set; the headers aren't actually sent until you send
+the response.  You can add headers without overwriting (the equivalent
+of ``header("...", false)``) with ``resp.headers.add('Header-Name',
+'value')``.
+
+The status in PHP is sent with ``http_send_status(code)``.  In WebOb
+this is ``resp.status = code``.
+
+The body in PHP is sent implicitly through the rendering of the PHP
+body (or with ``echo`` or any other functions that send output).

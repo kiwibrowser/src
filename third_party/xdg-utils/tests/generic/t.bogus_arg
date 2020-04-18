@@ -1,0 +1,25 @@
+#!/bin/bash
+
+. "$XDG_TEST_DIR/include/testassertions.sh"
+
+
+generic_bogus_arg() {
+test_start "$FUNCNAME: generic bogus argument $XDGUTIL"
+test_purpose "Ensure that $XDGUTIL exits with an error when called with an unsupported argument."
+
+# Dependencies section
+test_init
+
+assert_util_var
+set_no_display
+
+# Test steps section
+test_procedure
+
+assert_exit 1 "$XDGUTIL" "--fobar-bogus-arg"
+assert_nostdout
+assert_stderr
+
+test_result
+}
+GENERIC_TEST="generic_bogus_arg"

@@ -1,0 +1,1011 @@
+WebOb Reference
++++++++++++++++
+
+.. contents::
+
+.. comment:
+
+    >>> from doctest import ELLIPSIS
+
+Introduction
+============
+
+This document covers all the details of the Request and Response
+objects.  It is written to be testable with `doctest
+<http://python.org/doc/current/lib/module-doctest.html>`_ -- this
+affects the flavor of the documentation, perhaps to its detriment.
+But it also means you can feel confident that the documentation is
+correct.
+
+This is a somewhat different approach to reference documentation
+compared to the extracted documentation for the `request
+<class-webob.Request.html>`_ and `response
+<class-webob.Response.html>`_.
+
+Request
+=======
+
+The primary object in WebOb is ``webob.Request``, a wrapper around a
+`WSGI environment <http://www.python.org/dev/peps/pep-0333/>`_.
+
+The basic way you create a request object is simple enough:
+
+.. code-block:: python
+
+   >>> from webob import Request
+   >>> environ = {'wsgi.url_scheme': 'http', ...}  #doctest: +SKIP
+   >>> req = Request(environ)                      #doctest: +SKIP
+
+(Note that the WSGI environment is a dictionary with a dozen required
+keys, so it's a bit lengthly to show a complete example of what it
+would look like -- usually your WSGI server will create it.)
+
+The request object *wraps* the environment; it has very little
+internal state of its own.  Instead attributes you access read and
+write to the environment dictionary.
+
+You don't have to understand the details of WSGI to use this library;
+this library handles those details for you.  You also don't have to
+use this exclusively of other libraries.  If those other libraries
+also keep their state in the environment, multiple wrappers can
+coexist.  Examples of libraries that can coexist include
+`paste.wsgiwrappers.Request
+<http://pythonpaste.org/class-paste.wsgiwrappers.WSGIRequest.html>`_
+(used by Pylons) and `yaro.Request
+<http://lukearno.com/projects/yaro/>`_.
+
+The WSGI environment has a number of required variables.  To make it
+easier to test and play around with, the ``Request`` class has a
+constructor that will fill in a minimal environment:
+
+.. code-block:: python
+
+   >>> req = Request.blank('/article?id=1')
+   >>> from pprint import pprint
+   >>> pprint(req.environ)
+   {'HTTP_HOST': 'localhost:80',
+    'PATH_INFO': '/article',
+    'QUERY_STRING': 'id=1',
+    'REQUEST_METHOD': 'GET',
+    'SCRIPT_NAME': '',
+    'SERVER_NAME': 'localhost',
+    'SERVER_PORT': '80',
+    'SERVER_PROTOCOL': 'HTTP/1.0',
+    'wsgi.errors': <open file '<stderr>', mode 'w' at ...>,
+    'wsgi.input': <...IO... object at ...>,
+    'wsgi.multiprocess': False,
+    'wsgi.multithread': False,
+    'wsgi.run_once': False,
+    'wsgi.url_scheme': 'http',
+    'wsgi.version': (1, 0)}
+
+Request Body
+------------
+
+``req.body`` is a file-like object that gives the body of the request
+(e.g., a POST form, the body of a PUT, etc).  It's kind of boring to
+start, but you can set it to a string and that will be turned into a
+file-like object.  You can read the entire body with
+``req.body``.
+
+.. code-block:: python
+
+    >>> hasattr(req.body_file, 'read')
+    True
+    >>> req.body
+    ''
+    >>> req.method = 'PUT'
+    >>> req.body = 'test'
+    >>> hasattr(req.body_file, 'read')
+    True
+    >>> req.body
+    'test'
+
+Method & URL
+------------
+
+All the normal parts of a request are also accessible through the
+request object:
+
+.. code-block:: python
+
+    >>> req.method
+    'PUT'
+    >>> req.scheme
+    'http'
+    >>> req.script_name  # The base of the URL
+    ''
+    >>> req.script_name = '/blog' # make it more interesting
+    >>> req.path_info    # The yet-to-be-consumed part of the URL
+    '/article'
+    >>> req.content_type # Content-Type of the request body
+    ''
+    >>> print req.remote_user  # The authenticated user (there is none set)
+    None
+    >>> print req.remote_addr  # The remote IP
+    None
+    >>> req.host
+    'localhost:80'
+    >>> req.host_url
+    'http://localhost'
+    >>> req.application_url
+    'http://localhost/blog'
+    >>> req.path_url
+    'http://localhost/blog/article'
+    >>> req.url
+    'http://localhost/blog/article?id=1'
+    >>> req.path
+    '/blog/article'
+    >>> req.path_qs
+    '/blog/article?id=1'
+    >>> req.query_string
+    'id=1'
+
+You can make new URLs:
+
+.. code-block:: python
+
+    >>> req.relative_url('archive')
+    'http://localhost/blog/archive'
+
+For parsing the URLs, it is often useful to deal with just the next
+path segment on PATH_INFO:
+
+.. code-block:: python
+
+    >>> req.path_info_peek() # Doesn't change request
+    'article'
+    >>> req.path_info_pop()  # Does change request!
+    'article'
+    >>> req.script_name
+    '/blog/article'
+    >>> req.path_info
+    ''
+
+Headers
+-------
+
+All request headers are available through a dictionary-like object
+``req.headers``.  Keys are case-insensitive.
+
+.. code-block:: python
+
+    >>> req.headers['Content-Type'] = 'application/x-www-urlencoded'
+    >>> sorted(req.headers.items())
+    [('Content-Length', '4'), ('Content-Type', 'application/x-www-urlencoded'), ('Host', 'localhost:80')]
+    >>> req.environ['CONTENT_TYPE']
+    'application/x-www-urlencoded'
+
+Query & POST variables
+----------------------
+
+Requests can have variables in one of two locations: the query string
+(``?id=1``), or in the body of the request (generally a POST form).
+Note that even POST requests can have a query string, so both kinds of
+variables can exist at the same time.  Also, a variable can show up
+more than once, as in ``?check=a&check=b``.
+
+For these variables WebOb uses a `MultiDict
+<class-webob.multidict.MultiDict.html>`_, which is basically a
+dictionary wrapper on a list of key/value pairs.  It looks like a
+single-valued dictionary, but you can access all the values of a key
+with ``.getall(key)`` (which always returns a list, possibly an empty
+list).  You also get all key/value pairs when using ``.items()`` and
+all values with ``.values()``.
+
+Some examples:
+
+.. code-block:: python
+
+    >>> req = Request.blank('/test?check=a&check=b&name=Bob')
+    >>> req.GET
+    MultiDict([(u'check', u'a'), (u'check', u'b'), (u'name', u'Bob')])
+    >>> req.GET['check']
+    u'b'
+    >>> req.GET.getall('check')
+    [u'a', u'b']
+    >>> req.GET.items()
+    [(u'check', u'a'), (u'check', u'b'), (u'name', u'Bob')]
+
+We'll have to create a request body and change the method to get
+POST.  Until we do that, the variables are boring:
+
+.. code-block:: python
+
+    >>> req.POST
+    <NoVars: Not a form request>
+    >>> req.POST.items()  # NoVars can be read like a dict, but not written
+    []
+    >>> req.method = 'POST'
+    >>> req.body = 'name=Joe&email=joe@example.com'
+    >>> req.POST
+    MultiDict([(u'name', u'Joe'), (u'email', u'joe@example.com')])
+    >>> req.POST['name']
+    u'Joe'
+
+Often you won't care where the variables come from.  (Even if you care
+about the method, the location of the variables might not be
+important.)  There is a dictionary called ``req.params`` that
+contains variables from both sources:
+
+.. code-block:: python
+
+    >>> req.params
+    NestedMultiDict([(u'check', u'a'), (u'check', u'b'), (u'name', u'Bob'), (u'name', u'Joe'), (u'email', u'joe@example.com')])
+    >>> req.params['name']
+    u'Bob'
+    >>> req.params.getall('name')
+    [u'Bob', u'Joe']
+    >>> for name, value in req.params.items():
+    ...     print '%s: %r' % (name, value)
+    check: u'a'
+    check: u'b'
+    name: u'Bob'
+    name: u'Joe'
+    email: u'joe@example.com'
+
+The ``POST`` and ``GET`` nomenclature is historical -- ``req.GET`` can
+be used for non-GET requests to access query parameters, and
+``req.POST`` can also be used for PUT requests with the appropriate
+Content-Type.
+
+    >>> req = Request.blank('/test?check=a&check=b&name=Bob')
+    >>> req.method = 'PUT'
+    >>> req.body = body = 'var1=value1&var2=value2&rep=1&rep=2'
+    >>> req.environ['CONTENT_LENGTH'] = str(len(req.body))
+    >>> req.environ['CONTENT_TYPE'] = 'application/x-www-form-urlencoded'
+    >>> req.GET
+    MultiDict([(u'check', u'a'), (u'check', u'b'), (u'name', u'Bob')])
+    >>> req.POST
+    MultiDict([(u'var1', u'value1'), (u'var2', u'value2'), (u'rep', u'1'), (u'rep', u'2')])
+
+Unicode Variables
+~~~~~~~~~~~~~~~~~
+
+Submissions are non-unicode (``str``) strings, unless some character
+set is indicated.  A client can indicate the character set with
+``Content-Type: application/x-www-form-urlencoded; charset=utf8``, but
+very few clients actually do this (sometimes XMLHttpRequest requests
+will do this, as JSON is always UTF8 even when a page is served with a
+different character set).  You can force a charset, which will affect
+all the variables:
+
+.. code-block:: python
+
+    >>> req.charset = 'utf8'
+    >>> req.GET
+    MultiDict([(u'check', u'a'), (u'check', u'b'), (u'name', u'Bob')])
+
+Cookies
+-------
+
+Cookies are presented in a simple dictionary.  Like other variables,
+they will be decoded into Unicode strings if you set the charset.
+
+.. code-block:: python
+
+    >>> req.headers['Cookie'] = 'test=value'
+    >>> req.cookies
+    MultiDict([(u'test', u'value')])
+
+Modifying the request
+---------------------
+
+The headers are all modifiable, as are other environmental variables
+(like ``req.remote_user``, which maps to
+``request.environ['REMOTE_USER']``).
+
+If you want to copy the request you can use ``req.copy()``; this
+copies the ``environ`` dictionary, and the request body from
+``environ['wsgi.input']``.
+
+The method ``req.remove_conditional_headers(remove_encoding=True)``
+can be used to remove headers that might result in a ``304 Not
+Modified`` response.  If you are writing some intermediary it can be
+useful to avoid these headers.  Also if ``remove_encoding`` is true
+(the default) then any ``Accept-Encoding`` header will be removed,
+which can result in gzipped responses.
+
+Header Getters
+--------------
+
+In addition to ``req.headers``, there are attributes for most of the
+request headers defined by the HTTP 1.1 specification.  These
+attributes often return parsed forms of the headers.
+
+Accept-* headers
+~~~~~~~~~~~~~~~~
+
+There are several request headers that tell the server what the client
+accepts.  These are ``accept`` (the Content-Type that is accepted),
+``accept_charset`` (the charset accepted), ``accept_encoding``
+(the Content-Encoding, like gzip, that is accepted), and
+``accept_language`` (generally the preferred language of the client).
+
+The objects returned support containment to test for acceptability.
+E.g.:
+
+.. code-block:: python
+
+    >>> 'text/html' in req.accept
+    True
+
+Because no header means anything is potentially acceptable, this is
+returning True.  We can set it to see more interesting behavior (the
+example means that ``text/html`` is okay, but
+``application/xhtml+xml`` is preferred):
+
+.. code-block:: python
+
+    >>> req.accept = 'text/html;q=0.5, application/xhtml+xml;q=1'
+    >>> req.accept
+    <MIMEAccept('text/html;q=0.5, application/xhtml+xml')>
+    >>> 'text/html' in req.accept
+    True
+
+There are a few methods for different strategies of finding a match.
+
+.. code-block:: python
+
+    >>> req.accept.best_match(['text/html', 'application/xhtml+xml'])
+    'application/xhtml+xml'
+
+If we just want to know everything the client prefers, in the order it
+is preferred:
+
+.. code-block:: python
+
+    >>> list(req.accept)
+    ['application/xhtml+xml', 'text/html']
+
+For languages you'll often have a "fallback" language.  E.g., if there's
+nothing better then use ``en-US`` (and if ``en-US`` is okay, ignore
+any less preferrable languages):
+
+.. code-block:: python
+
+    >>> req.accept_language = 'es, pt-BR'
+    >>> req.accept_language.best_match(['en-GB', 'en-US'], default_match='en-US')
+    'en-US'
+    >>> req.accept_language.best_match(['es', 'en-US'], default_match='en-US')
+    'es'
+
+Your fallback language must appear both in the ``offers`` and as the
+``default_match`` to insure that it is returned as a best match if the
+client specified a preference for it.
+
+.. code-block:: python
+
+    >>> req.accept_language = 'en-US;q=0.5, en-GB;q=0.2'
+    >>> req.accept_language.best_match(['en-GB'], default_match='en-US')
+    'en-GB'
+    >>> req.accept_language.best_match(['en-GB', 'en-US'], default_match='en-US')
+    'en-US'
+
+Conditional Requests
+~~~~~~~~~~~~~~~~~~~~
+
+There a number of ways to make a conditional request.  A conditional
+request is made when the client has a document, but it is not sure if
+the document is up to date.  If it is not, it wants a new version.  If
+the document is up to date then it doesn't want to waste the
+bandwidth, and expects a ``304 Not Modified`` response.
+
+ETags are generally the best technique for these kinds of requests;
+this is an opaque string that indicates the identity of the object.
+For instance, it's common to use the mtime (last modified) of the file,
+plus the number of bytes, and maybe a hash of the filename (if there's
+a possibility that the same URL could point to two different
+server-side filenames based on other variables).  To test if a 304
+response is appropriate, you can use:
+
+.. code-block:: python
+
+    >>> server_token = 'opaque-token'
+    >>> server_token in req.if_none_match # You shouldn't return 304
+    False
+    >>> req.if_none_match = server_token
+    >>> req.if_none_match
+    <ETag opaque-token>
+    >>> server_token in req.if_none_match # You *should* return 304
+    True
+
+For date-based comparisons If-Modified-Since is used:
+
+.. code-block:: python
+
+    >>> from webob import UTC
+    >>> from datetime import datetime
+    >>> req.if_modified_since = datetime(2006, 1, 1, 12, 0, tzinfo=UTC)
+    >>> req.headers['If-Modified-Since']
+    'Sun, 01 Jan 2006 12:00:00 GMT'
+    >>> server_modified = datetime(2005, 1, 1, 12, 0, tzinfo=UTC)
+    >>> req.if_modified_since and req.if_modified_since >= server_modified
+    True
+
+For range requests there are two important headers, If-Range (which is
+form of conditional request) and Range (which requests a range).  If
+the If-Range header fails to match then the full response (not a
+range) should be returned:
+
+.. code-block:: python
+
+    >>> req.if_range
+    <Empty If-Range>
+    >>> req.if_range.match(etag='some-etag', last_modified=datetime(2005, 1, 1, 12, 0))
+    True
+    >>> req.if_range = 'opaque-etag'
+    >>> req.if_range.match(etag='other-etag')
+    False
+    >>> req.if_range.match(etag='opaque-etag')
+    True
+
+You can also pass in a response object with:
+
+.. code-block:: python
+
+    >>> from webob import Response
+    >>> res = Response(etag='opaque-etag')
+    >>> req.if_range.match_response(res)
+    True
+
+To get the range information:
+
+    >>> req.range = 'bytes=0-100'
+    >>> req.range
+    <Range ranges=(0, 101)>
+    >>> cr = req.range.content_range(length=1000)
+    >>> cr.start, cr.stop, cr.length
+    (0, 101, 1000)
+
+Note that the range headers use *inclusive* ranges (the last byte
+indexed is included), where Python always uses a range where the last
+index is excluded from the range.  The ``.stop`` index is in the
+Python form.
+
+Another kind of conditional request is a request (typically PUT) that
+includes If-Match or If-Unmodified-Since.  In this case you are saying
+"here is an update to a resource, but don't apply it if someone else
+has done something since I last got the resource".  If-Match means "do
+this if the current ETag matches the ETag I'm giving".
+If-Unmodified-Since means "do this if the resource has remained
+unchanged".
+
+.. code-block:: python
+
+    >>> server_token in req.if_match # No If-Match means everything is ok
+    True
+    >>> req.if_match = server_token
+    >>> server_token in req.if_match # Still OK
+    True
+    >>> req.if_match = 'other-token'
+    >>> # Not OK, should return 412 Precondition Failed:
+    >>> server_token in req.if_match
+    False
+
+For more on this kind of conditional request, see `Detecting the Lost
+Update Problem Using Unreserved Checkout
+<http://www.w3.org/1999/04/Editing/>`_.
+
+Calling WSGI Applications
+-------------------------
+
+The request object can be used to make handy subrequests or test
+requests against WSGI applications.  If you want to make subrequests,
+you should copy the request (with ``req.copy()``) before sending it to
+multiple applications, since applications might modify the request
+when they are run.
+
+There's two forms of the subrequest.  The more primitive form is
+this:
+
+.. code-block:: python
+
+    >>> req = Request.blank('/')
+    >>> def wsgi_app(environ, start_response):
+    ...     start_response('200 OK', [('Content-type', 'text/plain')])
+    ...     return ['Hi!']
+    >>> req.call_application(wsgi_app)
+    ('200 OK', [('Content-type', 'text/plain')], ['Hi!'])
+
+Note it returns ``(status_string, header_list, app_iter)``.  If
+``app_iter.close()`` exists, it is your responsibility to call it.
+
+A handier response can be had with:
+
+.. code-block:: python
+
+    >>> res = req.get_response(wsgi_app)
+    >>> res
+    <Response ... 200 OK>
+    >>> res.status
+    '200 OK'
+    >>> res.headers
+    ResponseHeaders([('Content-type', 'text/plain')])
+    >>> res.body
+    'Hi!'
+
+You can learn more about this response object in the Response_ section.
+
+Ad-Hoc Attributes
+-----------------
+
+You can assign attributes to your request objects.  They will all go
+in ``environ['webob.adhoc_attrs']`` (a dictionary).
+
+.. code-block:: python
+
+    >>> req = Request.blank('/')
+    >>> req.some_attr = 'blah blah blah'
+    >>> new_req = Request(req.environ)
+    >>> new_req.some_attr
+    'blah blah blah'
+    >>> req.environ['webob.adhoc_attrs']
+    {'some_attr': 'blah blah blah'}
+
+Response
+========
+
+The ``webob.Response`` object contains everything necessary to make a
+WSGI response.  Instances of it are in fact WSGI applications, but it
+can also represent the result of calling a WSGI application (as noted
+in `Calling WSGI Applications`_).  It can also be a way of
+accumulating a response in your WSGI application.
+
+A WSGI response is made up of a status (like ``200 OK``), a list of
+headers, and a body (or iterator that will produce a body).
+
+Core Attributes
+---------------
+
+The core attributes are unsurprising:
+
+.. code-block:: python
+
+    >>> from webob import Response
+    >>> res = Response()
+    >>> res.status
+    '200 OK'
+    >>> res.headerlist
+    [('Content-Type', 'text/html; charset=UTF-8'), ('Content-Length', '0')]
+    >>> res.body
+    ''
+
+You can set any of these attributes, e.g.:
+
+.. code-block:: python
+
+    >>> res.status = 404
+    >>> res.status
+    '404 Not Found'
+    >>> res.status_code
+    404
+    >>> res.headerlist = [('Content-type', 'text/html')]
+    >>> res.body = 'test'
+    >>> print res
+    404 Not Found
+    Content-type: text/html
+    Content-Length: 4
+    <BLANKLINE>
+    test
+    >>> res.body = u"test"
+    Traceback (most recent call last):
+        ...
+    TypeError: You cannot set Response.body to a unicode object (use Response.text)
+    >>> res.text = u"test"
+    Traceback (most recent call last):
+        ...
+    AttributeError: You cannot access Response.text unless charset is set
+    >>> res.charset = 'utf8'
+    >>> res.text = u"test"
+    >>> res.body
+    'test'
+
+You can set any attribute with the constructor, like
+``Response(charset='utf8')``
+
+Headers
+-------
+
+In addition to ``res.headerlist``, there is dictionary-like view on
+the list in ``res.headers``:
+
+.. code-block:: python
+
+    >>> res.headers
+    ResponseHeaders([('Content-Type', 'text/html; charset=utf8'), ('Content-Length', '4')])
+
+This is case-insensitive.  It can support multiple values for a key,
+though only if you use ``res.headers.add(key, value)`` or read them
+with ``res.headers.getall(key)``.
+
+Body & app_iter
+---------------
+
+The ``res.body`` attribute represents the entire body of the request
+as a single string (not unicode, though you can set it to unicode if
+you have a charset defined).  There is also a ``res.app_iter``
+attribute that reprsents the body as an iterator.  WSGI applications
+return these ``app_iter`` iterators instead of strings, and sometimes
+it can be problematic to load the entire iterator at once (for
+instance, if it returns the contents of a very large file).  Generally
+it is not a problem, and often the iterator is something simple like a
+one-item list containing a string with the entire body.
+
+If you set the body then Content-Length will also be set, and an
+``res.app_iter`` will be created for you.  If you set ``res.app_iter``
+then Content-Length will be cleared, but it won't be set for you.
+
+There is also a file-like object you can access, which will update the
+app_iter in-place (turning the app_iter into a list if necessary):
+
+.. code-block:: python
+
+    >>> res = Response(content_type='text/plain', charset=None)
+    >>> f = res.body_file
+    >>> f.write('hey')
+    >>> f.write(u'test')
+    Traceback (most recent call last):
+      . . .
+    TypeError: You can only write unicode to Response if charset has been set
+    >>> f.encoding
+    >>> res.charset = 'utf8'
+    >>> f.encoding
+    'utf8'
+    >>> f.write(u'test')
+    >>> res.app_iter
+    ['', 'hey', 'test']
+    >>> res.body
+    'heytest'
+
+Header Getters
+--------------
+
+Like Request, HTTP response headers are also available as individual
+properties.  These represent parsed forms of the headers.
+
+Content-Type is a special case, as the type and the charset are
+handled through two separate properties:
+
+.. code-block:: python
+
+    >>> res = Response()
+    >>> res.content_type = 'text/html'
+    >>> res.charset = 'utf8'
+    >>> res.content_type
+    'text/html'
+    >>> res.headers['content-type']
+    'text/html; charset=utf8'
+    >>> res.content_type = 'application/atom+xml'
+    >>> res.content_type_params
+    {'charset': 'utf8'}
+    >>> res.content_type_params = {'type': 'entry', 'charset': 'utf8'}
+    >>> res.headers['content-type']
+    'application/atom+xml; charset=utf8; type=entry'
+
+Other headers:
+
+.. code-block:: python
+
+    >>> # Used with a redirect:
+    >>> res.location = 'http://localhost/foo'
+
+    >>> # Indicates that the server accepts Range requests:
+    >>> res.accept_ranges = 'bytes'
+
+    >>> # Used by caching proxies to tell the client how old the
+    >>> # response is:
+    >>> res.age = 120
+
+    >>> # Show what methods the client can do; typically used in
+    >>> # a 405 Method Not Allowed response:
+    >>> res.allow = ['GET', 'PUT']
+
+    >>> # Set the cache-control header:
+    >>> res.cache_control.max_age = 360
+    >>> res.cache_control.no_transform = True
+
+    >>> # Tell the browser to treat the response as an attachment:
+    >>> res.content_disposition = 'attachment; filename=foo.xml'
+
+    >>> # Used if you had gzipped the body:
+    >>> res.content_encoding = 'gzip'
+
+    >>> # What language(s) are in the content:
+    >>> res.content_language = ['en']
+
+    >>> # Seldom used header that tells the client where the content
+    >>> # is from:
+    >>> res.content_location = 'http://localhost/foo'
+
+    >>> # Seldom used header that gives a hash of the body:
+    >>> res.content_md5 = 'big-hash'
+
+    >>> # Means we are serving bytes 0-500 inclusive, out of 1000 bytes total:
+    >>> # you can also use the range setter shown earlier
+    >>> res.content_range = (0, 501, 1000)
+
+    >>> # The length of the content; set automatically if you set
+    >>> # res.body:
+    >>> res.content_length = 4
+
+    >>> # Used to indicate the current date as the server understands
+    >>> # it:
+    >>> res.date = datetime.now()
+
+    >>> # The etag:
+    >>> res.etag = 'opaque-token'
+    >>> # You can generate it from the body too:
+    >>> res.md5_etag()
+    >>> res.etag
+    '1B2M2Y8AsgTpgAmY7PhCfg'
+
+    >>> # When this page should expire from a cache (Cache-Control
+    >>> # often works better):
+    >>> import time
+    >>> res.expires = time.time() + 60*60 # 1 hour
+
+    >>> # When this was last modified, of course:
+    >>> res.last_modified = datetime(2007, 1, 1, 12, 0, tzinfo=UTC)
+
+    >>> # Used with 503 Service Unavailable to hint the client when to
+    >>> # try again:
+    >>> res.retry_after = 160
+
+    >>> # Indicate the server software:
+    >>> res.server = 'WebOb/1.0'
+
+    >>> # Give a list of headers that the cache should vary on:
+    >>> res.vary = ['Cookie']
+
+Note in each case you can general set the header to a string to avoid
+any parsing, and set it to None to remove the header (or do something
+like ``del res.vary``).
+
+In the case of date-related headers you can set the value to a
+``datetime`` instance (ideally with a UTC timezone), a time tuple, an
+integer timestamp, or a properly-formatted string.
+
+After setting all these headers, here's the result:
+
+.. code-block:: python
+
+    >>> for name, value in res.headerlist:
+    ...     print '%s: %s' % (name, value)
+    Content-Type: application/atom+xml; charset=utf8; type=entry
+    Location: http://localhost/foo
+    Accept-Ranges: bytes
+    Age: 120
+    Allow: GET, PUT
+    Cache-Control: max-age=360, no-transform
+    Content-Disposition: attachment; filename=foo.xml
+    Content-Encoding: gzip
+    Content-Language: en
+    Content-Location: http://localhost/foo
+    Content-MD5: big-hash
+    Content-Range: bytes 0-500/1000
+    Content-Length: 4
+    Date: ... GMT
+    ETag: ...
+    Expires: ... GMT
+    Last-Modified: Mon, 01 Jan 2007 12:00:00 GMT
+    Retry-After: 160
+    Server: WebOb/1.0
+    Vary: Cookie
+
+You can also set Cache-Control related attributes with
+``req.cache_expires(seconds, **attrs)``, like:
+
+.. code-block:: python
+
+    >>> res = Response()
+    >>> res.cache_expires(10)
+    >>> res.headers['Cache-Control']
+    'max-age=10'
+    >>> res.cache_expires(0)
+    >>> res.headers['Cache-Control']
+    'max-age=0, must-revalidate, no-cache, no-store'
+    >>> res.headers['Expires']
+    '... GMT'
+
+You can also use the `timedelta
+<http://python.org/doc/current/lib/datetime-timedelta.html>`_
+constants defined, e.g.:
+
+.. code-block:: python
+
+    >>> from webob import *
+    >>> res = Response()
+    >>> res.cache_expires(2*day+4*hour)
+    >>> res.headers['Cache-Control']
+    'max-age=187200'
+
+Cookies
+-------
+
+Cookies (and the Set-Cookie header) are handled with a couple
+methods.  Most importantly:
+
+.. code-block:: python
+
+    >>> res.set_cookie('key', 'value', max_age=360, path='/',
+    ...                domain='example.org', secure=True)
+    >>> res.headers['Set-Cookie']
+    'key=value; Domain=example.org; Max-Age=360; Path=/; expires=... GMT; secure'
+    >>> # To delete a cookie previously set in the client:
+    >>> res.delete_cookie('bad_cookie')
+    >>> res.headers['Set-Cookie']
+    'bad_cookie=; Max-Age=0; Path=/; expires=... GMT'
+
+The only other real method of note (note that this does *not* delete
+the cookie from clients, only from the response object):
+
+.. code-block:: python
+
+    >>> res.unset_cookie('key')
+    >>> res.unset_cookie('bad_cookie')
+    >>> print res.headers.get('Set-Cookie')
+    None
+
+Binding a Request
+-----------------
+
+You can bind a request (or request WSGI environ) to the response
+object.  This is available through ``res.request`` or
+``res.environ``.  This is currently only used in setting
+``res.location``, to make the location absolute if necessary.
+
+Response as a WSGI application
+------------------------------
+
+A response is a WSGI application, in that you can do:
+
+.. code-block:: python
+
+    >>> req = Request.blank('/')
+    >>> status, headers, app_iter = req.call_application(res)
+
+A possible pattern for your application might be:
+
+.. code-block:: python
+
+    >>> def my_app(environ, start_response):
+    ...     req = Request(environ)
+    ...     res = Response()
+    ...     res.content_type = 'text/plain'
+    ...     parts = []
+    ...     for name, value in sorted(req.environ.items()):
+    ...         parts.append('%s: %r' % (name, value))
+    ...     res.body = '\n'.join(parts)
+    ...     return res(environ, start_response)
+    >>> req = Request.blank('/')
+    >>> res = req.get_response(my_app)
+    >>> print res
+    200 OK
+    Content-Type: text/plain; charset=UTF-8
+    Content-Length: ...
+    <BLANKLINE>
+    HTTP_HOST: 'localhost:80'
+    PATH_INFO: '/'
+    QUERY_STRING: ''
+    REQUEST_METHOD: 'GET'
+    SCRIPT_NAME: ''
+    SERVER_NAME: 'localhost'
+    SERVER_PORT: '80'
+    SERVER_PROTOCOL: 'HTTP/1.0'
+    wsgi.errors: <open file '<stderr>', mode 'w' at ...>
+    wsgi.input: <...IO... object at ...>
+    wsgi.multiprocess: False
+    wsgi.multithread: False
+    wsgi.run_once: False
+    wsgi.url_scheme: 'http'
+    wsgi.version: (1, 0)
+
+Exceptions
+==========
+
+In addition to Request and Response objects, there are a set of Python
+exceptions for different HTTP responses (3xx, 4xx, 5xx codes).
+
+These provide a simple way to provide these non-200 response.  A very
+simple body is provided.
+
+.. code-block:: python
+
+    >>> from webob.exc import *
+    >>> exc = HTTPTemporaryRedirect(location='foo')
+    >>> req = Request.blank('/path/to/something')
+    >>> print str(req.get_response(exc)).strip()
+    307 Temporary Redirect
+    Location: http://localhost/path/to/foo
+    Content-Length: 126
+    Content-Type: text/plain; charset=UTF-8
+    <BLANKLINE>
+    307 Temporary Redirect
+    <BLANKLINE>
+    The resource has been moved to http://localhost/path/to/foo; you should be redirected automatically.
+
+Note that only if there's an ``Accept: text/html`` header in the
+request will an HTML response be given:
+
+.. code-block:: python
+
+    >>> req.accept += 'text/html'
+    >>> print str(req.get_response(exc)).strip()
+    307 Temporary Redirect
+    Location: http://localhost/path/to/foo
+    Content-Length: 270
+    Content-Type: text/html; charset=UTF-8
+    <BLANKLINE>
+    <html>
+     <head>
+      <title>307 Temporary Redirect</title>
+     </head>
+     <body>
+      <h1>307 Temporary Redirect</h1>
+      The resource has been moved to <a href="http://localhost/path/to/foo">http://localhost/path/to/foo</a>;
+    you should be redirected automatically.
+    <BLANKLINE>
+    <BLANKLINE>
+     </body>
+    </html>
+
+
+This is taken from `paste.httpexceptions
+<http://pythonpaste.org/modules/httpexceptions.html#module-paste.httpexceptions>`_, and if
+you have Paste installed then these exceptions will be subclasses of
+the Paste exceptions.
+
+
+Conditional WSGI Application
+----------------------------
+
+The Response object can handle your conditional responses for you,
+checking If-None-Match, If-Modified-Since, and Range/If-Range.
+
+To enable this you must create the response like
+``Response(conditional_response=True)``, or make a subclass like:
+
+.. code-block:: python
+
+    >>> class AppResponse(Response):
+    ...     default_content_type = 'text/html'
+    ...     default_conditional_response = True
+    >>> res = AppResponse(body='0123456789',
+    ...                   last_modified=datetime(2005, 1, 1, 12, 0, tzinfo=UTC))
+    >>> req = Request.blank('/')
+    >>> req.if_modified_since = datetime(2006, 1, 1, 12, 0, tzinfo=UTC)
+    >>> req.get_response(res)
+    <Response ... 304 Not Modified>
+    >>> del req.if_modified_since
+    >>> res.etag = 'opaque-tag'
+    >>> req.if_none_match = 'opaque-tag'
+    >>> req.get_response(res)
+    <Response ... 304 Not Modified>
+
+    >>> req.if_none_match = '*'
+    >>> 'x' in req.if_none_match
+    True
+    >>> req.if_none_match = req.if_none_match
+    >>> 'x' in req.if_none_match
+    True
+    >>> req.if_none_match = None
+    >>> 'x' in req.if_none_match
+    False
+    >>> req.if_match = None
+    >>> 'x' in req.if_match
+    True
+    >>> req.if_match = req.if_match
+    >>> 'x' in req.if_match
+    True
+    >>> req.headers.get('If-Match')
+    '*'
+
+    >>> del req.if_none_match
+
+    >>> req.range = (1, 5)
+    >>> result = req.get_response(res)
+    >>> result.headers['content-range']
+    'bytes 1-4/10'
+    >>> result.body
+    '1234'

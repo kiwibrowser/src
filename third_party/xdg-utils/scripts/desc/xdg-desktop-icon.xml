@@ -1,0 +1,364 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl"
+   href="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+    "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
+]>
+<refentry id="xdg-desktop-icon">
+  <refentryinfo>
+    <title>xdg-desktop-icon Manual</title>
+    <copyright>
+      <year>2006</year>
+    </copyright>
+    <author>
+      <firstname>Kevin</firstname>
+      <surname>Krammer</surname>
+    </author>
+    <address><email>kevin.krammer@gmx.at</email></address>
+    <author>
+      <firstname>Jeremy</firstname>
+      <surname>White</surname>
+    </author>
+    <address><email>jwhite@codeweavers.com</email></address>
+    <releaseinfo>xdg-utils 1.0</releaseinfo>
+  </refentryinfo>
+
+  <refmeta>
+    <refentrytitle>xdg-desktop-icon</refentrytitle>
+    <manvolnum>1</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname>xdg-desktop-icon</refname>
+    <refpurpose>command line tool for (un)installing icons to the desktop</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+    <cmdsynopsis>
+      <command>xdg-desktop-icon</command>
+      <arg choice="plain">install</arg>
+      <arg><option>--novendor</option></arg>
+      <arg choice="plain"><replaceable>FILE</replaceable></arg>
+    </cmdsynopsis>
+    <cmdsynopsis>
+      <command>xdg-desktop-icon</command>
+      <arg choice="plain">uninstall</arg>
+      <arg choice="plain"><replaceable>FILE</replaceable></arg>
+    </cmdsynopsis>
+    <cmdsynopsis>
+      <command>xdg-desktop-icon</command>
+      <group choice="req">
+        <arg choice="plain"><option>--help</option></arg>
+        <arg choice="plain"><option>--manual</option></arg>
+        <arg choice="plain"><option>--version</option></arg>
+      </group>
+    </cmdsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1 id="description">
+    <title>Description</title>
+    <para>
+      The xdg-desktop-icon program can be used to install an application launcher
+      or other file on the desktop of the current user.
+    </para>
+    <para>
+      An application launcher is represented by a *.desktop file.
+      Desktop files are defined by the freedesktop.org Desktop Entry
+      Specification. The most important aspects of *.desktop files
+      are summarized below.
+    </para>
+  </refsect1>
+  <refsect1 id="commands">
+    <title>Commands</title>
+    <variablelist>
+      <varlistentry>
+	<term>install</term>
+	<listitem>
+	  <simpara>
+	    Installs <replaceable>FILE</replaceable> to the desktop of the current user.
+	    <replaceable>FILE</replaceable> can be a *.desktop file or any
+            other type of file.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>uninstall</term>
+	<listitem>
+	  <simpara>
+	    Removes <replaceable>FILE</replaceable> from the desktop
+            of the current user.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+  <refsect1 id="options">
+    <title>Options</title>
+    <variablelist>
+      <varlistentry>
+	<term><option>--novendor</option></term>
+	<listitem>
+	  <simpara>
+	    Normally, xdg-desktop-icon checks to ensure that a *.desktop file
+	    to be installed has a vendor prefix. This option can be
+	    used to disable that check.
+	  </simpara>
+	  <simpara>
+            A vendor prefix consists of alpha characters ([a-zA-Z]) and is
+            terminated with a dash ("-").
+            Companies and organizations are encouraged to use a word
+            or phrase, preferably the organizations name, for which they hold
+            a trademark as their vendor prefix.
+            The purpose of the vendor prefix is to prevent name conflicts.
+          </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term><option>--help</option></term>
+	<listitem>
+	  <simpara>
+	    Show command synopsis.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term><option>--manual</option></term>
+	<listitem>
+	  <simpara>
+	    Show this manualpage.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>--version</option></term>
+        <listitem>
+          <simpara>
+            Show the xdg-utils version information.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+    </variablelist>
+  </refsect1>
+  <refsect1 id="desktopfiles">
+    <title>Desktop Files</title>
+    <para>
+      An application launcher can be added to the desktop by installing a
+      *.desktop file. A *.desktop file consists of a
+      <emphasis>[Desktop Entry]</emphasis> header followed by several
+      <replaceable>Key</replaceable>=<replaceable>Value</replaceable> lines.
+    </para>
+    <para>
+      A *.desktop file can provide a name and description for an application
+      in several different languages. This is done by adding a language
+      code as used by LC_MESSAGES in square brackets behind the 
+      <replaceable>Key</replaceable>. This way one can specify different
+      values for the same <replaceable>Key</replaceable> depending on the
+      currently selected language.
+    </para>
+    <para>
+      The following keys are often used:
+    </para>
+    <variablelist>
+      <varlistentry>
+	<term>Value=1.0</term>
+	<listitem>
+	  <simpara>
+	    This is a mandatory field to indicate that the *.desktop file
+	    follows the 1.0 version of the specification.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>Type=Application</term>
+	<listitem>
+	  <simpara>
+	    This is a mandatory field that indicates that the *.desktop file
+	    describes an application launcher.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>Name=<replaceable>Application Name</replaceable></term>
+	<listitem>
+	  <simpara>
+	    The name of the application.
+	    For example <emphasis>Mozilla</emphasis>
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>GenericName=<replaceable>Generic Name</replaceable></term>
+	<listitem>
+	  <simpara>
+	    A generic description of the application.
+	    For example <emphasis>Web Browser</emphasis>
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>Comment=<replaceable>Comment</replaceable></term>
+	<listitem>
+	  <simpara>
+	    Optional field to specify a tooltip for the application. 
+	    For example <emphasis>Visit websites on the Internet</emphasis>
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>Icon=<replaceable>Icon File</replaceable></term>
+	<listitem>
+	  <simpara>
+	    The icon to use for the application. This can either be
+	    an absolute path to an image file or an icon-name.
+	    If an icon-name is provided an image lookup by name is done
+	    in the user's current icon theme. The <command>xdg-icon-resource</command>
+	    command can be used to install image files into icon themes.
+	    The advantage of using an icon-name instead of an absolute
+	    path is that with an icon-name the application icon can be
+	    provided in several different sizes as well as in several
+	    differently themed styles.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>Exec=<replaceable>Command Line</replaceable></term>
+	<listitem>
+	  <simpara>
+	    The command line to start the application. If the application
+	    can open files the %f placeholder should be specified. When
+	    a file is dropped on the application launcher the %f is replaced
+	    with the file path of the dropped file. If multiple files
+	    can be specified on the command line the %F placeholder should
+	    be used instead of %f. If the application is able to open URLs
+	    in addition to local files then  %u or %U can be used instead
+	    of %f or %F.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    <para>
+      For a complete oveview of the *.desktop file format please
+      visit http://www.freedesktop.org/wiki/Standards/desktop-entry-spec
+    </para>
+  </refsect1>
+  <refsect1 id="env_vars">
+    <title>Environment Variables</title>
+    <para>
+      xdg-desktop-icon honours the following environment variables:
+    </para>
+    <variablelist>
+      <varlistentry>
+	<term>XDG_UTILS_DEBUG_LEVEL</term>
+	<listitem>
+	  <simpara>
+	    Setting this environment variable to a non-zero numerical value
+	    makes xdg-desktop-icon do more verbose reporting on stderr.
+	    Setting a higher value increases the verbosity.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+  <refsect1 id="exitcodes">
+    <title>Exit Codes</title>
+    <para>
+      An exit code of 0 indicates success while a non-zero exit code
+      indicates failure. The following failure codes can be returned:
+    </para>
+    <variablelist>
+      <varlistentry>
+	<term><option>1</option></term>
+	<listitem>
+	  <simpara>
+	    Error in command line syntax.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><option>2</option></term>
+	<listitem>
+	  <simpara>
+	    One of the files passed on the command line did not exist.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><option>3</option></term>
+	<listitem>
+	  <simpara>
+	    A required tool could not be found. 
+	  </simpara>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><option>4</option></term>
+	<listitem>
+	  <simpara>
+	    The action failed. 
+	  </simpara>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><option>5</option></term>
+	<listitem>
+	  <simpara>
+	    No permission to read one of the files passed on the command
+            line.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+  <refsect1 id="seealso">
+    <title>See Also</title>
+    <para><citerefentry><refentrytitle>xdg-icon-resource</refentrytitle>
+        <manvolnum>1</manvolnum>
+      </citerefentry>
+    </para>
+  </refsect1>
+  <refsect1 id="examples">
+    <title>Examples</title>
+    <para>
+      The company ShinyThings Inc. has developed an application named
+      "WebMirror" and would like to add a launcher for for on the desktop.
+      The company will use "shinythings" as its vendor id.
+      In order to add the application to the desktop there needs to be a
+      .desktop file for the application:
+<programlisting>
+shinythings-webmirror.desktop:
+
+  [Desktop Entry]
+  Encoding=UTF-8
+  Type=Application
+
+  Exec=webmirror
+  Icon=shinythings-webmirror
+
+  Name=WebMirror
+  Name[nl]=WebSpiegel
+</programlisting>
+    </para>
+    <para>Now the xdg-desktop-icon tool can be used to add the webmirror.desktop file
+    to the desktop:
+<programlisting>
+xdg-desktop-icon install ./shinythings-webmirror.desktop
+</programlisting>
+    </para>
+    <para>To add a README file to the desktop as well, the following command can be used:  
+<programlisting>
+xdg-desktop-icon install ./shinythings-README
+</programlisting>
+    </para>
+  </refsect1>
+</refentry>

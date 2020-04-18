@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<!--
+Copyright 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/value/histogram_set.html">
+
+<script>
+'use strict';
+tr.exportTo('tr.v', function() {
+  function deleteMergedToDiagnostics(histogramArrayMap) {
+    for (const [name, histograms] of histogramArrayMap) {
+      if (histograms instanceof Array) {
+        for (const histogram of histograms) {
+          histogram.diagnostics.delete(tr.v.d.RESERVED_NAMES.MERGED_TO);
+        }
+      } else if (histograms instanceof Map) {
+        deleteMergedToDiagnostics(histograms);
+      }
+    }
+  }
+
+  /*
+   * See also HistogramSet.groupHistogramsRecursively().
+   * See also tr.v.ui.HistogramSetTableRow.
+   */
+  class HistogramSetHierarchy {
+    /**
+     * @param {string} name
+     */
+    constructor(name) {
+      this.name = name;
+      this.description = '';
+      this.depth = 0;
+      this.subRows = [];
+      this.columns = new Map();
+      this.mergeRelationshipsForColumn_ = new Map();
+    }
+
+    * walk() {
+      yield this;
+      for (const row of this.subRows) yield* row.walk();
+    }
+
+    static* walkAll(rootRows) {
+      for (const rootRow of rootRows) yield* rootRow.walk();
+    }
+
+    /**
+     * Build table rows recursively from grouped Histograms.
+     *
+     * @param {!(HistogramArray|HistogramArrayMap)}
+     * @returns {!Array.<!HistogramSetHierarchy>}
+     */
+    static build(histogramArrayMap) {
+      const rootRows = [];
+      HistogramSetHierarchy.buildInternal_(histogramArrayMap, [], rootRows);
+
+      const histograms = new tr.v.HistogramSet();
+
+      for (const row of HistogramSetHierarchy.walkAll(rootRows)) {
+        for (const hist of row.columns.values()) {
+          if (!(hist instanceof tr.v.Histogram)) continue;
+          histograms.addHistogram(hist);
+        }
+      }
+
+      histograms.deduplicateDiagnostics();
+
+      for (const row of HistogramSetHierarchy.walkAll(rootRows)) {
+        for (const [name, hist] of row.columns) {
+          if (!(hist instanceof tr.v.Histogram)) continue;
+          if (!row.mergeRelationshipsForColumn_.get(name)) continue;
+          hist.diagnostics.mergeRelationships(hist);
+        }
+      }
+
+      // Delete "mergedTo" diagnostics from the original Histograms, or else
+      // they'll accumulate as the user re-groups them, and slow down future
+      // mergeRelationships operations.
+      deleteMergedToDiagnostics(histogramArrayMap);
+
+      for (const row of HistogramSetHierarchy.walkAll(rootRows)) {
+        row.maybeRebin_();
+      }
+
+      return rootRows;
+    }
+
+    maybeRebin_() {
+      // if all of |this| row's columns are single-bin, then re-bin all of them.
+      const dataRange = new tr.b.math.Range();
+      for (const hist of this.columns.values()) {
+        if (!(hist instanceof tr.v.Histogram)) continue;
+        if (hist.allBins.length > 1) return;  // don't re-bin
+        if (hist.numValues === 0) continue;  // ignore hist
+        dataRange.addValue(hist.min);
+        dataRange.addValue(hist.max);
+      }
+
+      dataRange.addValue(tr.b.math.lesserWholeNumber(dataRange.min));
+      dataRange.addValue(tr.b.math.greaterWholeNumber(dataRange.max));
+
+      if (dataRange.min === dataRange.max) return;  // don't rebin
+
+      const boundaries = tr.v.HistogramBinBoundaries.createLinear(
+          dataRange.min, dataRange.max, tr.v.DEFAULT_REBINNED_COUNT);
+
+      for (const [name, hist] of this.columns) {
+        if (!(hist instanceof tr.v.Histogram)) continue;
+        this.columns.set(name, hist.rebin(boundaries));
+      }
+    }
+
+    static mergeHistogramDownHierarchy_(histogram, hierarchy, columnName) {
+      // Track the path down the grouping tree to each Histogram,
+      // but only start tracking the path at the grouping level that
+      // corresponds to the Histogram NAME Grouping. This groupingPath will be
+      // attached to Histograms in order to help mergeRelationships() figure out
+      // which merged Histograms should be related to which other merged
+      // Histograms.
+      let groupingPath = undefined;
+
+      for (const row of hierarchy) {
+        if (groupingPath !== undefined) {
+          groupingPath.push(row.name);
+        } else if (row.name === histogram.name) {
+          // Start tracking the path, but don't add histogram.name to the path,
+          // since related histograms won't have the same name.
+          groupingPath = [];
+        }
+
+        if (!row.description) {
+          row.description = histogram.description;
+        }
+
+        const existing = row.columns.get(columnName);
+
+        if (existing === undefined) {
+          const clone = histogram.clone();
+          if (groupingPath !== undefined) {
+            new tr.v.d.GroupingPath(groupingPath).addToHistogram(clone);
+          }
+          row.columns.set(columnName, clone);
+          row.mergeRelationshipsForColumn_.set(columnName, true);
+          continue;
+        }
+
+        if (existing instanceof tr.v.HistogramSet) {
+          // There have already been unmergeable histograms.
+          existing.addHistogram(histogram);
+          continue;
+        }
+
+        if (!existing.canAddHistogram(histogram)) {
+          // Remember all of the original unmergeable Histograms so that
+          // filter() can keep the rows that match the given HistogramSet even
+          // if the rows will only be able to display (unmergeable).
+          const unmergeableHistograms = new tr.v.HistogramSet([histogram]);
+          const mergedFrom = existing.diagnostics.get(
+              tr.v.d.RESERVED_NAMES.MERGED_FROM);
+          if (mergedFrom !== undefined) {
+            for (const [unusedName, origHist] of mergedFrom) {
+              unmergeableHistograms.addHistogram(origHist);
+            }
+          }
+          row.columns.set(columnName, unmergeableHistograms);
+          continue;
+        }
+
+        if (existing.name !== histogram.name) {
+          // It won't make sense to merge relationships for this merged
+          // Histogram.
+          row.mergeRelationshipsForColumn_.set(name, false);
+        }
+
+        existing.addHistogram(histogram);
+      }
+    }
+
+    static buildInternal_(
+        histogramArrayMap, hierarchy, rootRows) {
+      for (const [name, histograms] of histogramArrayMap) {
+        if (histograms instanceof Array) {
+          // This recursion base case corresponds to the recursion base case of
+          // groupHistogramsRecursively(). The last groupingCallback is always
+          // getDisplayLabel, which defines the columns of the table and is
+          // unskippable.
+          for (const histogram of histograms) {
+            HistogramSetHierarchy.mergeHistogramDownHierarchy_(
+                histogram, hierarchy, name);
+          }
+        } else if (histograms instanceof Map) {
+          // |histograms| is actually a nested histogramArrayMap.
+          const row = new HistogramSetHierarchy(name);
+          row.depth = hierarchy.length;
+          hierarchy.push(row);
+          HistogramSetHierarchy.buildInternal_(histograms, hierarchy, rootRows);
+          hierarchy.pop();
+
+          if (hierarchy.length === 0) {
+            rootRows.push(row);
+          } else {
+            const parentRow = hierarchy[hierarchy.length - 1];
+            parentRow.subRows.push(row);
+          }
+        }
+      }
+    }
+
+    /**
+     * Clones and filters |rows| to contain only |histograms|.
+     *
+     * @param {!Array.<HistogramSetHierarchy>} rows
+     * @param {!tr.v.HistogramSet} histograms
+     * @returns {!Array.<HistogramSetHierarchy>}
+     */
+    static filter(rows, histograms) {
+      const results = [];
+      for (const row of rows) {
+        let filteredSubRows = [];
+        if (row.subRows.length > 0) {
+          // This is a branch row. Drop it if all of its subrows were dropped.
+          filteredSubRows = HistogramSetHierarchy.filter(
+              row.subRows, histograms);
+          if (filteredSubRows.length === 0) continue;
+        } else {
+          // This is a leaf row. Drop it if none of the Histograms in
+          // |row.columns| were merged from any in |histograms|.
+          let found = false;
+          for (const testHist of row.columns.values()) {
+            if (testHist instanceof tr.v.HistogramSet) {
+              // Keep this unmergeable cell if it was merged from any of
+              // |histograms|.
+              for (const origHist of testHist) {
+                if (histograms.lookupHistogram(origHist.guid) !== undefined) {
+                  found = true;
+                  break;
+                }
+              }
+              if (found) break;
+
+              continue;
+            }
+
+            if (!(testHist instanceof tr.v.Histogram)) {
+              throw new Error(
+                  'Cells can only contain Histogram or HistogramSet');
+            }
+
+            if (histograms.lookupHistogram(testHist.guid) !== undefined) {
+              found = true;
+              break;
+            }
+
+            const mergedFrom = testHist.diagnostics.get(
+                tr.v.d.RESERVED_NAMES.MERGED_FROM);
+            if (mergedFrom !== undefined) {
+              for (const [unusedName, origHist] of mergedFrom) {
+                if (histograms.lookupHistogram(origHist.guid) !== undefined) {
+                  found = true;
+                  break;
+                }
+              }
+            }
+            if (found) break;
+          }
+          // If none of the Histograms in |row| were merged from any of
+          // |histograms|, then drop this row.
+          if (!found) continue;
+        }
+
+        const clone = new HistogramSetHierarchy(row.name);
+        clone.description = row.description;
+        clone.depth = row.depth;
+        clone.subRows = filteredSubRows;
+        // Don't need to clone Histograms.
+        clone.columns = row.columns;
+        results.push(clone);
+      }
+      return results;
+    }
+  }
+
+  return {
+    HistogramSetHierarchy,
+  };
+});
+</script>

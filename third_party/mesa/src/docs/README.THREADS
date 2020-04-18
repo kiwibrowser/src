@@ -1,0 +1,52 @@
+
+
+Mesa Threads README
+-------------------
+
+Thread safety was introduced in Mesa 2.6 by John Stone and
+Christoph Poliwoda.
+
+It was redesigned in Mesa 3.3 so that thread safety is
+supported by default (on systems which support threads,
+that is).  There is no measurable penalty on single
+threaded applications.
+
+NOTE that the only _driver_ which is thread safe at this time
+is the OS/Mesa driver!
+
+
+At present the mthreads code supports three thread APIS:
+  1) POSIX threads (aka pthreads).
+  2) Solaris / Unix International threads.
+  3) Win32 threads (Win 95/NT).
+
+Support for other thread libraries can be added src/glthread.[ch]
+
+
+In order to guarantee proper operation, it is
+necessary for both Mesa and application code to use the same threads API.
+So, if your application uses Sun's thread API, then you should build Mesa
+using one of the targets for Sun threads.
+
+The mtdemos directory contains some example programs which use 
+multiple threads to render to osmesa rendering context(s).
+
+Linux users should be aware that there exist many different POSIX
+threads packages. The best solution is the linuxthreads package
+(http://pauillac.inria.fr/~xleroy/linuxthreads/) as this package is the
+only one that really supports multiprocessor machines (AFAIK). See
+http://pauillac.inria.fr/~xleroy/linuxthreads/README for further
+information about the usage of linuxthreads.
+
+If you are interested in helping with thread safety work in Mesa
+join the Mesa developers mailing list and post your proposal.
+
+
+Regards,
+  John Stone           -- j.stone@acm.org  johns@cs.umr.edu
+  Christoph Poliwoda   -- poliwoda@volumegraphics.com
+
+
+Version info:
+   Mesa 2.6 - initial thread support.
+   Mesa 3.3 - thread support mostly rewritten (Brian Paul)

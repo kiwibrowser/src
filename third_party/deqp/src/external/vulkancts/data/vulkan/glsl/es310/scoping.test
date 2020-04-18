@@ -1,0 +1,460 @@
+group valid "Valid scoping and name redeclaration cases"
+
+	case local_variable_hides_global_variable
+		version 310 es
+		values
+		{
+			input int in0 = [ 1 | 2 | 3 ];
+			output int out0 = [ 1 | 2 | 3 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			precision highp int;
+			${DECLARATIONS}
+
+			int a = -1;
+
+			void main()
+			{
+				${SETUP}
+				int a = in0;
+
+				out0 = a;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case block_variable_hides_local_variable
+		version 310 es
+		values
+		{
+			input int in0 = [ 1 | 2 | 3 ];
+			output int out0 = [ 1 | 2 | 3 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			precision highp int;
+			${DECLARATIONS}
+			void main()
+			{
+				${SETUP}
+				int a = in0;
+				{
+					int a = -1;
+				}
+				out0 = a;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case block_variable_hides_global_variable
+		version 310 es
+		values
+		{
+			input int in0 = [ 1 | 2 | 3 ];
+			output int out0 = [ 1 | 2 | 3 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			precision highp int;
+			${DECLARATIONS}
+
+			int a = -1;
+
+			void main()
+			{
+				${SETUP}
+				{
+					int a = in0;
+
+					out0 = a;
+				}
+				${OUTPUT}
+			}
+		""
+	end
+
+	case for_init_statement_variable_hides_local_variable
+		version 310 es
+		values
+		{
+			input int in0 = [ 1 | 2 | 3 ];
+			output int out0 = [ 1 | 2 | 3 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			precision highp int;
+			${DECLARATIONS}
+			void main()
+			{
+				${SETUP}
+				int a = in0;
+				for (int a = 0; a < 10; a++)
+				{
+				}
+				out0 = a;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case while_condition_variable_hides_local_variable
+		version 310 es
+		values
+		{
+			input int in0 = [ 1 | 2 | 3 ];
+			output int out0 = [ 1 | 2 | 3 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			precision highp int;
+			${DECLARATIONS}
+			void main()
+			{
+				${SETUP}
+				int a = in0;
+				int i = 0;
+				while (bool a = (i < 1))
+				{
+					i++;
+				}
+				out0 = a;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case for_init_statement_variable_hides_global_variable
+		version 310 es
+		values
+		{
+			input int in0 = [ 1 | 2 | 3 ];
+			output int out0 = [ 1 | 2 | 3 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			precision highp int;
+			${DECLARATIONS}
+
+			int a = 5;
+
+			void main()
+			{
+				${SETUP}
+				for (int a = 0; a < 10; a++)
+				{
+				}
+				out0 = in0 + a - 5;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case while_condition_variable_hides_global_variable
+		version 310 es
+		values
+		{
+			input int in0 = [ 1 | 2 | 3 ];
+			output int out0 = [ 1 | 2 | 3 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			precision highp int;
+			${DECLARATIONS}
+
+			int a = 5;
+
+			void main()
+			{
+				${SETUP}
+				int i = 0;
+				while (bool a = (i < 1))
+				{
+					i++;
+				}
+				out0 = in0 + a - 5;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case variable_in_if_hides_global_variable
+		version 310 es
+		values
+		{
+			input int in0 = [ 1 | 2 | 3 ];
+			output int out0 = [ 1 | 2 | 3 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			precision highp int;
+			${DECLARATIONS}
+
+			int a = 1;
+
+			void main()
+			{
+				${SETUP}
+				if (true)
+					int a = 42;
+				out0 = a*in0;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case variable_from_outer_scope_visible_in_initializer
+		version 310 es
+		values
+		{
+			input int in0 = [ 1 | 2 | 3 ];
+			output int out0 = [ 1 | 2 | 3 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			precision highp int;
+			${DECLARATIONS}
+			void main()
+			{
+				${SETUP}
+				int a = in0;
+				{
+					int a = a+5, b = a-5;
+					out0 = b;
+					a = 42;
+				}
+				out0 = out0 + a - in0;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case local_int_variable_hides_struct_type
+		version 310 es
+		values
+		{
+			input int in0 = [ 1 | 2 | 3 ];
+			output int out0 = [ 1 | 2 | 3 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			precision highp int;
+			${DECLARATIONS}
+
+			struct S { int val; };
+
+			void main()
+			{
+				${SETUP}
+				int S = S(in0).val;
+				out0 = S;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case local_struct_variable_hides_struct_type
+		version 310 es
+		values
+		{
+			input int in0 = [ 1 | 2 | 3 ];
+			output int out0 = [ 1 | 2 | 3 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			precision highp int;
+			${DECLARATIONS}
+
+			struct S { int val; };
+
+			void main()
+			{
+				${SETUP}
+				S S = S(in0);
+				out0 = S.val;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case local_variable_hides_function
+		version 310 es
+		values
+		{
+			input int in0 = [ 1 | 2 | 3 ];
+			output int out0 = [ 1 | 2 | 3 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			precision highp int;
+			${DECLARATIONS}
+
+			int foo (int x) { return x; }
+
+			void main()
+			{
+				${SETUP}
+				int foo = in0;
+				out0 = foo;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case function_parameter_hides_global_variable
+		version 310 es
+		values
+		{
+			input int in0 = [ 1 | 2 | 3 ];
+			output int out0 = [ 1 | 2 | 3 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			precision highp int;
+			${DECLARATIONS}
+
+			int a = -1;
+
+			int func (int a) { return a; }
+
+			void main()
+			{
+				${SETUP}
+				out0 = func(in0);
+				${OUTPUT}
+			}
+		""
+	end
+
+	case function_parameter_hides_struct_type
+		version 310 es
+		values
+		{
+			input int in0 = [ 1 | 2 | 3 ];
+			output int out0 = [ 1 | 2 | 3 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			precision highp int;
+			${DECLARATIONS}
+
+			struct S { int x; };
+
+			int func (int S) { return S; }
+
+			void main()
+			{
+				${SETUP}
+				out0 = func(in0);
+				${OUTPUT}
+			}
+		""
+	end
+
+	case function_parameter_hides_function
+		version 310 es
+		values
+		{
+			input int in0 = [ 1 | 2 | 3 ];
+			output int out0 = [ 1 | 2 | 3 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			precision highp int;
+			${DECLARATIONS}
+
+			int func (int func) { return func; }
+
+			void main()
+			{
+				${SETUP}
+				out0 = func(in0);
+				${OUTPUT}
+			}
+		""
+	end
+
+	case local_variable_in_inner_scope_hides_function_parameter
+		version 310 es
+		values
+		{
+			input int in0 = [ 1 | 2 | 3 ];
+			output int out0 = [ 1 | 2 | 3 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			precision highp int;
+			${DECLARATIONS}
+			int func (int inp, int x) { { int x = 5; return inp + x - 5; } }
+
+			void main()
+			{
+				${SETUP}
+				out0 = func(in0, 42);
+				${OUTPUT}
+			}
+		""
+	end
+
+	case redeclare_function
+		version 310 es
+		values
+		{
+			input int in0 = [ 1 | 2 | 3 ];
+			output int out0 = [ 1 | 2 | 3 ];
+		}
+
+		both ""
+			#version 310 es
+			precision highp float;
+			precision highp int;
+			${DECLARATIONS}
+
+			int func (int x);
+			int func (int);
+			int func (int inp) { return inp; }
+
+			void main()
+			{
+				${SETUP}
+				out0 = func(in0);
+				${OUTPUT}
+			}
+		""
+	end
+
+end

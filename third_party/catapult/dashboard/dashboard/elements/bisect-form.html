@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<!--
+Copyright 2016 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<!--
+The bisect-form element includes the form for all of the different stages of
+the bisect process after the user clicks on the bisect button.
+-->
+
+<link rel="import" href="/components/paper-button/paper-button.html">
+<link rel="import" href="/components/paper-dialog/paper-dialog.html">
+<link rel="import" href="/components/paper-spinner/paper-spinner.html">
+
+<link rel="import" href="/dashboard/static/simple_xhr.html">
+
+<dom-module is="bisect-form">
+  <template>
+    <style>
+      form {
+        width: 550px;
+        padding-bottom: 10px;
+      }
+
+      #loading {
+        background-color: white;
+        height: 100%;
+        width: 100%;
+        position: absolute;
+        left: 0;
+        top: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      select, input[type=text], input[type=number] {
+        border-radius: 1px;
+        border: 1px solid #d9d9d9;
+        border-top: 1px solid #c0c0c0;
+        font-size: 13px;
+        height: 25px;  /* 29 px total height incl padding + border */
+        width: 300px;
+        padding: 1px 2px;
+      }
+
+      paper-button[dialog-confirm] {
+        background: #4285f4;
+        color: #fff;
+      }
+
+      .error {
+        color: #dd4b39;
+      }
+
+      form tr td:first-of-type {
+        white-space: nowrap;
+      }
+    </style>
+    <paper-dialog id="container" autoCloseDisabled="true">
+      <!-- Styling for paper-dialog's children. -->
+
+
+      <form>
+        <table>
+          <tr>
+            <td>Bisect bot:</td>
+            <td>
+              <select id="bot" value="{{bot::input}}">
+                <template is="dom-repeat" items="{{botList}}" as="name">
+                <option value="{{name}}" selected="{{computeIsSelected(name, bot)}}">{{name}}</option>
+                </template>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td>Metric:</td>
+            <td>
+              <select id="metric" value="{{metric::input}}">
+                <template is="dom-repeat" items="{{metricList}}" as="name">
+                <option value="{{name}}" selected="{{computeIsSelected(name, metric)}}">{{name}}</option>
+                </template>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td>Story filter:</td>
+            <td><input type="text" value="{{storyFilter::input}}"></td>
+          </tr>
+          <tr>
+            <td>Bug ID:</td>
+            <td><input type="number" value="{{bugId::input}}"></td>
+          </tr>
+          <tr>
+            <td>Earlier revision:</td>
+            <td><input type="text" value="{{earlierRevision::input}}"></td>
+          </tr>
+          <tr>
+            <td>Later revision:</td>
+            <td><input type="text" value="{{laterRevision::input}}"></td>
+          </tr>
+          <tr hidden$="{{isNotReturnCode(BISECT_MODE)}}">
+            <td>Repeat count:</td>
+            <td><input type="number" min="1" max="100" value="{{REPEAT_COUNT::input}}"></td>
+          </tr>
+          <tr hidden$="{{isNotReturnCode(BISECT_MODE)}}">
+            <td>Max time (min):</td>
+            <td><input type="number" min="1" max="60" value="{{MAX_TIME_MINUTES::input}}"></td>
+          </tr>
+
+          <template is="dom-if" if="{{isAdmin}}">
+            <tr>
+              <td>Launch on staging bots:</td>
+              <td><input type="checkbox"
+                         checked="{{useStaging::change}}">
+              </td>
+            </tr>
+          </template>
+
+          <tr>
+            <td>Bisect mode:</td>
+            <td>
+              <select type="text" value="{{BISECT_MODE::input}}">
+                <option value="mean">mean</option>
+                <option value="return_code">return_code</option>
+              </select>
+              <p class="error" hidden$="{{isNotReturnCode(BISECT_MODE)}}">
+                If you would like to bisect on a test failure, please carefully
+                check the revision range on the buildbot status page and update
+                the <b>Earlier Revision</b> and <b>Later Revision</b> fields above
+                accordingly. Note that the revisions for a test failure will
+                <b>not</b> show up on the graph.
+              </p>
+            </td>
+          </tr>
+        </table>
+        <p><a href="https://chromium.googlesource.com/chromium/src/+/master/docs/speed/bisects.md#What-are-all-the-boxes-in-the-form">
+          About the config parameters</a></p>
+
+        <p class="error">{{error}}</p>
+
+        <paper-button dialog-confirm raised autofocus disabled$="{{computeHasError(error)}}"
+                      on-click="onSendToTrybot">Start bisect</paper-button>
+        <paper-button dialog-dismiss raised>Close</paper-button>
+      </form>
+
+
+
+      <template is="dom-if" if="{{loading}}">
+        <div id="loading">
+          <paper-spinner active></paper-spinner>
+        </div>
+      </template>
+    </paper-dialog>
+
+    <div id="toasts" hidden>
+      <div id="jobsubmitted">
+        <b>Job submitted!</b>
+        <a href="{{lastSubmittedJobUrl}}"
+           target="_blank">View job {{lastSubmittedJobId}}.</a>
+      </div>
+    </div>
+  </template>
+  <script>
+    'use strict';
+    (function() {
+      /**
+       * Checks whether a revision appears to be OK to use for bisect.
+       * TODO(qyearsley): Extract common code in trace-form and bisect-form.
+       */
+      function validateRev(rev) {
+        if (/^[a-fA-F0-9]{40}$/.test(rev)) {
+          return true;
+        }
+        if (!/^\d+/.test(rev)) {
+          return false;
+        }
+        rev = Number(rev);
+        return rev > 200000 && rev < 700000;
+      }
+
+      Polymer({
+        is: 'bisect-form',
+        properties: {
+          // Default values of variables that are bound to inputs in the form.
+          // See: http://goo.gl/I94Kyj
+          BISECT_MODE: {
+            type: String,
+            value: 'mean'
+          },
+          MAX_TIME_MINUTES: {
+            type: Number,
+            value: 20
+          },
+          REPEAT_COUNT: {
+            type: Number,
+            value: 20
+          },
+          alerts: {},
+          bugId: { notify: true },
+          earlierRevision: {
+            notify: true,
+            observer: 'earlierRevisionChanged'
+          },
+          laterRevision: {
+            notify: true,
+            observer: 'laterRevisionChanged'
+          },
+          useStaging: {
+            type: Boolean,
+            value: false,
+          },
+          testPath: { notify: true },
+          xsrfToken: { notify: true }
+        },
+
+        computeHasError(e) {
+          return !!e;
+        },
+
+        computeIsSelected(name, reference) {
+          return name == reference;
+        },
+
+        /**
+         * Initializes and shows the bisect form.
+         */
+        show() {
+          this.isAdmin = false,
+          this.useStaging = false,
+          this.loading = true;
+          this.open();
+          simple_xhr.send('/start_try_job',
+              {
+                'test_path': this.testPath,
+                'step': 'prefill-info',
+                'xsrf_token': this.xsrfToken
+              },
+              function successCallback(info) {
+                this.bot = info.bisect_bot;
+                this.botList = info.all_bots;
+                this.metric = info.default_metric;
+                this.metricList = info.all_metrics;
+                this.storyFilter = info.story_filter;
+                this.email = info.email;
+                this.suite = info.suite;
+                this.master = info.master;
+                this.internalOnly = info.internal_only;
+                this.isAdmin = info.is_admin;
+
+                this.loading = false;
+              }.bind(this),
+              function errorCallback(msg) {
+                this.fire('display-toast', {
+                  'text': 'An error occurred: ' + msg,
+                  'error': true
+                });
+                this.close();
+              }.bind(this));
+        },
+
+        /**
+         * Makes a request to /start_try_job to perform a bisect.
+         */
+        onSendToTrybot(event) {
+          const alerts = [];
+          if (this.alerts) {
+            for (const a of this.alerts) {
+              alerts.push(a.key);
+            }
+          }
+
+          event.preventDefault();
+          this.loading = true;
+          const params = {
+            'step': 'perform-bisect',
+            'alerts': JSON.stringify(alerts),
+            'bisect_bot': this.bot,
+            'suite': this.suite,
+            'metric': this.metric,
+            'story_filter': this.storyFilter,
+            'good_revision': this.earlierRevision,
+            'bad_revision': this.laterRevision,
+            'repeat_count': this.REPEAT_COUNT,
+            'max_time_minutes': this.MAX_TIME_MINUTES,
+            'use_staging_bot': this.useStaging ? 'true' : '',
+            'master': this.master,
+            'internal_only': this.internalOnly,
+            'bisect_mode': this.BISECT_MODE,
+            'xsrf_token': this.xsrfToken
+          };
+          if (this.bugId) {
+            params.bug_id = this.bugId;
+          }
+          simple_xhr.send(
+              '/start_try_job', params,
+              function successCallback(info) {
+                this.lastSubmittedJobId = info.issue_id;
+                this.lastSubmittedJobUrl = info.issue_url;
+                this.fire('display-toast', {'content': this.$.jobsubmitted});
+
+                // Refresh bisect result log element.
+                const bisectLog = document.getElementById('bisect-result-log');
+                if (bisectLog) {
+                  bisectLog.refresh();
+                }
+
+                this.close();
+              }.bind(this),
+              function errorCallback(msg) {
+                this.fire('display-toast', {
+                  'text': 'An error occurred: ' + msg,
+                  'error': true
+                });
+                this.close();
+              }.bind(this));
+        },
+
+        earlierRevisionChanged() {
+          this.error = '';
+          if (!validateRev(this.earlierRevision)) {
+            this.error = 'Revisions should be git commit positions or hashes.';
+            return;
+          }
+          this.onRevisionsChange();
+        },
+
+        laterRevisionChanged() {
+          this.error = '';
+          if (!validateRev(this.laterRevision)) {
+            this.error = 'Revisions should be git commit positions or hashes.';
+            return;
+          }
+          this.onRevisionsChange();
+        },
+
+        onRevisionsChange() {
+          if (this.earlierRevision == this.laterRevision) {
+            this.error = (
+              '"Both "earlier" and "later" are the same.');
+          }
+          if (!/^\d+$/.test(this.earlierRevision) ||
+              !/^\d+$/.test(this.laterRevision)) {
+            return;
+          }
+          if (Number(this.earlierRevision) >= Number(this.laterRevision)) {
+            this.error = (
+              '"Earlier revision" should be less than "later revision".');
+          }
+        },
+
+        open() {
+          this.$.container.open();
+        },
+
+        close() {
+          this.$.container.close();
+        },
+        isNotReturnCode(bisectMode) {
+          return bisectMode != 'return_code';
+        }
+      });
+    })();
+  </script>
+</dom-module>

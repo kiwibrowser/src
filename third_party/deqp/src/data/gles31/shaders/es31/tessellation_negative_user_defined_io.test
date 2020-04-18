@@ -1,0 +1,254 @@
+case per_patch_array_of_structs
+	version 310 es
+	desc "per-patch variable type is array of structs"
+	expect compile_or_link_fail
+	require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+	vertex ""
+		#version 310 es
+		${VERTEX_DECLARATIONS}
+		void main()
+		{
+			${VERTEX_OUTPUT}
+		}
+	""
+	tessellation_control ""
+		#version 310 es
+		${TESSELLATION_CONTROL_DECLARATIONS}
+		struct S
+		{
+			highp float a;
+			highp vec2 b;
+		};
+		patch out S patchVariable[2]; // array of structures is illegal
+		void main()
+		{
+			patchVariable[0].a = gl_in[0].gl_Position.x;
+			patchVariable[0].b = gl_in[0].gl_Position.yz;
+			patchVariable[1].a = gl_in[0].gl_Position.z;
+			patchVariable[1].b = gl_in[0].gl_Position.wx;
+			${TESSELLATION_CONTROL_OUTPUT}
+		}
+	""
+	tessellation_evaluation ""
+		#version 310 es
+		${TESSELLATION_EVALUATION_DECLARATIONS}
+		struct S
+		{
+			highp float a;
+			highp vec2 b;
+		};
+		patch in S patchVariable[2]; // array of structures is illegal
+		out mediump float te_out;
+		void main()
+		{
+			te_out = patchVariable[0].a + patchVariable[1].b.y;
+			${TESSELLATION_EVALUATION_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 310 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		in mediump float te_out;
+		void main()
+		{
+			${FRAG_COLOR} = vec4(te_out);
+		}
+	""
+end
+
+case per_patch_structs_containing_arrays
+	version 310 es
+	desc "per-patch variable type is struct containing array"
+	expect compile_or_link_fail
+	require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+	vertex ""
+		#version 310 es
+		${VERTEX_DECLARATIONS}
+		void main()
+		{
+			${VERTEX_OUTPUT}
+		}
+	""
+	tessellation_control ""
+		#version 310 es
+		${TESSELLATION_CONTROL_DECLARATIONS}
+		struct S
+		{
+			highp float a;
+			highp float b[2];
+		};
+		patch out S patchVariable; // output structure containing array is illegal
+		void main()
+		{
+			patchVariable.a = gl_in[0].gl_Position.x;
+			patchVariable.b[0] = gl_in[0].gl_Position.y;
+			patchVariable.b[1] = gl_in[0].gl_Position.w;
+			${TESSELLATION_CONTROL_OUTPUT}
+		}
+	""
+	tessellation_evaluation ""
+		#version 310 es
+		${TESSELLATION_EVALUATION_DECLARATIONS}
+		struct S
+		{
+			highp float a;
+			highp float b[2];
+		};
+		patch in S patchVariable; // output structure containing array is illegal
+		out mediump float te_out;
+		void main()
+		{
+			te_out = patchVariable.a + patchVariable.b[1];
+			${TESSELLATION_EVALUATION_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 310 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		in mediump float te_out;
+		void main()
+		{
+			${FRAG_COLOR} = vec4(te_out);
+		}
+	""
+end
+
+case per_vertex_incorrect_control_explicit_output_array_size_2
+	version 310 es
+	desc "Incorrectly sized tessellation control output array"
+	expect compile_or_link_fail
+	require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+	vertex ""
+		#version 310 es
+		${VERTEX_DECLARATIONS}
+		void main()
+		{
+			${VERTEX_OUTPUT}
+		}
+	""
+	tessellation_control ""
+		#version 310 es
+		${TESSELLATION_CONTROL_DECLARATIONS}
+		out highp float varyingArray[gl_MaxPatchVertices]; // size does not match layout declaration
+		void main()
+		{
+			varyingArray[gl_InvocationID] = gl_in[0].gl_Position[gl_InvocationID];
+			${TESSELLATION_CONTROL_OUTPUT}
+		}
+	""
+	tessellation_evaluation ""
+		#version 310 es
+		${TESSELLATION_EVALUATION_DECLARATIONS}
+		in highp float varyingArray[gl_MaxPatchVertices]; // size is correct
+		out mediump float te_out;
+		void main()
+		{
+			te_out = varyingArray[0] * gl_TessCoord.x + varyingArray[1] * gl_TessCoord.y + varyingArray[2];
+			${TESSELLATION_EVALUATION_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 310 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		in mediump float te_out;
+		void main()
+		{
+			${FRAG_COLOR} = vec4(te_out);
+		}
+	""
+end
+
+case per_vertex_incorrect_control_explicit_output_array_size_3
+	version 310 es
+	desc "Incorrectly sized tessellation control output array"
+	expect compile_or_link_fail
+	require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+	vertex ""
+		#version 310 es
+		${VERTEX_DECLARATIONS}
+		void main()
+		{
+			${VERTEX_OUTPUT}
+		}
+	""
+	tessellation_control ""
+		#version 310 es
+		${TESSELLATION_CONTROL_DECLARATIONS}
+		out highp float varyingArray[${GL_MAX_PATCH_VERTICES}]; // size does not match layout declaration
+		void main()
+		{
+			varyingArray[gl_InvocationID] = gl_in[0].gl_Position[gl_InvocationID];
+			${TESSELLATION_CONTROL_OUTPUT}
+		}
+	""
+	tessellation_evaluation ""
+		#version 310 es
+		${TESSELLATION_EVALUATION_DECLARATIONS}
+		in highp float varyingArray[gl_MaxPatchVertices]; // size is correct
+		out mediump float te_out;
+		void main()
+		{
+			te_out = varyingArray[0] * gl_TessCoord.x + varyingArray[1] * gl_TessCoord.y + varyingArray[2];
+			${TESSELLATION_EVALUATION_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 310 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		in mediump float te_out;
+		void main()
+		{
+			${FRAG_COLOR} = vec4(te_out);
+		}
+	""
+end
+
+case per_vertex_incorrect_eval_explicit_input_array_size
+	version 310 es
+	desc "Incorrectly sized tessellation control output array"
+	expect compile_or_link_fail
+	require extension { "GL_OES_tessellation_shader" | "GL_EXT_tessellation_shader" } in { tessellation_control, tessellation_evaluation }
+	vertex ""
+		#version 310 es
+		${VERTEX_DECLARATIONS}
+		void main()
+		{
+			${VERTEX_OUTPUT}
+		}
+	""
+	tessellation_control ""
+		#version 310 es
+		${TESSELLATION_CONTROL_DECLARATIONS}
+		out highp float varyingArray[];
+		void main()
+		{
+			varyingArray[gl_InvocationID] = gl_in[0].gl_Position[gl_InvocationID];
+			${TESSELLATION_CONTROL_OUTPUT}
+		}
+	""
+	tessellation_evaluation ""
+		#version 310 es
+		${TESSELLATION_EVALUATION_DECLARATIONS}
+		in highp float varyingArray[3]; // size is not equal to gl_MaxPatchVertices
+		out mediump float te_out;
+		void main()
+		{
+			te_out = varyingArray[0] * gl_TessCoord.x + varyingArray[1] * gl_TessCoord.y + varyingArray[2];
+			${TESSELLATION_EVALUATION_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 310 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		in mediump float te_out;
+		void main()
+		{
+			${FRAG_COLOR} = vec4(te_out);
+		}
+	""
+end

@@ -1,0 +1,62 @@
+{
+  "repos" : [
+    {
+      "name" : "glslang",
+      "url" : "https://github.com/KhronosGroup/glslang.git",
+      "sub_dir" : "glslang",
+      "build_dir" : "glslang/build",
+      "install_dir" : "glslang/build/install",
+      "commit" : "5432f0dd8f331f15182681664d7486681e8514e6",
+      "prebuild" : [
+        "python update_glslang_sources.py"
+      ]
+    },
+    {
+      "name" : "Vulkan-Headers",
+      "url" : "https://github.com/KhronosGroup/Vulkan-Headers.git",
+      "sub_dir" : "Vulkan-Headers",
+      "build_dir" : "Vulkan-Headers/build",
+      "install_dir" : "Vulkan-Headers/build/install",
+      "commit" : "v1.1.102"
+    },
+    {
+      "name" : "MoltenVK",
+      "url" : "https://github.com/KhronosGroup/MoltenVK.git",
+      "sub_dir" : "MoltenVK",
+      "build_dir" : "MoltenVK",
+      "install_dir" : "MoltenVK",
+      "commit" : "f969bcc937674989ee5ea8e3cf8e35184134f29d",
+      "custom_build" : [
+        "./fetchDependencies --v-headers-root {0[Vulkan-Headers][repo_dir]} --glslang-root {0[glslang][repo_dir]}",
+        "xcodebuild -project MoltenVKPackaging.xcodeproj GCC_PREPROCESSOR_DEFINITIONS='$GCC_PREPROCESSOR_DEFINITIONS MVK_LOGGING_ENABLED=0' -scheme \"MoltenVK Package\" build"
+      ],
+      "build_step" : "custom",
+      "build_platforms" : [
+        "darwin"
+      ]
+    },
+    {
+      "name" : "Vulkan-Loader",
+      "url" : "https://github.com/KhronosGroup/Vulkan-Loader.git",
+      "sub_dir" : "Vulkan-Loader",
+      "build_dir" : "Vulkan-Loader/build",
+      "install_dir" : "Vulkan-Loader/build/install",
+      "commit" : "v1.1.102",
+      "deps" : [
+        {
+          "var_name" : "VULKAN_HEADERS_INSTALL_DIR",
+          "repo_name" : "Vulkan-Headers"
+        }
+      ],
+      "cmake_options" : [
+        "-DBUILD_TESTS=NO"
+      ]
+    }
+  ],
+  "install_names" : {
+      "glslang" : "GLSLANG_INSTALL_DIR",
+      "Vulkan-Headers" : "VULKAN_HEADERS_INSTALL_DIR",
+      "Vulkan-Loader" : "VULKAN_LOADER_INSTALL_DIR",
+      "MoltenVK" : "MOLTENVK_REPO_ROOT"
+    }
+}

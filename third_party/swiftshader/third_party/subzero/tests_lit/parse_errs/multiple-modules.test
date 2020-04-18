@@ -1,0 +1,22 @@
+; Tests that we check for multiple modules in the bitcode file.
+
+; REQUIRES: no_minimal_build
+
+; RUN: not %pnacl_sz -bitcode-as-text \
+; RUN:     %p/Inputs/multiple-modules.tbc \
+; RUN:     -bitcode-format=pnacl -notranslate -build-on-read 2>&1 \
+; RUN:   | FileCheck %s
+
+; CHECK: Input can't contain more than one module
+
+; RUN: pnacl-bcfuzz -bitcode-as-text \
+; RUN:     %p/Inputs/multiple-modules.tbc -output - \
+; RUN:   | not pnacl-bcdis -no-records | FileCheck -check-prefix=ASM %s
+
+; ASM: module {  // BlockID = 8
+; ASM:   version 1;
+; ASM: }
+; ASM: module {  // BlockID = 8
+; ASM:   version 1;
+; ASM: }
+; ASM: Error(38:4): Expected 1 top level block in bitcode: Found:2

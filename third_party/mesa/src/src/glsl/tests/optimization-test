@@ -1,0 +1,28 @@
+#!/bin/bash
+
+total=0
+pass=0
+
+echo "====== Testing optimization passes ======"
+for test in `find . -iname '*.opt_test'`; do
+    echo -n "Testing $test..."
+    (cd `dirname "$test"`; ./`basename "$test"`) > "$test.out" 2>&1
+    total=$((total+1))
+    if $PYTHON2 $PYTHON_FLAGS ./compare_ir "$test.expected" "$test.out" >/dev/null 2>&1; then
+        echo "PASS"
+        pass=$((pass+1))
+    else
+        echo "FAIL"
+        $PYTHON2 $PYTHON_FLAGS ./compare_ir "$test.expected" "$test.out"
+    fi
+done
+
+echo ""
+echo "$pass/$total tests returned correct results"
+echo ""
+
+if [[ $pass == $total ]]; then
+    exit 0
+else
+    exit 1
+fi

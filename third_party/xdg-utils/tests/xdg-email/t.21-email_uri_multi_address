@@ -1,0 +1,36 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_email_uri_multi_address() {
+test_start "$FUNCNAME: verify uri email compose"
+
+ADDR="$XDG_TEST_SHORTID@portland.freedesktop.org" 
+test_init
+
+require_notroot
+## Require a running X server
+assert_display
+
+test_procedure
+
+assert_exit 0 xdg-email "mailto:$ADDR?to=t2-$ADDR&subject=Test%20Subject&cc=cc-$ADDR&cc=cc2-$ADDR&body=Test%20Body"
+
+assert_nostdout
+assert_nostderr
+
+assert_interactive "Did an email open to both '$ADDR' and 't2-$ADDR'?" y
+assert_interactive "Are both 'cc-$ADDR' and 'cc2-$ADDR' CC'd?" y
+assert_interactive "Is the subject 'Test Subject'?" y
+assert_interactive "Is the body 'Test Body'?" y
+
+assert_interactive "Please close any email windows opened by the test." C
+
+
+test_result
+}
+
+run_test test_email_uri_multi_address

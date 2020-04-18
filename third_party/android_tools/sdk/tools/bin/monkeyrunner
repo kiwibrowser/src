@@ -1,0 +1,104 @@
+#!/bin/sh
+# Copyright 2005-2007, The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Set up prog to be the path of this script, including following symlinks,
+# and set up progdir to be the fully-qualified pathname of its directory.
+prog="$0"
+while [ -h "${prog}" ]; do
+    newProg=`/bin/ls -ld "${prog}"`
+    newProg=`expr "${newProg}" : ".* -> \(.*\)$"`
+    if expr "x${newProg}" : 'x/' >/dev/null; then
+        prog="${newProg}"
+    else
+        progdir=`dirname "${prog}"`
+        prog="${progdir}/${newProg}"
+    fi
+done
+oldwd=`pwd`
+progdir=`dirname "${prog}"`
+cd "${progdir}/.."
+progdir=`pwd`
+prog="${progdir}"/bin/`basename "${prog}"`
+cd "${oldwd}"
+
+frameworkdir="$progdir"
+libdir="$progdir"
+jarfile=`basename "$APP_HOME/lib/monkeyrunner-26.0.0-dev.jar"`
+if [ ! -r "$frameworkdir/${jarfile}" ]
+then
+    frameworkdir="$progdir"/lib
+    libdir="$progdir"/lib
+fi
+if [ ! -r "$frameworkdir/${jarfile}" ]
+then
+    frameworkdir=`dirname "$progdir"`/tools/lib
+    libdir=`dirname "$progdir"`/tools/lib
+fi
+if [ ! -r "$frameworkdir/${jarfile}" ]
+then
+    frameworkdir=`dirname "$progdir"`/framework
+    libdir=`dirname "$progdir"`/lib
+fi
+if [ ! -r "$frameworkdir/${jarfile}" ]
+then
+    echo `basename "$prog"`": can't find ${jarfile}"
+    exit 1
+fi
+
+
+# Check args.
+if [ debug = "$1" ]; then
+    # add this in for debugging
+    java_debug=-agentlib:jdwp=transport=dt_socket,server=y,address=8050,suspend=y
+    shift 1
+else
+    java_debug=
+fi
+
+if [ "$OSTYPE" = "cygwin" ] ; then
+    jarpath=`cygpath -w  "$frameworkdir/${jarfile}"`
+    progdir=`cygpath -w  "$progdir"`
+else
+    jarpath="$frameworkdir/${jarfile}"
+fi
+
+# Figure out the path to the swt.jar for the current architecture.
+# if ANDROID_SWT is defined, then just use this.
+# else, if running in the Android source tree, then look for the correct swt folder in prebuilt
+# else, look for the correct swt folder in the SDK under tools/lib/
+swtpath=""
+if [ -n "$ANDROID_SWT" ]; then
+    swtpath="$ANDROID_SWT"
+else
+    vmarch=`"${progdir}"/bin/archquery`
+    if [ -n "$ANDROID_BUILD_TOP" ]; then
+        osname=`uname -s | tr A-Z a-z`
+        swtpath="${ANDROID_BUILD_TOP}/prebuilts/tools/${osname}-${vmarch}/swt"
+    elif [ -d "$frameworkdir/$vmarch" ]; then
+        swtpath="${frameworkdir}/${vmarch}"
+    else
+        swtpath="${frameworkdir}"
+    fi
+fi
+
+if [ ! -d "$swtpath" ]; then
+    echo "SWT folder '${swtpath}' does not exist."
+    echo "Please export ANDROID_SWT to point to the folder containing swt.jar for your platform."
+    exit 1
+fi
+
+# need to use "java.ext.dirs" because "-jar" causes classpath to be ignored
+# might need more memory, e.g. -Xmx128M
+exec java -Xmx128M $os_opts $java_debug -Djava.ext.dirs="$frameworkdir:$swtpath" -Djava.library.path="$libdir" -Dcom.android.monkeyrunner.bindir="$progdir" -jar "$jarpath" "$@"

@@ -1,0 +1,1501 @@
+# -------------------------------------------------
+# drawElements Quality Program OpenGL ES 3.2 Module
+# -------------------------------------------------
+#
+# Copyright 2016 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+group varying "Default block varying matching"
+
+	case missing_input
+		version 320 es
+		desc "Variable has no matching input"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out mediump float v_val;
+				out mediump float v_val_no_such_input;
+				void main()
+				{
+					v_val = float(gl_VertexID);
+					v_val_no_such_input = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in mediump float v_val;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val);
+				}
+			""
+		end
+	end
+
+	case missing_output
+		version 320 es
+		desc "Variable has no matching output"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out mediump float v_val;
+				void main()
+				{
+					v_val = float(gl_VertexID);
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in mediump float v_val;
+				in mediump float v_val_no_such_output;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val + v_val_no_such_output);
+				}
+			""
+		end
+	end
+
+	case mismatch_type
+		version 320 es
+		desc "Variable type mismatch"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out mediump vec3 v_val;
+				void main()
+				{
+					v_val = vec3(float(gl_VertexID));
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in mediump vec4 v_val;
+				void main()
+				{
+					${FRAG_COLOR} = v_val;
+				}
+			""
+		end
+	end
+
+	case mismatch_precision
+		version 320 es
+		desc "Variable precision mismatch"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out mediump float v_val;
+				void main()
+				{
+					v_val = float(gl_VertexID);
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in highp float v_val;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val);
+				}
+			""
+		end
+	end
+
+	case mismatch_explicit_location_type
+		version 320 es
+		desc "Variable type mismatch, explicit varying locations"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				layout(location = 3) out mediump vec4 v_val;
+				void main()
+				{
+					v_val = vec4(float(gl_VertexID));
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				layout(location = 3) in mediump vec2 v_val;
+				void main()
+				{
+					${FRAG_COLOR} = v_val.xxyy;
+				}
+			""
+		end
+	end
+
+	case mismatch_explicit_location_precision
+		version 320 es
+		desc "Variable precision mismatch, explicit varying locations"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				layout(location = 3) out mediump float v_val;
+				void main()
+				{
+					v_val = float(gl_VertexID);
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				layout(location = 3) in highp float v_val;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val);
+				}
+			""
+		end
+	end
+
+	case mismatch_explicit_location
+		version 320 es
+		desc "Variable location mismatch"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				layout(location = 3) out mediump float v_val;
+				void main()
+				{
+					v_val = float(gl_VertexID);
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				layout(location = 4) in mediump float v_val;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val);
+				}
+			""
+		end
+	end
+
+	case mismatch_implicit_explicit_location_1
+		version 320 es
+		desc "Variable location mismatch"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out mediump float v_val;
+				void main()
+				{
+					v_val = float(gl_VertexID);
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				layout(location = 3) in mediump float v_val;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val);
+				}
+			""
+		end
+	end
+
+	case mismatch_implicit_explicit_location_2
+		version 320 es
+		desc "Variable location mismatch"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				layout(location = 3) out mediump float v_val;
+				void main()
+				{
+					v_val = float(gl_VertexID);
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in mediump float v_val;
+				layout(location = 3) in mediump float v_val_other_name;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val + v_val_other_name);
+				}
+			""
+		end
+	end
+
+	case mismatch_implicit_explicit_location_3
+		version 320 es
+		desc "Variable location mismatch"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out mediump float v_val;
+				layout(location = 3) out mediump float v_val_other_name;
+				void main()
+				{
+					v_val = float(gl_VertexID);
+					v_val_other_name = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				layout(location = 3) in mediump float v_val;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val);
+				}
+			""
+		end
+	end
+
+	case match_different_struct_names
+		version 320 es
+		desc "Variable struct names different but otherwise identical"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				struct StructureNameA
+				{
+					mediump float member;
+				};
+				out StructureNameA v_val;
+				void main()
+				{
+					v_val.member = float(gl_VertexID);
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				struct StructureNameB
+				{
+					mediump float member;
+				};
+				in StructureNameB v_val;
+				void main()
+				{
+					// should always produce white
+					${FRAG_COLOR} = (v_val.member > -1.0) ? (vec4(1.0)) : (vec4(0.0));
+				}
+			""
+		end
+	end
+
+	case mismatch_struct_member_name
+		version 320 es
+		desc "Struct member name mismatch"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				struct StructureName
+				{
+					mediump float member;
+				};
+				out StructureName v_val;
+				void main()
+				{
+					v_val.member = float(gl_VertexID);
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				struct StructureName
+				{
+					mediump float member_different_name;
+				};
+				in StructureName v_val;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val.member_different_name);
+				}
+			""
+		end
+	end
+
+	case mismatch_struct_member_type
+		version 320 es
+		desc "Struct member type mismatch"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				struct StructureName
+				{
+					mediump float member;
+				};
+				out StructureName v_val;
+				void main()
+				{
+					v_val.member = float(gl_VertexID);
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				struct StructureName
+				{
+					mediump vec2 member;
+				};
+				in StructureName v_val;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val.member.x);
+				}
+			""
+		end
+	end
+
+	case mismatch_struct_member_precision
+		version 320 es
+		desc "Struct member precision mismatch"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				struct StructureName
+				{
+					mediump float member;
+				};
+				out StructureName v_val;
+				void main()
+				{
+					v_val.member = float(gl_VertexID);
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				struct StructureName
+				{
+					highp float member;
+				};
+				in StructureName v_val;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val.member);
+				}
+			""
+		end
+	end
+
+	case mismatch_struct_member_order
+		version 320 es
+		desc "Struct member order mismatch"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				struct StructureName
+				{
+					mediump float memberA;
+					mediump float memberB;
+				};
+				out StructureName v_val;
+				void main()
+				{
+					v_val.memberA = float(gl_VertexID);
+					v_val.memberB = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				struct StructureName
+				{
+					mediump float memberB;
+					mediump float memberA;
+				};
+				in StructureName v_val;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val.memberA + v_val.memberB);
+				}
+			""
+		end
+	end
+
+	case mismatch_array_element_type
+		version 320 es
+		desc "Array element type mismatch"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out mediump float v_val[2];
+				void main()
+				{
+					v_val[0] = 1.0;
+					v_val[1] = 2.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in mediump vec2 v_val[2];
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val[0].x + v_val[1].y);
+				}
+			""
+		end
+	end
+
+	case mismatch_array_length
+		version 320 es
+		desc "Array length mismatch"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out mediump float v_val[2];
+				void main()
+				{
+					v_val[0] = 1.0;
+					v_val[1] = 2.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in mediump float v_val[3];
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val[0] + v_val[1] + v_val[2]);
+				}
+			""
+		end
+	end
+
+	case mismatch_array_precision
+		version 320 es
+		desc "Array length mismatch"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out mediump float v_val[2];
+				void main()
+				{
+					v_val[0] = 1.0;
+					v_val[1] = 2.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in highp float v_val[2];
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val[0] + v_val[1]);
+				}
+			""
+		end
+	end
+
+	case mismatch_qualifier_vertex_flat_fragment_none
+		version 320 es
+		desc "Interpolation qualifier mismatch"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out flat highp vec4 v_val;
+				void main()
+				{
+					v_val = vec4(float(gl_VertexID));
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in highp vec4 v_val;
+				void main()
+				{
+					${FRAG_COLOR} = v_val;
+				}
+			""
+		end
+	end
+
+	case mismatch_qualifier_vertex_flat_fragment_smooth
+		version 320 es
+		desc "Interpolation qualifier mismatch"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out flat highp vec4 v_val;
+				void main()
+				{
+					v_val = vec4(float(gl_VertexID));
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in smooth highp vec4 v_val;
+				void main()
+				{
+					${FRAG_COLOR} = v_val;
+				}
+			""
+		end
+	end
+
+	case mismatch_qualifier_vertex_flat_fragment_centroid
+		version 320 es
+		desc "Interpolation qualifier mismatch"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out flat highp vec4 v_val;
+				void main()
+				{
+					v_val = vec4(float(gl_VertexID));
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in centroid highp vec4 v_val;
+				void main()
+				{
+					${FRAG_COLOR} = v_val;
+				}
+			""
+		end
+	end
+
+	case mismatch_qualifier_vertex_smooth_fragment_flat
+		version 320 es
+		desc "Interpolation qualifier mismatch"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out smooth highp vec4 v_val;
+				void main()
+				{
+					v_val = vec4(float(gl_VertexID));
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in flat highp vec4 v_val;
+				void main()
+				{
+					${FRAG_COLOR} = v_val;
+				}
+			""
+		end
+	end
+
+	case mismatch_qualifier_vertex_centroid_fragment_flat
+		version 320 es
+		desc "Interpolation qualifier mismatch"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out centroid highp vec4 v_val;
+				void main()
+				{
+					v_val = vec4(float(gl_VertexID));
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in flat highp vec4 v_val;
+				void main()
+				{
+					${FRAG_COLOR} = v_val;
+				}
+			""
+		end
+	end
+end
+
+group io_blocks "shader io blocks"
+
+	case missing_input
+		version 320 es
+		desc "Missing input block"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out IOBlockName
+				{
+					mediump float v_val;
+				};
+				void main()
+				{
+					v_val = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				void main()
+				{
+					${FRAG_COLOR} = vec4(1.0);
+				}
+			""
+		end
+	end
+
+	case missing_output
+		version 320 es
+		desc "Missing output block"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				void main()
+				{
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in IOBlockName
+				{
+					mediump float v_val;
+				};
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val);
+				}
+			""
+		end
+	end
+
+	case mismatch_number_of_declarations
+		version 320 es
+		desc "IO-blocks do not match due to mismatch in number of declarations"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out IOBlockName
+				{
+					mediump float v_valA;
+					mediump float v_valB;
+				};
+				void main()
+				{
+					v_valA = 1.0;
+					v_valB = 2.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in IOBlockName
+				{
+					mediump float v_valA;
+				};
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_valA);
+				}
+			""
+		end
+	end
+
+	case mismatch_member_order
+		version 320 es
+		desc "IO-blocks do not match due to mismatch with member declaration order"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out IOBlockName
+				{
+					mediump float v_valA;
+					mediump float v_valB;
+				};
+				void main()
+				{
+					v_valA = 1.0;
+					v_valB = 2.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in IOBlockName
+				{
+					mediump float v_valB;
+					mediump float v_valA;
+				};
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_valA+v_valB);
+				}
+			""
+		end
+	end
+
+	case mismatch_member_type
+		version 320 es
+		desc "IO-blocks do not match due to mismatch with member types"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out IOBlockName
+				{
+					mediump float v_valA;
+				};
+				void main()
+				{
+					v_valA = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in IOBlockName
+				{
+					mediump vec2 v_valA;
+				};
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_valA.xyxy);
+				}
+			""
+		end
+	end
+
+	case mismatch_member_name
+		version 320 es
+		desc "IO-blocks do not match due to mismatch with member names"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out IOBlockName
+				{
+					mediump float v_valA;
+				};
+				void main()
+				{
+					v_valA = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in IOBlockName
+				{
+					mediump vec2 v_valB;
+				};
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_valB.y);
+				}
+			""
+		end
+	end
+
+	case mismatch_member_precision
+		version 320 es
+		desc "IO-blocks do not match due to mismatch with member precisions"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out IOBlockName
+				{
+					mediump float v_valA;
+				};
+				void main()
+				{
+					v_valA = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in IOBlockName
+				{
+					highp float v_valA;
+				};
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_valA);
+				}
+			""
+		end
+	end
+
+	case mismatch_different_member_interpolation
+		version 320 es
+		desc "IO-block members do not match due to different interpolation qualifiers"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out IOBlockName
+				{
+					smooth out mediump float v_val;
+				};
+				void main()
+				{
+					v_val = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in IOBlockName
+				{
+					flat in mediump float v_val;
+				};
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val);
+				}
+			""
+		end
+	end
+
+	case mismatch_member_array_size
+		version 320 es
+		desc "IO-blocks do not match due to mismatch with member array size"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out IOBlockName
+				{
+					mediump float v_val_arr[2];
+				};
+				void main()
+				{
+					v_val_arr[0] = 1.0;
+					v_val_arr[1] = 2.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in IOBlockName
+				{
+					mediump float v_val_arr[1];
+				};
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val_arr[0]);
+				}
+			""
+		end
+	end
+
+	case match_different_member_struct_names
+		version 320 es
+		desc "IO-blocks match with structs with different names"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				struct StructNameA
+				{
+					mediump float v;
+				};
+				out IOBlockName
+				{
+					StructNameA v_val;
+				};
+
+				void main()
+				{
+					v_val.v = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				struct StructNameB
+				{
+					mediump float v;
+				};
+				in IOBlockName
+				{
+					StructNameB v_val;
+				};
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val.v);
+				}
+			""
+		end
+	end
+
+	case mismatch_member_struct_member_name
+		version 320 es
+		desc "IO-blocks do not match due to mismatch with member structs"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				struct StructName
+				{
+					mediump float v;
+				};
+				out IOBlockName
+				{
+					StructName v_val;
+				};
+
+				void main()
+				{
+					v_val.v = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				struct StructName
+				{
+					mediump float v_alt_name;
+				};
+				in IOBlockName
+				{
+					StructName v_val;
+				};
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val.v_alt_name);
+				}
+			""
+		end
+	end
+
+	case mismatch_member_struct_member_type
+		version 320 es
+		desc "IO-blocks do not match due to mismatch with member structs"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				struct StructName
+				{
+					mediump float v;
+				};
+				out IOBlockName
+				{
+					StructName v_val;
+				};
+
+				void main()
+				{
+					v_val.v = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				struct StructName
+				{
+					mediump vec2 v;
+				};
+				in IOBlockName
+				{
+					StructName v_val;
+				};
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val.v.x);
+				}
+			""
+		end
+	end
+
+	case mismatch_member_struct_member_precision
+		version 320 es
+		desc "IO-blocks do not match due to mismatch with member structs"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				struct StructName
+				{
+					mediump float v;
+				};
+				out IOBlockName
+				{
+					StructName v_val;
+				};
+
+				void main()
+				{
+					v_val.v = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				struct StructName
+				{
+					highp float v;
+				};
+				in IOBlockName
+				{
+					StructName v_val;
+				};
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val.v);
+				}
+			""
+		end
+	end
+
+	case mismatch_member_struct_member_order
+		version 320 es
+		desc "IO-blocks do not match due to mismatch with member structs"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				struct StructName
+				{
+					mediump float v_a;
+					mediump float v_b;
+				};
+				out IOBlockName
+				{
+					StructName v_val;
+				};
+
+				void main()
+				{
+					v_val.v_a = 1.0;
+					v_val.v_b = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				struct StructName
+				{
+					mediump float v_b;
+					mediump float v_a;
+				};
+				in IOBlockName
+				{
+					StructName v_val;
+				};
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val.v_a);
+				}
+			""
+		end
+	end
+
+	case mismatch_array_size
+		version 320 es
+		desc "IO-blocks do not match due to mismatch with array sizes"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out IOBlockName
+				{
+					mediump float v_val;
+				} ioBlock[2];
+				void main()
+				{
+					ioBlock[0].v_val = 1.0;
+					ioBlock[1].v_val = 2.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in IOBlockName
+				{
+					mediump float v_val;
+				} ioBlock[1];
+				void main()
+				{
+					${FRAG_COLOR} = vec4(ioBlock[0].v_val);
+				}
+			""
+		end
+	end
+
+	case mismatch_variable_and_block_member_1
+		version 320 es
+		desc "IO-block does not match with variable"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out IOBlockName
+				{
+					mediump float v_val;
+				};
+
+				void main()
+				{
+					v_val = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in mediump float v_val;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(v_val);
+				}
+			""
+		end
+	end
+
+	case mismatch_variable_and_block_member_2
+		version 320 es
+		desc "IO-block does not match with variable"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 320 es
+				${VERTEX_DECLARATIONS}
+				out VariableAndBlockName
+				{
+					mediump float v_val;
+				};
+
+				void main()
+				{
+					v_val = 1.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 320 es
+				${FRAGMENT_DECLARATIONS}
+				in mediump float VariableAndBlockName;
+				void main()
+				{
+					${FRAG_COLOR} = vec4(VariableAndBlockName);
+				}
+			""
+		end
+	end
+end

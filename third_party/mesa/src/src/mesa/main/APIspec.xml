@@ -1,0 +1,2380 @@
+<?xml version="1.0"?>
+<!DOCTYPE apispec SYSTEM "APIspec.dtd">
+
+<!-- A function is generated from a template.  Multiple functions can be
+     generated from a single template with different arguments.  For example,
+     glColor3f can be generated from
+
+     <function name="Color3f" template="Color" gltype="GLfloat" vector_size="3" expand_vector="true"/>
+
+     and glColor4iv can be generated from
+
+     <function name="Color4iv" template="Color" gltype="GLint" vector_size="4"/>
+
+     In a template, there are <desc>s that describe the properties of
+     parameters.  A <desc> can enumerate the valid values of a parameter.  It
+     can also specify the error code when an invalid value is given, and etc.
+     By nesting <desc>s, they can create dependency between parameters.
+
+     A function can be marked as external.  It means that the function cannot
+     be dispatched to the corresponding mesa function, if one exists, directly,
+     and requires an external implementation.
+-->
+
+<apispec>
+
+<template name="Color">
+	<proto>
+		<return type="void"/>
+		<vector name="v" type="const GLtype *" size="dynamic">
+			<param name="red" type="GLtype"/>
+			<param name="green" type="GLtype"/>
+			<param name="blue" type="GLtype"/>
+			<param name="alpha" type="GLtype"/>
+		</vector>
+	</proto>
+</template>
+
+<template name="ClipPlane">
+	<proto>
+		<return type="void"/>
+		<param name="plane" type="GLenum"/>
+		<vector name="equation" type="const GLtype *" size="4"/>
+	</proto>
+</template>
+
+<template name="CullFace">
+	<proto>
+		<return type="void"/>
+		<param name="mode" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="Fog">
+	<proto>
+		<return type="void"/>
+		<param name="pname" type="GLenum"/>
+		<vector name="params" type="const GLtype *" size="dynamic">
+			<param name="param" type="GLtype"/>
+		</vector>
+	</proto>
+</template>
+
+<template name="FrontFace">
+	<proto>
+		<return type="void"/>
+		<param name="mode" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="Hint">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="mode" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="Light">
+	<proto>
+		<return type="void"/>
+		<param name="light" type="GLenum"/>
+		<param name="pname" type="GLenum"/>
+		<vector name="params" type="const GLtype *" size="dynamic">
+			<param name="param" type="GLtype"/>
+		</vector>
+	</proto>
+</template>
+
+<template name="LightModel">
+	<proto>
+		<return type="void"/>
+		<param name="pname" type="GLenum"/>
+		<vector name="params" type="const GLtype *" size="dynamic">
+			<param name="param" type="GLtype"/>
+		</vector>
+	</proto>
+</template>
+
+<template name="LineWidth">
+	<proto>
+		<return type="void"/>
+		<param name="width" type="GLtype"/>
+	</proto>
+</template>
+
+<template name="Material">
+	<proto>
+		<return type="void"/>
+		<param name="face" type="GLenum"/>
+		<param name="pname" type="GLenum"/>
+		<vector name="params" type="const GLtype *" size="dynamic">
+			<param name="param" type="GLtype"/>
+		</vector>
+	</proto>
+</template>
+
+<template name="PointSize">
+	<proto>
+		<return type="void"/>
+		<param name="size" type="GLtype"/>
+	</proto>
+</template>
+
+<template name="PointSizePointer">
+	<proto>
+		<return type="void"/>
+		<param name="type" type="GLenum"/>
+		<param name="stride" type="GLsizei"/>
+		<param name="pointer" type="const GLvoid *"/>
+	</proto>
+</template>
+
+<template name="Scissor">
+	<proto>
+		<return type="void"/>
+		<param name="x" type="GLint"/>
+		<param name="y" type="GLint"/>
+		<param name="width" type="GLsizei"/>
+		<param name="height" type="GLsizei"/>
+	</proto>
+</template>
+
+<template name="ShadeModel">
+	<proto>
+		<return type="void"/>
+		<param name="mode" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="TexParameter">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="pname" type="GLenum"/>
+		<vector name="params" type="const GLtype *" size="dynamic">
+			<param name="param" type="GLtype"/>
+		</vector>
+	</proto>
+</template>
+
+<template name="TexImage2D">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="level" type="GLint"/>
+		<param name="internalFormat" type="GLint"/> <!-- should be GLenum -->
+		<param name="width" type="GLsizei"/>
+		<param name="height" type="GLsizei"/>
+		<param name="border" type="GLint"/>
+		<param name="format" type="GLenum"/>
+		<param name="type" type="GLenum"/>
+		<param name="pixels" type="const GLvoid *"/>
+	</proto>
+</template>
+
+<template name="TexEnv">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="pname" type="GLenum"/>
+		<vector name="params" type="const GLtype *" size="dynamic">
+			<param name="param" type="GLtype"/>
+		</vector>
+	</proto>
+</template>
+
+<template name="TexGen">
+	<proto>
+		<return type="void"/>
+		<param name="coord" type="GLenum"/>
+		<param name="pname" type="GLenum"/>
+		<vector name="params" type="const GLtype *" size="dynamic">
+			<param name="param" type="GLtype"/>
+		</vector>
+	</proto>
+</template>
+
+<template name="Clear">
+	<proto>
+		<return type="void"/>
+		<param name="mask" type="GLbitfield"/>
+	</proto>
+</template>
+
+<template name="ClearColor">
+	<proto>
+		<return type="void"/>
+		<param name="red" type="GLtype"/>
+		<param name="green" type="GLtype"/>
+		<param name="blue" type="GLtype"/>
+		<param name="alpha" type="GLtype"/>
+	</proto>
+</template>
+
+<template name="ClearStencil">
+	<proto>
+		<return type="void"/>
+		<param name="s" type="GLint"/>
+	</proto>
+</template>
+
+<template name="ClearDepth">
+	<proto>
+		<return type="void"/>
+		<param name="depth" type="GLtype"/>
+	</proto>
+</template>
+
+<template name="StencilMask">
+	<proto>
+		<return type="void"/>
+		<param name="mask" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="StencilMaskSeparate">
+	<proto>
+		<return type="void"/>
+		<param name="face" type="GLenum"/>
+		<param name="mask" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="ColorMask">
+	<proto>
+		<return type="void"/>
+		<param name="red" type="GLboolean"/>
+		<param name="green" type="GLboolean"/>
+		<param name="blue" type="GLboolean"/>
+		<param name="alpha" type="GLboolean"/>
+	</proto>
+</template>
+
+<template name="DepthMask">
+	<proto>
+		<return type="void"/>
+		<param name="flag" type="GLboolean"/>
+	</proto>
+</template>
+
+<template name="Disable">
+	<proto>
+		<return type="void"/>
+		<param name="cap" type="GLenum"/>
+	</proto>
+</template>
+
+<!-- it is exactly the same as Disable -->
+<template name="Enable">
+	<proto>
+		<return type="void"/>
+		<param name="cap" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="Finish">
+	<proto>
+		<return type="void"/>
+	</proto>
+</template>
+
+<template name="Flush">
+	<proto>
+		<return type="void"/>
+	</proto>
+</template>
+
+<template name="AlphaFunc">
+	<proto>
+		<return type="void"/>
+		<param name="func" type="GLenum"/>
+		<param name="ref" type="GLtype"/>
+	</proto>
+</template>
+
+<template name="BlendFunc">
+	<proto>
+		<return type="void"/>
+		<param name="sfactor" type="GLenum"/>
+		<param name="dfactor" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="LogicOp">
+	<proto>
+		<return type="void"/>
+		<param name="opcode" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="StencilFunc">
+	<proto>
+		<return type="void"/>
+		<param name="func" type="GLenum"/>
+		<param name="ref" type="GLint"/>
+		<param name="mask" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="StencilFuncSeparate">
+	<proto>
+		<return type="void"/>
+		<param name="face" type="GLenum"/>
+		<param name="func" type="GLenum"/>
+		<param name="ref" type="GLint"/>
+		<param name="mask" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="StencilOp">
+	<proto>
+		<return type="void"/>
+		<param name="fail" type="GLenum"/>
+		<param name="zfail" type="GLenum"/>
+		<param name="zpass" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="StencilOpSeparate">
+	<proto>
+		<return type="void"/>
+		<param name="face" type="GLenum"/>
+		<param name="fail" type="GLenum"/>
+		<param name="zfail" type="GLenum"/>
+		<param name="zpass" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="DepthFunc">
+	<proto>
+		<return type="void"/>
+		<param name="func" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="PixelStore">
+	<proto>
+		<return type="void"/>
+		<param name="pname" type="GLenum"/>
+		<param name="param" type="GLtype"/>
+	</proto>
+</template>
+
+<template name="ReadPixels" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="x" type="GLint"/>
+		<param name="y" type="GLint"/>
+		<param name="width" type="GLsizei"/>
+		<param name="height" type="GLsizei"/>
+		<param name="format" type="GLenum"/>
+		<param name="type" type="GLenum"/>
+		<param name="pixels" type="GLvoid *"/>
+	</proto>
+</template>
+
+<template name="GetClipPlane" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="plane" type="GLenum"/>
+		<vector name="equation" type="GLtype *" size="4"/>
+	</proto>
+</template>
+
+<template name="GetError" direction="get">
+	<proto>
+		<return type="GLenum"/>
+	</proto>
+</template>
+
+<!-- template for GetFloatv, GetIntegerv, GetBoolean, and GetFixedv -->
+<template name="GetState" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="pname" type="GLenum"/>
+		<vector name="params" type="GLtype *" size="dynamic"/>
+	</proto>
+	<!-- param checking is done in mesa -->
+</template>
+
+<template name="GetLight" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="light" type="GLenum"/>
+		<param name="pname" type="GLenum"/>
+		<vector name="params" type="GLtype *" size="dynamic"/>
+	</proto>
+</template>
+
+<template name="GetMaterial" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="face" type="GLenum"/>
+		<param name="pname" type="GLenum"/>
+		<vector name="params" type="GLtype *" size="dynamic">
+			<param name="param" type="GLtype"/>
+		</vector>
+	</proto>
+</template>
+
+<template name="GetString" direction="get">
+	<proto>
+		<return type="const GLubyte *"/>
+		<param name="name" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="GetTexEnv" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="pname" type="GLenum"/>
+		<vector name="params" type="GLtype *" size="dynamic"/>
+	</proto>
+</template>
+
+<template name="GetTexGen" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="coord" type="GLenum"/>
+		<param name="pname" type="GLenum"/>
+		<vector name="params" type="GLtype *" size="dynamic"/>
+	</proto>
+</template>
+
+<template name="GetTexParameter" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="pname" type="GLenum"/>
+		<vector name="params" type="GLtype *" size="dynamic"/>
+	</proto>
+</template>
+
+<template name="IsEnabled" direction="get">
+	<proto>
+		<return type="GLboolean"/>
+		<param name="cap" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="DepthRange">
+	<proto>
+		<return type="void"/>
+		<param name="zNear" type="GLtype"/>
+		<param name="zFar" type="GLtype"/>
+	</proto>
+</template>
+
+<template name="Frustum">
+	<proto>
+		<return type="void"/>
+		<param name="left" type="GLtype"/>
+		<param name="right" type="GLtype"/>
+		<param name="bottom" type="GLtype"/>
+		<param name="top" type="GLtype"/>
+		<param name="zNear" type="GLtype"/>
+		<param name="zFar" type="GLtype"/>
+	</proto>
+</template>
+
+<template name="LoadIdentity">
+	<proto>
+		<return type="void"/>
+	</proto>
+</template>
+
+<template name="LoadMatrix">
+	<proto>
+		<return type="void"/>
+		<vector name="m" type="const GLtype *" size="16"/>
+	</proto>
+</template>
+
+<template name="MatrixMode">
+	<proto>
+		<return type="void"/>
+		<param name="mode" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="MultMatrix">
+	<proto>
+		<return type="void"/>
+		<vector name="m" type="const GLtype *" size="16"/>
+	</proto>
+</template>
+
+<template name="Ortho">
+	<proto>
+		<return type="void"/>
+		<param name="left" type="GLtype"/>
+		<param name="right" type="GLtype"/>
+		<param name="bottom" type="GLtype"/>
+		<param name="top" type="GLtype"/>
+		<param name="zNear" type="GLtype"/>
+		<param name="zFar" type="GLtype"/>
+	</proto>
+</template>
+
+<template name="PopMatrix">
+	<proto>
+		<return type="void"/>
+	</proto>
+</template>
+
+<template name="PushMatrix">
+	<proto>
+		<return type="void"/>
+	</proto>
+</template>
+
+<template name="Rotate">
+	<proto>
+		<return type="void"/>
+		<param name="angle" type="GLtype"/>
+		<param name="x" type="GLtype"/>
+		<param name="y" type="GLtype"/>
+		<param name="z" type="GLtype"/>
+	</proto>
+</template>
+
+<template name="Scale">
+	<proto>
+		<return type="void"/>
+		<param name="x" type="GLtype"/>
+		<param name="y" type="GLtype"/>
+		<param name="z" type="GLtype"/>
+	</proto>
+</template>
+
+<template name="Translate">
+	<proto>
+		<return type="void"/>
+		<param name="x" type="GLtype"/>
+		<param name="y" type="GLtype"/>
+		<param name="z" type="GLtype"/>
+	</proto>
+</template>
+
+<template name="Viewport">
+	<proto>
+		<return type="void"/>
+		<param name="x" type="GLint"/>
+		<param name="y" type="GLint"/>
+		<param name="width" type="GLsizei"/>
+		<param name="height" type="GLsizei"/>
+	</proto>
+</template>
+
+<template name="ColorPointer">
+	<proto>
+		<return type="void"/>
+		<param name="size" type="GLint"/>
+		<param name="type" type="GLenum"/>
+		<param name="stride" type="GLsizei"/>
+		<param name="pointer" type="const GLvoid *"/>
+	</proto>
+</template>
+
+<template name="DisableClientState">
+	<proto>
+		<return type="void"/>
+		<param name="array" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="DrawArrays">
+	<proto>
+		<return type="void"/>
+		<param name="mode" type="GLenum"/>
+		<param name="first" type="GLint"/>
+		<param name="count" type="GLsizei"/>
+	</proto>
+</template>
+
+<template name="DrawElements">
+	<proto>
+		<return type="void"/>
+		<param name="mode" type="GLenum"/>
+		<param name="count" type="GLsizei"/>
+		<param name="type" type="GLenum"/>
+		<param name="indices" type="const GLvoid *"/>
+	</proto>
+</template>
+
+<template name="EnableClientState">
+	<proto>
+		<return type="void"/>
+		<param name="array" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="GetPointer" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="pname" type="GLenum"/>
+		<vector name="params" type="GLvoid **" size="dynamic"/>
+	</proto>
+</template>
+
+<template name="Normal">
+	<proto>
+		<return type="void"/>
+		<vector name="v" type="const GLtype *" size="3">
+			<param name="nx" type="GLtype"/>
+			<param name="ny" type="GLtype"/>
+			<param name="nz" type="GLtype"/>
+		</vector>
+	</proto>
+</template>
+
+<template name="NormalPointer">
+	<proto>
+		<return type="void"/>
+		<param name="type" type="GLenum"/>
+		<param name="stride" type="GLsizei"/>
+		<param name="pointer" type="const GLvoid *"/>
+	</proto>
+</template>
+
+<template name="TexCoordPointer">
+	<proto>
+		<return type="void"/>
+		<param name="size" type="GLint"/>
+		<param name="type" type="GLenum"/>
+		<param name="stride" type="GLsizei"/>
+		<param name="pointer" type="const GLvoid *"/>
+	</proto>
+</template>
+
+<template name="VertexPointer">
+	<proto>
+		<return type="void"/>
+		<param name="size" type="GLint"/>
+		<param name="type" type="GLenum"/>
+		<param name="stride" type="GLsizei"/>
+		<param name="pointer" type="const GLvoid *"/>
+	</proto>
+</template>
+
+<template name="PolygonOffset">
+	<proto>
+		<return type="void"/>
+		<param name="factor" type="GLtype"/>
+		<param name="units" type="GLtype"/>
+	</proto>
+</template>
+
+<template name="CopyTexImage2D">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="level" type="GLint"/>
+		<param name="internalFormat" type="GLenum"/>
+		<param name="x" type="GLint"/>
+		<param name="y" type="GLint"/>
+		<param name="width" type="GLsizei"/>
+		<param name="height" type="GLsizei"/>
+		<param name="border" type="GLint"/>
+	</proto>
+</template>
+
+<template name="CopyTexSubImage2D">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="level" type="GLint"/>
+		<param name="xoffset" type="GLint"/>
+		<param name="yoffset" type="GLint"/>
+		<param name="x" type="GLint"/>
+		<param name="y" type="GLint"/>
+		<param name="width" type="GLsizei"/>
+		<param name="height" type="GLsizei"/>
+	</proto>
+</template>
+
+<template name="TexSubImage2D">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="level" type="GLint"/>
+		<param name="xoffset" type="GLint"/>
+		<param name="yoffset" type="GLint"/>
+		<param name="width" type="GLsizei"/>
+		<param name="height" type="GLsizei"/>
+		<param name="format" type="GLenum"/>
+		<param name="type" type="GLenum"/>
+		<param name="pixels" type="const GLvoid *"/>
+	</proto>
+</template>
+
+<template name="BindTexture">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="texture" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="DeleteTextures">
+	<proto>
+		<return type="void"/>
+		<param name="n" type="GLsizei"/>
+		<param name="textures" type="const GLuint *"/>
+	</proto>
+</template>
+
+<template name="GenTextures" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="n" type="GLsizei"/>
+		<param name="textures" type="GLuint *"/>
+	</proto>
+</template>
+
+<template name="IsTexture" direction="get">
+	<proto>
+		<return type="GLboolean"/>
+		<param name="texture" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="BlendColor">
+	<proto>
+		<return type="void"/>
+		<param name="red" type="GLtype"/>
+		<param name="green" type="GLtype"/>
+		<param name="blue" type="GLtype"/>
+		<param name="alpha" type="GLtype"/>
+	</proto>
+</template>
+
+<template name="BlendEquation">
+	<proto>
+		<return type="void"/>
+		<param name="mode" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="BlendEquationSeparate">
+	<proto>
+		<return type="void"/>
+		<param name="modeRGB" type="GLenum"/>
+		<param name="modeAlpha" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="TexImage3D">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="level" type="GLint"/>
+		<param name="internalFormat" type="GLenum"/>
+		<param name="width" type="GLsizei"/>
+		<param name="height" type="GLsizei"/>
+		<param name="depth" type="GLsizei"/>
+		<param name="border" type="GLint"/>
+		<param name="format" type="GLenum"/>
+		<param name="type" type="GLenum"/>
+		<param name="pixels" type="const GLvoid *"/>
+	</proto>
+
+</template>
+
+<template name="TexSubImage3D">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="level" type="GLint"/>
+		<param name="xoffset" type="GLint"/>
+		<param name="yoffset" type="GLint"/>
+		<param name="zoffset" type="GLint"/>
+		<param name="width" type="GLsizei"/>
+		<param name="height" type="GLsizei"/>
+		<param name="depth" type="GLsizei"/>
+		<param name="format" type="GLenum"/>
+		<param name="type" type="GLenum"/>
+		<param name="pixels" type="const GLvoid *"/>
+	</proto>
+</template>
+
+<template name="CopyTexSubImage3D">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="level" type="GLint"/>
+		<param name="xoffset" type="GLint"/>
+		<param name="yoffset" type="GLint"/>
+		<param name="zoffset" type="GLint"/>
+		<param name="x" type="GLint"/>
+		<param name="y" type="GLint"/>
+		<param name="width" type="GLsizei"/>
+		<param name="height" type="GLsizei"/>
+	</proto>
+</template>
+
+<template name="MultiTexCoord">
+	<proto>
+		<return type="void"/>
+		<param name="texture" type="GLenum"/>
+		<vector name="v" type="const GLtype *" size="dynamic">
+			<param name="s" type="GLtype"/>
+			<param name="t" type="GLtype"/>
+			<param name="r" type="GLtype"/>
+			<param name="q" type="GLtype"/>
+		</vector>
+	</proto>
+</template>
+
+<template name="CompressedTexImage3D">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="level" type="GLint"/>
+		<param name="internalFormat" type="GLenum"/>
+		<param name="width" type="GLsizei"/>
+		<param name="height" type="GLsizei"/>
+		<param name="depth" type="GLsizei"/>
+		<param name="border" type="GLint"/>
+		<param name="imagesize" type="GLsizei"/>
+		<param name="data" type="const GLvoid *"/>
+	</proto>
+</template>
+
+<template name="CompressedTexSubImage3D">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="level" type="GLint"/>
+		<param name="xoffset" type="GLint"/>
+		<param name="yoffset" type="GLint"/>
+		<param name="zoffset" type="GLint"/>
+		<param name="width" type="GLsizei"/>
+		<param name="height" type="GLsizei"/>
+		<param name="depth" type="GLsizei"/>
+		<param name="format" type="GLenum"/>
+		<param name="imagesize" type="GLsizei"/>
+		<param name="data" type="const GLvoid *"/>
+	</proto>
+</template>
+
+<template name="ActiveTexture">
+	<proto>
+		<return type="void"/>
+		<param name="texture" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="ClientActiveTexture">
+	<proto>
+		<return type="void"/>
+		<param name="texture" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="SampleCoverage">
+	<proto>
+		<return type="void"/>
+		<param name="value" type="GLtype"/>
+		<param name="invert" type="GLboolean"/>
+	</proto>
+</template>
+
+<template name="CompressedTexImage2D">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="level" type="GLint"/>
+		<param name="internalFormat" type="GLenum"/>
+		<param name="width" type="GLsizei"/>
+		<param name="height" type="GLsizei"/>
+		<param name="border" type="GLint"/>
+		<param name="imageSize" type="GLsizei"/>
+		<param name="data" type="const GLvoid *"/>
+	</proto>
+</template>
+
+<template name="CompressedTexSubImage2D">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="level" type="GLint"/>
+		<param name="xoffset" type="GLint"/>
+		<param name="yoffset" type="GLint"/>
+		<param name="width" type="GLsizei"/>
+		<param name="height" type="GLsizei"/>
+		<param name="format" type="GLenum"/>
+		<param name="imageSize" type="GLsizei"/>
+		<param name="data" type="const GLvoid *"/>
+	</proto>
+</template>
+
+<template name="BlendFuncSeparate">
+	<proto>
+		<return type="void"/>
+		<param name="srcRGB" type="GLenum"/>
+		<param name="dstRGB" type="GLenum"/>
+		<param name="srcAlpha" type="GLenum"/>
+		<param name="dstAlpha" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="PointParameter">
+	<proto>
+		<return type="void"/>
+		<param name="pname" type="GLenum"/>
+		<vector name="params" type="const GLtype *" size="dynamic">
+			<param name="param" type="GLtype"/>
+		</vector>
+	</proto>
+</template>
+
+<template name="VertexAttrib">
+	<proto>
+		<return type="void"/>
+		<param name="index" type="GLuint"/>
+		<vector name="v" type="const GLtype *" size="dynamic">
+			<param name="x" type="GLtype"/>
+			<param name="y" type="GLtype"/>
+			<param name="z" type="GLtype"/>
+			<param name="w" type="GLtype"/>
+		</vector>
+	</proto>
+</template>
+
+<template name="VertexAttribPointer">
+	<proto>
+		<return type="void"/>
+		<param name="index" type="GLuint"/>
+		<param name="size" type="GLint"/>
+		<param name="type" type="GLenum"/>
+		<param name="normalized" type="GLboolean"/>
+		<param name="stride" type="GLsizei"/>
+		<param name="pointer" type="const GLvoid *"/>
+	</proto>
+</template>
+
+<template name="EnableVertexAttribArray">
+	<proto>
+		<return type="void"/>
+		<param name="index" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="DisableVertexAttribArray">
+	<proto>
+		<return type="void"/>
+		<param name="index" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="IsProgram" direction="get">
+	<proto>
+		<return type="GLboolean"/>
+		<param name="program" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="GetProgram" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="program" type="GLuint"/>
+		<param name="pname" type="GLenum"/>
+		<vector name="params" type="GLtype *" size="dynamic"/>
+	</proto>
+</template>
+
+<template name="GetVertexAttrib" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="index" type="GLuint"/>
+		<param name="pname" type="GLenum"/>
+		<vector name="params" type="GLtype *" size="dynamic"/>
+	</proto>
+</template>
+
+<template name="GetVertexAttribPointer" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="index" type="GLuint"/>
+		<param name="pname" type="GLenum"/>
+		<vector name="pointer" type="GLvoid **" size="dynamic"/>
+	</proto>
+</template>
+
+<template name="GetBufferPointer" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="pname" type="GLenum"/>
+		<vector name="params" type="GLvoid **" size="dynamic"/>
+	</proto>
+</template>
+
+<template name="MapBuffer" direction="get">
+	<proto>
+		<return type="void *"/>
+		<param name="target" type="GLenum"/>
+		<param name="access" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="UnmapBuffer" direction="get">
+	<proto>
+		<return type="GLboolean"/>
+		<param name="target" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="BindBuffer">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="buffer" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="BufferData">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="size" type="GLsizeiptr"/>
+		<param name="data" type="const GLvoid *"/>
+		<param name="usage" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="BufferSubData">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="offset" type="GLintptr"/>
+		<param name="size" type="GLsizeiptr"/>
+		<param name="data" type="const GLvoid *"/>
+	</proto>
+</template>
+
+<template name="DeleteBuffers">
+	<proto>
+		<return type="void"/>
+		<param name="n" type="GLsizei"/>
+		<param name="buffer" type="const GLuint *"/>
+	</proto>
+</template>
+
+<template name="GenBuffers" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="n" type="GLsizei"/>
+		<param name="buffer" type="GLuint *"/>
+	</proto>
+</template>
+
+<template name="GetBufferParameter" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="pname" type="GLenum"/>
+		<vector name="params" type="GLtype *" size="dynamic"/>
+	</proto>
+</template>
+
+<template name="IsBuffer" direction="get">
+	<proto>
+		<return type="GLboolean"/>
+		<param name="buffer" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="CreateShader">
+	<proto>
+		<return type="GLuint"/>
+		<param name="type" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="ShaderSource">
+	<proto>
+		<return type="void"/>
+		<param name="shader" type="GLuint"/>
+		<param name="count" type="GLsizei"/>
+		<param name="string" type="const GLchar * const *"/>
+		<param name="length" type="const int *"/>
+	</proto>
+</template>
+
+<template name="CompileShader">
+	<proto>
+		<return type="void"/>
+		<param name="shader" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="ReleaseShaderCompiler">
+	<proto>
+		<return type="void"/>
+	</proto>
+</template>
+
+<template name="DeleteShader">
+	<proto>
+		<return type="void"/>
+		<param name="shader" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="ShaderBinary">
+	<proto>
+		<return type="void"/>
+		<param name="n" type="GLsizei"/>
+		<param name="shaders" type="const GLuint *"/>
+		<param name="binaryformat" type="GLenum"/>
+		<param name="binary" type="const GLvoid *"/>
+		<param name="length" type="GLsizei"/>
+	</proto>
+</template>
+
+<template name="CreateProgram">
+	<proto>
+		<return type="GLuint"/>
+	</proto>
+</template>
+
+<template name="AttachShader">
+	<proto>
+		<return type="void"/>
+		<param name="program" type="GLuint"/>
+		<param name="shader" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="DetachShader">
+	<proto>
+		<return type="void"/>
+		<param name="program" type="GLuint"/>
+		<param name="shader" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="LinkProgram">
+	<proto>
+		<return type="void"/>
+		<param name="program" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="UseProgram">
+	<proto>
+		<return type="void"/>
+		<param name="program" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="DeleteProgram">
+	<proto>
+		<return type="void"/>
+		<param name="program" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="GetActiveAttrib" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="program" type="GLuint"/>
+		<param name="index" type="GLuint"/>
+		<param name="bufSize" type="GLsizei"/>
+		<param name="length" type="GLsizei *"/>
+		<param name="size" type="GLint *"/>
+		<param name="type" type="GLenum *"/>
+		<param name="name" type="GLchar *"/>
+	</proto>
+</template>
+
+<template name="GetAttribLocation" direction="get">
+	<proto>
+		<return type="GLint"/>
+		<param name="program" type="GLuint"/>
+		<param name="name" type="const char *"/>
+	</proto>
+</template>
+
+<template name="BindAttribLocation">
+	<proto>
+		<return type="void"/>
+		<param name="program" type="GLuint"/>
+		<param name="index" type="GLuint"/>
+		<param name="name" type="const char *"/>
+	</proto>
+</template>
+
+<template name="GetUniformLocation" direction="get">
+	<proto>
+		<return type="GLint"/>
+		<param name="program" type="GLuint"/>
+		<param name="name" type="const char *"/>
+	</proto>
+</template>
+
+<template name="GetActiveUniform" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="program" type="GLuint"/>
+		<param name="index" type="GLuint"/>
+		<param name="bufSize" type="GLsizei"/>
+		<param name="length" type="GLsizei *"/>
+		<param name="size" type="GLint *"/>
+		<param name="type" type="GLenum *"/>
+		<param name="name" type="GLchar *"/>
+	</proto>
+</template>
+
+<template name="Uniform">
+	<proto>
+		<return type="void"/>
+		<param name="location" type="GLint"/>
+		<param name="count" type="GLsizei" hide_if_expanded="true"/>
+		<vector name="values" type="const GLtype *" size="dynamic">
+			<param name="v0" type="GLtype"/>
+			<param name="v1" type="GLtype"/>
+			<param name="v2" type="GLtype"/>
+			<param name="v3" type="GLtype"/>
+		</vector>
+	</proto>
+</template>
+
+<template name="UniformMatrix">
+	<proto>
+		<return type="void"/>
+		<param name="location" type="GLint"/>
+		<param name="count" type="GLsizei"/>
+		<param name="transpose" type="GLboolean"/>
+		<vector name="value" type="const GLtype *" size="dynamic"/>
+	</proto>
+</template>
+
+<template name="ValidateProgram">
+	<proto>
+		<return type="void"/>
+		<param name="program" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="GenerateMipmap">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="BindFramebuffer">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="framebuffer" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="DeleteFramebuffers">
+	<proto>
+		<return type="void"/>
+		<param name="n" type="GLsizei"/>
+		<param name="framebuffers" type="const GLuint *"/>
+	</proto>
+</template>
+
+<template name="GenFramebuffers">
+	<proto>
+		<return type="void"/>
+		<param name="n" type="GLsizei"/>
+		<param name="ids" type="GLuint *"/>
+	</proto>
+</template>
+
+<template name="BindRenderbuffer">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="renderbuffer" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="DeleteRenderbuffers">
+	<proto>
+		<return type="void"/>
+		<param name="n" type="GLsizei"/>
+		<param name="renderbuffers" type="const GLuint *"/>
+	</proto>
+</template>
+
+<template name="GenRenderbuffers">
+	<proto>
+		<return type="void"/>
+		<param name="n" type="GLsizei"/>
+		<param name="renderbuffers" type="GLuint *"/>
+	</proto>
+</template>
+
+<template name="RenderbufferStorage">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="internalFormat" type="GLenum"/>
+		<param name="width" type="GLsizei"/>
+		<param name="height" type="GLsizei"/>
+	</proto>
+</template>
+
+<template name="FramebufferRenderbuffer">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="attachment" type="GLenum"/>
+		<param name="renderbuffertarget" type="GLenum"/>
+		<param name="renderbuffer" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="FramebufferTexture2D">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="attachment" type="GLenum"/>
+		<param name="textarget" type="GLenum"/>
+		<param name="texture" type="GLuint"/>
+		<param name="level" type="GLint"/>
+	</proto>
+	<!-- According to the base specification, "level" must be 0.  But
+	     extension GL_OES_fbo_render_mipmap lifts that restriction,
+	     so no restriction is placed here. -->
+</template>
+
+<template name="FramebufferTexture3D">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="attachment" type="GLenum"/>
+		<param name="textarget" type="GLenum"/>
+		<param name="texture" type="GLuint"/>
+		<param name="level" type="GLint"/>
+		<param name="zoffset" type="GLint"/>
+	</proto>
+</template>
+
+<template name="CheckFramebufferStatus" direction="get">
+	<proto>
+		<return type="GLenum"/>
+		<param name="target" type="GLenum"/>
+	</proto>
+</template>
+
+<template name="GetFramebufferAttachmentParameter" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="attachment" type="GLenum"/>
+		<param name="pname" type="GLenum"/>
+		<vector name="params" type="GLtype *" size="dynamic"/>
+	</proto>
+</template>
+
+<template name="GetRenderbufferParameter" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="pname" type="GLenum"/>
+		<vector name="params" type="GLtype *" size="dynamic"/>
+	</proto>
+</template>
+
+<template name="IsRenderbuffer" direction="get">
+	<proto>
+		<return type="GLboolean"/>
+		<param name="renderbuffer" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="IsFramebuffer" direction="get">
+	<proto>
+		<return type="GLboolean"/>
+		<param name="framebuffer" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="IsShader" direction="get">
+	<proto>
+		<return type="GLboolean"/>
+		<param name="shader" type="GLuint"/>
+	</proto>
+</template>
+
+<template name="GetShader" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="shader" type="GLuint"/>
+		<param name="pname" type="GLenum"/>
+		<vector name="params" type="GLtype *" size="dynamic"/>
+	</proto>
+</template>
+
+<template name="GetAttachedShaders" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="program" type="GLuint"/>
+		<param name="maxCount" type="GLsizei"/>
+		<param name="count" type="GLsizei *"/>
+		<param name="shaders" type="GLuint *"/>
+	</proto>
+</template>
+
+<template name="GetShaderInfoLog" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="shader" type="GLuint"/>
+		<param name="bufSize" type="GLsizei"/>
+		<param name="length" type="GLsizei *"/>
+		<param name="infoLog" type="GLchar *"/>
+	</proto>
+</template>
+
+<template name="GetProgramInfoLog" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="program" type="GLuint"/>
+		<param name="bufSize" type="GLsizei"/>
+		<param name="length" type="GLsizei *"/>
+		<param name="infoLog" type="GLchar *"/>
+	</proto>
+</template>
+
+<template name="GetShaderSource" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="shader" type="GLuint"/>
+		<param name="bufSize" type="GLsizei"/>
+		<param name="length" type="GLsizei *"/>
+		<param name="source" type="GLchar *"/>
+	</proto>
+</template>
+
+<template name="GetShaderPrecisionFormat" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="shadertype" type="GLenum"/>
+		<param name="precisiontype" type="GLenum"/>
+		<param name="range" type="GLint *"/>
+		<param name="precision" type="GLint *"/>
+	</proto>
+</template>
+
+<template name="GetUniform" direction="get">
+	<proto>
+		<return type="void"/>
+		<param name="program" type="GLuint"/>
+		<param name="location" type="GLint"/>
+		<vector name="params" type="GLtype *" size="dynamic"/>
+	</proto>
+</template>
+
+<template name="QueryMatrix" direction="get">
+	<proto>
+		<return type="GLbitfield"/>
+		<vector name="mantissa" type="GLtype *" size="16"/>
+		<vector name="exponent" type="GLint *" size="16"/>
+	</proto>
+</template>
+
+<template name="DrawTex">
+	<proto>
+		<return type="void"/>
+		<vector name="coords" type="const GLtype *" size="5">
+			<param name="x" type="GLtype"/>
+			<param name="y" type="GLtype"/>
+			<param name="z" type="GLtype"/>
+			<param name="w" type="GLtype"/>
+			<param name="h" type="GLtype"/>
+		</vector>
+	</proto>
+</template>
+
+<template name="MultiDrawArrays">
+	<proto>
+		<return type="void"/>
+		<param name="mode" type="GLenum"/>
+		<param name="first" type="const GLint *"/>
+		<param name="count" type="const GLsizei *"/>
+		<param name="primcount" type="GLsizei"/>
+	</proto>
+</template>
+
+<template name="MultiDrawElements">
+	<proto>
+		<return type="void"/>
+		<param name="mode" type="GLenum"/>
+		<param name="count" type="const GLsizei *"/>
+		<param name="type" type="GLenum"/>
+		<param name="indices" type="const GLvoid **"/>
+		<param name="primcount" type="GLsizei"/>
+	</proto>
+</template>
+
+<template name="EGLImageTargetTexture2D">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="image" type="GLeglImageOES"/>
+	</proto>
+</template>
+
+<template name="EGLImageTargetRenderbufferStorage">
+	<proto>
+		<return type="void"/>
+		<param name="target" type="GLenum"/>
+		<param name="image" type="GLeglImageOES"/>
+	</proto>
+</template>
+
+<template name="DrawBuffers">
+	<proto>
+		<return type="void"/>
+		<param name="n" type="GLsizei"/>
+		<param name="bufs" type="const GLenum *"/>
+	</proto>
+</template>
+
+<template name="ReadBuffer">
+	<proto>
+		<return type="void"/>
+		<param name="mode" type="GLenum"/>
+	</proto>
+</template>
+
+<api name="mesa" implementation="true">
+	<category name="MESA"/>
+
+	<function name="Color4f"  default_prefix="_es_" template="Color" gltype="GLfloat" vector_size="4" expand_vector="true"/>
+	<function name="ClipPlane" template="ClipPlane" gltype="GLdouble"/>
+	<function name="CullFace" template="CullFace"/>
+
+	<function name="Fogf" template="Fog" gltype="GLfloat" expand_vector="true"/>
+	<function name="Fogfv" template="Fog" gltype="GLfloat"/>
+
+	<function name="FrontFace" template="FrontFace"/>
+	<function name="Hint" template="Hint"/>
+
+	<function name="Lightf" template="Light" gltype="GLfloat" expand_vector="true"/>
+	<function name="Lightfv" template="Light" gltype="GLfloat"/>
+
+	<function name="LightModelf" template="LightModel" gltype="GLfloat" expand_vector="true"/>
+	<function name="LightModelfv" template="LightModel" gltype="GLfloat"/>
+
+	<function name="LineWidth" template="LineWidth" gltype="GLfloat"/>
+
+	<function name="Materialf" default_prefix="_es_" template="Material" gltype="GLfloat" expand_vector="true"/>
+	<function name="Materialfv" default_prefix="_es_" template="Material" gltype="GLfloat"/>
+
+	<function name="PointSize" template="PointSize" gltype="GLfloat"/>
+	<function name="PointSizePointer" template="PointSizePointer"/>
+
+	<function name="Scissor" template="Scissor"/>
+	<function name="ShadeModel" template="ShadeModel"/>
+
+	<function name="TexParameterf" template="TexParameter" gltype="GLfloat" expand_vector="true"/>
+	<function name="TexParameterfv" template="TexParameter" gltype="GLfloat"/>
+	<function name="TexParameteri" template="TexParameter" gltype="GLint" expand_vector="true"/>
+	<function name="TexParameteriv" template="TexParameter" gltype="GLint"/>
+
+	<function name="TexImage2D" template="TexImage2D"/>
+
+	<function name="TexEnvf" template="TexEnv" gltype="GLfloat" expand_vector="true"/>
+	<function name="TexEnvi" template="TexEnv" gltype="GLint" expand_vector="true"/>
+	<function name="TexEnvfv" template="TexEnv" gltype="GLfloat"/>
+	<function name="TexEnviv" template="TexEnv" gltype="GLint"/>
+
+	<function name="TexGenf" template="TexGen" gltype="GLfloat" expand_vector="true"/>
+	<function name="TexGenfv" template="TexGen" gltype="GLfloat"/>
+
+	<function name="Clear" template="Clear"/>
+	<function name="ClearColor" template="ClearColor" gltype="GLclampf"/>
+	<function name="ClearStencil" template="ClearStencil"/>
+	<function name="ClearDepth" template="ClearDepth" gltype="GLclampd"/>
+	<function name="ClearDepthf" template="ClearDepth" gltype="GLclampf"/>
+
+	<function name="StencilMask" template="StencilMask"/>
+	<function name="StencilMaskSeparate" template="StencilMaskSeparate"/>
+	<function name="ColorMask" template="ColorMask"/>
+	<function name="DepthMask" template="DepthMask"/>
+	<function name="Disable" template="Disable"/>
+	<function name="Enable" template="Enable"/>
+	<function name="Finish" template="Finish"/>
+	<function name="Flush" template="Flush"/>
+
+	<function name="AlphaFunc" template="AlphaFunc" gltype="GLclampf"/>
+
+	<function name="BlendFunc" template="BlendFunc"/>
+	<function name="LogicOp" template="LogicOp"/>
+	<function name="StencilFunc" template="StencilFunc"/>
+	<function name="StencilFuncSeparate" template="StencilFuncSeparate"/>
+	<function name="StencilOp" template="StencilOp"/>
+	<function name="StencilOpSeparate" template="StencilOpSeparate"/>
+	<function name="DepthFunc" template="DepthFunc"/>
+	<function name="PixelStorei" template="PixelStore" gltype="GLint"/>
+
+	<function name="ReadPixels" template="ReadPixels"/>
+	<function name="GetBooleanv" template="GetState" gltype="GLboolean"/>
+	<function name="GetClipPlane" template="GetClipPlane" gltype="GLdouble"/>
+	<function name="GetError" template="GetError"/>
+	<function name="GetFloatv" template="GetState" gltype="GLfloat"/>
+	<function name="GetFixedv" template="GetState" gltype="GLfixed"/>
+	<function name="GetIntegerv" template="GetState" gltype="GLint"/>
+
+	<function name="GetLightfv" template="GetLight" gltype="GLfloat"/>
+	<function name="GetMaterialfv" template="GetMaterial" gltype="GLfloat"/>
+	<function name="GetMaterialiv" template="GetMaterial" gltype="GLint"/>
+
+	<function name="GetString" template="GetString"/>
+
+	<function name="GetTexEnvfv" template="GetTexEnv" gltype="GLfloat"/>
+	<function name="GetTexEnviv" template="GetTexEnv" gltype="GLint"/>
+	<function name="GetTexGenfv" template="GetTexGen" gltype="GLfloat"/>
+	<function name="GetTexParameterfv" template="GetTexParameter" gltype="GLfloat"/>
+	<function name="GetTexParameteriv" template="GetTexParameter" gltype="GLint"/>
+
+	<function name="IsEnabled" template="IsEnabled"/>
+
+	<function name="DepthRange" template="DepthRange" gltype="GLclampd"/>
+	<function name="DepthRangef" template="DepthRange" gltype="GLclampf"/>
+	<function name="Frustum" template="Frustum" gltype="GLdouble"/>
+
+	<function name="LoadIdentity" template="LoadIdentity"/>
+	<function name="LoadMatrixf" template="LoadMatrix" gltype="GLfloat"/>
+	<function name="MatrixMode" template="MatrixMode"/>
+
+	<function name="MultMatrixf" template="MultMatrix" gltype="GLfloat"/>
+	<function name="Ortho" template="Ortho" gltype="GLdouble"/>
+	<function name="PopMatrix" template="PopMatrix"/>
+	<function name="PushMatrix" template="PushMatrix"/>
+
+	<function name="Rotatef" template="Rotate" gltype="GLfloat"/>
+	<function name="Scalef" template="Scale" gltype="GLfloat"/>
+	<function name="Translatef" template="Translate" gltype="GLfloat"/>
+
+	<function name="Viewport" template="Viewport"/>
+
+	<function name="ColorPointer" template="ColorPointer"/>
+	<function name="DisableClientState" template="DisableClientState"/>
+	<function name="DrawArrays" template="DrawArrays"/>
+	<function name="DrawElements" template="DrawElements"/>
+	<function name="EnableClientState" template="EnableClientState"/>
+
+	<function name="GetPointerv" template="GetPointer"/>
+	<function name="Normal3f" default_prefix="_es_" template="Normal" gltype="GLfloat" expand_vector="true"/>
+	<function name="NormalPointer" template="NormalPointer"/>
+	<function name="TexCoordPointer" template="TexCoordPointer"/>
+	<function name="VertexPointer" template="VertexPointer"/>
+
+	<function name="PolygonOffset" template="PolygonOffset" gltype="GLfloat"/>
+	<function name="CopyTexImage2D" template="CopyTexImage2D"/>
+	<function name="CopyTexSubImage2D" template="CopyTexSubImage2D"/>
+	<function name="TexSubImage2D" template="TexSubImage2D"/>
+
+	<function name="BindTexture" template="BindTexture"/>
+	<function name="DeleteTextures" template="DeleteTextures"/>
+	<function name="GenTextures" template="GenTextures"/>
+	<function name="IsTexture" template="IsTexture"/>
+
+	<function name="BlendColor" template="BlendColor" gltype="GLclampf"/>
+	<function name="BlendEquation" template="BlendEquation"/>
+	<function name="BlendEquationSeparateEXT" template="BlendEquationSeparate"/>
+
+	<function name="TexImage3D" template="TexImage3D"/>
+	<function name="TexSubImage3D" template="TexSubImage3D"/>
+	<function name="CopyTexSubImage3D" template="CopyTexSubImage3D"/>
+
+	<function name="CompressedTexImage3DARB" template="CompressedTexImage3D"/>
+	<function name="CompressedTexSubImage3DARB" template="CompressedTexSubImage3D"/>
+
+	<function name="ActiveTextureARB" template="ActiveTexture"/>
+	<function name="ClientActiveTextureARB" template="ClientActiveTexture"/>
+
+	<function name="MultiTexCoord4f" default_prefix="_es_" template="MultiTexCoord" gltype="GLfloat" vector_size="4" expand_vector="true"/>
+
+	<function name="SampleCoverageARB" template="SampleCoverage" gltype="GLclampf"/>
+
+	<function name="CompressedTexImage2DARB" template="CompressedTexImage2D"/>
+	<function name="CompressedTexSubImage2DARB" template="CompressedTexSubImage2D"/>
+
+	<function name="BlendFuncSeparateEXT" template="BlendFuncSeparate"/>
+
+	<function name="PointParameterf" template="PointParameter" gltype="GLfloat" expand_vector="true"/>
+	<function name="PointParameterfv" template="PointParameter" gltype="GLfloat"/>
+
+	<function name="VertexAttrib1f" default_prefix="_es_" template="VertexAttrib" gltype="GLfloat" vector_size="1" expand_vector="true"/>
+	<function name="VertexAttrib2f" default_prefix="_es_" template="VertexAttrib" gltype="GLfloat" vector_size="2" expand_vector="true"/>
+	<function name="VertexAttrib3f" default_prefix="_es_" template="VertexAttrib" gltype="GLfloat" vector_size="3" expand_vector="true"/>
+	<function name="VertexAttrib4f" default_prefix="_es_" template="VertexAttrib" gltype="GLfloat" vector_size="4" expand_vector="true"/>
+	<function name="VertexAttrib1fv" default_prefix="_es_" template="VertexAttrib" gltype="GLfloat" vector_size="1"/>
+	<function name="VertexAttrib2fv" default_prefix="_es_" template="VertexAttrib" gltype="GLfloat" vector_size="2"/>
+	<function name="VertexAttrib3fv" default_prefix="_es_" template="VertexAttrib" gltype="GLfloat" vector_size="3"/>
+	<function name="VertexAttrib4fv" default_prefix="_es_" template="VertexAttrib" gltype="GLfloat" vector_size="4"/>
+
+	<function name="VertexAttribPointerARB" template="VertexAttribPointer"/>
+	<function name="EnableVertexAttribArrayARB" template="EnableVertexAttribArray"/>
+	<function name="DisableVertexAttribArrayARB" template="DisableVertexAttribArray"/>
+
+	<function name="IsProgram" template="IsProgram"/>
+	<function name="GetProgramiv" template="GetProgram" gltype="GLint"/>
+
+	<function name="GetVertexAttribfvARB" template="GetVertexAttrib" gltype="GLfloat"/>
+	<function name="GetVertexAttribivARB" template="GetVertexAttrib" gltype="GLint"/>
+	<function name="GetVertexAttribPointervARB" template="GetVertexAttribPointer"/>
+
+	<function name="GetBufferPointervARB" template="GetBufferPointer"/>
+	<function name="MapBufferARB" template="MapBuffer"/>
+	<function name="UnmapBufferARB" template="UnmapBuffer"/>
+	<function name="BindBufferARB" template="BindBuffer"/>
+	<function name="BufferDataARB" template="BufferData"/>
+	<function name="BufferSubDataARB" template="BufferSubData"/>
+	<function name="DeleteBuffersARB" template="DeleteBuffers"/>
+	<function name="GenBuffersARB" template="GenBuffers"/>
+	<function name="GetBufferParameterivARB" template="GetBufferParameter" gltype="GLint"/>
+	<function name="IsBufferARB" template="IsBuffer"/>
+
+	<function name="CreateShader" template="CreateShader"/>
+	<function name="ShaderSourceARB" template="ShaderSource"/>
+	<function name="CompileShaderARB" template="CompileShader"/>
+	<function name="ReleaseShaderCompiler" template="ReleaseShaderCompiler"/>
+	<function name="DeleteShader" template="DeleteShader"/>
+	<function name="ShaderBinary" template="ShaderBinary"/>
+	<function name="CreateProgram" template="CreateProgram"/>
+	<function name="AttachShader" template="AttachShader"/>
+	<function name="DetachShader" template="DetachShader"/>
+	<function name="LinkProgramARB" template="LinkProgram"/>
+	<function name="UseProgramObjectARB" template="UseProgram"/>
+	<function name="DeleteProgram" template="DeleteProgram"/>
+
+	<function name="GetActiveAttribARB" template="GetActiveAttrib"/>
+	<function name="GetAttribLocationARB" template="GetAttribLocation"/>
+	<function name="BindAttribLocationARB" template="BindAttribLocation"/>
+	<function name="GetUniformLocationARB" template="GetUniformLocation"/>
+	<function name="GetActiveUniformARB" template="GetActiveUniform"/>
+
+	<function name="Uniform1fARB" template="Uniform" gltype="GLfloat" vector_size="1" expand_vector="true"/>
+	<function name="Uniform2fARB" template="Uniform" gltype="GLfloat" vector_size="2" expand_vector="true"/>
+	<function name="Uniform3fARB" template="Uniform" gltype="GLfloat" vector_size="3" expand_vector="true"/>
+	<function name="Uniform4fARB" template="Uniform" gltype="GLfloat" vector_size="4" expand_vector="true"/>
+	<function name="Uniform1iARB" template="Uniform" gltype="GLint" vector_size="1" expand_vector="true"/>
+	<function name="Uniform2iARB" template="Uniform" gltype="GLint" vector_size="2" expand_vector="true"/>
+	<function name="Uniform3iARB" template="Uniform" gltype="GLint" vector_size="3" expand_vector="true"/>
+	<function name="Uniform4iARB" template="Uniform" gltype="GLint" vector_size="4" expand_vector="true"/>
+	<function name="Uniform1fvARB" template="Uniform" gltype="GLfloat" vector_size="1"/>
+	<function name="Uniform2fvARB" template="Uniform" gltype="GLfloat" vector_size="2"/>
+	<function name="Uniform3fvARB" template="Uniform" gltype="GLfloat" vector_size="3"/>
+	<function name="Uniform4fvARB" template="Uniform" gltype="GLfloat" vector_size="4"/>
+	<function name="Uniform1ivARB" template="Uniform" gltype="GLint" vector_size="1"/>
+	<function name="Uniform2ivARB" template="Uniform" gltype="GLint" vector_size="2"/>
+	<function name="Uniform3ivARB" template="Uniform" gltype="GLint" vector_size="3"/>
+	<function name="Uniform4ivARB" template="Uniform" gltype="GLint" vector_size="4"/>
+
+	<function name="UniformMatrix2fvARB" template="UniformMatrix" gltype="GLfloat" vector_size="2"/>
+	<function name="UniformMatrix3fvARB" template="UniformMatrix" gltype="GLfloat" vector_size="3"/>
+	<function name="UniformMatrix4fvARB" template="UniformMatrix" gltype="GLfloat" vector_size="4"/>
+
+	<function name="ValidateProgramARB" template="ValidateProgram"/>
+
+	<function name="GenerateMipmapEXT" template="GenerateMipmap"/>
+	<function name="BindFramebufferEXT" template="BindFramebuffer"/>
+	<function name="DeleteFramebuffersEXT" template="DeleteFramebuffers"/>
+	<function name="GenFramebuffersEXT" template="GenFramebuffers"/>
+	<function name="BindRenderbufferEXT" template="BindRenderbuffer"/>
+	<function name="DeleteRenderbuffersEXT" template="DeleteRenderbuffers"/>
+	<function name="GenRenderbuffersEXT" template="GenRenderbuffers"/>
+	<function name="RenderbufferStorageEXT" template="RenderbufferStorage"/>
+	<function name="FramebufferRenderbufferEXT" template="FramebufferRenderbuffer"/>
+	<function name="FramebufferTexture2DEXT" template="FramebufferTexture2D"/>
+	<function name="FramebufferTexture3DEXT" template="FramebufferTexture3D"/>
+	<function name="CheckFramebufferStatusEXT" template="CheckFramebufferStatus"/>
+	<function name="GetFramebufferAttachmentParameterivEXT" template="GetFramebufferAttachmentParameter" gltype="GLint"/>
+	<function name="GetRenderbufferParameterivEXT" template="GetRenderbufferParameter" gltype="GLint"/>
+	<function name="IsRenderbufferEXT" template="IsRenderbuffer"/>
+	<function name="IsFramebufferEXT" template="IsFramebuffer"/>
+
+	<function name="IsShader" template="IsShader"/>
+	<function name="GetShaderiv" template="GetShader" gltype="GLint"/>
+	<function name="GetAttachedShaders" template="GetAttachedShaders"/>
+	<function name="GetShaderInfoLog" template="GetShaderInfoLog"/>
+	<function name="GetProgramInfoLog" template="GetProgramInfoLog"/>
+	<function name="GetShaderSourceARB" template="GetShaderSource"/>
+	<function name="GetShaderPrecisionFormat" template="GetShaderPrecisionFormat"/>
+	<function name="GetUniformfvARB" template="GetUniform" gltype="GLfloat"/>
+	<function name="GetUniformivARB" template="GetUniform" gltype="GLint"/>
+
+	<function name="DrawTexf" template="DrawTex" gltype="GLfloat" expand_vector="true"/>
+	<function name="DrawTexfv" template="DrawTex" gltype="GLfloat"/>
+	<function name="DrawTexi" template="DrawTex" gltype="GLint" expand_vector="true"/>
+	<function name="DrawTexiv" template="DrawTex" gltype="GLint"/>
+	<function name="DrawTexs" template="DrawTex" gltype="GLshort" expand_vector="true"/>
+	<function name="DrawTexsv" template="DrawTex" gltype="GLshort"/>
+
+        <!-- EXT_multi_draw_arrays -->
+        <function name="MultiDrawArraysEXT" template="MultiDrawArrays"/>
+        <function name="MultiDrawElementsEXT" template="MultiDrawElements"/>
+
+        <!-- OES_EGL_image -->
+        <function name="EGLImageTargetTexture2DOES" template="EGLImageTargetTexture2D"/>
+        <function name="EGLImageTargetRenderbufferStorageOES" template="EGLImageTargetRenderbufferStorage"/>
+
+	<function name="DrawBuffersARB" template="DrawBuffers"/>
+
+	<function name="ReadBuffer" template="ReadBuffer"/>
+
+</api>
+
+<api name="GLES1.1">
+	<category name="GLES1.1"/>
+
+	<category name="OES_byte_coordinates"/>
+	<category name="OES_fixed_point"/>
+	<category name="OES_single_precision"/>
+	<category name="OES_matrix_get"/>
+	<category name="OES_read_format"/>
+	<category name="OES_compressed_paletted_texture"/>
+	<category name="OES_compressed_ETC1_RGB8_texture"/>
+	<category name="OES_point_size_array"/>
+	<category name="OES_point_sprite"/>
+	<category name="OES_query_matrix"/>
+	<category name="OES_draw_texture"/>
+	<category name="OES_blend_equation_separate"/>
+	<category name="OES_blend_func_separate"/>
+	<category name="OES_blend_subtract"/>
+	<category name="OES_stencil_wrap"/>
+	<category name="OES_texture_cube_map"/>
+	<category name="OES_texture_env_crossbar"/>
+	<category name="OES_texture_mirrored_repeat"/>
+	<category name="OES_framebuffer_object"/>
+	<category name="OES_depth24"/>
+	<category name="OES_depth32"/>
+	<category name="OES_fbo_render_mipmap"/>
+	<category name="OES_rgb8_rgba8"/>
+	<category name="OES_stencil1"/>
+	<category name="OES_stencil4"/>
+	<category name="OES_stencil8"/>
+	<category name="OES_element_index_uint"/>
+	<category name="OES_mapbuffer"/>
+	<category name="EXT_texture_filter_anisotropic"/>
+	<category name="EXT_texture_format_BGRA8888"/>
+	<category name="EXT_read_format_bgra"/>
+
+	<category name="ARB_texture_non_power_of_two"/>
+	<!-- disabled due to missing enums
+	<category name="EXT_texture_compression_dxt1"/>
+	-->
+	<category name="EXT_texture_lod_bias"/>
+	<category name="EXT_blend_minmax"/>
+	<category name="EXT_multi_draw_arrays"/>
+	<category name="OES_EGL_image"/>
+	<category name="OES_EGL_image_external"/>
+
+	<category name="OES_matrix_palette"/>
+
+	<function name="Color4f" external="true" template="Color" gltype="GLfloat" vector_size="4" expand_vector="true"/>
+	<function name="Color4ub" template="Color" gltype="GLubyte" vector_size="4" expand_vector="true"/>
+	<function name="Color4x" template="Color" gltype="GLfixed" vector_size="4" expand_vector="true"/>
+
+	<function name="ClipPlanef" template="ClipPlane" gltype="GLfloat"/>
+	<function name="ClipPlanex" template="ClipPlane" gltype="GLfixed"/>
+
+	<function name="CullFace" template="CullFace"/>
+
+	<function name="Fogf" template="Fog" gltype="GLfloat" expand_vector="true"/>
+	<function name="Fogx" template="Fog" gltype="GLfixed" expand_vector="true"/>
+	<function name="Fogfv" template="Fog" gltype="GLfloat"/>
+	<function name="Fogxv" template="Fog" gltype="GLfixed"/>
+
+	<function name="FrontFace" template="FrontFace"/>
+	<function name="Hint" template="Hint"/>
+
+	<function name="Lightf" template="Light" gltype="GLfloat" expand_vector="true"/>
+	<function name="Lightx" template="Light" gltype="GLfixed" expand_vector="true"/>
+	<function name="Lightfv" template="Light" gltype="GLfloat"/>
+	<function name="Lightxv" template="Light" gltype="GLfixed"/>
+
+	<function name="LightModelf" template="LightModel" gltype="GLfloat" expand_vector="true"/>
+	<function name="LightModelx" template="LightModel" gltype="GLfixed" expand_vector="true"/>
+	<function name="LightModelfv" template="LightModel" gltype="GLfloat"/>
+	<function name="LightModelxv" template="LightModel" gltype="GLfixed"/>
+
+	<function name="LineWidth" template="LineWidth" gltype="GLfloat"/>
+	<function name="LineWidthx" template="LineWidth" gltype="GLfixed"/>
+
+	<function name="Materialf" external="true" template="Material" gltype="GLfloat" expand_vector="true"/>
+	<function name="Materialfv" external="true" template="Material" gltype="GLfloat"/>
+	<function name="Materialx" template="Material" gltype="GLfixed" expand_vector="true"/>
+	<function name="Materialxv" template="Material" gltype="GLfixed"/>
+
+	<function name="PointSize" template="PointSize" gltype="GLfloat"/>
+	<function name="PointSizex" template="PointSize" gltype="GLfixed"/>
+	<function name="PointSizePointerOES" template="PointSizePointer"/>
+
+	<function name="Scissor" template="Scissor"/>
+	<function name="ShadeModel" template="ShadeModel"/>
+
+	<function name="TexParameterf" template="TexParameter" gltype="GLfloat" expand_vector="true"/>
+	<function name="TexParameterfv" template="TexParameter" gltype="GLfloat"/>
+	<function name="TexParameteri" template="TexParameter" gltype="GLint" expand_vector="true"/>
+	<function name="TexParameteriv" template="TexParameter" gltype="GLint"/>
+	<function name="TexParameterx" template="TexParameter" gltype="GLfixed" expand_vector="true"/>
+	<function name="TexParameterxv" template="TexParameter" gltype="GLfixed"/>
+
+	<function name="TexImage2D" template="TexImage2D"/>
+
+	<function name="TexEnvf" template="TexEnv" gltype="GLfloat" expand_vector="true"/>
+	<function name="TexEnvfv" template="TexEnv" gltype="GLfloat"/>
+	<function name="TexEnvi" template="TexEnv" gltype="GLint" expand_vector="true"/>
+	<function name="TexEnviv" template="TexEnv" gltype="GLint"/>
+	<function name="TexEnvx" template="TexEnv" gltype="GLfixed" expand_vector="true"/>
+	<function name="TexEnvxv" template="TexEnv" gltype="GLfixed"/>
+
+	<function name="TexGenfOES" external="true" template="TexGen" gltype="GLfloat" expand_vector="true"/>
+	<function name="TexGenfvOES" external="true" template="TexGen" gltype="GLfloat"/>
+	<function name="TexGeniOES" external="true" template="TexGen" gltype="GLint" expand_vector="true"/>
+	<function name="TexGenivOES" external="true" template="TexGen" gltype="GLint"/>
+	<function name="TexGenxOES" external="true" template="TexGen" gltype="GLfixed" expand_vector="true"/>
+	<function name="TexGenxvOES" external="true" template="TexGen" gltype="GLfixed"/>
+
+	<function name="Clear" template="Clear"/>
+	<function name="ClearColor" template="ClearColor" gltype="GLclampf"/>
+	<function name="ClearColorx" template="ClearColor" gltype="GLclampx"/>
+
+	<function name="ClearStencil" template="ClearStencil"/>
+	<function name="ClearDepthf" template="ClearDepth" gltype="GLclampf"/>
+	<function name="ClearDepthx" template="ClearDepth" gltype="GLclampx"/>
+
+	<function name="StencilMask" template="StencilMask"/>
+	<function name="ColorMask" template="ColorMask"/>
+	<function name="DepthMask" template="DepthMask"/>
+
+	<function name="Disable" template="Disable"/>
+	<function name="Enable" template="Enable"/>
+	<function name="Finish" template="Finish"/>
+	<function name="Flush" template="Flush"/>
+
+	<function name="AlphaFunc" template="AlphaFunc" gltype="GLclampf"/>
+	<function name="AlphaFuncx" template="AlphaFunc" gltype="GLclampx"/>
+
+	<function name="BlendFunc" template="BlendFunc"/>
+	<function name="LogicOp" template="LogicOp"/>
+	<function name="StencilFunc" template="StencilFunc"/>
+
+	<function name="StencilOp" template="StencilOp"/>
+	<function name="DepthFunc" template="DepthFunc"/>
+
+	<function name="PixelStorei" template="PixelStore" gltype="GLint"/>
+	<function name="ReadPixels" template="ReadPixels"/>
+
+	<function name="GetBooleanv" template="GetState" gltype="GLboolean"/>
+
+	<function name="GetClipPlanef" template="GetClipPlane" gltype="GLfloat"/>
+	<function name="GetClipPlanex" template="GetClipPlane" gltype="GLfixed"/>
+
+	<function name="GetError" template="GetError"/>
+	<function name="GetFloatv" template="GetState" gltype="GLfloat"/>
+	<function name="GetFixedv" template="GetState" gltype="GLfixed"/>
+	<function name="GetIntegerv" template="GetState" gltype="GLint"/>
+
+	<function name="GetLightfv" template="GetLight" gltype="GLfloat"/>
+	<function name="GetLightxv" template="GetLight" gltype="GLfixed"/>
+
+	<function name="GetMaterialfv" template="GetMaterial" gltype="GLfloat"/>
+	<function name="GetMaterialxv" template="GetMaterial" gltype="GLfixed"/>
+
+	<function name="GetString" template="GetString"/>
+
+	<function name="GetTexEnvfv" template="GetTexEnv" gltype="GLfloat"/>
+	<function name="GetTexEnviv" template="GetTexEnv" gltype="GLint"/>
+	<function name="GetTexEnvxv" template="GetTexEnv" gltype="GLfixed"/>
+
+	<function name="GetTexGenfvOES" external="true" template="GetTexGen" gltype="GLfloat"/>
+	<function name="GetTexGenivOES" external="true" template="GetTexGen" gltype="GLint"/>
+	<function name="GetTexGenxvOES" external="true" template="GetTexGen" gltype="GLfixed"/>
+
+	<function name="GetTexParameterfv" template="GetTexParameter" gltype="GLfloat"/>
+	<function name="GetTexParameteriv" template="GetTexParameter" gltype="GLint"/>
+	<function name="GetTexParameterxv" template="GetTexParameter" gltype="GLfixed"/>
+
+	<function name="IsEnabled" template="IsEnabled"/>
+
+	<function name="DepthRangef" template="DepthRange" gltype="GLclampf"/>
+	<function name="DepthRangex" template="DepthRange" gltype="GLclampx"/>
+
+	<function name="Frustumf" template="Frustum" gltype="GLfloat"/>
+	<function name="Frustumx" template="Frustum" gltype="GLfixed"/>
+
+	<function name="LoadIdentity" template="LoadIdentity"/>
+	<function name="LoadMatrixf" template="LoadMatrix" gltype="GLfloat"/>
+	<function name="LoadMatrixx" template="LoadMatrix" gltype="GLfixed"/>
+	<function name="MatrixMode" template="MatrixMode"/>
+
+	<function name="MultMatrixf" template="MultMatrix" gltype="GLfloat"/>
+	<function name="MultMatrixx" template="MultMatrix" gltype="GLfixed"/>
+	<function name="Orthof" template="Ortho" gltype="GLfloat"/>
+	<function name="Orthox" template="Ortho" gltype="GLfixed"/>
+
+	<function name="PopMatrix" template="PopMatrix"/>
+	<function name="PushMatrix" template="PushMatrix"/>
+
+	<function name="Rotatef" template="Rotate" gltype="GLfloat"/>
+	<function name="Rotatex" template="Rotate" gltype="GLfixed"/>
+	<function name="Scalef" template="Scale" gltype="GLfloat"/>
+	<function name="Scalex" template="Scale" gltype="GLfixed"/>
+	<function name="Translatef" template="Translate" gltype="GLfloat"/>
+	<function name="Translatex" template="Translate" gltype="GLfixed"/>
+
+	<function name="Viewport" template="Viewport"/>
+	<function name="ColorPointer" template="ColorPointer"/>
+	<function name="DisableClientState" template="DisableClientState"/>
+	<function name="DrawArrays" template="DrawArrays"/>
+	<function name="DrawElements" template="DrawElements"/>
+	<function name="EnableClientState" template="EnableClientState"/>
+
+	<function name="GetPointerv" template="GetPointer"/>
+
+	<function name="Normal3f" external="true" template="Normal" gltype="GLfloat" expand_vector="true"/>
+	<function name="Normal3x" template="Normal" gltype="GLfixed" expand_vector="true"/>
+	<function name="NormalPointer" template="NormalPointer"/>
+	<function name="TexCoordPointer" template="TexCoordPointer"/>
+	<function name="VertexPointer" template="VertexPointer"/>
+
+	<function name="PolygonOffset" template="PolygonOffset" gltype="GLfloat"/>
+	<function name="PolygonOffsetx" template="PolygonOffset" gltype="GLfixed"/>
+
+	<function name="CopyTexImage2D" template="CopyTexImage2D"/>
+	<function name="CopyTexSubImage2D" template="CopyTexSubImage2D"/>
+
+	<function name="TexSubImage2D" template="TexSubImage2D"/>
+
+	<function name="BindTexture" template="BindTexture"/>
+	<function name="DeleteTextures" template="DeleteTextures"/>
+	<function name="GenTextures" template="GenTextures"/>
+	<function name="IsTexture" template="IsTexture"/>
+
+	<function name="BlendEquationOES" template="BlendEquation"/>
+	<function name="BlendEquationSeparateOES" template="BlendEquationSeparate"/>
+
+	<function name="MultiTexCoord4x" template="MultiTexCoord" gltype="GLfixed" vector_size="4" expand_vector="true"/>
+
+	<function name="ActiveTexture" template="ActiveTexture"/>
+	<function name="ClientActiveTexture" template="ClientActiveTexture"/>
+
+	<function name="MultiTexCoord4f" external="true" template="MultiTexCoord" gltype="GLfloat" vector_size="4" expand_vector="true"/>
+
+	<function name="SampleCoverage" template="SampleCoverage" gltype="GLclampf"/>
+	<function name="SampleCoveragex" template="SampleCoverage" gltype="GLclampx"/>
+
+	<!-- CompressedTexImage2D calls out to two different functions based on
+	     whether the image is a paletted image or not -->
+	<function name="CompressedTexImage2D" template="CompressedTexImage2D"/>
+	<function name="CompressedTexSubImage2D" template="CompressedTexSubImage2D"/>
+
+	<function name="BlendFuncSeparateOES" template="BlendFuncSeparate"/>
+
+	<function name="PointParameterf" template="PointParameter" gltype="GLfloat" expand_vector="true"/>
+	<function name="PointParameterfv" template="PointParameter" gltype="GLfloat"/>
+	<function name="PointParameterx" template="PointParameter" gltype="GLfixed" expand_vector="true"/>
+	<function name="PointParameterxv" template="PointParameter" gltype="GLfixed"/>
+
+	<!-- OES_mapbuffer -->
+	<function name="GetBufferPointervOES" template="GetBufferPointer"/>
+	<function name="MapBufferOES" template="MapBuffer"/>
+	<function name="UnmapBufferOES" template="UnmapBuffer"/>
+
+	<function name="BindBuffer" template="BindBuffer"/>
+	<function name="BufferData" template="BufferData"/>
+	<function name="BufferSubData" template="BufferSubData"/>
+	<function name="DeleteBuffers" template="DeleteBuffers"/>
+	<function name="GenBuffers" template="GenBuffers"/>
+	<function name="GetBufferParameteriv" template="GetBufferParameter" gltype="GLint"/>
+	<function name="IsBuffer" template="IsBuffer"/>
+
+	<!-- OES_framebuffer_object -->
+	<function name="GenerateMipmapOES" template="GenerateMipmap"/>
+	<function name="BindFramebufferOES" template="BindFramebuffer"/>
+	<function name="DeleteFramebuffersOES" template="DeleteFramebuffers"/>
+	<function name="GenFramebuffersOES" template="GenFramebuffers"/>
+	<function name="BindRenderbufferOES" template="BindRenderbuffer"/>
+	<function name="DeleteRenderbuffersOES" template="DeleteRenderbuffers"/>
+	<function name="GenRenderbuffersOES" template="GenRenderbuffers"/>
+	<function name="RenderbufferStorageOES" external="true" template="RenderbufferStorage"/>
+	<function name="FramebufferRenderbufferOES" template="FramebufferRenderbuffer"/>
+	<function name="FramebufferTexture2DOES" template="FramebufferTexture2D"/>
+	<function name="CheckFramebufferStatusOES" template="CheckFramebufferStatus"/>
+	<function name="GetFramebufferAttachmentParameterivOES" template="GetFramebufferAttachmentParameter" gltype="GLint"/>
+	<function name="GetRenderbufferParameterivOES" template="GetRenderbufferParameter" gltype="GLint"/>
+	<function name="IsRenderbufferOES" template="IsRenderbuffer"/>
+	<function name="IsFramebufferOES" template="IsFramebuffer"/>
+
+	<!-- OES_query_matrix -->
+	<!-- QueryMatrixx returns values in an unusual, decomposed, fixed-value
+	     form; it has its own code for this -->
+	<function name="QueryMatrixxOES" external="true" template="QueryMatrix" gltype="GLfixed"/>
+
+	<!-- OES_draw_texture -->
+	<function name="DrawTexfOES" template="DrawTex" gltype="GLfloat" expand_vector="true"/>
+	<function name="DrawTexiOES" template="DrawTex" gltype="GLint" expand_vector="true"/>
+	<function name="DrawTexsOES" template="DrawTex" gltype="GLshort" expand_vector="true"/>
+	<function name="DrawTexxOES" template="DrawTex" gltype="GLfixed" expand_vector="true"/>
+	<function name="DrawTexfvOES" template="DrawTex" gltype="GLfloat"/>
+	<function name="DrawTexivOES" template="DrawTex" gltype="GLint"/>
+	<function name="DrawTexsvOES" template="DrawTex" gltype="GLshort"/>
+	<function name="DrawTexxvOES" template="DrawTex" gltype="GLfixed"/>
+
+        <!-- EXT_multi_draw_arrays -->
+        <function name="MultiDrawArraysEXT" template="MultiDrawArrays"/>
+        <function name="MultiDrawElementsEXT" template="MultiDrawElements"/>
+
+        <!-- OES_EGL_image -->
+        <function name="EGLImageTargetTexture2DOES" template="EGLImageTargetTexture2D"/>
+        <function name="EGLImageTargetRenderbufferStorageOES" template="EGLImageTargetRenderbufferStorage"/>
+</api>
+
+<api name="GLES2.0">
+	<category name="GLES2.0"/>
+
+	<category name="OES_compressed_paletted_texture"/>
+	<category name="OES_compressed_ETC1_RGB8_texture"/>
+	<category name="OES_depth24"/>
+	<category name="OES_depth32"/>
+	<category name="OES_fbo_render_mipmap"/>
+	<category name="OES_rgb8_rgba8"/>
+	<category name="OES_stencil1"/>
+	<category name="OES_stencil4"/>
+	<category name="OES_element_index_uint"/>
+	<category name="OES_mapbuffer"/>
+	<category name="OES_texture_3D"/>
+	<category name="OES_texture_npot"/>
+	<category name="EXT_texture_filter_anisotropic"/>
+	<category name="EXT_texture_type_2_10_10_10_REV"/>
+	<category name="OES_depth_texture"/>
+	<category name="OES_packed_depth_stencil"/>
+	<category name="OES_standard_derivatives"/>
+	<category name="EXT_texture_format_BGRA8888"/>
+	<category name="EXT_texture_rg"/>
+	<category name="EXT_read_format_bgra"/>
+
+	<category name="EXT_texture_compression_dxt1"/>
+	<category name="EXT_blend_minmax"/>
+	<category name="EXT_multi_draw_arrays"/>
+	<category name="OES_EGL_image"/>
+	<category name="OES_EGL_image_external"/>
+        <category name="EXT_unpack_subimage"/>
+
+	<category name="NV_draw_buffers"/>
+	<category name="NV_read_buffer"/>
+
+	<function name="DrawBuffersNV" template="DrawBuffers"/>
+	<function name="ReadBufferNV" template="ReadBuffer"/> 
+
+	<function name="CullFace" template="CullFace"/>
+
+	<function name="FrontFace" template="FrontFace"/>
+	<function name="Hint" template="Hint"/>
+
+	<function name="LineWidth" template="LineWidth" gltype="GLfloat"/>
+
+	<function name="Scissor" template="Scissor"/>
+
+	<function name="TexParameterf" template="TexParameter" gltype="GLfloat" expand_vector="true"/>
+	<function name="TexParameterfv" template="TexParameter" gltype="GLfloat"/>
+	<function name="TexParameteri" template="TexParameter" gltype="GLint" expand_vector="true"/>
+	<function name="TexParameteriv" template="TexParameter" gltype="GLint"/>
+
+	<function name="TexImage2D" template="TexImage2D"/>
+
+	<function name="Clear" template="Clear"/>
+	<function name="ClearColor" template="ClearColor" gltype="GLclampf"/>
+	<function name="ClearStencil" template="ClearStencil"/>
+	<function name="ClearDepthf" template="ClearDepth" gltype="GLclampf"/>
+
+	<function name="StencilMask" template="StencilMask"/>
+	<function name="StencilMaskSeparate" template="StencilMaskSeparate"/>
+	<function name="ColorMask" template="ColorMask"/>
+	<function name="DepthMask" template="DepthMask"/>
+	<function name="Disable" template="Disable"/>
+	<function name="Enable" template="Enable"/>
+	<function name="Finish" template="Finish"/>
+	<function name="Flush" template="Flush"/>
+
+	<function name="BlendFunc" template="BlendFunc"/>
+
+	<function name="StencilFunc" template="StencilFunc"/>
+	<function name="StencilFuncSeparate" template="StencilFuncSeparate"/>
+	<function name="StencilOp" template="StencilOp"/>
+	<function name="StencilOpSeparate" template="StencilOpSeparate"/>
+
+	<function name="DepthFunc" template="DepthFunc"/>
+
+	<function name="PixelStorei" template="PixelStore" gltype="GLint"/>
+	<function name="ReadPixels" template="ReadPixels"/>
+
+	<function name="GetBooleanv" template="GetState" gltype="GLboolean"/>
+	<function name="GetError" template="GetError"/>
+	<function name="GetFloatv" template="GetState" gltype="GLfloat"/>
+	<function name="GetIntegerv" template="GetState" gltype="GLint"/>
+
+	<function name="GetString" template="GetString"/>
+
+	<function name="GetTexParameterfv" template="GetTexParameter" gltype="GLfloat"/>
+	<function name="GetTexParameteriv" template="GetTexParameter" gltype="GLint"/>
+
+	<function name="IsEnabled" template="IsEnabled"/>
+
+	<function name="DepthRangef" template="DepthRange" gltype="GLclampf"/>
+
+	<function name="Viewport" template="Viewport"/>
+
+	<function name="DrawArrays" template="DrawArrays"/>
+	<function name="DrawElements" template="DrawElements"/>
+
+	<function name="PolygonOffset" template="PolygonOffset" gltype="GLfloat"/>
+	<function name="CopyTexImage2D" template="CopyTexImage2D"/>
+	<function name="CopyTexSubImage2D" template="CopyTexSubImage2D"/>
+	<function name="TexSubImage2D" template="TexSubImage2D"/>
+
+	<function name="BindTexture" template="BindTexture"/>
+	<function name="DeleteTextures" template="DeleteTextures"/>
+	<function name="GenTextures" template="GenTextures"/>
+	<function name="IsTexture" template="IsTexture"/>
+
+	<function name="BlendColor" template="BlendColor" gltype="GLclampf"/>
+	<function name="BlendEquation" template="BlendEquation"/>
+	<function name="BlendEquationSeparate" template="BlendEquationSeparate"/>
+
+	<function name="TexImage3DOES" template="TexImage3D"/>
+	<function name="TexSubImage3DOES" template="TexSubImage3D"/>
+	<function name="CopyTexSubImage3DOES" template="CopyTexSubImage3D"/>
+
+	<function name="CompressedTexImage3DOES" template="CompressedTexImage3D"/>
+	<function name="CompressedTexSubImage3DOES" template="CompressedTexSubImage3D"/>
+
+	<function name="ActiveTexture" template="ActiveTexture"/>
+
+	<function name="SampleCoverage" template="SampleCoverage" gltype="GLclampf"/>
+
+	<function name="CompressedTexImage2D" template="CompressedTexImage2D"/>
+	<function name="CompressedTexSubImage2D" template="CompressedTexSubImage2D"/>
+
+	<function name="BlendFuncSeparate" template="BlendFuncSeparate"/>
+
+	<function name="VertexAttrib1f" external="true" template="VertexAttrib" gltype="GLfloat" vector_size="1" expand_vector="true"/>
+	<function name="VertexAttrib2f" external="true" template="VertexAttrib" gltype="GLfloat" vector_size="2" expand_vector="true"/>
+	<function name="VertexAttrib3f" external="true" template="VertexAttrib" gltype="GLfloat" vector_size="3" expand_vector="true"/>
+	<function name="VertexAttrib4f" external="true" template="VertexAttrib" gltype="GLfloat" vector_size="4" expand_vector="true"/>
+	<function name="VertexAttrib1fv" external="true" template="VertexAttrib" gltype="GLfloat" vector_size="1"/>
+	<function name="VertexAttrib2fv" external="true" template="VertexAttrib" gltype="GLfloat" vector_size="2"/>
+	<function name="VertexAttrib3fv" external="true" template="VertexAttrib" gltype="GLfloat" vector_size="3"/>
+	<function name="VertexAttrib4fv" external="true" template="VertexAttrib" gltype="GLfloat" vector_size="4"/>
+
+	<function name="VertexAttribPointer" template="VertexAttribPointer"/>
+
+	<function name="EnableVertexAttribArray" template="EnableVertexAttribArray"/>
+	<function name="DisableVertexAttribArray" template="DisableVertexAttribArray"/>
+
+	<function name="IsProgram" template="IsProgram"/>
+	<function name="GetProgramiv" template="GetProgram" gltype="GLint"/>
+
+	<function name="GetVertexAttribfv" template="GetVertexAttrib" gltype="GLfloat"/>
+	<function name="GetVertexAttribiv" template="GetVertexAttrib" gltype="GLint"/>
+	<function name="GetVertexAttribPointerv" template="GetVertexAttribPointer"/>
+
+	<function name="GetBufferPointervOES" template="GetBufferPointer"/>
+	<function name="MapBufferOES" template="MapBuffer"/>
+	<function name="UnmapBufferOES" template="UnmapBuffer"/>
+	<function name="BindBuffer" template="BindBuffer"/>
+	<function name="BufferData" template="BufferData"/>
+	<function name="BufferSubData" template="BufferSubData"/>
+	<function name="DeleteBuffers" template="DeleteBuffers"/>
+	<function name="GenBuffers" template="GenBuffers"/>
+	<function name="GetBufferParameteriv" template="GetBufferParameter" gltype="GLint"/>
+	<function name="IsBuffer" template="IsBuffer"/>
+
+	<function name="CreateShader" template="CreateShader"/>
+	<function name="ShaderSource" template="ShaderSource"/>
+	<function name="CompileShader" template="CompileShader"/>
+	<function name="ReleaseShaderCompiler" template="ReleaseShaderCompiler"/>
+	<function name="DeleteShader" template="DeleteShader"/>
+	<function name="ShaderBinary" template="ShaderBinary"/>
+	<function name="CreateProgram" template="CreateProgram"/>
+	<function name="AttachShader" template="AttachShader"/>
+	<function name="DetachShader" template="DetachShader"/>
+	<function name="LinkProgram" template="LinkProgram"/>
+	<function name="UseProgram" template="UseProgram"/>
+	<function name="DeleteProgram" template="DeleteProgram"/>
+
+	<function name="GetActiveAttrib" template="GetActiveAttrib"/>
+	<function name="GetAttribLocation" template="GetAttribLocation"/>
+	<function name="BindAttribLocation" template="BindAttribLocation"/>
+	<function name="GetUniformLocation" template="GetUniformLocation"/>
+	<function name="GetActiveUniform" template="GetActiveUniform"/>
+
+	<function name="Uniform1f" template="Uniform" gltype="GLfloat" vector_size="1" expand_vector="true"/>
+	<function name="Uniform2f" template="Uniform" gltype="GLfloat" vector_size="2" expand_vector="true"/>
+	<function name="Uniform3f" template="Uniform" gltype="GLfloat" vector_size="3" expand_vector="true"/>
+	<function name="Uniform4f" template="Uniform" gltype="GLfloat" vector_size="4" expand_vector="true"/>
+	<function name="Uniform1i" template="Uniform" gltype="GLint" vector_size="1" expand_vector="true"/>
+	<function name="Uniform2i" template="Uniform" gltype="GLint" vector_size="2" expand_vector="true"/>
+	<function name="Uniform3i" template="Uniform" gltype="GLint" vector_size="3" expand_vector="true"/>
+	<function name="Uniform4i" template="Uniform" gltype="GLint" vector_size="4" expand_vector="true"/>
+
+	<function name="Uniform1fv" template="Uniform" gltype="GLfloat" vector_size="1"/>
+	<function name="Uniform2fv" template="Uniform" gltype="GLfloat" vector_size="2"/>
+	<function name="Uniform3fv" template="Uniform" gltype="GLfloat" vector_size="3"/>
+	<function name="Uniform4fv" template="Uniform" gltype="GLfloat" vector_size="4"/>
+	<function name="Uniform1iv" template="Uniform" gltype="GLint" vector_size="1"/>
+	<function name="Uniform2iv" template="Uniform" gltype="GLint" vector_size="2"/>
+	<function name="Uniform3iv" template="Uniform" gltype="GLint" vector_size="3"/>
+	<function name="Uniform4iv" template="Uniform" gltype="GLint" vector_size="4"/>
+
+	<function name="UniformMatrix2fv" template="UniformMatrix" gltype="GLfloat" vector_size="2"/>
+	<function name="UniformMatrix3fv" template="UniformMatrix" gltype="GLfloat" vector_size="3"/>
+	<function name="UniformMatrix4fv" template="UniformMatrix" gltype="GLfloat" vector_size="4"/>
+
+	<function name="ValidateProgram" template="ValidateProgram"/>
+
+	<function name="GenerateMipmap" template="GenerateMipmap"/>
+	<function name="BindFramebuffer" template="BindFramebuffer"/>
+	<function name="DeleteFramebuffers" template="DeleteFramebuffers"/>
+	<function name="GenFramebuffers" template="GenFramebuffers"/>
+	<function name="BindRenderbuffer" template="BindRenderbuffer"/>
+	<function name="DeleteRenderbuffers" template="DeleteRenderbuffers"/>
+	<function name="GenRenderbuffers" template="GenRenderbuffers"/>
+	<function name="RenderbufferStorage" external="true" template="RenderbufferStorage"/>
+	<function name="FramebufferRenderbuffer" template="FramebufferRenderbuffer"/>
+	<function name="FramebufferTexture2D" template="FramebufferTexture2D"/>
+	<function name="FramebufferTexture3DOES" template="FramebufferTexture3D"/>
+	<function name="CheckFramebufferStatus" template="CheckFramebufferStatus"/>
+	<function name="GetFramebufferAttachmentParameteriv" template="GetFramebufferAttachmentParameter" gltype="GLint"/>
+	<function name="GetRenderbufferParameteriv" template="GetRenderbufferParameter" gltype="GLint"/>
+	<function name="IsRenderbuffer" template="IsRenderbuffer"/>
+	<function name="IsFramebuffer" template="IsFramebuffer"/>
+
+	<function name="IsShader" template="IsShader"/>
+	<function name="GetShaderiv" template="GetShader" gltype="GLint"/>
+	<function name="GetAttachedShaders" template="GetAttachedShaders"/>
+	<function name="GetShaderInfoLog" template="GetShaderInfoLog"/>
+	<function name="GetProgramInfoLog" template="GetProgramInfoLog"/>
+	<function name="GetShaderSource" template="GetShaderSource"/>
+	<function name="GetShaderPrecisionFormat" template="GetShaderPrecisionFormat"/>
+	<function name="GetUniformfv" template="GetUniform" gltype="GLfloat"/>
+	<function name="GetUniformiv" template="GetUniform" gltype="GLint"/>
+
+        <!-- EXT_multi_draw_arrays -->
+        <function name="MultiDrawArraysEXT" template="MultiDrawArrays"/>
+        <function name="MultiDrawElementsEXT" template="MultiDrawElements"/>
+
+        <!-- OES_EGL_image -->
+        <function name="EGLImageTargetTexture2DOES" template="EGLImageTargetTexture2D"/>
+        <function name="EGLImageTargetRenderbufferStorageOES" template="EGLImageTargetRenderbufferStorage"/>
+</api>
+
+</apispec>

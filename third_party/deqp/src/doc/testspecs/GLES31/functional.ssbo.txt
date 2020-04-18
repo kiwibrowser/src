@@ -1,0 +1,69 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Shader Storage Buffer Object / Buffer Block Tests
+
+Tests:
+ + dEQP-GLES31.functional.ssbo.*
+
+Includes:
+ + SSBO access from compute shaders
+ + Basic SSBO usage
+   - Binding and unbinding uniform buffers
+   - Writing uniform buffer data with glBufferData()
+ + Binding SSBOs to buffer blocks
+   - glBindBufferRange()
+   - glBindBufferBase()
+   - glShaderStorageBlockBinding()
+ + Querying buffer block memory layout
+ + Layout sanity verification
+ + std140 and std430 layout verification
+ + Buffer blocks GLSL
+   - Basic scalar, vector and matrix types in buffer blocks
+   - Samplers in buffer blocks - as negative case!
+   - Structures and arrays in buffer blocks
+   - Buffer block instance names
+   - Buffer block arrays
+   - Unsized arrays as a last element of buffer block
+   - Layout qualifiers: shared, packed, std140, row_major, column_major
+   - Unused variables in buffer blocks
+ * Atomic operations
+
+Excludes:
+ + Access from other shader shader stages (currently compute only)
+ + Negative tests
+
+Description:
+
+SSBO layout and access tests generate compute shader code based on interface
+declaration. Shader is compiled and layout is queried. Validity checks are
+performed to the layout, and in case of std140 and std430 layouts the layout
+is compared against a full reference layout.
+
+Single compute shader invocation is issued. Shader reads and/or writes to
+SSBO. Reads are validated by comparing values to constant values declared in
+shader text. Writes are validated by reading back the SSBO and comparing
+against expected values.
+
+Atomic operation test cases use a single SSBO for both input data, output data
+and data operated with atomic memory functions. Multiple work groups of size
+3x2x1 is issued and each invocation executes atomic operation with per-
+invocation data. Result values are then stored into SSBO. Results are
+validated by mapping buffer and doing comparison that varies per function. The
+input values are chosen so that comparison can detect obvious non-atomic
+behavior.

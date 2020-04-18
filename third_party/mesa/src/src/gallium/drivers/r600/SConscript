@@ -1,0 +1,18 @@
+Import('*')
+
+env = env.Clone()
+
+env.PkgUseModules('DRM_RADEON')
+
+env.Append(CPPPATH = [
+    '#/include',
+])
+
+r600 = env.ConvenienceLibrary(
+    target = 'r600',
+    source = env.ParseSourceList('Makefile.sources', 'C_SOURCES')
+    )
+
+env.Alias('r600', r600)
+
+Export('r600')

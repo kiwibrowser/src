@@ -1,0 +1,24 @@
+#!/bin/bash -e
+# Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This is a simple wrapper around ./google_appengine/dev_appserver.py
+
+# https://cloud.google.com/appengine/downloads#Google_App_Engine_SDK_for_Python
+SDK_VER="1.9.40"
+
+srcdir="${0%/*}"
+pushd "${srcdir}" >/dev/null
+
+if [ ! -d google_appengine ]; then
+  zip="google_appengine_${SDK_VER}.zip"
+  wget -c https://storage.googleapis.com/appengine-sdks/featured/${zip}
+  echo "Unpacking ${zip}"
+  unzip -q ${zip}
+fi
+
+popd >/dev/null
+
+HOST=$(hostname | awk -F. '{print $1}')
+exec "${srcdir}"/google_appengine/dev_appserver.py --host ${HOST} "$@"

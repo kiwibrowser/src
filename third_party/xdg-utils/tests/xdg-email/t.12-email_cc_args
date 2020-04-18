@@ -1,0 +1,43 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_cc_args() {
+test_start "$FUNCNAME: verify cc/bcc/subject/body/attach arguments work"
+
+
+addr="$XDG_TEST_SHORTID@portland.freedesktop.org"
+ADDR_TO="to_$addr"
+ADDR_CC="cc_$addr"
+ADDR_BCC="bcc_$addr"
+SUBJ="I am a subject about $XDG_TEST_SHORTID"
+BODY="I am the body. $XDG_TEST_SHORTID is short for $XDG_TEST_ID"
+
+test_init
+
+require_notroot
+## Require a running X server
+assert_display
+
+test_procedure
+
+assert_exit 0 xdg-email --cc "$ADDR_CC" --bcc "$ADDR_BCC" \
+ --subject "$SUBJ" --body "$BODY" "$ADDR_TO"
+
+assert_nostdout
+assert_nostderr
+
+assert_interactive "Did a new email open to '$ADDR_TO'?" y
+assert_interactive "Is the cc: line '$ADDR_CC'?" y
+assert_interactive "Is the bcc: line '$ADDR_BCC'?" y
+assert_interactive "Is the subject: line '$SUBJ'?" y
+assert_interactive "Is the body '$BODY'?" y
+assert_interactive "Please close any email windows opened by the test." C
+
+test_result
+}
+
+run_test test_cc_args

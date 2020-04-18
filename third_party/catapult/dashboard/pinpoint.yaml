@@ -1,0 +1,73 @@
+service: pinpoint
+
+runtime: python27
+api_version: 1
+threadsafe: true
+instance_class: F4_1G
+
+libraries:
+- name: pycrypto
+  version: "2.6"
+- name: webapp2
+  version: "2.5.1"
+
+handlers:
+
+- url: /api/migrate
+  script: dashboard.pinpoint.dispatcher.APP
+  login: admin
+  secure: always
+  auth_fail_action: unauthorized
+
+- url: /api/generate-results2/.*
+  script: dashboard.pinpoint.dispatcher.APP
+  login: admin
+  secure: always
+
+- url: /api/run/.*
+  script: dashboard.pinpoint.dispatcher.APP
+  login: admin
+  secure: always
+
+- url: /api/.*
+  script: dashboard.pinpoint.dispatcher.APP
+  secure: always
+
+- url: /components/(.*)/(.*\.(html|js|css))$
+  static_files: polymer/components/\1/\2
+  upload: polymer/components/.*/.*\.(html|js|css)$
+  secure: always
+
+- url: /dashboard/elements/(.*\.html)$
+  static_files: dashboard/elements/\1
+  upload: dashboard/elements/.*\.html$
+  secure: always
+
+- url: /static
+  static_dir: dashboard/pinpoint/static
+  secure: always
+
+- url: /elements/(.*\.html)$
+  static_files: dashboard/pinpoint/elements/\1
+  upload: dashboard/pinpoint/elements/.*\.html$
+  secure: always
+
+- url: /vulcanized_histograms_viewer/
+  static_dir: vulcanized_histograms_viewer/
+  secure: always
+  application_readable: true
+
+- url: /flot/(.*\.js)$
+  static_files: flot/\1
+  upload: flot/.*\.js$
+  secure: always
+
+- url: /jquery/(.*\.js)$
+  static_files: jquery/\1
+  upload: jquery/.*\.js$
+  secure: always
+
+- url: /.*
+  static_files: dashboard/pinpoint/index/index.html
+  upload: dashboard/pinpoint/index/index.html
+  secure: always

@@ -1,0 +1,51 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Blend Equation Advanced (GL_KHR_blend_equation_advanced)
+
+Tests:
+ + dEQP-GLES31.functional.blend_equation_advanced.*
+
+Includes:
+ + Validation of all advanced blending modes
+ + Rendering into default framebuffer
+ + Rendering into sRGB FBO
+ + Rendering into MSAA FBO
+ + glBlendBarrierKHR() usage
+ + Validation of coherent blending (if supported)
+
+Excludes (will be added later):
+ + Use of blend_support_all qualifier
+ + Interaction with other per-fragment operations
+ + Non-premultiplied / invalid color inputs
+ + Negative tests
+
+Description:
+
+Advanced blending tests render two or more overlapping quads. First quad is
+rendered without blending, while subsequent quads have the advanced blend mode
+enabled. Results are always verified against a reference implementation. In
+modes other than HSL, bilinear comparison is used. in HSL modes fuzzy
+comparison is used as minor precision differences can cause relatively large
+deviations in rendered images.
+
+In basic, srgb, and msaa tests, only two quads are rendered. In barrier tests
+multiple quads are rendered, one quad per draw call. A blend barrier call is
+made between each overlapping quad with advanced blending enabled. In coherent
+and coherent_msaa tests all quads that have blending enabled are rendered in a
+single draw call.

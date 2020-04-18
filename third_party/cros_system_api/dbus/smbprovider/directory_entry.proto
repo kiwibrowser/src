@@ -1,0 +1,221 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package smbprovider;
+
+// ErrorType matches 1:1 to FileSystemProvider#ProviderError in Chromium up
+// until ERROR_PROVIDER_ERROR_COUNT. The ErrorTypes past that are specific to
+// SmbProvider.
+enum ErrorType {
+  ERROR_NONE = 0;
+  ERROR_OK = 1;
+  ERROR_FAILED = 2;
+  ERROR_IN_USE = 3;
+  ERROR_EXISTS = 4;
+  ERROR_NOT_FOUND = 5;
+  ERROR_ACCESS_DENIED = 6;
+  ERROR_TOO_MANY_OPENED = 7;
+  ERROR_NO_MEMORY = 8;
+  ERROR_NO_SPACE = 9;
+  ERROR_NOT_A_DIRECTORY = 10;
+  ERROR_INVALID_OPERATION = 11;
+  ERROR_SECURITY = 12;
+  ERROR_ABORT = 13;
+  ERROR_NOT_A_FILE = 14;
+  ERROR_NOT_EMPTY = 15;
+  ERROR_INVALID_URL = 16;
+  ERROR_IO = 17;
+  // Count of ProviderError.
+  ERROR_PROVIDER_ERROR_COUNT = 18;
+  // The following errors are not ProviderErrors, instead they are specific to
+  // SmbProvider. The jump in int value is to account for possible future
+  // additions to ProviderError.
+  ERROR_DBUS_PARSE_FAILED = 50;
+}
+
+message DirectoryEntryProto {
+  optional bool is_directory = 1;
+  optional string name = 2;
+  // Size in bytes.
+  optional int64 size = 3;
+  // Seconds since unix epoch.
+  optional int64 last_modified_time = 4;
+}
+
+// DirectoryEntryListProto is included in responses to ReadDirectory D-Bus
+// method calls.
+message DirectoryEntryListProto { repeated DirectoryEntryProto entries = 1; }
+
+// Used for passing inputs into SmbProvider.Mount().
+message MountOptionsProto {
+  // Path of the share to be mounted. (e.g. "smb://qnap/testshare")
+  optional string path = 1;
+
+  // Authentication parameters.
+  optional string workgroup = 2;
+  optional string username = 3;
+}
+
+// Used for passing inputs into SmbProvider.Unmount().
+message UnmountOptionsProto {
+  // ID of the mount returned from Mount().
+  optional int32 mount_id = 1;
+}
+
+// Used for passing inputs into SmbProvider.ReadDirectory().
+message ReadDirectoryOptionsProto {
+  // ID of the mount returned from Mount().
+  optional int32 mount_id = 1;
+  // Path of the directory to be read. The paths are relative to the mount root.
+  // (e.g. "/testfolder")
+  optional string directory_path = 2;
+}
+
+// Used for passing inputs into SmbProvider.GetMetadataEntry().
+message GetMetadataEntryOptionsProto {
+  // ID of the mount returned from Mount().
+  optional int32 mount_id = 1;
+  // Path of the entry to be read. This can be a file or directory path.
+  // The paths are relative to the mount root. (e.g. "/testfolder/dog.jpg")
+  optional string entry_path = 2;
+}
+
+// Used for passing inputs into SmbProvider.OpenFile().
+message OpenFileOptionsProto {
+  // ID of the mount returned from Mount().
+  optional int32 mount_id = 1;
+  // Path of the file to be opened. This must be a file path.
+  // Paths are relative to the mount root, e.g. "/animals/dog.jpg".
+  optional string file_path = 2;
+  // Boolean indicating write status. False indicates read only.
+  optional bool writeable = 3;
+}
+
+// Used for passing inputs into SmbProvider.CloseFile().
+message CloseFileOptionsProto {
+  // ID of the mount returned from Mount().
+  optional int32 mount_id = 1;
+  // ID of the file returned from OpenFile().
+  optional int32 file_id = 2;
+}
+
+// Used for passing inputs into SmbProvider.ReadFile().
+message ReadFileOptionsProto {
+  // ID of the mount returned from Mount().
+  optional int32 mount_id = 1;
+  // ID of the file returned from OpenFile().
+  optional int32 file_id = 2;
+  // Offset of the file to be read.
+  optional int64 offset = 3;
+  // Length in bytes to be read.
+  optional int32 length = 4;
+}
+
+// Used for passing inputs into SmbProvider.DeleteEntry().
+message DeleteEntryOptionsProto {
+  // ID of the mount returned from Mount().
+  optional int32 mount_id = 1;
+  // Path of the entry to be deleted. This can be a file or directory path.
+  // The paths are relative to the mount root. (e.g. "/testfolder/dog.jpg")
+  optional string entry_path = 2;
+  // Boolean indicating whether the delete should be recursive for directories.
+  optional bool recursive = 3;
+}
+
+// Used for passing inputs into SmbProvider.CreateFile().
+message CreateFileOptionsProto {
+  // ID of the mount returned from Mount().
+  optional int32 mount_id = 1;
+  // Path of the file to be created. Paths are relative to the mount root,
+  // e.g. "/animals/dog.jpg".
+  optional string file_path = 2;
+}
+
+// Used for passing inputs into SmbProvider.Truncate().
+message TruncateOptionsProto {
+  // ID of the mount returned from Mount().
+  optional int32 mount_id = 1;
+  // Path of the file to be truncated. Paths are relative to the mount root,
+  // e.g. "/animals/dog.jpg".
+  optional string file_path = 2;
+  // New desired length of the file.
+  optional int64 length = 3;
+}
+
+// Used for passing inputs into SmbProvider.WriteFile().
+message WriteFileOptionsProto {
+  // ID of the mount returned from Mount().
+  optional int32 mount_id = 1;
+  // ID of the file returned from OpenFile().
+  optional int32 file_id = 2;
+  // Offset of the file for the write.
+  optional int64 offset = 3;
+  // Length of data being written.
+  optional int32 length = 4;
+}
+
+// Used for passing inputs into SmbProvider.CreateDirectory().
+message CreateDirectoryOptionsProto {
+  // ID of the mount returned from Mount().
+  optional int32 mount_id = 1;
+  // Path of the directory to be created. Paths are relative to the mount root.
+  // (e.g. "/testfolder/dogs")
+  optional string directory_path = 2;
+  // Boolean indicating whether the create should be recursive, meaning the
+  // parent directories will also be created if they currently don't exist.
+  optional bool recursive = 3;
+}
+
+// Used for passing inputs into SmbProvider.MoveEntry().
+message MoveEntryOptionsProto {
+  // ID of the mount returned from Mount().
+  optional int32 mount_id = 1;
+  // Source path of the entry to be moved. This can be a file or directory path.
+  // Paths are relative to the mount root. (e.g. "/testfolder/dog.jpg")
+  optional string source_path = 2;
+  // Destination path for the entry to be moved to. This must be a non-existent
+  // file or directory path. Paths are relative to the mount
+  // root. (e.g. "/testfolder/dog.jpg")
+  optional string target_path = 3;
+}
+
+// Used for passing inputs into SmbProvider.CopyEntry().
+message CopyEntryOptionsProto {
+  // ID of the mount returned from Mount().
+  optional int32 mount_id = 1;
+  // Source path of the entry to be copied. This can be a file or directory
+  // path. Paths are relative to the mount root. (e.g. "/testfolder/dog.jpg")
+  optional string source_path = 2;
+  // Destination path for the entry to be copied to. This must be a non-existent
+  // file or directory path. Paths are relative to the mount root.
+  // (e.g. "/testfolder/dog.jpg")
+  optional string target_path = 3;
+}
+
+message GetDeleteListOptionsProto {
+  optional int32 mount_id = 1;
+  optional string entry_path = 2;
+}
+
+message DeleteListProto {
+  repeated string entries = 1;
+}
+
+// Used for passing inputs into SmbProvider.GetShares().
+message GetSharesOptionsProto {
+  // Url of the server containing the shares. (e.g. "smb://192.168.0.1")
+  optional string server_url = 1;
+}
+
+// Used for passing inputs into SmbProvider.Remount().
+message RemountOptionsProto {
+  // Path of the share to be remounted. (e.g. "smb://192.168.0.1/testshare")
+  optional string path = 1;
+  // ID to assign to the mount.
+  optional int32 mount_id = 2;
+}

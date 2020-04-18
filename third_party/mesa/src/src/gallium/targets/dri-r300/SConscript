@@ -1,0 +1,26 @@
+Import('*')
+
+env = drienv.Clone()
+
+env.Append(CPPDEFINES = ['GALLIUM_RBUG', 'GALLIUM_TRACE', 'GALLIUM_GALAHAD'])
+
+env.Prepend(LIBS = [
+    st_dri,
+    radeonwinsys,
+    r300,
+    galahad,
+    trace,
+    rbug,
+    mesa,
+    glsl,
+    gallium,
+    COMMON_DRI_DRM_OBJECTS
+])
+
+module = env.SharedLibrary(
+    target ='r300_dri.so',
+    source = 'target.c',
+    SHLIBPREFIX = '',
+)
+
+env.Alias('dri-r300', module)

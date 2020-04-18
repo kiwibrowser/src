@@ -1,0 +1,28 @@
+#!/bin/bash
+
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+test_user_install_missing_file() {
+INPUT_FILE='non-existant-file.xml'
+
+test_start "$FUNCNAME: install mime type as user with missing file $INPUT_FILE"
+test_purpose "Verify that the correct error is generated when the mime file is missing."
+
+## Check dependencies
+test_init
+
+require_notroot
+assert_nofile "$INPUT_FILE"
+
+## Main test
+test_procedure
+
+assert_exit 2 xdg-mime install --mode user "$INPUT_FILE"
+assert_stderr
+assert_nostdout
+
+test_result 
+}
+
+run_test test_user_install_missing_file

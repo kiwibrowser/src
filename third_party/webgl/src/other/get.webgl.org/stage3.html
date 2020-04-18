@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta http-equiv="X-UA-Compatible" content="chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"></meta>
+<script type="text/javascript" src="troubleshooting/DoNotCopyOrLinkThisFileElseYouWillNotGetAutoUpdatedHelpForYourUsers.js"></script>
+<script type="text/javascript" src="tdl/tdl-minified.js"></script>
+<script type="text/javascript" src="logo3.js"></script>
+<script type="text/javascript">
+/**/
+
+function $$(x) {
+    return document.getElementById(x);
+}
+
+// Add indexOf ot IE.
+if(!Array.indexOf){
+    Array.prototype.indexOf = function(obj){
+        for(var i=0; i<this.length; i++){
+            if(this[i]==obj){
+                return i;
+            }
+        }
+        return -1;
+    }
+}
+
+var canvas, gl;
+
+function launchLogo() {
+    initializeLogo(canvas);
+}
+
+function log(msg) {
+    var d = document.createElement("div");
+    d.appendChild(document.createTextNode(msg));
+    document.body.appendChild(d);
+}
+
+function removeClass(element, clas) {
+    // Does not work in IE var classes = element.getAttribute("class");
+    var classes = element.className;
+    if (classes) {
+        var cs = classes.split(/\s+/);
+        if (cs.indexOf(clas) != -1) {
+            cs.splice(cs.indexOf(clas), 1);
+        }
+        // Does not work in IE element.setAttribute("class", cs.join(" "));
+        element.className = cs.join(" ");
+    }
+}
+
+function addClass(element, clas) {
+    element.className = element.className + " " + clas;
+}
+
+function pageLoaded() {
+    removeClass($$("have-javascript"), "webgl-hidden");
+    addClass($$("no-javascript"), "webgl-hidden");
+    b = BrowserDetect;
+    b.init();
+    canvas = document.getElementById("webgl-logo");
+    var experimental = false;
+    try { gl = canvas.getContext("webgl"); }
+    catch (x) { gl = null; }
+
+    if (gl == null) {
+        try { gl = canvas.getContext("experimental-webgl"); experimental = true; }
+        catch (x) { gl = null; }
+    }
+
+    if (gl) {
+        // hide/show phrase for webgl-experimental
+        $$("webgl-experimental").style.display = experimental ? "auto" : "none";
+
+        // Set the support link to the correct URL for the browser.
+        $$("support-link").href = b.urls.troubleshootingUrl;
+
+        // show webgl supported div, and launch webgl demo
+        removeClass($$("webgl-yes"), "webgl-hidden");
+        launchLogo();
+    } else if ("WebGLRenderingContext" in window) {
+        // not a foolproof way to check if the browser
+        // might actually support WebGL, but better than nothing
+        removeClass($$("webgl-disabled"), "webgl-hidden");
+
+        // Do we know this browser?
+        if (b.browser != "unknown") {
+            // Yes. So show the known-browser message.
+            removeClass($$("known-browser"), "webgl-hidden");
+
+            // Hide the unknonw-browser message.
+            addClass($$("unknown-browser"), "webgl-hidden");
+
+            // Set the correct link for troubleshooting.
+            $$("troubleshooting-link").href = b.urls.troubleshootingUrl;
+        }
+    } else {
+        // Show the no webgl message.
+        removeClass($$("webgl-no"), "webgl-hidden");
+
+        // Do we know the browser and can it be upgraded?
+        if (b.browser != "unknown" && b.urls.upgradeUrl) {
+            // Yes, show the browser and the upgrade link.
+            $$("name").innerHTML = b.browser;
+            $$("upgrade-link").href = b.urls.upgradeUrl;
+        } else {
+            // No, so only the link for browser for this platform.
+            // TODO: Display "No known browsers for your platform.
+            randomizeBrowsers();
+            addClass($$("upgrade-browser"), "webgl-hidden");
+            removeClass($$("get-browser"), "webgl-hidden");
+            $$("platform").innerHTML = b.platform;
+        }
+    }
+}
+
+function randomizeBrowsers() {
+
+    var bl = $$("webgl-browser-list");
+    var browsers = [];
+    var infos = b.platformInfo.browsers;
+    for (var ii = 0; ii < infos.length; ++ii) {
+      browsers.push({
+        info: infos[ii],
+        weight: Math.random()
+      });
+    }
+
+    browsers = browsers.sort(function(a, b) {
+        if (a.weight < b.weight) return -1;
+        if (a.weight > b.weight) return 1;
+        return 0;
+    });
+
+    for (var ii = 0; ii < browsers.length; ++ii) {
+        var info = browsers[ii].info;
+        var div = document.createElement("div");
+        var a = document.createElement("a");
+        a.href = info.url;
+        a.innerHTML = info.name;
+        div.appendChild(a);
+        bl.appendChild(div);
+    }
+}
+
+// addEventListener does not work on IE7/8.
+window.onload = pageLoaded;
+</script>
+
+<style type="text/css">
+
+body {
+    background: #333;
+    font-family: sans-serif;
+}
+
+.roundbox {
+    max-width: 500px;
+    margin: 1em auto 1em auto;
+    padding: 0em 0.5em 0em 0.5em;
+
+    border: 2px solid #ccc;
+    background: #eee;
+
+    -moz-border-radius: 5px 5px;
+    -webkit-border-radius: 5px 5px;
+    -o-border-radius: 5px 5px;
+    border-radius: 5px 5px;
+}
+
+.webgl-div {
+}
+
+.webgl-bottom {
+    background: #aaa;
+}
+
+h1 {
+    background: transparent;
+    color: #ddd;
+    text-shadow: #aaa 3px 3px 2px;
+    text-align: center;
+}
+
+#webgl-logo {
+}
+
+.webgl-hidden {
+    display: none;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>Can I use WebGL?</h1>
+
+<div class="roundbox">
+<div class="webgl-hidden" id="have-javascript">
+<div class="webgl-hidden webgl-div" id="webgl-yes">
+  <p>Yes!  Your browser supports WebGL!  <span id="webgl-experimental">(However,
+it indicates that support is experimental; you might see issues with some
+content.)  </span>You should see a spinning WebGL logo below.  If you do not,
+<a id="support-link">please visit the support site for your browser</a>.</p>
+
+<p style="text-align: center"><canvas width="300" height="200" id="webgl-logo"></canvas></p>
+
+<p>Check out some of the following links to learn more about WebGL and to find more web applications using WebGL.</p>
+
+<ul>
+<li><a href="http://khronos.org/webgl/wiki/">WebGL Wiki</a></li>
+<li>For developers: <a href="http://learningwebgl.com/">Learning WebGL Blog</a></li>
+</ul>
+</div>
+
+<div class="webgl-hidden webgl-div" id="webgl-disabled">
+<p>Hmm.  While your browser seems to support WebGL, it is disabled or unavailable.  If possible, please ensure that you are running the latest drivers for your video card.</p>
+<p id="known-browser" class="webgl-hidden"><a id="troubleshooting-link" href="">For more help, please click this link</a>.</p>
+<p id="unknown-browser">For more help, please visit the support site for your browser.</p>
+</div>
+
+<div class="webgl-hidden webgl-div" id="webgl-no">
+<p>Oh no!  We are sorry, but your browser does not seem to support WebGL.</p>
+<div id="upgrade-browser">
+<p><a id="upgrade-link" href="">You can upgrade <span id="name"></span> by clicking this link.</a></p></div>
+<div id="get-browser" class="webgl-hidden">
+<p>You may want to download one of the following browsers to view WebGL content.</p>
+
+<p>The following browsers support WebGL on <span id="platform"></span>:</p>
+
+<div id="webgl-browser-list">
+</div>
+</div>
+</div>
+</div>
+<div id="no-javascript">
+You must enable JavaScript to use WebGL.
+</div>
+</div>
+
+<div class="webgl-bottom roundbox">
+Want more information about WebGL?  <a href="http://khronos.org/webgl/">Visit khronos.org/webgl</a>.
+</div>
+
+<script id="modelVertexShader" type="text/something-not-javascript">
+uniform mat4 worldViewProjection;
+uniform mat4 world;
+uniform mat4 viewInverse;
+uniform mat4 worldInverseTranspose;
+uniform vec3 lightWorldPos;
+attribute vec4 position;
+attribute vec3 normal;
+attribute vec2 texCoord;
+varying vec3 v_normal;
+varying vec3 v_surfaceToView;
+varying vec3 v_surfaceToLight;
+varying vec2 v_texCoord;
+void main() {
+  gl_Position = (worldViewProjection * position);
+  v_normal = (worldInverseTranspose * vec4(normal, 0)).xyz;
+  v_surfaceToView = (viewInverse[3] - (world * position)).xyz;
+  v_surfaceToLight = lightWorldPos - (world * position).xyz;
+  v_texCoord = texCoord;
+}
+
+</script>
+<script id="modelFragmentShader" type="text/something-not-javascript">
+#ifdef GL_ES
+precision highp float;
+#endif
+uniform vec4 lightColor;
+varying vec3 v_normal;
+varying vec3 v_surfaceToView;
+varying vec2 v_texCoord;
+varying vec3 v_surfaceToLight;
+uniform sampler2D diffuseSampler;
+
+uniform vec4 specular;
+uniform float shininess;
+uniform float specularFactor;
+
+vec4 lit(float l ,float h, float m) {
+  return vec4(1.0,
+              max(l, 0.0),
+              (l > 0.0) ? pow(max(0.0, h), m) : 0.0,
+              1.0);
+}
+
+void main() {
+  vec4 diffuse = texture2D(diffuseSampler, v_texCoord);
+  vec3 normal = normalize(v_normal);
+  vec3 surfaceToLight = normalize(v_surfaceToLight);
+  vec3 surfaceToView = normalize(v_surfaceToView);
+  vec3 halfVector = normalize(surfaceToLight + surfaceToView);
+  vec4 litR = lit(dot(normal, surfaceToLight),
+                    dot(normal, halfVector), shininess);
+  gl_FragColor = vec4((
+  lightColor * (diffuse * litR.y
+                        + specular * litR.z * specularFactor)).rgb,
+      diffuse.a);
+}
+</script>
+</body>
+</html>
+

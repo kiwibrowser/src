@@ -1,0 +1,72 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Explicit uniform location tests
+
+Tests:
+ + dEQP-GLES31.functional.uniform_location.*
+
+Includes:
+ + Location for all primitive types
+ + Location for (nested) structs and their members
+ + Location for (nested) arrays and all their elements
+ + Minimum and maximum location
+   - With all primitive types
+ + Linkage with locations defined in the vertex shader, fragment shader, both or neither
+   - Primitive types only
+ + Negative tests
+   - Duplicate location with various linkage and usage
+   - Overlapping structs and arrays with various linkage and usage
+
+Excludes:
+ + Samplers with dimensionality other than two or less than four color channels
+ + Deeply nested structs/arrays
+
+Description:
+
+All cases create a shader with suitable uniforms, some of which have layout
+qualifiers with a location specified. Locations of all uniforms in the shader
+are verified to match the given ones with glGetUniformLocation. Generated
+textures with a flat randomized color are bound to samplers. Other uniforms
+are assigned similarly randomized values.
+The shader contains hardcoded comparisons to these randomized values for each
+uniform that is being checked. It outputs white if all of the assigned uniform
+values match the hardcoded values. A quad is rendered and the output of the
+shader is verified to be fully white.
+
+All cases excluding negative and min/max use randomized locations between the
+spec defined minimum and maximum values [0, 1024) for all uniforms.
+
+Basic primitive type, array, nested array and min/max cases test with all basic
+types. Tests are done in both vertex and fragment shaders but with trivial
+linkage.
+
+Min/max cases assign a single primitive either the largest valid location as
+reported by the implementation or the smallest valid location (0) but are
+otherwise identical to the basic primitive type cases.
+
+Struct, nested struct and linkage cases are randomized.
+These cases do not necessarily use every declared uniform.
+These cases have declarations, locations specifiers and verification
+randomly split between the vertex and fragment shaders on a per-uniform basis.
+This includes leaving some locations unassigned.
+All primitive types used in these tests are randomized.
+Struct cases have a fixed number of members with a fixed nesting structure.
+
+Negative cases are not generated and share no logic with the other cases,
+instead expecting compile or link failures.

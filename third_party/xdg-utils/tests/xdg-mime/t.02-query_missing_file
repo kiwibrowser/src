@@ -1,0 +1,30 @@
+#!/bin/bash
+
+. "$XDG_TEST_DIR/include/testassertions.sh"
+
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+test_query_missing_file() {
+INPUT_FILE='non-existant-file.xml'
+
+test_start "$FUNCNAME: verify correct error for missing file: $INPUT_FILE"
+test_purpose "Verify that the correct error is generated when the mime file is missing. This is bug 7123 case 1"
+
+## Check dependencies
+test_init
+
+# query requires a desktop environment
+require_notroot
+assert_nofile "$INPUT_FILE"
+
+## Main test
+test_procedure
+
+assert_exit 2 xdg-mime query filetype "$INPUT_FILE"
+assert_stderr
+assert_nostdout
+
+test_result 
+}
+
+run_test test_query_missing_file

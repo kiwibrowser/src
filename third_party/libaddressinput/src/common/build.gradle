@@ -1,0 +1,67 @@
+/*
+ * Copyright (C) 2015 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+buildscript {
+    repositories {
+        mavenCentral()
+        mavenLocal()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:1.1.0'
+    }
+}
+
+apply plugin: 'java'
+
+sourceCompatibility = '1.7'
+targetCompatibility = '1.7'
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+sourceSets {
+    /* It's simpler if the test resources are next to the java sources. */
+    test {
+        resources {
+            srcDir 'src/test/java'
+        }
+    }
+}
+
+test {
+  /* Listen to events in the test execution lifecycle. */
+  beforeTest { descriptor -> logger.lifecycle("Running test: " + descriptor) }
+
+  /* Show standard out and standard error of the test JVM(s) on the console. */
+  // testLogging.showStandardStreams = true
+
+  /* Listen to standard out and standard error of the test JVM(s). */
+  // onOutput { descriptor, event ->
+  //   logger.lifecycle("Test: " + descriptor + " produced standard out/err: " + event.message )
+  // }
+}
+
+dependencies {
+  compile 'com.google.guava:guava-gwt:18.0'
+  /* Note that gradle will warn about this not being the same version as *
+   * the Android JSON library (but will not compile if it's removed).    */
+  compile 'org.json:json:20090211'
+  testCompile 'junit:junit:4.11'
+  testCompile 'com.google.truth:truth:0.25'
+  testCompile 'org.mockito:mockito-core:1.9.5'
+}
+

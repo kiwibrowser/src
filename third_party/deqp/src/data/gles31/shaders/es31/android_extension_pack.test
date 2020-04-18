@@ -1,0 +1,625 @@
+group extension_macros "Extension macro definitions"
+
+	case android_extension_pack_es31a
+		version 310 es
+		desc "Test GL_ANDROID_extension_pack_es31a macro"
+		require extension { "GL_ANDROID_extension_pack_es31a" }
+		values
+		{
+			output float out0 = 1.0;
+		}
+
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+
+			void main()
+			{
+				out0 = float(GL_ANDROID_extension_pack_es31a);
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+end
+
+group extension_directive "Extension directive"
+
+	case oes_sample_variables
+		version 310 es
+		desc "Test oes_sample_variables extension"
+		require extension { "GL_ANDROID_extension_pack_es31a" }
+		values
+		{
+			output float out0 = 1.0;
+		}
+
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+
+			void main()
+			{
+				out0 = (gl_SampleID < 0) ? (0.0) : (1.0);
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case oes_shader_image_atomic
+		version 310 es
+		desc "Test oes_shader_image_atomic extension"
+		require extension { "GL_ANDROID_extension_pack_es31a" }
+		expect build_successful
+
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			layout(binding=0, r32i) coherent uniform highp iimage2D u_image;
+
+			void main()
+			{
+				if (imageAtomicXor(u_image, ivec2(0, 0), 1) == 0)
+					discard;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case oes_shader_multisample_interpolation
+		version 310 es
+		desc "Test oes_shader_multisample_interpolation extension"
+		require extension { "GL_ANDROID_extension_pack_es31a" }
+		values
+		{
+			input float in0 = 1.0;
+			output float out0 = 1.0;
+		}
+
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			sample out highp float v_var;
+
+			void main()
+			{
+				v_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			sample in mediump float v_var;
+
+			void main()
+			{
+				out0 = v_var;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case oes_texture_storage_multisample_2d_array
+		version 310 es
+		desc "Test oes_texture_storage_multisample_2d_array extension"
+		require extension { "GL_ANDROID_extension_pack_es31a" }
+		expect build_successful
+
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			uniform mediump sampler2DMSArray u_sampler;
+
+			void main()
+			{
+				if (texelFetch(u_sampler, ivec3(0, 0, 0), 0).r > 0.5)
+					discard;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case ext_geometry_shader
+		version 310 es
+		desc "Test ext_geometry_shader extension"
+		require extension { "GL_ANDROID_extension_pack_es31a" }
+		values
+		{
+			input float in0 = 1.0;
+			output float out0 = 1.0;
+		}
+
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			out highp float geo_in;
+			void main()
+			{
+				geo_in = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		geometry ""
+			#version 310 es
+			${GEOMETRY_DECLARATIONS}
+			in lowp float geo_in[];
+			out mediump float geo_out;
+			void main()
+			{
+				for (int ndx = 0; ndx < gl_in.length(); ++ndx)
+				{
+					geo_out = geo_in[ndx];
+					gl_Position = gl_in[ndx].gl_Position;
+					EmitVertex();
+				}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float geo_out;
+			void main()
+			{
+				out0 = geo_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case ext_gpu_shader5
+		version 310 es
+		desc "Test ext_gpu_shader5 extension"
+		require extension { "GL_ANDROID_extension_pack_es31a" }
+		values
+		{
+			input float in0 = 1.0;
+			output float out0 = 2.0;
+		}
+
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			out highp float v_var;
+			void main()
+			{
+				v_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float v_var;
+			void main()
+			{
+				precise float fmaResult = fma(v_var, v_var, v_var);
+				out0 = fmaResult;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case ext_primitive_bounding_box
+		version 310 es
+		desc "Test ext_primitive_bounding_box extension"
+		require extension { "GL_ANDROID_extension_pack_es31a" }
+		values
+		{
+			input float in0 = 1.0;
+			output float out0 = 1.0;
+		}
+
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			out highp float tc_in;
+			void main()
+			{
+				tc_in = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 310 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			in highp float tc_in[];
+			out highp float tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+				// set bounding box to (-1,-1,-1, 1) .. (1,1,1,1)
+				gl_BoundingBoxEXT[0] = vec4(tc_in[0]-2.0, tc_in[1]-2.0, tc_in[2]-2.0, 1.0);
+				gl_BoundingBoxEXT[1] = vec4(tc_in[0], tc_in[1], tc_in[2], 1.0);
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 310 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			in highp float tc_out[];
+			out highp float te_out;
+			void main()
+			{
+				te_out = tc_out[2];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float te_out;
+			void main()
+			{
+				out0 = te_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case ext_shader_io_blocks
+		version 310 es
+		desc "Test ext_shader_io_blocks extension"
+		require extension { "GL_ANDROID_extension_pack_es31a" }
+		values
+		{
+			input float in0 = 1.0;
+			output float out0 = 1.0;
+		}
+
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			out VaryingIOBlockName { highp float v_var; } instanceName;
+			void main()
+			{
+				instanceName.v_var = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in VaryingIOBlockName { highp float v_var; } instanceName;
+			void main()
+			{
+				out0 = instanceName.v_var;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case ext_tessellation_shader
+		version 310 es
+		desc "Test ext_tessellation_shader extension"
+		require extension { "GL_ANDROID_extension_pack_es31a" }
+		values
+		{
+			input float in0 = 1.0;
+			output float out0 = 1.0;
+		}
+
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			out highp float tc_in;
+			void main()
+			{
+				tc_in = in0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		tessellation_control ""
+			#version 310 es
+			${TESSELLATION_CONTROL_DECLARATIONS}
+			in highp float tc_in[];
+			out highp float tc_out[];
+			void main()
+			{
+				tc_out[gl_InvocationID] = tc_in[gl_InvocationID];
+				${TESSELLATION_CONTROL_OUTPUT}
+			}
+		""
+		tessellation_evaluation ""
+			#version 310 es
+			${TESSELLATION_EVALUATION_DECLARATIONS}
+			in highp float tc_out[];
+			out highp float te_out;
+			void main()
+			{
+				te_out = tc_out[2];
+				${TESSELLATION_EVALUATION_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float te_out;
+			void main()
+			{
+				out0 = te_out;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case ext_texture_buffer
+		version 310 es
+		desc "Test ext_texture_buffer extension"
+		require extension { "GL_ANDROID_extension_pack_es31a" }
+		expect build_successful
+
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			uniform mediump samplerBuffer u_sampler;
+
+			void main()
+			{
+				if (textureSize(u_sampler) > 10)
+					discard;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case ext_texture_cube_map_array
+		version 310 es
+		desc "Test ext_texture_cube_map_array extension"
+		require extension { "GL_ANDROID_extension_pack_es31a" }
+		expect build_successful
+
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			uniform mediump samplerCubeArray u_sampler;
+
+			void main()
+			{
+				if (textureSize(u_sampler, 3).y > 10)
+					discard;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+end
+
+group implementation_limits "Extended implementation limits"
+
+	case max_fragment_atomic_counter_buffers
+		version 310 es
+		desc "Test MAX_FRAGMENT_ATOMIC_COUNTER_BUFFERS limit"
+		require extension { "GL_ANDROID_extension_pack_es31a" }
+		expect build_successful
+
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			layout(binding=0) uniform atomic_uint u_counter;
+
+			void main()
+			{
+				if (atomicCounterIncrement(u_counter) == 0u)
+					discard;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case max_fragment_atomic_counters
+		version 310 es
+		desc "Test MAX_FRAGMENT_ATOMIC_COUNTERS limit"
+		require extension { "GL_ANDROID_extension_pack_es31a" }
+		expect build_successful
+
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			layout(binding=0) uniform atomic_uint u_counter[8];
+
+			void main()
+			{
+				if (atomicCounterIncrement(u_counter[0]) == 0u)
+					discard;
+				if (atomicCounterIncrement(u_counter[1]) == 0u)
+					discard;
+				if (atomicCounterIncrement(u_counter[2]) == 0u)
+					discard;
+				if (atomicCounterIncrement(u_counter[3]) == 0u)
+					discard;
+				if (atomicCounterIncrement(u_counter[4]) == 0u)
+					discard;
+				if (atomicCounterIncrement(u_counter[5]) == 0u)
+					discard;
+				if (atomicCounterIncrement(u_counter[6]) == 0u)
+					discard;
+				if (atomicCounterIncrement(u_counter[7]) == 0u)
+					discard;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case max_fragment_image_uniforms
+		version 310 es
+		desc "Test MAX_FRAGMENT_IMAGE_UNIFORMS limit"
+		require extension { "GL_ANDROID_extension_pack_es31a" }
+		expect build_successful
+
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			layout(binding=0, r32i) uniform readonly highp iimage2D u_image0;
+			layout(binding=1, rgba16i) uniform readonly highp iimage3D u_image1;
+			layout(binding=2, rgba8ui) uniform readonly highp uimageCube u_image2;
+			layout(binding=3, rgba16f) uniform readonly highp image2DArray u_image3;
+
+			void main()
+			{
+				if (imageLoad(u_image0, ivec2(0, 0)).r == 0)
+					discard;
+				if (imageLoad(u_image1, ivec3(0, 0, 0)).r == 0)
+					discard;
+				if (imageLoad(u_image2, ivec3(0, 0, 0)).r == 0u)
+					discard;
+				if (imageLoad(u_image3, ivec3(0, 0, 0)).r == 0.0)
+					discard;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case max_fragment_shader_storage_blocks
+		version 310 es
+		desc "Test MAX_FRAGMENT_SHADER_STORAGE_BLOCKS limit"
+		require extension { "GL_ANDROID_extension_pack_es31a" }
+		expect build_successful
+
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			layout(binding=0, std430) coherent readonly buffer Buffer0
+			{
+				highp int val;
+				highp float vals[32];
+			} buffer0;
+			layout(binding=1, std140) volatile buffer Buffer1
+			{
+				highp float vals[];
+			} buffer1;
+			layout(binding=2, packed) restrict buffer Buffer2
+			{
+				highp int vals[15];
+			} buffer2;
+			layout(binding=3, std140) writeonly buffer Buffer3
+			{
+				highp vec3 vals[8];
+			} buffer3;
+
+			void main()
+			{
+				highp int readNdx = abs(int(gl_FragCoord.x));
+				highp int writeNdx = abs(int(gl_FragCoord.y));
+
+				if (buffer0.vals[readNdx % 32] == 0.0)
+					discard;
+
+				if (buffer1.vals[readNdx % 1024] == 0.0)
+					discard;
+				buffer1.vals[writeNdx % 1024] = float(readNdx);
+
+				if (buffer2.vals[readNdx % 15] == 0)
+					discard;
+				buffer2.vals[writeNdx % 15] = readNdx;
+
+				buffer3.vals[writeNdx % 8] = vec3(float(writeNdx), 0.0, float(readNdx));
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+end

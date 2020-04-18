@@ -1,0 +1,101 @@
+
+case correct_int_literal
+	version 300 es
+	values
+	{
+		uniform int u_ref = -1610612736;
+		output float out0 = 1.0;
+	}
+	both ""
+		#version 300 es
+		precision mediump float;
+		uniform highp int u_ref;
+		${DECLARATIONS}
+		void main()
+		{
+			highp int h = 0xA0000000;
+			out0 = 0.0;
+			if (h == u_ref)
+				out0 = 1.0;
+			${OUTPUT}
+		}
+	""
+end
+
+case int_overflow_1
+	version 300 es
+	expect compile_fail
+	both ""
+		#version 300 es
+		precision mediump float;
+		${DECLARATIONS}
+		void main()
+		{
+			highp int i = 5000000000;
+			out0 = 1.0;
+			${OUTPUT}
+		}
+	""
+end
+
+case int_overflow_2
+	version 300 es
+	expect compile_fail
+	both ""
+		#version 300 es
+		precision mediump float;
+		${DECLARATIONS}
+		void main()
+		{
+			highp int j = 0xFFFFFFFFF;
+			out0 = 1.0;
+			${OUTPUT}
+		}
+	""
+end
+
+case int_wrap_1
+	version 300 es
+	values { output int out0 = -2147483648; }
+	vertex ""
+		#version 300 es
+		${VERTEX_DECLARATIONS}
+		void main()
+		{
+			${VERTEX_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 300 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		void main()
+		{
+			out0 = 0x80000000;
+			${FRAGMENT_OUTPUT}
+		}
+	""
+end
+
+case int_wrap_2
+	version 300 es
+	values { output int out0 = -2147483648; }
+	vertex ""
+		#version 300 es
+		${VERTEX_DECLARATIONS}
+		void main()
+		{
+			${VERTEX_OUTPUT}
+		}
+	""
+	fragment ""
+		#version 300 es
+		precision mediump float;
+		${FRAGMENT_DECLARATIONS}
+		void main()
+		{
+			out0 = 2147483648;
+			${FRAGMENT_OUTPUT}
+		}
+	""
+end

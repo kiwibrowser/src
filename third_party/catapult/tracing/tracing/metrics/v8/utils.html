@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<!--
+Copyright 2016 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/base/category_util.html">
+<link rel="import" href="/tracing/base/math/piecewise_linear_function.html">
+<link rel="import" href="/tracing/base/math/range.html">
+<link rel="import" href="/tracing/base/math/range_utils.html">
+<link rel="import" href="/tracing/base/unit.html">
+<link rel="import" href="/tracing/extras/v8/v8_thread_slice.html">
+<link rel="import" href="/tracing/metrics/metric_registry.html">
+<link rel="import" href="/tracing/value/histogram.html">
+
+<script>
+'use strict';
+
+tr.exportTo('tr.metrics.v8.utils', function() {
+  // The title of the idle task event.
+  const IDLE_TASK_EVENT = 'SingleThreadIdleTaskRunner::RunTask';
+
+  // V8 execution event.
+  const V8_EXECUTE = 'V8.Execute';
+
+  // GC events start with this prefix.
+  const GC_EVENT_PREFIX = 'V8.GC';
+
+  // Special handling is required for full GCs inside low memory notification.
+  const FULL_GC_EVENT = 'V8.GCCompactor';
+
+  const LOW_MEMORY_EVENT = 'V8.GCLowMemoryNotification';
+
+  const MAJOR_GC_EVENT = 'MajorGC';
+  const MINOR_GC_EVENT = 'MinorGC';
+
+  // Maps the top-level GC events in timeline to telemetry friendly names.
+  const TOP_GC_EVENTS = {
+    'V8.GCCompactor': 'v8-gc-full-mark-compactor',
+    'V8.GCFinalizeMC': 'v8-gc-latency-mark-compactor',
+    'V8.GCFinalizeMCReduceMemory': 'v8-gc-memory-mark-compactor',
+    'V8.GCIncrementalMarking': 'v8-gc-incremental-step',
+    'V8.GCIncrementalMarkingFinalize': 'v8-gc-incremental-finalize',
+    'V8.GCIncrementalMarkingStart': 'v8-gc-incremental-start',
+    'V8.GCPhantomHandleProcessingCallback': 'v8-gc-phantom-handle-callback',
+    'V8.GCScavenger': 'v8-gc-scavenger'
+  };
+
+  const LOW_MEMORY_MARK_COMPACTOR = 'v8-gc-low-memory-mark-compactor';
+
+  /**
+   * Finds the first parent of the |event| for which the |predicate| holds.
+   */
+  function findParent(event, predicate) {
+    let parent = event.parentSlice;
+    while (parent) {
+      if (predicate(parent)) {
+        return parent;
+      }
+      parent = parent.parentSlice;
+    }
+    return null;
+  }
+
+  function isIdleTask(event) {
+    return event.title === IDLE_TASK_EVENT;
+  }
+
+  function isLowMemoryEvent(event) {
+    return event.title === LOW_MEMORY_EVENT;
+  }
+
+  function isV8Event(event) {
+    return event.title.startsWith('V8.');
+  }
+
+  function isV8ExecuteEvent(event) {
+    return event.title === V8_EXECUTE;
+  }
+
+  function isTopV8ExecuteEvent(event) {
+    return isV8ExecuteEvent(event) && findParent(isV8ExecuteEvent) === null;
+  }
+
+  function isGarbageCollectionEvent(event) {
+    // Low memory notification is handled specially because it contains
+    // several full mark compact events.
+    return event.title && event.title.startsWith(GC_EVENT_PREFIX) &&
+           event.title !== LOW_MEMORY_EVENT;
+  }
+
+  function isTopGarbageCollectionEvent(event) {
+    return event.title in TOP_GC_EVENTS;
+  }
+
+  function isForcedGarbageCollectionEvent(event) {
+    return findParent(event, isLowMemoryEvent) !== null;
+  }
+
+  function isSubGarbageCollectionEvent(event) {
+    // To reduce number of results, we return only the first level of GC
+    // subevents. Some subevents are nested in MajorGC or MinorGC events, so
+    // we have to check for it explicitly.
+    return isGarbageCollectionEvent(event) &&
+           event.parentSlice &&
+           (isTopGarbageCollectionEvent(event.parentSlice) ||
+            event.parentSlice.title === MAJOR_GC_EVENT ||
+            event.parentSlice.title === MINOR_GC_EVENT);
+  }
+
+  function isFullMarkCompactorEvent(event) {
+    return event.title === 'V8.GCCompactor';
+  }
+
+  function isIncrementalMarkingEvent(event) {
+    return event.title.startsWith('V8.GCIncrementalMarking');
+  }
+
+  function isLatencyMarkCompactorEvent(event) {
+    return event.title === 'V8.GCFinalizeMC';
+  }
+
+  function isMemoryMarkCompactorEvent(event) {
+    return event.title === 'V8.GCFinalizeMCReduceMemory';
+  }
+
+  function isScavengerEvent(event) {
+    return event.title === 'V8.GCScavenger';
+  }
+
+  function isCompileOptimizeRCSCategory(name) {
+    return name === 'Optimize';
+  }
+
+  function isCompileUnoptimizeRCSCategory(name) {
+    return name === 'Compile';
+  }
+
+  function isCompileParseRCSCategory(name) {
+    return name === 'Parse';
+  }
+
+  function isCompileRCSCategory(name) {
+    return name === 'Compile' || name === 'Optimize' || name === 'Parse';
+  }
+
+  function isV8RCSEvent(event) {
+    return event instanceof tr.e.v8.V8ThreadSlice;
+  }
+
+  function topGarbageCollectionEventName(event) {
+    if (event.title === FULL_GC_EVENT) {
+      // Full mark compact events inside a low memory notification
+      // are counted as low memory mark compacts.
+      if (findParent(event, isLowMemoryEvent)) {
+        return LOW_MEMORY_MARK_COMPACTOR;
+      }
+    }
+    return TOP_GC_EVENTS[event.title];
+  }
+
+  function subGarbageCollectionEventName(event) {
+    const topEvent = findParent(event, isTopGarbageCollectionEvent);
+    const prefix = topEvent ? topGarbageCollectionEventName(topEvent) :
+      'unknown';
+    // Remove redundant prefixes and convert to lower case.
+    const name = event.title.replace('V8.GC_MC_', '')
+        .replace('V8.GC_SCAVENGER_', '')
+        .replace('V8.GC_', '')
+        .replace(/_/g, '-').toLowerCase();
+    return prefix + '-' + name;
+  }
+
+  /**
+   * Filters events using the |filterCallback|, then groups events by the user
+   * the name computed using the |nameCallback|, and then invokes
+   * the |processCallback| with the grouped events.
+   * @param {Function} filterCallback Takes an event and returns a boolean.
+   * @param {Function} nameCallback Takes event and returns a string.
+   * @param {Function} processCallback Takes a name, and an array of events.
+   */
+  function groupAndProcessEvents(model, filterCallback,
+      nameCallback, processCallback) {
+    // Map: name -> [events].
+    const nameToEvents = {};
+    for (const event of model.getDescendantEvents()) {
+      if (!filterCallback(event)) continue;
+      const name = nameCallback(event);
+      nameToEvents[name] = nameToEvents[name] || [];
+      nameToEvents[name].push(event);
+    }
+    for (const [name, events] of Object.entries(nameToEvents)) {
+      processCallback(name, events);
+    }
+  }
+
+  /**
+   * Given a list of intervals, returns a new list with all overalapping
+   * intervals merged into a single interval.
+   */
+  function unionOfIntervals(intervals) {
+    if (intervals.length === 0) return [];
+    return tr.b.math.mergeRanges(
+        intervals.map(x => { return { min: x.start, max: x.end }; }), 1e-6,
+        function(ranges) {
+          return {
+            start: ranges.reduce(
+                (acc, x) => Math.min(acc, x.min), ranges[0].min),
+            end: ranges.reduce((acc, x) => Math.max(acc, x.max), ranges[0].max)
+          };
+        }
+    );
+  }
+
+  function hasV8Stats(globalMemoryDump) {
+    let v8stats = undefined;
+    globalMemoryDump.iterateContainerDumps(function(dump) {
+      v8stats = v8stats || dump.getMemoryAllocatorDumpByFullName('v8');
+    });
+    return !!v8stats;
+  }
+
+  function rangeForMemoryDumps(model) {
+    const startOfFirstDumpWithV8 =
+        model.globalMemoryDumps.filter(hasV8Stats).reduce(
+            (start, dump) => Math.min(start, dump.start), Infinity);
+    // Empty range.
+    if (startOfFirstDumpWithV8 === Infinity) return new tr.b.math.Range();
+    return tr.b.math.Range.fromExplicitRange(startOfFirstDumpWithV8, Infinity);
+  }
+
+  return {
+    findParent,
+    groupAndProcessEvents,
+    isForcedGarbageCollectionEvent,
+    isFullMarkCompactorEvent,
+    isGarbageCollectionEvent,
+    isIdleTask,
+    isIncrementalMarkingEvent,
+    isLatencyMarkCompactorEvent,
+    isLowMemoryEvent,
+    isMemoryMarkCompactorEvent,
+    isScavengerEvent,
+    isSubGarbageCollectionEvent,
+    isTopGarbageCollectionEvent,
+    isTopV8ExecuteEvent,
+    isV8Event,
+    isV8ExecuteEvent,
+    isV8RCSEvent,
+    isCompileRCSCategory,
+    isCompileOptimizeRCSCategory,
+    isCompileUnoptimizeRCSCategory,
+    isCompileParseRCSCategory,
+    rangeForMemoryDumps,
+    subGarbageCollectionEventName,
+    topGarbageCollectionEventName,
+    unionOfIntervals,
+  };
+});
+</script>

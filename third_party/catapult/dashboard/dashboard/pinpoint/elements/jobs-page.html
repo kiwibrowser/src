@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<!--
+Copyright 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/components/app-route/app-route.html">
+
+<link rel="import" href="/elements/base-style.html">
+<link rel="import" href="/elements/jobs-page/jobs-table.html">
+<link rel="import" href="/elements/jobs-page/new-job-fab.html">
+<link rel="import" href="/elements/loading-wrapper.html">
+
+<dom-module id="jobs-page">
+  <template>
+    <style include="base-style">
+      #job-count {
+        background: var(--paper-indigo-50);
+        color: var(--paper-indigo-500);
+      }
+
+      new-job-fab {
+        bottom: 2em;
+        position: fixed;
+        right: 2em;
+      }
+    </style>
+
+    <app-route route="{{route}}" pattern="/:sortBy:sortDescending" query-params="{{queryParams}}"></app-route>
+
+    <h1>
+      Jobs
+      <span id="job-count" class="badge">
+        [[jobCount(jobs)]]
+      </span>
+    </h1>
+    <loading-wrapper url="/api/jobs" headers="[[authHeaders]]" response="{{jobs}}">
+      <jobs-table id="jobs-table"
+          jobs="[[jobs.jobs]]"
+          sort-by="[[queryParams.sortBy]]"
+          sort-descending="[[queryParams.sortDescending]]">
+      </jobs-table>
+    </loading-wrapper>
+    <new-job-fab auth-headers="[[authHeaders]]"></new-job-fab>
+  </template>
+
+  <script>
+    'use strict';
+    Polymer({
+      is: 'jobs-page',
+
+      properties: {
+        jobs: {
+          type: Object,
+        },
+      },
+
+      jobCount(jobs) {
+        if (jobs.count >= jobs.max_count) {
+          return String(jobs.max_count) + '+';
+        }
+        return String(jobs.count);
+      }
+    });
+  </script>
+</dom-module>

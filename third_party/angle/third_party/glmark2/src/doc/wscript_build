@@ -1,0 +1,12 @@
+for name in bld.env.keys():
+    if name.startswith('FLAVOR_') and bld.env[name]:
+        target = bld.env[name]
+        bld(
+            features = 'subst',
+            source = 'glmark2.1.in',
+            target = bld.path.find_or_declare('%s.1' % target),
+            APPNAME = 'GLMARK2',
+            appname = target,
+            appversion = bld.env.GLMARK2_VERSION,
+            install_path = '${MANDIR}/man1'
+        )

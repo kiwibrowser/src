@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="MyAndroidApp" default="help">
+
+<!-- The local.properties file is created and updated by the 'android'
+     tool.
+     It contains the path to the SDK. It should *NOT* be checked into
+     Version Control Systems. -->
+    <property file="local.properties" />
+
+    <!-- The build.properties file can be created by you and is never touched
+         by the 'android' tool. This is the place to change some of the
+         default property values used by the Ant rules.
+         Here are some properties you may want to change/update:
+
+         source.dir
+             The name of the source directory. Default is 'src'.
+         out.dir
+             The name of the output directory. Default is 'bin'.
+
+         Properties related to the SDK location or the project target should
+         be updated using the 'android' tool with the 'update' action.
+
+         This file is an integral part of the build system for your
+         application and should be checked into Version Control Systems.
+
+         -->
+    <property file="build.properties" />
+
+    <!-- The default.properties file is created and updated by the 'android'
+         tool, as well as ADT.
+         This file is an integral part of the build system for your
+         application and should be checked into Version Control Systems. -->
+    <property file="default.properties" />
+
+    <!-- Custom Android task to deal with the project target, and import the
+         proper rules.
+         This requires ant 1.6.0 or above. -->
+    <path id="android.antlibs">
+        <pathelement path="${sdk.dir}/tools/lib/anttasks.jar" />
+        <pathelement path="${sdk.dir}/tools/lib/sdklib.jar" />
+        <pathelement path="${sdk.dir}/tools/lib/androidprefs.jar" />
+    </path>
+
+    <taskdef name="setup"
+        classname="com.android.ant.SetupTask"
+        classpathref="android.antlibs" />
+
+<!-- extension targets. Uncomment the ones where you want to do custom work
+     in between standard targets -->
+<!--
+    <target name="-pre-build">
+    </target>
+    <target name="-pre-compile">
+    </target>
+
+    [This is typically used for code obfuscation.
+     Compiled code location: ${out.classes.absolute.dir}
+     If this is not done in place, override ${out.dex.input.absolute.dir}]
+    <target name="-post-compile">
+    </target>
+-->
+
+
+    <!-- Execute the Android Setup task that will setup some properties
+         specific to the target, and import the build rules files.
+
+         The rules file is imported from
+            <SDK>/platforms/<target_platform>/ant/ant_rules_r#.xml
+
+         To customize existing targets, there are two options:
+         - Customize only one target:
+             - copy/paste the target into this file, *before* the
+               <setup> task.
+             - customize it to your needs.
+         - Customize the whole script.
+             - copy/paste the content of the rules files (minus the top node)
+               into this file, *after* the <setup> task
+             - disable the import of the rules by changing the setup task
+               below to <setup import="false" />.
+             - customize to your needs.
+    -->
+
+    <setup />
+
+    <!-- Define a place for the optimized classes. -->
+    <property name="out.proguard.absolute.jar"
+              location="${out.absolute.dir}/classes-processed.jar" />
+
+    <!-- Define a obfuscation mapping file. -->
+    <property name="out.proguard.absolute.map"
+              location="${out.absolute.dir}/classes-processed.map" />
+
+    <!-- Redefine the dex help macro, so it converts the optimized classes.. -->
+    <macrodef name="dex-helper">
+        <element name="external-libs" optional="yes" />
+        <element name="extra-parameters" optional="yes" />
+        <sequential>
+            <echo>Converting optimized files into ${intermediate.dex.file}...</echo>
+            <apply executable="${dx}" failonerror="true" parallel="true">
+                <arg value="--dex" />
+                <arg value="--output=${intermediate.dex.file}" />
+                <extra-parameters />
+                <arg line="${verbose.option}" />
+                <fileset file="${out.proguard.absolute.jar}" />
+                <external-libs />
+            </apply>
+        </sequential>
+    </macrodef>
+
+    <!-- Define the optimization target. -->
+    <taskdef resource="proguard/ant/task.properties"
+             classpath="/home/eric/ProGuard/releases/proguard4.5.1/lib/proguard.jar" />
+
+    <target name="-post-compile">
+        <echo>Optimizing compiled files and libraries into ${out.proguard.absolute.jar}...</echo>
+        <proguard printmapping="${out.proguard.absolute.map}">
+            <injar      path="${out.classes.absolute.dir}"   />
+            <injar      path="${external.libs.absolute.dir}" />
+            <outjar     path="${out.proguard.absolute.jar}"  />
+            <libraryjar refid="android.target.classpath" />
+
+            -dontpreverify
+            -repackageclasses ''
+            -allowaccessmodification
+            -optimizations !code/simplification/arithmetic
+
+            <!--
+            -renamesourcefileattribute SourceFile
+            -keepattributes SourceFile,LineNumberTable
+            -->
+
+            -keepattributes *Annotation*
+
+            -keep public class * extends android.app.Activity
+            -keep public class * extends android.app.Application
+            -keep public class * extends android.app.Service
+            -keep public class * extends android.content.BroadcastReceiver
+            -keep public class * extends android.content.ContentProvider
+
+            -keep public class * extends android.view.View {
+                public &lt;init&gt;(android.content.Context);
+                public &lt;init&gt;(android.content.Context, android.util.AttributeSet);
+                public &lt;init&gt;(android.content.Context, android.util.AttributeSet, int);
+                public void set*(...);
+            }
+
+            -keepclasseswithmembers class * {
+                public &lt;init&gt;(android.content.Context, android.util.AttributeSet);
+            }
+
+            -keepclasseswithmembers class * {
+                public &lt;init&gt;(android.content.Context, android.util.AttributeSet, int);
+            }
+
+            -keepclassmembers class * implements android.os.Parcelable {
+                static android.os.Parcelable$Creator CREATOR;
+            }
+
+            -keepclassmembers class **.R$* {
+                public static &lt;fields&gt;;
+            }
+
+            -keep public interface com.android.vending.licensing.ILicensingService
+            -dontnote com.android.vending.licensing.ILicensingService
+
+            -keepclasseswithmembernames class * {
+                native &lt;methods&gt;;
+            }
+
+            -keepclassmembers class * extends java.lang.Enum {
+                public static **[] values();
+                public static ** valueOf(java.lang.String);
+            }
+        </proguard>
+    </target>
+
+</project>

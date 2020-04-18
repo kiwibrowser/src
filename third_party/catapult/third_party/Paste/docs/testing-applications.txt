@@ -1,0 +1,156 @@
+Testing Applications with Paste
++++++++++++++++++++++++++++++++
+
+:author: Ian Bicking <ianb@colorstudy.com>
+:revision: $Rev$
+:date: $LastChangedDate$
+
+.. contents::
+
+Introduction
+============
+
+Paste includes functionality for testing your application in a
+convenient manner.  These facilities are quite young, and feedback is
+invited.  Feedback and discussion should take place on the
+`Paste-users list
+<http://groups.google.com/group/paste-users>`_.
+
+These facilities let you test your Paste and WSGI-based applications
+easily and without a server. 
+
+.. include:: include/contact.txt
+
+The Tests Themselves
+====================
+
+The ``app`` object is a wrapper around your application, with many
+methods to make testing convenient.  Here's an example test script::
+
+    def test_myapp():
+        res = app.get('/view', params={'id': 10})
+        # We just got /view?id=10
+        res.mustcontain('Item 10')
+        res = app.post('/view', params={'id': 10, 'name': 'New item
+            name'})
+        # The app does POST-and-redirect...
+        res = res.follow()
+        assert res.request.url == '/view?id=10'
+        res.mustcontain('New item name')
+        res.mustcontain('Item updated')
+
+The methods of the ``app`` object (a ``paste.tests.fixture.TestApp``
+object):
+
+``get(url, params={}, headers={}, status=None)``:
+    Gets the URL.  URLs are based in the root of your application; no
+    domains are allowed.  Parameters can be given as a dictionary, or
+    included directly in the ``url``.  Headers can also be added.
+
+    This tests that the status is a ``200 OK`` or a redirect header,
+    unless you pass in a ``status``.  A status of ``"*"`` will never
+    fail; or you can assert a specific status (like ``500``).
+
+    Also, if any errors are written to the error stream this will
+    raise an error.
+
+``post(url, params={}, headers={}, status=None, upload_files=())``:
+    POSTS to the URL.  Like GET, except also allows for uploading
+    files.  The uploaded files are a list of ``(field_name, filename,
+    file_content)``.  
+
+    If you don't want to do a urlencoded post body, you can put a
+    ``content-type`` header in your header, and pass the body in as a
+    string with ``params``.
+
+The response object:
+
+``header(header_name, [default])``:
+    Returns the named header.  It's an error if there is more than one
+    matching header.  If you don't provide a default, it is an error
+    if there is no matching header.
+
+``all_headers(header_name):``
+    Returns a list of all matching headers.
+
+``follow(**kw)``:
+    Follows the redirect, returning the new response.  It is an error
+    if this response wasn't a redirect.  Any keyword arguments are
+    passed to ``app.get`` (e.g., ``status``).
+
+``x in res``:
+    Returns True if the string is found in the response.  Whitespace
+    is normalized for this test.
+
+``mustcontain(*strings)``:
+    Raises an error if any of the strings are not found in the
+    response.
+
+``showbrowser()``:
+    Opens the HTML response in a browser; useful for debugging.
+
+``str(res)``:
+    Gives a slightly-compacted version of the response.
+
+``click(description=None, linkid=None, href=None, anchor=None, index=None, verbose=False)``: 
+    Clicks the described link (`see docstring for more
+    <./class-paste.fixture.TestResponse.html#click>`_)
+
+``forms``:
+    Return a dictionary of forms; you can use both indexes (refer to
+    the forms in order) or the string ids of forms (if you've given
+    them ids) to identify the form.  See `Form Submissions <#form-submissions>`_ for
+    more on the form objects.
+
+Request objects:
+
+``url``:
+    The url requested.
+
+``environ``:
+    The environment used for the request.
+
+``full_url``:
+    The url with query string.
+
+Form Submissions
+================
+
+You can fill out and submit forms from your tests.  First you get the
+form::
+
+    res = testapp.get('/entry_form')
+    form = res.forms[0]
+
+Then you fill it in fields::
+
+    # when there's one unambiguous name field:
+    form['name'] = 'Bob'
+    # Enter something into the first field named 'age'
+    form.set('age', '45', index=1)
+
+Finally you submit::
+
+    # Submit with no particular submit button pressed:
+    form.submit()
+    # Or submit a button:
+    form.submit('submit_button_name')
+
+Framework Hooks
+===============
+
+Frameworks can detect that they are in a testing environment by the
+presence (and truth) of the WSGI environmental variable
+``"paste.testing"``.
+
+More generally, frameworks can detect that something (possibly a test
+fixture) is ready to catch unexpected errors by the presence and truth
+of ``"paste.throw_errors"`` (this is sometimes set outside of testing
+fixtures too, when an error-handling middleware is in place).
+
+Frameworks that want to expose the inner structure of the request may
+use ``"paste.testing_variables"``.  This will be a dictionary -- any
+values put into that dictionary will become attributes of the response
+object.  So if you do ``env["paste.testing_variables"]['template'] =
+template_name`` in your framework, then ``response.template`` will be
+``template_name``.

@@ -1,0 +1,11 @@
+FRAG
+
+DCL IN[0], COLOR, LINEAR
+DCL OUT[0], COLOR
+
+DCL TEMP[0]
+
+ABS TEMP[0], IN[0]
+LRP OUT[0], TEMP[0], IN[0].xxxx, IN[0].yyyy
+
+END

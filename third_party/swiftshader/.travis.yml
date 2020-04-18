@@ -1,0 +1,34 @@
+language: cpp
+
+os:
+  - linux
+  - osx
+
+dist: trusty
+osx_image: xcode8
+sudo: false
+
+compiler:
+  - clang
+  - gcc
+
+env:
+  - REACTOR_BACKEND=LLVM
+  - REACTOR_BACKEND=Subzero
+
+script:
+  - $CXX --version
+  - mkdir build && cd build
+  - cmake -DREACTOR_BACKEND=$REACTOR_BACKEND ..
+  - make
+
+deploy:
+  provider: gcs
+  access_key_id: GOOGUX6FX5STNWQ5LHZ5
+  secret_access_key:
+    secure: MuHxqjCzr11tS9t2I4XWZRrSn13wbW3xTViG4V+oA/w2hTfDUlw1i8LpUXZmpJMvheC9xxeEhsST4rSKxrfNX4GawmFhO8pDbOVeSK5vCy9Gn1DQ/udEZnwEJcOwy1SOIAyxo8dqJeniZ9om78oqOB3AhBWYd8YBjSgF6iarD8gIrmHkyC9/eSmhb3OdAFYvrdG02aImh7svjkhQsRV4YJSDuog/bg/TrG+uyU02+Eer7xn8skLtCcPrvHREV/DX459FiPXFGEgBPfEnFSBkTz/yUXlLom47Kf2HnRnBI985oNGlVeaY7DGRa5dwB33tuhyYudP21mSyNu02mP7RE+VPZtL3K1TdeC7bPdoUpjoP+zyoSw2VPkBkfqU0GXdmUkYAwiECKZ/erF3/Wz0404P1Ad8N9ouoYZuw0G5S61PMG4QlyOQhTnpCJLIkenXuN+PSN/2/rIypd0C0RpPKrOQZ2S5vm4xS9ns4UX/d58evRSKTYP5hFPVv0z0P4RQTTNWhv0rdEIvfq4jRX3nMAvCM+/Xf/tUxWwzxEb/HXFupXwg90LHHluiD0O0vcBF38rvpGfGXrpPSwq9lU+bDWoKeOc6VLVk+/J/3b5baqkljOhfv0a1rkRyreU00rDmo0miqY97aCS9V0phH0cGjSk/jKIKUdsPUdXl2bh7N0PM=
+  bucket: swiftshader-binaries
+  skip_cleanup: true
+  acl: public-read
+  upload-dir: OpenGL_ES/Latest
+  local-dir: $TRAVIS_BUILD_DIR/out

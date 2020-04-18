@@ -1,0 +1,43 @@
+; Test if we detect duplicate names in a symbol table.
+
+; REQUIRES: no_minimal_build
+
+; RUN: not %pnacl_sz -bitcode-as-text -allow-externally-defined-symbols \
+; RUN:     %p/Inputs/fcn-value-index-isnt-defined.tbc \
+; RUN:     -bitcode-format=pnacl -notranslate -build-on-read 2>&1 \
+; RUN:   | FileCheck %s
+
+; CHECK: Value index {{.*}} not defined!
+
+; RUN: pnacl-bcfuzz -bitcode-as-text \
+; RUN:     %p/Inputs/fcn-value-index-isnt-defined.tbc -output - \
+; RUN:   | not pnacl-bcdis -no-records | FileCheck -check-prefix=ASM %s
+
+; ASM: module {  // BlockID = 8
+; ASM:   version 1;
+; ASM:   types {  // BlockID = 17
+; ASM:     count 4;
+; ASM:     @t0 = i32;
+; ASM:     @t1 = i32 ();
+; ASM:     @t2 = i8;
+; ASM:     @t3 = void;
+; ASM:   }
+; ASM:   define external i32 @f0();
+; ASM:   globals {  // BlockID = 19
+; ASM:     count 0;
+; ASM:   }
+; ASM:   valuesymtab {  // BlockID = 14
+; ASM:     @f0 : "f";
+; ASM:   }
+; ASM:   function i32 @f0() {  // BlockID = 12
+; ASM:     blocks 1;
+; ASM:     constants {  // BlockID = 11
+; ASM:       i32:
+; ASM:         %c0 = i32 1;
+; ASM:       }
+; ASM:   %b0:
+; ASM:     %v0 = alloca i8, i32 %c0, align 4;
+; ASM:     ret void %v1;
+; ASM: Error({{.*}}): Can't find type for %v1
+; ASM:   }
+; ASM: }

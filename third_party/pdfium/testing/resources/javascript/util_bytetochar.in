@@ -1,0 +1,75 @@
+{{header}}
+{{object 1 0}} <<
+  /Type /Catalog
+  /Pages 2 0 R
+  /OpenAction 10 0 R
+>>
+endobj
+{{object 2 0}} <<
+  /Type /Pages
+  /Count 1
+  /Kids [
+    3 0 R
+  ]
+>>
+endobj
+% Page number 0.
+{{object 3 0}} <<
+  /Type /Page
+  /Parent 2 0 R
+  /Resources <<
+    /Font <</F1 15 0 R>>
+  >>
+  /Contents [21 0 R]
+  /MediaBox [0 0 612 792]
+>>
+% OpenAction action
+{{object 10 0}} <<
+  /Type /Action
+  /S /JavaScript
+  /JS 11 0 R
+>>
+endobj
+% JS program to exexute
+{{object 11 0}} <<
+  {{streamlen}}
+>>
+stream
+function TestOneInput(x) {
+  try {
+    var s = util.byteToChar(x);
+    if (s.length) {
+      s = s.charCodeAt(0);
+    }
+    app.alert(x + " => " + s);
+  }
+  catch (e) {
+    app.alert(x + ": Caught error: " + e);
+  }
+}
+TestOneInput(0);
+TestOneInput(65);
+TestOneInput(127);
+TestOneInput(128);
+TestOneInput(255);
+TestOneInput(256);
+TestOneInput(40000000);
+TestOneInput(-1);
+try {
+  util.byteToChar();
+}
+catch (e) {
+  app.alert("Caught expected error: " + e);
+}
+try {
+  util.byteToChar({x:39});
+}
+catch (e) {
+  app.alert("Caught expected error: " + e);
+}
+endstream
+endobj
+{{xref}}
+{{trailer}}
+{{startxref}}
+%%EOF

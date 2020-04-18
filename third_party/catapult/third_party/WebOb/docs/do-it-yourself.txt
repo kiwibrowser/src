@@ -1,0 +1,580 @@
+Another Do-It-Yourself Framework
+================================
+
+.. contents::
+
+Introduction and Audience
+-------------------------
+
+It's been over two years since I wrote the `first version of this tutorial <http://pythonpaste.org/do-it-yourself-framework.html>`_.  I decided to give it another run with some of the tools that have come about since then (particularly `WebOb <http://webob.org/>`_).
+
+Sometimes Python is accused of having too many web frameworks.  And it's true, there are a lot.  That said, I think writing a framework is a useful exercise.  It doesn't let you skip over too much without understanding it.  It removes the magic.  So even if you go on to use another existing framework (which I'd probably advise you do), you'll be able to understand it better if you've written something like it on your own.
+
+This tutorial shows you how to create a web framework of your own, using WSGI and WebOb.  No other libraries will be used.
+
+For the longer sections I will try to explain any tricky parts on a line-by line basis following the example.
+
+What Is WSGI?
+-------------
+
+At its simplest WSGI is an interface between web servers and web applications.  We'll explain the mechanics of WSGI below, but a higher level view is to say that WSGI lets code pass around web requests in a fairly formal way.  That's the simplest summary, but there is more -- WSGI lets you add annotation to the request, and adds some more metadata to the request.
+
+WSGI more specifically is made up of an *application* and a *server*.  The application is a function that receives the request and produces the response.  The server is the thing that calls the application function.
+
+A very simple application looks like this:
+
+.. code-block:: python
+
+    >>> def application(environ, start_response):
+    ...     start_response('200 OK', [('Content-Type', 'text/html')])
+    ...     return ['Hello World!']
+
+The ``environ`` argument is a dictionary with values like the environment in a CGI request.  The header ``Host:``, for instance, goes in ``environ['HTTP_HOST']``.  The path is in ``environ['SCRIPT_NAME']`` (which is the path leading *up to* the application), and ``environ['PATH_INFO']`` (the remaining path that the application should interpret).
+
+We won't focus much on the server, but we will use WebOb to handle the application.  WebOb in a way has a simple server interface.  To use it you create a new request with ``req = webob.Request.blank('http://localhost/test')``, and then call the application with ``resp = req.get_response(app)``.  For example:
+
+.. code-block:: python
+
+    >>> from webob import Request
+    >>> req = Request.blank('http://localhost/test')
+    >>> resp = req.get_response(application)
+    >>> print resp
+    200 OK
+    Content-Type: text/html
+    <BLANKLINE>
+    Hello World!
+
+This is an easy way to test applications, and we'll use it to test the framework we're creating.
+
+About WebOb
+-----------
+
+WebOb is a library to create a request and response object.  It's centered around the WSGI model.  Requests are wrappers around the environment.  For example:
+
+.. code-block:: python
+
+    >>> req = Request.blank('http://localhost/test')
+    >>> req.environ['HTTP_HOST']
+    'localhost:80'
+    >>> req.host
+    'localhost:80'
+    >>> req.path_info
+    '/test'
+
+Responses are objects that represent the... well, response.  The status, headers, and body:
+
+.. code-block:: python
+
+    >>> from webob import Response
+    >>> resp = Response(body='Hello World!')
+    >>> resp.content_type
+    'text/html'
+    >>> resp.content_type = 'text/plain'
+    >>> print resp
+    200 OK
+    Content-Length: 12
+    Content-Type: text/plain; charset=UTF-8
+    <BLANKLINE>
+    Hello World!
+
+Responses also happen to be WSGI applications.  That means you can call ``resp(environ, start_response)``.  Of course it's much less *dynamic* than a normal WSGI application.
+
+These two pieces solve a lot of the more tedious parts of making a framework.  They deal with parsing most HTTP headers, generating valid responses, and a number of unicode issues.
+
+Serving Your Application
+------------------------
+
+While we can test the application using WebOb, you might want to serve the application.  Here's the basic recipe, using the `Paste <http://pythonpaste.org>`_ HTTP server:
+
+.. code-block:: python
+
+    if __name__ == '__main__':
+        from paste import httpserver
+        httpserver.serve(app, host='127.0.0.1', port=8080)
+
+you could also use `wsgiref <https://docs.python.org/3/library/wsgiref.html#module-wsgiref.simple_server>`_ from the standard library, but this is mostly appropriate for testing as it is single-threaded:
+
+.. code-block:: python
+
+    if __name__ == '__main__':
+        from wsgiref.simple_server import make_server
+        server = make_server('127.0.0.1', 8080, app)
+        server.serve_forever()
+
+Making A Framework
+------------------
+
+Well, now we need to start work on our framework.
+
+Here's the basic model we'll be creating:
+
+* We'll define routes that point to controllers
+
+* We'll create a simple framework for creating controllers
+
+Routing
+-------
+
+We'll use explicit routes using URI templates (minus the domains) to match paths.  We'll add a little extension that you can use ``{name:regular expression}``, where the named segment must then match that regular expression.  The matches will include a "controller" variable, which will be a string like "module_name:function_name".  For our examples we'll use a simple blog.
+
+So here's what a route would look like:
+
+.. code-block:: python
+
+    app = Router()
+    app.add_route('/', controller='controllers:index')
+    app.add_route('/{year:\d\d\d\d}/',
+                  controller='controllers:archive')
+    app.add_route('/{year:\d\d\d\d}/{month:\d\d}/',
+                  controller='controllers:archive')
+    app.add_route('/{year:\d\d\d\d}/{month:\d\d}/{slug}',
+                  controller='controllers:view')
+    app.add_route('/post', controller='controllers:post')
+
+To do this we'll need a couple pieces:
+
+* Something to match those URI template things.
+* Something to load the controller
+* The object to patch them together (``Router``)
+
+Routing: Templates
+~~~~~~~~~~~~~~~~~~
+
+To do the matching, we'll compile those templates to regular expressions.
+
+.. code-block:: python
+   :linenos:
+
+    >>> import re
+    >>> var_regex = re.compile(r'''
+    ...     \{          # The exact character "{"
+    ...     (\w+)       # The variable name (restricted to a-z, 0-9, _)
+    ...     (?::([^}]+))? # The optional :regex part
+    ...     \}          # The exact character "}"
+    ...     ''', re.VERBOSE)
+    >>> def template_to_regex(template):
+    ...     regex = ''
+    ...     last_pos = 0
+    ...     for match in var_regex.finditer(template):
+    ...         regex += re.escape(template[last_pos:match.start()])
+    ...         var_name = match.group(1)
+    ...         expr = match.group(2) or '[^/]+'
+    ...         expr = '(?P<%s>%s)' % (var_name, expr)
+    ...         regex += expr
+    ...         last_pos = match.end()
+    ...     regex += re.escape(template[last_pos:])
+    ...     regex = '^%s$' % regex
+    ...     return regex
+
+**line 2:** Here we create the regular expression.  The ``re.VERBOSE`` flag makes the regular expression parser ignore whitespace and allow comments, so we can avoid some of the feel of line-noise.  This matches any variables, i.e., ``{var:regex}`` (where ``:regex`` is optional).  Note that there are two groups we capture: ``match.group(1)`` will be the variable name, and ``match.group(2)`` will be the regular expression (or None when there is no regular expression).  Note that ``(?:...)?`` means that the section is optional.
+
+**line 10**: This variable will hold the regular expression that we are creating.
+
+**line 11**: This contains the position of the end of the last match.
+
+**line 12**: The ``finditer`` method yields all the matches.
+
+**line 13**: We're getting all the non-``{}`` text from after the last match, up to the beginning of this match.  We call ``re.escape`` on that text, which escapes any characters that have special meaning.  So ``.html`` will be escaped as ``\.html``.
+
+**line 14**: The first match is the variable name.
+
+**line 15**: ``expr`` is the regular expression we'll match against, the optional second match.  The default is ``[^/]+``, which matches any non-empty, non-/ string.  Which seems like a reasonable default to me.
+
+**line 16**: Here we create the actual regular expression.  ``(?P<name>...)`` is a grouped expression that is named.  When you get a match, you can look at ``match.groupdict()`` and get the names and values.
+
+**line 17, 18**: We add the expression on to the complete regular expression and save the last position.
+
+**line 19**: We add remaining non-variable text to the regular expression.
+
+**line 20**: And then we make the regular expression match the complete string (``^`` to force it to match from the start, ``$`` to make sure it matches up to the end).
+
+To test it we can try some translations.  You could put these directly in the docstring of the ``template_to_regex`` function and use `doctest <http://python.org/doc/current/lib/module-doctest.html>`_ to test that.  But I'm using doctest to test *this* document, so I can't put a docstring doctest inside the doctest itself.  Anyway, here's what a test looks like:
+
+.. code-block:: python
+
+    >>> print template_to_regex('/a/static/path')
+    ^\/a\/static\/path$
+    >>> print template_to_regex('/{year:\d\d\d\d}/{month:\d\d}/{slug}')
+    ^\/(?P<year>\d\d\d\d)\/(?P<month>\d\d)\/(?P<slug>[^/]+)$
+
+Routing: controller loading
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To load controllers we have to import the module, then get the function out of it.  We'll use the ``__import__`` builtin to import the module.  The return value of ``__import__`` isn't very useful, but it puts the module into ``sys.modules``, a dictionary of all the loaded modules.
+
+Also, some people don't know how exactly the string method ``split`` works.  It takes two arguments -- the first is the character to split on, and the second is the maximum number of splits to do.  We want to split on just the first ``:`` character, so we'll use a maximum number of splits of 1.
+
+.. code-block:: python
+
+    >>> import sys
+    >>> def load_controller(string):
+    ...     module_name, func_name = string.split(':', 1)
+    ...     __import__(module_name)
+    ...     module = sys.modules[module_name]
+    ...     func = getattr(module, func_name)
+    ...     return func
+
+Routing: putting it together
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Now, the ``Router`` class.  The class has the ``add_route`` method, and also a ``__call__`` method.  That ``__call__`` method makes the Router object itself a WSGI application.  So when a request comes in, it looks at ``PATH_INFO`` (also known as ``req.path_info``) and hands off the request to the controller that matches that path.
+
+.. code-block:: python
+   :linenos:
+
+    >>> from webob import Request
+    >>> from webob import exc
+    >>> class Router(object):
+    ...     def __init__(self):
+    ...         self.routes = []
+    ...
+    ...     def add_route(self, template, controller, **vars):
+    ...         if isinstance(controller, basestring):
+    ...             controller = load_controller(controller)
+    ...         self.routes.append((re.compile(template_to_regex(template)),
+    ...                             controller,
+    ...                             vars))
+    ...
+    ...     def __call__(self, environ, start_response):
+    ...         req = Request(environ)
+    ...         for regex, controller, vars in self.routes:
+    ...             match = regex.match(req.path_info)
+    ...             if match:
+    ...                 req.urlvars = match.groupdict()
+    ...                 req.urlvars.update(vars)
+    ...                 return controller(environ, start_response)
+    ...         return exc.HTTPNotFound()(environ, start_response)
+
+**line 5**: We are going to keep the route options in an ordered list.  Each item will be ``(regex, controller, vars)``: ``regex`` is the regular expression object to match against, ``controller`` is the controller to run, and ``vars`` are any extra (constant) variables.
+
+**line 8, 9**: We will allow you to call ``add_route`` with a string (that will be imported) or a controller object.  We test for a string here, and then import it if necessary.
+
+**line 13**: Here we add a ``__call__`` method.  This is the method used when you call an object like a function.  You should recognize this as the WSGI signature.
+
+**line 14**: We create a request object.  Note we'll only use this request object in this function; if the controller wants a request object it'll have to make on of its own.
+
+**line 16**: We test the regular expression against ``req.path_info``.  This is the same as ``environ['PATH_INFO']``.  That's all the request path left to be processed.
+
+**line 18**: We set ``req.urlvars`` to the dictionary of matches in the regular expression.  This variable actually maps to ``environ['wsgiorg.routing_args']``.  Any attributes you set on a request will, in one way or another, map to the environment dictionary: the request holds no state of its own.
+
+**line 19**: We also add in any explicit variables passed in through ``add_route()``.
+
+**line 20**: Then we call the controller as a WSGI application itself.  Any fancy framework stuff the controller wants to do, it'll have to do itself.
+
+**line 21**: If nothing matches, we return a 404 Not Found response.  ``webob.exc.HTTPNotFound()`` is a WSGI application that returns 404 responses.  You could add a message too, like ``webob.exc.HTTPNotFound('No route matched')``.  Then, of course, we call the application.
+
+Controllers
+-----------
+
+The router just passes the request on to the controller, so the controllers are themselves just WSGI applications.  But we'll want to set up something to make those applications friendlier to write.
+
+To do that we'll write a `decorator <http://www.ddj.com/web-development/184406073>`_.  A decorator is a function that wraps another function.  After decoration the function will be a WSGI application, but it will be decorating a function with a signature like ``controller_func(req, **urlvars)``.  The controller function will return a response object (which, remember, is a WSGI application on its own).
+
+.. code-block:: python
+   :linenos:
+
+    >>> from webob import Request, Response
+    >>> from webob import exc
+    >>> def controller(func):
+    ...     def replacement(environ, start_response):
+    ...         req = Request(environ)
+    ...         try:
+    ...             resp = func(req, **req.urlvars)
+    ...         except exc.HTTPException, e:
+    ...             resp = e
+    ...         if isinstance(resp, basestring):
+    ...             resp = Response(body=resp)
+    ...         return resp(environ, start_response)
+    ...     return replacement
+
+**line 3**: This is the typical signature for a decorator -- it takes one function as an argument, and returns a wrapped function.
+
+**line 4**: This is the replacement function we'll return.  This is called a `closure <http://en.wikipedia.org/wiki/Closure_(computer_science)>`_ -- this function will have access to ``func``, and everytime you decorate a new function there will be a new ``replacement`` function with its own value of ``func``.  As you can see, this is a WSGI application.
+
+**line 5**: We create a request.
+
+**line 6**: Here we catch any ``webob.exc.HTTPException`` exceptions.  This is so you can do ``raise webob.exc.HTTPNotFound()`` in your function.  These exceptions are themselves WSGI applications.
+
+**line 7**: We call the function with the request object, any any variables in ``req.urlvars``.  And we get back a response.
+
+**line 10**: We'll allow the function to return a full response object, or just a string.  If they return a string, we'll create a ``Response`` object with that (and with the standard ``200 OK`` status, ``text/html`` content type, and ``utf8`` charset/encoding).
+
+**line 12**: We pass the request on to the response.  Which *also* happens to be a WSGI application.  WSGI applications are falling from the sky!
+
+**line 13**: We return the function object itself, which will take the place of the function.
+
+You use this controller like:
+
+.. code-block:: python
+
+    >>> @controller
+    ... def index(req):
+    ...     return 'This is the index'
+
+Putting It Together
+-------------------
+
+Now we'll show a basic application.  Just a hello world application for now.  Note that this document is the module ``__main__``.
+
+.. code-block:: python
+
+    >>> @controller
+    ... def hello(req):
+    ...     if req.method == 'POST':
+    ...         return 'Hello %s!' % req.params['name']
+    ...     elif req.method == 'GET':
+    ...         return '''<form method="POST">
+    ...             You're name: <input type="text" name="name">
+    ...             <input type="submit">
+    ...             </form>'''
+    >>> hello_world = Router()
+    >>> hello_world.add_route('/', controller=hello)
+
+Now let's test that application:
+
+.. code-block:: python
+
+    >>> req = Request.blank('/')
+    >>> resp = req.get_response(hello_world)
+    >>> print resp
+    200 OK
+    Content-Type: text/html; charset=UTF-8
+    Content-Length: 131
+    <BLANKLINE>
+    <form method="POST">
+                You're name: <input type="text" name="name">
+                <input type="submit">
+                </form>
+    >>> req.method = 'POST'
+    >>> req.body = 'name=Ian'
+    >>> resp = req.get_response(hello_world)
+    >>> print resp
+    200 OK
+    Content-Type: text/html; charset=UTF-8
+    Content-Length: 10
+    <BLANKLINE>
+    Hello Ian!
+
+
+Another Controller
+------------------
+
+There's another pattern that might be interesting to try for a controller.  Instead of a function, we can make a class with methods like ``get``, ``post``, etc.  The ``urlvars`` will be used to instantiate the class.
+
+We could do this as a superclass, but the implementation will be more elegant as a wrapper, like the decorator is a wrapper.  Python 3.0 will add `class decorators <http://www.python.org/dev/peps/pep-3129/>`_ which will work like this.
+
+We'll allow an extra ``action`` variable, which will define the method (actually ``action_method``, where ``_method`` is the request method).  If no action is given, we'll use just the method (i.e., ``get``, ``post``, etc).
+
+.. code-block:: python
+   :linenos:
+
+    >>> def rest_controller(cls):
+    ...     def replacement(environ, start_response):
+    ...         req = Request(environ)
+    ...         try:
+    ...             instance = cls(req, **req.urlvars)
+    ...             action = req.urlvars.get('action')
+    ...             if action:
+    ...                 action += '_' + req.method.lower()
+    ...             else:
+    ...                 action = req.method.lower()
+    ...             try:
+    ...                 method = getattr(instance, action)
+    ...             except AttributeError:
+    ...                 raise exc.HTTPNotFound("No action %s" % action)
+    ...             resp = method()
+    ...             if isinstance(resp, basestring):
+    ...                 resp = Response(body=resp)
+    ...         except exc.HTTPException, e:
+    ...             resp = e
+    ...         return resp(environ, start_response)
+    ...     return replacement
+
+**line 1**: Here we're kind of decorating a class.  But really we'll just create a WSGI application wrapper.
+
+**line 2-4**: The replacement WSGI application, also a closure.  And we create a request and catch exceptions, just like in the decorator.
+
+**line 5**: We instantiate the class with both the request and ``req.urlvars`` to initialize it.  The instance will only be used for one request.  (Note that the *instance* then doesn't have to be thread safe.)
+
+**line 6**: We get the action variable out, if there is one.
+
+**line 7, 8**: If there was one, we'll use the method name ``{action}_{method}``...
+
+**line 8, 9**: ... otherwise we'll use just the method for the method name.
+
+**line 10-13**: We'll get the method from the instance, or respond with a 404 error if there is not such method.
+
+**line 14**: Call the method, get the response
+
+**line 15, 16**: If the response is just a string, create a full response object from it.
+
+**line 19**: and then we forward the request...
+
+**line 20**: ... and return the wrapper object we've created.
+
+Here's the hello world:
+
+.. code-block:: python
+
+    >>> class Hello(object):
+    ...     def __init__(self, req):
+    ...         self.request = req
+    ...     def get(self):
+    ...         return '''<form method="POST">
+    ...             You're name: <input type="text" name="name">
+    ...             <input type="submit">
+    ...             </form>'''
+    ...     def post(self):
+    ...         return 'Hello %s!' % self.request.params['name']
+    >>> hello = rest_controller(Hello)
+
+We'll run the same test as before:
+
+.. code-block:: python
+
+    >>> hello_world = Router()
+    >>> hello_world.add_route('/', controller=hello)
+    >>> req = Request.blank('/')
+    >>> resp = req.get_response(hello_world)
+    >>> print resp
+    200 OK
+    Content-Type: text/html; charset=UTF-8
+    Content-Length: 131
+    <BLANKLINE>
+    <form method="POST">
+                You're name: <input type="text" name="name">
+                <input type="submit">
+                </form>
+    >>> req.method = 'POST'
+    >>> req.body = 'name=Ian'
+    >>> resp = req.get_response(hello_world)
+    >>> print resp
+    200 OK
+    Content-Type: text/html; charset=UTF-8
+    Content-Length: 10
+    <BLANKLINE>
+    Hello Ian!
+
+URL Generation and Request Access
+---------------------------------
+
+You can use hard-coded links in your HTML, but this can have problems.  Relative links are hard to manage, and absolute links presume that your application lives at a particular location.  WSGI gives a variable ``SCRIPT_NAME``, which is the portion of the path that led up to this application.  If you are writing a blog application, for instance, someone might want to install it at ``/blog/``, and then SCRIPT_NAME would be ``"/blog"``.  We should generate links with that in mind.
+
+The base URL using SCRIPT_NAME is ``req.application_url``.  So, if we have access to the request we can make a URL.  But what if we don't have access?
+
+We can use thread-local variables to make it easy for any function to get access to the currect request.  A "thread-local" variable is a variable whose value is tracked separately for each thread, so if there are multiple requests in different threads, their requests won't clobber each other.
+
+The basic means of using a thread-local variable is ``threading.local()``.  This creates a blank object that can have thread-local attributes assigned to it.  I find the best way to get *at* a thread-local value is with a function, as this makes it clear that you are fetching the object, as opposed to getting at some global object.
+
+Here's the basic structure for the local:
+
+.. code-block:: python
+
+    >>> import threading
+    >>> class Localized(object):
+    ...     def __init__(self):
+    ...         self.local = threading.local()
+    ...     def register(self, object):
+    ...         self.local.object = object
+    ...     def unregister(self):
+    ...         del self.local.object
+    ...     def __call__(self):
+    ...         try:
+    ...             return self.local.object
+    ...         except AttributeError:
+    ...             raise TypeError("No object has been registered for this thread")
+    >>> get_request = Localized()
+
+Now we need some *middleware* to register the request object.  Middleware is something that wraps an application, possibly modifying the request on the way in or the way out.  In a sense the ``Router`` object was middleware, though not exactly because it didn't wrap a single application.
+
+This registration middleware looks like:
+
+.. code-block:: python
+
+    >>> class RegisterRequest(object):
+    ...     def __init__(self, app):
+    ...         self.app = app
+    ...     def __call__(self, environ, start_response):
+    ...         req = Request(environ)
+    ...         get_request.register(req)
+    ...         try:
+    ...             return self.app(environ, start_response)
+    ...         finally:
+    ...             get_request.unregister()
+
+Now if we do:
+
+    >>> hello_world = RegisterRequest(hello_world)
+
+then the request will be registered each time.  Now, lets create a URL generation function:
+
+.. code-block:: python
+
+    >>> import urllib
+    >>> def url(*segments, **vars):
+    ...     base_url = get_request().application_url
+    ...     path = '/'.join(str(s) for s in segments)
+    ...     if not path.startswith('/'):
+    ...         path = '/' + path
+    ...     if vars:
+    ...         path += '?' + urllib.urlencode(vars)
+    ...     return base_url + path
+
+Now, to test:
+
+.. code-block:: python
+
+    >>> get_request.register(Request.blank('http://localhost/'))
+    >>> url('article', 1)
+    'http://localhost/article/1'
+    >>> url('search', q='some query')
+    'http://localhost/search?q=some+query'
+
+Templating
+----------
+
+Well, we don't *really* need to factor templating into our framework.  After all, you return a string from your controller, and you can figure out on your own how to get a rendered string from a template.
+
+But we'll add a little helper, because I think it shows a clever trick.
+
+We'll use `Tempita <http://pythonpaste.org/tempita/>`_ for templating, mostly because it's very simplistic about how it does loading.  The basic form is:
+
+.. code-block:: python
+
+    import tempita
+    template = tempita.HTMLTemplate.from_filename('some-file.html')
+
+But we'll be implementing a function ``render(template_name, **vars)`` that will render the named template, treating it as a path *relative to the location of the render() call*.  That's the trick.
+
+To do that we use ``sys._getframe``, which is a way to look at information in the calling scope.  Generally this is frowned upon, but I think this case is justifiable.
+
+We'll also let you pass an instantiated template in instead of a template name, which will be useful in places like a doctest where there aren't other files easily accessible.
+
+.. code-block:: python
+
+    >>> import os
+    >>> import tempita #doctest: +SKIP
+    >>> def render(template, **vars):
+    ...     if isinstance(template, basestring):
+    ...         caller_location = sys._getframe(1).f_globals['__file__']
+    ...         filename = os.path.join(os.path.dirname(caller_location), template)
+    ...         template = tempita.HTMLTemplate.from_filename(filename)
+    ...     vars.setdefault('request', get_request())
+    ...     return template.substitute(vars)
+
+Conclusion
+----------
+
+Well, that's a framework.  Ta-da!
+
+Of course, this doesn't deal with some other stuff.  In particular:
+
+* Configuration
+* Making your routes debuggable
+* Exception catching and other basic infrastructure
+* Database connections
+* Form handling
+* Authentication
+
+But, for now, that's outside the scope of this document.
+

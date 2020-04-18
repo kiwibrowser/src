@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<!--
+Copyright (c) 2013 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/base/base.html">
+<link rel="import" href="/tracing/base/base64.html">
+<link rel="import" href="/tracing/extras/importer/trace_event_importer.html">
+<link rel="import"
+      href="/tracing/ui/extras/about_tracing/mock_tracing_controller_client.html">
+<link rel="import" href="/tracing/ui/extras/about_tracing/profiling_view.html">
+
+<script>
+'use strict';
+
+tr.b.unittest.testSuite(function() {
+  const Base64 = tr.b.Base64;
+  const testData = [
+    {name: 'a', args: {}, pid: 52, ts: 15000, cat: 'foo', tid: 53, ph: 'B'},
+    {name: 'a', args: {}, pid: 52, ts: 19000, cat: 'foo', tid: 53, ph: 'E'},
+    {name: 'b', args: {}, pid: 52, ts: 32000, cat: 'foo', tid: 53, ph: 'B'},
+    {name: 'b', args: {}, pid: 52, ts: 54000, cat: 'foo', tid: 53, ph: 'E'}
+  ];
+
+  const monitoringOptions = {
+    isMonitoring: false,
+    categoryFilter: '*',
+    useSystemTracing: false,
+    useContinuousTracing: false,
+    useSampling: false
+  };
+
+  const ProfilingView = tr.ui.e.about_tracing.ProfilingView;
+
+  test('recording', function() {
+    const mock = new tr.ui.e.about_tracing.MockTracingControllerClient();
+    mock.allowLooping = true;
+    mock.expectRequest('endRecording', function() {
+      return '';
+    });
+    mock.expectRequest('getCategories', function() {
+      return ['a', 'b', 'c'];
+    });
+    mock.expectRequest('beginRecording', function(data) {
+      return '';
+    });
+    mock.expectRequest('endRecording', function(data) {
+      return JSON.stringify(testData);
+    });
+
+    const view = new ProfilingView(mock);
+    view.style.height = '400px';
+    view.style.border = '1px solid black';
+    this.addHTMLOutput(view);
+
+    const recordingPromise = view.beginRecording();
+
+    let didAbort = false;
+
+    tr.b.timeout(60).then(() => {
+      if (didAbort) return;
+      recordingPromise.selectionDlg.clickRecordButton();
+    }).then(() => tr.b.timeout(60)).then(() => {
+      recordingPromise.progressDlg.clickStopButton();
+    });
+
+    return recordingPromise.then(null, err => {
+      didAbort = true;
+      assert.fail(err);
+    });
+  });
+});
+</script>
+

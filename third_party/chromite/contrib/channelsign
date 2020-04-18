@@ -1,0 +1,210 @@
+#!/bin/bash
+# Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+# Set PROGram name
+PROG=$(basename $0)
+########################################################################
+#+
+#+ NAME
+#+     $PROG - ChromeOS channel image mover
+#+
+#+ SYNOPSIS
+#+     $PROG [-n] <version> <from-channel> <to-channel> [<board>] [<key>] \
+#+ [<newkey>]
+#+     $PROG [--help | -man]
+#+     $PROG [--usage | -?]
+#+
+#+ DESCRIPTION
+#+     $PROG takes an image from one channel and creates a copy (with symlinks)
+#+     to be signed in a new target directory (stable,beta).
+#+
+#+     Run from anywhere with GS credentials
+#+
+#+     If you don't specify a <board>, then all boards will be processed.
+#+
+#+     If you specify a <key>, then only instructions matching that keyset will
+#+     be processed.  Otherwise, all active keysets will be processed.  If you
+#+     use a short name like "mp" or "premp", the short board name will be auto-
+#+     matically prepended to it.
+#+
+#+     If, instead, you want to change the key used to sign the images, specify
+#+     the <newkey> option.  Then any images that were signed with <key> will be
+#+     changed to be signed with <newkey>.
+#+
+#+ EXAMPLES
+#+
+#+ FILES
+#+
+#+ SEE ALSO
+#+     stdlib.sh                 -  function definitions for TimeStamp, etc.
+#+
+#+ BUGS/TODO
+#+
+#- AUTHOR & DT : djmm Wed Jul 21 15:02:45 PDT 2010
+#-
+########################################################################
+# If NO ARGUMENTS should return *usage*, uncomment the following line:
+usage=${1-yes}
+
+# This construct allows $PROG to be a symlink or simply PATH'd to.
+symlink=$(readlink $0)
+# Set up basic env and standard functions.
+. "$(dirname "${symlink:-$0}")"/channelsign-lib.sh || exit 1
+
+# Set some default options.
+DRYRUN=false
+looseargs=()
+for arg in ${LOOSEARGS}; do
+  case ${arg} in
+  -n) DRYRUN=true ;;
+  *) looseargs+=( "${arg}" ) ;;
+  esac
+done
+if ${DRYRUN}; then
+  echo "DRYRUN MODE: Nothing will be uploaded"
+  echo
+fi
+if [[ ${#looseargs[@]} -lt 3 ]]; then
+  exec ${PROG} -?
+fi
+
+# BEGIN script.
+TimeStamp begin
+
+VERSION=${looseargs[0]}
+FROMCHANNEL=${looseargs[1]/-channel/}-channel
+TOCHANNEL=${looseargs[2]/-channel/}-channel
+BOARD=${looseargs[3]}
+
+expand_key_name() {
+  local key=$1
+
+  if [[ -z ${key} ]]; then
+    return
+  fi
+
+  case ${key} in
+  premp|mp|mp-v[0-9]*)
+    # If they specify "mp", automatically prepend the board name so
+    # we get something like "stumpy-mp".
+    echo "${BOARD#*-}-${key}"
+    ;;
+  *)
+    echo "${key}"
+    ;;
+  esac
+}
+ORIG_KEY=${looseargs[4]}
+ORIG_NEWKEY=${looseargs[5]}
+KEY=$(expand_key_name "${ORIG_KEY}")
+NEWKEY=$(expand_key_name "${ORIG_NEWKEY}")
+
+if [[ -n ${ORIG_KEY} ]]; then
+  echo "Looking for images signed by key ${KEY} (derived from ${ORIG_KEY})"
+fi
+if [[ -n ${ORIG_NEWKEY} ]]; then
+  echo " Resigning with key ${NEWKEY} (derived from ${ORIG_NEWKEY})"
+fi
+
+GSBASE=gs://chromeos-releases
+TBSBASE="${GSBASE}/tobesigned"
+
+echo "Waiting for GoogleStorage..."
+# Get list of instructions files only to process
+FILELIST=$(
+  gsutil ls "${GSBASE}/${FROMCHANNEL}/${BOARD:-*}/${VERSION}/C*.instructions"
+)
+FROMCHANNEL=$(echo ${FILELIST} | awk -F/ 'NR<2 {print $4}')
+
+if [[ -z ${FROMCHANNEL} ]]; then
+  Exit 1 "Couldn't determine source channel.  Fail."
+fi
+
+if [[ ${TOCHANNEL} == "${FROMCHANNEL}" ]]; then
+  if [[ ${KEY} == "${NEWKEY}" ]]; then
+    Exit 1 "Source channel = destination channel && old key == new key!  Fail."
+  fi
+fi
+
+GSUTIL=$(FindGSUTIL) || Exit 1 "Unable to find gsutil executable!"
+
+# GS copy
+# Take a FROM arg and a TO arg
+GSCp() {
+  local lfrom=$1
+  local lto=$2
+  local cmd=( "${GSUTIL}" cp "${lfrom}" "${lto}" )
+
+  if ${DRYRUN}; then
+    if [[ ${lto} == gs:* ]]; then
+      echo "DRYRUN: ${cmd[*]}"
+    else
+      # If source is local, we're downloading a file, so still do that.
+      "${cmd[@]}"
+    fi
+  else
+    "${cmd[@]}"
+  fi
+}
+
+LOCALSIGN="/tmp/${PROG}-tbs.$$"
+DumpRunTimeEnv > "${LOCALSIGN}"
+
+# Working off of instructions files only, derive file names for all other
+# operations
+for f in ${FILELIST}; do
+  echo
+
+  # Set the TO filename
+  TARGET=${f/${FROMCHANNEL}/${TOCHANNEL}}
+
+  # Get a local insructions file name
+  LOCALI="/tmp/$(basename ${TARGET})"
+  rm -f "${LOCALI}"
+  GSCp ${f} "${LOCALI}"
+
+  # Make relevant changes to local instructions file
+  sed -i "s/channel = .*/channel = ${TOCHANNEL/-channel/}/g" "${LOCALI}"
+  keyset=$(awk '$1 == "keyset" { print $NF }' "${LOCALI}")
+  if [[ -n ${KEY} ]]; then
+    if [[ ${keyset} != ${KEY} ]]; then
+      echo " - skipping instructions: ${KEY} != ${keyset}"
+      continue
+    fi
+    if [[ -n ${NEWKEY} ]]; then
+      echo " - changing keyset from ${KEY} to ${NEWKEY}"
+      sed -i "/keyset *=/s:=.*:= ${NEWKEY}:g" "${LOCALI}"
+    fi
+  fi
+  archive=$(awk '$1 == "archive" { print $NF }' "${LOCALI}")
+  if [[ -z ${archive} ]]; then
+    archive=${f%.instructions}.zip
+  fi
+
+  TBS_BOARD=${BOARD:-$(echo "${f}" | cut -d/ -f5)}
+  if [[ ${TOCHANNEL} == "${FROMCHANNEL}" ]]; then
+    # We're just changing keys in the same channel, so update the insn only.
+    TARGET="${TARGET%.instructions}-${NEWKEY}.instructions"
+    GSCp "${LOCALI}" "${TARGET}"
+  else
+    # Copy it and other bits up to TOCHANNEL
+    GSCp "${LOCALI}" "${TARGET}"
+    GSCp "${f%/*}/${archive}" "${TARGET%/*}/${archive}"
+    GSCp "$(dirname "${f}")/au-generator.zip" \
+      "$(dirname "${TARGET}")/"
+    GSCp "$(dirname "${f}")/ChromeOS-test*.tar.xz" \
+      "$(dirname "${TARGET}")/"
+    GSCp "$(dirname "${f}")/stateful.tgz" \
+      "$(dirname "${TARGET}")/"
+  fi
+
+  TOBESIGNED="${TBSBASE}/30,${TOCHANNEL},${TBS_BOARD},${VERSION},${TARGET##*/}"
+  GSCp "${LOCALSIGN}" "${TOBESIGNED}"
+done
+
+# Cleanup
+rm -f "${LOCALI}" "${LOCALSIGN}"
+
+# END script.
+TimeStamp end

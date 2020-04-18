@@ -1,0 +1,198 @@
+// Copyright (c) 2015 The LUCI Authors. All rights reserved.
+// Use of this source code is governed under the Apache License, Version 2.0
+// that can be found in the LICENSE file.
+
+syntax = "proto3";
+
+package milo;
+
+import "google/protobuf/timestamp.proto";
+
+// Status is the expressed root step of this step or substep.
+enum Status {
+  // The step is still running.
+  RUNNING = 0;
+  // The step has finished successfully.
+  SUCCESS = 1;
+  // The step has finished unsuccessfully.
+  FAILURE = 2;
+  // The step has been scheduled, but not yet started.
+  PENDING = 3;
+}
+
+// FailureType provides more details on the nature of the Status.
+message FailureDetails {
+  // Type is the type of failure.
+  enum Type {
+    // The failure is a general failure.
+    GENERAL = 0;
+    // An unhandled exception occured during execution.
+    EXCEPTION = 1;
+    // The failure is related to a failed infrastructure component, not an error
+    // with the Step itself.
+    INFRA = 2;
+    // The failure is due to a failed Dungeon Master dependency. This should be
+    // used if a Step's external depdendency fails and the Step cannot recover
+    // or proceed without it.
+    DM_DEPENDENCY_FAILED = 3;
+    // The step was cancelled.
+    CANCELLED = 4;
+    // The failure was due to an resource exhausion. The step was scheduled
+    // but never ran, and never will run.
+    EXPIRED = 5;
+  }
+  Type type = 1;
+
+  // An optional string describing the failure.
+  string text = 2;
+
+  // If the failure type is DEPENDENCY_FAILED, the failed dependencies should be
+  // listed here.
+  repeated DMLink failed_dm_dependency = 3;
+}
+
+// Generic step or substep state.
+message Step {
+  // The display name of the Component.
+  string name = 1;
+
+  // Command contains information about a command-line invocation.
+  message Command {
+    // The command-line invocation, expressed as an argument vector.
+    repeated string command_line = 1;
+
+    // The current working directory.
+    string cwd = 2;
+
+    // Environment represents the state of a process' environment.
+    map<string, string> environ = 3;
+  }
+  // The command-line invocation of the step, expressed as an argument vector.
+  Command command = 2;
+
+  // The current running status of the Step.
+  Status status = 3;
+  // Optional information detailing the failure. This may be populated if the
+  // Step's top-level command Status is set to FAILURE.
+  FailureDetails failure_details = 4;
+
+  // Sub-steps nested underneath of this step.
+  message Substep {
+    // The substep.
+    oneof substep {
+      // The substep is an inline Step.
+      Step step = 1;
+      // The substep is a separate LogDog annotation stream.
+      LogdogStream annotation_stream = 2;
+    }
+  }
+  // Substeps that this Step is composed of.
+  repeated Substep substep = 5;
+
+  // A link to this Step's STDOUT stream, if present.
+  LogdogStream stdout_stream = 6;
+  // A link to this Step's STDERR stream, if present.
+  LogdogStream stderr_stream = 7;
+
+  // When the step started, expressed as an RFC3339 string using Z (UTC)
+  // timezone.
+  google.protobuf.Timestamp started = 8;
+
+  // When the step ended, expressed as an RFC3339 string using Z (UTC) timezone.
+  google.protobuf.Timestamp ended = 9;
+
+  // Arbitrary lines of component text. Each string here is a consecutive line,
+  // and should not contain newlines.
+  repeated string text = 20;
+
+  // Progress expresses a Component's overall progress. It does this using
+  // arbitrary "progress units", wich are discrete units of work measured by
+  // the Component that are either completed or not completed.
+  //
+  // A simple construction for "percentage complete" is to set `total` to 100
+  // and `completed` to the percentage value.
+  message Progress {
+    // The total number of progress units. If missing or zero, no progress is
+    // expressed.
+    int32 total = 1;
+    // The number of completed progress units. This must always be less than or
+    // equal to `total`. If omitted, it is implied to be zero.
+    int32 completed = 2;
+  }
+  // The Component's progress.
+  Progress progress = 21;
+
+  // The primary link for this Component. This is the link that interaction
+  // with the Component will use.
+  Link link = 22;
+  // Additional links related to the Component. These will be rendered alongside
+  // the component.
+  repeated Link other_links = 23;
+
+  // Property is an arbitrary key/value (build) property.
+  message Property {
+    // name is the property name.
+    string name = 1;
+    // value is the optional property value.
+    string value = 2;
+  }
+  repeated Property property = 24;
+}
+
+// A Link is an optional label followed by a typed link to an external
+// resource.
+message Link {
+  // An optional display label for the link.
+  string label = 1;
+  // If present, this link is an alias for another link with this name, and
+  // should be rendered in relation to that link.
+  string alias_label = 2;
+
+  oneof value {
+    // A URL.
+    string url = 3;
+    // (One of) A LogDog stream link.
+    LogdogStream logdog_stream = 4;
+    // (One of) An isolate server link.
+    IsolateObject isolate_object = 5;
+    // (One of) A link to a Dungeon Master object.
+    DMLink dm_link = 6;
+  }
+}
+
+// LogdogStream is a LogDog stream link.
+message LogdogStream {
+  // The stream's server. If omitted, the server is the same server that this
+  // annotation stream is homed on.
+  string server = 1;
+  // The log Prefix. If empty, the prefix is the same prefix as this annotation
+  // stream.
+  string prefix = 2;
+  // The log name.
+  string name = 3;
+}
+
+// IsolateObject is an Isolate service object specification.
+message IsolateObject {
+  // The Isolate server. If empty, this is the default Isolate server specified
+  // by the project's LUCI config.
+  string server = 1;
+  // The isolate object hash.
+  string hash = 2;
+}
+
+// DMLink is a Dungeon Master execution specification.
+message DMLink {
+  // The Dungeon Master server. If empty, this is the default Isolate server
+  // specified by the project's LUCI config.
+  string server = 1;
+
+  // The quest name.
+  string quest = 2;
+
+  // The attempt number.
+  int64 attempt = 3;
+
+  // The execution number.
+  int64 execution = 4;
+}

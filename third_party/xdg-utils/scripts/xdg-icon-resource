@@ -1,0 +1,952 @@
+#!/bin/sh
+#---------------------------------------------
+#   xdg-icon-resource
+#
+#   Utility script to install icons on a Linux desktop.
+#
+#   Refer to the usage() function below for usage.
+#
+#   Copyright 2009-2010, Fathi Boudra <fabo@freedesktop.org>
+#   Copyright 2009-2010, Rex Dieter <rdieter@fedoraproject.org>
+#   Copyright 2006, Kevin Krammer <kevin.krammer@gmx.at>
+#   Copyright 2006, Jeremy White <jwhite@codeweavers.com>
+#
+#   LICENSE:
+#
+#   Permission is hereby granted, free of charge, to any person obtaining a
+#   copy of this software and associated documentation files (the "Software"),
+#   to deal in the Software without restriction, including without limitation
+#   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+#   and/or sell copies of the Software, and to permit persons to whom the
+#   Software is furnished to do so, subject to the following conditions:
+#
+#   The above copyright notice and this permission notice shall be included
+#   in all copies or substantial portions of the Software.
+#
+#   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+#   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+#   THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+#   OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+#   ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+#   OTHER DEALINGS IN THE SOFTWARE.
+#
+#---------------------------------------------
+
+manualpage()
+{
+cat << _MANUALPAGE
+Name
+
+xdg-icon-resource - command line tool for (un)installing icon resources
+
+Synopsis
+
+xdg-icon-resource install [--noupdate] [--novendor] [--theme theme] [--context
+context] [--mode mode] --size size icon-file [icon-name]
+
+xdg-icon-resource uninstall [--noupdate] [--theme theme] [--context context]
+[--mode mode] --size size icon-name
+
+xdg-icon-resource forceupdate [--theme theme] [--mode mode]
+
+xdg-icon-resource { --help | --manual | --version }
+
+Description
+
+The xdg-icon-resource program can be used to install icon resources into the
+desktop icon system in order to illustrate menu entries, to depict desktop
+icons or to graphically represent file types.
+
+The desktop icon system identifies icons by name. Depending on the required
+size, the choice of icon theme and the context in which the icon is used, the
+desktop icon system locates an appropriate icon resource to depict an icon.
+Icon resources can be XPM files or PNG files.
+
+The desktop icon system works according to the XDG Icon Theme Specification at
+http://www.freedesktop.org/Standards/icon-theme-spec
+
+Commands
+
+install
+    Installs the icon file indicated by icon-file to the desktop icon system
+    under the name icon-name. Icon names do not have an extension. If icon-name
+    is not provided the name is derived from icon-file. The icon file must have
+    .png or .xpm as extension. If a corresponding .icon file exists in the same
+    location as icon-file it will be installed as well.
+uninstall
+    Removes the icon indicated by icon-name from the desktop icon system. Note
+    that icon names do not have an extension.
+forceupdate
+    Force an update of the desktop icon system. This is only useful if the last
+    call to xdg-icon-resource included the --noupdate option.
+
+Options
+
+--noupdate
+    Postpone updating the desktop icon system. If multiple icons are added in
+    sequence this flag can be used to indicate that additional changes will
+    follow and that it is not necassery to update the desktop icon system right
+    away.
+--novendor
+
+    Normally, xdg-icon-resource checks to ensure that an icon file to be
+    installed in the apps context has a proper vendor prefix. This option can
+    be used to disable that check.
+
+    A vendor prefix consists of alpha characters ([a-zA-Z]) and is terminated
+    with a dash ("-"). Companies and organizations are encouraged to use a word
+    or phrase, preferably the organizations name, for which they hold a
+    trademark as their vendor prefix. The purpose of the vendor prefix is to
+    prevent name conflicts.
+
+--theme theme
+    Installs or removes the icon file as part of theme. If no theme is
+    specified the icons will be installed as part of the default hicolor theme.
+    Applications may install icons under multiple themes but should at least
+    install icons for the default hicolor theme.
+--context context
+    Specifies the context for the icon. Icons to be used in the application
+    menu and as desktop icon should use apps as context which is the default
+    context. Icons to be used as file icons should use mimetypes as context.
+    Other common contexts are actions, devices, emblems, filesystems and stock.
+--size size
+    Specifies the size of the icon. All icons must be square. Common sizes for
+    icons in the apps context are: 16, 22, 32, 48, 64 and 128. Common sizes for
+    icons in the mimetypes context are: 16, 22, 32, 48, 64 and 128
+--mode mode
+
+    mode can be user or system. In user mode the file is (un)installed for the
+    current user only. In system mode the file is (un)installed for all users
+    on the system. Usually only root is allowed to install in system mode.
+
+    The default is to use system mode when called by root and to use user mode
+    when called by a non-root user.
+
+--help
+    Show command synopsis.
+--manual
+    Show this manualpage.
+--version
+    Show the xdg-utils version information.
+
+Environment Variables
+
+xdg-icon-resource honours the following environment variables:
+
+XDG_UTILS_DEBUG_LEVEL
+    Setting this environment variable to a non-zero numerical value makes
+    xdg-icon-resource do more verbose reporting on stderr. Setting a higher
+    value increases the verbosity.
+XDG_UTILS_INSTALL_MODE
+    This environment variable can be used by the user or administrator to
+    override the installation mode. Valid values are user and system.
+
+Exit Codes
+
+An exit code of 0 indicates success while a non-zero exit code indicates
+failure. The following failure codes can be returned:
+
+1
+    Error in command line syntax.
+2
+    One of the files passed on the command line did not exist.
+3
+    A required tool could not be found.
+4
+    The action failed.
+5
+    No permission to read one of the files passed on the command line.
+
+See Also
+
+xdg-desktop-icon(1), xdg-desktop-menu(1), xdg-mime(1)
+
+Examples
+
+To install an icon resource to depict a launcher for the application myfoobar,
+the company ShinyThings Inc. can use:
+
+xdg-icon-resource install --size 64 shinythings-myfoobar.png
+
+To install an icon for a new application/x-foobar file type one can use:
+
+xdg-icon-resource install --context mimetypes --size 48 ./mime-foobar-48.png application-x-foobar
+xdg-icon-resource install --context mimetypes --size 64 ./mime-foobar-64.png application-x-foobar
+
+This will install two icons with the name application-x-foobar but with
+different sizes.
+
+_MANUALPAGE
+}
+
+usage()
+{
+cat << _USAGE
+xdg-icon-resource - command line tool for (un)installing icon resources
+
+Synopsis
+
+xdg-icon-resource install [--noupdate] [--novendor] [--theme theme] [--context
+context] [--mode mode] --size size icon-file [icon-name]
+
+xdg-icon-resource uninstall [--noupdate] [--theme theme] [--context context]
+[--mode mode] --size size icon-name
+
+xdg-icon-resource forceupdate [--theme theme] [--mode mode]
+
+xdg-icon-resource { --help | --manual | --version }
+
+_USAGE
+}
+
+#@xdg-utils-common@
+
+#----------------------------------------------------------------------------
+#   Common utility functions included in all XDG wrapper scripts
+#----------------------------------------------------------------------------
+
+DEBUG()
+{
+  [ -z "${XDG_UTILS_DEBUG_LEVEL}" ] && return 0;
+  [ ${XDG_UTILS_DEBUG_LEVEL} -lt $1 ] && return 0;
+  shift
+  echo "$@" >&2
+}
+
+# This handles backslashes but not quote marks.
+first_word()
+{
+    read first rest
+    echo "$first"
+}
+
+#-------------------------------------------------------------
+# map a binary to a .desktop file
+binary_to_desktop_file()
+{
+    search="${XDG_DATA_HOME:-$HOME/.local/share}:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+    binary="`which "$1"`"
+    binary="`readlink -f "$binary"`"
+    base="`basename "$binary"`"
+    IFS=:
+    for dir in $search; do
+        unset IFS
+        [ "$dir" ] || continue
+        [ -d "$dir/applications" -o -d "$dir/applnk" ] || continue
+        for file in "$dir"/applications/*.desktop "$dir"/applications/*/*.desktop "$dir"/applnk/*.desktop "$dir"/applnk/*/*.desktop; do
+            [ -r "$file" ] || continue
+            # Check to make sure it's worth the processing.
+            grep -q "^Exec.*$base" "$file" || continue
+            # Make sure it's a visible desktop file (e.g. not "preferred-web-browser.desktop").
+            grep -Eq "^(NoDisplay|Hidden)=true" "$file" && continue
+            command="`grep -E "^Exec(\[[^]=]*])?=" "$file" | cut -d= -f 2- | first_word`"
+            command="`which "$command"`"
+            if [ x"`readlink -f "$command"`" = x"$binary" ]; then
+                # Fix any double slashes that got added path composition
+                echo "$file" | sed -e 's,//*,/,g'
+                return
+            fi
+        done
+    done
+}
+
+#-------------------------------------------------------------
+# map a .desktop file to a binary
+## FIXME: handle vendor dir case
+desktop_file_to_binary()
+{
+    search="${XDG_DATA_HOME:-$HOME/.local/share}:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+    desktop="`basename "$1"`"
+    IFS=:
+    for dir in $search; do
+        unset IFS
+        [ "$dir" -a -d "$dir/applications" ] || continue
+        file="$dir/applications/$desktop"
+        [ -r "$file" ] || continue
+        # Remove any arguments (%F, %f, %U, %u, etc.).
+        command="`grep -E "^Exec(\[[^]=]*])?=" "$file" | cut -d= -f 2- | first_word`"
+        command="`which "$command"`"
+        readlink -f "$command"
+        return
+    done
+}
+
+#-------------------------------------------------------------
+# Exit script on successfully completing the desired operation
+
+exit_success()
+{
+    if [ $# -gt 0 ]; then
+        echo "$@"
+        echo
+    fi
+
+    exit 0
+}
+
+
+#-----------------------------------------
+# Exit script on malformed arguments, not enough arguments
+# or missing required option.
+# prints usage information
+
+exit_failure_syntax()
+{
+    if [ $# -gt 0 ]; then
+        echo "xdg-icon-resource: $@" >&2
+        echo "Try 'xdg-icon-resource --help' for more information." >&2
+    else
+        usage
+        echo "Use 'man xdg-icon-resource' or 'xdg-icon-resource --manual' for additional info."
+    fi
+
+    exit 1
+}
+
+#-------------------------------------------------------------
+# Exit script on missing file specified on command line
+
+exit_failure_file_missing()
+{
+    if [ $# -gt 0 ]; then
+        echo "xdg-icon-resource: $@" >&2
+    fi
+
+    exit 2
+}
+
+#-------------------------------------------------------------
+# Exit script on failure to locate necessary tool applications
+
+exit_failure_operation_impossible()
+{
+    if [ $# -gt 0 ]; then
+        echo "xdg-icon-resource: $@" >&2
+    fi
+
+    exit 3
+}
+
+#-------------------------------------------------------------
+# Exit script on failure returned by a tool application
+
+exit_failure_operation_failed()
+{
+    if [ $# -gt 0 ]; then
+        echo "xdg-icon-resource: $@" >&2
+    fi
+
+    exit 4
+}
+
+#------------------------------------------------------------
+# Exit script on insufficient permission to read a specified file
+
+exit_failure_file_permission_read()
+{
+    if [ $# -gt 0 ]; then
+        echo "xdg-icon-resource: $@" >&2
+    fi
+
+    exit 5
+}
+
+#------------------------------------------------------------
+# Exit script on insufficient permission to write a specified file
+
+exit_failure_file_permission_write()
+{
+    if [ $# -gt 0 ]; then
+        echo "xdg-icon-resource: $@" >&2
+    fi
+
+    exit 6
+}
+
+check_input_file()
+{
+    if [ ! -e "$1" ]; then
+        exit_failure_file_missing "file '$1' does not exist"
+    fi
+    if [ ! -r "$1" ]; then
+        exit_failure_file_permission_read "no permission to read file '$1'"
+    fi
+}
+
+check_vendor_prefix()
+{
+    file_label="$2"
+    [ -n "$file_label" ] || file_label="filename"
+    file=`basename "$1"`
+    case "$file" in
+       [a-zA-Z]*-*)
+         return
+         ;;
+    esac
+
+    echo "xdg-icon-resource: $file_label '$file' does not have a proper vendor prefix" >&2
+    echo 'A vendor prefix consists of alpha characters ([a-zA-Z]) and is terminated' >&2
+    echo 'with a dash ("-"). An example '"$file_label"' is '"'example-$file'" >&2
+    echo "Use --novendor to override or 'xdg-icon-resource --manual' for additional info." >&2
+    exit 1
+}
+
+check_output_file()
+{
+    # if the file exists, check if it is writeable
+    # if it does not exists, check if we are allowed to write on the directory
+    if [ -e "$1" ]; then
+        if [ ! -w "$1" ]; then
+            exit_failure_file_permission_write "no permission to write to file '$1'"
+        fi
+    else
+        DIR=`dirname "$1"`
+        if [ ! -w "$DIR" -o ! -x "$DIR" ]; then
+            exit_failure_file_permission_write "no permission to create file '$1'"
+        fi
+    fi
+}
+
+#----------------------------------------
+# Checks for shared commands, e.g. --help
+
+check_common_commands()
+{
+    while [ $# -gt 0 ] ; do
+        parm="$1"
+        shift
+
+        case "$parm" in
+            --help)
+            usage
+            echo "Use 'man xdg-icon-resource' or 'xdg-icon-resource --manual' for additional info."
+            exit_success
+            ;;
+
+            --manual)
+            manualpage
+            exit_success
+            ;;
+
+            --version)
+            echo "xdg-icon-resource 1.1.0 rc1"
+            exit_success
+            ;;
+        esac
+    done
+}
+
+check_common_commands "$@"
+
+[ -z "${XDG_UTILS_DEBUG_LEVEL}" ] && unset XDG_UTILS_DEBUG_LEVEL;
+if [ ${XDG_UTILS_DEBUG_LEVEL-0} -lt 1 ]; then
+    # Be silent
+    xdg_redirect_output=" > /dev/null 2> /dev/null"
+else
+    # All output to stderr
+    xdg_redirect_output=" >&2"
+fi
+
+#--------------------------------------
+# Checks for known desktop environments
+# set variable DE to the desktop environments name, lowercase
+
+detectDE()
+{
+    # see https://bugs.freedesktop.org/show_bug.cgi?id=34164
+    unset GREP_OPTIONS
+
+    if [ -n "${XDG_CURRENT_DESKTOP}" ]; then
+      case "${XDG_CURRENT_DESKTOP}" in
+         GNOME)
+           DE=gnome;
+           ;;
+         KDE)
+           DE=kde;
+           ;;
+         LXDE)
+           DE=lxde;
+           ;;
+         XFCE)
+           DE=xfce
+      esac
+    fi
+
+    if [ x"$DE" = x"" ]; then
+      # classic fallbacks
+      if [ x"$KDE_FULL_SESSION" = x"true" ]; then DE=kde;
+      elif [ x"$GNOME_DESKTOP_SESSION_ID" != x"" ]; then DE=gnome;
+      elif `dbus-send --print-reply --dest=org.freedesktop.DBus /org/freedesktop/DBus org.freedesktop.DBus.GetNameOwner string:org.gnome.SessionManager > /dev/null 2>&1` ; then DE=gnome;
+      elif xprop -root _DT_SAVE_MODE 2> /dev/null | grep ' = \"xfce4\"$' >/dev/null 2>&1; then DE=xfce;
+      elif xprop -root 2> /dev/null | grep -i '^xfce_desktop_window' >/dev/null 2>&1; then DE=xfce
+      fi
+    fi
+
+    if [ x"$DE" = x"" ]; then
+      # fallback to checking $DESKTOP_SESSION
+      case "$DESKTOP_SESSION" in
+         gnome)
+           DE=gnome;
+           ;;
+         LXDE)
+           DE=lxde; 
+           ;;
+         xfce|xfce4)
+           DE=xfce;
+           ;;
+      esac
+    fi
+
+    if [ x"$DE" = x"" ]; then
+      # fallback to uname output for other platforms
+      case "$(uname 2>/dev/null)" in 
+        Darwin)
+          DE=darwin;
+          ;;
+      esac
+    fi
+
+    if [ x"$DE" = x"gnome" ]; then
+      # gnome-default-applications-properties is only available in GNOME 2.x
+      # but not in GNOME 3.x
+      which gnome-default-applications-properties > /dev/null 2>&1  || DE="gnome3"
+    fi
+}
+
+#----------------------------------------------------------------------------
+# kfmclient exec/openURL can give bogus exit value in KDE <= 3.5.4
+# It also always returns 1 in KDE 3.4 and earlier
+# Simply return 0 in such case
+
+kfmclient_fix_exit_code()
+{
+    version=`LC_ALL=C.UTF-8 kde-config --version 2>/dev/null | grep '^KDE'`
+    major=`echo $version | sed 's/KDE.*: \([0-9]\).*/\1/'`
+    minor=`echo $version | sed 's/KDE.*: [0-9]*\.\([0-9]\).*/\1/'`
+    release=`echo $version | sed 's/KDE.*: [0-9]*\.[0-9]*\.\([0-9]\).*/\1/'`
+    test "$major" -gt 3 && return $1
+    test "$minor" -gt 5 && return $1
+    test "$release" -gt 4 && return $1
+    return 0
+}
+
+# Set GTK_UPDATE_ICON_CACHE to gtk-update-icon-cache executable path or
+# to "-" if not found.
+GTK_UPDATE_ICON_CACHE=
+find_gtk_update_icon_cache()
+{
+    [ -n "$GTK_UPDATE_ICON_CACHE" ] && return;
+
+    GTK_UPDATE_ICON_CACHE="-"
+    for x in `echo "$PATH:/opt/gnome/bin" | sed 's/:/ /g'`; do
+        DEBUG 3 "Checking $x for gtk-update-icon-cache"
+        if [ -x "$x/gtk-update-icon-cache" ] ; then
+            DEBUG 1 "Found $x/gtk-update-icon-cache"
+            GTK_UPDATE_ICON_CACHE="$x/gtk-update-icon-cache"
+            return
+        fi
+    done
+}
+
+# Start GNOME legacy workaround section
+need_dot_icon_path()
+{
+  # GTK < 2.6 uses ~/.icons but not XDG_DATA_HOME/icons
+  # The availability of gtk-update-icon-cache is used as indication
+  # of whether the system is using GTK 2.6 or later
+  find_gtk_update_icon_cache
+  [ "$GTK_UPDATE_ICON_CACHE" != "-" ] && return 1;
+  return 0;
+}
+
+update_icon_database()
+{
+   # Touch me, I'm dirty
+   touch "$1/.xdg-icon-resource-dummy"
+   rm -f "$1/.xdg-icon-resource-dummy"
+
+   # Don't create a cache if there wan't one already
+   if [ -f "$1/icon-theme.cache" ] ; then
+      find_gtk_update_icon_cache
+      if [ "$GTK_UPDATE_ICON_CACHE" != "-" ] ; then
+         DEBUG 1 "Running $GTK_UPDATE_ICON_CACHE -f -t \"$1\""
+         eval '$GTK_UPDATE_ICON_CACHE -f -t "$1"'$xdg_redirect_output
+         return
+      fi
+   fi
+}
+
+[ x"$1" != x"" ] || exit_failure_syntax
+
+mode=
+action=
+update=yes
+size=
+theme=hicolor
+context=apps
+icon_file=
+icon_name=
+
+case $1 in
+  install)
+    action=install
+    ;;
+
+  uninstall)
+    action=uninstall
+    ;;
+
+  forceupdate)
+    action=forceupdate
+    ;;
+
+  *)
+    exit_failure_syntax "unknown command '$1'"
+    ;;
+esac
+
+shift
+
+vendor=true
+while [ $# -gt 0 ] ; do
+    parm="$1"
+    shift
+
+    case $parm in
+      --noupdate)
+        update=no
+        ;;
+
+      --mode)
+        if [ -z "$1" ] ; then
+            exit_failure_syntax "mode argument missing for --mode"
+        fi
+        case "$1" in
+          user)
+            mode="user"
+            ;;
+
+          system)
+            mode="system"
+            ;;
+
+          *)
+            exit_failure_syntax "unknown mode '$1'"
+            ;;
+        esac
+        shift
+        ;;
+
+      --theme)
+        if [ -z "$1" ] ; then
+            exit_failure_syntax "theme argument missing for --theme"
+        fi
+        theme="$1"
+        shift
+        ;;
+
+      --size)
+        if [ -z "$1" ] ; then
+            exit_failure_syntax "size argument missing for --size"
+        fi
+        if echo "$1" | grep '[^0-9]' > /dev/null 2> /dev/null; then
+            exit_failure_syntax "size argument must be numeric"
+        fi
+        size="$1"
+        shift
+        ;;
+
+      --context)
+        if [ -z "$1" ] ; then
+            exit_failure_syntax "context argument missing for --context"
+        fi
+        context="$1"
+        shift
+        ;;
+
+      --novendor)
+        vendor=false
+        ;;
+
+      -*)
+        exit_failure_syntax "unexpected option '$parm'"
+        ;;
+
+      *)
+        if [ -n "$icon_name" ] ; then
+            exit_failure_syntax "unexpected argument '$parm'"
+        elif [ -n "$icon_file" ] ; then
+            icon_name="$parm"
+        else
+            if [ "$action" = "install" ] ; then
+                check_input_file "$parm"
+            fi
+            icon_file="$parm"
+        fi
+        ;;
+    esac
+done
+
+# Shouldn't happen
+if [ -z "$action" ] ; then
+    exit_failure_syntax "command argument missing"
+fi
+
+# Shouldn't happen
+if [ -z "$context" ] ; then
+    exit_failure_syntax "context argument missing"
+fi
+
+if [ -n "$XDG_UTILS_INSTALL_MODE" ] ; then
+    if [ "$XDG_UTILS_INSTALL_MODE" = "system" ] ; then
+        mode="system"
+    elif [ "$XDG_UTILS_INSTALL_MODE" = "user" ] ; then
+        mode="user"
+    fi
+fi
+
+if [ -z "$mode" ] ; then
+    if [ `whoami` = "root" ] ; then
+       mode="system"
+    else
+       mode="user"
+    fi
+fi
+
+xdg_dir_name="icons/$theme"
+
+xdg_user_dir="$XDG_DATA_HOME"
+[ -n "$xdg_user_dir" ] || xdg_user_dir="$HOME/.local/share"
+xdg_user_prefix="$xdg_user_dir/icons"
+xdg_user_dir="$xdg_user_dir/$xdg_dir_name"
+
+xdg_global_dir=
+xdg_global_prefix=
+xdg_system_dirs="$XDG_DATA_DIRS"
+[ -n "$xdg_system_dirs" ] || xdg_system_dirs="/usr/local/share/:/usr/share/"
+for x in `echo "$xdg_system_dirs" | sed 's/:/ /g'`; do
+   if [ -w $x/$xdg_dir_name ] ; then
+      xdg_global_prefix="$x/icons"
+      xdg_global_dir="$x/$xdg_dir_name"
+      break
+   fi
+done
+[ -w $xdg_global_dir ] || xdg_global_dir=
+
+dot_icon_dir=
+dot_base_dir=
+if [ x"$mode" = x"user" ] ; then
+    xdg_base_dir="$xdg_user_dir"
+    #Gnome 2.8 supports ~/.icons but not XDG_DATA_HOME
+    if need_dot_icon_path ; then
+        dot_icon_dir="$HOME/.icons"
+        dot_base_dir="$dot_icon_dir/$theme"
+    fi
+else
+    xdg_base_dir="$xdg_global_dir"
+    if [ -z "$xdg_base_dir" ] ; then
+        exit_failure_operation_impossible "No writable system icon directory found."
+    fi
+fi
+
+if [ x"$action" = x"forceupdate" ] ; then
+    if [ -n "$icon_file" ] ; then
+      exit_failure_syntax "unexpected argument '$icon_file'"
+    fi
+    update_icon_database $xdg_base_dir
+    if [ -n "$dot_icon_dir" ] ; then
+        if [ -d "$dot_icon_dir/" -a ! -L "$dot_icon_dir" ] ; then
+            update_icon_database $dot_base_dir
+        fi
+    fi
+    exit_success
+fi
+
+if [ -z "$icon_file" ] ; then
+    if [ x"$action" = x"install" ] ; then
+      exit_failure_syntax "icon-file argument missing"
+    else
+      exit_failure_syntax "icon-name argument missing"
+    fi
+fi
+
+xdg_size_name=
+extension=
+
+if [ -z "$size" ] ; then
+    exit_failure_syntax "the icon size must be specified with --size"
+fi
+xdg_size_name="${size}x${size}"
+
+if [ x"$action" = x"install" ] ; then
+    case $icon_file in
+      *.xpm)
+        extension="xpm"
+        ;;
+      *.png)
+        extension="png"
+        ;;
+      *)
+        exit_failure_syntax "icon file to install must be a *.png or *.xpm file"
+        ;;
+    esac
+fi
+
+if [ -n "$icon_name" ] ; then
+    case $icon_name in
+      *.png)
+         exit_failure_syntax "icon name should not include an extension"
+         ;;
+      *.xpm)
+         exit_failure_syntax "icon name should not include an extension"
+         ;;
+    esac
+fi
+
+# Start KDE legacy workaround section
+need_kde_icon_path()
+{
+  local path
+  path=`readlink -f "$1" 2> /dev/null` # Normalize path
+  DEBUG 2 "need_kde_icon_path $path"
+  if [ -z "$path" ] ; then
+     DEBUG 2 "need_kde_icon_path RETURN 1 (not needed, no xdg icon dir)"
+     return 1; # Not needed
+  fi
+
+  # if kde-config not found... return 0
+  kde_icon_dirs=`kde${KDE_SESSION_VERSION}-config --path icon 2> /dev/null |sed 's/:/ /g'`
+  DEBUG 3 "kde_icon_dirs: $kde_icon_dirs"
+  if [ -z "$kde_icon_dirs" ] ; then
+     DEBUG 3 "no result from kde${KDE_SESSION_VERSION}-config --path icon"
+     DEBUG 2 "need_kde_icon_path RETURN 1 (not needed, no kde icon path)"
+     return 1; # Not needed
+  fi
+  needed=0 # Needed
+  for y in $kde_icon_dirs ; do
+    x=`readlink -f "$y"` # Normalize path
+    DEBUG 3 "Normalize $y --> $x"
+    if [ -n "$x" ] ; then
+      if [ "$x" = "$path" ] ; then
+        needed=1 # Not needed
+      fi
+      if [ -w "$x" ] ; then
+        kde_global_prefix="$x"
+        # Take last writable dir
+      fi
+    fi
+  done
+  DEBUG 2 "kde_global_prefix: $kde_global_prefix"
+  [ $needed -eq "1" ] && DEBUG 2 "need_kde_icon_path RETURN $needed (not needed)"
+  [ $needed -eq "0" ] && DEBUG 2 "need_kde_icon_path RETURN $needed (needed)"
+  return $needed
+}
+
+kde_dir=
+if [ x"$mode" = x"user" ] ; then
+    xdg_dir="$xdg_base_dir/$xdg_size_name/$context"
+    #KDE 3.x doesn't support XDG_DATA_HOME for icons
+    #Check if xdg_dir prefix is listed by kde-config --path icon
+    #If not, install additional symlink to kdedir
+    if need_kde_icon_path "$xdg_user_prefix" ; then
+        kde_user_icon_dir=`kde${KDE_SESSION_VERSION}-config --path icon | cut -d ':' -f 1`
+        kde_user_dir="$kde_user_icon_dir/$theme"
+        kde_dir="$kde_user_dir/$xdg_size_name/$context"
+    fi
+    #Gnome 2.8 supports ~/.icons but not XDG_DATA_HOME
+    if [ -n "$dot_icon_dir" ] ; then
+        if [ -L "$dot_icon_dir" ] ; then
+            # Don't do anything
+            dot_icon_dir=
+        elif [ ! -d "$dot_icon_dir/" ] ; then
+            # Symlink if it doesn't exist
+            eval 'ln -s ".local/share/icons" "$dot_icon_dir"'$xdg_redirect_output
+            dot_icon_dir=
+        else
+            dot_icon_dir="$dot_icon_dir/$theme/$xdg_size_name/$context"
+        fi
+    fi
+    my_umask=077
+else
+    xdg_dir="$xdg_base_dir/$xdg_size_name/$context"
+    #KDE 3.x doesn't support XDG_DATA_DIRS for icons
+    #Check if xdg_dir prefix is listed by kde-config --path icon
+    #If not, install additional symlink to kdedir
+    if need_kde_icon_path "$xdg_global_prefix" ; then
+        kde_global_dir="$kde_global_prefix/$theme"
+        kde_dir="$kde_global_dir/$xdg_size_name/$context"
+    fi
+    my_umask=022
+fi
+# End KDE legacy workaround section
+
+# Start GNOME legacy workaround section
+need_gnome_mime=
+[ $context = "mimetypes" ] && need_gnome_mime=true
+# End GNOME legacy workaround section
+
+[ -n "$icon_name" ] || icon_name=`basename "$icon_file" | sed 's/\.[a-z][a-z][a-z]$//'`
+
+if [ "$vendor" = "true" -a "$action" = "install" -a "$context" = "apps" ] ; then
+    check_vendor_prefix "$icon_name" "icon name"
+fi
+
+icon_icon_file=`echo "$icon_file" | sed 's/\.[a-z][a-z][a-z]$/.icon/'`
+icon_icon_name="$icon_name.icon"
+
+DEBUG 1 "$action icon in $xdg_dir"
+[ $action = "install" -a -f $icon_icon_file ] && DEBUG 1 "install $icon_icon_name meta file in $xdg_dir"
+[ -n "$kde_dir" ] && DEBUG 1 "$action symlink in $kde_dir (KDE 3.x support)"
+[ -n "$need_gnome_mime" ] && DEBUG 1 "$action gnome-mime-$icon_name symlink (GNOME 2.x support)"
+[  $action = "install" -a -n "$dot_icon_dir" ] && DEBUG 1 "$action ~/.icons symlink (GNOME 2.8 support)"
+
+case $action in
+    install)
+        save_umask=`umask`
+        umask $my_umask
+
+        for icon_dir in $xdg_dir $dot_icon_dir; do
+            mkdir -p $icon_dir
+            eval 'cp "$icon_file" "$icon_dir/$icon_name.$extension"'$xdg_redirect_output
+            if [ -f "$icon_icon_file" ] ; then
+                eval 'cp "$icon_icon_file" "$icon_dir/$icon_icon_name"'$xdg_redirect_output
+            fi
+            if [ -n "$need_gnome_mime" ] ; then
+                eval 'ln -s "$icon_name.$extension" "$icon_dir/gnome-mime-$icon_name.$extension"'$xdg_redirect_output
+            fi
+        done
+        if [ -n "$kde_dir" ] ; then
+            mkdir -p $kde_dir
+            eval 'ln -s "$xdg_dir/$icon_name.$extension" "$kde_dir/$icon_name.$extension"'$xdg_redirect_output
+        fi
+
+        umask $save_umask
+        ;;
+
+    uninstall)
+        for icon_dir in $xdg_dir $dot_icon_dir; do
+            rm -f "$icon_dir/$icon_name.xpm" "$icon_dir/$icon_name.png"
+            rm -f "$icon_dir/$icon_icon_name"
+            if [ -n "$need_gnome_mime" ] ; then
+                rm -f "$icon_dir/gnome-mime-$icon_name.xpm"
+                rm -f "$icon_dir/gnome-mime-$icon_name.png"
+            fi
+        done
+        if [ -n "$kde_dir" ] ; then
+            rm -f "$kde_dir/$icon_name.xpm" "$kde_dir/$icon_name.png"
+        fi
+
+        ;;
+esac
+
+if [ x"$update" = x"yes" ] ; then
+    update_icon_database "$xdg_base_dir"
+    if [ -n "$dot_icon_dir" ] ; then
+        if [ -d "$dot_icon_dir/" -a ! -L "$dot_icon_dir" ] ; then
+            update_icon_database $dot_base_dir
+        fi
+    fi
+fi
+
+exit_success

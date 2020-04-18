@@ -1,0 +1,44 @@
+                              RBUG PIPE DRIVER
+
+
+= About =
+
+This directory contains a Gallium3D remote debugger pipe driver.
+It provides remote debugging functionality.
+
+
+= Usage =
+
+Do
+
+   GALLIUM_RBUG=true progs/trivial/tri
+
+which should open gallium remote debugging session. While the program is running
+you can launch the small remote debugging application from progs/rbug. More
+information is in that directory. Also for a gui see:
+
+   http://cgit.freedesktop.org/mesa/rbug-gui
+
+
+= Integrating =
+
+You can integrate the rbug pipe driver either inside the state tracker or the 
+target. The procedure on both cases is the same. Let's assume you have a 
+pipe_screen obtained by the usual means (variable and function names are just
+for illustration purposes):
+
+  real_screen = real_screen_create(...);
+
+The rbug screen is then created by doing
+
+  rbug_screen = rbug_screen_create(real_screen);
+
+You can then simply use rbug_screen instead of real_screen.
+
+You can create as many contexts you wish from rbug_screen::context_create they
+are automatically wrapped by rbug_screen.
+
+
+--
+Jose Fonseca <jrfonseca@tungstengraphics.com>
+Jakob Bornecrantz <jakob@vmware.com>

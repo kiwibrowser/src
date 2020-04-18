@@ -1,0 +1,84 @@
+The goal of these guidelines is to allow as much freedom as possible, while keeping the code buildable and pleasant to read.
+
+* Formatting
+
+- Indent with a single tab character. This is the best choice, since anyone can use the visual indentation he prefers by adjust the tab width setting in his editor.
+- Align multiline statements with an additional extra tab before each continuation line 
+- Keep in mind that people can program with proportional fonts: hence, don't attempt to align anything not at the start of the line, since it's impossible
+- In general, there should never be two consecutive spaces in the source code
+- There is no strict limit on line length, but try to not make lines too long, and insert a line break where it looks good
+
+* Language/platform features
+
+All language features of C++03 with TR1 and all the STL library may be used.
+Obviously, try to keep the code simple, readable and intuitive, code size small, and compilation time short where possible.
+Platform/compiler-specific extensions can be used if beneficial, protected by #ifs.
+
+C++0x is currently not used since it's unreleased and currently not well supported by clang.
+Once GCC, clang and Visual C++ all have very good or complete support, and ideally the standard is finalized, we can start taking advantage of it.
+Change this document once that happens.
+
+Boost is currently not used because it hasn't been necessary and it's best to keep things simple.
+If really necessary, add a dependency on it, but use it judiciously.
+
+C should be used only for old code, and preferably completely avoided.
+
+You can freely assume that char is 8-bit, short 16-bit and int 32-bit, that long and pointers are 32-bit or 64-bit, that long long is at least 64-bit, that float is 32-bit and that double is 64-bit.
+However, when you intend a specific size, int8_t, etc. are preferred.
+
+* Naming style
+
+ Code implementing public parts of Windows interfaces (and derived ones) should follow Windows naming conventions:
+ - Classes are like GalliumD3D11VertexShader
+ - Functions are like CreateVertexShader
+ - Variables are like ppVertexShader
+
+ Other code should follow Gallium/Linux/POSIX/STL/Boost naming conventions:
+ - Classes are like maybe_mutex_t
+ - Functions are like xs_create_shader
+ - Variables are like sampler_view
+ 
+ Template parameters are named accordingly to what looks best for the specific case.
+ Typically it will be FooBar for typename parameters and foo_bar for non-typename ones.
+ 
+ * Implementation style
+ 
+See the comments in d3d1xstutil.h for the COM implementation method.
+In particular, avoid multiple/virtual inheritance in favor of mixins where possible.
+ 
+Try to limit or avoid preprocessor magic and multiline macros and use templates instead where possible.
+Often, you can lessen the preprocessor magic by putting some of it in a template instantiated by the remaining magic.
+
+Forward declarations should not be used unless necessary.
+In particular C++ classes should be implemented "inline" and should you should almost never have a forward declaration of a class.
+To achieve this, you can opt to create an "interface class", which goes into an header or earlier in the C++ file, and an "implementation class" with goes in the C++ file.
+Alternatively, use global helpers with forward declaration. 
+
+Order definitions so that forward declarations are not necessary (e.g. put main at the end of the file).
+
+Choose between "struct" or "class" depending on whether the first declared member is public or private, to save the explicit specifier. 
+
+Try to use const appropriately, esp. as a qualifier for member functions.
+
+Try to avoid Microsoft-style TYPES like FLOAT, UINT, etc. in favor of the usual C types like float, unsigned.
+
+Where feasible, if a platform is missing a function/keyword, add a definition of it with the standard name, rather than inventing an "abstraction layer".
+
+Try to use typedefs for STL maps on which  you need to declare iterations, as well as function pointers or other "weird" C types.
+ 
+ To iterate, use the following idiom from LLVM, which is optimal, unless end() is trivial:
+ for(iterator_type i = begin(), e = end(); i != e; ++i)
+ {}
+ 
+ Otherwise, you risk the compiler evaluating end() for each loop iteration.
+ If end() is trivial, use this:
+ for(iterator_type i = begin(); i != end(); ++i)
+ {}
+ 
+ Note the "++i" instead of the "i++" to avoid creating an unnecessary copy (esp. with overloaded operators).
+ 
+ Declare variables just before they are  needed, and inside the for() header.
+ Usually, you should initialize variable in the declaration if that's the only assignment or if it is a default value, and as a separate assignment if not.
+
+Try to use C++ references (with const if appropriate) when the pointer must be non-null, and that type is not already customarily passed with a pointer.
+

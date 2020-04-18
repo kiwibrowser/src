@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Polymer Redux, Async Demo</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="../../../node_modules/redux/dist/redux.js"></script>
+    <script src="../../../node_modules/redux-thunk/dist/redux-thunk.js"></script>
+
+    <link rel="import" href="../../iron-demo-helpers/demo-pages-shared-styles.html">
+    <link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
+
+    <link rel="import" href="../polymer-redux.html">
+
+    <style is="custom-style" include="demo-pages-shared-styles">
+    </style>
+  </head>
+  <body>
+
+    <div class="vertical-section-container">
+      <h3>Polymer Redux, Async Demo</h3>
+      <demo-snippet>
+        <template>
+          <!-- redux setup -->
+          <script>
+            var reducer = function(state, action) {
+              state = state || { counter: 0 };
+              var counter = state.counter;
+              if (action.type === 'INCREMENT') {
+                ++counter;
+              } else if (action.type === 'DOUBLE') {
+                counter += counter;
+              }
+              return {
+                counter: counter,
+              };
+            };
+            var store = Redux.createStore(
+              reducer,
+              Redux.applyMiddleware(ReduxThunk.default)
+            );
+            var ReduxBehavior = PolymerRedux(store);
+            var AsyncBehavior = {
+              actions: {
+                double: function() {
+                  return function(dispatch) {
+                    setTimeout(function() {
+                      dispatch({ type: 'DOUBLE' });
+                    }, 1000);
+                  };
+                }
+              },
+            };
+          </script>
+
+          <!-- friends list module -->
+          <dom-module id="x-counter">
+            <template>
+              <p>
+                Counter value: 
+                <span>[[counter]]</span>
+              </p>
+              <button on-click="incrementClick">Increment</button>
+              <button on-click="increment200Click">Increment (0.2s)</button>
+              <button on-click="increment500Click">Increment (0.5s)</button>
+              <button on-click="increment1000Click">Increment (1.0s)</button>
+              <button on-click="double1000Click">Double (1.0s)</button>
+            </template>
+            <script>
+              Polymer({
+                is: 'x-counter',
+                behaviors: [ ReduxBehavior, AsyncBehavior ],
+                actions: {
+                  increment: function(ms) {
+                    if (ms) {
+                      return function(dispatch) {
+                        setTimeout(function() {
+                          return dispatch('increment');
+                        }, ms);
+                      };
+                    }
+                    return {
+                      type: 'INCREMENT',
+                    };
+                  }
+                },
+                properties: {
+                  counter: {
+                    type: Number,
+                    statePath: 'counter',
+                  }
+                },
+                incrementClick: function() {
+                  return this.dispatch('increment');
+                },
+                increment200Click: function() {
+                  return this.dispatch('increment', 200);
+                },
+                increment500Click: function() {
+                  return this.dispatch('increment', 500);
+                },
+                increment1000Click: function() {
+                  return this.dispatch(function(dispatch) {
+                    setTimeout(function() {
+                      dispatch('increment');
+                    }, 1000);
+                  });
+                },
+                double1000Click: function() {
+                  this.dispatch('double');
+                }
+              });
+            </script>
+          </dom-module>
+
+          <!-- demo -->
+          <x-counter></x-counter>
+        </template>
+      </demo-snippet>
+    </div>
+  </body>
+</html>

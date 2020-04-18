@@ -1,0 +1,136 @@
+{{header}}
+{{object 1 0}} <<
+  /Type /Catalog
+  /Pages 2 0 R
+  /OpenAction 10 0 R
+>>
+endobj
+{{object 2 0}} <<
+  /Type /Pages
+  /Count 1
+  /Kids [
+    3 0 R
+  ]
+>>
+endobj
+% Page number 0.
+{{object 3 0}} <<
+  /Type /Page
+  /Parent 2 0 R
+  /Resources <<
+    /Font <</F1 15 0 R>>
+  >>
+  /Contents [21 0 R]
+  /MediaBox [0 0 612 792]
+>>
+% OpenAction action
+{{object 10 0}} <<
+  /Type /Action
+  /S /JavaScript
+  /JS 11 0 R
+>>
+endobj
+% JS program to exexute
+{{object 11 0}} <<
+  {{streamlen}}
+>>
+stream
+
+function doTest(name, props) {
+  try {
+    for (var i = 0; i < props.length; ++i) {
+      var expr = name + "." + props[i];
+      app.alert(expr + " is " + eval(expr));
+    }
+  } catch (e) {
+    app.alert("ERROR: " + e.toString());
+  }
+}
+
+function doGlobalTest(props) {
+  try {
+    for (var i = 0; i < props.length; ++i) {
+      app.alert(props[i] + " is " + eval(props[i]));
+    }
+  } catch (e) {
+    app.alert("ERROR: " + e.toString());
+  }
+}
+
+function doGlobalArrayTest(props) {
+  try {
+    for (var i = 0; i < props.length; ++i) {
+      app.alert(props[i] + " is\n  " + eval(props[i]).join(",\n  "));
+    }
+  } catch (e) {
+    app.alert("ERROR: " + e.toString());
+  }
+}
+
+function doEqualityTests() {
+  app.alert("String equality test (==): " +
+            (IDS_GREATER_THAN == IDS_GREATER_THAN));
+  app.alert("String equality test (===): " +
+            (IDS_GREATER_THAN === IDS_GREATER_THAN));
+  app.alert("Array equality test (==): " +
+            (RE_PHONE_COMMIT == RE_PHONE_COMMIT));
+  app.alert("Array equality test (===): " +
+            (RE_PHONE_COMMIT === RE_PHONE_COMMIT));
+}
+
+try {
+  doTest("border", ["s", "b", "d", "i", "u", "nonesuch"]);
+  doTest("display", ["visible", "hidden", "noPrint", "noView", "nonesuch"]);
+  doTest("font", ["Times", "TimesB", "TimesI", "TimesBI", "Helv", "HelvB",
+                  "HelvI", "HelvBI", "Cour", "CourB", "CourI", "CourBI",
+                  "Symbol", "ZapfD", "Nonesuch"]);
+
+  doTest("highlight", ["n", "i", "p", "o", "nonesuch"]);
+  doTest("position", ["textOnly", "iconOnly", "iconTextV", "textIconV",
+                      "iconTextH", "textIconH", "overlay", "nonesuch"]);
+
+  doTest("scaleHow", ["proportional", "anamorphic", "nonesuch"]);
+  doTest("scaleWhen", ["always", "never", "tooBig", "tooSmall", "nonesuch"]);
+  doTest("style", ["ch", "cr", "di", "ci", "st", "sq", "nonesuch"]);
+  doTest("zoomtype", ["none", "fitP", "fitW", "fitH", "fitV", "pref", "refW",
+                      "nonesuch"]);
+
+  doGlobalTest([
+    "IDS_GREATER_THAN",
+    "IDS_GT_AND_LT",
+    "IDS_LESS_THAN",
+    "IDS_INVALID_MONTH",
+    "IDS_INVALID_DATE",
+    "IDS_INVALID_VALUE",
+    "IDS_AM",
+    "IDS_PM",
+    "IDS_MONTH_INFO",
+    "IDS_STARTUP_CONSOLE_MSG"
+  ]);
+
+  doGlobalArrayTest([
+    "RE_NUMBER_ENTRY_DOT_SEP",
+    "RE_NUMBER_COMMIT_DOT_SEP",
+    "RE_NUMBER_ENTRY_COMMA_SEP",
+    "RE_NUMBER_COMMIT_COMMA_SEP",
+    "RE_ZIP_ENTRY",
+    "RE_ZIP_COMMIT",
+    "RE_ZIP4_ENTRY",
+    "RE_ZIP4_COMMIT",
+    "RE_PHONE_ENTRY",
+    "RE_PHONE_COMMIT",
+    "RE_SSN_ENTRY",
+    "RE_SSN_COMMIT"
+  ]);
+
+  doEqualityTests();
+} catch (e) {
+  app.alert("ERROR: " + e.toString());
+}
+endstream
+endobj
+{{xref}}
+{{trailer}}
+{{startxref}}
+%%EOF
+

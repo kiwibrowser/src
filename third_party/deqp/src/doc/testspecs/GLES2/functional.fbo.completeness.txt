@@ -1,0 +1,132 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Framebuffer completeness tests.
+
+Tests:
+ + dEQP-GLES2.functional.fbo.completeness.renderable.*
+ + dEQP-GLES2.functional.fbo.completeness.attachment_combinations.*
+ + dEQP-GLES2.functional.fbo.completeness.attachment_combinations.exists_supported
+ + dEQP-GLES2.functional.fbo.completeness.size.zero
+ + dEQP-GLES2.functional.fbo.completeness.size.distinct
+
+Includes:
+ + glCheckFramebufferStatus return value check
+ + Single attachments with all standard (and many extension) formats
+ + All combinations of color0, depth and stencil attachments
+   - And other color attachments if GL_NV_fbo_color_attachments is exposed
+ + Existence of a supported combination of formats
+ + Zero-sized attachment
+ + Differently sized attachments
+
+Excludes:
+ + Trying FBO operations on in/complete FBOs.
+ + Completeness status changes after the FBO is modified.
+
+Description:
+
+These tests check that the implementation reports framebuffer completeness
+status correctly. Most test cases create a single framebuffer object, create
+some renderbuffers and/or textures and attach them to the FBO, and then call
+glCheckFramebufferStatus on it. The returned value is compared against a set
+of legal return values that is calculated from the arguments given to image
+creation and attachment functions. The test passes if the return value is
+found in this set. Some test cases may also expect image creation to fail
+before it can be attached.
+
+For each test case, the test log shows the configurations of the created
+images and attachments, the set of expected status values and the actual
+returned status value.
+
+
+The "renderable.*" test cases iterate through all the texture formats and
+attachment points and attach a single texture or renderbuffer with that format
+at that attachment point.
+
+The purpose of these tests is to check that the implementation's notion of
+color/depth/stencil-renderability adheres to the GLES specification and
+extensions. Both renderability and non-renderability of unexpected formats are
+reported as test failures.
+
+Note that the GLES2 spec allows implementations to return
+GL_FRAMEBUFFER_UNSUPPORTED for practically any framebuffer configurations. See
+"attachment_combinations.exists_supported" for a test that ensures that at
+least one combination of attachment formats is supported.
+
+Also note that the GLES2 spec is notoriously ambiguous regarding the
+renderability of unsized formats that correspond to renderable sized formats.
+See Khronos bug 7333 <https://cvs.khronos.org/bugzilla/show_bug.cgi?id=7333>
+for details. This test expects the following behavior:
+
+* The type/unsized-format combinations corresponding to the color-renderable
+  sized formats in table 4.5 are expected to be color-renderable. (Consensus
+  in bug 7333.)
+
+* If OES_rgb8_rgba8 is exposed, the combinations ubyte/RGB and ubyte/RGBA are
+  expected to be color-renderable. (Consensus in bug 7333.)
+
+* If extensions state explicitly the renderability of a format, the
+  implementation is expected to adhere to that.
+
+* If an extension makes another sized format renderable, and there is no text
+  about the renderability of the corresponding type/unsized-format
+  combination, then it is allowed but not required to be renderable.
+
+* If a type/unsized-format combination is not specified to be renderable and
+  does not correspond to a renderable sized format, then it is expected to be
+  unrenderable.
+
+
+The "attachment_combination.*" test cases attach some textures and/or
+renderbuffers with suitable formats to none, some or all of the framebuffer's
+attachment points. The expected status values are as follows:
+
+* If there are no attachments, GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
+  must be returned.
+
+* Otherwise, GL_FRAMEBUFFER_COMPLETE or GL_FRAMEBUFFER_UNSUPPORTED must be
+  returned.
+
+If the implementation declares support for GL_NV_fbo_color_attachments, all
+color attachments are used in the tests.
+
+Some tests may return the status "NotSupported" because the implementation
+does support a depth- or stencil-renderable texture format.
+
+Note that GLES2, unlike GLES3, allows the depth and stencil attachments to be
+distinct images, and in fact requires them to be, since without extensions
+there is no format that is both depth- and stencil-renderable. When a test
+case has both a depth and a stencil attachment, they are always distinct
+images.
+
+The test case "attachment_combinations.exists_supported" iterates through all
+standard GLES2 renderable formats and attempts to find at least one
+combination of attachments and formats such that the framebuffer checks as
+complete. The test fails if no such combination is found.
+
+
+The "size.*" test cases check that attachment sizes are treated correctly.
+
+The "size.zero" test case creates a framebuffer object with a single
+zero-sized renderbuffer attachment. The glCheckFramebufferStatus call is
+expected to return GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT. Note that creating
+and attaching the zero-sized renderbuffer is still expected to succeed.
+
+The "size.distinct" test case creates a framebuffer object with two
+attachments with different sizes. The glCheckFramebufferStatus call is
+expected to return GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS.

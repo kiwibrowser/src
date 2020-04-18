@@ -1,0 +1,76 @@
+group declarations "Declarations"
+
+	case missing_variable_name
+		version 300 es
+		both ""
+			#version 300 es
+			precision mediump int;
+			${DECLARATIONS}
+			void main()
+			{
+				int;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case comma_preceding_variable
+		version 300 es
+		both ""
+			#version 300 es
+			precision mediump int;
+			${DECLARATIONS}
+			void main()
+			{
+				int ,a;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case comma_following_variable
+		version 300 es
+		expect compile_fail
+		both ""
+			#version 300 es
+			precision mediump int;
+			${DECLARATIONS}
+			void main()
+			{
+				int a,;
+				${OUTPUT}
+			}
+		""
+	end
+
+	case struct_missing_attribute_name
+		version 300 es
+		expect compile_fail
+		both ""
+			#version 300 es
+			precision mediump int;
+			${DECLARATIONS}
+			void main()
+			{
+				struct Data { int; };
+				${OUTPUT}
+			}
+		""
+	end
+
+	case struct_comma_preceding_attribute
+		version 300 es
+		expect compile_fail
+		both ""
+			#version 300 es
+			precision mediump int;
+			${DECLARATIONS}
+			void main()
+			{
+				struct Data { int ,a; };
+				${OUTPUT}
+			}
+		""
+	end
+
+end # invalid_declarations

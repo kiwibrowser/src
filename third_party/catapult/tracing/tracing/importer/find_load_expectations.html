@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<!--
+Copyright (c) 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/extras/chrome/event_finder_utils.html">
+<link rel="import" href="/tracing/extras/chrome/time_to_interactive.html">
+<link rel="import" href="/tracing/model/user_model/load_expectation.html">
+
+<script>
+'use strict';
+
+tr.exportTo('tr.importer', function() {
+  const LONG_TASK_THRESHOLD_MS = 50;
+
+  const IGNORE_URLS = [
+    // Blank URLs correspond to initial empty loads and we want to ignore
+    // them.
+    '',
+    'about:blank',
+  ];
+
+
+  /**
+   * @param  {!tr.model.Process} process
+   * @param  {!tr.b.math.Range} range
+   * @return {Array.<tr.model.Event>} An array of network events of a process
+   * and that are intersecting a range.
+   */
+  function getNetworkEventsInRange(process, range) {
+    const networkEvents = [];
+    for (const thread of Object.values(process.threads)) {
+      const threadHelper = new tr.model.helpers.ChromeThreadHelper(thread);
+      const events = threadHelper.getNetworkEvents();
+      for (const event of events) {
+        if (range.intersectsExplicitRangeInclusive(event.start, event.end)) {
+          networkEvents.push(event);
+        }
+      }
+    }
+    return networkEvents;
+  }
+
+  function findFrameLoaderSnapshotAt(rendererHelper, frameIdRef, ts) {
+    const objects = rendererHelper.process.objects;
+    const frameLoaderInstances = objects.instancesByTypeName_.FrameLoader;
+    if (frameLoaderInstances === undefined) return undefined;
+
+    let snapshot;
+    for (const instance of frameLoaderInstances) {
+      if (!instance.isAliveAt(ts)) continue;
+      const maybeSnapshot = instance.getSnapshotAt(ts);
+      if (frameIdRef !== maybeSnapshot.args.frame.id_ref) continue;
+      snapshot = maybeSnapshot;
+    }
+
+    return snapshot;
+  }
+
+  function findFirstMeaningfulPaintCandidates(rendererHelper) {
+    const candidatesForFrameId = {};
+    for (const ev of rendererHelper.process.getDescendantEvents()) {
+      if (!tr.e.chrome.EventFinderUtils.hasCategoryAndName(
+          ev, 'loading', 'firstMeaningfulPaintCandidate')) {
+        continue;
+      }
+      if (rendererHelper.isTelemetryInternalEvent(ev)) continue;
+      const frameIdRef = ev.args.frame;
+      if (frameIdRef === undefined) continue;
+      let list = candidatesForFrameId[frameIdRef];
+      if (list === undefined) {
+        candidatesForFrameId[frameIdRef] = list = [];
+      }
+      list.push(ev);
+    }
+    return candidatesForFrameId;
+  }
+
+  /**
+   * Returns Time to Interactive and First CPU Idle for the
+   * given parameters. See the time_to_interactive.html module for detailed
+   * description and implementation of these metrics. The two metrics are
+   * computed together in the same function because almost all the computed
+   * parameters, for example list of relevant long tasks, are same for these two
+   * metrics, and this helps avoid duplicate computation.
+   *
+   * @param {tr.model.helpers.ChromeRendererHelper} rendererHelper - Renderer
+   *     helper for the renderer of interest.
+   * @param {tr.model.ThreadSlice} navigationStart - The navigation start
+   *     event for which loading metrics is being computed.
+   * @param {tr.model.ThreadSlice} fmpEvent - The first meaningful paint
+   *     event for which loading metrics is being computed.
+   * @param {tr.model.ThreadSlice} domContentLoadedEndEvent - Event
+   *     corresponding to finish  of dom content loading
+   * @param {number} searchWindowEnd - Time till when to search for a TTI. This
+   *   value is either the start of next navigation or the end of the trace.
+   * @returns {interactiveSample: {number}|undefined,
+   *           firstCpuIdleTime: {number}|undefined}
+   */
+  function computeInteractivityMetricSample_(rendererHelper, navigationStart,
+      fmpEvent, domContentLoadedEndEvent, searchWindowEnd) {
+    // Cannot determine TTI if DomContentLoadedEnd was never reached or if
+    // there is no corresponding fmpEvent.
+    if (domContentLoadedEndEvent === undefined || fmpEvent === undefined) {
+      return {interactiveTime: undefined, firstCpuIdleTime: undefined};
+    }
+
+    const firstMeaningfulPaintTime = fmpEvent.start;
+    const mainThreadTasks =
+        tr.e.chrome.EventFinderUtils.findToplevelSchedulerTasks(
+            rendererHelper.mainThread);
+
+    const longTasks = mainThreadTasks.filter(
+        task => task.duration >= LONG_TASK_THRESHOLD_MS);
+    const longTasksInWindow = longTasks.filter(
+        task => task.range.intersectsExplicitRangeInclusive(
+            firstMeaningfulPaintTime, searchWindowEnd));
+
+    const resourceLoadEvents = getNetworkEventsInRange(rendererHelper.process,
+        tr.b.math.Range.fromExplicitRange(navigationStart.start,
+            searchWindowEnd));
+
+    const firstCpuIdleTime =
+        tr.e.chrome.findFirstCpuIdleTime(
+            firstMeaningfulPaintTime, searchWindowEnd,
+            domContentLoadedEndEvent.start, longTasksInWindow);
+    const interactiveTime =
+        tr.e.chrome.findInteractiveTime(
+            firstMeaningfulPaintTime, searchWindowEnd,
+            domContentLoadedEndEvent.start, longTasksInWindow,
+            resourceLoadEvents);
+    return {interactiveTime, firstCpuIdleTime};
+  }
+
+  /* Constructs a loading metrics for the specified navigation start event and
+   * the corresponding fmpEvent and returns a sample including the metrics and
+   * navigationStartEvent, fmpEvent, url and the frameId.
+   *
+   * @param {tr.model.helpers.ChromeRendererHelper} rendererHelper - Renderer
+   *     helper for the renderer of interest.
+   * @param {Map.<string, Array<!tr.model.ThreadSlice>>} frameToNavStartEvents -
+   *     Map from frame ids to sorted array of navigation start events.
+   * @param {Map.<string, Array<!tr.model.ThreadSlice>>}
+   *     frameToDomContentLoadedEndEvents - Map from frame ids to sorted array
+   *     of DOMContentLoadedEnd events.
+   * @param {tr.model.ThreadSlice} navigationStart - The navigation start
+   *     event for which loading metrics is being computed.
+   * @param {tr.model.ThreadSlice} fmpEvent - The first meaningful paint
+   *     event for which loading metrics is being computed.
+   * @param {number} searchWindowEnd - The end of the current navigation either
+   *     because new navigation has started or the trace has ended.
+   * @param {string} url - URL of the current main frame document.
+   * @param {number} frameId - fameId.
+   * @returns {{start: {number}, duration: {number},
+   *  fmpEvent: {tr.model.ThreadSlice}, navStart: {tr.model.ThreadSlice},
+   *  dclEndTime: {tr.model.ThreadSlice}, firstCpuIdleTime: {number}|undefined,
+   *  interactiveSample: {number}|undefined, url: {string}, frameId: {number}}}
+   */
+  function constructLoadingExpectation_(rendererHelper,
+      frameToDomContentLoadedEndEvents, navigationStart, fmpEvent,
+      searchWindowEnd, url, frameId) {
+    // Find when dom content has loaded.
+    const dclTimesForFrame =
+        frameToDomContentLoadedEndEvents.get(frameId) || [];
+    const dclSearchRange = tr.b.math.Range.fromExplicitRange(
+        navigationStart.start, searchWindowEnd);
+    const dclTimesInWindow =
+        dclSearchRange.filterArray(dclTimesForFrame, event => event.start);
+    let domContentLoadedEndEvent = undefined;
+    if (dclTimesInWindow.length !== 0) {
+      // TODO(catapult:#3796): Ideally a frame should reach DomContentLoadedEnd
+      // at most once within two navigationStarts, but sometimes there is a
+      // strange DclEnd event immediately following the navigationStart, and
+      // then the 'real' dclEnd happens later. It is not clear how to best
+      // determine the correct dclEnd value. For now, if there are multiple
+      // DclEnd events in the search window, we just pick the last one.
+      domContentLoadedEndEvent =
+        dclTimesInWindow[dclTimesInWindow.length - 1];
+    }
+
+    const {interactiveTime, firstCpuIdleTime} =
+      computeInteractivityMetricSample_(
+          rendererHelper, navigationStart, fmpEvent,
+          domContentLoadedEndEvent, searchWindowEnd);
+
+    const duration = (interactiveTime === undefined) ?
+      searchWindowEnd - navigationStart.start :
+      interactiveTime - navigationStart.start;
+
+    return new tr.model.um.LoadExpectation(
+        rendererHelper.modelHelper.model,
+        tr.model.um.LOAD_SUBTYPE_NAMES.SUCCESSFUL, navigationStart.start,
+        duration, rendererHelper.process, navigationStart, fmpEvent,
+        domContentLoadedEndEvent, firstCpuIdleTime, interactiveTime, url,
+        frameId);
+  }
+
+  /**
+   * Computes the loading expectations for a renderer represented by
+   * |rendererHelper| and returns a list of samples. The loading
+   * expectation is the time between navigation start and the time to
+   * be interactive. There will be one load expectation corresponding
+   * to each navigation start for loading main frames.
+   *
+   * Also, computes Time to First Meaningful Paint (TTFMP), and
+   * Time to First CPU Idle (TTFCI) along with time to interactive (TTI)
+   * and returns them along with the load expectation.
+   *
+   * First meaningful paint is the paint following the layout with the highest
+   * "Layout Significance". The Layout Significance is computed inside Blink,
+   * by FirstMeaningfulPaintDetector class. It logs
+   * "firstMeaningfulPaintCandidate" event every time the Layout Significance
+   * marks a record. TTFMP is the time between NavigationStart and the last
+   * firstMeaningfulPaintCandidate event.
+   *
+   * Design doc: https://goo.gl/vpaxv6
+   *
+   * Time to Interactive and Time to First CPU Idle is based on heuristics
+   * involving main thread and network activity, as well as First Meaningful
+   * Paint and DOMContentLoadedEnd event. See time_to_interactive.html module
+   * for detailed description and implementation of these two metrics.
+   */
+  function collectLoadExpectationsForRenderer(
+      rendererHelper) {
+    const samples = [];
+    const frameToNavStartEvents =
+        tr.e.chrome.EventFinderUtils.getSortedMainThreadEventsByFrame(
+            rendererHelper, 'navigationStart', 'blink.user_timing');
+    const frameToDomContentLoadedEndEvents =
+          tr.e.chrome.EventFinderUtils.getSortedMainThreadEventsByFrame(
+              rendererHelper, 'domContentLoadedEventEnd', 'blink.user_timing');
+
+    function addSamples(frameIdRef, navigationStart, fmpCandidateEvents,
+        searchWindowEnd, url) {
+      let fmpMarkerEvent =
+            tr.e.chrome.EventFinderUtils.
+                findLastEventStartingOnOrBeforeTimestamp(fmpCandidateEvents,
+                    searchWindowEnd);
+      if (fmpMarkerEvent !== undefined &&
+        navigationStart.start > fmpMarkerEvent.start) {
+        // Don't use fmpCandidate if it is not corresponding this navigation.
+        fmpMarkerEvent = undefined;
+      }
+      samples.push(constructLoadingExpectation_(
+          rendererHelper, frameToDomContentLoadedEndEvents, navigationStart,
+          fmpMarkerEvent, searchWindowEnd, url, frameIdRef));
+    }
+
+    const candidatesForFrameId =
+        findFirstMeaningfulPaintCandidates(rendererHelper);
+
+    for (const [frameIdRef, navStartEvents] of frameToNavStartEvents) {
+      const fmpCandidateEvents = candidatesForFrameId[frameIdRef] || [];
+      let prevNavigation = {navigationEvent: undefined, url: undefined};
+
+      for (let index = 0; index < navStartEvents.length; index++) {
+        const currNavigation = navStartEvents[index];
+        let url;
+        let isLoadingMainFrame = false;
+
+        if (currNavigation.args.data) {
+          url = currNavigation.args.data.documentLoaderURL;
+          isLoadingMainFrame = currNavigation.args.data.isLoadingMainFrame;
+        } else {
+          // TODO(#4358): Delete old path of obtaining URL.
+          const snapshot = findFrameLoaderSnapshotAt(
+              rendererHelper, frameIdRef, currNavigation.start);
+          if (snapshot) {
+            url = snapshot.args.documentLoaderURL;
+            isLoadingMainFrame = snapshot.args.isLoadingMainFrame;
+          }
+        }
+
+        // Filter navigationStartEvents that do not correspond to a loading main
+        // frame, or has a URL that we do not care about.
+        if (!isLoadingMainFrame) continue;
+        if (url === undefined || IGNORE_URLS.includes(url)) continue;
+
+        if (prevNavigation.navigationEvent !== undefined) {
+          // Add a LoadExpectation for the previous navigation ending on or
+          // before current navigation.
+          addSamples(frameIdRef, prevNavigation.navigationEvent,
+              fmpCandidateEvents, currNavigation.start, prevNavigation.url);
+        }
+
+        prevNavigation = {navigationEvent: currNavigation, url};
+      }
+
+      // Handle the last navigation here.
+      if (prevNavigation.navigationEvent !== undefined) {
+        addSamples(frameIdRef, prevNavigation.navigationEvent,
+            fmpCandidateEvents, rendererHelper.modelHelper.chromeBounds.max,
+            prevNavigation.url);
+      }
+    }
+    return samples;
+  }
+
+
+  function findLoadExpectations(modelHelper) {
+    const loads = [];
+
+    const chromeHelper = modelHelper.model.getOrCreateHelper(
+        tr.model.helpers.ChromeModelHelper);
+    for (const pid in chromeHelper.rendererHelpers) {
+      const rendererHelper = chromeHelper.rendererHelpers[pid];
+      if (rendererHelper.isChromeTracingUI) continue;
+
+      loads.push.apply(loads,
+          collectLoadExpectationsForRenderer(rendererHelper));
+    }
+    return loads;
+  }
+
+  return {
+    findLoadExpectations,
+  };
+});
+</script>

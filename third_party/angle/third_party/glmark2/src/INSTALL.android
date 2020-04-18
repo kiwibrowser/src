@@ -1,0 +1,35 @@
+The minimum Android API level for glmark2 is 9 (>= Android 2.3).
+
+Building using the SDK and NDK
+------------------------------
+
+To build and install glmark2 you need the Android SDK and NDK. The 'android',
+'adb' and 'ndk-build' tools used below are included there.
+
+To build glmark2 for Android we start by building the native part:
+
+$ cd android
+$ ndk-build
+
+To continue building the package from the command line:
+
+$ android update project -p . -s -t <target> (where target, e.g., android-10)
+$ ant debug {or release}
+
+To install to a device, you need to have set up an ADB connection
+to the device. Then do:
+
+$ adb install bin/Glmark2-debug.apk
+
+Alternatively you can load the project (in the android/ directory) in Eclipse
+using the ADT plugin and manage the build and install process from there.  Keep
+in mind that when updating the native build (ndk-build etc) you need to refresh
+the Eclipse project, otherwise it won't notice that something has changed.
+
+Building using the Android build system
+---------------------------------------
+
+Copy the glmark2 source tree to somewhere the Android build system can access
+it (eg external/glmark2) and build the GLMark2 module:
+
+$ make GLMark2

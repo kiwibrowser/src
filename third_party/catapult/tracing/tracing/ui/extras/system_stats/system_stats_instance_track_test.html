@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<!--
+Copyright (c) 2013 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/core/test_utils.html">
+<link rel="import" href="/tracing/ui/extras/system_stats/system_stats.html">
+<link rel="import" href="/tracing/ui/timeline_viewport.html">
+<link rel="import" href="/tracing/ui/tracks/drawing_container.html">
+
+<script>
+'use strict';
+
+tr.b.unittest.testSuite(function() {
+  const SystemStatsInstanceTrack =
+    tr.ui.e.system_stats.SystemStatsInstanceTrack;
+  const Viewport = tr.ui.TimelineViewport;
+
+  const createObjects = function() {
+    const objectInstance = new tr.model.ObjectInstance({});
+    const snapshots = [];
+
+    const stats1 = {};
+    const stats2 = {};
+
+    stats1.committed_memory = 2000000;
+    stats2.committed_memory = 3000000;
+
+    stats1.meminfo = {};
+    stats1.meminfo.free = 10000;
+    stats2.meminfo = {};
+    stats2.meminfo.free = 20000;
+
+    snapshots.push(new tr.e.system_stats.SystemStatsSnapshot(objectInstance,
+        10, stats1));
+    snapshots.push(new tr.e.system_stats.SystemStatsSnapshot(objectInstance,
+        20, stats2));
+
+    objectInstance.snapshots = snapshots;
+
+    return objectInstance;
+  };
+
+  test('instantiate', function() {
+    const objectInstances = [];
+    objectInstances.push(createObjects());
+
+    const div = document.createElement('div');
+    const viewport = new Viewport(div);
+    const drawingContainer = new tr.ui.tracks.DrawingContainer(viewport);
+    Polymer.dom(div).appendChild(drawingContainer);
+
+    const track = new SystemStatsInstanceTrack(viewport);
+    track.objectInstances = objectInstances;
+    Polymer.dom(drawingContainer).appendChild(track);
+
+    this.addHTMLOutput(div);
+    drawingContainer.invalidate();
+
+    track.heading = 'testBasic';
+    const dt = new tr.ui.TimelineDisplayTransform();
+    dt.xSetWorldBounds(0, 50, track.clientWidth);
+    track.viewport.setDisplayTransformImmediately(dt);
+  });
+});
+</script>

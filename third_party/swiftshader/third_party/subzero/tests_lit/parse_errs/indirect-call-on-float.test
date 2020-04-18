@@ -1,0 +1,21 @@
+; Tests that we check the call address is a pointer on an indirect call.
+
+; REQUIRES: no_minimal_build
+
+; RUN: not %pnacl_sz -bitcode-as-text -allow-externally-defined-symbols \
+; RUN:     %p/Inputs/indirect-call-on-float.tbc \
+; RUN:     -bitcode-format=pnacl -notranslate -build-on-read 2>&1 \
+; RUN:   | FileCheck %s
+
+; CHECK: Call indirect address not i32. Found: float
+
+; RUN: pnacl-bcfuzz -bitcode-as-text \
+; RUN:     %p/Inputs/indirect-call-on-float.tbc -output - \
+; RUN:   | not pnacl-bcdis -no-records | FileCheck -check-prefix=ASM %s
+
+; ASM:   function void @f1(i32 %p0, float %p1) {  // BlockID = 12
+; ASM:     blocks 1;
+; ASM:   %b0:
+; ASM:     call void %p1();
+; ASM:     ret void;
+; ASM:   }

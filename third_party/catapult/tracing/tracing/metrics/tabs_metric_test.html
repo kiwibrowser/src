@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<!--
+Copyright 2018 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/core/test_utils.html">
+<link rel="import" href="/tracing/metrics/tabs_metric.html">
+<link rel="import" href="/tracing/value/histogram_set.html">
+
+<script>
+'use strict';
+
+tr.b.unittest.testSuite(function() {
+  test('tabsMetric_tabSwitching', function() {
+    const model = tr.c.TestUtils.newModel((model) => {
+      const browserThread = setUpBrowserThread(model);
+      addTabSwitchingData(browserThread, browserThread);
+    });
+    const histograms = new tr.v.HistogramSet();
+    tr.metrics.tabs.tabsMetric(histograms, model);
+    const hist = histograms.getHistogramNamed('tab_switching_latency');
+    assert.strictEqual(hist.max, 43.0);
+    assert.strictEqual(hist.min, 24.0);
+    assert.strictEqual(hist.average, 33.0);
+  });
+
+  test('tabsMetric_tabSwitchingWithViz', function() {
+    const model = tr.c.TestUtils.newModel((model) => {
+      // With viz turned on, the data will be in the gpu process in the display
+      // compositor thread.
+      const browserThread = setUpBrowserThread(model);
+      const compositorThread = setUpDisplayCompositorThread(model);
+      addTabSwitchingData(browserThread, compositorThread);
+    });
+    const histograms = new tr.v.HistogramSet();
+    tr.metrics.tabs.tabsMetric(histograms, model);
+    const hist = histograms.getHistogramNamed('tab_switching_latency');
+    assert.strictEqual(hist.max, 43.0);
+    assert.strictEqual(hist.min, 24.0);
+    assert.strictEqual(hist.average, 33.0);
+  });
+
+  function setUpBrowserThread(model) {
+    const BROWSER_PROCESS_ID = 1234;
+    const browserProcess = model.getOrCreateProcess(BROWSER_PROCESS_ID);
+    const browserThread = browserProcess.getOrCreateThread(2);
+    browserThread.name = 'CrBrowserMain';
+    return browserThread;
+  }
+
+  function setUpDisplayCompositorThread(model) {
+    const GPU_PROCESS_ID = 2345;
+    const gpuProcess = model.getOrCreateProcess(GPU_PROCESS_ID);
+    const compositorThread = gpuProcess.getOrCreateThread(2);
+    compositorThread.name = 'CompositorThread';
+    return compositorThread;
+  }
+
+  function addTabSwitchingData(browserThread, compositorThread) {
+    const group = browserThread.asyncSliceGroup;
+    group.push(tr.c.TestUtils.newAsyncSliceEx({
+      cat: 'latency',
+      title: 'TabSwitching::Latency',
+      start: 0,
+      duration: 24,
+      startThread: browserThread,
+      endThread: compositorThread,
+    }));
+    group.push(tr.c.TestUtils.newAsyncSliceEx({
+      cat: 'latency',
+      title: 'TabSwitching::Latency',
+      start: 1,
+      duration: 32,
+      startThread: browserThread,
+      endThread: compositorThread,
+    }));
+    group.push(tr.c.TestUtils.newAsyncSliceEx({
+      cat: 'latency',
+      title: 'TabSwitching::Latency',
+      start: 2,
+      duration: 43,
+      startThread: browserThread,
+      endThread: compositorThread,
+    }));
+  }
+});
+</script>

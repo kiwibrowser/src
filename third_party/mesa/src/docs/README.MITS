@@ -1,0 +1,102 @@
+
+			Mesa 3.0 MITS Information
+
+
+This software is distributed under the terms of the GNU Library
+General Public License, see the LICENSE file for details.
+
+
+This document is a preliminary introduction to help you get
+started. For more detaile information consult the web page.
+
+http://10-dencies.zkm.de/~mesa/
+
+
+
+Version 0.1 (Yes it's very alpha code so be warned!)
+Contributors: 
+  Emil Briggs    	(briggs@bucky.physics.ncsu.edu)
+  David Bucciarelli 	(tech.hmw@plus.it)
+  Andreas Schiffler 	(schiffler@zkm.de)
+
+
+
+1. Requirements:
+     Mesa 3.0.
+     An SMP capable machine running Linux 2.x
+     libpthread installed on your machine.
+
+
+2. What does MITS stand for?
+     MITS stands for Mesa Internal Threading System. By adding
+     internal threading to Mesa it should be possible to improve
+     performance of OpenGL applications on SMP machines.
+
+
+3. Do applications have to be recoded to take advantage of MITS?
+     No. The threading is internal to Mesa and transparent to
+     applications.
+
+
+4. Will all applications benefit from the current implementation of MITS?
+     No. This implementation splits the processing of the vertex buffer
+     over two threads. There is a certain amount of overhead involved
+     with the thread synchronization and if there is not enough work
+     to be done the extra overhead outweighs any speedup from using
+     dual processors. You will not for example see any speedup when
+     running Quake because it uses GL_POLYGON and there is only one
+     polygon for each vertex buffer processed. Test results on a
+     dual 200 Mhz. Pentium Pro system show that one needs around
+     100-200 vertices in the vertex buffer before any there is any
+     appreciable benefit from the threading.
+
+
+5. Are there any parameters that I can tune to try to improve performance.
+     Yes. You can try to vary the size of the vertex buffer which is
+     define in VB_MAX located in the file src/vb.h from your top level
+     Mesa distribution. The number needs to be a multiple of 12 and
+     the optimum value will probably depend on the capabilities of
+     your machine and the particular application you are running.
+
+
+6. Are there any ways I can modify the application to improve its
+   performance with the MITS?
+     Yes. Try to use as many vertices between each Begin/End pair
+     as possbile. This will reduce the thread synchronization
+     overhead.
+
+
+7. What sort of speedups can I expect?
+     On some benchmarks performance gains of up to 30% have been
+     observerd. Others may see no gain at all and in a few rare
+     cases even some degradation.
+
+
+8. What still needs to be done?
+     Lots of testing and benchmarking.
+     A portable implementation that works within the Mesa thread API.
+     Threading of additional areas of Mesa to improve performance
+     even more.
+
+
+
+Installation:
+
+   1. This assumes that you already have a working Mesa 3.0 installation
+      from source.
+   2. Place the tarball MITS.tar.gz in your top level Mesa directory.
+   3. Unzip it and untar it. It will replace the following files in
+      your Mesa source tree so back them up if you want to save them.
+
+
+	 README.MITS
+         Make-config
+	 Makefile
+	 mklib.glide
+         src/vbxform.c
+	 src/vb.h
+
+   4. Rebuild Mesa using the command
+
+          make linux-386-glide-mits
+

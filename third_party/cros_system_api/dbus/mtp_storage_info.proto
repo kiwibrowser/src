@@ -1,0 +1,57 @@
+// Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+// This protobuf is for sending the characteristics of a storage from a mtp/ptp
+// device to the browser.
+message MtpStorageInfo {
+  // The name of the storage. e.g. usb:2,5:65537
+  optional string storage_name = 1;
+
+  // Device vendor name. e.g. Kodak
+  optional string vendor = 2;
+
+  // Device vendor id. e.g. 0x040a
+  optional uint32 vendor_id = 3;
+
+  // Device product name. e.g. DC4800
+  optional string product = 4;
+
+  // Device product id. e.g. 0x0160
+  optional uint32 product_id = 5;
+
+  // Device flags as defined by libmtp. See libmtp's src/device-flags.h.
+  optional uint32 device_flags = 6;
+
+  // Device storage type as defined in the PIMA 15740-2000 standard, first
+  // edition, section 5.5.3, table 11.
+  optional uint32 storage_type = 7;
+
+  // Device file system type as defined in the PIMA 15740-2000 standard, first
+  // edition, section 5.5.3, table 12.
+  optional uint32 filesystem_type = 8;
+
+  // Access capability as defined in the PIMA 15740-2000 standard, first
+  // edition, section 5.5.3, table 13.
+  optional uint32 access_capability = 9;
+
+  // Capacity of the storage in bytes.
+  optional uint64 max_capacity = 10;
+
+  // Free space of the storage in bytes.
+  optional uint64 free_space_in_bytes = 11;
+
+  // Free space of the storage in objects. i.e. How many more objects can be
+  // created on the device.
+  optional uint64 free_space_in_objects = 12;
+
+  // A description of the storage. This is device dependent.
+  optional string storage_description = 13;
+
+  // The volume label of the storage. This is device dependent.
+  optional string volume_identifier = 14;
+}

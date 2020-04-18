@@ -1,0 +1,227 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl"
+   href="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+    "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
+]>
+<refentry id="xdg-screensaver">
+  <refentryinfo>
+    <title>xdg-screensaver Manual</title>
+    <copyright>
+      <year>2006</year>
+    </copyright>
+    <author>
+      <firstname>Bryce</firstname>
+      <surname>Harrington</surname>
+    </author>
+    <address><email>bryce@osdl.org</email></address>
+    <releaseinfo>xdg-utils 1.0</releaseinfo>
+  </refentryinfo>
+
+  <refmeta>
+    <refentrytitle>xdg-screensaver</refentrytitle>
+    <manvolnum>1</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname>xdg-screensaver</refname>
+    <refpurpose>command line tool for controlling the screensaver</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+    <cmdsynopsis>
+      <command>xdg-screensaver</command>
+      <arg choice="plain"><option>suspend <replaceable>WindowID</replaceable></option></arg>
+    </cmdsynopsis>
+    <cmdsynopsis>
+      <command>xdg-screensaver</command>
+      <arg choice="plain"><option>resume <replaceable>WindowID</replaceable></option></arg>
+    </cmdsynopsis>
+    <cmdsynopsis>
+      <command>xdg-screensaver</command>
+      <group choice="req">
+        <arg choice="plain"><option>activate</option></arg>
+        <arg choice="plain"><option>lock</option></arg>
+        <arg choice="plain"><option>reset</option></arg>
+        <arg choice="plain"><option>status</option></arg>
+      </group>
+    </cmdsynopsis>
+    <cmdsynopsis>
+      <command>xdg-screensaver</command>
+      <group choice="req">
+        <arg choice="plain"><option>--help</option></arg>
+        <arg choice="plain"><option>--manual</option></arg>
+        <arg choice="plain"><option>--version</option></arg>
+      </group>
+    </cmdsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1 id="description">
+    <title>Description</title>
+    <para>
+      xdg-screensaver provides commands to control the screensaver.
+    </para>
+    <para>
+      xdg-screensaver is for use inside a desktop session only.
+      It is not recommended to use xdg-screensaver as root.
+    </para>
+  </refsect1>
+  <refsect1 id="commands">
+    <title>Commands</title>
+    <variablelist>
+      <varlistentry>
+        <term><option>suspend <replaceable>WindowID</replaceable></option></term>
+        <listitem>
+          <simpara>
+            Suspends the screensaver and monitor power management.
+            <replaceable>WindowID</replaceable> must be the X Window ID
+            of an existing window of the calling application. The window
+            must remain in existance for the duration of the suspension.
+          </simpara>
+          <simpara>
+            WindowID can be represented as either a decimal number
+            or as a hexadecimal number consisting of the prefix
+            <emphasis>0x</emphasis> followed by one or more hexadecimal
+            digits. 
+          </simpara>
+          <simpara>
+            The screensaver can be suspended in relation to multiple
+            windows at the same time. In that case screensaver
+            operation is only restored once the screensaver has been
+            resumed in relation to each of the windows
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>resume <replaceable>WindowID</replaceable></option></term>
+        <listitem>
+          <simpara>
+            Resume the screensaver and monitor power management after being
+            suspended.
+            <replaceable>WindowID</replaceable>
+            must be the same X Window ID that was passed to a previous call
+            of <command>xdg-screensaver suspend</command>
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>activate</option></term>
+        <listitem>
+          <simpara>
+            Turns the screensaver on immediately. This may result in the
+            screen getting locked, depending on existing system policies.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>lock</option></term>
+        <listitem>
+          <simpara>
+            Lock the screen immediately.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>reset</option></term>
+        <listitem>
+          <simpara>
+            Turns the screensaver off immediately. If the screen was locked
+            the user may be asked to authenticate first.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>status</option></term>
+        <listitem>
+          <simpara>
+            Prints <emphasis>enabled</emphasis> to stdout if the
+            screensaver is enabled to turn on after a period of
+            inactivity and prints
+            <emphasis>disabled</emphasis> if the screensaver is
+            not enabled.
+          </simpara>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+  <refsect1 id="options">
+    <title>Options</title>
+    <variablelist>
+      <varlistentry>
+	<term><option>--help</option></term>
+	<listitem>
+	  <simpara>
+	    Show command synopsis.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term><option>--manual</option></term>
+	<listitem>
+	  <simpara>
+	    Show this manualpage.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>--version</option></term>
+        <listitem>
+          <simpara>
+            Show the xdg-utils version information.
+          </simpara>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+  <refsect1 id="exitcodes">
+    <title>Exit Codes</title>
+    <para>
+      An exit code of 0 indicates success while a non-zero exit code
+      indicates failure. The following failure codes can be returned:
+    </para>
+    <variablelist>
+      <varlistentry>
+	<term><option>1</option></term>
+	<listitem>
+	  <simpara>
+	    Error in command line syntax.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><option>3</option></term>
+	<listitem>
+	  <simpara>
+	    A required tool could not be found. 
+	  </simpara>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><option>4</option></term>
+	<listitem>
+	  <simpara>
+	    The action failed. 
+	  </simpara>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+  <refsect1 id="examples">
+    <title>Examples</title>
+    <para>
+<programlisting>
+xdg-screensaver suspend 0x1c00007
+</programlisting>Causes the screensaver to be disabled till
+        <command>xdg-screensaver resume 0x1c00007</command> is called.
+        <emphasis>0x1c00007</emphasis> must be the X Window ID of an
+        existing window.
+    </para>
+  </refsect1>
+</refentry>

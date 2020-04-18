@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<!--
+Copyright 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/dashboard/elements/story_tag_filter.html">
+<link rel="import" href="/tracing/ui/base/deep_utils.html">
+<link rel="import" href="/tracing/value/diagnostics/tag_map.html">
+
+<script>
+'use strict';
+tr.b.unittest.testSuite(function() {
+  test('instantiate_tag_filter', async function() {
+    const stf = document.createElement('story-tag-filter');
+    const t0 = new tr.v.d.TagMap({
+      tagsToStoryNames: {
+        audio_playback: ['story0', 'story1', 'story2'],
+        canvas_animation: ['story0', 'story1', 'story3']
+      }
+    });
+
+    stf.tagMap = t0;
+    this.addHTMLOutput(stf);
+
+    let selectedStoriesChangedFired = false;
+    stf.addEventListener('selected-stories-changed', function(d) {
+      selectedStoriesChangedFired = true;
+    });
+
+    await tr.b.animationFrame();
+    const checkboxes = tr.ui.b.findDeepElementsMatching(stf, 'paper-checkbox');
+
+    assert.deepEqual(stf.selectedStoryNames,
+        ['story0', 'story1', 'story2', 'story3']);
+
+    checkboxes[0].click();
+    assert.deepEqual(stf.selectedStoryNames, ['story0', 'story1', 'story2']);
+
+    checkboxes[1].click();
+    assert.deepEqual(stf.selectedStoryNames,
+        ['story0', 'story1', 'story2', 'story3']);
+
+    checkboxes[0].click();
+    checkboxes[1].click();
+
+    const t1 = new tr.v.d.TagMap({
+      tagsToStoryNames: {
+        audio_playback: ['story0', 'story1', 'story2'],
+        canvas_animation: ['story0', 'story1', 'story3'],
+        css_animation: ['story3', 'story4'],
+        extension: ['story0', 'story1', 'story2'],
+        images: ['story0', 'story1', 'story2', 'story5'],
+        infinite_scroll: ['story0', 'story2', 'story7'],
+        international: ['story0', 'story5', 'story6'],
+        emerging_market: ['story0', 'story4'],
+        javascript_heavy: ['story0', 'story5', 'story6'],
+        scroll: ['story2', 'story5', 'story6'],
+        pinch_zoom: ['story3', 'story5', 'story6'],
+        tabs_switching: ['story0', 'story4', 'story6'],
+        video_playback: ['story0', 'story5', 'story6'],
+        webgl: ['story3', 'story4', 'story6'],
+        web_storage: ['story0', 'story5', 'story6']
+      }
+    });
+
+    stf.tagMap = t1;
+
+    await tr.b.animationFrame();
+    const newCheckboxes = tr.ui.b.findDeepElementsMatching(stf,
+        'paper-checkbox');
+
+    assert.deepEqual(stf.selectedStoryNames, ['story0', 'story1', 'story2',
+      'story3', 'story4', 'story5', 'story6', 'story7']);
+
+    newCheckboxes[4].click();
+    assert.deepEqual(stf.selectedStoryNames,
+        ['story0', 'story1', 'story2']);
+
+    newCheckboxes[5].click();
+    assert.deepEqual(stf.selectedStoryNames,
+        ['story0', 'story1', 'story2', 'story5']);
+
+    newCheckboxes[4].click();
+    newCheckboxes[5].click();
+
+    assert.isTrue(selectedStoriesChangedFired);
+  });
+});
+</script>

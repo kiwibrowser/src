@@ -1,0 +1,68 @@
+#!/bin/bash
+
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+test_desktop_file_icon() {
+
+test_start "$FUNCNAME: ensure that associations with filetypes is correct."
+
+ICON_SIZES="16 22 24 32 48 64 128"
+
+test_init
+
+# get icon files
+for i in $ICON_SIZES; do
+	use_file "$XDG_TEST_DIR/icons/red-$i.png" TMP
+done
+
+# get & edit desktop file
+use_file "$XDG_TEST_DIR/xdg-utils-usecases/data/icon_test.desktop" DESKTOP_FILE
+edit_file "$DESKTOP_FILE" 'red' ICON_NAME
+TEST_DIR="$XDG_TEST_TMPDIR/show"
+assert_exit 0 mkdir -p "$TEST_DIR"
+assert_exit 0 cp "$DESKTOP_FILE" "$TEST_DIR/IconTest.desktop"
+
+test_procedure
+
+# install icons of all sizes
+for i in $ICON_SIZES; do
+	assert_exit 0 xdg-icon-resource install --size "$i" "xdgtestdata-$XDG_TEST_ID-red-$i.png" "$ICON_NAME"
+	assert_nostdout
+	assert_nostderr
+done
+
+# Wait a little for caches to update
+sleep 1
+
+# open directory with test file
+if [ `whoami` != 'root' ] ; then
+	assert_exit 0 xdg-open "$TEST_DIR"
+	assert_nostdout
+	assert_nostderr
+	assert_interactive "Did the file browser open the '$TEST_DIR' directory?" y
+else
+	assert_interactive "Please open '$TEST_DIR' in the file browser."
+fi
+
+# ask user to cycle through sizes & ensure correct icons are displayed.
+assert_interactive "Is a file named either 'Icon Test' or 'IconTest.desktop' present in the directory?" y
+assert_interactive "Does the icon consist of a red number?\n\t(You may need to select something like 'View->As Icons')" y
+# assert_interactive "Does the number change appropriately when you increase or decrease the view size?" y
+
+## cleanup
+if [ `whoami` != 'root' ] ; then
+	assert_interactive "Please close any windows opened by this test." C
+else
+	assert_interactive "You may close the file browser window." C
+fi
+
+# remove icons
+for i in $ICON_SIZES; do
+	xdg-icon-resource uninstall --size "$i" "$ICON_NAME" > /dev/null 2> /dev/null
+done
+
+test_result
+}
+
+run_test test_desktop_file_icon

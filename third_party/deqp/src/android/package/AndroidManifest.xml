@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+		  package="com.drawelements.deqp"
+		  android:versionCode="1"
+		  android:versionName="1.0">
+	<application android:label="dEQP Tests"
+				 android:icon="@drawable/deqp_app">
+		<activity android:name="com.drawelements.deqp.execserver.ExecServerActivity"
+				  android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+				  android:label="dEQP ExecServer"
+				  android:launchMode="singleTask"
+				  android:process=":execserverui"
+				  android:exported="true" />
+		<activity android:name="com.drawelements.deqp.execserver.ServiceStarter"
+				  android:theme="@android:style/Theme.NoDisplay"
+				  android:label="dEQP ExecServer Launcher"
+				  android:launchMode="singleTask"
+				  android:process=":execserverstarter"
+				  android:exported="true" />
+		<service android:name="com.drawelements.deqp.execserver.ExecService"
+				 android:label="dEQP ExecServer Service"
+				 android:exported="true"
+				 android:process=":execserver" />
+		<activity android:name="android.app.NativeActivity"
+				  android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+				  android:label="dEQP Test Process"
+				  android:configChanges="keyboardHidden|orientation|screenSize"
+				  android:exported="true"
+				  android:process=":testercore">
+			<meta-data android:name="android.app.lib_name"
+					   android:value="deqp" />
+			<meta-data android:name="android.app.func_name"
+					   android:value="createTestActivity" />
+		</activity>
+	</application>
+
+	<uses-sdk android:minSdkVersion="13"/>
+	<uses-sdk android:targetSdkVersion="19"/>
+	<uses-feature android:glEsVersion="0x00020000"/>
+	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+	<uses-permission android:name="android.permission.GET_TASKS" />
+	<uses-permission android:name="android.permission.INTERNET" />
+	<uses-permission android:name="android.permission.RUN_INSTRUMENTATION" />
+
+	<instrumentation android:label="dEQP-Instrumentation"
+					 android:name="com.drawelements.deqp.testercore.DeqpInstrumentation"
+					 android:targetPackage="com.drawelements.deqp" />
+	<instrumentation android:label="dEQP-PlatformCapabilityQueryInstrumentation"
+					 android:name="com.drawelements.deqp.platformutil.DeqpPlatformCapabilityQueryInstrumentation"
+					 android:targetPackage="com.drawelements.deqp" />
+</manifest>

@@ -1,0 +1,84 @@
+Conformance Test
+
+    CTS_EXT_texture_filter_anisotropic
+
+Contributors
+
+    Adam Czupryna, Mobica
+
+Contacts
+
+    Adam Czupryna, Mobica (adam.czupryna 'at' mobica.com)
+
+Status
+
+    In review
+
+Version
+
+    April 24, 2017 (version 1)
+
+Dependencies
+
+    OpenGL 1.2 is required.
+
+    EXT_texture_filter_anisotropic extension is required.
+
+    This specification is written against:
+      - EXT_texture_filter_anisotropic specification,
+      - OpenGL 1.2 specification.
+
+Overview
+
+    This tests verifies if functionality provided by EXT_texture_filter_anisotropic
+    works as expected:
+
+      * Verify if TexParameter*, GetTexParameter* queries works correctly for
+        TEXTURE_MAX_ANISOTROPY_EXT token and Get* queries for
+        MAX_TEXTURE_MAX_ANISOTROPY_EXT token respectively.
+
+      * Verify if there is difference between polygon rendered with different
+        degree of anisotropy.
+
+New Tests
+
+    New State Queries Test
+
+      * Test TexParameter{i f}{v}, GetTexParameter{i f} queries for <pname>:
+
+          - TEXTURE_MAX_ANISOTROPY_EXT
+
+        Check default values and set manually. Test if setting value lower
+          than 1.0 would generate INVALID_VALUE error.
+
+      * Test GetBooleanv, GetDoublev, GetFloatv and GetIntegerv queries for <pname>"
+
+          - MAX_TEXTURE_MAX_ANISOTROPY_EXT
+
+        Check if no error is generated.
+
+    Anisotropic Filtering Test
+
+      * Iterate through all supported targets and texture formats.
+            Generate high contrast texture (vertical strips) with at least two
+              mipmap levels.
+                Set min filtering to GL_LINEAR_MIPMAP_LINEAR and render polygon with
+                  top vertices set far away from camera and bottom vertices set near
+                  camera. Do it for 3 different degrees of anisotropy:
+                  - 1.0 (disabled anisotropic filtering)
+                  - 2.0
+                  - MAX_TEXTURE_MAX_ANISOTROPY_EXT
+                Expect that for higher degrees of anisotropy top part of rendered
+                  strips will be smoother. It means that total sum of absolute
+                  derivatives of color in x direction will be less than for lower
+                  degree of anisotropy.
+
+Revision History
+
+    Revision 1, 24 April, 2017 (Adam Czupryna)
+      - Intial version;
+
+    Revision 2, 2 June, 2017 (Adam Czupryna)
+      - Added description of anisotropy verification method to
+        Anisotropic Filtering Test section;
+

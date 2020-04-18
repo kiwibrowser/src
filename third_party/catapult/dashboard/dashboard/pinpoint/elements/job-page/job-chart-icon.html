@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<!--
+Copyright 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/components/iron-icon/iron-icon.html">
+<link rel="import" href="/components/iron-icons/iron-icons.html">
+
+<dom-module id="job-chart-icon">
+  <template>
+    <style>
+      #icon {
+        height: 24;
+        position: absolute;
+        width: 24;
+      }
+
+      #icon:hover {
+        fill: var(--paper-pink-a200);
+      }
+    </style>
+
+    <iron-icon id="icon" icon="[[icon]]"></iron-icon>
+  </template>
+
+  <script>
+    'use strict';
+    Polymer({
+      is: 'job-chart-icon',
+
+      properties: {
+        icon: {
+          type: String,
+          value: '',
+        }
+      },
+
+      setPosition(x, y) {
+        this.$.icon.style.left = (x - 12) + 'px';
+        this.$.icon.style.top = (y - 12) + 'px';
+      },
+
+      setType(type) {
+        if (type == 'pending') {
+          this.set('icon', 'watch-later');
+          this.$.icon.updateStyles(
+              {'--iron-icon-fill-color': 'var(--paper-indigo-100)'});
+        } else {
+          this.set('icon', 'clear');
+          this.$.icon.updateStyles(
+              {'--iron-icon-fill-color': 'var(--paper-red-500)'});
+        }
+      }
+    });
+  </script>
+</dom-module>

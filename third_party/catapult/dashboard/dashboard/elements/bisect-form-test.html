@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<!--
+Copyright 2016 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/dashboard/elements/bisect-form.html">
+<link rel="import" href="/dashboard/static/testing_common.html">
+
+<link rel="import" href="/tracing/core/test_utils.html">
+
+<script>
+'use strict';
+
+tr.b.unittest.testSuite(function() {
+  const FAKE_XSRF_TOKEN = 'abcdef012345';
+  const FAKE_TEST_PATH = 'MyMaster/my-bot/my-benchmark/MyStory/MyMetric';
+
+  const testOptions = {
+    tearDown() {
+      testing_common.clearXhrMock();
+    }
+  };
+
+  test('instantiate', function() {
+    const form = document.createElement('bisect-form');
+    form.set('testPath', FAKE_TEST_PATH);
+    form.set('xsrfToken', FAKE_XSRF_TOKEN);
+    this.addHTMLOutput(form);
+
+    const requestParams = {
+      test_path: FAKE_TEST_PATH,
+      step: 'prefill-info',
+      xsrf_token: FAKE_XSRF_TOKEN
+    };
+    const response = {
+      bisect_bot: 'my_bisect_bot',
+      all_bots: ['bot1', 'bot2'],
+      default_metric: 'defaultMetric',
+      all_metrics: ['defaultMetric', 'otherMetric1', 'otherMetric2'],
+      story_filter: 'defaultMetric',
+      use_archive: true,
+      email: 'fake1@gmail.com',
+      suite: 'suite1',
+      master: 'master1',
+      internal_only: true,
+      is_admin: true
+    };
+    const query = '/start_try_job?' +
+        testing_common.paramString(requestParams);
+    testing_common.addXhrMock(query, JSON.stringify(response));
+
+    form.show();
+  }, testOptions);
+});
+</script>

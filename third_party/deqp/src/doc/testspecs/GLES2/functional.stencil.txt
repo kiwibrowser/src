@@ -1,0 +1,50 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Stencil test
+
+Tests:
+ + dEQP-GLES2.functional.stencil.*
+
+Includes:
+ + Stencil buffer clears
+ + Stencil update with GL_REPLACE in stencil fail, depth fail and depth pass
+ + All stencil update modes in stencil fail
+ + All stencil comparison modes
+ + Masked stencil comparison
+ + Out-of-range stencil clear values
+ + Out-of-range stencil update values
+
+Excludes:
+ + Stencil compare or update with points and lines
+ + Exhaustive testing of all possible stencil test states
+
+Description:
+
+The viewport is divided into NxN cells, where each cell is assigned a target
+stencil value, choosen uniformly from available values. In addition there are
+two cells that target out-of-range stencil values. The amount of cells is scaled
+based on available stencil bits. For example with 8b there are 6x6 cells.
+
+Test cases choose input parameters for operations based on target stencil value
+for each cell. The parametrized operations are then executed and finally stencil
+buffer contents are visualized by rendering full-screen quads with different
+colors that pass only where stencil value equals one of the target values.
+
+The rendered image is compared against reference image. The reference is
+computed using a simplified model of the GL rendering pipe.

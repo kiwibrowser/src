@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<!--
+Copyright 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<meta charset="utf-8">
+<title>Pinpoint</title>
+
+<style type="text/css">
+  body {
+    font: 0.8em helvetica,arial,sans-serif;
+    margin: 0;
+  }
+</style>
+
+<script src="/components/webcomponentsjs/webcomponents-lite.min.js"></script>
+
+<link rel="icon" type="image/png" href="/static/logo.png">
+
+<link rel="import" href="/components/app-route/app-location.html">
+<link rel="import" href="/components/app-route/app-route.html">
+<link rel="import" href="/components/iron-pages/iron-pages.html">
+<link rel="import" href="/components/polymer/polymer.html">
+
+<link rel="import" href="/dashboard/elements/load-analytics.html">
+<link rel="import" href="/elements/navigation-bar.html">
+
+<dom-module id="index-page">
+  <link rel="lazy-import" href="/elements/error-page.html">
+  <link rel="lazy-import" href="/elements/job-page.html">
+  <link rel="lazy-import" href="/elements/jobs-page.html">
+  <link rel="lazy-import" href="/elements/migrate-page.html">
+  <link rel="lazy-import" href="/elements/results2-page.html">
+  <link rel="lazy-import" href="/elements/stats-page.html">
+
+  <template>
+    <style>
+      #content {
+        /* Add some extra space at the bottom to ensure any
+           Floating Action Buttons don't overlap anything. */
+        margin: 1em 1em 7em 1em;
+      }
+    </style>
+
+    <!--
+    The <app-location> element is what provides the sync between the
+    url and the app via the "route" object. This is passed to the
+    <app-route> elements to consume the route and in turn produce data
+    related to the route (ie. like the query params) and can also pass the
+    unconsumed portion of the route to other <app-route> elements.
+    The <app-route> elements can also notify via the "active" attribute if
+    that route matches and is active.
+    -->
+    <app-location route="{{route}}"></app-location>
+    <app-route route="{{route}}" pattern="/:page" data="{{routeData}}" tail="{{subroute}}"></app-route>
+
+    <navigation-bar auth-headers="{{authHeaders}}"></navigation-bar>
+
+    <!--
+    The <iron-pages> element can be used as a simple content switcher. We have a
+    single <app-route> defined which matches to a page, which is passed to
+    the <iron-pages> element via routeData.page.
+    -->
+    <div id="content">
+      <iron-pages selected="[[page]]" attr-for-selected="name" fallback-selection="error" on-iron-select="onSelectedPage" on-iron-deselect="onDeselectedPage">
+        <error-page name="error"></error-page>
+        <job-page name="job" route="{{subroute}}" auth-headers="[[authHeaders]]"></job-page>
+        <jobs-page name="jobs" route="{{subroute}}" auth-headers="[[authHeaders]]"></jobs-page>
+        <migrate-page name="migrate"></migrate-page>
+        <results2-page name="results2" route="{{subroute}}"></results2-page>
+        <stats-page name="stats"></stats-page>
+      </iron-pages>
+    </div>
+
+    <load-analytics></load-analytics>
+  </template>
+  <script>
+    'use strict';
+    Polymer({
+      is: 'index-page',
+
+      properties: {
+        page: {
+          type: String,
+          reflectToAttribute: true,
+          observer: '_pageChanged',
+        },
+      },
+
+      observers: [
+        '_routePageChanged(routeData.page)',
+      ],
+
+      onDeselectedPage(e) {
+        const page = e.detail.item;
+        // Need to call the the page.* functions async since this callback is
+        // called sync while the route is being modified.
+        if ('deselected' in page) {
+          this.async(function() { page.deselected(); });
+        }
+      },
+
+      onSelectedPage(e) {
+        const page = e.detail.item;
+        // Need to call the the page.* functions async since this callback is
+        // called sync while the route is being modified.
+        if ('selected' in page) {
+          this.async(function() { page.selected(); });
+        }
+      },
+
+      _routePageChanged(page) {
+        this.page = page || 'jobs';
+      },
+
+      _pageChanged(page) {
+        // Load page import on demand. Show 404 page on failure.
+        const url = '/elements/' + page + '-page.html';
+        this.importHref(url, null, this._showPage404, true);
+      },
+
+      _showPage404() {
+        this.page = 'error';
+      },
+    });
+  </script>
+
+  <script>
+    'use strict';
+    // The Google analytics code assumes there will be a script element to
+    // inject into in the page. This empty element is used for that.
+  </script>
+</dom-module>
+
+<index-page></index-page>

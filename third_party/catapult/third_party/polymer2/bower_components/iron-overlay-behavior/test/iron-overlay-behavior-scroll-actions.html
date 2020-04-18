@@ -1,0 +1,413 @@
+<!doctype html>
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<html>
+
+<head>
+
+  <title>iron-overlay-behavior tests</title>
+
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+
+  <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+
+  <script src="../../web-component-tester/browser.js"></script>
+  <link rel="import" href="test-overlay.html">
+  <link rel="import" href="test-scrollable.html">
+
+</head>
+
+<body>
+
+  <style>
+    .scrollable {
+      overflow: auto;
+      width: 200px;
+      height: 200px;
+    }
+
+    .big {
+      width: 150vmax;
+      height: 150vmax;
+    }
+  </style>
+
+  <div class="big">
+    This element makes the page scrollable.
+  </div>
+
+  <test-fixture id="basic">
+    <template>
+      <test-overlay class="scrollable">
+        <div class="big">
+          This element makes the overlay scrollable.
+        </div>
+      </test-overlay>
+    </template>
+  </test-fixture>
+
+  <test-fixture id="scrollable">
+    <template>
+      <test-scrollable>
+        <div slot="scrollable-content" class="big">
+          This element makes the overlay scrollable.
+          <test-overlay>Overlay in light dom</test-overlay>
+        </div>
+        <div slot="overlay-content" class="big">Overlay in shadow root</div>
+      </test-scrollable>
+    </template>
+  </test-fixture>
+
+  <script>
+    // Need to discover if html or body is scrollable.
+    // Here we are sure the page is scrollable.
+    var scrollTarget;
+    document.documentElement.scrollTop = 1;
+    if (document.documentElement.scrollTop === 1) {
+      document.documentElement.scrollTop = 0;
+      scrollTarget = document.documentElement;
+    } else {
+      scrollTarget = document.body;
+    }
+
+    function runAfterOpen(overlay, callback) {
+      overlay.addEventListener('iron-overlay-opened', callback);
+      overlay.open();
+    }
+
+    function runAfterClose(overlay, callback) {
+      overlay.addEventListener('iron-overlay-closed', callback);
+      overlay.close();
+    }
+
+    function fireWheel(node, deltaX, deltaY) {
+      // IE 11 doesn't support WheelEvent, use CustomEvent.
+      var event = new CustomEvent('wheel', {
+        cancelable: true,
+        bubbles: true,
+        composed: true,
+      });
+      event.deltaX = deltaX;
+      event.deltaY = deltaY;
+      node.dispatchEvent(event);
+      return event;
+    }
+
+    function dispatchScroll(target, scrollLeft, scrollTop) {
+      target.scrollLeft = scrollLeft;
+      target.scrollTop = scrollTop;
+      target.dispatchEvent(
+          new CustomEvent('scroll', {bubbles: true, composed: false}));
+    }
+
+    suite('scroll actions', function() {
+      var overlay;
+      setup(function() {
+        // Ensure we always scroll to top.
+        dispatchScroll(scrollTarget, 0, 0);
+        overlay = fixture('basic');
+      });
+
+      test('default: outside scroll not prevented', function(done) {
+        runAfterOpen(overlay, function() {
+          assert.isFalse(
+              Polymer.IronScrollManager.elementIsScrollLocked(scrollTarget));
+          assert.isFalse(fireWheel(scrollTarget, 0, 10).defaultPrevented);
+          dispatchScroll(scrollTarget, 0, 10);
+          Polymer.RenderStatus.afterNextRender(overlay, function() {
+            assert.equal(scrollTarget.scrollTop, 10, 'scrollTop ok');
+            assert.equal(scrollTarget.scrollLeft, 0, 'scrollLeft ok');
+            done();
+          });
+        });
+      });
+
+      test('default: outside scroll does NOT trigger refit', function(done) {
+        runAfterOpen(overlay, function() {
+          var refitSpy = sinon.spy(overlay, 'refit');
+          dispatchScroll(scrollTarget, 0, 10);
+          Polymer.RenderStatus.afterNextRender(overlay, function() {
+            assert.equal(refitSpy.callCount, 0, 'did not refit on scroll');
+            done();
+          });
+        });
+      });
+
+      test(
+          'refit scrollAction does NOT refit the overlay on scroll inside',
+          function(done) {
+            overlay.scrollAction = 'refit';
+            runAfterOpen(overlay, function() {
+              // Wait a tick, otherwise this fails in FF/Safari.
+              setTimeout(function() {
+                var refitSpy = sinon.spy(overlay, 'refit');
+                dispatchScroll(overlay, 0, 10);
+                Polymer.RenderStatus.afterNextRender(overlay, function() {
+                  assert.equal(
+                      refitSpy.callCount, 0, 'did not refit on scroll inside');
+                  done();
+                });
+              });
+            });
+          });
+
+      test(
+          'refit scrollAction refits the overlay on scroll outside',
+          function(done) {
+            overlay.scrollAction = 'refit';
+            runAfterOpen(overlay, function() {
+              var refitSpy = sinon.spy(overlay, 'refit');
+              dispatchScroll(scrollTarget, 0, 10);
+              Polymer.RenderStatus.afterNextRender(overlay, function() {
+                assert.notEqual(
+                    refitSpy.callCount, 0, 'did refit on scroll outside');
+                done();
+              });
+            });
+          });
+
+      test(
+          'cancel scrollAction does NOT close the overlay on scroll inside',
+          function(done) {
+            overlay.scrollAction = 'cancel';
+            runAfterOpen(overlay, function() {
+              dispatchScroll(overlay, 0, 10);
+              assert.isTrue(overlay.opened, 'overlay was not closed');
+              done();
+            });
+          });
+
+      test(
+          'cancel scrollAction closes the overlay on scroll outside',
+          function(done) {
+            overlay.scrollAction = 'cancel';
+            runAfterOpen(overlay, function() {
+              overlay.addEventListener('iron-overlay-canceled', function(event) {
+                assert.equal(
+                    event.detail.type, 'scroll', 'detail contains original event');
+                assert.equal(
+                    event.detail.target,
+                    scrollTarget,
+                    'original scroll event target ok');
+                overlay.addEventListener('iron-overlay-closed', function() {
+                  done();
+                });
+              });
+              dispatchScroll(scrollTarget, 0, 10);
+            });
+          });
+
+      test('lock scrollAction locks scroll', function(done) {
+        overlay.scrollAction = 'lock';
+        runAfterOpen(overlay, function() {
+          assert.isTrue(
+              Polymer.IronScrollManager.elementIsScrollLocked(scrollTarget));
+          assert.isTrue(fireWheel(scrollTarget, 0, 10).defaultPrevented);
+          dispatchScroll(scrollTarget, 0, 10);
+          assert.equal(scrollTarget.scrollTop, 0, 'scrollTop ok');
+          assert.equal(scrollTarget.scrollLeft, 0, 'scrollLeft ok');
+          done();
+        });
+      });
+
+      test('should lock, only once', function(done) {
+        var openCount = 0;
+        overlay.scrollAction = 'lock';
+        runAfterOpen(overlay, function() {
+          assert.isTrue(
+              Polymer.IronScrollManager.elementIsScrollLocked(scrollTarget));
+          assert.isTrue(fireWheel(scrollTarget, 0, 10).defaultPrevented);
+          assert.equal(Polymer.IronScrollManager._lockingElements.length, 1);
+          if (openCount === 0) {
+            // This triggers a second `pushScrollLock` with the same element,
+            // however that should not add the element to the `_lockingElements`
+            // stack twice
+            runAfterClose(overlay, function() {
+              assert.isFalse(
+                  Polymer.IronScrollManager.elementIsScrollLocked(overlay));
+              assert.isFalse(fireWheel(scrollTarget, 0, 10).defaultPrevented);
+              overlay.open();
+            });
+          } else {
+            done();
+          }
+          openCount++;
+        });
+      });
+    });
+
+    suite('scroll actions in shadow root', function() {
+      suiteSetup(function() {
+        if (!Polymer.Settings.useShadow) {
+          this.skip();
+        }
+      });
+
+      var scrollable, overlay;
+      setup(function() {
+        var f = fixture('scrollable');
+        scrollable = f.$.scrollable;
+        overlay = f.$.overlay;
+      });
+
+      test(
+          'refit scrollAction does NOT refit the overlay on scroll inside',
+          function(done) {
+            overlay.scrollAction = 'refit';
+            runAfterOpen(overlay, function() {
+              var refitSpy = sinon.spy(overlay, 'refit');
+              dispatchScroll(overlay, 0, 10);
+              Polymer.RenderStatus.afterNextRender(overlay, function() {
+                assert.equal(
+                    refitSpy.callCount, 0, 'did not refit on scroll inside');
+                done();
+              });
+            });
+          });
+
+      test(
+          'refit scrollAction refits the overlay on scroll outside',
+          function(done) {
+            overlay.scrollAction = 'refit';
+            runAfterOpen(overlay, function() {
+              var refitSpy = sinon.spy(overlay, 'refit');
+              dispatchScroll(scrollable, 0, 10);
+              Polymer.RenderStatus.afterNextRender(overlay, function() {
+                assert.notEqual(
+                    refitSpy.callCount, 0, 'did refit on scroll outside');
+                done();
+              });
+            });
+          });
+
+      test(
+          'cancel scrollAction does NOT close the overlay on scroll inside',
+          function(done) {
+            overlay.scrollAction = 'cancel';
+            runAfterOpen(overlay, function() {
+              dispatchScroll(overlay, 0, 10);
+              assert.isTrue(overlay.opened, 'overlay was not closed');
+              done();
+            });
+          });
+
+      test(
+          'cancel scrollAction closes the overlay on scroll outside',
+          function(done) {
+            overlay.scrollAction = 'cancel';
+            runAfterOpen(overlay, function() {
+              overlay.addEventListener('iron-overlay-canceled', function(event) {
+                assert.equal(
+                    event.detail.type, 'scroll', 'detail contains original event');
+                // In Polymer 1.x with dom=shadow, triggering a scroll event on a
+                // node inside a shadowRoot doesn't set the correct target, so we
+                // skip this check.
+                if (Polymer.Element || !Polymer.Settings.useShadow) {
+                  assert.equal(
+                      event.detail.target,
+                      scrollable,
+                      'original scroll event target ok');
+                }
+                overlay.addEventListener('iron-overlay-closed', function() {
+                  done();
+                });
+              });
+              dispatchScroll(scrollable, 0, 10);
+            });
+          });
+    });
+
+    suite('scroll actions in shadow root, overlay distributed', function() {
+      suiteSetup(function() {
+        if (!Polymer.Settings.useShadow) {
+          this.skip();
+        }
+      });
+
+      var scrollable, overlay;
+      setup(function() {
+        var f = fixture('scrollable');
+        scrollable = f.$.scrollable;
+        overlay = Polymer.dom(f).querySelector('test-overlay');
+      });
+
+      test(
+          'refit scrollAction does NOT refit the overlay on scroll inside',
+          function(done) {
+            overlay.scrollAction = 'refit';
+            runAfterOpen(overlay, function() {
+              var refitSpy = sinon.spy(overlay, 'refit');
+              dispatchScroll(overlay, 0, 10);
+              Polymer.RenderStatus.afterNextRender(overlay, function() {
+                assert.equal(
+                    refitSpy.callCount, 0, 'did not refit on scroll inside');
+                done();
+              });
+            });
+          });
+
+      test(
+          'refit scrollAction refits the overlay on scroll outside',
+          function(done) {
+            overlay.scrollAction = 'refit';
+            runAfterOpen(overlay, function() {
+              var refitSpy = sinon.spy(overlay, 'refit');
+              dispatchScroll(scrollable, 0, 10);
+              Polymer.RenderStatus.afterNextRender(overlay, function() {
+                assert.notEqual(
+                    refitSpy.callCount, 0, 'did refit on scroll outside');
+                done();
+              });
+            });
+          });
+
+      test(
+          'cancel scrollAction does NOT close the overlay on scroll inside',
+          function(done) {
+            overlay.scrollAction = 'cancel';
+            runAfterOpen(overlay, function() {
+              dispatchScroll(overlay, 0, 10);
+              assert.isTrue(overlay.opened, 'overlay was not closed');
+              done();
+            });
+          });
+
+      test(
+          'cancel scrollAction closes the overlay on scroll outside',
+          function(done) {
+            overlay.scrollAction = 'cancel';
+            runAfterOpen(overlay, function() {
+              overlay.addEventListener('iron-overlay-canceled', function(event) {
+                assert.equal(
+                    event.detail.type, 'scroll', 'detail contains original event');
+                // In Polymer 1.x with dom=shadow, triggering a scroll event on a
+                // node inside a shadowRoot doesn't set the correct target, so we
+                // skip this check.
+                if (Polymer.Element || !Polymer.Settings.useShadow) {
+                  assert.equal(
+                      event.detail.target,
+                      scrollable,
+                      'original scroll event target ok');
+                }
+                overlay.addEventListener('iron-overlay-closed', function() {
+                  done();
+                });
+              });
+              dispatchScroll(scrollable, 0, 10);
+            });
+          });
+    });
+  </script>
+
+</body>
+
+</html>

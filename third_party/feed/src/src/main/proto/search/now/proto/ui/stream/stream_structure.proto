@@ -1,0 +1,91 @@
+// Copyright 2018 The Feed Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+import "src/main/proto/search/now/proto/ui/piet/piet.proto";
+import "src/main/proto/search/now/proto/wire/feed/content_id.proto";
+import "src/main/proto/search/now/proto/wire/feed/feature.proto";
+
+package search.now.ui.stream;
+
+option optimize_for=LITE_RUNTIME;
+
+option java_package = "com.google.search.now.ui.stream";
+option java_outer_classname = "StreamStructureProto";
+option cc_enable_arenas = true;
+
+// Top level feature which shows a stream of cards.  Provides any UI inforamtion
+// which may be needed in order to render the stream of cards.
+message Stream {
+  extend search.now.proto.wire.feed.Feature {
+    optional Stream stream_extension = 185431437;
+  }
+
+  // Empty for now as don't support any custom information.
+}
+
+// Feature which represents a cluster in a Stream. May have a Card or Content
+// as children.
+message Cluster {
+  extend search.now.proto.wire.feed.Feature {
+    optional Cluster cluster_extension = 190812910;
+  }
+
+  // Empty for now as we don't support any custom information.
+}
+
+// Feature which represents a full card in a Stream.  Allows metadata to be sent
+// to describe how to render the card.
+message Card {
+  extend search.now.proto.wire.feed.Feature {
+    optional Card card_extension = 185431438;
+  }
+
+  // Please use CL numbers you own for extension numbers.
+  extensions 10000 to max;
+}
+
+// Feature which is able to show actual content in a stream. This could be
+// inside or outside a card. Actual data on what to display will be sent on an
+// extension.
+message Content {
+  extend search.now.proto.wire.feed.Feature {
+    optional Content content_extension = 185431439;
+  }
+
+  enum Type {
+    UNKNOWN_CONTENT = 0;
+    PIET = 1;
+  }
+  optional Type type = 1;
+
+  // Please use CL numbers you own for extension numbers.
+  extensions 10000 to max;
+}
+
+// Content which is able to show a Piet frame. This includes any data which may
+// be needed to show a Piet frame.
+message PietContent {
+  extend Content {
+    optional PietContent piet_content_extension = 185431440;
+  }
+
+  // Content Ids of Piet Shared States which should be provided to Piet in order
+  // to show its content.
+  repeated search.now.proto.wire.feed.ContentId piet_shared_states = 1;
+
+  // The Piet frame to render.
+  optional search.now.ui.piet.Frame frame = 2;
+}

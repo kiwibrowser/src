@@ -1,0 +1,268 @@
+#!/bin/bash
+# Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Note:
+# We do *not* source any other files as this is meant to be used as a
+# standalone helper script with no other dependencies.  So please do
+# not try to refactor this to rely on anything else.
+
+ARGV0="cros_mirror"
+
+MANIFEST_URL_EXT='https://chromium.googlesource.com/chromiumos/manifest.git'
+MANIFEST_URL_INT='https://chrome-internal.googlesource.com/chromeos/manifest-internal.git'
+REPO_URL='https://chromium.googlesource.com/external/repo.git'
+# When we make commits to manifest git repos, we want the owner info to be the
+# same, and we want it to map to info that end users are unlikely to use.  That
+# way when the local repo rebase runs, it handles the update gracefully.
+export GIT_AUTHOR_NAME='Elmur Fudsicle' GIT_AUTHOR_EMAIL='<baba@booya.bizzle>'
+
+set -e
+
+#
+# Helper functions.
+#
+info() {
+  if [[ -z ${QUIET} ]]; then
+    echo "info: $*"
+  fi
+}
+
+error() {
+  echo "error: $*" >&2
+}
+
+die() {
+  error "$*"
+  exit 1
+}
+
+_pushd() { pushd "$@" >/dev/null; }
+_popd()  { popd "$@" >/dev/null; }
+
+#
+# Process user flags.
+#
+usage() {
+  cat <<EOF
+Create or maintain a mirror of the ChromiumOS repository.
+
+Usage: ${ARGV0} [options] --root <dir>
+
+Options:
+  --external          Pull the external ChromiumOS manifest
+  --internal          Pull the internal ChromeOS manifest (note: Googler-only)
+  -j, --jobs          Number of fetch jobs to run in parallel (default ${JOBS})
+  -q, --quiet         Be quiet!
+  -r, --root          The directory to hold all mirroring information
+  -u, --url           The URL that people will use to pull from this mirror
+  -m, --manifest      The repo manifest to use as a basis (default default.xml)
+  -h, --help          This!
+
+You must specify the --url option at least once so that all of the paths can
+be rewritten for external users.  After that, it should be automatically saved
+and restored at runtime by this script.
+
+Example:
+# Create a full mirror in \${PWD} and have users fetch from the local machine.
+\$ ${ARGV0} -r . -u git://$(hostname -f)
+# Update the mirror (put this into a cronjob).
+\$ ${ARGV0} -q -r ${ROOT:-${PWD}}
+
+See this page for more information:
+http://dev.chromium.org/chromium-os/how-tos-and-troubleshooting/creating-local-mirrors
+EOF
+  exit ${1:-0}
+}
+
+JOBS=$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)
+MANIFEST_URL=
+MANIFEST_NAME=default.xml
+QUIET=
+ROOT=
+URL=
+while [[ $# -gt 0 ]]; do
+  case $1 in
+  --external)       MANIFEST_URL=${MANIFEST_URL_EXT};;
+  --internal)       MANIFEST_URL=${MANIFEST_URL_INT};;
+  -j|--jobs)        JOBS=$2; shift;;
+  -q|--quiet)       QUIET="-q";;
+  -r|--root)        ROOT=$2; shift;;
+  -u|--url)         URL=$2; shift;;
+  -m|--manifest)    MANIFEST_NAME=$2; shift;;
+  -h|--help)        usage;;
+  -x)               set -x;;
+  *)                usage 1;;
+  esac
+  shift
+done
+
+if [[ -z ${ROOT} ]]; then
+  die "need to specify root dir with --root"
+fi
+if [[ ! -d ${ROOT} ]]; then
+  die "specified root dir does not exist; please run: mkdir '${ROOT}'"
+fi
+
+cd "${ROOT}"
+
+#
+# Make sure our tools are up-to-date.
+#
+if ! which repo >/dev/null; then
+  die "you must have repo installed and in your \$PATH; please see:" \
+      "http://dev.chromium.org/developers/how-tos/install-depot-tools"
+fi
+# This has been tested against 1.7.7.x, so require at least that.
+if ! gver=$(git --version); then
+  die "you must have git installed!"
+fi
+bver="1.7.7"
+ver_to_int() {
+  local v i=0
+  local ver=( $(echo $(IFS=.; echo $*)) )
+  for v in 0 1 2; do
+    : $(( i = (i << 8) | ${ver[v]} ))
+  done
+  echo ${i}
+}
+if [[ $(ver_to_int "${bver}") -gt $(ver_to_int "${gver##* }") ]]; then
+  die "your git version is too old (${gver}); we require at least git ${bver}"
+fi
+
+
+#
+# Initialize the whole tree mirror style.
+#
+repo_init() {
+  repo init -u "${MANIFEST_URL}" -m "${MANIFEST_NAME}" \
+    --repo-url="${REPO_URL}" ${QUIET} "$@"
+}
+if [[ ! -d .repo ]]; then
+  # Default to external manifest.
+  : ${MANIFEST_URL:=${MANIFEST_URL_EXT}}
+  repo_init --mirror
+else
+  # Allow people to change manifests on the fly (internal<->external).
+  CURRENT_URL=$(git --git-dir=.repo/manifests.git config remote.origin.url)
+  # Find the previously defined manifest name by following the symbolic link.
+  CURRENT_NAME=$(readlink .repo/manifest.xml)
+  # Strip off the "manifests/" prefix.
+  CURRENT_NAME=${CURRENT_NAME#manifests/}
+  # If no manifest was selected, default to the current one.
+  : ${MANIFEST_URL:=${CURRENT_URL}}
+  if [[ "${CURRENT_URL}" != "${MANIFEST_URL}" || \
+        "${CURRENT_NAME}" != "${MANIFEST_NAME}" ]]; then
+    info "re-initing due to URL or manifest change: \
+      ${CURRENT_URL} -> ${MANIFEST_URL}, ${CURRENT_NAME} -> ${MANIFEST_NAME}"
+    repo_init
+  fi
+fi
+if [[ ! -e git ]]; then
+  ln -s . git
+fi
+
+#
+# Pull down any updates.
+#
+info "syncing the whole tree"
+repo sync -j${JOBS} ${QUIET}
+
+#
+# Setup our local manifests repo which we'll hack on to point
+# to our local mirror.  We can't modify the repo in place as
+# we want to make sure updates are atomic -- don't want other
+# people to be able to accidentally pull in an unmodified repo.
+#
+update_manifests() {
+  local git_repo=$1
+  local checkout=${git_repo##*/}
+  checkout=${checkout%.git}
+
+  if [[ ${MANIFEST_URL} == "${MANIFEST_URL_INT}" ]]; then
+    # Try to head off leakage of Google data.
+    case ${URL} in
+    ssh://* | file://*) ;;
+    *)
+      die "You *must* use a secure channel like ssh:// or file://" \
+          "when mirroring internal Google repositories."
+      ;;
+    esac
+  fi
+
+  if [[ ! -d ${checkout} ]]; then
+    info "cloning ${checkout}"
+    git clone ${QUIET} ./${git_repo} ${checkout}
+    # Make the path relative so the whole tree can be moved w/out breaking.
+    git --git-dir=${checkout}/.git config remote.origin.url ../${git_repo}
+  fi
+
+  info "updating ${checkout}"
+  _pushd ${checkout}
+  git fetch ${QUIET}
+  if [[ -z ${URL} ]]; then
+    # Extract the local URI if they didn't specify one.
+    URL=$(eval $(grep -h fetch= *.xml); echo ${fetch})
+    if [[ ${URL} == "https://chromium.googlesource.com" ]]; then
+      # Guess they want the current system.
+      URL="git://$(hostname -f)"
+    fi
+  fi
+
+  # Trim any branches that have been deleted on the server.
+  git remote update --prune
+
+  # Setup the fetch= field of the manifest to point to our local mirror.
+  local b branches=(
+    $(git ls-remote | sed 's:.*refs/heads/::' | egrep -v '\<(HEAD|^master)$')
+    "master"
+  )
+  info "rewriting ${checkout} branches to ${URL}"
+  for b in "${branches[@]}"; do
+    git checkout -q -f -B ${b} origin/${b} >/dev/null
+    if [[ -z $(find -name '*.xml' -type f) ]]; then
+      # Skip branches that don't have any manifests.
+      continue
+    fi
+    find -name '*.xml' -type f \
+      -exec sed -i "s|fetch=\"[^\"]*\"|fetch=\"${URL}\"|" {} +
+    git commit -q -a -m 'set fetch references to local mirror'
+  done
+
+  # Push out our updates.
+  local pub="../${git_repo%.git}-mirror.git"
+  if [[ ! -e ${pub} ]]; then
+    git --git-dir="${pub}" init ${QUIET}
+  fi
+  git push ${QUIET} -f "${pub}" 'refs/heads/*:refs/heads/*'
+  _popd
+}
+update_manifests chromiumos/manifest.git
+if [[ ${MANIFEST_URL} == "${MANIFEST_URL_INT}" ]]; then
+  update_manifests chromeos/manifest-internal.git
+fi
+
+#
+# All done!
+#
+if [[ -z ${QUIET} ]]; then
+  if [[ ${MANIFEST_URL} == "${MANIFEST_URL_EXT}" ]]; then
+    cat <<EOF
+
+You can now serve this tree with:
+git daemon --base-path=${ROOT} --export-all
+
+Your users can pull from this mirror with:
+repo init -u ${URL}/chromiumos/manifest-mirror.git --repo-url=${URL}/external/repo.git
+EOF
+  else
+    cat <<EOF
+
+You must only serve these resources over encrypted channels like ssh://.
+
+Your users can pull from this mirror with:
+repo init -u ${URL}/chromeos/manifest-internal-mirror.git --repo-url=${URL}/external/repo.git
+EOF
+  fi
+fi

@@ -1,0 +1,29 @@
+Import('*')
+
+env = drienv.Clone()
+
+env.PkgUseModules('DRM_INTEL')
+
+env.Append(CPPDEFINES = ['GALLIUM_RBUG', 'GALLIUM_TRACE', 'GALLIUM_GALAHAD'])
+
+env.Prepend(LIBS = [
+    ws_wrapper,
+    st_dri,
+    i915drm,
+    i915,
+    galahad,
+    trace,
+    rbug,
+    mesa,
+    glsl,
+    gallium,
+    COMMON_DRI_DRM_OBJECTS
+])
+
+module = env.LoadableModule(
+    target = 'i915_dri.so',
+    source = 'target.c',
+    SHLIBPREFIX = '',
+)
+
+env.Alias('dri-i915', module)

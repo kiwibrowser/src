@@ -1,0 +1,89 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+# Copyright (C) 2011 The Libphonenumber Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+include /usr/share/cdbs/1/rules/debhelper.mk
+include /usr/share/cdbs/1/class/maven.mk
+
+JAVA_HOME := /usr/lib/jvm/default-java
+DEB_MAVEN_DOC_TARGET := javadoc:jar javadoc:aggregate
+
+CMAKE ?= cmake
+
+CMAKE_FLAGS := -DCMAKE_INSTALL_PREFIX=/usr
+CPP_BUILD := cpp/build
+JAVA_BUILD := java/build
+
+# CMake doesn't read CPPFLAGS and dh_auto commands are not used in this rules
+# file so we have to manually set the flags here to ensure that hardening flags
+# are used:
+CFLAGS += $(CPPFLAGS)
+CXXFLAGS += $(CPPFLAGS)
+
+ifneq (,$(filter noopt,$(DEB_BUILD_OPTIONS)))
+  CFLAGS += -O0
+else
+  CFLAGS += -O2
+endif
+ifeq (,$(filter nostrip,$(DEB_BUILD_OPTIONS)))
+  INSTALL_PROGRAM += -s
+endif
+ifneq (,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+  NUMJOBS = $(patsubst parallel=%,%,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+  MAKEFLAGS += -j$(NUMJOBS)
+endif
+
+#%:
+#	dh $@ --with javahelper
+
+#override_dh_auto_configure:
+configure/libphonenumber7::
+	mkdir -p $(CPP_BUILD) && cd $(CPP_BUILD) && $(CMAKE) $(CMAKE_FLAGS) ..
+
+#override_dh_auto_build:
+#	( cd tools/java && $(MVN) package )
+#	mkdir java/lib
+#	ln -s /usr/share/java/junit4.jar java/lib/junit-4.8.1.jar
+#	$(ANT) -f $(JAVA_BUILD).xml jar
+build/libphonenumber7::
+	ln -sf cpp-build-1.0-SNAPSHOT.jar tools/java/cpp-build/target/cpp-build-1.0-SNAPSHOT-jar-with-dependencies.jar
+	ln -sf /usr/share/java/protobuf.jar tools/java/cpp-build/target/protobuf-java-debian.jar
+	$(MAKE) -C $(CPP_BUILD) phonenumber phonenumber-shared
+
+#override_dh_auto_test:
+#ifeq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
+#	$(MAKE) -C $(CPP_BUILD) test
+#	$(ANT) -f $(JAVA_BUILD).xml junit
+#endif
+
+# Hack for multiarch: CMake doesn't really support libdir so we just manually
+# move /usr/lib/* to a proper multiarch location.
+#override_dh_auto_install:
+common-install-arch::
+	dh_auto_install --builddirectory=$(CPP_BUILD)
+	mkdir -p debian/tmp/usr/lib-$(DEB_HOST_MULTIARCH)
+	mv debian/tmp/usr/lib/* debian/tmp/usr/lib-$(DEB_HOST_MULTIARCH)
+	mv debian/tmp/usr/lib-$(DEB_HOST_MULTIARCH) \
+		debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)
+
+#override_dh_auto_clean:
+clean::
+	-test -d $(CPP_BUILD) && $(MAKE) -C $(CPP_BUILD) clean
+	#-$(ANT) -f $(JAVA_BUILD).xml clean
+	#-( cd tools/java && $(MVN) clean )

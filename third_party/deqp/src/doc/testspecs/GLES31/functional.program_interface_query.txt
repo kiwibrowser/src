@@ -1,0 +1,101 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Program interface query
+
+Tests:
+ + dEQP-GLES31.functional.program_interface_query.*
+
+Includes:
+ + Basic queries for every property of every program interface
+ + Basic tests for resource list contents for every program interface
+ + Attempts to query data to too small buffers
+
+Excludes:
+ + Exact layout validation for data layout related queries (offset,
+   stride)
+ + Consistency validation for location queries (as in no two different
+   variables with the same location)
+
+Description:
+
+buffer_limited_query.* cases test that queries function properly when
+given a return value buffer that is too short to contain all queried
+data. resource_name_query case tests GetProgramResourceName function
+with different character output buffer sizes and resource_query case
+tests GetProgramResourceiv with different property value output buffer
+sizes.
+
+Program interface query tests are structured as follows. Each program
+interface has its own test group at the
+functional.program_interface_query.* level. Each program interface test
+group contains a test group for each supported property, for example
+"uniform.location.*". Additionally, each program interface contains test
+group "resource_list" which contains tests for resource list generation.
+In addition, some program interfaces contain "random" test group which
+contains randomly (fixed seed) generated tests.
+
+Each program interface query test, a program corresponding to the case's
+full name is generated. For example,
+"uniform.name_length.default_block.var_struct" would mean a NAME_LENGTH
+query for a member variable of a uniform struct in the default block.
+Cases without explicit mention of the shader type in its full name
+generate compute shaders. The generated program is compiled and linked
+and then the specified property is queried and verified. For the
+randomly generated cases, all supported properties of the interface are
+queried and verified.
+
+uniform.* and buffer_variable.* cases test GL_UNIFORM and
+GL_BUFFER_VARIABLE program interfaces, respectively. Test groups
+array_size, array_stride, atomic_counter_buffer_index, block_index,
+location, matrix_row_major, matrix_stride, name_length, offset,
+referenced_by_shader, and type test properties ARRAY_SIZE, ARRAY_STRIDE,
+ATOMIC_COUNTER_BUFFER_INDEX, BLOCK_INDEX, LOCATION, IS_ROW_MAJOR,
+MATRIX_STRIDE, NAME_LENGTH, OFFSET, REFERENCED_BY_*_SHADER, and TYPE
+properties, respectively. Additionally, the buffer_variable.* test group
+contains tests for TOP_LEVEL_ARRAY_SIZE (top_level_array_size.*) and
+TOP_LEVEL_ARRAY_STRIDE (top_level_array_stride.*) properties.
+
+uniform_block.* and shader_storage_block.* cases test GL_UNIFORM_BLOCK
+and GL_SHADER_STORAGE_BLOCK program interfaces, respectively. Test
+groups active_variables, buffer_binding, buffer_data_size, name_length,
+and referenced_by test properties ACTIVE_VARIABLES, BUFFER_BINDING,
+BUFFER_DATA_SIZE, NAME_LENGTH, and REFERENCED_BY_*_SHADER properties,
+respectively.
+
+atomic_counter_buffer.* cases test GL_ATOMIC_COUNTER_BUFFER program
+interface. Test cases active_variables, buffer_binding,
+buffer_data_size, and referenced_by_* test ACTIVE_VARIABLES,
+BUFFER_BINDING, BUFFER_DATA_SIZE, and REFERENCED_BY_*_SHADER properties,
+respectively.
+
+program_input.* and program_output.* cases test PROGRAM_INPUT and
+PROGRAM_OUTPUT program interfaces, respectively. Test groups array_size,
+location, name_length, referenced_by, and type test ARRAY_SIZE,
+LOCATION, NAME_LENGTH, REFERENCED_BY_*_SHADER and TYPE properties,
+respectively. Each test group contains separate tests for different
+program configurations such as compute program, vertex-fragment program,
+or separable shader programs.
+
+transform_feedback_varying.* cases test TRANSFORM_FEEDBACK_VARYING
+program interface. Test groups array_size, name_length, and type test
+ARRAY_SIZE, NAME_LENGTH, and TYPE properties. Each test group contains
+separate tests for a complete vertex-fragment program and for separable
+program containing only a vertex shader. Test query properties of
+various types of user-defined output variables and a built-in output
+gl_Position.

@@ -1,0 +1,31 @@
+#!/bin/bash
+# Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+bin/cbuildbot_view_config --update_config
+bin/cros_show_waterfall_layout > cbuildbot/waterfall_layout_dump.txt
+if [ "$(git diff cbuildbot/config_dump.json)" ]; then
+  echo "You have uncommitted changes to cbuildbot/config_dump.json"
+  echo "This is likely because you have modified:"
+  echo "  cbuildbot/chromeos_config.py"
+  echo "Please --amend your commit to include config_dump.json."
+  echo
+  echo "In future, you can update the dump file with the command"
+  echo "bin/cbuildbot_view_config --update_config"
+  exit 1
+fi
+
+if [ "$(git diff cbuildbot/waterfall_layout_dump.txt)" ]; then
+  echo "You have uncommitted changes to cbuildbot/waterfall_layout_dump.txt"
+  echo "This is likely because you have modified:"
+  echo "  cbuildbot/chromeos_config.py"
+  echo "Please --amend your commit to include waterfall_layout_dump.txt"
+  echo
+  echo "In future, you can update the dump file with the command"
+  echo "bin/cros_show_waterfall_layout > cbuildbot/waterfall_layout_dump.txt"
+  echo
+  echo "Also, note that your change may require a waterfall restart to take"
+  echo "effect. To request one, see go/bug-a-trooper"
+  exit 1
+fi

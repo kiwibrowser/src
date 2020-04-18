@@ -1,0 +1,116 @@
+liblouis 2.6.0 has been released
+
+The liblouis developer team is proud to announce the liblouis release
+2.6.0 The release is available for download at:
+
+    https://github.com/liblouis/liblouis/releases
+
+Introduction
+============
+
+Liblouis is an open-source braille translator and back-translator. It
+features support for computer, literary and math braille, supports
+contracted and uncontracted translation for many, many languages[1].
+It plays an important role in an open source accessibility stack and
+is used by screenreaders such as NVDA and Orca. A companion project
+liblouisutdml[2] deals with formatting of braille.
+
+Next release
+============
+
+The next release will be published on December 1st so please keep
+those improvements coming.
+
+Changes in this release
+=======================
+
+This is the first release by the new maintainer team. A lot of work by
+people from across the community contributed to this release. There
+are massive additions and updates to the Braille tables (e.g.
+Afrikaans, Hebrew, many Indian languages, Korean) and also changes to
+the C API to enable call backs for error messages and warnings.
+
+New features
+~~~~~~~~~~~~
+
+New Braille tables
+------------------
+
+Tables for Afrikaans, Cherokee, Hawaiian, Maori, Sotho and Tswana were
+donated by Greg Kearney. Afrikaans, Cherokee, Maori and Hawaiian all
+are grade 1 tables and with the exception of Cherokee were derived
+from World Braille Usage 2013. The Cherokee was taken from the
+specification published at www.cbtbc.org/cherokee/.
+
+Logging callback
+----------------
+
+There is now a callback system in place to get error messages and
+warnings. This can be used from programs that use liblouis to log
+warnings for example.
+
+Bug fixes
+~~~~~~~~~
+
+- fix back translation problems when word gets split in unusual places
+  causing back translation of whole words for example K5 back
+  translates to Knowledgeen, M>k back translates to Moreark, and M5
+  back translates to Moren. This caused over 8400 extra back
+  translation errors in en-us-g2 and 5000 in en-ueb-g2. Thanks to Ken
+  Perry.
+- Fixed bug to prevent removal of \xffff between largesign rules. This
+  solves a Liblouisutdml bug where \xffff is used as a segment
+  delimiter.
+- Fixed a bug in back translation, when a letsign was encountered, the
+  letsign was being applied beyond the element it applied to.
+- Fix memory leaks in the default table resolver introduced in the
+  previous release.
+- Fixes to the build system by Simon Aittamaa
+
+Braille table improvements
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Major improvements to Indian tables thanks to the Indian National
+  Institute for Visually Handicapped, in particular Dipendra Manocha,
+  Mesar Hameed, Dinesh Kaushall and Sreeja Parameswaran:
+  - Corrected opcodes for letters, punctuation marks, digits, signs
+    etc.
+  - Updated braille codes according to prescribed braille codes for
+    each Unicode character by the Braille Council of India for all
+    Indian languages.
+  - defined rules for dealing with Nukhta character in Hindi table
+  - defined rule to insert dot-1 between consonant followed by full
+    vowel character in all Indian Languages
+  - defined rules for shifting of halant character before the
+    consonant. This character is placed after the consonant in normal
+    typing but need to be before the consonant in braille. This rule
+    is applicable for all Indian languages.
+  - defined rules for two conjunct characters "ksha and gya" used in
+    all Indian Languages for which there are specific codes in
+    Braille.
+- New Hebrew table that is based on the new unified Hebrew Braille
+  code standard that was put together on January 2014 after a
+  conference with all of the specialists in this field in Israel. It
+  includes improved representation of Hebrew letters, special letters
+  that are called Nikud, and punctuation symbols. The old Braille
+  standard is not relevant any more. Thanks to Adi Kushnir.
+- UEB table fixes: Fix ity contraction, fixed the missing end word
+  contraction ;n ;d sign 46. thanks to Ken Perry.
+- Fix for Norwegian where letsign is affecting some extra characters
+  thanks to Lars Bjørndal
+- Much improved hyphenation for Norwegian thanks to Lars Bjørndal
+- Korean Grade 2 now includes support for reading English text using
+  grade 2.
+- en-us-g1.ctb and en-ueb.g1.ctb are now able to display 8 dot Unicode
+  braille.
+
+Share and Enjoy!
+
+-- Christian Egli, on behalf of the liblouis developers
+
+Footnotes
+=========
+
+[1]  See https://github.com/liblouis/liblouis/tree/master/tables
+[2]  See http://code.google.com/p/liblouisutdml/ 
+

@@ -1,0 +1,75 @@
+group basic "Name Hiding Tests"
+
+	case hidden_name_1
+		version 300 es
+		values { output float out0 = 0.0; }
+
+		both ""
+			#version 300 es
+			precision mediump float;
+			float S()
+			{
+				struct S { int i; };
+				S s;
+				s.i = 1;
+				return 0.0;
+			}
+			${DECLARATIONS}
+
+			void main()
+			{
+				out0 = S();
+				${OUTPUT}
+			}
+		""
+	end
+
+	case hidden_name_2
+		version 300 es
+		values { output float out0 = 3.0; }
+
+		both ""
+			#version 300 es
+			precision mediump float;
+			struct S { int i; };
+			S s1;
+			float fun()
+			{
+				struct S { float f; };
+				S s2;
+				s2.f = 2.0;
+				return s2.f;
+			}
+			S s3;
+			${DECLARATIONS}
+
+			void main()
+			{
+				s1.i = 1;
+				s3.i = 3;
+				out0 = float(s1.i) + fun();
+				${OUTPUT}
+			}
+		""
+	end
+
+	case hidden_name_3
+		version 300 es
+		expect compile_fail
+
+		both ""
+			#version 300 es
+			precision mediump float;
+			struct S { int i; };
+			struct S { float f; };
+			${DECLARATIONS}
+
+			void main()
+			{
+				${OUTPUT}
+			}
+		""
+	end
+
+end # operator_precedence
+

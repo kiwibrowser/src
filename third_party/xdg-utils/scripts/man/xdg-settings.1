@@ -1,0 +1,154 @@
+'\" t
+.\"     Title: xdg-settings
+.\"    Author: Mike Mammarella
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
+.\"      Date: 07/20/2011
+.\"    Manual: xdg-settings Manual
+.\"    Source: [FIXME: source]
+.\"  Language: English
+.\"
+.TH "XDG\-SETTINGS" "1" "07/20/2011" "[FIXME: source]" "xdg-settings Manual"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+xdg-settings \- get various settings from the desktop environment
+.SH "SYNOPSIS"
+.HP \w'\fBxdg\-settings\fR\ 'u
+\fBxdg\-settings\fR {\fB\fIget\fR\fR | \fB\fIcheck\fR\fR | \fB\fIset\fR\fR} {\fBproperty\fR} [\fBsubproperty\fR] [\fBvalue\fR]
+.HP \w'\fBxdg\-settings\fR\ 'u
+\fBxdg\-settings\fR {\fB\-\-help\fR | \fB\-\-list\fR | \fB\-\-manual\fR | \fB\-\-version\fR}
+.SH "DESCRIPTION"
+.PP
+xdg\-settings gets various settings from the desktop environment\&. For instance, desktop environments often provide proxy configuration and default web browser settings\&. Using xdg\-settings these parameters can be extracted for use by applications that do not use the desktop environment\*(Aqs libraries (which would use the settings natively)\&.
+.PP
+xdg\-settings is for use inside a desktop session only\&. It is not recommended to use xdg\-settings as root\&.
+.SH "OPTIONS"
+.PP
+\fB\-\-help\fR
+.RS 4
+Show command synopsis\&.
+.RE
+.PP
+\fB\-\-list\fR
+.RS 4
+List all properties xdg\-settings knows about\&.
+.RE
+.PP
+\fB\-\-manual\fR
+.RS 4
+Show this manualpage\&.
+.RE
+.PP
+\fB\-\-version\fR
+.RS 4
+Show the xdg\-utils version information\&.
+.RE
+.SH "PROPERTIES"
+.PP
+When using xdg\-settings to get, check or set a destkop setting, properties and possibly sub\-properties are used to specify the setting to be changed\&.
+.PP
+Some properties (such as default\-web\-browser) fully describe the setting to be changed\&. Other properties (such as default\-url\-scheme\-handler) require more information (in this case the actual scheme to set the default handler for) which must be provided in a sub\-property\&.
+.SH "EXIT CODES"
+.PP
+An exit code of 0 indicates success while a non\-zero exit code indicates failure\&. The following failure codes can be returned:
+.PP
+\fB1\fR
+.RS 4
+Error in command line syntax\&.
+.RE
+.PP
+\fB2\fR
+.RS 4
+One of the files passed on the command line did not exist\&.
+.RE
+.PP
+\fB3\fR
+.RS 4
+A required tool could not be found\&.
+.RE
+.PP
+\fB4\fR
+.RS 4
+The action failed\&.
+.RE
+.SH "EXAMPLES"
+.PP
+Get the desktop file name of the current default web browser
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+        xdg\-settings get default\-web\-browser
+      
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Check whether the default web browser is firefox\&.desktop, which can be false even if "get default\-web\-browser" says that is the current value (if only some of the underlying settings actually reflect that value)
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+        xdg\-settings check default\-web\-browser firefox\&.desktop
+      
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Set the default web browser to google\-chrome\&.desktop
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+        xdg\-settings set default\-web\-browser google\-chrome\&.desktop
+      
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Set the default mailto URL scheme handler to be evolution\&.desktop
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+        xdg\-settings set default\-url\-scheme\-handler mailto evolution\&.desktop
+      
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.SH "AUTHOR"
+.PP
+\fBMike Mammarella\fR
+.RS 4
+Author.
+.RE
+.SH "COPYRIGHT"
+.br
+Copyright \(co 2009-2011
+.br

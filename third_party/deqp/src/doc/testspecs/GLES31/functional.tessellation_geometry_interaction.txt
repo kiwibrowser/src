@@ -1,0 +1,91 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Geometry and tessellation shader interaction tests
+
+Tests:
+ + dEQP-GLES31.functional.tessellation_geometry_interaction.*
+ + dEQP-GLES31.stress.tessellation_geometry_interaction.*
+
+Includes:
+ + Basic render tests using a shader program with tessellation and
+   geometry shading stages.
+ + Render tests with maximum geometry amplification in different stages
+ + Scattering render tests where result primitives are scattered all
+   over the viewport and render layers.
+ + Basic transform feedback tests
+ + Point size render tests
+
+Excludes:
+ + Complex rendering tests
+ + SSBO memory access ordering test between tessellation and geometry shaders
+ + Transform feedback with all basic types
+
+Description:
+
+render.passthrough cases tests basic rendering with a shader program with
+attached tessellation and geometry shaders. Tests verify that attaching either a
+passthrough geometry or tessellation shader does not change the result image. In
+*_passthrough_geometry_* cases, the pattern is first rendered without a geometry
+shader and then with a passthrough geometry shader. In
+*_passthrough_tessellation_* cases, image is first rendered without a
+tessellation stage and then with a passthrough tessellation shader attached.
+
+render.limits.* cases test rendering with a five stage shader program with a
+shader that uses the maximum number of geometry output vertices, uses maximum
+number geometry shader instances, or sets the maximum tessellation level.
+*_required_* cases use the maximum limit as required by the extension
+specifications and *_implementation_* cases use the maximum limit reported by
+the glGetInteger(GL_MAX_...) queries. Cases render a grid of green and yellow
+cells, and the result image is verified.
+
+The
+dEQP-GLES31.stress.tessellation_geometry_interaction.render_multiple_limits.*
+cases are otherwise identical to the functional cases but the stress.*
+counterparts test multiple implementation and specification mandated limits at
+the same time. Due to the extreme geometry amplification in certain tests, the
+OUT_OF_MEMORY error is treated as a valid result (in addition to the valid
+render result).
+
+render.scatter.* cases use geometry shader to scatter the output primitives all
+over the viewport. In the geometry_scatter_instances case, each geometry shader
+instance emits its primitives near to each other but far form the primitives
+emitted by the other instances of the same geometry shader execution. In the
+geometry_scatter_primitives, each geometry shader instance emits its primitives
+far form each other. In geometry_scatter_layers case, each emitted primitive of
+a geometry shader instance is assigned a different layer index. Cases render a
+grid of green and yellow cells, and the result image is verified.
+
+feedback.tessellation_output_*_geometry_output_* cases test that transform
+feedback works with five stage shader programs with different tessellation and
+geometry output primitive types. Tests verify the validity of feedback results
+and the value GL_PRIMITIVES_GENERATED query and then compare the rendered image
+against the feedback results.
+
+feedback.record_variable_selection case tests that when using transform
+feedback the recorded variable is selected from the geometry shader if the
+geometry shader is active.
+
+point_size.* cases test reading and writing to gl_PointSize varible in different
+shader stages. In {vertex, control, evaluation, geometry}_set cases, a constant
+is assigned to the gl_PointSize in the corresponding shader stage. In {vertex,
+control, ...}_add cases, gl_PointSize is incremented by a constant. In {eval,
+default}_default cases, the corresponding shader stage is active, but it does
+not modify the point size or use the shader stage specific point size extension.
+The shader program is used to render a single point, and the rendered point size
+is then verified from the image.

@@ -1,0 +1,113 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Shader atomic counter tests
+
+Tests:
+ + dEQP-GLES31.functional.shaders.atomic_counter.*
+
+Includes:
+ + Calls to atomicCounter(), atomicCounterIncrement() and atomicCounterDecrement()
+   - Only in compute shaders
+   - With different number of parallel shaders
+   - With different number of calls per shader
+   - With different combinations of operations
+   - With conditional calls depending on thread and call number
+ + Atomic counters with different offsets
+ + Atomic counters with default layout qualifier and implicit offset and binding
+ + Invalid offsets and bindings in layout qualifier
+ + Invalid offsets and bindings in default layout qualifier
+
+Excludes:
+ + Multiple binding points and buffers
+   - Only single binding point is required by specification
+ + Use in other than compute shader
+   - Specification requires zero binding points in other shader types
+ + Usage in multiple shaders at same time
+ + Multiple shader innovocations
+
+Description:
+
+Test cases perform atomic counter calls and saves results to a SSBO. The SSBO
+and the atomic counter buffer are read back from the device after executing
+the shader. Atomic counter values are verified by comparing against the
+initial value subtracted by total number of calls to atomicCounterDecrement()
+and incremented by total number of calls to atomicCounterIncrement() performed
+by the shader. SSBO value verification depends on the set of functions used in
+the shader. Values returned by call to atomicCounterDecrement() are
+incremented by one so that all values in the SSBO are values of counter before
+peforming operation. Atomic counter values returned by different atomic
+counters are verified separately.
+
+Test cases using only atomicCounter() call are verified by checking that all
+calls returned the same value as set initially to the atomic counter.
+
+Test case using either atomicCounterIncrement() or atomicCounterDecrement()
+call check that each value returned is unique and all values are in continuous
+range from initial value to the expected result value.
+
+Test cases using either atomicCounterIncrement() or atomicCounterDecrement()
+and atomicCounter() call perform call to atomicCounter() before and after each
+call to atomicCounterIncrement()/atomicCounterDecrement(). Test cases check
+that value returned by atomicCounterIncrement()/atomicCounterDecrement() is
+between values returned by previous and following call to atomicCounter().
+
+Test cases with calls to both atomicCounterIncrement() and
+atomicCounterDecrement() are verified by counting how many times each value
+was returned by each function. Using these counts we check that there is
+possible order in which operations could have been performed. Following pseudo
+code checks that there is possible order in which increments and decrements
+could have happened.
+
+// Minimum value returned by atomicCounterDecrement() or atomicCounterIncrement()
+minValue
+// Maximum value returned by atomicCounterDecrement() or atomicCounterIncrement()
+maxValue
+// incrementCounts[value] is how many times value was returned by atomicCounterIncrement()
+incrementCounts[]
+// decrementCounts[value] is how many times value-1 was returned by atomicCounterDecrement()
+decrementCounts[]
+// Value of counter before any operation has been performed
+initialValue
+// Value of counter after executing shader
+resultValue
+
+pos = initialValue
+
+while incrementCounts[pos] + decrementCounts[pos] == 0:
+	// Prefer operations that would move away from the result value.
+	if incrementCounts[pos] > 0 and pos > resultValue:
+		incrementCounts[pos]--
+		pos++
+	else if decrementCounts[pos]:
+		decrementCounts[pos]--
+		pos--
+	else
+		incrementCounts[pos]--
+		pos++
+
+	// Last value might have never been returned by call
+	// to atomicCounterIncrement() or atomicCounterDecrement()
+	// if it's outside of range.
+	if pos < minValue or pos > maxValue:
+		break
+
+// Check that incrementCounts and decrementCounts contain only zero values.
+
+Test set includes negative shader compilation cases as well. In such cases the
+compilation is simply expected to fail.

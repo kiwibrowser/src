@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<!--
+Copyright 2016 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/base/math/range.html">
+<link rel="import" href="/tracing/base/unit.html">
+<link rel="import" href="/tracing/metrics/metric_registry.html">
+<link rel="import" href="/tracing/metrics/v8/utils.html">
+<link rel="import" href="/tracing/value/histogram.html">
+
+<script>
+'use strict';
+
+tr.exportTo('tr.metrics.v8', function() {
+  // The time window size for mutator utilization computation.
+  // It is equal to the duration of one frame corresponding to 60 FPS rendering.
+  const TARGET_FPS = 60;
+  const MS_PER_SECOND = 1000;
+  const WINDOW_SIZE_MS = MS_PER_SECOND / TARGET_FPS;
+
+  function gcMetric(histograms, model) {
+    addDurationOfTopEvents(histograms, model);
+    addTotalDurationOfTopEvents(histograms, model);
+    addDurationOfSubEvents(histograms, model);
+    addPercentageInV8ExecuteOfTopEvents(histograms, model);
+    addTotalPercentageInV8Execute(histograms, model);
+  }
+
+  tr.metrics.MetricRegistry.register(gcMetric);
+
+  const timeDurationInMs_smallerIsBetter =
+      tr.b.Unit.byName.timeDurationInMs_smallerIsBetter;
+  const percentage_biggerIsBetter =
+      tr.b.Unit.byName.normalizedPercentage_biggerIsBetter;
+  const percentage_smallerIsBetter =
+      tr.b.Unit.byName.normalizedPercentage_smallerIsBetter;
+
+  // 0.1 steps from 0 to 20 since it is the most common range.
+  // Exponentially increasing steps from 20 to 200.
+  const CUSTOM_BOUNDARIES = tr.v.HistogramBinBoundaries.createLinear(0, 20, 200)
+      .addExponentialBins(200, 100);
+
+  function createNumericForTopEventTime(name) {
+    const n = new tr.v.Histogram(name,
+        timeDurationInMs_smallerIsBetter, CUSTOM_BOUNDARIES);
+    n.customizeSummaryOptions({
+      avg: true,
+      count: true,
+      max: true,
+      min: false,
+      std: true,
+      sum: true,
+      percentile: [0.90]});
+    return n;
+  }
+
+  function createNumericForSubEventTime(name) {
+    const n = new tr.v.Histogram(name,
+        timeDurationInMs_smallerIsBetter, CUSTOM_BOUNDARIES);
+    n.customizeSummaryOptions({
+      avg: true,
+      count: false,
+      max: true,
+      min: false,
+      std: false,
+      sum: false,
+      percentile: [0.90]
+    });
+    return n;
+  }
+
+  function createNumericForIdleTime(name) {
+    const n = new tr.v.Histogram(name,
+        timeDurationInMs_smallerIsBetter, CUSTOM_BOUNDARIES);
+    n.customizeSummaryOptions({
+      avg: true,
+      count: false,
+      max: true,
+      min: false,
+      std: false,
+      sum: true,
+      percentile: []
+    });
+    return n;
+  }
+
+  function createPercentage(name, numerator, denominator, unit) {
+    const hist = new tr.v.Histogram(name, unit);
+    if (denominator === 0) {
+      hist.addSample(0);
+    } else {
+      hist.addSample(numerator / denominator);
+    }
+    hist.customizeSummaryOptions({
+      avg: true,
+      count: false,
+      max: false,
+      min: false,
+      std: false,
+      sum: false,
+      percentile: []
+    });
+    return hist;
+  }
+
+  function isNotForcedTopGarbageCollectionEvent(event) {
+    // We exclude garbage collection events forced by benchmark runner,
+    // because they cannot happen in real world.
+    return tr.metrics.v8.utils.isTopGarbageCollectionEvent(event) &&
+           !tr.metrics.v8.utils.isForcedGarbageCollectionEvent(event);
+  }
+
+  function isNotForcedSubGarbageCollectionEvent(event) {
+    // We exclude garbage collection events forced by benchmark runner,
+    // because they cannot happen in real world.
+    return tr.metrics.v8.utils.isSubGarbageCollectionEvent(event) &&
+           !tr.metrics.v8.utils.isForcedGarbageCollectionEvent(event);
+  }
+
+  /**
+   * Example output:
+   * - v8-gc-full-mark-compactor.
+   */
+  function addDurationOfTopEvents(histograms, model) {
+    tr.metrics.v8.utils.groupAndProcessEvents(model,
+        isNotForcedTopGarbageCollectionEvent,
+        tr.metrics.v8.utils.topGarbageCollectionEventName,
+        function(name, events) {
+          const cpuDuration = createNumericForTopEventTime(name);
+          events.forEach(function(event) {
+            cpuDuration.addSample(event.cpuDuration);
+          });
+          histograms.addHistogram(cpuDuration);
+        }
+    );
+  }
+
+  /**
+   * Example output:
+   * - v8-gc-total
+   */
+  function addTotalDurationOfTopEvents(histograms, model) {
+    tr.metrics.v8.utils.groupAndProcessEvents(model,
+        isNotForcedTopGarbageCollectionEvent,
+        event => 'v8-gc-total',
+        function(name, events) {
+          const cpuDuration = createNumericForTopEventTime(name);
+          events.forEach(function(event) {
+            cpuDuration.addSample(event.cpuDuration);
+          });
+          histograms.addHistogram(cpuDuration);
+        }
+    );
+  }
+
+  /**
+   * Example output:
+   * - v8-gc-full-mark-compactor-evacuate.
+   */
+  function addDurationOfSubEvents(histograms, model) {
+    tr.metrics.v8.utils.groupAndProcessEvents(model,
+        isNotForcedSubGarbageCollectionEvent,
+        tr.metrics.v8.utils.subGarbageCollectionEventName,
+        function(name, events) {
+          const cpuDuration = createNumericForSubEventTime(name);
+          events.forEach(function(event) {
+            cpuDuration.addSample(event.cpuDuration);
+          });
+          histograms.addHistogram(cpuDuration);
+        }
+    );
+  }
+
+  /**
+   * Example output:
+   * - v8-gc-full-mark-compactor_percentage_in_v8_execute.
+   */
+  function addPercentageInV8ExecuteOfTopEvents(histograms, model) {
+    tr.metrics.v8.utils.groupAndProcessEvents(model,
+        isNotForcedTopGarbageCollectionEvent,
+        tr.metrics.v8.utils.topGarbageCollectionEventName,
+        function(name, events) {
+          addPercentageInV8Execute(histograms, model, name, events);
+        }
+    );
+  }
+
+  /**
+   * Example output:
+   * - v8-gc-total_percentage_in_v8_execute.
+   */
+  function addTotalPercentageInV8Execute(histograms, model) {
+    tr.metrics.v8.utils.groupAndProcessEvents(model,
+        isNotForcedTopGarbageCollectionEvent,
+        event => 'v8-gc-total',
+        function(name, events) {
+          addPercentageInV8Execute(histograms, model, name, events);
+        }
+    );
+  }
+
+  function addPercentageInV8Execute(histograms, model, name, events) {
+    let cpuDurationInV8Execute = 0;
+    let cpuDurationTotal = 0;
+    events.forEach(function(event) {
+      const v8Execute = tr.metrics.v8.utils.findParent(
+          event, tr.metrics.v8.utils.isV8ExecuteEvent);
+      if (v8Execute) {
+        cpuDurationInV8Execute += event.cpuDuration;
+      }
+      cpuDurationTotal += event.cpuDuration;
+    });
+    const percentage = createPercentage(
+        name + '_percentage_in_v8_execute', cpuDurationInV8Execute,
+        cpuDurationTotal, percentage_smallerIsBetter);
+    histograms.addHistogram(percentage);
+  }
+
+  return {
+    gcMetric,
+    WINDOW_SIZE_MS,  // For testing purposes only.
+  };
+});
+</script>

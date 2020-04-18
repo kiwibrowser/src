@@ -1,0 +1,67 @@
+/*
+ * Copyright (C) 2015 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+buildscript {
+    repositories {
+        mavenCentral()
+        mavenLocal()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:1.1.0'
+    }
+}
+
+apply plugin: 'com.android.library'
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+dependencies {
+    compile project(':common')
+    compile 'com.google.android.gms:play-services-location:10.0.0'
+    compile 'com.google.android.gms:play-services-places:9.2.0'
+    compile 'com.android.support:design:26.1.0'
+}
+
+android {
+    /*
+     * If these are modified, update the README to reflect the new versions and
+     * update any related settings in the AdroidManifest.xml file.
+     *
+     * NOTE: Because the 'buildToolsVersion' directive only matches an exact
+     * release (rather than allowing wildcards) and Android remove older
+     * versions of the build tools very soon after a new revision is made
+     * available, we must never use the lastest major version of the build
+     * tools here (because it will quickly be superceded and become unavailable
+     * to anyone using a fresh install of the SDK). The "final" release of the
+     * previous major version remains available for much longer however, so as
+     * a workaround we always use that.
+     *
+     * So when the build tools version 23.0.0 is released, the buildToolsVersion
+     * below should be bumped to the last released version of the 22.x.x series.
+     *
+     * The obvious way to fix this would be allow wildcards (ie, "22.+") but
+     * Android have explicitly said that they won't do this.
+     */
+    compileSdkVersion 22
+    buildToolsVersion '21.1.2'
+    defaultConfig {
+      minSdkVersion 17
+      targetSdkVersion 22
+    }
+}
+

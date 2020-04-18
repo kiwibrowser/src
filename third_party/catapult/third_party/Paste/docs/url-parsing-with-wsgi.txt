@@ -1,0 +1,304 @@
+URL Parsing With WSGI And Paste
++++++++++++++++++++++++++++++++
+
+:author: Ian Bicking <ianb@colorstudy.com>
+:revision: $Rev$
+:date: $LastChangedDate$
+
+.. contents::
+
+Introduction and Audience
+=========================
+
+This document is intended for web framework authors and integrators,
+and people who want to understand the internal architecture of Paste.
+
+.. include:: include/contact.txt
+
+URL Parsing
+===========
+
+.. note::
+
+   Sometimes people use "URL", and sometimes "URI".  I think URLs are
+   a subset of URIs.  But in practice you'll almost never see URIs
+   that aren't URLs, and certainly not in Paste.  URIs that aren't
+   URLs are abstract Identifiers, that cannot necessarily be used to
+   Locate the resource.  This document is *all* about locating.
+
+Most generally, URL parsing is about taking a URL and determining what
+"resource" the URL refers to.  "Resource" is a rather vague term,
+intentionally.  It's really just a metaphor -- in reality there aren't
+any "resources" in HTTP; there are only requests and responses.
+
+In Paste, everything is about WSGI.  But that can seem too fancy.
+There are four core things involved: the *request* (personified in the
+WSGI environment), the *response* (personified inthe
+``start_response`` callback and the return iterator), the WSGI
+application, and the server that calls that application.  The
+application and request are objects, while the server and response are
+really more like actions than concrete objects.
+
+In this context, URL parsing is about mapping a URL to an
+*application* and a *request*.  The request actually gets modified as
+it moves through different parts of the system.  Two dictionary keys
+in particular relate to URLs -- ``SCRIPT_NAME`` and ``PATH_INFO`` --
+but any part of the environment can be modified as it is passed
+through the system.
+
+Dispatching
+===========
+
+.. note::
+
+   WSGI isn't object oriented?  Well, if you look at it, you'll notice
+   there's no objects except built-in types, so it shouldn't be a
+   surprise.  Additionally, the interface and promises of the objects
+   we do see are very minimal.  An application doesn't have any
+   interface except one method -- ``__call__`` -- and that method
+   *does* things, it doesn't give any other information.
+
+Because WSGI is action-oriented, rather than object-oriented, it's
+more important what we *do*.  "Finding" an application is probably an
+intermediate step, but "running" the application is our ultimate goal,
+and the only real judge of success.  An application that isn't run is
+useless to us, because it doesn't have any other useful methods.
+
+So what we're really doing is *dispatching* -- we're handing the
+request and responsibility for the response off to another object
+(another actor, really).  In the process we can actually retain some
+control -- we can capture and transform the response, and we can
+modify the request -- but that's not what the typical URL resolver will
+do.  
+
+Motivations
+===========
+
+The most obvious kind of URL parsing is finding a WSGI application.
+
+Typically when a framework first supports WSGI or is integrated into
+Paste, it is "monolithic" with respect to URLs.  That is, you define
+(in Paste, or maybe in Apache) a "root" URL, and everything under that
+goes into the framework.  What the framework does internally, Paste
+does not know -- it probably finds internal objects to dispatch to, 
+but the framework is opaque to Paste.  Not just to Paste, but to
+any code that isn't in that framework.
+
+That means that we can't mix code from multiple frameworks, or as
+easily share services, or use WSGI middleware that doesn't apply to
+the entire framework/application.
+
+An example of someplace we might want to use an "application" that
+isn't part of the framework would be uploading large files.  It's
+possible to keep track of upload progress, and report that back to the
+user, but no framework typically is capable of this.  This is usually
+because the POST request is completely read and parsed before it
+invokes any application code.
+
+This is resolvable in WSGI -- a WSGI application can provide its own
+code to read and parse the POST request, and simultaneously report
+progress (usually in a way that *another* WSGI application/request can
+read and report to the user on that progress).  This is an example
+where you want to allow "foreign" applications to be intermingled with
+framework application code.
+
+Finding Applications
+====================
+
+OK, enough theory.  How does a URL parser work?  Well, it is a WSGI
+application, and a WSGI server, in the typical "WSGI middleware"
+style.  Except that it determines which application it will serve
+for each request.
+
+Let's consider Paste's ``URLParser`` (in ``paste.urlparser``).  This
+class takes a directory name as its only required argument, and
+instances are WSGI applications.
+
+When a request comes in, the parser looks at ``PATH_INFO`` to see
+what's left to parse.  ``SCRIPT_NAME`` represents where we are *now*;
+it's the part of the URL that has been parsed.
+
+There's a couple special cases:
+
+The empty string:
+
+    URLParser serves directories.  When ``PATH_INFO`` is empty, that
+    means we got a request with no trailing ``/``, like say ``/blog``
+    If URLParser serves the ``blog`` directory, then this won't do --
+    the user is requesting the ``blog`` *page*.  We have to redirect
+    them to ``/blog/``.
+
+A single ``/``:
+
+    So, we got a trailing ``/``.  This means we need to serve the
+    "index" page.  In URLParser, this is some file named ``index``,
+    though that's really an implementation detail.  You could create
+    an index dynamically (like Apache's file listings), or whatever.
+
+Otherwise we get a string like ``/path...``.  Note that ``PATH_INFO``
+*must* start with a ``/``, or it must be empty.
+
+URLParser pulls off the first part of the path.  E.g., if
+``PATH_INFO`` is ``/blog/edit/285``, then the first part is ``blog``.
+It appends this to ``SCRIPT_NAME``, and strips it off ``PATH_INFO``
+(which becomes ``/edit/285``).
+
+It then searches for a file that matches "blog".  In URLParser, this
+means it looks for a filename which matches that name (ignoring the
+extension).  It then uses the type of that file (determined by
+extension) to create a WSGI application.
+
+One case is that the file is a directory.  In that case, the
+application is *another* URLParser instance, this time with the new
+directory.
+
+URLParser actually allows per-extension "plugins" -- these are just
+functions that get a filename, and produce a WSGI application.  One of
+these is ``make_py`` -- this function imports the module, and looks
+for special symbols; if it finds a symbol ``application``, it assumes
+this is a WSGI application that is ready to accept the request.  If it
+finds a symbol that matches the name of the module (e.g., ``edit``),
+then it assumes that is an application *factory*, meaning that when
+you call it with no arguments you get a WSGI application.
+
+Another function takes "unknown" files (files for which no better
+constructor exists) and creates an application that simply responds
+with the contents of that file (and the appropriate ``Content-Type``).
+
+In any case, ``URLParser`` delegates as soon as it can.  It doesn't
+parse the entire path -- it just finds the *next* application, which
+in turn may delegate to yet another application.
+
+Here's a very simple implementation of URLParser::
+
+    class URLParser(object):
+        def __init__(self, dir):
+            self.dir = dir
+        def __call__(self, environ, start_response):
+            segment = wsgilib.path_info_pop(environ)
+            if segment is None: # No trailing /
+                # do a redirect...
+            for filename in os.listdir(self.dir):
+                if os.path.splitext(filename)[0] == segment:
+                    return self.serve_application(
+                        environ, start_response, filename)
+            # do a 404 Not Found
+        def serve_application(self, environ, start_response, filename):
+            basename, ext = os.path.splitext(filename)
+            filename = os.path.join(self.dir, filename)
+            if os.path.isdir(filename):
+                return URLParser(filename)(environ, start_response)
+            elif ext == '.py':
+                module = import_module(filename)
+                if hasattr(module, 'application'):
+                    return module.application(environ, start_response)
+                elif hasattr(module, basename):
+                    return getattr(module, basename)(
+                        environ, start_response)
+            else:
+                return wsgilib.send_file(filename)
+
+Modifying The Request
+=====================
+
+Well, URLParser is one kind of parser.  But others are possible, and
+aren't too hard to write.
+
+Lets imagine a URL like ``/2004/05/01/edit``.  It's likely that
+``/2004/05/01`` doesn't point to anything on file, but is really more
+of a "variable" that gets passed to ``edit``.  So we can pull them off
+and put them somewhere.  This is a good place for a WSGI extension.
+Lets put them in ``environ["app.url_date"]``.
+
+We'll pass one other applications in -- once we get the date (if any)
+we need to pass the request onto an application that can actually
+handle it.  This "application" might be a URLParser or similar system
+(that figures out what ``/edit`` means).
+
+::
+
+    class GrabDate(object):
+        def __init__(self, subapp):
+            self.subapp = subapp
+        def __call__(self, environ, start_response):
+            date_parts = []
+            while len(date_parts) < 3:
+               first, rest = wsgilib.path_info_split(environ['PATH_INFO'])
+               try:
+                   date_parts.append(int(first))
+                   wsgilib.path_info_pop(environ)
+               except (ValueError, TypeError):
+	           break
+            environ['app.date_parts'] = date_parts
+            return self.subapp(environ, start_response)
+
+This is really like traditional "middleware", in that it sits between
+the server and just one application.
+
+Assuming you put this class in the ``myapp.grabdate`` module, you
+could install it by adding this to your configuration::
+
+    middleware.append('myapp.grabdate.GrabDate')
+
+Object Publishing
+=================
+
+Besides looking in the filesystem, "object publishing" is another
+popular way to do URL parsing.  This is pretty easy to implement as
+well -- it usually just means use ``getattr`` with the popped
+segments.  But we'll implement a rough approximation of `Quixote's
+<http://www.mems-exchange.org/software/quixote/>`_ URL parsing::
+
+    class ObjectApp(object):
+        def __init__(self, obj):
+            self.obj = obj
+        def __call__(self, environ, start_response):
+            next = wsgilib.path_info_pop(environ)
+            if next is None: 
+                # This is the object, lets serve it...
+                return self.publish(obj, environ, start_response)
+            next = next or '_q_index' # the default index method
+            if next in obj._q_export and getattr(obj, next, None):
+                return ObjectApp(getattr(obj, next))(
+                    environ, start_reponse)
+            next_obj = obj._q_traverse(next)
+            if not next_obj:
+                # Do a 404
+            return ObjectApp(next_obj)(environ, start_response)
+
+        def publish(self, obj, environ, start_response):
+            if callable(obj):
+                output = str(obj())
+            else:
+                output = str(obj)
+            start_response('200 OK', [('Content-type', 'text/html')])
+            return [output]
+
+The ``publish`` object is a little weak, and functions like
+``_q_traverse`` aren't passed interesting information about the
+request, but this is only a rough approximation of the framework.
+Things to note:
+
+* The object has standard attributes and methods -- ``_q_exports``
+  (attributes that are public to the web) and ``_q_traverse``
+  (a way of overriding the traversal without having an attribute for
+  each possible path segment).
+
+* The object isn't rendered until the path is completely consumed
+  (when ``next`` is ``None``).  This means ``_q_traverse`` has to
+  consume extra segments of the path.  In this version ``_q_traverse``
+  is only given the next piece of the path; Quixote gives it the
+  entire path (as a list of segments).  
+
+* ``publish`` is really a small and lame way to turn a Quixote object
+  into a WSGI application.  For any serious framework you'd want to do
+  a better job than what I do here.
+
+* It would be even better if you used something like `Adaptation
+  <http://www.python.org/peps/pep-0246.html>`_ to convert objects into
+  applications.  This would include removing the explicit creation of
+  new ``ObjectApp`` instances, which could also be a kind of fall-back
+  adaptation. 
+
+Anyway, this example is less complete, but maybe it will get you
+thinking.

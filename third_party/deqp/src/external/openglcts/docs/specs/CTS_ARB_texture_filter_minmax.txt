@@ -1,0 +1,103 @@
+Conformance Test
+
+    CTS_ARB_texture_filter_minmax
+
+Contributors
+
+    Filip Demczewski, Mobica
+
+Contacts
+
+    Filip Demczewski, Mobica (filip.demczewski 'at' mobica.com)
+
+Status
+
+    In review
+
+Version
+
+    November 17, 2016 (version 1)
+
+Dependencies
+
+    OpenGL 3.3 is required.
+
+    ARB_texture_filter_minmax extension is required.
+
+    This specification is written against:
+      - ARB_texture_filter_minmax specification,
+      - OpenGL 4.5 (core) specification.
+
+Overview
+
+    This tests verifies if functionality provided by ARB_texture_filter_minmax
+    works as expected:
+
+      * Verify if new texture and sampler parameter (TEXTURE_REDUCTION_MODE_ARB)
+        allows application to produce a filtered texel value by computing
+        component-wise minimum (MIN) or maximum (MAX).
+
+      * The filter parameters are used to identify the set of texels used to
+        produce a final filtered value. Verify if reduction mode identifies how
+        these texels are combined.
+
+New Tests
+
+    New State Queries Test
+
+      * Test SamplerParameter{i f}{v},
+        SamplerParameterI{u}iv, GetSamplerParameter{i f}v,
+        GetSamplerParameterI{u}iv, TexParameter{i f}{v}, TexParameterI{u}iv,
+        GetTexParameter{i f}v, GetTexParameterI{u}iv, TextureParameter{i f}{v},
+        TextureParameterI{u}iv, GetTextureParameter{i f}v,
+        and GetTextureParameterI{u}iv queries for <pname>:
+
+          - TEXTURE_REDUCTION_MODE_ARB
+
+        Check default values and set manually.
+
+    Minification/Magnification Filtering Test
+
+      * Iterate through all supported targets and texture formats.
+            Iterate through TEXTURE_REDUCTION_MODE_ARB modes
+            (MIN, WEIGHTED_AVERAGE_ARB, MAX).
+                Compose texture where pixels have extreme values (0 and max).
+                Set LINEAR filtering.
+                Render polygon smaller or bigger than texture to a frame buffer.
+                Sum up pixel values - final result should increase with
+                each consecutive TEXTURE_REDUCTION_MODE_ARB mode.
+
+        When anisotropic texture filtering is enabled final filtered texel
+        value is computed by using implementation-dependent set of texels and
+        weights, so it cannot be tested.
+
+    Mipmap Minification Filtering Test
+
+      * Iterate through all supported targets
+            Iterate through TEXTURE_REDUCTION_MODE_ARB modes (MIN, MAX)
+                Iterate through filters (NEAREST_MIPMAP_LINEAR, LINEAR_MIPMAP_LINEAR)
+                    Compose texture where pixels have extreme values (0 and max).
+                    Set filtering.
+                    Render polygon smaller than texture size to the frame buffer.
+                    Sum up pixel values - final result should increase with
+                    each consecutive TEXTURE_REDUCTION_MODE_ARB mode.
+
+    Support Test
+
+      * Test support for TEXTURE_REDUCTION_MODE_ARB by calling GetInternalFormat*
+        Support should be provided if:
+          - texture is not multisampled
+          - internal format of texture is GL_RED
+          - internal format of texture is GL_LUMINANCE
+            (if compatibility profile is supported)
+          - data type of texture is fixed- or floating-point
+
+Revision History
+
+    Revision 1, 17 November, 2016 (Filip Demczewski)
+      - Intial version;
+
+    Revision 2, 22 November, 2016 (Filip Demczewski)
+      - Filtering tests change. Due to implementation-dependency the steps of
+        the test has been change to validate general differences between reduction
+        modes instead of validating each pixel separately.

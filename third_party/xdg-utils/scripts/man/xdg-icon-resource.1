@@ -1,0 +1,244 @@
+'\" t
+.\"     Title: xdg-icon-resource
+.\"    Author: Kevin Krammer
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
+.\"      Date: 12/31/2010
+.\"    Manual: xdg-icon-resource Manual
+.\"    Source: xdg-utils 1.0
+.\"  Language: English
+.\"
+.TH "XDG\-ICON\-RESOURCE" "1" "12/31/2010" "xdg-utils 1.0" "xdg-icon-resource Manual"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+xdg-icon-resource \- command line tool for (un)installing icon resources
+.SH "SYNOPSIS"
+.HP \w'\fBxdg\-icon\-resource\fR\ 'u
+\fBxdg\-icon\-resource\fR install [\fB\-\-noupdate\fR] [\fB\-\-novendor\fR] [\fB\-\-theme\ \fR\fB\fItheme\fR\fR] [\fB\-\-context\ \fR\fB\fIcontext\fR\fR] [\fB\-\-mode\ \fR\fB\fImode\fR\fR] \fB\-\-size\ \fR\fB\fIsize\fR\fR \fIicon\-file\fR [\fIicon\-name\fR]
+.HP \w'\fBxdg\-icon\-resource\fR\ 'u
+\fBxdg\-icon\-resource\fR uninstall [\fB\-\-noupdate\fR] [\fB\-\-theme\ \fR\fB\fItheme\fR\fR] [\fB\-\-context\ \fR\fB\fIcontext\fR\fR] [\fB\-\-mode\ \fR\fB\fImode\fR\fR] \fB\-\-size\ \fR\fB\fIsize\fR\fR \fIicon\-name\fR
+.HP \w'\fBxdg\-icon\-resource\fR\ 'u
+\fBxdg\-icon\-resource\fR forceupdate [\fB\-\-theme\ \fR\fB\fItheme\fR\fR] [\fB\-\-mode\ \fR\fB\fImode\fR\fR]
+.HP \w'\fBxdg\-icon\-resource\fR\ 'u
+\fBxdg\-icon\-resource\fR {\fB\-\-help\fR | \fB\-\-manual\fR | \fB\-\-version\fR}
+.SH "DESCRIPTION"
+.PP
+The xdg\-icon\-resource program can be used to install icon resources into the desktop icon system in order to illustrate menu entries, to depict desktop icons or to graphically represent file types\&.
+.PP
+The desktop icon system identifies icons by name\&. Depending on the required size, the choice of icon theme and the context in which the icon is used, the desktop icon system locates an appropriate icon resource to depict an icon\&. Icon resources can be XPM files or PNG files\&.
+.PP
+The desktop icon system works according to the XDG Icon Theme Specification at http://www\&.freedesktop\&.org/Standards/icon\-theme\-spec
+.SH "COMMANDS"
+.PP
+install
+.RS 4
+Installs the icon file indicated by
+\fIicon\-file\fR
+to the desktop icon system under the name
+\fIicon\-name\fR\&. Icon names do not have an extension\&. If
+\fIicon\-name\fR
+is not provided the name is derived from
+\fIicon\-file\fR\&. The icon file must have
+\fI\&.png\fR
+or
+\fI\&.xpm\fR
+as extension\&. If a corresponding
+\fI\&.icon\fR
+file exists in the same location as
+\fIicon\-file\fR
+it will be installed as well\&.
+.RE
+.PP
+uninstall
+.RS 4
+Removes the icon indicated by
+\fIicon\-name\fR
+from the desktop icon system\&. Note that icon names do not have an extension\&.
+.RE
+.PP
+forceupdate
+.RS 4
+Force an update of the desktop icon system\&. This is only useful if the last call to xdg\-icon\-resource included the
+\fB\-\-noupdate\fR
+option\&.
+.RE
+.SH "OPTIONS"
+.PP
+\fB\-\-noupdate\fR
+.RS 4
+Postpone updating the desktop icon system\&. If multiple icons are added in sequence this flag can be used to indicate that additional changes will follow and that it is not necassery to update the desktop icon system right away\&.
+.RE
+.PP
+\fB\-\-novendor\fR
+.RS 4
+Normally, xdg\-icon\-resource checks to ensure that an icon file to be installed in the
+\fIapps\fR
+context has a proper vendor prefix\&. This option can be used to disable that check\&.
+.sp
+A vendor prefix consists of alpha characters ([a\-zA\-Z]) and is terminated with a dash ("\-")\&. Companies and organizations are encouraged to use a word or phrase, preferably the organizations name, for which they hold a trademark as their vendor prefix\&. The purpose of the vendor prefix is to prevent name conflicts\&.
+.RE
+.PP
+\fB\-\-theme\fR \fItheme\fR
+.RS 4
+Installs or removes the icon file as part of
+\fItheme\fR\&. If no theme is specified the icons will be installed as part of the default
+\fIhicolor\fR
+theme\&. Applications may install icons under multiple themes but should at least install icons for the default
+\fIhicolor\fR
+theme\&.
+.RE
+.PP
+\fB\-\-context\fR \fIcontext\fR
+.RS 4
+Specifies the context for the icon\&. Icons to be used in the application menu and as desktop icon should use
+\fIapps\fR
+as context which is the default context\&. Icons to be used as file icons should use
+\fImimetypes\fR
+as context\&. Other common contexts are
+\fIactions\fR,
+\fIdevices\fR,
+\fIemblems\fR,
+\fIfilesystems\fR
+and
+\fIstock\fR\&.
+.RE
+.PP
+\fB\-\-size\fR \fIsize\fR
+.RS 4
+Specifies the size of the icon\&. All icons must be square\&. Common sizes for icons in the apps context are: 16, 22, 32, 48, 64 and 128\&. Common sizes for icons in the mimetypes context are: 16, 22, 32, 48, 64 and 128
+.RE
+.PP
+\fB\-\-mode\fR \fImode\fR
+.RS 4
+\fImode\fR
+can be
+\fIuser\fR
+or
+\fIsystem\fR\&. In user mode the file is (un)installed for the current user only\&. In system mode the file is (un)installed for all users on the system\&. Usually only root is allowed to install in system mode\&.
+.sp
+The default is to use system mode when called by root and to use user mode when called by a non\-root user\&.
+.RE
+.PP
+\fB\-\-help\fR
+.RS 4
+Show command synopsis\&.
+.RE
+.PP
+\fB\-\-manual\fR
+.RS 4
+Show this manualpage\&.
+.RE
+.PP
+\fB\-\-version\fR
+.RS 4
+Show the xdg\-utils version information\&.
+.RE
+.SH "ENVIRONMENT VARIABLES"
+.PP
+xdg\-icon\-resource honours the following environment variables:
+.PP
+XDG_UTILS_DEBUG_LEVEL
+.RS 4
+Setting this environment variable to a non\-zero numerical value makes xdg\-icon\-resource do more verbose reporting on stderr\&. Setting a higher value increases the verbosity\&.
+.RE
+.PP
+XDG_UTILS_INSTALL_MODE
+.RS 4
+This environment variable can be used by the user or administrator to override the installation mode\&. Valid values are
+\fIuser\fR
+and
+\fIsystem\fR\&.
+.RE
+.SH "EXIT CODES"
+.PP
+An exit code of 0 indicates success while a non\-zero exit code indicates failure\&. The following failure codes can be returned:
+.PP
+\fB1\fR
+.RS 4
+Error in command line syntax\&.
+.RE
+.PP
+\fB2\fR
+.RS 4
+One of the files passed on the command line did not exist\&.
+.RE
+.PP
+\fB3\fR
+.RS 4
+A required tool could not be found\&.
+.RE
+.PP
+\fB4\fR
+.RS 4
+The action failed\&.
+.RE
+.PP
+\fB5\fR
+.RS 4
+No permission to read one of the files passed on the command line\&.
+.RE
+.SH "SEE ALSO"
+.PP
+\fBxdg-desktop-icon\fR(1),
+\fBxdg-desktop-menu\fR(1),
+\fBxdg-mime\fR(1)
+.SH "EXAMPLES"
+.PP
+To install an icon resource to depict a launcher for the application myfoobar, the company ShinyThings Inc\&. can use:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+xdg\-icon\-resource install \-\-size 64 shinythings\-myfoobar\&.png
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+To install an icon for a new application/x\-foobar file type one can use:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+xdg\-icon\-resource install \-\-context mimetypes \-\-size 48 \&./mime\-foobar\-48\&.png application\-x\-foobar
+xdg\-icon\-resource install \-\-context mimetypes \-\-size 64 \&./mime\-foobar\-64\&.png application\-x\-foobar
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+This will install two icons with the name application\-x\-foobar but with different sizes\&.
+.SH "AUTHORS"
+.PP
+\fBKevin Krammer\fR
+.RS 4
+Author.
+.RE
+.PP
+\fBJeremy White\fR
+.RS 4
+Author.
+.RE
+.SH "COPYRIGHT"
+.br
+Copyright \(co 2006
+.br

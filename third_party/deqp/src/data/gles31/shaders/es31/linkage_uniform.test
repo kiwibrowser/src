@@ -1,0 +1,1562 @@
+group basic "Default block uniforms of scalar and vector types"
+	case precision_conflict_1
+		version 310 es
+		desc "Vertex side uniform has highp, fragment side uniform mediump."
+		expect link_fail
+		values {output float out0 = 3.0;}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			uniform highp float u_val;
+			out mediump float res;
+			void main()
+			{
+				res = u_val;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			uniform float u_val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{
+				out0 = u_val + res;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+	case precision_conflict_2
+		version 310 es
+		desc "Vertex side uniform has highp, fragment side uniform mediump."
+		expect link_fail
+		values {output float out0 = 3.0;}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			uniform highp float u_val;
+			out mediump float res;
+			void main()
+			{
+				res = u_val;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision highp float;
+			uniform mediump float u_val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{
+				out0 = u_val + res;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+	case precision_conflict_3
+		version 310 es
+		desc "Vertex side uniform has lowp, fragment side uniform highp."
+		expect link_fail
+		values {output float out0 = 3.0;}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			uniform lowp int u_val;
+			out mediump float res;
+			void main()
+			{
+				res = float(u_val);
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision highp float;
+			uniform highp int u_val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{
+				out0 = float(u_val) + res;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+	case precision_conflict_4
+		version 310 es
+		desc "Vertex side uniform has lowp, fragment side uniform mediump."
+		expect link_fail
+		values {output float out0 = 3.0;}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			uniform lowp vec3 u_val;
+			out mediump float res;
+			void main()
+			{
+				res = u_val.y;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision highp float;
+			uniform mediump vec3 u_val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{
+				out0 = u_val.z + res;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+end
+
+group struct "Uniform structs"
+	# Struct linkage handling
+	case basic
+		version 310 es
+		desc "Same uniform struct in both shaders"
+		values {
+			uniform float val.a = 1.0;
+			uniform float val.b = 2.0;
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump float a; mediump float b;};
+			uniform Struct val;
+			out mediump float dummy;
+			void main()
+			{
+				dummy = val.a + val.b;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump float a; mediump float b;};
+			uniform Struct val;
+			in mediump float dummy;
+			${FRAGMENT_DECLARATIONS}
+			void main()
+			{
+				out0 = val.b + val.a;
+				out0 = out0 + dummy;
+				out0 = out0 - dummy;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case vertex_only
+		version 310 es
+		desc "Uniform struct declared in both, used only in vertex."
+		values {
+			uniform float val.a = 1.0;
+			uniform float val.b = 2.0;
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump float a; mediump float b;};
+			uniform Struct val;
+			out mediump float res;
+			void main()
+			{
+				res = val.a + val.b;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump float a; mediump float b;};
+			uniform Struct val;
+			in mediump float res;
+			${FRAGMENT_DECLARATIONS}
+			void main()
+			{
+				out0 = res;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case fragment_only
+		version 310 es
+		desc "Uniform struct declared in both, used only in fragment."
+		values {
+			uniform float val.a = 1.0;
+			uniform float val.b = 2.0;
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump float a; mediump float b;};
+			uniform Struct val;
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump float a; mediump float b;};
+			uniform Struct val;
+			${FRAGMENT_DECLARATIONS}
+			void main()
+			{
+				out0 = val.a + val.b;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case partial
+		version 310 es
+		desc "Uniform struct declared in both, used partially in both."
+		values {
+			uniform float val.a = 1.0;
+			uniform float val.b = 2.0;
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump float a; mediump float b;};
+			uniform Struct val;
+			out mediump float res;
+			void main()
+			{
+				res = val.a;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump float a; mediump float b;};
+			uniform Struct val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{
+				out0 = res + val.b;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case vec4
+		version 310 es
+		desc "Same uniform struct in both shaders. Datatype vec4"
+		values {
+			uniform vec4 val.a = vec4(1.0, 2.0, 3.0, 4.0);
+			uniform vec4 val.b = vec4(1.0, 2.0, 3.0, 4.0);
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump vec4 a; mediump vec4 b;};
+			uniform Struct val;
+			out mediump float dummy;
+			void main()
+			{
+				dummy = val.a.x + val.b.y;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump vec4 a; mediump vec4 b;};
+			uniform Struct val;
+			in mediump float dummy;
+			${FRAGMENT_DECLARATIONS}
+			void main()
+			{
+				out0 = val.b.y + val.a.x;
+				out0 = out0 + dummy;
+				out0 = out0 - dummy;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case vertex_only_vec4
+		version 310 es
+		desc "Uniform struct declared in both, used only in vertex. Datatype vec4	"
+		values {
+			uniform vec4 val.a = vec4(1.0, 2.0, 3.0, 4.0);
+			uniform vec4 val.b = vec4(1.0, 2.0, 3.0, 4.0);
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump vec4 a; mediump vec4 b;};
+			uniform Struct val;
+			out mediump float res;
+			void main()
+			{
+				res = val.a.x + val.b.y;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump vec4 a; mediump vec4 b;};
+			uniform Struct val;
+			in mediump float res;
+			${FRAGMENT_DECLARATIONS}
+			void main()
+			{			out0 = res;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case fragment_only_vec4
+		version 310 es
+		desc "Uniform struct declared in both, used only in fragment. Datatype vec4"
+		values {
+			uniform vec4 val.a = vec4(1.0, 2.0, 3.0, 4.0);
+			uniform vec4 val.b = vec4(1.0, 2.0, 3.0, 4.0);
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump vec4 a; mediump vec4 b;};
+			uniform Struct val;
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump vec4 a; mediump vec4 b;};
+			uniform Struct val;
+			${FRAGMENT_DECLARATIONS}
+			void main()
+			{			out0 = val.a.x + val.b.y;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case partial_vec4
+		version 310 es
+		desc "Uniform struct declared in both, used partially in both. Datatype vec4"
+		values {
+			uniform vec4 val.a = vec4(1.0, 2.0, 3.0, 4.0);
+			uniform vec4 val.b = vec4(1.0, 2.0, 3.0, 4.0);
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump vec4 a; mediump vec4 b;};
+			uniform Struct val;
+			out mediump float res;
+			void main()
+			{
+				res = val.a.x;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump vec4 a; mediump vec4 b;};
+			uniform Struct val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{			out0 = res + val.b.y;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case vec4_vec3
+		version 310 es
+		desc "Same uniform struct in both shaders. Datatype vec4 and vec3"
+		values {
+			uniform vec4 val.a = vec4(1.0, 2.0, 3.0, 4.0);
+			uniform vec3 val.b = vec3(1.0, 2.0, 3.0);
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump vec4 a; mediump vec3 b;};
+			uniform Struct val;
+			out mediump float dummy;
+			void main()
+			{
+				dummy = val.a.x + val.b.y;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump vec4 a; mediump vec3 b;};
+			uniform Struct val;
+			in mediump float dummy;
+			${FRAGMENT_DECLARATIONS}
+			void main()
+			{			out0 = val.b.y + val.a.x;
+				out0 = out0 + dummy;
+				out0 = out0 - dummy;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case vertex_only_vec4_vec3
+		version 310 es
+		desc "Uniform struct declared in both, used only in vertex. Datatype vec4 and vec3"
+		values {
+			uniform vec4 val.a = vec4(1.0, 2.0, 3.0, 4.0);
+			uniform vec3 val.b = vec3(1.0, 2.0, 3.0);
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump vec4 a; mediump vec3 b;};
+			uniform Struct val;
+			out mediump float res;
+			void main()
+			{
+				res = val.a.x + val.b.y;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump vec4 a; mediump vec3 b;};
+			uniform Struct val;
+			in mediump float res;
+			${FRAGMENT_DECLARATIONS}
+			void main()
+			{			out0 = res;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case fragment_only_vec4_vec3
+		version 310 es
+		desc "Uniform struct declared in both, used only in fragment. Datatype vec4 and vec3"
+		values {
+			uniform vec4 val.a = vec4(1.0, 2.0, 3.0, 4.0);
+			uniform vec3 val.b = vec3(1.0, 2.0, 3.0);
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump vec4 a; mediump vec3 b;};
+			uniform Struct val;
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump vec4 a; mediump vec3 b;};
+			uniform Struct val;
+			${FRAGMENT_DECLARATIONS}
+			void main()
+			{			out0 = val.a.x + val.b.y;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case partial_vec4_vec3
+		version 310 es
+		desc "Uniform struct declared in both, used partially in both. Datatype vec4 and vec3"
+		values {
+			uniform vec4 val.a = vec4(1.0, 2.0, 3.0, 4.0);
+			uniform vec3 val.b = vec3(1.0, 2.0, 3.0);
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump vec4 a; mediump vec3 b;};
+			uniform Struct val;
+			out mediump float res;
+			void main()
+			{
+				res = val.a.x;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump vec4 a; mediump vec3 b;};
+			uniform Struct val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{			out0 = res + val.b.y;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case vec4_float
+		version 310 es
+		desc "Same uniform struct in both shaders. Datatype vec4 and float"
+		values {
+			uniform vec4 val.a = vec4(1.0, 2.0, 3.0, 4.0);
+			uniform float val.b = 2.0;
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump vec4 a; mediump float b;};
+			uniform Struct val;
+			out mediump float dummy;
+			void main()
+			{
+				dummy = val.a.x + val.b;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump vec4 a; mediump float b;};
+			uniform Struct val;
+			in mediump float dummy;
+			${FRAGMENT_DECLARATIONS}
+			void main()
+			{			out0 = val.b + val.a.x;
+				out0 = out0 + dummy;
+				out0 = out0 - dummy;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case vertex_only_vec4_float
+		version 310 es
+		desc "Uniform struct declared in both, used only in vertex. Datatype vec4 and float"
+		values {
+			uniform vec4 val.a = vec4(1.0, 2.0, 3.0, 4.0);
+			uniform float val.b = 2.0;
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump vec4 a; mediump float b;};
+			uniform Struct val;
+			out mediump float res;
+			void main()
+			{
+				res = val.a.x + val.b;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump vec4 a; mediump float b;};
+			uniform Struct val;
+			in mediump float res;
+			${FRAGMENT_DECLARATIONS}
+			void main()
+			{			out0 = res;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case fragment_only_vec4_float
+		version 310 es
+		desc "Uniform struct declared in both, used only in fragment. Datatype vec4 and float"
+		values {
+			uniform vec4 val.a = vec4(1.0, 2.0, 3.0, 4.0);
+			uniform float val.b = 2.0;
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump vec4 a; mediump float b;};
+			uniform Struct val;
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump vec4 a; mediump float b;};
+			uniform Struct val;
+			${FRAGMENT_DECLARATIONS}
+			void main()
+			{			out0 = val.a.x + val.b;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case partial_vec4_float
+		version 310 es
+		desc "Uniform struct declared in both, used partially in both. Datatype vec4 and float"
+		values {
+			uniform vec4 val.a = vec4(1.0, 2.0, 3.0, 4.0);
+			uniform float val.b = 2.0;
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump vec4 a; mediump float b;};
+			uniform Struct val;
+			out mediump float res;
+			void main()
+			{
+				res = val.a.x;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump vec4 a; mediump float b;};
+			uniform Struct val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{			out0 = res + val.b;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case partial_vec4_struct
+		version 310 es
+		desc "Uniform struct declared in both, used partially in both. Datatype vec4 and struct with vec4"
+		values {
+			uniform vec4 val.a = vec4(1.0, 2.0, 3.0, 4.0);
+			uniform vec4 val.b.c = vec4(1.0, 2.0, 3.0, 4.0);
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Inner {mediump vec4 c;};
+			struct Struct {mediump vec4 a; Inner b;};
+			uniform Struct val;
+			out mediump float res;
+			void main()
+			{
+				res = val.a.x;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Inner {mediump vec4 c;};
+			struct Struct {mediump vec4 a; Inner b;};
+			uniform Struct val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{			out0 = res + val.b.c.y;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case partial_vec4_vec3_struct
+		version 310 es
+		desc "Uniform struct declared in both, used partially in both. Datatype vec4 and struct with vec3"
+		values {
+			uniform vec4 val.a = vec4(1.0, 2.0, 3.0, 4.0);
+			uniform vec3 val.b.c = vec3(1.0, 2.0, 3.0);
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Inner {mediump vec3 c;};
+			struct Struct {mediump vec4 a; Inner b;};
+			uniform Struct val;
+			out mediump float res;
+			void main()
+			{
+				res = val.a.x;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Inner {mediump vec3 c;};
+			struct Struct {mediump vec4 a; Inner b;};
+			uniform Struct val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{			out0 = res + val.b.c.y;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case partial_vec2_vec3
+		version 310 es
+		desc "Uniform struct declared in both, used partially in both. Datatype vec2 and vec3"
+		values {
+			uniform vec2 val.a = vec2(1.0, 2.0);
+			uniform vec3 val.b = vec3(1.0, 2.0, 3.0);
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump vec2 a; mediump vec3 b;};
+			uniform Struct val;
+			out mediump float res;
+			void main()
+			{
+				res = val.a.x;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump vec2 a; mediump vec3 b;};
+			uniform Struct val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{			out0 = res + val.b.y;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case partial_vec2_int
+		version 310 es
+		desc "Uniform struct declared in both, used partially in both. Datatype vec2 and int"
+		values {
+			uniform vec2 val.a = vec2(1.0, 2.0);
+			uniform int val.b = 2;
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump vec2 a; mediump int b;};
+			uniform Struct val;
+			out mediump float res;
+			void main()
+			{
+				res = val.a.x;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump vec2 a; mediump int b;};
+			uniform Struct val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{			out0 = res + float(val.b);
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case partial_int_float
+		version 310 es
+		desc "Uniform struct declared in both, used partially in both. Datatype int and float"
+		values {
+			uniform float val.a = 1.0;
+			uniform int val.b = 2;
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump float a; mediump int b;};
+			uniform Struct val;
+			out mediump float res;
+			void main()
+			{
+				res = val.a;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump float a; mediump int b;};
+			uniform Struct val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{			out0 = res + float(val.b);
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case partial_bvec2_vec2
+		version 310 es
+		desc "Uniform struct declared in both, used partially in both. Datatype bvec2 and vec2"
+		values {
+			uniform bvec2 val.a = bvec2(true, true);
+			uniform vec2 val.b = vec2(1.0, 2.0);
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {bvec2 a; mediump vec2 b;};
+			uniform Struct val;
+			out mediump float res;
+			void main()
+			{
+				res = float(val.a.x);
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {bvec2 a; mediump vec2 b;};
+			uniform Struct val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{			out0 = res + val.b.y;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case partial_ivec2_vec2
+		version 310 es
+		desc "Uniform struct declared in both, used partially in both. Datatype ivec2 and vec2"
+		values {
+			uniform ivec2 val.a = ivec2(1, 2);
+			uniform vec2 val.b = vec2(1.0, 2.0);
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump ivec2 a; mediump vec2 b;};
+			uniform Struct val;
+			out mediump float res;
+			void main()
+			{
+				res = vec2(val.a).x;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump ivec2 a; mediump vec2 b;};
+			uniform Struct val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{			out0 = res + val.b.y;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case partial_ivec2_ivec2
+		version 310 es
+		desc "Uniform struct declared in both, used partially in both. Datatype ivec2 and ivec2"
+		values {
+			uniform ivec2 val.a = ivec2(1, 2);
+			uniform ivec2 val.b = ivec2(1, 2);
+			output float out0 = 3.0;
+		}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump ivec2 a; mediump ivec2 b;};
+			uniform Struct val;
+			out mediump float res;
+			void main()
+			{
+				res = vec2(val.a).x;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump ivec2 a; mediump ivec2 b;};
+			uniform Struct val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{			out0 = res + vec2(val.b).y;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case type_conflict_1
+		version 310 es
+		desc "Fragment struct has one less member than fragment version"
+		expect link_fail
+		values {output float out0 = 3.0;}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump float a; mediump float b;};
+			uniform Struct val;
+			out mediump float res;
+			void main()
+			{
+				res = val.a;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump float a;};
+			uniform Struct val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{			out0 = res + val.a;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case type_conflict_2
+		version 310 es
+		desc "Vertex struct has int, fragment struct has float."
+		expect link_fail
+		values {output float out0 = 3.0;}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump int a;};
+			uniform Struct val;
+			out mediump float res;
+			void main()
+			{
+				res = float(val.a);
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump float a;};
+			uniform Struct val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{			out0 = val.a;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case type_conflict_3
+		version 310 es
+		desc "Vertex struct has vec3, fragment struct has vec4."
+		expect link_fail
+		values {output float out0 = 3.0;}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump vec3 a;};
+			uniform Struct val;
+			out mediump float res;
+			void main()
+			{
+				res = float(val.a.x);
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump vec4 a;};
+			uniform Struct val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{			out0 = val.a.x;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case precision_conflict_1
+		version 310 es
+		desc "Vertex side struct has highp, fragment side struct mediump."
+		expect link_fail
+		values {output float out0 = 3.0;}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {highp float a;};
+			uniform Struct val;
+			out mediump float res;
+			void main()
+			{
+				res = val.a;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump float a;};
+			uniform Struct val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{			out0 = val.a;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case precision_conflict_2
+		version 310 es
+		desc "Vertex side struct has mediump, fragment side struct lowp."
+		expect link_fail
+		values {output float out0 = 3.0;}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {mediump float a;};
+			uniform Struct val;
+			out mediump float res;
+			void main()
+			{
+				res = val.a;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {lowp float a;};
+			uniform Struct val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{			out0 = val.a;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case precision_conflict_3
+		version 310 es
+		desc "Vertex side struct has lowp, fragment side struct mediump."
+		expect link_fail
+		values {output float out0 = 3.0;}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {lowp float a;};
+			uniform Struct val;
+			out mediump float res;
+			void main()
+			{
+				res = val.a;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {mediump float a;};
+			uniform Struct val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{			out0 = val.a;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case precision_conflict_4
+		version 310 es
+		desc "Vertex side struct has lowp, fragment side struct implicit mediump."
+		expect link_fail
+		values {output float out0 = 3.0;}
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			struct Struct {lowp float a;};
+			uniform Struct val;
+			out mediump float res;
+			void main()
+			{
+				res = val.a;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Struct {float a;};
+			uniform Struct val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{			out0 = val.a;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case light_struct_highp
+		version 310 es
+		desc "Complex Light struct from use case tests."
+		values {
+			uniform float val.constantAttenuation = 1.0;
+			uniform float val.quadraticAttenuation = 1.0;
+			output float out0 = 2.0;
+		}
+		vertex ""
+			#version 310 es
+			struct Light
+			{
+				mediump vec3	color;
+				highp vec4		position;
+				highp vec3		direction;
+				mediump float	constantAttenuation;
+				mediump float	linearAttenuation;
+				mediump float	quadraticAttenuation;
+			};
+			${VERTEX_DECLARATIONS}
+			uniform Light val;
+			out mediump float res;
+			void main()
+			{
+				res = val.constantAttenuation;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Light
+			{
+				mediump vec3	color;
+				highp vec4		position;
+				highp vec3		direction;
+				mediump float	constantAttenuation;
+				mediump float	linearAttenuation;
+				mediump float	quadraticAttenuation;
+			};
+			struct Struct {float a;};
+			uniform Light val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{
+				out0 = res + val.quadraticAttenuation;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case light_struct_mediump
+		version 310 es
+		desc "Complex Light struct from use case tests, without highp usage"
+		values {
+			uniform float val.constantAttenuation = 1.0;
+			uniform float val.quadraticAttenuation = 1.0;
+			output float out0 = 2.0;
+		}
+		vertex ""
+			#version 310 es
+			struct Light
+			{
+				mediump vec3	color;
+				mediump vec4	position;
+				mediump vec3	direction;
+				mediump float	constantAttenuation;
+				mediump float	linearAttenuation;
+				mediump float	quadraticAttenuation;
+			};
+			${VERTEX_DECLARATIONS}
+			uniform Light val;
+			out mediump float res;
+			void main()
+			{
+				res = val.constantAttenuation;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+			precision mediump float;
+			struct Light
+			{
+				mediump vec3	color;
+				mediump vec4	position;
+				mediump vec3	direction;
+				mediump float	constantAttenuation;
+				mediump float	linearAttenuation;
+				mediump float	quadraticAttenuation;
+			};
+			struct Struct {float a;};
+			uniform Light val;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{
+				out0 = res + val.quadraticAttenuation;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+end
+
+group block "Uniform blocks"
+	case differing_precision
+		version 310 es
+		expect build_successful
+		vertex ""
+			#version 310 es
+
+			uniform Block
+			{
+				highp vec4 val;
+			};
+
+			${VERTEX_DECLARATIONS}
+			out mediump float res;
+			void main()
+			{
+				res = val.x;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+
+			uniform Block
+			{
+				mediump vec4 val;
+			};
+
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{
+				dEQP_FragColor = val;
+			}
+		""
+	end
+
+	case type_mismatch
+		version 310 es
+		expect link_fail
+		vertex ""
+			#version 310 es
+
+			uniform Block
+			{
+				highp vec4 val;
+			};
+
+			${VERTEX_DECLARATIONS}
+			out mediump float res;
+			void main()
+			{
+				res = val.x;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+
+			uniform Block
+			{
+				highp vec3 val;
+			};
+
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{
+				dEQP_FragColor = vec4(val, 1.0);
+			}
+		""
+	end
+
+	case members_mismatch
+		version 310 es
+		expect link_fail
+		vertex ""
+			#version 310 es
+
+			uniform Block
+			{
+				highp vec4 val;
+			};
+
+			${VERTEX_DECLARATIONS}
+			out mediump float res;
+			void main()
+			{
+				res = val.x;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+
+			uniform Block
+			{
+				highp vec4 val;
+				lowp uint u;
+			};
+
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{
+				dEQP_FragColor = vec4(val);
+			}
+		""
+	end
+
+	case layout_qualifier_mismatch_1
+		version 310 es
+		expect link_fail
+		vertex ""
+			#version 310 es
+
+			layout(std140) uniform Block
+			{
+				highp vec4 val;
+			};
+
+			${VERTEX_DECLARATIONS}
+			out mediump float res;
+			void main()
+			{
+				res = val.x;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+
+			uniform Block
+			{
+				highp vec4 val;
+			};
+
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{
+				dEQP_FragColor = vec4(val);
+			}
+		""
+	end
+
+	case layout_qualifier_mismatch_2
+		version 310 es
+		expect link_fail
+		vertex ""
+			#version 310 es
+
+			layout(shared) uniform Block
+			{
+				highp vec4 val;
+			};
+
+			${VERTEX_DECLARATIONS}
+			out mediump float res;
+			void main()
+			{
+				res = val.x;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+
+			layout(packed) uniform Block
+			{
+				highp vec4 val;
+			};
+
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{
+				dEQP_FragColor = vec4(val);
+			}
+		""
+	end
+
+	case layout_qualifier_mismatch_3
+		version 310 es
+		expect link_fail
+		vertex ""
+			#version 310 es
+
+			layout(row_major) uniform Block
+			{
+				highp vec4 val;
+			};
+
+			${VERTEX_DECLARATIONS}
+			out mediump float res;
+			void main()
+			{
+				res = val.x;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+
+			layout(column_major) uniform Block
+			{
+				highp vec4 val;
+			};
+
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{
+				dEQP_FragColor = vec4(val);
+			}
+		""
+	end
+
+	case layout_qualifier_mismatch_4
+		version 310 es
+		expect link_fail
+		vertex ""
+			#version 310 es
+
+			layout(row_major) uniform Block
+			{
+				highp mat3 val;
+			};
+
+			${VERTEX_DECLARATIONS}
+			out mediump float res;
+			void main()
+			{
+				res = val[0][1];
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+
+			layout(column_major) uniform Block
+			{
+				highp mat3 val;
+			};
+
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{
+				dEQP_FragColor = vec4(val[2], 1.0);
+			}
+		""
+	end
+
+	case layout_qualifier_mismatch_5
+		version 310 es
+		expect link_fail
+		vertex ""
+			#version 310 es
+
+			uniform Block
+			{
+				layout(row_major) uniform highp mat3 val;
+			};
+
+			${VERTEX_DECLARATIONS}
+			out mediump float res;
+			void main()
+			{
+				res = val[0][1];
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 310 es
+
+			uniform Block
+			{
+				layout(column_major) uniform highp mat3 val;
+			};
+
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			in mediump float res;
+			void main()
+			{
+				dEQP_FragColor = vec4(val[2], 1.0);
+			}
+		""
+	end
+end

@@ -1,0 +1,44 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_desktop_icon_uninstall() {
+## Begin the test.
+DIR="$XDG_TEST_DIR/xdg-desktop-icon/data"
+FILE="desktop_icon_install.desktop"
+test_start "$FUNCNAME: verify desktop file is uninstalled correctly from the desktop"
+DESKTOP="$HOME/Desktop"
+
+# Dependencies section
+test_init
+
+use_file "$XDG_TEST_DIR/xdg-desktop-icon/data/desktop_icon_install.desktop" DESK_FILE
+edit_file "$XDG_TEST_TMPDIR/$DESK_FILE" 'xdg-test-desktop-icon-install.tmp' CREATE_FILE
+edit_file "$DESK_FILE" 'Desktop_Icon' ICON_TEXT "Uninstall $XDG_TEST_SHORTID"
+assert_file "$XDG_TEST_TMPDIR/$DESK_FILE"
+
+set_no_display
+
+# Verify the test icon is not installed already.
+assert_exit 0 xdg-desktop-icon install  "$XDG_TEST_TMPDIR/$DESK_FILE"
+
+assert_file_in_path "$DESK_FILE" "$DESKTOP"
+assert_interactive_notroot "Is an icon named '$ICON_TEXT' present on the desktop?" y
+
+# Test steps section
+test_procedure
+
+assert_exit 0 xdg-desktop-icon uninstall "$DESK_FILE"
+assert_nostdout
+assert_nostderr
+
+assert_file_not_in_path "$DESK_FILE" "$DESKTOP"
+assert_interactive_notroot "Is an icon named '$ICON_TEXT' still present on the desktop?" n
+
+test_result
+} 
+
+run_test test_desktop_icon_uninstall

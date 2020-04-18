@@ -1,0 +1,87 @@
+// Copyright 2018 The Feed Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+
+package search.now.ui.piet;
+
+option optimize_for=LITE_RUNTIME;
+
+option java_package = "com.google.search.now.ui.piet";
+option java_outer_classname = "ActionsProto";
+option cc_enable_arenas = true;
+
+// Multiple actions can be associated with every UI element. To keep the set of
+// Actions consistent among multiple UI elements, they’re all defined in a
+// dedicated message.
+message Actions {
+  // Action to be executed when the user taps (clicks) on a UI element.
+  optional Action on_click_action = 1;
+
+  // Action to be executed when the user long-clicks (taps & holds) a UI
+  // element.
+  optional Action on_long_click_action = 2;
+
+  // These actions will fire once a view with visibility below the threshold
+  // goes above the threshold
+  //
+  // Ex. A view action at 0.5 will trigger when a view that was less than half
+  // visible becomes half visible, and not trigger again until the view has
+  // become less than half visible (reset) and then becomes more than half
+  // visible.
+  repeated VisibilityAction on_view_actions = 3;
+
+  // These actions will fire once a view with visibility above the threshold
+  // goes below the threshold.
+  //
+  // Ex. A hide action at 0.5 will trigger when a view that was half visible
+  // becomes less than half visible, and not trigger again until the view has
+  // become more than half visible (reset) and then becomes less than half
+  // visible.
+  repeated VisibilityAction on_hide_actions = 4;
+
+  // DEPRECATED
+
+  // Action to be executed when the UI element comes completely into view,
+  // meaning that the entire UI element's bounds are contained in the viewport.
+  // Note: if the content is too large to fit entirely in the viewport, then the
+  // on_full_view action will never trigger.
+  optional Action on_full_view = 1003 [deprecated = true];
+
+  // Action to be executed when the UI element comes partially into view,
+  // meaning that any pixel of the element's bounds are within the viewport.
+  optional Action on_partial_view = 1004 [deprecated = true];
+}
+
+// Defines an Action which can be raised when the user clicks a UI element. The
+// action can be defined for the full slice or something inside a slice such as
+// a suggestion chip. All Actions should be defined as extensions, don’t define
+// fields in this proto directly.
+message Action {
+  // Please use CL numbers you own for extension numbers.
+  extensions 10000 to max;
+}
+
+// Actions that trigger based on the proportion of the parent Element that is
+// visible.
+message VisibilityAction {
+  // Proportion of the view that should be visible for this action to trigger
+  // [0.0 to 1.0]
+  // Defaults to 1.0 to make this an "on full view" action.
+  optional float proportion_visible = 1 [default = 1.0];
+
+  // Action to trigger at the given visibility threshold
+  optional Action action = 2;
+}

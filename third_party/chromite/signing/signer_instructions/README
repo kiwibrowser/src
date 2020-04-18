@@ -1,0 +1,76 @@
+=== PREFACE ===
+NOTE: The files in chromite/ are currently only used for testing.  The actual
+files used by releases live in crostools/signer_instructions/.  The program
+managers would prefer to keep them internal for now.
+
+=== OVERVIEW ===
+This directory holds instruction files that are used when uploading files for
+signing with official keys.  The pushimage script will process them to create
+output instruction files which are then posted to a Google Storage bucket that
+the signing processes watch.  The input files tell pushimage how to operate,
+and output files tell the signer how to operate.
+
+This file covers things that pushimage itself cares about.  It does not get into
+the fields that the signer utilizes.  See REFERENCES below for that.
+
+=== FILES ===
+DEFAULT.instructions - default values for all boards/artifacts; loaded first
+DEFAULT.$TYPE.instructions - default values for all boards for a specific type
+$BOARD.instructions - default values for all artifacts for $BOARD, and used for
+                      recovery images
+$BOARD.$TYPE.instructions - values specific to a board and artifact type; see
+                            the --sign-types argument to pushimage
+
+=== FORMAT ===
+There are a few main sections that pushimage cares about:
+[insns]
+[insns.XXX]  (Where XXX can be anything)
+[general]
+
+Other sections are passed through to the signer untouched, and many fields in
+the above sections are also unmodified.
+
+The keys that pushimage looks at are:
+[insns]
+channels = comma/space delimited list of the channels to flag for signing
+keysets = comma/space delimited list of the keysets to use when signing
+
+A bunch of fields will also be clobbered in the [general] section as pushimage
+writes out metadata based on the command line flags/artifacts.
+
+=== MULTI CHANNEL/KEYSET ===
+When you want to sign a single board/artifact type for multiple channels or
+keysets, simply list them in insns.channels and insn.keysets.  The pushimage
+script will take care of posting to the right subdirs and creating unique
+filenames based on those.
+
+=== MULTI INPUTS ===
+When you want to sign multiple artifacts for a single board (and all the same
+artifact type), you need to use the multiple input form instead.  When you
+create multiple sections that start with "insns.", pushimage will overlay that
+on top of the insns section, and then produce multiple ouput requests.
+
+So if you wrote a file like:
+  [insns]
+  channel = dev
+  [insns.one]
+  keyset = Zinger
+  input_files = zinger/ec.bin
+  [insns.two]
+  keyset = Hoho
+  input_files = hoho/ec.bin
+
+Pushimage will produce two requests for the signer:
+  [insns]
+  channel = dev
+  keyset = Zinger
+  input_files = zinger/ec.bin
+And:
+  [insns]
+  channel = dev
+  keyset = Hoho
+  input_files = hoho/ec.bin
+
+=== REFERENCES ===
+For details on the fields that the signer uses:
+https://sites.google.com/a/google.com/chromeos/resources/engineering/releng/signer-documentation

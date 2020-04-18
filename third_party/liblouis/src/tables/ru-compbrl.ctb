@@ -1,0 +1,102 @@
+# liblouis: Russian translation table for program sources
+#
+#  Copyright (C) 2013 Igor B. Poretsky <poretsky@mlbox.ru>
+#
+#  This file is part of liblouis.
+#
+#  liblouis is free software: you can redistribute it and/or modify it
+#  under the terms of the GNU Lesser General Public License as
+#  published by the Free Software Foundation, either version 3 of the
+#  License, or (at your option) any later version.
+#
+#  liblouis is distributed in the hope that it will be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with liblouis. If not, see
+#  <http://www.gnu.org/licenses/>.
+
+# This table is not a computer braille in usual sense.
+# It is intended for producing printable braille representation
+# of a program source text, especially when it contains
+# Russian comments or literals. Use it as an alternative
+# literary braille table.
+
+# Display and character definitions:
+include ru-letters.dis
+include ru-chardefs.cti
+include chardefs.cti
+
+# Braille indicators:
+numsign 3456  number sign, just a dots operand
+capsign 46
+begcaps 56
+endcaps 6
+
+# The decimal digits:
+include litdigits6Dots.uti
+
+# Punctuations:
+decpoint . 256
+prepunc " 236
+postpunc " 356
+hyphen - 36
+always . 256
+always , 2
+always ; 6-23
+always : 25
+always ? 6-26
+always ! 6-235
+always ' 3
+always ` 4
+
+# Special symbols:
+always @ 4-1
+always # 4-1345
+always $ 4-145
+always % 3456-356
+always ^ 56-26
+always & 6-12346
+always * 23
+always ( 126
+always ) 345
+always _ 6-25
+always [ 12356
+always ] 23456
+always { 46-126
+always } 46-345
+always \\ 4-16
+always | 456-3
+always ~ 26
+
+# mathematical symbols:
+always - 36
+always + 235
+always / 6-34
+always < 4-246
+always > 4-135
+always = 2356
+
+# Symbol classes for special rules below:
+class upperlatin ABCDEFGHIJKLMNOPQRSTUVWXYZ
+class lowerlatin abcdefghijklmnopqrstuvwxyz
+class uppercyrillic \x0401\x0410\x0411\x0412\x0413\x0414\x0415\x0416\x0417\x0418\x0419\x041A\x041B\x041C\x041D\x041E\x041F\x0420\x0421\x0422\x0423\x0424\x0425\x0426\x0427\x0428\x0429\x042A\x042B\x042C\x042D\x042E\x042F
+class lowercyrillic \x0430\x0431\x0432\x0433\x0434\x0435\x0436\x0437\x0438\x0439\x043A\x043B\x043C\x043D\x043E\x043F\x0440\x0441\x0442\x0443\x0444\x0445\x0446\x0447\x0448\x0449\x044A\x044B\x044C\x044D\x044E\x044F\x0451
+
+class latin ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
+class cyrillic \x0401\x0410\x0411\x0412\x0413\x0414\x0415\x0416\x0417\x0418\x0419\x041A\x041B\x041C\x041D\x041E\x041F\x0420\x0421\x0422\x0423\x0424\x0425\x0426\x0427\x0428\x0429\x042A\x042B\x042C\x042D\x042E\x042F\x0430\x0431\x0432\x0433\x0434\x0435\x0436\x0437\x0438\x0439\x043A\x043B\x043C\x043D\x043E\x043F\x0440\x0441\x0442\x0443\x0444\x0445\x0446\x0447\x0448\x0449\x044A\x044B\x044C\x044D\x044E\x044F\x0451
+
+swapcd updigit 1234567890 1,12,14,145,15,124,1245,125,24,245
+
+# Mark letters immediately following digits.
+context [$d]%lowerlatin %updigit@6
+context [$d]%lowercyrillic %updigit@5
+context [$d"."]%lowerlatin %updigit@256@6
+context [$d"."]%lowercyrillic %updigit@256@5
+
+# Fix cyrillic letter marks.
+pass2 [@46]%cyrillic @45
+pass2 [@56]%cyrillic @456
+pass2 [@6]%cyrillic @5

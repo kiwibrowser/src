@@ -1,0 +1,84 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Shader compiler performance tests
+
+Tests:
+ + dEQP-GLES2.performance.compiler.*
+
+Includes:
+ + Shader compile, link and specialization (draw call -time) time measurements
+ + Tests for impact of cache hits on compilation time (note: in release 2012.4)
+ + Front-end time estimation with invalid shaders
+ + Typical use cases
+   - Vertex and fragment lighting
+   - Mandelbrot viewer
+   - Normal mapping, parallax and relief mapping (note: in release 2012.4)
+ + Synthetic cases
+   - A number of texture lookups blended together in fragment shader
+   - Single or nested loops
+   - Single expression consisting of a variable number of vec4 multiplications
+ + Shaders designed to stress compiler (note: in release 2012.4)
+   - High register pressure
+   - Lots of control flow
+
+Excludes:
+ + Shader functional testing
+
+Description:
+
+Shader compiler performance tests measure the time to compile GLSL shader programs.
+The tests will take into account implementations that postpone final compilation
+until execution of a draw call.
+
+Separate cases are made for testing compilation time when avoiding cache hits and
+when allowing them (note that tests that allow cache will be in release 2012.4).
+Cache-avoiding cases use a different shader for different iterations of the same
+test case, whereas cache-allowing cases use the same shader for all iterations.
+Cache hits are however only ever allowed between the iterations of a case and not
+across separate cases.
+
+The method for defeating the shader cache is to append a postfix to all uniform,
+attribute and varying names. The postfix depends on the current time as well as
+the case that is in question. In case of cache-avoiding cases, the postfix also
+depends on the current iteration. This method forces at least re-linking.
+
+Front-end time is estimated by compiling invalid shaders with either an invalid
+character at the end of the shader or an invalid statement at the end of the main()
+block.
+
+The result value is the average number of milliseconds used per test case
+iteration. In cases that allow cache hits the average excludes the first
+compilation.
+
+Before any measurements are done, each test case first draws with a simple dummy
+shader for warm-up.
+
+Overview for valid shader cases:
+ - 1. Create program and shaders; compile and link
+ - 2. Set inputs and draw a small quad
+ - 3. Flush
+ - 4. Repeat without step 1
+ - 5. Compute difference of times measured for 1-3 and 4 and record it as
+      compilation time
+ - Repeat the above steps several times and compute average
+
+Overview for invalid shader cases (front-end time estimation):
+ - 1. Create program and invalid shaders; compile (expect failure)
+ - 2. Record time measured for step 1
+ - Repeat the above steps several times and compute average

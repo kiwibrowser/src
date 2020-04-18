@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<!--
+Copyright 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/elements/base-style.html">
+
+<dom-module id="jobs-table">
+  <template>
+    <style include="base-style">
+      th {
+        background-position: right 0.5em center;
+        background-repeat: no-repeat;
+        background-size: 0.8em;
+        border-bottom: solid 1px var(--paper-grey-400);
+        cursor: pointer;
+      }
+
+      th:hover {
+        color: var(--paper-pink-a200);
+      }
+
+      th[data-sort-direction=true] {
+        background-image: url("/static/sort-up.svg");
+      }
+
+      th[data-sort-direction=false] {
+        background-image: url("/static/sort-down.svg");
+      }
+
+      td {
+        word-break: break-all;
+      }
+    </style>
+
+    <table id="jobs">
+      <thead>
+        <tr>
+          <th id="job_id" on-click="columnHeaderClicked">Job ID
+          <th id="status" on-click="columnHeaderClicked">Status
+          <th id="created" on-click="columnHeaderClicked">Created
+          <th id="configuration" on-click="columnHeaderClicked">Configuration
+          <th id="benchmark" on-click="columnHeaderClicked">Benchmark
+          <th id="story" on-click="columnHeaderClicked">Story
+          <th id="chart" on-click="columnHeaderClicked">Chart
+      <tbody>
+        <template is="dom-repeat" items="[[jobs]]" sort="[[jobSorter(sortBy, sortDescending)]]">
+          <tr>
+            <td><a href='/job/[[item.job_id]]'>[[item.job_id]]</a>
+            <td>[[item.status]]
+            <td>[[formatDate(item.created)]]
+            <td>[[item.arguments.configuration]]
+            <td>[[item.arguments.benchmark]]
+            <td>[[item.arguments.story]]
+            <td>[[item.arguments.chart]]
+        </template>
+    </table>
+  </template>
+
+  <script>
+    'use strict';
+    Polymer({
+      is: 'jobs-table',
+
+      properties: {
+        jobs: {
+          type: Array,
+          value: () => []
+        },
+
+        /**
+         * The field to sort by. Note that this will be both the id of a th
+         * element in the table, and a property of an item in the job list.
+         */
+        sortBy: {
+          type: String,
+          value: 'created'
+        },
+
+        /**
+         * Sort direction, either 'down' (increasing) or 'up' (decreasing).
+         */
+        sortDescending: {
+          type: Boolean,
+          value: true
+        },
+      },
+
+      /**
+       * Custom element lifecycle callback, called once this element is ready.
+       */
+      ready() {
+        this.updateHeaders();
+      },
+
+      /**
+       * Callback for the click event for a column header.
+       * @param {Event} event Clicked event.
+       * @param {Object} detail Detail Object.
+       */
+      columnHeaderClicked(event, detail) {
+        if (this.sortBy == event.currentTarget.id) {
+          this.sortDescending = !this.sortDescending;
+        } else {
+          this.sortBy = event.currentTarget.id;
+          this.sortDescending = false;
+        }
+        this.updateHeaders();
+      },
+
+      /**
+       * Update the table headers to indicate the current table sorting.
+       */
+      updateHeaders() {
+        const headers = Polymer.dom(this.$.jobs).querySelectorAll('th');
+        for (let i = 0; i < headers.length; i++) {
+          if (headers[i].id == this.sortBy) {
+            Polymer.dom(headers[i]).setAttribute('data-sort-direction',
+                this.sortDescending);
+          } else {
+            Polymer.dom(headers[i]).removeAttribute('data-sort-direction');
+          }
+        }
+      },
+
+      /**
+       * Sorts the jobs list according to the current values of the properties
+       * sortDirection and sortBy.
+       */
+      jobSorter(sortBy, sortDescending) {
+        return (a, b) => {
+          const valA = a[sortBy] || a.arguments[sortBy] || '';
+          const valB = b[sortBy] || b.arguments[sortBy] || '';
+          let comparison = valA.localeCompare(valB);
+          if (sortDescending) {
+            comparison = -comparison;
+          }
+          return comparison;
+        };
+      },
+
+      formatDate(dateString) {
+        return new Date(dateString + 'Z').toLocaleString();
+      }
+    });
+  </script>
+</dom-module>

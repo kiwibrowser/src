@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<!--
+Copyright 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/base/raf.html">
+<link rel="import" href="/tracing/base/timing.html">
+<link rel="import" href="/tracing/value/histogram_set.html">
+
+<script>
+'use strict';
+tr.exportTo('tr.v', function() {
+  class HistogramImporter {
+    /**
+     * @param {!Element} loadingEl
+     */
+    constructor(loadingEl) {
+      this.loadingEl_ = loadingEl;
+      this.histograms_ = undefined;
+      this.jsonEls_ = [];
+      this.jsonDivIndex_ = 0;
+      this.view_ = undefined;
+      this.fmpMark_ = tr.b.Timing.mark('HistogramImporter', 'fmp');
+
+      this.loadingEl_.textContent = 'Parsing HTML...';
+      // The json divs appear after this script tag in results.html, so the
+      // browser will parse them into DOM now.
+    }
+
+    /**
+     * @param {string} message
+     * @return {Promise} resolves when |message| is displayed.
+     */
+    async update_(message) {
+      this.loadingEl_.textContent = message;
+      await tr.b.animationFrame();
+    }
+
+    /**
+     * Each jsonEl should contain a Histogram JSON in its innerHTML.
+     * The |view| should have display: none so that it doesn't obnoxiously
+     * display "zero Histograms" while they are being imported.
+     *
+     * @param {!Array.<!Element>} jsonEls
+     * @param {!Element} view A histogram-set-view.
+     * @return {Promise} resolves when |view| is displayed.
+     */
+    async importHistograms(jsonEls, view) {
+      this.histograms_ = new tr.v.HistogramSet();
+      this.jsonEls_ = jsonEls;
+      this.view_ = view;
+      tr.b.Timing.instant(
+          'HistogramImporter', 'jsonCount', this.jsonEls_.length);
+
+      if (this.jsonEls_.length > 0) {
+        await this.update_(`Loading Histogram 0 of ${this.jsonEls_.length}`);
+        const loadMark = tr.b.Timing.mark(
+            'HistogramImporter', 'loadHistograms');
+        await this.loadSomeHistograms_();
+        loadMark.end();
+        tr.b.Timing.instant('HistogramImporter', 'nsPerJson',
+            parseInt(1e3 * loadMark.durationMs / this.jsonEls_.length));
+      }
+
+      await this.update_('Resolving Histogram relationships...');
+      const relatedMark = tr.b.Timing.mark(
+          'HistogramImporter', 'resolveRelatedHistograms');
+      await this.histograms_.resolveRelatedHistograms();
+      relatedMark.end();
+
+      await this.update_('Displaying Histogram table...');
+      await this.displayHistograms_();
+    }
+
+    async loadSomeHistograms_() {
+      // Don't spend so long on this chunk of Histograms that the user gets
+      // frustrated, but also don't call requestAnimationFrame faster than every
+      // 16ms, so that the browser doesn't have to wait for the next vsync.
+      // Powerful computers can load several hundred Histograms in 32ms.
+      // Also don't call new Date() more often than necessary.
+      const start = new Date();
+      let stopIndex;
+      do {
+        stopIndex = Math.min(
+            this.jsonDivIndex_ + 100, this.jsonEls_.length);
+        for (; this.jsonDivIndex_ < stopIndex; ++this.jsonDivIndex_) {
+          const dict = JSON.parse(this.jsonEls_[this.jsonDivIndex_].innerText);
+          this.histograms_.importDicts([dict]);
+        }
+      } while (new Date() - start < 50);
+
+      if (this.jsonDivIndex_ === this.jsonEls_.length) return;
+
+      await this.update_(
+          `Loading Histogram ${stopIndex} of ${this.jsonEls_.length}`);
+      await this.loadSomeHistograms_();
+    }
+
+    async displayHistograms_() {
+      this.view_.addEventListener('display-ready', async() => {
+        this.loadingEl_.style.display = 'none';
+        this.view_.style.display = 'block';
+        await tr.b.animationFrame();
+        this.fmpMark_.end();
+      });
+
+      await this.view_.build(this.histograms_, {
+        progress: message => this.update_(message),
+        helpHref: 'https://github.com/catapult-project/catapult/blob/master/docs/metrics-results-ui.md',
+        feedbackHref: 'https://docs.google.com/a/google.com/forms/d/e/1FAIpQLSfXvMvm_z2F9-khFaKyH_LHVZ6caPPkxI27BZqMnEt4XjyJ3g/viewform',
+      });
+    }
+  }
+
+  return {
+    HistogramImporter,
+  };
+});
+</script>

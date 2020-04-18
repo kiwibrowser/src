@@ -1,0 +1,73 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Vertex Attribute Binding Tests
+
+Tests:
+ + dEQP-GLES31.functional.vertex_attribute_binding.*
+ + dEQP-GLES31.functional.state_query.vertex_attribute_binding.*
+ + dEQP-GLES31.stress.vertex_attribute_binding.*
+
+Includes:
+ + Vertex attribute binding state setting and queries
+ + Drawing with all attributes sourced from a single buffer
+   - Single and multiple attributes, multiple attributes sharing
+     components.
+   - Non-zero buffer offset
+   - Sourcing elements at an aligned location from a buffer with
+     a combination of non-aligned buffer offset and non-aligned
+     vertex attribute start offset.
+ + Drawing with all attributes sourced from different binding points
+   - Basic drawing
+   - Binding point stride set to zero
+   - Binding point instance divisor
+   - Binding same buffer object to multiple binding points
+ + Mixing vertex attribute binding and vertex attribute pointer APIs
+   - Different APIs for different vertex attributes
+   - Use vertex attribute binding API to change state set with vertex
+     attribute pointer API
+ + Negative tests
+   - Use with default VAO
+   - BindVertexBuffer for non-gen'd buffer name
+   - Invalid values
+ + Stress tests
+   - Sourcing elements over buffer bounds
+   - Sourcing elements at non-aligned locations
+
+Excludes:
+ + Use of all vertex attribute binding points
+ + Sourcing elements from a buffer with a large stride/offset
+ + Buffer object lifetime/validity after deleteBuffers
+
+Description:
+
+State query tests verify initial values, and state setting and
+querying functions by setting random values. Modifications to
+vertex attribute binding state after use of vertex attribute
+pointer API is also verified.
+
+Rendering tests set vertex attribute state using vertex attribute
+binding API and issue a single draw command. Resulting image is
+then verified. Mixed API rendering tests intermix both vertex
+attribute binding and the vertexAttribPointer API commands to
+modify the state of the same or different vertex attributes.
+
+Stress tests source elements at invalid locations. Tests source
+elements out of buffer range and at non-aligned locations using
+binding point buffer offset and/or vertex attribute relative
+offset.

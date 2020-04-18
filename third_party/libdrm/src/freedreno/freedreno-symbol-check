@@ -1,0 +1,60 @@
+#!/bin/bash
+
+# The following symbols (past the first five) are taken from the public headers.
+# A list of the latter should be available Makefile.sources/LIBDRM_FREEDRENO_H_FILES
+
+FUNCS=$(nm -D --format=bsd --defined-only ${1-.libs/libdrm_freedreno.so} | awk '{print $3}'| while read func; do
+( grep -q "^$func$" || echo $func )  <<EOF
+__bss_start
+_edata
+_end
+_fini
+_init
+fd_bo_cpu_fini
+fd_bo_cpu_prep
+fd_bo_del
+fd_bo_dmabuf
+fd_bo_from_dmabuf
+fd_bo_from_fbdev
+fd_bo_from_handle
+fd_bo_from_name
+fd_bo_get_name
+fd_bo_handle
+fd_bo_map
+fd_bo_new
+fd_bo_ref
+fd_bo_size
+fd_device_del
+fd_device_fd
+fd_device_new
+fd_device_new_dup
+fd_device_ref
+fd_device_version
+fd_pipe_del
+fd_pipe_get_param
+fd_pipe_new
+fd_pipe_wait
+fd_pipe_wait_timeout
+fd_ringbuffer_cmd_count
+fd_ringbuffer_del
+fd_ringbuffer_emit_reloc_ring
+fd_ringbuffer_emit_reloc_ring_full
+fd_ringbuffer_flush
+fd_ringbuffer_grow
+fd_ringbuffer_new
+fd_ringbuffer_reloc
+fd_ringbuffer_reloc2
+fd_ringbuffer_reset
+fd_ringbuffer_set_parent
+fd_ringbuffer_timestamp
+fd_ringmarker_del
+fd_ringmarker_dwords
+fd_ringmarker_flush
+fd_ringbuffer_flush2
+fd_ringmarker_mark
+fd_ringmarker_new
+EOF
+done)
+
+test ! -n "$FUNCS" || echo $FUNCS
+test ! -n "$FUNCS"

@@ -1,0 +1,30 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_open_url() {
+test_start "$FUNCNAME: HTTP open test."
+URL="http://portland.freedesktop.org/wiki/"
+
+test_init
+
+require_notroot
+## Require a running X server
+assert_display
+
+test_procedure
+
+assert_exit 0 xdg-open "$URL"
+assert_nostdout
+assert_nostderr
+
+assert_interactive "Did a web browser open to '$URL'" y
+assert_interactive "Please close any windows opened by this test." C
+
+test_result
+}
+
+run_test test_open_url

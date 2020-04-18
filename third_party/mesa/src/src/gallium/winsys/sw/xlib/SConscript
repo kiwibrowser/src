@@ -1,0 +1,23 @@
+#######################################################################
+# SConscript for xlib winsys
+
+
+Import('*')
+
+if env['platform'] in ('cygwin', 'freebsd', 'linux', 'sunos'):
+
+    env = env.Clone()
+
+    env.Append(CPPPATH = [
+        '#/src/gallium/include',
+        '#/src/gallium/auxiliary',
+        '#/src/gallium/drivers',
+    ])
+
+    ws_xlib = env.ConvenienceLibrary(
+        target = 'ws_xlib',
+        source = [
+           'xlib_sw_winsys.c',
+        ]
+    )
+    Export('ws_xlib')

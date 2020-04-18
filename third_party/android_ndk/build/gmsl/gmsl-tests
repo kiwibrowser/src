@@ -1,0 +1,647 @@
+# ----------------------------------------------------------------------------
+#
+# GNU Make Standard Library (GMSL) Test Suite
+#
+# Test suite for the GMSL
+#
+# Copyright (c) 2005-2007 John Graham-Cumming
+#
+# This file is part of GMSL
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
+# 
+# Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# Neither the name of the John Graham-Cumming nor the names of its
+# contributors may be used to endorse or promote products derived from
+# this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# ----------------------------------------------------------------------------
+
+.PHONY: all
+all:
+	@echo
+	@echo Test Summary
+	@echo ------------
+	@echo "$(call int_decode,$(passed)) tests passed; $(call int_decode,$(failed)) tests failed"
+
+include gmsl
+
+passed :=
+failed :=
+
+ECHO := /bin/echo
+
+start_test = $(shell $(ECHO) -n "Testing '$1': " >&2)$(eval current_test := OK)
+stop_test  = $(shell $(ECHO) " $(current_test)" >&2)
+test_pass = .$(eval passed := $(call int_inc,$(passed)))
+test_fail = X$(eval failed := $(call int_inc,$(failed)))$(eval current_test := ERROR '$1' != '$2')
+test_assert = $(if $(filter undefined,$(origin 2)),$(eval 2 :=))$(shell $(ECHO) -n $(if $(call seq,$1,$2),$(call test_pass,$1,$2),$(call test_fail,$1,$2)) >&2)
+
+$(call start_test,not)
+$(call test_assert,$(call not,$(true)),$(false))
+$(call test_assert,$(call not,$(false)),$(true))
+$(call stop_test)
+
+$(call start_test,or)
+$(call test_assert,$(call or,$(true),$(true)),$(true))
+$(call test_assert,$(call or,$(true),$(false)),$(true))
+$(call test_assert,$(call or,$(false),$(true)),$(true))
+$(call test_assert,$(call or,$(false),$(false)),$(false))
+$(call stop_test)
+
+$(call start_test,and)
+$(call test_assert,$(call and,$(true),$(true)),$(true))
+$(call test_assert,$(call and,$(true),$(false)),$(false))
+$(call test_assert,$(call and,$(false),$(true)),$(false))
+$(call test_assert,$(call and,$(false),$(false)),$(false))
+$(call stop_test)
+
+$(call start_test,xor)
+$(call test_assert,$(call xor,$(true),$(true)),$(false))
+$(call test_assert,$(call xor,$(true),$(false)),$(true))
+$(call test_assert,$(call xor,$(false),$(true)),$(true))
+$(call test_assert,$(call xor,$(false),$(false)),$(false))
+$(call stop_test)
+
+$(call start_test,nand)
+$(call test_assert,$(call nand,$(true),$(true)),$(false))
+$(call test_assert,$(call nand,$(true),$(false)),$(true))
+$(call test_assert,$(call nand,$(false),$(true)),$(true))
+$(call test_assert,$(call nand,$(false),$(false)),$(true))
+$(call stop_test)
+
+$(call start_test,nor)
+$(call test_assert,$(call nor,$(true),$(true)),$(false))
+$(call test_assert,$(call nor,$(true),$(false)),$(false))
+$(call test_assert,$(call nor,$(false),$(true)),$(false))
+$(call test_assert,$(call nor,$(false),$(false)),$(true))
+$(call stop_test)
+
+$(call start_test,xnor)
+$(call test_assert,$(call xnor,$(true),$(true)),$(true))
+$(call test_assert,$(call xnor,$(true),$(false)),$(false))
+$(call test_assert,$(call xnor,$(false),$(true)),$(false))
+$(call test_assert,$(call xnor,$(false),$(false)),$(true))
+$(call stop_test)
+
+$(call start_test,first)
+$(call test_assert,$(call first,1 2 3),1)
+$(call test_assert,$(call first,1),1)
+$(call test_assert,$(call first,),)
+$(call stop_test)
+
+$(call start_test,last)
+$(call test_assert,$(call last,1 2 3),3)
+$(call test_assert,$(call last,1),1)
+$(call test_assert,$(call last,),)
+$(call stop_test)
+
+$(call start_test,rest)
+$(call test_assert,$(call rest,1 2 3),2 3)
+$(call test_assert,$(call rest,1),)
+$(call test_assert,$(call rest,),)
+$(call stop_test)
+
+$(call start_test,chop)
+$(call test_assert,$(call chop,1 2 3),1 2)
+$(call test_assert,$(call chop,1 2 3 4),1 2 3)
+$(call test_assert,$(call chop,1),)
+$(call test_assert,$(call chop,),)
+$(call stop_test)
+
+$(call start_test,length)
+$(call test_assert,$(call length,1 2 3),3)
+$(call test_assert,$(call length,1 2 3 4),4)
+$(call test_assert,$(call length,1),1)
+$(call test_assert,$(call length,),0)
+$(call stop_test)
+
+$(call start_test,map)
+$(call test_assert,$(call map,origin,__undefined map MAKE),undefined file default)
+$(call test_assert,$(call map,origin,),)
+$(call stop_test)
+
+joinem = $1$2
+$(call start_test,pairmap)
+$(call test_assert,$(call pairmap,addsuffix,2 1 3,a b c),a2 b1 c3)
+$(call test_assert,$(call pairmap,addprefix,2 1 3,a b c d),2a 1b 3c d)
+$(call test_assert,$(call pairmap,addprefix,2 1 3 4,a b c),2a 1b 3c)
+$(call test_assert,$(call pairmap,joinem,2 1 3 4,a b c),2a 1b 3c 4)
+$(call stop_test)
+
+$(call start_test,seq)
+$(call test_assert,$(call seq,abc,abc),T)
+$(call test_assert,$(call seq,x,),)
+$(call test_assert,$(call seq,,x),)
+$(call test_assert,$(call seq,x,x),T)
+$(call test_assert,$(call seq,a%c,abc),)
+$(call test_assert,$(call seq,abc,a%c),)
+$(call test_assert,$(call seq,abc,ABC),)
+$(call test_assert,$(call seq,abc,),)
+$(call test_assert,$(call seq,,),T)
+$(call test_assert,$(call seq,a b c,a b c),T)
+$(call test_assert,$(call seq,aa% bb% cc,aa% bb% cc),T)
+$(call test_assert,$(call seq,aa% bb% cc,aa% bb cc),)
+$(call test_assert,$(call seq,aa% bb% cc,xx yy zz),)
+$(call stop_test)
+
+$(call start_test,sne)
+$(call test_assert,$(call sne,abc,abc),)
+$(call test_assert,$(call sne,x,),T)
+$(call test_assert,$(call sne,,x),T)
+$(call test_assert,$(call sne,x,x),)
+$(call test_assert,$(call sne,abc,ABC),T)
+$(call test_assert,$(call sne,abc,),T)
+$(call test_assert,$(call sne,,),)
+$(call test_assert,$(call sne,a b c,a b c),)
+$(call test_assert,$(call sne,aa% bb% cc,aa% bb% cc),)
+$(call test_assert,$(call sne,aa% bb% cc,aa% bb cc),T)
+$(call stop_test)
+
+$(call start_test,strlen)
+$(call test_assert,$(call strlen,),0)
+$(call test_assert,$(call strlen,a),1)
+$(call test_assert,$(call strlen,a b),3)
+$(call test_assert,$(call strlen,a ),2)
+$(call test_assert,$(call strlen, a),2)
+$(call test_assert,$(call strlen,  ),2)
+$(call test_assert,$(call strlen,   ),3)
+$(call test_assert,$(call strlen,    ),4)
+$(call stop_test)
+
+$(call start_test,substr)
+$(call test_assert,$(call substr,xyz,1,1),x)
+$(call test_assert,$(call substr,xyz,1,2),xy)
+$(call test_assert,$(call substr,xyz,2,3),yz)
+$(call test_assert,$(call substr,some string,1,1),s)
+$(call test_assert,$(call substr,some string,1,2),so)
+$(call test_assert,$(call substr,some string,1,3),som)
+$(call test_assert,$(call substr,some string,1,4),some)
+$(call test_assert,$(call substr,some string,1,5),some )
+$(call test_assert,$(call substr,some string,1,6),some s)
+$(call test_assert,$(call substr,some string,5,5), )
+$(call test_assert,$(call substr,some string,5,6), s)
+$(call test_assert,$(call substr,some string,5,7), st)
+$(call test_assert,$(call substr,some string,5,8), str)
+$(call test_assert,$(call substr,some string,1,100),some string)
+$(call stop_test)
+
+$(call start_test,lc)
+$(call test_assert,$(call lc,The Quick Brown Fox),the quick brown fox)
+$(call test_assert,$(call lc,the1 quick2 brown3 fox4),the1 quick2 brown3 fox4)
+$(call test_assert,$(call lc,The_),the_)
+$(call test_assert,$(call lc,),)
+$(call stop_test)
+
+$(call start_test,uc)
+$(call test_assert,$(call uc,The Quick Brown Fox),THE QUICK BROWN FOX)
+$(call test_assert,$(call uc,the1 quick2 brown3 fox4),THE1 QUICK2 BROWN3 FOX4)
+$(call test_assert,$(call uc,The_),THE_)
+$(call test_assert,$(call uc,),)
+$(call stop_test)
+
+$(call start_test,tr)
+$(call test_assert,$(call tr,A B C,1 2 3,CAPITAL),31PIT1L)
+$(call test_assert,$(call tr,a b c,1 2 3,CAPITAL),CAPITAL)
+$(call test_assert,$(call tr,E L I,3 1 1,I AM ELITE),1 AM 311T3)
+$(call stop_test)
+
+$(call start_test,leq)
+$(call test_assert,$(call leq,1 2 3,1 2 3),T)
+$(call test_assert,$(call leq,1 2 3,1 2 3 4),)
+$(call test_assert,$(call leq,1 2 3 4,1 2 3),)
+$(call test_assert,$(call leq,1,1),T)
+$(call test_assert,$(call leq,,),T)
+$(call stop_test)
+
+$(call start_test,lne)
+$(call test_assert,$(call lne,1 2 3,1 2 3),)
+$(call test_assert,$(call lne,1 2 3,1 2 3 4),T)
+$(call test_assert,$(call lne,1 2 3 4,1 2 3),T)
+$(call test_assert,$(call lne,1,1),)
+$(call test_assert,$(call lne,,),)
+$(call stop_test)
+
+$(call start_test,empty_set)
+$(call test_assert,$(empty_set),)
+$(call test_assert,$(empty_set),$(call set_create,))
+$(call stop_test)
+
+$(call start_test,set_create)
+$(call test_assert,$(call set_create,),)
+$(call test_assert,$(call set_create,1 2 2 3),1 2 3)
+$(call test_assert,$(call set_create,2 1 1 2 2 3),1 2 3)
+$(call test_assert,$(call set_create,1),1)
+$(call stop_test)
+
+$(call start_test,set_insert)
+$(call test_assert,$(call set_insert,1,$(empty_set)),1)
+$(call test_assert,$(call set_insert,1,$(call set_create,1)),1)
+$(call test_assert,$(call set_insert,1,$(call set_create,1 2)),1 2)
+$(call test_assert,$(call set_insert,0,$(call set_create,1 2)),0 1 2)
+$(call stop_test)
+
+$(call start_test,set_remove)
+$(call test_assert,$(call set_remove,1,$(empty_set)),$(empty_set))
+$(call test_assert,$(call set_remove,1,$(call set_create,1 2)),2)
+$(call test_assert,$(call set_remove,1,$(call set_create,1 11 2)),11 2)
+$(call test_assert,$(call set_remove,0,$(call set_create,1 2)),1 2)
+$(call stop_test)
+
+$(call start_test,set_is_member)
+$(call test_assert,$(call set_is_member,1,$(empty_set)),)
+$(call test_assert,$(call set_is_member,1,$(call set_create,2 3)),)
+$(call test_assert,$(call set_is_member,1,$(call set_create,1 2 3)),T)
+$(call test_assert,$(call set_is_member,1,$(call set_create,1)),T)
+$(call stop_test)
+
+$(call start_test,set_union)
+$(call test_assert,$(call set_union,,),)
+$(call test_assert,$(call set_union,1 2,),1 2)
+$(call test_assert,$(call set_union,,3 4),3 4)
+$(call test_assert,$(call set_union,1 2,3 4),1 2 3 4)
+$(call test_assert,$(call set_union,1 2 3,3 4 5),1 2 3 4 5)
+$(call stop_test)
+
+$(call start_test,set_intersection)
+$(call test_assert,$(call set_intersection,,),)
+$(call test_assert,$(call set_intersection,1 2,),)
+$(call test_assert,$(call set_intersection,,3 4),)
+$(call test_assert,$(call set_intersection,1 2,3 4),)
+$(call test_assert,$(call set_intersection,1 2 3 4,3 4 5),3 4)
+$(call stop_test)
+
+$(call start_test,set_is_subset)
+$(call test_assert,$(call set_is_subset,,),T)
+$(call test_assert,$(call set_is_subset,1 2,),)
+$(call test_assert,$(call set_is_subset,,3 4),T)
+$(call test_assert,$(call set_is_subset,1 2,3 4),)
+$(call test_assert,$(call set_is_subset,1 2,1 2 3 4 5),T)
+$(call test_assert,$(call set_is_subset,1 2,1 2),T)
+$(call test_assert,$(call set_is_subset,1 2,1 3 4 5),)
+$(call stop_test)
+
+$(call start_test,set_equal)
+$(call test_assert,$(call set_equal,,),T)
+$(call test_assert,$(call set_equal,1,),)
+$(call test_assert,$(call set_equal,,1),)
+$(call test_assert,$(call set_equal,1,1),T)
+$(call test_assert,$(call set_equal,1 2,),)
+$(call test_assert,$(call set_equal,,1 2),)
+$(call test_assert,$(call set_equal,1 2,1 2 3),)
+$(call stop_test)
+
+$(call start_test,int_encode)
+$(call test_assert,$(call int_encode,0),)
+$(call test_assert,$(call int_encode,1),x)
+$(call test_assert,$(call int_encode,2),x x)
+$(call test_assert,$(call int_encode,10),x x x x x x x x x x)
+$(call stop_test)
+
+$(call start_test,int_decode)
+$(call test_assert,$(call int_decode,),0)
+$(call test_assert,$(call int_decode,x),1)
+$(call test_assert,$(call int_decode,x x),2)
+$(call test_assert,$(call int_decode,x x x x x x x x x x),10)
+$(call stop_test)
+
+$(call start_test,int_plus)
+$(call test_assert,$(call int_plus,$(call int_encode,3),$(call int_encode,4)),$(call int_encode,7))
+$(call test_assert,$(call int_plus,$(call int_encode,0),$(call int_encode,4)),$(call int_encode,4))
+$(call test_assert,$(call int_plus,$(call int_encode,3),$(call int_encode,0)),$(call int_encode,3))
+$(call test_assert,$(call int_plus,$(call int_encode,0),$(call int_encode,0)),$(call int_encode,0))
+$(call test_assert,$(call int_plus,$(call int_encode,1),$(call int_encode,0)),$(call int_encode,1))
+$(call stop_test)
+
+$(call start_test,plus)
+$(call test_assert,$(call plus,3,4),7)
+$(call test_assert,$(call plus,4,3),7)
+$(call test_assert,$(call plus,0,4),4)
+$(call test_assert,$(call plus,3,0),3)
+$(call test_assert,$(call plus,0,0),0)
+$(call stop_test)
+
+__gmsl_warning = $1
+$(call start_test,int_subtract)
+$(call test_assert,$(call int_subtract,$(call int_encode,3),$(call int_encode,4)),Subtraction underflow)
+$(call test_assert,$(call int_subtract,$(call int_encode,4),$(call int_encode,3)),$(call int_encode,1))
+$(call test_assert,$(call int_subtract,$(call int_encode,3),$(call int_encode,0)),$(call int_encode,3))
+$(call test_assert,$(call int_subtract,$(call int_encode,0),$(call int_encode,0)),$(call int_encode,0))
+$(call test_assert,$(call int_subtract,$(call int_encode,1),$(call int_encode,0)),$(call int_encode,1))
+$(call stop_test)
+
+__gmsl_warning = x x x x x x x x x x
+$(call start_test,subtract)
+$(call test_assert,$(call subtract,3,4),10)
+$(call test_assert,$(call subtract,4,3),1)
+$(call test_assert,$(call subtract,3,0),3)
+$(call test_assert,$(call subtract,0,0),0)
+$(call stop_test)
+
+$(call start_test,int_multiply)
+$(call test_assert,$(call int_multiply,$(call int_encode,3),$(call int_encode,4)),$(call int_encode,12))
+$(call test_assert,$(call int_multiply,$(call int_encode,4),$(call int_encode,3)),$(call int_encode,12))
+$(call test_assert,$(call int_multiply,$(call int_encode,3),$(call int_encode,0)),$(call int_encode,0))
+$(call test_assert,$(call int_multiply,$(call int_encode,0),$(call int_encode,0)),$(call int_encode,0))
+$(call test_assert,$(call int_multiply,$(call int_encode,1),$(call int_encode,0)),$(call int_encode,0))
+$(call stop_test)
+
+$(call start_test,multiply)
+$(call test_assert,$(call multiply,3,4),12)
+$(call test_assert,$(call multiply,4,3),12)
+$(call test_assert,$(call multiply,3,0),0)
+$(call test_assert,$(call multiply,0,3),0)
+$(call test_assert,$(call multiply,0,0),0)
+$(call stop_test)
+
+__gmsl_error = $1
+$(call start_test,int_divide)
+$(call test_assert,$(call int_divide,$(call int_encode,3),$(call int_encode,4)),$(call int_encode,0))
+$(call test_assert,$(call int_divide,$(call int_encode,4),$(call int_encode,3)),$(call int_encode,1))
+$(call test_assert,$(call int_divide,$(call int_encode,31),$(call int_encode,3)),$(call int_encode,10))
+$(call test_assert,$(call int_divide,$(call int_encode,30),$(call int_encode,3)),$(call int_encode,10))
+$(call test_assert,$(call int_divide,$(call int_encode,29),$(call int_encode,3)),$(call int_encode,9))
+$(call test_assert,$(call int_divide,$(call int_encode,0),$(call int_encode,1)),$(call int_encode,0))
+$(call test_assert,$(call int_divide,$(call int_encode,1),$(call int_encode,0)),Division by zero)
+$(call stop_test)
+
+__gmsl_error = x x x x x x x x x x
+$(call start_test,divide)
+$(call test_assert,$(call divide,3,4),0)
+$(call test_assert,$(call divide,4,3),1)
+$(call test_assert,$(call divide,21,2),10)
+$(call test_assert,$(call divide,20,2),10)
+$(call test_assert,$(call divide,19,2),9)
+$(call test_assert,$(call divide,1,0),10)
+$(call stop_test)
+
+$(call start_test,associative array)
+$(call test_assert,$(call get,myarray,key1),)
+$(call set,myarray,key1,value1)
+$(call test_assert,$(call get,myarray,key1),value1)
+$(call test_assert,$(call get,myarray,key2),)
+$(call test_assert,$(call get,myarray1,key1),)
+$(call test_assert,$(call defined,myarray,key1),T)
+$(call test_assert,$(call defined,myarray,key2),)
+$(call test_assert,$(call defined,myarray1,key1),)
+$(call set,myarray,key2,value2)
+$(call test_assert,$(call keys,myarray),key1 key2)
+$(call test_assert,$(call keys,myarray1),)
+$(call stop_test)
+
+$(call start_test,named stack)
+$(call test_assert,$(call pop,mystack),)
+$(call test_assert,$(call push,mystack,e2))
+$(call push,mystack,e1)
+$(call test_assert,$(call pop,mystack),e1)
+$(call test_assert,$(call pop,mystack),e2)
+$(call push,mystack,f3)
+$(call push,mystack,f1)
+$(call test_assert,$(call pop,mystack),f1)
+$(call push,mystack,f2)
+$(call test_assert,$(call peek,mystack),f2)
+$(call test_assert,$(call depth,mystack),2)
+$(call test_assert,$(call pop,mystack),f2)
+$(call test_assert,$(call depth,mystack),1)
+$(call test_assert,$(call pop,myotherstack),)
+$(call stop_test)
+
+$(call start_test,reverse)
+$(call test_assert,$(call reverse,),)
+$(call test_assert,$(call reverse,1),1)
+$(call test_assert,$(call reverse,1 2),2 1)
+$(call test_assert,$(call reverse,1 2 3),3 2 1)
+$(call stop_test)
+
+$(call start_test,uniq)
+$(call test_assert,$(call uniq,),)
+$(call test_assert,$(call uniq,a),a)
+$(call test_assert,$(call uniq,a a),a)
+$(call test_assert,$(call uniq,a aa),a aa)
+$(call test_assert,$(call uniq,a aa a),a aa)
+$(call test_assert,$(call uniq,a b ba ab b a a ba a),a b ba ab)
+$(call stop_test)
+
+c:=,
+$(call start_test,split)
+$(call test_assert,$(call split,$c,comma$cseparated$cstring),comma separated string)
+$(call test_assert,$(call split,*,star*field*record),star field record)
+$(call test_assert,$(call split,*,star*),star)
+$(call test_assert,$(call split,*,star*field),star field)
+$(call test_assert,$(call split,*,star****field),star field)
+$(call test_assert,$(call split,*,),)
+$(call stop_test)
+
+$(call start_test,merge)
+$(call test_assert,$(call merge,$c,list of things),list$cof$cthings)
+$(call test_assert,$(call merge,*,list of things),list*of*things)
+$(call test_assert,$(call merge,*,list),list)
+$(call test_assert,$(call merge,*,),)
+$(call stop_test)
+
+$(call start_test,int_max)
+$(call test_assert,$(call int_max,$(call int_encode,2),$(call int_encode,1)),$(call int_encode,2))
+$(call test_assert,$(call int_max,$(call int_encode,1),$(call int_encode,2)),$(call int_encode,2))
+$(call test_assert,$(call int_max,$(call int_encode,2),$(call int_encode,0)),$(call int_encode,2))
+$(call test_assert,$(call int_max,$(call int_encode,0),$(call int_encode,2)),$(call int_encode,2))
+$(call test_assert,$(call int_max,$(call int_encode,2),$(call int_encode,2)),$(call int_encode,2))
+$(call test_assert,$(call int_max,$(call int_encode,0),$(call int_encode,0)),$(call int_encode,0))
+$(call stop_test)
+
+$(call start_test,max)
+$(call test_assert,$(call max,2,1),2)
+$(call test_assert,$(call max,1,2),2)
+$(call test_assert,$(call max,2,0),2)
+$(call test_assert,$(call max,0,2),2)
+$(call test_assert,$(call max,2,2),2)
+$(call test_assert,$(call max,0,0),0)
+$(call stop_test)
+
+$(call start_test,int_min)
+$(call test_assert,$(call int_min,$(call int_encode,2),$(call int_encode,1)),$(call int_encode,1))
+$(call test_assert,$(call int_min,$(call int_encode,1),$(call int_encode,2)),$(call int_encode,1))
+$(call test_assert,$(call int_min,$(call int_encode,2),$(call int_encode,0)),$(call int_encode,0))
+$(call test_assert,$(call int_min,$(call int_encode,0),$(call int_encode,2)),$(call int_encode,0))
+$(call test_assert,$(call int_min,$(call int_encode,2),$(call int_encode,2)),$(call int_encode,2))
+$(call test_assert,$(call int_min,$(call int_encode,0),$(call int_encode,0)),$(call int_encode,0))
+$(call stop_test)
+
+$(call start_test,min)
+$(call test_assert,$(call min,2,1),1)
+$(call test_assert,$(call min,1,2),1)
+$(call test_assert,$(call min,2,0),0)
+$(call test_assert,$(call min,0,2),0)
+$(call test_assert,$(call min,2,2),2)
+$(call test_assert,$(call min,0,0),0)
+$(call stop_test)
+
+__gmsl_error = $1
+$(call start_test,assert functions)
+$(call test_assert,$(call assert,$(true),ignore),)
+$(call test_assert,$(call assert,$(false),failed),Assertion failure: failed)
+$(call test_assert,$(call assert_exists,gmsl-tests),)
+$(call test_assert,$(call assert_exists,MISSING-gmsl-tests),Assertion failure: file 'MISSING-gmsl-tests' missing)
+$(call stop_test)
+
+$(call start_test,int_inc)
+$(call test_assert,$(call int_inc,$(call int_encode,0)),$(call int_encode,1))
+$(call test_assert,$(call int_inc,$(call int_encode,1)),$(call int_encode,2))
+$(call test_assert,$(call int_inc,$(call int_encode,4)),$(call int_encode,5))
+$(call test_assert,$(call int_inc,$(call int_encode,10)),$(call int_encode,11))
+$(call stop_test)
+
+$(call start_test,inc)
+$(call test_assert,$(call inc,0),1)
+$(call test_assert,$(call inc,1),2)
+$(call test_assert,$(call inc,4),5)
+$(call test_assert,$(call inc,10),11)
+$(call stop_test)
+
+__gmsl_warning = $1
+$(call start_test,int_dec)
+$(call test_assert,$(call int_dec,$(call int_encode,0)),Decrement underflow)
+$(call test_assert,$(call int_dec,$(call int_encode,1)),$(call int_encode,0))
+$(call test_assert,$(call int_dec,$(call int_encode,4)),$(call int_encode,3))
+$(call test_assert,$(call int_dec,$(call int_encode,10)),$(call int_encode,9))
+$(call stop_test)
+
+__gmsl_warning = x x x x x x x x x x
+$(call start_test,dec)
+$(call test_assert,$(call dec,0),10)
+$(call test_assert,$(call dec,1),0)
+$(call test_assert,$(call dec,4),3)
+$(call test_assert,$(call dec,10),9)
+$(call stop_test)
+
+$(call start_test,int_double)
+$(call test_assert,$(call int_double,$(call int_encode,0)),$(call int_encode,0))
+$(call test_assert,$(call int_double,$(call int_encode,1)),$(call int_encode,2))
+$(call test_assert,$(call int_double,$(call int_encode,4)),$(call int_encode,8))
+$(call stop_test)
+
+$(call start_test,double)
+$(call test_assert,$(call double,0),0)
+$(call test_assert,$(call double,1),2)
+$(call test_assert,$(call double,4),8)
+$(call stop_test)
+
+$(call start_test,int_halve)
+$(call test_assert,$(call int_halve,$(call int_encode,0)),$(call int_encode,0))
+$(call test_assert,$(call int_halve,$(call int_encode,2)),$(call int_encode,1))
+$(call test_assert,$(call int_halve,$(call int_encode,8)),$(call int_encode,4))
+$(call test_assert,$(call int_halve,$(call int_encode,7)),$(call int_encode,3))
+$(call stop_test)
+
+$(call start_test,halve)
+$(call test_assert,$(call halve,0),0)
+$(call test_assert,$(call halve,2),1)
+$(call test_assert,$(call halve,8),4)
+$(call test_assert,$(call halve,7),3)
+$(call stop_test) 
+
+$(call start_test,gt)
+$(call test_assert,$(call gt,2,3),)
+$(call test_assert,$(call gt,3,2),$(true))
+$(call test_assert,$(call gt,2,2),)
+$(call stop_test)
+
+$(call start_test,gte)
+$(call test_assert,$(call gte,2,3),)
+$(call test_assert,$(call gte,3,2),$(true))
+$(call test_assert,$(call gte,2,2),$(true))
+$(call stop_test)
+
+$(call start_test,lt)
+$(call test_assert,$(call lt,2,3),$(true))
+$(call test_assert,$(call lt,3,2),)
+$(call test_assert,$(call lt,2,2),)
+$(call stop_test)
+
+$(call start_test,lte)
+$(call test_assert,$(call lte,2,3),$(true))
+$(call test_assert,$(call lte,3,2),)
+$(call test_assert,$(call lte,2,2),$(true))
+$(call stop_test)
+
+$(call start_test,eq)
+$(call test_assert,$(call eq,2,3),)
+$(call test_assert,$(call eq,3,2),)
+$(call test_assert,$(call eq,2,2),$(true))
+$(call stop_test)
+
+$(call start_test,ne)
+$(call test_assert,$(call ne,2,3),$(true))
+$(call test_assert,$(call ne,3,2),$(true))
+$(call test_assert,$(call ne,2,2),)
+$(call stop_test)
+
+$(call start_test,int_gt)
+$(call test_assert,$(call int_gt,$(call int_encode,2),$(call int_encode,3)),)
+$(call test_assert,$(call int_gt,$(call int_encode,3),$(call int_encode,2)),$(true))
+$(call test_assert,$(call int_gt,$(call int_encode,2),$(call int_encode,2)),)
+$(call stop_test)
+
+$(call start_test,int_gte)
+$(call test_assert,$(call int_gte,$(call int_encode,2),$(call int_encode,3)),)
+$(call test_assert,$(call int_gte,$(call int_encode,3),$(call int_encode,2)),$(true))
+$(call test_assert,$(call int_gte,$(call int_encode,2),$(call int_encode,2)),$(true))
+$(call stop_test)
+
+$(call start_test,int_lt)
+$(call test_assert,$(call int_lt,$(call int_encode,2),$(call int_encode,3)),$(true))
+$(call test_assert,$(call int_lt,$(call int_encode,3),$(call int_encode,2)),)
+$(call test_assert,$(call int_lt,$(call int_encode,2),$(call int_encode,2)),)
+$(call stop_test)
+
+$(call start_test,int_lte)
+$(call test_assert,$(call int_lte,$(call int_encode,2),$(call int_encode,3)),$(true))
+$(call test_assert,$(call int_lte,$(call int_encode,3),$(call int_encode,2)),)
+$(call test_assert,$(call int_lte,$(call int_encode,2),$(call int_encode,2)),$(true))
+$(call stop_test)
+
+$(call start_test,int_eq)
+$(call test_assert,$(call int_eq,$(call int_encode,2),$(call int_encode,3)),)
+$(call test_assert,$(call int_eq,$(call int_encode,3),$(call int_encode,2)),)
+$(call test_assert,$(call int_eq,$(call int_encode,2),$(call int_encode,2)),$(true))
+$(call stop_test)
+
+$(call start_test,int_ne)
+$(call test_assert,$(call int_ne,$(call int_encode,2),$(call int_encode,3)),$(true))
+$(call test_assert,$(call int_ne,$(call int_encode,3),$(call int_encode,2)),$(true))
+$(call test_assert,$(call int_ne,$(call int_encode,2),$(call int_encode,2)),)
+$(call stop_test)
+
+$(call start_test,gmsl_compatible)
+$(call test_assert,$(call gmsl_compatible,$(gmsl_version)),$(true))
+$(call test_assert,$(call gmsl_compatible,0 9 0),$(true))
+$(call test_assert,$(call gmsl_compatible,0 0 1),$(true))
+$(call test_assert,$(call gmsl_compatible,0 0 0),$(true))
+$(call test_assert,$(call gmsl_compatible,2 0 0),)
+$(call test_assert,$(call gmsl_compatible,1 1 0),)
+$(call test_assert,$(call gmsl_compatible,1 0 8),$(true))
+$(call test_assert,$(call gmsl_compatible,1 0 8),$(true))
+$(call test_assert,$(call gmsl_compatible,1 0 10),$(true))
+$(call test_assert,$(call gmsl_compatible,1 0 11),$(true))
+$(call test_assert,$(call gmsl_compatible,1 0 12),)
+$(call stop_test)

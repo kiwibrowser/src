@@ -1,0 +1,84 @@
+#!/bin/bash
+# Copyright 2016 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# The purpose of this script is to help user setup SSH/ADB connection to
+# the Android apps on their Chromebook. It performs the following steps:
+# 1. Download SSH RSA key for devmode Chromebook.
+# 2. Add an entry in .ssh/config, then ssh to the Chromebook via RSA key.
+# 3. Copy local ADB key to Chromebook so that ADB would accept request from
+#    this workstation.
+
+# Configurable constants
+KEY_URL="https://chromium.googlesource.com/chromiumos/overlays/chromiumos-overlay/+/3b1b89803279f3f21b6b95b88cdaae22efe56c63/chromeos-base/chromeos-test-testauthkeys/files/testing_rsa?format=TEXT"
+
+# Environment checks
+if [ $# -ne 2 ]; then
+  echo "Usage: $0 <ip address> <chromebook host name>"
+  exit 1
+fi
+
+IP=$1
+CHROMEBOOK=$2
+
+if ! ping -c1 -W1 ${IP} &> /dev/null; then
+  echo "ERROR: ${IP} is not reachable"
+  exit 1
+fi
+
+# Download SSH key file
+mkdir --mode=700 -p ~/.ssh
+TESTING_RSA=$(readlink -f ~/.ssh/chromebook_testing_rsa)
+if [ ! -f ${TESTING_RSA} ]; then
+  curl -s ${KEY_URL} | base64 --decode > ${TESTING_RSA}
+  chmod 600 ${TESTING_RSA}
+fi
+
+# Check if the SSH config already had the host
+SSH_CONFIG=$(readlink -f ~/.ssh/config)
+if [[ -z "$(grep "Host ${CHROMEBOOK}" ${SSH_CONFIG} 2> /dev/null)" ]]; then
+  # Alter .ssh/config
+  cat << EOF >> ${SSH_CONFIG}
+
+Host ${CHROMEBOOK}
+  Hostname ${IP}
+  User root
+  IdentityFile ${TESTING_RSA}
+  UserKnownHostsFile /dev/null
+  StrictHostKeyChecking no
+  LogLevel ERROR
+EOF
+fi
+
+# Connect to Chromebook
+function ssh_exec() {
+  ssh ${CHROMEBOOK} $1 || (echo "ERROR: failed to execute command: $1" && exit 1)
+}
+
+ssh_exec "exit"
+echo "INFO: SSH connectivity established."
+
+# Copy ADB key
+adb kill-server &> /dev/null
+adb start-server &> /dev/null
+ADB_KEY=$(readlink -f ~/.android/adbkey.pub)
+if [ -z ${ADB_KEY} ]; then
+  echo "ERROR: cannot locate ADB public key."
+  exit 1
+fi
+
+ssh_exec "android-sh -c 'cat > /data/misc/adb/adb_keys'" < ${ADB_KEY}
+ssh_exec "android-sh -c 'restorecon /data/misc/adb/adb_keys'"
+ssh_exec "android-sh -c 'setprop persist.sys.usb.config mtp,adb'"
+
+SDK_VERSION=`ssh_exec "android-sh -c 'getprop ro.build.version.sdk'"`
+# 25: Android N SDK version.
+if [ "${SDK_VERSION}" -ge 25 ]; then
+  # In N or later, init.usb.rc is updated so that persist.sys.usb.config
+  # is propagated to sys.usb.config only on booting.
+  # So, here manually propagate it so that adbd is triggered to start.
+  ssh_exec "android-sh -c 'setprop sys.usb.config mtp,adb'"
+fi
+
+echo "INFO: ADB set up complete."

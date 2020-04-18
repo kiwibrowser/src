@@ -1,0 +1,161 @@
+#!/bin/sh
+#---------------------------------------------
+#   xdg-su
+#
+#   Utility script to run a command as an alternate user, generally
+#       the root user, with a graphical prompt for the root
+#       password if needed
+#
+#   Refer to the usage() function below for usage.
+#
+#   Copyright 2009-2010, Fathi Boudra <fabo@freedesktop.org>
+#   Copyright 2009-2010, Rex Dieter <rdieter@fedoraproject.org>
+#   Copyright 2006, Jeremy White <jwhite@codeweavers.com>
+#   Copyright 2006, Kevin Krammer <kevin.krammer@gmx.at>
+#
+#   LICENSE:
+#
+#---------------------------------------------
+
+manualpage()
+{
+cat << _MANUALPAGE
+_MANUALPAGE
+}
+
+usage()
+{
+cat << _USAGE
+_USAGE
+}
+
+#@xdg-utils-common@
+
+su_kde()
+{
+    if [ x"$KDE_SESSION_VERSION" = x"4" ]; then
+        KDESU=`kde4-config --locate kdesu --path exe 2>/dev/null`
+    else
+        KDESU=`which kdesu 2>/dev/null`
+    fi
+    if [ $? -eq 0 ] ; then
+        if [ -z "$user" ] ; then
+             $KDESU -c "$cmd"
+        else
+             $KDESU -u "$user" -c "$cmd"
+        fi
+
+        if [ $? -eq 0 ]; then
+            exit_success
+        else
+            exit_failure_operation_failed
+        fi
+    else
+        su_generic
+    fi
+}
+
+su_gnome()
+{
+    GSU=`which gnomesu 2>/dev/null`
+    if [ $? -ne 0 ] ; then
+        GSU=`which xsu 2>/dev/null`
+    fi
+    if [ $? -eq 0 ] ; then
+        if [ -z "$user" ] ; then
+            $GSU -c "$cmd"
+        else
+            $GSU -u "$user" -c "$cmd"
+        fi
+
+        if [ $? -eq 0 ]; then
+            exit_success
+        else
+            exit_failure_operation_failed
+        fi
+    else
+        su_generic
+    fi
+}
+
+su_generic()
+{
+    if [ -z "$user" ] ; then
+        xterm -geom 60x5 -T "xdg-su: $cmd" -e su -c "$cmd"
+    else
+        xterm -geom 60x5 -T "xdg-su: $cmd" -e su -c "$cmd" "$user"
+    fi
+
+    if [ $? -eq 0 ]; then
+        exit_success
+    else
+        exit_failure_operation_failed
+    fi
+}
+
+[ x"$1" != x"" ] || exit_failure_syntax
+
+user=
+cmd=
+while [ $# -gt 0 ] ; do
+    parm="$1"
+    shift
+
+    case "$parm" in
+      -u)
+        if [ -z "$1" ] ; then
+            exit_failure_syntax "user argument missing for -u"
+        fi
+        user="$1"
+        shift
+        ;;
+
+      -c)
+        if [ -z "$1" ] ; then
+            exit_failure_syntax "command argument missing for -c"
+        fi
+        cmd="$1"
+        shift
+        ;;
+
+      -*)
+        exit_failure_syntax "unexpected option '$parm'"
+        ;;
+
+      *)
+        exit_failure_syntax "unexpected argument '$parm'"
+        ;;
+    esac
+done
+
+if [ -z "${cmd}" ] ; then
+    exit_failure_syntax "command missing"
+fi
+
+detectDE
+
+if [ x"$DE" = x"" ]; then
+    XSU=`which xsu 2>/dev/null`
+    if [ $? -eq 0 ] ; then
+        DE=generic
+    fi
+fi
+
+case "$DE" in
+    kde)
+    su_kde
+    ;;
+
+    gnome*|lxde)
+    su_gnome
+    ;;
+
+    generic)
+    su_generic
+    ;;
+
+    *)
+    [ x"$user" = x"" ] && user=root
+    exit_failure_operation_impossible "no graphical method available for invoking '$cmd' as '$user'"
+    ;;
+esac

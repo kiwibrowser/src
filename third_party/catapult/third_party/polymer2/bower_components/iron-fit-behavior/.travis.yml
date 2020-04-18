@@ -1,0 +1,33 @@
+language: node_js
+sudo: required
+before_script:
+  - npm install -g polymer-cli
+  - polymer install --variants
+  - >-
+    npm run update-types && git diff --exit-code || (echo -e
+    '\n\033[31mERROR:\033[0m Typings are stale. Please run "npm run
+    update-types".' && false)
+  - >-
+    npm run format && git diff --exit-code || (echo -e '\n\033[31mERROR:\033[0m
+    Typings are stale. Please run "npm run format".' && false)
+env:
+  global:
+    - secure: >-
+        L4lSnuQZDY+YcXYzBZSRKjJJ1rZf18Lc/8YDgQPfkMkAItrRHGR8vblBoKiPAmtvgNxztcpZxAXTiDy1vAeVv54QnX9b1JsuOs7rrQxB4BS04Dj7LdT6DDu1p/V09MJBN11lzLVxgpxljbumwGWE4gfpDl2+rjbBt7cRV5VkVnE=
+    - secure: >-
+        H7dHZ9FQvJszK2UMNZJiZmzOPET3muO/XvlkUc1x3KcUlV5/tD/404V05XfFMowH7DavHFYleZkb89deYjq9PHncO9c4bp4SHD7HKN4FaGyhzfpXjg66v3dZH/OcERjaas337uUE2jo/x1jCq4HJCz2bMVh+bvd4du1C/2OWarc=
+node_js: stable
+addons:
+  firefox: latest
+  apt:
+    sources:
+      - google-chrome
+    packages:
+      - google-chrome-stable
+  sauce_connect: true
+script:
+  - xvfb-run polymer test
+  - >-
+    if [ "${TRAVIS_PULL_REQUEST}" = "false" ]; then polymer test -s 'default';
+    fi
+dist: trusty

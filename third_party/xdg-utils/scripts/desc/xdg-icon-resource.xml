@@ -1,0 +1,372 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl"
+   href="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+    "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
+]>
+<refentry id="xdg-icon-resource">
+  <refentryinfo>
+    <title>xdg-icon-resource Manual</title>
+    <copyright>
+      <year>2006</year>
+    </copyright>
+    <author>
+      <firstname>Kevin</firstname>
+      <surname>Krammer</surname>
+    </author>
+    <address><email>kevin.krammer@gmx.at</email></address>
+    <author>
+      <firstname>Jeremy</firstname>
+      <surname>White</surname>
+    </author>
+    <address><email>jwhite@codeweavers.com</email></address>
+    <releaseinfo>xdg-utils 1.0</releaseinfo>
+  </refentryinfo>
+
+  <refmeta>
+    <refentrytitle>xdg-icon-resource</refentrytitle>
+    <manvolnum>1</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname>xdg-icon-resource</refname>
+    <refpurpose>command line tool for (un)installing icon resources</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+    <cmdsynopsis>
+      <command>xdg-icon-resource</command>
+      <arg choice="plain">install</arg>
+      <arg><option>--noupdate</option></arg>
+      <arg><option>--novendor</option></arg>
+      <arg><option>--theme <replaceable>theme</replaceable></option></arg>
+      <arg><option>--context <replaceable>context</replaceable></option></arg>
+      <arg><option>--mode <replaceable>mode</replaceable></option></arg>
+      <arg choice="plain"><option>--size <replaceable>size</replaceable></option></arg>
+      <arg choice="plain"><replaceable>icon-file</replaceable></arg>
+      <arg><replaceable>icon-name</replaceable></arg>
+    </cmdsynopsis>
+    <cmdsynopsis>
+      <command>xdg-icon-resource</command>
+      <arg choice="plain">uninstall</arg>
+      <arg><option>--noupdate</option></arg>
+      <arg><option>--theme <replaceable>theme</replaceable></option></arg>
+      <arg><option>--context <replaceable>context</replaceable></option></arg>
+      <arg><option>--mode <replaceable>mode</replaceable></option></arg>
+      <arg choice="plain"><option>--size <replaceable>size</replaceable></option></arg>
+      <arg choice="plain"><replaceable>icon-name</replaceable></arg>
+    </cmdsynopsis>
+    <cmdsynopsis>
+      <command>xdg-icon-resource</command>
+      <arg choice="plain">forceupdate</arg>
+      <arg><option>--theme <replaceable>theme</replaceable></option></arg>
+      <arg><option>--mode <replaceable>mode</replaceable></option></arg>
+    </cmdsynopsis>
+    <cmdsynopsis>
+      <command>xdg-icon-resource</command>
+      <group choice="req">
+        <arg choice="plain"><option>--help</option></arg>
+        <arg choice="plain"><option>--manual</option></arg>
+        <arg choice="plain"><option>--version</option></arg>
+      </group>
+    </cmdsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1 id="description">
+    <title>Description</title>
+    <para>
+      The xdg-icon-resource program can be used to install icon resources
+      into the desktop icon system in order to illustrate menu entries,
+      to depict desktop icons or to graphically represent file types.
+    </para>
+    <para>
+      The desktop icon system identifies icons by name. Depending on the
+      required size, the choice of icon theme and the context in which the
+      icon is used, the desktop icon system locates an appropriate
+      icon resource to depict an icon. Icon resources can be XPM files or
+      PNG files. 
+    </para>
+    <para>
+      The desktop icon system works according to the
+      XDG Icon Theme Specification at
+      http://www.freedesktop.org/Standards/icon-theme-spec
+    </para>
+  </refsect1>
+  <refsect1 id="commands">
+    <title>Commands</title>
+    <variablelist>
+      <varlistentry>
+	<term>install</term>
+	<listitem>
+	  <simpara>
+	    Installs the icon file indicated by <replaceable>icon-file</replaceable>
+            to the desktop icon system under the name 
+            <replaceable>icon-name</replaceable>. 
+            Icon names do not have an extension.
+            If <replaceable>icon-name</replaceable> is not provided the name is
+            derived from <replaceable>icon-file</replaceable>.
+            The icon file must have
+            <emphasis>.png</emphasis> or <emphasis>.xpm</emphasis>
+            as extension. If a corresponding <emphasis>.icon</emphasis>
+            file exists in the same location as <replaceable>icon-file</replaceable>
+            it will be installed as well.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>uninstall</term>
+	<listitem>
+	  <simpara>
+	    Removes the icon indicated by <replaceable>icon-name</replaceable>
+            from the desktop icon system. Note that icon names do not have
+            an extension.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>forceupdate</term>
+	<listitem>
+	  <simpara>
+	    Force an update of the desktop icon system. This is only useful if
+	    the last call to xdg-icon-resource included the <option>--noupdate</option> option.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+  <refsect1 id="options">
+    <title>Options</title>
+    <variablelist>
+      <varlistentry>
+	<term><option>--noupdate</option></term>
+	<listitem>
+	  <simpara>
+	    Postpone updating the desktop icon system. If multiple icons are
+	    added in sequence this flag can be used to indicate that
+	    additional changes will follow and that it is not
+            necassery to update the desktop icon system right away.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><option>--novendor</option></term>
+	<listitem>
+	  <simpara>
+	    Normally, xdg-icon-resource checks to ensure that an icon file
+	    to be installed in the <emphasis>apps</emphasis> context has
+	    a proper vendor prefix. This option can be used to disable
+	    that check.
+	  </simpara>
+	  <simpara>
+            A vendor prefix consists of alpha characters ([a-zA-Z]) and is
+            terminated with a dash ("-").
+            Companies and organizations are encouraged to use a word
+            or phrase, preferably the organizations name, for which they hold
+            a trademark as their vendor prefix.
+            The purpose of the vendor prefix is to prevent name conflicts.
+          </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term><option>--theme</option> <replaceable>theme</replaceable></term>
+	<listitem>
+	  <simpara>
+	    Installs or removes the icon file as part of 
+	    <replaceable>theme</replaceable>. If no theme is specified the
+	    icons will be installed as part of the default <emphasis>hicolor</emphasis> theme.
+	    Applications may install icons under multiple themes but should
+	    at least install icons for the default <emphasis>hicolor</emphasis> theme.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term><option>--context</option> <replaceable>context</replaceable></term>
+	<listitem>
+	  <simpara>
+	    Specifies the context for the icon. Icons to be used in the
+            application menu and as desktop icon should use
+            <emphasis>apps</emphasis> as context which is the default
+            context. Icons to be used as file icons should use
+            <emphasis>mimetypes</emphasis> as context.
+            Other common contexts are <emphasis>actions</emphasis>,
+            <emphasis>devices</emphasis>, <emphasis>emblems</emphasis>,
+            <emphasis>filesystems</emphasis> and <emphasis>stock</emphasis>.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term><option>--size</option> <replaceable>size</replaceable></term>
+	<listitem>
+	  <simpara>
+	    Specifies the size of the icon. All icons must be square.
+	    Common sizes for icons in the apps context are:
+	    16, 22, 32, 48, 64 and 128.  
+	    Common sizes for icons in the mimetypes context are:
+	    16, 22, 32, 48, 64 and 128
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term><option>--mode</option> <replaceable>mode</replaceable></term>
+	<listitem>
+	  <simpara><replaceable>mode</replaceable> can be
+            <emphasis>user</emphasis> or <emphasis>system</emphasis>.
+            In user mode the file is (un)installed for the current user
+            only. In system mode the file is (un)installed for all users
+            on the system. Usually only root is allowed to install in
+            system mode.
+	  </simpara>
+	  <simpara>
+	    The default is to use system mode when called by root
+	    and to use user mode when called by a non-root user.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term><option>--help</option></term>
+	<listitem>
+	  <simpara>
+	    Show command synopsis.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term><option>--manual</option></term>
+	<listitem>
+	  <simpara>
+	    Show this manualpage.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>--version</option></term>
+        <listitem>
+          <simpara>
+            Show the xdg-utils version information.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+    </variablelist>
+  </refsect1>
+  <refsect1 id="env_vars">
+    <title>Environment Variables</title>
+    <para>
+      xdg-icon-resource honours the following environment variables:
+    </para>
+    <variablelist>
+      <varlistentry>
+	<term>XDG_UTILS_DEBUG_LEVEL</term>
+	<listitem>
+	  <simpara>
+	    Setting this environment variable to a non-zero numerical value
+	    makes xdg-icon-resource do more verbose reporting on stderr.
+	    Setting a higher value increases the verbosity.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>XDG_UTILS_INSTALL_MODE</term>
+	<listitem>
+	  <simpara>
+	    This environment variable can be used by the user or
+            administrator to override the installation mode.
+	    Valid values are <emphasis>user</emphasis> and
+            <emphasis>system</emphasis>.  
+	  </simpara>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+
+  <refsect1 id="exitcodes">
+    <title>Exit Codes</title>
+    <para>
+      An exit code of 0 indicates success while a non-zero exit code
+      indicates failure. The following failure codes can be returned:
+    </para>
+    <variablelist>
+      <varlistentry>
+	<term><option>1</option></term>
+	<listitem>
+	  <simpara>
+	    Error in command line syntax.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><option>2</option></term>
+	<listitem>
+	  <simpara>
+	    One of the files passed on the command line did not exist.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><option>3</option></term>
+	<listitem>
+	  <simpara>
+	    A required tool could not be found. 
+	  </simpara>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><option>4</option></term>
+	<listitem>
+	  <simpara>
+	    The action failed. 
+	  </simpara>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><option>5</option></term>
+	<listitem>
+	  <simpara>
+	    No permission to read one of the files passed on the command
+            line.
+	  </simpara>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+  <refsect1 id="seealso">
+    <title>See Also</title>
+    <para><citerefentry><refentrytitle>xdg-desktop-icon</refentrytitle>
+        <manvolnum>1</manvolnum>
+      </citerefentry>,
+      <citerefentry><refentrytitle>xdg-desktop-menu</refentrytitle>
+        <manvolnum>1</manvolnum>
+      </citerefentry>,
+      <citerefentry><refentrytitle>xdg-mime</refentrytitle>
+        <manvolnum>1</manvolnum>
+      </citerefentry>
+    </para>
+  </refsect1>
+  <refsect1 id="examples">
+    <title>Examples</title>
+    <para>
+To install an icon resource to depict a launcher for the application
+myfoobar, the company ShinyThings Inc. can use:
+<programlisting>
+xdg-icon-resource install --size 64 shinythings-myfoobar.png
+</programlisting>
+    </para>
+    <para>
+To install an icon for a new application/x-foobar file type one can use:
+<programlisting>
+xdg-icon-resource install --context mimetypes --size 48 ./mime-foobar-48.png application-x-foobar
+xdg-icon-resource install --context mimetypes --size 64 ./mime-foobar-64.png application-x-foobar
+</programlisting>This will install two icons with the name application-x-foobar
+but with different sizes.
+    </para>
+  </refsect1>
+</refentry>

@@ -1,0 +1,81 @@
+    Specialization Constants tests
+
+Tests:
+ + dEQP-VK.pipeline.spec_constant.*
+
+Includes:
+ + Uses extended GLSL (KHR_vulkan_glsl) to specify shaders
+   (dependency on glslang)
+ + Basic specialization constants (OpSpecConstant, OpSpecConstantTrue,
+   OpSpecConstantFalse instructions)
+   - No specialization info (default values)
+   - Partial and full specialization
+   - 32 bit boolean, integer and float types
+   - (optional) 16 and 64 bit types, where supported
+ + Specialization constants in composites (OpSpecConstantComposite instruction)
+   - struct members
+   - array elements
+   - vector components
+   - matrix columns
+ + Specialization constants in expressions (OpSpecConstantOp instruction)
+   - Array size
+   - (optional) Various instructions as listed in the spec
+ + Compute shader work group size specialization
+ + Built-in constant specialization (override the default value)
+ + All of the above should be exercised with all applicable shader stages in
+   both pipeline types (compute and graphics).
+
+Excludes:
+ + SPIR-V assembly code
+ + OpSpecConstantOp instructions are covered by assembly tests in
+   external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmInstructionTests.cpp
+
+Notes:
+ + SPIR-V generated from GLSL should be inspected for instruction coverage
+   and overall correctness before accepting the tests.
+
+Description:
+
+The tests will run various shader stages with some specialization constants.
+Constant values are read in the shader, written to a SSBO, and read back from
+a host-visible buffer. Depending on the test, none, some, or all specialization
+constants are defined through VkSpecializationInfo. The test passes if the value
+written by the shader matches the expected reference value (either the default
+or a set specialized value).
+
+For expression tests result of an operation is written to the output SSBO and
+then compared to a reference operation result.
+
+A test with no specialization info verifies that the default values defined in
+the shader are used correctly. Specialization with one or more specialization
+constants check if Vulkan structure is consumed correctly by the API.
+
+Different types and type widths are tested to see if provided value is passed
+correctly to the shader. The tests will use types and expressions similar to the
+following (examples are not exhaustive):
+
+  // Basic specialization constants and const expressions
+
+  layout(constant_id = 7) const int foo = 3;
+  layout(constant_id = 9) const float bar = 6.5;
+
+  int data[foo];
+  int data2[foo + 2];
+
+  // Specialization constant expressions
+
+  const float expr_fadd = bar + 3.5;  // OpFAdd
+
+  // Specialization constant composites
+
+  const vec3 sc_vec = vec3(1.0, bar, 3.0);
+  const int sc_array[4] = int[](foo, 2, 3, 4);
+
+  // Override work group size
+
+  layout(local_size_y_id = 19) in;                        // y=? (id=19)
+  layout(local_size_x_id = 20, local_size_z_id = 21) in;  // x=? z=?
+
+  // Override Built-in constant
+
+  layout(constant_id = 13) gl_MaxImageUnits;

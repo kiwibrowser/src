@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<!--
+Copyright (c) 2013 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/base/base64.html">
+<link rel="import" href="/tracing/importer/import.html">
+<link rel="import" href="/tracing/ui/base/file.html">
+<link rel="import" href="/tracing/ui/base/hotkey_controller.html">
+<link rel="import" href="/tracing/ui/base/info_bar_group.html">
+<link rel="import" href="/tracing/ui/base/overlay.html">
+<link rel="import" href="/tracing/ui/base/utils.html">
+<link rel="import"
+      href="/tracing/ui/extras/about_tracing/inspector_tracing_controller_client.html">
+<link rel="import"
+      href="/tracing/ui/extras/about_tracing/record_controller.html">
+<link rel="import"
+      href="/tracing/ui/extras/about_tracing/xhr_based_tracing_controller_client.html">
+<link rel="import" href="/tracing/ui/timeline_view.html">
+
+<style>
+x-profiling-view {
+  flex-direction: column;
+  display: flex;
+  padding: 0;
+}
+
+x-profiling-view .controls #save-button {
+  margin-left: 64px !important;
+}
+
+x-profiling-view > tr-ui-timeline-view {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.report-id-message {
+  -webkit-user-select: text;
+}
+
+x-timeline-view-buttons {
+  display: flex;
+  align-items: center;
+}
+</style>
+
+<template id="profiling-view-template">
+  <tr-ui-b-info-bar-group></tr-ui-b-info-bar-group>
+  <x-timeline-view-buttons>
+    <button id="record-button">Record</button>
+    <button id="save-button">Save</button>
+    <button id="load-button">Load</button>
+  </x-timeline-view-buttons>
+  <tr-ui-timeline-view>
+    <track-view-container id='track_view_container'></track-view-container>
+  </tr-ui-timeline-view>
+</template>
+
+<script>
+'use strict';
+
+/**
+ * @fileoverview ProfilingView glues the View control to
+ * TracingController.
+ */
+tr.exportTo('tr.ui.e.about_tracing', function() {
+  /**
+   * ProfilingView
+   * @constructor
+   * @extends {HTMLDivElement}
+   */
+  const ProfilingView = tr.ui.b.define('x-profiling-view');
+  const THIS_DOC = document.currentScript.ownerDocument;
+
+  ProfilingView.prototype = {
+    __proto__: HTMLDivElement.prototype,
+
+    decorate(tracingControllerClient) {
+      Polymer.dom(this).appendChild(
+          tr.ui.b.instantiateTemplate('#profiling-view-template', THIS_DOC));
+
+      this.timelineView_ =
+          Polymer.dom(this).querySelector('tr-ui-timeline-view');
+      this.infoBarGroup_ =
+          Polymer.dom(this).querySelector('tr-ui-b-info-bar-group');
+
+      // Detach the buttons. We will reattach them to the timeline view.
+      // TODO(nduca): Make timeline-view have a content select="x-buttons"
+      // that pulls in any buttons.
+      this.recordButton_ = Polymer.dom(this).querySelector('#record-button');
+      this.loadButton_ = Polymer.dom(this).querySelector('#load-button');
+      this.saveButton_ = Polymer.dom(this).querySelector('#save-button');
+
+      const buttons = Polymer.dom(this).querySelector(
+          'x-timeline-view-buttons');
+      Polymer.dom(buttons.parentElement).removeChild(buttons);
+      Polymer.dom(this.timelineView_.leftControls).appendChild(buttons);
+      this.initButtons_();
+
+      this.timelineView_.hotkeyController.addHotKey(new tr.ui.b.HotKey({
+        eventType: 'keypress',
+        keyCode: 'r'.charCodeAt(0),
+        callback(e) {
+          this.beginRecording();
+          event.stopPropagation();
+        },
+        thisArg: this
+      }));
+
+      this.initDragAndDrop_();
+
+      if (tracingControllerClient) {
+        this.tracingControllerClient_ = tracingControllerClient;
+      } else if (window.DevToolsHost !== undefined) {
+        this.tracingControllerClient_ =
+            new tr.ui.e.about_tracing.InspectorTracingControllerClient(
+                new tr.ui.e.about_tracing.InspectorConnection(window));
+      } else {
+        this.tracingControllerClient_ =
+            new tr.ui.e.about_tracing.XhrBasedTracingControllerClient();
+      }
+
+      this.isRecording_ = false;
+      this.activeTrace_ = undefined;
+
+      this.updateTracingControllerSpecificState_();
+    },
+
+    // Detach all document event listeners. Without this the tests can get
+    // confused as the element may still be listening when the next test runs.
+    detach_() {
+      this.detachDragAndDrop_();
+    },
+
+    get isRecording() {
+      return this.isRecording_;
+    },
+
+    set tracingControllerClient(tracingControllerClient) {
+      this.tracingControllerClient_ = tracingControllerClient;
+      this.updateTracingControllerSpecificState_();
+    },
+
+    updateTracingControllerSpecificState_() {
+      const isInspector = this.tracingControllerClient_ instanceof
+          tr.ui.e.about_tracing.InspectorTracingControllerClient;
+
+      if (isInspector) {
+        this.infoBarGroup_.addMessage(
+            'This about:tracing is connected to a remote device...',
+            [{buttonText: 'Wow!', onClick() {}}]);
+      }
+    },
+
+    beginRecording() {
+      if (this.isRecording_) {
+        throw new Error('Already recording');
+      }
+      this.isRecording_ = true;
+      const resultPromise = tr.ui.e.about_tracing.beginRecording(
+          this.tracingControllerClient_);
+      resultPromise.then(
+          function(data) {
+            this.isRecording_ = false;
+            const traceName = tr.ui.e.about_tracing.defaultTraceName(
+                this.tracingControllerClient_);
+            this.setActiveTrace(traceName, data, false);
+          }.bind(this),
+          function(err) {
+            this.isRecording_ = false;
+            if (err instanceof tr.ui.e.about_tracing.UserCancelledError) {
+              return;
+            }
+            tr.ui.b.Overlay.showError('Error while recording', err);
+          }.bind(this));
+      return resultPromise;
+    },
+
+    get timelineView() {
+      return this.timelineView_;
+    },
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    clearActiveTrace() {
+      this.saveButton_.disabled = true;
+      this.activeTrace_ = undefined;
+    },
+
+    setActiveTrace(filename, data) {
+      this.activeTrace_ = {
+        filename,
+        data
+      };
+
+      this.infoBarGroup_.clearMessages();
+      this.updateTracingControllerSpecificState_();
+      this.saveButton_.disabled = false;
+      this.timelineView_.viewTitle = filename;
+
+      const m = new tr.Model();
+      const i = new tr.importer.Import(m);
+      const p = i.importTracesWithProgressDialog([data]);
+      p.then(
+          function() {
+            this.timelineView_.model = m;
+            this.timelineView_.updateDocumentFavicon();
+          }.bind(this),
+          function(err) {
+            tr.ui.b.Overlay.showError('While importing: ', err);
+          }.bind(this));
+    },
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    initButtons_() {
+      this.recordButton_.addEventListener(
+          'click', function(event) {
+            event.stopPropagation();
+            this.beginRecording();
+          }.bind(this));
+
+      this.loadButton_.addEventListener(
+          'click', function(event) {
+            event.stopPropagation();
+            this.onLoadClicked_();
+          }.bind(this));
+
+      this.saveButton_.addEventListener('click',
+          this.onSaveClicked_.bind(this));
+      this.saveButton_.disabled = true;
+    },
+
+    requestFilename_() {
+      // unsafe filename patterns:
+      const illegalRe = /[\/\?<>\\:\*\|":]/g;
+      const controlRe = /[\x00-\x1f\x80-\x9f]/g;
+      const reservedRe = /^\.+$/;
+
+      const defaultName = this.activeTrace_.filename;
+      let fileExtension = '.json';
+      let fileRegex = /\.json$/;
+      if (/[.]gz$/.test(defaultName)) {
+        fileExtension += '.gz';
+        fileRegex = /\.json\.gz$/;
+      } else if (/[.]zip$/.test(defaultName)) {
+        fileExtension = '.zip';
+        fileRegex = /\.zip$/;
+      }
+
+      const custom = prompt('Filename? (' + fileExtension +
+                          ' appended) Or leave blank:');
+      if (custom === null) {
+        return undefined;
+      }
+
+      let name;
+      if (custom) {
+        name = ' ' + custom;
+      } else {
+        const date = new Date();
+        const dateText = ' ' + date.toDateString() +
+                       ' ' + date.toLocaleTimeString();
+        name = dateText;
+      }
+
+      const filename = defaultName.replace(fileRegex, name) + fileExtension;
+
+      return filename
+          .replace(illegalRe, '.')
+          .replace(controlRe, '\u2022')
+          .replace(reservedRe, '')
+          .replace(/\s+/g, '_');
+    },
+
+    onSaveClicked_() {
+      // Create a blob URL from the binary array.
+      const blob = new Blob([this.activeTrace_.data],
+          {type: 'application/octet-binary'});
+      const blobUrl = window.webkitURL.createObjectURL(blob);
+
+      // Create a link and click on it. BEST API EVAR!
+      const link = document.createElementNS('http://www.w3.org/1999/xhtml', 'a');
+      link.href = blobUrl;
+      const filename = this.requestFilename_();
+      if (filename) {
+        link.download = filename;
+        link.click();
+      }
+    },
+
+    onLoadClicked_() {
+      const inputElement = document.createElement('input');
+      inputElement.type = 'file';
+      inputElement.multiple = false;
+
+      let changeFired = false;
+      inputElement.addEventListener(
+          'change',
+          function(e) {
+            if (changeFired) return;
+            changeFired = true;
+
+            const file = inputElement.files[0];
+            tr.ui.b.readFile(file).then(
+                function(data) {
+                  this.setActiveTrace(file.name, data);
+                }.bind(this),
+                function(err) {
+                  tr.ui.b.Overlay.showError('Error while loading file: ' + err);
+                });
+          }.bind(this), false);
+      inputElement.click();
+    },
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    initDragAndDrop_() {
+      this.dropHandler_ = this.dropHandler_.bind(this);
+      this.ignoreDragEvent_ = this.ignoreDragEvent_.bind(this);
+      document.addEventListener('dragstart', this.ignoreDragEvent_, false);
+      document.addEventListener('dragend', this.ignoreDragEvent_, false);
+      document.addEventListener('dragenter', this.ignoreDragEvent_, false);
+      document.addEventListener('dragleave', this.ignoreDragEvent_, false);
+      document.addEventListener('dragover', this.ignoreDragEvent_, false);
+      document.addEventListener('drop', this.dropHandler_, false);
+    },
+
+    detachDragAndDrop_() {
+      document.removeEventListener('dragstart', this.ignoreDragEvent_);
+      document.removeEventListener('dragend', this.ignoreDragEvent_);
+      document.removeEventListener('dragenter', this.ignoreDragEvent_);
+      document.removeEventListener('dragleave', this.ignoreDragEvent_);
+      document.removeEventListener('dragover', this.ignoreDragEvent_);
+      document.removeEventListener('drop', this.dropHandler_);
+    },
+
+    ignoreDragEvent_(e) {
+      e.preventDefault();
+      return false;
+    },
+
+    dropHandler_(e) {
+      if (this.isAnyDialogUp_) return;
+
+      e.stopPropagation();
+      e.preventDefault();
+
+      const files = e.dataTransfer.files;
+      if (files.length !== 1) {
+        tr.ui.b.Overlay.showError('1 file supported at a time.');
+        return;
+      }
+
+      tr.ui.b.readFile(files[0]).then(
+          function(data) {
+            this.setActiveTrace(files[0].name, data);
+          }.bind(this),
+          function(err) {
+            tr.ui.b.Overlay.showError('Error while loading file: ' + err);
+          });
+      return false;
+    }
+  };
+
+  return {
+    ProfilingView,
+  };
+});
+</script>

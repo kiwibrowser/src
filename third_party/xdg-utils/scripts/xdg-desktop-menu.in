@@ -1,0 +1,628 @@
+#!/bin/sh
+#---------------------------------------------
+#   xdg-desktop-menu
+#
+#   Utility script to install menu items on a Linux desktop.
+#   Refer to the usage() function below for usage.
+#
+#   Copyright 2009-2010, Fathi Boudra <fabo@freedesktop.org>
+#   Copyright 2009-2010, Rex Dieter <rdieter@fedoraproject.org>
+#   Copyright 2006, Kevin Krammer <kevin.krammer@gmx.at>
+#   Copyright 2006, Jeremy White <jwhite@codeweavers.com>
+#
+#   LICENSE:
+#
+#---------------------------------------------
+
+manualpage()
+{
+cat << _MANUALPAGE
+_MANUALPAGE
+}
+
+usage()
+{
+cat << _USAGE
+_USAGE
+}
+
+#@xdg-utils-common@
+
+update_desktop_database()
+{
+#    echo Update desktop database: $mode
+    if [ "$mode" = "system" ] ; then
+        for x in `echo $PATH | sed 's/:/ /g'` /opt/gnome/bin; do
+           if [ -x $x/update-desktop-database ] ; then
+              DEBUG 1 "Running $x/update-desktop-database"
+              eval '$x/update-desktop-database'$xdg_redirect_output
+              return
+           fi
+        done
+    fi
+}
+
+# Make application $1/$2 the default for all the mimetypes it support,
+# iff such mimetype didn't had a default application already.
+# $1 Install dir for desktop file
+# $2 base name of desktop file
+make_lazy_default()
+{
+    local mimetypes
+    local xdg_user_dir
+    local xdg_default_dirs
+
+    DEBUG 1 "make_lazy_default $1/$2"
+    mimetypes=`awk '
+{
+    if (match($0,/MimeType=/)) {
+        split(substr($0,RSTART+9),mimetypes,";")
+        for (n in mimetypes)
+        {
+               if (mimetypes[n])
+                 print mimetypes[n]
+        }
+    }
+}' "$1/$2" 2> /dev/null`
+
+    for MIME in $mimetypes ; do
+        xdg_default_dirs="$XDG_DATA_DIRS"
+        [ -n "$xdg_default_dirs" ] || xdg_default_dirs=/usr/local/share/:/usr/share/
+        if [ x"$mode" = x"user" ] ; then
+            xdg_user_dir="$XDG_DATA_HOME"
+            [ -n "$xdg_user_dir" ] || xdg_user_dir="$HOME/.local/share"
+            xdg_default_dirs="$xdg_user_dir:$xdg_default_dirs"
+        fi
+        local default_app
+        for x in `echo "$xdg_default_dirs" | sed 's/:/ /g'`; do
+            DEBUG 2 "Checking $x/applications/defaults.list"
+            default_app=`grep "$MIME=" $x/applications/defaults.list 2> /dev/null | cut -d '=' -f 2`
+            if [ -n "$default_app" ] ; then
+                DEBUG 2 "Found default apps for $MIME: $default_app"
+                default_app="$default_app;"
+                break;
+            fi
+        done
+        DEBUG 2 "Current default apps for $MIME: $default_app"
+        if echo "$default_app" | grep "$2" > /dev/null 2> /dev/null; then
+            # App already listed as default
+            continue;
+        fi
+        default_file="$(readlink -f "$1/defaults.list")"
+        DEBUG 1 "Updating $default_file"
+        grep -v "$MIME=" $default_file > ${default_file}.new 2> /dev/null
+        if ! grep "[Default Applications]" ${default_file}.new > /dev/null; then
+            echo "[Default Applications]" >> ${default_file}.new
+        fi
+        echo $MIME="$default_app$2" >> ${default_file}.new
+        mv ${default_file}.new $default_file
+    done
+}
+
+update_submenu()
+{
+    DEBUG 1 "update_submenu $1"
+    menu_file="$1"
+
+    xdg_dir_name=menus
+    xdg_user_dir="$XDG_CONFIG_HOME"
+    [ -n "$xdg_user_dir" ] || xdg_user_dir="$HOME/.config"
+    xdg_user_dir="$xdg_user_dir/$xdg_dir_name"
+
+    xdg_system_dirs="$XDG_CONFIG_DIRS"
+    [ -n "$xdg_system_dirs" ] || xdg_system_dirs=/etc/xdg
+    xdg_global_dir=
+    for x in `echo $xdg_system_dirs | sed 's/:/ /g'` ; do
+        if [ -w $x/$xdg_dir_name ] ; then
+            xdg_global_dir="$x/$xdg_dir_name"
+            break
+        fi
+    done
+    xdg_user_dir="$xdg_user_dir/applications-merged"
+    xdg_global_dir="$xdg_global_dir/applications-merged"
+
+    DEBUG 3 "Install locations for *.menu file:"
+    DEBUG 3 "xdg_user_dir: $xdg_user_dir"
+    DEBUG 3 "xdg_global_dir: $xdg_global_dir"
+    DEBUG 3 "kde_user_dir: $kde_user_dir"
+    DEBUG 3 "kde_global_dir: $kde_global_dir"
+    DEBUG 3 "gnome_user_dir: $gnome_user_dir"
+    DEBUG 3 "gnome_global_dir: $gnome_global_dir"
+
+    if [ x"$mode" = x"user" ] ; then
+        xdg_dir="$xdg_user_dir"
+        kde_dir="$kde_user_dir"
+        gnome_dir="$gnome_user_dir"
+        my_umask=077
+        my_chmod=0600
+    else
+        xdg_dir="$xdg_global_dir"
+        kde_dir="$kde_global_dir"
+        gnome_dir="$gnome_global_dir"
+        my_umask=022
+        my_chmod=0644
+        if [ -z "${xdg_dir}${kde_dir}${gnome_dir}" ] ; then
+            exit_failure_operation_impossible "No writable system menu directory found."
+        fi
+    fi
+
+    if [ -z "$menu_file" ] ; then
+        # Work around for SUSE/gnome 2.12 to pick up new ~/.local/share/applications
+        save_umask=`umask`
+        umask $my_umask
+
+        mkdir -p $xdg_dir
+        touch $xdg_dir/@NAME@-dummy.menu
+
+        umask $save_umask
+        return
+    fi
+
+    if [ $action = "install" -a -f "/etc/xdg/menus/gnome-applications.menu" ] ; then
+        # Work around for Debian Gnome
+        gnome_xdg_dir=`echo "$xdg_dir" | sed -e 's^/applications-merged^/gnome-applications-merged^'`
+        if [ ! -e "$gnome_xdg_dir" ] ; then
+            DEBUG 1 "Debian Workaround: Link '$xdg_dir' to '$gnome_xdg_dir'"
+            mkdir -p `dirname "$gnome_xdg_dir"`
+            eval 'ln -s "applications-merged" "$gnome_xdg_dir"'$xdg_redirect_output
+        fi
+    fi
+    if [ $action = "install" -a -f "/etc/mandrake-release" ] ; then
+        # Work around for Mandriva 2006
+        mandrake_xdg_dir=`echo "$xdg_dir" | sed -e 's^/applications-merged^/applications-mdk-merged^'`
+        if [ ! -e "$mandrake_xdg_dir" ] ; then
+            DEBUG 1 "Mandriva Workaround: Link '$xdg_dir' to '$mandrake_xdg_dir'"
+            mkdir -p `dirname "$mandrake_xdg_dir"`
+            eval 'ln -s "applications-merged" "$mandrake_xdg_dir"'$xdg_redirect_output
+        fi
+    fi
+    if [ $action = "install" -a x"$mode" = x"user" -a -d "/etc/xdg/menus/kde-applications-merged" ] ; then
+        # Work around for Fedora Core 5 + patched KDE
+        kde_xdg_dir=`echo "$xdg_dir" | sed -e 's^/applications-merged^/kde-applications-merged^'`
+        if [ ! -e "$kde_xdg_dir" ] ; then
+            DEBUG 1 "Fedora Workaround: Link '$xdg_dir' to '$kde_xdg_dir'"
+            mkdir -p `dirname "$kde_xdg_dir"`
+            eval 'ln -s "applications-merged" "$kde_xdg_dir"'$xdg_redirect_output
+        fi
+    fi
+    if [ $action = "install" -a x"$mode" = x"system" -a -d "/etc/xdg/menus/kde-applications-merged" -a ! -d "/etc/xdg/menus/applications-merged" ] ; then
+        # Work around for Kubuntu 6.06
+        kde_xdg_dir=`echo "$xdg_dir" | sed -e 's^/applications-merged^/kde-applications-merged^'`
+        DEBUG 1 "Kubuntu Workaround: Link '$xdg_dir' to 'kde-applications-merged'"
+        eval 'ln -s "kde-applications-merged" "$xdg_dir"'$xdg_redirect_output
+    fi
+
+    orig_menu_file=$xdg_dir/$menu_file
+
+    DEBUG 1 "Updating $orig_menu_file ($action)"
+
+    test "${TMPDIR+set}" = set || TMPDIR=/tmp
+    tmpfile=`mktemp $TMPDIR/tmp.XXXXXXXXXX`
+    orig_desktop_files=
+    if [ -r "$orig_menu_file" ] ; then
+        awk '
+# List all files within <Filename> tags
+BEGIN {
+  RS="<"
+}
+/^Filename/ {
+  if (match($0,/>/)) {
+     print substr($0,RSTART+1)
+  }
+}' $orig_menu_file > $tmpfile
+    fi
+
+    orig_desktop_files=`cat $tmpfile`
+    new_desktop_files=
+    if [ $action = "install" ] ; then
+        for desktop_file in $desktop_files; do
+            basefile=`basename "$desktop_file"`
+            if ! grep '^'$basefile'$' $tmpfile > /dev/null 2> /dev/null ; then
+            	# Append
+            	echo "$basefile" >> $tmpfile
+            fi
+        done
+        new_desktop_files=`cat $tmpfile`
+    fi
+    if [ $action = "uninstall" ] ; then
+        echo > $tmpfile
+        for desktop_file in $desktop_files; do
+            echo "$desktop_file" >> $tmpfile
+        done
+        # Files to uninstall are listed in $tmpfile
+        # Existing files are in $orig_desktop_files
+        for desktop_file in $orig_desktop_files; do
+            if ! grep '^'$desktop_file'$' $tmpfile > /dev/null 2> /dev/null; then
+            	# Keep this file, it's not in the uninstall list
+            	new_desktop_files="$new_desktop_files $desktop_file"
+            fi
+        done
+    fi
+    rm -f "$tmpfile"
+
+    DEBUG 3 "Files to list in $menu_file: $new_desktop_files"
+
+    if [ -n "$new_desktop_files" ] ; then
+        # Install/update
+        test "${TMPDIR+set}" = set || TMPDIR=/tmp
+        tmpfile=`mktemp $TMPDIR/tmp.XXXXXXXXXX`
+        (
+            echo '<!DOCTYPE Menu PUBLIC "-//freedesktop//DTD Menu 1.0//EN"'
+            echo '    "http://www.freedesktop.org/standards/menu-spec/menu-1.0.dtd">'
+            echo '<!-- Do not edit manually - generated and managed by @NAME@ -->'
+            echo '<Menu>'
+            echo '    <Name>Applications</Name>'
+
+            for desktop_file in $directory_files; do
+                basefile=`basename "$desktop_file"`
+                basefilename=`echo "$basefile"|cut -d '.' -f 1`
+                echo "<Menu>"
+                echo "    <Name>$basefilename</Name>"
+                echo "    <Directory>$basefile</Directory>"
+            done
+
+            echo "    <Include>"
+            for desktop_file in $new_desktop_files; do
+                echo "        <Filename>$desktop_file</Filename>"
+            done
+            echo "    </Include>"
+
+            for desktop_file in $directory_files; do
+                echo "</Menu>"
+            done
+
+            echo '</Menu>'
+        ) > $tmpfile
+        chmod $my_chmod $tmpfile
+
+        save_umask=`umask`
+        umask $my_umask
+
+        mkdir -p $xdg_dir
+        eval 'cp $tmpfile $xdg_dir/$menu_file'$xdg_redirect_output
+
+        umask $save_umask
+	rm -f "$tmpfile"
+    else
+        # Uninstall
+        rm -f $xdg_dir/$menu_file
+    fi
+
+    # Uninstall .directory files only if no longer referenced
+    if [ $action = "uninstall" ] ; then
+        test "${TMPDIR+set}" = set || TMPDIR=/tmp
+        tmpfile=`mktemp $TMPDIR/tmp.XXXXXXXXXX`
+        for menu_file in $xdg_dir/*; do
+            if grep 'generated and managed by @NAME@' $menu_file > /dev/null 2> /dev/null; then
+                awk '
+# List all files within <Directory> tags
+BEGIN {
+  RS="<"
+}
+/^Directory/ {
+  if (match($0,/>/)) {
+     print substr($0,RSTART+1)
+  }
+}' $menu_file >> $tmpfile
+            fi
+        done
+        orig_directory_files="$directory_files"
+        directory_files=
+        for desktop_file in $orig_directory_files; do
+            if ! grep '^'$desktop_file'$' $tmpfile > /dev/null 2> /dev/null; then
+                # No longer in use, safe to delete
+               directory_files="$directory_files $desktop_file"
+            fi
+        done
+        rm -f "$tmpfile"
+    fi
+}
+
+
+[ x"$1" != x"" ] || exit_failure_syntax
+
+mode=
+action=
+update=yes
+desktop_files=
+directory_files=
+
+case $1 in
+  install)
+    action=install
+    ;;
+
+  uninstall)
+    action=uninstall
+    ;;
+
+  forceupdate)
+    action=forceupdate
+    ;;
+
+  *)
+    exit_failure_syntax "unknown command '$1'"
+    ;;
+esac
+
+shift
+
+vendor=true
+while [ $# -gt 0 ] ; do
+    parm="$1"
+    shift
+
+    case "$parm" in
+      --noupdate)
+        update=no
+        ;;
+
+      --mode)
+        if [ -z "$1" ] ; then
+            exit_failure_syntax "mode argument missing for --mode"
+        fi
+        case "$1" in
+          user)
+            mode="user"
+            ;;
+
+          system)
+            mode="system"
+            ;;
+
+          *)
+            exit_failure_syntax "unknown mode '$1'"
+            ;;
+        esac
+        shift
+        ;;
+
+      --novendor)
+        vendor=false
+        ;;
+
+      -*)
+        exit_failure_syntax "unexpected option '$parm'"
+        ;;
+
+      *)
+        if [ "$action" = "install" ] ; then
+            check_input_file "$parm"
+        fi
+        case "$parm" in
+           *.directory)
+              if [ -n "$desktop_files" ] ; then
+                  exit_failure_syntax "'$parm' must preceed any *.desktop file"
+              fi
+              directory_files="$directory_files $parm"
+              ;;
+           *.desktop)
+              desktop_files="$desktop_files $parm"
+              ;;
+           *)
+              exit_failure_syntax "file to $action must be a *.directory or *.desktop file"
+              ;;
+        esac
+        ;;
+    esac
+done
+
+# Shouldn't happen
+if [ -z "$action" ] ; then
+    exit_failure_syntax "command argument missing"
+fi
+
+if [ -n "$XDG_UTILS_INSTALL_MODE" ] ; then
+    if [ "$XDG_UTILS_INSTALL_MODE" = "system" ] ; then
+        mode="system"
+    elif [ "$XDG_UTILS_INSTALL_MODE" = "user" ] ; then
+        mode="user"
+    fi
+fi
+
+if [ -z "$mode" ] ; then
+    if [ `whoami` = "root" ] ; then
+       mode="system"
+    else
+       mode="user"
+    fi
+fi
+
+if [ x"$action" = x"forceupdate" ] ; then
+    update_desktop_database
+    exit_success
+fi
+
+if [ -z "$desktop_files" ] ; then
+    exit_failure_syntax "desktop-file argument missing"
+fi
+
+menu_name=
+for desktop_file in $directory_files; do
+    if [ "$vendor" =  "true" -a "$action" = "install" ] ; then
+        check_vendor_prefix "$desktop_file"
+    fi
+
+    basefilename=`basename "$desktop_file" | cut -d '.' -f 1`
+    if [ -z "$menu_name" ] ; then
+        menu_name="$basefilename"
+    else
+        menu_name="$menu_name-$basefilename"
+    fi
+done
+
+if [ -n "$menu_name" ] ; then
+    if [ x"$mode" = x"user" ] ; then
+        update_submenu "user-$menu_name.menu"
+    else
+        update_submenu "$menu_name.menu"
+    fi
+else
+    # Work around for SUSE/gnome 2.12 to pick up new ~/.local/share/applications
+    if [ x"$mode" = x"user" ] ; then
+        update_submenu
+    fi
+fi
+
+# Install *.directory files
+
+xdg_dir_name=desktop-directories
+
+xdg_user_dir="$XDG_DATA_HOME"
+[ -n "$xdg_user_dir" ] || xdg_user_dir="$HOME/.local/share"
+xdg_user_dir="$xdg_user_dir/$xdg_dir_name"
+
+xdg_system_dirs="$XDG_DATA_DIRS"
+[ -n "$xdg_system_dirs" ] || xdg_system_dirs=/usr/local/share/:/usr/share/
+xdg_global_dir=
+for x in `echo $xdg_system_dirs | sed 's/:/ /g'` ; do
+    if [ -w $x/$xdg_dir_name ] ; then
+        xdg_global_dir="$x/$xdg_dir_name"
+        break
+    fi
+done
+
+DEBUG 3 "Install locations for *.directory files:"
+DEBUG 3 "xdg_user_dir: $xdg_user_dir"
+DEBUG 3 "xdg_global_dir: $xdg_global_dir"
+DEBUG 3 "kde_user_dir: $kde_user_dir"
+DEBUG 3 "kde_global_dir: $kde_global_dir"
+DEBUG 3 "gnome_user_dir: $gnome_user_dir"
+DEBUG 3 "gnome_global_dir: $gnome_global_dir"
+
+if [ x"$mode" = x"user" ] ; then
+    xdg_dir="$xdg_user_dir"
+    kde_dir="$kde_user_dir"
+    gnome_dir="$gnome_user_dir"
+    my_umask=077
+else
+    xdg_dir="$xdg_global_dir"
+    kde_dir="$kde_global_dir"
+    gnome_dir="$gnome_global_dir"
+    my_umask=022
+    if [ -z "${xdg_dir}${kde_dir}${gnome_dir}" ] ; then
+        exit_failure_operation_impossible "No writable system menu directory found."
+    fi
+fi
+
+for desktop_file in $directory_files; do
+    basefile=`basename "$desktop_file"`
+
+    DEBUG 1 "$action $desktop_file in $xdg_dir $kde_dir $gnome_dir"
+
+    case $action in
+        install)
+            save_umask=`umask`
+            umask $my_umask
+
+            for x in $xdg_dir $kde_dir $gnome_dir ; do
+                mkdir -p $x
+                eval 'cp $desktop_file $x/$basefile'$xdg_redirect_output
+            done
+
+            umask $save_umask
+            ;;
+
+        uninstall)
+            for x in $xdg_dir $kde_dir $gnome_dir ; do
+                rm -f $x/$basefile
+            done
+
+            ;;
+    esac
+done
+
+# Install *.desktop files
+xdg_dir_name=applications
+
+xdg_user_dir="$XDG_DATA_HOME"
+[ -n "$xdg_user_dir" ] || xdg_user_dir="$HOME/.local/share"
+xdg_user_dir="$xdg_user_dir/$xdg_dir_name"
+
+xdg_system_dirs="$XDG_DATA_DIRS"
+[ -n "$xdg_system_dirs" ] || xdg_system_dirs=/usr/local/share/:/usr/share/
+xdg_global_dir=
+for x in `echo $xdg_system_dirs | sed 's/:/ /g'` ; do
+    if [ -w $x/$xdg_dir_name ] ; then
+        xdg_global_dir="$x/$xdg_dir_name"
+        break
+    fi
+done
+
+kde_user_dir=`kde${KDE_SESSION_VERSION}-config --path apps 2> /dev/null | cut -d ':' -f 1`
+kde_global_dir=`kde${KDE_SESSION_VERSION}-config --path apps 2> /dev/null | cut -d ':' -f 2`
+[ -w $kde_global_dir ] || kde_global_dir=
+
+gnome_user_dir="$HOME/.gnome/apps"
+gnome_global_dir="/usr/share/gnome/apps"
+[ -w $gnome_global_dir ] || gnome_global_dir=
+
+DEBUG 3 "Install locations for *.desktop files:"
+DEBUG 3 "xdg_user_dir: $xdg_user_dir"
+DEBUG 3 "xdg_global_dir: $xdg_global_dir"
+DEBUG 3 "kde_user_dir: $kde_user_dir"
+DEBUG 3 "kde_global_dir: $kde_global_dir"
+DEBUG 3 "gnome_user_dir: $gnome_user_dir"
+DEBUG 3 "gnome_global_dir: $gnome_global_dir"
+
+if [ x"$mode" = x"user" ] ; then
+    xdg_dir="$xdg_user_dir"
+    kde_dir="$kde_user_dir"
+    gnome_dir="$gnome_user_dir"
+    my_umask=077
+else
+    xdg_dir="$xdg_global_dir"
+    kde_dir="$kde_global_dir"
+    gnome_dir="$gnome_global_dir"
+    my_umask=022
+    if [ -z "${xdg_dir}${kde_dir}${gnome_dir}" ] ; then
+        exit_failure_operation_impossible "No writable system menu directory found."
+    fi
+fi
+
+for desktop_file in $desktop_files; do
+    if [ "$vendor" =  "true" -a "$action" = "install" ] ; then
+        check_vendor_prefix "$desktop_file"
+    fi
+
+    basefile=`basename "$desktop_file"`
+
+    DEBUG 1 "$action $desktop_file in $xdg_dir $kde_dir $gnome_dir"
+
+    case $action in
+        install)
+            save_umask=`umask`
+            umask $my_umask
+
+            for x in $xdg_dir $kde_dir $gnome_dir ; do
+                mkdir -p $x
+                eval 'cp $desktop_file $x/$basefile'$xdg_redirect_output
+            done
+
+            if [ -f $kde_dir/$basefile ] ; then
+                echo "OnlyShowIn=Old;" >> $kde_dir/$basefile
+            fi
+
+            if [ -f $gnome_dir/$basefile ] ; then
+                echo "OnlyShowIn=Old;" >> $gnome_dir/$basefile
+            fi
+
+            make_lazy_default "$xdg_dir" "$basefile"
+
+            umask $save_umask
+            ;;
+
+        uninstall)
+            for x in $xdg_dir $kde_dir $gnome_dir ; do
+                rm -f $x/$basefile
+            done
+
+            ;;
+    esac
+done
+
+if [ x"$update" = x"yes" ] ; then
+    update_desktop_database
+fi
+
+exit_success

@@ -1,0 +1,16 @@
+#!/bin/bash
+dir="$(dirname "$0")/../mstools"
+(cd "$dir"; ./download-mstools)
+
+arch="$(uname -m)"
+if test "$arch" == i386 || test "$arch" == i486 || test "$arch" == i586 || test "$arch" == i686 || test "$arch" == x86_64; then
+	emu="wine"
+else
+	emu="qemu-i386 wine"
+fi
+exe="$dir/fxc.exe"
+if test "$#" == 0 || test "$1" == "--help"; then
+	exec $emu "$exe" "/?"
+else
+	exec $emu "$exe" "$@"
+fi

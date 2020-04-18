@@ -1,0 +1,203 @@
+{
+    "output_dir": "output",
+
+    "browsers": [
+        {
+            "name": "Chrome",
+            "platforms": {
+                "darwin": {
+                    "paths": ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"]
+                },
+                "linux": {
+                    "paths": ["/opt/google/chrome/google-chrome"]
+                },
+                "win32": {
+                    "paths": ["C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"]
+                },
+                "remote-android": {
+                    "pre_launch_command": "adb shell \"echo 'chrome --disable-fre --disable-gpu-driver-bug-workarounds --ignore-gpu-blacklist --disable-gesture-requirement-for-media-playback' > /data/local/chrome-command-line\"",
+                    "package_name": "com.android.chrome",
+                    "main_activity": "com.android.chrome/com.google.android.apps.chrome.Main",
+                    "launch_intent": "android.intent.action.VIEW",
+                    "quit_command": "adb shell \"ps | grep chrome \" | awk '{print $2}' | xargs adb shell kill -9 && adb shell \"rm /data/local/chrome-command-line\""
+                 }
+            },
+
+            "profile_arg": "--user-data-dir=",
+
+            "args": [
+                "--no-first-run",
+                "--disable-gpu-driver-bug-workarounds",
+                "--ignore-gpu-blacklist"
+            ]
+        },
+
+        {
+            "name": "ChromeWinOpenGL",
+            "platforms": {
+                "win32": {
+                    "paths": ["C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"]
+                }
+            },
+
+            "profile_arg": "--user-data-dir=",
+
+            "args": [
+                "--no-first-run",
+                "--disable-gpu-driver-bug-workarounds",
+                "--ignore-gpu-blacklist",
+                "--use-gl=desktop"
+            ]
+        },
+
+        {
+            "name": "ChromeCanary",
+            "platforms": {
+                "darwin": {
+                    "paths": ["/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary"]
+                },
+                "win32": {
+                    "paths": ["C:\\Program Files (x86)\\Google\\Chrome SxS\\Application\\chrome.exe"]
+                }
+            },
+
+            "profile_arg": "--user-data-dir=",
+
+            "args": [
+                "--no-first-run",
+                "--disable-gpu-driver-bug-workarounds",
+                "--ignore-gpu-blacklist"
+            ]
+        },
+
+        {
+            "name": "ChromeCanaryWinOpenGL",
+            "platforms": {
+                "win32": {
+                    "paths": ["C:\\Program Files (x86)\\Google\\Chrome SxS\\Application\\chrome.exe"]
+                }
+            },
+
+            "profile_arg": "--user-data-dir=",
+
+            "args": [
+                "--no-first-run",
+                "--disable-gpu-driver-bug-workarounds",
+                "--ignore-gpu-blacklist",
+                "--use-gl=desktop"
+            ]
+        },
+
+        {
+            "name": "Chromium",
+            "platforms": {
+                "darwin": {
+                    "paths": ["/Applications/Chromium.app/Contents/MacOS/Chromium"]
+                },
+                "linux": {
+                    "paths": ["/usr/bin/chromium-browser"]
+                },
+                "win32": {
+                    "paths": ["C:\\Program Files (x86)\\Google\\Chromium\\Application\\chromium.exe"]
+                }
+            },
+
+            "profile_arg": "--user-data-dir=",
+
+            "args": [
+                "--no-first-run",
+                "--disable-gpu-driver-bug-workarounds",
+                "--ignore-gpu-blacklist"
+            ]
+        },
+
+        {
+            "name": "ChromiumWinOpenGL",
+            "platforms": {
+                "win32": {
+                    "paths": ["C:\\Program Files (x86)\\Google\\Chromium\\Application\\chromium.exe"]
+                }
+            },
+
+            "profile_arg": "--user-data-dir=",
+
+            "args": [
+                "--no-first-run",
+                "--disable-gpu-driver-bug-workarounds",
+                "--ignore-gpu-blacklist",
+                "--use-gl=desktop"
+            ]
+        },
+
+        {
+            "name": "Firefox",
+            "platforms": {
+                "darwin": {
+                    "paths": ["/Applications/Firefox.app/Contents/MacOS/firefox"]
+                },
+                "linux": {
+                    "paths": ["/usr/bin/firefox"]
+                },
+                "win32": {
+                    "paths": ["C:\\Program Files (x86)\\Mozilla Firefox\\firefox.exe"]
+                }
+            },
+
+            "profile_arg": "-profile",
+
+            "firefox_user_prefs": {
+                "webgl.force-enabled": true,
+                "browser.shell.checkDefaultBrowser": false,
+                "gfx.work-around-driver-bugs": false
+            },
+
+            "args": [
+                "-silent",
+                "-no-remote"
+            ]
+        },
+
+        {
+            "name": "FirefoxWinOpenGL",
+            "platforms": {
+                "win32": {
+                    "paths": ["C:\\Program Files (x86)\\Mozilla Firefox\\firefox.exe"]
+                }
+            },
+
+            "profile_arg": "-profile",
+
+            "firefox_user_prefs": {
+                "webgl.force-enabled": true,
+                "browser.shell.checkDefaultBrowser": false,
+                "gfx.work-around-driver-bugs": false,
+                "webgl.prefer-native-gl": true
+            },
+
+            "args": [
+                "-silent",
+                "-no-remote"
+            ]
+        },
+
+        {
+            "name": "Safari",
+            "platforms": {
+                "darwin": {
+                    "paths": ["/Applications/Safari.app/Contents/MacOS/Safari"],
+                    "command": "open",
+                    "comment": "FIXME: find a way to send this command to precisely the right process",
+                    "quit_command": "osascript -e 'quit application \"Safari\"'"
+                }
+            },
+
+            "osx_defaults": {
+                "com.apple.Safari com.apple.Safari.ContentPageGroupIdentifier.WebKit2WebGLEnabled": "1"
+            },
+
+            "args": [
+                "-F", "-W", "-n", "-a", "safari"
+            ]
+        }
+    ]
+}

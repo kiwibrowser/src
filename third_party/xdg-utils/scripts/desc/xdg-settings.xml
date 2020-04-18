@@ -1,0 +1,197 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl"
+   href="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+    "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
+]>
+<refentry id="xdg-settings">
+  <refentryinfo>
+    <title>xdg-settings Manual</title>
+    <copyright>
+      <year>2009-2011</year>
+    </copyright>
+    <author>
+      <firstname>Mike</firstname>
+      <surname>Mammarella</surname>
+    </author>
+    <address><email>mdm@google.com</email></address>
+    <!--<releaseinfo>xdg-utils 1.0</releaseinfo>-->
+  </refentryinfo>
+
+  <refmeta>
+    <refentrytitle>xdg-settings</refentrytitle>
+    <manvolnum>1</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname>xdg-settings</refname>
+    <refpurpose>get various settings from the desktop environment</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+    <cmdsynopsis>
+      <command>xdg-settings</command>
+      <group choice="req">
+        <arg choice="plain"><option><replaceable>get</replaceable></option></arg>
+        <arg choice="plain"><option><replaceable>check</replaceable></option></arg>
+        <arg choice="plain"><option><replaceable>set</replaceable></option></arg>
+      </group>
+      <group choice="req">
+	<option>property</option>
+      </group>
+      <group choice="opt">
+        <option>subproperty</option>
+      </group>
+      <group choice="opt">
+	<option>value</option>
+      </group>
+    </cmdsynopsis>
+    <cmdsynopsis>
+      <command>xdg-settings</command>
+      <group choice="req">
+        <arg choice="plain"><option>--help</option></arg>
+        <arg choice="plain"><option>--list</option></arg>
+        <arg choice="plain"><option>--manual</option></arg>
+        <arg choice="plain"><option>--version</option></arg>
+      </group>
+    </cmdsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1 id="description">
+    <title>Description</title>
+    <para>
+      xdg-settings gets various settings from the desktop environment.
+      For instance, desktop environments often provide proxy configuration
+      and default web browser settings. Using xdg-settings these parameters
+      can be extracted for use by applications that do not use the desktop
+      environment's libraries (which would use the settings natively).
+    </para>
+    <para>
+      xdg-settings is for use inside a desktop session only.
+      It is not recommended to use xdg-settings as root.
+    </para>
+  </refsect1>
+  <refsect1 id="options">
+    <title>Options</title>
+    <variablelist>
+      <varlistentry>
+        <term><option>--help</option></term>
+        <listitem>
+          <simpara>
+            Show command synopsis.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>--list</option></term>
+        <listitem>
+          <simpara>
+            List all properties xdg-settings knows about.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>--manual</option></term>
+        <listitem>
+          <simpara>
+            Show this manualpage.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>--version</option></term>
+        <listitem>
+          <simpara>
+            Show the xdg-utils version information.
+          </simpara>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+  <refsect1 id="properties">
+    <title>Properties</title>
+    <para>
+      When using xdg-settings to get, check or set a destkop setting, properties
+      and possibly sub-properties are used to specify the setting to be changed.
+    </para>
+    <para>
+      Some properties (such as default-web-browser) fully describe the setting
+      to be changed. Other properties (such as default-url-scheme-handler) require
+      more information (in this case the actual scheme to set the default handler
+      for) which must be provided in a sub-property.
+    </para>
+  </refsect1>
+  <refsect1 id="exitcodes">
+    <title>Exit Codes</title>
+    <para>
+      An exit code of 0 indicates success while a non-zero exit code
+      indicates failure. The following failure codes can be returned:
+    </para>
+    <variablelist>
+      <varlistentry>
+        <term><option>1</option></term>
+        <listitem>
+          <simpara>
+            Error in command line syntax.
+          </simpara>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>2</option></term>
+        <listitem>
+          <simpara>
+            One of the files passed on the command line did not exist.
+          </simpara>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>3</option></term>
+        <listitem>
+          <simpara>
+            A required tool could not be found. 
+          </simpara>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>4</option></term>
+        <listitem>
+          <simpara>
+            The action failed. 
+          </simpara>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+  <refsect1 id="examples">
+    <title>Examples</title>
+    <para>
+      Get the desktop file name of the current default web browser
+      <programlisting>
+        xdg-settings get default-web-browser
+      </programlisting>
+    </para>
+    <para>
+      Check whether the default web browser is firefox.desktop, which can be
+      false even if "get default-web-browser" says that is the current value
+      (if only some of the underlying settings actually reflect that value)
+      <programlisting>
+        xdg-settings check default-web-browser firefox.desktop
+      </programlisting>
+    </para>
+    <para>
+      Set the default web browser to google-chrome.desktop
+      <programlisting>
+        xdg-settings set default-web-browser google-chrome.desktop
+      </programlisting>
+    </para>
+    <para>
+      Set the default mailto URL scheme handler to be evolution.desktop
+      <programlisting>
+        xdg-settings set default-url-scheme-handler mailto evolution.desktop
+      </programlisting>
+    </para>
+  </refsect1>
+</refentry>

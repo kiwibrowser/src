@@ -1,0 +1,53 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    GL3 conditional render stress tests
+
+Tests:
+ + dEQP-GL3.stress.conditional_render.*
+
+Includes:
+ + Multiple concurrent queries/renders
+ + Query and conditional geometry significantly apart
+   - For tiled renderers
+
+Excludes:
+
+Description:
+
+Conditional rendering stress tests use a large number of conditional rendering
+calls under various conditions.
+
+Call count and distant query tests prepare all vertex arrays before rendering.
+All tests are based on using occlusion queries with known results and rendering
+the same scene with geometry culled either by conditional rendering or the
+test logic. The results are compared to verify correctness.
+
+Rendering is ordered so that all occlusion queries are started before any
+conditional rendering is done.
+
+Call count test use many occlusion queries and simple occluder geometry. Every
+second occlusion query is set to fail. Failing occlusion query geometry is
+limited within a small region of the screen. Passing query geometry is evenly
+spread around the screen. Conditionally rendered geometry is evenly spread.
+
+Distant query tests have maximal screen distance between the query geometry
+and the rendering the query controls. The setup is equivalent to the call
+count cases with the exception of the distribution of the primitives rendered.
+Occlusion query geometry is roughly on the opposing edge of the screen as the
+geometry it controls. All edges have occluders.

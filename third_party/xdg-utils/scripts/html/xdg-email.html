@@ -1,0 +1,89 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>xdg-email</title><meta name="generator" content="DocBook XSL Stylesheets V1.75.2"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" title="xdg-email"><a name="xdg-email"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>xdg-email &#8212; command line tool for sending mail using the user's preferred e-mail composer</p></div><div class="refsynopsisdiv" title="Synopsis"><h2>Synopsis</h2><div class="cmdsynopsis"><p><code class="command">xdg-email</code>  [<code class="option">--utf8</code>] [<code class="option">--cc</code> <em class="replaceable"><code>address</code></em>] [<code class="option">--bcc</code> <em class="replaceable"><code>address</code></em>] [<code class="option">--subject</code> <em class="replaceable"><code>text</code></em>] [<code class="option">--body</code> <em class="replaceable"><code>text</code></em>] [<code class="option">--attach</code> <em class="replaceable"><code>file</code></em>] [ <em class="replaceable"><code>mailto-uri</code></em>  |   <em class="replaceable"><code>address(es)</code></em> ]</p></div><div class="cmdsynopsis"><p><code class="command">xdg-email</code>  { <code class="option">--help</code>  |   <code class="option">--manual</code>  |   <code class="option">--version</code> }</p></div></div><div class="refsect1" title="Description"><a name="description"></a><h2>Description</h2><p>
+      xdg-email opens the user's preferred e-mail composer in order to send
+      a mail to <em class="replaceable"><code>address(es)</code></em> or
+      <em class="replaceable"><code>mailto-uri</code></em>. RFC2368 defines mailto:
+      URIs. xdg-email limits support to, cc, subject and body fields in
+      <em class="replaceable"><code>mailto-uri</code></em>, all other fields are silently
+      ignored. <em class="replaceable"><code>address(es)</code></em> must follow the
+      syntax of RFC822. Multiple addresses may be provided as 
+      separate arguments.
+    </p><p>
+      All information provided on the command line is used to
+      prefill corresponding fields in the user's e-mail composer. The user
+      will have the opportunity to change any of this information before
+      actually sending the e-mail.
+    </p><p>
+      xdg-email is for use inside a desktop session only.
+      It is not recommended to use xdg-email as root.
+    </p><p>
+      See http://portland.freedesktop.org/EmailConfig for information on
+      how the user can change the e-mail composer that is used.
+    </p></div><div class="refsect1" title="Options"><a name="options"></a><h2>Options</h2><div class="variablelist"><dl><dt><span class="term"><code class="option">--utf8</code></span></dt><dd>
+	    Indicates that all command line options that follow are in utf8.
+	    Without this option, command line options are expected to be
+	    encoded according to locale.
+            If the locale already specifies utf8 this option has no effect.
+            This option does not affect mailto URIs that are passed on the
+            command line.
+	  </dd><dt><span class="term"><code class="option">--cc</code> <em class="replaceable"><code>address</code></em></span></dt><dd>
+	    Specify a recipient to be copied on the e-mail.
+	  </dd><dt><span class="term"><code class="option">--bcc</code> <em class="replaceable"><code>address</code></em></span></dt><dd>
+	    Specify a recipient to be blindly copied on the e-mail.
+	  </dd><dt><span class="term"><code class="option">--subject</code> <em class="replaceable"><code>text</code></em></span></dt><dd>
+	    Specify a subject for the e-mail.
+	  </dd><dt><span class="term"><code class="option">--body</code> <em class="replaceable"><code>text</code></em></span></dt><dd>
+	    Specify a body for the e-mail. Since the user will be able to 
+	    make changes before actually sending the e-mail, this can be 
+	    used to provide the user with a template for the e-mail.
+	    <em class="replaceable"><code>text</code></em> may contain linebreaks. 
+	  </dd><dt><span class="term"><code class="option">--attach</code> <em class="replaceable"><code>file</code></em></span></dt><dd><p class="simpara">
+	    Specify an attachment for the e-mail. <em class="replaceable"><code>file</code></em>
+	    must point to an existing file.
+	  </p><p class="simpara">
+	    Some e-mail applications require the file to remain present
+            after xdg-email returns.
+	  </p></dd><dt><span class="term"><code class="option">--help</code></span></dt><dd>
+	    Show command synopsis.
+	  </dd><dt><span class="term"><code class="option">--manual</code></span></dt><dd>
+	    Show this manualpage.
+	  </dd><dt><span class="term"><code class="option">--version</code></span></dt><dd>
+            Show the xdg-utils version information.
+          </dd></dl></div></div><div class="refsect1" title="Environment Variables"><a name="env_vars"></a><h2>Environment Variables</h2><p>
+      xdg-email honours the following environment variables:
+    </p><div class="variablelist"><dl><dt><span class="term">XDG_UTILS_DEBUG_LEVEL</span></dt><dd>
+	    Setting this environment variable to a non-zero numerical value
+	    makes xdg-email do more verbose reporting on stderr.
+	    Setting a higher value increases the verbosity.
+	  </dd></dl></div></div><div class="refsect1" title="Exit Codes"><a name="exitcodes"></a><h2>Exit Codes</h2><p>
+      An exit code of 0 indicates success while a non-zero exit code
+      indicates failure. The following failure codes can be returned:
+    </p><div class="variablelist"><dl><dt><span class="term"><code class="option">1</code></span></dt><dd>
+	    Error in command line syntax.
+	  </dd><dt><span class="term"><code class="option">2</code></span></dt><dd>
+	    One of the files passed on the command line did not exist.
+	  </dd><dt><span class="term"><code class="option">3</code></span></dt><dd>
+	    A required tool could not be found. 
+	  </dd><dt><span class="term"><code class="option">4</code></span></dt><dd>
+	    The action failed. 
+	  </dd><dt><span class="term"><code class="option">5</code></span></dt><dd>
+	    No permission to read one of the files passed on the command
+            line.
+	  </dd></dl></div></div><div class="refsect1" title="Configuration"><a name="configuration"></a><h2>Configuration</h2><p>Visit http://portland.freedesktop.org/EmailConfig for information
+      how to configure xdg-email to use the email client of your choice.
+    </p></div><div class="refsect1" title="Examples"><a name="examples"></a><h2>Examples</h2><p>
+</p><pre class="programlisting">
+xdg-email 'Jeremy White &lt;jwhite@example.com&gt;'
+</pre><p>
+    </p><p>
+</p><pre class="programlisting">
+xdg-email --attach /tmp/logo.png \
+          --subject 'Logo contest' \
+          --body 'Attached you find the logo for the contest.' \
+          'jwhite@example.com'
+</pre><p>
+    </p><p>
+</p><pre class="programlisting">
+xdg-email --subject 'Your password is about to expire' \
+          'jwhite@example.com' 'bastian@example.com' 'whipple@example.com'
+</pre><p>
+    </p></div></div></body></html>

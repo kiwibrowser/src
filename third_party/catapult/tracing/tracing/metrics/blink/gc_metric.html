@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<!--
+Copyright 2016 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/base/math/range.html">
+<link rel="import" href="/tracing/base/unit.html">
+<link rel="import" href="/tracing/metrics/metric_registry.html">
+<link rel="import" href="/tracing/metrics/v8/utils.html">
+<link rel="import" href="/tracing/value/histogram.html">
+
+<script>
+'use strict';
+
+tr.exportTo('tr.metrics.blink', function() {
+  // Maps the Blink GC events in timeline to telemetry friendly names.
+  const BLINK_GC_EVENTS = {
+    'BlinkGCMarking': 'blink-gc-marking',
+    'ThreadState::completeSweep': 'blink-gc-complete-sweep',
+    'ThreadState::performIdleLazySweep': 'blink-gc-idle-lazy-sweep'
+  };
+
+  function isBlinkGarbageCollectionEvent(event) {
+    return event.title in BLINK_GC_EVENTS;
+  }
+
+  function blinkGarbageCollectionEventName(event) {
+    return BLINK_GC_EVENTS[event.title];
+  }
+
+  function blinkGcMetric(histograms, model) {
+    addDurationOfTopEvents(histograms, model);
+    addTotalDurationOfTopEvents(histograms, model);
+    addIdleTimesOfTopEvents(histograms, model);
+    addTotalIdleTimesOfTopEvents(histograms, model);
+  }
+
+  tr.metrics.MetricRegistry.register(blinkGcMetric);
+
+  const timeDurationInMs_smallerIsBetter =
+      tr.b.Unit.byName.timeDurationInMs_smallerIsBetter;
+  const percentage_biggerIsBetter =
+      tr.b.Unit.byName.normalizedPercentage_biggerIsBetter;
+
+  // 0.1 steps from 0 to 20 since it is the most common range.
+  // Exponentially increasing steps from 20 to 200.
+  const CUSTOM_BOUNDARIES = tr.v.HistogramBinBoundaries.createLinear(0, 20, 200)
+      .addExponentialBins(200, 100);
+
+  function createNumericForTopEventTime(name) {
+    const n = new tr.v.Histogram(name,
+        timeDurationInMs_smallerIsBetter, CUSTOM_BOUNDARIES);
+    n.customizeSummaryOptions({
+      avg: true,
+      count: true,
+      max: true,
+      min: false,
+      std: true,
+      sum: true,
+      percentile: [0.90]});
+    return n;
+  }
+
+  function createNumericForIdleTime(name) {
+    const n = new tr.v.Histogram(name,
+        timeDurationInMs_smallerIsBetter, CUSTOM_BOUNDARIES);
+    n.customizeSummaryOptions({
+      avg: true,
+      count: false,
+      max: true,
+      min: false,
+      std: false,
+      sum: true,
+      percentile: []
+    });
+    return n;
+  }
+
+  function createPercentage(name, numerator, denominator) {
+    const histogram = new tr.v.Histogram(name, percentage_biggerIsBetter);
+    if (denominator === 0) {
+      histogram.addSample(0);
+    } else {
+      histogram.addSample(numerator / denominator);
+    }
+    return histogram;
+  }
+
+  /**
+   * Example output:
+   * - blink-gc-marking.
+   */
+  function addDurationOfTopEvents(histograms, model) {
+    tr.metrics.v8.utils.groupAndProcessEvents(model,
+        isBlinkGarbageCollectionEvent,
+        blinkGarbageCollectionEventName,
+        function(name, events) {
+          const cpuDuration = createNumericForTopEventTime(name);
+          events.forEach(function(event) {
+            cpuDuration.addSample(event.cpuDuration);
+          });
+          histograms.addHistogram(cpuDuration);
+        }
+    );
+  }
+
+  /**
+   * Example output:
+   * - blink-gc-total
+   */
+  function addTotalDurationOfTopEvents(histograms, model) {
+    tr.metrics.v8.utils.groupAndProcessEvents(model,
+        isBlinkGarbageCollectionEvent,
+        event => 'blink-gc-total',
+        function(name, events) {
+          const cpuDuration = createNumericForTopEventTime(name);
+          events.forEach(function(event) {
+            cpuDuration.addSample(event.cpuDuration);
+          });
+          histograms.addHistogram(cpuDuration);
+        }
+    );
+  }
+
+  /**
+   * Example output:
+   * - blink-gc-marking_idle_deadline_overrun,
+   * - blink-gc-marking_outside_idle,
+   * - blink-gc-marking_percentage_idle.
+   */
+  function addIdleTimesOfTopEvents(histograms, model) {
+    tr.metrics.v8.utils.groupAndProcessEvents(model,
+        isBlinkGarbageCollectionEvent,
+        blinkGarbageCollectionEventName,
+        function(name, events) {
+          addIdleTimes(histograms, model, name, events);
+        }
+    );
+  }
+
+  /**
+   * Example output:
+   * - blink-gc-total_idle_deadline_overrun,
+   * - blink-gc-total_outside_idle,
+   * - blink-gc-total_percentage_idle.
+   */
+  function addTotalIdleTimesOfTopEvents(histograms, model) {
+    tr.metrics.v8.utils.groupAndProcessEvents(model,
+        isBlinkGarbageCollectionEvent,
+        event => 'blink-gc-total',
+        function(name, events) {
+          addIdleTimes(histograms, model, name, events);
+        }
+    );
+  }
+
+  function addIdleTimes(histograms, model, name, events) {
+    const cpuDuration = createNumericForIdleTime(name + '_cpu');
+    const insideIdle = createNumericForIdleTime(name + '_inside_idle');
+    const outsideIdle = createNumericForIdleTime(name + '_outside_idle');
+    const idleDeadlineOverrun = createNumericForIdleTime(
+        name + '_idle_deadline_overrun');
+    events.forEach(function(event) {
+      const idleTask = tr.metrics.v8.utils.findParent(
+          event, tr.metrics.v8.utils.isIdleTask);
+      let inside = 0;
+      let overrun = 0;
+      if (idleTask) {
+        const allottedTime = idleTask.args.allotted_time_ms;
+        if (event.duration > allottedTime) {
+          overrun = event.duration - allottedTime;
+          // Don't count time over the deadline as being inside idle time.
+          // Since the deadline should be relative to wall clock we
+          // compare allotted_time_ms with wall duration instead of thread
+          // duration, and then assume the thread duration was inside idle
+          // for the same percentage of time.
+          inside = event.cpuDuration * allottedTime / event.duration;
+        } else {
+          inside = event.cpuDuration;
+        }
+      }
+      cpuDuration.addSample(event.cpuDuration);
+      insideIdle.addSample(inside);
+      outsideIdle.addSample(event.cpuDuration - inside);
+      idleDeadlineOverrun.addSample(overrun);
+    });
+    histograms.addHistogram(idleDeadlineOverrun);
+    histograms.addHistogram(outsideIdle);
+    const percentage = createPercentage(
+        name + '_percentage_idle', insideIdle.sum, cpuDuration.sum);
+    histograms.addHistogram(percentage);
+  }
+
+  return {
+    blinkGcMetric,
+  };
+});
+</script>

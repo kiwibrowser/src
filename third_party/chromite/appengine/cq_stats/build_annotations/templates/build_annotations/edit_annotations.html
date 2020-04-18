@@ -1,0 +1,125 @@
+{% extends 'build_annotations/base.html' %}
+
+{% block template-private-imports %}
+{% load build_annotations_filters %}
+{% endblock %}
+
+{% block content %}
+<h1>Annotate {{ build_config|title }} Build {{ build_row.id }}</h1>
+<ul class="navbar">
+  <li class="navbar">
+    <a class="navbar" href="{% url 'build_annotations:builds_list' build_config %}?{{ request.GET.urlencode }}">Builds List</a>
+  </li>
+</ul>
+
+<table class="build_details">
+  <tr>
+    <th class="build_details">Build Number</th>
+    <td class="build_details"><a class="external_link" href="https://uberchromegw.corp.google.com/i/{{ build_row.waterfall }}/builders/{{ build_row.builder_name }}/builds/{{ build_row.build_number }}" target="_blank" rel="nofollow">{{ build_row.build_number }}</a></td>
+  </tr>
+  <tr>
+    <th class="build_details">Status</th>
+    <td class="build_details">{{ build_row.status }}</td>
+  </tr>
+  <tr>
+    <th class="build_details">Summary</th>
+    <td class="build_details">{{ build_row.summary|linebreaksbr }}</td>
+  </tr>
+  <tr>
+    <th class="build_details">Start Time</th>
+    <td class="build_details" name="date.datetz">{{ build_row.start_time|date:"D, d M Y H:i" }} UTC</td>
+  </tr>
+  <tr>
+    <th class="build_details">Runtime</th>
+    <td class="build_details">{{ build_row.run_time }}</td>
+  </tr>
+  <tr>
+    <th class="build_details">Weekday</th>
+    <td class="build_details">{{ build_row.weekday }}</td>
+  </tr>
+  <tr>
+    <th class="build_details">ChromeOS Version</th>
+    <td class="build_details">{{ build_row.chromeos_version }}</td>
+  </tr>
+  <tr>
+    <th class="build_details">Chrome Version</th>
+    <td class="build_details">{{ build_row.chrome_version }}</td>
+  </tr>
+  <tr>
+    <th class="build_details">Failed Stages</th>
+    <td class="build_details">{{ build_row.failed_stages }}</td>
+  </tr>
+  <tr>
+    <th class="build_details">CLs Picked Up</th>
+    <td class="build_details">{{ build_row.picked_up_count }}</td>
+  </tr>
+  <tr>
+    <th class="build_details">CLs Submitted</th>
+    <td class="build_details">{{ build_row.submitted_count }}</td>
+  </tr>
+  <tr>
+    <th class="build_details">CLs Kicked Out</th>
+    <td class="build_details">{{ build_row.kicked_out_count }}</td>
+  </tr>
+</table>
+<form action="{% url 'build_annotations:edit_annotations' build_config build_row.id %}?{{ request.GET.urlencode }}"
+      method="post">
+  {% csrf_token %}
+  {{ annotations_formset.management_form }}
+  <table class="annotations_list">
+    <tr>
+    {% for form in annotations_formset %}
+      {% if forloop.first %}
+        <tr>
+          <th class="annotations_list">Failure Category</th>
+          <th class="annotations_list">Failure Message</th>
+          <th class="annotations_list">Blame URL</th>
+          <th class="annotations_list">Notes</th>
+          <th class="annotations_list">Update</th>
+        </tr>
+      {% endif %}
+      {% for hidden in form.hidden_fields %}
+        {{ hidden }}
+      {% endfor %}
+
+      {% if not forloop.last %}
+        <tr id="annotation_{{ forloop.counter }}_noedit">
+          <td>{{ form.failure_category.value|default_if_none:""|striptags|crosurlize|linebreaks }}</td>
+          <td>{{ form.failure_message.value|default_if_none:""|striptags|crosurlize|linebreaks }}</td>
+          <td>{{ form.blame_url.value|default_if_none:""|striptags|crosurlize|linebreaks }}</td>
+          <td>{{ form.notes.value|default_if_none:""|striptags|crosurlize|linebreaks }}</td>
+          <td><a href="javascript:void(0)" onclick="editAnnotation('{{ forloop.counter }}')">edit</a>
+        </tr>
+      {% endif %}
+
+      {% if not forloop.last %}
+        <tr id="annotation_{{ forloop.counter }}_edit" class="hidden">
+      {% else %}
+        <tr id="annotation_{{ forloop.counter }}_edit">
+      {% endif %}
+            <td class="annotations_list">{{ form.failure_category }}<br><div class="errorlist">{{ form.failure_category.errors }}</div></td>
+            <td class="annotations_list">{{ form.failure_message }}<br><div class="errorlist">{{ form.failure_message.errors }}</div></td>
+            <td class="annotations_list">{{ form.blame_url }}<br><div class="errorlist">{{ form.blame_url.errors }}</div></td>
+            <td class="annotations_list">{{ form.notes }}<br><div class="errorlist">{{ form.notes.errors }}</div></td>
+            <td class="annotations_list">Mark for deletion: {{ form.deleted }}<br><div class="errorlist">{{ form.deleted.errors }}</div></td>
+        </tr>
+    {% endfor %}
+  </table>
+  <input type="checkbox" name="finalize"
+         {% comment %}
+           Finalize messages cannot be unfinalized (yet?), so disable the
+           checkbox if there already exists a finalize message for this build.
+         {% endcomment %}
+         {% if finalize_form.finalize.value %} checked disabled {% endif %}
+         title="Check this when you want to assert that all failures have been annotated."/>
+  <label for="finalize">
+    {% if not finalize_form.finalize.value %}
+      Finalize annotations?
+    {% else %}
+      (Annotations already finalized)
+    {% endif %}
+  </label>
+  <input type="submit" value="Save Changes"/>
+</form>
+{% endblock %}  <!-- content -->
+

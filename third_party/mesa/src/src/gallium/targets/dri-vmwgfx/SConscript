@@ -1,0 +1,33 @@
+Import('*')
+
+env = drienv.Clone()
+
+if env['suncc']:
+    print 'warning: not building dri-vmwgfx'
+    Return()
+
+if env['build'] == 'release':
+    env.Append(CPPDEFINES = ['GALLIUM_RBUG'])
+    env.Prepend(LIBS = [rbug])
+else:
+    env.Append(CPPDEFINES = ['GALLIUM_TRACE', 'GALLIUM_RBUG', 'GALLIUM_GALAHAD', 'GALLIUM_SOFTPIPE'])
+    env.Prepend(LIBS = [trace, rbug, galahad, softpipe, ws_wrapper])
+
+
+env.Prepend(LIBS = [
+    st_dri,
+    svgadrm,
+    svga,
+    mesa,
+    glsl,
+    gallium,
+    COMMON_DRI_DRM_OBJECTS
+])
+
+module = env.LoadableModule(
+    target = 'vmwgfx_dri.so',
+    source = 'target.c',
+    SHLIBPREFIX = '',
+)
+
+env.Alias('dri-vmwgfx', module)

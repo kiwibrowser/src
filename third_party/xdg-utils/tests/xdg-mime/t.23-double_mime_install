@@ -1,0 +1,48 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_double_mime_install() {
+# TODO: should follow the filename tests.
+
+## Begin the test.
+test_start "$FUNCNAME: verify installing an existing mime type is OK"
+
+# Dependencies section
+test_init
+
+require_notroot
+
+use_file "$XDG_TEST_DIR/xdg-mime/data/testmime.xml" INPUT_FILE
+edit_file "$INPUT_FILE" "x-xdg-testpattern" TEST_MIME "x-$XDG_TEST_ID"
+assert_file "$INPUT_FILE"
+echo "text/$TEST_MIME" >testmime.expected
+
+echo "Some text." >testfile.xdgtest
+assert_file testfile.xdgtest
+
+# Verify the test type is not installed already.
+assert_exit 0 xdg-mime install --mode user "$INPUT_FILE"
+assert_exit 0 xdg-mime query filetype testfile.xdgtest
+assert_stdout testmime.expected
+
+# Test steps section
+test_procedure
+
+assert_exit 0 xdg-mime install --mode user "$INPUT_FILE"
+assert_nostdout
+assert_nostderr
+
+assert_exit 0 xdg-mime query filetype testfile.xdgtest
+assert_stdout testmime.expected
+assert_nostderr
+
+# this is a cleanup step
+xdg-mime uninstall --mode user "$INPUT_FILE" >/dev/null 2>&1
+
+test_result
+} 
+run_test test_double_mime_install 

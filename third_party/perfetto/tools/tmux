@@ -1,0 +1,207 @@
+#!/bin/bash
+# Copyright (C) 2018 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+set -e
+
+if [ "$TMPDIR" == "" ]; then
+  TMPDIR=/tmp
+fi
+
+function is_monolithic {
+  local out=$1
+  gn args $out --list --short | grep 'monolithic_binaries = true' 2>&1 >/dev/null
+  return $?
+}
+
+function is_android {
+  local out=$1
+  gn args $out --list --short | grep 'target_os = "android"' 2>&1 >/dev/null
+  return $?
+}
+
+function reset_tracing {
+  if is_android $OUT; then
+    adb shell 'echo 0 > /d/tracing/tracing_on'
+  else
+    if [ ! -w /sys/kernel/debug ]; then
+      echo "debugfs not accessible, try sudo chown -R $USER /sys/kernel/debug"
+      sudo chown -R $USER /sys/kernel/debug
+    fi
+
+    echo 0 > /sys/kernel/debug/tracing/tracing_on
+  fi
+}
+
+function adb_supports_push_sync {
+  adb --help | grep 'push.*\[--sync\]' 2>&1 >/dev/null
+}
+
+function push {
+  if is_android $OUT; then
+    local maybe_sync=''
+    if adb_supports_push_sync; then
+      maybe_sync='--sync '
+    fi
+    echo adb push $maybe_sync $1 $DIR
+    adb push $maybe_sync $1 $DIR
+  else
+    echo cp $1 $DIR
+    cp $1 $DIR
+  fi
+}
+
+function pull {
+  if is_android $OUT; then
+    echo adb pull $DIR/$1 $2
+    adb pull $DIR/$1 $2
+  else
+    echo mv $DIR/$1 $2
+    mv $DIR/$1 $2
+  fi
+}
+
+background=0
+
+while getopts b o; do
+  case "$o" in
+    b) background=1;;
+    *) echo "Invalid option $o"; exit;;
+  esac
+done
+
+# If not set guess the OUT dir using the latest directory.
+if [ ! -f "$OUT/args.gn" ]; then
+  echo "OUT=$OUT doesn't look like an output directory."
+  echo "Please specify a directory by doing: export OUT=out/xxx"
+  exit 1
+fi
+
+# You can set the config to one of the files under test/configs e.g.
+# CONFIG=ftrace.cfg or to :test. Defaults to :test.
+CONFIG="${CONFIG:-:test}"
+
+if is_android $OUT ; then
+  DIR=/data/local/tmp
+else
+  DIR=$(mktemp -p $TMPDIR -d perfetto.XXXXXX)
+fi
+
+tools/ninja -C $OUT traced traced_probes perfetto trace_to_text test/configs
+
+push $OUT/traced
+push $OUT/traced_probes
+push $OUT/perfetto
+reset_tracing
+
+if is_android $OUT; then
+  PREFIX="PERFETTO_CONSUMER_SOCK_NAME=/data/misc/perfetto-traces/test_consumer_socket PERFETTO_PRODUCER_SOCK_NAME=/data/misc/perfetto-traces/test_producer_socket"
+else
+  PREFIX=""
+fi
+
+if ! is_monolithic $OUT; then
+  PREFIX="$PREFIX LD_LIBRARY_PATH=$DIR"
+  push $OUT/libtraced_shared.so
+fi
+
+PREFIX="$PREFIX PERFETTO_METATRACE_FILE=$DIR/mtrace"
+
+CONFIG_DEVICE_PATH=$CONFIG
+if [[ "$CONFIG" != ":test" ]]; then
+  CONFIG_DEVICE_PATH=$DIR/$CONFIG.protobuf
+  CONFIG_PATH=$OUT/$CONFIG.protobuf;
+  if [[ ! -f $CONFIG_PATH ]]; then
+    echo 'Config "'$CONFIG_PATH'" not known.'
+    exit 1
+  fi
+  push $CONFIG_PATH
+fi
+
+POSTFIX=""
+
+if [[ background -eq 1 ]]; then
+  PREFIX="$PREFIX nohup"
+  POSTFIX=" &> /dev/null &"
+fi
+
+if tmux has-session -t demo; then
+  tmux kill-session -t demo
+fi
+tmux -2 new-session -d -s demo
+
+if tmux -V | awk '{split($2, ver, "."); if (ver[1] < 2) exit 1 ; else if (ver[1] == 2 && ver[2] < 1) exit 1 }'; then
+  tmux set-option -g mouse on
+else
+  tmux set-option -g mode-mouse on
+  tmux set-option -g mouse-resize-pane on
+  tmux set-option -g mouse-select-pane on
+  tmux set-option -g mouse-select-window on
+fi
+
+tmux split-window -v
+tmux split-window -v
+
+tmux select-layout even-vertical
+
+tmux select-pane -t 0
+tmux send-keys "clear" C-m
+if is_android $OUT; then
+  tmux send-keys "adb shell" C-m
+fi
+
+tmux select-pane -t 1
+tmux send-keys "clear" C-m
+if is_android $OUT; then
+  tmux send-keys "adb shell" C-m
+fi
+
+tmux select-pane -t 2
+tmux send-keys "clear" C-m
+if is_android $OUT; then
+  tmux send-keys "adb shell" C-m
+fi
+
+sleep 2
+
+tmux select-pane -t 1
+tmux send-keys "$PREFIX $DIR/traced $POSTFIX" Enter
+
+tmux select-pane -t 0
+tmux send-keys "$PREFIX $DIR/traced_probes $POSTFIX" Enter
+
+tmux select-pane -t 2
+tmux send-keys "$PREFIX $DIR/perfetto -c $CONFIG_DEVICE_PATH -o $DIR/trace $POSTFIX"
+
+# Select consumer pane.
+tmux select-pane -t 2
+
+tmux -2 attach-session -t demo
+if [[ background -eq 1 ]]; then
+  exit 0;
+fi
+
+reset_tracing
+
+TRACE=$HOME/Downloads/trace
+pull trace /tmp/trace.protobuf
+echo -e "\n\x1b[32mPulling trace into $TRACE.pbtext\x1b[0m"
+$OUT/trace_to_text text < /tmp/trace.protobuf > $TRACE.pbtext
+echo -e "\n\x1b[32mPulling trace into $TRACE.json\x1b[0m"
+$OUT/trace_to_text systrace < /tmp/trace.protobuf > $TRACE.json
+# Keep this last so it can fail.
+pull mtrace /tmp/mtrace.json
+# Add [ to beginning of file and replace trailing , with ] to turn into valid
+# JSON array.
+sed -i '$ s/.$/]/' /tmp/mtrace.json
+sed -i '1s/^/[/' /tmp/mtrace.json

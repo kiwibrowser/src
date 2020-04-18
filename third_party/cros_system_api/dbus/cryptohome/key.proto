@@ -1,0 +1,151 @@
+// Copyright (c) 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+//
+// Provides wire-type for cryptohome Key objects.  It does not
+// represent the entirety of the bookkeeping data needed by Cryptohome.
+//
+// Anything in this file may be persisted on disk.  Update carefully!
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package cryptohome;
+
+message KeyAuthorizationSecretUsage {
+  optional bool encrypt = 1;
+  optional bool sign = 2;
+}
+
+message KeyAuthorizationSecret {
+  optional KeyAuthorizationSecretUsage usage = 1;
+  optional bytes symmetric_key = 2;
+  optional bytes public_key = 3;
+  // Indicates if the symmetric_key is wrapped.
+  optional bool wrapped = 4 [default=false];
+}
+
+message KeyAuthorizationData {
+  enum KeyAuthorizationType {
+    KEY_AUTHORIZATION_TYPE_HMACSHA256 = 0;
+    KEY_AUTHORIZATION_TYPE_AES256CBC_HMACSHA256 = 1;
+  }
+  optional KeyAuthorizationType type = 1;
+  repeated KeyAuthorizationSecret secrets = 2;
+}
+
+// Software-enforced privileges.
+message KeyPrivileges {
+  // Allows the key to mount the cryptohome.
+  optional bool mount = 1 [default=true];
+  // Allows new keys to be added.
+  optional bool add = 2 [default=true];
+  // Allows other existing keys to be removed.
+  optional bool remove = 3 [default=true];
+  // Allows the key to update itself.
+  optional bool update = 4 [default=true];
+  // Allows a key to update itself iff the requested change
+  // is authorized as per KeyAuthorizationData.
+  optional bool authorized_update = 5 [default=false];
+}
+
+// Public metadata stored on behalf of the KeyProvider.
+message KeyProviderData {
+  message Entry {
+    optional string name = 1;
+    optional int64 number = 2;
+    optional bytes bytes = 3;
+  }
+  repeated Entry entry = 1;
+}
+
+// Cryptographic signature algorithm type for challenge requests. Used with
+// challenge-response cryptohome keys.
+enum ChallengeSignatureAlgorithm {
+  CHALLENGE_RSASSA_PKCS1_V1_5_SHA1 = 1;
+  CHALLENGE_RSASSA_PKCS1_V1_5_SHA256 = 2;
+  CHALLENGE_RSASSA_PKCS1_V1_5_SHA384 = 3;
+  CHALLENGE_RSASSA_PKCS1_V1_5_SHA512 = 4;
+}
+
+// Description of a public key of an asymmetric cryptographic key. Used with
+// challenge-response cryptohome keys.
+message ChallengePublicKeyInfo {
+  // DER-encoded blob of the X.509 Subject Public Key Info.
+  optional bytes public_key_spki_der = 1;
+  // Supported signature algorithms, in the order of preference (starting from
+  // the most preferred). Absence of this field denotes that the key cannot be
+  // used for signing.
+  repeated ChallengeSignatureAlgorithm signature_algorithm = 2;
+}
+
+// Policies which determine how a key can be used. |GetSupportedKeyPolicies|
+// request can be used to determine if a given policy value is supported.
+// This message is also used inside of |GetKeyDataReply|, which allows clients
+// to query current key state without submitting an authentication attempt.
+message KeyPolicy {
+  // Is this key additionally protected from brute force attacks as a low
+  // entropy credential? For such keys, delays between subsequent unsuccessful
+  // authorization attempts and/or a limit on the number of such attempts are
+  // enforced to slow down dictionary-based attacks. Set this to true when
+  // registering a key to protect it.
+  optional bool low_entropy_credential = 1;
+  // If true, the key is "locked" after too many unsuccessful authorization
+  // attempts. Future authentication attempts against a locked key fail with
+  // CRYPTOHOME_ERROR_TPM_DEFEND_LOCK error.
+  // Currently, such locking is supported only for keys with
+  // |low_entropy_credential| policy set to true,
+  // This field is ignored when registering a new key.
+  optional bool auth_locked = 2;
+}
+
+// Non-secret data describing the key.
+message KeyData {
+  // The KeyType should specify the handling needed by Cryptohome
+  // and not a provider KeyType.
+  enum KeyType {
+    // Password-based key. The password's text or its hashed/transformed
+    // representation is transmitted in the |secret| field of the Key message.
+    KEY_TYPE_PASSWORD = 0;
+    // The challenge-response type of key. The secret data for such key is not
+    // passed clear-text through D-Bus calls, but is instead handled by
+    // cryptohome internally. In order to authenticate using such key,
+    // cryptohome will issue one or multiple challenge requests.
+    KEY_TYPE_CHALLENGE_RESPONSE = 1;
+  }
+  optional KeyType type = 1;
+  // All keys must be labeled when persisted to disk, but when KeyData
+  // is used in an UpdateKeyRequest, only defined fields are necessary
+  // (so that the caller doesn't need the full KeyData first).
+  optional string label = 2;
+  // If undefined, use the default settings.
+  optional KeyPrivileges privileges = 3;
+  optional int64 revision = 4;
+  // At present, only support for one authorization mechanism is implemented.
+  repeated KeyAuthorizationData authorization_data = 5;
+  // Data stored for use by the provider of the key, often for pre-processing
+  // of passwords or custom provider key typing.
+  // This will be size-limited by serialized size (e.g., 4096 bytes).
+  optional KeyProviderData provider_data = 6;
+  // Is set when |type| is |KEY_TYPE_CHALLENGE_RESPONSE|. Specifies the list of
+  // keys that should be used for challenge requests.
+  repeated ChallengePublicKeyInfo challenge_response_key = 7;
+  // Optional additional policy to apply to the key. Certain policy values
+  // require hardware support which may not be available.
+  optional KeyPolicy policy = 8;
+}
+
+// Key is not presently persisted to disk, but it acts as the single authority
+// for what comprises a key.
+message Key {
+  // In most cases, |data| is required.  When used in an UpdateKeyRequest, it
+  // is only required if KeyData is changing.  If only the |secret| is changing,
+  // this field may be left unset.
+  optional KeyData data = 1;
+  // |secret| is required for many requests, like AddKeyRequest, but not all.
+  // An UpdateKeyRequest only requires the changes to the Key that was
+  // was authorized in the AuthorizationRequest. Making |secret| required would
+  // logically force a key rotation even if the values were the same.
+  optional bytes secret = 2;
+}

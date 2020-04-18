@@ -1,0 +1,67 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Shader Storage / Image Storage synchronization tests
+
+Tests:
+ + dEQP-GLES31.functional.synchronization.*
+
+Includes:
+
+ + In-invocation synchronization
+   - Test synchronization primitives within a single invocation.
+
+ + Inter-invocation synchronization
+   - Test synchronization between work group invocations.
+
+ + Inter-call synchronization
+   - Test synchronization between draw calls
+
+Excludes:
+
+ - Inter-invocation synchronization without use of barrier()
+ - Use vertex, fragment, or geometry shaders.
+
+Description:
+
+In-invocation synchronization tests read and write to a coherent image or
+buffer within a single invocation. Data accessed by a single invocation is not
+accessed by other invocations. Image accesses are synchronized using
+memoryBarrierImage(). SSBO accesses do not need to be explicitly synchronized
+as memory operations execute in order.
+
+Inter-invocation synchronization tests read and write to a coherent image or
+buffer within a single work group. Data accessed by a single invocation is also
+accessed by another invocation within the work group. Accesses are synchronized
+using a combination of groupMemoryBarrier() and barrier().
+
+inter_call.with_memory_barrier test cases read and write to an image or buffer.
+Data written in a single call is read in another call. glMemoryBarrier() is used
+for synchronization between the calls.
+
+inter_call.without_memory_barrier.* inter-call synchronization tests modify a image
+or buffer declared as volatile with atomic operations or using atomic counters.
+Multiple computes are dispatched without calling MemoryBarrier(). Result and
+intermediate results are checked to verify operation atomicy over multiple compute
+dispatches.
+
+inter_call.without_memory_barrier.ssbo_atomic_counter_mixed_* cases test relative
+atomicy of buffer atomic operations and atomic counter operations. Separate programs
+modify atomically either a buffer or an atomic counter backed by the same buffer.
+Multiple instances of programs are dispatched without calling MemoryBarrrier(). Buffer
+content and intermediate values are checked to verify atomicy between operations.

@@ -1,0 +1,99 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Performance tests
+
+This test specification describes general techniques and methodologies used
+in performance test cases.
+
+
+Measuring performance:
+
+Performance test cases must satisfy following conditions:
+
+ + Result should represent the performance of the tested feature or use case.
+   - Use of any other features should be kept at minimum.
+   - Architecture-specific optimizations should not affect result unless they
+     target the feature being tested.
+   - Measurement overhead should be minimized.
+
+ + Hardware must be utilized to the maximum.
+   - In most cases total throughput is more important than latency.
+   - Latency is measured where it matters.
+   - Test cases should behave like other graphics-intensive applications on
+     that platform. This usually means that test cases should render multiple
+	 frames and utilize platform-defined standard mechanisms to display each
+	 frame on screen.
+
+ + Test result should be stable across test runs.
+   - Final result should be a function of results from multiple iterations if
+     performance is expected to vary between iterations (due to undeterministic
+     scheduling for example).
+   - Simple average may not always be the right function, often stability of
+     the performance is more important from user experience perspective.
+
+ + Test result values should be meaningful.
+   - Result should be meaningful without knowing the exact implementation
+     details of the test case.
+   - Good example: Millions of pixels or vertices with shader X per second
+   - Bad example: Frames per second
+
+ + Results can be compared across different implementations and configurations.
+   - If possible, configuration changes (viewport size for example) should not
+	 affect the test result.
+   - Where configuration may affect the result, test log should include the
+	 configuration details.
+
+
+Test output:
+
+Test cases will log at least following variables, if available:
+
+ * Viewport size
+ * Color, depth, stencil and multisample bits
+ * Number of draw calls
+ * Shader program source
+ * Automatic calibration values
+ * Individual iteration times (if iteration count is reasonable)
+ * Minimum and maximum iteration times
+ * Average iteration time
+ * Minimum and maximum computed performance
+ * Average computed performance
+
+
+Shader execution tests:
+
+Shader execution tests measure the performance of single pair of vertex and
+fragment shaders, optionally combined with fixed-function per-fragment
+operations such as blending.
+
+Each iteration (frame) renders N grids of quads. Each grid, drawn with single
+draw call, fills the screen entirely without any overlap between quads.
+The number of quads depends on targeted vertex load. Test cases targeting
+fragment shaders only use a single quad. N (number of times screen is filled)
+is chosen either automatically to target certain iteration time or specified
+by the test case explicitly.
+
+Test cases that measure fragment-side performance must make sure fragments
+are not discarded early due to Z-culling or any other optimization. The
+preferred way to do this is to enable simple additive blending. The extra
+cost of that is one read from the framebuffer and per-channel saturating
+additions.
+
+The result is MPix/s, MVert/s or weighted sum of both depending on test
+case type.

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<!--
+Copyright 2016 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/core/test_utils.html">
+<link rel="import" href="/tracing/extras/importer/trace_event_importer.html">
+<link rel="import" href="/tracing/metrics/v8/gc_metric.html">
+<link rel="import" href="/tracing/model/slice_group.html">
+<link rel="import" href="/tracing/value/histogram_set.html">
+
+<script>
+'use strict';
+
+tr.b.unittest.testSuite(function() {
+  function createModel(start, end, slices) {
+    const opts = {
+      customizeModelCallback(model) {
+        const process = model.getOrCreateProcess(1);
+        const thread = process.getOrCreateThread(2);
+        const group = thread.sliceGroup;
+        slices.forEach(function(slice) {
+          group.pushSlice(tr.c.TestUtils.newSliceEx(slice));
+        });
+        group.createSubSlices();
+      }
+    };
+    const model = tr.c.TestUtils.newModelWithEvents([], opts);
+    return model;
+  }
+
+  function constructName(name, suffix) {
+    return name + '_' + suffix;
+  }
+
+  function run(slices) {
+    const histograms = new tr.v.HistogramSet();
+    const startTime = slices.reduce(
+        (acc, slice) => (Math.min(acc, slice.start)));
+    const endTime = slices.reduce((acc, slice) => (Math.max(acc, slice.end)));
+    const model = createModel(startTime - 1, endTime + 1, slices);
+    tr.metrics.v8.gcMetric(histograms, model);
+    return histograms;
+  }
+
+  test('topEvents', function() {
+    const events = {
+      'V8.GCCompactor': 'v8-gc-full-mark-compactor',
+      'V8.GCFinalizeMC': 'v8-gc-latency-mark-compactor',
+      'V8.GCFinalizeMCReduceMemory': 'v8-gc-memory-mark-compactor',
+      'V8.GCIncrementalMarking': 'v8-gc-incremental-step',
+      'V8.GCIncrementalMarkingFinalize': 'v8-gc-incremental-finalize',
+      'V8.GCIncrementalMarkingStart': 'v8-gc-incremental-start',
+      'V8.GCPhantomHandleProcessingCallback': 'v8-gc-phantom-handle-callback',
+      'V8.GCScavenger': 'v8-gc-scavenger'
+    };
+    for (const [timelineName, telemetryName] of Object.entries(events)) {
+      const slices = [
+        {
+          title: timelineName, args: {}, start: 100, end: 200,
+          cpuStart: 100, cpuEnd: 200
+        }
+      ];
+      const actual = run(slices);
+
+      const value = actual.getHistogramNamed(telemetryName);
+      assert.strictEqual(value.running.sum, 100);
+      assert.strictEqual(value.numValues, 1);
+      assert.strictEqual(value.average, 100);
+      assert.strictEqual(value.running.max, 100);
+      assert.closeTo(value.getApproximatePercentile(0.90), 100, 1);
+    }
+  });
+
+  test('subEvents', function() {
+    const histograms = new tr.v.HistogramSet();
+    const slices = [
+      {
+        title: 'V8.GCFinalizeMC', args: {}, start: 100, end: 200,
+        cpuStart: 100, cpuEnd: 200
+      },
+      {
+        title: 'V8.GC_MC_MARK', args: {}, start: 110, end: 190,
+        cpuStart: 110, cpuEnd: 190
+      },
+    ];
+    const actual = run(slices);
+    const telemetryName = 'v8-gc-latency-mark-compactor-mark';
+    const value = actual.getHistogramNamed(telemetryName);
+    assert.strictEqual(value.average, 80);
+    assert.strictEqual(value.running.max, 80);
+    assert.closeTo(value.getApproximatePercentile(0.90), 80, 1);
+  });
+
+  test('total', function() {
+    const histograms = new tr.v.HistogramSet();
+    const slices = [
+      {
+        title: 'V8.GCFinalizeMC', args: {}, start: 100, end: 200,
+        cpuStart: 100, cpuEnd: 200
+      },
+      {
+        title: 'V8.GCIncrementalMarking', args: {}, start: 210, end: 290,
+        cpuStart: 210, cpuEnd: 290
+      }
+    ];
+    const actual = run(slices);
+
+    const value = actual.getHistogramNamed('v8-gc-total');
+    assert.strictEqual(value.running.sum, 180);
+    assert.strictEqual(value.numValues, 2);
+    assert.strictEqual(value.average, 90);
+    assert.strictEqual(value.running.max, 100);
+  });
+
+  test('percentageInV8Execute', function() {
+    const histograms = new tr.v.HistogramSet();
+    const slices = [
+      {
+        title: 'V8.Execute',
+        args: {}, start: 100, end: 200,
+        cpuStart: 100, cpuEnd: 200
+      },
+      {
+        title: 'V8.GCFinalizeMC', args: {}, start: 110, end: 190,
+        cpuStart: 110, cpuEnd: 190
+      },
+      {
+        title: 'V8.GCFinalizeMC', args: {}, start: 210, end: 220,
+        cpuStart: 210, cpuEnd: 220
+      }
+    ];
+    const actual = run(slices);
+    const value = actual.getHistogramNamed(
+        'v8-gc-latency-mark-compactor_percentage_in_v8_execute');
+    assert.strictEqual(value.average,
+        (190 - 110) / ((190 - 110) + (220 - 210)));
+  });
+});
+</script>

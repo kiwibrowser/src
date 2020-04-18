@@ -1,0 +1,167 @@
+# liblouis: Marburg maths  Table for mathematics
+#
+#  Based on the Linux screenreader BRLTTY, copyright (C) 1999-2006 by
+#  The BRLTTY Team
+#
+#  Copyright (C) 2004, 2005, 2006
+#  ViewPlus Technologies, Inc. www.viewplus.com
+#  and
+#  JJB Software, Inc. www.jjb-software.com
+#  All rights reserved
+#
+#  This file is free software; you can redistribute it and/or modify it
+#   under the terms of the Lesser or Library GNU General Public License 
+#  as published by the
+#  Free Software Foundation; either version 3, or (at your option) any
+#  later version.
+# 
+#  This file is distributed in the hope that it will be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+#  Library GNU General Public License for more details.
+#
+#  You should have received a copy of the Library GNU General Public 
+#  License along with this program; see the file COPYING.  If not, write 
+#  to
+#  the Free Software Foundation, 51 Franklin Street, Fifth Floor,
+#  Boston, MA 02110-1301, USA.
+#
+#  Maintained by John J. Boyer john.boyer@jjb-software.com
+# Updated 6-18-08 by Mike Sivill <mike.sivill@viewplus.com>
+
+include marburg_single_cell_defs.cti
+include marburg_unicode_defs.cti
+# grouping definitions are character-definition rules
+grouping mrow \x0001\x0002 1e,2e
+grouping mfrac \x0003\x0004 3e,4e
+grouping brackets \x0005\x0006 126,345
+
+# Braille indicators
+numsign 3456
+capsign 6
+begcaps 6-6
+endcaps 6-3
+singleletterital 4
+singleletterbold 4
+
+# litdigit opcodes must be in this table, not the single-cell table.
+include litdigits6Dots.uti
+
+# No letsign but endnum for letters a-j.
+endnum a 56-1
+endnum b 56-12
+endnum c 56-14
+endnum d 56-145
+endnum e 56-15
+endnum f 56-124
+endnum g 56-1245
+endnum h 56-125
+endnum i 56-24
+endnum j 56-245
+
+# Ordinary translation entries
+always = a-56-2356
+always + a-56-235
+always > a-135-a
+always < a-246-a
+always % 25-1234
+always $ 256
+always & 4-12346
+always ~ 45-156
+always ! 6-236
+prepunc " 236
+postpunc " 356
+postpunc ' 3
+always '' 36
+always ''' 36-3
+midnum , 3
+postpunc , 6-2
+always , 3
+always # 35-2345 print number sign before number
+always ( 126
+always ) 345
+pass2 [{mrow]@126/@345}mrow ?
+pass2 @126[{mrow]/}mrow@345 ?
+decpoint . 2
+always ... 3-3-3
+hyphen - 36
+postpunc . 6-256
+postpunc ; 6-23
+postpunc : 6-25
+postpunc ? 6-236
+endnum % 4-356
+midnum * 4-16
+repeated \s 0
+repeated \x00a0 a
+
+# swap opcodes for replacement and testing.
+swapcd dropped 0123456789 356,2,23,25,456,26,235,2356,236,35
+swapdd upnum 245,1,12,14,145,15,124,1245,125,24 0,0,0,0,0,0,0,0,0,0
+swapdd lownum 356,2,23,25,256,26,235,2356,236,35 0,0,0,0,0,0,0,0,0,0
+
+# now we start doing the real work
+
+# Correction rules
+correct {mrow$ld1-20[}mrow] ?
+correct "\eb"[{mrow]/}mrow"\ee" ?
+context "\eb"[]$l"\ee" @56
+context "\eb"[]","$l"\ee" @56
+context {mfrac$d1-10[]"@456-34"$d1-10}mfrac #1=1
+# context []"@456-34"$d1-10}mfrac #1=1
+context []"@346"$d1-10"@12456" #1=1
+context []"@16"$d1-10"@12456" #1=1
+# context []"@146"$d1-10 #1=1
+context #1=1$d1-10 #1=0%dropped 
+
+# exactdots opcodes for dot patterns in ukmaths.sem
+exactdots @126
+exactdots @345
+exactdots @123456
+exactdots @346
+exactdots @16
+exactdots @23456
+exactdots @34
+exactdots @456-34
+exactdots @12456
+exactdots @146
+
+# Function names and abbreviations
+word cos 1246-14
+word grad 1246-1245
+word cosh 1246-125-14
+word sinh 1246-125-234
+word tanh 1246-125-2345
+word cosech 1246-125-126
+word coth 1246-125-1256
+word sech 1246-125-36
+word log 1246-123
+word sin 1246-234
+word tan 1246-2345
+word cosec 1246-126
+word curl 1246-146
+word div 1246-1456
+word cot 1246-1256
+word arccosh 1246-236-14
+word arcsinh 1246-236-234
+word arctanh 1246-236-2345
+word arccosech 1246-236-126
+word arccoth 1246-236-1256
+word arcsech 1246-236-36
+word sec 1246-36
+word arccos 1246-4-14
+word antilog 1246-4-123
+word arcsin 1246-4-234
+word arctan 1246-4-2345
+word arccosec 1246-4-126
+word arccot 1246-4-1256
+word arcsec 1246-4-25
+word colog 1246-45-123
+
+# pass2 processing
+pass2 [@3456]%lownum1-10 ?
+pass2 [@456-34-3456]%lownum1-10 ?
+
+# pass3 processing
+pass3 @346%lownum1-10[@12456] ?
+pass3 @16[%lownum1-10]@12456 *
+pass3 {mfrac[@3456%upnum1-10%lownum1-10]}mfrac *

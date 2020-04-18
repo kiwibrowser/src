@@ -1,0 +1,41 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_screensave_reset() {
+test_start "$FUNCNAME: verify screensaver reset"
+
+test_init
+
+require_notroot
+require_interactive
+## Require a running X server
+assert_display
+
+assert_exit 0 xdg-screensaver status
+assert_stdout
+mv out.stdout out.stat
+
+assert_interactive "Screensaver will activate 1sec after you press enter, then deactivate in 2 secs. Please be careful not to deactivate it manually."
+
+sleep 1
+assert_exit 0 xdg-screensaver activate
+sleep 2
+test_procedure
+
+assert_exit 0 xdg-screensaver reset
+assert_nostdout
+assert_nostderr
+
+assert_interactive "Did the screensaver deactivate automatically?" y
+
+assert_exit 0 xdg-screensaver status
+assert_stdout out.stat
+
+test_result
+}
+
+run_test test_screensave_reset

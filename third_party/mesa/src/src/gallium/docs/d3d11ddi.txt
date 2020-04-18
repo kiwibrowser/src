@@ -1,0 +1,462 @@
+This document compares the D3D10/D3D11 device driver interface with Gallium.
+It is written from the perspective of a developer implementing a D3D10/D3D11 driver as a Gallium state tracker.
+
+Note that naming and other cosmetic differences are not noted, since they don't really matter and would severely clutter the document.
+Gallium/OpenGL terminology is used in preference to D3D terminology.
+
+NOTE: this document tries to be complete but most likely isn't fully complete and also not fully correct: please submit patches if you spot anything incorrect
+
+Also note that this is specifically for the DirectX 10/11 Windows Vista/7 DDI interfaces.
+DirectX 9 has both user-mode (for Vista) and kernel mode (pre-Vista) interfaces, but they are significantly different from Gallium due to the presence of a lot of fixed function functionality.
+
+The user-visible DirectX 10/11 interfaces are distinct from the kernel DDI, but they match very closely.
+
+* Accessing Microsoft documentation
+
+See http://msdn.microsoft.com/en-us/library/dd445501.aspx ("D3D11DDI_DEVICEFUNCS") for D3D documentation.
+
+Also see http://download.microsoft.com/download/f/2/d/f2d5ee2c-b7ba-4cd0-9686-b6508b5479a1/direct3d10_web.pdf ("The Direct3D 10 System" by David Blythe) for an introduction to Direct3D 10 and the rationale for its design.
+
+The Windows Driver Kit contains the actual headers, as well as shader bytecode documentation.
+
+To get the headers from Linux, run the following, in a dedicated directory:
+wget http://download.microsoft.com/download/4/A/2/4A25C7D5-EFBE-4182-B6A9-AE6850409A78/GRMWDK_EN_7600_1.ISO
+sudo mount -o loop GRMWDK_EN_7600_1.ISO /mnt/tmp
+cabextract -x /mnt/tmp/wdk/headers_cab001.cab
+rename 's/^_(.*)_[0-9]*$/$1/' *
+sudo umount /mnt/tmp
+
+d3d10umddi.h contains the DDI interface analyzed in this document: note that it is much easier to read this online on MSDN.
+d3d{10,11}TokenizedProgramFormat.hpp contains the shader bytecode definitions: this is not available on MSDN.
+d3d9types.h contains DX9 shader bytecode, and DX9 types
+d3dumddi.h contains the DirectX 9 DDI interface
+
+* Glossary
+
+BC1: DXT1
+BC2: DXT3
+BC3: DXT5
+BC5: RGTC1
+BC6H: BPTC float
+BC7: BPTC
+CS = compute shader: OpenCL-like shader
+DS = domain shader: tessellation evaluation shader
+HS = hull shader: tessellation control shader
+IA = input assembler: primitive assembly
+Input layout: vertex elements
+OM = output merger: blender
+PS = pixel shader: fragment shader
+Primitive topology: primitive type
+Resource: buffer or texture
+Shader resource (view): sampler view
+SO = stream out: transform feedback
+Unordered access view: view supporting random read/write access (usually from compute shaders)
+
+* Legend
+
+-: features D3D11 has and Gallium lacks
++: features Gallium has and D3D11 lacks
+!: differences between D3D11 and Gallium
+*: possible improvements to Gallium
+>: references to comparisons of special enumerations
+#: comment
+
+* Gallium functions with no direct D3D10/D3D11 equivalent
+
+clear
+	+ Gallium supports clearing both render targets and depth/stencil with a single call
+
+fence_signalled
+fence_finish
+	+ D3D10/D3D11 don't appear to support explicit fencing; queries can often substitute though, and flushing is supported
+
+set_clip_state
+	+ Gallium supports fixed function user clip planes, D3D10/D3D11 only support using the vertex shader for them
+
+set_polygon_stipple
+	+ Gallium supports polygon stipple
+
+clearRT/clearDS
+	+ Gallium supports subrectangle fills of surfaces, D3D10 only supports full clears of views
+
+* DirectX 10/11 DDI functions and Gallium equivalents
+
+AbandonCommandList (D3D11 only)
+	- Gallium does not support deferred contexts
+
+CalcPrivateBlendStateSize
+CalcPrivateDepthStencilStateSize
+CalcPrivateDepthStencilViewSize
+CalcPrivateElementLayoutSize
+CalcPrivateGeometryShaderWithStreamOutput
+CalcPrivateOpenedResourceSize
+CalcPrivateQuerySize
+CalcPrivateRasterizerStateSize
+CalcPrivateRenderTargetViewSize
+CalcPrivateResourceSize
+CalcPrivateSamplerSize
+CalcPrivateShaderResourceViewSize
+CalcPrivateShaderSize
+CalcDeferredContextHandleSize (D3D11 only)
+CalcPrivateCommandListSize (D3D11 only)
+CalcPrivateDeferredContextSize (D3D11 only)
+CalcPrivateTessellationShaderSize (D3D11 only)
+CalcPrivateUnorderedAccessViewSize (D3D11 only)
+	! D3D11 allocates private objects itself, using the size computed here
+	* Gallium could do something similar to be able to put the private data inline into state tracker objects: this would allow them to fit in the same cacheline and improve performance
+
+CheckDeferredContextHandleSizes (D3D11 only)
+	- Gallium does not support deferred contexts
+
+CheckFormatSupport -> screen->is_format_supported
+	! Gallium passes usages to this function, D3D11 returns them
+	- Gallium does not differentiate between blendable and non-blendable render targets
+	! Gallium includes sample count directly, D3D11 uses additional query 
+
+CheckMultisampleQualityLevels
+	! is merged with is_format_supported
+
+CommandListExecute (D3D11 only)
+	- Gallium does not support command lists
+
+CopyStructureCount (D3D11 only)
+	- Gallium does not support unordered access views (views that can be written to arbitrarily from compute shaders)
+
+ClearDepthStencilView -> clear_depth_stencil
+ClearRenderTargetView -> clear_render_target
+	# D3D11 is not totally clear about whether this applies to any view or only a "currently-bound view"
+	+ Gallium allows to clear both depth/stencil and render target(s) in a single operation
+	+ Gallium supports double-precision depth values (but not rgba values!)
+	* May want to also support double-precision rgba or use "float" for "depth"
+
+ClearUnorderedAccessViewFloat (D3D11 only)
+ClearUnorderedAccessViewUint (D3D11 only)
+	- Gallium does not support unordered access views (views that can be written to arbitrarily from compute shaders)
+
+CreateBlendState (extended in D3D10.1) -> create_blend_state
+	# D3D10 does not support per-RT blend modes (but per-RT blending), only D3D10.1 does
+	+ Gallium supports logic ops
+	+ Gallium supports dithering
+	+ Gallium supports using the broadcast alpha component of the blend constant color
+
+CreateCommandList (D3D11 only)
+	- Gallium does not support command lists
+
+CreateComputeShader (D3D11 only)
+	- Gallium does not support compute shaders
+
+CreateDeferredContext (D3D11 only)
+	- Gallium does not support deferred contexts
+
+CreateDomainShader (D3D11 only)
+	- Gallium does not support domain shaders
+
+CreateHullShader (D3D11 only)
+	- Gallium does not support hull shaders
+
+CreateUnorderedAccessView (D3D11 only)
+	- Gallium does not support unordered access views
+
+CreateDepthStencilState -> create_depth_stencil_alpha_state
+	! D3D11 has both a global stencil enable, and front/back enables; Gallium has only front/back enables
+	+ Gallium has per-face writemask/valuemasks, D3D11 uses the same value for back and front
+	+ Gallium supports the alpha test, which D3D11 lacks
+
+CreateDepthStencilView -> create_surface
+CreateRenderTargetView -> create_surface
+	! Gallium merges depthstencil and rendertarget views into pipe_surface
+	- lack of render-to-buffer support
+	+ Gallium supports using 3D texture zslices as a depth/stencil buffer (in theory)
+
+CreateElementLayout -> create_vertex_elements_state
+	! D3D11 allows sparse vertex elements (via InputRegister); in Gallium they must be specified sequentially
+	! D3D11 has an extra flag (InputSlotClass) that is the same as instance_divisor == 0
+
+CreateGeometryShader -> create_gs_state
+CreateGeometryShaderWithStreamOutput -> create_gs_state + create_stream_output_state
+CreatePixelShader -> create_fs_state
+CreateVertexShader -> create_vs_state
+	> bytecode is different (see D3d10tokenizedprogramformat.hpp)
+	! D3D11 describes input/outputs separately from bytecode; Gallium has the tgsi_scan.c module to extract it from TGSI
+	@ TODO: look into DirectX 10/11 semantics specification and bytecode
+
+CheckCounter
+CheckCounterInfo
+CreateQuery -> create_query
+	! D3D11 implements fences with "event" queries
+	* others are performance counters, we may want them but they are not critical
+
+CreateRasterizerState
+	+ Gallium, like OpenGL, supports PIPE_POLYGON_MODE_POINT
+	+ Gallium, like OpenGL, supports per-face polygon fill modes
+	+ Gallium, like OpenGL, supports culling everything
+	+ Gallium, like OpenGL, supports two-side lighting; D3D11 only has the facing attribute
+	+ Gallium, like OpenGL, supports per-fill-mode polygon offset enables
+	+ Gallium, like OpenGL, supports polygon smoothing
+	+ Gallium, like OpenGL, supports polygon stipple
+	+ Gallium, like OpenGL, supports point smoothing
+	+ Gallium, like OpenGL, supports point sprites
+	+ Gallium supports specifying point quad rasterization
+	+ Gallium, like OpenGL, supports per-point point size
+	+ Gallium, like OpenGL, supports line smoothing
+	+ Gallium, like OpenGL, supports line stipple
+	+ Gallium supports line last pixel rule specification
+	+ Gallium, like OpenGL, supports provoking vertex convention
+	+ Gallium supports D3D9 rasterization rules
+	+ Gallium supports fixed line width
+	+ Gallium supports fixed point size
+
+CreateResource -> texture_create or buffer_create
+	! D3D11 passes the dimensions of all mipmap levels to the create call, while Gallium has an implicit floor(x/2) rule
+	# Note that hardware often has the implicit rule, so the D3D11 interface seems to make little sense
+	# Also, the D3D11 API does not allow the user to specify mipmap sizes, so this really seems a dubious decision on Microsoft's part
+	- D3D11 supports specifying initial data to write in the resource
+	- Gallium does not support unordered access buffers
+	! D3D11 specifies mapping flags (i.e. read/write/discard);:it's unclear what they are used for here
+	- D3D11 supports odd things in the D3D10_DDI_RESOURCE_MISC_FLAG enum (D3D10_DDI_RESOURCE_MISC_DISCARD_ON_PRESENT, D3D11_DDI_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS, D3D11_DDI_RESOURCE_MISC_BUFFER_STRUCTURED)
+	- Gallium does not support indirect draw call parameter buffers
+	! D3D11 supports specifying hardware modes and other stuff here for scanout resources
+	! D3D11 implements cube maps as 2D array textures
+
+CreateSampler
+	- D3D11 supports a monochrome convolution filter for "text filtering"
+	+ Gallium supports non-normalized coordinates
+	+ Gallium supports CLAMP, MIRROR_CLAMP and MIRROR_CLAMP_TO_BORDER
+	+ Gallium supports setting min/max/mip filters and anisotropy independently
+
+CreateShaderResourceView (extended in D3D10.1) -> create_sampler_view
+	+ Gallium supports specifying a swizzle
+	! D3D11 implements "cube views" as views into a 2D array texture
+
+CsSetConstantBuffers (D3D11 only)
+CsSetSamplers (D3D11 only)
+CsSetShader (D3D11 only)
+CsSetShaderResources (D3D11 only)
+CsSetShaderWithIfaces (D3D11 only)
+CsSetUnorderedAccessViews (D3D11 only)
+	- Gallium does not support compute shaders
+
+DestroyBlendState
+DestroyCommandList (D3D11 only)
+DestroyDepthStencilState
+DestroyDepthStencilView
+DestroyDevice
+DestroyElementLayout
+DestroyQuery
+DestroyRasterizerState
+DestroyRenderTargetView
+DestroyResource
+DestroySampler
+DestroyShader
+DestroyShaderResourceView
+DestroyUnorderedAccessView (D3D11 only)
+	# these are trivial
+
+Dispatch (D3D11 only)
+	- Gallium does not support compute shaders
+
+DispatchIndirect (D3D11 only)
+	- Gallium does not support compute shaders
+
+Draw -> draw_vbo
+	! D3D11 sets primitive modes separately with IaSetTopology: it's not obvious which is better
+
+DrawAuto -> draw_auto
+
+DrawIndexed -> draw_vbo
+	! D3D11 sets primitive modes separately with IaSetTopology: it's not obvious which is better
+	+ D3D11 lacks explicit range, which is required for OpenGL
+
+DrawIndexedInstanced -> draw_vbo
+	! D3D11 sets primitive modes separately with IaSetTopology: it's not obvious which is better
+
+DrawIndexedInstancedIndirect (D3D11 only)
+	# this allows to use an hardware buffer to specify the parameters for multiple draw_vbo calls
+	- Gallium does not support draw call parameter buffers and indirect draw
+
+DrawInstanced -> draw_vbo
+	! D3D11 sets primitive modes separately with IaSetTopology: it's not obvious which is better
+
+DrawInstancedIndirect (D3D11 only)
+	# this allows to use an hardware buffer to specify the parameters for multiple draw_vbo calls
+	- Gallium does not support draw call parameter buffers and indirect draws
+
+DsSetConstantBuffers (D3D11 only)
+DsSetSamplers (D3D11 only)
+DsSetShader (D3D11 only)
+DsSetShaderResources (D3D11 only)
+DsSetShaderWithIfaces (D3D11 only)
+	- Gallium does not support domain shaders
+
+Flush -> flush
+	! Gallium supports fencing, D3D11 just has a dumb glFlush-like function
+
+GenMips
+	- Gallium lacks a mipmap generation interface, and does this manually with the 3D engine
+	* it may be useful to add a mipmap generation interface, since the hardware (especially older cards) may have a better way than using the 3D engine
+
+GsSetConstantBuffers -> for(i = StartBuffer; i < NumBuffers; ++i) set_constant_buffer(PIPE_SHADER_GEOMETRY, i, phBuffers[i])
+
+GsSetSamplers
+	- Gallium does not support sampling in geometry shaders
+
+GsSetShader -> bind_gs_state
+
+GsSetShaderWithIfaces (D3D11 only)
+	- Gallium does not support shader interfaces
+
+GsSetShaderResources
+	- Gallium does not support sampling in geometry shaders
+
+HsSetConstantBuffers (D3D11 only)
+HsSetSamplers (D3D11 only)
+HsSetShader (D3D11 only)
+HsSetShaderResources (D3D11 only)
+HsSetShaderWithIfaces (D3D11 only)
+	- Gallium does not support hull shaders
+
+IaSetIndexBuffer -> set_index_buffer
+	+ Gallium supports 8-bit indices
+	# the D3D11 interface allows index-size-unaligned byte offsets into the index buffer; most drivers will abort with an assertion
+
+IaSetInputLayout -> bind_vertex_elements_state
+
+IaSetTopology
+	! Gallium passes the topology = primitive type to the draw calls
+	* may want to add an interface for this
+	- Gallium lacks support for DirectX 11 tessellated primitives
+	+ Gallium supports line loops, triangle fans, quads, quad strips and polygons
+
+IaSetVertexBuffers -> set_vertex_buffers
+	- Gallium only allows setting all vertex buffers at once, while D3D11 supports setting a subset
+
+OpenResource -> texture_from_handle
+
+PsSetConstantBuffers -> for(i = StartBuffer; i < NumBuffers; ++i) set_constant_buffer(PIPE_SHADER_FRAGMENT, i, phBuffers[i])
+	* may want to split into fragment/vertex-specific versions
+
+PsSetSamplers -> bind_fragment_sampler_states
+	* may want to allow binding subsets instead of all at once
+
+PsSetShader -> bind_fs_state
+
+PsSetShaderWithIfaces (D3D11 only)
+	- Gallium does not support shader interfaces
+
+PsSetShaderResources -> set_fragment_sampler_views
+	* may want to allow binding subsets instead of all at once
+
+QueryBegin -> begin_query
+
+QueryEnd -> end_query
+
+QueryGetData -> get_query_result
+	- D3D11 supports reading an arbitrary data chunk for query results, Gallium only supports reading a 64-bit integer
+	+ D3D11 doesn't seem to support actually waiting for the query result (?!)
+	- D3D11 supports optionally not flushing command buffers here and instead returning DXGI_DDI_ERR_WASSTILLDRAWING
+
+RecycleCommandList (D3D11 only)
+RecycleCreateCommandList (D3D11 only)
+RecycleDestroyCommandList (D3D11 only)
+	- Gallium does not support command lists
+
+RecycleCreateDeferredContext (D3D11 only)
+	- Gallium does not support deferred contexts
+
+RelocateDeviceFuncs
+	- Gallium does not support moving pipe_context, while D3D11 seems to, using this
+
+ResetPrimitiveID (D3D10.1+ only, #ifdef D3D10PSGP)
+	# used to do vertex processing on the GPU on Intel G45 chipsets when it is faster this way (see www.intel.com/Assets/PDF/whitepaper/322931.pdf)
+	# presumably this resets the primitive id system value
+	- Gallium does not support vertex pipeline bypass anymore
+
+ResourceCopy
+ResourceCopyRegion
+ResourceConvert (D3D10.1+ only)
+ResourceConvertRegion (D3D10.1+ only)
+	-> resource_copy_region
+
+ResourceIsStagingBusy ->
+	- Gallium lacks this
+	+ Gallium can use fences
+
+ResourceReadAfterWriteHazard
+	- Gallium lacks this
+
+ResourceResolveSubresource -> resource_resolve
+
+ResourceMap
+ResourceUnmap
+DynamicConstantBufferMapDiscard
+DynamicConstantBufferUnmap
+DynamicIABufferMapDiscard
+DynamicIABufferMapNoOverwrite
+DynamicIABufferUnmap
+DynamicResourceMapDiscard
+DynamicResourceUnmap
+StagingResourceMap
+StagingResourceUnmap
+	-> transfer functions
+	! Gallium and D3D have different semantics for transfers
+	* D3D separates vertex/index buffers from constant buffers
+	! D3D separates some buffer flags into specialized calls
+
+ResourceUpdateSubresourceUP -> transfer functionality, transfer_inline_write in gallium-resources
+DefaultConstantBufferUpdateSubresourceUP -> transfer functionality, transfer_inline_write in gallium-resources
+
+SetBlendState -> bind_blend_state, set_blend_color and set_sample_mask
+	! D3D11 fuses bind_blend_state, set_blend_color and set_sample_mask in a single function
+
+SetDepthStencilState -> bind_depth_stencil_alpha_state and set_stencil_ref
+	! D3D11 fuses bind_depth_stencil_alpha_state and set_stencil_ref in a single function
+
+SetPredication -> render_condition
+	# here both D3D11 and Gallium seem very limited (hardware is too, probably though)
+	# ideally, we should support nested conditional rendering, as well as more complex tests (checking for an arbitrary range, after an AND with arbitrary mask )
+	# of couse, hardware support is probably as limited as OpenGL/D3D11
+	+ Gallium, like NV_conditional_render, supports by-region and wait flags
+	- D3D11 supports predication conditional on being equal any value (along with occlusion predicates); Gallium only supports on non-zero
+
+SetRasterizerState -> bind_rasterizer_state
+
+SetRenderTargets (extended in D3D11) -> set_framebuffer_state
+	! Gallium passed a width/height here, D3D11 does not
+	! Gallium lacks ClearTargets (but this is redundant and the driver can trivially compute this if desired)
+	- Gallium does not support unordered access views
+	- Gallium does not support geometry shader selection of texture array image / 3D texture zslice
+
+SetResourceMinLOD (D3D11 only) -> pipe_sampler_view::tex::first_level
+
+SetScissorRects
+	- Gallium lacks support for multiple geometry-shader-selectable scissor rectangles D3D11 has
+
+SetTextFilterSize
+	- Gallium lacks support for text filters
+
+SetVertexPipelineOutput (D3D10.1+ only)
+	# used to do vertex processing on the GPU on Intel G45 chipsets when it is faster this way (see www.intel.com/Assets/PDF/whitepaper/322931.pdf)
+	- Gallium does not support vertex pipeline bypass anymore
+
+SetViewports
+	- Gallium lacks support for multiple geometry-shader-selectable viewports D3D11 has
+
+ShaderResourceViewReadAfterWriteHazard
+	- Gallium lacks support for this
+	+ Gallium has texture_barrier
+
+SoSetTargets -> set_stream_output_buffers
+
+VsSetConstantBuffers -> for(i = StartBuffer; i < NumBuffers; ++i) set_constant_buffer(PIPE_SHADER_VERTEX, i, phBuffers[i])
+	* may want to split into fragment/vertex-specific versions
+
+VsSetSamplers -> bind_vertex_sampler_states
+	* may want to allow binding subsets instead of all at once
+
+VsSetShader -> bind_vs_state
+
+VsSetShaderWithIfaces (D3D11 only)
+	- Gallium does not support shader interfaces
+
+VsSetShaderResources  -> set_fragment_sampler_views
+	* may want to allow binding subsets instead of all at once

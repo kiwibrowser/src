@@ -1,0 +1,110 @@
+# -*-makefile-*-
+
+
+ifeq ($(MESA_LLVM),1)
+LDFLAGS += $(LLVM_LDFLAGS)
+DRIVER_EXTRAS = $(LLVM_LIBS)
+endif
+
+MESA_MODULES = \
+	$(TOP)/src/mesa/libmesagallium.a \
+	$(GALLIUM_AUXILIARIES)
+
+COMMON_GALLIUM_SOURCES = \
+        $(TOP)/src/mesa/drivers/dri/common/utils.c \
+        $(TOP)/src/mesa/drivers/dri/common/dri_util.c \
+        $(TOP)/src/mesa/drivers/dri/common/xmlconfig.c
+
+COMMON_SOURCES = $(COMMON_GALLIUM_SOURCES) \
+        $(TOP)/src/mesa/drivers/common/driverfuncs.c
+
+COMMON_BM_SOURCES = \
+	$(TOP)/src/mesa/drivers/dri/common/dri_bufmgr.c \
+	$(TOP)/src/mesa/drivers/dri/common/dri_drmpool.c
+
+INCLUDES = $(SHARED_INCLUDES) $(EXPAT_INCLUDES)
+
+OBJECTS = \
+	$(C_SOURCES:.c=.o) \
+	$(ASM_SOURCES:.S=.o) 
+
+
+### Include directories
+SHARED_INCLUDES = \
+	-I. \
+	-I$(TOP)/src/mesa/drivers/dri/common \
+	-Iserver \
+	-I$(TOP)/include \
+	-I$(TOP)/include/GL/internal \
+	-I$(TOP)/src/mapi \
+	-I$(TOP)/src/gallium/include \
+	-I$(TOP)/src/gallium/auxiliary \
+	-I$(TOP)/src/gallium/drivers \
+	-I$(TOP)/src/gallium/winsys \
+	-I$(TOP)/src/mesa \
+	-I$(TOP)/src/mesa/main \
+	-I$(TOP)/src/mesa/math \
+	-I$(TOP)/src/mesa/transform \
+	-I$(TOP)/src/mesa/shader \
+	-I$(TOP)/src/mesa/swrast \
+	-I$(TOP)/src/mesa/swrast_setup \
+	-I$(TOP)/src/egl/main \
+	-I$(TOP)/src/egl/drivers/dri \
+	$(LIBDRM_CFLAGS)
+
+LIBNAME_STAGING = $(TOP)/$(LIB_DIR)/gallium/$(LIBNAME)
+
+
+##### RULES #####
+
+.c.o:
+	$(CC) -c $(INCLUDES) $(CFLAGS) $(DRIVER_DEFINES) $< -o $@
+
+.S.o:
+	$(CC) -c $(INCLUDES) $(CFLAGS) $(DRIVER_DEFINES) $< -o $@
+
+
+##### TARGETS #####
+
+default: depend symlinks $(TOP)/$(LIB_DIR)/gallium $(LIBNAME) $(LIBNAME_STAGING)
+
+$(LIBNAME): $(OBJECTS) $(MESA_MODULES) $(PIPE_DRIVERS) Makefile \
+		$(TOP)/src/mesa/drivers/dri/common/dri_test.o
+	$(MKLIB) -o $@.tmp -noprefix -linker '$(CXX)' -ldflags '$(LDFLAGS)' \
+		$(OBJECTS) $(PIPE_DRIVERS) \
+                -Wl,--start-group $(MESA_MODULES) -Wl,--end-group \
+                 $(GALLIUM_DRI_LIB_DEPS) $(DRIVER_EXTRAS)
+	$(CXX) $(CFLAGS) -o $@.test $(TOP)/src/mesa/drivers/dri/common/dri_test.o $@.tmp $(GALLIUM_DRI_LIB_DEPS) $(LDFLAGS);
+	@rm -f $@.test
+	mv -f $@.tmp $@
+
+$(TOP)/$(LIB_DIR)/gallium:
+	mkdir -p $@
+
+$(LIBNAME_STAGING): $(LIBNAME)
+	$(INSTALL) $(LIBNAME) $(TOP)/$(LIB_DIR)/gallium
+
+depend: $(C_SOURCES) $(ASM_SOURCES) $(SYMLINKS)
+	rm -f depend
+	touch depend
+	$(MKDEP) $(MKDEP_OPTIONS) $(DRIVER_DEFINES) $(INCLUDES) $(C_SOURCES) \
+		$(ASM_SOURCES) 2> /dev/null
+
+
+# Emacs tags
+tags:
+	etags `find . -name \*.[ch]` `find ../include`
+
+
+# Remove .o and backup files
+clean:
+	-rm -f *.o */*.o *~ *.so *~ server/*.o $(SYMLINKS)
+	-rm -f depend depend.bak
+
+
+install: $(LIBNAME)
+	$(INSTALL) -d $(DESTDIR)$(DRI_DRIVER_INSTALL_DIR)
+	$(MINSTALL) -m 755 $(LIBNAME) $(DESTDIR)$(DRI_DRIVER_INSTALL_DIR)
+
+
+include depend

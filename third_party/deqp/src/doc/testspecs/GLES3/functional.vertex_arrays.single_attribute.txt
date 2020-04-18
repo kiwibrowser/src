@@ -1,0 +1,67 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+	Single vertex attribute vertex array tests
+
+Tests:
+ + dEQP-GLES3.functional.vertex_arrays.single_attribute.*
+
+Includes:
+ + Rendering with different strides from buffer and user pointer.
+ + Attribute normalization with different types and component counts.
+ + Passing attributes to vec{N}, ivec{N} and uvec{N} (1 < n < 5).
+ + Passing integer types to float types.
+ + Passing ingerer types to intgeger types.
+ + Using buffers with different usage.
+ + Buffer attributes with different offsets.
+ + Different first values for glDrawArrays
+
+Excludes:
+ + Buffer data modifications
+ + Stride less than types own size
+ + Robustness with nan or inf
+ + Index buffers or glDrawElements
+ + Exact precision of attributes as input is clamped to very few bits of output.
+
+Description:
+
+Testcases generate data that defines quads in testcase specifig format.
+This takes account stride, offsets and other parameters. Input types must
+have two or more components to form distinct coordinates. First two components
+are coordinates and six subsequent attributes form two triangles which define a
+quad. Third and fourth component are same for each vertex in quad.
+This data is uploaded to buffer or used from user pointer while rendering.
+Rendering uses simple shader that takes first two components and adds
+first to third component and second to fourth component if more than
+two components are used. First and third component are used as x coordinate
+and second and fourth as y. These values are also scaled to range from -1.0 to 1.0.
+Test renders only once and result is checked against reference implementations result.
+
+Stride tests render different input type and component count combinations from buffer
+and user pointer. Stride testcases test npot and pot strides and types real size as stride.
+Data is passed to shader as vec4.
+
+Normalization is tested with different input types and component counts. User
+pointers are used as source for data and vec4 is used in shaders.
+
+Output type tests pass different input types to different vector types in shader.
+Also different input type and output type component counts are tested. Data is used
+from user pointer.
+
+Usage testcases test buffers with different usage parameters with different strides
+and different sized types. The data is used as vec2 in shaders.

@@ -1,0 +1,31 @@
+diff --git a/third_party/lcms/src/cmstypes.c b/third_party/lcms/src/cmstypes.c
+index 75f1fae32..f92a92822 100644
+--- a/third_party/lcms/src/cmstypes.c
++++ b/third_party/lcms/src/cmstypes.c
+@@ -4460,18 +4460,19 @@ void *Type_MPE_Read(struct _cms_typehandler_struct* self, cmsIOHANDLER* io, cmsU
+     NewLUT = cmsPipelineAlloc(self ->ContextID, InputChans, OutputChans);
+     if (NewLUT == NULL) return NULL;
+ 
+-    if (!_cmsReadUInt32Number(io, &ElementCount)) return NULL;
+-
+-    if (!ReadPositionTable(self, io, ElementCount, BaseOffset, NewLUT, ReadMPEElem)) {
+-        if (NewLUT != NULL) cmsPipelineFree(NewLUT);
+-        *nItems = 0;
+-        return NULL;
+-    }
++    if (!_cmsReadUInt32Number(io, &ElementCount)) goto Error;
++    if (!ReadPositionTable(self, io, ElementCount, BaseOffset, NewLUT, ReadMPEElem)) goto Error;
+ 
+     // Success
+     *nItems = 1;
+     return NewLUT;
+ 
++    // Error
++Error:
++    if (NewLUT != NULL) cmsPipelineFree(NewLUT);
++    *nItems = 0;
++    return NULL;
++
+     cmsUNUSED_PARAMETER(SizeOfTag);
+ }
+ 

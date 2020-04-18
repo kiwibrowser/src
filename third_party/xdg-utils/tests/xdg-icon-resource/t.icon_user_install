@@ -1,0 +1,40 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_icon_user_install() {
+test_start "$FUNCNAME: verify $ICON is installed correctly"
+
+## Begin the test.
+userpath="$HOME/.icons:$HOME/.local:$XDG_DATA_HOME"
+
+# Dependencies section
+test_init
+
+set_no_display
+use_file "$XDG_TEST_DIR/icons/$ICON" ICONFILE
+assert_file "$ICONFILE"
+
+# Verify the test icon is not installed already.
+assert_file_not_in_path "$ICONFILE" "$userpath"
+
+# Test steps section
+test_procedure
+
+assert_exit 0 xdg-icon-resource install --mode user --size "$SIZE" "$ICONFILE"
+assert_nostdout
+assert_nostderr
+
+assert_file_in_path "$ICONFILE" "$userpath"
+
+xdg-icon-resource uninstall --mode user --size "$SIZE" "$ICONFILE"
+
+test_result
+} 
+
+repeat_test test_icon_user_install 2 ICON SIZE 'red-16.png' 'red-22.png' 'red-24.png' 'red-32.png' 16 22 24 32
+repeat_test test_icon_user_install 2 ICON SIZE 'red-48.png' 'red-64.png' 'red-128.png' 48 64 128

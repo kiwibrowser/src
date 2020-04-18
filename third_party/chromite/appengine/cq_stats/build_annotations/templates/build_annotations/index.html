@@ -1,0 +1,104 @@
+{% extends 'build_annotations/base.html' %}
+
+{% block template-private-imports %}
+  <!-- Call this once on every web page. -->
+  <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+
+  <script type="text/javascript">
+    // Load the Google Charts "core" charts (bar, line, pie...)
+    google.load("visualization", '1', {packages:['corechart']});
+    // When the page loads call the drawChart() function.
+    google.setOnLoadCallback(drawChart);
+
+    function drawChart() {
+      var data = google.visualization.arrayToDataTable([          // The chart data.
+        ['CL', 'Handling Time (minutes)'],
+        {% for key, value in histogram_data.items %}
+        ['{{ key }}', {{ value }}],
+        {% endfor %}
+      ]);
+
+      var options = {      // Customize a few of Google Charts' hundreds of options.
+        title: 'Histogram: Patch handling times',
+        width: 600,
+        height: 400,
+        hAxis: { title: 'Patch handling time', },
+        vAxis: { title: '# Patches', },
+      };
+
+      // Create and draw a Google Column Chart.
+      // To experiment with different types of charts, replace "ColumnChart" with
+      // the desired chart type (e.g., "PieChart", "LineChart").
+      var chart = new google.visualization.Histogram(document.getElementById('chart_div'));
+      google.visualization.events.addListener(chart, 'ready', function() {
+        document.getElementById('chart_img_div').innerHTML = '<a href="' + chart.getImageURI() + '">Save Chart</a>'
+      })
+      chart.draw(data, options);
+    }
+  </script>
+
+{% endblock %}  <!-- template-private-impots -->
+{% block content %}
+<h1> {{ build_config|title }} Builds</h1>
+<ul class="navbar">
+  <li class="navbar">
+    <a class="navbar" href="{% url 'build_annotations:builds_list' 'master-paladin' %}">Master-Paladin</a>
+  </li>
+  <li class="navbar">
+    <a class="navbar" href="{% url 'build_annotations:builds_list' 'master-release' %}">Master-Release</a>
+  </li>
+  <li class="navbar">
+    <a class="navbar" href="{% url 'build_annotations:builds_list' 'master-chromium-pfq' %}">Chromium-PFQ</a>
+  </li>
+</ul>
+<form action="{% url 'build_annotations:builds_list' build_config %}?{{ request.GET.urlencode }}" method="post">
+  {% csrf_token %}
+  <table>
+    <tr>
+      <th><label>{{ search_form.latest_build_id.label }}</label></th>
+      <td>{{ search_form.latest_build_id }}</td>
+      <td class="error_message">{{ search_form.latest_build_id.errors }}</td>
+    </tr>
+    <tr>
+      <th><label>{{ search_form.num_builds.label }}</label></th>
+      <td>{{ search_form.num_builds }}</td>
+      <td class="error_message">{{ search_form.num_builds.errors }}</td>
+    </tr>
+  </table>
+  <input type="submit" value="Update List"/>
+</form>
+
+<div id='chart_div_container' class='centered_div_container'>
+  <div id='chart_div' class='centered_div_block'></div>
+  <div id='chart_img_div' class='centered_div_block'></div>
+</div>
+
+<table class="build_list">
+  <tr>
+    <th class="build_list">Build ID</th>
+    <th class="build_list">Build Number</th>
+    <th class="build_list">Status</th>
+    <th class="build_list">Summary</th>
+    <th class="build_list">Start Time</th>
+    <th class="build_list">Runtime</th>
+    <th class="build_list">CLs Picked Up</th>
+    <th class="build_list">Submitted</th>
+    <th class="build_list">Rejected</th>
+    <th class="build_list">Annotation Summary</th>
+  </tr>
+{% for build_row in builds_list %}
+  <tr class="build_item_{{ build_row.status }}">
+    <td class="build_list"><a href="{% url 'build_annotations:edit_annotations' build_config build_row.id %}?{{ request.GET.urlencode }}">{{ build_row.id }}</a></td>
+    <td class="build_list">{{ build_row.build_number }}</td>
+    <td class="build_list">{{ build_row.status|truncatechars:20 }}</td>
+    <td class="build_list">{{ build_row.summary|truncatechars:50|cut:'\n\r' }}</td>
+    <td class="build_list" name="date.datetz">{{ build_row.start_time|date:"D, d M Y H:i" }} UTC</td>
+    <td class="build_list">{{ build_row.run_time }}</td>
+    <td class="build_list">{{ build_row.picked_up_count }}</td>
+    <td class="build_list">{{ build_row.submitted_count }}</td>
+    <td class="build_list">{{ build_row.kicked_out_count }}</td>
+    <td class="build_list">{{ build_row.annotation_summary|truncatechars:150 }}</td>
+  </tr>
+{% endfor %}
+</table>
+{% endblock %}  <!-- content -->

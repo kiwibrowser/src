@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Polymer Redux, Behaviors Demo</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="../../../node_modules/redux/dist/redux.js"></script>
+
+    <link rel="import" href="../../iron-demo-helpers/demo-pages-shared-styles.html">
+    <link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
+
+    <link rel="import" href="../polymer-redux.html">
+
+    <style is="custom-style" include="demo-pages-shared-styles">
+    </style>
+  </head>
+  <body>
+
+    <div class="vertical-section-container">
+      <h3>Polymer Redux, Behaviors Demo</h3>
+      <demo-snippet>
+        <template>
+          <!-- redux setup -->
+          <script>
+            const reducer = (state, action) => {
+              return {
+                foo: 'i am foo',
+                bar: 'i am bar',
+                baz: 'i am baz'
+              }
+            }
+            const store = Redux.createStore(reducer);
+            const ReduxBehavior = PolymerRedux(store);
+
+            const FooBarBehavior = {
+              properties: {
+                foo: {
+                  type: String,
+                  statePath: 'bar'
+                },
+                bar: {
+                  type: String,
+                  statePath: 'bar'
+                }
+              }
+            };
+
+            const CombinedBehavior = [ReduxBehavior, FooBarBehavior];
+          </script>
+
+          <!-- friends list module -->
+          <dom-module id="behavior-demo">
+            <template>
+              <p>Foo: <em>[[foo]]</em></p>
+              <p>Bar: <em>[[bar]]</em></p>
+              <p>Baz: <em>[[baz]]</em></p>
+            </template>
+            <script>
+              Polymer({
+                is: 'behavior-demo',
+                behaviors: [ CombinedBehavior ],
+                properties: {
+                  foo: {
+                    type: String,
+                    statePath: 'foo'
+                  },
+                  baz: {
+                    type: String,
+                    notify: true,
+                    statePath: 'baz'
+                  }
+                }
+              });
+            </script>
+          </dom-module>
+
+          <!-- demo -->
+          <behavior-demo></behavior-demo>
+        </template>
+      </demo-snippet>
+    </div>
+  </body>
+</html>

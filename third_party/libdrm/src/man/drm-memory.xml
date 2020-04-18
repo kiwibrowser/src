@@ -1,0 +1,430 @@
+<?xml version='1.0'?> <!--*-nxml-*-->
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+          "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
+
+<!--
+  Written 2012 by David Herrmann <dh.herrmann@googlemail.com>
+  Dedicated to the Public Domain
+-->
+
+<refentry id="drm-memory">
+  <refentryinfo>
+    <title>Direct Rendering Manager</title>
+    <productname>libdrm</productname>
+    <date>September 2012</date>
+    <authorgroup>
+      <author>
+        <contrib>Developer</contrib>
+        <firstname>David</firstname>
+        <surname>Herrmann</surname>
+        <email>dh.herrmann@googlemail.com</email>
+      </author>
+    </authorgroup>
+  </refentryinfo>
+
+  <refmeta>
+    <refentrytitle>drm-memory</refentrytitle>
+    <manvolnum>7</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname>drm-memory</refname>
+    <refname>drm-mm</refname>
+    <refname>drm-gem</refname>
+    <refname>drm-ttm</refname>
+    <refpurpose>DRM Memory Management</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+    <funcsynopsis>
+      <funcsynopsisinfo>#include &lt;xf86drm.h&gt;</funcsynopsisinfo>
+    </funcsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>Description</title>
+      <para>Many modern high-end GPUs come with their own memory managers. They
+            even include several different caches that need to be synchronized
+            during access. Textures, framebuffers, command buffers and more need
+            to be stored in memory that can be accessed quickly by the GPU.
+            Therefore, memory management on GPUs is highly driver- and
+            hardware-dependent.</para>
+
+      <para>However, there are several frameworks in the kernel that are used by
+            more than one driver. These can be used for trivial mode-setting
+            without requiring driver-dependent code. But for
+            hardware-accelerated rendering you need to read the manual pages for
+            the driver you want to work with.</para>
+
+    <refsect2>
+      <title>Dumb-Buffers</title>
+      <para>Almost all in-kernel DRM hardware drivers support an API called
+            <emphasis>Dumb-Buffers</emphasis>. This API allows to create buffers
+            of arbitrary size that can be used for scanout. These buffers can be
+            memory mapped via
+            <citerefentry><refentrytitle>mmap</refentrytitle><manvolnum>2</manvolnum></citerefentry>
+            so you can render into them on the CPU. However, GPU access to these
+            buffers is often not possible. Therefore, they are fine for simple
+            tasks but not suitable for complex compositions and
+            renderings.</para>
+
+      <para>The <constant>DRM_IOCTL_MODE_CREATE_DUMB</constant> ioctl can be
+            used to create a dumb buffer. The kernel will return a 32bit handle
+            that can be used to manage the buffer with the DRM API. You can
+            create framebuffers with
+            <citerefentry><refentrytitle>drmModeAddFB</refentrytitle><manvolnum>3</manvolnum></citerefentry>
+            and use it for mode-setting and scanout. To access the buffer, you
+            first need to retrieve the offset of the buffer. The
+            <constant>DRM_IOCTL_MODE_MAP_DUMB</constant> ioctl requests the DRM
+            subsystem to prepare the buffer for memory-mapping and returns a
+            fake-offset that can be used with
+            <citerefentry><refentrytitle>mmap</refentrytitle><manvolnum>2</manvolnum></citerefentry>.</para>
+
+      <para>The <constant>DRM_IOCTL_MODE_CREATE_DUMB</constant> ioctl takes as
+            argument a structure of type
+            <structname>struct drm_mode_create_dumb</structname>:
+
+<programlisting>
+struct drm_mode_create_dumb {
+	__u32 height;
+	__u32 width;
+	__u32 bpp;
+	__u32 flags;
+
+	__u32 handle;
+	__u32 pitch;
+	__u64 size;
+};
+</programlisting>
+
+            The fields <structfield>height</structfield>,
+            <structfield>width</structfield>, <structfield>bpp</structfield> and
+            <structfield>flags</structfield> have to be provided by the caller.
+            The other fields are filled by the kernel with the return values.
+            <structfield>height</structfield> and
+            <structfield>width</structfield> are the dimensions of the
+            rectangular buffer that is created. <structfield>bpp</structfield>
+            is the number of bits-per-pixel and must be a multiple of
+            <literal>8</literal>. You most commonly want to pass
+            <literal>32</literal> here. The <structfield>flags</structfield>
+            field is currently unused and must be zeroed. Different flags to
+            modify the behavior may be added in the future. After calling the
+            ioctl, the <structfield>handle</structfield>,
+            <structfield>pitch</structfield> and <structfield>size</structfield>
+            fields are filled by the kernel. <structfield>handle</structfield>
+            is a 32bit gem handle that identifies the buffer. This is used by
+            several other calls that take a gem-handle or memory-buffer as
+            argument. The <structfield>pitch</structfield> field is the
+            pitch (or stride) of the new buffer. Most drivers use 32bit or 64bit
+            aligned stride-values. The <structfield>size</structfield> field
+            contains the absolute size in bytes of the buffer. This can normally
+            also be computed with
+            <emphasis>(height * pitch + width) * bpp / 4</emphasis>.</para>
+
+      <para>To prepare the buffer for
+            <citerefentry><refentrytitle>mmap</refentrytitle><manvolnum>2</manvolnum></citerefentry>
+            you need to use the <constant>DRM_IOCTL_MODE_MAP_DUMB</constant>
+            ioctl. It takes as argument a structure of type
+            <structname>struct drm_mode_map_dumb</structname>:
+
+<programlisting>
+struct drm_mode_map_dumb {
+	__u32 handle;
+	__u32 pad;
+
+	__u64 offset;
+};
+</programlisting>
+
+            You need to put the gem-handle that was previously retrieved via
+            <constant>DRM_IOCTL_MODE_CREATE_DUMB</constant> into the
+            <structfield>handle</structfield> field. The
+            <structfield>pad</structfield> field is unused padding and must be
+            zeroed. After completion, the <structfield>offset</structfield>
+            field will contain an offset that can be used with
+            <citerefentry><refentrytitle>mmap</refentrytitle><manvolnum>2</manvolnum></citerefentry>
+            on the DRM file-descriptor.</para>
+
+      <para>If you don't need your dumb-buffer, anymore, you have to destroy it
+            with <constant>DRM_IOCTL_MODE_DESTROY_DUMB</constant>. If you close
+            the DRM file-descriptor, all open dumb-buffers are automatically
+            destroyed. This ioctl takes as argument a structure of type
+            <structname>struct drm_mode_destroy_dumb</structname>:
+
+<programlisting>
+struct drm_mode_destroy_dumb {
+	__u32 handle;
+};
+</programlisting>
+
+            You only need to put your handle into the
+            <structfield>handle</structfield> field. After this call, the handle
+            is invalid and may be reused for new buffers by the dumb-API.</para>
+
+    </refsect2>
+
+    <refsect2>
+      <title>TTM</title>
+      <para><emphasis>TTM</emphasis> stands for
+            <emphasis>Translation Table Manager</emphasis> and is a generic
+            memory-manager provided by the kernel. It does not provide a common
+            user-space API so you need to look at each driver interface if you
+            want to use it. See for instance the radeon manpages for more
+            information on memory-management with radeon and TTM.</para>
+    </refsect2>
+
+    <refsect2>
+      <title>GEM</title>
+      <para><emphasis>GEM</emphasis> stands for
+            <emphasis>Graphics Execution Manager</emphasis> and is a generic DRM
+            memory-management framework in the kernel, that is used by many
+            different drivers. Gem is designed to manage graphics memory,
+            control access to the graphics device execution context and handle
+            essentially NUMA environment unique to modern graphics hardware. Gem
+            allows multiple applications to share graphics device resources
+            without the need to constantly reload the entire graphics card. Data
+            may be shared between multiple applications with gem ensuring that
+            the correct memory synchronization occurs.</para>
+
+      <para>Gem provides simple mechanisms to manage graphics data and control
+            execution flow within the linux DRM subsystem. However, gem is not a
+            complete framework that is fully driver independent. Instead, if
+            provides many functions that are shared between many drivers, but
+            each driver has to implement most of memory-management with
+            driver-dependent ioctls. This manpage tries to describe the
+            semantics (and if it applies, the syntax) that is shared between all
+            drivers that use gem.</para>
+
+      <para>All GEM APIs are defined as
+            <citerefentry><refentrytitle>ioctl</refentrytitle><manvolnum>2</manvolnum></citerefentry>
+            on the DRM file descriptor. An application must be authorized via
+            <citerefentry><refentrytitle>drmAuthMagic</refentrytitle><manvolnum>3</manvolnum></citerefentry>
+            to the current DRM-Master to access the GEM subsystem. A driver that
+            does not support gem will return <constant>ENODEV</constant> for all
+            these ioctls. Invalid object handles return
+            <constant>EINVAL</constant> and invalid object names return
+            <constant>ENOENT</constant>.</para>
+
+      <para>Gem provides explicit memory management primitives. System pages are
+            allocated when the object is created, either as the fundamental
+            storage for hardware where system memory is used by the graphics
+            processor directly, or as backing store for graphics-processor
+            resident memory.</para>
+
+      <para>Objects are referenced from user-space using handles. These are, for
+            all intents and purposes, equivalent to file descriptors but avoid
+            the overhead. Newer kernel drivers also support the
+            <citerefentry><refentrytitle>drm-prime</refentrytitle><manvolnum>7</manvolnum></citerefentry>
+            infrastructure which can return real file-descriptor for gem-handles
+            using the linux dma-buf API. Objects may be published with a name so
+            that other applications and processes can access them. The name
+            remains valid as long as the object exists. Gem-objects are
+            reference counted in the kernel. The object is only destroyed when
+            all handles from user-space were closed.</para>
+
+      <para>Gem-buffers cannot be created with a generic API. Each driver
+            provides its own API to create gem-buffers. See for example
+            <constant>DRM_I915_GEM_CREATE</constant>,
+            <constant>DRM_NOUVEAU_GEM_NEW</constant> or
+            <constant>DRM_RADEON_GEM_CREATE</constant>. Each of these ioctls
+            returns a gem-handle that can be passed to different generic ioctls.
+            The <emphasis>libgbm</emphasis> library from the
+            <emphasis>mesa3D</emphasis> distribution tries to provide a
+            driver-independent API to create gbm buffers and retrieve a
+            gbm-handle to them. It allows to create buffers for different
+            use-cases including scanout, rendering, cursors and CPU-access. See
+            the libgbm library for more information or look at the
+            driver-dependent man-pages (for example
+            <citerefentry><refentrytitle>drm-intel</refentrytitle><manvolnum>7</manvolnum></citerefentry>
+            or
+            <citerefentry><refentrytitle>drm-radeon</refentrytitle><manvolnum>7</manvolnum></citerefentry>).</para>
+
+      <para>Gem-buffers can be closed with the
+            <constant>DRM_IOCTL_GEM_CLOSE</constant> ioctl. It takes as argument
+            a structure of type <structname>struct drm_gem_close</structname>:
+
+<programlisting>
+struct drm_gem_close {
+	__u32 handle;
+	__u32 pad;
+};
+</programlisting>
+
+            The <structfield>handle</structfield> field is the gem-handle to be
+            closed. The <structfield>pad</structfield> field is unused padding.
+            It must be zeroed. After this call the gem handle cannot be used by
+            this process anymore and may be reused for new gem objects by the
+            gem API.</para>
+
+      <para>If you want to share gem-objects between different processes, you
+            can create a name for them and pass this name to other processes
+            which can then open this gem-object. Names are currently 32bit
+            integer IDs and have no special protection. That is, if you put a
+            name on your gem-object, every other client that has access to the
+            DRM device and is authenticated via
+            <citerefentry><refentrytitle>drmAuthMagic</refentrytitle><manvolnum>3</manvolnum></citerefentry>
+            to the current DRM-Master, can <emphasis>guess</emphasis> the name
+            and open or access the gem-object. If you want more fine-grained
+            access control, you can use the new
+            <citerefentry><refentrytitle>drm-prime</refentrytitle><manvolnum>7</manvolnum></citerefentry>
+            API to retrieve file-descriptors for gem-handles. To create a name
+            for a gem-handle, you use the
+            <constant>DRM_IOCTL_GEM_FLINK</constant> ioctl. It takes as argument
+            a structure of type <structname>struct drm_gem_flink</structname>:
+
+<programlisting>
+struct drm_gem_flink {
+	__u32 handle;
+	__u32 name;
+};
+</programlisting>
+
+            You have to put your handle into the
+            <structfield>handle</structfield> field. After completion, the
+            kernel has put the new unique name into the
+            <structfield>name</structfield> field. You can now pass this name to
+            other processes which can then import the name with the
+            <constant>DRM_IOCTL_GEM_OPEN</constant> ioctl. It takes as argument
+            a structure of type <structname>struct drm_gem_open</structname>:
+
+<programlisting>
+struct drm_gem_open {
+	__u32 name;
+
+	__u32 handle;
+	__u32 size;
+};
+</programlisting>
+
+            You have to fill in the <structfield>name</structfield> field with
+            the name of the gem-object that you want to open. The kernel will
+            fill in the <structfield>handle</structfield> and
+            <structfield>size</structfield> fields with the new handle and size
+            of the gem-object. You can now access the gem-object via the handle
+            as if you created it with the gem API.</para>
+
+      <para>Besides generic buffer management, the GEM API does not provide any
+            generic access. Each driver implements its own functionality on top
+            of this API. This includes execution-buffers, GTT management,
+            context creation, CPU access, GPU I/O and more. The next
+            higher-level API is <emphasis>OpenGL</emphasis>. So if you want to
+            use more GPU features, you should use the
+            <emphasis>mesa3D</emphasis> library to create OpenGL contexts on DRM
+            devices. This does <emphasis>not</emphasis> require any
+            windowing-system like X11, but can also be done on raw DRM devices.
+            However, this is beyond the scope of this man-page. You may have a
+            look at other mesa3D manpages, including libgbm and libEGL. 2D
+            software-rendering (rendering with the CPU) can be achieved with the
+            dumb-buffer-API in a driver-independent fashion, however, for
+            hardware-accelerated 2D or 3D rendering you must use OpenGL. Any
+            other API that tries to abstract the driver-internals to access
+            GEM-execution-buffers and other GPU internals, would simply reinvent
+            OpenGL so it is not provided. But if you need more detailed
+            information for a specific driver, you may have a look into the
+            driver-manpages, including
+            <citerefentry><refentrytitle>drm-intel</refentrytitle><manvolnum>7</manvolnum></citerefentry>,
+            <citerefentry><refentrytitle>drm-radeon</refentrytitle><manvolnum>7</manvolnum></citerefentry>
+            and
+            <citerefentry><refentrytitle>drm-nouveau</refentrytitle><manvolnum>7</manvolnum></citerefentry>.
+            However, the
+            <citerefentry><refentrytitle>drm-prime</refentrytitle><manvolnum>7</manvolnum></citerefentry>
+            infrastructure and the generic gem API as described here allow
+            display-managers to handle graphics-buffers and render-clients
+            without any deeper knowledge of the GPU that is used. Moreover, it
+            allows to move objects between GPUs and implement complex
+            display-servers that don't do any rendering on their own. See its
+            man-page for more information.</para>
+    </refsect2>
+  </refsect1>
+
+  <refsect1>
+    <title>Examples</title>
+      <para>This section includes examples for basic memory-management
+            tasks.</para>
+
+    <refsect2>
+      <title>Dumb-Buffers</title>
+        <para>This examples shows how to create a dumb-buffer via the generic
+              DRM API. This is driver-independent (as long as the driver
+              supports dumb-buffers) and provides memory-mapped buffers that can
+              be used for scanout. This example creates a full-HD 1920x1080
+              buffer with 32 bits-per-pixel and a color-depth of 24 bits. The
+              buffer is then bound to a framebuffer which can be used for
+              scanout with the KMS API (see
+              <citerefentry><refentrytitle>drm-kms</refentrytitle><manvolnum>7</manvolnum></citerefentry>).</para>
+
+<programlisting>
+struct drm_mode_create_dumb creq;
+struct drm_mode_destroy_dumb dreq;
+struct drm_mode_map_dumb mreq;
+uint32_t fb;
+int ret;
+void *map;
+
+/* create dumb buffer */
+memset(&amp;creq, 0, sizeof(creq));
+creq.width = 1920;
+creq.height = 1080;
+creq.bpp = 32;
+ret = drmIoctl(fd, DRM_IOCTL_MODE_CREATE_DUMB, &amp;creq);
+if (ret &lt; 0) {
+	/* buffer creation failed; see "errno" for more error codes */
+	...
+}
+/* creq.pitch, creq.handle and creq.size are filled by this ioctl with
+ * the requested values and can be used now. */
+
+/* create framebuffer object for the dumb-buffer */
+ret = drmModeAddFB(fd, 1920, 1080, 24, 32, creq.pitch, creq.handle, &amp;fb);
+if (ret) {
+	/* frame buffer creation failed; see "errno" */
+	...
+}
+/* the framebuffer "fb" can now used for scanout with KMS */
+
+/* prepare buffer for memory mapping */
+memset(&amp;mreq, 0, sizeof(mreq));
+mreq.handle = creq.handle;
+ret = drmIoctl(fd, DRM_IOCTL_MODE_MAP_DUMB, &amp;mreq);
+if (ret) {
+	/* DRM buffer preparation failed; see "errno" */
+	...
+}
+/* mreq.offset now contains the new offset that can be used with mmap() */
+
+/* perform actual memory mapping */
+map = mmap(0, creq.size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, mreq.offset);
+if (map == MAP_FAILED) {
+	/* memory-mapping failed; see "errno" */
+	...
+}
+
+/* clear the framebuffer to 0 */
+memset(map, 0, creq.size);
+</programlisting>
+
+    </refsect2>
+
+  </refsect1>
+
+  <refsect1>
+    <title>Reporting Bugs</title>
+    <para>Bugs in this manual should be reported to
+      https://bugs.freedesktop.org/enter_bug.cgi?product=DRI&amp;component=libdrm
+      under the "DRI" product, component "libdrm"</para>
+  </refsect1>
+
+  <refsect1>
+    <title>See Also</title>
+    <para>
+      <citerefentry><refentrytitle>drm</refentrytitle><manvolnum>7</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drm-kms</refentrytitle><manvolnum>7</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drm-prime</refentrytitle><manvolnum>7</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drmAvailable</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drmOpen</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drm-intel</refentrytitle><manvolnum>7</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drm-radeon</refentrytitle><manvolnum>7</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>drm-nouveau</refentrytitle><manvolnum>7</manvolnum></citerefentry>
+    </para>
+  </refsect1>
+</refentry>

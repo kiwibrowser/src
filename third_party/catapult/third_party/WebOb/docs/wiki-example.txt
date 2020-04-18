@@ -1,0 +1,687 @@
+Wiki Example
+============
+
+:author: Ian Bicking <ianb@colorstudy.com>
+
+.. contents::
+
+Introduction
+------------
+
+This is an example of how to write a WSGI application using WebOb.
+WebOb isn't itself intended to write applications -- it is not a web
+framework on its own -- but it is *possible* to write applications
+using just WebOb.
+
+The `file serving example <file-example.html>`_ is a better example of
+advanced HTTP usage.  The `comment middleware example
+<comment-example.html>`_ is a better example of using middleware.
+This example provides some completeness by showing an
+application-focused end point.
+
+This example implements a very simple wiki.
+
+Code
+----
+
+The finished code for this is available in
+`docs/wiki-example-code/example.py
+<https://github.com/Pylons/webob/tree/master/docs/wiki-example-code/example.py>`_
+-- you can run that file as a script to try it out.
+
+Creating an Application
+-----------------------
+
+A common pattern for creating small WSGI applications is to have a
+class which is instantiated with the configuration.  For our
+application we'll be storing the pages under a directory.
+
+.. code-block:: python
+
+    class WikiApp(object):
+
+        def __init__(self, storage_dir):
+            self.storage_dir = os.path.abspath(os.path.normpath(storage_dir))
+
+WSGI applications are callables like ``wsgi_app(environ,
+start_response)``.  *Instances* of `WikiApp` are WSGI applications, so
+we'll implement a ``__call__`` method:
+
+.. code-block:: python
+
+    class WikiApp(object):
+        ...
+        def __call__(self, environ, start_response):
+            # what we'll fill in
+
+To make the script runnable we'll create a simple command-line
+interface:
+
+.. code-block:: python
+
+    if __name__ == '__main__':
+        import optparse
+        parser = optparse.OptionParser(
+            usage='%prog --port=PORT'
+            )
+        parser.add_option(
+            '-p', '--port',
+            default='8080',
+            dest='port',
+            type='int',
+            help='Port to serve on (default 8080)')
+        parser.add_option(
+            '--wiki-data',
+            default='./wiki',
+            dest='wiki_data',
+            help='Place to put wiki data into (default ./wiki/)')
+        options, args = parser.parse_args()
+        print 'Writing wiki pages to %s' % options.wiki_data
+        app = WikiApp(options.wiki_data)
+        from wsgiref.simple_server import make_server
+        httpd = make_server('localhost', options.port, app)
+        print 'Serving on http://localhost:%s' % options.port
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            print '^C'
+
+There's not much to talk about in this code block.  The application is
+instantiated and served with the built-in module
+`wsgiref.simple_server
+<http://www.python.org/doc/current/lib/module-wsgiref.simple_server.html>`_.
+
+The WSGI Application
+--------------------
+
+Of course all the interesting stuff is in that ``__call__`` method.
+WebOb lets you ignore some of the details of WSGI, like what
+``start_response`` really is.  ``environ`` is a CGI-like dictionary,
+but ``webob.Request`` gives an object interface to it.
+``webob.Response`` represents a response, and is itself a WSGI
+application.  Here's kind of the hello world of WSGI applications
+using these objects:
+
+.. code-block:: python
+
+    from webob import Request, Response
+
+    class WikiApp(object):
+        ...
+
+        def __call__(self, environ, start_response):
+            req = Request(environ)
+            resp = Response(
+                'Hello %s!' % req.params.get('name', 'World'))
+            return resp(environ, start_response)
+
+``req.params.get('name', 'World')`` gets any query string parameter
+(like ``?name=Bob``), or if it's a POST form request it will look for
+a form parameter ``name``.  We instantiate the response with the body
+of the response.  You could also give keyword arguments like
+``content_type='text/plain'`` (``text/html`` is the default content
+type and ``200 OK`` is the default status).
+
+For the wiki application we'll support a couple different kinds of
+screens, and we'll make our ``__call__`` method dispatch to different
+methods depending on the request.  We'll support an ``action``
+parameter like ``?action=edit``, and also dispatch on the method (GET,
+POST, etc, in ``req.method``).  We'll pass in the request and expect a
+response object back.
+
+Also, WebOb has a series of exceptions in ``webob.exc``, like
+``webob.exc.HTTPNotFound``, ``webob.exc.HTTPTemporaryRedirect``, etc.
+We'll also let the method raise one of these exceptions and turn it
+into a response.
+
+One last thing we'll do in our ``__call__`` method is create our
+``Page`` object, which represents a wiki page.
+
+All this together makes:
+
+.. code-block:: python
+
+    from webob import Request, Response
+    from webob import exc
+
+    class WikiApp(object):
+        ...
+
+        def __call__(self, environ, start_response):
+            req = Request(environ)
+            action = req.params.get('action', 'view')
+            # Here's where we get the Page domain object:
+            page = self.get_page(req.path_info)
+            try:
+                try:
+                    # The method name is action_{action_param}_{request_method}:
+                    meth = getattr(self, 'action_%s_%s' % (action, req.method))
+                except AttributeError:
+                    # If the method wasn't found there must be
+                    # something wrong with the request:
+                    raise exc.HTTPBadRequest('No such action %r' % action)
+                resp = meth(req, page)
+            except exc.HTTPException, e:
+                # The exception object itself is a WSGI application/response:
+                resp = e
+            return resp(environ, start_response)
+
+The Domain Object
+-----------------
+
+The ``Page`` domain object isn't really related to the web, but it is
+important to implementing this.  Each ``Page`` is just a file on the
+filesystem.  Our ``get_page`` method figures out the filename given
+the path (the path is in ``req.path_info``, which is all the path
+after the base path).  The ``Page`` class handles getting and setting
+the title and content.
+
+Here's the method to figure out the filename:
+
+.. code-block:: python
+
+    import os
+
+    class WikiApp(object):
+        ...
+
+        def get_page(self, path):
+            path = path.lstrip('/')
+            if not path:
+                # The path was '/', the home page
+                path = 'index'
+            path = os.path.join(self.storage_dir)
+            path = os.path.normpath(path)
+            if path.endswith('/'):
+                path += 'index'
+            if not path.startswith(self.storage_dir):
+                raise exc.HTTPBadRequest("Bad path")
+            path += '.html'
+            return Page(path)
+
+Mostly this is just the kind of careful path construction you have to
+do when mapping a URL to a filename.  While the server *may* normalize
+the path (so that a path like ``/../../`` can't be requested), you can
+never really be sure.  By using ``os.path.normpath`` we eliminate
+these, and then we make absolutely sure that the resulting path is
+under our ``self.storage_dir`` with ``if not
+path.startswith(self.storage_dir): raise exc.HTTPBadRequest("Bad
+path")``.
+
+Here's the actual domain object:
+
+.. code-block:: python
+
+    class Page(object):
+        def __init__(self, filename):
+            self.filename = filename
+
+        @property
+        def exists(self):
+            return os.path.exists(self.filename)
+
+        @property
+        def title(self):
+            if not self.exists:
+                # we need to guess the title
+                basename = os.path.splitext(os.path.basename(self.filename))[0]
+                basename = re.sub(r'[_-]', ' ', basename)
+                return basename.capitalize()
+            content = self.full_content
+            match = re.search(r'<title>(.*?)</title>', content, re.I|re.S)
+            return match.group(1)
+
+        @property
+        def full_content(self):
+            f = open(self.filename, 'rb')
+            try:
+                return f.read()
+            finally:
+                f.close()
+
+        @property
+        def content(self):
+            if not self.exists:
+                return ''
+            content = self.full_content
+            match = re.search(r'<body[^>]*>(.*?)</body>', content, re.I|re.S)
+            return match.group(1)
+
+        @property
+        def mtime(self):
+            if not self.exists:
+                return None
+            else:
+                return int(os.stat(self.filename).st_mtime)
+
+        def set(self, title, content):
+            dir = os.path.dirname(self.filename)
+            if not os.path.exists(dir):
+                os.makedirs(dir)
+            new_content = """<html><head><title>%s</title></head><body>%s</body></html>""" % (
+                title, content)
+            f = open(self.filename, 'wb')
+            f.write(new_content)
+            f.close()
+
+Basically it provides a ``.title`` attribute, a ``.content``
+attribute, the ``.mtime`` (last modified time), and the page can exist
+or not (giving appropriate guesses for title and content when the page
+does not exist).  It encodes these on the filesystem as a simple HTML
+page that is parsed by some regular expressions.
+
+None of this really applies much to the web or WebOb, so I'll leave it
+to you to figure out the details of this.
+
+URLs, PATH_INFO, and SCRIPT_NAME
+--------------------------------
+
+This is an aside for the tutorial, but an important concept.  In WSGI,
+and accordingly with WebOb, the URL is split up into several pieces.
+Some of these are obvious and some not.
+
+An example::
+
+  http://example.com:8080/wiki/article/12?version=10
+
+There are several components here:
+
+* req.scheme: ``http``
+* req.host: ``example.com:8080``
+* req.server_name: ``example.com``
+* req.server_port: 8080
+* req.script_name: ``/wiki``
+* req.path_info: ``/article/12``
+* req.query_string: ``version=10``
+
+One non-obvious part is ``req.script_name`` and ``req.path_info``.
+These correspond to the CGI environmental variables ``SCRIPT_NAME``
+and ``PATH_INFO``.  ``req.script_name`` points to the *application*.
+You might have several applications in your site at different paths:
+one at ``/wiki``, one at ``/blog``, one at ``/``.  Each application
+doesn't necessarily know about the others, but it has to construct its
+URLs properly -- so any internal links to the wiki application should
+start with ``/wiki``.
+
+Just as there are pieces to the URL, there are several properties in
+WebOb to construct URLs based on these:
+
+* req.host_url: ``http://example.com:8080``
+* req.application_url: ``http://example.com:8080/wiki``
+* req.path_url: ``http://example.com:8080/wiki/article/12``
+* req.path: ``/wiki/article/12``
+* req.path_qs: ``/wiki/article/12?version=10``
+* req.url: ``http://example.com:8080/wiki/article/12?version10``
+
+You can also create URLs with
+``req.relative_url('some/other/page')``.  In this example that would
+resolve to ``http://example.com:8080/wiki/article/some/other/page``.
+You can also create a relative URL to the application URL
+(SCRIPT_NAME) like ``req.relative_url('some/other/page', True)`` which
+would be ``http://example.com:8080/wiki/some/other/page``.
+
+Back to the Application
+-----------------------
+
+We have a dispatching function with ``__call__`` and we have a domain
+object with ``Page``, but we aren't actually doing anything.
+
+The dispatching goes to ``action_ACTION_METHOD``, where ACTION
+defaults to ``view``.  So a simple page view will be
+``action_view_GET``.  Let's implement that:
+
+.. code-block:: python
+
+    class WikiApp(object):
+        ...
+
+        def action_view_GET(self, req, page):
+            if not page.exists:
+                return exc.HTTPTemporaryRedirect(
+                    location=req.url + '?action=edit')
+            text = self.view_template.substitute(
+                page=page, req=req)
+            resp = Response(text)
+            resp.last_modified = page.mtime
+            resp.conditional_response = True
+            return resp
+
+The first thing we do is redirect the user to the edit screen if the
+page doesn't exist.  ``exc.HTTPTemporaryRedirect`` is a response that
+gives a ``307 Temporary Redirect`` response with the given location.
+
+Otherwise we fill in a template.  The template language we're going to
+use in this example is `Tempita <http://pythonpaste.org/tempita/>`_, a
+very simple template language with a similar interface to
+`string.Template <http://python.org/doc/current/lib/node40.html>`_.
+
+The template actually looks like this:
+
+.. code-block:: python
+
+    from tempita import HTMLTemplate
+
+    VIEW_TEMPLATE = HTMLTemplate("""\
+    <html>
+     <head>
+      <title>{{page.title}}</title>
+     </head>
+     <body>
+    <h1>{{page.title}}</h1>
+
+    <div>{{page.content|html}}</div>
+
+    <hr>
+    <a href="{{req.url}}?action=edit">Edit</a>
+     </body>
+    </html>
+    """)
+
+    class WikiApp(object):
+        view_template = VIEW_TEMPLATE
+        ...
+
+As you can see it's a simple template using the title and the body,
+and a link to the edit screen.  We copy the template object into a
+class method (``view_template = VIEW_TEMPLATE``) so that potentially a
+subclass could override these templates.
+
+``tempita.HTMLTemplate`` is a template that does automatic HTML
+escaping.  Our wiki will just be written in plain HTML, so we disable
+escaping of the content with ``{{page.content|html}}``.
+
+So let's look at the ``action_view_GET`` method again:
+
+.. code-block:: python
+
+        def action_view_GET(self, req, page):
+            if not page.exists:
+                return exc.HTTPTemporaryRedirect(
+                    location=req.url + '?action=edit')
+            text = self.view_template.substitute(
+                page=page, req=req)
+            resp = Response(text)
+            resp.last_modified = page.mtime
+            resp.conditional_response = True
+            return resp
+
+The template should be pretty obvious now.  We create a response with
+``Response(text)``, which already has a default Content-Type of
+``text/html``.
+
+To allow conditional responses we set ``resp.last_modified``.  You can
+set this attribute to a date, None (effectively removing the header),
+a time tuple (like produced by ``time.localtime()``), or as in this
+case to an integer timestamp.  If you get the value back it will
+always be a `datetime
+<http://python.org/doc/current/lib/datetime-datetime.html>`_ object
+(or None).  With this header we can process requests with
+If-Modified-Since headers, and return ``304 Not Modified`` if
+appropriate.  It won't actually do that unless you set
+``resp.conditional_response`` to True.
+
+.. note::
+
+    If you subclass ``webob.Response`` you can set the class attribute
+    ``default_conditional_response = True`` and this setting will be
+    on by default.  You can also set other defaults, like the
+    ``default_charset`` (``"utf8"``), or ``default_content_type``
+    (``"text/html"``).
+
+The Edit Screen
+---------------
+
+The edit screen will be implemented in the method
+``action_edit_GET``.  There's a template and a very simple method:
+
+.. code-block:: python
+
+    EDIT_TEMPLATE = HTMLTemplate("""\
+    <html>
+     <head>
+      <title>Edit: {{page.title}}</title>
+     </head>
+     <body>
+    {{if page.exists}}
+    <h1>Edit: {{page.title}}</h1>
+    {{else}}
+    <h1>Create: {{page.title}}</h1>
+    {{endif}}
+
+    <form action="{{req.path_url}}" method="POST">
+     <input type="hidden" name="mtime" value="{{page.mtime}}">
+     Title: <input type="text" name="title" style="width: 70%" value="{{page.title}}"><br>
+     Content: <input type="submit" value="Save">
+     <a href="{{req.path_url}}">Cancel</a>
+       <br>
+     <textarea name="content" style="width: 100%; height: 75%" rows="40">{{page.content}}</textarea>
+       <br>
+     <input type="submit" value="Save">
+     <a href="{{req.path_url}}">Cancel</a>
+    </form>
+    </body></html>
+    """)
+
+    class WikiApp(object):
+        ...
+
+        edit_template = EDIT_TEMPLATE
+
+        def action_edit_GET(self, req, page):
+            text = self.edit_template.substitute(
+                page=page, req=req)
+            return Response(text)
+
+As you can see, all the action here is in the template.
+
+In ``<form action="{{req.path_url}}" method="POST">`` we submit to
+``req.path_url``; that's everything *but* ``?action=edit``.  So we are
+POSTing right over the view page.  This has the nice side effect of
+automatically invalidating any caches of the original page.  It also
+is vaguely `RESTful
+<http://en.wikipedia.org/wiki/Representational_State_Transfer>`_.
+
+We save the last modified time in a hidden ``mtime`` field.  This way
+we can detect concurrent updates.  If start editing the page who's
+mtime is 100000, and someone else edits and saves a revision changing
+the mtime to 100010, we can use this hidden field to detect that
+conflict.  Actually resolving the conflict is a little tricky and
+outside the scope of this particular tutorial, we'll just note the
+conflict to the user in an error.
+
+From there we just have a very straight-forward HTML form.  Note that
+we don't quote the values because that is done automatically by
+``HTMLTemplate``; if you are using something like ``string.Template``
+or a templating language that doesn't do automatic quoting, you have
+to be careful to quote all the field values.
+
+We don't have any error conditions in our application, but if there
+were error conditions we might have to re-display this form with the
+input values the user already gave.  In that case we'd do something
+like::
+
+    <input type="text" name="title"
+     value="{{req.params.get('title', page.title)}}">
+
+This way we use the value in the request (``req.params`` is both the
+query string parameters and any variables in a POST response), but if
+there is no value (e.g., first request) then we use the page values.
+
+Processing the Form
+-------------------
+
+The form submits to ``action_view_POST`` (``view`` is the default
+action).  So we have to implement that method:
+
+.. code-block:: python
+
+    class WikiApp(object):
+        ...
+
+        def action_view_POST(self, req, page):
+            submit_mtime = int(req.params.get('mtime') or '0') or None
+            if page.mtime != submit_mtime:
+                return exc.HTTPPreconditionFailed(
+                    "The page has been updated since you started editing it")
+            page.set(
+                title=req.params['title'],
+                content=req.params['content'])
+            resp = exc.HTTPSeeOther(
+                location=req.path_url)
+            return resp
+
+The first thing we do is check the mtime value.  It can be an empty
+string (when there's no mtime, like when you are creating a page) or
+an integer.  ``int(req.params.get('time') or '0') or None`` basically
+makes sure we don't pass ``""`` to ``int()`` (which is an error) then
+turns 0 into None (``0 or None`` will evaluate to None in Python --
+``false_value or other_value`` in Python resolves to ``other_value``).
+If it fails we just give a not-very-helpful error message, using ``412
+Precondition Failed`` (typically preconditions are HTTP headers like
+``If-Unmodified-Since``, but we can't really get the browser to send
+requests like that, so we use the hidden field instead).
+
+.. note::
+
+    Error statuses in HTTP are often under-used because people think
+    they need to either return an error (useful for machines) or an
+    error message or interface (useful for humans).  In fact you can
+    do both: you can give any human readable error message with your
+    error response.
+
+    One problem is that Internet Explorer will replace error messages
+    with its own incredibly unhelpful error messages.  However, it
+    will only do this if the error message is short.  If it's fairly
+    large (4Kb is large enough) it will show the error message it was
+    given.  You can load your error with a big HTML comment to
+    accomplish this, like ``"<!-- %s -->" % ('x'*4000)``.
+
+    You can change the status of any response with ``resp.status_int =
+    412``, or you can change the body of an ``exc.HTTPSomething`` with
+    ``resp.body = new_body``.  The primary advantage of using the
+    classes in ``webob.exc`` is giving the response a clear name and a
+    boilerplate error message.
+
+After we check the mtime we get the form parameters from
+``req.params`` and issue a redirect back to the original view page.
+``303 See Other`` is a good response to give after accepting a POST
+form submission, as it gets rid of the POST (no warning messages for the
+user if they try to go back).
+
+In this example we've used ``req.params`` for all the form values.  If
+we wanted to be specific about where we get the values from, they
+could come from ``req.GET`` (the query string, a misnomer since the
+query string is present even in POST requests) or ``req.POST`` (a POST
+form body).  While sometimes it's nice to distinguish between these
+two locations, for the most part it doesn't matter.  If you want to
+check the request method (e.g., make sure you can't change a page with
+a GET request) there's no reason to do it by accessing these
+method-specific getters.  It's better to just handle the method
+specifically.  We do it here by including the request method in our
+dispatcher (dispatching to ``action_view_GET`` or
+``action_view_POST``).
+
+
+Cookies
+-------
+
+One last little improvement we can do is show the user a message when
+they update the page, so it's not quite so mysteriously just another
+page view.
+
+A simple way to do this is to set a cookie after the save, then
+display it in the page view.  To set it on save, we add a little to
+``action_view_POST``:
+
+.. code-block:: python
+
+    def action_view_POST(self, req, page):
+        ...
+        resp = exc.HTTPSeeOther(
+            location=req.path_url)
+        resp.set_cookie('message', 'Page updated')
+        return resp
+
+And then in ``action_view_GET``:
+
+.. code-block:: python
+
+
+    VIEW_TEMPLATE = HTMLTemplate("""\
+    ...
+    {{if message}}
+    <div style="background-color: #99f">{{message}}</div>
+    {{endif}}
+    ...""")
+
+    class WikiApp(object):
+        ...
+
+        def action_view_GET(self, req, page):
+            ...
+            if req.cookies.get('message'):
+                message = req.cookies['message']
+            else:
+                message = None
+            text = self.view_template.substitute(
+                page=page, req=req, message=message)
+            resp = Response(text)
+            if message:
+                resp.delete_cookie('message')
+            else:
+                resp.last_modified = page.mtime
+                resp.conditional_response = True
+            return resp
+
+``req.cookies`` is just a dictionary, and we also delete the cookie if
+it is present (so the message doesn't keep getting set).  The
+conditional response stuff only applies when there isn't any
+message, as messages are private.  Another alternative would be to
+display the message with Javascript, like::
+
+    <script type="text/javascript">
+    function readCookie(name) {
+        var nameEQ = name + "=";
+        var ca = document.cookie.split(';');
+        for (var i=0; i < ca.length; i++) {
+            var c = ca[i];
+            while (c.charAt(0) == ' ') c = c.substring(1,c.length);
+            if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+        }
+        return null;
+    }
+
+    function createCookie(name, value, days) {
+        if (days) {
+            var date = new Date();
+            date.setTime(date.getTime()+(days*24*60*60*1000));
+            var expires = "; expires="+date.toGMTString();
+        } else {
+            var expires = "";
+        }
+        document.cookie = name+"="+value+expires+"; path=/";
+    }
+
+    function eraseCookie(name) {
+        createCookie(name, "", -1);
+    }
+
+    function showMessage() {
+        var message = readCookie('message');
+        if (message) {
+            var el = document.getElementById('message');
+            el.innerHTML = message;
+            el.style.display = '';
+            eraseCookie('message');
+        }
+    }
+    </script>
+
+Then put ``<div id="messaage" style="display: none"></div>`` in the
+page somewhere.  This has the advantage of being very cacheable and
+simple on the server side.
+
+Conclusion
+----------
+
+We're done, hurrah!

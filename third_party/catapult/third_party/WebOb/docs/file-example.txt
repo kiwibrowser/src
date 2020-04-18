@@ -1,0 +1,224 @@
+WebOb File-Serving Example
+==========================
+
+This document shows how you can make a static-file-serving application
+using WebOb.  We'll quickly build this up from minimal functionality
+to a high-quality file serving application.
+
+.. note:: Starting from 1.2b4, WebOb ships with a :mod:`webob.static` module
+    which implements a :class:`webob.static.FileApp` WSGI application similar to the
+    one described below.
+
+    This document stays as a didactic example how to serve files with WebOb, but
+    you should consider using applications from :mod:`webob.static` in
+    production.
+
+.. comment:
+
+   >>> import webob, os
+   >>> base_dir = os.path.dirname(os.path.dirname(webob.__file__))
+   >>> doc_dir = os.path.join(base_dir, 'docs')
+   >>> from doctest import ELLIPSIS
+
+First we'll setup a really simple shim around our application, which
+we can use as we improve our application:
+
+.. code-block:: python
+
+   >>> from webob import Request, Response
+   >>> import os
+   >>> class FileApp(object):
+   ...     def __init__(self, filename):
+   ...         self.filename = filename
+   ...     def __call__(self, environ, start_response):
+   ...         res = make_response(self.filename)
+   ...         return res(environ, start_response)
+   >>> import mimetypes
+   >>> def get_mimetype(filename):
+   ...     type, encoding = mimetypes.guess_type(filename)
+   ...     # We'll ignore encoding, even though we shouldn't really
+   ...     return type or 'application/octet-stream'
+
+Now we can make different definitions of ``make_response``.  The
+simplest version:
+
+.. code-block:: python
+
+   >>> def make_response(filename):
+   ...     res = Response(content_type=get_mimetype(filename))
+   ...     res.body = open(filename, 'rb').read()
+   ...     return res
+
+Let's give it a go.  We'll test it out with a file ``test-file.txt``
+in the WebOb doc directory:
+
+.. code-block:: python
+
+   >>> fn = os.path.join(doc_dir, 'test-file.txt')
+   >>> open(fn).read()
+   'This is a test.  Hello test people!'
+   >>> app = FileApp(fn)
+   >>> req = Request.blank('/')
+   >>> print req.get_response(app)
+   200 OK
+   Content-Type: text/plain; charset=UTF-8
+   Content-Length: 35
+   <BLANKLINE>
+   This is a test.  Hello test people!
+
+Well, that worked.  But it's not a very fancy object.  First, it reads
+everything into memory, and that's bad.  We'll create an iterator instead:
+
+.. code-block:: python
+
+   >>> class FileIterable(object):
+   ...     def __init__(self, filename):
+   ...         self.filename = filename
+   ...     def __iter__(self):
+   ...         return FileIterator(self.filename)
+   >>> class FileIterator(object):
+   ...     chunk_size = 4096
+   ...     def __init__(self, filename):
+   ...         self.filename = filename
+   ...         self.fileobj = open(self.filename, 'rb')
+   ...     def __iter__(self):
+   ...         return self
+   ...     def next(self):
+   ...         chunk = self.fileobj.read(self.chunk_size)
+   ...         if not chunk:
+   ...             raise StopIteration
+   ...         return chunk
+   ...     __next__ = next # py3 compat
+   >>> def make_response(filename):
+   ...     res = Response(content_type=get_mimetype(filename))
+   ...     res.app_iter = FileIterable(filename)
+   ...     res.content_length = os.path.getsize(filename)
+   ...     return res
+
+And testing:
+
+.. code-block:: python
+
+   >>> req = Request.blank('/')
+   >>> print req.get_response(app)
+   200 OK
+   Content-Type: text/plain; charset=UTF-8
+   Content-Length: 35
+   <BLANKLINE>
+   This is a test.  Hello test people!
+
+Well, that doesn't *look* different, but lets *imagine* that it's
+different because we know we changed some code.  Now to add some basic
+metadata to the response:
+
+.. code-block:: python
+
+   >>> def make_response(filename):
+   ...     res = Response(content_type=get_mimetype(filename),
+   ...                    conditional_response=True)
+   ...     res.app_iter = FileIterable(filename)
+   ...     res.content_length = os.path.getsize(filename)
+   ...     res.last_modified = os.path.getmtime(filename)
+   ...     res.etag = '%s-%s-%s' % (os.path.getmtime(filename),
+   ...                              os.path.getsize(filename), hash(filename))
+   ...     return res
+
+Now, with ``conditional_response`` on, and with ``last_modified`` and
+``etag`` set, we can do conditional requests:
+
+.. code-block:: python
+
+   >>> req = Request.blank('/')
+   >>> res = req.get_response(app)
+   >>> print res
+   200 OK
+   Content-Type: text/plain; charset=UTF-8
+   Content-Length: 35
+   Last-Modified: ... GMT
+   ETag: ...-...
+   <BLANKLINE>
+   This is a test.  Hello test people!
+   >>> req2 = Request.blank('/')
+   >>> req2.if_none_match = res.etag
+   >>> req2.get_response(app)
+   <Response ... 304 Not Modified>
+   >>> req3 = Request.blank('/')
+   >>> req3.if_modified_since = res.last_modified
+   >>> req3.get_response(app)
+   <Response ... 304 Not Modified>
+
+We can even do Range requests, but it will currently involve iterating
+through the file unnecessarily.  When there's a range request (and you
+set ``conditional_response=True``) the application will satisfy that
+request.  But with an arbitrary iterator the only way to do that is to
+run through the beginning of the iterator until you get to the chunk
+that the client asked for.  We can do better because we can use
+``fileobj.seek(pos)`` to move around the file much more efficiently.
+
+So we'll add an extra method, ``app_iter_range``, that ``Response``
+looks for:
+
+.. code-block:: python
+
+   >>> class FileIterable(object):
+   ...     def __init__(self, filename, start=None, stop=None):
+   ...         self.filename = filename
+   ...         self.start = start
+   ...         self.stop = stop
+   ...     def __iter__(self):
+   ...         return FileIterator(self.filename, self.start, self.stop)
+   ...     def app_iter_range(self, start, stop):
+   ...         return self.__class__(self.filename, start, stop)
+   >>> class FileIterator(object):
+   ...     chunk_size = 4096
+   ...     def __init__(self, filename, start, stop):
+   ...         self.filename = filename
+   ...         self.fileobj = open(self.filename, 'rb')
+   ...         if start:
+   ...             self.fileobj.seek(start)
+   ...         if stop is not None:
+   ...             self.length = stop - start
+   ...         else:
+   ...             self.length = None
+   ...     def __iter__(self):
+   ...         return self
+   ...     def next(self):
+   ...         if self.length is not None and self.length <= 0:
+   ...             raise StopIteration
+   ...         chunk = self.fileobj.read(self.chunk_size)
+   ...         if not chunk:
+   ...             raise StopIteration
+   ...         if self.length is not None:
+   ...             self.length -= len(chunk)
+   ...             if self.length < 0:
+   ...                 # Chop off the extra:
+   ...                 chunk = chunk[:self.length]
+   ...         return chunk
+   ...     __next__ = next # py3 compat
+
+Now we'll test it out:
+
+.. code-block:: python
+
+   >>> req = Request.blank('/')
+   >>> res = req.get_response(app)
+   >>> req2 = Request.blank('/')
+   >>> # Re-fetch the first 5 bytes:
+   >>> req2.range = (0, 5)
+   >>> res2 = req2.get_response(app)
+   >>> res2
+   <Response ... 206 Partial Content>
+   >>> # Let's check it's our custom class:
+   >>> res2.app_iter
+   <FileIterable object at ...>
+   >>> res2.body
+   'This '
+   >>> # Now, conditional range support:
+   >>> req3 = Request.blank('/')
+   >>> req3.if_range = res.etag
+   >>> req3.range = (0, 5)
+   >>> req3.get_response(app)
+   <Response ... 206 Partial Content>
+   >>> req3.if_range = 'invalid-etag'
+   >>> req3.get_response(app)
+   <Response ... 200 OK>

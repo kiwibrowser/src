@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<!--
+Copyright 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/components/paper-button/paper-button.html">
+<link rel="import" href="/components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="/components/paper-input/paper-textarea.html">
+<link rel="import" href="/components/paper-item/paper-item.html">
+<link rel="import" href="/components/paper-listbox/paper-listbox.html">
+<link rel="import" href="/components/polymer/polymer.html">
+
+<link rel="import" href="/dashboard/static/base.html">
+<link rel="import" href="/dashboard/static/simple_xhr.html">
+
+<dom-module id="create-health-report-page">
+  <style>
+    .error {
+      color: #dd4b39;
+      font-weight: bold;
+    }
+
+    .center {
+      margin: auto;
+      padding: 10px;
+    }
+
+    #content {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    #loading-spinner {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    #success {
+      color: #15c;
+      font-size: 25px;
+    }
+
+    paper-textarea {
+      width: 100%;
+    }
+
+  </style>
+  <template>
+    <template is="dom-if" if="{{loading}}">
+      <div id="loading-spinner"><img src="//www.google.com/images/loading.gif"></div>
+    </template>
+    <div id="content">
+      <template is="dom-if" if="{{error}}">
+        <div class="error">{{error}}</div>
+      </template>
+      <p id="success" 
+        hidden$="{{hideSuccess}}">Report created successfully. You can
+                 view it here: <a href="/speed_releasing/{{endpointName}}">
+                                  {{endpointName}}
+                               </a>
+      </p>
+      <h1>Create a Health Report</h1>
+      <p>Or edit one:</p>
+      <paper-dropdown-menu id="testSelect" on-iron-select="onEditChanged">
+        <paper-listbox class="dropdown-content">
+          <paper-item label=""></paper-item>
+          <template is="dom-repeat" items="{{tableConfigs}}">
+            <paper-item label="{{item}}">{{item}}</paper-item>
+          </template>
+        </paper-listbox>
+      </paper-dropdown-menu>
+      <br>
+      <b>User-friendly name:</b><br>
+      <paper-input id="name" value="{{name}}" label="Report Name" required 
+                   auto-validate error-message="Required field.">
+      </paper-input>
+
+      <br><br><b>Master/bots:</b><br>
+      Enter each master/bot pair, separated by line. For example:<br>
+      ChromiumPerf/Nexus5<br>
+      ClankInternal/mako<br>
+      ...<br>
+      <paper-textarea id="bots" value="{{bots}}" 
+                      label="Master/bot Pairs" auto-validate required
+                      error-message="Required field.">
+      </paper-textarea>
+
+      <br><br><b>Tests:</b><br>
+      Enter each test path in full, separated by line. For example: <br>
+      memory.top_10_mobile/memory:chrome:all_processes:reported_by_os:system_memory:ashmem:proportional_resident_size_avg <br>
+      memory.top_10_mobile/memory:chrome:all_processes:reported_by_os:system_memory:java_heap:proportional_resident_size_avg<br>
+      ...<br>
+
+      <paper-textarea id="tests" value="{{tests}}" label="Test paths"
+                      auto-validate required error-message="Required field.">
+      </paper-textarea>
+
+      <br><br><b>Test layout:</b><br>
+      Enter a JSON dict to specify the layout. For example: <br>
+      { <br>
+      &nbsp;&nbsp;"system_health.memory_mobile/foreground/ashmem": ["Foreground", "Ashmem"]<br>
+      &nbsp;&nbsp;...<br>
+      }<br>
+      The usage is: "test": ["Category", "UserFriendlyName"]
+      <br>
+
+      <paper-textarea id="layout" value="{{layout}}" 
+                      label="Table Layout" required auto-validate
+                      error-message="Required field.">
+      </paper-textarea>
+      <paper-button raised on-click="onSubmit">Submit</paper-button>
+    </div>
+  </template>
+  
+  <script>
+    'use strict';
+    Polymer({
+      is: 'create-health-report-page',
+      properties: {
+        loading: {
+          type: Boolean,
+          value: false,
+          notify: true
+        },
+        error: {
+          type: String,
+          value: '',
+          notify: true
+        },
+        hideSuccess: {
+          type: Boolean,
+          value: true,
+        },
+        endpointName: {
+          type: String,
+        },
+        name: {
+          type: String,
+          notify: true
+        },
+        layout: {
+          type: String,
+          notify: true
+        },
+        bots: {
+          type: String,
+          notify: true
+        },
+        tests: {
+          type: String,
+          notify: true
+        },
+        xsrfToken: {
+          type: String,
+          value: ''
+        },
+        tableConfigs: {
+          type: Array,
+          value: [],
+        },
+        selectedTableConfig: {
+          type: String,
+          value: ''
+        }
+      },
+
+      onSubmit() {
+        const valid = this.validateInputs();
+        if (valid) {
+          this.checkToken();
+        }
+        this.error = '';
+      },
+
+      checkToken() {
+        const params = {
+          getToken: true,
+        };
+        simple_xhr.send('/create_health_report', params,
+            function(response) {
+              this.xsrfToken = response.xsrf_token;
+              this.loading = false;
+              this.buildTable(); // Needs to wait for response with token.
+            }.bind(this),
+            function(msg) {
+              this.error = msg;
+              this.loading = false;
+            }.bind(this));
+      },
+
+      buildTable() {
+        this.loading = true;
+        let override = 0;
+        if (this.selectedTableConfig == this.name) {
+          override = 1;  // Tell server it is okay to override the config.
+        }
+        const params = {
+          tableLayout: this.layout,
+          tableName: this.name,
+          tableBots: this.bots,
+          tableTests: this.tests,
+          xsrf_token: this.xsrfToken,
+          override,
+        };
+        simple_xhr.send('/create_health_report', params,
+            function(response) {
+              this.loading = false;
+              this.hideSuccess = false;
+              this.endpointName = response.name;
+              window.scrollTo(0, 0);
+            }.bind(this),
+            function(msg) {
+              this.error = msg;
+              this.loading = false;
+              window.scrollTo(0, 0);
+              this.hideSuccess = true;
+            }.bind(this));
+      },
+
+      /*
+       * Goes and grabs the table_config details to populate the form with.
+       */
+      onEditChanged(e) {
+        this.selectedTableConfig = e.detail.item.label;
+        if (!this.selectedTableConfig) {
+          this.name = '';
+          this.bots = '';
+          this.tests = '';
+          this.layout = '';
+          return;
+        }
+        const params = {
+          getTableConfigDetails: this.selectedTableConfig,
+          xsrf_token: this.xsrfToken,
+        };
+        simple_xhr.send('/create_health_report', params,
+            function(response) {
+              this.loading = false;
+              this.name = response.table_name;
+              this.bots = '';
+              for (const i in response.table_bots) {
+                this.bots += (response.table_bots[i] + '\n');
+              }
+              this.tests = '';
+              for (const k in response.table_tests) {
+                this.tests += (response.table_tests[k] + '\n');
+              }
+              this.layout = response.table_layout;
+            }.bind(this),
+            function(msg) {
+              this.error = msg;
+            }.bind(this));
+      },
+
+      validateInputs() {
+        let valid = true;
+        if (!this.name) {
+          valid = false;
+          this.$.name.invalid = true;
+        }
+        if (!this.bots) {
+          valid = false;
+          this.$.bots.invalid = true;
+        }
+        if (!this.tests) {
+          valid = false;
+          this.$.tests.invalid = true;
+        }
+        if (!this.layout) {
+          valid = false;
+          this.$.layout.invalid = true;
+        }
+        return valid;
+      },
+
+      ready() {
+        const params = {
+          getTableConfigList: true,
+          xsrf_token: this.xsrfToken,
+        };
+        this.loading = true;
+        simple_xhr.send('/create_health_report', params,
+            function(response) {
+              this.loading = false;
+              this.tableConfigs = response.table_config_list;
+            }.bind(this),
+            function(msg) {
+              this.error = msg;
+              this.loading = false;
+            }.bind(this));
+      }
+    });
+  </script>
+</dom-module>

@@ -1,0 +1,216 @@
+# liblouis: Nemeth Table for mathematics
+#
+#  Based on the Linux screenreader BRLTTY, copyright (C) 1999-2006 by
+#  The BRLTTY Team
+#
+#  Copyright (C) 2004, 2005, 2006
+#  ViewPlus Technologies, Inc. www.viewplus.com
+#  and
+#  JJB Software, Inc. www.jjb-software.com
+#  All rights reserved
+#
+#  This file is free software; you can redistribute it and/or modify it
+#   under the terms of the Lesser or Library GNU General Public License 
+#  as published by the
+#  Free Software Foundation; either version 3, or (at your option) any
+#  later version.
+# 
+#  This file is distributed in the hope that it will be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+#  Library GNU General Public License for more details.
+#
+#  You should have received a copy of the Library GNU General Public 
+#  License along with this program; see the file COPYING.  If not, write 
+#  to
+#  the Free Software Foundation, 51 Franklin Street, Fifth Floor,
+#  Boston, MA 02110-1301, USA.
+#
+#  Maintained by John J. Boyer john.boyer@jjb-software.com
+# Updated 6-18-08 by Mike Sivill <mike.sivill@viewplus.com>
+
+include chardefs.cti All character definition opcodes
+include nemethdefs.cti
+
+# Braille indicators
+multind 56-6 letsign capsign
+capsign 6
+begital 46
+endital 46-46
+begbold 456
+endbold 456-456
+begcomp 456-346
+endcomp 456-156
+
+# Letters are defined in en-chardefs
+# punctuation
+
+prepunc " 236
+postpunc " 356
+prepunc ' 6-236
+postpunc ' 356-3
+postpunc , 6
+always , 6-a
+always # 35-2345 print number sign before number
+decpoint . 46
+hyphen - 36
+postpunc . 456-256
+endnum . 456-256
+always . 256
+postpunc ; 456-23
+postpunc : 456-25
+always ! 12346 factorial
+always < a-5-13-a
+always = a-46-13-a
+always > a-46-2-a
+postpunc ? 456-236
+endnum % 4-356
+always ~~ 4-156-5-4-156
+always ~ 4-156
+always & 456-12346
+midnum * 4-16
+always [ 4-12356
+always ] 4-23456
+always { 46-12356
+always } 46-23456
+always @ 4-1
+always \\ 456-16
+always | 1256
+always $ 4-234
+repeated \s 0
+context ["\X25A1"]$d @1246-256-5
+context ["\X25A0"]$d @1246-456-256-5
+always \x00b0 45-46-16
+always \x00B1 346-36
+
+# semantic character pairs
+always ^, 6
+always ^; 56
+always ^: 156
+always ^. 46
+always ^! 2346
+always ^" 5
+always ^' 3
+always ^( 12356
+always ^) 23456
+always ^- 36
+always ^_ 456
+always ^< 126
+always ^= 123456
+always ^> 345
+always ^% 146
+always ^+ 346
+always ^~ 45
+always ^` 4
+always ^& 12346
+always ^$ 1246
+always ^? 1456
+always ^{ 246
+always ^} 12456
+always ^# 3456
+always ^| 1256
+always ^/ 34
+always ^* 16
+repeated ^1 a
+
+# Function names and abbreviations
+always acos 1-14-135-234-a
+always antilog 1-1345-2345-24-123-135-1234-a
+always arc 1-1235-14-a
+always arccos 1-1235-14-14-135-234-a
+always arg 1-1235-1245-a
+always asin 1-234-24-1345-a
+always atan 1-2345-1-1345-a
+always colog 14-123-135-1245-a
+always cos 14-135-234-a
+always cosh 14-135-234-125-a
+always cot 14-135-2345-a
+always coth 14-135-2345-125-a
+always covers 14-135-1236-15-1235-234-a
+always csc 14-234-14-a
+always csch 14-234-14-125-a
+always erf 15-1235-124-a
+always inf 24-1345-124-a
+always ln 123-1345-a
+always log 123-135-1234-a
+always max 134-1-1346-a
+always min 134-24-1345-a
+always sec 234-15-14-a
+always sech 234-15-14-125-a
+always sin 234-24-1345-a
+always sinh 234-24-1345-125-a
+always tan 2345-1-1345-a
+always tanh 2345-1-135-125-a
+always vers 1236-15-1235-234-a
+
+
+
+# computer braille character sequences
+compbrl :// URLs
+compbrl www.
+compbrl .com
+compbrl .edu
+compbrl .gov
+compbrl .mil
+compbrl .net
+compbrl .org
+compbrl .doc
+compbrl .htm
+compbrl .html
+compbrl .tex
+compbrl .txt
+compbrl .gif
+compbrl .jpg
+compbrl .png
+compbrl .wav
+compbrl .tar
+compbrl .zip
+
+# pass 2 corrections
+
+# get rid of base-line ind. after subscripts
+pass2 @56[$d1-5]@5!$d *
+# insert another superscript ind. on doube superscripts
+pass2 @45[]$d@5-5 @45
+#get rid of extra baseline inds.
+pass2 @5-5 @5 
+pass2 @5-0 @0 
+pass2 @5-a @a 
+pass2 @5-1b-15 @1b-15
+# get rid rid of superscript ind. on prime sign
+pass2 @45-3-5 @3
+# Put 456 in mixed numbers
+pass2 $d[]@1456 @456
+pass2 @456-1456!$s3-8[]@3456 @456
+# Put number sign on numbers after spaces
+pass2 @a[]$d @3456
+pass2 @0[]$d @3456
+pass2 @1b-12[]$d @3456
+pass2 @a-0 @a
+# fix anomaly with superscripts
+pass2 @45-0-5 @45
+pass2 @45-5 @45
+# Fix single letter and digit with overbar
+pass2 @5$l[@126-12456] @156
+pass2 @5-6$l[@126-12456] @156
+pass2 [@5]!$s@156 @a
+pass2 @46-a @456-256
+# get rid of space for overscripts 
+pass2 @126-a @126
+pass2 @146-a @146
+pass2 @0-146 @146
+pass2 @a-146 @146
+pass2 @a-12456 @12456
+# fix complex fraction begin and end (not perfectly)
+pass2 @1456-1456 @6-1456-1456
+pass2 @3456-3456 @3456-6-3456
+# Fix lim with overbar sign
+pass2 @5-123-24-134-126-12456 @126-123-24-134
+# Get rid of open paren before matrices
+pass2 @12356-4-6-12356 @4-6-12356
+pass2 @1256-4-6-12356 @4-6-12356
+# take off baseline ind. comma space
+pass2 [@5-6]!$l @6
+pass2 @1b-12[]$d @3456 number sign before digit at beginning
+pass2 @1b-12-36[]$d @3456 number sign before minus before digit at beginning
+

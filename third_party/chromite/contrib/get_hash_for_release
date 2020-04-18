@@ -1,0 +1,173 @@
+#!/bin/bash
+# Copyright 2014 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# The "get_hash_for_release" command can be used in one of two forms:
+#  - It can be used to return the hash associated with the project in
+#    the current directory:
+#
+#      ~/chromiumos/chromite$ get_hash_for_release 6822.0.0
+#      0b325183cf2eee7f93d7d631a8639c089f4a2d4f
+#      # This is the hash of the "chromite" package for release 6822.0.0
+#
+#  - It can indicate what is the earliest release where a given hash
+#    appeared:
+#
+#     ~/chromiumos/chromite$ get_hash_for_release R41 \
+#         8eba257003357ca945528fb93dadd2c4d16b7d11
+#     Oldest release with 8eba257003357ca945528fb93dadd2c4d16b7d11 is 6674.0.0
+
+
+fetch_manifests() {
+  temp_dir=/tmp/chrome_manifest_temp
+  if [[ ! -d "${temp_dir}" ]] ; then
+    mkdir -p "${temp_dir}"
+    local git_server="https://chrome-internal.googlesource.com"
+    git clone -q --depth 1 --single-branch \
+        "${git_server}/chromeos/manifest-versions" "${temp_dir}"
+  else
+    (cd "${temp_dir}" && git pull -q)
+  fi
+}
+
+cleanup_manifests() {
+  if [[ -d "${temp_dir}" ]] ; then
+    rm -rf "${temp_dir}"
+  fi
+}
+
+is_child_release() {
+  # Release numbers are stated in a set of dotted integers.
+  # 2.0.0.0 is a child of 1.0.0.0 (later release)
+  # 2.1.0.0 is a child of 2.0.0.0 (new branch)
+  # 3.0.0.0 is a child of 2.0.0.0 but not 2.1.0.0 since 2.1 branched from 2.0.
+  # 3.0.1.0 isn't really valid (branches are left aligned) but we ignore this.
+
+  local child
+  local parent
+  IFS='.' read -a child <<< "$1"
+  IFS='.' read -a parent <<< "$2"
+  if [[ ${#child[@]} -ne ${#parent[@]} ]] ; then
+    return 1
+  fi
+
+  local must_be_root
+  for idx in $(seq 0 $((${#child[@]} - 1))); do
+    local parent_num="${parent[idx]}"
+    [[ -n "${must_be_root}" && "$parent_num" != "0" ]] && return 1
+    local child_num="${child[idx]}"
+    [[ "${parent_num}" > "${child_num}" ]] && return 1
+    [[ "${parent_num}" < "${child_num}" ]] && must_be_root=1
+  done
+  return 0
+}
+
+get_project_info() {
+  repo info . 2>/dev/null | egrep '^(Project|Current revision):' | cut -f2 -d:
+}
+
+get_revision() {
+  local release="$1"
+  local revision="$2"
+  grep "${project}.*upstream=.*${branch}" \
+      ${temp_dir}/buildspecs/$release/${revision}.xml |
+      sed -e 's/ *<project.*revision="\([^"]*\)".*/\1/' \
+          -e 's/^.*\/\([0-9.]*\)\.xml:/\1 : /'
+}
+
+get_hash_for_release() {
+  get_revision '*' "${revision}"
+}
+
+get_release_for_hash() {
+  local release="${revision:1}"
+  local -a all_revs=($(ls "${temp_dir}/buildspecs/${release}" |
+                       sort -Vr | sed -e 's/\.xml$//'))
+  latest_rev=$(basename $(cd "${temp_dir}/buildspecs/${release}" &&
+                          git log -n1 --name-only --oneline --grep release . |
+                          grep -v ' ' | sort -V | tail -1 |
+                          sed -e 's/\.xml$//'))
+  revs=()
+  for rev in "${all_revs[@]}"; do
+    is_child_release "${latest_rev}" "${rev}" && revs+=("${rev}")
+  done
+  last_released_hash=$(get_revision "${release}" "${latest_rev}" |
+                       awk '{print $1}')
+  if [[ -z "${last_released_hash}" ]] ; then
+    echo "Huh?  Can't find hash for ${latest_rev}"
+    return
+  fi
+  local -a hashes
+  found=''
+  for search_size in 10 100 1000 10000; do
+    hashes=($(git log --pretty=format:%H -n "${search_size}" \
+              "${last_released_hash}"))
+    if echo "${hashes[*]}" | grep -q $hash; then
+      found=1
+      break
+    fi
+  done
+  if [[ -z "${found}" ]] ; then
+    echo "Perhaps ${hash} was never in release ${release}?"
+    return
+  fi
+  # Pop all hashes after the one we care about.
+  while [[ "${hashes[-1]}" != "${hash}" ]] ; do
+    unset hashes[${#hashes[@]}-1]
+  done
+  oldest_release="${latest_rev}"
+  idx=1
+  while [[ $idx -lt ${#revs[@]} ]]; do
+    rev="${revs[idx]}"
+    hash_for_rev=$(get_revision "${release}" "${rev}" |
+                   awk '{print $1}')
+    if ! echo "${hashes[*]}" | grep -q $hash_for_rev; then
+      break
+    fi
+    oldest_release="${rev}"
+    idx=$(( idx + 1 ))
+  done
+  echo "Oldest release with ${hash} is ${oldest_release}"
+}
+
+main() {
+  revision="${1}"
+  if [[ -z "${revision}"  ]] ; then
+    echo "Usage: $0 <revision> [hash]"
+    exit 0
+  fi
+
+  if expr "${revision}" : '[MR]' > /dev/null; then
+    hash="${2}"
+    shift
+  fi
+
+  project_info=($(get_project_info))
+
+  if [[ "${#project_info[@]}" < 2 ]] ; then
+    echo "Couldn't get project info (are you in a repo directory?)"
+    exit 0
+  fi
+
+  project="${project_info[0]}"
+  branch="$(echo ${project_info[1]} | cut -d/ -f3)"
+  if [[ "${branch}" == "master" ]] ; then
+    branch=""
+  elif [[ "${branch}" == "chromeos-3.4" ]] ; then
+    # Hack for old releases of chromeos-kernel.
+    branch='\.[4B]"'
+  fi
+
+  fetch_manifests
+
+  if [[ -z "${hash}" ]] ; then
+    get_hash_for_release
+  else
+    get_release_for_hash
+  fi
+
+  #cleanup_manifests
+}
+
+main "$@"

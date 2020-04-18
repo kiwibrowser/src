@@ -1,0 +1,178 @@
+#!/bin/bash
+
+# Attempt to set app_home
+# Resolve links: $0 may be a link
+prg="$0"
+# Need this for relative symlinks.
+while [ -h "$prg" ] ; do
+  ls=`ls -ld "$prg"`
+  link=`expr "$ls" : '.*-> \(.*\)$'`
+  if expr "$link" : '/.*' > /dev/null; then
+    prg="$link"
+  else
+    prg=`dirname "$prg"`"/$link"
+  fi
+done
+saved="`pwd`"
+cd "`dirname \"$prg\"`" >/dev/null
+app_home="`pwd -P`"
+cd "$saved" >/dev/null
+
+ANDROID_WRAPPER_BIN_DIR=${ANDROID_WRAPPER_BIN_DIR:-$app_home/bin}
+ANDROID_WRAPPER_SDK_TIMEOUT=${ANDROID_WRAPPER_SDK_TIMEOUT:-20}
+
+cat <<< \
+"*************************************************************************
+The \"android\" command is deprecated.
+For manual SDK, AVD, and project management, please use Android Studio.
+For command-line tools, use tools/bin/sdkmanager and tools/bin/avdmanager
+*************************************************************************"
+
+function usage {
+  echo "Invalid or unsupported command \"$@\""
+  echo
+  echo "Supported commands are:"
+  echo "android list target"
+  echo "android list avd"
+  echo "android list device"
+  echo "android create avd"
+  echo "android move avd"
+  echo "android delete avd"
+  echo "android list sdk"
+  echo "android update sdk"
+  exit 2
+}
+
+function matches {
+  verbs=$1
+  objects=$2
+  verb=""
+  object=""
+  shift 2
+
+  for arg in "$@"; do
+    if [[ $arg =~ ^- ]]; then
+      continue
+    fi
+    if [[ -z $verb && $verbs =~ ( |^)$arg( |$) ]]; then
+      verb=$arg
+      continue
+    fi
+    if [[ -n $verb && $objects =~ ( |^)$arg( |$) ]]; then
+      object=$arg
+      break
+    fi
+    break
+  done
+  return $([[ -n $verb && -n $object ]])
+}
+
+function echo_and_exec {
+  echo "Running $@"
+  echo
+  exec $@
+}
+
+function parse_filter {
+  local IFS=,
+  for filter in $1; do
+    if [[ $filter == tool || $filter == platform-tool || $filter == doc ]]; then
+      command+=( "$args ${filter}s" )
+    elif [[ $filter == tools || $filter == platform-tools ]]; then
+      command+=( "$args ${filter}" )
+    elif [[ $filter =~ ^lldb ]]; then
+      command+=( "$args ${filter/-/;}" )
+    elif [[ $filter =~ ^build-tools ]]; then
+      command+=( "$args ${filter/build-tools-/build-tools;}" )
+    elif [[ $filter == ndk ]]; then
+      command+=( "$args ndk-bundle" )
+    elif [[ $filter =~ ^android- ]]; then
+      command+=( "$args platforms;$filter" )
+    elif [[ $filter =~ ^extra- ]]; then
+      tmp=${filter//-/;}
+      command+=( "$args ${tmp/extra/extras}" )
+    else
+      echo Filter $filter not supported
+      exit 2
+    fi
+  done
+}
+
+function confirm_try_sdk {
+  for arg in "$@"; do
+    if [[ $arg == --use-sdk-wrapper ]]; then
+      return 0
+    fi
+  done
+  if [[ -n $USE_SDK_WRAPPER ]]; then
+    return 0
+  fi
+  read -t $ANDROID_WRAPPER_SDK_TIMEOUT -p "\"android\" SDK commands can be translated to sdkmanager commands on a best-effort basis.
+Continue? (This prompt can be suppressed with the --use-sdk-wrapper command-line argument
+or by setting the USE_SDK_WRAPPER environment variable) [y/N]: " trysdkresponse
+  if (( $? > 128 )); then
+    echo "Timed out waiting for input."
+    echo "To suppress this prompt, run with --use-sdk-wrapper or set USE_SDK_WRAPPER."
+    exit 1
+  fi
+  if [[ ${trysdkresponse,,} == y ]]; then
+    return 0
+  fi
+  echo Aborted
+  exit 1
+}
+
+avd_verbs="list create move delete"
+avd_objects="avd target device"
+
+if matches "$avd_verbs" "$avd_objects" "$@"; then
+  echo_and_exec "$ANDROID_WRAPPER_BIN_DIR/avdmanager" "$@"
+fi
+
+sdk_verbs="list update"
+sdk_objects="sdk"
+
+if matches "$sdk_verbs" "$sdk_objects" "$@"; then
+  confirm_try_sdk $@
+  if [[ $verb == list ]]; then
+    echo_and_exec "$ANDROID_WRAPPER_BIN_DIR/sdkmanager" --list --verbose
+  fi
+  if [[ $verb == update ]]; then
+    command=( "$ANDROID_WRAPPER_BIN_DIR/sdkmanager" )
+    prev=""
+    update_all=1
+    for arg in "$@"; do
+      if [[ $arg == --use-sdk-wrapper || $arg == $verb || $arg == $object ]]; then
+        continue
+      elif [[ $arg == -n ]]; then
+        echo "update sdk -n is not supported"
+        exit 2
+      elif [[ $arg == -s || $arg == --no-https ]]; then
+        command+=("--no_https")
+      elif [[ $arg == -a || $arg == --all ]]; then
+        command+=("--include_obsolete")
+      elif [[ $arg == -p || $arg == --obsolete || $arg == -u || $arg == --no-ui || $arg == --proxy-host ||
+        $arg == --proxy-port || $arg == -t || $arg == --filter ]]; then
+        :
+      elif [[ $prev == --proxy-host ]]; then
+        command+=("--proxy=http" "--proxy_host=$arg")
+      elif [[ $prev == --proxy-port ]]; then
+        command+=("--proxy_port=$arg")
+      elif [[ $prev == -t || $prev == --filter ]]; then
+        update_all=
+        parse_filter $arg
+      else
+        echo Unrecognized argument $arg
+        exit 2
+      fi
+
+      prev=$arg
+    done
+    if [[ -n $update_all ]]; then
+      command+=("--update")
+    fi
+    echo_and_exec ${command[@]}
+  fi
+fi
+
+usage $@

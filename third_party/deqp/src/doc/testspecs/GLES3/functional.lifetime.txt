@@ -1,0 +1,126 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Object lifetime tests.
+
+Tests:
+ + dEQP-GLES3.functional.lifetime.*
+
+Includes:
+ + The following OpenGL ES 3.0 object types
+   - Buffers
+   - Textures
+   - Renderbuffers
+   - Framebuffers
+   - Shaders
+   - Programs
+   - Queries
+   - Transform feedbacks
+   - Vertex arrays
+   - Samplers
+ + Object existence tests based on Is* queries
+   - After calling Gen* or Create*
+   - After calling Gen* or Create*, then Delete*
+   - After calling Gen*, then Bind*
+   - After calling Gen*, then Bind*, then Delete*
+   - After calling Bind* without preceding Gen*
+   - After calling CreateProgram, then UseProgram, then DeleteProgram
+   - After calling BeginTransformFeedback, then DeleteTransformFeedbacks
+ + Tests for deleting an object that is attached to a container
+   - Is* queries for the name of the deleted object
+   - Reading from the container
+   - Writing to the container
+
+Excludes:
+ + Sync objects
+ + Deleting an object that is currently bound in another context
+
+Description:
+
+These tests check that creation and deletion of objects adheres to the
+OpenGL ES 3.0 specification. The tests check the existence of objects as
+reported by the Is* family of GL functions, the state of bindings as
+reported in various state variables, and the behavior of containers with
+deleted objects.
+
+NOTE: Because these tests try to delete objects that are directly or
+indirectly attached to the current context, a faulty OpenGL ES
+implementation may reclaim and later reallocate memory that is still
+being referenced. This may result in unpredictable errors at some later
+time. Use of external memory debugging tools may be required to
+accurately identify these errors.
+
+The "gen.*" test cases call the object type's Gen* or Create* function
+to allocate a new name, and then check whether the name is used, i.e.
+whether a new object was created for the name (as reported by the result
+of the corresponding Is* function). In OpenGL ES 3.0, the Create*
+functions and the GenSamplers function must always create an object, and
+the other Gen* functions must never create an object.
+
+The "delete.*" test cases call an object type's Gen* or Create* function
+followed by the Delete* function. They then check that the generated
+name is no longer in use.
+
+The "bind.*" test cases call an object type's Gen* function followed by
+its Bind* function. They then check that the name is in use.
+
+The "delete_bound.*" test cases call an object type's Gen* function
+followed by its Bind* function and Delete* function. They then check
+that the name is no longer in use and that the binding has been removed.
+
+The "bind_no_gen.*" test cases call the object type's Bind* function for
+a random name that has not been produced by the Gen* function. They then
+check whether the function call succeeded. In OpenGL ES 3.0, the
+BindBuffer, BindFramebuffer, BindRenderbuffer and BindTexture functions
+must succeed for arbitrary object names, and the other Bind* functions
+must fail.
+
+The "delete_used.program" test case creates a new program object (along
+with associated shader objects) and makes it the current program with
+the glUseProgram function. The program object is then deleted. The test
+checks that the name of the program remains in use and is flagged for
+deletion. Then the program is made non-current and the test checks that
+the name becomes unused.
+
+The "delete_active.transform_feedback" test case creates a new transform
+feedback object, makes it active with the BeginTransformFeedback
+function, and then attempts to delete it. The test checks that the
+deletion fails.
+
+The "attach.*" family of test cases create a container object (a
+framebuffer, vertex array, transform feedback, or program) and attach
+another object (a texture, renderbuffer, buffer or shader) to it. The
+attached object is then deleted.
+
+In the "attach.deleted_name.*" test cases, the container is queried for
+its attachment, and the existence of the deleted attachment object is
+checked. In OpenGL ES 3.0, shader objects must exist even after deletion
+if they are attached to a program.
+
+In the "attach.deleted_input.*" test cases, the container is read from
+(by reading a framebuffer's pixel contents or using a program or vertex
+array for drawing) first before the attachment is deleted, and then
+again after deleting the attachment and creating a new object of the
+attachment type. If the results differ, the new object erroneously
+affected the container's state.
+
+In the "attach.deleted_output.*" test cases, the container is written to
+(by drawing to a framebuffer or by using a transform feedback) first
+after deleting the attachment and then again after creating a new object
+of the attachment type. If the writing affected the new object state, it
+erroneously shared state with the deleted attachment.

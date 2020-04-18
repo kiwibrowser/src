@@ -1,0 +1,28 @@
+Import('*')
+
+env = drienv.Clone()
+
+env.PkgUseModules('DRM')
+env.PkgUseModules('DRM_RADEON')
+
+env.Append(CPPDEFINES = ['GALLIUM_RBUG', 'GALLIUM_TRACE'])
+
+env.Prepend(LIBS = [
+    st_dri,
+    radeonwinsys,
+    r600,
+    trace,
+    rbug,
+    mesa,
+    glsl,
+    gallium,
+    COMMON_DRI_DRM_OBJECTS
+])
+
+module = env.SharedLibrary(
+    target ='r600_dri.so',
+    source = 'target.c',
+    SHLIBPREFIX = '',
+)
+
+env.Alias('dri-r600', module)

@@ -1,0 +1,131 @@
+# liblouis: Russian literary text translation table
+#
+#  Copyright (C) 2013 Igor B. Poretsky <poretsky@mlbox.ru>
+#
+#  This file is part of liblouis.
+#
+#  liblouis is free software: you can redistribute it and/or modify it
+#  under the terms of the GNU Lesser General Public License as
+#  published by the Free Software Foundation, either version 3 of the
+#  License, or (at your option) any later version.
+#
+#  liblouis is distributed in the hope that it will be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with liblouis. If not, see
+#  <http://www.gnu.org/licenses/>.
+
+# Display and character definitions:
+include ru-letters.dis
+include ru-chardefs.cti
+include chardefs.cti
+
+# Braille indicators:
+numsign 3456  number sign, just a dots operand
+
+# Emphasis indication signs:
+firstwordital 456
+lastworditalafter 456
+firstwordbold 34
+lastwordboldafter 34
+
+# The decimal digits:
+include litdigits6Dots.uti
+
+# Punctuations:
+decpoint , 2
+prepunc " 236
+postpunc " 356
+postpunc ,\s 2
+postpunc ;\s 23
+hyphen - 36
+always . 256
+always , 2
+always ; 23
+always : 25
+always ? 26
+always ! 235
+always ' 3
+always ` 4
+
+# Special symbols:
+always @ 4-1
+always # 4-1345
+always $ 4-145
+always % 3456-245-356
+always ^ 56-26
+always & 6-12346
+always * 35
+always ( 126
+always ) 345
+always _ 6-25
+always [ 6-12356
+always ] 6-23456
+always { 46-126
+always } 46-345
+always \\ 4-16
+always | 456-3
+always ~ 5-26
+
+# mathematical symbols:
+always - 36
+always + 0-235
+always / 6-34
+always < 0-25-246-0
+always > 0-135-25-0
+always = 0-2356
+
+# Symbol classes for special rules below:
+class upperlatin ABCDEFGHIJKLMNOPQRSTUVWXYZ
+class lowerlatin abcdefghijklmnopqrstuvwxyz
+class uppercyrillic \x0401\x0410\x0411\x0412\x0413\x0414\x0415\x0416\x0417\x0418\x0419\x041A\x041B\x041C\x041D\x041E\x041F\x0420\x0421\x0422\x0423\x0424\x0425\x0426\x0427\x0428\x0429\x042A\x042B\x042C\x042D\x042E\x042F
+class lowercyrillic \x0430\x0431\x0432\x0433\x0434\x0435\x0436\x0437\x0438\x0439\x043A\x043B\x043C\x043D\x043E\x043F\x0440\x0441\x0442\x0443\x0444\x0445\x0446\x0447\x0448\x0449\x044A\x044B\x044C\x044D\x044E\x044F\x0451
+
+class latin ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
+class cyrillic \x0401\x0410\x0411\x0412\x0413\x0414\x0415\x0416\x0417\x0418\x0419\x041A\x041B\x041C\x041D\x041E\x041F\x0420\x0421\x0422\x0423\x0424\x0425\x0426\x0427\x0428\x0429\x042A\x042B\x042C\x042D\x042E\x042F\x0430\x0431\x0432\x0433\x0434\x0435\x0436\x0437\x0438\x0439\x043A\x043B\x043C\x043D\x043E\x043F\x0440\x0441\x0442\x0443\x0444\x0445\x0446\x0447\x0448\x0449\x044A\x044B\x044C\x044D\x044E\x044F\x0451
+
+swapcd updigit 1234567890 1,12,14,145,15,124,1245,125,24,245
+
+# Adjust spacing around dashes according to the Russian braille rules.
+context `["-\s"] @36
+context [$s]"-"$s ?
+context [$d]"-" %updigit@0
+
+# Mark cyrillic letters immediately following digits.
+context [$d]%uppercyrillic %updigit@45#1=0
+context [$d]%lowercyrillic %updigit@5#1=0
+
+# Mark lowercase latin letters where it is required.
+context !#1=0[]%cyrillic #1=0
+context #1=1[$d]%lowerlatin %updigit@6
+context !#1=1[]%lowerlatin #1=1@6
+context !#1=1[]%upperlatin #1=1
+
+# Make space before text following number with punctuation.
+context [$d","]$l %updigit@2-0
+context [$d",\s"]$l %updigit@2-0
+context [$d";"]$l %updigit@23-0
+context [$d";\s"]$l %updigit@23-0
+
+# Mark cyrillic letters immediately following latins.
+pass2 %lowerlatin[]%uppercyrillic @45#1=0
+pass2 %lowerlatin[]%lowercyrillic @5#1=0
+pass2 #1=1[]%uppercyrillic @45#1=0
+pass2 #1=1[]%lowercyrillic @5#1=0
+
+# Mark uppercase latin letters where it is appropriate.
+pass2 !%upperlatin *#1=0
+pass2 !#1=1[]%upperlatin #1=1@46
+
+# Format dialogs and direct speech according to the Russian braille tradition.
+pass3 `@36 *#1=1
+pass3 @236 *#1=1
+pass3 @356 *#1=0
+pass3 #1=1@2@36@0 *#1=2
+pass3 #1=1@26@36@0 *#1=2
+pass3 #1=1@235@36@0 *#1=2
+pass3 #1=2@2[@36@0] @0-36
+pass3 #1=2@256[@36@0] @0-36

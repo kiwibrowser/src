@@ -1,0 +1,75 @@
+# Windows Build Configuration for AppVeyor
+# http://www.appveyor.com/docs/appveyor-yml
+#
+
+# This version starts a separte job for each platform config
+# in order to get around the AppVeyor limit of 60 mins per job.
+
+# build version format
+version: "{build}"
+
+# Free accounts have a max of 1, but ask anyway.
+max_jobs: 4
+
+os:
+  - Visual Studio 2013
+
+environment:
+  PYTHON_PATH: "C:/Python35"
+  PYTHON_PACKAGE_PATH: "C:/Python35/Scripts"
+
+branches:
+  only:
+    - master
+
+before_build:
+  - "SET PATH=C:\\Python35;C:\\Python35\\Scripts;%PATH%"
+  - echo Starting build for %APPVEYOR_REPO_NAME% in %APPVEYOR_BUILD_FOLDER%
+  # Build Vulkan-Headers
+  - echo Building Vulkan-Headers for %PLATFORM% %CONFIGURATION%
+  - cd %APPVEYOR_BUILD_FOLDER%
+  - git clone https://github.com/KhronosGroup/Vulkan-Headers.git
+  - cd Vulkan-Headers
+  - mkdir build
+  - cd build
+  - cmake -A %PLATFORM% -DCMAKE_INSTALL_PREFIX=install ..
+  - cmake --build . --config %CONFIGURATION% --target install -- /maxcpucount
+  # Build Vulkan-Loader
+  - echo Building Vulkan-Loader for %PLATFORM% %CONFIGURATION%
+  - cd %APPVEYOR_BUILD_FOLDER%
+  - git clone https://github.com/KhronosGroup/Vulkan-Loader.git
+  - cd Vulkan-Loader
+  - mkdir build
+  - cd build
+  - cmake -A %PLATFORM% -DVULKAN_HEADERS_INSTALL_DIR=%APPVEYOR_BUILD_FOLDER%/Vulkan-Headers/build/install -DCMAKE_INSTALL_PREFIX=install ..
+  - cmake --build . --config %CONFIGURATION% --target install -- /maxcpucount
+  # Generate build files using CMake for the build step.
+  - echo Generating Vulkan-Tools CMake files for %PLATFORM% %CONFIGURATION%
+  - cd %APPVEYOR_BUILD_FOLDER%
+  - mkdir build
+  - cd build
+  - cmake -A %PLATFORM% -DVULKAN_HEADERS_INSTALL_DIR=%APPVEYOR_BUILD_FOLDER%/Vulkan-Headers/build/install -DVULKAN_LOADER_INSTALL_DIR=%APPVEYOR_BUILD_FOLDER%/Vulkan-Loader/build/install ..
+  - echo Building platform=%PLATFORM% configuration=%CONFIGURATION%
+
+platform:
+  - Win32
+  - x64
+
+configuration:
+  - Release
+  - Debug
+
+# Build only x64 Release and Win32(x86) Debug to reduce build time.
+# This should still provide adequate 32-bit vs 64-bit and
+# Release vs Debug coverage.
+matrix:
+  exclude:
+    - configuration: Release
+      platform: Win32
+    - configuration: Debug
+      platform: x64
+
+build:
+  parallel: true                  # enable MSBuild parallel builds
+  project: build/Vulkan-Tools.sln # path to Visual Studio solution or project
+  verbosity: quiet                # quiet|minimal|normal|detailed

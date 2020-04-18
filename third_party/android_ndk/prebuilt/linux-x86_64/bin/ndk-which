@@ -1,0 +1,56 @@
+#!/bin/bash
+#
+# Copyright (C) 2012 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# This script is useful for learning the path of the active toolchain
+# components within the ndk.
+# Run this script without parameters, for usage hints.
+
+# show usage if no parameter given
+WHICH=$1
+if [ "$WHICH" == "" ]; then
+  echo "USAGE: ndk-which <tool>"
+  echo "where tool is 'gdb', 'gcc', 'objdump', etc."
+  exit 1
+fi
+
+MYNDKDIR=`dirname $0`/../../..
+
+# create a temporary skeleton project so that we can leverage build-local.mk
+TMPDIR=/tmp/ndk-which-$$
+mkdir -p $TMPDIR/jni
+cat >$TMPDIR/jni/Android.mk << "END_OF_FILE"
+include $(CLEAR_VARS)
+END_OF_FILE
+
+# 'get_build_var_for_abi' was copied from ndk-gdb
+get_build_var_for_abi ()
+{
+    if [ -z "$GNUMAKE" ] ; then
+        GNUMAKE=make
+    fi
+    NDK_PROJECT_PATH=$TMPDIR $GNUMAKE --no-print-dir -f $MYNDKDIR/build/core/build-local.mk DUMP_$1 APP_ABI=$2
+}
+
+TOOLCHAIN_PREFIX=`get_build_var_for_abi TOOLCHAIN_PREFIX armeabi`
+rm -Rf $TMPDIR
+
+# fully qualified file name
+FQFN=${TOOLCHAIN_PREFIX}$WHICH
+
+# use the host system's 'which' to decide/report if the file exists or not, and is executable
+which "$FQFN"
+

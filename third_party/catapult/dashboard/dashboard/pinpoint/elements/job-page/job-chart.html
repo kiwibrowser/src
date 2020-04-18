@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<!--
+Copyright 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/elements/job-page/job-chart-dot.html">
+<link rel="import" href="/elements/job-page/job-chart-icon.html">
+
+<dom-module id="job-chart">
+  <template>
+    <style>
+      #plot {
+        height: 240px;
+        margin-top: 1em;
+        width: 100%;
+      }
+    </style>
+
+    <div id="plot"></div>
+  </template>
+
+  <script>
+    'use strict';
+    Polymer({
+      is: 'job-chart',
+
+      properties: {
+        jobData: {
+          type: Object,
+          observer: '_jobDataChanged',
+        },
+
+        changeIndex: {
+          type: Number,
+          notify: true
+        },
+      },
+
+      ready() {
+        this.initializePlotEventListeners();
+      },
+
+      initializePlotEventListeners() {
+        const plot = $(this.$.plot);
+        plot.bind('plotclick', this.onPlotClick.bind(this));
+      },
+
+      onPlotClick(event, pos, item) {
+        if (item == null) {
+          return;
+        }
+
+        this.set('changeIndex', item.datapoint[0]);
+      },
+
+      onBuildStatusClick(index) {
+        this.set('changeIndex', index);
+      },
+
+      _jobDataChanged() {
+        this.setChangeIndex();
+        this.async(this.draw, 1);
+      },
+
+      setChangeIndex() {
+        // TODO: Choose the largest difference, not just any difference.
+        for (let i = 0; i < this.jobData.state.length; ++i) {
+          if (this.jobData.state[i].comparisons.prev === 'different') {
+            this.set('changeIndex', i);
+            return;
+          }
+        }
+        // TODO: If no statistical difference, choose the largest delta.
+        this.set('changeIndex', this.jobData.state.length - 1);
+      },
+
+      draw() {
+        // Calculate the data series, points, and error bars.
+        const plotData = [];
+
+        let seriesData = [];
+        for (let i = 0; i < this.jobData.state.length; ++i) {
+          const changeData = this.jobData.state[i];
+          if (!changeData.result_values.length) {
+            continue;
+          }
+
+          const mid = percentile(changeData.result_values, 0.5);
+          const lowError = mid - Math.min(...changeData.result_values);
+          const highError = Math.max(...changeData.result_values) - mid;
+          seriesData.push([i, mid, lowError, highError]);
+
+          if (changeData.comparisons.next !== 'same' &&
+              changeData.comparisons.next !== 'unknown') {
+            if (seriesData.length) {
+              plotData.push(annotateSeries(seriesData));
+              seriesData = [];
+            }
+          }
+        }
+
+        // Chart options to be given when initializing the Flot chart.
+        // See: https://github.com/flot/flot/blob/master/API.md#plot-options
+        const options = {
+          grid: {
+            clickable: true,
+            hoverable: true,
+            borderWidth: 1,
+            borderColor: 'rgba(0, 0, 0, 0.5)'
+          },
+          xaxis: {
+            min: -0.5,
+            max: this.jobData.state.length - 0.5,
+            ticks:
+              this.jobData.state.map((d, i) => [i, changeString(d.change)]),
+            tickLength: 0
+          },
+          yaxis: {
+            min: this.jobData.bounds[0],
+            max: this.jobData.bounds[1]
+          }
+        };
+
+        // Plot the chart!
+        const chart = $.plot(this.$.plot, plotData, options);
+
+        // Draw overlays.
+        for (let i = 0; i < this.jobData.state.length; ++i) {
+          const changeData = this.jobData.state[i];
+          const y = changeData.result_values.length ?
+            percentile(changeData.result_values, 0.5) :
+            (this.jobData.bounds[0] + this.jobData.bounds[1]) / 2;
+          const offset = chart.pointOffset({x: i, y});
+
+          if (changeData.result_values.length) {
+            // Draw pulsing dots for important points.
+            if (changeData.comparisons.prev === 'different') {
+              const dot = document.createElement('job-chart-dot');
+              dot.setPosition(offset.left, offset.top);
+              this.$.plot.appendChild(dot);
+            }
+          } else {
+            // Draw icons for failed and pending attempts.
+            const status = document.createElement('job-chart-icon');
+            status.setPosition(offset.left, offset.top);
+            // TODO: Plumb through real "pending" information from the Job.
+            if (changeData.comparisons.prev === 'pending' ||
+                changeData.comparisons.next === 'pending') {
+              status.setType('pending');
+            } else {
+              status.setType('failed');
+            }
+            status.onclick = this.onBuildStatusClick.bind(this, i);
+            this.$.plot.appendChild(status);
+          }
+        }
+      }
+    });
+
+    function annotateSeries(data) {
+      const color = '#ff4081';
+      return {
+        color,
+        data,
+        lines: {
+          show: true
+        },
+        points: {
+          errorbars: 'y',
+          fillColor: color,
+          show: true,
+          yerr: {
+            asymmetric: true,
+            upperCap: '-',
+            lowerCap: '-',
+            show: true
+          }
+        }
+      };
+    }
+
+    function changeString(change) {
+      const lastCommit = change.commits[change.commits.length - 1];
+      let changeString = lastCommit.commit_position ||
+        lastCommit.git_hash.substring(0, 7);
+      if (change.patch) {
+        changeString += ' + ' + change.patch.author.split('@')[0];
+      }
+      return changeString;
+    }
+
+    function percentile(values, p) {
+      values.sort(function(a, b) {return a - b;});
+      const index = (values.length - 1) * p;
+      const lower = Math.floor(index);
+      const upper = Math.ceil(index);
+      const weight = index % 1;
+      return values[lower] * (1 - weight) + values[upper] * weight;
+    }
+  </script>
+</dom-module>

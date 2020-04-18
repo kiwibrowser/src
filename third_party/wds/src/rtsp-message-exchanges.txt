@@ -1,0 +1,148 @@
+
+**************************************************
+* RTSP messages during WFD session establishment *
+**************************************************
+
+
+There are five different states:
+   1. capability negotiation A
+   2. capability negotiation B
+   3. RTSP session establishment
+   4. WFD session establishment
+   5. WFD session
+
+I'm listing the possible exchanges below, per state (except for the
+last state: that's a lot more work and mostly not required for POC).
+  *   = message
+  ***  = message, valid start point for a message exchange in this state
+
+
+SOURCE                                   SINK
+MESSAGES                                 MESSAGES
+-------------------------------------------------------------
+
+
+STATE 1 capability negotiation A
+-------------------------------------------------------------
+*** M1 OPTIONS           -------->
+                                        if M1 response == 200
+                                        send M2
+
+
+                         <--------      * M2 OPTIONS
+if M2 response = 200
+send M3
+
+
+* M3 GET_PARAMETER       -------->
+if M3 response == 200
+move to state 2, send M4
+
+
+STATE 2 capability negotiation B
+-------------------------------------------------------------
+
+*** M3 GET_PARAMETER     -------->
+
+* M4 SET_PARAMETER     -------->
+(mandatory and optional parameters below)
+if M4 response == 200
+send M5
+
+
+STATE 3 RTSP session establishment
+-------------------------------------------------------------
+
+*** M3 GET_PARAMETER     -------->
+
+
+*** M4 SET_PARAMETER     -------->
+
+
+* M5 SET_PARAMETER       -------->
+(trigger SETUP)                         if M5 response == 200 
+                                        send M6
+
+
+                         <--------      * M6 SETUP
+                                        if M6 response == 200
+                                        move to state 4, send M7
+
+
+STATE 4 WFD session establishment
+-------------------------------------------------------------
+
+*** M3 GET_PARAMETER     -------->
+
+
+*** M5 SET_PARAMETER     -------->
+(trigger TEARDOWN)                      if M5 response = 200
+                                        send M8
+
+
+*** M5 SET_PARAMETER     -------->
+(trigger PLAY)                          if M5 response == 200
+                                        send M7
+
+
+                         <--------      * M7 PLAY
+if M7 response == 200
+move to state 5, start streaming
+
+
+                                        *** M8 TEARDOWN
+if M8 response == 200
+move to state 1
+
+
+
+
+STATE 5 WFD Session
+---------------------------------------------------------------
+TODO ...
+
+
+
+
+
+*****************************
+* GET/SET Method parameters *
+*****************************
+
+
+    M = mandatory
+    O = optional
+
+These rules apply _before_ the WFD sessions is established
+(in other words states 1-4): 
+
+                    request                reply
+* M3 GET_PARAMETER 
+-----------------------------------------------------------------
+audio-codecs        M                      M
+video-formats       M                      M
+3d-video-formats    O                      M (if in request)
+content-protection  O                      M (if in request)
+display-edid        O                      M (if in request)
+coupled-sink        O                      M (if in request)
+client-rtp-ports    M                      M
+I2C                 O                      M (if in request)
+uibc-capability     O                      M (if in request)
+connector-type      O                      M (if in request)
+standby-resume--    O                      M (if in request)
+
+
+* M4 SET_PARAMETER
+audio-codecs        M (if stream contains audio) 
+video-formats       M (if no preferred-display and stream contains video)
+3d-video-formats    M (if no preferred-display and stream includes 3d)
+presentation-url    M 
+client-rtp-ports    M
+preferred-display-- O                        (spec error on p 111?)
+uibc-capability     O
+uibc-setting        O
+
+
+* M5 SET_PARAMETER 
+trigger-method      M
+

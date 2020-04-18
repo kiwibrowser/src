@@ -1,0 +1,43 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_screensave_restore_basic() {
+test_start "$FUNCNAME: verify screensaver restore doesn't error"
+test_procedure "see also bug 7593"
+
+test_init
+
+require_notroot
+## Require a running X server
+assert_display
+
+assert_exit 0 test ! -z "$WINDOWID"
+assert_exit 0 xdg-screensaver status
+assert_stdout
+mv out.stdout out.prev
+
+sleep 1
+
+assert_exit 0 xdg-screensaver suspend "$WINDOWID"
+
+test_procedure
+
+sleep 1
+
+assert_exit 0 xdg-screensaver resume "$WINDOWID"
+assert_nostdout
+assert_nostderr
+
+sleep 1
+
+assert_exit 0 xdg-screensaver status
+assert_stdout out.prev
+
+test_result
+}
+
+run_test test_screensave_restore_basic

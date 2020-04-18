@@ -1,0 +1,55 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Scissoring Tests
+
+Tests:
+ + dEQP-GLES2.functional.scissor.*
+ + dEQP-GLES3.functional.scissor.*
+
+Includes:
+ + Primitives
+   - Points
+   - Lines
+   - Triangles
+ + Clears (including GLES 3 only ones)
+ + Framebuffer blits (GLES 3)
+ + Scissor configurations
+   - Enclosing rendered area
+   - Enclosed by rendered area (if applicable)
+   - Partially containing rendered area
+   - (Partially) outside render target
+
+
+Excludes:
+ + Blits to/from multiple buffers
+ + Partially clipped points
+
+Description:
+
+This test set compares images rendered by the target with the scissor test
+enabled to references generated with the scissor test disabled but with
+areas outside the scissor rectangle cleared by the test logic.
+
+All primitive types are tested in all reasonable scissor configurations
+listed above. Points are tested in a somewhat limited fashion since
+support for point sizes above one is not required.
+
+After clearing with scissoring enabled, depth and stencil clears disable
+scissoring and render a colored fullscreen quad with depth & stencil
+tests requiring values set by the previous clears to produce the final output.

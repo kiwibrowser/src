@@ -1,0 +1,110 @@
+++++++++++++++++++++++++++++
+Python Paste Developer Guide
+++++++++++++++++++++++++++++
+
+Hi.  Welcome to Paste.  I hope you enjoy your stay here.
+
+I hope to bring together multiple efforts here, for Paste to support
+multiple frameworks and directions, while presenting a fairly
+integrated frontend to users.  How to do that?  That's an open
+question, and this code is in some ways an exploration.
+
+There's some basic principles:
+
+* Keep stuff decoupled.
+
+* Must be testable.  Of course tested is even better than testable.
+
+* Use WSGI standards for communication between decoupled libraries.
+
+* When possible, use HTTP semantics for communicating between
+  libraries (e.g., indicate cachability using the appropriate HTTP
+  headers).
+
+* When possible, use WSGI as a wrapper around web-neutral libraries.
+  For instance, the configuration is a simple library, but the WSGI
+  middleware that puts the configuration in place is really really
+  simple.  If it could be used outside of a web context, then having
+  both a library and middleware form is good.
+
+* Entry into frameworks should be easy, but exit should also be easy.
+  Heterogeneous frameworks and applications are the ambition.  But we
+  have to get some messiness into Paste before we can try to resolve
+  that messiness.
+
+* When all is said and done, users should be able to ignore much of
+  what we've done and focus on writing their applications, and Stuff
+  Just Works.  Documentation is good; stuff that works without user
+  intervention is better.
+
+Developer Info
+==============
+
+Mostly, if there's a problem we can discuss it and work it out, no one
+is going to bite your head off for committing something.
+
+* Framework-like things should go in subpackages, or perhaps in
+  separate distributions entirely (Paste WebKit and Wareweb were
+  extracted for this reason).
+
+* Integrating external servers and frameworks is also interesting, but
+  it's best to introduce that as a requirement instead of including
+  the work here.  Paste Script contains several wrappers for external
+  projects (servers in particular).
+
+* Tests are good.  We use py.test_, because it is simple.  I want to
+  use doctests too, but the infrastructure isn't really there now --
+  but please feel free to use those too.  ``unittest`` is kind of
+  annoying, and py.test is both more powerful and easier to write for.
+  Tests should go in the ``tests/`` directory.  ``paste.fixture``
+  contains some convenience functions for testing WSGI applications
+  and middleware.  Pay particular attention to ``TestApp``.
+  
+.. _py.test: http://codespeak.net/py/current/doc/test.html
+
+* If you move something around that someone may be using, keep their
+  imports working and introduce a warning, like::
+
+    def backward_compat_function(*args, **kw):
+        import warnings
+        # Deprecated on 2005 Mar 5
+        warnings.warn('Moved to foo.function', DeprecationWarning, 2)
+        return foo.function(*args, **kw)
+
+* If something is really experimental, put it in your home directory,
+  or make a branch in your home directory.  You can make a home
+  directory for yourself, in ``http://svn.w4py.org/home/username``.
+
+* Not everything in the repository or even in the trunk will
+  necessarily go into the release.  The release should contain stuff
+  that is tested, documented, and useful.  Each module or feature also
+  needs a champion -- someone who will stand by the code, answer
+  questions, etc.  It doesn't have to be the original developer, but
+  there has to be *someone*.  So when a release is cut, if some
+  modules don't fulfill that they may be left out.
+
+* Try to keep to the `Style Guidelines`_.  But if you are bringing in
+  outside work, don't stress out too much about it.  Still, if you
+  have a choice, follow that.  Those guidelines are meant to represent
+  conventional Python style guides, there's nothing out of the normal
+  there.
+
+.. _Style Guidelines: StyleGuide.html
+
+* Write your docstrings in `restructured text
+  <http://docutils.sourceforge.net/rst.html>`_.  As time goes on, I
+  want to rely on docstrings more for documentation, with shorter
+  narrative documentation pointing into the documentation generated
+  from docstrings.
+
+  The generation is done with `Pudge <http://pudge.lesscode.org/>`_.
+  To try generating the documentation, this should work::
+
+    $ easy_install svn://lesscode.org/buildutils/trunk \
+                   svn://lesscode.org/pudge/trunk
+    $ cd Paste
+    $ python setup.py pudge
+
+  This will install Pudge and `buildutils
+  <http://buildutils.lesscode.org/>`_, and then generate the
+  documentation into ``Paste/docs/html/``.

@@ -1,0 +1,49 @@
+Import('*')
+
+from sys import executable as python_cmd
+
+
+# Generate the GL API headers that are used by various parts of the
+# Mesa and GLX tree.  Other .c and .h files are generated elsewhere
+# if they're only used in one place.
+
+GLAPI = '#src/mapi/glapi/'
+
+glapi_headers = []
+
+glapi_headers += env.CodeGenerate(
+    target = '#src/mesa/main/dispatch.h',
+    script = GLAPI + 'gen/gl_table.py',
+    source = GLAPI + 'gen/gl_API.xml',
+    command = python_cmd + ' $SCRIPT -m remap_table -f $SOURCE > $TARGET',
+    )
+
+glapi_headers += env.CodeGenerate(
+    target = '#src/mapi/glapi/glapitable.h',
+    script = GLAPI + 'gen/gl_table.py',
+    source = GLAPI + 'gen/gl_API.xml',
+    command = python_cmd + ' $SCRIPT -f $SOURCE > $TARGET'
+    )
+
+glapi_headers += env.CodeGenerate(
+    target = '#src/mapi/glapi/glapitemp.h',
+    script = GLAPI + 'gen/gl_apitemp.py',
+    source = GLAPI + 'gen/gl_API.xml',
+    command = python_cmd + ' $SCRIPT -f $SOURCE > $TARGET'
+    )
+
+glapi_headers += env.CodeGenerate(
+    target = '#src/mapi/glapi/glprocs.h',
+    script = GLAPI + 'gen/gl_procs.py',
+    source = GLAPI + 'gen/gl_API.xml',
+    command = python_cmd + ' $SCRIPT -f $SOURCE > $TARGET'
+    )
+
+glapi_headers += env.CodeGenerate(
+    target = '#src/mesa/main/remap_helper.h',
+    script = GLAPI + 'gen/remap_helper.py',
+    source = GLAPI + 'gen/gl_API.xml',
+    command = python_cmd + ' $SCRIPT -f $SOURCE > $TARGET'
+    )
+
+env.Export('glapi_headers')

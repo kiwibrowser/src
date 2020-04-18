@@ -1,0 +1,241 @@
+'\" t
+.\"     Title: xdg-desktop-icon
+.\"    Author: Kevin Krammer
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
+.\"      Date: 12/31/2010
+.\"    Manual: xdg-desktop-icon Manual
+.\"    Source: xdg-utils 1.0
+.\"  Language: English
+.\"
+.TH "XDG\-DESKTOP\-ICON" "1" "12/31/2010" "xdg-utils 1.0" "xdg-desktop-icon Manual"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+xdg-desktop-icon \- command line tool for (un)installing icons to the desktop
+.SH "SYNOPSIS"
+.HP \w'\fBxdg\-desktop\-icon\fR\ 'u
+\fBxdg\-desktop\-icon\fR install [\fB\-\-novendor\fR] \fIFILE\fR
+.HP \w'\fBxdg\-desktop\-icon\fR\ 'u
+\fBxdg\-desktop\-icon\fR uninstall \fIFILE\fR
+.HP \w'\fBxdg\-desktop\-icon\fR\ 'u
+\fBxdg\-desktop\-icon\fR {\fB\-\-help\fR | \fB\-\-manual\fR | \fB\-\-version\fR}
+.SH "DESCRIPTION"
+.PP
+The xdg\-desktop\-icon program can be used to install an application launcher or other file on the desktop of the current user\&.
+.PP
+An application launcher is represented by a *\&.desktop file\&. Desktop files are defined by the freedesktop\&.org Desktop Entry Specification\&. The most important aspects of *\&.desktop files are summarized below\&.
+.SH "COMMANDS"
+.PP
+install
+.RS 4
+Installs
+\fIFILE\fR
+to the desktop of the current user\&.
+\fIFILE\fR
+can be a *\&.desktop file or any other type of file\&.
+.RE
+.PP
+uninstall
+.RS 4
+Removes
+\fIFILE\fR
+from the desktop of the current user\&.
+.RE
+.SH "OPTIONS"
+.PP
+\fB\-\-novendor\fR
+.RS 4
+Normally, xdg\-desktop\-icon checks to ensure that a *\&.desktop file to be installed has a vendor prefix\&. This option can be used to disable that check\&.
+.sp
+A vendor prefix consists of alpha characters ([a\-zA\-Z]) and is terminated with a dash ("\-")\&. Companies and organizations are encouraged to use a word or phrase, preferably the organizations name, for which they hold a trademark as their vendor prefix\&. The purpose of the vendor prefix is to prevent name conflicts\&.
+.RE
+.PP
+\fB\-\-help\fR
+.RS 4
+Show command synopsis\&.
+.RE
+.PP
+\fB\-\-manual\fR
+.RS 4
+Show this manualpage\&.
+.RE
+.PP
+\fB\-\-version\fR
+.RS 4
+Show the xdg\-utils version information\&.
+.RE
+.SH "DESKTOP FILES"
+.PP
+An application launcher can be added to the desktop by installing a *\&.desktop file\&. A *\&.desktop file consists of a
+\fI[Desktop Entry]\fR
+header followed by several
+\fIKey\fR=\fIValue\fR
+lines\&.
+.PP
+A *\&.desktop file can provide a name and description for an application in several different languages\&. This is done by adding a language code as used by LC_MESSAGES in square brackets behind the
+\fIKey\fR\&. This way one can specify different values for the same
+\fIKey\fR
+depending on the currently selected language\&.
+.PP
+The following keys are often used:
+.PP
+Value=1\&.0
+.RS 4
+This is a mandatory field to indicate that the *\&.desktop file follows the 1\&.0 version of the specification\&.
+.RE
+.PP
+Type=Application
+.RS 4
+This is a mandatory field that indicates that the *\&.desktop file describes an application launcher\&.
+.RE
+.PP
+Name=\fIApplication Name\fR
+.RS 4
+The name of the application\&. For example
+\fIMozilla\fR
+.RE
+.PP
+GenericName=\fIGeneric Name\fR
+.RS 4
+A generic description of the application\&. For example
+\fIWeb Browser\fR
+.RE
+.PP
+Comment=\fIComment\fR
+.RS 4
+Optional field to specify a tooltip for the application\&. For example
+\fIVisit websites on the Internet\fR
+.RE
+.PP
+Icon=\fIIcon File\fR
+.RS 4
+The icon to use for the application\&. This can either be an absolute path to an image file or an icon\-name\&. If an icon\-name is provided an image lookup by name is done in the user\*(Aqs current icon theme\&. The
+\fBxdg\-icon\-resource\fR
+command can be used to install image files into icon themes\&. The advantage of using an icon\-name instead of an absolute path is that with an icon\-name the application icon can be provided in several different sizes as well as in several differently themed styles\&.
+.RE
+.PP
+Exec=\fICommand Line\fR
+.RS 4
+The command line to start the application\&. If the application can open files the %f placeholder should be specified\&. When a file is dropped on the application launcher the %f is replaced with the file path of the dropped file\&. If multiple files can be specified on the command line the %F placeholder should be used instead of %f\&. If the application is able to open URLs in addition to local files then %u or %U can be used instead of %f or %F\&.
+.RE
+.PP
+For a complete oveview of the *\&.desktop file format please visit http://www\&.freedesktop\&.org/wiki/Standards/desktop\-entry\-spec
+.SH "ENVIRONMENT VARIABLES"
+.PP
+xdg\-desktop\-icon honours the following environment variables:
+.PP
+XDG_UTILS_DEBUG_LEVEL
+.RS 4
+Setting this environment variable to a non\-zero numerical value makes xdg\-desktop\-icon do more verbose reporting on stderr\&. Setting a higher value increases the verbosity\&.
+.RE
+.SH "EXIT CODES"
+.PP
+An exit code of 0 indicates success while a non\-zero exit code indicates failure\&. The following failure codes can be returned:
+.PP
+\fB1\fR
+.RS 4
+Error in command line syntax\&.
+.RE
+.PP
+\fB2\fR
+.RS 4
+One of the files passed on the command line did not exist\&.
+.RE
+.PP
+\fB3\fR
+.RS 4
+A required tool could not be found\&.
+.RE
+.PP
+\fB4\fR
+.RS 4
+The action failed\&.
+.RE
+.PP
+\fB5\fR
+.RS 4
+No permission to read one of the files passed on the command line\&.
+.RE
+.SH "SEE ALSO"
+.PP
+\fBxdg-icon-resource\fR(1)
+.SH "EXAMPLES"
+.PP
+The company ShinyThings Inc\&. has developed an application named "WebMirror" and would like to add a launcher for for on the desktop\&. The company will use "shinythings" as its vendor id\&. In order to add the application to the desktop there needs to be a \&.desktop file for the application:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+shinythings\-webmirror\&.desktop:
+
+  [Desktop Entry]
+  Encoding=UTF\-8
+  Type=Application
+
+  Exec=webmirror
+  Icon=shinythings\-webmirror
+
+  Name=WebMirror
+  Name[nl]=WebSpiegel
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Now the xdg\-desktop\-icon tool can be used to add the webmirror\&.desktop file to the desktop:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+xdg\-desktop\-icon install \&./shinythings\-webmirror\&.desktop
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+To add a README file to the desktop as well, the following command can be used:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+xdg\-desktop\-icon install \&./shinythings\-README
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.SH "AUTHORS"
+.PP
+\fBKevin Krammer\fR
+.RS 4
+Author.
+.RE
+.PP
+\fBJeremy White\fR
+.RS 4
+Author.
+.RE
+.SH "COPYRIGHT"
+.br
+Copyright \(co 2006
+.br

@@ -1,0 +1,1183 @@
+News
+====
+
+1.5.0a0 (2015-07-25)
+--------------------
+
+Backwards Incompatibilities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- ``Morsel`` will no longer accept a cookie value that does not meet RFC6265's
+  cookie-octet specification. Upon calling ``Morsel.serialize`` a warning will
+  be issued, in the future this will raise a ``ValueError``, please update your
+  cookie handling code. See https://github.com/Pylons/webob/pull/172
+
+  The cookie-octet specification in RFC6265 states the following characters are
+  valid in a cookie value:
+ 
+  ===============  =======================================
+  Hex Range        Actual Characters
+  ===============  =======================================
+  ``[0x21     ]``  ``!``
+  ``[0x25-0x2B]``  ``#$%&'()*+``
+  ``[0x2D-0x3A]``  ``-./0123456789:``
+  ``[0x3C-0x5B]``  ``<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[``
+  ``[0x5D-0x7E]``  ``]^_`abcdefghijklmnopqrstuvwxyz{|}~``
+  ===============  =======================================
+
+  RFC6265 suggests using base 64 to serialize data before storing data in a
+  cookie.
+
+- ``response.set_cookie`` now uses the internal ``make_cookie`` API, which will
+  issue warnings if cookies are set with invalid bytes. See
+  https://github.com/Pylons/webob/pull/172
+
+Features
+~~~~~~~~
+
+- Add support for some new caching headers, stale-while-revalidate and
+  stale-if-error that can be used by reverse proxies to cache stale responses
+  temporarily if the backend disappears. From RFC5861. See
+  https://github.com/Pylons/webob/pull/189
+
+Bug Fixes
+~~~~~~~~~
+
+- Response.status now uses duck-typing for integers, and has also learned to
+  raise a ValueError if the status isn't an integer followed by a space, and
+  then the reason. See https://github.com/Pylons/webob/pull/191
+
+- Fixed a bug in ``webob.multidict.GetDict`` which resulted in the
+  QUERY_STRING not being updated when changes were made to query
+  params using ``Request.GET.extend()``.
+
+- Read the body of a request if we think it might have a body. This fixes PATCH
+  to support bodies. See https://github.com/Pylons/webob/pull/184
+
+- Response.from_file returns HTTP headers as latin1 rather than UTF-8, this
+  fixes the usage on Google AppEngine. See
+  https://github.com/Pylons/webob/issues/99 and
+  https://github.com/Pylons/webob/pull/150
+
+- Fix a bug in parsing the auth parameters that contained bad white space. This
+  makes the parsing fall in line with what's required in RFC7235. See
+  https://github.com/Pylons/webob/issues/158
+
+- Use '\r\n' line endings in ``Response.__str__``. See:
+  https://github.com/Pylons/webob/pull/146
+
+Documentation Changes
+~~~~~~~~~~~~~~~~~~~~~
+
+- ``response.set_cookie`` now has proper documentation for ``max_age`` and
+  ``expires``. The code has also been refactored to use ``cookies.make_cookie``
+  instead of duplicating the code. This fixes
+  https://github.com/Pylons/webob/issues/166 and
+  https://github.com/Pylons/webob/issues/171
+
+- Documentation didn't match the actual code for the wsgify function signature.
+  See https://github.com/Pylons/webob/pull/167
+
+- Remove the WebDAV only from certain HTTP Exceptions, these exceptions may
+  also be used by REST services for example.
+
+1.4 (2014-05-14)
+----------------
+
+Features
+~~~~~~~~
+
+- Remove ``webob.__version__``, the version number had not been kept in sync
+  with the official pkg version.  To obtain the WebOb version number, use
+  ``pkg_resources.get_distribution('webob').version`` instead.
+
+Bug Fixes
+~~~~~~~~~
+
+- Fix a bug in ``EmptyResponse`` that prevents it from setting self.close as
+  appropriate due to testing truthiness of object rather than if it is
+  something other than ``None``.
+
+- Fix a bug in ``SignedSerializer`` preventing secrets from containing
+  higher-order characters. See https://github.com/Pylons/webob/issues/136
+
+- Use the ``hmac.compare_digest`` method when available for constant-time
+  comparisons.
+
+1.3.1 (2013-12-13)
+------------------
+
+Bug Fixes
+~~~~~~~~~
+
+- Fix a bug in ``SignedCookieProfile`` whereby we didn't keep the original
+  serializer around, this would cause us to have ``SignedSerializer`` be added on
+  top of a ``SignedSerializer`` which would cause it to be run twice when
+  attempting to verify a cookie.  See https://github.com/Pylons/webob/pull/127
+
+Backwards Incompatibilities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- When ``CookieProfile.get_value`` and ``SignedCookieProfile.get_value`` fails
+  to deserialize a badly encoded value, we now return ``None`` as if the cookie
+  was never set in the first place instead of allowing a ``ValueError`` to be
+  raised to the calling code.  See https://github.com/Pylons/webob/pull/126
+
+1.3 (2013-12-10)
+----------------
+
+Features
+~~~~~~~~
+
+- Added a read-only ``domain`` property to ``BaseRequest``.  This property
+  returns the domain portion of the host value.  For example, if the
+  environment contains an ``HTTP_HOST`` value of ``foo.example.com:8000``,
+  ``request.domain`` will return ``foo.example.com``.
+
+- Added five new APIs: ``webob.cookies.CookieProfile``,
+  ``webob.cookies.SignedCookieProfile``, ``webob.cookies.JSONSerializer`` and
+  ``webob.cookies.SignedSerializer``, and ``webob.cookies.make_cookie``.  These
+  APIs are convenience APIs for generating and parsing cookie headers as well
+  as dealing with signing cookies.
+
+- Cookies generated via webob.cookies quoted characters in cookie values that
+  did not need to be quoted per RFC 6265.  The following characters are no
+  longer quoted in cookie values: ``~/=<>()[]{}?@`` .  The full set of
+  non-letter-or-digit unquoted cookie value characters is now
+  ``!#$%&'*+-.^_`|~/: =<>()[]{}?@``.  See
+  http://tools.ietf.org/html/rfc6265#section-4.1.1 for more information.
+
+- Cookie names are now restricted to the set of characters expected by RFC
+  6265.  Previously they could contain unsupported characters such as ``/``.
+
+- Older versions of Webob escaped the doublequote to ``\"`` and the backslash
+  to ``\\`` when quoting cookie values.  Now, instead, cookie serialization
+  generates ``\042`` for the doublequote and ``\134`` for the backslash. This
+  is what is expected as per RFC 6265.  Note that old cookie values that do
+  have the older style quoting in them will still be unquoted correctly,
+  however.
+
+- Added support for draft status code 451 ("Unavailable for Legal Reasons").
+  See http://tools.ietf.org/html/draft-tbray-http-legally-restricted-status-00
+
+- Added status codes 428, 429, 431 and 511 to ``util.status_reasons`` (they
+  were already present in a previous release as ``webob.exc`` exceptions).
+
+Bug Fixes
+~~~~~~~~~
+
+- MIMEAccept happily parsed malformed wildcard strings like "image/pn*" at
+  parse time, but then threw an AssertionError during matching.  See
+  https://github.com/Pylons/webob/pull/83 .
+
+- Preserve document ordering of GET and POST request data when POST data passed
+  to Request.blank is a MultiDict.  See https://github.com/Pylons/webob/pull/96
+
+- Allow query strings attached to PATCH requests to populate request.params.
+  See https://github.com/Pylons/webob/pull/106
+
+- Added Python 3.3 trove classifier.
+
+1.2.3
+------------
+
+* Maintainership transferred to `Pylons Project <http://www.pylonsproject.org/>`
+
+* Fix parsing of form submissions where fields have
+  transfer-content-encoding headers.
+
+1.2.2
+------------
+
+* Fix multiple calls to ``cache_expires()`` not fully overriding the
+  previously set headers.
+
+* Fix parsing of form submissions where fields have different encodings.
+
+
+1.2.1
+------------
+
+* Add index page (e.g., ``index.html``) support for
+  :class:`webob.static.DirectoryApp`.
+
+* Detect mime-type when creating a test request with file uploads
+  (``Request.blank("/", POST=dict(file1=("foo.jpg", "xxx")))``)
+
+* Relax parsing of ``Accept`` and ``Range`` headers to allow
+  uppercase and extra whitespace.
+
+* Fix docs references to some deprecated classes.
+
+
+1.2
+------------
+
+* Fix :mod:`webob.client` handling  of connection-refused on Windows.
+
+* Use ``simplejson`` in :mod:`webob.request` if present.
+
+* Fix ``resp.retry_after = <long>`` interpreting value as a UNIX timestamp
+  (should interpret as time delta in seconds).
+
+
+1.2rc1
+------------
+
+* Add ``Response.json`` and ``Request.json`` which reads and sets the
+  body using a JSON encoding (previously only the readable attribute
+  ``Request.json_body`` existed).  ``Request.json_body`` is still
+  available as an alias.
+
+* Rename ``Response.status_int`` to ``Response.status_code`` (the
+  ``.status_int`` name is still available and will be supported
+  indefinitely).
+
+* Add ``Request.text``, the unicode version of the request body
+  (similar to ``Response.text``).
+
+* Add :mod:`webob.client` which contains the WSGI application
+  ``send_request_app`` and ``SendRequest``.  All requests sent to this
+  application are turned into HTTP requests.
+
+* Renamed ``Request.get_response(app)`` to ``Request.send(app)``.  The
+  ``.get_response()`` name is still available.
+
+* Use ``send_request_app`` as the default application for
+  ``Request.send()``, so you can do:
+
+    ``resp = Request.blank("http://python.org").send()``
+
+* Add :mod:`webob.static` which contains two new WSGI applications,
+  :class:`FileApp` serve one static file and :class:`DirectoryApp` to serve
+  the content of a directory. They should provide a reusable implementation
+  of :doc:`file-example`.  It also comes with support for ``wsgi.file_wrapper``.
+
+  The implementation has been imported and simplified from
+  :mod:`PasteOb.fileapp`.
+
+* Add ``dev`` and ``docs`` setup.py aliases (to install development and docs
+  dependencies respectively, e.g. "python setup.py dev").
+
+
+1.2b3
+------------
+
+* Added ``request.host_port`` API (returns port number implied by HTTP_HOST,
+  falling back to SERVER_PORT).
+
+* Added ``request.client_addr`` API (returns IP address implied by
+  HTTP_X_FORWARDED_FOR, falling back to REMOTE_ADDR).
+
+* Fix corner-case ``response.status_int`` and ``response.status`` mutation
+  bug on py3 (use explicit floor division).
+
+* Backwards incompatibility: Request and BaseRequest objects now return
+  Unicode for ``request.path_info`` and ``request.script_name`` under Python
+  2.  Rationale: the legacy behavior of returning the respective raw environ
+  values was nonsensical on Python 3.  Working with non-ascii encoded environ
+  variables as raw WSGI values under Python 3 makes no sense, as PEP 3333
+  specifies that environ variables are bytes-tunneled-as-latin-1 strings.
+
+  If you don't care about Python 3, and you need strict backwards
+  compatibility, to get legacy behavior of returning bytes on Python 2 for
+  these attributes, use ``webob.LegacyRequest`` instead of ``webob.Request``.
+  Although it's possible to use ``webob.LegacyRequest`` under Python 3, it
+  makes no sense, and it should not be used there.
+
+* The above backwards incompatibility fixed nonsensical behavior of
+  ``request.host_url``, ``request.application_url``, ``request.path_url``,
+  ``request.path``, ``request.path_qs``, ``request.url``,
+  ``request.relative_url``, ``request.path_info_peek``,
+  ``request.path_info_pop`` under Python 3.  These methods previously dealt
+  with raw SCRIPT_NAME and PATH_INFO values, which caused nonsensical
+  results.
+
+* The WebOb Request object now respects an additional WSGI environment
+  variable: ``webob.url_encoding``.  ``webob.url_encoding`` will be used to
+  decode the raw WSGI PATH_INFO and SCRIPT_NAME variables when the
+  ``request.path_info`` and ``request.script_name`` APIs are used.
+
+* Request objects now accept an additional constructor parameter:
+  ``url_encoding``.  ``url_encoding`` will be used to decode PATH_INFO and
+  SCRIPT_NAME from its WSGI-encoded values. If ``webob.url_encoding`` is not
+  set in the environ and ``url_encoding`` is not passed to the Request
+  constructor, the default value ``utf-8`` will be used to decode the
+  PATH_INFO and SCRIPT_NAME.
+
+  Note that passing ``url_encoding`` will cause the WSGI environment variable
+  ``webob.url_encoding`` to be set.
+
+* Fix ``webob.response._request_uri`` internal function to generate sensible
+  request URI under Python 3.  This fixed a problem under Python 3 if you
+  were using non-absolute Location headers in responses.
+
+1.2b2
+------
+
+* Fix ``request.cookies.get('name', 'default')``.  Previously ``default`` was
+  ignored.
+
+1.2b1
+---------
+
+* Mutating the ``request.cookies`` property now reflects the mutations into
+  the ``HTTP_COOKIES`` environ header.
+
+* ``Response.etag = (tag, False)`` sets weak etag.
+
+* ``Range`` only parses single range now.
+
+* ``Range.satisfiable(..)`` is gone.
+
+* ``Accept.best_matches()`` is gone; use ``list(request.accept)`` or
+  ``request.accept.best_match(..)`` instead (applies to all Accept-*
+  headers) or similar with ``request.accept_language``.
+
+* ``Response.request`` and ``Response.environ`` attrs are undeprecated and no
+  longer raise exceptions when used.  These can also be passed to the
+  Response constructor.  This is to support codebases that pass them to the
+  constructor or assign them to a response instance.  However, some behavior
+  differences from 1.1 exist.  In particular, synchronization is no longer
+  done between environ and request attribute properties of Response; you may
+  pass either to the constructor (or both) or assign one or the other or
+  both, but they wont be managed specially and will remain the same over the
+  lifetime of the response just as you passed them.  Default values for both
+  ``request`` and ``environ`` on any given response are ``None`` now.
+
+* Undeprecated ``uscript_name`` and ``upath_info``.
+
+* For backwards compatibility purposes, switch ``req.script_name`` and
+  ``path_info`` back again to contain "raw" undecoded native strings rather
+  than text.  Use ``uscript_name`` and ``upath_info`` to get the text version
+  of SCRIPT_NAME and PATH_INFO.
+
+* Don't raise an exception if ``unicode_errors`` or ``decode_param_names`` is
+  passed to the Request constructor.  Instead, emit a warning.  For benefit
+  of Pylons 1.X, which passes both.
+
+* Don't raise an exception if HTTPException.exception is used; instead emit a
+  warning.  For benefit of Pylons 1.X, which uses it.
+
+1.2a2
+---------
+
+* ``req.script_name`` and ``path_info`` now contain text, not bytes.
+
+* Deprecated ``uscript_name`` and ``upath_info``.
+
+* ``charset`` argument to ``Request`` as well as the attribute can only
+  be set to UTF-8 or the value already present in the ``Content-Type`` header.
+
+* ``unicode_errors`` attribute of ``Request`` and related functionality is gone.
+
+* To process requests that come in an encoding different from UTF-8, the request
+  needs to be transcoded like this: ``req = req.decode('windows-1251')``
+
+* Added support for weak ETag matching in conditional responses.
+
+* Most of etag-related functionality was refactored.
+
+
+1.2a1
+---------
+
+* Python 3.2 compatibility.
+
+* No longer compatible with Python 2.5 (only 2.6, 2.7, and 3.2 are supported).
+
+* Switched VCS from Mercurial to Git
+
+* Moved development to `GitHub <https://github.com/Pylons/webob>`_
+
+* Added full history from PyCon 2011 sprint to the repository
+
+* Change ``LimitedLengthFile`` and ``FakeCGIBody`` to inherit from
+  ``io.RawIOBase`` and benefit from ``io.BufferedReader``.
+
+* Do not set ``resp.request`` in ``req.get_response(app)``
+
+* ``Response.request`` and ``.environ`` attrs are deprecated and raise exceptions
+  when used.
+
+* Deprecated request attributes ``str_GET``, ``str_POST``, ``str_cookies`` and
+  ``str_params`` now raise exceptions when touched.
+
+* Remove testing dependency on WebTest.
+
+* Remove UnicodeMultiDict class; the result of ``Request.GET`` and
+  ``Request.POST`` is now just a plain ``MultiDict``.
+
+* The ``decode_param_names`` Request constructor argument has been removed,
+  along with the ``Request.decode_param_names`` attribute.
+
+* The ``Request.as_string()`` method is now better known as
+  ``Request.as_bytes()``.
+
+* The ``Request.from_string()`` method is now better known as
+  ``Request.from_bytes()``.
+
+* A new method named ``Request.as_text()`` now exists.
+
+* A new method named ``Request.from_text()`` now exists.
+
+* The ``webob.dec.wsgify`` repr() is now much less informative, but a lot
+  easier to test and maintain.
+
+
+1.1.1
+---------
+
+* Fix disconnect detection being incorrect in some cases (`issue 21
+  <https://bitbucket.org/ianb/webob/issue/21>`_).
+
+* Fix exception when calling ``.accept.best_match(..)`` on a header containing
+  ``'*'`` (instead of ``'*/*'``).
+
+* Extract some of the ``Accept`` code into subclasses (``AcceptCharset``,
+  ``AcceptLanguage``).
+
+* Improve language matching so that the app can now offer a generic
+  language code and it will match any of the accepted dialects
+  (``'en' in AcceptLanguage('en-gb')``).
+
+* Normalize locale names when matching
+  (``'en_GB' in AcceptLanguage('en-gb')``).
+
+* Deprecate ``etag.weak_match(..)``.
+
+* Deprecate ``Response.request`` and ``Response.environ`` attrs.
+
+
+1.1
+---------
+
+* Remove deprecation warnings for ``unicode_body`` and ``ubody``.
+
+
+1.1rc1
+---------
+
+* Deprecate ``Response.ubody`` / ``.unicode_body`` in favor of new ``.text`` attribute
+  (the old names will be removed in 1.3 or even later).
+
+* Make ``Response.write`` much more efficient (`issue 18
+  <https://bitbucket.org/ianb/webob/issue/18>`_).
+
+* Make sure copying responses does not reset Content-Length or Content-MD5 of the
+  original (and that of future copies).
+
+* Change ``del res.body`` semantics so that it doesn't make the response invalid,
+  but only removes the response body.
+
+* Remove ``Response._body`` so the ``_app_iter`` is the only representation.
+
+
+1.1b2
+---------
+
+* Add detection for browser / user-agent disconnects. If the client disconnected
+  before sending the entire request body (POST / PUT), ``req.POST``, ``req.body``
+  and other related properties and methods will raise an exception.
+  Previously this caused the application get a truncated request with no indication that it
+  is incomplete.
+
+* Make ``Response.body_file`` settable. This is now valid:
+  ``Response(body_file=open('foo.bin'), content_type=...)``
+
+* Revert the restriction on req.body not being settable for GET and some
+  other requests. Such requests actually can have a body according to HTTP BIS
+  (see also `commit message <https://bitbucket.org/ianb/webob/changeset/b3ef34c57936>`_)
+
+* Add support for file upload testing via ``Request.blank(POST=..)``. Patch contributed by
+  Tim Perevezentsev. See also:
+  `ticket <https://bitbucket.org/ianb/webob/issue/15>`_,
+  `changeset <https://bitbucket.org/ianb/webob/changeset/4ba9ab0c3f99>`_.
+
+* Deprecate ``req.str_GET``, ``str_POST``, ``str_params`` and ``str_cookies`` (warning).
+
+
+* Deprecate ``req.decode_param_names`` (warning).
+
+* Change ``req.decode_param_names`` default to ``True``. This means that ``.POST``, ``.GET``,
+  ``.params`` and ``.cookies`` keys are now unicode. This is necessary for WebOb to behave
+  as close as possible on Python 2 and Python 3.
+
+
+1.1b1
+---------
+
+* We have acquired the webob.org domain, docs are now hosted at `docs.webob.org
+  <http://docs.webob.org/>`_
+
+* Make ``accept.quality(..)`` return best match quality, not first match quality.
+
+* Fix ``Range.satisfiable(..)`` edge cases.
+
+* Make sure ``WSGIHTTPException`` instances return the same headers for ``HEAD``
+  and ``GET`` requests.
+
+* Drop Python 2.4 support
+
+* Deprecate ``HTTPException.exception`` (warning on use).
+
+* Deprecate ``accept.first_match(..)`` (warning on use).
+  Use ``.best_match(..)`` instead.
+
+* Complete deprecation of ``req.[str_]{post|query}vars`` properties
+  (exception on use).
+
+* Remove ``FakeCGIBody.seek`` hack (no longer necessary).
+
+
+1.0.8
+------
+
+* Escape commas in cookie values (see also:
+  `stdlib Cookie bug <http://bugs.python.org/issue9824>`_)
+
+* Change cookie serialization to more closely match how cookies usually
+  are serialized (unquoted expires, semicolon separators even between morsels)
+
+* Fix some rare cases in cookie parsing
+
+* Enhance the req.is_body_readable to always guess GET, HEAD, DELETE and TRACE
+  as unreadable and PUT and POST as readable
+  (`issue 12 <https://bitbucket.org/ianb/webob/issue/12>`_)
+
+* Deny setting req.body or req.body_file to non-empty values for GET, HEAD and
+  other bodiless requests
+
+* Fix running nosetests with arguments on UNIX systems
+  (`issue 11 <https://bitbucket.org/ianb/webob/issue/11>`_)
+
+
+1.0.7
+------
+
+* Fix ``Accept`` header matching for items with zero-quality
+  (`issue 10 <https://bitbucket.org/ianb/webob/issue/10>`_)
+
+* Hide password values in ``MultiDict.__repr__``
+
+1.0.6
+------
+
+* Use ``environ['wsgi.input'].read()`` instead of ``.read(-1)`` because the former
+  is explicitly mentioned in PEP-3333 and CherryPy server does not support the latter.
+
+* Add new ``environ['webob.is_body_readable']`` flag which specifies if the
+  input stream is readable even if the ``CONTENT_LENGTH`` is not set.
+  WebOb now only ever reads the input stream if the content-length is known
+  or this flag is set.
+
+* The two changes above fix a hangup with CherryPy and wsgiref servers
+  (`issue 6 <https://bitbucket.org/ianb/webob/issue/6>`_)
+
+* ``req.body_file`` is now safer to read directly. For ``GET`` and other similar requests
+  it returns an empty ``StringIO`` or ``BytesIO`` object even if the server passed in
+  something else.
+
+* Setting ``req.body_file`` to a string now produces a PendingDeprecationWarning.
+  It will produce DeprecationWarning in 1.1 and raise an error in 1.2. Either
+  set ``req.body_file`` to a file-like object or set ``req.body`` to a string value.
+
+* Fix ``.pop()`` and ``.setdefault(..)`` methods of ``req/resp.cache_control``
+
+* Thanks to the participants of `Pyramid sprint at the PyCon US 2011
+  <https://bitbucket.org/ianb/webob/changeset/7b7dc3ec6159>`_ WebOb now has
+  100% test coverage.
+
+1.0.5
+------
+* Restore Python 2.4 compatibility.
+
+1.0.4
+------
+
+* The field names escaping bug semi-fixed in 1.0.3 and originally blamed on cgi module
+  was in fact a ``webob.request._encode_multipart`` bug (also in Google Chrome) and was
+  lurking in webob code for quite some time -- 1.0.2 just made it trigger more often.
+  Now it is fixed properly.
+
+* Make sure that req.url and related properties do not unnecessarily escape some chars
+  (``:@&+$``) in the URI path (`issue 5 <https://bitbucket.org/ianb/webob/issue/5>`_)
+
+* Revert some changes from 1.0.3 that have broken backwards compatibility for some apps.
+  Getting ``req.body_file`` does not make input stream seekable, but there's a new property
+  ``req.body_file_seekable`` that does.
+
+* ``Request.get_response`` and ``Request.call_application`` seek the input body to start
+  before calling the app (if possible).
+
+* Accessing ``req.body`` 'rewinds' the input stream back to pos 0 as well.
+
+* When accessing ``req.POST`` we now avoid making the body seekable as the input stream data
+  are preserved in ``FakeCGIBody`` anyway.
+
+* Add new method ``Request.from_string``.
+
+* Make sure ``Request.as_string()`` uses CRLF to separate headers.
+
+* Improve parity between ``Request.as_string()`` and ``.from_file``/``.from_string``
+  methods, so that the latter can parse output of the former and create a similar
+  request object which wasn't always the case previously.
+
+1.0.3
+------
+
+* Correct a caching issue introduced in WebOb 1.0.2 that was causing unnecessary reparsing
+  of POST requests.
+
+* Fix a bug regarding field names escaping for forms submitted as ``multipart/form-data``.
+  For more infromation see `the bug report and discussion
+  <https://bitbucket.org/ianb/webob/issue/2>`_ and 1.0.4 notes for further fix.
+
+* Add ``req.http_version`` attribute.
+
+1.0.2
+------
+
+* Primary maintainer is now `Sergey Schetinin <http://self.maluke.com/>`_.
+
+* Issue tracker moved from `Trac <http://bit.ly/webob-tickets>`_ to bitbucket's `issue
+  tracker <https://bitbucket.org/ianb/webob/issues>`_
+
+* WebOb 1.0.1 changed the behavior of ``MultiDict.update`` to be more in line with
+  other dict-like objects. We now also issue a warning when we detect that the
+  client code seems to expect the old, extending semantics.
+
+* Make ``Response.set_cookie(key, None)`` set the 'delete-cookie' (same as ``.delete_cookie(key)``)
+
+* Make ``req.upath_info`` and ``req.uscript_name`` settable
+
+* Add :meth:``Request.as_string()`` method
+
+* Add a ``req.is_body_seekable`` property
+
+* Support for the ``deflate`` method with ``resp.decode_content()``
+
+* To better conform to WSGI spec we no longer attempt to use seek on ``wsgi.input`` file
+  instead we assume it is not seekable unless ``env['webob.is_body_seekable']`` is set.
+  When making the body seekable we set that flag.
+
+* A call to ``req.make_body_seekable()`` now guarantees that the body is seekable, is at 0 position
+  and that a correct ``req.content_length`` is present.
+
+* ``req.body_file`` is always seekable. To access ``env['wsgi.input']`` without any processing,
+  use ``req.body_file_raw``. (Partially reverted in 1.0.4)
+
+* Fix responses to HEAD requests with Range.
+
+* Fix ``del resp.content_type``, ``del req.body``, ``del req.cache_control``
+
+* Fix ``resp.merge_cookies()`` when called with an argument that is not a Response instance.
+
+* Fix ``resp.content_body = None`` (was removing Cache-Control instead)
+
+* Fix ``req.body_file = f`` setting ``CONTENT_LENGTH`` to ``-1`` (now removes from environ)
+
+* Fix: make sure req.copy() leaves the original with seekable body
+
+* Fix handling of WSGI environs with missing ``SCRIPT_NAME``
+
+* A lot of tests were added by Mariano Mara and Danny Navarro.
+
+
+
+1.0.1
+-----
+
+* As WebOb requires Python 2.4 or later, drop some compatibility modules
+  and update the code to use the decorator syntax.
+
+* Implement optional on-the-fly response compression (``resp.encode_content(lazy=True)``)
+
+* Drop ``util.safezip`` module and make ``util`` a module instead of a subpackage.
+  Merge ``statusreasons`` into it.
+
+* Instead of using stdlib ``Cookie`` with monkeypatching, add a derived
+  but thoroughly rewritten, cleaner, safer and faster ``webob.cookies`` module.
+
+* Fix: ``Response.merge_cookies`` now copies the headers before modification instead of
+  doing it in-place.
+
+* Fix: setting request header attribute to ``None`` deletes that header.
+  (Bug only affected the 1.0 release).
+
+* Use ``io.BytesIO`` for the request body file on Python 2.7 and newer.
+
+* If a UnicodeMultiDict was used as the ``multi`` argument of another
+  UnicodeMultiDict, and a ``cgi.FieldStorage`` with a ``filename``
+  with high-order characters was present in the underlying
+  UnicodeMultiDict, a ``UnicodeEncodeError`` would be raised when any
+  helper method caused the ``_decode_value`` method to be called,
+  because the method would try to decode an already decoded string.
+
+* Fix tests to pass under Python 2.4.
+
+* Add descriptive docstrings to each exception in ``webob.exc``.
+
+* Change the behaviour of ``MultiDict.update`` to overwrite existing header
+  values instead of adding new headers. The extending semantics are now available
+  via the ``extend`` method.
+
+* Fix a bug in ``webob.exc.WSGIHTTPException.__init__``.  If a list of
+  ``headers`` was passed as a sequence which contained duplicate keys (for
+  example, multiple ``Set-Cookie`` headers), all but one of those headers
+  would be lost, because the list was effectively flattened into a dictionary
+  as the result of calling ``self.headers.update``.  Fixed via calling
+  ``self.headers.extend`` instead.
+
+1.0
+---
+
+* 1.0, yay!
+
+* Pull in werkzeug Cookie fix for malformed cookie bug.
+
+* Implement :meth:`Request.from_file` and
+  :meth:`Response.from_file` which are kind of the inversion of
+  ``str(req)`` and ``str(resp)``
+
+* Add optional ``pattern`` argument to :meth:`Request.path_info_pop` that requires
+  the ``path_info`` segment to match the passed regexp to get popped and returned.
+
+* Rewrite most of descriptor implementations for speed.
+
+* Reorder descriptor declarations to group them by their semantics.
+
+* Move code around so that there are fewer compat modules.
+
+* Change :meth:``HTTPError.__str__`` to better conform to PEP 352.
+
+* Make :attr:`Request.cache_control` a view on the headers.
+
+* Correct Accept-Language and Accept-Charset matching to fully conform to the HTTP spec.
+
+* Expose parts of :meth:`Request.blank` as :func:`environ_from_url`
+  and :func:`environ_add_POST`
+
+* Fix Authorization header parsing for some corner cases.
+
+* Fix an error generated if the user-agent sends a 'Content_Length' header
+  (note the underscore).
+
+* Kill :attr:`Request.default_charset`. Request charset defaults to UTF-8.
+  This ensures that all values in ``req.GET``, ``req.POST`` and ``req.params``
+  are always unicode.
+
+* Fix the ``headerlist`` and ``content_type`` constructor arguments priorities
+  for :class:`HTTPError` and subclasses.
+
+* Add support for weak etags to conditional Response objects.
+
+* Fix locale-dependence for some cookie dates strings.
+
+* Improve overall test coverage.
+
+* Rename class ``webob.datastruct.EnvironHeaders`` to ``webob.headers.EnvironHeaders``
+
+* Rename class ``webob.headerdict.HeaderDict`` to ``webob.headers.ResponseHeaders``
+
+* Rename class ``webob.updatedict.UpdateDict`` to ``webob.cachecontrol.UpdateDict``
+
+0.9.8
+-----
+
+* Fix issue with WSGIHTTPException inadvertently generating unicode body
+  and failing to encode it
+
+* WWW-Authenticate response header is accessible as
+  ``response.www_authenticate``
+
+* ``response.www_authenticate`` and ``request.authorization`` hold None
+  or tuple ``(auth_method, params)`` where ``params`` is a dictionary
+  (or a string when ``auth_method`` is not one of known auth schemes
+  and for Authenticate: Basic ...)
+
+* Don't share response headers when getting a response like ``resp =
+  req.get_response(some_app)``; this can avoid some funny errors with
+  modifying headers and reusing Response objects.
+
+* Add `overwrite` argument to :meth:`Response.set_cookie` that make the
+  new value overwrite the previously set. `False` by default.
+
+* Add `strict` argument to :meth:`Response.unset_cookie` that controls
+  if an exception should be raised in case there are no cookies to unset.
+  `True` by default.
+
+* Fix ``req.GET.copy()``
+
+* Make sure that 304 Not Modified responses generated by
+  :meth:`Response.conditional_response_app` exclude Content-{Length/Type}
+  headers
+
+* Fix ``Response.copy()`` not being an independent copy
+
+* When the requested range is not satisfiable, return a 416 error
+  (was returning entire body)
+
+* Truncate response for range requests that go beyond the end of body
+  (was treating as invalid).
+
+0.9.7.1
+-------
+
+* Fix an import problem with Pylons
+
+0.9.7
+-----
+
+* Moved repository from svn location to
+  http://bitbucket.org/ianb/webob/
+
+* Arguments to :meth:`Accept.best_match` must be specific types,
+  not wildcards. The server should know a list of specic types it can
+  offer and use ``best_match`` to select a specific one.
+
+* With ``req.accept.best_match([types])`` prefer the first type in the
+  list (previously it preferred later types).
+
+* Also, make sure that if the user-agent accepts multiple types and
+  there are multiple matches to the types that the application offers,
+  ``req.accept.best_match([..])`` returns the most specific match.
+  So if the server can satisfy either ``image/*`` or ``text/plain``
+  types, the latter will be picked independent from the order the accepted
+  or offered types are listed (given they have the same quality rating).
+
+* Fix Range, Content-Range and AppIter support all of which were broken
+  in many ways, incorrectly parsing ranges, reporting incorrect
+  content-ranges, failing to generate the correct body to satisfy the range
+  from ``app_iter`` etc.
+
+* Fix assumption that presense of a ``seek`` method means that the stream
+  is seekable.
+
+* Add ``ubody`` alias for ``Response.unicode_body``
+
+* Add Unicode versions of ``Request.script_name`` and ``path_info``:
+  ``uscript_name`` and ``upath_info``.
+
+* Split __init__.py into four modules: request, response, descriptors and
+  datetime_utils.
+
+* Fix ``Response.body`` access resetting Content-Length to zero
+  for HEAD responses.
+
+* Support passing Unicode bodies to :class:`WSGIHTTPException`
+  constructors.
+
+* Make ``bool(req.accept)`` return ``False`` for requests with missing
+  Accept header.
+
+* Add HTTP version to :meth:`Request.__str__` output.
+
+* Resolve deprecation warnings for parse_qsl on Python 2.6 and newer.
+
+* Fix :meth:`Response.md5_etag` setting Content-MD5 in incorrect
+  format.
+
+* Add ``Request.authorization`` property for Authorization header.
+
+* Make sure ETag value is always quoted (required by RFC)
+
+* Moved most ``Request`` behavior into a new class named
+  ``BaseRequest``.  The ``Request`` class is now a superclass for
+  ``BaseRequest`` and a simple mixin which manages
+  ``environ['webob.adhoc_attrs']`` when ``__setitem__``,
+  ``__delitem__`` and ``__getitem__`` are called.  This allows
+  framework developers who do not want the
+  ``environ['webob.adhoc_attrs']`` mutation behavior from
+  ``__setattr__``.  (chrism)
+
+* Added response attribute ``response.content_disposition`` for its
+  associated header.
+
+* Changed how ``charset`` is determined on :class:`webob.Request`
+  objects.  Now the ``charset`` parameter is read on the Content-Type
+  header, if it is present.  Otherwise a ``default_charset`` parameter
+  is read, or the ``charset`` argument to the Request constructor.
+  This is more similar to how :class:`webob.Response` handles the
+  charset.
+
+* Made the case of the Content-Type header consistent (note: this
+  might break some doctests).
+
+* Make ``req.GET`` settable, such that ``req.environ['QUERY_STRING']``
+  is updated.
+
+* Fix problem with ``req.POST`` causing a re-parse of the body when
+  you instantiate multiple ``Request`` objects over the same environ
+  (e.g., when using middleware that looks at ``req.POST``).
+
+* Recreate the request body properly when a ``POST`` includes file
+  uploads.
+
+* When ``req.POST`` is updated, the generated body will include the
+  new values.
+
+* Added a ``POST`` parameter to :meth:`webob.Request.blank`; when
+  given this will create a request body for the POST parameters (list
+  of two-tuples or dictionary-like object).  Note: this does not
+  handle unicode or file uploads.
+
+* Added method :meth:`webob.Response.merge_cookies`, which takes the
+  ``Set-Cookie`` headers from a Response, and merges them with another
+  response or WSGI application.  (This is useful for flash messages.)
+
+* Fix a problem with creating exceptions like
+  ``webob.exc.HTTPNotFound(body='<notfound/>',
+  content_type='application/xml')`` (i.e., non-HTML exceptions).
+
+* When a Location header is not absolute in a Response, it will be
+  made absolute when the Response is called as a WSGI application.
+  This makes the response less bound to a specific request.
+
+* Added :mod:`webob.dec`, a decorator for making WSGI applications
+  from functions with the signature ``resp = app(req)``.
+
+0.9.6.1
+-------
+
+* Fixed :meth:`Response.__init__`, which for some content types would
+  raise an exception.
+
+* The ``req.body`` property will not recreate a StringIO object
+  unnecessarily when rereading the body.
+
+0.9.6
+-----
+
+* Removed `environ_getter` from :class:`webob.Request`.  This
+  largely-unused option allowed a Request object to be instantiated
+  with a dynamic underlying environ.  Since it wasn't used much, and
+  might have been ill-advised from the beginning, and affected
+  performance, it has been removed (from Chris McDonough).
+
+* Speed ups for :meth:`webob.Response.__init__` and
+  :meth:`webob.Request.__init__`
+
+* Fix defaulting of ``CONTENT_TYPE`` instead of ``CONTENT_LENGTH`` to
+  0 in ``Request.str_POST``.
+
+* Added :meth:`webob.Response.copy`
+
+0.9.5
+-----
+
+* Fix ``Request.blank('/').copy()`` raising an exception.
+
+* Fix a potential memory leak with HEAD requests and 304 responses.
+
+* Make :func:`webob.html_escape` respect the ``.__html__()`` magic
+  method, which allows you to use HTML in
+  :class:`webob.exc.HTTPException` instances.
+
+* Handle unicode values for ``resp.location``.
+
+* Allow arbitrary keyword arguments to ``exc.HTTP*`` (the same
+  keywords you can send to :class:`webob.Response`).
+
+* Allow setting :meth:`webob.Response.cache_expires` (usually it is
+  called as a method).  This is primarily to allow
+  ``Response(cache_expires=True)``.
+
+0.9.4
+-----
+
+* Quiet Python 2.6 deprecation warnings.
+
+* Added an attribute ``unicode_errors`` to :class:`webob.Response` --
+  if set to something like ``unicode_errors='replace'`` it will decode
+  ``resp.body`` appropriately.  The default is ``strict`` (which was
+  the former un-overridable behavior).
+
+0.9.3
+-----
+
+* Make sure that if changing the body the Content-MD5 header is
+  removed. (Otherwise a lot of middleware would accidentally
+  corrupt responses).
+
+* Fixed ``Response.encode_content('identity')`` case (was a no-op even
+  for encoded bodies).
+
+* Fixed :meth:`Request.remove_conditional_headers` that was removing
+  If-Match header instead of If-None-Match.
+
+* Fixed ``resp.set_cookie(max_age=timedelta(...))``
+
+* ``request.POST`` now supports PUT requests with the appropriate
+  Content-Type.
+
+0.9.2
+-----
+
+* Add more arguments to :meth:`Request.remove_conditional_headers`
+  for more fine-grained control: `remove_encoding`, `remove_range`,
+  `remove_match`, `remove_modified`. All of them are `True` by default.
+
+* Add an `set_content_md5` argument to :meth:`Response.md5_etag`
+  that calculates and sets Content-MD5 reponse header from current
+  body.
+
+* Change formatting of cookie expires, to use the more traditional
+  format ``Wed, 5-May-2001 15:34:10 GMT`` (dashes instead of spaces).
+  Browsers should deal with either format, but some other code expects
+  dashes.
+
+* Added in ``sorted`` function for backward compatibility with Python
+  2.3.
+
+* Allow keyword arguments to :class:`webob.Request`, which assign
+  attributes (possibly overwriting values in the environment).
+
+* Added methods :meth:`webob.Request.make_body_seekable` and
+  :meth:`webob.Request.copy_body`, which make it easier to share a
+  request body among different consuming applications, doing something
+  like `req.make_body_seekable(); req.body_file.seek(0)`
+
+0.9.1
+-----
+
+* ``request.params.copy()`` now returns a writable MultiDict (before
+  it returned an unwritable object).
+
+* There were several things broken with ``UnicodeMultiDict`` when
+  ``decode_param_names`` is turned on (when the dictionary keys are
+  unicode).
+
+* You can pass keyword arguments to ``Request.blank()`` that will be
+  used to construct ``Request`` (e.g., ``Request.blank('/',
+  decode_param_names=True)``).
+
+* If you set headers like ``response.etag`` to a unicode value, they
+  will be encoded as ISO-8859-1 (however, they will remain encoded,
+  and ``response.etag`` will not be a unicode value).
+
+* When parsing, interpret times with no timezone as UTC (previously
+  they would be interpreted as local time).
+
+* Set the Expires property on cookies when using
+  ``response.set_cookie()``.  This is inherited from ``max_age``.
+
+* Support Unicode cookie values
+
+0.9
+---
+
+* Added ``req.urlarg``, which represents positional arguments in
+  ``environ['wsgiorg.routing_args']``.
+
+* For Python 2.4, added attribute get/set proxies on exception objects
+  from, for example, ``webob.exc.HTTPNotFound().exception``, so that
+  they act more like normal response objects (despite not being
+  new-style classes or ``webob.Response`` objects).  In Python 2.5 the
+  exceptions are ``webob.Response`` objects.
+
+Backward Incompatible Changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* The ``Response`` constructor has changed: it is now ``Response([body],
+  [status], ...)`` (before it was ``Response([status], [body], ...)``).
+  Body may be str or unicode.
+
+* The ``Response`` class defaults to ``text/html`` for the
+  Content-Type, and ``utf8`` for the charset (charset is only set on
+  ``text/*`` and ``application/*+xml`` responses).
+
+Bugfixes and Small Changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Use ``BaseCookie`` instead of ``SimpleCookie`` for parsing cookies.
+
+* Added ``resp.write(text)`` method, which is equivalent to
+  ``resp.body += text`` or ``resp.unicode_body += text``, depending on
+  the type of ``text``.
+
+* The ``decode_param_names`` argument (used like
+  ``Request(decode_param_names=True)``) was being ignored.
+
+* Unicode decoding of file uploads and file upload filenames were
+  causing errors when decoding non-file-upload fields (both fixes from
+  Ryan Barrett).
+
+0.8.5
+-----
+
+* Added response methods ``resp.encode_content()`` and
+  ``resp.decode_content()`` to gzip or ungzip content.
+
+* ``Response(status=404)`` now works (before you would have to use
+  ``status="404 Not Found"``).
+
+* Bugfix (typo) with reusing POST body.
+
+* Added ``226 IM Used`` response status.
+
+* Backport of ``string.Template`` included for Python 2.3
+  compatibility.
+
+0.8.4
+-----
+
+* ``__setattr__`` would keep ``Request`` subclasses from having
+  properly settable environ proxies (like ``req.path_info``).
+
+0.8.3
+-----
+
+* ``request.POST`` was giving FieldStorage objects for *every*
+  attribute, not just file uploads.  This is fixed now.
+
+
+* Added request attributes ``req.server_name`` and ``req.server_port``
+  for the environ keys ``SERVER_NAME`` and ``SERVER_PORT``.
+
+* Avoid exceptions in ``req.content_length``, even if
+  ``environ['CONTENT_LENGTH']`` is somehow invalid.
+
+0.8.2
+-----
+
+* Python 2.3 compatibility: backport of ``reversed(seq)``
+
+* Made separate ``.exception`` attribute on ``webob.exc`` objects,
+  since new-style classes can't be raised as exceptions.
+
+* Deprecate ``req.postvars`` and ``req.queryvars``, instead using the
+  sole names ``req.GET`` and ``req.POST`` (also ``req.str_GET`` and
+  ``req.str_POST``).  The old names give a warning; will give an error
+  in next release, and be completely gone in the following release.
+
+* ``req.user_agent`` is now just a simple string (parsing the
+  User-Agent header was just too volatile, and required too much
+  knowledge about current browsers).  Similarly,
+  ``req.referer_search_query()`` is gone.
+
+* Added parameters ``version`` and ``comment`` to
+  ``Response.set_cookie()``, per William Dode's suggestion.
+
+* Was accidentally consuming file uploads, instead of putting the
+  ``FieldStorage`` object directly in the parameters.
+
+0.8.1
+-----
+
+* Added ``res.set_cookie(..., httponly=True)`` to set the ``HttpOnly``
+  attribute on the cookie, which keeps Javascript from reading the
+  cookie.
+
+* Added some WebDAV-related responses to ``webob.exc``
+
+* Set default ``Last-Modified`` when using ``response.cache_expire()``
+  (fixes issue with Opera)
+
+* Generally fix ``.cache_control``
+
+0.8
+---
+
+First release.  Nothing is new, or everything is new, depending on how
+you think about it.

@@ -1,0 +1,352 @@
+/*
+ * Copyright (C) 2016 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef _STLPORT_CPP11_EXTENSION_MEMORY_
+#define _STLPORT_CPP11_EXTENSION_MEMORY_
+
+// This file extends stlport's <memory> implementation to provide support for:
+//  - std::shared_ptr (C++11)
+//  - std::unique_ptr (C++11)
+
+// Cloned from master branch vendor/google/native/cmds/sysproxy/shared_ptr.h
+// Upstream commit ff64c352c35c46a14f15503778781889a816eea4
+// Upstream Change-Id: I481ec53b08beecde2bf6dc38e5933342235da3d9
+
+#include <stlport/memory>
+
+namespace std {
+
+template <typename T>
+class shared_ptr {
+ public:
+  shared_ptr();
+  explicit shared_ptr(T *value);
+  shared_ptr(const shared_ptr &rhs);
+  shared_ptr &operator=(const shared_ptr &rhs);
+  template <typename U>
+  shared_ptr(const shared_ptr<U> &rhs);
+  template <typename U>
+  shared_ptr &operator=(const shared_ptr<U> &rhs);
+  ~shared_ptr();
+
+  T *get() const;
+  T *operator->() const;
+  T &operator*() const;
+
+  template <typename U>
+  bool operator==(const shared_ptr<U> &rhs) const;
+  template <typename U>
+  bool operator!=(const shared_ptr<U> &rhs) const;
+  template <typename U>
+  bool operator<(const shared_ptr<U> &rhs) const;
+  template <typename U>
+  bool operator<=(const shared_ptr<U> &rhs) const;
+  template <typename U>
+  bool operator>(const shared_ptr<U> &rhs) const;
+  template <typename U>
+  bool operator>=(const shared_ptr<U> &rhs) const;
+
+  void reset(T *value = NULL);
+
+  // TODO(haining) Work with Deleter
+
+ private:
+  template <typename U>
+  friend class shared_ptr;
+
+  struct Node {
+    T *value;
+    int *count;
+  };
+  // Thread safe decrement, deletes node_ if holding last remaining reference.
+  // Any use of node_ after calling this function is unsafe unless node_ is
+  // reassigned.
+  void DecNode();
+
+  // Thread safe increment.
+  void IncNode();
+
+  // Creates a Node referring to NULL.
+  static Node NewNullNode();
+
+  // Creates a Node referring to value.
+  static Node NewNodeFor(T *value);
+
+  Node node_;
+};
+
+template <typename T>
+typename shared_ptr<T>::Node shared_ptr<T>::NewNodeFor(T *value) {
+  Node n = {value, new int(1)};
+  return n;
+}
+
+template <typename T>
+typename shared_ptr<T>::Node shared_ptr<T>::NewNullNode() {
+  return NewNodeFor(NULL);
+}
+
+template <typename T>
+void shared_ptr<T>::reset(T *value) {
+  DecNode();
+  node_ = NewNodeFor(value);
+}
+
+template <typename T>
+shared_ptr<T>::shared_ptr() : node_(NewNullNode()) {}
+
+template <typename T>
+void shared_ptr<T>::DecNode() {
+  bool should_delete = __atomic_fetch_sub(node_.count, 1, __ATOMIC_SEQ_CST) == 0;
+  // The only accesses to node_ that should be made after this line is the
+  // deletion conditional on should_delete. Anything else is unsafe since
+  // because another thread could have deleted node_
+  if (should_delete) {
+    delete node_.value;
+    delete node_.count;
+    node_.value = NULL;
+    node_.count = NULL;
+  }
+}
+
+template <typename T>
+void shared_ptr<T>::IncNode() {
+  __atomic_fetch_add(node_.count, 1, __ATOMIC_SEQ_CST);
+}
+
+template <typename T>
+shared_ptr<T>::shared_ptr(T *value) {
+  node_ = NewNodeFor(value);
+}
+
+template <typename T>
+shared_ptr<T>::shared_ptr(const shared_ptr &rhs) : node_(rhs.node_) {
+  IncNode();
+}
+
+template <typename T>
+template <typename U>
+shared_ptr<T>::shared_ptr(const shared_ptr<U> &rhs) {
+  node_.value = rhs.node_.value;
+  node_.count = rhs.node_.count;
+  node_.m = rhs.node_.m;
+  IncNode();
+}
+
+template <typename T>
+shared_ptr<T> &shared_ptr<T>::operator=(const shared_ptr &rhs) {
+  if (node_.value == rhs.node_.value) {
+    return *this;
+  }
+
+  DecNode();
+  node_ = rhs.node_;
+  IncNode();
+  return *this;
+}
+
+template <typename T>
+template <typename U>
+shared_ptr<T> &shared_ptr<T>::operator=(const shared_ptr<U> &rhs) {
+  if (node_.value == rhs.node_.value) {
+    return *this;
+  }
+
+  DecNode();
+  node_.value = rhs.node_.value;
+  node_.count = rhs.node_.count;
+  node_.m = rhs.node_.m;
+  IncNode();
+  return *this;
+}
+
+template <typename T>
+shared_ptr<T>::~shared_ptr() {
+  DecNode();
+}
+
+template <typename T>
+T *shared_ptr<T>::get() const {
+  return node_.value;
+}
+
+template <typename T>
+T *shared_ptr<T>::operator->() const {
+  return get();
+}
+
+template <typename T>
+T &shared_ptr<T>::operator*() const {
+  return *node_.value;
+}
+
+template <typename T>
+template <typename U>
+bool shared_ptr<T>::operator==(const shared_ptr<U> &rhs) const {
+  return node_.value == rhs.node_.value;
+}
+
+template <typename T>
+template <typename U>
+bool shared_ptr<T>::operator!=(const shared_ptr<U> &rhs) const {
+  return node_.value != rhs.node_.value;
+}
+
+template <typename T>
+template <typename U>
+bool shared_ptr<T>::operator<(const shared_ptr<U> &rhs) const {
+  return node_.value < rhs.node_.value;
+}
+
+template <typename T>
+template <typename U>
+bool shared_ptr<T>::operator<=(const shared_ptr<U> &rhs) const {
+  return node_.value <= rhs.node_.value;
+}
+
+template <typename T>
+template <typename U>
+bool shared_ptr<T>::operator>(const shared_ptr<U> &rhs) const {
+  return node_.value > rhs.node_.value;
+}
+
+template <typename T>
+template <typename U>
+bool shared_ptr<T>::operator>=(const shared_ptr<U> &rhs) const {
+  return node_.value >= rhs.node_.value;
+}
+
+#if !defined(DISALLOW_COPY_AND_ASSIGN)
+#define DISALLOW_COPY_AND_ASSIGN(TypeName) \
+  TypeName(const TypeName&);               \
+  void operator=(const TypeName&);
+#endif
+
+#include <cstddef>
+
+// Default deleter for pointer types.
+template <typename T>
+struct DefaultDelete {
+  void operator()(T* p) const { delete p; }
+};
+
+// Default deleter for array types.
+template <typename T>
+struct DefaultDelete<T[]> {
+  void operator()(T* p) const { delete[] p; }
+};
+
+// A smart pointer that deletes the given pointer on destruction.
+// Equivalent to C++11's std::unique_ptr
+// Named to be in keeping with Android style but also to avoid
+// collision with any other implementation, until we can switch over
+// to unique_ptr.
+// Use thus:
+//   unique_ptr<C> c(new C);
+
+namespace workaround_internal {
+template <typename T, typename Deleter>
+class UniquePtrBase {
+ public:
+  // Construct a new UniquePtrBase, taking ownership of the given raw pointer.
+  explicit UniquePtrBase(T* ptr = 0) : mPtr(ptr), mDeleter() {}
+  explicit UniquePtrBase(T* ptr, Deleter d) : mPtr(ptr), mDeleter(d) {}
+
+  ~UniquePtrBase() { reset(); }
+
+  // Accessors.
+  T* get() const { return mPtr; }
+
+  // Returns the raw pointer and hands over ownership to the caller.
+  // The pointer will not be deleted by UniquePtrBase.
+  T* release() {
+    T* result = mPtr;
+    mPtr = 0;
+    return result;
+  }
+
+  // Takes ownership of the given raw pointer.
+  // If this smart pointer previously owned a different raw pointer, that
+  // raw pointer will be freed.
+  void reset(T* ptr = 0) {
+    T* old_ptr = mPtr;
+    mPtr = ptr;
+    if (old_ptr != NULL && mPtr != old_ptr) {
+      get_deleter()(old_ptr);
+    }
+  }
+
+  Deleter& get_deleter() { return mDeleter; }
+  const Deleter& get_deleter() const { return mDeleter; }
+
+ private:
+  // This is so users can compare against null. Callers should be able
+  // to invoke operator== and operator!= above with NULL pointers but not
+  // with any other pointer.
+  struct RawDummy {};
+
+ public:
+  bool operator==(const RawDummy*) const { return get() == NULL; }
+  friend bool operator==(const RawDummy*, const UniquePtrBase& self) {
+    return self == NULL;
+  }
+
+  bool operator!=(const RawDummy*) const { return !(*this == NULL); }
+  friend bool operator!=(const RawDummy*, const UniquePtrBase& self) {
+    return self != NULL;
+  }
+
+ private:
+  // The raw pointer.
+  T* mPtr;
+  Deleter mDeleter;
+
+  DISALLOW_COPY_AND_ASSIGN(UniquePtrBase);
+};
+}  // namespace workaround_internal
+
+template <typename T, typename Deleter = DefaultDelete<T> >
+class unique_ptr : public workaround_internal::UniquePtrBase<T, Deleter> {
+  typedef workaround_internal::UniquePtrBase<T, Deleter> Base;
+ public:
+  // Construct a new unique_ptr, taking ownership of the given raw pointer.
+  explicit unique_ptr(T* ptr = 0) : Base(ptr) { }
+  explicit unique_ptr(T* ptr, Deleter d) : Base(ptr, d) { }
+
+  T& operator*() const { return *this->get(); }
+  T* operator->() const { return this->get(); }
+};
+
+// Partial specialization for array types. Like std::unique_ptr, this removes
+// operator* and operator-> but adds operator[].
+template <typename T, typename Deleter>
+class unique_ptr<T[], Deleter> : public workaround_internal::UniquePtrBase<T, Deleter> {
+  typedef workaround_internal::UniquePtrBase<T, Deleter> Base;
+ public:
+  explicit unique_ptr(T* ptr = 0) : Base(ptr) { }
+  explicit unique_ptr(T* ptr, Deleter d) : Base(ptr, d) { }
+
+  T& operator[](std::ptrdiff_t i) const { return this->get()[i]; }
+};
+
+template <typename T>
+shared_ptr<T> make_shared() {
+  return shared_ptr<T>(new T);
+}
+
+}  // namespace std
+
+#endif  // _STLPORT_CPP11_EXTENSION_MEMORY_

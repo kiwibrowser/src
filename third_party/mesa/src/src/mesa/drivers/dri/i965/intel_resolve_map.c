@@ -1,0 +1,1 @@
+../intel/intel_resolve_map.c

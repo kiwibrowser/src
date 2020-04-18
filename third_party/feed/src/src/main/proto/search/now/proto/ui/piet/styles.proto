@@ -1,0 +1,262 @@
+// Copyright 2018 The Feed Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+import "src/main/proto/search/now/proto/ui/piet/binding_refs.proto";
+import "src/main/proto/search/now/proto/ui/piet/gradients.proto";
+import "src/main/proto/search/now/proto/ui/piet/rounded_corners.proto";
+import "src/main/proto/search/now/proto/ui/piet/shadows.proto";
+
+package search.now.ui.piet;
+
+option optimize_for=LITE_RUNTIME;
+
+option java_package = "com.google.search.now.ui.piet";
+option java_outer_classname = "StylesProto";
+option cc_enable_arenas = true;
+
+// A Style is a reusable specification of visual layout that can be applied to
+// any Piet visual element.
+//
+// Styles can be applied to visual elements at multiple levels of the visual
+// hierarchy. Only those attributes that make sense for a visual element will be
+// applied. Implementations MUST ignore attributes that cannot be meaningfully
+// applied to a visual element and MUST NOT issue any warnings or errors, to
+// allow for the same style to be reused in other places where those attributes
+// are relevant. E.g. for any style applied to an image-like element, color
+// should be ignored.
+
+// A stack of style_ids used to evaluate the style of an element. The final
+// applicable style is computed by proto-merging each style one by one, in order
+// starting from the first. Later attributes override earlier attributes. If a
+// style_id cannot be found, ERR_MISSING_STYLE is raised.
+//
+// After the style_ids are merged, in case a bound_style is given, its values
+// override the ones produced by the merge.
+message StyleIdsStack {
+  // Style IDs that are proto-merged in order from first to last.
+  repeated string style_ids = 1;
+
+  // Optional style binding that override the styles in the given style_ids.
+  // See message comment for exact use.
+  optional StyleBindingRef style_binding = 2;
+
+  // Please use CL numbers you own for extension numbers.
+  extensions 10000 to max;
+}
+
+// A collection of attributes describing an element’s visual properties.
+message Style {
+  // Every style must have a name that is unique within the StyleSheet. But
+  // don’t go overboard in naming these with namespaced constructs because
+  // longer strings lead to more bytes on the wire.
+  optional string style_id = 1;
+
+  // Foreground color (e.g. for text or any other foreground element).
+  optional fixed32 color = 2;
+
+  // Defines the background fill, either as a solid color, or a gradient.
+  optional Fill background = 3;
+
+  // Font information applicable to text elements.
+  optional Font font = 4;
+
+  // Margins (if given) are outside the specified width/height.
+  // The background fills all the area up to the margin, excluding the margin.
+  //
+  //    +--------SpecifiedWidth---------+
+  //    |                               |
+  //
+  // +-------------------------------------+
+  // |               Margin                |
+  // |  +-------------------------------+  |  --+
+  // |  |ooooooooooo.Border.oooooooooooo|  |    |
+  // |  |o+---------------------------+o|  |    |
+  // |  |o|          Padding          |o|  |    |
+  // |  |o|  +---------------------+  |o|  |    |
+  // |  |o|  |                     |  |o|  |    |
+  // |  |o|  |       Content       |  |o|  |    +-- SpecifiedHeight
+  // |  |o|  |                     |  |o|  |    |
+  // |  |o|  +---------------------+  |o|  |    |
+  // |  |o|                           |o|  |    |
+  // |  |o+---------------------------+o|  |    |
+  // |  |ooooooooooooooooooooooooooooooo|  |    |
+  // |  +-------------------------------+  |  --+
+  // |                                     |
+  // +-------------------------------------+
+
+  // Margins around the item
+  optional EdgeWidths margins = 5;
+
+  // Borders
+  optional Borders borders = 6;
+
+  // Padding around the item
+  optional EdgeWidths padding = 7;
+
+  // Width of an element.
+  optional uint32 width = 8;
+
+  // Height of an element.
+  optional uint32 height = 9;
+
+  // Minimum height for an element.
+  optional uint32 min_height = 10;
+
+  // Maximum number of text lines to display
+  optional uint32 max_lines = 11;
+
+  // If there is a background fill, allow the background (including borders) to
+  // have rounded corners.
+  optional RoundedCorners rounded_corners = 12;
+
+  // Opacity. This affects the element with the current style, and also all its
+  // descendants. For example, Opacity of a GridRow will affect all the
+  // GridCells under it, and their descendants. This value comes on top of the
+  // alpha value of colors.
+  // Values between [0..1] are valid; those outside this range will be clamped.
+  optional float opacity = 13;
+
+  // Defines a shadow for an element.
+  optional Shadow shadow = 14;
+
+  // Please use CL numbers you own for extension numbers.
+  extensions 10000 to max;
+}
+
+// Style that can be bound to an element. Not all style attributes can be bound
+// due to performance (specifically, this affects view recycling).
+//
+// PLEASE NOTE: Field names inside this message should bear the exact same names
+//     as their counterparts in the Style message.
+message BoundStyle {
+  // See comments for Style.color.
+  optional fixed32 color = 1;
+
+  // See comments for Style.background.
+  optional Fill background = 2;
+}
+
+// Font definitions for text elements. In the interest of preserving
+// consistency, feature authors are highly encouraged to use Fonts as part of a
+// Style, instead of applying font definitions to individual elements.
+message Font {
+  // The size of the text in scaled pixels (sp). For devices with a scaling
+  // factor of 1.0, this size is equivalent to display pixels.
+  // Certain OS-level accessibility features allow users to increase/decrease
+  // font size by a scaling factor (e.g. iOS > Dynamic Type, or Android Settings
+  // > Font Size, or Android > Accessibility > Large Text). If the user has
+  // turned on text scaling, the Host App should apply that scaling factor to
+  // this numeric font size before rendering.
+  // Note that other related metrics such as width and height are NOT
+  // automatically scaled.
+  optional int32 size = 1;
+
+  // Line height, expressed as a multiple of size (hence the `_ratio` suffix).
+  // The default value of 1.0 is intended to work well for most scenarios
+  // without requiring feature authors to specify this explicitly.
+  optional float line_height_ratio = 2 [default = 1.0];
+
+  // Material Design specifies six weights for a font, in order from thinnest
+  // stroke to thickest stroke. Orthogonal to weight, a font can be either
+  // normal or italic. Not all weights may be supported by every typeface or
+  // every platform; see [INTERNAL LINK]
+  enum FontWeight {
+    // Unspecified font weight.
+    FONT_WEIGHT_UNSPECIFIED = 0;
+
+    // Thinnest font weight.
+    THIN = 1;
+
+    // Light font weight.
+    LIGHT = 2;
+
+    // Regular font weight (this is the default).
+    REGULAR = 3;
+
+    // Medium font weight.
+    MEDIUM = 4;
+
+    // Bold font weight.
+    BOLD = 5;
+
+    // Black (extra-bold) font weight.
+    BLACK = 6;
+  }
+  // The font weight (boldness) to apply to the text.
+  optional FontWeight weight = 3 [default = REGULAR];
+
+  // Apply the italic style to the Font.
+  optional bool italic = 4;
+
+  // Sets text letter-spacing in em units. Typical values for slight expansion
+  // will be around 0.05. Negative values tighten text. Also known as “tracking”
+  // in typography, or “character spacing” in image editing tools.
+  optional float letter_spacing = 5;
+
+  // The typeface to use, e.g. "roboto", "open-sans", or "product-sans".
+  // Multiple typefaces can be specified by the server, and the first one that
+  // is available on the client will be used. If none match, or if no typefaces
+  // are specified, then ERR_FONT_UNAVAILABLE is raised, and the system default
+  // typeface on each platform will be used. Each typeface’s name is a custom
+  // string, and should be negotiated between server and client to ensure that
+  // typefaces requested by the server are available on the client. Piet
+  // provides no way to request that a particular font face be downloaded at
+  // runtime; this should be done out-of-band if required.
+  repeated string typefaces = 6;
+}
+
+// Definition of a Border.
+message Border {
+  // The color of the border.
+  optional fixed32 color = 1;
+
+  // The thickness of the border in DP.
+  optional int32 width = 2;
+
+  // Please use CL numbers you own for extension numbers.
+  extensions 10000 to max;
+}
+
+// A set of four Borders for all four edges of a view.
+message Borders {
+  // Top border.
+  optional Border top = 1;
+
+  // Bottom border.
+  optional Border bottom = 2;
+
+  // Border for leading edge (left for LTR languages; right for RTL).
+  optional Border start = 3;
+
+  // Border for trailing edge (left for LTR languages; right for RTL).
+  optional Border end = 4;
+}
+
+// A set of four values for widths of the edges of a view, used for
+// paddings/margins.
+message EdgeWidths {
+  // Top boundary.
+  optional uint32 top = 1;
+
+  // Bottom boundary.
+  optional uint32 bottom = 2;
+
+  // Boundary for leading edge (left for LTR languages; right for RTL).
+  optional uint32 start = 3;
+
+  // Boundary for trailing edge (left for LTR languages; right for RTL).
+  optional uint32 end = 4;
+}

@@ -1,0 +1,106 @@
+#!/bin/sh
+#---------------------------------------------
+#   xdg-copy
+#
+#   Utility script to copy files specified by URLs, including
+#   downloading and uploading from/to remote sites.
+#
+#   Refer to the usage() function below for usage.
+#
+#   Copyright 2009-2010, Fathi Boudra <fabo@freedesktop.org>
+#   Copyright 2009-2010, Rex Dieter <rdieter@fedoraproject.org>
+#   Copyright 2006, Kevin Krammer <kevin.krammer@gmx.at>
+#   Copyright 2006, Jeremy White <jwhite@codeweavers.com>
+#
+#   LICENSE:
+#
+#---------------------------------------------
+
+manualpage()
+{
+cat << _MANUALPAGE
+_MANUALPAGE
+}
+
+usage()
+{
+cat << _USAGE
+_USAGE
+}
+
+#@xdg-utils-common@
+
+copy_kde()
+{
+    kfmclient copy "$1" "$2"
+
+    if [ $? -eq 0 ]; then
+        exit_success
+    else
+        exit_failure_operation_failed
+    fi
+}
+
+copy_gnome()
+{
+    if gvfs-copy --help 2>/dev/null 1>&2; then
+        gvfs-copy "$1" "$2"
+    else
+        gnomevfs-copy "$1" "$2"
+    fi
+
+    if [ $? -eq 0 ]; then
+        exit_success
+    else
+        exit_failure_operation_failed
+    fi
+}
+
+[ x"$1" != x"" ] || exit_failure_syntax
+
+source=
+dest=
+while [ $# -gt 0 ] ; do
+    parm=$1
+    shift
+
+    case $parm in
+      -*)
+        exit_failure_syntax "unexpected option '$parm'"
+        ;;
+
+      *)
+        if [ -n "$dest" ] ; then
+            exit_failure_syntax "unexpected argument '$parm'"
+        fi
+        if [ -n "$source" ] ; then
+            dest=$parm
+        else
+            source=$parm
+        fi
+        ;;
+    esac
+done
+
+if [ -z "${source}" ] ; then
+    exit_failure_syntax "source argument missing"
+fi
+if [ -z "${dest}" ] ; then
+    exit_failure_syntax "destination argument missing"
+fi
+
+detectDE
+
+case "$DE" in
+    kde)
+    copy_kde "$source" "$dest"
+    ;;
+
+    gnome*)
+    copy_gnome "$source" "$dest"
+    ;;
+
+    *)
+    exit_failure_operation_impossible "no method available for copying '$source' to '$dest'"
+    ;;
+esac

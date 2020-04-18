@@ -1,0 +1,48 @@
+#!/usr/bin/python
+# Copyright 2015 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import os
+import shutil
+import sys
+import tempfile
+
+
+def _AddToPathIfNeeded(path):
+  if path not in sys.path:
+    sys.path.insert(0, path)
+
+
+def Main():
+  dashboard_path = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+  _AddToPathIfNeeded(dashboard_path)
+  import dashboard
+
+  catapult_path = os.path.dirname(dashboard_path)
+  _AddToPathIfNeeded(catapult_path)
+
+  tracing_path = os.path.join(catapult_path, 'tracing')
+  _AddToPathIfNeeded(tracing_path)
+  from tracing_build import vulcanize_histograms_viewer
+
+  temp_dir = tempfile.mkdtemp()
+  viewer_dir_path = os.path.join(temp_dir, 'vulcanized_histograms_viewer')
+  viewer_html_path = os.path.join(viewer_dir_path, 'vulcanized_histograms_viewer.html')
+  os.mkdir(viewer_dir_path)
+  with open(viewer_html_path, 'w') as f:
+    s = vulcanize_histograms_viewer.VulcanizeHistogramsViewer()
+    f.write(s.encode('utf-8'))
+
+  deployment_paths = dashboard.PathsForDeployment() + [viewer_dir_path]
+  from catapult_build import appengine_deploy
+  appengine_deploy.Deploy(deployment_paths, sys.argv[1:])
+
+  try:
+    shutil.rmtree(temp_dir)
+  except OSError as e:
+    logging.error('Error cleaning up temp dir %s: %s', temp_dir, e)
+
+
+if __name__ == '__main__':
+  Main()

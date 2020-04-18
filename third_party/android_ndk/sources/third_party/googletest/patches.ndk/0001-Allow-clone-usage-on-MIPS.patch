@@ -1,0 +1,34 @@
+From c0265ead0f124c54b71f6d03491573a42accae09 Mon Sep 17 00:00:00 2001
+From: David 'Digit' Turner <digit@google.com>
+Date: Thu, 25 Apr 2013 23:06:50 +0200
+Subject: Allow clone() usage on MIPS
+
+GoogleTest assumes that clone() is only available on ARM, but
+this is only because the NDK headers were incorrect, and only
+fixed recently.
+
+Note that clone() is sadly _not_ available on x86 at this point
+though.
+---
+ include/gtest/internal/gtest-port.h | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/include/gtest/internal/gtest-port.h b/include/gtest/internal/gtest-port.h
+index dc4fe0c..0011186 100644
+--- a/include/gtest/internal/gtest-port.h
++++ b/include/gtest/internal/gtest-port.h
+@@ -611,8 +611,9 @@ using ::std::tuple_size;
+ 
+ # if GTEST_OS_LINUX && !defined(__ia64__)
+ #  if GTEST_OS_LINUX_ANDROID
+-// On Android, clone() is only available on ARM starting with Gingerbread.
+-#    if defined(__arm__) && __ANDROID_API__ >= 9
++// On Android, clone() is only available starting with Gingerbread, except
++// on x86, for some reason.
++#    if !defined(__i386__) && __ANDROID_API__ >= 9
+ #     define GTEST_HAS_CLONE 1
+ #    else
+ #     define GTEST_HAS_CLONE 0
+-- 
+1.7.12.146.g16d26b1
+

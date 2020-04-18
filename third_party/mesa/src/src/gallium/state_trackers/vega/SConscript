@@ -1,0 +1,63 @@
+#######################################################################
+# SConscript for vega state_tracker
+
+Import('*')
+
+from sys import executable as python_cmd
+
+env = env.Clone()
+
+env.Append(CPPPATH = [
+    '#/src/mapi',
+])
+env.Append(CPPDEFINES = [
+    'VEGA_VERSION_STRING=',
+    'KHRONOS_DLL_EXPORTS',
+])
+
+vega_sources = [
+    'api.c',
+    'api_context.c',
+    'api_filters.c',
+    'api_images.c',
+    'api_masks.c',
+    'api_misc.c',
+    'api_paint.c',
+    'api_params.c',
+    'api_path.c',
+    'api_text.c',
+    'api_transform.c',
+    'arc.c',
+    'bezier.c',
+    'handle.c',
+    'image.c',
+    'mask.c',
+    'paint.c',
+    'path.c',
+    'polygon.c',
+    'renderer.c',
+    'shader.c',
+    'shaders_cache.c',
+    'stroker.c',
+    'text.c',
+    'vg_context.c',
+    'vg_manager.c',
+    'vg_state.c',
+    'vg_translate.c',
+    'vgu.c'
+]
+
+api_tmp = env.CodeGenerate(
+        target = '#/src/gallium/state_trackers/vega/api_tmp.h',
+        script = '#src/mapi/mapi/mapi_abi.py',
+        source = '#src/mapi/vgapi/vgapi.csv',
+        command = python_cmd + ' $SCRIPT --printer vgapi --mode app $SOURCE > $TARGET'
+)
+env.Depends(vega_sources, api_tmp)
+
+st_vega = env.ConvenienceLibrary(
+    target = 'st_vega',
+    source = vega_sources,
+)
+
+Export('st_vega')

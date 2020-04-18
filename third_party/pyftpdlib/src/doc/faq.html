@@ -1,0 +1,167 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<style>
+.section_anchor {
+    font-size:0px;
+}
+</style>
+
+
+
+
+
+ <title>FAQ</title>
+ </head><body>
+
+
+
+
+ <div id="wikicontent">
+ <table border="0" cellpadding="0" cellspacing="0" width="100%">
+ <tbody><tr>
+
+ <td class="vt" id="wikimaincol" width="100%">
+
+ <div id="wikiheader" style="margin-bottom: 1em;">
+
+ &nbsp;
+ <span style="font-size: 120%; font-weight: bold;">FAQ</span>
+ &nbsp;
+
+
+ <div style="font-style: italic; margin-top: 3px;">Frequently Asked Questions</div>
+
+ </div>
+ <h1><a name="Table_of_contents"></a>Table of contents<a href="#Table_of_contents" class="section_anchor">¶</a></h1><p></p><ul><li><a href="#Table_of_contents">Table of contents</a></li><li><a href="#Introduction">Introduction</a></li><ul><li><a href="#What_is_pyftpdlib?">What is pyftpdlib?</a></li><li><a href="#What_is_Python?">What is Python?</a></li><li><a href="#I%27m_not_a_python_programmer._Can_I_use_it_anyway?">I'm not a python programmer. Can I use it anyway?</a></li><li><a href="#Documentation">Documentation</a></li><li><a href="#Mailing_lists">Mailing lists</a></li><li><a href="#Bug_reporting">Bug reporting</a></li></ul><li><a href="#Installing_and_compatibility">Installing and compatibility</a></li><ul><li><a href="#How_do_I_install_pyftpdlib?">How do I install pyftpdlib?</a></li><li><a href="#Which_Python_versions_are_compatible?">Which Python versions are compatible?</a></li><li><a href="#What_about_Python_3.x?">What about Python 3.x?</a></li><li><a href="#On_which_platforms_can_pyftpdlib_be_used?">On which platforms can pyftpdlib be used?</a></li></ul><li><a href="#Usage">Usage</a></li><ul><li><a href="#How_can_I_run_long-running_tasks_without_blocking_the_server?">How can I run long-running tasks without blocking the server?</a></li><li><a href="#Why_do_I_get_socket.error_%22Permission_denied%22_error_on">Why do I get socket.error "Permission denied" error on ftpd starting?</a></li><li><a href="#How_can_I_prevent_the_server_version_from_being_displayed?">How can I prevent the server version from being displayed?</a></li><li><a href="#Can_control_upload/download_ratios?">Can control upload/download ratios?</a></li><li><a href="#Are_there_ways_to_limit_connections?">Are there ways to limit connections?</a></li><li><a href="#I%27m_behind_a_NAT_/_gateway">I'm behind a NAT / gateway</a></li><li><a href="#What_is_FXP?">What is FXP?</a></li><li><a href="#Does_pyftpdlib_support_FXP?">Does pyftpdlib support FXP?</a></li><li><a href="#Why_timestamps_shown_by_MDTM_and_ls_commands_%28LIST,_MLSD,_MLST%29">Why timestamps shown by MDTM and ls commands (LIST, MLSD, MLST) are wrong?</a></li></ul><li><a href="#Implementation">Implementation</a></li><ul><li><a href="#Globbing_/_STAT_command_implementation">Globbing / STAT command implementation</a></li><li><a href="#ASCII_transfers_/_SIZE_command_implementation">ASCII transfers / SIZE command implementation</a></li><li><a href="#IPv6_support">IPv6 support</a></li><li><a href="#How_do_I_install_IPv6_support_on_my_system?">How do I install IPv6 support on my system?</a></li><li><a href="#Can_pyftpdlib_be_integrated_with_%22real%22_users_existing">Can pyftpdlib be integrated with "real" users existing on the system?</a></li><li><a href="#Does_pyftpdlib_support_FTP_over_TLS/SSL_%28FTPS%29">Does pyftpdlib support FTP over TLS/SSL (FTPS)</a></li><li><a href="#What_about_SITE_commands?">What about SITE commands?</a></li></ul></ul> <p></p><h1><a name="Introduction"></a>Introduction<a href="#Introduction" class="section_anchor">¶</a></h1><h2><a name="What_is_pyftpdlib?"></a>What is pyftpdlib?<a href="#What_is_pyftpdlib?" class="section_anchor">¶</a></h2><p>pyftpdlib is a high-level library to easily write asynchronous portable FTP servers with <a href="http://www.python.org/" rel="nofollow">Python</a>. </p><h2><a name="What_is_Python?"></a>What is Python?<a href="#What_is_Python?" class="section_anchor">¶</a></h2><p>Python is an interpreted, interactive, object-oriented, easy-to-learn programming language. It is often compared to <i>Tcl, Perl, Scheme</i> or <i>Java</i>. </p><h2><a name="I'm_not_a_python_programmer._Can_I_use_it_anyway?"></a>I'm not a python programmer. Can I use it anyway?<a href="#I%27m_not_a_python_programmer._Can_I_use_it_anyway?" class="section_anchor">¶</a></h2><p>Yes.
+ pyftpdlib is a fully working FTP server implementation that can be run
+"as is". For example you could run an anonymous ftp server from cmd-line
+ by running: </p><pre class="prettyprint">giampaolo@ubuntu:~$ sudo python -m pyftpdlib.ftpserver
+Serving FTP on 0.0.0.0:21</pre><p>This is useful in case you want a
+quick and dirty way to share a directory without, say, installing and
+configuring samba. Starting from version 0.6.0 options can be passed to
+the command line (see <tt>python -m pyftpdlib.ftpserver --help</tt> to see all available options). Examples: </p><p>Anonymous FTP server with write access: </p><pre class="prettyprint">giampaolo@ubuntu:~$ sudo python -m pyftpdlib.ftpserver -w
+/usr/local/lib/python2.6/site-packages/pyftpdlib/ftpserver.py:520: RuntimeWarning: Write permissions assigned to anonymous user.
+  RuntimeWarning)
+Serving FTP on 0.0.0.0:21</pre><p>Listen on a different ip/port: </p><pre class="prettyprint">giampaolo@ubuntu:~$ python -m pyftpdlib.ftpserver -i 127.0.0.1 -p 8021
+Serving FTP on 127.0.0.1:8021</pre><p>Customizing ftpd for basic tasks
+like adding users or deciding where log file should be placed is mostly
+simply editing variables. This is basically like learning how to edit a
+common unix ftpd.conf file and doesn't really require Python knowledge.
+Customizing ftpd more deeply requires a python script which imports
+pyftpdlib to be written separately. An example about how this could be
+done are the scripts contained in the <a href="http://code.google.com/p/pyftpdlib/source/browse/trunk/demo" rel="nofollow">demo directory</a>. </p><h2><a name="Documentation"></a>Documentation<a href="#Documentation" class="section_anchor">¶</a></h2><p><a href="http://code.google.com/p/pyftpdlib/" rel="nofollow">http://code.google.com/p/pyftpdlib/</a> is the primary source for all information about the project including <a href="http://code.google.com/p/pyftpdlib/wiki/Install" rel="nofollow">Install instructions</a>, <a href="http://code.google.com/p/pyftpdlib/wiki/Tutorial" rel="nofollow">Tutorial</a>, <a href="http://code.google.com/p/pyftpdlib/wiki/RFCsCompliance" rel="nofollow">RFCs Compliance paper</a>, <a href="http://code.google.com/p/pyftpdlib/w/list" rel="nofollow">Wikis</a> and the <a href="http://code.google.com/p/pyftpdlib/issues/list" rel="nofollow">Bug Tracker</a>. </p><h2><a name="Mailing_lists"></a>Mailing lists<a href="#Mailing_lists" class="section_anchor">¶</a></h2><p>There are a number of mailing lists for pyftpdlib: </p><p><table><tbody><tr><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> <strong>Name</strong> </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> <strong>E-mail</strong> </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> <strong>Web Interface</strong> </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> <strong>Description</strong> </td></tr> <tr><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> <a href="http://groups.google.com/group/pyftpdlib" rel="nofollow">pyftpdlib</a> </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;">  pyftpdlib@googlegroups.com </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> <a href="http://groups.google.com/group/pyftpdlib/topics" rel="nofollow">topics</a> </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;">  This is intended for end user support. </td></tr> <tr><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> <a href="http://groups.google.com/group/pyftpdlib-commit" rel="nofollow">pyftpdlib-commit</a> </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> pyftpdlib-commits@googlegroups.com </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> <a href="http://groups.google.com/group/pyftpdlib-commit/topics" rel="nofollow">topics</a> </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;">
+ This list receives all change notifications for code in the Subversion
+repository. Unless you're a pyftpdlib developer you will probably not be
+ interested in it. </td></tr> <tr><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> <a href="http://groups.google.com/group/pyftpdlib-issues" rel="nofollow">pyftpdlib-issues</a> </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> pyftpdlib-issues@googlegroups.com </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> <a href="http://groups.google.com/group/pyftpdlib-issues/topics" rel="nofollow">topics</a> </td><td style="border: 1px solid rgb(170, 170, 170); padding: 5px;"> This list receives all change notifications from the <a href="http://code.google.com/p/pyftpdlib/issues/list" rel="nofollow">Bug Tracker</a>. Unless you are involved into pyftpdlib development you will probably not find this useful. </td></tr> </tbody></table></p><h2><a name="Bug_reporting"></a>Bug reporting<a href="#Bug_reporting" class="section_anchor">¶</a></h2><p>Bug reports should be made via Google Code <a href="http://code.google.com/p/pyftpdlib/issues/list" rel="nofollow">Issue Tracker</a>. Patches should be attached to the appropriate bug and not mailed directly to the mailing lists or any given team member. </p><hr><h1><a name="Installing_and_compatibility"></a>Installing and compatibility<a href="#Installing_and_compatibility" class="section_anchor">¶</a></h1><h2><a name="How_do_I_install_pyftpdlib?"></a>How do I install pyftpdlib?<a href="#How_do_I_install_pyftpdlib?" class="section_anchor">¶</a></h2><p>If you are not new to Python you probably don't need that, otherwise follow the <a href="http://code.google.com/p/pyftpdlib/wiki/Install" rel="nofollow">instructions</a>. </p><h2><a name="Which_Python_versions_are_compatible?"></a>Which Python versions are compatible?<a href="#Which_Python_versions_are_compatible?" class="section_anchor">¶</a></h2><p><strong>2.4</strong>, <strong>2.5</strong>, <strong>2.6</strong> and <strong>2.7</strong>. Python 2.3 support has been removed starting from version 0.6.0. The latest version supporting Python 2.3 is <a href="http://code.google.com/p/pyftpdlib/downloads/detail?name=pyftpdlib-0.5.2.tar.gz" rel="nofollow">pyftpdlib 0.5.2</a>. </p><h2><a name="What_about_Python_3.x?"></a>What about Python 3.x?<a href="#What_about_Python_3.x?" class="section_anchor">¶</a></h2><p>Python
+ 3.x is not yet covered because I still have to figure out how to deal
+with the str/bytes and encoding differences introduced in the new Python
+ version =). A porting to Python 3.x is surely in plan, anyway (see <a href="http://code.google.com/p/pyftpdlib/issues/detail?id=76" rel="nofollow">issue #76</a>. </p><h2><a name="On_which_platforms_can_pyftpdlib_be_used?"></a>On which platforms can pyftpdlib be used?<a href="#On_which_platforms_can_pyftpdlib_be_used?" class="section_anchor">¶</a></h2><p>pyftpdlib should work on any platform where <strong><i>select()</i></strong> or <strong><i>poll()</i></strong> system calls are available and on any Python implementation which refers to <strong>cPython 2.4</strong> or superior (e.g cPython 2.6 or PythonCE 2.5). The development team has mainly tested it under various <strong>Linux</strong>, <strong>Windows</strong>, <strong>OS X</strong> and <strong>FreeBSD</strong> systems. For FreeBSD is also available a <a href="http://www.freshports.org/ftp/py-pyftpdlib/" rel="nofollow">pre-compiled package</a> maintained by Li-Wen Hsu &lt;lwhsu@freebsd.org&gt;. Other Python implementation like <strong><a href="http://pythonce.sourceforge.net/" rel="nofollow">PythonCE</a></strong> are known to work with pyftpdlib and every new version is usually tested against it. pyftpdlib currently does not work on <strong><a href="http://www.jython.org/" rel="nofollow">Jython</a></strong>
+ since the latest Jython release refers to CPython 2.2.x serie. The best
+ way to know whether pyftpdlib works on your platform is installing it
+and running its test suite. </p><hr><h1><a name="Usage"></a>Usage<a href="#Usage" class="section_anchor">¶</a></h1><h2><a name="How_can_I_run_long-running_tasks_without_blocking_the_server?"></a>How can I run long-running tasks without blocking the server?<a href="#How_can_I_run_long-running_tasks_without_blocking_the_server?" class="section_anchor">¶</a></h2><p>pyftpdlib is an <strong>asynchronous</strong>
+ FTP server. That means that if you need to run a time consuming task
+you have to use a separate Python process or thread for the actual
+processing work otherwise the entire asynchronous loop will be blocked. </p><p>Let's
+ suppose you want to implement a long-running task every time the server
+ receives a file. The code snippet below shows the correct way to do it
+by using a thread. </p><p>Notice how we first set <tt>FTPHandler.sleeping</tt> attribute to <tt>True</tt>, then we set it back to <tt>False</tt> when the long-running task has completed.<br> By setting <tt>sleeping</tt> attribute to <tt>False</tt>
+ we temporarily "sleep" the channel which won't be able to send or
+receive any more data and won't be closed (disconnected) as long as we
+don't set it back to <tt>True</tt>. This is fundamental when working with threads to avoid race conditions, dead locks etc. </p><pre class="prettyprint">class MyHandler(ftpserver.FTPHandler):
+
+    def on_file_received(self, file):
+        """Called every time a file has been received"""
+
+        def blocking_task():
+            time.sleep(5)
+            self.sleeping = False
+
+        self.sleeping = True
+        threading.Thread(target=blocking_task).start()</pre><h2><a name="Why_do_I_get_socket.error_&quot;Permission_denied&quot;_error_on"></a>Why do I get socket.error "Permission denied" error on ftpd starting?<a href="#Why_do_I_get_socket.error_%22Permission_denied%22_error_on" class="section_anchor">¶</a></h2><p>Probably because you're on a Unix system and you're trying to start ftpd as an unprivileged user. <i>ftpserver.py</i>
+ binds on port 21 by default and only super-user account (e.g. root) can
+ bind sockets on such ports. If you want to bind ftpd as non-privileged
+user you should set a port higher than 1024. </p><h2><a name="How_can_I_prevent_the_server_version_from_being_displayed?"></a>How can I prevent the server version from being displayed?<a href="#How_can_I_prevent_the_server_version_from_being_displayed?" class="section_anchor">¶</a></h2><p>Just modify <tt>banner</tt> attribute of <tt>FTPHandler</tt> class. </p><h2><a name="Can_control_upload/download_ratios?"></a>Can control upload/download ratios?<a href="#Can_control_upload/download_ratios?" class="section_anchor">¶</a></h2><p>Yes. Starting from version 0.5.2 ftpserver.py provides a new class called <tt>ThrottledDTPHandler</tt>. You can set speed limits by modifying <tt>read_limit</tt> and <tt>write_limit</tt> class attributes as it is shown in <a href="http://pyftpdlib.googlecode.com/svn/trunk/demo/throttled_ftpd.py" rel="nofollow">throttled_ftpd.py</a> demo script. </p><h2><a name="Are_there_ways_to_limit_connections?"></a>Are there ways to limit connections?<a href="#Are_there_ways_to_limit_connections?" class="section_anchor">¶</a></h2><p><tt>FTPServer</tt> class comes with two overridable attributes defaulting to zero (no limit): <tt>max_cons</tt>, which sets a limit for maximum simultaneous connection to handle by ftpd and <tt>max_cons_per_ip</tt>
+ which set a limit for connections from the same IP address. Overriding
+these variables is always recommended to avoid DoS attacks. </p><h2><a name="I'm_behind_a_NAT_/_gateway"></a>I'm behind a NAT / gateway<a href="#I%27m_behind_a_NAT_/_gateway" class="section_anchor">¶</a></h2><p>When
+ behind a NAT a ftp server needs to replace the IP local address
+displayed in PASV replies and instead use the public address of the NAT
+to allow client to connect.  By overriding <tt>masquerade_address</tt> attribute of <tt>FTPHandler</tt>
+ class you will force pyftpdlib to do such replacement. However, one
+problem still exists.  The passive FTP connections will use ports from
+1024 and up, which means that you must forward all ports 1024-65535 from
+ the NAT to the FTP server!  And you have to allow many (possibly)
+dangerous ports in your firewalling rules!  To resolve this, simply
+override <tt>passive_ports</tt> attribute of <tt>FTPHandler</tt> class to control what ports pyftpdlib will use for its passive data transfers.  Value expected by <tt>passive_ports</tt>
+ attribute is a list of integers (e.g. range(60000, 65535)) indicating
+which ports will be used for initializing the passive data channel. In
+case you run a FTP server with multiple private IP addresses behind a
+NAT firewall with multiple public IP addresses you can use <tt>FTPHandler.masquerade_address_map</tt> option which allows you to define multiple 1 to 1 mappings (<strong><i>New in 0.6.0</i></strong>).  </p><h2><a name="What_is_FXP?"></a>What is FXP?<a href="#What_is_FXP?" class="section_anchor">¶</a></h2><p>FXP is part of the name of a popular Windows FTP client: <a href="http://www.flashfxp.com/" rel="nofollow">http://www.flashfxp.com</a>.
+ This client has made the name "FXP" commonly used as a synonym for
+site-to-site FTP transfers, for transferring a file between two remote
+FTP servers without the transfer going through the client's host.
+Sometimes "FXP" is referred to as a protocol; in fact, it is not. The
+site-to-site transfer capability was deliberately designed into <a href="http://www.faqs.org/rfcs/rfc959.html" rel="nofollow">RFC-959</a>. More info can be found here: <a href="http://www.proftpd.org/docs/howto/FXP.html" rel="nofollow">http://www.proftpd.org/docs/howto/FXP.html</a>. </p><h2><a name="Does_pyftpdlib_support_FXP?"></a>Does pyftpdlib support FXP?<a href="#Does_pyftpdlib_support_FXP?" class="section_anchor">¶</a></h2><p>Yes. It is disabled by default for security reasons (see <a href="http://gim.org.pl/rfcs/rfc2577.html" rel="nofollow">RFC-2257</a> and <a href="http://www.cert.org/advisories/CA-1997-27.html" rel="nofollow">FTP bounce attack description</a>) but in case you want to enable it just set to True the <tt>permit_foreign_addresses</tt> attribute of <tt>FTPHandler</tt> class. </p><h2><a name="Why_timestamps_shown_by_MDTM_and_ls_commands_(LIST,_MLSD,_MLST)"></a>Why timestamps shown by MDTM and ls commands (LIST, MLSD, MLST) are wrong?<a href="#Why_timestamps_shown_by_MDTM_and_ls_commands_%28LIST,_MLSD,_MLST%29" class="section_anchor">¶</a></h2><p>If
+ by "wrong" you mean "different from the timestamp of that file on my
+client machine", then that is the expected behavior. Starting from
+version 0.6.0 pyftpdlib uses <a href="http://en.wikipedia.org/wiki/Greenwich_Mean_Time" rel="nofollow">GMT times</a> as recommended in <a href="http://tools.ietf.org/html/rfc3659" rel="nofollow">RFC-3659</a>. In case you want such commands to report local times instead just set the <tt>FTPHandler.use_gmt_times</tt> attribute to <tt>False</tt>. For further information you might want to take a look at <a href="http://www.proftpd.org/docs/howto/Timestamps.html" rel="nofollow">this</a> Proftpd FAQ. </p><hr><h1><a name="Implementation"></a>Implementation<a href="#Implementation" class="section_anchor">¶</a></h1><h2><a name="Globbing_/_STAT_command_implementation"></a>Globbing / STAT command implementation<a href="#Globbing_/_STAT_command_implementation" class="section_anchor">¶</a></h2><p>Globbing
+ is a common Unix shell mechanism for expanding wildcard patterns to
+match multiple filenames. When an argument is provided to the <strong>STAT</strong> command, ftpd should return directory listing over the command channel. <a href="http://tools.ietf.org/html/rfc959" rel="nofollow">RFC-959</a>
+ does not explicitly mention globbing; this means that FTP servers are
+not required to support globbing in order to be compliant.  However,
+many FTP servers do support globbing as a measure of convenience for FTP
+ clients and users. In order to search for and match the given globbing
+expression, the code has to search (possibly) many directories, examine
+each contained filename, and build a list of matching files in memory.
+Since this operation can be quite intensive, both CPU- and memory-wise,
+pyftpdlib <i>does not</i> support globbing. </p><h2><a name="ASCII_transfers_/_SIZE_command_implementation"></a>ASCII transfers / SIZE command implementation<a href="#ASCII_transfers_/_SIZE_command_implementation" class="section_anchor">¶</a></h2><p>Properly
+ handling the SIZE command when TYPE ASCII is used would require to scan
+ the entire file to perform the ASCII translation logic
+(file.read().replace(os.linesep, '\r\n')) and then calculating the len
+of such data which may be different than the actual size of the file on
+the server. Considering that calculating such result could be very
+resource-intensive it could be easy for a malicious client to try a DoS
+attack, thus pyftpdlib rejects SIZE when the current TYPE is ASCII.
+However, clients in general should not be resuming downloads in ASCII
+mode.  Resuming downloads in binary mode is the recommended way as
+specified in <a href="http://tools.ietf.org/html/rfc3659" rel="nofollow">RFC-3659</a>. </p><h2><a name="IPv6_support"></a>IPv6 support<a href="#IPv6_support" class="section_anchor">¶</a></h2><p>Starting from version 0.4.0 pyftpdlib <i>supports</i> IPv6 (<a href="http://tools.ietf.org/html/rfc2428" rel="nofollow">RFC-2428</a>).
+ If you use IPv6 and want your FTP daemon to do so just pass a valid
+IPv6 address to the FTPServer class constructor. Example: </p><pre class="prettyprint">&gt;&gt;&gt; from pyftpdlib import ftpserver
+&gt;&gt;&gt; address = ("::1", 21)  # listen on localhost, port 21
+&gt;&gt;&gt; ftpd = ftpserver.FTPServer(address, ftpserver.FTPHandler)
+&gt;&gt;&gt; ftpd.serve_forever()
+Serving FTP on ::1:21</pre><p>If your OS (for example: all recent UNIX
+systems) have an hybrid dual-stack IPv6/IPv4 implementation the code
+above will listen on both IPv4 and IPv6 by using a single IPv6 socket (<i><strong>New in 0.6.0</strong></i>). </p><h2><a name="How_do_I_install_IPv6_support_on_my_system?"></a>How do I install IPv6 support on my system?<a href="#How_do_I_install_IPv6_support_on_my_system?" class="section_anchor">¶</a></h2><p>If
+ you want to install IPv6 support on Linux run "modprobe ipv6", then
+"ifconfig". This should display the loopback adapter, with the address
+"::1". You should then be able to listen the server on that address, and
+ connect to it. </p><p>On Windows (XP SP2 and higher) run "netsh int ipv6 install". Again, you should be able to use IPv6 loopback afterwards. </p><h2><a name="Can_pyftpdlib_be_integrated_with_&quot;real&quot;_users_existing"></a>Can pyftpdlib be integrated with "real" users existing on the system?<a href="#Can_pyftpdlib_be_integrated_with_%22real%22_users_existing" class="section_anchor">¶</a></h2><p>Yes. Starting from version 0.6.0 pyftpdlib provides the new <tt>UnixAuthorizer</tt> and <tt>WindowsAuthorizer</tt>
+ classes. By using them pyftpdlib can look into the system account
+database to authenticate users. They also assume the id of real users
+every time the FTP server is going to access the filesystem (e.g. for
+creating or renaming a file) the authorizer will temporarily impersonate
+ the currently logged on user, execute the filesystem call and then
+switch back to the user who originally started the server. Example UNIX
+and Windows FTP servers contained in the <a href="http://code.google.com/p/pyftpdlib/source/browse/#svn/trunk/demo" rel="nofollow">demo directory</a> shows how to use <tt>UnixAuthorizer</tt> and <tt>WindowsAuthorizer</tt> classes. </p><h2><a name="Does_pyftpdlib_support_FTP_over_TLS/SSL_(FTPS)"></a>Does pyftpdlib support FTP over TLS/SSL (FTPS)<a href="#Does_pyftpdlib_support_FTP_over_TLS/SSL_%28FTPS%29" class="section_anchor">¶</a></h2><p>Yes, starting from version 0.6.0, see: <a href="http://code.google.com/p/billiejoex/wiki/Tutorial#3.7_-_FTPS_%28FTP_over_TLS/SSL%29_server" rel="nofollow">http://code.google.com/p/billiejoex/wiki/Tutorial#3.7_-_FTPS_(FTP_over_TLS/SSL)_server</a> </p><h2><a name="What_about_SITE_commands?"></a>What about SITE commands?<a href="#What_about_SITE_commands?" class="section_anchor">¶</a></h2><p>No SITE commands aside from <strong>SITE HELP</strong> are implemented by default. The user willing to add support for a specific SITE command (e.g. <strong>SITE CHMOD</strong>) has to define a new <tt>ftp_SITE_%CMD%</tt> method in the <tt>FTPHandler</tt> subclass and add a new entry in <tt>ftpserver.proto_cmds</tt> dictionary. Example: </p><pre class="prettyprint">from pyftpdlib import ftpserver
+
+prop = (None, True, None, False, 'Syntax: SITE CHMOD &lt;SP&gt; path (change file permission).')
+ftpserver.proto_cmds['SITE CHMOD'] = ftpserver._CommandProperty(*prop)
+
+class CustomizedFTPHandler(ftpserver.FTPHandler):
+
+    def ftp_SITE_CHMOD(self, line):
+        """Change file permissions."""
+        ...</pre>
+ </td>
+ </tr>
+ </tbody></table>
+ </div>
+
+
+
+
+<script type="text/javascript" src="faq_files/dit_scripts.js"></script>
+
+
+
+ </body></html>

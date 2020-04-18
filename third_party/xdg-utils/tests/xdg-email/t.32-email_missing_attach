@@ -1,0 +1,34 @@
+#!/bin/bash
+
+## Include utility functions.
+. "$XDG_TEST_DIR/include/testassertions.sh"
+. "$XDG_TEST_DIR/include/testcontrol.sh"
+
+## Test function
+test_email_missing_attach() {
+test_start "$FUNCNAME: verify an error when --attach does not have a valid file"
+
+ADDR="$XDG_TEST_SHORTID@portland.freedesktop.org"
+
+test_init
+
+require_notroot
+## Require a running X server
+assert_display
+
+get_unique_name TARG 'attach.txt'
+assert_nofile "$TARG"
+
+test_procedure
+
+assert_exit 2 xdg-email --attach "$TARG" "$ADDR"
+assert_nostdout
+assert_stderr
+
+assert_interactive "Did an email open to '$ADDR'?" n
+assert_interactive "Please close any email windows opened by the test." C
+
+test_result
+}
+
+run_test test_email_missing_attach

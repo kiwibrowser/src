@@ -1,0 +1,159 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>Mesa Release Notes</title>
+  <link rel="stylesheet" type="text/css" href="mesa.css">
+</head>
+<body>
+
+<h1>Mesa 9.0.1 Release Notes / November 16th, 2012</h1>
+
+<p>
+Mesa 9.0.1 is a bug fix release which fixes bugs found since the 9.0 release.
+</p>
+<p>
+Mesa 9.0 implements the OpenGL 3.1 API, but the version reported by
+glGetString(GL_VERSION) or glGetIntegerv(GL_MAJOR_VERSION) /
+glGetIntegerv(GL_MINOR_VERSION) depends on the particular driver being used.
+Some drivers don't support all the features required in OpenGL 3.1.  OpenGL
+3.1 is <strong>only</strong> available if requested at context creation
+because GL_ARB_compatibility is not supported.
+</p>
+
+<h2>MD5 checksums</h2>
+<pre>
+97d6554c05ea7449398afe3a0ede7018  MesaLib-9.0.1.tar.bz2
+fd0fd5a6e56bc3dd210c80e42baef975  MesaLib-9.0.1.tar.gz
+c2683d957acd530a00f747f50317186f  MesaLib-9.0.1.zip
+</pre>
+
+<h2>New features</h2>
+<p>None.</p>
+
+<h2>Bug fixes</h2>
+
+<p>This list is likely incomplete.</p>
+
+<ul>
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=44912">Bug 44912</a> - [bisected] WebGL conformance/textures/texture-mips tests fails</li>
+
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=55856">Bug 55856</a> - kwin with gles window content is not updating (gen4)</li>
+
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=56057">Bug 56057</a> - INTEL_swap_event not correctly listed</li>
+
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=56211">Bug 56211</a> - src/mesa/state_tracker/st_cb_texture.c:1123:copy_image_data_to_texture: Assertion `u_minify(stImage-&gt;pt-&gt;height0, src_level) == stImage-&gt;base.Height' failed.</li>
+
+<!-- <li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=">Bug </a> - </li> -->
+</ul>
+
+
+<h2>Changes</h2>
+<p>The full set of changes can be viewed by using the following GIT command:</p>
+
+<pre>
+  git log mesa-9.0..mesa-9.0.1
+</pre>
+
+<p>Adam Jackson (1):</p>
+<ul>
+  <li>glx: Add GLXBadProfileARB to the error string list</li>
+</ul>
+
+<p>Andreas Boll (7):</p>
+<ul>
+  <li>docs: add news item for 9.0 release</li>
+  <li>mesa: add get-pick-list.sh script into bin/</li>
+  <li>mesa: add initial .cherry-ignore file for the 9.0 branch</li>
+  <li>mesa: use .cherry-ignore in the get-pick-list.sh script</li>
+  <li>build: add config.sub and config.guess to tarballs target</li>
+  <li>build: add missing Makefile.in files to tarballs target</li>
+  <li>build: add missing files to tarballs target</li>
+</ul>
+
+<p>Brian Paul (2):</p>
+<ul>
+  <li>mesa: don't call TexImage driver hooks for zero-sized images</li>
+  <li>mesa: fix error check for zero-sized compressed subtexture</li>
+</ul>
+
+<p>Fredrik Höglund (1):</p>
+<ul>
+  <li>egl_dri2/x11: Fix eglPostSubBufferNV()</li>
+</ul>
+
+<p>Ian Romanick (5):</p>
+<ul>
+  <li>docs: Add 9.0 release md5sums</li>
+  <li>i965: Fix regression in depth texture rendering on pre-SNB</li>
+  <li>glx: Set sRGBCapable to a default value</li>
+  <li>docs: Add 9.0.1 release notes</li>
+  <li>mesa: Bump version to 9.0.1</li>
+</ul>
+
+<p>Imre Deak (7):</p>
+<ul>
+  <li>mesa: glGet: fix indentation of _mesa_init_get_hash</li>
+  <li>mesa: glGet: fix indentation of find_value</li>
+  <li>mesa: glGet: fix indentation of print_table_stats</li>
+  <li>mesa: glGet: fix API check for EGL_image_external enums</li>
+  <li>glapi: rename/move GL_POLYGON_OFFSET_BIAS to its extension section</li>
+  <li>mesa: glGet: fix parameter lookup for apps using multiple APIs</li>
+  <li>glget: fix make check for glGet GL_POLYGON_OFFSET_BIAS</li>
+</ul>
+
+<p>Jonas Ådahl (1):</p>
+<ul>
+  <li>wayland: Destroy frame callback when destroying surface</li>
+</ul>
+
+<p>Kenneth Graunke (1):</p>
+<ul>
+  <li>glsl: Allow ir_if in the linker's move_non_declarations function.</li>
+</ul>
+
+<p>Kristian Høgsberg (5):</p>
+<ul>
+  <li>gbm: Reject buffers that are not wl_drm buffers in gbm_bo_import()</li>
+  <li>gbm: Use the kms dumb ioctls for cursor instead of libkms</li>
+  <li>egl/wayland: Update to Wayland 0.99 API</li>
+  <li>wayland: Remove 0.85 compatibility #ifdefs</li>
+  <li>wayland: Drop support for ill-defined, unused wl_egl_pixmap</li>
+</ul>
+
+<p>Marcin Slusarz (1):</p>
+<ul>
+  <li>nouveau: use pre-calculated stride for resource_get_handle</li>
+</ul>
+
+<p>Matt Turner (4):</p>
+<ul>
+  <li>egl: Return EGL_BAD_MATCH for invalid profile attributes</li>
+  <li>Re-add HAVE_PTHREADS preprocessor macro</li>
+  <li>build: Ship install-sh in the tarball</li>
+  <li>ralloc: Annotate printf functions with PRINTFLIKE(...)</li>
+</ul>
+
+<p>Michel Dänzer (2):</p>
+<ul>
+  <li>st/mesa: Fix source miptree level for copying data to finalized miptree.</li>
+  <li>st/mesa: Fix assertions for copying texture image to finalized miptree.</li>
+</ul>
+
+<p>Owen W. Taylor (1):</p>
+<ul>
+  <li>glx: Fix listing of INTEL_swap_event in glXQueryExtensionsString()</li>
+</ul>
+
+<p>Quentin Glidic (1):</p>
+<ul>
+  <li>intel: Add missing #include &lt;time.h&gt;</li>
+</ul>
+
+<p>Tomeu Vizoso (1):</p>
+<ul>
+  <li>mesa/es: Define GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT enum for all GLs</li>
+</ul>
+
+</body>
+</html>

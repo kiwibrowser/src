@@ -1,0 +1,603 @@
+#!/bin/sh
+#---------------------------------------------
+#   xdg-file-dialog
+#
+#   Utility script to file selection dialogs
+#   on XDG compliant systems.
+#
+#   Refer to the usage() function below for usage.
+#
+#   Copyright 2006, Kevin Krammer <kevin.krammer@gmx.at>
+#
+#   LICENSE:
+#
+#   Permission is hereby granted, free of charge, to any person obtaining a
+#   copy of this software and associated documentation files (the "Software"),
+#   to deal in the Software without restriction, including without limitation
+#   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+#   and/or sell copies of the Software, and to permit persons to whom the
+#   Software is furnished to do so, subject to the following conditions:
+#
+#   The above copyright notice and this permission notice shall be included
+#   in all copies or substantial portions of the Software.
+#
+#   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+#   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+#   THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+#   OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+#   ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+#   OTHER DEALINGS IN THE SOFTWARE.
+#
+#---------------------------------------------
+
+manualpage()
+{
+cat << _MANUALPAGE
+Name
+
+   xdg-file-dialog -- command line tool for providing file and directory
+   selection dialogs
+
+Synopsis
+
+   xdg-file-dialog openfilename [--title TITLE] [FILENAME]
+
+   xdg-file-dialog openfilenamelist [--title TITLE] [FILENAME]
+
+   xdg-file-dialog savefilename [--title TITLE] [FILENAME]
+
+   xdg-file-dialog directory [--title TITLE] [DIRNAME]
+
+   xdg-file-dialog { --help | --manual | --version }
+
+Description
+
+   The xdg-file-dialog program can be used to let the native file selection
+   dialog handle file and directory input.
+
+   xdg-file-dialog is for use inside a desktop session only. It is not
+   recommended to use xdg-file-dialog as root.
+
+Commands
+
+   openfilename
+           Returns the filename with path for a file to read from. FILENAME
+           can optionally be used to specify path and filename of a
+           preselection.
+
+   openfilenamelist
+           Returns one or more filenames with path for files to read from,
+           each on a new line. FILENAME can optionally be used to specify
+           path and filename of a preselection.
+
+   savefilename
+           Returns the filename with path for file to write to. FILENAME can
+           optionally be used to specify path and filename of a preselection.
+
+   directory
+           Returns the path for an exsiting directory. DIRNAME can optionally
+           be used to specify a path of a preselection.
+
+Options
+
+   --title TITLE
+           Sets the dialog's title (caption) to the specified text.
+
+   --help
+           Show command synopsis.
+
+   --manual
+           Show this manualpage.
+
+   --version
+           Show the xdg-utils version information.
+
+Exit Codes
+
+   An exit code of 0 indicates success while a non-zero exit code indicates
+   failure. The following failure codes can be returned:
+
+   1
+           Error in command line syntax.
+
+   2
+           One of the files passed on the command line did not exist.
+
+   3
+           A required tool could not be found.
+
+   4
+           The action failed.
+
+Examples
+
+ xdg-file-dialog savefilename /tmp/foobar.png
+
+   Asks for a save file name starting in directory /tmp and suggesting
+   foobar.png as the filename
+
+ xdg-file-dialog directory --title "Select a target folder" /tmp
+
+   Asks for a directory name starting in directory /tmp using the text
+   "Select a target folder" as the dialog's title/caption.
+_MANUALPAGE
+}
+
+usage()
+{
+cat << _USAGE
+   xdg-file-dialog -- command line tool for providing file and directory
+   selection dialogs
+
+Synopsis
+
+   xdg-file-dialog openfilename [--title TITLE] [FILENAME]
+
+   xdg-file-dialog openfilenamelist [--title TITLE] [FILENAME]
+
+   xdg-file-dialog savefilename [--title TITLE] [FILENAME]
+
+   xdg-file-dialog directory [--title TITLE] [DIRNAME]
+
+   xdg-file-dialog { --help | --manual | --version }
+
+_USAGE
+}
+
+#@xdg-utils-common@
+
+#----------------------------------------------------------------------------
+#   Common utility functions included in all XDG wrapper scripts
+#----------------------------------------------------------------------------
+
+#-------------------------------------------------------------
+# Exit script on successfully completing the desired operation
+
+exit_success()
+{
+    if [ $# -gt 0 ]; then
+        echo "$@"
+        echo
+    fi
+
+    exit 0
+}
+
+
+#-----------------------------------------
+# Exit script on malformed arguments, not enough arguments
+# or missing required option.
+# prints usage information
+
+exit_failure_syntax()
+{
+    if [ $# -gt 0 ]; then
+        echo "xdg-file-dialog: $@" >&2
+        echo "Try 'xdg-file-dialog --help' for more information." >&2
+    else
+        usage
+        echo "Use 'man xdg-file-dialog' or 'xdg-file-dialog --manual' for additional info." 
+    fi
+
+    exit 1
+}
+
+#-------------------------------------------------------------
+# Exit script on missing file specified on command line
+
+exit_failure_file_missing()
+{
+    if [ $# -gt 0 ]; then
+        echo "xdg-file-dialog: $@" >&2
+    fi
+
+    exit 2
+}
+
+#-------------------------------------------------------------
+# Exit script on failure to locate necessary tool applications
+
+exit_failure_operation_impossible()
+{
+    if [ $# -gt 0 ]; then
+        echo "xdg-file-dialog: $@" >&2
+    fi
+
+    exit 3
+}
+
+#-------------------------------------------------------------
+# Exit script on failure returned by a tool application
+
+exit_failure_operation_failed()
+{
+    if [ $# -gt 0 ]; then
+        echo "xdg-file-dialog: $@" >&2
+    fi
+
+    exit 4
+}
+
+
+#----------------------------------------
+# Checks for shared commands, e.g. --help
+
+check_common_commands()
+{
+    while [ $# -gt 0 ] ; do
+        parm=$1
+        shift
+
+        case $parm in
+            --help)
+            usage
+            echo "Use 'man xdg-file-dialog' or 'xdg-file-dialog --manual' for additional info." 
+            exit_success
+            ;;
+
+            --manual)
+            manualpage
+            exit_success
+            ;;
+
+            --version)
+            echo "xdg-file-dialog 1.0beta1"
+            exit_success
+            ;;
+        esac
+    done
+}
+
+check_common_commands "$@"
+
+#--------------------------------------
+# Checks for known desktop environments
+# set variable DE to the desktop environments name, lowercase
+
+detectDE()
+{
+    if [ x"$KDE_FULL_SESSION" = x"true" ]; then DE=kde;
+    elif [ x"$GNOME_DESKTOP_SESSION_ID" != x"" ]; then DE=gnome;
+    elif xprop -root _DT_SAVE_MODE | grep ' = \"xfce4\"$' >/dev/null 2>&1; then DE=xfce;
+    fi
+}
+
+#----------------------------------------------------------------------------
+
+
+
+open_kde()
+{
+    DIALOG=`which kdialog`
+    if [ $? -eq 0 ]; then
+        if [ x"$TITLE" != x"" ]; then
+            $DIALOG --title "$TITLE" --getopenfilename "$1" ""
+        else
+            $DIALOG --getopenfilename "$1" ""
+        fi
+
+        if [ $? -eq 0 ]; then
+            exit_success
+        else
+            exit_failure_operation_failed
+        fi
+    else
+        exit_failure_operation_impossible
+    fi
+}
+
+open_zenity()
+{
+    DIALOG=`which zenity`
+    if [ $? -eq 0 ]; then
+        if [ x"$1" != x"" ]; then
+            cd `dirname "$1"` 2>/dev/null
+            FILENAME=`basename "$1"`
+            if [ x"$FILENAME" != x"" ]; then
+                FILENAME="--filename=""$FILENAME"
+            fi
+        fi
+
+        if [ x"$FILENAME" != x"" ]; then
+            if [ x"$TITLE" != x"" ]; then
+                $DIALOG --title "$TITLE" --file-selection "$FILENAME"
+            else
+                $DIALOG --file-selection "$FILENAME"
+            fi
+        else
+            if [ x"$TITLE" != x"" ]; then
+                $DIALOG --title "$TITLE" --file-selection
+            else
+                $DIALOG --file-selection
+            fi
+        fi
+
+        if [ $? -eq 0 ]; then
+            exit_success
+        else
+            exit_failure_operation_failed
+        fi
+    else
+        exit_failure_operation_impossible
+    fi
+}
+
+open_multi_kde()
+{
+    DIALOG=`which kdialog`
+    if [ $? -eq 0 ]; then
+        if [ x"$TITLE" != x"" ]; then
+            $DIALOG --title "$TITLE" --multiple --separate-output \
+                    --getopenfilename "$1" ""
+        else
+            $DIALOG --multiple --separate-output --getopenfilename "$1" ""
+        fi
+
+        if [ $? -eq 0 ]; then
+            exit_success
+        else
+            exit_failure_operation_failed
+        fi
+    else
+        exit_failure_operation_impossible
+    fi
+}
+
+open_multi_zenity()
+{
+    DIALOG=`which zenity`
+    if [ $? -eq 0 ]; then
+        if [ x"$1" != x"" ]; then
+            cd `dirname "$1"` 2>/dev/null
+            FILENAME=`basename "$1"`
+            if [ x"$FILENAME" != x"" ]; then
+                FILENAME="--filename=""$FILENAME"
+            fi
+        fi
+
+        if [ x"$FILENAME" != x"" ]; then
+            if [ x"$TITLE" != x"" ]; then
+                LIST=`$DIALOG --title "$TITLE" --multiple --file-selection "$FILENAME"`
+            else
+                LIST=`$DIALOG --multiple --file-selection "$FILENAME"`
+            fi
+        else
+            if [ x"$TITLE" != x"" ]; then
+                LIST=`$DIALOG --title "$TITLE" --multiple --file-selection`
+            else
+                LIST=`$DIALOG --multiple --file-selection`
+            fi
+        fi
+
+        if [ $? -eq 0 ]; then
+            echo "$LIST" | sed s#'|'#\\n#g
+            exit_success
+        else
+            exit_failure_operation_failed
+        fi
+    else
+        exit_failure_operation_impossible
+    fi
+}
+
+save_kde()
+{
+    DIALOG=`which kdialog`
+    if [ $? -eq 0 ]; then
+        if [ x"$TITLE" != x"" ]; then
+            $DIALOG --title "$TITLE" --getsavefilename "$1" ""
+        else
+            $DIALOG --getsavefilename "$1" ""
+        fi
+
+        if [ $? -eq 0 ]; then
+            exit_success
+        else
+            exit_failure_operation_failed
+        fi
+    else
+        exit_failure_operation_impossible
+    fi
+}
+
+save_zenity()
+{
+    DIALOG=`which zenity`
+    if [ $? -eq 0 ]; then
+        if [ x"$1" != x"" ]; then
+            cd `dirname "$1"` 2>/dev/null
+            FILENAME=`basename "$1"`
+            if [ x"$FILENAME" != x"" ]; then
+                FILENAME="--filename=""$FILENAME"
+            fi
+        fi
+
+        if [ x"$FILENAME" != x"" ]; then
+            if [ x"$TITLE" != x"" ]; then
+                $DIALOG --title "$TITLE" --save --file-selection "$FILENAME"
+            else
+                $DIALOG --save --file-selection "$FILENAME"
+            fi
+        else
+            if [ x"$TITLE" != x"" ]; then
+                $DIALOG --title "$TITLE" --save --file-selection
+            else
+                $DIALOG --save --file-selection
+            fi
+        fi
+
+        if [ $? -eq 0 ]; then
+            exit_success
+        else
+            exit_failure_operation_failed
+        fi
+    else
+        exit_failure_operation_impossible
+    fi
+}
+
+directory_kde()
+{
+    DIALOG=`which kdialog`
+    if [ $? -eq 0 ]; then
+        if [ x"$TITLE" != x"" ]; then
+            $DIALOG --title "$TITLE" --getexistingdirectory "$1" ""
+        else
+            $DIALOG --getexistingdirectory "$1" ""
+        fi
+
+        if [ $? -eq 0 ]; then
+            exit_success
+        else
+            exit_failure_operation_failed
+        fi
+    else
+        exit_failure_operation_impossible
+    fi
+}
+
+directory_zenity()
+{
+    DIALOG=`which zenity`
+    if [ $? -eq 0 ]; then
+        if [ x"$1" != x"" ]; then
+            cd "$1" 2>/dev/null
+        fi
+
+        if [ x"$TITLE" != x"" ]; then
+            $DIALOG --title "$TITLE" --directory --file-selection
+        else
+            $DIALOG --directory --file-selection
+        fi
+
+        if [ $? -eq 0 ]; then
+            exit_success
+        else
+            exit_failure_operation_failed
+        fi
+    else
+        exit_failure_operation_impossible
+    fi
+}
+
+[ x"$1" != x"" ] || exit_failure_syntax
+
+TITLE=
+action=
+filename=
+
+case $1 in
+  openfilename)
+    action=openfilename
+    ;;
+
+  openfilenamelist)
+    action=openfilenamelist
+    ;;
+
+  savefilename)
+    action=savefilename
+    ;;
+    
+  directory)
+    action=directory
+    ;;
+
+  *)
+  exit_failure_syntax "unknown command '$1'"
+  ;;
+esac
+
+shift
+
+while [ $# -gt 0 ] ; do
+    parm=$1
+    shift
+
+    case $parm in
+      --title)
+        if [ -z "$1" ] ; then
+            exit_failure_syntax "TITLE argument missing for --title"
+        fi
+        TITLE="$1"
+        shift
+        ;;
+
+      -*)
+        exit_failure_syntax "unexpected option '$parm'"
+        ;;
+
+      *)
+        if [ -n "$filename" ] ; then
+            exit_failure_syntax "unexpected argument '$parm'"
+        fi
+        filename="$parm"
+        ;;
+    esac
+done
+
+# Shouldn't happen
+if [ -z "$action" ] ; then
+    exit_failure_syntax "command argument missing"
+fi
+
+detectDE
+
+if [ "$action" = "openfilename" ]; then
+    case "$DE" in
+        kde)
+        open_kde "$filename"
+        ;;
+
+        gnome|xfce)
+        open_zenity "$filename"
+        ;;
+
+        *)
+        exit_failure_operation_impossible "no method available for opening a filename dialog"
+        ;;
+    esac
+elif [ "$action" = "openfilenamelist" ]; then
+    case "$DE" in
+        kde)
+        open_multi_kde "$filename"
+        ;;
+
+        gnome|xfce)
+        open_multi_zenity "$filename"
+        ;;
+
+        *)
+        exit_failure_operation_impossible "no method available for opening a filename dialog"
+        ;;
+    esac
+elif [ "$action" = "savefilename" ]; then
+    case "$DE" in
+        kde)
+        save_kde "$filename"
+        ;;
+
+        gnome|xfce)
+        save_zenity "$filename"
+        ;;
+
+        *)
+        exit_failure_operation_impossible "no method available for opening a filename dialog"
+        ;;
+    esac
+elif [ "$action" = "directory" ]; then
+    case "$DE" in
+        kde)
+        directory_kde "$filename"
+        ;;
+
+        gnome|xfce)
+        directory_zenity "$filename"
+        ;;
+
+        *)
+        exit_failure_operation_impossible "no method available for opening a directory dialog"
+        ;;
+    esac
+fi

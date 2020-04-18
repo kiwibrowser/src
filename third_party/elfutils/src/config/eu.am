@@ -1,0 +1,64 @@
+## Common automake fragments for elfutils subdirectory makefiles.
+##
+## Copyright (C) 2010 Red Hat, Inc.
+##
+## This file is part of elfutils.
+##
+## This file is free software; you can redistribute it and/or modify
+## it under the terms of either
+##
+##   * the GNU Lesser General Public License as published by the Free
+##     Software Foundation; either version 3 of the License, or (at
+##     your option) any later version
+##
+## or
+##
+##   * the GNU General Public License as published by the Free
+##     Software Foundation; either version 2 of the License, or (at
+##     your option) any later version
+##
+## or both in parallel, as here.
+##
+## elfutils is distributed in the hope that it will be useful, but
+## WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+## General Public License for more details.
+##
+## You should have received copies of the GNU General Public License and
+## the GNU Lesser General Public License along with this program.  If
+## not, see <http://www.gnu.org/licenses/>.
+##
+
+DEFS = -D_GNU_SOURCE -DHAVE_CONFIG_H -DLOCALEDIR='"${localedir}"'
+AM_CPPFLAGS = -I. -I$(srcdir) -I$(top_srcdir)/lib -I..
+AM_CFLAGS = -std=gnu99 -Wall -Wshadow \
+	    $(if $($(*F)_no_Werror),,-Werror) \
+	    $(if $($(*F)_no_Wunused),,-Wunused -Wextra) \
+	    $(if $($(*F)_no_Wformat),-Wno-format,-Wformat=2) \
+	    $($(*F)_CFLAGS)
+
+if MUDFLAP
+AM_CFLAGS += -fmudflap
+libmudflap = -lmudflap
+else
+libmudflap =
+endif
+
+COMPILE.os = $(filter-out -fprofile-arcs -ftest-coverage $(no_mudflap.os),\
+	     		  $(COMPILE))
+
+%.os: %.c %.o
+if AMDEP
+	if $(COMPILE.os) -c -o $@ -fpic -DPIC -DSHARED -MT $@ -MD -MP \
+	  -MF "$(DEPDIR)/$*.Tpo" `test -f '$<' || echo '$(srcdir)/'`$<; \
+	then cat "$(DEPDIR)/$*.Tpo" >> "$(DEPDIR)/$*.Po"; \
+	     rm -f "$(DEPDIR)/$*.Tpo"; \
+	else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; \
+	fi
+else
+	$(COMPILE.os) -c -o $@ -fpic -DPIC -DSHARED $<
+endif
+
+CLEANFILES = *.gcno *.gcda
+
+textrel_check = if $(READELF) -d $@ | fgrep -q TEXTREL; then exit 1; fi

@@ -1,0 +1,139 @@
+// Copyright 2014 The Chromium OS Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package power_manager;
+
+// Included in powerd's SuspendImminent signal, sent when the system is about to
+// suspend.  If any clients previously called RegisterSuspendDelay, suspending
+// will be deferred until they've called powerd's HandleSuspendReadiness method.
+//
+// The general flow is as follows:
+//
+// 1. A client that needs to perform some work before the system can be
+//    suspended listens for SuspendImminent and SuspendDone signals from powerd.
+// 2. The client passes a RegisterSuspendDelayRequest message to powerd's
+//    RegisterSuspendDelay method and receives a RegisterSuspendDelayReply
+//    message in response. The client saves the |delay_id| field from the
+//    response.
+// 3. When the power manager is about to suspend the system, it emits a
+//    SuspendImminent signal containing a SuspendImminent message.
+// 4. Upon receipt of the signal, the client performs any last minute work
+//    that it needs to do and then calls powerd's HandleSuspendReadiness method,
+//    including a SuspendReadinessInfo message with its |delay_id| and the
+//    |suspend_id| field from the SuspendImminent signal.
+// 5. Once powerd has received notification that all registered clients are
+//    ready to suspend, the system will be suspended. If the initial suspend
+//    attempt fails, it will be retried automatically, but additional
+//    SuspendImminent signals will not be emitted.
+// 6. After the suspend request is complete, powerd emits a SuspendDone signal
+//    containing a SuspendDone message. The client should undo any pre-suspend
+//    work that was done in response to the SuspendImminent signal.
+// 7. Before the client exits, it calls UnregisterSuspendDelayRequest with a
+//    UnregisterSuspendDelayRequest message containing its delay ID.
+//
+// Note that the original suspend request may be aborted before all clients have
+// reported readiness; this can happen if a user closes and then quickly opens
+// the lid, for instance. In this case, powerd will emit SuspendDone and return
+// to normal unsuspended behavior without waiting for clients to report
+// readiness. It's unnecessary for clients to report readiness for the original
+// |suspend_id| after a SuspendDone containing the same ID has been received.
+//
+// Clients that start asynchronous operations in response to SuspendImminent
+// should take this possibility into account. One approach is to queue the
+// "undo" operation when SuspendDone is received so it will run after the
+// original operation completes. Note that a second SuspendImminent signal may
+// be emitted before the original operation has completed; in this case, the
+// client may wish to unqueue the undo operation and instead report readiness
+// for the second, current |suspend_id| once the original operation completes.
+message SuspendImminent {
+  // Next ID to use: 2
+
+  enum Reason {
+    // The user inactivity idle timeout was reached.
+    IDLE = 0;
+    // The lid was closed.
+    LID_CLOSED = 1;
+    // Some other reason (e.g. an explicit user request).
+    OTHER = 2;
+  }
+
+  // Unique ID corresponding to this suspend request. This is included in the
+  // SuspendReadinessInfo message passed via HandleSuspendReadiness.
+  optional int32 suspend_id = 1;
+
+  // The reason the system is suspending.
+  optional Reason reason = 2;
+}
+
+// Included in powerd's SuspendDone signal, sent after the system has completed
+// a suspend request. Each SuspendImminent signal will be followed by a
+// SuspendDone signal.
+message SuspendDone {
+  // Next ID to use: 3
+
+  // Unique ID corresponding to the suspend request.
+  optional int32 suspend_id = 1;
+
+  // Wall time that the system was suspended, as given by
+  // base::TimeDelta::ToInternalValue().
+  optional int64 suspend_duration = 2;
+}
+
+// Included in calls to powerd's RegisterSuspendDelay method.
+message RegisterSuspendDelayRequest {
+  // Next ID to use: 3
+
+  // Upper bound on the amount of time that the power manager will wait for this
+  // client to call HandleSuspendReadiness before suspending the system, as
+  // given by base::TimeDelta::ToInternalValue().
+  optional int64 timeout = 1;
+
+  // Human-readable description of the delay's purpose (e.g. the name of
+  // the daemon that requested the delay). Only used for debugging.
+  optional string description = 2;
+}
+
+// Included in responses to powerd's RegisterSuspendDelay method.
+message RegisterSuspendDelayReply {
+  // Next ID to use: 2
+
+  // Unique ID assigned to the client that registered this suspend delay. This
+  // is included in later HandleSuspendReadiness and UnregisterSuspendDelay
+  // calls.
+  optional int32 delay_id = 1;
+}
+
+// Included in calls to powerd's UnregisterSuspendDelay method.
+message UnregisterSuspendDelayRequest {
+  // Next ID to use: 2
+
+  // ID that was returned in response to the original RegisterSuspendDelay call.
+  optional int32 delay_id = 1;
+}
+
+// Included in calls to powerd's HandleSuspendReadiness method.
+message SuspendReadinessInfo {
+  // Next ID to use: 3
+
+  // ID that was returned to the client in response to its invocation of
+  // RegisterSuspendDelay.
+  optional int32 delay_id = 1;
+
+  // ID that was included in the SuspendImminent signal that provoked this
+  // readiness call.
+  optional int32 suspend_id = 2;
+}
+
+// Included in calls to powerd's RecordDarkResumeWakeReason method.
+message DarkResumeWakeReason {
+  // Next ID to use: 2
+
+  // Wake reason that caused the current dark resume.
+  optional string wake_reason = 1;
+}
+

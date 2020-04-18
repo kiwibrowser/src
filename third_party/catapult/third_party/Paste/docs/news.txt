@@ -1,0 +1,1047 @@
+News
+====
+
+.. contents::
+
+2.0.2
+-----
+
+* #22: Fix improper commas in request headers in wsgi_environ (https://bitbucket.org/ianb/paste/pull-request/22/fix-improper-commas-in-request-headers-in)
+  Fixes issue #4 ("WSGI environ totally borked") (https://bitbucket.org/ianb/paste/issue/4/wsgi-environ-totally-borked)
+
+* #24: test_wsgirequest_charset: Use UTF-8 instead of iso-8859-1 (https://bitbucket.org/ianb/paste/pull-request/24/test_wsgirequest_charset-use-utf-8-instead)
+  Fixes issue #7 ("Python 3 test failure") (https://bitbucket.org/ianb/paste/issue/7/python-3-test-failure)
+
+* #23: Replace cgi.parse_qsl w/ six.moves.urllib.parse.parse_qsl (https://bitbucket.org/ianb/paste/pull-request/23/replace-cgiparse_qsl-w)
+  Fixes issue #8 ("cgi.parse_qsl is pending deprecation") (https://bitbucket.org/ianb/paste/issue/8/cgiparse_qsl-is-pending-deprecation)
+
+* #20: Escape CGI environment variables in HTTP 404 responses (https://bitbucket.org/ianb/paste/pull-request/20/escape-cgi-environment-variables-in-http)
+
+* #6: Add HTTP exception for new code 429 "Too Many Requests" (https://bitbucket.org/ianb/paste/pull-request/6/add-http-exception-for-new-code-429-too)
+
+* #25: replace ``has_key`` method to ``in`` operator #9 (https://bitbucket.org/ianb/paste/pull-request/25/replace-has_key-method-to-in-operator-9)
+  Fixes #9 ("used methods removed from py3") (https://bitbucket.org/ianb/paste/issue/9/used-methods-removed-from-py3)
+
+* #5: Invalid error message when the socket is already in use (https://bitbucket.org/ianb/paste/issue/5/invalid-error-message-when-the-socket-is)
+
+2.0.1
+-----
+
+* Fix setup.py for six dependency: move the six dependency from extras_require
+  to install_requires.
+
+* Port paste.proxy to Python 3.
+
+* Fix paste.exceptions.serial_number_generator.hash_identifier() on Python 3.
+
+* Fix paste.util.threadedprint.uninstall(). Rename duplicated uninstall()
+  function to uninstall_stdin() and fix typo in variable name (_oldstin =>
+  _oldstdin).
+
+* Add README.rst file.
+
+2.0
+---
+
+* Experimental Python 3 support.
+
+* paste now requires the six module.
+
+* Drop support of Python 2.5 and older.
+
+* Fixed ``egg:Paste#cgi``
+
+* In ``paste.httpserver``: give a 100 Continue response even when the
+  server has been configured as an HTTP/1.0 server (clients may send
+  ``Expect: 100-Continue`` before they know the version), and wrap
+  100 Continue ``environ['wsgi.input']`` files with LimitedLengthFile
+  just like normal request bodies are wrapped, keeping WSGI
+  applications from over-reading from the socket.
+
+* Fixed parsing of paths beginning with multiple forward slashes.
+
+* Add tox.ini to run tests with tox on Python 2.6, 2.7 and 3.4.
+
+1.7.5.1
+-------
+
+* Fix bug introduced in :mod:`paste.auth.auth_tkt` (with ``url_unquote``)
+
+1.7.5
+-----
+
+* Won't install ``tests/`` directory (also caused installation
+  problems on some Mac systems).
+
+* Fixed problem with gzip middleware and zero-length responses.
+
+* Use ``X-Forwarded-For`` header in :mod:`paste.translogger`
+
+* Fixed problems with mimeparse code
+
+* Fixed some corner cases with CGI scripts
+
+* :mod:`paste.auth.auth_tkt` will URL-quote usernames, avoiding some
+  errors with usernames with ``!`` in them.
+
+* Improve handling of errors in fetching error pages in
+  :mod:`paste.errordocument`.
+
+1.7.4
+-----
+
+* Fix XSS bug (security issue) with not found handlers for
+  :class:`paste.urlparser.StaticURLParser` and
+  :class:`paste.urlmap.URLMap`.  If you ask for a path with
+  ``/--><script>...`` that will be inserted in the error page and can
+  execute Javascript.  Reported by Tim Wintle with further details
+  from Georg-Christian Pranschke.
+
+* Replaced :func:`paste.util.mimeparse.desired_match`
+
+1.7.3.1
+-------
+
+* Removed directory name from 404 errors in
+  :class:`paste.urlparser.StaticURLParser`.
+
+* Fixed packaging to include Javascript and images for
+  :mod:`paste.evalexception`
+
+1.7.3
+-----
+
+* I got a fever and the only prescription is more :mod:`paste.cowbell`!
+
+* Fix :mod:`paste.httpserver` on Python 2.6.
+
+* Fix :mod:`paste.auth.cookie`, which would insert newlines for long
+  cookies.
+
+* :mod:`paste.util.mimeparse` parses a single ``*`` in Accept headers
+  (sent by IE 6).
+
+* Fix some problems with the ``wdg_validate`` middleware.
+
+* Improvements to :mod:`paste.auth.auth_tkt`: add httponly support,
+  don't always aggressively set cookies without the
+  ``wildcard_cookie`` option.  Also on logout, make cookies expire.
+
+* In :class:`paste.proxy.Proxy` handle Content-Length of -1.
+
+* In :mod:`paste.httpexceptions` avoid some unicode errors.
+
+* In :mod:`paste.httpserver` handle ``.read()`` from 100 Continue
+  properly (because of a typo it was doing a readline).
+
+* Update ``paste.util.mimeparse`` from `upstream
+  <http://code.google.com/p/mimeparse/>`_.
+
+1.7.2
+-----
+
+* In :mod:`paste.proxy`, added some more headers that are disallowed
+  in WSGI (e.g., Keep-Alive).  Send Content-Length.  Also fix the
+  missing query string when using :class:`paste.proxy.Proxy`
+  (:class:`paste.proxy.TransparentProxy` already worked).
+
+* Make :mod:`paste.debug.prints` work with Google App Engine.
+
+* Make ``environ['wsgi.input']`` with :mod:`paste.httpserver` only
+  have a ``seek`` method if it is wrapping something with a seek
+  method (which usually it is not).
+
+* In :mod:`paste.httpserver` re-raise KeyboardInterrupt in worker
+  threads.
+
+* Added support for the ``HttpOnly`` Cookie property to
+  :mod:`paste.wsgiwrappers`
+
+* Added :func:`paste.reloader.add_file_callback`, which lets you watch
+  files based on a callback.
+
+* Quiet Python 2.6 deprecation warnings.
+
+* Fix :mod:`paste.auth.cookie` generating bad headers.
+
+* Added :class:`paste.reloader.JythonMonitor` for an experimental,
+  optimized reloader on Jython.
+
+1.7.1
+-----
+
+* Normalize and make absolute the paths passed to
+  :class:`paste.urlparser.StaticURLParser` (before passing a
+  relative-to-cwd path to that class would cause Forbidden errors).
+
+* Deprecate :func:`paste.fixture.setup_module`
+
+1.7
+---
+
+* Fixed bug in :class:`paste.fixture.TestApp` that would submit forms
+  with unnamed fields (like an unnamed submit button).  Also made
+  checkboxes with no explicit ``value`` send ``on`` instead of
+  ``checked`` (which is what browsers do).
+
+* Fixed bug in :mod:`paste.httpserver` where
+  ``environ['wsgi.input'].readline(max_size)`` ignored the max_size
+  argument, which can lead to large memory usage (from Jakub Stolarski)
+
+* Make :mod:`paste.cascade` notice sockets that have stopped producing
+  data.  From Casey Zednick.
+
+* In :class:`paste.fixture.TestApp` Accept MultiDict values for the
+  ``params`` argument in requests.  (Anything with a ``.items()``
+  method will have its items encoded as the request parameters.)
+
+* Fix :mod:`paste.httpserver` to allow binding to port 0.
+
+* In :mod:`paste.auth.auth_tkt`, set the same cookies (with the same
+  domains) in ``set_cookie`` as get unset in ``logout_user_cookie``.
+
+* In :mod:`paste.translogger` save REQUEST_METHOD in case it gets
+  overridden somewhere (e.g., when using errordocuments POST would
+  show up as GET).
+
+* Exceptions with unicode messages don't cause the collector to fail.
+
+* Sometimes :class:`paste.exceptions.errormiddleware.ErrorMiddleware`
+  would not call start_response properly; this is fixed (from Andreas
+  Kloecker).
+
+* :mod:`paste.fixture.TestApp` can store multiple cookie values
+  (previously only one cookie was stored; from Andrey Lebedev)
+
+* ``u'' in TestApp(app).get('/')`` will work when the body isn't ASCII
+  (before it would give a unicode error).  This problem wasn't present
+  in the recommended `WebTest <http://pythonpaste.org/webtest/>`_.
+
+* :mod:`paste.debug.profile` won't break when content is served with no
+  Content-Type.
+
+* Accept relative paths and paths with ``/../`` in them for
+  :class:`paste.urlparser.StaticURLParser` (from Eric Larson).  Also fix
+  problem with case normalization on Windows (from Ionel Maries
+  Cristian).
+
+* :class:`paste.registry.StackedObjectProxy`'s now include the proxied object's names via
+  ``__dir__`` (for Python 2.6).
+
+* Use ``environ['wsgi.file_wrapper']`` when available (in
+  ``paste.fileapp``).
+
+* Make :mod:`paste.debug.prints` compatible with App Engine.
+
+* Fix the ``domain`` keyword in
+  :meth:`paste.wsgiwrappers.WSGIResponse.delete_cookie`.
+
+1.6.1
+-----
+
+* Fixed bug in paste lint where PATH_INFO would become unicode.
+
+1.6
+---
+
+* Make the import of ``socket.sslerror`` conditional in
+  ``paste.exceptions.reporter`` (needed for Python interpreters
+  compiled without SSL support).
+
+* In ``paste.proxy.TransparentProxy``, don't overwrite
+  ``X-Forwarded-For`` header if it is already in the environment.
+
+* Added ``226 IM Used`` status code to ``paste.wsgiwrappers``
+
+* In ``paste.fixture.TestApp`` treat ``<image type="image">`` the same
+  as a submit button.
+
+* Use ``OpenSSL.tsafe.Connection`` for https with
+  ``paste.httpserver``, avoiding some possible errors (``sslv3 alert
+  bad record mac``).
+
+* Fix small issue with ``paste.cgiapp`` and mod_wsgi.
+
+* Use ``BaseCookie`` instead of ``SimpleCookie`` for storing cookies
+  (avoids quoting cookie values).
+
+1.5.1
+-----
+
+* Make ``paste.cascade`` more tolerant of a missing or invalid
+  Content-Length.
+
+1.5
+---
+
+* Fixed memory leak with ``paste.registry`` not properly removing
+  all references to registered objects should register be called
+  multiple times during a single context for a StackedObjectProxy.
+
+* ``paste.httpheaders.CONTENT_RANGE`` returns ``bytes
+  START-END/LENGTH`` instead of just ``START-END/LENGTH``
+
+* In ``paste.fixture.TestApp`` set ``CONTENT_TYPE`` to
+  ``'application/x-www-form-urlencoded'`` whenever there are
+  parameters (and no other content type was provided).
+
+* In ``paste.session``, when cleaning files ignore files that aren't
+  session files.
+
+* ``paste.httpexceptions.HTTPExceptionHandler`` will no longer catch
+  exceptions raised during the app_iter iteration.
+
+* ``paste.cascade.Cascade`` copies ``wsgi.input`` when cascading, so
+  that one of the applications cannot read the input and leave a later
+  application blocked when it tries to read the input.
+
+* Fix assigning to ``WSGIResponse.charset`` breaking the content-type.
+
+* SMTP authentication is supported for the exception handler.  You may
+  now set ``smtp_username``, ``smtp_password`` and ``smtp_use_tls`` to
+  control this behavior.  From pthy.
+
+1.4.2
+-----
+
+* Remove FreeBSD threadpool condition in paste.httpserver (which was
+  also breaking code for Windows users).
+
+* Fix problem with ``paste.wsgilib.intercept_output`` and passing up
+  exceptions.
+
+1.4.1
+-----
+
+* Allow customization of the ``paste.config.ConfigMiddleware`` environ
+  key.
+
+* Added a ``current`` method (an alias of ``current_conf``) to
+  ``paste.config.DispatchingConfig``.
+
+* Make test response ``.form`` attribute work when you have a single
+  named form.
+
+* Try to encode any unicode input to ``paste.auth.auth_tkt``
+
+* ``paste.wsgiwrappers.WSGIResponse`` now has a ``.content_type``
+  attribute (that does not include parameters), and a ``.charset``
+  attribute (that gets the charset parameter).
+
+* Inherit inherit show_exceptions_in_wsgi_errors from global
+  configuration.  Inherit ``debug`` more properly.
+
+1.4
+---
+
+* In ``paste.httpserver`` added lots of functionality to the
+  threadpool.  See `the paste.httpserver threadpool documentation
+  <paste-httpserver-threadpool.html>`_ for details.  This catches
+  worker threads (and WSGI apps) that take too long to complete their
+  task; killing them eventually, adding more worker threads when the
+  pool is exhausted and it doesn't look good that it'll clear soon,
+  and optionally killing the process when there are too many
+  lost/zombie threads (you must be using some kind supervisor process
+  for this last response to make sense).
+
+* Save host and scheme information during real HTTP proxy requests to
+  ``paste.httpserver``, into the keys
+  ``paste.httpserver.proxy.scheme`` and
+  ``paste.httpserver.proxy.host``
+
+* In ``paste.exceptions`` always call ``start_response``; may help
+  problems when there is an exception in ``start_response`` itself.
+
+* Added method to ``paste.registry.StackedObjectProxy``,
+  ``_object_stack()``, which returns a list of all the registered
+  objects.  Useful if you want to search through the effective history
+  of a stacked object.
+
+* Fixed infinite recursion problem with
+  ``paste.request.EnvironHeaders.keys()``.
+
+* Fix ``paste.wsgiwrappers.WSGIRequest.urlvars`` to use
+  ``wsgiorg.routing_args``
+
+* Remove port from ``paste.request.construct_url`` if it's the default
+  port (e.g., port 80 for ``http``).
+
+* ``paste.proxy`` works with headers with continuations in the
+  response (i.e., a header that spans multiple lines).  Also, treat a
+  missing Content-Length as 0, not unlimited (may have previously
+  caused freeze ups for some kinds of requests).
+
+* ``StackedObjectProxy`` supports ``__call__`` (i.e., you can use
+  ``StackedObjectProxy`` with callable objects).
+
+* Fixed ``ProfileMiddleware`` not calling ``close()`` on consumed
+  app_iters.
+
+* ``httpheaders.AcceptLanguage`` now won't give an exception when
+  there is a malformed parameter in the header.
+
+* Fix ``paste.auth.form.auth_form`` Paste Deploy entry point.
+
+* Added REST methods to ``paste.fixture.TestApp``, so you can more
+  easily do requests like PUT and DELETE.  From Anders Pearson.
+
+* Added ``{{default var=default_value}}`` command to
+  ``paste.util.template``.  Make ``{{# comment}}`` work.
+
+1.3
+---
+
+* In ``paste.httpserver`` remove the reverse DNS lookup to set
+  ``REMOTE_HOST``
+
+* In ``paste.fileapp``, if the client sends both If-None-Match and
+  If-Modified-Since, prefer If-None-Match.  Make ETags include the
+  size as well as last modified timestamp.  Make it possible to
+  override how mimetypes are guessed.
+
+* ``HTTPException`` objects now have a ``exc.response(environ)``
+  method that returns a ``WSGIResponse`` object.
+
+* ``egg:Paste#watch_threads`` will show tracebacks of each thread
+  under Python 2.5.
+
+* Made ``paste.util.template`` trim whitespace around statements that
+  are on their own line.
+
+* ``paste.fileapp.DataApp`` now accepts ``allowed_headers=[...]`` to
+  specify the allowed headers.  By default only ``GET`` and ``HEAD``
+  are allowed.
+
+* Added ``paste.util.import_string.try_import_module``, which imports
+  modules and catches ``ImportError``, but only if it's an error
+  importing the specific module, not an uncaught ``ImportError`` in
+  the module being imported.
+
+1.2.1
+-----
+
+* ``paste.httpserver`` didn't implement the ``readline`` that the
+  ``cgi`` module wants (regression in 1.2).
+
+1.2
+---
+
+* **Backward incompatible change**: ``paste.fileapp.FileApp`` properly
+  supports request methods, including HEAD.  If you were subclassing
+  ``FileApp`` or ``DataApp`` and overriding ``__call__()`` you may have
+  to subclass ``get()`` instead.
+
+* paste.httpheaders now parses the HTTP Accept-Language header and returns
+  a list of languages the browser supports in the order it prefers them.
+
+* paste.mimeparse module added that handles parsing HTTP Accept headers
+  for quality and mime-types.
+
+* ``paste.request.construct_url`` was adding ``SERVER_PORT`` to
+  ``HTTP_HOST``; but ``HTTP_HOST`` (from the Host header) generally
+  contains a port when necessary, and ``SERVER_PORT`` should only be
+  used with ``SERVER_NAME``.
+
+* Added entry point for ``paste.registry.RegistryManager``
+  (``egg:Paste#registry``).
+
+* ``paste.request.HeaderDict`` fixed to know that ``Content-Length``
+  maps to ``CONTENT_LENGTH``.
+
+* Can use ``paste.urlparser.StaticURLParser`` with sub-instances other
+  than ``paste.fileapp.FileApp`` (if you subclass and override
+  ``make_app``)
+
+* ``paste.fixture.TestApp.get(status=X)`` takes a list of allowed
+  status codes for ``X``.
+
+* Added a small templating system for internal use (``paste.util.template``)
+
+* Removed a bunch of long-deprecated modules (generally modules that
+  have been moved to other names).
+
+In paste.wsgiwrappers
+~~~~~~~~~~~~~~~~~~~~~
+
+* ``paste.wsgiwrappers.WSGIRequest`` has match_accept() function to screen
+  incoming HTPT Accept values against a list of mime-types.
+
+* ``paste.wsgiwrappers.WSGIRequest.defaults`` now accepts a new key:
+
+  ``language``:
+    The i18n language that should be used as the fallback should
+    a translation not occur in a language file. See docs for
+    details.
+
+* ``paste.wsgiwrappers.WSGIRequest`` can now optionally decode form
+  parameters to unicode when it has a ``charset`` value set.
+
+* Deprecated the ``paste.wsgiwrappers.settings`` StackedObjectProxy
+  dictionary for ``paste.wsgiwrappers.WSGIResponse.defaults``.
+
+In paste.httpserver
+~~~~~~~~~~~~~~~~~~~
+
+* Regression in 1.1 fixed, where Paste's HTTP server would drop
+  trailing slashes from paths.
+
+* ``paste.httpserver`` now puts a key in the environment when using a
+  thread pool that allows you to track the thread pool and see any
+  wedged threads.  ``egg:Paste#watch_threads`` is an application that
+  can display this information.
+
+* ``paste.httpserver`` now accepts all request methods, not just
+  ``GET``, ``PUT``, etc.  (Methods like ``MKCOL`` were previously
+  rejected.)
+
+* ``paste.httpserver`` has a ``wsgi.input`` that now does not block if
+  you try to read past the end (it is limited to returning the number
+  of bytes given in ``Content-Length``).  Double-reading from
+  ``wsgi.input`` won't give you the same data, but it won't cause
+  blocking.
+
+1.1.1
+-----
+
+* Fixed major issue with serving static files on Windows (a regression
+  in Paste 1.1 where most static files would return 404 Not Found).
+
+* Fixed ``parse_dict_querystring`` returning empty dicts instead of
+  ``MultiDict``\ s.
+
+* Added ``paste.config``, a rewrite of ``paste.deploy.config`` using
+  ``paste.registry``. This version of ``ConfigMiddleware`` will
+  enable use of ``paste.config.CONFIG`` within the ``EvalException``
+  interactive debugger.
+
+* Fixed problem where ``paste.recursive`` would leave ``wsgi.input``
+  and ``CONTENT_LENGTH`` set for recursive requests.
+
+* Changed the static file servers to give 404 Not Found responses when
+  you have extra parts after a static file, instead of 400 Bad
+  Request (like when you request ``/file.html/extra/path``)
+
+1.1
+---
+
+* Security fix for ``paste.urlparser.StaticURLParser``.  The problem
+  allowed escaping the root (and reading files) when used with
+  ``paste.httpserver`` (this does not effect other servers, and does
+  not apply when proxying requests from Apache to
+  ``paste.httpserver``).
+
+* ``paste.httpserver`` and ``paste.fixture.TestApp`` url-unquote
+  ``SCRIPT_NAME`` and ``PATH_INFO``, as specified in the CGI spec.
+  Thanks to Jon Nelson for pointing out both these issues.
+
+* ``paste.registry`` now works within the ``EvalException``
+  interactive debugger.
+
+* Fixed ``paste.auth.open_id`` failures not returning a correct
+  response.
+
+* Changed ``paste.httpexceptions.HTTPUnauthorized`` so that the
+  ``WWW-Authenticate`` header is not required.  401 responses don't
+  *have* to have that header.
+
+* In ``paste.fixture.TestApp``: ``<form>`` tags that have to
+  ``action`` will preserve the existing query string.  (Generally
+  relative links that are completely empty should but were not
+  preserving the query string)
+
+* Made ``paste.*`` compatible with `py2exe <http://www.py2exe.org/>`_
+  by adding a ``modulefinder`` call in ``__init__.py``
+
+* The ``paste.gzipper`` gzipping middleware wasn't changing the
+  Content-Length header properly; thanks to Brad Clements for the fix.
+
+* Fixed ``paste.proxy`` to not use anything based on the dict form of
+  ``httplib..HTTPMessage``.  This form folds headers together in a way
+  that breaks ``Set-Cookie`` headers (two ``Set-Cookie`` headers would
+  be merged into one).
+
+* ``paste.request.parse_formvars`` didn't accept parameters in
+  ``CONTENT_TYPE``.  ``prototype.js`` sets a ``charset`` parameter,
+  which caused a problem.
+
+* Added a ``__traceback_decorator__`` magic local variable, to allow
+  arbitrary manipulation of the output of
+  ``paste.exceptions.collector`` before formatting.
+
+* Added unicorn power to ``paste.pony`` (from Chad Whitacre)
+
+* For ``paste.httpserver`` SSL support: add support loading an
+  explicit certificate context, and using ``ssl_pem='*'`` create an
+  unsigned SSL certificate (from Jason Kirtland).
+
+* Fix some cases where ``paste.httpserver`` can have an orphaned
+  thread pool (causing the process to not shut down properly).  Patch
+  from jek.
+
+1.0
+---
+
+* Fixed ``parsed_formvars`` potentially locking up on wsgi.input
+  after modification of ``QUERY_STRING``.
+
+* Fixed problem where ``paste.exceptions.errormiddleware`` didn't
+  expose the ``.close()`` method of the app_iter that it wraps (to
+  catch exceptions).  This is a problem if the server about the
+  errormiddleware aborts the request; it should then call
+  ``.close()``, but won't necessarily exhaust the iterator to do so.
+
+* Added entry point for ``paste.translogger``
+  (``egg:Paste#translogger``)
+
+* Fixed some cases where long data (e.g., a file upload) would show up
+  in the error report, creating a very very large report.  Also, put
+  in a monkeypatch for the ``cgi`` module so that
+  ``repr(uploaded_field)`` won't load the entire field into memory
+  (from its temporary file location).
+
+* Added a ``force_host`` option to ``paste.proxy.TransparentProxy``,
+  which will force all incoming requests to the same host, but leave
+  the ``Host`` header intact.
+
+* Added automatic cleanup of old sessions for ``paste.session``, from
+  Amir Salihefendic.
+
+* Quote the function name in tracebacks in the exception formatter;
+  Genshi has function names that use ``<>``.
+
+0.9.9
+-----
+
+* Fixed ``paste.response.HeaderDict`` ``get`` and ``setdefault``
+  methods to be case insensitive
+
+* Fix use of ``TestApp().post(params={'key': ['list of',
+  'values']})`` as reported by Syver Enstad.
+
+* ``paste.fileapp.DataApp`` is now directly usable (was previously
+  only usable as an abstract base class).
+
+0.9.8
+-----
+
+* Fixed ``wsgiwrappers.WSGIResponse.delete_cookie``. It also now takes
+  optional path and domain arguments
+
+* ``wsgiwrappers.WSGIResponse`` now handles generator/iterator content
+  more cleanly, and properly encodes unicode content according to its
+  specified charset
+
+* Fixed ``wsgiwrappers.WSGIResponse`` mishandling multiple headers of
+  the same name
+
+* Added a Paste Deploy entry point for ``paste.auth.cookie``
+
+* Moved Paste Deploy dependencies out of top-level modules and into
+  Paste-Deploy-specific entry point functions.  This should make Paste
+  more-or-less Paste Deploy independent.  ``paste.urlparser`` and
+  ``paste.exceptions.errormiddleware`` still have some leftover bits.
+
+* Added another redirector type to ``paste.recursive``,
+  ``environ['paste.recursive.include_app_iter']`` which gives access
+  to the original app_iter.
+
+* Bug with ``wsgilib.catch_errors`` and app_iters with no ``close()``
+  method.
+
+* Long words in tracebacks weren't being wrapped correctly at all.
+  Also, large data would cause the wrapping routine to give a
+  recursion error.  Now large data is truncated (at 1000 characters),
+  and recursion won't be a problem.  Also, wrapping shouldn't lose
+  characters.
+
+* Better exception if you try to put a non-str into environ when using
+  ``paste.auth.cookie``
+
+* ``paste.exceptions.collector`` produces an
+  ``exc_data.exception_type`` that is a class, not a string.  This
+  helps it get formatted better in Python 2.5.
+
+* All the tests pass on Python 2.5!
+
+* Added ``paste.proxy.TransparentProxy``, which just sends the request
+  described in the WSGI environ on without any modification.  More
+  useful for WSGI clients than servers, it effectively allows any
+  WSGI-based request mechanism to act like an httplib-based request
+  mechanism.
+
+* Added a ``cache_max_age`` argument to
+  ``paste.urlparser.StaticURLParser``, which allows you to encourage
+  the caching of static files.  Patch from Brad Clements.
+
+* Added ``suppress_http_headers`` to ``paste.proxy.Proxy``, which will
+  filter out HTTP headers from the request before passing it on.
+  Patch from Brad Clements.
+
+0.9.7
+-----
+
+* The ``EvalException`` 'full traceback' button is now only displayed
+  when the full traceback differs from the regular (includes hidden
+  frames).
+
+* Fixed ``EvalException`` returning a Content-type of 'text-html'
+  instead of 'text/html' in some cases.
+
+0.9.6
+-----
+
+* Renamed the ``paste.util.multidict.multidict`` class to
+  ``paste.util.multidict.MultiDict``
+
+0.9.5
+-----
+
+* Fixed a security vulnerability in ``paste.urlparser``'s StaticURLParser
+  and PkgResourcesParser where, with some servers, you could escape
+  the document root.
+
+* Significantly improved ``paste.httpserver``'s (egg:Paste#http)
+  performance. It now uses a thread pool: previously it created a new
+  thread for every request. To revert back to the old, slower behavior,
+  set::
+
+    use_threadpool = false
+
+  in the [server:main] section of the config file.
+
+* More control of where the output of ``paste.debug.prints`` goes.
+
+* Added a warning to ``paste.wsgilib.add_close`` if the upstream
+  app_iter consumer doesn't call the ``app_iter.close()`` method.
+
+* Fixed ``testapp.post(params={})``
+
+* Fixed ``paste.translogger.TransLogger`` to log to the Apache combined
+  log format as advertised.
+
+* Fixed ``paste.urlparser`` classes to handle quoted characters (e.g.
+  %20) in URL paths.
+
+* Changed ``paste.session`` to allow manipulating a session for the
+  first time after ``start_response`` is called.
+
+* Added ``paste.wsgilib.add_start_close`` which calls a function just
+  before returning the first chunk of the app_iter.
+
+* Changed ``paste.urlmap`` so that it matches domain-specific mappings
+  before domain-neutral mappings.
+
+* Fixed IE 6 potentially receiving the following ``"400 Bad Request"``
+  error on file downloads::
+
+    Please check your system clock.
+    According to this server, the time provided in the
+    If-Modified-Since header is in the future.
+
+* Added a 'no' keyword argument to ``TestResponse.mustcontain``, so
+  you can assert that a response does contain some strings at the same
+  time that you assert that a response *does not* contain other
+  strings, like::
+
+    res = app.get('/')
+    res.mustcontain('this must be there',
+                    no=['error', 'unexpected'])
+
+* Fixed ``fileapp.FileApp`` to pay attention to the ``If-None-Match``
+  header, which does ETag matching; before only ``If-Modified-Since``
+  was supported, even though an ``ETag`` header was being sent; in
+  particular Firefox would then only send ``If-None-Match`` and so
+  conditional requests never worked.
+
+* Changed usage of ``paste.request.MultiDict`` to
+  ``paste.util.multidict``, particularly in ``paste.wsgiwrappers``
+  where ``request.GET`` returns a new style of dictionary interface.
+
+* Be more careful in ``paste.request.parse_formvars`` not to let
+  the ``cgi`` module read from ``wsgi.input`` when there are no
+  parsable variables in the input (based on ``CONTENT_TYPE``).
+
+0.9.4
+-----
+
+* This released was lost in a tragic clerical accident.
+
+0.9.3
+-----
+
+* 0.9.2 Included a version of MochiKit that was no longer compatible with
+  evalexception; 0.9.3 reverts to a previous version.
+
+* Change wsgi.run_once=False for ``paste.httpserver``
+
+* Added entry points for debug apps
+
+0.9.2
+-----
+
+* Fix in paste.urlmap when connecting with host:port.
+
+* Added ``/_debug/summary`` to evalexception, which gives a
+  JSON-formatted list of all the exceptions in memory.
+
+0.9.1
+-----
+
+* A fix for paste.errordocument, when doing an internal redirect from
+  a POST request (the request is rewritten as a GET request)
+
+0.9
+---
+
+* Added `paste.request.WSGIRequest
+  <class-paste.request.WSGIRequest.html>`_, a request object that
+  wraps the WSGI environment.
+
+* Added `paste.registry <module-paste.registry.html>`_, which is
+  middleware for registering threadlocal objects in a request.
+
+* Avoid annoying warning from paste.recursive
+
+* ``paste.httpserver`` now removes HTTPServer's transaction logging,
+  which was doing a reverse DNS lookup.
+
+* Added ``has_session`` to ``paste.session``
+
+* Allow for conditional ``paste.wsgilib.intercept_output`` which
+  should be slightly faster (and streamable) compared to doing the
+  condition manually.
+
+* Added entry point for `paste.proxy <module-paste.proxy.html>`_, plus
+  improvements from Brad Clements (support path in target, filter
+  request methods)
+
+* Added `paste.pony <module-paste.pony.html>`_ so pony power can be
+  added to any WSGI application.
+
+* Added port matching to ``paste.urlmap``.
+
+0.5
+---
+
+* Added `paste.auth.auth_tkt <module-paste.auth.auth_tkt.html>`_
+
+* Added `paste.auth.grantip <module-paste.auth.grantip.html>`_
+
+0.4.1
+-----
+
+* Some bug fixes to the `built-in HTTP server
+  <module-paste.httpserver.html>`_.
+
+* Experimental `paste.progress <module-paste.progress.html>`_
+  middleware for tracking upload progress
+
+* Some tweaking of how `paste.reload <module-paste.reload.html>`_
+  works, especially with respect to shutdown.
+
+0.4
+---
+
+* Fixed up paste documentation (especially for new packages/modules)
+
+* Added `paste.auth <module-paste.auth.html>`_ package for authentication
+  related WSGI middle-ware components:
+
+  - ``basic`` and ``digest`` HTTP authentication as described by RFC 2617
+
+  - support for Yale's Central Authentication System (``cas``)
+
+  - ``open_id`` supports single sign-on originally developed for
+    LiveJournal (see http://openid.net)
+
+  - ``cookie`` digitally signs cookies to record the current
+    authenticated user (``REMOTE_USER``), session identifier
+    (``REMOTE_SESSION``), and other WSGI entries in the ``environ``.
+
+  - a ``form`` module (to be used with ``cookie`` or an equivalent)
+    provides a simple HTML based form authentication.
+
+  - the ``multi`` module is an *experimental* mechanism for choosing
+    an authentication mechanism based on the WSGI ``environ``
+
+* Added `paste.httpserver <module-paste.httpserver.html>`_ module which
+  provides a very simple WSGI server built upon python's
+  ``BaseHTTPServer``; this server has support for several features:
+
+  - support for SSL connections via OpenSSL
+
+  - support for HTTP/1.1 ``100 Continue`` messages as required by the
+    WSGI specification (many HTTP server implementations don't do this)
+
+  - implemented as a Mix-In so that it can be used with other
+    more enchanted versions of ``BaseHTTPServer``
+
+  - support for 'Keep-Alive' (standard in HTTP/1.1) by either providing
+    a content-length or closing a connection if one is not available
+
+* Improved the `paste.httpexceptions <module-paste.httpexceptions.html>`_
+  module:
+
+  - added missing exception objects, and better descriptions
+
+  - fixed several bugs in how exceptions are caught and propagated
+
+  - usage as a ``wsgi_application()`` enables exceptions to be
+    returned without throwing or catching the error
+
+  - support for plain/text messages for text-only clients such as
+    curl, python's urllib, or Microsoft Excel
+
+  - allows customization of the HTML template for higher-level frameworks
+
+* Added `paste.httpheaders <module-paste.httpheaders.html>`_ module
+  to provide a uniform mechanism to access/update standard HTTP headers
+  in a WSGI ``environ`` and ``response_headers`` collection; it includes
+  specific support for:
+
+  - providing "common" header names and sorting them as suggested
+    by RFC 2616
+
+  - validated support for ``Cache-Control`` header construction
+
+  - validated support for ``Content-Disposition`` header construction
+
+  - parsing of ``If-Modified-Since`` and other date oriented headers
+
+  - parsing of Range header for partial-content delivery
+
+  - composition of HTTP/1.1 digest ``Authorization`` responses
+
+* Improved `paste.fileapp <module-paste.fileapp.html>`_ to support:
+
+  - static in-memory resources
+
+  - incremental downloading of files from disk
+
+  - responding to 'Range' requests to handle partial downloads
+
+  - allowing cache settings to be easily provided; including
+    support for HTTP/1.0 'Expires' and HTTP/1.1 'Cache-Control'
+
+* Added an *experimental* `paste.transaction
+  <module-paste.transaction.html>`_ module for handling
+  commit/rollback of standard DBAPI database connections
+
+* Added a `paste.util.datetimeutil <module-paste.util.datetimeutil.html>`_
+  module for parsing standard date/time user-generated text values
+
+* Added a `debug <module-paste.debug.html>`_ package, which includes:
+
+  - previous top-level modules ``prints``, ``profile``,
+    ``wdg_validate`` and ``doctest_webapp``
+
+  - a ``testserver`` module suitable to test HTTP socket
+    connections via ``py.test``
+
+* Re-factored `paste.wsgilib <module-paste.wsgilib.html>`_ into
+  several other modules:
+
+  - functions regarding header manipulation moved to
+    `paste.response <module-paste.response.html>`_
+
+  - functions regarding cookies and arguments moved to
+    `paste.request <module-paste.request.html>`_
+
+* Significant improvements to ``wsgiutils.wsgilib`` module:
+
+  - added a ``dump_environ`` application to help debugging
+
+  - fixes to ``raw_interactive`` to comply with WSGI specifications
+
+  - ``raw_interactive`` now logs all 5xx exceptions and sets HTTP_HOST
+
+* Added an argument ``no_profile`` to
+  `paste.debug.profile.profile_decorator
+  <module-paste.debug.profile.html#profile_decorator>`_; if that
+  option is false, then don't profile the function at all.
+
+* Changed `paste.lint <module-paste.lint.html>`_ to check that the
+  status contains a message (e.g., ``"404 Not Found"`` instead of just
+  ``"404"``).  Check that environmental variables
+  ``HTTP_CONTENT_TYPE`` and ``HTTP_CONTENT_LENGTH`` are no present.
+  Made unknown ``REQUEST_METHOD`` a warning (not an error).
+
+* Added parameter ``cwd`` to `TestFileEnvironment.run
+  <class-paste.fixture.TestFileEnvironment.html#run>`_
+
+* `paste.fixture.TestApp <class-paste.fixture.TestApp.html>`_:
+
+  - Form filling code (use ``response.forms[0]`` to get a `form object
+    <class-paste.fixture.Form.html>`_)
+
+  - Added `click method
+    <class-paste.fixture.TestResponse.html#click>`_.
+
+  - Better attribute errors.
+
+  - You can force set hidden fields using
+    ``form.fields[name].force_value(value)`` (normally setting the
+    value of a hidden field is an error).
+
+  - Frameworks can now add custom attributes to the response object.
+
+* ``paste.wsgilib.capture_output`` is deprecated in favor of
+  `paste.wsgilib.intercept_output
+  <module-paste.wsgilib.html#intercept_output>`_
+
+* Remove use of exceptions in `paste.cascade.Cascade
+  <class-paste.cascade.Cascade.html>`_, which causes weird effects in
+  some cases.  Generally we aren't using exceptions internally now,
+  only return status codes.  Also in cascade, be careful to keep
+  cascaded requests from sharing the same environment.
+
+* ``paste.wsgilib.error_response`` is deprecated
+  (`paste.httpexceptions <module-paste.httpexceptions.html>`_ replaces
+  this with exception's ``.wsgi_application`` method).
+
+* Moved ``paste.login`` to the attic, since `paste.auth
+  <module-paste.auth.html>`_ pretty much replaces it.
+
+* `paste.urlparser <module-paste.urlparser.html>`_ improvements:
+
+  - Added an application `urlparser.StaticURLParser
+    <class-paste.urlparser.StaticURLParser.html>`_ for serving static
+    files.
+
+  - Added an application `urlparser.PkgResourcesParser
+    <class-paste.urlparser.PkgResourcesParser.html>`_ for serving static
+    files found with ``pkg_resources`` (e.g., out of zipped Eggs).
+
+  - Be less picky about ambiguous filenames when using `URLParser
+    <class-paste.urlparser.URLParser.html>`_; if an exact file match
+    exists, use that.  (``file.gif.bak`` would cause a request for
+    ``file.gif`` to be ambiguous before)
+
+  - Now looks for a ``.wsgi_application`` attribute when serving
+    Python files/modules, as a general hook for returning a WSGI
+    application version of an object.
+
+* The `ErrorMiddleware
+  <class-paste.exceptions.errormiddleware.ErrorMiddleware.html>`_:
+
+  - Returns trimmed-down exceptions if there is a ``_`` GET variable
+    in the request (which is meant to signal an XMLHttpRequest).
+    Exceptions displayed in this context are best when they are smaller
+    and easier to display.
+
+  - Includes a text version of the traceback, for easier
+    copy-and-paste.
+
+  - Avoid printing exceptions to ``wsgi.errors`` if they are already
+    displayed elsewhere (at least by default).
+
+  - Highlight Python code.
+
+* Use ``pkg_resources.declare_namespace`` so that there are less
+  problems about confusing the ``paste`` package that is provided by
+  Paste, Paste Script, Paste Deploy, and Paste WebKit.  Before you
+  could get one of these at random if you didn't use
+  ``pkg_resources.require`` first.
+
+* Cleaned up use of ``exc_info`` argument in ``start_response`` calls
+  (both accepting and producing), in a variety of places.

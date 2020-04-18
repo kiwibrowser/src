@@ -1,0 +1,11 @@
+#!/bin/bash
+# Copyright 2015 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+this_dir="$(readlink -e "$(dirname "${BASH_SOURCE}")")"
+ae_shell="${this_dir}/../ae_shell"
+"${ae_shell}" cq_stats -- python cq_stats/manage.py collectstatic --noinput
+if [[ $? -eq 0 ]]; then
+  "${ae_shell}" cq_stats -- dev_appserver.py cq_stats
+fi

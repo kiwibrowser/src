@@ -1,0 +1,201 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>Mesa Release Notes</title>
+  <link rel="stylesheet" type="text/css" href="mesa.css">
+</head>
+<body>
+
+<h1>Mesa 8.0.4 Release Notes / July 10, 2012</h1>
+
+<p>
+Mesa 8.0.4 is a bug fix release which fixes bugs found since the 8.0.2 release.
+</p>
+<p>
+Mesa 8.0.4 implements the OpenGL 3.0 API, but the version reported by
+glGetString(GL_VERSION) depends on the particular driver being used.
+Some drivers don't support all the features required in OpenGL 3.0.
+</p>
+<p>
+See the <a href="install.html">Compiling/Installing page</a> for prerequisites
+for DRI hardware acceleration.
+</p>
+
+
+<h2>MD5 checksums</h2>
+<pre>
+02b96082d2f1ad72e7385f4022afafb9  MesaLib-8.0.4.tar.gz
+d546f988adfdf986cff45b1efa2d8a46  MesaLib-8.0.4.tar.bz2
+1f0fdabe6e8019d4de6c16e20e74d163  MesaLib-8.0.4.zip
+</pre>
+
+<h2>New features</h2>
+<p>None.</p>
+
+<h2>Bug fixes</h2>
+
+<p>This list is likely incomplete.</p>
+
+<ul>
+
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=45967">Bug 45967</a> - piglit getteximage-invalid-format-for-packed-type regression</li>
+
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=47742">Bug 47742</a> - [softpipe] piglit fbo-generatemipmap-array regression</li>
+
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=48141">Bug 48141</a> - [vmwgfx] src/gallium/auxiliary/util/u_inlines.h:256:pipe_buffer_map_range: Assertion `offset + length &lt;= buffer-&gt;width0' failed.</li>
+
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=48472">Bug 48472</a> - GPU Lockup while running demo (rzr - the scene is dead) in wine</li>
+
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=50033">Bug 50033</a> - src/mesa/state_tracker/st_cb_fbo.c:379:st_render_texture: Assertion `strb-&gt;rtt_level &lt;= strb-&gt;texture-&gt;last_level' failed.</li>
+
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=50621">Bug 50621</a> - Mesa fails its test suite with a buffer overflow.</li>
+
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=50298">Bug 50298</a> - [ILK IVB bisected]Ogles2conform GL/sin/sin_float_vert_xvary.test regressed</li>
+
+<li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=51574">Bug 51574</a> - ir_loop_jump constructor assigns member variable to itself</li>
+
+<!-- <li><a href="https://bugs.freedesktop.org/show_bug.cgi?id=">Bug </a> - </li> -->
+
+</ul>
+
+
+<h2>Changes</h2>
+<p>The full set of changes can be viewed by using the following GIT command:</p>
+
+<pre>
+  git log mesa-8.0.3..mesa-8.0.4
+</pre>
+
+<p>Andreas Betz (1):</p>
+<ul>
+  <li>vega: fix 565 color unpacking bug</li>
+</ul>
+
+<p>Antoine Labour (2):</p>
+<ul>
+  <li>meta: Cleanup the resources we allocate.</li>
+  <li>mesa: Free uniforms correclty.</li>
+</ul>
+
+<p>Brian Paul (22):</p>
+<ul>
+  <li>docs: add link to 8.0.3 release notes</li>
+  <li>mesa: fix Z32_FLOAT -&gt; uint conversion functions</li>
+  <li>draw: fix primitive restart bug by using the index buffer offset</li>
+  <li>st/mesa: fix glDrawPixels(GL_DEPTH_COMPONENT) color output</li>
+  <li>svga: fix synchronization bug between sampler views and surfaces</li>
+  <li>mesa: new _mesa_error_check_format_and_type() function</li>
+  <li>mesa: add missing GL_UNSIGNED_INT_10F_11F_11F_REV case</li>
+  <li>mesa: fix missing return value in getteximage_error_check()</li>
+  <li>st/mesa: pass GL_MAP_INVALIDATE_RANGE_BIT to gallium drivers</li>
+  <li>svga: add 0.5 in float-&gt;int conversion of sample min/max lod</li>
+  <li>svga: fix min/max lod clamping</li>
+  <li>svga: change PIPE_CAPF_MAX_TEXTURE_LOD_BIAS from 16.0 to 15.0</li>
+  <li>st/mesa: add fallback pipe formats for (compressed) R, RG formats</li>
+  <li>st/mesa: copy num_immediates field when copying the immediates array</li>
+  <li>svga: move svga_texture() casts/calls in svga_surface_copy()</li>
+  <li>svga: reset vertex buffer offset in svga_release_user_upl_buffers()</li>
+  <li>st/mesa: don't set PIPE_BIND_DISPLAY_TARGET for user-created renderbuffers</li>
+  <li>st/mesa: use private pipe_sampler_view in decompress_with_blit()</li>
+  <li>st/mesa: add null pointer check in st_texture_image_map()</li>
+  <li>st/mesa: fix mipmap image size computation w.r.t. texture arrays</li>
+  <li>draw: fix missing immediates bug in polygon stipple code</li>
+  <li>st/mesa: fix max_offset computation for base vertex</li>
+</ul>
+
+<p>Christoph Bumiller (1):</p>
+<ul>
+  <li>nv50: handle NEG,ABS modifiers for short RCP encoding</li>
+</ul>
+
+<p>Dylan Noblesmith (1):</p>
+<ul>
+  <li>mesa: require GL_MAX_SAMPLES &gt;= 4 for GL 3.0</li>
+</ul>
+
+<p>Eric Anholt (1):</p>
+<ul>
+  <li>i965/vs: Fix texelFetchOffset()</li>
+</ul>
+
+<p>Ian Romanick (5):</p>
+<ul>
+  <li>docs: Add 8.0.3 release md5sums</li>
+  <li>glx/tests: Fix off-by-one error in allocating extension string buffer</li>
+  <li>glsl: Remove spurious printf messages</li>
+  <li>glsl: Fix pi/2 constant in acos built-in function</li>
+  <li>mesa: Bump version number to 8.0.4</li>
+</ul>
+
+<p>José Fonseca (2):</p>
+<ul>
+  <li>mesa: Avoid void acinclude.m4 Android.common.mk Android.mk autogen.sh bin common.py configs configure.ac docs doxygen include Makefile scons SConstruct src tests arithmetic.</li>
+  <li>draw: Ensure that prepare is always run after LLVM garbagge collection.</li>
+</ul>
+
+<p>Kenneth Graunke (15):</p>
+<ul>
+  <li>mesa: Check for a negative "size" parameter in glCopyBufferSubData().</li>
+  <li>i965: Fix brw_swap_cmod() for LE/GE comparisons.</li>
+  <li>glsl: Remove unused ir_loop_jump::loop pointer.</li>
+  <li>ralloc: Fix ralloc_parent() of memory allocated out of the NULL context.</li>
+  <li>mesa: Restore depth texture state on glPopAttrib(GL_TEXTURE_BIT).</li>
+  <li>glsl/builtins: Fix textureGrad() for Array samplers.</li>
+  <li>mesa: Unbind ARB_copy_buffer and transform feedback buffers on delete.</li>
+  <li>mesa: Support BindBuffer{Base,Offset,Range} with a buffer of 0.</li>
+  <li>mesa: Unbind ARB_transform_feedback2 binding points on Delete too.</li>
+  <li>meta: Fix GL_RENDERBUFFER binding in decompress_texture_image().</li>
+  <li>i965/fs: Fix texelFetchOffset() on pre-Gen7.</li>
+  <li>i965/vs: Fix texelFetchOffset() on pre-Gen7.</li>
+  <li>i965/fs: Fix user-defined FS outputs with less than four components.</li>
+  <li>glsl: Hook up loop_variable_state destructor to plug a memory leak.</li>
+  <li>glsl: Don't trust loop analysis in the presence of function calls.</li>
+</ul>
+
+<p>Kurt Roeckx (1):</p>
+<ul>
+  <li>i830: Fix crash for GL_STENCIL_TEST in i830Enable()</li>
+</ul>
+
+<p>Lukas Rössler (1):</p>
+<ul>
+  <li>glu: fix two Clang warnings</li>
+</ul>
+
+<p>Marek Olšák (2):</p>
+<ul>
+  <li>mesa: allow exposing GL3 without EXT_texture_integer</li>
+  <li>st/mesa: don't do srgb-&gt;linear conversion in decompress_with_blit</li>
+</ul>
+
+<p>Paul Seidler (1):</p>
+<ul>
+  <li>tests: include mesa headers</li>
+</ul>
+
+<p>Stéphane Marchesin (3):</p>
+<ul>
+  <li>glx: Handle a null reply in QueryVersion.</li>
+  <li>i915g: Don't invert signalled/unsignalled fences</li>
+  <li>i915g: Don't avoid flushing when we have a pending fence.</li>
+</ul>
+
+<p>Thomas Gstädtner (1):</p>
+<ul>
+  <li>gallium/targets: pass ldflags parameter to MKLIB</li>
+</ul>
+
+<p>Vadim Girlin (2):</p>
+<ul>
+  <li>st/mesa: set stObj-&gt;lastLevel in guess_and_alloc_texture</li>
+  <li>r600g: check gpr count limit</li>
+</ul>
+
+<p>Vinson Lee (1):</p>
+<ul>
+  <li>st/mesa: Fix uninitialized members in glsl_to_tgsi_visitor constructor.</li>
+</ul>
+
+</body>
+</html>

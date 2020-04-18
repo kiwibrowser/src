@@ -1,0 +1,66 @@
+#!/usr/bin/python
+
+import os
+import sys
+
+class CompilerWrapper():
+  def __init__(self, argv):
+    self.args = argv
+    self.execargs = []
+    self.real_compiler = None
+    self.argv0 = None
+    self.append_flags = []
+    self.prepend_flags = []
+    self.custom_flags = {
+      '--gomacc-path': None
+    }
+
+  def set_real_compiler(self):
+    """Find the real compiler with the absolute path."""
+    compiler_path = os.path.dirname(os.path.abspath(__file__))
+    if os.path.islink(__file__):
+      compiler = os.path.basename(os.readlink(__file__))
+    else:
+      compiler = os.path.basename(os.path.abspath(__file__))
+    self.real_compiler = os.path.join(
+        compiler_path,
+        "real-" + compiler)
+    self.argv0 = self.real_compiler
+
+  def process_gomacc_command(self):
+    """Return the gomacc command if '--gomacc-path' is set."""
+    gomacc = self.custom_flags['--gomacc-path']
+    if gomacc and os.path.isfile(gomacc):
+      self.argv0 = gomacc
+      self.execargs += [gomacc]
+
+  def parse_custom_flags(self):
+    i = 0
+    args = []
+    while i < len(self.args):
+      if self.args[i] in self.custom_flags:
+        self.custom_flags[self.args[i]] = self.args[i + 1]
+        i = i + 2
+      else:
+        args.append(self.args[i])
+        i = i + 1
+    self.args = args
+
+  def add_flags(self):
+    self.args = self.prepend_flags + self.args + self.append_flags
+
+  def invoke_compiler(self):
+    self.set_real_compiler()
+    self.parse_custom_flags()
+    self.process_gomacc_command()
+    self.add_flags()
+    self.execargs += [self.real_compiler] + self.args
+    os.execv(self.argv0, self.execargs)
+
+
+def main(argv):
+  cw = CompilerWrapper(argv[1:])
+  cw.invoke_compiler()
+
+if __name__ == "__main__":
+  main(sys.argv)

@@ -1,0 +1,348 @@
+#!/usr/bin/env python
+# Copyright (C) 2017 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import argparse
+import hashlib
+import logging
+import os
+import shutil
+import subprocess
+import sys
+import urllib
+import zipfile
+
+from collections import namedtuple
+
+# When adding a new git dependency here please also add a corresponding entry in
+# .travis.yml under the "cache:" section.
+
+# The format for the deps below is the following:
+# (target_folder, source_url, sha1, target_platform)
+# |source_url| can be either a git repo or a http url.
+# If a git repo, |sha1| is the committish that will be checked out.
+# If a http url, |sha1| is the shasum of the original file.
+# If the url is a .zip or .tgz file it will be automatically deflated under
+# |target_folder|, taking care of stripping the root folder if it's a single
+# root (to avoid ending up with buildtools/protobuf/protobuf-1.2.3/... and have
+# instead just buildtools/protobuf).
+# |target_platform| is either 'darwin', 'linux2' or 'all' and applies the dep
+# only on the given platform (ask python why linux2 and not just linux).
+
+# Dependencies required to build code on the host or when targeting desktop OS.
+BUILD_DEPS_HOST = [
+  # GN
+  ('buildtools/mac/gn',
+   'https://storage.googleapis.com/chromium-gn/9be792dd9010ce303a9c3a497a67bcc5ac8c7666',
+   '9be792dd9010ce303a9c3a497a67bcc5ac8c7666',
+   'darwin'
+  ),
+  ('buildtools/linux64/gn',
+   'https://storage.googleapis.com/chromium-gn/2f27ff0b6118e5886df976da5effa6003d19d1ce',
+   '2f27ff0b6118e5886df976da5effa6003d19d1ce',
+   'linux2'
+  ),
+
+  # clang-format
+  ('buildtools/mac/clang-format',
+   'https://storage.googleapis.com/chromium-clang-format/0679b295e2ce2fce7919d1e8d003e497475f24a3',
+   '0679b295e2ce2fce7919d1e8d003e497475f24a3',
+   'darwin'
+  ),
+  ('buildtools/linux64/clang-format',
+   'https://storage.googleapis.com/chromium-clang-format/5349d1954e17f6ccafb6e6663b0f13cdb2bb33c8',
+   '5349d1954e17f6ccafb6e6663b0f13cdb2bb33c8',
+   'linux2'
+  ),
+  # Keep the SHA1 in sync with |clang_format_rev| in chromium //buildtools/DEPS.
+  ('buildtools/clang_format/script',
+   'https://chromium.googlesource.com/chromium/llvm-project/cfe/tools/clang-format.git',
+   '0653eee0c81ea04715c635dd0885e8096ff6ba6d',
+   'all'
+  ),
+
+  # Ninja
+  ('buildtools/mac/ninja',
+   'https://storage.googleapis.com/fuchsia-build/fuchsia/ninja/mac/a1db595e824c50cf565fbf0af2437fd91b7babf4',
+   'a1db595e824c50cf565fbf0af2437fd91b7babf4',
+   'darwin'
+  ),
+  ('buildtools/linux64/ninja',
+   'https://storage.googleapis.com/fuchsia-build/fuchsia/ninja/linux64/d35b36c84a09f7e38b25947cafada10e8bf835bc',
+   'd35b36c84a09f7e38b25947cafada10e8bf835bc',
+   'linux2'
+  ),
+
+  # Keep in sync with Android's //external/googletest/README.version.
+  ('buildtools/googletest.zip',
+   'https://github.com/google/googletest/archive/ff07a5de0e81580547f1685e101194ed1a4fcd56.zip',
+   'c7edec7d7e6db1fc37a20710de9c4d89e3a3893b',
+   'all'
+  ),
+
+  # Keep in sync with Android's //external/protobuf/README.version.
+  ('buildtools/protobuf.zip',
+   'https://github.com/google/protobuf/releases/download/v3.0.0-beta-3/protobuf-cpp-3.0.0-beta-3.zip',
+   '3caec60aa9d8eefc8c3c3201b6b8ca19935edb89',
+   'all'
+  ),
+
+  # libc++, libc++abi and libunwind for Linux where we need to rebuild the C++
+  # lib from sources. Keep the SHA1s in sync with Chrome's src/buildtools/DEPS.
+  ('buildtools/libcxx',
+   'https://chromium.googlesource.com/chromium/llvm-project/libcxx.git',
+   'ece1de8658d749e19c12cacd4458cc330eca94e3',
+   'all'
+  ),
+  ('buildtools/libcxxabi',
+   'https://chromium.googlesource.com/chromium/llvm-project/libcxxabi.git',
+   '05a73941f3fb177c4a891d4ff2a4ed5785e3b80c',
+   'all'
+  ),
+  ('buildtools/libunwind',
+   'https://chromium.googlesource.com/external/llvm.org/libunwind.git',
+   '0f3cbe4123f8afacd646bd4f5414aa6528ef8129',
+   'all'
+  ),
+
+  # Keep the revision in sync with Chrome's CLANG_REVISION in
+  # tools/clang/scripts/update.py.
+  ('buildtools/clang.tgz',
+   'https://commondatastorage.googleapis.com/chromium-browser-clang/Linux_x64/clang-331747-1.tgz',
+   '973073ca36ae9194019705ec7677852a30c4b54e',
+   'linux2'
+  ),
+
+  # Benchmarking tool.
+  ('buildtools/benchmark.zip',
+   'https://github.com/google/benchmark/archive/v1.3.0.zip',
+   'f387e0df37d54bfd5be239e8d0d3ea2e2c3e34f4',
+   'all'
+  ),
+
+  # Libbacktrace, for stacktraces in Linux/Android debug builds.
+  ('buildtools/libbacktrace.zip',
+   'https://github.com/ianlancetaylor/libbacktrace/archive/177940370e4a6b2509e92a0aaa9749184e64af43.zip',
+   'b723fe9d671d1ab54df1297f6afbf2893a41c3ea',
+   'all'
+  ),
+
+  # Sqlite for the trace processing library.
+  ('buildtools/sqlite.zip',
+   'https://storage.googleapis.com/perfetto/sqlite-amalgamation-3230100.zip',
+   '98729f2c2d57d166e3d6d9862744c1d66388e286',
+   'all'
+  ),
+]
+
+# Dependencies required to build Android code.
+# URLs and SHA1s taken from:
+# - https://dl.google.com/android/repository/repository-11.xml
+# - https://dl.google.com/android/repository/sys-img/android/sys-img.xml
+BUILD_DEPS_ANDROID = [
+  # Android NDK
+  ('buildtools/ndk.zip',
+   'https://dl.google.com/android/repository/android-ndk-r15c-darwin-x86_64.zip',
+   'ea4b5d76475db84745aa8828000d009625fc1f98',
+   'darwin'
+  ),
+  ('buildtools/ndk.zip',
+   'https://dl.google.com/android/repository/android-ndk-r15c-linux-x86_64.zip',
+   '0bf02d4e8b85fd770fd7b9b2cdec57f9441f27a2',
+   'linux2'
+  ),
+]
+
+# Dependencies required to run Android tests.
+TEST_DEPS_ANDROID = [
+  # Android emulator images.
+  ('buildtools/aosp-arm.zip',
+   'https://storage.googleapis.com/perfetto/aosp-02022018-arm.zip',
+   'a480d5e7d3ca888b0a58fe15ce76b1791537429a',
+   'all'
+  ),
+
+  # platform-tools.zip contains adb binaries.
+  ('buildtools/android_sdk/platform-tools.zip',
+   'https://dl.google.com/android/repository/platform-tools_r26.0.0-darwin.zip',
+   'e75b6137dc444f777eb02f44a6d9819b3aabff82',
+   'darwin'
+  ),
+  ('buildtools/android_sdk/platform-tools.zip',
+   'https://dl.google.com/android/repository/platform-tools_r26.0.0-linux.zip',
+   '00de8a6631405b617c10f68cd11ff2e1cd528e23',
+   'linux2'
+  ),
+
+  # Android emulator binaries.
+  ('buildtools/emulator',
+   'https://android.googlesource.com/platform/prebuilts/android-emulator.git',
+   '4b260028dc27bc92c39bee9129cb2ba839970956',
+   'all'
+  ),
+]
+
+UI_DEPS = [
+  ('buildtools/nodejs.tgz',
+   'https://storage.googleapis.com/perfetto/node-v8.11.1-darwin-x64.tar.gz',
+   '01effb57fa711aa258d7aab26c6615e1f8a64b1a',
+   'darwin'
+  ),
+  ('buildtools/nodejs.tgz',
+   'https://storage.googleapis.com/perfetto/node-v8.11.1-linux-x64.tar.xz',
+   '04c2e703b042ecfdc9deb32e4797a41c41482966',
+   'linux2'
+  ),
+  ('buildtools/emsdk/emscripten.tgz',
+   'https://storage.googleapis.com/perfetto/emscripten-1.37.40.tar.gz',
+   '588c28221321ebbdfc8e3a6f47ea6106f589669b',
+   'all'
+  ),
+  ('buildtools/emsdk/llvm.tgz',
+   'https://storage.googleapis.com/perfetto/emscripten-llvm-e1.37.40-darwin.tar.gz',
+   '7a894ef0a52821c62f6abaac552dc4ce5d424607',
+   'darwin'
+  ),
+  ('buildtools/emsdk/llvm.tgz',
+   'https://storage.googleapis.com/perfetto/emscripten-llvm-e1.37.40-linux.tar.gz',
+   'fdc26481fe70001ea00e83b99d0df906c9b2a45f',
+   'linux2'
+  ),
+]
+
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def ReadFile(path):
+  if not os.path.exists(path):
+    return None
+  with open(path) as f:
+      return f.read().strip()
+
+
+def MkdirRecursive(path):
+  # Works with both relative and absolute paths
+  cwd = '/' if path.startswith('/') else ROOT_DIR
+  for part in path.split('/'):
+    cwd = os.path.join(cwd, part)
+    if not os.path.exists(cwd):
+      os.makedirs(cwd)
+    else:
+      assert(os.path.isdir(cwd))
+
+
+def HashLocalFile(path):
+  if not os.path.exists(path):
+    return None
+  with open(path, 'rb') as f:
+    return hashlib.sha1(f.read()).hexdigest()
+
+
+def ExtractZipfilePreservePermissions(zf, info, path):
+  zf.extract(info.filename, path=path)
+  target_path = os.path.join(path, info.filename)
+  min_acls = 0o755 if info.filename.endswith('/') else 0o644
+  os.chmod(target_path, (info.external_attr >> 16L) | min_acls)
+
+
+def IsGitRepoCheckoutOutAtRevision(path, revision):
+  return ReadFile(os.path.join(path, '.git', 'HEAD')) == revision
+
+
+def CheckoutGitRepo(path, git_url, revision):
+  if IsGitRepoCheckoutOutAtRevision(path, revision):
+    return
+  if os.path.exists(path):
+    shutil.rmtree(path)
+  MkdirRecursive(path)
+  logging.info('Fetching %s @ %s into %s', git_url, revision, path)
+  subprocess.check_call(['git', 'init', path], cwd=path)
+  subprocess.check_call(
+    ['git', 'fetch', '--depth', '1', git_url, revision], cwd=path)
+  subprocess.check_call(['git', 'checkout', revision, '--quiet'], cwd=path)
+  assert(IsGitRepoCheckoutOutAtRevision(path, revision))
+
+
+def Main():
+  parser = argparse.ArgumentParser()
+  parser.add_argument('--no-android', action='store_true')
+  parser.add_argument('--ui', action='store_true')
+  args = parser.parse_args()
+  deps = BUILD_DEPS_HOST
+  if not args.no_android:
+    deps += BUILD_DEPS_ANDROID + TEST_DEPS_ANDROID
+  if args.ui:
+    deps += UI_DEPS
+  for rel_path, url, expected_sha1, platform in deps:
+    if (platform != 'all' and platform != sys.platform):
+      continue
+    local_path = os.path.join(ROOT_DIR, rel_path)
+    if url.endswith('.git'):
+      CheckoutGitRepo(local_path, url, expected_sha1)
+      continue
+    is_zip = local_path.endswith('.zip') or local_path.endswith('.tgz')
+    zip_target_dir = local_path[:-4] if is_zip else None
+    zip_dir_stamp = os.path.join(zip_target_dir, '.stamp') if is_zip else None
+
+    if ((not is_zip and HashLocalFile(local_path) == expected_sha1) or
+        (is_zip and ReadFile(zip_dir_stamp) == expected_sha1)):
+      continue
+    MkdirRecursive(os.path.dirname(rel_path))
+    if HashLocalFile(local_path) != expected_sha1:
+      download_path = local_path + '.tmp'
+      logging.info('Downloading %s from %s', local_path, url)
+      urllib.urlretrieve(url, download_path)
+      os.chmod(download_path, 0o755)
+      if (HashLocalFile(download_path) != expected_sha1):
+        os.remove(download_path)
+        logging.fatal('SHA1 mismatch for %s', download_path)
+        return 1
+      os.rename(download_path, local_path)
+    assert(HashLocalFile(local_path) == expected_sha1)
+
+    if is_zip:
+      logging.info('Extracting %s into %s' % (local_path, zip_target_dir))
+      assert(os.path.commonprefix((ROOT_DIR, zip_target_dir)) == ROOT_DIR)
+      if os.path.exists(zip_target_dir):
+        logging.info('Deleting stale dir %s' % zip_target_dir)
+        shutil.rmtree(zip_target_dir)
+
+      # Decompress the archive.
+      if local_path.endswith('.tgz'):
+        MkdirRecursive(zip_target_dir)
+        subprocess.check_call(['tar', '-xf', local_path], cwd=zip_target_dir)
+      elif local_path.endswith('.zip'):
+        with zipfile.ZipFile(local_path, 'r') as zf:
+          for info in zf.infolist():
+            ExtractZipfilePreservePermissions(zf, info, zip_target_dir)
+
+      # If the zip contains one root folder, rebase one level up moving all
+      # its sub files and folders inside |target_dir|.
+      subdir = os.listdir(zip_target_dir)
+      if len(subdir) == 1:
+        subdir = os.path.join(zip_target_dir, subdir[0])
+        if os.path.isdir(subdir):
+          for subf in os.listdir(subdir):
+            shutil.move(os.path.join(subdir,subf), zip_target_dir)
+          os.rmdir(subdir)
+
+      # Create stamp and remove the archive.
+      with open(zip_dir_stamp, 'w') as stamp_file:
+        stamp_file.write(expected_sha1)
+      os.remove(local_path)
+
+
+if __name__ == '__main__':
+  logging.basicConfig(level=logging.INFO)
+  sys.exit(Main())

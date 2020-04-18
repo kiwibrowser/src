@@ -1,0 +1,29 @@
+// Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+option optimize_for = LITE_RUNTIME;
+
+package power_manager;
+
+// Included in powerd's InputEvent signals.
+message InputEvent {
+  // Next ID to use: 3
+
+  // Type of event.
+  enum Type {
+    POWER_BUTTON_DOWN = 0;
+    POWER_BUTTON_UP = 1;
+    LID_OPEN = 2;
+    LID_CLOSED = 3;
+    TABLET_MODE_ON = 4;
+    TABLET_MODE_OFF = 5;
+  }
+  optional Type type = 1;
+
+  // Monotonically-increasing time at which this event occured, as given by
+  // base::TimeTicks::ToInternalValue().
+  optional int64 timestamp = 2;
+}

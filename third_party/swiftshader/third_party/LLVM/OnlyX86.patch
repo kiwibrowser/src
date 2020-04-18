@@ -1,0 +1,274 @@
+Index: include/llvm/Intrinsics.td
+===================================================================
+--- include/llvm/Intrinsics.td	(revision 3710)
++++ include/llvm/Intrinsics.td	(working copy)
+@@ -439,10 +439,10 @@
+ // Target-specific intrinsics
+ //===----------------------------------------------------------------------===//
+ 
+-include "llvm/IntrinsicsPowerPC.td"
++//include "llvm/IntrinsicsPowerPC.td"
+ include "llvm/IntrinsicsX86.td"
+-include "llvm/IntrinsicsARM.td"
+-include "llvm/IntrinsicsCellSPU.td"
+-include "llvm/IntrinsicsAlpha.td"
+-include "llvm/IntrinsicsXCore.td"
+-include "llvm/IntrinsicsPTX.td"
++//include "llvm/IntrinsicsARM.td"
++//include "llvm/IntrinsicsCellSPU.td"
++//include "llvm/IntrinsicsAlpha.td"
++//include "llvm/IntrinsicsXCore.td"
++//include "llvm/IntrinsicsPTX.td"
+Index: lib/Analysis/BasicAliasAnalysis.cpp
+===================================================================
+--- lib/Analysis/BasicAliasAnalysis.cpp	(revision 3710)
++++ lib/Analysis/BasicAliasAnalysis.cpp	(working copy)
+@@ -785,27 +785,27 @@
+         return NoModRef;
+       break;
+     }
+-    case Intrinsic::arm_neon_vld1: {
+-      // LLVM's vld1 and vst1 intrinsics currently only support a single
+-      // vector register.
+-      uint64_t Size =
+-        TD ? TD->getTypeStoreSize(II->getType()) : UnknownSize;
+-      if (isNoAlias(Location(II->getArgOperand(0), Size,
+-                             II->getMetadata(LLVMContext::MD_tbaa)),
+-                    Loc))
+-        return NoModRef;
+-      break;
++    //case Intrinsic::arm_neon_vld1: {
++    //  // LLVM's vld1 and vst1 intrinsics currently only support a single
++    //  // vector register.
++    //  uint64_t Size =
++    //    TD ? TD->getTypeStoreSize(II->getType()) : UnknownSize;
++    //  if (isNoAlias(Location(II->getArgOperand(0), Size,
++    //                         II->getMetadata(LLVMContext::MD_tbaa)),
++    //                Loc))
++    //    return NoModRef;
++    //  break;
++    //}
++    //case Intrinsic::arm_neon_vst1: {
++    //  uint64_t Size =
++    //    TD ? TD->getTypeStoreSize(II->getArgOperand(1)->getType()) : UnknownSize;
++    //  if (isNoAlias(Location(II->getArgOperand(0), Size,
++    //                         II->getMetadata(LLVMContext::MD_tbaa)),
++    //                Loc))
++    //    return NoModRef;
++    //  break;
++    //}
+     }
+-    case Intrinsic::arm_neon_vst1: {
+-      uint64_t Size =
+-        TD ? TD->getTypeStoreSize(II->getArgOperand(1)->getType()) : UnknownSize;
+-      if (isNoAlias(Location(II->getArgOperand(0), Size,
+-                             II->getMetadata(LLVMContext::MD_tbaa)),
+-                    Loc))
+-        return NoModRef;
+-      break;
+-    }
+-    }
+ 
+   // We can bound the aliasing properties of memset_pattern16 just as we can
+   // for memcpy/memset.  This is particularly important because the 
+Index: lib/Transforms/InstCombine/InstCombineCalls.cpp
+===================================================================
+--- lib/Transforms/InstCombine/InstCombineCalls.cpp	(revision 3710)
++++ lib/Transforms/InstCombine/InstCombineCalls.cpp	(working copy)
+@@ -544,25 +544,25 @@
+       }
+     }
+     break;
+-  case Intrinsic::ppc_altivec_lvx:
+-  case Intrinsic::ppc_altivec_lvxl:
+-    // Turn PPC lvx -> load if the pointer is known aligned.
+-    if (getOrEnforceKnownAlignment(II->getArgOperand(0), 16, TD) >= 16) {
+-      Value *Ptr = Builder->CreateBitCast(II->getArgOperand(0),
+-                                         PointerType::getUnqual(II->getType()));
+-      return new LoadInst(Ptr);
+-    }
+-    break;
+-  case Intrinsic::ppc_altivec_stvx:
+-  case Intrinsic::ppc_altivec_stvxl:
+-    // Turn stvx -> store if the pointer is known aligned.
+-    if (getOrEnforceKnownAlignment(II->getArgOperand(1), 16, TD) >= 16) {
+-      Type *OpPtrTy = 
+-        PointerType::getUnqual(II->getArgOperand(0)->getType());
+-      Value *Ptr = Builder->CreateBitCast(II->getArgOperand(1), OpPtrTy);
+-      return new StoreInst(II->getArgOperand(0), Ptr);
+-    }
+-    break;
++  //case Intrinsic::ppc_altivec_lvx:
++  //case Intrinsic::ppc_altivec_lvxl:
++  //  // Turn PPC lvx -> load if the pointer is known aligned.
++  //  if (getOrEnforceKnownAlignment(II->getArgOperand(0), 16, TD) >= 16) {
++  //    Value *Ptr = Builder->CreateBitCast(II->getArgOperand(0),
++  //                                       PointerType::getUnqual(II->getType()));
++  //    return new LoadInst(Ptr);
++  //  }
++  //  break;
++  //case Intrinsic::ppc_altivec_stvx:
++  //case Intrinsic::ppc_altivec_stvxl:
++  //  // Turn stvx -> store if the pointer is known aligned.
++  //  if (getOrEnforceKnownAlignment(II->getArgOperand(1), 16, TD) >= 16) {
++  //    Type *OpPtrTy = 
++  //      PointerType::getUnqual(II->getArgOperand(0)->getType());
++  //    Value *Ptr = Builder->CreateBitCast(II->getArgOperand(1), OpPtrTy);
++  //    return new StoreInst(II->getArgOperand(0), Ptr);
++  //  }
++  //  break;
+   case Intrinsic::x86_sse_storeu_ps:
+   case Intrinsic::x86_sse2_storeu_pd:
+   case Intrinsic::x86_sse2_storeu_dq:
+@@ -619,79 +619,79 @@
+     break;
+   }
+ 
+-  case Intrinsic::ppc_altivec_vperm:
+-    // Turn vperm(V1,V2,mask) -> shuffle(V1,V2,mask) if mask is a constant.
+-    if (ConstantVector *Mask = dyn_cast<ConstantVector>(II->getArgOperand(2))) {
+-      assert(Mask->getNumOperands() == 16 && "Bad type for intrinsic!");
+-      
+-      // Check that all of the elements are integer constants or undefs.
+-      bool AllEltsOk = true;
+-      for (unsigned i = 0; i != 16; ++i) {
+-        if (!isa<ConstantInt>(Mask->getOperand(i)) && 
+-            !isa<UndefValue>(Mask->getOperand(i))) {
+-          AllEltsOk = false;
+-          break;
+-        }
+-      }
+-      
+-      if (AllEltsOk) {
+-        // Cast the input vectors to byte vectors.
+-        Value *Op0 = Builder->CreateBitCast(II->getArgOperand(0),
+-                                            Mask->getType());
+-        Value *Op1 = Builder->CreateBitCast(II->getArgOperand(1),
+-                                            Mask->getType());
+-        Value *Result = UndefValue::get(Op0->getType());
+-        
+-        // Only extract each element once.
+-        Value *ExtractedElts[32];
+-        memset(ExtractedElts, 0, sizeof(ExtractedElts));
+-        
+-        for (unsigned i = 0; i != 16; ++i) {
+-          if (isa<UndefValue>(Mask->getOperand(i)))
+-            continue;
+-          unsigned Idx=cast<ConstantInt>(Mask->getOperand(i))->getZExtValue();
+-          Idx &= 31;  // Match the hardware behavior.
+-          
+-          if (ExtractedElts[Idx] == 0) {
+-            ExtractedElts[Idx] = 
+-              Builder->CreateExtractElement(Idx < 16 ? Op0 : Op1,
+-                                            Builder->getInt32(Idx&15));
+-          }
+-        
+-          // Insert this value into the result vector.
+-          Result = Builder->CreateInsertElement(Result, ExtractedElts[Idx],
+-                                                Builder->getInt32(i));
+-        }
+-        return CastInst::Create(Instruction::BitCast, Result, CI.getType());
+-      }
+-    }
+-    break;
++  //case Intrinsic::ppc_altivec_vperm:
++  //  // Turn vperm(V1,V2,mask) -> shuffle(V1,V2,mask) if mask is a constant.
++  //  if (ConstantVector *Mask = dyn_cast<ConstantVector>(II->getArgOperand(2))) {
++  //    assert(Mask->getNumOperands() == 16 && "Bad type for intrinsic!");
++  //    
++  //    // Check that all of the elements are integer constants or undefs.
++  //    bool AllEltsOk = true;
++  //    for (unsigned i = 0; i != 16; ++i) {
++  //      if (!isa<ConstantInt>(Mask->getOperand(i)) && 
++  //          !isa<UndefValue>(Mask->getOperand(i))) {
++  //        AllEltsOk = false;
++  //        break;
++  //      }
++  //    }
++  //    
++  //    if (AllEltsOk) {
++  //      // Cast the input vectors to byte vectors.
++  //      Value *Op0 = Builder->CreateBitCast(II->getArgOperand(0),
++  //                                          Mask->getType());
++  //      Value *Op1 = Builder->CreateBitCast(II->getArgOperand(1),
++  //                                          Mask->getType());
++  //      Value *Result = UndefValue::get(Op0->getType());
++  //      
++  //      // Only extract each element once.
++  //      Value *ExtractedElts[32];
++  //      memset(ExtractedElts, 0, sizeof(ExtractedElts));
++  //      
++  //      for (unsigned i = 0; i != 16; ++i) {
++  //        if (isa<UndefValue>(Mask->getOperand(i)))
++  //          continue;
++  //        unsigned Idx=cast<ConstantInt>(Mask->getOperand(i))->getZExtValue();
++  //        Idx &= 31;  // Match the hardware behavior.
++  //        
++  //        if (ExtractedElts[Idx] == 0) {
++  //          ExtractedElts[Idx] = 
++  //            Builder->CreateExtractElement(Idx < 16 ? Op0 : Op1,
++  //                                          Builder->getInt32(Idx&15));
++  //        }
++  //      
++  //        // Insert this value into the result vector.
++  //        Result = Builder->CreateInsertElement(Result, ExtractedElts[Idx],
++  //                                              Builder->getInt32(i));
++  //      }
++  //      return CastInst::Create(Instruction::BitCast, Result, CI.getType());
++  //    }
++  //  }
++  //  break;
+ 
+-  case Intrinsic::arm_neon_vld1:
+-  case Intrinsic::arm_neon_vld2:
+-  case Intrinsic::arm_neon_vld3:
+-  case Intrinsic::arm_neon_vld4:
+-  case Intrinsic::arm_neon_vld2lane:
+-  case Intrinsic::arm_neon_vld3lane:
+-  case Intrinsic::arm_neon_vld4lane:
+-  case Intrinsic::arm_neon_vst1:
+-  case Intrinsic::arm_neon_vst2:
+-  case Intrinsic::arm_neon_vst3:
+-  case Intrinsic::arm_neon_vst4:
+-  case Intrinsic::arm_neon_vst2lane:
+-  case Intrinsic::arm_neon_vst3lane:
+-  case Intrinsic::arm_neon_vst4lane: {
+-    unsigned MemAlign = getKnownAlignment(II->getArgOperand(0), TD);
+-    unsigned AlignArg = II->getNumArgOperands() - 1;
+-    ConstantInt *IntrAlign = dyn_cast<ConstantInt>(II->getArgOperand(AlignArg));
+-    if (IntrAlign && IntrAlign->getZExtValue() < MemAlign) {
+-      II->setArgOperand(AlignArg,
+-                        ConstantInt::get(Type::getInt32Ty(II->getContext()),
+-                                         MemAlign, false));
+-      return II;
+-    }
+-    break;
+-  }
++  //case Intrinsic::arm_neon_vld1:
++  //case Intrinsic::arm_neon_vld2:
++  //case Intrinsic::arm_neon_vld3:
++  //case Intrinsic::arm_neon_vld4:
++  //case Intrinsic::arm_neon_vld2lane:
++  //case Intrinsic::arm_neon_vld3lane:
++  //case Intrinsic::arm_neon_vld4lane:
++  //case Intrinsic::arm_neon_vst1:
++  //case Intrinsic::arm_neon_vst2:
++  //case Intrinsic::arm_neon_vst3:
++  //case Intrinsic::arm_neon_vst4:
++  //case Intrinsic::arm_neon_vst2lane:
++  //case Intrinsic::arm_neon_vst3lane:
++  //case Intrinsic::arm_neon_vst4lane: {
++  //  unsigned MemAlign = getKnownAlignment(II->getArgOperand(0), TD);
++  //  unsigned AlignArg = II->getNumArgOperands() - 1;
++  //  ConstantInt *IntrAlign = dyn_cast<ConstantInt>(II->getArgOperand(AlignArg));
++  //  if (IntrAlign && IntrAlign->getZExtValue() < MemAlign) {
++  //    II->setArgOperand(AlignArg,
++  //                      ConstantInt::get(Type::getInt32Ty(II->getContext()),
++  //                                       MemAlign, false));
++  //    return II;
++  //  }
++  //  break;
++  //}
+ 
+   case Intrinsic::stackrestore: {
+     // If the save is right next to the restore, remove the restore.  This can

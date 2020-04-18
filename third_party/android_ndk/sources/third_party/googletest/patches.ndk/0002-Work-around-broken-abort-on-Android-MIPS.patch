@@ -1,0 +1,29 @@
+From a2cdb0c2e1f54b1affc923df3b492feb0c0b102b Mon Sep 17 00:00:00 2001
+From: David 'Digit' Turner <digit@google.com>
+Date: Thu, 25 Apr 2013 23:08:50 +0200
+Subject: Work-around broken abort() on Android/MIPS.
+
+abort() freezes in the Android MIPS emulator, work around this
+by using exit(1) after flushing all opened files, which should
+match the abort() behaviour.
+---
+ include/gtest/internal/gtest-port.h | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/include/gtest/internal/gtest-port.h b/include/gtest/internal/gtest-port.h
+index 0011186..b6159f1 100644
+--- a/include/gtest/internal/gtest-port.h
++++ b/include/gtest/internal/gtest-port.h
+@@ -1813,6 +1813,9 @@ inline const char* GetEnv(const char* name) {
+ // several places in Google Test. This implementation provides a reasonable
+ // imitation of standard behaviour.
+ void Abort();
++#elif defined(__ANDROID__) && defined(__mips__)
++// Work-around broken abort() on Android/MIPS
++inline void Abort() { fflush(NULL); exit(1); }
+ #else
+ inline void Abort() { abort(); }
+ #endif  // GTEST_OS_WINDOWS_MOBILE
+-- 
+1.7.12.146.g16d26b1
+

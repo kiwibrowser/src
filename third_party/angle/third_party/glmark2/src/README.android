@@ -1,0 +1,50 @@
+Command-line arguments
+======================
+
+The Android version of glmark2 can accept command-line arguments from either
+an extra intent key or a file. If arguments are specified in an intent key, the
+file is disregarded.
+
+Arguments from an extra intent key
+----------------------------------
+
+The 'args' extra intent key is used to specify arguments. For example:
+
+am start -a android.intent.action.MAIN \
+         -n org.linaro.glmark2/org.linaro.glmark2.Glmark2Activity \
+         -e args '-b :duration=2 -b texture -f /path/file --debug'
+
+Arguments from a file
+---------------------
+
+If the 'args' intent key is not defined, the contents of the file
+'/data/glmark2/args' (if present) are used as command line arguments. The
+arguments can be placed in either a single or multiple lines. For example:
+
+-b :duration -b texture
+-f /path/file
+--debug
+
+Android limitations and peculiarities
+=====================================
+
+The Android version of glmark2 doesn't accept all of the command-line arguments
+that the X11 version accepts. In particular, the Android version currently
+ignores the following:
+
+--validate
+--frame-end
+--off-screen
+--reuse-context
+--fullscreen
+-l,--list-scenes
+
+The default visual config used on Android is:
+
+'red=5:green=6:blue=5:alpha=0:depth=16:buffer=1'
+
+Of course, you can change it using the '--visual-config' option.
+
+The Android system is free to resize the application at will, so although the
+'-s,--size' option is initially taken into account, it usually doesn't have any
+lasting effect.

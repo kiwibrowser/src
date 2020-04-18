@@ -1,0 +1,128 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Shader image load and store tests
+
+Tests:
+ + dEQP-GLES31.functional.image_load_store.*
+
+Includes:
+ + 2d, cube, 3d, 2d array and buffer (GL_EXT_texture_buffer) textures
+ + Plain imageStore()
+ + imageLoad() followed by imageStore()
+ + imageAtomic*()
+   - Cases for both final result and return values
+ + Basic usage of the "coherent" qualifier along with barrier() and
+   memoryBarrier()
+   - Also identical variants except with "volatile"
+ + Basic sanity case for "restrict"
+ + Format re-interpretation cases
+ + Binding a single layer of a texture
+ + imageSize()
+ + Basic cases for early_fragment_tests, if images supported in fragment shader
+
+Excludes:
+ + Shaders other than compute (except for basic early_fragment_tests cases)
+ + Complex usage, such as complex inter-invocation and inter-call communication
+ + Negative testing
+
+Description:
+
+In all of the cases described below, unless otherwise mentioned, texture
+contents (one layer, slice or cube face at a time) are retrieved from the GL in
+the following manner:
+ - if the texture is of an integer format, it is bound to the color attachment
+   of a FBO and read with glReadPixels(). Texture is verified with exact
+   comparisons, where applicable.
+ - if the texture is of a [half] float or [s]norm format, it is copied by a
+   compute shader (read with texture()) into a SSBO, which is then read with a
+   mapping. Texture is verified with some tolerance.
+
+Texture format and size are set with glTexStorage*(). Any initialization data is
+uploaded with glTexSubImage*().
+
+Compute shaders use local sizes (1, 1, 1).
+
+The imageStore() cases store results of simple computations into an image.
+The image is of the same format as the texture bound to it. Stored results are
+compared to a reference image. All image formats are tested. The compute shader
+is invoked once for each pixel, in a single glDispatchCompute().
+
+The cases testing imageLoad() first initialize the contents of a texture with
+API calls. In the compute shader, the contents of the image are read with
+imageLoad() and copied into a second image with imageStore(). The images and
+their corresponding textures all have the same format. The results are compared
+to a reference image. All image formats are tested. The compute shader is
+invoked once for each pixel, in a single glDispatchCompute().
+
+The atomic operation cases exist in two variants: cases for testing the end
+result in the texture operated on by the atomic functions, as well as cases
+testing the values returned by the atomic function in each shader invocation.
+For both case types, a texture is created, and its pixels initialized. A compute
+shader is dispatched with the dimensions equal to the image size, except that
+the x size is a multiple of the width of the image, so that each pixel is
+operated on by multiple shader invocations. For the return value cases, the
+return value of the atomic function is stored with imageStore() into a second
+image, the size of which equals the dispatch dimensions. The results for the end
+result cases are verified by comparing the pixels of the first image to
+reference values, which may allow one of multiple choices, depending on the type
+of the operation. The results for the return value cases are verified by reading
+the second image and checking that a valid return value sequence was generated
+for each set of related invocations.
+
+The "coherent" cases use an image with a format that allows both reading and
+writing in the same shader (i.e. r32i/r32ui/r32f). In the shader, such an image
+is qualified "coherent". Some computation results are first stored in the image;
+then, in the same shader, after a call to memoryBarrier() and barrier(), pixels
+corresponding to some other invocations are read, an expression is computed
+based on the values read, and after yet another set of barriers, the value of
+this expression is stored to the image. The result is compared to a reference
+image.
+
+The "volatile" cases are otherwise identical to the "coherent" cases, except
+that the "volatile" qualifier is used instead of "coherent". Volatility implies
+coherence, and results should therefore be identical.
+
+The "restrict" case does image loading and storing similar to that in the
+above-described imageLoad()&imageStore() case, except the images are qualified
+"restrict". This is mainly a sanity case to see that the keyword is properly
+recognized.
+
+The format re-interpretation cases are similar to the above-described
+imageLoad()&imageStore() cases. However, the image format is not the same as
+the texture format, but one that is (size-)compatible with the texture format.
+All size-compatible format pairs are tested.
+
+The single-layer cases bind a cube, 3d, or 2d array texture to an image unit
+with the "layered" parameter set to GL_FALSE. The image is operated on by a
+shader with an *image2D image variable. The shader's operation is similar to
+the store or load&store cases (both variants exist). Multiple shader invocations
+with different layer bindings are done to cover the entire texture. The result
+is compared to a reference.
+
+The imageSize() cases read the size of an image in the shader, and store a
+verification result into a 2d r32ui image. The result is trivially verified.
+
+The cases for early_fragment_tests are relevant only if the implementation
+supports images in fragment shaders. Each case either uses or doesn't use
+the early_fragment_tests layout qualifier, and targets either depth or stencil
+test. Conditions are prepared such that approximately half of the fragments of
+a full-viewport quad will fail the specific fragment test. In the fragment
+shader, imageAtomicAdd() is used to increment a shared counter. The case then
+tests the value of the counter; its value should depend on whether
+early_fragment_tests was specified.

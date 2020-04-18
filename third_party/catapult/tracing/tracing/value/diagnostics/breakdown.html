@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<!--
+Copyright 2016 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="/tracing/value/diagnostics/diagnostic.html">
+
+<script>
+'use strict';
+
+tr.exportTo('tr.v.d', function() {
+  class Breakdown extends tr.v.d.Diagnostic {
+    constructor() {
+      super();
+      this.values_ = new Map();
+      this.colorScheme = undefined;
+    }
+
+    clone() {
+      const clone = new Breakdown();
+      clone.colorScheme = this.colorScheme;
+      clone.addDiagnostic(this);
+      return clone;
+    }
+
+    canAddDiagnostic(otherDiagnostic) {
+      return ((otherDiagnostic instanceof Breakdown) &&
+              (otherDiagnostic.colorScheme === this.colorScheme));
+    }
+
+    addDiagnostic(otherDiagnostic) {
+      for (const [name, value] of otherDiagnostic) {
+        this.set(name, this.get(name) + value);
+      }
+      return this;
+    }
+
+    /**
+     * Add a Value by an explicit name to this map.
+     *
+     * @param {string} name
+     * @param {number} value
+     */
+    set(name, value) {
+      if (typeof name !== 'string' ||
+          typeof value !== 'number') {
+        throw new Error('Breakdown maps from strings to numbers');
+      }
+      this.values_.set(name, value);
+    }
+
+    /**
+     * @param {string} name
+     * @return {number}
+     */
+    get(name) {
+      return this.values_.get(name) || 0;
+    }
+
+    * [Symbol.iterator]() {
+      for (const pair of this.values_) {
+        yield pair;
+      }
+    }
+
+    get size() {
+      return this.values_.size;
+    }
+
+    asDictInto_(d) {
+      d.values = {};
+      for (const [name, value] of this) {
+        d.values[name] = tr.b.numberToJson(value);
+      }
+      if (this.colorScheme) {
+        d.colorScheme = this.colorScheme;
+      }
+    }
+
+    static fromEntries(entries) {
+      const breakdown = new Breakdown();
+      for (const [name, value] of entries) {
+        breakdown.set(name, value);
+      }
+      return breakdown;
+    }
+
+    static fromDict(d) {
+      const breakdown = new Breakdown();
+      for (const [name, value] of Object.entries(d.values)) {
+        breakdown.set(name, tr.b.numberFromJson(value));
+      }
+      if (d.colorScheme) {
+        breakdown.colorScheme = d.colorScheme;
+      }
+      return breakdown;
+    }
+  }
+
+  tr.v.d.Diagnostic.register(Breakdown, {
+    elementName: 'tr-v-ui-breakdown-span'
+  });
+
+  return {
+    Breakdown,
+  };
+});
+</script>

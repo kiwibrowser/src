@@ -1,0 +1,73 @@
+# This makefile template is used to build libXvMC*.so
+
+LIBNAME = lib$(LIBBASENAME).so
+XVMC_LIB_GLOB=lib$(LIBBASENAME).*so*
+XVMC_MAJOR = 1
+XVMC_MINOR = 0
+INCLUDES = -I$(TOP)/src/gallium/include \
+	   -I$(TOP)/src/gallium/drivers \
+	   -I$(TOP)/src/gallium/auxiliary \
+	   -I$(TOP)/src/gallium/winsys \
+	   $(DRIVER_INCLUDES)
+DEFINES = -DGALLIUM_TRACE $(DRIVER_DEFINES)
+LIBS = $(DRIVER_LIBS) -lXv -lX11-xcb -lxcb-dri2 -lm
+STATE_TRACKER_LIB = $(TOP)/src/gallium/state_trackers/xvmc/libxvmctracker.a
+
+ifeq ($(MESA_LLVM),1)
+LDFLAGS += $(LLVM_LDFLAGS)
+DRIVER_EXTRAS = $(LLVM_LIBS)
+LD=$(CXX)
+else
+  ifeq ($(LINK_WITH_CXX),1)
+    LD=$(CXX)
+  else
+    LD=$(CC)
+  endif
+endif
+
+# XXX: Hack, XvMC public funcs aren't exported if we link to libxvmctracker.a :(
+C_SOURCES += $(wildcard $(TOP)/src/gallium/state_trackers/xvmc/*.c)
+OBJECTS = $(C_SOURCES:.c=.o) \
+	  $(ASM_SOURCES:.S=.o)
+
+##### RULES #####
+
+.c.o:
+	$(CC) -c $(INCLUDES) $(CFLAGS) $(DEFINES) $< -o $@
+
+.S.o:
+	$(CC) -c $(INCLUDES) $(CFLAGS) $(DEFINES) $< -o $@
+
+##### TARGETS #####
+
+default: depend symlinks $(TOP)/$(LIB_DIR)/gallium/$(LIBNAME)
+
+$(TOP)/$(LIB_DIR)/gallium/$(LIBNAME): $(OBJECTS) $(PIPE_DRIVERS) $(STATE_TRACKER_LIB) Makefile
+	$(MKLIB) -o $(LIBBASENAME) -linker '$(LD)' -ldflags '$(LDFLAGS)' \
+		-major $(XVMC_MAJOR) -minor $(XVMC_MINOR) $(MKLIB_OPTIONS) \
+		-install $(TOP)/$(LIB_DIR)/gallium \
+		$(OBJECTS) $(STATE_TRACKER_LIB) $(PIPE_DRIVERS) $(LIBS) $(DRIVER_EXTRAS)
+
+$(TOP)/$(LIB_DIR)/gallium:
+	mkdir -p $@
+
+depend: $(C_SOURCES) $(ASM_SOURCES) $(SYMLINKS)
+	rm -f depend
+	touch depend
+	$(MKDEP) $(MKDEP_OPTIONS) $(DEFINES) $(INCLUDES) $(C_SOURCES) \
+		$(ASM_SOURCES) 2> /dev/null
+
+# Emacs tags
+tags:
+	etags `find . -name \*.[ch]` `find ../include`
+
+# Remove .o and backup files
+clean:
+	-rm -f $(OBJECTS) *~ *.so $(SYMLINKS)
+	-rm -f depend depend.bak
+
+install: default
+	$(INSTALL) -d $(DESTDIR)$(XVMC_LIB_INSTALL_DIR)
+	$(MINSTALL) -m 755 $(TOP)/$(LIB_DIR)/gallium/$(XVMC_LIB_GLOB) $(DESTDIR)$(XVMC_LIB_INSTALL_DIR)
+
+include depend

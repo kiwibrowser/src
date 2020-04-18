@@ -1,0 +1,29 @@
+; Tests that we correctly check parameter types for intrinsics.
+
+; REQUIRES: no_minimal_build
+
+; RUN: not %pnacl_sz -bitcode-as-text \
+; RUN:     %p/Inputs/bad-intrinsic-arg.tbc \
+; RUN:     -bitcode-format=pnacl -notranslate -build-on-read \
+; RUN:     -allow-externally-defined-symbols 2>&1 \
+; RUN:   | FileCheck %s
+
+; CHECK: Invalid type signature for intrinsic llvm.nacl.setjmp: i32 (double)
+
+; RUN: pnacl-bcfuzz -bitcode-as-text \
+; RUN:     %p/Inputs/bad-intrinsic-arg.tbc -output - \
+; RUN:   | not pnacl-bcdis -no-records | FileCheck -check-prefix=ASM %s
+
+; ASM: module {  // BlockID = 8
+; ASM:   declare external i32 @f0(double);
+; ASM:   valuesymtab {  // BlockID = 14
+; ASM:     @f0 : "llvm.nacl.setjmp";
+; ASM: Error(118:0): Intrinsic llvm.nacl.setjmp expects i8* for argument 1. Found: double
+; ASM:   }
+; ASM:   function void @f3(i32 %p0, double %p1) {  // BlockID = 12
+; ASM:     blocks 1;
+; ASM:   %b0:
+; ASM:     %v0 = call i32 @f0(double %p1);
+; ASM:     ret void;
+; ASM:   }
+; ASM: }

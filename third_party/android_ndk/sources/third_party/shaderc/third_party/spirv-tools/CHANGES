@@ -1,0 +1,180 @@
+Revision history for SPIRV-Tools
+
+v2017.1-dev 2017-09-01
+
+v2017.0 2017-09-01
+ - Update README to describe that assembler, disassembler, and binary parser support
+   are based on grammar files from the SPIRV-Headers repository.
+
+v2016.7 2017-09-01
+ - Add SPIR-V 1.2
+ - OpenCL 2.2 support is now based on SPIR-V 1.2
+ - Support AMD extensions in assembler, disassembler:
+    SPV_AMD_gcn_shader
+    SPV_AMD_shader_ballot
+    SPV_AMD_shader_explicit_vertex_parameter
+    SPV_AMD_shader_trinary_minmax
+    SPV_AMD_gpu_shader_half_float
+    SPV_AMD_texture_gather_bias_lod
+    SPV_AMD_gpu_shader_int16
+ - Optimizer: Add support for:
+   - Inline all function calls in entry points.
+   - Flatten decoration groups.  Fixes #602
+   - Id compaction (minimize Id bound).  Fixes #624
+   - Eliminate redundant composite insert followed by extract
+   - Simplify access chains to local variables
+   - Eliminate local variables with a single store, if possible
+   - Eliminate local variables with a several stores, if possible
+   - Eliminate loads and stores in same block to local variables
+   - Eliminate redundant insert/extract to composite values
+   - Aggressive dead instruction elimination
+   - Eliminate dead branches
+   - Merge blocks when the second can only be preceded by the first
+   - Eliminate ommon uniform loads
+ - Assembler: Add option to preserve numeric ids. Fixes #625
+ - Add build target spirv-tools-vimsyntax to generate spvasm.vim, a SPIR-V
+   assembly syntax file for Vim.
+ - Version string: Allow overriding of wall clock timestamp with contents
+   of environment variable SOURCE_DATE_EPOCH.
+ - Validator implements relaxed rules for SPV_KHR_16bit_storage.
+ - CMake installation rules use GNUInstallDirs.  For example, libraries
+   will be installed into a lib64 directory if that's the norm for the
+   current system.
+ - Fixes:
+   #500: Parameterize validator limit checks
+   #508: Support compilation under CYGWIN
+   #517: Fix validation when continue (or case) contstruct is also the head of a
+     nested control construct.
+   #551: If a merge block is reachable, it must be *strictly* dominated by its
+     header.
+   #548: Validator: Error when the reserved OpImageSparseSampleProj* opcodes
+     are used.
+   #611: spvtools::Optimizer was failing to save the module to the output
+     binary vector when all passes succeded without changes.
+   #629: The inline-entry-points-all optimization could generate invalidly
+     structured code when the inlined function had early returns.
+   #697: Optimizer's Instruction::ForEachInId method was skipping semantics-id
+     and scope-id.
+   #755: Inliner: Fix inlining of callee with single Return appearing before
+     the end of the function.
+   #776: Fix dead branch elimination in presence of complex but dead control
+     flow.
+   #781: SPV_KHR_variable_pointers allows duplicate pointer types
+   #782: Inliner: Fix remapping of non-label forward references in callee
+   #787: Inliner: Fix remapping of inlined entry block when called from
+     single block loop.
+   #790: Inliner: Fix remapping of inlined entry block when callee has
+     multiple returns.
+
+v2016.6 2016-12-13
+ - Published the C++ interface for assembling, disassembling, validation, and
+   optimization.
+ - Support SPV_KHR_shader_draw_parameters in assembler, disassembler, parser.
+ - Validator:
+   - Add validator API accepting raw binary words
+   - Increased coverage:
+     - Checks "Data rules" in Universal Validation Rules, section 2.16.1
+     - WIP: Universal Limits.
+       - The minimum mandated upper bounds are checked.
+       - TODO: Parameterize the validator to allow larger limits accepted by
+         a more than minimally capable implementation.
+   - OpSampledImage checks
+   - OpConstantComposite checks
+   - Id bound check
+ - Disasssembler:
+   - Generates friendly GLSL-based names for more builtin variables
+   - Generates friendly names for numeric OpConstant values
+   - Vendor tool info extracted from SPIR-V XML registry file.
+ - Fixes issues:
+   #429: Validator: Allow OpTypeForwardPointer and OpTypeStruct to reference
+     undefined IDs
+   #482: Validator: OpVariable initializer can be an ID of a module-scope variable
+
+v2016.5 2016-09-16
+ - Support SPV_KHR_shader_ballot in assembler, disassembler, parser.
+ - Disassembler: Generate friendly names for built-in variables.
+ - Partial fixes:
+   #359: Add Emacs helper for automatically diassembling/assembling a SPIR-V
+     binary on file load/save.
+ - Fixes:
+   #414: Validator: Allow OpUndef for composite constants
+   #415: Validator: Phi can use its own value in some cases.
+
+v2016.4 2016-09-01
+ - Relicensed under Apache 2.0
+ - Add optimization passes (in API and spirv-opt command)
+   - Fold spec constants defined with OpSpecConstantOp and
+       OpSpecConstantComposite to normal constants with fixed value(s).
+ - Fixes issues:
+   #318: Relicensed under Apache 2.0
+
+v2016.3 2016-08-24
+ - Add target environment enums for OpenCL 2.1, OpenCL 2.2,
+   OpenGL 4.0, OpenGL 4.1, OpenGL 4.2, OpenGL 4.3, OpenGL 4.5.
+ - Add spirv-cfg, an experimental tool to dump the control flow graph
+   as a GraphiViz "dot" graph
+ - Add optimization pass: Eliminate dead constants.
+ - Add spirv-lesspipe.sh filter utility
+ - Fixes issues:
+   #288: Check def-use dominance rules for OpPhi (variable,parent) operands
+   #339: Allow OpUndef in types-constants-global-vars section, as required
+     by SPIR-V 1.0 Rev7, 1.1 Rev 3.
+   #340: Avoid race on mkdir during build
+   #365: Relax PointSize, ClipDistance, CullDistance capability check in all
+     environments not just Vulkan 1.0.
+
+v2016.2 2016-08-05
+ - Validator is incomplete
+   - Checks ID use block is dominated by definition block
+ - Add optimization passes (in API and spirv-opt command)
+   - Strip debug info instructions
+   - Freeze spec constant to their default values
+ - Allow INotEqual as operation for OpSpecConstantOp
+ - Fixes bugs:
+   #270: validator: crash when continue construct is unreachable
+   #279: validator: infinite loop when analyzing some degenerate control
+     flow graphs
+   #286: validator: don't incorrectly generate def-use error for
+         (variable,parent) parameters to OpPhi
+   #290: disassembler: never generate bare % for an identifier
+   #295: validator: def-use dominance check should ignore unreachable uses
+   #276: validator: allow unreachable continue constructs
+   #297: validator: allow an unreachable block to branch to a reachable
+         merge block
+
+v2016.1 2016-07-19
+ - Fix https://github.com/KhronosGroup/SPIRV-Tools/issues/261
+   Turn off ClipDistance and CullDistance capability checks for Vulkan.
+ - The disassembler can emit friendly names based on debug info (OpName
+   instructions), and will infer somewhat friendly names for most types.
+   This is turned on by default for the spirv-dis command line tool.
+ - Updated to support SPIR-V 1.1 rev 2
+   - Input StorageClass, Sampled1D capability, and SampledBuffer capability
+     do not require Shader capability anymore.
+
+v2016.0 2016-07-04
+
+ - Adds v<year>.<index> versioning, with "-dev" indicating
+   work in progress.  The intent is to more easly report
+   and summarize functionality when SPIRV-Tools is incorporated
+   in downstream projects.
+
+ - Summary of functionality (See the README.md for more):
+   - Supports SPIR-V 1.1 Rev 1
+   - Supports SPIR-V 1.0 Rev 5
+   - Supports GLSL std450 extended instructions 1.0 Rev 3
+   - Supports OpenCL extended instructions 1.0 Rev 2
+   - Assembler, disassembler are complete
+     - Supports floating point widths of 16, 32, 64 bits
+     - Supports integer widths up to 64 bits
+   - Validator is incomplete
+     - Checks capability requirements in most cases
+     - Checks module layout constraints
+     - Checks ID use-definition ordering constraints,
+       ignoring control flow
+     - Checks some control flow graph rules
+   - Optimizer is introduced, with few available transforms.
+   - Supported on Linux, OSX, Android, Windows
+
+ - Fixes bugs:
+   - #143: OpenCL pow and pown arguments
