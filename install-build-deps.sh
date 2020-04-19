@@ -1,9 +1,11 @@
 #!/bin/bash -e
+
 # Copyright (c) 2012 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 # Script to install everything needed to build chromium (well, ideally, anyway)
 # See https://chromium.googlesource.com/chromium/src/+/master/docs/linux/build_instructions.md
+
 usage() {
   echo "Usage: $0 [--options]"
   echo "Options:"
@@ -25,6 +27,7 @@ usage() {
   echo "Script will prompt interactively if options not given."
   exit 1
 }
+
 # Build list of apt packages in dpkg --get-selections format.
 build_apt_package_list() {
   echo "Building apt package list." >&2
