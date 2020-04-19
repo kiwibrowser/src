@@ -167,17 +167,11 @@ To prepare initial setup run from ~/chromium/src:
     gclient runhooks
 
 
-then generate the build files:
+then generate the build files in ~/chromium/src:
 
-    ~/chromium/src$ gn gen out/android_arm # (you can also use 'gn args out/android_arm')
-    Writing build/secondary/third_party/android_tools/google_play_services_basement_java.info
-    Writing build/secondary/third_party/android_tools/google_play_services_tasks_java.info
-    Writing third_party/android_support_test_runner/rules_java.info
-    Writing build/secondary/third_party/android_tools/google_play_services_base_java.info
-    Writing     build/secondary/third_party/android_tools/google_play_services_auth_base_java.info
-    [...]
-    Done. Made 19910 targets from 1626 files in 21974ms
+    gn gen out/android_arm
 
+Alternatively you can use: gn args out/android_arm
 
 ### Compiling Kiwi Browser
 
