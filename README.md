@@ -162,7 +162,7 @@ You can replace Android keystore password and Android keystore keypath with the 
 
 ### Prepare the first build
 
-To prepare initial setup run:
+To prepare initial setup run from ~/chromium/src:
 
     gclient runhooks
 
