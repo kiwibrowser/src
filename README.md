@@ -1,4 +1,4 @@
-# Welcome to Kiwi Browser
+# Kiwi Browser
 
 [Kiwi Browser](https://play.google.com/store/apps/details?id=com.kiwibrowser.browser) is a fully open-source web browser for Android.
 
