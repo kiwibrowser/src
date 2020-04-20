@@ -68,12 +68,29 @@ jobs:
       - name: Checking available disk-space again
         run: df -h
 
+      - name: Verifying checkout 1
+        run: ls -la
+
+      - name: Verifying checkout 2
+        run: ls -la repository
+
+      - name: Verifying checkout 3
+        run: ls -la repository/src
+
       - name: Installing system dependencies
-        env:
-          working-directory: ./repository/src
+        working-directory: ./repository/src
         run: |
+          pwd
           sudo bash install-build-deps.sh --no-chromeos-fonts
           build/linux/sysroot_scripts/install-sysroot.py --arch=i386
           build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
+          
+      - name: Checking available disk-space one more time
+        run: df -h
 
+      - name: Creating output folder
+        run: mkdir -p out/android_arm
+      
+      - name: Checking where we are
+        run: pwd
 
