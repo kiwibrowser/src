@@ -46,8 +46,20 @@ jobs:
       - name: Setting-up Java 8 as default Java provider
         run: sudo update-java-alternatives --set java-1.8.0-openjdk-amd64
 
-      - name: Checking-out source-code
-        uses: actions/checkout@v1
+      - name: Checking available disk-space
+        run: df -h
+      
+      - name: Installing gitfs
+        run: |
+          sudo add-apt-repository ppa:presslabs/gitfs
+          sudo apt-get update
+          sudo apt-get install gitfs
+
+      - name: Mounting gitfs
+        run: gitfs https://github.com/kiwibrowser/src.git ./src
+
+#      - name: Checking-out source-code
+#        uses: actions/checkout@v1
         
 #      - name: Installing dependencies (install-build-deps.sh)
 #        run: |
