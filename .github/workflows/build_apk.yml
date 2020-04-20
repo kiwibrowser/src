@@ -23,12 +23,22 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      - name: Gathering CIPD from cache (dependencies)
+        id: cache-cipd
+        uses: actions/cache@v1
+        with:
+          path: ../.cipd
+          key: ${{ runner.os }}-cipd
+
+      - name: Checking-out CIPD dependencies
+        uses: actions/checkout@v2
+        if: steps.cache-cipd.outputs.cache-hit != 'true'
         with:
           repository: kiwibrowser/dependencies
           path: .cipd 
           
       - name: Moving CIPD folder one level higher
+        if: steps.cache-cipd.outputs.cache-hit != 'true'
         run: mv .cipd ../ 
 
       - name: Installing Python and OpenJDK
