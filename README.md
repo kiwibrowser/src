@@ -271,9 +271,8 @@ If you want to optimize of the final APK, you can look at the size of each indiv
 
 You can ask for extra help in our Discord server, or by [filing an issue](https://github.com/kiwibrowser/src/issues).
 
-<a href="https://discord.gg/XyMppQq"> <img src="https://discordapp.com/assets/e4923594e694a21542a489471ecffa50.svg" height="70">
+<a href="https://discord.gg/XyMppQq"> <img src="https://discordapp.com/assets/e4923594e694a21542a489471ecffa50.svg" height="70"></a>
 
 Have fun with Kiwi!
 
 Arnaud.
-
