@@ -55,24 +55,32 @@ To build Kiwi Browser you can directly clone the repository, as we have packed a
 
 In ~ (your home directory) run:
 
-    git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+```
+git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+```
 
 and edit the file ~/.bashrc to add at the very end
 
-    export PATH=$HOME/depot_tools:$PATH
-    
+```bash
+export PATH=$HOME/depot_tools:$PATH
+```
+
 Validate the changes by running:
 
-    source ~/.bashrc
+```bash
+source ~/.bashrc
+```
 
 This will give you access to one utility called gclient (as in "Google client")
 
 Create a directory called ~/chromium/, and in ~/chromium/ run:
 
-    git clone https://github.com/kiwibrowser/dependencies.git .cipd
-    cp ~/chromium/.cipd/.gclient ~/chromium/
-    cp ~/chromium/.cipd/.gclient_entries ~/chromium/
-    git clone https://github.com/kiwibrowser/src.git
+```bash
+git clone https://github.com/kiwibrowser/dependencies.git .cipd
+cp ~/chromium/.cipd/.gclient ~/chromium/
+cp ~/chromium/.cipd/.gclient_entries ~/chromium/
+git clone https://github.com/kiwibrowser/src.git
+```
 
 At this stage, in ~/chromium/ you will have the .cipd folder, and a folder with the Kiwi Browser source-code called src.
 
@@ -80,18 +88,24 @@ At this stage, in ~/chromium/ you will have the .cipd folder, and a folder with 
 
 To be able to build Kiwi Browser, you need python and OpenJDK (OpenJDK to create Java bindings for Android):
 
-    sudo apt-get update
-    sudo apt-get install python openjdk-8-jdk-headless libncurses5
-    
+```bash
+sudo apt-get update
+sudo apt-get install python openjdk-8-jdk-headless libncurses5
+```
+
 We want to be sure to use Java 1.8 in order to not get compilation errors (lint and errorprone):
 
-    sudo update-java-alternatives --set java-1.8.0-openjdk-amd64
+```bash
+sudo update-java-alternatives --set java-1.8.0-openjdk-amd64
+```
 
 then run the following commands in ~/chromium/src:
 
-    bash install-build-deps.sh --no-chromeos-fonts
-    build/linux/sysroot_scripts/install-sysroot.py --arch=i386
-    build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
+```bash
+bash install-build-deps.sh --no-chromeos-fonts
+build/linux/sysroot_scripts/install-sysroot.py --arch=i386
+build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
+```
 
 These commands will install all necessary system packages using apt-get and gather a minimal build filesystem.
 
@@ -101,65 +115,70 @@ APKs (application packages) on Android need to be signed by developers in order 
 
 To generate a key:
 
-    keytool -genkey -v -keystore ~/chromium/keystore.jks -alias production -keyalg RSA -keysize 2048 -validity 10000 -keypass HERE_YOUR_ANDROID_KEYSTORE_PASSWORD
+```
+keytool -genkey -v -keystore ~/chromium/keystore.jks -alias production -keyalg RSA -keysize 2048 -validity 10000 -keypass HERE_YOUR_ANDROID_KEYSTORE_PASSWORD
+```
 
 ### Configuring the build type and platform
 
 Run:
 
-    mkdir -p ~/chromium/src/out/android_arm
+```bash
+mkdir -p ~/chromium/src/out/android_arm
+```
 
 Create a file called args.gn in ~/chromium/src/out/android_arm/ with this content:
 
-    target_os = "android"
-    target_cpu = "arm" # <---- can be arm, arm64, x86 or x64
-    is_debug = false
-    is_java_debug = false
-    
-    android_channel = "stable"
-    is_official_build = true
-    is_component_build = false
-    is_chrome_branded = false
-    is_clang = true
-    symbol_level = 1
-    use_unofficial_version_number = false
-    android_default_version_code = "158"
-    android_keystore_name = "production"
-    android_keystore_password = "HERE_YOUR_ANDROID_KEYSTORE_PASSWORD"
-    android_keystore_path = "../../../keystore.jks"
-    android_default_version_name = "Quadea"
-    fieldtrial_testing_like_official_build = true
-    icu_use_data_file = false
-    enable_iterator_debugging = false
+```bash
+target_os = "android"
+target_cpu = "arm" # <---- can be arm, arm64, x86 or x64
+is_debug = false
+is_java_debug = false
 
-    google_api_key = "KIWIBROWSER"
-    google_default_client_id = "42.apps.kiwibrowser.com"
-    google_default_client_secret = "KIWIBROWSER_NOT_SO_SECRET"
-    use_official_google_api_keys = true
+android_channel = "stable"
+is_official_build = true
+is_component_build = false
+is_chrome_branded = false
+is_clang = true
+symbol_level = 1
+use_unofficial_version_number = false
+android_default_version_code = "158"
+android_keystore_name = "production"
+android_keystore_password = "HERE_YOUR_ANDROID_KEYSTORE_PASSWORD"
+android_keystore_path = "../../../keystore.jks"
+android_default_version_name = "Quadea"
+fieldtrial_testing_like_official_build = true
+icu_use_data_file = false
+enable_iterator_debugging = false
 
-    ffmpeg_branding = "Chrome"
-    proprietary_codecs = true
-    enable_hevc_demuxing = true
-    enable_nacl = false
-    enable_wifi_display = false
-    enable_widevine = false
-    enable_google_now = true
-    enable_ac3_eac3_audio_demuxing = true
-    enable_iterator_debugging = false
-    enable_mse_mpeg2ts_stream_parser = true
-    enable_remoting = false
-    rtc_use_h264 = false
-    rtc_use_lto = false
-    use_openh264 = false
-    
-    v8_use_external_startup_data = true
-    update_android_aar_prebuilts = true
-    
-    use_thin_lto = true
-    
-    enable_extensions = true
-    enable_plugins = true
+google_api_key = "KIWIBROWSER"
+google_default_client_id = "42.apps.kiwibrowser.com"
+google_default_client_secret = "KIWIBROWSER_NOT_SO_SECRET"
+use_official_google_api_keys = true
 
+ffmpeg_branding = "Chrome"
+proprietary_codecs = true
+enable_hevc_demuxing = true
+enable_nacl = false
+enable_wifi_display = false
+enable_widevine = false
+enable_google_now = true
+enable_ac3_eac3_audio_demuxing = true
+enable_iterator_debugging = false
+enable_mse_mpeg2ts_stream_parser = true
+enable_remoting = false
+rtc_use_h264 = false
+rtc_use_lto = false
+use_openh264 = false
+
+v8_use_external_startup_data = true
+update_android_aar_prebuilts = true
+
+use_thin_lto = true
+
+enable_extensions = true
+enable_plugins = true
+```
 
 You can replace Android keystore password and Android keystore keypath with the data for your Android keystore (or you can generate a new key).
 
@@ -167,12 +186,15 @@ You can replace Android keystore password and Android keystore keypath with the 
 
 To prepare initial setup run from ~/chromium/src:
 
-    gclient runhooks
-
+```
+gclient runhooks
+```
 
 then generate the build files in ~/chromium/src:
 
-    gn gen out/android_arm
+```
+gn gen out/android_arm
+```
 
 Alternatively you can use: gn args out/android_arm
 
@@ -180,18 +202,26 @@ Alternatively you can use: gn args out/android_arm
 
 To compile, use the command:
 
-    ninja -C out/android_arm chrome_public_apk
+```
+ninja -C out/android_arm chrome_public_apk
+```
 
 you'll have the output APK in ~/chromium/src/out/android_arm/apks/ChromePublic.apk
 
 then you can run the APK on your phone.
 
 ### To investigate crashes
-     components/crash/content/tools/generate_breakpad_symbols.py --build-dir=out/lnx64 --symbols-dir=/tmp/my_symbols/ --binary=out/android_arm/lib.unstripped/libchrome.so --clear --verbose
+
+```
+components/crash/content/tools/generate_breakpad_symbols.py --build-dir=out/lnx64 --symbols-dir=/tmp/my_symbols/ --binary=out/android_arm/lib.unstripped/libchrome.so --clear --verbose
+```
 
 or from a tombstone:
 
-     ~/chromium/src$ ./third_party/android_ndk/ndk-stack -sym out/android_x86/lib.unstripped -dump /home/raven/tombstone_06
+```
+~/chromium/src$ ./third_party/android_ndk/ndk-stack -sym out/android_x86/lib.unstripped -dump /home/raven/tombstone_06
+```
+
 ==
 
 ### Remote debugging
@@ -201,18 +231,25 @@ You can use Google Chrome to debug using the devtools console.
 In case the devtools console doesn't work (error 404),  the solution is to use chrome://inspect (Inspect fallback)
 or change SHA1 in build/util/LASTCHANGE
 
-    LASTCHANGE=8920e690dd011895672947112477d10d5c8afb09-refs/branch-heads/3497@{#948}
+```
+LASTCHANGE=8920e690dd011895672947112477d10d5c8afb09-refs/branch-heads/3497@{#948}
+```
 
 and confirm the change using:
 
-     rm out/android_arm/gen/components/version_info/version_info_values.h out/android_x86/gen/components/version_info/version_info_values.h out/android_arm/gen/build/util/webkit_version.h out/android_x86/gen/build/util/webkit_version.h out/android_arm/gen/chrome/common/chrome_version.h out/android_x86/gen/chrome/common/chrome_version.h
+```
+rm out/android_arm/gen/components/version_info/version_info_values.h out/android_x86/gen/components/version_info/version_info_values.h out/android_arm/gen/build/util/webkit_version.h out/android_x86/gen/build/util/webkit_version.h out/android_arm/gen/chrome/common/chrome_version.h out/android_x86/gen/chrome/common/chrome_version.h
+```
 
 ### Binary size optimization
 
 If you want to optimize of the final APK, you can look at the size of each individual component using command:
 
-    ./tools/binary_size/supersize archive chrome.size --apk-file out/android_arm/apks/ChromePublic.apk -v
-    ./tools/binary_size/supersize html_report chrome.size --report-dir size-report -v
+```
+./tools/binary_size/supersize archive chrome.size --apk-file out/android_arm/apks/ChromePublic.apk -v
+./tools/binary_size/supersize html_report chrome.size --report-dir size-report -v
+```
+
 ==
 
 If you need any assistance with building Kiwi, feel free to ask.
