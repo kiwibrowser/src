@@ -23,38 +23,42 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     # /dev/sda1 has more available space than /dev/sdb1 (14 GB only on /dev/sdb1 at this stage)
     # so we want to take advantage of the available disk space on /dev/sda1
+      
+    # We store the dependencies and output objects on /dev/sda1 
+    # We store the main repository on /dev/sdb1
     steps:
       - name: Reclaiming disk space on /dev/sda1 by disabling swap partition
         run: |
           sudo swapoff -av
           sudo rm -f /swapfile
 
-      - name: Creating repository folder in /dev/sda1
+      - name: Creating repository folder in /dev/sdb1
         run: |
-          sudo mkdir -p /repository
-          sudo chown -R runner:docker /repository
+          sudo mkdir -p /mnt/repository
+          sudo chown -R runner:docker /mnt/repository
 
       - name: Running symlink on /dev/sdb1 pointing to /dev/sda1
-        run: ln -s /repository $GITHUB_WORKSPACE/repository
+        run: ln -s /mnt/repository $GITHUB_WORKSPACE/repository
 
       - name: Gathering CIPD from cache
         id: cache-cipd
         uses: actions/cache@v1
         with:
-          path: ./repository/.cipd
+          path: ./.cipd
           key: ${{ runner.os }}-cipd
 
-      - name: Checking-out CIPD dependencies
+      - name: Checking-out CIPD dependencies in $GITHUB_WORKSPACE/.cipd
         uses: actions/checkout@v2
         if: steps.cache-cipd.outputs.cache-hit != 'true'
         with:
           repository: kiwibrowser/dependencies
-          path: ./repository/.cipd 
+          path: ./.cipd 
           
-      - name: Copying .gclient and .gclient_entries
+      - name: Linking .cipd in the proper path and copying .gclient and .gclient_entries
         run: |
-          cp ./repository/.cipd/.gclient ./repository/
-          cp ./repository/.cipd/.gclient_entries ./repository/
+          ln -s $GITHUB_WORKSPACE/./cipd/ ./repository/
+          cp ./.cipd/.gclient ./repository/
+          cp ./.cipd/.gclient_entries ./repository/
 
       - name: Installing Python and OpenJDK
         run: sudo apt-get install python openjdk-8-jdk-headless libncurses5
@@ -111,3 +115,7 @@ jobs:
       - name: Generating build files
         working-directory: ./repository/src
         run: gn gen ../../out/android_arm
+
+      - name: Building APK
+        working-directory: ./repository/src
+        run: ninja -C ../../out/android_arm chrome_public_apk
