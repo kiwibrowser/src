@@ -18,21 +18,21 @@ The browser is licensed under the same licence as Chromium, which means that you
 ## Table of contents
 
 - [Timeline](#timeline)
-- [Contributors](#contributors)
-- [Modifications](#modifications)
-- [How to build](#how-to-build)
-- [Getting the source-code and environment](#getting-the-source-code-and-environment)
-- [Setting-up dependencies](#setting-up-dependencies)
-- [Preparing a signing key](#preparing-a-signing-key)
-- [Configuring the build type and platform](#configuring-the-build-type-and-platform)
-- [Prepare the first build](#prepare-the-first-build)
-- [Compiling Kiwi Browser](#compiling-kiwi-browser)
-- [To investigate crashes](#to-investigate-crashes)
-- [Remote debugging](#remote-debugging)
-- [Binary size optimization](#binary-size-optimization)
+- [Contributing](#contributing)
+- [Modifying](#modifying)
+- [Building](#building)
+  - [Getting the source-code and environment](#getting-the-source-code-and-environment)
+  - [Setting-up dependencies](#setting-up-dependencies)
+  - [Preparing a signing key](#preparing-a-signing-key)
+  - [Configuring the build type and platform](#configuring-the-build-type-and-platform)
+  - [Preparing the first build](#preparing-the-first-build)
+  - [Compiling Kiwi Browser](#compiling-kiwi-browser)
+  - [Investigating crashes](#investigating-crashes)
+  - [Remote debugging](#remote-debugging)
+  - [Optimizing binary size](#optimizing-binary-size)
 - [Additional help](#additional-help)
 
-### Timeline
+## Timeline
 
 - 15 April 2018 - First Kiwi Browser release.
 
@@ -47,18 +47,18 @@ The new builds are done from the open-source edition directly to the [Play Store
 
 There are thousands of hours of work in this repository and thousands of files changed.
 
-### Contributors
+## Contributors
 
 Contributions are welcome and encouraged.
 
 If you want your code to be integrated into Kiwi, open a merge request, I (and/or a member of the community) can review the code with you and push it to the Play Store.
 
-### Modifications
+## Modifying
 
 If you create your own browser or a mod, make sure to change the browser name and icon in `chrome/android/java/res_chromium/values/channel_constants.xml` and translation strings (search and replace Kiwi in all `*.xtb`, all `*.grd` and all `*.grdp` files)
 
 
-## How to build
+## Building
 
 The reference build machine is using Ubuntu 19.04 (also tested using Ubuntu 18.04 and Ubuntu 19.10).
 
@@ -199,7 +199,7 @@ enable_plugins = true
 
 You can replace Android keystore password and Android keystore keypath with the data for your Android keystore (or you can generate a new key).
 
-### Prepare the first build
+### Preparing the first build
 
 To prepare initial setup run from ~/chromium/src:
 
@@ -227,7 +227,7 @@ you'll have the output APK in ~/chromium/src/out/android_arm/apks/ChromePublic.a
 
 then you can run the APK on your phone.
 
-### To investigate crashes
+### Investigating crashes
 
 ```
 components/crash/content/tools/generate_breakpad_symbols.py --build-dir=out/lnx64 --symbols-dir=/tmp/my_symbols/ --binary=out/android_arm/lib.unstripped/libchrome.so --clear --verbose
@@ -256,7 +256,7 @@ and confirm the change using:
 rm out/android_arm/gen/components/version_info/version_info_values.h out/android_x86/gen/components/version_info/version_info_values.h out/android_arm/gen/build/util/webkit_version.h out/android_x86/gen/build/util/webkit_version.h out/android_arm/gen/chrome/common/chrome_version.h out/android_x86/gen/chrome/common/chrome_version.h
 ```
 
-### Binary size optimization
+### Optimizing binary size
 
 If you want to optimize of the final APK, you can look at the size of each individual component using command:
 
