@@ -27,18 +27,33 @@ jobs:
     # We store the dependencies and output objects on /dev/sda1 
     # We store the main repository on /dev/sdb1
     steps:
+      - name: Checking available disk-space again
+        run: df -h
+
+      - name: Checking available disk-space again
+        run: ls -la /mnt
+
       - name: Reclaiming disk space on /dev/sda1 by disabling swap partition
         run: |
           sudo swapoff -av
           sudo rm -f /swapfile
+
+      - name: Checking available disk-space again
+        run: df -h
 
       - name: Creating repository folder in /dev/sdb1
         run: |
           sudo mkdir -p /mnt/repository
           sudo chown -R runner:docker /mnt/repository
 
+      - name: Checking available disk-space again
+        run: ls -la /mnt
+        
       - name: Running symlink on /dev/sdb1 pointing to /dev/sda1
-        run: ln -s /mnt/repository $GITHUB_WORKSPACE/repository
+        run: ln -s /mnt/repository $GITHUB_WORKSPACE/
+
+      - name: Checking available disk-space again
+        run: df -h
 
       - name: Gathering CIPD from cache
         id: cache-cipd
@@ -60,9 +75,15 @@ jobs:
           cp ./.cipd/.gclient ./repository/
           cp ./.cipd/.gclient_entries ./repository/
 
+      - name: Checking available disk-space again
+        run: df -h
+
       - name: Installing Python and OpenJDK
         run: sudo apt-get install python openjdk-8-jdk-headless libncurses5
-    
+        
+      - name: Checking available disk-space again
+        run: df -h
+
       - name: Setting-up Java 8 as default Java provider
         run: sudo update-java-alternatives --set java-1.8.0-openjdk-amd64
 
