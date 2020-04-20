@@ -22,11 +22,24 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      - name: Reclaiming disk space by disabling swap partition
+        run: |
+          sudo swapoff -av
+          sudo rm -f /swapfile
+
+      - name: Creating worker space
+        run: |
+          sudo mkdir -p /work
+          sudo chown -R runner:docker /work
+
+      - name: Running symlink
+        run: ln -s /repository $GITHUB_WORKSPACE/repository
+
       - name: Gathering CIPD from cache
         id: cache-cipd
         uses: actions/cache@v1
         with:
-          path: ../.cipd
+          path: ./repository/.cipd
           key: ${{ runner.os }}-cipd
 
       - name: Checking-out CIPD dependencies
@@ -34,11 +47,7 @@ jobs:
         if: steps.cache-cipd.outputs.cache-hit != 'true'
         with:
           repository: kiwibrowser/dependencies
-          path: .cipd 
-          
-      - name: Moving CIPD folder one level higher
-        if: steps.cache-cipd.outputs.cache-hit != 'true'
-        run: mv .cipd ../ 
+          path: ./repository/.cipd 
 
       - name: Installing Python and OpenJDK
         run: sudo apt-get install python openjdk-8-jdk-headless libncurses5
@@ -48,3 +57,21 @@ jobs:
 
       - name: Checking available disk-space
         run: df -h
+
+      - name: Checking-out source-code
+        uses: actions/checkout@v2
+        with:
+          path: ./repository/src 
+
+      - name: Checking available disk-space again
+        run: df -h
+
+      - name: Installing system dependencies
+        env:
+          working-directory: ./repository/src
+        run: |
+          sudo bash install-build-deps.sh --no-chromeos-fonts
+          build/linux/sysroot_scripts/install-sysroot.py --arch=i386
+          build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
+
+
