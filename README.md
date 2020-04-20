@@ -15,6 +15,23 @@ It also includes performance improvements (partial rasterisation of tiles, etc)
 
 The browser is licensed under the same licence as Chromium, which means that you are allowed to create derivatives of the browser.
 
+## Table of contents
+
+- [Timeline](#timeline)
+- [Contributors](#contributors)
+- [Modifications](#modifications)
+- [How to build](#how-to-build)
+- [Getting the source-code and environment](#getting-the-source-code-and-environment)
+- [Setting-up dependencies](#setting-up-dependencies)
+- [Preparing a signing key](#preparing-a-signing-key)
+- [Configuring the build type and platform](#configuring-the-build-type-and-platform)
+- [Prepare the first build](#prepare-the-first-build)
+- [Compiling Kiwi Browser](#compiling-kiwi-browser)
+- [To investigate crashes](#to-investigate-crashes)
+- [Remote debugging](#remote-debugging)
+- [Binary size optimization](#binary-size-optimization)
+- [Additional help](#additional-help)
+
 ### Timeline
 
 - 15 April 2018 - First Kiwi Browser release.
