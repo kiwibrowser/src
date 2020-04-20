@@ -222,8 +222,6 @@ or from a tombstone:
 ~/chromium/src$ ./third_party/android_ndk/ndk-stack -sym out/android_x86/lib.unstripped -dump /home/raven/tombstone_06
 ```
 
-==
-
 ### Remote debugging
 
 You can use Google Chrome to debug using the devtools console.
