@@ -16,11 +16,12 @@ It also includes performance improvements (partial rasterisation of tiles, etc)
 The browser is licensed under the same licence as Chromium, which means that you are allowed to create derivatives of the browser.
 
 ### Timeline
-15 April 2018 - First Kiwi Browser release.
 
-15 April 2019 - Kiwi Browser gets support for Chrome Extensions.
+- 15 April 2018 - First Kiwi Browser release.
 
-17 April 2020 - Kiwi Browser goes fully open-source.
+- 15 April 2019 - Kiwi Browser gets support for Chrome Extensions.
+
+- 17 April 2020 - Kiwi Browser goes fully open-source.
 
 
 This code is up-to-date and is matching the build on the Play Store.
