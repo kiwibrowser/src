@@ -250,12 +250,11 @@ If you want to optimize of the final APK, you can look at the size of each indiv
 ./tools/binary_size/supersize html_report chrome.size --report-dir size-report -v
 ```
 
-==
+## Additional help
 
-If you need any assistance with building Kiwi, feel free to ask.
-To do so, please open a GitHub issue so answers will benefit to everyone.
+You can ask for extra help in our Discord server, or by [filing an issue](https://github.com/kiwibrowser/src/issues).
 
-You can also reach out on Discord https://discord.gg/XyMppQq
+<a href="https://discord.gg/XyMppQq"> <img src="https://discordapp.com/assets/e4923594e694a21542a489471ecffa50.svg" height="70"> <a href="">
 
 Have fun with Kiwi!
 
