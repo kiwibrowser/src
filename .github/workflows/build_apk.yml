@@ -27,12 +27,6 @@ jobs:
     # We store the main repository on /dev/sda1
     # We store the dependencies and output objects on /dev/sdb1 
     steps:
-      - name: Checking available disk-space again
-        run: df -h
-
-      - name: Checking available disk-space again
-        run: ls -la /mnt
-
       - name: Reclaiming disk space on /dev/sda1 by disabling swap partition
         run: |
           sudo swapoff -av
@@ -40,9 +34,6 @@ jobs:
           
       - name: Reclaiming disk space on /dev/sda1 by removing .NET framework
         run: sudo rm -rf /usr/share/dotnet
-
-      - name: Checking available disk-space again
-        run: df -h
 
       - name: Checking-out source-code
         uses: actions/checkout@v2
@@ -52,14 +43,8 @@ jobs:
           sudo mkdir -p /mnt/secondary_disk
           sudo chown -R runner:docker /mnt/secondary_disk
 
-      - name: Checking available disk-space again
-        run: ls -la /mnt
-        
       - name: Running symlink on /dev/sdb1 pointing to /dev/sda1
         run: ln -s /mnt/secondary_disk $GITHUB_WORKSPACE/
-
-      - name: Checking available disk-space again
-        run: df -h
 
       - name: Gathering CIPD from cache
         id: cache-cipd
@@ -81,50 +66,11 @@ jobs:
           cp ../.cipd/.gclient ..
           cp ../.cipd/.gclient_entries ..
 
-      - name: Checking available disk-space again
-        run: df -h
-
       - name: Installing Python and OpenJDK
         run: sudo apt-get install python openjdk-8-jdk-headless libncurses5
-        
-      - name: Checking available disk-space again
-        run: df -h
 
       - name: Setting-up Java 8 as default Java provider
         run: sudo update-java-alternatives --set java-1.8.0-openjdk-amd64
-
-      - name: Checking available disk-space
-        run: df -h
-
-      - name: Checking available disk-space again
-        run: df -h
-        
-      - name: Checking available disk-space again
-        run: df -h /mnt
-        
-      - name: Checking available disk-space again
-        run: df -h /home
-        
-      - name: Checking available disk-space again
-        run: df -h ./secondary_disk
-
-      - name: Checking available disk-space again workspace
-        run: df -h $GITHUB_WORKSPACE
-
-      - name: Checking available disk-space again
-        run: df -h
-        
-      - name: Checking available disk-space again
-        run: df -h /mnt
-        
-      - name: Checking available disk-space again
-        run: df -h /home
-        
-      - name: Checking available disk-space again
-        run: df -h ./secondary_disk
-
-      - name: Checking available disk-space again workspace
-        run: df -h $GITHUB_WORKSPACE
 
       - name: Installing system dependencies
         run: |
@@ -132,9 +78,6 @@ jobs:
           build/linux/sysroot_scripts/install-sysroot.py --arch=i386
           build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
           
-      - name: Checking available disk-space one more time
-        run: df -h
-
       - name: Creating output folder
         run: mkdir -p secondary_disk/out/android_arm
       
@@ -157,5 +100,12 @@ jobs:
       - name: Generating build files
         run: gn gen ./secondary_disk/out/android_arm
 
-      - name: Building APK
+      - name: Compiling source-code
         run: ninja -C ./secondary_disk/out/android_arm chrome_public_apk
+
+      - name: Uploading APK
+        uses: actions/upload-artifact@v1
+        with:
+          name: apks
+          path: ./secondary_disk/out/android_arm/apks/ChromePublic.apk
+
