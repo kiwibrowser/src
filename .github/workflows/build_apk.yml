@@ -21,18 +21,20 @@ jobs:
     runs-on: ubuntu-latest
 
     # Steps represent a sequence of tasks that will be executed as part of the job
+    # /dev/sda1 has more available space than /dev/sdb1 (14 GB only on /dev/sdb1 at this stage)
+    # so we want to take advantage of the available disk space on /dev/sda1
     steps:
-      - name: Reclaiming disk space by disabling swap partition
+      - name: Reclaiming disk space on /dev/sda1 by disabling swap partition
         run: |
           sudo swapoff -av
           sudo rm -f /swapfile
 
-      - name: Creating worker space
+      - name: Creating repository folder in /dev/sda1
         run: |
-          sudo mkdir -p /work
-          sudo chown -R runner:docker /work
+          sudo mkdir -p /repository
+          sudo chown -R runner:docker /repository
 
-      - name: Running symlink
+      - name: Running symlink on /dev/sdb1 pointing to /dev/sda1
         run: ln -s /repository $GITHUB_WORKSPACE/repository
 
       - name: Gathering CIPD from cache
