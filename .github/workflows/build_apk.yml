@@ -50,6 +50,11 @@ jobs:
         with:
           repository: kiwibrowser/dependencies
           path: ./repository/.cipd 
+          
+      - name: Copying .gclient and .gclient_entries
+        run: |
+          cp ./repository/.cipd/.gclient ./repository/
+          cp ./repository/.cipd/.gclient_entries ./repository/
 
       - name: Installing Python and OpenJDK
         run: sudo apt-get install python openjdk-8-jdk-headless libncurses5
@@ -68,19 +73,9 @@ jobs:
       - name: Checking available disk-space again
         run: df -h
 
-      - name: Verifying checkout 1
-        run: ls -la
-
-      - name: Verifying checkout 2
-        run: ls -la repository
-
-      - name: Verifying checkout 3
-        run: ls -la repository/src
-
       - name: Installing system dependencies
         working-directory: ./repository/src
         run: |
-          pwd
           sudo bash install-build-deps.sh --no-chromeos-fonts
           build/linux/sysroot_scripts/install-sysroot.py --arch=i386
           build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
@@ -91,6 +86,22 @@ jobs:
       - name: Creating output folder
         run: mkdir -p out/android_arm
       
-      - name: Checking where we are
-        run: pwd
+      - name: Generating one-time APK signature key
+        run: keytool -genkey -v -keystore keystore.jks -alias dev -keyalg RSA -keysize 2048 -validity 10000 -storepass public_password -keypass public_password -dname "cn=Kiwi Browser (unverified), ou=Actions, o=Kiwi Browser, c=GitHub"
 
+      - name: Copying args.gn to target folder
+        run: cp repository/src/.build/android_arm/args.gn out/android_arm/
+
+      - name: Downloading depot_tools
+        run: git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+
+      - name: Adding depot_tools to path
+        run: echo "::add-path::depot_tools"
+      
+      - name: Running gclient runhooks
+        working-directory: ./repository/src
+        run: gclient runhooks
+      
+      - name: Generating build files
+        working-directory: ./repository/src
+        run: gn gen ../../out/android_arm
