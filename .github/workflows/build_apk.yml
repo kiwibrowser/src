@@ -21,37 +21,69 @@ jobs:
     runs-on: ubuntu-latest
 
     # Steps represent a sequence of tasks that will be executed as part of the job
+    # /dev/sda1 has more available space than /dev/sdb1 (14 GB only on /dev/sdb1 at this stage)
+    # so we want to take advantage of the available disk space on /dev/sda1
+      
+    # We store the dependencies and output objects on /dev/sda1 
+    # We store the main repository on /dev/sdb1
     steps:
-      - name: Reclaiming disk space by disabling swap partition
+      - name: Checking available disk-space again
+        run: df -h
+
+      - name: Checking available disk-space again
+        run: ls -la /mnt
+
+      - name: Reclaiming disk space on /dev/sda1 by disabling swap partition
         run: |
           sudo swapoff -av
           sudo rm -f /swapfile
 
-      - name: Creating worker space
-        run: |
-          sudo mkdir -p /work
-          sudo chown -R runner:docker /work
+      - name: Checking available disk-space again
+        run: df -h
 
-      - name: Running symlink
-        run: ln -s /repository $GITHUB_WORKSPACE/repository
+      - name: Creating repository folder in /dev/sdb1
+        run: |
+          sudo mkdir -p /mnt/repository
+          sudo chown -R runner:docker /mnt/repository
+
+      - name: Checking available disk-space again
+        run: ls -la /mnt
+        
+      - name: Running symlink on /dev/sdb1 pointing to /dev/sda1
+        run: ln -s /mnt/repository $GITHUB_WORKSPACE/
+
+      - name: Checking available disk-space again
+        run: df -h
 
       - name: Gathering CIPD from cache
         id: cache-cipd
         uses: actions/cache@v1
         with:
-          path: ./repository/.cipd
+          path: ./.cipd
           key: ${{ runner.os }}-cipd
 
-      - name: Checking-out CIPD dependencies
+      - name: Checking-out CIPD dependencies in $GITHUB_WORKSPACE/.cipd
         uses: actions/checkout@v2
         if: steps.cache-cipd.outputs.cache-hit != 'true'
         with:
           repository: kiwibrowser/dependencies
-          path: ./repository/.cipd 
+          path: ./.cipd 
+          
+      - name: Linking .cipd in the proper path and copying .gclient and .gclient_entries
+        run: |
+          ln -s $GITHUB_WORKSPACE/./cipd/ ./repository/
+          cp ./.cipd/.gclient ./repository/
+          cp ./.cipd/.gclient_entries ./repository/
+
+      - name: Checking available disk-space again
+        run: df -h
 
       - name: Installing Python and OpenJDK
         run: sudo apt-get install python openjdk-8-jdk-headless libncurses5
-    
+        
+      - name: Checking available disk-space again
+        run: df -h
+
       - name: Setting-up Java 8 as default Java provider
         run: sudo update-java-alternatives --set java-1.8.0-openjdk-amd64
 
@@ -67,11 +99,44 @@ jobs:
         run: df -h
 
       - name: Installing system dependencies
-        env:
-          working-directory: ./repository/src
+        working-directory: ./repository/src
         run: |
           sudo bash install-build-deps.sh --no-chromeos-fonts
           build/linux/sysroot_scripts/install-sysroot.py --arch=i386
           build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
+          
+      - name: Checking available disk-space one more time
+        run: df -h
 
+      - name: Creating output folder
+        run: mkdir -p out/android_arm
+      
+      - name: Generating one-time APK signature key
+        run: keytool -genkey -v -keystore keystore.jks -alias dev -keyalg RSA -keysize 2048 -validity 10000 -storepass public_password -keypass public_password -dname "cn=Kiwi Browser (unverified), ou=Actions, o=Kiwi Browser, c=GitHub"
 
+      - name: Copying args.gn to target folder
+        run: cp repository/src/.build/android_arm/args.gn out/android_arm/
+
+      - name: Downloading depot_tools
+        run: git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+
+      - name: Current directory
+        run: pwd
+        
+      - name: Current directory
+        run: ls -la depot_tools
+        
+      - name: Adding depot_tools to path
+        run: echo "::add-path::$GITHUB_WORKSPACE/depot_tools"
+      
+      - name: Running gclient runhooks
+        working-directory: ./repository/src
+        run: gclient runhooks
+      
+      - name: Generating build files
+        working-directory: ./repository/src
+        run: gn gen ../../out/android_arm
+
+      - name: Building APK
+        working-directory: ./repository/src
+        run: ninja -C ../../out/android_arm chrome_public_apk
