@@ -39,23 +39,25 @@ jobs:
         run: sudo rm -rf /usr/share/dotnet
 
       - name: Preparing secondary disk
-        run: sudo chown -R runner:docker /mnt
+        run: |
+          sudo mkdir -p /mnt/storage
+          sudo chown -R runner:docker /mnt/storage
 
       - name: Checking-out source-code
         uses: actions/checkout@v2
         with:
-          path: /mnt/src
+          path: /mnt/storage/src
 
       - name: Checking-out CIPD dependencies in $GITHUB_WORKSPACE/.cipd
         uses: actions/checkout@v2
         with:
           repository: kiwibrowser/dependencies
-          path: /mnt/.cipd 
+          path: /mnt/storage/.cipd 
           
       - name: Copying .gclient and .gclient_entries
         run: |
-          cp /mnt/.cipd/.gclient /mnt/
-          cp /mnt/.cipd/.gclient_entries /mnt/
+          cp /mnt/storage/.cipd/.gclient /mnt/storage/
+          cp /mnt/storage/.cipd/.gclient_entries /mnt/storage/
 
       - name: Installing Python and OpenJDK
         run: sudo apt-get install python openjdk-8-jdk-headless libncurses5
@@ -76,7 +78,7 @@ jobs:
         run: keytool -genkey -v -keystore keystore.jks -alias dev -keyalg RSA -keysize 2048 -validity 10000 -storepass public_password -keypass public_password -dname "cn=Kiwi Browser (unverified), ou=Actions, o=Kiwi Browser, c=GitHub"
 
       - name: Copying args.gn to target folder
-        run: cp /mnt/src/.build/android_arm/args.gn out/android_arm/
+        run: cp /mnt/storage/src/.build/android_arm/args.gn out/android_arm/
 
       - name: Downloading depot_tools
         run: git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
@@ -88,11 +90,11 @@ jobs:
         run: gclient runhooks
       
       - name: Generating build files
-        working-directory: /mnt/src
+        working-directory: /mnt/storage/src
         run: gn gen $GITHUB_WORKSPACE/out/android_arm
       
       - name: Creating obj directory
-        working-directory: /mnt/src
+        working-directory: /mnt/storage/src
         run: mkdir -p $GITHUB_WORKSPACE/out/android_arm/obj
 
       - name: Gathering pre-compiled objects from cache
@@ -102,7 +104,7 @@ jobs:
           key: ${{ runner.os }}-android_arm-obj
 
       - name: Compiling source-code
-        working-directory: /mnt/src
+        working-directory: /mnt/storage/src
         run: ninja -C $GITHUB_WORKSPACE/out/android_arm chrome_public_apk
 
       - name: Uploading APK
