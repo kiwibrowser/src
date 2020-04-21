@@ -1,7 +1,6 @@
 # Kiwi Browser
 
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/0697b24af601432bba8a54a6c7fcfbe6)](https://app.codacy.com/manual/kiwibrowser/src?utm_source=github.com&utm_medium=referral&utm_content=kiwibrowser/src&utm_campaign=Badge_Grade_Dashboard)
-
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/0697b24af601432bba8a54a6c7fcfbe6)](https://app.codacy.com/manual/kiwibrowser/src?utm_source=github.com&utm_medium=referral&utm_content=kiwibrowser/src&utm_campaign=Badge_Grade_Dashboard) ![Build APK](https://github.com/kiwibrowser/src/workflows/Build%20APK/badge.svg)
 
 ## Overview
 
