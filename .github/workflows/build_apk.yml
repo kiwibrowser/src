@@ -46,16 +46,8 @@ jobs:
       - name: Running symlink on /dev/sdb1 pointing to /dev/sda1
         run: ln -s /mnt/secondary_disk $GITHUB_WORKSPACE/
 
-      - name: Gathering CIPD from cache
-        id: cache-cipd
-        uses: actions/cache@v1
-        with:
-          path: ./secondary_disk/.cipd
-          key: ${{ runner.os }}-cipd
-
       - name: Checking-out CIPD dependencies in $GITHUB_WORKSPACE/.cipd
         uses: actions/checkout@v2
-        if: steps.cache-cipd.outputs.cache-hit != 'true'
         with:
           repository: kiwibrowser/dependencies
           path: ./secondary_disk/.cipd 
@@ -99,6 +91,15 @@ jobs:
       
       - name: Generating build files
         run: gn gen ./secondary_disk/out/android_arm
+      
+      - name: Creating obj directory
+        run: mkdir -p ./secondary_disk/out/android_arm/obj
+
+      - name: Gathering pre-compiled objects from cache
+        uses: actions/cache@v1
+        with:
+          path: ./secondary_disk/out/android_arm/obj
+          key: ${{ runner.os }}-android_arm-obj
 
       - name: Compiling source-code
         run: ninja -C ./secondary_disk/out/android_arm chrome_public_apk
@@ -107,5 +108,5 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           name: apks
-          path: ./secondary_disk/out/android_arm/apks/ChromePublic.apk
+          path: ./secondary_disk/out/android_arm/apks/
 
