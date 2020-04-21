@@ -89,6 +89,12 @@ jobs:
       - name: Adding depot_tools to path
         run: echo "::add-path::$GITHUB_WORKSPACE/depot_tools"
       
+      - name: Preparing ramdisk where the toolchains will be stored
+        run: |
+          sudo mkdir -p /tmp/ramdisk
+          sudo mount -t tmpfs -o size=2048M tmpfs /tmp/ramdisk
+          ln -s /tmp/ramdisk /mnt/storage/src/native_client/toolchain
+
       - name: Running gclient runhooks
         working-directory: /mnt/storage/src
         run: gclient runhooks
