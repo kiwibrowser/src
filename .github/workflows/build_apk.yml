@@ -67,6 +67,7 @@ jobs:
         run: sudo update-java-alternatives --set java-1.8.0-openjdk-amd64
 
       - name: Installing system dependencies
+        working-directory: /mnt/storage/src
         run: |
           sudo bash install-build-deps.sh --no-chromeos-fonts
           build/linux/sysroot_scripts/install-sysroot.py --arch=i386
@@ -88,6 +89,7 @@ jobs:
         run: echo "::add-path::$GITHUB_WORKSPACE/depot_tools"
       
       - name: Running gclient runhooks
+        working-directory: /mnt/storage/src
         run: gclient runhooks
       
       - name: Generating build files
