@@ -21,11 +21,14 @@ jobs:
     runs-on: ubuntu-latest
 
     # Steps represent a sequence of tasks that will be executed as part of the job
+
+    # /dev/sdb1 is a faster device (SSD)
+
     # /dev/sda1 has more available space than /dev/sdb1 (14 GB only on /dev/sdb1 at this stage)
     # so we want to take advantage of the available disk space on /dev/sda1
       
-    # We store the main repository on /dev/sda1
-    # We store the dependencies and output objects on /dev/sdb1 
+    # We store the output objects on /dev/sda1 
+    # We store the dependencies and main repository on /dev/sdb1
     steps:
       - name: Reclaiming disk space on /dev/sda1 by disabling swap partition
         run: |
@@ -35,28 +38,24 @@ jobs:
       - name: Reclaiming disk space on /dev/sda1 by removing .NET framework
         run: sudo rm -rf /usr/share/dotnet
 
+      - name: Preparing secondary disk
+        run: sudo chown -R runner:docker /mnt
+
       - name: Checking-out source-code
         uses: actions/checkout@v2
-
-      - name: Creating secondary disk folder in /dev/sdb1
-        run: |
-          sudo mkdir -p /mnt/secondary_disk
-          sudo chown -R runner:docker /mnt/secondary_disk
-
-      - name: Running symlink on /dev/sdb1 pointing to /dev/sda1
-        run: ln -s /mnt/secondary_disk $GITHUB_WORKSPACE/
+        with:
+          path: /mnt/src
 
       - name: Checking-out CIPD dependencies in $GITHUB_WORKSPACE/.cipd
         uses: actions/checkout@v2
         with:
           repository: kiwibrowser/dependencies
-          path: ./secondary_disk/.cipd 
+          path: /mnt/.cipd 
           
-      - name: Linking .cipd in the proper path and copying .gclient and .gclient_entries
+      - name: Copying .gclient and .gclient_entries
         run: |
-          ln -s $GITHUB_WORKSPACE/./secondary_disk/.cipd ..
-          cp ../.cipd/.gclient ..
-          cp ../.cipd/.gclient_entries ..
+          cp /mnt/.cipd/.gclient /mnt/
+          cp /mnt/.cipd/.gclient_entries /mnt/
 
       - name: Installing Python and OpenJDK
         run: sudo apt-get install python openjdk-8-jdk-headless libncurses5
@@ -71,42 +70,44 @@ jobs:
           build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
           
       - name: Creating output folder
-        run: mkdir -p secondary_disk/out/android_arm
+        run: mkdir -p out/android_arm
       
       - name: Generating one-time APK signature key
         run: keytool -genkey -v -keystore keystore.jks -alias dev -keyalg RSA -keysize 2048 -validity 10000 -storepass public_password -keypass public_password -dname "cn=Kiwi Browser (unverified), ou=Actions, o=Kiwi Browser, c=GitHub"
 
       - name: Copying args.gn to target folder
-        run: cp .build/android_arm/args.gn secondary_disk/out/android_arm/
+        run: cp /mnt/src/.build/android_arm/args.gn out/android_arm/
 
       - name: Downloading depot_tools
-        working-directory: ./secondary_disk
         run: git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
         
       - name: Adding depot_tools to path
-        run: echo "::add-path::$GITHUB_WORKSPACE/secondary_disk/depot_tools"
+        run: echo "::add-path::$GITHUB_WORKSPACE/depot_tools"
       
       - name: Running gclient runhooks
         run: gclient runhooks
       
       - name: Generating build files
-        run: gn gen ./secondary_disk/out/android_arm
+        working-directory: /mnt/src
+        run: gn gen $GITHUB_WORKSPACE/out/android_arm
       
       - name: Creating obj directory
-        run: mkdir -p ./secondary_disk/out/android_arm/obj
+        working-directory: /mnt/src
+        run: mkdir -p $GITHUB_WORKSPACE/out/android_arm/obj
 
       - name: Gathering pre-compiled objects from cache
         uses: actions/cache@v1
         with:
-          path: ./secondary_disk/out/android_arm/obj
+          path: out/android_arm/obj
           key: ${{ runner.os }}-android_arm-obj
 
       - name: Compiling source-code
-        run: ninja -C ./secondary_disk/out/android_arm chrome_public_apk
+        working-directory: /mnt/src
+        run: ninja -C $GITHUB_WORKSPACE/out/android_arm chrome_public_apk
 
       - name: Uploading APK
         uses: actions/upload-artifact@v1
         with:
           name: apks
-          path: ./secondary_disk/out/android_arm/apks/
+          path: out/android_arm/apks/
 
