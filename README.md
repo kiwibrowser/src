@@ -1,6 +1,10 @@
-# Welcome to Kiwi Browser
+# Kiwi Browser
 
-[Kiwi Browser](https://play.google.com/store/apps/details?id=com.kiwibrowser.browser) is a fully open-source web browser for Android.
+<a href="https://play.google.com/store/apps/details?id=com.kiwibrowser.browser"> <img src="https://camo.githubusercontent.com/59c5c810fc8363f8488c3a36fc78f89990d13e99/68747470733a2f2f706c61792e676f6f676c652e636f6d2f696e746c2f656e5f75732f6261646765732f696d616765732f67656e657269632f656e5f62616467655f7765625f67656e657269632e706e67" height="55">
+
+## Overview
+
+[Kiwi Browser](https://kiwibrowser.com/) is a fully open-source web browser for Android.
 
 Kiwi is based on Chromium. Easily switch to Kiwi without having to painstakingly learn a new interface or break your existing browsing habits.
 
@@ -13,12 +17,30 @@ It also includes performance improvements (partial rasterisation of tiles, etc)
 
 The browser is licensed under the same licence as Chromium, which means that you are allowed to create derivatives of the browser.
 
-### Timeline
-15 April 2018 - First Kiwi Browser release.
+## Table of contents
 
-15 April 2019 - Kiwi Browser gets support for Chrome Extensions.
+- [Timeline](#timeline)
+- [Contributing](#contributing)
+- [Modifying](#modifying)
+- [Building](#building)
+  - [Getting the source-code and environment](#getting-the-source-code-and-environment)
+  - [Setting-up dependencies](#setting-up-dependencies)
+  - [Preparing a signing key](#preparing-a-signing-key)
+  - [Configuring the build type and platform](#configuring-the-build-type-and-platform)
+  - [Preparing the first build](#preparing-the-first-build)
+  - [Compiling Kiwi Browser](#compiling-kiwi-browser)
+  - [Investigating crashes](#investigating-crashes)
+  - [Remote debugging](#remote-debugging)
+  - [Optimizing binary size](#optimizing-binary-size)
+- [Additional help](#additional-help)
 
-17 April 2020 - Kiwi Browser goes fully open-source.
+## Timeline
+
+- 15 April 2018 - First Kiwi Browser release.
+
+- 15 April 2019 - Kiwi Browser gets support for Chrome Extensions.
+
+- 17 April 2020 - Kiwi Browser goes fully open-source.
 
 
 This code is up-to-date and is matching the build on the Play Store.
@@ -27,18 +49,18 @@ The new builds are done from the open-source edition directly to the [Play Store
 
 There are thousands of hours of work in this repository and thousands of files changed.
 
-### Contributors
+## Contributing
 
 Contributions are welcome and encouraged.
 
 If you want your code to be integrated into Kiwi, open a merge request, I (and/or a member of the community) can review the code with you and push it to the Play Store.
 
-### Modifications
+## Modifying
 
-If you create your own browser or a mod, make sure to change the browser name and icon in chrome/android/java/res_chromium/values/channel_constants.xml and translation strings (search and replace Kiwi in all *.xtb, all *.grd and all *.grdp files)
+If you create your own browser or a mod, make sure to change the browser name and icon in `chrome/android/java/res_chromium/values/channel_constants.xml` and translation strings (search and replace Kiwi in all `*.xtb`, all `*.grd` and all `*.grdp` files)
 
 
-## How to build
+## Building
 
 The reference build machine is using Ubuntu 19.04 (also tested using Ubuntu 18.04 and Ubuntu 19.10).
 
@@ -52,24 +74,32 @@ To build Kiwi Browser you can directly clone the repository, as we have packed a
 
 In ~ (your home directory) run:
 
-    git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+```
+git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+```
 
 and edit the file ~/.bashrc to add at the very end
 
-    export PATH=$HOME/depot_tools:$PATH
-    
+```bash
+export PATH=$HOME/depot_tools:$PATH
+```
+
 Validate the changes by running:
 
-    source ~/.bashrc
+```bash
+source ~/.bashrc
+```
 
 This will give you access to one utility called gclient (as in "Google client")
 
 Create a directory called ~/chromium/, and in ~/chromium/ run:
 
-    git clone https://github.com/kiwibrowser/dependencies.git .cipd
-    cp ~/chromium/.cipd/.gclient ~/chromium/
-    cp ~/chromium/.cipd/.gclient_entries ~/chromium/
-    git clone https://github.com/kiwibrowser/src.git
+```bash
+git clone https://github.com/kiwibrowser/dependencies.git .cipd
+cp ~/chromium/.cipd/.gclient ~/chromium/
+cp ~/chromium/.cipd/.gclient_entries ~/chromium/
+git clone https://github.com/kiwibrowser/src.git
+```
 
 At this stage, in ~/chromium/ you will have the .cipd folder, and a folder with the Kiwi Browser source-code called src.
 
@@ -77,14 +107,24 @@ At this stage, in ~/chromium/ you will have the .cipd folder, and a folder with 
 
 To be able to build Kiwi Browser, you need python and OpenJDK (OpenJDK to create Java bindings for Android):
 
-    sudo apt-get install python openjdk-8-jdk-headless libncurses5
-    sudo update-java-alternatives --set java-1.8.0-openjdk-amd64 # We want to be sure to use Java 1.8 in order to not get compilation errors (lint and errorprone)
+```bash
+sudo apt-get update
+sudo apt-get install python openjdk-8-jdk-headless libncurses5
+```
 
-then run the following commands:
+We want to be sure to use Java 1.8 in order to not get compilation errors (lint and errorprone):
 
-    bash install-build-deps.sh --no-chromeos-fonts
-    build/linux/sysroot_scripts/install-sysroot.py --arch=i386
-    build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
+```bash
+sudo update-java-alternatives --set java-1.8.0-openjdk-amd64
+```
+
+then run the following commands in ~/chromium/src:
+
+```bash
+bash install-build-deps.sh --no-chromeos-fonts
+build/linux/sysroot_scripts/install-sysroot.py --arch=i386
+build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
+```
 
 These commands will install all necessary system packages using apt-get and gather a minimal build filesystem.
 
@@ -94,104 +134,112 @@ APKs (application packages) on Android need to be signed by developers in order 
 
 To generate a key:
 
-    keytool -genkey -v -keystore ~/chromium/keystore.jks -alias production -keyalg RSA -keysize 2048 -validity 10000 -keypass HERE_YOUR_ANDROID_KEYSTORE_PASSWORD
+```bash
+keytool -genkey -v -keystore ~/chromium/keystore.jks -alias production -keyalg RSA -keysize 2048 -validity 10000 -storepass HERE_YOUR_ANDROID_KEYSTORE_PASSWORD -keypass HERE_YOUR_ANDROID_KEYSTORE_PASSWORD
+```
 
 ### Configuring the build type and platform
 
 Run:
 
-    mkdir -p ~/chromium/src/out/android_arm
+```bash
+mkdir -p ~/chromium/src/out/android_arm
+```
 
 Create a file called args.gn in ~/chromium/src/out/android_arm/ with this content:
 
-    target_os = "android"
-    target_cpu = "arm" # <---- can be arm, arm64, x86 or x64
-    is_debug = false
-    is_java_debug = false
-    
-    android_channel = "stable"
-    is_official_build = true
-    is_component_build = false
-    is_chrome_branded = false
-    is_clang = true
-    symbol_level = 1
-    use_unofficial_version_number = false
-    android_default_version_code = "158"
-    android_keystore_name = "production"
-    android_keystore_password = "HERE_YOUR_ANDROID_KEYSTORE_PASSWORD"
-    android_keystore_path = "../../../keystore.jks"
-    android_default_version_name = "Quadea"
-    fieldtrial_testing_like_official_build = true
-    icu_use_data_file = false
-    enable_iterator_debugging = false
+```bash
+target_os = "android"
+target_cpu = "arm" # <---- can be arm, arm64, x86 or x64
+is_debug = false
+is_java_debug = false
 
-    google_api_key = "KIWIBROWSER"
-    google_default_client_id = "42.apps.kiwibrowser.com"
-    google_default_client_secret = "KIWIBROWSER_NOT_SO_SECRET"
-    use_official_google_api_keys = true
+android_channel = "stable"
+is_official_build = true
+is_component_build = false
+is_chrome_branded = false
+is_clang = true
+symbol_level = 1
+use_unofficial_version_number = false
+android_default_version_code = "158"
+android_keystore_name = "production"
+android_keystore_password = "HERE_YOUR_ANDROID_KEYSTORE_PASSWORD"
+android_keystore_path = "../../../keystore.jks"
+android_default_version_name = "Quadea"
+fieldtrial_testing_like_official_build = true
+icu_use_data_file = false
+enable_iterator_debugging = false
 
-    ffmpeg_branding = "Chrome"
-    proprietary_codecs = true
-    enable_hevc_demuxing = true
-    enable_nacl = false
-    enable_wifi_display = false
-    enable_widevine = false
-    enable_google_now = true
-    enable_ac3_eac3_audio_demuxing = true
-    enable_iterator_debugging = false
-    enable_mse_mpeg2ts_stream_parser = true
-    enable_remoting = false
-    rtc_use_h264 = false
-    rtc_use_lto = false
-    use_openh264 = false
-    
-    v8_use_external_startup_data = true
-    update_android_aar_prebuilts = true
-    
-    use_thin_lto = true
-    
-    enable_extensions = true
-    enable_plugins = true
+google_api_key = "KIWIBROWSER"
+google_default_client_id = "42.apps.kiwibrowser.com"
+google_default_client_secret = "KIWIBROWSER_NOT_SO_SECRET"
+use_official_google_api_keys = true
 
+ffmpeg_branding = "Chrome"
+proprietary_codecs = true
+enable_hevc_demuxing = true
+enable_nacl = false
+enable_wifi_display = false
+enable_widevine = false
+enable_google_now = true
+enable_ac3_eac3_audio_demuxing = true
+enable_iterator_debugging = false
+enable_mse_mpeg2ts_stream_parser = true
+enable_remoting = false
+rtc_use_h264 = false
+rtc_use_lto = false
+use_openh264 = false
+
+v8_use_external_startup_data = true
+update_android_aar_prebuilts = true
+
+use_thin_lto = true
+
+enable_extensions = true
+enable_plugins = true
+```
 
 You can replace Android keystore password and Android keystore keypath with the data for your Android keystore (or you can generate a new key).
 
-### Prepare the first build
+### Preparing the first build
 
-To prepare initial setup run:
+To prepare initial setup run from ~/chromium/src:
 
-    gclient runhooks
+```
+gclient runhooks
+```
 
+then generate the build files in ~/chromium/src:
 
-then generate the build files:
+```
+gn gen out/android_arm
+```
 
-    ~/chromium/src$ gn gen out/android_arm # (you can also use 'gn args out/android_arm')
-    Writing build/secondary/third_party/android_tools/google_play_services_basement_java.info
-    Writing build/secondary/third_party/android_tools/google_play_services_tasks_java.info
-    Writing third_party/android_support_test_runner/rules_java.info
-    Writing build/secondary/third_party/android_tools/google_play_services_base_java.info
-    Writing     build/secondary/third_party/android_tools/google_play_services_auth_base_java.info
-    [...]
-    Done. Made 19910 targets from 1626 files in 21974ms
-
+Alternatively you can use: gn args out/android_arm
 
 ### Compiling Kiwi Browser
 
 To compile, use the command:
 
-    ninja -C out/android_arm chrome_public_apk
+```
+ninja -C out/android_arm chrome_public_apk
+```
 
 you'll have the output APK in ~/chromium/src/out/android_arm/apks/ChromePublic.apk
 
 then you can run the APK on your phone.
 
-### To investigate crashes
-     components/crash/content/tools/generate_breakpad_symbols.py --build-dir=out/lnx64 --symbols-dir=/tmp/my_symbols/ --binary=out/android_arm/lib.unstripped/libchrome.so --clear --verbose
+### Investigating crashes
+
+```
+components/crash/content/tools/generate_breakpad_symbols.py --build-dir=out/lnx64 --symbols-dir=/tmp/my_symbols/ --binary=out/android_arm/lib.unstripped/libchrome.so --clear --verbose
+```
 
 or from a tombstone:
 
-     ~/chromium/src$ ./third_party/android_ndk/ndk-stack -sym out/android_x86/lib.unstripped -dump /home/raven/tombstone_06
-==
+```
+~/chromium/src$ ./third_party/android_ndk/ndk-stack -sym out/android_x86/lib.unstripped -dump /home/raven/tombstone_06
+```
 
 ### Remote debugging
 
@@ -200,26 +248,31 @@ You can use Google Chrome to debug using the devtools console.
 In case the devtools console doesn't work (error 404),  the solution is to use chrome://inspect (Inspect fallback)
 or change SHA1 in build/util/LASTCHANGE
 
-    LASTCHANGE=8920e690dd011895672947112477d10d5c8afb09-refs/branch-heads/3497@{#948}
+```
+LASTCHANGE=8920e690dd011895672947112477d10d5c8afb09-refs/branch-heads/3497@{#948}
+```
 
 and confirm the change using:
 
-     rm out/android_arm/gen/components/version_info/version_info_values.h out/android_x86/gen/components/version_info/version_info_values.h out/android_arm/gen/build/util/webkit_version.h out/android_x86/gen/build/util/webkit_version.h out/android_arm/gen/chrome/common/chrome_version.h out/android_x86/gen/chrome/common/chrome_version.h
+```
+rm out/android_arm/gen/components/version_info/version_info_values.h out/android_x86/gen/components/version_info/version_info_values.h out/android_arm/gen/build/util/webkit_version.h out/android_x86/gen/build/util/webkit_version.h out/android_arm/gen/chrome/common/chrome_version.h out/android_x86/gen/chrome/common/chrome_version.h
+```
 
-### Binary size optimization
+### Optimizing binary size
 
 If you want to optimize of the final APK, you can look at the size of each individual component using command:
 
-    ./tools/binary_size/supersize archive chrome.size --apk-file out/android_arm/apks/ChromePublic.apk -v
-    ./tools/binary_size/supersize html_report chrome.size --report-dir size-report -v
-==
+```
+./tools/binary_size/supersize archive chrome.size --apk-file out/android_arm/apks/ChromePublic.apk -v
+./tools/binary_size/supersize html_report chrome.size --report-dir size-report -v
+```
 
-If you need any assistance with building Kiwi, feel free to ask.
-To do so, please open a GitHub issue so answers will benefit to everyone.
+## Additional help
 
-You can also reach out on Discord https://discord.gg/XyMppQq
+You can ask for extra help in our Discord server, or by [filing an issue](https://github.com/kiwibrowser/src/issues).
+
+<a href="https://discord.gg/XyMppQq"> <img src="https://discordapp.com/assets/e4923594e694a21542a489471ecffa50.svg" height="50"></a>
 
 Have fun with Kiwi!
 
 Arnaud.
-
