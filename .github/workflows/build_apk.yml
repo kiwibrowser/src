@@ -42,17 +42,18 @@ jobs:
         run: |
           sudo mkdir -p /mnt/storage
           sudo chown -R runner:docker /mnt/storage
+          ln -s /mnt/storage storage
 
       - name: Checking-out source-code
         uses: actions/checkout@v2
         with:
-          path: /mnt/storage/src
+          path: storage/src
 
       - name: Checking-out CIPD dependencies in $GITHUB_WORKSPACE/.cipd
         uses: actions/checkout@v2
         with:
           repository: kiwibrowser/dependencies
-          path: /mnt/storage/.cipd 
+          path: storage/.cipd 
           
       - name: Copying .gclient and .gclient_entries
         run: |
