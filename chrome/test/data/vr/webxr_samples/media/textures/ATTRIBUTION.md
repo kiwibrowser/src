@@ -1,1 +1,0 @@
-"[Le panorama de la Voie Lactée](http://www.eso.org/public/images/eso0932a/)" image by European Southern Observatory is licensed under [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/legalcode).
