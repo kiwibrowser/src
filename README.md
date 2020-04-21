@@ -1,5 +1,7 @@
 # Kiwi Browser
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/0697b24af601432bba8a54a6c7fcfbe6)](https://app.codacy.com/manual/kiwibrowser/src?utm_source=github.com&utm_medium=referral&utm_content=kiwibrowser/src&utm_campaign=Badge_Grade_Dashboard)
+
 <a href="https://play.google.com/store/apps/details?id=com.kiwibrowser.browser"> <img src="https://camo.githubusercontent.com/59c5c810fc8363f8488c3a36fc78f89990d13e99/68747470733a2f2f706c61792e676f6f676c652e636f6d2f696e746c2f656e5f75732f6261646765732f696d616765732f67656e657269632f656e5f62616467655f7765625f67656e657269632e706e67" height="55">
 
 ## Overview
