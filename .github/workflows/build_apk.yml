@@ -103,14 +103,10 @@ jobs:
         working-directory: /mnt/storage/src
         run: gn gen $GITHUB_WORKSPACE/out/android_arm
       
-      - name: Creating obj directory
-        working-directory: /mnt/storage/src
-        run: mkdir -p $GITHUB_WORKSPACE/out/android_arm/obj
-
       - name: Gathering pre-compiled objects from cache
         uses: actions/cache@v1
         with:
-          path: out/android_arm
+          path: $GITHUB_WORKSPACE/out/android_arm
           key: ${{ runner.os }}-android_arm-obj-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-android_arm-obj-
