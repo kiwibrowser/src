@@ -1105,21 +1105,27 @@ public class ToolbarManager implements ToolbarTabController, UrlFocusChangeListe
         Tab currentTab = mToolbarModel.getTab();
         if (currentTab == null) return;
 
-        String SCRIPT = ""
-+"var _kbOverscroll;"
-+"(function(d) {"
-+"if (typeof _kbOverscroll == 'undefined' || _kbOverscroll == false) {"
-+"  d.getElementsByTagName('html')[0].style.transition='0.5s ease-in-out';"
-+"  d.getElementsByTagName('html')[0].style.transform='translate(0px, 98vw)';"
-+"  window.scrollTo({ top: 0,left: 0, behavior: 'smooth' });"
-+"  _kbOverscroll = true;"
-+"} else {"
-+"  d.getElementsByTagName('html')[0].style.transition='0.5s ease-in-out';"
-+"  d.getElementsByTagName('html')[0].style.transform='';"
-+"  _kbOverscroll = false;"
-+"}"
-+"}(document));";
-
+        String SCRIPT = "var _kbOverscroll;"
++"(function (d) {"
++   " if (typeof _kbOverscroll == 'undefined' || _kbOverscroll == false) {"
++        "d.getElementsByTagName('html')[0].style.transition = '0.5s ease-in-out';"
++        "d.getElementsByTagName('html')[0].style.transform = 'translate(0px, 98vw)';"
++        "d.getElementsByTagName('html')[0].style.overflowY = 'auto';"
++        "d.getElementsByTagName('body')[0].style.display='block';"
++        "d.getElementsByTagName('body')[0].style.position='fixed';"
++        "d.getElementsByTagName('body')[0].style.overflowY='scroll';"
++        "d.getElementsByTagName('body')[0].style.height='98vw';"
++        "window.scrollTo({top: 0,left: 0,behavior: 'smooth' });"
++        "_kbOverscroll = true;"
++    "} else {"
++        "d.getElementsByTagName('html')[0].style.transition = '0.5s ease-in-out';"
++        "d.getElementsByTagName('html')[0].style.transform = '';"
++        "d.getElementsByTagName('html')[0].style.overflowY = 'initial';"
++       " d.getElementsByTagName('body')[0].style.display='';"
++      " d.getElementsByTagName('body')[0].style.position='initial';"
++      " d.getElementsByTagName('body')[0].style.overflowY='auto';"
++       "d.getElementsByTagName('body')[0].style.height='';"
++      " _kbOverscroll = false;}}(document));";
         currentTab.getWebContents().evaluateJavaScript(SCRIPT, null);
     }
 
