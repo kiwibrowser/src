@@ -106,10 +106,16 @@ jobs:
       - name: Gathering pre-compiled objects from cache
         uses: actions/cache@v1
         with:
-          path: $GITHUB_WORKSPACE/out/android_arm
+          path: out/android_arm
           key: ${{ runner.os }}-android_arm-obj-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-android_arm-obj-
+
+      - name: Listing files
+        run: ls -la $GITHUB_WORKSPACE/out/android_arm
+
+      - name: Listing files in obj
+        run: ls -la $GITHUB_WORKSPACE/out/android_arm/obj
 
       - name: Compiling source-code
         working-directory: /mnt/storage/src
