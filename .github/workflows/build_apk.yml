@@ -115,7 +115,7 @@ jobs:
 
       - name: Compiling source-code
         working-directory: /mnt/storage/src
-        run: ninja -C $GITHUB_WORKSPACE/out/android_arm chrome_public_apk
+        run: timeout 50 ninja -C $GITHUB_WORKSPACE/out/android_arm chrome_public_apk || [ $? -eq 124 ]
 
       - name: Uploading APK
         uses: actions/upload-artifact@v1
