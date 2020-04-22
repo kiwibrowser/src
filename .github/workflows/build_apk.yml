@@ -110,12 +110,15 @@ jobs:
       - name: Gathering pre-compiled objects from cache
         uses: actions/cache@v1
         with:
-          path: out/android_arm/obj
+          path: out/android_arm
           key: ${{ runner.os }}-android_arm-obj
 
       - name: Compiling source-code
         working-directory: /mnt/storage/src
-        run: timeout 18000 ninja -C $GITHUB_WORKSPACE/out/android_arm chrome_public_apk || [ $? -eq 124 ]
+        run: timeout 50 ninja -C $GITHUB_WORKSPACE/out/android_arm chrome_public_apk || [ $? -eq 124 ]
+
+      - name: Deleting args.gn to not have it in cache
+        run: rm -rvf out/android_arm/args.gn
 
      # - name: Uploading APK
      #   uses: actions/upload-artifact@v1
