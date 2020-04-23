@@ -17,51 +17,14 @@ jobs:
   # This workflow contains a single job called "build"
   build:
     # The type of runner that the job will run on
-    runs-on: ubuntu-latest
-
-    # Remarks:
-    # /dev/sdb1 is a faster device (SSD)
-    # /dev/sda1 has more available space than /dev/sdb1 (14 GB only on /dev/sdb1)
-    # -> we want to take advantage of the available disk space on /dev/sda1
+    runs-on: macos-latest
     
-    # For these reasons:
-    # We store the dependencies and output objects on /dev/sda1 
-    # We store the main repository on /dev/sdb1
-      
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - name: Gathering pre-compiled objects from cache
-        uses: actions/cache@v1
-        with:
-          path: out/android_arm
-          key: ${{ runner.os }}-android_arm-obj-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-android_arm-obj-
-
-      - name: Listing files
-        run: ls -la $GITHUB_WORKSPACE/out/android_arm
-
-      - name: Listing files in obj
-        run: ls -la $GITHUB_WORKSPACE/out/android_arm/obj
-      
-      - name: Listing files
-        run: stat $GITHUB_WORKSPACE/out/android_arm/obj/base/base_static/base_switches.o
-    
-      - name: Early fail
-        run: aaaaaa
-        
-      - name: Reclaiming disk space on /dev/sda1 by disabling swap partition
-        run: |
-          sudo swapoff -av
-          sudo rm -f /swapfile
-          
-      - name: Reclaiming disk space on /dev/sda1 by removing .NET framework
-        run: sudo rm -rf /usr/share/dotnet
-
-      - name: Preparing secondary disk
+      - name: Preparing storage folder
         run: |
           sudo mkdir -p /mnt/storage
-          sudo chown -R runner:docker /mnt/storage
+          sudo chown -R runner:staff /mnt/storage
           ln -s /mnt/storage .
 
       - name: Checking-out source-code
@@ -80,12 +43,6 @@ jobs:
           cp .cipd/.gclient /mnt/storage/
           cp .cipd/.gclient_entries /mnt/storage/
           ln -s $GITHUB_WORKSPACE/.cipd /mnt/storage/
-
-      - name: Installing Python and OpenJDK
-        run: sudo apt-get install python openjdk-8-jdk-headless libncurses5
-
-      - name: Setting-up Java 8 as default Java provider
-        run: sudo update-java-alternatives --set java-1.8.0-openjdk-amd64
 
       - name: Installing system dependencies
         working-directory: /mnt/storage/src
