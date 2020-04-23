@@ -43,6 +43,12 @@ jobs:
           cp .cipd/.gclient_entries /Users/runner/storage/
           ln -s $GITHUB_WORKSPACE/.cipd /Users/runner/storage/
 
+      - name: Installing system dependencies
+        working-directory: /Users/runner/storage/src
+        run: |
+          build/linux/sysroot_scripts/install-sysroot.py --arch=i386
+          build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
+
       - name: Creating output folder
         run: mkdir -p out/android_arm
       
@@ -84,12 +90,11 @@ jobs:
         working-directory: /Users/runner/storage/src
         run: ninja -C $GITHUB_WORKSPACE/out/android_arm chrome_public_apk
 
-     # - name: Deleting args.gn to not have it in cache
-     #   run: rm -rvf out/android_arm/args.gn
+      - name: Deleting args.gn to not have it in cache
+        run: rm -rvf out/android_arm/args.gn
 
-     
-     # - name: Uploading APK
-     #   uses: actions/upload-artifact@v1
-     #   with:
-     #     name: apks
-     #     path: out/android_arm/apks/
+      - name: Uploading APK
+        uses: actions/upload-artifact@v1
+        with:
+          name: apks
+          path: out/android_arm/apks/
