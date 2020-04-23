@@ -23,9 +23,8 @@ jobs:
     steps:
       - name: Preparing storage folder
         run: |
-          sudo mkdir -p /mnt/storage
-          sudo chown -R runner:staff /mnt/storage
-          ln -s /mnt/storage .
+          mkdir -p /Users/runner/storage
+          ln -s /Users/runner/storage .
 
       - name: Checking-out source-code
         uses: actions/checkout@v2
@@ -40,12 +39,12 @@ jobs:
           
       - name: Copying .gclient and .gclient_entries
         run: |
-          cp .cipd/.gclient /mnt/storage/
-          cp .cipd/.gclient_entries /mnt/storage/
-          ln -s $GITHUB_WORKSPACE/.cipd /mnt/storage/
+          cp .cipd/.gclient /Users/runner/storage/
+          cp .cipd/.gclient_entries /Users/runner/storage/
+          ln -s $GITHUB_WORKSPACE/.cipd /Users/runner/storage/
 
       - name: Installing system dependencies
-        working-directory: /mnt/storage/src
+        working-directory: /Users/runner/storage/src
         run: |
           sudo bash install-build-deps.sh --no-chromeos-fonts
           build/linux/sysroot_scripts/install-sysroot.py --arch=i386
@@ -55,10 +54,10 @@ jobs:
         run: mkdir -p out/android_arm
       
       - name: Generating one-time APK signature key
-        run: keytool -genkey -v -keystore /mnt/storage/src/keystore.jks -alias dev -keyalg RSA -keysize 2048 -validity 10000 -storepass public_password -keypass public_password -dname "cn=Kiwi Browser (unverified), ou=Actions, o=Kiwi Browser, c=GitHub"
+        run: keytool -genkey -v -keystore /Users/runner/storage/src/keystore.jks -alias dev -keyalg RSA -keysize 2048 -validity 10000 -storepass public_password -keypass public_password -dname "cn=Kiwi Browser (unverified), ou=Actions, o=Kiwi Browser, c=GitHub"
 
       - name: Copying args.gn to target folder
-        run: cp /mnt/storage/src/.build/android_arm/args.gn out/android_arm/
+        run: cp /Users/runner/storage/src/.build/android_arm/args.gn out/android_arm/
 
       - name: Downloading depot_tools
         run: git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
@@ -66,18 +65,12 @@ jobs:
       - name: Adding depot_tools to path
         run: echo "::add-path::$GITHUB_WORKSPACE/depot_tools"
       
-      - name: Preparing ramdisk where the toolchains will be stored
-        run: |
-          sudo mkdir -p /tmp/ramdisk
-          sudo mount -t tmpfs -o size=2048M tmpfs /tmp/ramdisk
-          ln -s /tmp/ramdisk /mnt/storage/src/native_client/toolchain
-
       - name: Running gclient runhooks
-        working-directory: /mnt/storage/src
+        working-directory: /Users/runner/storage/src
         run: gclient runhooks
       
       - name: Generating build files
-        working-directory: /mnt/storage/src
+        working-directory: /Users/runner/storage/src
         run: gn gen $GITHUB_WORKSPACE/out/android_arm
       
       - name: Gathering pre-compiled objects from cache
@@ -95,7 +88,7 @@ jobs:
         run: ls -la $GITHUB_WORKSPACE/out/android_arm/obj
 
       - name: Compiling source-code
-        working-directory: /mnt/storage/src
+        working-directory: /Users/runner/storage/src
         run: timeout 140 ninja -C $GITHUB_WORKSPACE/out/android_arm chrome_public_apk || [ $? -eq 124 ]
 
      # - name: Deleting args.gn to not have it in cache
