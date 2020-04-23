@@ -1,6 +1,6 @@
 # Compile Kiwi Browser
 name: automatic build of apk
-
+#
 # Controls when the action will run. Triggers the workflow on push or pull request events
 on:
   push:
@@ -17,32 +17,14 @@ jobs:
   # This workflow contains a single job called "build"
   build:
     # The type of runner that the job will run on
-    runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
-
-    # Remarks:
-    # /dev/sdb1 is a faster device (SSD)
-    # /dev/sda1 has more available space than /dev/sdb1 (14 GB only on /dev/sdb1)
-    # -> we want to take advantage of the available disk space on /dev/sda1
+    runs-on: macos-latest
     
-    # For these reasons:
-    # We store the dependencies and output objects on /dev/sda1 
-    # We store the main repository on /dev/sdb1
+    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - name: Reclaiming disk space on /dev/sda1 by disabling swap partition
+      - name: Preparing storage folder
         run: |
-          sudo swapoff -av
-          sudo rm -f /swapfile
-          
-      - name: Reclaiming disk space on /dev/sda1 by removing .NET framework
-        run: sudo rm -rf /usr/share/dotnet
-
-      - name: Preparing secondary disk
-        run: |
-          sudo mkdir -p /mnt/storage
-          sudo chown -R runner:docker /mnt/storage
-          ln -s /mnt/storage .
+          mkdir -p /Users/runner/storage
+          ln -s /Users/runner/storage .
 
       - name: Checking-out source-code
         uses: actions/checkout@v2
@@ -57,31 +39,18 @@ jobs:
           
       - name: Copying .gclient and .gclient_entries
         run: |
-          cp .cipd/.gclient /mnt/storage/
-          cp .cipd/.gclient_entries /mnt/storage/
-          ln -s $GITHUB_WORKSPACE/.cipd /mnt/storage/
+          cp .cipd/.gclient /Users/runner/storage/
+          cp .cipd/.gclient_entries /Users/runner/storage/
+          ln -s $GITHUB_WORKSPACE/.cipd /Users/runner/storage/
 
-      - name: Installing Python and OpenJDK
-        run: sudo apt-get install python openjdk-8-jdk-headless libncurses5
-
-      - name: Setting-up Java 8 as default Java provider
-        run: sudo update-java-alternatives --set java-1.8.0-openjdk-amd64
-
-      - name: Installing system dependencies
-        working-directory: /mnt/storage/src
-        run: |
-          sudo bash install-build-deps.sh --no-chromeos-fonts
-          build/linux/sysroot_scripts/install-sysroot.py --arch=i386
-          build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
-          
       - name: Creating output folder
         run: mkdir -p out/android_arm
       
       - name: Generating one-time APK signature key
-        run: keytool -genkey -v -keystore keystore.jks -alias dev -keyalg RSA -keysize 2048 -validity 10000 -storepass public_password -keypass public_password -dname "cn=Kiwi Browser (unverified), ou=Actions, o=Kiwi Browser, c=GitHub"
+        run: keytool -genkey -v -keystore /Users/runner/storage/src/keystore.jks -alias dev -keyalg RSA -keysize 2048 -validity 10000 -storepass public_password -keypass public_password -dname "cn=Kiwi Browser (unverified), ou=Actions, o=Kiwi Browser, c=GitHub"
 
       - name: Copying args.gn to target folder
-        run: cp /mnt/storage/src/.build/android_arm/args.gn out/android_arm/
+        run: cp /Users/runner/storage/src/.build/android_arm/args.gn out/android_arm/
 
       - name: Downloading depot_tools
         run: git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
@@ -90,30 +59,37 @@ jobs:
         run: echo "::add-path::$GITHUB_WORKSPACE/depot_tools"
       
       - name: Running gclient runhooks
-        working-directory: /mnt/storage/src
+        working-directory: /Users/runner/storage/src
         run: gclient runhooks
       
       - name: Generating build files
-        working-directory: /mnt/storage/src
+        working-directory: /Users/runner/storage/src
         run: gn gen $GITHUB_WORKSPACE/out/android_arm
       
-      - name: Creating obj directory
-        working-directory: /mnt/storage/src
-        run: mkdir -p $GITHUB_WORKSPACE/out/android_arm/obj
-
       - name: Gathering pre-compiled objects from cache
         uses: actions/cache@v1
         with:
-          path: out/android_arm/obj
-          key: ${{ runner.os }}-android_arm-obj
+          path: out/android_arm
+          key: ${{ runner.os }}-android_arm-obj-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-android_arm-obj-
+
+      - name: Listing files
+        run: ls -la $GITHUB_WORKSPACE/out/android_arm
+
+      - name: Listing files in obj
+        run: ls -la $GITHUB_WORKSPACE/out/android_arm/obj
 
       - name: Compiling source-code
-        working-directory: /mnt/storage/src
+        working-directory: /Users/runner/storage/src
         run: ninja -C $GITHUB_WORKSPACE/out/android_arm chrome_public_apk
 
-      - name: Uploading APK
-        uses: actions/upload-artifact@v1
-        with:
-          name: apks
-          path: out/android_arm/apks/
+     # - name: Deleting args.gn to not have it in cache
+     #   run: rm -rvf out/android_arm/args.gn
 
+     
+     # - name: Uploading APK
+     #   uses: actions/upload-artifact@v1
+     #   with:
+     #     name: apks
+     #     path: out/android_arm/apks/
