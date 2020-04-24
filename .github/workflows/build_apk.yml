@@ -21,10 +21,43 @@ jobs:
     
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - name: Preparing storage folder
+      - name: Installing osxfuse
+        run: brew cask install osxfuse
+
+      - name: Installing docker
+        run: brew install docker docker-compose docker-machine xhyve docker-machine-driver-xhyve sshfs
+        
+      - name: Setting up docker
         run: |
-          mkdir -p /Users/runner/storage
-          ln -s /Users/runner/storage .
+          sudo chown root:wheel $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
+          sudo chmod u+s $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve  
+          mkdir -p ~/.docker/machine/cache
+          curl -Lo ~/.docker/machine/cache/boot2docker.iso https://github.com/boot2docker/boot2docker/releases/download/v19.03.5/boot2docker.iso
+
+      - name: Booting machine
+        run: for i in $(seq 1 10); do docker-machine create --driver xhyve default && s=0 && break || sudo kill -9 `ps aux | grep xhyve | grep -v grep | awk '{print $2}'` && sudo rm -rf /Users/runner/.docker/machine/machines/default && s=$? && sleep 15; done; (exit $s)    # Retry 10 times before abort
+          
+      - name: Export docker environment variables
+        run: |
+          DOCKER_TLS_VERIFY="$(docker-machine env default | grep DOCKER_TLS_VERIFY | sed -e 's/.*="//g' -e 's/"$//g')"
+          DOCKER_HOST="$(docker-machine env default | grep DOCKER_HOST | sed -e 's/.*="//g' -e 's/"$//g')"
+          DOCKER_CERT_PATH="$(docker-machine env default | grep DOCKER_CERT_PATH | sed -e 's/.*="//g' -e 's/"$//g')"
+          DOCKER_MACHINE_NAME="$(docker-machine env default | grep DOCKER_MACHINE_NAME | sed -e 's/.*="//g' -e 's/"$//g')"
+          DOCKER_IP="$(docker-machine ip default)";
+          echo ::set-env name=DOCKER_TLS_VERIFY::${DOCKER_TLS_VERIFY}
+          echo ::set-env name=DOCKER_HOST::${DOCKER_HOST}
+          echo ::set-env name=DOCKER_CERT_PATH::${DOCKER_CERT_PATH}
+          echo ::set-env name=DOCKER_MACHINE_NAME::${DOCKER_MACHINE_NAME}
+          echo ::set-env name=DOCKER_IP::${DOCKER_IP}
+
+      - name: Starting Ubuntu machine
+        run: docker run --name ubuntu -t -d ubuntu:eoan
+
+      - name: Preparing storage folder
+        run: mkdir -p storage
+
+      - name: Mounting disk
+        run: docker-machine mount default:/root storage
 
       - name: Checking-out source-code
         uses: actions/checkout@v2
@@ -67,12 +100,6 @@ jobs:
           rm -rf /Users/runner/storage/src/third_party/llvm-build/Release+Asserts/bin/llvm-ar
 #          mkdir -p /Users/runner/storage/src/third_party/llvm-build/Release+Asserts
 
-      - name: Downloading clang
-        working-directory: /Users/runner/storage/src
-        run: |
-          wget https://storage.googleapis.com/chromium-browser-clang/Mac/clang-357692-1.tgz
-          tar -C /Users/runner/storage/src/third_party/llvm-build/Release+Asserts/ -xzf clang-357692-1.tgz
-      
       - name: Listing files
         run: ls -la /Users/runner/storage/src/third_party/llvm-build/
 
