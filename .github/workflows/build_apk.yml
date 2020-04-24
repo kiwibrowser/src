@@ -61,7 +61,12 @@ jobs:
       - name: Running gclient runhooks
         working-directory: /Users/runner/storage/src
         run: gclient runhooks
-      
+
+      - name: Removing files
+        run: |
+          rm -rf /Users/runner/storage/src/third_party/llvm-build/Release+Asserts
+          mkdir -p /Users/runner/storage/src/third_party/llvm-build/Release+Asserts
+
       - name: Downloading clang
         working-directory: /Users/runner/storage/src
         run: |
@@ -72,14 +77,8 @@ jobs:
         run: ls -la /Users/runner/storage/src/third_party/llvm-build/
 
       - name: Listing files
-        run: ls -la /Users/runner/storage/src/third_party/llvm-build/Release+Asserts/
-
-      - name: Listing files
         run: ls -la /Users/runner/storage/src/third_party/llvm-build/Release+Asserts/bin
-        
-      - name: Testing client
-        run: /Users/runner/storage/src/third_party/llvm-build/Release+Asserts/bin/llvm-ar
-      
+              
       - name: Generating build files
         working-directory: /Users/runner/storage/src
         run: gn gen $GITHUB_WORKSPACE/out/android_arm
