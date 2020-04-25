@@ -25,12 +25,13 @@ jobs:
       - name: Starting NFS
         run: |
           echo "/ -maproot=nobody 192.168.64.1" > exports
-          echo "/ -maproot=nobody 192.168.64.2" > exports
+          echo "/ -maproot=nobody 192.168.64.2" >> exports
           sudo cp -f exports /etc/
           sudo nfsd checkexports
           sudo nfsd enable
           sudo nfsd start
           nfsd status
+          sudo showmount -e
 
       - name: Installing osxfuse
         run: brew cask install osxfuse
