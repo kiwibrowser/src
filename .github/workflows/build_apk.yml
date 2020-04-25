@@ -74,10 +74,12 @@ jobs:
         run: |
           mkdir -p tools
           echo '#!/bin/sh' > tools/git
-          echo 'docker exec ubuntu uname -a; pwd; docker exec ubuntu id; docker exec ubuntu git $*' >> tools/git
+          echo 'docker exec ubuntu git $*' >> tools/git
+          echo 'exit $?' >> tools/git
           chmod +x tools/git
           echo '#!/bin/sh' > tools/tar
           echo 'docker exec ubuntu tar $*' >> tools/tar
+          echo 'exit $?' >> tools/tar
           chmod +x tools/tar
       
       - name: Re-routing git commands inside docker
