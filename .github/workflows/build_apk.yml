@@ -77,9 +77,9 @@ jobs:
         run: |
           mkdir -p tools
           echo '#!/bin/sh' > tools/git
-          echo "cd $GITHUB_WORKSPACE" >> tools/git
-          echo "pwd 1>&2" >> tools/git
-          echo "ls -laR $GITHUB_WORKSPACE 1>&2" >> tools/git
+          echo "docker exec ubuntu cd $PWD" >> tools/git
+          echo "docker exec ubuntu pwd 1>&2" >> tools/git
+          echo "docker exec ubuntu ls -laR $GITHUB_WORKSPACE 1>&2" >> tools/git
           echo 'docker exec ubuntu git $*' >> tools/git
           echo 'exit $?' >> tools/git
           chmod +x tools/git
