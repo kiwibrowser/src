@@ -52,23 +52,38 @@ jobs:
 
       - name: Starting Ubuntu machine
         run: docker run --name ubuntu -t -d -v /Users/runner/storage:/storage ubuntu:eoan
+        
+      - name: Checking available disk-space
+        run: docker exec ubuntu df -h
+
+      - name: Checking storage directory
+        run: ls -la /Users/runner/storage
 
       - name: Checking-out source-code
         uses: actions/checkout@v2
         with:
-          path: storage/src
+          path: /Users/runner/storage/src
+
+      - name: Checking storage directory
+        run: ls -la /Users/runner/storage
 
       - name: Checking-out CIPD dependencies in $GITHUB_WORKSPACE/.cipd
         uses: actions/checkout@v2
         with:
           repository: kiwibrowser/dependencies
-          path: .cipd 
-          
+          path: /Users/runner/.cipd
+
+      - name: Checking storage directory
+        run: ls -la /Users/runner/.cipd
+
+      - name: Checking available disk-space
+        run: docker exec ubuntu df -h
+        
       - name: Copying .gclient and .gclient_entries
         run: |
-          cp .cipd/.gclient /Users/runner/storage/
-          cp .cipd/.gclient_entries /Users/runner/storage/
-          ln -s $GITHUB_WORKSPACE/.cipd /Users/runner/storage/
+          cp /Users/runner/.cipd/.gclient /Users/runner/storage/
+          cp /Users/runner/.cipd/.gclient_entries /Users/runner/storage/
+          ln -s /Users/runner/.cipd /Users/runner/storage/
 
       - name: Creating output folder
         run: mkdir -p out/android_arm
