@@ -34,7 +34,7 @@ jobs:
     # We spawn one Linux (Ubuntu) instance using the "docker" command that remotely controls the agent within Boot2docker.
     #
       - name: Installing docker
-        run: brew install docker docker-compose docker-machine xhyve docker-machine-driver-xhyve sshfs
+        run: brew install docker docker-compose docker-machine xhyve docker-machine-driver-xhyve
         
       - name: Setting up docker
         run: |
@@ -65,25 +65,26 @@ jobs:
       - name: Checking available disk-space
         run: docker exec ubuntu df -h
 
+      - name: Creating tools to route checkout inside docker
+        run: |
+          mkdir -p tools
+          echo '#!/bin/sh' > tools/git
+          echo 'docker exec ubuntu git $*' >> tools/git
+          chmod +x tools/git
+          echo '#!/bin/sh' > tools/tar
+          echo 'docker exec ubuntu tar $*' >> tools/tar
+          chmod +x tools/tar
+      
+      - name: Re-routing git commands inside docker
+        run: echo "::add-path::$GITHUB_WORKSPACE/tools"
+        
       - name: Preparing storage folder
         run: mkdir -p storage
-
-      - name: Mounting disk
-        run: docker-machine mount default:/storage storage
 
       - name: Checking-out source-code
         uses: actions/checkout@v2
         with:
           path: storage/src
-
-      - name: Checking storage directory on host
-        run: ls -la $GITHUB_WORKSPACE/storage/src
-
-      - name: Checking storage directory on guest (/storage)
-        run: docker exec --user root ubuntu ls -la /storage
-
-      - name: Checking storage directory on guest (/storage/src)
-        run: docker exec --user root ubuntu ls -la /storage/src
 
       - name: Checking-out CIPD dependencies in $GITHUB_WORKSPACE/.cipd
         uses: actions/checkout@v2
