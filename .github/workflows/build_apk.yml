@@ -22,20 +22,17 @@ jobs:
     
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - name: Starting NFS
-        run: |
-          echo "/ -maproot=nobody 192.168.64.1" > exports
-          echo "/ -maproot=nobody 192.168.64.2" >> exports
-          sudo cp -f exports /etc/
-          sudo nfsd checkexports
-          sudo nfsd enable
-          sudo nfsd start
-          nfsd status
-          sudo showmount -e
-
       - name: Installing osxfuse
         run: brew cask install osxfuse
 
+    # Docker doesn't support MacOS natively, so we have to workaround it.
+    #
+    # First, using "docker-machine", we create a VM with xhyve as hypervisor.
+    # This VM runs a Linux-derived OS called Boot2docker.
+    #
+    # Within this Boot2docker VM, we can spawn other OS (such as our Ubuntu Linux).
+    # We spawn one Linux (Ubuntu) instance using the "docker" command that remotely controls the agent within Boot2docker.
+    #
       - name: Installing docker
         run: brew install docker docker-compose docker-machine xhyve docker-machine-driver-xhyve sshfs
         
@@ -47,7 +44,7 @@ jobs:
           curl -Lo ~/.docker/machine/cache/boot2docker.iso https://github.com/boot2docker/boot2docker/releases/download/v19.03.5/boot2docker.iso
 
       - name: Booting machine
-        run: for i in $(seq 1 10); do docker-machine create --driver xhyve default && s=0 && break || sudo kill -9 `ps aux | grep xhyve | grep -v grep | awk '{print $2}'` && sudo rm -rf /Users/runner/.docker/machine/machines/default && s=$? && sleep 15; done; (exit $s)    # Retry 10 times before abort
+        run: for i in $(seq 1 10); do docker-machine create --driver xhyve --xhyve-rawdisk --xhyve-cpu-count 6 --xhyve-memory-size 8000 --xhyve-disk-size '100000' default && s=0 && break || sudo kill -9 `ps aux | grep xhyve | grep -v grep | awk '{print $2}'` && sudo rm -rf /Users/runner/.docker/machine/machines/default && s=$? && sleep 15; done; (exit $s)    # Retry 10 times before abort
           
       - name: Exporting docker environment variables
         run: |
@@ -67,24 +64,12 @@ jobs:
         
       - name: Checking available disk-space
         run: docker exec ubuntu df -h
-        
-      - name: Creating NFS folder on guest
-        run: docker exec --user root ubuntu mkdir -p /host
 
-      - name: Mounting NFS storage
-        run: docker exec --user root ubuntu mount -t nfs 192.168.64.1:/ /host -o nolock
-        
-      - name: Checking available disk-space
-        run: docker exec ubuntu df -h
-        
-      - name: Checking NFS folder on guest
-        run: docker exec --user root ubuntu ls -la /host/
+      - name: Preparing storage folder
+        run: mkdir -p storage
 
-      - name: Checking NFS folder on guest
-        run: docker exec --user root ubuntu ls -la /host/Users/
-        
-      - name: Creating storage directory
-        run: mkdir -p $GITHUB_WORKSPACE/storage
+      - name: Mounting disk
+        run: docker-machine mount default:/storage storage
 
       - name: Checking-out source-code
         uses: actions/checkout@v2
@@ -95,10 +80,10 @@ jobs:
         run: ls -la $GITHUB_WORKSPACE/storage/src
 
       - name: Checking storage directory on guest (/storage)
-        run: docker exec ubuntu ls -la /storage
+        run: docker exec --user root ubuntu ls -la /storage
 
       - name: Checking storage directory on guest (/storage/src)
-        run: docker exec ubuntu ls -la /storage/src
+        run: docker exec --user root ubuntu ls -la /storage/src
 
       - name: Checking-out CIPD dependencies in $GITHUB_WORKSPACE/.cipd
         uses: actions/checkout@v2
@@ -108,9 +93,6 @@ jobs:
 
       - name: Checking storage directory
         run: ls -la .cipd
-
-      - name: Checking available disk-space
-        run: docker exec ubuntu df -h
         
       - name: Copying .gclient and .gclient_entries
         run: |
