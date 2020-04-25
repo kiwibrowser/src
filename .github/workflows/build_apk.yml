@@ -80,12 +80,12 @@ jobs:
           echo "docker exec ubuntu cd $PWD" >> tools/git
           echo "docker exec ubuntu pwd 1>&2" >> tools/git
           echo "docker exec ubuntu ls -laR $GITHUB_WORKSPACE 1>&2" >> tools/git
-          echo 'docker exec ubuntu git $*' >> tools/git
+          echo 'docker exec ubuntu -w $PWD git $*' >> tools/git
           echo 'exit $?' >> tools/git
           chmod +x tools/git
           echo '#!/bin/sh' > tools/tar
           echo "cd $GITHUB_WORKSPACE" >> tools/git
-          echo 'docker exec ubuntu tar $*' >> tools/tar
+          echo 'docker exec ubuntu -w $PWD tar $*' >> tools/tar
           echo 'exit $?' >> tools/tar
           chmod +x tools/tar
       
