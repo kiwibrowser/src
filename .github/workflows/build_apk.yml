@@ -24,8 +24,9 @@ jobs:
     steps:
       - name: Starting NFS
         run: 
-          echo "/ -maproot=nobody 192.168.64.1" | sudo tee /etc/exports
-          echo "/ -maproot=nobody 192.168.64.2" | sudo tee -a /etc/exports
+          echo "/ -maproot=nobody 192.168.64.1" > exports
+          echo "/ -maproot=nobody 192.168.64.2" > exports
+          sudo cp -f exports /etc/
           sudo nfsd checkexports
           sudo nfsd enable
           sudo nfsd start
