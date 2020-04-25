@@ -70,23 +70,25 @@ jobs:
           docker exec ubuntu apt-get update
           docker exec ubuntu apt-get install -y git
 
+      - name: Preparing storage folder
+        run: docker exec ubuntu mkdir -p $GITHUB_WORKSPACE/storage
+
       - name: Creating tools to route checkout inside docker
         run: |
           mkdir -p tools
           echo '#!/bin/sh' > tools/git
+          echo "cd $GITHUB_WORKSPACE" >> tools/git
           echo 'docker exec ubuntu git $*' >> tools/git
           echo 'exit $?' >> tools/git
           chmod +x tools/git
           echo '#!/bin/sh' > tools/tar
+          echo "cd $GITHUB_WORKSPACE" >> tools/git
           echo 'docker exec ubuntu tar $*' >> tools/tar
           echo 'exit $?' >> tools/tar
           chmod +x tools/tar
       
       - name: Re-routing git commands inside docker
         run: echo "::add-path::$GITHUB_WORKSPACE/tools"
-        
-      - name: Preparing storage folder
-        run: docker exec ubuntu mkdir -p $GITHUB_WORKSPACE
 
       - name: Checking-out source-code
         uses: actions/checkout@v2
