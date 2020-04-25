@@ -70,17 +70,17 @@ jobs:
         run: docker exec ubuntu sudo mkdir -p /host
 
       - name: Mounting NFS storage
-        run: docker exec ubuntu sudo mount -t nfs 192.168.64.1:/ /host -o nolock
+        run: docker exec --user root ubuntu mount -t nfs 192.168.64.1:/ /host -o nolock
         
       - name: Checking available disk-space
         run: docker exec ubuntu df -h
         
       - name: Checking NFS folder on guest
-        run: docker exec ubuntu sudo ls -la /host/
+        run: docker exec --user root ubuntu ls -la /host/
 
         
       - name: Checking NFS folder on guest
-        run: docker exec ubuntu sudo ls -la /host/Users/
+        run: docker exec --user root ubuntu ls -la /host/Users/
         
       - name: Creating storage directory
         run: mkdir -p $GITHUB_WORKSPACE/storage
