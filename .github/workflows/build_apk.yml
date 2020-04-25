@@ -67,7 +67,7 @@ jobs:
         run: docker exec ubuntu df -h
         
       - name: Creating NFS folder on guest
-        run: docker exec ubuntu sudo mkdir -p /host
+        run: docker exec --user root ubuntu mkdir -p /host
 
       - name: Mounting NFS storage
         run: docker exec --user root ubuntu mount -t nfs 192.168.64.1:/ /host -o nolock
@@ -78,7 +78,6 @@ jobs:
       - name: Checking NFS folder on guest
         run: docker exec --user root ubuntu ls -la /host/
 
-        
       - name: Checking NFS folder on guest
         run: docker exec --user root ubuntu ls -la /host/Users/
         
