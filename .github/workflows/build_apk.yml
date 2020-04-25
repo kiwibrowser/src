@@ -22,6 +22,15 @@ jobs:
     
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      - name: Starting NFS
+        run: 
+          echo "/ -maproot=nobody 192.168.64.1" | sudo tee /etc/exports
+          echo "/ -maproot=nobody 192.168.64.2" | sudo tee -a /etc/exports
+          sudo nfsd checkexports
+          sudo nfsd enable
+          sudo nfsd start
+          nfsd status
+
       - name: Installing osxfuse
         run: brew cask install osxfuse
 
@@ -52,11 +61,27 @@ jobs:
           echo ::set-env name=DOCKER_IP::${DOCKER_IP}
 
       - name: Starting Ubuntu machine
-        run: docker run --name ubuntu -t -d -v /../../$GITHUB_WORKSPACE/storage:/storage ubuntu:eoan
+        run: docker run --name ubuntu -t -d ubuntu:eoan
         
       - name: Checking available disk-space
         run: docker exec ubuntu df -h
+        
+      - name: Creating NFS folder on guest
+        run: docker exec ubuntu sudo mkdir -p /host
 
+      - name: Mounting NFS storage
+        run: docker exec ubuntu sudo mount -t nfs 192.168.64.1:/ /host -o nolock
+        
+      - name: Checking available disk-space
+        run: docker exec ubuntu df -h
+        
+      - name: Checking NFS folder on guest
+        run: docker exec ubuntu sudo ls -la /host/
+
+        
+      - name: Checking NFS folder on guest
+        run: docker exec ubuntu sudo ls -la /host/Users/
+        
       - name: Creating storage directory
         run: mkdir -p $GITHUB_WORKSPACE/storage
 
