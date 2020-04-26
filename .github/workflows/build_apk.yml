@@ -77,8 +77,11 @@ jobs:
         run: |
           mkdir -p tools
           echo '#!/bin/sh' > tools/git
-          echo 'docker exec ubuntu mkdir -p $PWD' >> tools/git
-          echo 'docker exec -w $PWD ubuntu git $*' >> tools/git
+          echo 'if [ "$1" != "config" ]' >> tools/git
+          echo 'then' >> tools/git
+          echo '  docker exec ubuntu mkdir -p $PWD' >> tools/git
+          echo '  docker exec -w $PWD ubuntu git $*' >> tools/git
+          echo 'fi' >> tools/git
           echo 'exit $?' >> tools/git
           chmod +x tools/git
           echo '#!/bin/sh' > tools/tar
