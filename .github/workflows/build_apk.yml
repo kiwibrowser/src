@@ -70,8 +70,10 @@ jobs:
           docker exec ubuntu apt-get update
           docker exec ubuntu apt-get install -y git
 
-      - name: Copying gitconfig into Docker instance
-        run: docker cp ~/.gitconfig default:~/.gitconfig
+      - name: Setting-up an empty .gitconfig
+        run: |
+          docker exec ubuntu echo '[core]' > ~/.gitconfig
+          docker exec ubuntu echo 'editor = nano' >> ~/.gitconfig
 
       - name: Preparing storage folder
         run: docker exec ubuntu mkdir -p $GITHUB_WORKSPACE/storage
@@ -79,7 +81,6 @@ jobs:
       - name: Creating tools to route checkout inside docker
         run: |
           mkdir -p tools
-          cat ~/.gitconfig
           echo '#!/bin/sh' > tools/git
           echo 'docker exec ubuntu mkdir -p $PWD/.git' >> tools/git
           echo 'if [ "$1" != "submodule_ignored" -a "$1" != "config_ignored" ]' >> tools/git
