@@ -70,6 +70,9 @@ jobs:
           docker exec ubuntu apt-get update
           docker exec ubuntu apt-get install -y git
 
+      - name: Copying gitconfig into Docker instance
+        run: docker cp ~/.gitconfig ubuntu:~/.gitconfig
+
       - name: Preparing storage folder
         run: docker exec ubuntu mkdir -p $GITHUB_WORKSPACE/storage
  
@@ -78,8 +81,7 @@ jobs:
           mkdir -p tools
           echo '#!/bin/sh' > tools/git
           echo 'docker exec ubuntu mkdir -p $PWD/.git' >> tools/git
-          echo 'docker exec ubuntu touch $PWD/.git/config' >> tools/git
-          echo 'if [ "$1" != "submodule" -a "$1" != "config" ]' >> tools/git
+          echo 'if [ "$1" != "submodule_ignored" -a "$1" != "config_ignored" ]' >> tools/git
           echo 'then' >> tools/git
           echo '  docker exec -w $PWD ubuntu git $*' >> tools/git
           echo 'fi' >> tools/git
