@@ -62,73 +62,78 @@ jobs:
       - name: Starting Ubuntu machine
         run: docker run --name ubuntu -t -d ubuntu:eoan
 
-
       # Everything below happens inside the Ubuntu inside Docker
       # All commands must be prefixed with docker exec
+      # We use /root as working directory
 
       - name: Checking available disk-space
-        run: docker exec ubuntu df -h
+        run: docker exec -w /root ubuntu df -h
 
       - name: Installing git inside virtual environment
         run: |
-          docker exec ubuntu apt-get update
-          docker exec ubuntu apt-get install -y git
+          docker exec -w /root ubuntu apt-get update
+          docker exec -w /root ubuntu apt-get install -y git
 
       - name: Checking-out source-code
-        run: docker exec ubuntu bash -c "git clone --single-branch --depth 1 https://github.com/kiwibrowser/src.git"
+        run: docker exec -w /root ubuntu bash -c "git clone --single-branch --depth 1 https://github.com/kiwibrowser/src"
 
       - name: Checking-out CIPD dependencies
-        run: docker exec ubuntu bash -c "git clone --single-branch --depth 1 https://github.com/kiwibrowser/dependencies.git" .cipd
+        run: docker exec -w /root ubuntu bash -c "git clone --single-branch --depth 1 https://github.com/kiwibrowser/dependencies .cipd"
 
       - name: Copying .gclient and .gclient_entries
         run: |
-          docker exec ubuntu bash -c "ls -la"
-          docker exec ubuntu bash -c "pwd"
-          docker exec ubuntu bash -c "ls -la $GITHUB_WORKSPACE/.cipd"
-          docker exec ubuntu bash -c "cp $GITHUB_WORKSPACE/.cipd/.gclient $GITHUB_WORKSPACE/storage/"
-          docker exec ubuntu bash -c "cp $GITHUB_WORKSPACE/.cipd/.gclient_entries $GITHUB_WORKSPACE/storage/"
-          docker exec ubuntu bash -c "ln -s $GITHUB_WORKSPACE/.cipd $GITHUB_WORKSPACE/storage/"
+          docker exec -w /root ubuntu bash -c "cp .cipd/.gclient ."
+          docker exec -w /root ubuntu bash -c "cp .cipd/.gclient_entries ."
+
+      - name: Installing Python and OpenJDK
+        run: docker exec -w /root ubuntu bash -c "apt-get install -y python openjdk-8-jdk-headless libncurses5"
+
+      - name: Setting-up Java 8 as default Java provider
+        run: docker exec -w /root ubuntu bash -c "update-java-alternatives --set java-1.8.0-openjdk-amd64"
+
+      - name: Installing system dependencies
+        run: |
+          docker exec -w /root/src ubuntu bash -c "bash install-build-deps.sh --no-chromeos-fonts"
+          docker exec -w /root/src ubuntu bash -c "build/linux/sysroot_scripts/install-sysroot.py --arch=i386"
+          docker exec -w /root/src ubuntu bash -c "build/linux/sysroot_scripts/install-sysroot.py --arch=amd64"
 
       - name: Creating output folder
-        run: docker exec ubuntu bash -c "mkdir -p $GITHUB_WORKSPACE/out/android_arm"
-      
-      - name: Generating one-time APK signature key
-        run: docker exec ubuntu bash -c "keytool -genkey -v -keystore $GITHUB_WORKSPACE/storage/src/keystore.jks -alias dev -keyalg RSA -keysize 2048 -validity 10000 -storepass public_password -keypass public_password -dname 'cn=Kiwi Browser (unverified), ou=Actions, o=Kiwi Browser, c=GitHub'"
+        run: docker exec -w /root ubuntu bash -c "mkdir -p src/out/android_arm"
 
       - name: Copying args.gn to target folder
-        run: docker exec ubuntu bash -c "cp $GITHUB_WORKSPACE/storage/src/.build/android_arm/args.gn out/android_arm/"
+        run: docker exec -w /root ubuntu bash -c "cp src/.build/android_arm/args.gn src/out/android_arm/"
+
+      - name: Generating one-time APK signature key
+        run: docker exec -w /root ubuntu bash -c "keytool -genkey -v -keystore keystore.jks -alias dev -keyalg RSA -keysize 2048 -validity 10000 -storepass public_password -keypass public_password -dname 'cn=Kiwi Browser (unverified), ou=Actions, o=Kiwi Browser, c=GitHub'"
 
       - name: Downloading depot_tools
-        run: docker exec ubuntu bash -c "git clone --single-branch --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git"
+        run: docker exec -w /root ubuntu bash -c "git clone --single-branch --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git"
         
       - name: Adding depot_tools to path
-        run: docker exec ubuntu bash -c "echo 'export PATH=$HOME/depot_tools:$PATH' >> /root/.bashrc"
+        run: docker exec -w /root ubuntu bash -c "echo 'export PATH=/root/depot_tools:$PATH' >> /root/.bashrc"
 
       - name: Running gclient runhooks
-        working-directory: /Users/runner/storage/src
-        run: docker exec ubuntu bash -c "gclient runhooks"
+        run: docker exec -w /root ubuntu bash -c "gclient runhooks"
 
       - name: Generating build files
-        working-directory: /Users/runner/storage/src
-        run: docker exec ubuntu bash -c "gn gen $GITHUB_WORKSPACE/out/android_arm"
+        run: docker exec -w /root ubuntu bash -c "gn gen out/android_arm"
       
       - name: Gathering pre-compiled objects from cache
         uses: actions/cache@v1
         with:
-          path: out/android_arm
+          path: src/out/android_arm
           key: ${{ runner.os }}-android_arm-obj-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-android_arm-obj-
 
       - name: Compiling source-code
-        working-directory: /Users/runner/storage/src
-        run: ninja -C $GITHUB_WORKSPACE/out/android_arm chrome_public_apk
+        run: docker exec -w /root ubuntu bash -c "ninja -C src/out/android_arm chrome_public_apk"
 
       - name: Deleting args.gn to not have it in cache
-        run: rm -rvf out/android_arm/args.gn
+        run: docker exec -w /root ubuntu bash -c "rm -rvf src/out/android_arm/args.gn"
 
       - name: Uploading APK
         uses: actions/upload-artifact@v1
         with:
           name: apks
-          path: out/android_arm/apks/
+          path: src/out/android_arm/apks/
