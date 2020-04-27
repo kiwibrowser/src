@@ -58,10 +58,14 @@ jobs:
           echo ::set-env name=DOCKER_CERT_PATH::${DOCKER_CERT_PATH}
           echo ::set-env name=DOCKER_MACHINE_NAME::${DOCKER_MACHINE_NAME}
           echo ::set-env name=DOCKER_IP::${DOCKER_IP}
-
+          
       - name: Starting Ubuntu machine
         run: docker run --name ubuntu -t -d ubuntu:eoan
-        
+
+
+      # Everything below happens inside the Ubuntu inside Docker
+      # All commands must be prefixed with docker exec
+
       - name: Checking available disk-space
         run: docker exec ubuntu df -h
 
@@ -70,12 +74,6 @@ jobs:
           docker exec ubuntu apt-get update
           docker exec ubuntu apt-get install -y git
 
-      - name: Setting-up an empty .gitconfig
-        run: |
-          docker exec ubuntu bash -c "echo '[core]' > /root/.gitconfig"
-          docker exec ubuntu bash -c "echo 'editor = nano' >> /root/.gitconfig"
-          docker exec ubuntu bash -c "cat ~/.gitconfig"
-
       - name: Preparing storage folder
         run: docker exec ubuntu mkdir -p $GITHUB_WORKSPACE/storage
  
@@ -83,12 +81,8 @@ jobs:
         run: |
           mkdir -p tools
           echo '#!/bin/sh' > tools/git
-          echo 'docker exec ubuntu cp /root/.gitconfig /Users/runner/runners/2.169.1/work/src/src/storage/src/.git/config' >> tools/git
-          echo 'docker exec ubuntu mkdir -p $PWD/.git' >> tools/git
-          echo 'if [ "$1" != "submodule" -a "$1" != "config" ]' >> tools/git
-          echo 'then' >> tools/git
-          echo '  docker exec -w $PWD ubuntu git $*' >> tools/git
-          echo 'fi' >> tools/git
+          echo 'docker exec ubuntu mkdir -p $PWD' >> tools/git
+          echo 'docker exec -w $PWD ubuntu git $*' >> tools/git
           echo 'exit $?' >> tools/git
           chmod +x tools/git
           echo '#!/bin/sh' > tools/tar
@@ -96,9 +90,17 @@ jobs:
           echo 'docker exec -w $PWD ubuntu tar $*' >> tools/tar
           echo 'exit $?' >> tools/tar
           chmod +x tools/tar
-      
+          
+      # We hook all git commands so they execute inside the Docker instead of the MacOS machine
       - name: Re-routing git commands inside docker
         run: echo "::add-path::$GITHUB_WORKSPACE/tools"
+
+      # Note:
+      # The advantage is that we don't have to take care of which branch or commit to clone
+      # actions/checkout@v2 has certain bugs related to .gitconifg, so we use the simple, but functional v1
+      #
+      # We could in theory just git clone inside the Docker but it would make the logic actually more complex
+      # as we would need to handle the case of the pull requests
 
       - name: Checking-out source-code
         uses: actions/checkout@v1
@@ -111,49 +113,35 @@ jobs:
         with:
           repository: kiwibrowser/dependencies
           path: .cipd
-
-      - name: Checking storage directory
-        run: ls -la .cipd
         
       - name: Copying .gclient and .gclient_entries
         run: |
-          cp $GITHUB_WORKSPACE/.cipd/.gclient $GITHUB_WORKSPACE/storage/
-          cp $GITHUB_WORKSPACE/.cipd/.gclient_entries $GITHUB_WORKSPACE/storage/
-          ln -s $GITHUB_WORKSPACE/.cipd $GITHUB_WORKSPACE/storage/
+          docker exec ubuntu bash -c "cp $GITHUB_WORKSPACE/.cipd/.gclient $GITHUB_WORKSPACE/storage/"
+          docker exec ubuntu bash -c "cp $GITHUB_WORKSPACE/.cipd/.gclient_entries $GITHUB_WORKSPACE/storage/"
+          docker exec ubuntu bash -c "ln -s $GITHUB_WORKSPACE/.cipd $GITHUB_WORKSPACE/storage/"
 
       - name: Creating output folder
-        run: mkdir -p out/android_arm
+        run: docker exec ubuntu bash -c "mkdir -p $GITHUB_WORKSPACE/out/android_arm"
       
       - name: Generating one-time APK signature key
-        run: keytool -genkey -v -keystore $GITHUB_WORKSPACE/storage/src/keystore.jks -alias dev -keyalg RSA -keysize 2048 -validity 10000 -storepass public_password -keypass public_password -dname "cn=Kiwi Browser (unverified), ou=Actions, o=Kiwi Browser, c=GitHub"
+        run: docker exec ubuntu bash -c "keytool -genkey -v -keystore $GITHUB_WORKSPACE/storage/src/keystore.jks -alias dev -keyalg RSA -keysize 2048 -validity 10000 -storepass public_password -keypass public_password -dname 'cn=Kiwi Browser (unverified), ou=Actions, o=Kiwi Browser, c=GitHub'"
 
       - name: Copying args.gn to target folder
-        run: cp $GITHUB_WORKSPACE/storage/src/.build/android_arm/args.gn out/android_arm/
+        run: docker exec ubuntu bash -c "cp $GITHUB_WORKSPACE/storage/src/.build/android_arm/args.gn out/android_arm/"
 
       - name: Downloading depot_tools
-        run: git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+        run: docker exec ubuntu bash -c "git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git"
         
       - name: Adding depot_tools to path
-        run: echo "::add-path::$GITHUB_WORKSPACE/depot_tools"
+        run: docker exec ubuntu bash -c "echo 'export PATH=$HOME/depot_tools:$PATH' >> /root/.bashrc"
 
       - name: Running gclient runhooks
         working-directory: /Users/runner/storage/src
-        run: gclient runhooks
+        run: docker exec ubuntu bash -c "gclient runhooks"
 
-      - name: Removing files
-        run: |
-          rm -rf /Users/runner/storage/src/third_party/llvm-build/Release+Asserts/bin/llvm-ar
-#          mkdir -p /Users/runner/storage/src/third_party/llvm-build/Release+Asserts
-
-      - name: Listing files
-        run: ls -la /Users/runner/storage/src/third_party/llvm-build/
-
-      - name: Listing files
-        run: ls -la /Users/runner/storage/src/third_party/llvm-build/Release+Asserts/bin
-              
       - name: Generating build files
         working-directory: /Users/runner/storage/src
-        run: gn gen $GITHUB_WORKSPACE/out/android_arm
+        run: docker exec ubuntu bash -c "gn gen $GITHUB_WORKSPACE/out/android_arm"
       
       - name: Gathering pre-compiled objects from cache
         uses: actions/cache@v1
