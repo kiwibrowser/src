@@ -111,26 +111,15 @@ jobs:
 
       - name: Downloading depot_tools
         run: docker exec -w /root ubuntu bash -c "git clone --single-branch --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git"
-        
-      - name: Adding depot_tools to path
-        run: docker exec -w /root ubuntu bash -c "echo 'export PATH=/root/depot_tools:$PATH' >> /root/.bashrc"
 
       - name: Running gclient runhooks
-        run: docker exec -w /root ubuntu bash -c "gclient runhooks"
+        run: docker exec -w /root ubuntu bash -c 'PATH=/root/depot_tools:$PATH gclient runhooks'
 
       - name: Generating build files
-        run: docker exec -w /root ubuntu bash -c "gn gen out/android_arm"
+        run: docker exec -w /root ubuntu bash -c 'PATH=/root/depot_tools:$PATH gn gen out/android_arm'
       
-      - name: Gathering pre-compiled objects from cache
-        uses: actions/cache@v1
-        with:
-          path: src/out/android_arm
-          key: ${{ runner.os }}-android_arm-obj-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-android_arm-obj-
-
       - name: Compiling source-code
-        run: docker exec -w /root ubuntu bash -c "ninja -C src/out/android_arm chrome_public_apk"
+        run: docker exec -w /root ubuntu bash -c 'PATH=/root/depot_tools:$PATH ninja -C src/out/android_arm chrome_public_apk'
 
       - name: Deleting args.gn to not have it in cache
         run: docker exec -w /root ubuntu bash -c "rm -rvf src/out/android_arm/args.gn"
