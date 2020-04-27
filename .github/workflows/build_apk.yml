@@ -75,10 +75,10 @@ jobs:
           docker exec ubuntu apt-get install -y git
 
       - name: Checking-out source-code
-        run: docker exec ubuntu bash -c "git clone --single-branch -–depth 1 https://github.com/kiwibrowser/src.git"
+        run: docker exec ubuntu bash -c "git clone --single-branch --depth 1 https://github.com/kiwibrowser/src.git"
 
       - name: Checking-out CIPD dependencies
-        run: docker exec ubuntu bash -c "git clone --single-branch -–depth 1 https://github.com/kiwibrowser/dependencies.git" .cipd
+        run: docker exec ubuntu bash -c "git clone --single-branch --depth 1 https://github.com/kiwibrowser/dependencies.git" .cipd
 
       - name: Copying .gclient and .gclient_entries
         run: |
@@ -99,7 +99,7 @@ jobs:
         run: docker exec ubuntu bash -c "cp $GITHUB_WORKSPACE/storage/src/.build/android_arm/args.gn out/android_arm/"
 
       - name: Downloading depot_tools
-        run: docker exec ubuntu bash -c "git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git"
+        run: docker exec ubuntu bash -c "git clone --single-branch --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git"
         
       - name: Adding depot_tools to path
         run: docker exec ubuntu bash -c "echo 'export PATH=$HOME/depot_tools:$PATH' >> /root/.bashrc"
