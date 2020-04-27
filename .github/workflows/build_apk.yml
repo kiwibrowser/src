@@ -72,8 +72,8 @@ jobs:
 
       - name: Setting-up an empty .gitconfig
         run: |
-          docker exec ubuntu bash -c "echo '[core]' > ~/.gitconfig"
-          docker exec ubuntu bash -c "echo 'editor = nano' >> ~/.gitconfig"
+          docker exec ubuntu bash -c "echo '[core]' > /root/.gitconfig"
+          docker exec ubuntu bash -c "echo 'editor = nano' >> /root/.gitconfig"
           docker exec ubuntu bash -c "cat ~/.gitconfig"
 
       - name: Preparing storage folder
@@ -83,7 +83,7 @@ jobs:
         run: |
           mkdir -p tools
           echo '#!/bin/sh' > tools/git
-          echo 'docker exec ubuntu cp ~/.gitconfig /Users/runner/runners/2.169.1/work/src/src/storage/src/.git/config' >> tools/git
+          echo 'docker exec ubuntu cp /root/.gitconfig /Users/runner/runners/2.169.1/work/src/src/storage/src/.git/config' >> tools/git
           echo 'docker exec ubuntu mkdir -p $PWD/.git' >> tools/git
           echo 'if [ "$1" != "submodule" -a "$1" != "config" ]' >> tools/git
           echo 'then' >> tools/git
