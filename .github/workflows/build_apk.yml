@@ -74,53 +74,16 @@ jobs:
           docker exec ubuntu apt-get update
           docker exec ubuntu apt-get install -y git
 
-      - name: Preparing storage folder
-        run: docker exec ubuntu mkdir -p $GITHUB_WORKSPACE/storage
- 
-      - name: Creating tools to route checkout inside docker
-        run: |
-          mkdir -p tools
-          echo '#!/bin/sh' > tools/git
-          echo 'docker exec ubuntu mkdir -p $PWD' >> tools/git
-          echo 'docker exec -w $PWD ubuntu git $*' >> tools/git
-          echo 'exit $?' >> tools/git
-          chmod +x tools/git
-          echo '#!/bin/sh' > tools/tar
-          echo 'docker exec ubuntu mkdir -p $PWD' >> tools/tar
-          echo 'docker exec -w $PWD ubuntu tar $*' >> tools/tar
-          echo 'exit $?' >> tools/tar
-          chmod +x tools/tar
-          
-      # We hook all git commands so they execute inside the Docker instead of the MacOS machine
-      - name: Re-routing git commands inside docker
-        run: |
-          echo "::add-path::$GITHUB_WORKSPACE/tools"
-          echo ::set-env name=PATH::$GITHUB_WORKSPACE/tools:${PATH}
-
-
-      # Note:
-      # The advantage is that we don't have to take care of which branch or commit to clone
-      # actions/checkout@v2 has certain bugs related to .gitconifg, so we use the simple, but functional v1
-      #
-      # We could in theory just git clone inside the Docker but it would make the logic actually more complex
-      # as we would need to handle the case of the pull requests
-
       - name: Checking-out source-code
-        uses: actions/checkout@v1
-        with:
-          persist-credentials: false
-          path: storage/src
+        run: docker exec ubuntu bash -c "git clone --single-branch -–depth 1 https://github.com/kiwibrowser/src.git"
 
-      - name: Checking-out CIPD dependencies in $GITHUB_WORKSPACE/.cipd
-        uses: actions/checkout@v2
-        with:
-          repository: kiwibrowser/dependencies
-          path: .cipd
-        
+      - name: Checking-out CIPD dependencies
+        run: docker exec ubuntu bash -c "git clone --single-branch -–depth 1 https://github.com/kiwibrowser/dependencies.git" .cipd
+
       - name: Copying .gclient and .gclient_entries
         run: |
-          docker exec ubuntu bash -c "ls -la $GITHUB_WORKSPACE"
-          docker exec ubuntu bash -c "ls -la $GITHUB_WORKSPACE/storage"
+          docker exec ubuntu bash -c "ls -la"
+          docker exec ubuntu bash -c "pwd"
           docker exec ubuntu bash -c "ls -la $GITHUB_WORKSPACE/.cipd"
           docker exec ubuntu bash -c "cp $GITHUB_WORKSPACE/.cipd/.gclient $GITHUB_WORKSPACE/storage/"
           docker exec ubuntu bash -c "cp $GITHUB_WORKSPACE/.cipd/.gclient_entries $GITHUB_WORKSPACE/storage/"
