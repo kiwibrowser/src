@@ -93,7 +93,10 @@ jobs:
           
       # We hook all git commands so they execute inside the Docker instead of the MacOS machine
       - name: Re-routing git commands inside docker
-        run: echo "::add-path::$GITHUB_WORKSPACE/tools"
+        run: |
+          echo "::add-path::$GITHUB_WORKSPACE/tools"
+          echo ::set-env name=PATH::$GITHUB_WORKSPACE/tools:${PATH}
+
 
       # Note:
       # The advantage is that we don't have to take care of which branch or commit to clone
