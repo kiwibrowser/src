@@ -44,7 +44,7 @@ jobs:
           curl -Lo ~/.docker/machine/cache/boot2docker.iso https://github.com/boot2docker/boot2docker/releases/download/v19.03.5/boot2docker.iso
 
       - name: Booting machine
-        run: for i in $(seq 1 10); do docker-machine create --driver xhyve --xhyve-rawdisk --xhyve-cpu-count 6 --xhyve-memory-size 8000 --xhyve-disk-size '100000' default && s=0 && break || sudo kill -9 `ps aux | grep xhyve | grep -v grep | awk '{print $2}'` && sudo rm -rf /Users/runner/.docker/machine/machines/default && s=$? && sleep 15; done; (exit $s)    # Retry 10 times before abort
+        run: for i in $(seq 1 10); do docker-machine create --driver xhyve --xhyve-rawdisk --xhyve-cpu-count -1 --xhyve-memory-size 9000 --xhyve-disk-size '100000' default && s=0 && break || sudo kill -9 `ps aux | grep xhyve | grep -v grep | awk '{print $2}'` && sudo rm -rf /Users/runner/.docker/machine/machines/default && s=$? && sleep 15; done; (exit $s)    # Retry 10 times before abort
           
       - name: Exporting docker environment variables
         run: |
