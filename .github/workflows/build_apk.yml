@@ -123,7 +123,7 @@ jobs:
 
       - name: Gathering pre-compiled objects from cache
         uses: actions/cache@v1
-        id: chrome_java_cache
+        id: cache
         with:
           path: ./chrome_java_cache/
           key: ${{ runner.os }}-android_arm-chrome_java-${{ github.sha }}
@@ -131,7 +131,7 @@ jobs:
             ${{ runner.os }}-android_arm-chrome_java-
 
       - name: Unpacking cache
-        if: steps.chrome_java_cache.outputs.cache-hit == 'true'
+        if: steps.cache.outputs.cache-hit == 'true'
         run: |
           docker cp ./chrome_java_cache/storage.lzma ubuntu:/root/storage.lzma
           docker exec -w /root ubuntu bash -c 'tar -xf ./storage.lzma -P -H posix --lzma'
