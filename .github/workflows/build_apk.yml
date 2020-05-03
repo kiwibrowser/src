@@ -132,20 +132,23 @@ jobs:
       - name: Unpacking cache
         run: |
           ls -la ./chrome_java_cache/
-          test -f ./chrome_java_cache/storage.lzma && echo File exists
-          test -f ./chrome_java_cache/storage.lzma && echo Copying storage.lzma file
-          test -f ./chrome_java_cache/storage.lzma && docker cp ./chrome_java_cache/storage.lzma ubuntu:/root/storage.lzma
-          test -f ./chrome_java_cache/storage.lzma && echo Starting extraction
-          test -f ./chrome_java_cache/storage.lzma && docker exec -w /root ubuntu bash -c 'tar -xpf ./storage.lzma -P -H posix --lzma'
-          test -f ./chrome_java_cache/storage.lzma && echo Extraction completed
+          test -f ./chrome_java_cache/storage.tar.gz && echo File exists
+          test -f ./chrome_java_cache/storage.tar.gz && echo Copying storage.lzma file
+          test -f ./chrome_java_cache/storage.tar.gz && docker cp ./chrome_java_cache/storage.tar.gz ubuntu:/root/storage.tar.gz
+          test -f ./chrome_java_cache/storage.tar.gz && echo Starting extraction
+          test -f ./chrome_java_cache/storage.tar.gz && docker exec -w /root ubuntu bash -c 'tar -xpfz ./storage.tar.gz -P -H posix'
+          test -f ./chrome_java_cache/storage.tar.gz && echo Extraction completed
 
-      - name: Compiling chrome_java
-        run: docker exec -w /root/src ubuntu bash -c 'PATH=/root/depot_tools:$PATH ninja -C out/android_arm chrome_java'
+  #    - name: Compiling chrome_java
+  #      run: docker exec -w /root/src ubuntu bash -c 'PATH=/root/depot_tools:$PATH ninja -C out/android_arm chrome_java'
+
+      - name: Compiling monochrome_java
+        run: docker exec -w /root/src ubuntu bash -c 'PATH=/root/depot_tools:$PATH ninja -C out/android_arm monochrome_java'
 
       - name: Compressing and collecting cache
         run: |
-          docker exec -w /root ubuntu bash -c 'tar -cpf storage.lzma -P -H posix --lzma /root/src/out/android_arm'
-          docker cp ubuntu:/root/storage.lzma ./chrome_java_cache/storage.lzma
+          docker exec -w /root ubuntu bash -c 'tar -cpfz storage.tar.gz -P -H posix /root/src/out/android_arm'
+          docker cp ubuntu:/root/storage.tar.gz ./chrome_java_cache/storage.tar.gz
 
     #  - name: Compiling monochrome_java
     #    run: docker exec -w /root/src ubuntu bash -c 'PATH=/root/depot_tools:$PATH ninja -C out/android_arm monochrome_java'
