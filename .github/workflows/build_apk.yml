@@ -137,16 +137,15 @@ jobs:
           test -f ./chrome_java_cache/storage.lzma && echo Copying storage.lzma file
           test -f ./chrome_java_cache/storage.lzma && docker cp ./chrome_java_cache/storage.lzma ubuntu:/root/storage.lzma
           test -f ./chrome_java_cache/storage.lzma && echo Starting extraction
-          test -f ./chrome_java_cache/storage.lzma && docker exec -w /root ubuntu bash -c 'tar -xvf ./storage.lzma -P -H posix --lzma'
+          test -f ./chrome_java_cache/storage.lzma && docker exec -w /root ubuntu bash -c 'tar -xpf ./storage.lzma -P -H posix --lzma'
           test -f ./chrome_java_cache/storage.lzma && echo Extraction completed
-          test -f ./chrome_java_cache/storage.lzma && docker exec -w /root ubuntu bash -c 'ls -laR /root/src/out/android_arm'
 
       - name: Compiling chrome_java
         run: docker exec -w /root/src ubuntu bash -c 'PATH=/root/depot_tools:$PATH ninja -C out/android_arm chrome_java'
 
       - name: Compressing and collecting cache
         run: |
-          docker exec -w /root ubuntu bash -c 'tar -cf storage.lzma -P -H posix --lzma /root/src/out/android_arm'
+          docker exec -w /root ubuntu bash -c 'tar -cpf storage.lzma -P -H posix --lzma /root/src/out/android_arm'
           docker cp ubuntu:/root/storage.lzma ./chrome_java_cache/storage.lzma
 
     #  - name: Compiling monochrome_java
