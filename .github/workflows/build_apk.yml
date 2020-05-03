@@ -131,10 +131,9 @@ jobs:
             ${{ runner.os }}-android_arm-chrome_java-
 
       - name: Unpacking cache
-        if: steps.cache.outputs.cache-hit == 'true'
         run: |
-          docker cp ./chrome_java_cache/storage.lzma ubuntu:/root/storage.lzma
-          docker exec -w /root ubuntu bash -c 'tar -xf ./storage.lzma -P -H posix --lzma'
+          test -f ./chrome_java_cache/storage.lzma && docker cp ./chrome_java_cache/storage.lzma ubuntu:/root/storage.lzma
+          test -f ./chrome_java_cache/storage.lzma && docker exec -w /root ubuntu bash -c 'tar -xf ./storage.lzma -P -H posix --lzma'
 
       - name: Compiling chrome_java
         run: docker exec -w /root/src ubuntu bash -c 'PATH=/root/depot_tools:$PATH ninja -C out/android_arm chrome_java'
