@@ -1,5 +1,6 @@
-# Compile Kiwi Browser
-name: automatic build of apk
+# Build a test APK for Kiwi Browser
+
+name: Build APK
 
 # Controls when the action will run. Triggers the workflow on push or pull request events
 on:
@@ -14,119 +15,95 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-
   # This workflow contains a single job called "build"
   build:
     # The type of runner that the job will run on
-    runs-on: macos-latest
-    
+    runs-on: ubuntu-latest
+
     # Steps represent a sequence of tasks that will be executed as part of the job
+    # /dev/sda1 has more available space than /dev/sdb1 (14 GB only on /dev/sdb1 at this stage)
+    # so we want to take advantage of the available disk space on /dev/sda1
+      
+    # We store the main repository on /dev/sda1
+    # We store the dependencies and output objects on /dev/sdb1 
     steps:
-      - name: Installing osxfuse
-        run: brew cask install osxfuse
-
-    # Docker doesn't support MacOS natively, so we have to workaround it.
-    #
-    # First, using "docker-machine", we create a VM with xhyve as hypervisor.
-    # This VM runs a Linux-derived OS called Boot2docker.
-    #
-    # Within this Boot2docker VM, we can spawn other OS (such as our Ubuntu Linux).
-    # We spawn one Linux (Ubuntu) instance using the "docker" command that remotely controls the agent within Boot2docker.
-    #
-      - name: Installing docker
-        run: brew install docker docker-compose docker-machine xhyve docker-machine-driver-xhyve
-        
-      - name: Setting up docker
+      - name: Reclaiming disk space on /dev/sda1 by disabling swap partition
         run: |
-          sudo chown root:wheel $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
-          sudo chmod u+s $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve  
-          mkdir -p ~/.docker/machine/cache
-          curl -Lo ~/.docker/machine/cache/boot2docker.iso https://github.com/boot2docker/boot2docker/releases/download/v19.03.5/boot2docker.iso
-
-      - name: Booting machine
-        run: for i in $(seq 1 10); do docker-machine create --driver xhyve --xhyve-rawdisk --xhyve-cpu-count -1 --xhyve-memory-size 9000 --xhyve-disk-size '100000' default && s=0 && break || sudo kill -9 `ps aux | grep xhyve | grep -v grep | awk '{print $2}'` && sudo rm -rf /Users/runner/.docker/machine/machines/default && s=$? && sleep 15; done; (exit $s)    # Retry 10 times before abort
+          sudo swapoff -av
+          sudo rm -f /swapfile
           
-      - name: Exporting docker environment variables
-        run: |
-          DOCKER_TLS_VERIFY="$(docker-machine env default | grep DOCKER_TLS_VERIFY | sed -e 's/.*="//g' -e 's/"$//g')"
-          DOCKER_HOST="$(docker-machine env default | grep DOCKER_HOST | sed -e 's/.*="//g' -e 's/"$//g')"
-          DOCKER_CERT_PATH="$(docker-machine env default | grep DOCKER_CERT_PATH | sed -e 's/.*="//g' -e 's/"$//g')"
-          DOCKER_MACHINE_NAME="$(docker-machine env default | grep DOCKER_MACHINE_NAME | sed -e 's/.*="//g' -e 's/"$//g')"
-          DOCKER_IP="$(docker-machine ip default)";
-          echo ::set-env name=DOCKER_TLS_VERIFY::${DOCKER_TLS_VERIFY}
-          echo ::set-env name=DOCKER_HOST::${DOCKER_HOST}
-          echo ::set-env name=DOCKER_CERT_PATH::${DOCKER_CERT_PATH}
-          echo ::set-env name=DOCKER_MACHINE_NAME::${DOCKER_MACHINE_NAME}
-          echo ::set-env name=DOCKER_IP::${DOCKER_IP}
-          
-      - name: Starting Ubuntu machine
-        run: docker run --name ubuntu -t -d kiwibrowser/docker_image
-
-      # Everything below happens inside the Ubuntu inside Docker
-      # All commands must be prefixed with docker exec
-      # We use /root as working directory
-
-      - name: Checking available disk-space
-        run: docker exec -w /root ubuntu df -h
+      - name: Reclaiming disk space on /dev/sda1 by removing .NET framework
+        run: sudo rm -rf /usr/share/dotnet
 
       - name: Checking-out source-code
-        run: docker exec -w /root/src ubuntu bash -c "git fetch && git pull origin master"
+        uses: actions/checkout@v2
 
+      - name: Creating secondary disk folder in /dev/sdb1
+        run: |
+          sudo mkdir -p /mnt/secondary_disk
+          sudo chown -R runner:docker /mnt/secondary_disk
+      - name: Running symlink on /dev/sdb1 pointing to /dev/sda1
+        run: ln -s /mnt/secondary_disk $GITHUB_WORKSPACE/
+
+      - name: Checking-out CIPD dependencies in $GITHUB_WORKSPACE/.cipd
+        uses: actions/checkout@v2
+        with:
+          repository: kiwibrowser/dependencies
+          path: ./secondary_disk/.cipd 
+          
+      - name: Linking .cipd in the proper path and copying .gclient and .gclient_entries
+        run: |
+          ln -s $GITHUB_WORKSPACE/./secondary_disk/.cipd ..
+          cp ../.cipd/.gclient ..
+          cp ../.cipd/.gclient_entries ..
+      - name: Installing Python and OpenJDK
+        run: sudo apt-get install python openjdk-8-jdk-headless libncurses5
+
+      - name: Setting-up Java 8 as default Java provider
+        run: sudo update-java-alternatives --set java-1.8.0-openjdk-amd64
+
+      - name: Installing system dependencies
+        run: |
+          sudo bash install-build-deps.sh --no-chromeos-fonts
+          build/linux/sysroot_scripts/install-sysroot.py --arch=i386
+          build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
+          
       - name: Creating output folder
-        run: docker exec -w /root ubuntu bash -c "mkdir -p src/out/android_arm"
+        run: mkdir -p secondary_disk/out/android_arm
+      
+      - name: Generating one-time APK signature key
+        run: keytool -genkey -v -keystore keystore.jks -alias dev -keyalg RSA -keysize 2048 -validity 10000 -storepass public_password -keypass public_password -dname "cn=Kiwi Browser (unverified), ou=Actions, o=Kiwi Browser, c=GitHub"
 
       - name: Copying args.gn to target folder
-        run: docker exec -w /root ubuntu bash -c "cp src/.build/android_arm/args.gn src/out/android_arm/"
+        run: cp .build/android_arm/args.gn secondary_disk/out/android_arm/
 
-      - name: Generating one-time APK signature key
-        run: docker exec -w /root ubuntu bash -c "keytool -genkey -v -keystore keystore.jks -alias dev -keyalg RSA -keysize 2048 -validity 10000 -storepass public_password -keypass public_password -dname 'cn=Kiwi Browser (unverified), ou=Actions, o=Kiwi Browser, c=GitHub'"
-
+      - name: Downloading depot_tools
+        working-directory: ./secondary_disk
+        run: git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+        
+      - name: Adding depot_tools to path
+        run: echo "::add-path::$GITHUB_WORKSPACE/secondary_disk/depot_tools"
+      
+      - name: Running gclient runhooks
+        run: gclient runhooks
+      
       - name: Generating build files
-        run: docker exec -w /root/src ubuntu bash -c 'PATH=/root/depot_tools:$PATH gn gen out/android_arm'
-
-      - name: Creating cache directory
-        run: mkdir -p ./chrome_java_cache/
+        run: gn gen ./secondary_disk/out/android_arm
+      
+      - name: Creating obj directory
+        run: mkdir -p ./secondary_disk/out/android_arm/obj
 
       - name: Gathering pre-compiled objects from cache
         uses: actions/cache@v1
-        id: cache
         with:
-          path: ./chrome_java_cache/
-          key: ${{ runner.os }}-android_arm-chrome_java-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-android_arm-chrome_java-
+          path: ./secondary_disk/out/android_arm/obj
+          key: ${{ runner.os }}-android_arm-obj
 
-      - name: Unpacking cache (if necessary)
-        run: |
-          test -f ./chrome_java_cache/storage.tar.gz && echo File exists || exit 0
-          test -f ./chrome_java_cache/storage.tar.gz && echo Copying storage.lzma file || exit 0
-          test -f ./chrome_java_cache/storage.tar.gz && docker cp ./chrome_java_cache/storage.tar.gz ubuntu:/root/storage.tar.gz || exit 0
-          test -f ./chrome_java_cache/storage.tar.gz && echo Starting extraction || exit 0
-          test -f ./chrome_java_cache/storage.tar.gz && docker exec -w /root ubuntu bash -c 'tar -xpfz ./storage.tar.gz -P -H posix' || exit 0
-          test -f ./chrome_java_cache/storage.tar.gz && echo Extraction completed || exit 0
+      - name: Compiling source-code
+        run: ninja -C ./secondary_disk/out/android_arm chrome_public_apk
 
-  #    - name: Compiling chrome_java
-  #      run: docker exec -w /root/src ubuntu bash -c 'PATH=/root/depot_tools:$PATH ninja -C out/android_arm chrome_java'
-
-      - name: Compiling monochrome_java
-        run: docker exec -w /root/src ubuntu bash -c 'PATH=/root/depot_tools:$PATH ninja -C out/android_arm monochrome_java'
-
-      - name: Compressing and collecting cache
-        run: |
-          docker exec -w /root ubuntu bash -c 'tar -cpfz storage.tar.gz -P -H posix /root/src/out/android_arm'
-          docker cp ubuntu:/root/storage.tar.gz ./chrome_java_cache/storage.tar.gz
-
-    #  - name: Compiling monochrome_java
-    #    run: docker exec -w /root/src ubuntu bash -c 'PATH=/root/depot_tools:$PATH ninja -C out/android_arm monochrome_java'
-
-    #  - name: Compiling chrome_public_apk
-    #    run: docker exec -w /root/src ubuntu bash -c 'PATH=/root/depot_tools:$PATH ninja -C out/android_arm chrome_public_apk'
-
-    #  - name: Deleting args.gn to not have it in cache
-    #    run: docker exec -w /root/src ubuntu bash -c "rm -rvf out/android_arm/args.gn"
-
-    #  - name: Uploading APK
-    #    uses: actions/upload-artifact@v1
-    #    with:
-    #      name: apks
-    #      path: src/out/android_arm/apks/
+      - name: Uploading APK
+        uses: actions/upload-artifact@v1
+        with:
+          name: apks
+          path: ./secondary_disk/out/android_arm/apks/
