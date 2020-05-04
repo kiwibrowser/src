@@ -101,7 +101,9 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ./secondary_disk/out/android_arm/obj
-          key: ${{ runner.os }}-android_arm-obj
+          key: ${{ runner.os }}-android_arm-cache-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-android_arm-cache-
 
       - name: Compiling source-code
         run: ninja -C ./secondary_disk/out/android_arm chrome_public_apk
