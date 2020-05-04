@@ -59,7 +59,7 @@ jobs:
           echo ::set-env name=DOCKER_IP::${DOCKER_IP}
           
       - name: Starting Ubuntu machine
-        run: docker run --name ubuntu -t -d ubuntu:bionic
+        run: docker run --name ubuntu -t -d kiwibrowser:docker_image
 
       # Everything below happens inside the Ubuntu inside Docker
       # All commands must be prefixed with docker exec
@@ -68,36 +68,8 @@ jobs:
       - name: Checking available disk-space
         run: docker exec -w /root ubuntu df -h
 
-      - name: Installing git inside virtual environment (and lsb_release)
-        run: |
-          docker exec -w /root ubuntu apt-get update
-          docker exec -w /root ubuntu apt-get install -y git lsb-core sudo
-          
-      - name: Installing tzdata
-        run: docker exec -w /root ubuntu bash -c "DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata"
-
       - name: Checking-out source-code
-        run: docker exec -w /root ubuntu bash -c "git clone --single-branch --depth 1 https://github.com/kiwibrowser/src"
-
-      - name: Checking-out CIPD dependencies
-        run: docker exec -w /root ubuntu bash -c "git clone --single-branch --depth 1 https://github.com/kiwibrowser/dependencies .cipd"
-
-      - name: Copying .gclient and .gclient_entries
-        run: |
-          docker exec -w /root ubuntu bash -c "cp .cipd/.gclient ."
-          docker exec -w /root ubuntu bash -c "cp .cipd/.gclient_entries ."
-
-      - name: Installing Python and OpenJDK
-        run: docker exec -w /root ubuntu bash -c "apt-get install -y python openjdk-8-jdk-headless libncurses5"
-
-      - name: Setting-up Java 8 as default Java provider
-        run: docker exec -w /root ubuntu bash -c "update-java-alternatives --set java-1.8.0-openjdk-amd64"
-
-      - name: Installing system dependencies
-        run: |
-          docker exec -w /root/src ubuntu bash -c "bash install-build-deps.sh --no-chromeos-fonts"
-          docker exec -w /root/src ubuntu bash -c "build/linux/sysroot_scripts/install-sysroot.py --arch=i386"
-          docker exec -w /root/src ubuntu bash -c "build/linux/sysroot_scripts/install-sysroot.py --arch=amd64"
+        run: docker exec -w /root ubuntu bash -c "git fetch && git pull origin master"
 
       - name: Creating output folder
         run: docker exec -w /root ubuntu bash -c "mkdir -p src/out/android_arm"
@@ -107,12 +79,6 @@ jobs:
 
       - name: Generating one-time APK signature key
         run: docker exec -w /root ubuntu bash -c "keytool -genkey -v -keystore keystore.jks -alias dev -keyalg RSA -keysize 2048 -validity 10000 -storepass public_password -keypass public_password -dname 'cn=Kiwi Browser (unverified), ou=Actions, o=Kiwi Browser, c=GitHub'"
-
-      - name: Downloading depot_tools
-        run: docker exec -w /root ubuntu bash -c "git clone --single-branch --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git"
-
-      - name: Running gclient runhooks
-        run: docker exec -w /root ubuntu bash -c 'PATH=/root/depot_tools:$PATH gclient runhooks'
 
       - name: Generating build files
         run: docker exec -w /root/src ubuntu bash -c 'PATH=/root/depot_tools:$PATH gn gen out/android_arm'
