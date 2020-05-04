@@ -96,14 +96,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-android_arm-chrome_java-
 
-      - name: Unpacking cache
+      - name: Unpacking cache (if necessary)
         run: |
-          test -f ./chrome_java_cache/storage.tar.gz && echo File exists
-          test -f ./chrome_java_cache/storage.tar.gz && echo Copying storage.lzma file
-          test -f ./chrome_java_cache/storage.tar.gz && docker cp ./chrome_java_cache/storage.tar.gz ubuntu:/root/storage.tar.gz
-          test -f ./chrome_java_cache/storage.tar.gz && echo Starting extraction
-          test -f ./chrome_java_cache/storage.tar.gz && docker exec -w /root ubuntu bash -c 'tar -xpfz ./storage.tar.gz -P -H posix'
-          test -f ./chrome_java_cache/storage.tar.gz && echo Extraction completed
+          test -f ./chrome_java_cache/storage.tar.gz && echo File exists || exit 0
+          test -f ./chrome_java_cache/storage.tar.gz && echo Copying storage.lzma file || exit 0
+          test -f ./chrome_java_cache/storage.tar.gz && docker cp ./chrome_java_cache/storage.tar.gz ubuntu:/root/storage.tar.gz || exit 0
+          test -f ./chrome_java_cache/storage.tar.gz && echo Starting extraction || exit 0
+          test -f ./chrome_java_cache/storage.tar.gz && docker exec -w /root ubuntu bash -c 'tar -xpfz ./storage.tar.gz -P -H posix' || exit 0
+          test -f ./chrome_java_cache/storage.tar.gz && echo Extraction completed || exit 0
 
   #    - name: Compiling chrome_java
   #      run: docker exec -w /root/src ubuntu bash -c 'PATH=/root/depot_tools:$PATH ninja -C out/android_arm chrome_java'
