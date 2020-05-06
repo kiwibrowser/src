@@ -108,16 +108,12 @@ jobs:
         
       - name: Adding depot_tools to path
         run: echo "::add-path::$GITHUB_WORKSPACE/secondary_disk/depot_tools"
-      
-      - name: Running gclient runhooks
-        run: gclient runhooks
-      
-      - name: Generating build files
-        run: gn gen ./secondary_disk/out/android_arm
-      
-      - name: Creating obj directory
-        run: mkdir -p ./secondary_disk/out/android_arm/obj
 
+      - name: Setting environment variables
+        run: |
+          echo "::set-env name=CC::sccache clang -Qunused-arguments"
+          echo "::set-env name=CXX::sccache clang++ -Qunused-arguments"
+          
       - name: Running sccache server
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.WASABI_ACCESS_KEY }}
@@ -129,6 +125,18 @@ jobs:
 
       - name: Checking sccache status
         run: sccache --show-stats
+
+      - name: Displaying env
+        run: env
+
+      - name: Running gclient runhooks
+        run: gclient runhooks
+      
+      - name: Generating build files
+        run: gn gen ./secondary_disk/out/android_arm
+      
+      - name: Creating obj directory
+        run: mkdir -p ./secondary_disk/out/android_arm/obj
 
       - name: Compiling source-code
         run: ninja -C ./secondary_disk/out/android_arm chrome_java
