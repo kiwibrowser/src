@@ -1,6 +1,6 @@
 # Build a test APK for Kiwi Browser
 
-name: Build APK
+name: automatic build of apk
 
 # Controls when the action will run. Triggers the workflow on push or pull request events
 on:
@@ -139,13 +139,13 @@ jobs:
         run: mkdir -p ./secondary_disk/out/android_arm/obj
 
       - name: Compiling source-code
-        run: ninja -C ./secondary_disk/out/android_arm chrome_java
+        run: ninja -C ./secondary_disk/out/android_arm chrome_public_apk
 
       - name: Checking sccache status
         run: sccache --show-stats
 
-#      - name: Uploading APK
-#        uses: actions/upload-artifact@v1
-#        with:
-#          name: apks
-#          path: ./secondary_disk/out/android_arm/apks/
+      - name: Uploading APK
+        uses: actions/upload-artifact@v1
+        with:
+          name: apks
+          path: ./secondary_disk/out/android_arm/apks/
