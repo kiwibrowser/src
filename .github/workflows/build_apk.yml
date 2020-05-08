@@ -54,15 +54,6 @@ jobs:
           popd
           popd
           
-      - name: Installing sccache
-        run: |
-          pushd /tmp
-          curl -LOs https://github.com/mozilla/sccache/releases/download/0.2.7/sccache-0.2.7-x86_64-unknown-linux-musl.tar.gz
-          tar -zxvf sccache-0.2.7-x86_64-unknown-linux-musl.tar.gz
-          sudo mv sccache-0.2.7-x86_64-unknown-linux-musl/sccache /usr/local/bin/sccache
-          rm -rf sccache-0.2.7-x86_64-unknown-linux-musl*
-          popd
-
       - name: Checking-out source-code
         uses: actions/checkout@v2
 
@@ -118,22 +109,36 @@ jobs:
 
       - name: Setting environment variables
         run: |
-          echo "::set-env name=CC::sccache clang -Qunused-arguments"
-          echo "::set-env name=CXX::sccache clang++ -Qunused-arguments"
-          
-      - name: Running sccache server
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.WASABI_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
-          SCCACHE_ENDPOINT: s3.wasabisys.com
-          SCCACHE_BUCKET: kiwibrowser-${{ matrix.platform }}
-        run: sccache --start-server
+          echo "::set-env name=CC::ccache clang -Qunused-arguments"
+          echo "::set-env name=CXX::ccache clang++ -Qunused-arguments"
 
+      - name: Checking available disk-space
+        run: df -h
+        
+      - name: Creating ccache configuration
+        run: |
+          echo 'max_size = 20G' > $HOME/.ccache/ccache.conf
+          echo "base_dir = $HOME" >> $HOME/.ccache/ccache.conf
+          echo "cache_dir = $HOME/cache" >> $HOME/.ccache/ccache.conf
+
+      - name: Creating rclone config
+        run: |
+          mkdir -p $HOME/.config/rclone/
+          echo '[cache]' > $HOME/.config/rclone/rclone.conf
+          echo 'type = s3' >> $HOME/.config/rclone/rclone.conf
+          echo 'provider = Wasabi' >> $HOME/.config/rclone/rclone.conf
+          echo 'env_auth = false' >> $HOME/.config/rclone/rclone.conf
+          echo 'endpoint = s3.wasabisys.com' >> $HOME/.config/rclone/rclone.conf
+          echo 'acl = public-read' >> $HOME/.config/rclone/rclone.conf
+
+      - name: Downloading cache for binary objects
+        run: rclone copy cache:kiwibrowser-ccache-${{ matrix.platform }} $HOME/cache
+        
       - name: Checking sccache status
-        run: sccache --show-stats
+        run: ccache --show-stats
 
-      - name: Displaying env
-        run: env
+      - name: Checking available disk-space after downloading cache
+        run: df -h
 
       - name: Running gclient runhooks
         run: gclient runhooks
@@ -141,14 +146,36 @@ jobs:
       - name: Generating build files
         run: gn gen ./secondary_disk/out/android_${{ matrix.platform }}
       
-      - name: Creating obj directory
-        run: mkdir -p ./secondary_disk/out/android_${{ matrix.platform }}/obj
+      - name: Checking available disk-space before build cache
+        run: df -h
 
       - name: Compiling source-code
-        run: ninja -j 1 -C ./secondary_disk/out/android_${{ matrix.platform }} -n -d explain chrome_public_apk
+        run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome_java
 
       - name: Checking sccache status
-        run: sccache --show-stats
+        run: ccache --show-stats
+
+      - name: Creating rclone config to upload the cache
+        if: ${{ secrets.WASABI_SECRET_KEY != 0 }}
+        env:
+          WASABI_ACCESS_KEY: ${{ secrets.WASABI_ACCESS_KEY }}
+          WASABI_SECRET_KEY: ${{ secrets.WASABI_SECRET_KEY }}
+        run: |
+          echo '[sync]' > $HOME/.config/rclone/rclone.conf
+          echo 'type = s3' >> $HOME/.config/rclone/rclone.conf
+          echo 'provider = Wasabi' >> $HOME/.config/rclone/rclone.conf
+          echo 'env_auth = false' >> $HOME/.config/rclone/rclone.conf
+          echo 'endpoint = s3.wasabisys.com' >> $HOME/.config/rclone/rclone.conf
+          echo "access_key_id = $WASABI_ACCESS_KEY" >> $HOME/.config/rclone/rclone.conf
+          echo "secret_access_key = WASABI_SECRET_KEY" >> $HOME/.config/rclone/rclone.conf
+          echo 'acl = public-read' >> $HOME/.config/rclone/rclone.conf
+          
+      - name: Uploading cache for binary objects
+        if: ${{ secrets.WASABI_SECRET_KEY != 0 }}
+        env:
+          WASABI_ACCESS_KEY: ${{ secrets.WASABI_ACCESS_KEY }}
+          WASABI_SECRET_KEY: ${{ secrets.WASABI_SECRET_KEY }}
+        run: rclone copy $HOME/cache/* sync:kiwibrowser-ccache-${{ matrix.platform }}
 
       - name: Uploading APK
         uses: actions/upload-artifact@v1
