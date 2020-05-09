@@ -133,7 +133,7 @@ jobs:
           echo 'acl = public-read' >> $HOME/.config/rclone/rclone.conf
 
       - name: Downloading cache for binary objects
-        run: rclone copy --fast-list --transfers=128 cache:kiwibrowser-ccache-${{ matrix.platform }} $HOME/cache
+        run: rclone copy --transfers=128 cache:kiwibrowser-ccache-${{ matrix.platform }} $HOME/cache
         
       - name: Checking sccache status
         run: ccache --show-stats
@@ -171,7 +171,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.WASABI_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
-        run: rclone copy --fast-list --transfers=128 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
+        run: rclone copy --transfers=128 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
 
       - name: Uploading APK
         uses: actions/upload-artifact@v1
