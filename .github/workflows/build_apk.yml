@@ -158,21 +158,19 @@ jobs:
 
       - name: Creating rclone config to upload the cache
         if: ${{ github.repository_owner == 'kiwibrowser' }}
-        env:
-          WASABI_ACCESS_KEY: ${{ secrets.WASABI_ACCESS_KEY }}
-          WASABI_SECRET_KEY: ${{ secrets.WASABI_SECRET_KEY }}
         run: |
           echo '[sync]' > $HOME/.config/rclone/rclone.conf
           echo 'type = s3' >> $HOME/.config/rclone/rclone.conf
           echo 'provider = Wasabi' >> $HOME/.config/rclone/rclone.conf
-          echo 'env_auth = false' >> $HOME/.config/rclone/rclone.conf
+          echo 'env_auth = true' >> $HOME/.config/rclone/rclone.conf
           echo 'endpoint = s3.wasabisys.com' >> $HOME/.config/rclone/rclone.conf
-          echo "access_key_id = $WASABI_ACCESS_KEY" >> $HOME/.config/rclone/rclone.conf
-          echo "secret_access_key = WASABI_SECRET_KEY" >> $HOME/.config/rclone/rclone.conf
           echo 'acl = public-read' >> $HOME/.config/rclone/rclone.conf
           
       - name: Uploading binary objects to cache
         if: ${{ github.repository_owner == 'kiwibrowser' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.WASABI_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
         run: rclone copy $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
 
       - name: Uploading APK
