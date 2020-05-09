@@ -121,6 +121,8 @@ jobs:
           echo 'max_size = 20G' > $HOME/.ccache/ccache.conf
           echo "base_dir = $HOME" >> $HOME/.ccache/ccache.conf
           echo "cache_dir = $HOME/cache" >> $HOME/.ccache/ccache.conf
+          echo "hash_dir = false" >> $HOME/.ccache/ccache.conf
+          echo "log_file = /tmp/cache.debug" >> $HOME/.ccache/ccache.conf
 
       - name: Creating rclone config
         run: |
@@ -153,8 +155,11 @@ jobs:
       - name: Compiling source-code
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome_java
 
-      - name: Checking sccache status
+      - name: Checking ccache status
         run: ccache --show-stats
+
+      - name: View ccache logs
+        run: cat /tmp/cache.debug
 
       - name: Creating rclone config to upload the cache
         if: ${{ github.repository_owner == 'kiwibrowser' }}
