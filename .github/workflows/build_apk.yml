@@ -34,26 +34,15 @@ jobs:
     steps:
       - name: Initializing build
         run: echo Initializing build for platform ${{ matrix.platform }}
-        
+
       - name: Reclaiming disk space on /dev/sda1 by disabling swap partition
         run: |
           sudo swapoff -av
           sudo rm -f /swapfile
-          
+
       - name: Reclaiming disk space on /dev/sda1 by removing .NET framework
         run: sudo rm -rf /usr/share/dotnet
-        
-      - name: Installing cacche
-        run: |
-          pushd /tmp
-          git clone https://github.com/pietern/ccache -b ccbin
-          pushd ccache
-          ./autogen.sh
-          ./configure --prefix=/usr/local
-          sudo make "-j$(nproc)" install
-          popd
-          popd
-          
+
       - name: Checking-out source-code
         uses: actions/checkout@v2
 
@@ -69,18 +58,18 @@ jobs:
         with:
           repository: kiwibrowser/dependencies
           path: ./secondary_disk/.cipd 
-          
+
       - name: Linking .cipd in the proper path and copying .gclient and .gclient_entries
         run: |
           ln -s $GITHUB_WORKSPACE/./secondary_disk/.cipd ..
           cp ../.cipd/.gclient ..
           cp ../.cipd/.gclient_entries ..
-          
+
       - name: Updating APT repository
         run: sudo apt-get update
 
       - name: Installing Python and OpenJDK
-        run: sudo apt-get install -y python openjdk-8-jdk-headless libncurses5 rclone
+        run: sudo apt-get install -y python openjdk-8-jdk-headless libncurses5 rclone ccache
 
       - name: Setting-up Java 8 as default Java provider
         run: sudo update-java-alternatives --set java-1.8.0-openjdk-amd64
@@ -90,10 +79,10 @@ jobs:
           sudo bash install-build-deps.sh --no-chromeos-fonts
           build/linux/sysroot_scripts/install-sysroot.py --arch=i386
           build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
-          
+
       - name: Creating output folder
         run: mkdir -p secondary_disk/out/android_${{ matrix.platform }}
-      
+
       - name: Generating one-time APK signature key
         run: keytool -genkey -v -keystore keystore.jks -alias dev -keyalg RSA -keysize 2048 -validity 10000 -storepass public_password -keypass public_password -dname "cn=Kiwi Browser (unverified), ou=Actions, o=Kiwi Browser, c=GitHub"
 
@@ -103,7 +92,7 @@ jobs:
       - name: Downloading depot_tools
         working-directory: ./secondary_disk
         run: git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
-        
+
       - name: Adding depot_tools to path
         run: echo "::add-path::$GITHUB_WORKSPACE/secondary_disk/depot_tools"
 
@@ -114,7 +103,7 @@ jobs:
 
       - name: Checking available disk-space
         run: df -h
-        
+
       - name: Creating ccache configuration
         run: |
           mkdir -p $HOME/.ccache/
@@ -137,7 +126,7 @@ jobs:
 
       - name: Downloading cache for binary objects
         run: rclone copy --transfers=16 cache:kiwibrowser-ccache-${{ matrix.platform }} $HOME/cache
-        
+
       - name: Checking sccache status
         run: ccache --show-stats
 
@@ -146,10 +135,10 @@ jobs:
 
       - name: Running gclient runhooks
         run: gclient runhooks
-      
+
       - name: Generating build files
         run: gn gen ./secondary_disk/out/android_${{ matrix.platform }}
-      
+
       - name: Checking available disk-space before build cache
         run: df -h
 
@@ -158,9 +147,6 @@ jobs:
 
       - name: Checking ccache status
         run: ccache --show-stats
-
-      - name: View ccache logs
-        run: cat /tmp/cache.debug
 
       - name: Creating rclone config to upload the cache
         if: ${{ github.repository_owner == 'kiwibrowser' }}
@@ -171,7 +157,7 @@ jobs:
           echo 'env_auth = true' >> $HOME/.config/rclone/rclone.conf
           echo 'endpoint = s3.wasabisys.com' >> $HOME/.config/rclone/rclone.conf
           echo 'acl = public-read' >> $HOME/.config/rclone/rclone.conf
-          
+
       - name: Uploading binary objects to cache
         if: ${{ github.repository_owner == 'kiwibrowser' }}
         env:
