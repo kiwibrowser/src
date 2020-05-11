@@ -24,6 +24,7 @@ jobs:
       max-parallel: 4
       matrix:
         platform: [arm, arm64, x86, x64]
+        tries: [1, 2]
 
     # The GitHub Actions machines have a "slow disk", and a SSD "fast" disk.
     # However, there is not enough space to do all the processing on the SSD.
@@ -174,7 +175,9 @@ jobs:
           echo 'endpoint = s3.wasabisys.com' >> $HOME/.config/rclone/rclone.conf
           echo 'acl = public-read' >> $HOME/.config/rclone/rclone.conf
 
-      - name: Compiling source-code
+      # We compile component by component as 6 hours is not enough for the initial build
+      # so we can snapshot between each component and continue further from the snapshot
+      - name: Compiling source-code (base)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} base
 
       - name: Uploading binary objects to cache
@@ -184,7 +187,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
         run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
 
-      - name: Compiling chrome_java
+      - name: Compiling source-code (chrome_java)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome_java
 
       - name: Uploading binary objects to cache
@@ -194,9 +197,8 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
         run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
 
-      - name: Compiling source-code
+      - name: Compiling source-code (chrome/browser)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome/browser
-
 
       - name: Uploading binary objects to cache
         if: ${{ github.repository_owner == 'kiwibrowser' }}
@@ -205,7 +207,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
         run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
 
-      - name: Compiling source-code
+      - name: Compiling source-code (chrome/common)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome/common
 
       - name: Uploading binary objects to cache
@@ -215,7 +217,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
         run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
 
-      - name: Compiling source-code
+      - name: Compiling source-code (chrome/gpu)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome/gpu
 
       - name: Uploading binary objects to cache
@@ -225,7 +227,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
         run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
 
-      - name: Compiling source-code
+      - name: Compiling source-code (chrome/renderer)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome/renderer
 
       - name: Uploading binary objects to cache
@@ -235,7 +237,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
         run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
 
-      - name: Compiling source-code
+      - name: Compiling source-code (extensions)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} extensions
 
       - name: Uploading binary objects to cache
@@ -245,7 +247,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
         run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
 
-      - name: Compiling source-code
+      - name: Compiling source-code (services)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} services
 
       - name: Uploading binary objects to cache
@@ -255,7 +257,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
         run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
 
-      - name: Compiling source-code
+      - name: Compiling source-code (v8)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} v8
 
       - name: Uploading binary objects to cache
