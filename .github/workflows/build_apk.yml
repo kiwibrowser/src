@@ -25,36 +25,46 @@ jobs:
       matrix:
         platform: [arm, arm64, x86, x64]
 
+    # The GitHub Actions machines have a "slow disk", and a SSD "fast" disk.
+    # However, there is not enough space to do all the processing on the SSD.
+    
+    # We refer to the disks based on their name in /dev/disk
+
+    # /dev/disk/azure/root-part1 is / ("slow disk")
+    # /dev/disk/azure/resource-part1 is a 14 GB ephemeral SSD disk mounted in /mnt
+
+    # We store the source-code repository (kiwibrowser/src) on /dev/disk/azure/root-part1
+    # We store cache, dependencies and output on /dev/disk/azure/resource-part1 (SSD)
+
     # Steps represent a sequence of tasks that will be executed as part of the job
-    # /dev/sda1 has more available space than /dev/sdb1 (14 GB only on /dev/sdb1 at this stage)
-    # so we want to take advantage of the available disk space on /dev/sda1
-      
-    # We store the main repository on /dev/sda1
-    # We store the dependencies and output objects on /dev/sdb1 
     steps:
       - name: Initializing build
         run: echo Initializing build for platform ${{ matrix.platform }}
 
-      - name: Reclaiming disk space on /dev/sda1 by disabling swap partition
+      - name: Reclaiming disk space on / by disabling swap partition
         run: |
           sudo swapoff -av
           sudo rm -f /swapfile
 
-# Uncomment if you need additional space (takes about 2 minutes)
-#      - name: Reclaiming disk space on /dev/sda1 by removing .NET framework
+#      Uncomment if you need additional space (takes about 2 minutes)
+#      - name: Reclaiming disk space on / by removing .NET framework
 #        run: sudo rm -rf /usr/share/dotnet
 
-      - name: Checking-out source-code
+      - name: Checking-out source-code in $GITHUB_WORKSPACE
         uses: actions/checkout@v2
 
-      - name: Creating secondary disk folder in /dev/sdb1
+      - name: Creating secondary disk folder on /dev/disk/azure/resource-part1 (SSD)
         run: |
           sudo mkdir -p /mnt/secondary_disk
           sudo chown -R runner:docker /mnt/secondary_disk
-      - name: Running symlink on /dev/sdb1 pointing to /dev/sda1
+          
+      - name: Creating symlink on /dev/disk/azure/root-part1 pointing to /dev/disk/azure/resource-part1
         run: ln -s /mnt/secondary_disk $GITHUB_WORKSPACE/
 
-      - name: Checking-out CIPD dependencies in $GITHUB_WORKSPACE/.cipd
+      # We cannot checkout outside of $GITHUB_WORKSPACE, but we want to checkout to the SSD
+      # so we have a symbolic link $GITHUB_WORKSPACE/secondary_disk/ pointing to the SSD
+      # and checkout the code there
+      - name: Checking-out CIPD dependencies in /mnt/secondary_disk/.cipd
         uses: actions/checkout@v2
         with:
           repository: kiwibrowser/dependencies
@@ -108,16 +118,6 @@ jobs:
       - name: Checking available disk-space
         run: df -h
 
-      - name: Creating ccache configuration
-        run: |
-          mkdir -p $HOME/.ccache/
-          echo 'compiler_check = none' >> $HOME/.ccache/ccache.conf
-          echo 'max_size = 20G' >> $HOME/.ccache/ccache.conf
-          echo "base_dir = $HOME" >> $HOME/.ccache/ccache.conf
-          echo "cache_dir = $HOME/cache" >> $HOME/.ccache/ccache.conf
-          echo "hash_dir = false" >> $HOME/.ccache/ccache.conf
-          echo "log_file = /tmp/cache.debug" >> $HOME/.ccache/ccache.conf
-
       - name: Creating rclone config
         run: |
           mkdir -p $HOME/.config/rclone/
@@ -128,14 +128,32 @@ jobs:
           echo 'endpoint = s3.wasabisys.com' >> $HOME/.config/rclone/rclone.conf
           echo 'acl = public-read' >> $HOME/.config/rclone/rclone.conf
 
-      - name: Downloading cache for binary objects
-        run: rclone copy --fast-list --transfers=16 cache:kiwibrowser-ccache-${{ matrix.platform }} $HOME/cache
+      - name: Creating cache folder on /dev/disk/azure/resource-part1 (SSD)
+        run: |
+          sudo mkdir -p /mnt/cache
+          sudo chown -R runner:docker /mnt/cache
+          
+      - name: Creating symlink in $HOME/cache pointing to cache on /dev/disk/azure/resource-part1
+        run: ln -s /mnt/cache $HOME/
 
-      - name: Checking ccache status
-        run: ccache --show-stats
+      - name: Downloading binary objects cache to $HOME/cache
+        run: rclone copy --fast-list --transfers=16 cache:kiwibrowser-ccache-${{ matrix.platform }} $HOME/cache
 
       - name: Checking available disk-space after downloading cache
         run: df -h
+        
+      - name: Calculating cache size
+        run: du -csh $HOME/cache
+
+      - name: Creating ccache configuration
+        run: |
+          mkdir -p $HOME/.ccache/
+          echo 'compiler_check = none' >> $HOME/.ccache/ccache.conf
+          echo "stats = false" >> $HOME/.ccache/ccache.conf
+          echo 'max_size = 20G' >> $HOME/.ccache/ccache.conf
+          echo "base_dir = $HOME" >> $HOME/.ccache/ccache.conf
+          echo "cache_dir = $HOME/cache" >> $HOME/.ccache/ccache.conf
+          echo "hash_dir = false" >> $HOME/.ccache/ccache.conf
 
       - name: Running gclient runhooks
         run: gclient runhooks
@@ -148,12 +166,6 @@ jobs:
 
       - name: Compiling source-code
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome_java
-
-      - name: Checking ccache status
-        run: ccache --show-stats
-
-      - name: View ccache logs
-        run: cat /tmp/cache.debug
 
       - name: Creating rclone config to upload the cache
         if: ${{ github.repository_owner == 'kiwibrowser' }}
