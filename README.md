@@ -13,9 +13,9 @@ Among other functionalities, Kiwi Browser supports:
  - Night Mode (another implementation than Chromium)
  - Support for Chrome Extensions
  - Bottom address bar
-It also includes performance improvements (partial rasterisation of tiles, etc)
+It also includes performance improvements (partial rasterization of tiles, etc)
 
-The browser is licensed under the same licence as Chromium, which means that you are allowed to create derivatives of the browser.
+The browser is licensed under the same license as Chromium, which means that you are allowed to create derivatives of the browser.
 
 ## Table of contents
 
@@ -64,9 +64,9 @@ If you create your own browser or a mod, make sure to change the browser name an
 
 The reference build machine is using Ubuntu 19.04 (also tested using Ubuntu 18.04 and Ubuntu 19.10).
 
-Minimum system requirements is 2 vCPUs, 7.5 GB Memory.
+The minimum system requirements are 2 vCPUs, 7.5 GB Memory.
 
-You can use a virtual machine, an AWS VM or a Google Cloud VM.
+You can use a virtual machine, an AWS VM, or a Google Cloud VM.
 
 ### Getting the source-code and environment
 
@@ -103,7 +103,7 @@ git clone https://github.com/kiwibrowser/src.git
 
 At this stage, in ~/chromium/ you will have the .cipd folder, and a folder with the Kiwi Browser source-code called src.
 
-### Setting-up dependencies
+### Setting up dependencies
 
 To be able to build Kiwi Browser, you need python and OpenJDK (OpenJDK to create Java bindings for Android):
 
