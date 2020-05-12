@@ -278,15 +278,17 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
         run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
 
-      - name: Compiling source-code
-        run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome_public_apk
+      - name: Checking available disk-space
+        run: df -h
 
-      - name: Uploading binary objects to cache
-        if: ${{ github.repository_owner == 'kiwibrowser' }}
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.WASABI_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
-        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
+      - name: Reclaiming disk space
+        run: rm -rf /mnt/cache
+
+      - name: Checking available disk-space
+        run: df -h
+
+      - name: Compiling source-code (final stage)
+        run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome_public_apk
 
       - name: Uploading APK
         uses: actions/upload-artifact@v1
