@@ -1,6 +1,6 @@
-# Compile Kiwi Browser
+# Build APKs for Kiwi Browser
 name: automatic build of apk
-#
+
 # Controls when the action will run. Triggers the workflow on push or pull request events
 on:
   push:
@@ -14,92 +14,290 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
+
   # This workflow contains a single job called "build"
   build:
+
     # The type of runner that the job will run on
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        platform: [arm, arm64, x86, x64]
+
+    # The GitHub Actions machines have a "slow disk", and a SSD "fast" disk.
+    # However, there is not enough space to do all the processing on the SSD.
     
+    # We refer to the disks based on their name in /dev/disk
+
+    # /dev/disk/azure/root-part1 is / ("slow disk")
+    # /dev/disk/azure/resource-part1 is a 14 GB ephemeral SSD disk mounted in /mnt
+
+    # We store the source-code repository (kiwibrowser/src) on /dev/disk/azure/root-part1
+    # We store cache, dependencies and output on /dev/disk/azure/resource-part1 (SSD)
+
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - name: Preparing storage folder
+      - name: Initializing build
+        run: echo Initializing build for platform ${{ matrix.platform }}
+
+      - name: Reclaiming disk space on / by disabling swap partition
         run: |
-          mkdir -p /Users/runner/storage
-          ln -s /Users/runner/storage .
+          sudo swapoff -av
+          sudo rm -f /swapfile
 
-      - name: Checking-out source-code
+#      Uncomment if you need additional space (takes about 2 minutes)
+#      - name: Reclaiming disk space on / by removing .NET framework
+#        run: sudo rm -rf /usr/share/dotnet
+
+      - name: Checking-out source-code in $GITHUB_WORKSPACE
         uses: actions/checkout@v2
-        with:
-          path: storage/src
 
-      - name: Checking-out CIPD dependencies in $GITHUB_WORKSPACE/.cipd
+      - name: Creating secondary disk folder on /dev/disk/azure/resource-part1 (SSD)
+        run: |
+          sudo mkdir -p /mnt/secondary_disk
+          sudo chown -R runner:docker /mnt/secondary_disk
+          
+      - name: Creating symlink on /dev/disk/azure/root-part1 pointing to /dev/disk/azure/resource-part1
+        run: ln -s /mnt/secondary_disk $GITHUB_WORKSPACE/
+
+      # We cannot checkout outside of $GITHUB_WORKSPACE, but we want to checkout to the SSD
+      # so we have a symbolic link $GITHUB_WORKSPACE/secondary_disk/ pointing to the SSD
+      # and checkout the code there
+      - name: Checking-out CIPD dependencies in /mnt/secondary_disk/.cipd
         uses: actions/checkout@v2
         with:
           repository: kiwibrowser/dependencies
-          path: .cipd 
-          
-      - name: Copying .gclient and .gclient_entries
+          path: ./secondary_disk/.cipd 
+
+      - name: Linking .cipd in the proper path and copying .gclient and .gclient_entries
         run: |
-          cp .cipd/.gclient /Users/runner/storage/
-          cp .cipd/.gclient_entries /Users/runner/storage/
-          ln -s $GITHUB_WORKSPACE/.cipd /Users/runner/storage/
+          ln -s $GITHUB_WORKSPACE/./secondary_disk/.cipd ..
+          cp ../.cipd/.gclient ..
+          cp ../.cipd/.gclient_entries ..
+
+      - name: Installing rclone
+        run: curl https://rclone.org/install.sh | sudo bash -s beta
+
+      - name: Updating APT repository
+        run: sudo apt-get update
+
+      - name: Installing Python and OpenJDK
+        run: sudo apt-get install -y python openjdk-8-jdk-headless libncurses5 ccache
+
+      - name: Setting-up Java 8 as default Java provider
+        run: sudo update-java-alternatives --set java-1.8.0-openjdk-amd64
+
+      - name: Installing system dependencies
+        run: |
+          sudo bash install-build-deps.sh --no-chromeos-fonts
+          build/linux/sysroot_scripts/install-sysroot.py --arch=i386
+          build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
 
       - name: Creating output folder
-        run: mkdir -p out/android_arm
-      
+        run: mkdir -p secondary_disk/out/android_${{ matrix.platform }}
+
       - name: Generating one-time APK signature key
-        run: keytool -genkey -v -keystore /Users/runner/storage/src/keystore.jks -alias dev -keyalg RSA -keysize 2048 -validity 10000 -storepass public_password -keypass public_password -dname "cn=Kiwi Browser (unverified), ou=Actions, o=Kiwi Browser, c=GitHub"
+        run: keytool -genkey -v -keystore keystore.jks -alias dev -keyalg RSA -keysize 2048 -validity 10000 -storepass public_password -keypass public_password -dname "cn=Kiwi Browser (unverified), ou=Actions, o=Kiwi Browser, c=GitHub"
 
       - name: Copying args.gn to target folder
-        run: cp /Users/runner/storage/src/.build/android_arm/args.gn out/android_arm/
+        run: cat .build/android_arm/args.gn | sed "s#target_cpu = \"arm\"#target_cpu = \"${{ matrix.platform }}\"#" > secondary_disk/out/android_${{ matrix.platform }}/args.gn
 
       - name: Downloading depot_tools
+        working-directory: ./secondary_disk
         run: git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
-        
+
       - name: Adding depot_tools to path
-        run: echo "::add-path::$GITHUB_WORKSPACE/depot_tools"
+        run: echo "::add-path::$GITHUB_WORKSPACE/secondary_disk/depot_tools"
+
+      - name: Setting environment variables
+        run: |
+          echo "::set-env name=CC::ccache clang -Qunused-arguments"
+          echo "::set-env name=CXX::ccache clang++ -Qunused-arguments"
+
+      - name: Checking available disk-space
+        run: df -h
+
+      - name: Creating rclone config
+        run: |
+          mkdir -p $HOME/.config/rclone/
+          echo '[cache]' > $HOME/.config/rclone/rclone.conf
+          echo 'type = s3' >> $HOME/.config/rclone/rclone.conf
+          echo 'provider = Wasabi' >> $HOME/.config/rclone/rclone.conf
+          echo 'env_auth = false' >> $HOME/.config/rclone/rclone.conf
+          echo 'endpoint = s3.wasabisys.com' >> $HOME/.config/rclone/rclone.conf
+          echo 'acl = public-read' >> $HOME/.config/rclone/rclone.conf
+
+      - name: Creating cache folder on /dev/disk/azure/resource-part1 (SSD)
+        run: |
+          sudo mkdir -p /mnt/cache
+          sudo chown -R runner:docker /mnt/cache
+          
+      - name: Creating symlink in $HOME/cache pointing to cache on /dev/disk/azure/resource-part1
+        run: ln -s /mnt/cache $HOME/
+
+      - name: Downloading binary objects cache to $HOME/cache
+        run: rclone copy --fast-list --transfers=16 cache:kiwibrowser-ccache-${{ matrix.platform }} $HOME/cache
+
+      - name: Checking available disk-space after downloading cache
+        run: df -h
+        
+      - name: Calculating cache size
+        run: du -csh $HOME/cache
+
+      - name: Creating ccache configuration
+        run: |
+          mkdir -p $HOME/.ccache/
+          echo 'compiler_check = none' >> $HOME/.ccache/ccache.conf
+          echo "stats = false" >> $HOME/.ccache/ccache.conf
+          echo 'max_size = 20G' >> $HOME/.ccache/ccache.conf
+          echo "base_dir = $HOME" >> $HOME/.ccache/ccache.conf
+          echo "cache_dir = $HOME/cache" >> $HOME/.ccache/ccache.conf
+          echo "hash_dir = false" >> $HOME/.ccache/ccache.conf
 
       - name: Running gclient runhooks
-        working-directory: /Users/runner/storage/src
         run: gclient runhooks
 
-      - name: Removing files
-        run: |
-          rm -rf /Users/runner/storage/src/third_party/llvm-build/Release+Asserts/bin/llvm-ar
-#          mkdir -p /Users/runner/storage/src/third_party/llvm-build/Release+Asserts
-
-      - name: Downloading clang
-        working-directory: /Users/runner/storage/src
-        run: |
-          wget https://storage.googleapis.com/chromium-browser-clang/Mac/clang-357692-1.tgz
-          tar -C /Users/runner/storage/src/third_party/llvm-build/Release+Asserts/ -xzf clang-357692-1.tgz
-      
-      - name: Listing files
-        run: ls -la /Users/runner/storage/src/third_party/llvm-build/
-
-      - name: Listing files
-        run: ls -la /Users/runner/storage/src/third_party/llvm-build/Release+Asserts/bin
-              
       - name: Generating build files
-        working-directory: /Users/runner/storage/src
-        run: gn gen $GITHUB_WORKSPACE/out/android_arm
-      
-      - name: Gathering pre-compiled objects from cache
-        uses: actions/cache@v1
-        with:
-          path: out/android_arm
-          key: ${{ runner.os }}-android_arm-obj-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-android_arm-obj-
+        run: gn gen ./secondary_disk/out/android_${{ matrix.platform }}
 
-      - name: Compiling source-code
-        working-directory: /Users/runner/storage/src
-        run: ninja -C $GITHUB_WORKSPACE/out/android_arm chrome_public_apk
+      - name: Checking available disk-space before build cache
+        run: df -h
 
-      - name: Deleting args.gn to not have it in cache
-        run: rm -rvf out/android_arm/args.gn
+      - name: Creating rclone config to upload the cache
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
+        run: |
+          echo '[sync]' > $HOME/.config/rclone/rclone.conf
+          echo 'type = s3' >> $HOME/.config/rclone/rclone.conf
+          echo 'provider = Wasabi' >> $HOME/.config/rclone/rclone.conf
+          echo 'env_auth = true' >> $HOME/.config/rclone/rclone.conf
+          echo 'endpoint = s3.wasabisys.com' >> $HOME/.config/rclone/rclone.conf
+          echo 'acl = public-read' >> $HOME/.config/rclone/rclone.conf
+
+      # We compile component by component as 6 hours is not enough for the initial build
+      # so we can snapshot between each component and continue further from the snapshot
+      - name: Compiling source-code (base)
+        run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} base
+
+      - name: Uploading binary objects to cache
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.WASABI_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
+        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
+
+      - name: Compiling source-code (chrome_java)
+        run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome_java
+
+      - name: Uploading binary objects to cache
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.WASABI_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
+        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
+
+      - name: Compiling source-code (components/version_info)
+        run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} components/version_info
+
+      - name: Uploading binary objects to cache
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.WASABI_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
+        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
+
+      - name: Compiling source-code (chrome/browser)
+        run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome/browser
+
+      - name: Uploading binary objects to cache
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.WASABI_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
+        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
+
+      - name: Compiling source-code (chrome/common)
+        run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome/common
+
+      - name: Uploading binary objects to cache
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.WASABI_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
+        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
+
+      - name: Compiling source-code (chrome/gpu)
+        run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome/gpu
+
+      - name: Uploading binary objects to cache
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.WASABI_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
+        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
+
+      - name: Compiling source-code (chrome/renderer)
+        run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome/renderer
+
+      - name: Uploading binary objects to cache
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.WASABI_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
+        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
+
+      - name: Compiling source-code (extensions)
+        run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} extensions
+
+      - name: Uploading binary objects to cache
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.WASABI_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
+        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
+
+      - name: Compiling source-code (services)
+        run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} services
+
+      - name: Uploading binary objects to cache
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.WASABI_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
+        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
+
+      - name: Compiling source-code (v8)
+        run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} v8
+
+      - name: Uploading binary objects to cache
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.WASABI_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
+        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
+
+      - name: Checking available disk-space
+        run: df -h
+
+      - name: Reclaiming disk space
+        run: sudo rm -rf /mnt/cache/*
+
+      - name: Checking available disk-space
+        run: df -h
+
+      - name: Checking available memory
+        run: free -m
+
+      - name: Listing running processes
+        run: ps auxww
+
+      - name: Compiling source-code (final stage)
+        run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome_public_apk
 
       - name: Uploading APK
         uses: actions/upload-artifact@v1
         with:
-          name: apks
-          path: out/android_arm/apks/
+          name: apk-${{ matrix.platform }}
+          path: ./secondary_disk/out/android_${{ matrix.platform }}/apks/
