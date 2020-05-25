@@ -89,7 +89,7 @@ def FetchVersionInfo(directory=None, filter=None, out_file=None, version_macro=N
   from some appropriate revision control system.
   """
   if out_file == 'src/build/util/LASTCHANGE':
-    version_info = VersionInfo('8920e690dd011895672947112477d10d5c8afb09', '8920e690dd011895672947112477d10d5c8afb09-refs/branch-heads/3497@{#948}')
+    version_info = VersionInfo('a7c1b21614f6b5763bd597ab8fefd8678c073df9', 'a7c1b21614f6b5763bd597ab8fefd8678c073df9-refs/heads/master@{#764932}')
   elif version_macro is not None and version_macro == 'GPU_LISTS_VERSION':
     version_info = VersionInfo('6f4691ebdde8d27536a757ac13fd972e3b265ce4', '6f4691ebdde8d27536a757ac13fd972e3b265ce4-refs/branch-heads/3497@{#948}')
   elif version_macro is not None and version_macro == 'SKIA_COMMIT_HASH':
