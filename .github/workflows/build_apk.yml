@@ -14,10 +14,7 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-
-  # This workflow contains a single job called "build"
   build:
-
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -320,3 +317,80 @@ jobs:
         with:
           name: apk-${{ matrix.platform }}
           path: ./secondary_disk/out/android_${{ matrix.platform }}/apks/
+
+  sign_and_upload:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Creating release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: true
+          prerelease: false
+          body: |
+            This release was automatically generated from GitHub ${{ github.ref }}
+
+      - name: Downloading artifact (arm)
+        uses: actions/download-artifact@v1
+        with:
+          name: apk-arm
+
+      - name: Uploading release asset (arm)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./apk-arm/ChromePublic.apk
+          asset_name: Kiwi-${{ github.ref }}-arm.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Downloading artifact (arm64)
+        uses: actions/download-artifact@v1
+        with:
+          name: apk-arm64
+
+      - name: Uploading release asset (arm64)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./apk-arm64/ChromePublic.apk
+          asset_name: Kiwi-${{ github.ref }}-arm64.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Downloading artifact (x86)
+        uses: actions/download-artifact@v1
+        with:
+          name: apk-x86
+
+      - name: Uploading release asset (x86)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./apk-x86/ChromePublic.apk
+          asset_name: Kiwi-${{ github.ref }}-x86.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Downloading artifact (x64)
+        uses: actions/download-artifact@v1
+        with:
+          name: apk-x64
+
+      - name: Uploading release asset (x64)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./apk-x64/ChromePublic.apk
+          asset_name: Kiwi-${{ github.ref }}-x64.apk
+          asset_content_type: application/vnd.android.package-archive
