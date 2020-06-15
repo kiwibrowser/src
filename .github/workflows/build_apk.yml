@@ -14,10 +14,7 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-
-  # This workflow contains a single job called "build"
   build:
-
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -103,7 +100,26 @@ jobs:
         run: keytool -genkey -v -keystore keystore.jks -alias dev -keyalg RSA -keysize 2048 -validity 10000 -storepass public_password -keypass public_password -dname "cn=Kiwi Browser (unverified), ou=Actions, o=Kiwi Browser, c=GitHub"
 
       - name: Copying args.gn to target folder
-        run: cat .build/android_arm/args.gn | sed "s#target_cpu = \"arm\"#target_cpu = \"${{ matrix.platform }}\"#" > secondary_disk/out/android_${{ matrix.platform }}/args.gn
+        run: cat .build/android_arm/args.gn | sed "s#target_cpu = \"arm\"#target_cpu = \"${{ matrix.platform }}\"#" | sed "s#android_default_version_name = \"Git\"#android_default_version_name = \"Git$(date '+%y%m%d')\"#" > secondary_disk/out/android_${{ matrix.platform }}/args.gn
+
+      - name: Modifying args.gn (arm)
+        if: matrix.platform == 'arm'
+        run: sed -i "s#android_default_version_code = \"1\"#android_default_version_code = \"$(date '+%y%m%d')1\"#" secondary_disk/out/android_${{ matrix.platform }}/args.gn
+
+      - name: Modifying args.gn (arm64)
+        if: matrix.platform == 'arm64'
+        run: sed -i "s#android_default_version_code = \"1\"#android_default_version_code = \"$(date '+%y%m%d')2\"#" secondary_disk/out/android_${{ matrix.platform }}/args.gn
+
+      - name: Modifying args.gn (x86)
+        if: matrix.platform == 'x86'
+        run: sed -i "s#android_default_version_code = \"1\"#android_default_version_code = \"$(date '+%y%m%d')3\"#" secondary_disk/out/android_${{ matrix.platform }}/args.gn
+
+      - name: Modifying args.gn (x64)
+        if: matrix.platform == 'x64'
+        run: sed -i "s#android_default_version_code = \"1\"#android_default_version_code = \"$(date '+%y%m%d')4\"#" secondary_disk/out/android_${{ matrix.platform }}/args.gn
+
+      - name: Displaying args.gn
+        run: cat secondary_disk/out/android_${{ matrix.platform }}/args.gn
 
       - name: Downloading depot_tools
         working-directory: ./secondary_disk
@@ -301,3 +317,81 @@ jobs:
         with:
           name: apk-${{ matrix.platform }}
           path: ./secondary_disk/out/android_${{ matrix.platform }}/apks/
+
+  sign_and_upload:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Creating release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.run_id }}
+          release_name: Release ${{ github.run_id }}
+          draft: false
+          prerelease: true
+          body: |
+            This release was automatically generated from GitHub ${{ github.ref }} in Workflow ID ${{ github.run_id }} and is signed using a random development key (upgrades / updates are not possible).
+
+      - name: Downloading artifact (arm)
+        uses: actions/download-artifact@v1
+        with:
+          name: apk-arm
+
+      - name: Uploading release asset (arm)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./apk-arm/ChromePublic.apk
+          asset_name: Kiwi-${{ github.run_id }}-arm.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Downloading artifact (arm64)
+        uses: actions/download-artifact@v1
+        with:
+          name: apk-arm64
+
+      - name: Uploading release asset (arm64)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./apk-arm64/ChromePublic.apk
+          asset_name: Kiwi-${{ github.run_id }}-arm64.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Downloading artifact (x86)
+        uses: actions/download-artifact@v1
+        with:
+          name: apk-x86
+
+      - name: Uploading release asset (x86)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./apk-x86/ChromePublic.apk
+          asset_name: Kiwi-${{ github.run_id }}-x86.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Downloading artifact (x64)
+        uses: actions/download-artifact@v1
+        with:
+          name: apk-x64
+
+      - name: Uploading release asset (x64)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./apk-x64/ChromePublic.apk
+          asset_name: Kiwi-${{ github.run_id }}-x64.apk
+          asset_content_type: application/vnd.android.package-archive
