@@ -191,10 +191,16 @@ jobs:
           echo 'endpoint = s3.wasabisys.com' >> $HOME/.config/rclone/rclone.conf
           echo 'acl = public-read' >> $HOME/.config/rclone/rclone.conf
 
+      - name: Checking available disk-space before build
+        run: df -h
+
       # We compile component by component as 6 hours is not enough for the initial build
       # so we can snapshot between each component and continue further from the snapshot
       - name: Compiling source-code (base)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} base
+
+      - name: Checking available disk-space before build
+        run: df -h
 
       - name: Uploading binary objects to cache
         if: ${{ github.repository_owner == 'kiwibrowser' }}
@@ -206,6 +212,9 @@ jobs:
       - name: Compiling source-code (chrome_java)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome_java
 
+      - name: Checking available disk-space before build
+        run: df -h
+
       - name: Uploading binary objects to cache
         if: ${{ github.repository_owner == 'kiwibrowser' }}
         env:
@@ -215,6 +224,9 @@ jobs:
 
       - name: Compiling source-code (components/version_info)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} components/version_info
+
+      - name: Checking available disk-space before build
+        run: df -h
 
       - name: Uploading binary objects to cache
         if: ${{ github.repository_owner == 'kiwibrowser' }}
@@ -226,6 +238,9 @@ jobs:
       - name: Compiling source-code (chrome/browser)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome/browser
 
+      - name: Checking available disk-space before build
+        run: df -h
+
       - name: Uploading binary objects to cache
         if: ${{ github.repository_owner == 'kiwibrowser' }}
         env:
@@ -235,6 +250,9 @@ jobs:
 
       - name: Compiling source-code (chrome/common)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome/common
+
+      - name: Checking available disk-space before build
+        run: df -h
 
       - name: Uploading binary objects to cache
         if: ${{ github.repository_owner == 'kiwibrowser' }}
@@ -246,6 +264,9 @@ jobs:
       - name: Compiling source-code (chrome/gpu)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome/gpu
 
+      - name: Checking available disk-space before build
+        run: df -h
+
       - name: Uploading binary objects to cache
         if: ${{ github.repository_owner == 'kiwibrowser' }}
         env:
@@ -256,6 +277,9 @@ jobs:
       - name: Compiling source-code (chrome/renderer)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome/renderer
 
+      - name: Checking available disk-space before build
+        run: df -h
+
       - name: Uploading binary objects to cache
         if: ${{ github.repository_owner == 'kiwibrowser' }}
         env:
@@ -265,6 +289,9 @@ jobs:
 
       - name: Compiling source-code (extensions)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} extensions
+
+      - name: Checking available disk-space before build
+        run: df -h
 
       - name: Uploading binary objects to cache
         if: ${{ github.repository_owner == 'kiwibrowser' }}
@@ -285,6 +312,9 @@ jobs:
 
       - name: Compiling source-code (v8)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} v8
+
+      - name: Checking available disk-space before build
+        run: df -h
 
       - name: Uploading binary objects to cache
         if: ${{ github.repository_owner == 'kiwibrowser' }}
