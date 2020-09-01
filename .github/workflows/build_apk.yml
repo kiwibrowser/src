@@ -54,11 +54,18 @@ jobs:
         run: |
           sudo mkdir -p /extended_data
           sudo chown -R runner:docker /extended_data
-          
-      - name: Creating symlink on /dev/disk/azure/root-part1 pointing to /dev/disk/azure/resource-part1
+      
+      # If you want to use only the SSD, you can use:
+      - name: On SSD - Creating symlink on /dev/disk/azure/root-part1 pointing to /dev/disk/azure/resource-part1
         run: |
           sudo ln -s /extended_data /mnt/secondary_disk
           sudo ln -s /mnt/secondary_disk $GITHUB_WORKSPACE/
+
+      # or alternatively, to work on the main partition
+      # - name: On HDD - Creating symlink on /dev/disk/azure/root-part1 pointing to /dev/disk/azure/resource-part1
+      #  run: |
+      #    sudo ln -s /extended_data /mnt/secondary_disk
+      #    sudo ln -s /mnt/secondary_disk $GITHUB_WORKSPACE/
 
       # We cannot checkout outside of $GITHUB_WORKSPACE, but we want to checkout to the SSD
       # so we have a symbolic link $GITHUB_WORKSPACE/secondary_disk/ pointing to the SSD
