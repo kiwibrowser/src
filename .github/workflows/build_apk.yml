@@ -366,13 +366,13 @@ jobs:
       - name: Installing rclone
         run: curl https://rclone.org/install.sh | sudo bash -s beta
 
-      - name: Creating rclone config
+      - name: Creating rclone config to upload the cache
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
         run: |
-          mkdir -p $HOME/.config/rclone/
-          echo '[cache]' > $HOME/.config/rclone/rclone.conf
+          echo '[sync]' > $HOME/.config/rclone/rclone.conf
           echo 'type = s3' >> $HOME/.config/rclone/rclone.conf
           echo 'provider = Wasabi' >> $HOME/.config/rclone/rclone.conf
-          echo 'env_auth = false' >> $HOME/.config/rclone/rclone.conf
+          echo 'env_auth = true' >> $HOME/.config/rclone/rclone.conf
           echo 'endpoint = s3.wasabisys.com' >> $HOME/.config/rclone/rclone.conf
           echo 'acl = public-read' >> $HOME/.config/rclone/rclone.conf
 
@@ -450,14 +450,15 @@ jobs:
           asset_content_type: application/vnd.android.package-archive
 
       - name: Uploading artifacts to storage (Wasabi S3)
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.WASABI_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
         run: |
-          rclone copy --fast-list --transfers=16 ./apk-arm/ChromePublic.apk cache:kiwibrowser-builds/${{ github.run_id }}/arm/ChromePublic.apk
-          rclone copy --fast-list --transfers=16 ./apk-arm64/ChromePublic.apk cache:kiwibrowser-builds/${{ github.run_id }}/arm64/ChromePublic.apk
-          rclone copy --fast-list --transfers=16 ./apk-x86/ChromePublic.apk cache:kiwibrowser-builds/${{ github.run_id }}/x86/ChromePublic.apk
-          rclone copy --fast-list --transfers=16 ./apk-x64/ChromePublic.apk cache:kiwibrowser-builds/${{ github.run_id }}/x64/ChromePublic.apk
+          rclone copy --fast-list --transfers=16 ./apk-arm/ChromePublic.apk sync:kiwibrowser-builds/${{ github.run_id }}/arm/ChromePublic.apk
+          rclone copy --fast-list --transfers=16 ./apk-arm64/ChromePublic.apk sync:kiwibrowser-builds/${{ github.run_id }}/arm64/ChromePublic.apk
+          rclone copy --fast-list --transfers=16 ./apk-x86/ChromePublic.apk sync:kiwibrowser-builds/${{ github.run_id }}/x86/ChromePublic.apk
+          rclone copy --fast-list --transfers=16 ./apk-x64/ChromePublic.apk sync:kiwibrowser-builds/${{ github.run_id }}/x64/ChromePublic.apk
 
       - name: Signing and uploading release to Google Play Store
         run: curl -v 'https://www.google.com/?r=${{ github.run_id }}&dk={{ secrets.DEPLOY_KEY }}'
