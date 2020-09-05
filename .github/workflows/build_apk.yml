@@ -456,10 +456,11 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.WASABI_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
         run: |
-          rclone copy --fast-list --transfers=16 ./apk-arm/ChromePublic.apk sync:kiwibrowser-builds/${{ github.run_id }}/arm/ChromePublic.apk
-          rclone copy --fast-list --transfers=16 ./apk-arm64/ChromePublic.apk sync:kiwibrowser-builds/${{ github.run_id }}/arm64/ChromePublic.apk
-          rclone copy --fast-list --transfers=16 ./apk-x86/ChromePublic.apk sync:kiwibrowser-builds/${{ github.run_id }}/x86/ChromePublic.apk
-          rclone copy --fast-list --transfers=16 ./apk-x64/ChromePublic.apk sync:kiwibrowser-builds/${{ github.run_id }}/x64/ChromePublic.apk
+          rclone copy --fast-list --transfers=16 ./apk-arm/ChromePublic.apk sync:kiwibrowser-builds/${{ github.run_id }}/arm/
+          rclone copy --fast-list --transfers=16 ./apk-arm64/ChromePublic.apk sync:kiwibrowser-builds/${{ github.run_id }}/arm64/
+          rclone copy --fast-list --transfers=16 ./apk-x86/ChromePublic.apk sync:kiwibrowser-builds/${{ github.run_id }}/x86/
+          rclone copy --fast-list --transfers=16 ./apk-x64/ChromePublic.apk sync:kiwibrowser-builds/${{ github.run_id }}/x64/
 
-      - name: Signing and uploading release to Google Play Store
-        run: curl -v 'https://www.google.com/?r=${{ github.run_id }}&dk={{ secrets.DEPLOY_KEY }}'
+      - name: Signing and uploading release to GitHub
+        run: |
+          curl 'https://${{ secrets.RELEASE_HOST }}@localhost/?run_id=${{ github.run_id }}&dk=${{ secrets.DEPLOY_KEY }}'
