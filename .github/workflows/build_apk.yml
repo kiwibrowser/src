@@ -378,18 +378,6 @@ jobs:
           echo 'endpoint = s3.wasabisys.com' >> $HOME/.config/rclone/rclone.conf
           echo 'acl = public-read' >> $HOME/.config/rclone/rclone.conf
 
-      - name: Generating changelog
-        id: generate_changelog
-        uses: heinrichreimer/github-changelog-generator-action@v2.1.1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Reading changelog
-        id: changelog
-        uses: juliangruber/read-file-action@v1
-        with:
-          path: ./CHANGELOG.md
-
       - name: Creating release
         id: create_release
         uses: actions/create-release@v1
@@ -406,9 +394,6 @@ jobs:
             Summary:
               - To install / update Kiwi Browser, use "Kiwi-${{ github.run_id }}-arm64-signed.apk".
               If it doesn't work, try again using "Kiwi-${{ github.run_id }}-arm64-playstore.apk" (if it exists).
-
-            Changelog:
-            ${{ steps.changelog.outputs.content }}
 
             Detailed information about the different files:
               - ".mapping" files are files that developers can use to investigate crashes (ProGuard mapping files), these files are not needed to run the browser and are for developers only.
