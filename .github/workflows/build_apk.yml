@@ -364,6 +364,7 @@ jobs:
 
     steps:
       - name: Installing rclone
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
         run: curl https://rclone.org/install.sh | sudo bash -s beta
 
       - name: Creating rclone config to upload the APK files
@@ -488,6 +489,7 @@ jobs:
           rclone copy --fast-list --transfers=16 sync:kiwibrowser-builds/${{ github.run_id }}/x64/ ./apk-x64
 
       - name: Uploading release asset (arm-signed)
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -498,6 +500,7 @@ jobs:
           asset_content_type: application/vnd.android.package-archive
 
       - name: Uploading release asset (arm64-signed)
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -508,6 +511,7 @@ jobs:
           asset_content_type: application/vnd.android.package-archive
 
       - name: Uploading release asset (x86-signed)
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -518,6 +522,7 @@ jobs:
           asset_content_type: application/vnd.android.package-archive
 
       - name: Uploading release asset (x64-signed)
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -526,3 +531,7 @@ jobs:
           asset_path: ./apk-x64/ChromePublic-DevSigned.apk
           asset_name: Kiwi-${{ github.run_id }}-x64-signed.apk
           asset_content_type: application/vnd.android.package-archive
+          
+      - name: Send announcement on Discord
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
+        run: curl -H "Content-Type: application/json" -X POST -d "{\"username\": \"Kiwi Builder\" , \"content\": \"A new build of Kiwi Browser is available: https://github.com/kiwibrowser/src/releases/tag/${{ github.run_id }}\"}" ${{ secrets.DISCORD_WEBHOOK }}
