@@ -388,12 +388,37 @@ jobs:
           draft: false
           prerelease: true
           body: |
-            This release was automatically generated from GitHub ${{ github.ref }} in run ID ${{ github.run_id }} and is signed using a random development key (upgrades / updates are not possible).
+            This release was automatically generated from GitHub ${{ github.ref }} in run ID ${{ github.run_id }}.
+            arm64 is compatible with most devices and offers the best performance.
+            It is recommended to use "-signed.apk" releases to get the latest versions.
+
+            "-unsigned.apk" builds are signed using a random development key (upgrades / updates are not possible).
+
+            "-signed.apk" builds are signed with the developer key (same as XDA-Developers, Discord and GitHub) and can be updated without data loss.
+            All builds are signed.
+            
+            "-playstore.apk" builds are signed by Google, they can be installed on top of Play Store releases only.
+            Not all builds are signed by Google.
 
       - name: Downloading artifact (arm)
         uses: actions/download-artifact@v1
         with:
           name: apk-arm
+
+      - name: Downloading artifact (arm64)
+        uses: actions/download-artifact@v1
+        with:
+          name: apk-arm64
+
+      - name: Downloading artifact (x86)
+        uses: actions/download-artifact@v1
+        with:
+          name: apk-x86
+
+      - name: Downloading artifact (x64)
+        uses: actions/download-artifact@v1
+        with:
+          name: apk-x64
 
       - name: Uploading release asset (arm)
         uses: actions/upload-release-asset@v1
@@ -402,13 +427,8 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./apk-arm/ChromePublic.apk
-          asset_name: Kiwi-${{ github.run_id }}-arm.apk
+          asset_name: Kiwi-${{ github.run_id }}-arm-unsigned.apk
           asset_content_type: application/vnd.android.package-archive
-
-      - name: Downloading artifact (arm64)
-        uses: actions/download-artifact@v1
-        with:
-          name: apk-arm64
 
       - name: Uploading release asset (arm64)
         uses: actions/upload-release-asset@v1
@@ -417,13 +437,8 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./apk-arm64/ChromePublic.apk
-          asset_name: Kiwi-${{ github.run_id }}-arm64.apk
+          asset_name: Kiwi-${{ github.run_id }}-arm64-unsigned.apk
           asset_content_type: application/vnd.android.package-archive
-
-      - name: Downloading artifact (x86)
-        uses: actions/download-artifact@v1
-        with:
-          name: apk-x86
 
       - name: Uploading release asset (x86)
         uses: actions/upload-release-asset@v1
@@ -432,13 +447,8 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./apk-x86/ChromePublic.apk
-          asset_name: Kiwi-${{ github.run_id }}-x86.apk
+          asset_name: Kiwi-${{ github.run_id }}-x86-unsigned.apk
           asset_content_type: application/vnd.android.package-archive
-
-      - name: Downloading artifact (x64)
-        uses: actions/download-artifact@v1
-        with:
-          name: apk-x64
 
       - name: Uploading release asset (x64)
         uses: actions/upload-release-asset@v1
@@ -447,7 +457,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./apk-x64/ChromePublic.apk
-          asset_name: Kiwi-${{ github.run_id }}-x64.apk
+          asset_name: Kiwi-${{ github.run_id }}-x64-unsigned.apk
           asset_content_type: application/vnd.android.package-archive
 
       - name: Uploading artifacts to storage (Wasabi S3)
@@ -462,5 +472,57 @@ jobs:
           rclone copy --fast-list --transfers=16 ./apk-x64/ChromePublic.apk sync:kiwibrowser-builds/${{ github.run_id }}/x64/
 
       - name: Signing and uploading release to GitHub
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
         run: |
-          curl 'https://${{ secrets.RELEASE_HOST }}@localhost/?run_id=${{ github.run_id }}&dk=${{ secrets.DEPLOY_KEY }}'
+          curl 'https://${{ secrets.RELEASE_HOST }}/?run_id=${{ github.run_id }}&dk=${{ secrets.DEPLOY_KEY }}'
+
+      - name: Downloading artifacts from storage (Wasabi S3)
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.WASABI_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
+        run: |
+          rclone copy --fast-list --transfers=16 sync:kiwibrowser-builds/${{ github.run_id }}/arm/ ./apk-arm 
+          rclone copy --fast-list --transfers=16 sync:kiwibrowser-builds/${{ github.run_id }}/arm64/ ./apk-arm64
+          rclone copy --fast-list --transfers=16 sync:kiwibrowser-builds/${{ github.run_id }}/x86/ ./apk-x86
+          rclone copy --fast-list --transfers=16 sync:kiwibrowser-builds/${{ github.run_id }}/x64/ ./apk-x64
+
+      - name: Uploading release asset (arm-signed)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./apk-arm/ChromePublic-DevSigned.apk
+          asset_name: Kiwi-${{ github.run_id }}-arm-signed.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Uploading release asset (arm64-signed)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./apk-arm64/ChromePublic-DevSigned.apk
+          asset_name: Kiwi-${{ github.run_id }}-arm64-signed.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Uploading release asset (x86-signed)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./apk-x86/ChromePublic-DevSigned.apk
+          asset_name: Kiwi-${{ github.run_id }}-x86-signed.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Uploading release asset (x64-signed)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./apk-x64/ChromePublic-DevSigned.apk
+          asset_name: Kiwi-${{ github.run_id }}-x64-signed.apk
+          asset_content_type: application/vnd.android.package-archive
