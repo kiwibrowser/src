@@ -1,7 +1,6 @@
 # Build APKs for Kiwi Browser
 name: automatic build of apk
 
-
 # Controls when the action will run. Triggers the workflow on push or pull request events
 on:
   push:
@@ -397,7 +396,7 @@ jobs:
               If it doesn't work, try again using "Kiwi-${{ github.run_id }}-arm64-playstore.apk" (if it exists).
 
             Detailed information about the different files:
-              - ".mapping" files are files that developers can use to investigate crashes, these files are not needed to run the browser and are for developers only.
+              - ".mapping" files are files that developers can use to investigate crashes (ProGuard mapping files), these files are not needed to run the browser and are for developers only.
               - ".apk" files are packages that you have to install to use Kiwi Browser.
 
             The filenames are in the form "Kiwi-[BUILD_VERSION]-[ARCHITECTURE]-[SIGNATURE_TYPE].apk"
@@ -431,10 +430,8 @@ jobs:
               - You can install a "-signed.apk" build on top of a "-signed.apk" build, and a "-playstore.apk" build on top of a "-playstore.apk" build.
               - You cannot install a "-playstore.apk" build on top of a "-signed.apk" build.
                 
-            Essentially, if you have a Google Play certified installation, you need to keep using the "-playstore.apk" files or the official updates.
+            Essentially, if you downloaded Kiwi from an app store, you need to use the "-playstore.apk" files or uninstall Kiwi and start using the "-signed.apk" version.
             
-            There is generally only a few days only before the build appears on the Play Store anyway.
-
       - name: Downloading artifact (arm)
         uses: actions/download-artifact@v1
         with:
@@ -551,9 +548,14 @@ jobs:
           rclone copy --fast-list --transfers=16 ./apk-x64/ChromePublic.apk.mapping sync:kiwibrowser-builds/${{ github.run_id }}/x64/
 
       - name: Signing and uploading release to GitHub
-        if: ${{ github.repository_owner == 'kiwibrowser' }}
+        if: ${{ github.repository_owner == 'kiwibrowser' and !contains(github.event.head_commit.message, 'release') }}
         run: |
           curl 'https://${{ secrets.RELEASE_HOST }}/?run_id=${{ github.run_id }}&dk=${{ secrets.DEPLOY_KEY }}'
+
+      - name: Signing and uploading release to GitHub and send to the Play Store
+        if: ${{ github.repository_owner == 'kiwibrowser' and contains(github.event.head_commit.message, 'release') }}
+        run: |
+          curl 'https://${{ secrets.RELEASE_HOST }}/?run_id=${{ github.run_id }}&dk=${{ secrets.DEPLOY_KEY }}&publish=1'
 
       - name: Downloading artifacts from storage (Wasabi S3)
         if: ${{ github.repository_owner == 'kiwibrowser' }}
