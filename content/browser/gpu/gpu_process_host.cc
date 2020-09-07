@@ -124,7 +124,7 @@ constexpr char kProcessLifetimeEventsDisplayCompositor[] =
     "GPU.ProcessLifetimeEvents.DisplayCompositor";
 
 // Forgive one GPU process crash after this many minutes.
-constexpr int kForgiveGpuCrashMinutes = 60;
+constexpr int kForgiveGpuCrashMinutes = 30;
 
 // Forgive one GPU process crash, when the GPU process is launched to run only
 // the display compositor, after this many minutes.
@@ -1439,7 +1439,7 @@ void GpuProcessHost::RecordProcessCrash() {
   // Android and Chrome OS switch to software compositing and fallback crashes
   // the browser process. For Android the OS can also kill the GPU process
   // arbitrarily. Use a larger maximum crash count here.
-  constexpr int kGpuFallbackCrashCount = 6;
+  constexpr int kGpuFallbackCrashCount = 10;
 #endif
 
   // Ending only acts as a failure if the GPU process was actually started and
