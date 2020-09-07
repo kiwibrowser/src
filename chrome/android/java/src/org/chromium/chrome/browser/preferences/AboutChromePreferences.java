@@ -84,7 +84,7 @@ public class AboutChromePreferences extends PreferenceFragment {
         }
         CharSequence updateTimeString = DateUtils.getRelativeTimeSpanString(
                 info.lastUpdateTime, System.currentTimeMillis(), 0);
-        return context.getString(R.string.version_with_update_time, info.versionName
+        return context.getString(R.string.version_with_update_time, info.versionName,
                 updateTimeString);
     }
 
