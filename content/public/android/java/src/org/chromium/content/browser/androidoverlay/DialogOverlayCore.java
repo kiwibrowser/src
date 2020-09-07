@@ -7,6 +7,7 @@ package org.chromium.content.browser.androidoverlay;
 import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.Context;
+import android.os.Build;
 import android.os.IBinder;
 import android.os.Looper;
 import android.view.Gravity;
@@ -163,9 +164,25 @@ class DialogOverlayCore {
 
         @Override
         public void surfaceDestroyed(SurfaceHolder holder) {
-            assertProperThread();
-
             if (mDialog == null || mHost == null) return;
+
+            // This method should be called on the overlay thread, but is sometimes called on the
+            // browser UI thread due to framework bugs.  If that happens, we can't really clean up
+            // properly (synchronously), since |mHost| can't be closed properly from the remote side
+            // since we're blocking the UI thread.  To avoid that, we just give up on synchronous
+            // shutdown and hope for the best.
+            //
+            // We only allow it on P, though, since that's the only place it should be observed.
+            if (Build.VERSION.SDK_INT != Build.VERSION_CODES.P) {
+                assertProperThread();
+            } else if (mLooper != Looper.myLooper()) {
+                Log.e(TAG, "surfaceDestroyed called on wrong thread.  Avoiding proper shutdown.");
+                // We still notify the client, so that it can shut down, but we don't wait.  Note
+                // that this can result in calls back into |this| on the overlay thread, including
+                // clearing |mHost| even if it is not null now.
+                mHost.onOverlayDestroyed();
+                return;
+            }
 
             // Notify the host that we've been destroyed, and wait for it to clean up or time out.
             mHost.onOverlayDestroyed();
