@@ -354,8 +354,12 @@ jobs:
 
       - name: Generating native symbols mapping
         run: |
-          components/crash/content/tools/generate_breakpad_symbols.py --build-dir=./secondary_disk/out/lnx64 --symbols-dir=/tmp/extracted_symbols/ --binary=./secondary_disk/out/android_${{ matrix.platform }}/lib.unstripped/libchrome.so --clear --verbose
-          tar -czvf out/android_${{ matrix.platform }}/apks/ChromePublic.native.mapping.tar.gz /tmp/extracted_symbols
+          echo Generating breakpad symbols...
+          python components/crash/content/tools/generate_breakpad_symbols.py --build-dir=./secondary_disk/out/lnx64 --symbols-dir=/tmp/extracted_symbols/ --binary=./secondary_disk/out/android_${{ matrix.platform }}/lib.unstripped/libchrome.so --clear --verbose
+          echo Symbols have been generated.
+          echo Compressing symbols...
+          tar -czvf ./secondary_disk/out/android_${{ matrix.platform }}/apks/ChromePublic.native.mapping.tar.gz /tmp/extracted_symbols
+          echo Compression completed.
 
       - name: Uploading APK
         uses: actions/upload-artifact@v1
