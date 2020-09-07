@@ -234,14 +234,19 @@ then you can run the APK on your phone.
 
 ### Investigating crashes
 
+You need to have the symbols for the version that crashed, the symbols can be generated using:
 ```
 components/crash/content/tools/generate_breakpad_symbols.py --build-dir=out/lnx64 --symbols-dir=/tmp/my_symbols/ --binary=out/android_arm/lib.unstripped/libchrome.so --clear --verbose
 ```
 
-or from a tombstone:
-
+If you have the crash information from logcat:
 ```
-~/chromium/src$ ./third_party/android_ndk/ndk-stack -sym out/android_x86/lib.unstripped -dump /home/raven/tombstone_06
+out/lnx64/microdump_stackwalk -s /tmp/dump.dmp /tmp/my_symbols/
+```
+
+If you have the crash information in a tombstone:
+```
+./third_party/android_ndk/ndk-stack -sym out/android_x86/lib.unstripped -dump tombstone
 ```
 
 ### Remote debugging
