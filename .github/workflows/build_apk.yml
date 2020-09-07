@@ -352,6 +352,11 @@ jobs:
       - name: Compiling source-code (final stage)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome_public_apk
 
+      - name: Generating native symbols mapping
+        run: |
+          components/crash/content/tools/generate_breakpad_symbols.py --build-dir=./secondary_disk/out/lnx64 --symbols-dir=/tmp/extracted_symbols/ --binary=./secondary_disk/out/android_${{ matrix.platform }}/lib.unstripped/libchrome.so --clear --verbose
+          tar -czvf out/android_${{ matrix.platform }}/apks/ChromePublic.native.mapping.tar.gz /tmp/extracted_symbols
+
       - name: Uploading APK
         uses: actions/upload-artifact@v1
         with:
@@ -533,6 +538,46 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./apk-x64/ChromePublic.apk.mapping
           asset_name: Kiwi-${{ github.run_id }}-x64.mapping
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Uploading native mapping file into GitHub release (arm)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./apk-arm/ChromePublic.native.mapping.tar.gz
+          asset_name: Kiwi-${{ github.run_id }}-arm.native.mapping.tar.gz
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Uploading native mapping file into GitHub release (arm64)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./apk-arm64/ChromePublic.native.mapping.tar.gz
+          asset_name: Kiwi-${{ github.run_id }}-arm64.native.mapping.tar.gz
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Uploading native mapping file into GitHub release (x86)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./apk-x86/ChromePublic.native.mapping.tar.gz
+          asset_name: Kiwi-${{ github.run_id }}-x86.native.mapping.tar.gz
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Uploading native mapping file into GitHub release (x64)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./apk-x64/ChromePublic.native.mapping.tar.gz
+          asset_name: Kiwi-${{ github.run_id }}.native.mapping.tar.gz
           asset_content_type: application/vnd.android.package-archive
 
       - name: Uploading artifacts to storage (Wasabi S3)
