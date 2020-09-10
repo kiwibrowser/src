@@ -24,3 +24,56 @@ jobs:
           PROXY_HOST: ${{ secrets.APPSTORE_PROXY_HOST }}
           PROXY_USER: ${{ secrets.APPSTORE_PROXY_USER }}
         run: bash check_for_playstore_releases.sh
+
+      - name: Creating release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.run_id }}
+          release_name: Play Store ${{ github.run_id }}
+          draft: true
+          prerelease: false
+          body: |
+            This release is the same as the development version, except it is signed by Google instead of the developer.
+
+      - name: Uploading release asset (arm-playstore)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./Kiwi-arm-playstore.apk
+          asset_name: Kiwi-${{ github.run_id }}-arm-playstore.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Uploading release asset (arm64-playstore)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./Kiwi-arm64-playstore.apk
+          asset_name: Kiwi-${{ github.run_id }}-arm64-playstore.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Uploading release asset (x86-playstore)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./Kiwi-x86-playstore.apk
+          asset_name: Kiwi-${{ github.run_id }}-x86-playstore.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Uploading release asset (x64-playstore)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./Kiwi-x64-playstore.apk
+          asset_name: Kiwi-${{ github.run_id }}-x64-playstore.apk
+          asset_content_type: application/vnd.android.package-archive
