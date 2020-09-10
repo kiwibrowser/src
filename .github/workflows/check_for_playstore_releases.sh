@@ -34,7 +34,7 @@ do
   download_id=`echo $download | egrep -o "<link rel='shortlink' href='\/\?p=([0-9]+)' \/>" | egrep -o '[0-9]+'`
 
   echo "Downloading target $download_id..."
-  curl -L "https://${APPSTORE_HOST}/${APPSTORE_DOWNLOAD_PATH}$download_id" "${curl_parameters[@]}" -o $download_id.apk
+  curl -C - -L "https://${APPSTORE_HOST}/${APPSTORE_DOWNLOAD_PATH}$download_id" "${curl_parameters[@]}" -o $download_id.apk
 
   signature=`java -jar apksigner.jar verify --print-certs $download_id.apk`
   signature_hash=`java -jar apksigner.jar verify --print-certs $download_id.apk | shasum | cut -f1 -d' '`
