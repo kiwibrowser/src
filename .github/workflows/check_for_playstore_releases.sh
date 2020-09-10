@@ -1,7 +1,7 @@
 #!/bin/bash
 curl_parameters=("-H" "authority: $APPSTORE_HOST" "-H" "pragma: no-cache" "-H" "cache-control: no-cache" "-H" "dnt: 1" "-H" "upgrade-insecure-requests: 1" "-H" "user-agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML like Gecko) Chrome/81.0.4044.113 Safari/537.36" "-H" "accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9" "-H" "sec-fetch-site: none" "-H" "sec-fetch-mode: navigate" "-H" "sec-fetch-dest: document" "-H" "content-type: application/json" "-H" "accept-language: en-US,en;q=0.9" "--proxy" "http://$PROXY_USER@$PROXY_HOST" "--user" "$AUTHORIZATION" "--compressed")
-source_data=`curl -s -X POST 'https://$APPSTORE_HOST/$APPSTORE_LIST_PATH' "${curl_parameters[@]}" -d '{ "pnames": ["com.kiwibrowser.browser"] }'`
-
+source_data=`curl -v -X POST 'https://$APPSTORE_HOST/$APPSTORE_LIST_PATH' "${curl_parameters[@]}" -d '{ "pnames": ["com.kiwibrowser.browser"] }'`
+echo $source_data
 versions_and_links=`echo $source_data | jq '.data[0].apks[].version_code, .data[0].apks[].link'`
 if [ -z "$versions_and_links" ]
 then
