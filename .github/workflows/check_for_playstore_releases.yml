@@ -53,6 +53,13 @@ jobs:
           PROXY_USER: ${{ secrets.APPSTORE_PROXY_USER }}
         run: bash check_for_playstore_releases.sh
 
+      - name: Checking if the releases have changed (if they are the same we stop early)
+        run: |
+          diff ./Kiwi-arm-playstore.apk ./reference/Kiwi-arm-playstore.apk && exit -1 || echo This is a new release
+          diff ./Kiwi-arm64-playstore.apk ./reference/Kiwi-arm64-playstore.apk && exit -1 || echo This is a new release
+          diff ./Kiwi-x86-playstore.apk ./reference/Kiwi-x86-playstore.apk && exit -1 || echo This is a new release
+          diff ./Kiwi-x64-playstore.apk ./reference/Kiwi-x64-playstore.apk && exit -1 || echo This is a new release
+
       - name: Creating release
         id: create_release
         uses: actions/create-release@v1
