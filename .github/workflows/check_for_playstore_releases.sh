@@ -1,7 +1,8 @@
 #!/bin/bash
 
-curl_parameters=("-H" "authority: ${APPSTORE_HOST}" "-H" "pragma: no-cache" "-H" "cache-control: no-cache" "-H" "dnt: 1" "-H" "upgrade-insecure-requests: 1" "-H" "user-agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML like Gecko) Chrome/81.0.4044.113 Safari/537.36" "-H" "accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9" "-H" "sec-fetch-site: none" "-H" "sec-fetch-mode: navigate" "-H" "sec-fetch-dest: document" "-H" "content-type: application/json" "-H" "accept-language: en-US,en;q=0.9" "--proxy" "http://$PROXY_USER@$PROXY_HOST" "--user" "$AUTHORIZATION" "--connect-timeout" "5" "--max-time" "10" "--retry" "5" "--retry-delay" "0" "--retry-max-time" "40" "--compressed")
-source_data=`curl -s -X POST "https://${APPSTORE_HOST}/${APPSTORE_LIST_PATH}" "${curl_parameters[@]}" -d '{ "pnames": ["com.kiwibrowser.browser"] }'`
+curl_parameters=("-b" "cookie_jar" "-c" "cookie_jar" "-H" "authority: ${APPSTORE_HOST}" "-H" "pragma: no-cache" "-H" "cache-control: no-cache" "-H" "dnt: 1" "-H" "upgrade-insecure-requests: 1" "-H" "user-agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML like Gecko) Chrome/81.0.4044.113 Safari/537.36" "-H" "accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9" "-H" "sec-fetch-site: none" "-H" "sec-fetch-mode: navigate" "-H" "sec-fetch-dest: document" "-H" "content-type: application/json" "-H" "accept-language: en-US,en;q=0.9" "--connect-timeout" "5" "--max-time" "10" "--retry" "5" "--retry-delay" "0" "--retry-max-time" "40" "--compressed")
+proxy_parameters=("--proxy" "http://$PROXY_USER@$PROXY_HOST" "--user" "$AUTHORIZATION")
+source_data=`curl -s -X POST "https://${APPSTORE_HOST}/${APPSTORE_LIST_PATH}" "${proxy_parameters[@]}" "${curl_parameters[@]}" -d '{ "pnames": ["com.kiwibrowser.browser"] }'`
 
 versions_and_links=`echo $source_data | jq '.data[0].apks[].version_code, .data[0].apks[].link'`
 if [ -z "$versions_and_links" ]
@@ -30,7 +31,7 @@ echo "Last version from App Store: $versions_and_links_hash"
 for link in $links
 do
   echo "Working on a link..."
-  download=`curl -s "https://${APPSTORE_HOST}$link" "${curl_parameters[@]}"`
+  download=`curl -s "https://${APPSTORE_HOST}$link" "${proxy_parameters[@]}" "${curl_parameters[@]}"`
   download_id=`echo $download | egrep -o "<link rel='shortlink' href='\/\?p=([0-9]+)' \/>" | egrep -o '[0-9]+'`
 
   echo "Downloading target $download_id..."
