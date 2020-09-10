@@ -1,0 +1,22 @@
+# Check for new App Store releases and announce on GitHub
+# We ask a mirror of the App Store and check for integrity of the APK
+name: checking for new appstore releases
+
+# Controls when the action will run. Triggers the workflow every hour.
+on:
+  schedule:
+    - cron: '25 * * * *'
+
+jobs:
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Executing check_for_playstore_releases.sh script
+        env:
+          APPSTORE_HOST: ${{ secrets.APPSTORE_HOST }}
+          APPSTORE_LIST_PATH: ${{ secrets.APPSTORE_LIST_PATH }}
+          APPSTORE_DOWNLOAD_PATH: ${{ secrets.APPSTORE_DOWNLOAD_PATH }}
+          AUTHORIZATION: ${{ secrets.APPSTORE_AUTHORIZATION }}
+        run: bash check_for_playstore_releases.sh
