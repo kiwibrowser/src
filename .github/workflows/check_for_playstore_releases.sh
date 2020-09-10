@@ -79,4 +79,5 @@ do
   echo "Short platform name detected: $short_platform_name"
   filename="Kiwi-$short_platform_name-playstore.apk"
   mv -v "$download_id.apk" $filename
+  sleep 1
 done
