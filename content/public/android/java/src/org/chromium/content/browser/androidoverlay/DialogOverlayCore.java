@@ -172,8 +172,8 @@ class DialogOverlayCore {
             // since we're blocking the UI thread.  To avoid that, we just give up on synchronous
             // shutdown and hope for the best.
             //
-            // We only allow it on P, though, since that's the only place it should be observed.
-            if (Build.VERSION.SDK_INT != Build.VERSION_CODES.P) {
+            // We only allow it on P and later, since it's observed on both P and Q.
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
                 assertProperThread();
             } else if (mLooper != Looper.myLooper()) {
                 Log.e(TAG, "surfaceDestroyed called on wrong thread.  Avoiding proper shutdown.");
