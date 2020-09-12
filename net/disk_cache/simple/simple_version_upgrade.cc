@@ -174,7 +174,7 @@ bool UpgradeSimpleCacheOnDisk(const base::FilePath& path) {
 
   // There should be one upgrade routine here for each incremental upgrade
   // starting at kMinVersionAbleToUpgrade.
-  static_assert(kMinVersionAbleToUpgrade == 5, "upgrade routines don't match");
+  static_assert(kMinVersionAbleToUpgrade == 9, "upgrade routines don't match");
   DCHECK_LE(5U, version_from);
   if (version_from == 5) {
     // Upgrade only the index for V5 -> V6 move.
@@ -194,6 +194,10 @@ bool UpgradeSimpleCacheOnDisk(const base::FilePath& path) {
   if (version_from == 7) {
     // Likewise, V7 -> V8 is handled entirely by the index reader.
     version_from++;
+  }
+  if (version_from == 8) {
+    LogMessageFailedUpgradeFromVersion(file_header.version);
+    return false;
   }
 
   DCHECK_EQ(kSimpleVersion, version_from);
