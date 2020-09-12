@@ -228,16 +228,6 @@ jobs:
         if: ${{ github.repository_owner == 'kiwibrowser' }}
         run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
 
-      - name: Compiling source-code (chrome/renderer)
-        run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome/renderer
-
-      - name: Checking available disk-space before build
-        run: df -h
-
-      - name: Uploading binary objects to cache
-        if: ${{ github.repository_owner == 'kiwibrowser' }}
-        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
-
       - name: Compiling source-code (components/guest_view/renderer)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} components/guest_view/renderer
 
