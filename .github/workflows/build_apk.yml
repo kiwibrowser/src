@@ -211,32 +211,11 @@ jobs:
       - name: Compiling source-code (base)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} base
 
-      - name: Checking available disk-space before build
-        run: df -h
-
-      - name: Uploading binary objects to cache
-        if: ${{ github.repository_owner == 'kiwibrowser' }}
-        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
-
       - name: Compiling source-code (chrome_java)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome_java
 
-      - name: Checking available disk-space before build
-        run: df -h
-
-      - name: Uploading binary objects to cache
-        if: ${{ github.repository_owner == 'kiwibrowser' }}
-        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
-
       - name: Compiling source-code (components/guest_view/renderer)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} components/guest_view/renderer
-
-      - name: Checking available disk-space before build
-        run: df -h
-
-      - name: Uploading binary objects to cache
-        if: ${{ github.repository_owner == 'kiwibrowser' }}
-        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
 
       - name: Compiling source-code (chrome/gpu)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome/gpu
@@ -251,22 +230,8 @@ jobs:
       - name: Compiling source-code (components/version_info)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} components/version_info
 
-      - name: Checking available disk-space before build
-        run: df -h
-
-      - name: Uploading binary objects to cache
-        if: ${{ github.repository_owner == 'kiwibrowser' }}
-        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
-
       - name: Compiling source-code (ui/base)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} ui/base
-
-      - name: Checking available disk-space before build
-        run: df -h
-
-      - name: Uploading binary objects to cache
-        if: ${{ github.repository_owner == 'kiwibrowser' }}
-        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
 
       - name: Compiling source-code (chrome/browser:resources)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome/browser:resources
@@ -281,42 +246,14 @@ jobs:
       - name: Compiling source-code (chrome/browser/ui)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome/browser/ui
 
-      - name: Checking available disk-space before build
-        run: df -h
-
-      - name: Uploading binary objects to cache
-        if: ${{ github.repository_owner == 'kiwibrowser' }}
-        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
-
       - name: Compiling source-code (chrome/browser)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome/browser
-
-      - name: Checking available disk-space before build
-        run: df -h
-
-      - name: Uploading binary objects to cache
-        if: ${{ github.repository_owner == 'kiwibrowser' }}
-        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
 
       - name: Compiling source-code (chrome/common)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome/common
 
-      - name: Checking available disk-space before build
-        run: df -h
-
-      - name: Uploading binary objects to cache
-        if: ${{ github.repository_owner == 'kiwibrowser' }}
-        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
-
       - name: Compiling source-code (chrome/renderer)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome/renderer
-
-      - name: Checking available disk-space before build
-        run: df -h
-
-      - name: Uploading binary objects to cache
-        if: ${{ github.repository_owner == 'kiwibrowser' }}
-        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
 
       - name: Compiling source-code (extensions)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} extensions
@@ -331,19 +268,8 @@ jobs:
       - name: Compiling source-code (services)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} services
 
-      - name: Uploading binary objects to cache
-        if: ${{ github.repository_owner == 'kiwibrowser' }}
-        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
-
       - name: Compiling source-code (v8)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} v8
-
-      - name: Checking available disk-space before build
-        run: df -h
-
-      - name: Uploading binary objects to cache
-        if: ${{ github.repository_owner == 'kiwibrowser' }}
-        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
 
       - name: Checking available disk-space
         run: df -h
@@ -362,6 +288,10 @@ jobs:
 
       - name: Compiling source-code (final stage)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome_public_apk
+
+      - name: Uploading binary objects to cache
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
+        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
 
       - name: Generating native symbols mapping
         run: |
