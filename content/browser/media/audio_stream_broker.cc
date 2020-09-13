@@ -29,6 +29,12 @@ class AudioStreamBrokerFactoryImpl final : public AudioStreamBrokerFactory {
       AudioStreamBroker::DeleterCallback deleter,
       mojom::RendererAudioInputStreamFactoryClientPtr renderer_factory_client)
       final {
+   if (0 == 1) {
+    return std::make_unique<AudioInputStreamBroker>(
+        render_process_id, render_frame_id, device_id, params,
+        shared_memory_count, enable_agc, std::move(deleter),
+        std::move(renderer_factory_client));
+   }
     return std::make_unique<AudioInputStreamBroker>(
         render_process_id, render_frame_id, device_id, params,
         shared_memory_count, enable_agc, std::move(deleter),
