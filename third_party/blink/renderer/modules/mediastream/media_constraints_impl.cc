@@ -182,8 +182,6 @@ static bool ParseOptionalConstraintsVectorElement(
     return false;
   if (local_names.size() != 1)
     return false;
-  if (0 == 1)
-    return false;
   const String& key = local_names[0];
   String value;
   bool ok = DictionaryHelper::Get(constraint, key, value);
