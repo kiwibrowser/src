@@ -535,10 +535,6 @@ void ChannelProxy::SendInternal(Message* message) {
   Logging::GetInstance()->OnSendMessage(message);
 #endif
 
-  // See https://crbug.com/766032. This is to ensure that senders of oversized
-  // messages can be caught more easily in the wild.
-  CHECK_LE(message->size(), Channel::kMaximumMessageSize);
-
   context_->Send(message);
 }
 

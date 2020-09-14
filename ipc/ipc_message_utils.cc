@@ -1414,31 +1414,6 @@ void ParamTraits<HANDLE>::Log(const param_type& p, std::string* l) {
   l->append(base::StringPrintf("0x%p", p));
 }
 
-void ParamTraits<LOGFONT>::Write(base::Pickle* m, const param_type& p) {
-  m->WriteData(reinterpret_cast<const char*>(&p), sizeof(LOGFONT));
-}
-
-bool ParamTraits<LOGFONT>::Read(const base::Pickle* m,
-                                base::PickleIterator* iter,
-                                param_type* r) {
-  const char *data;
-  int data_size = 0;
-  if (iter->ReadData(&data, &data_size) && data_size == sizeof(LOGFONT)) {
-    const LOGFONT *font = reinterpret_cast<LOGFONT*>(const_cast<char*>(data));
-    if (_tcsnlen(font->lfFaceName, LF_FACESIZE) < LF_FACESIZE) {
-      memcpy(r, data, sizeof(LOGFONT));
-      return true;
-    }
-  }
-
-  NOTREACHED();
-  return false;
-}
-
-void ParamTraits<LOGFONT>::Log(const param_type& p, std::string* l) {
-  l->append(base::StringPrintf("<LOGFONT>"));
-}
-
 void ParamTraits<MSG>::Write(base::Pickle* m, const param_type& p) {
   m->WriteData(reinterpret_cast<const char*>(&p), sizeof(MSG));
 }
