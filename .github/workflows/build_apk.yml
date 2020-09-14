@@ -164,7 +164,7 @@ jobs:
         run: ln -s /mnt/cache $HOME/
 
       - name: Downloading binary objects cache to $HOME/cache
-        run: rclone --daemon --transfers=16 mount cache:kiwibrowser-ccache-${{ matrix.platform }} $HOME/cache
+        run: rclone copy --fast-list --transfers=128 cache:kiwibrowser-ccache-${{ matrix.platform }} $HOME/cache
 
       - name: Checking available disk-space after downloading cache
         run: df -h
@@ -172,8 +172,8 @@ jobs:
       - name: Fetching number for the latest stable version of Chromium
         run: curl "https://omahaproxy.appspot.com/all" | grep -Fi "android,stable" | cut -f3 -d"," | awk '{split($0,a,"."); print "MAJOR=" a[1] "\nMINOR=" a[2] "\nBUILD=" a[3] "\nPATCH=" a[4]}' > chrome/VERSION
         
-#      - name: Calculating cache size
-#        run: du -csh $HOME/cache
+      - name: Calculating cache size
+        run: du -csh $HOME/cache
 
       - name: Creating ccache configuration
         run: |
@@ -220,6 +220,7 @@ jobs:
       - name: Compiling source-code (chrome/gpu)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome/gpu
 
+  
       - name: Compiling source-code (components/version_info)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} components/version_info
 
@@ -253,8 +254,8 @@ jobs:
       - name: Checking available disk-space
         run: df -h
 
-#      - name: Reclaiming disk space
-#        run: sudo rm -rf /mnt/cache/*
+      - name: Reclaiming disk space
+        run: sudo rm -rf /mnt/cache/*
 
       - name: Checking available disk-space
         run: df -h
@@ -268,9 +269,9 @@ jobs:
       - name: Compiling source-code (final stage)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome_public_apk
 
-#      - name: Uploading binary objects to cache
-#        if: ${{ github.repository_owner == 'kiwibrowser' }}
-#        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
+      - name: Uploading binary objects to cache
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
+        run: rclone copy --fast-list --transfers=16 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
 
       - name: Generating native symbols mapping
         run: |
