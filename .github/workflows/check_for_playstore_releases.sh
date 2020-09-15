@@ -13,10 +13,9 @@ fi
 versions_and_links_hash=`echo $versions_and_links | shasum | cut -f1 -d' '`
 links=`echo $source_data | jq '.data[0].apks[].link' | tr -d '"'`
 
-# This is apksigner with v3 signature verification
+# We use apksigner with v3 signature verification
 # Ubuntu provides only version 0.8, so we take Android SDK Build Tools version 30
 # apksigner 0.9
-wget https://s3.wasabisys.com/kiwibrowser-tools/apksigner.jar
 
 # Reference is:
 ########################################################################################################
