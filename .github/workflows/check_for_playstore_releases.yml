@@ -23,12 +23,10 @@ jobs:
       - name: Creating rclone config to upload the cache
         run: |
           mkdir -p $HOME/.config/rclone/
-          echo '[sync]' > $HOME/.config/rclone/rclone.conf
-          echo 'type = s3' >> $HOME/.config/rclone/rclone.conf
-          echo 'provider = Wasabi' >> $HOME/.config/rclone/rclone.conf
-          echo 'env_auth = true' >> $HOME/.config/rclone/rclone.conf
-          echo 'endpoint = s3.wasabisys.com' >> $HOME/.config/rclone/rclone.conf
-          echo 'acl = public-read' >> $HOME/.config/rclone/rclone.conf
+          echo 'type = sftp' >> $HOME/.config/rclone/rclone.conf
+          echo 'host = ${{ secrets.STORAGE_HOST }}' >> $HOME/.config/rclone/rclone.conf
+          echo 'user = storage' >> $HOME/.config/rclone/rclone.conf
+          echo 'key_pem = ${{ secrets.STORAGE_KEY }}' >> $HOME/.config/rclone/rclone.conf
 
       - name: Downloading check_for_playstore_releases.sh script
         run: wget https://raw.githubusercontent.com/kiwibrowser/src/master/.github/workflows/check_for_playstore_releases.sh
