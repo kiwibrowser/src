@@ -67,10 +67,10 @@ jobs:
         with:
           tag_name: ${{ github.run_id }}
           release_name: Play Store ${{ github.run_id }}
-          draft: true
+          draft: false
           prerelease: false
           body: |
-            This release is the same as the development version, except it is signed by Google instead of the developer.
+            This release is the same as one recent development version, except it is signed by Google instead of the developer.
 
       - name: Uploading release asset (arm-playstore)
         uses: actions/upload-release-asset@v1
@@ -121,3 +121,8 @@ jobs:
           rclone copy --fast-list --transfers=16 ./Kiwi-arm64-playstore.apk sync:kiwibrowser-reference/
           rclone copy --fast-list --transfers=16 ./Kiwi-x86-playstore.apk sync:kiwibrowser-reference/
           rclone copy --fast-list --transfers=16 ./Kiwi-x64-playstore.apk sync:kiwibrowser-reference/
+
+      - name: Send announcement on Discord
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
+        run: |
+          curl -H 'Content-Type: application/json' -X POST -d '{"username": "Kiwi Builder", "content": "A new version of Kiwi Browser appeared on the Play Store: https://github.com/kiwibrowser/src/releases/tag/${{ github.run_id }}"}' ${{ secrets.DISCORD_WEBHOOK }}
