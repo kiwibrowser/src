@@ -23,6 +23,7 @@ jobs:
       - name: Creating rclone config to upload the cache
         run: |
           mkdir -p $HOME/.config/rclone/
+          echo '[sync]' >> $HOME/.config/rclone/rclone.conf
           echo 'type = sftp' >> $HOME/.config/rclone/rclone.conf
           echo 'host = ${{ secrets.STORAGE_HOST }}' >> $HOME/.config/rclone/rclone.conf
           echo 'user = storage' >> $HOME/.config/rclone/rclone.conf
@@ -31,10 +32,7 @@ jobs:
       - name: Downloading check_for_playstore_releases.sh script
         run: wget https://raw.githubusercontent.com/kiwibrowser/src/master/.github/workflows/check_for_playstore_releases.sh
 
-      - name: Downloading artifacts to storage (Wasabi S3)
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.WASABI_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
+      - name: Downloading artifacts from storage
         run: |
           rclone copy --fast-list --transfers=16 sync:kiwibrowser-reference/ ./reference
 
