@@ -12,7 +12,9 @@ Among other functionalities, Kiwi Browser supports:
 
  - Night Mode (another implementation than Chromium)
  - Support for Chrome Extensions
- - Bottom address bar, It also includes performance improvements (partial rasterization of tiles, etc)
+ - Bottom address bar
+ 
+ -It also includes performance improvements (partial rasterization of tiles, etc)
 
 The browser is licensed under the same license as Chromium, which means that you are allowed to create derivatives of the browser.
 
