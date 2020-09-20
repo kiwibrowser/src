@@ -13,7 +13,7 @@ Among other functionalities, Kiwi Browser supports:
  - Night Mode (another implementation than Chromium)
  - Support for Chrome Extensions
  - Bottom address bar
-It also includes performance improvements (partial rasterization of tiles, etc)
+ - It also includes performance improvements (partial rasterization of tiles, etc)
 
 The browser is licensed under the same license as Chromium, which means that you are allowed to create derivatives of the browser.
 
@@ -285,7 +285,7 @@ If you want to optimize of the final APK, you can look at the size of each indiv
 
 If there is an issue or bug that you want to be included to Kiwi, please open an issue ticket pointing to the related Chromium bug or commit. Be precise, there are dozen of thousands of changes in Chromium.
 
-* Later in the year, if there is enough demand and ressources, Kiwi will follow Chromium releases automatically (including bugfixes).
+* Later in the year, if there is enough demand and resources, Kiwi will follow Chromium releases automatically (including bugfixes).
 
 ## Additional help
 
