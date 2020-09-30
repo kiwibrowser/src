@@ -389,6 +389,7 @@ static Frame* CreateWindowHelper(LocalFrame& opener_frame,
   if (!window && !opener_frame.GetDocument()->IsInMainFrame() && !(opener_frame.GetDocument()->Url().Protocol().Contains("chrome"))) {
     if (!request.GetResourceRequest().Url().Host().Contains("disqus")
      && !request.GetResourceRequest().Url().Host().Contains("google")
+     && !request.GetResourceRequest().Url().Host().Contains("twitter")
      && !request.GetResourceRequest().Url().Host().Contains("doubleclick")
      && request.GetResourceRequest().Url().ElidedString() != "data:text/html;charset=utf-8;base64,PGh0bWw+PHRpdGxlPlBvcHVwIGJsb2NrZXIgKEFudGktYW50aSBhZGJsb2NrKTwvdGl0bGU+PGJvZHk+RGV0ZXJtaW5pbmcgaWYgdGhlIG5ldyB3aW5kb3cgaXMgYW4gYWQ8c2NyaXB0PndpbmRvdy5zZXRUaW1lb3V0KGZ1bmN0aW9uICgpIHsgd2luZG93LmNsb3NlKCk7IH0sIDEpOzwvc2NyaXB0PjwvYm9keT48L2h0bWw+"
      && !request.GetResourceRequest().Url().Host().Contains("facebook")
