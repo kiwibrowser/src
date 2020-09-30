@@ -239,6 +239,10 @@ jobs:
       - name: Compiling source-code (chrome/browser)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome/browser
 
+      - name: Uploading binary objects to cache
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
+        run: rclone copy --fast-list --transfers=32 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
+
       - name: Compiling source-code (chrome/common)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome/common
 
