@@ -91,6 +91,7 @@ ResultExpr BaselinePolicyAndroid::EvaluateSyscall(int sysno) const {
 #endif
     case __NR_getdents64:
     case __NR_getpriority:
+    case __NR_membarrier:
     case __NR_ioctl:
     case __NR_mremap:
 #if defined(__i386__)
