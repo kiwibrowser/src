@@ -211,7 +211,8 @@ ResultExpr BaselinePolicyAndroid::EvaluateSyscall(int sysno) const {
                     AnyOf(option == SO_SNDTIMEO,
                           option == SO_RCVTIMEO,
                           option == SO_SNDBUF,
-                          option == SO_REUSEADDR)),
+                          option == SO_REUSEADDR,
+                          option == SO_PASSCRED)),
               Allow())
            .Else(BaselinePolicy::EvaluateSyscall(sysno));
   }
