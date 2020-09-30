@@ -1290,5 +1290,65 @@
 #define __NR_memfd_create 319
 #endif
 
+#if !defined(__NR_kexec_file_load)
+#define __NR_kexec_file_load 320
+#endif
+
+#if !defined(__NR_bpf)
+#define __NR_bpf 321
+#endif
+
+#if !defined(__NR_execveat)
+#define __NR_execveat 322
+#endif
+
+#if !defined(__NR_userfaultfd)
+#define __NR_userfaultfd 323
+#endif
+
+#if !defined(__NR_membarrier)
+#define __NR_membarrier 324
+#endif
+
+#if !defined(__NR_mlock2)
+#define __NR_mlock2 325
+#endif
+
+#if !defined(__NR_copy_file_range)
+#define __NR_copy_file_range 326
+#endif
+
+#if !defined(__NR_preadv2)
+#define __NR_preadv2 327
+#endif
+
+#if !defined(__NR_pwritev2)
+#define __NR_pwritev2 328
+#endif
+
+#if !defined(__NR_pkey_mprotect)
+#define __NR_pkey_mprotect 329
+#endif
+
+#if !defined(__NR_pkey_alloc)
+#define __NR_pkey_alloc 330
+#endif
+
+#if !defined(__NR_pkey_free)
+#define __NR_pkey_free 331
+#endif
+
+#if !defined(__NR_statx)
+#define __NR_statx 332
+#endif
+
+#if !defined(__NR_io_pgetevents)
+#define __NR_io_pgetevents 333
+#endif
+
+#if !defined(__NR_rseq)
+#define __NR_rseq 334
+#endif
+
 #endif  // SANDBOX_LINUX_SYSTEM_HEADERS_X86_64_LINUX_SYSCALLS_H_
 
