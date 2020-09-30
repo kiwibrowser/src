@@ -454,7 +454,7 @@ void URLRequestHttpJob::Start() {
   }
   else if (request_info_.url.host().find("addons.opera.com") != std::string::npos)
   {
-     request_info_.extra_headers.SetHeader(HttpRequestHeaders::kUserAgent, "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36 OPR/60.0.3255.27");
+     request_info_.extra_headers.SetHeader(HttpRequestHeaders::kUserAgent, "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36 OPR/60.0.3255.27 (Edition developer)");
   }
   else if (request_info_.url.host().find("chrome.google.com") != std::string::npos)
   {
