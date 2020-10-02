@@ -91,6 +91,7 @@ import org.chromium.content_public.common.UseZoomForDSFPolicy;
 import org.chromium.device.gamepad.GamepadList;
 import org.chromium.net.NetworkChangeNotifier;
 import org.chromium.ui.base.ActivityWindowAndroid;
+import org.chromium.ui.base.Clipboard;
 import org.chromium.ui.base.PageTransition;
 import org.chromium.ui.base.ViewAndroidDelegate;
 import org.chromium.ui.base.WindowAndroid;
@@ -3497,6 +3498,7 @@ public class AwContents implements SmartClipProvider {
             if (isDestroyedOrNoOperation(NO_WARN)) return;
             mWindowFocused = hasWindowFocus;
             mViewEventSink.onWindowFocusChanged(hasWindowFocus);
+            Clipboard.getInstance().onWindowFocusChanged(hasWindowFocus);
         }
 
         @Override
