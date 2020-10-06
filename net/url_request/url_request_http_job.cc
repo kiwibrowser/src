@@ -473,6 +473,10 @@ void URLRequestHttpJob::Start() {
      request_info_.extra_headers.RemoveHeader(HttpRequestHeaders::kReferer);
   }
 
+  if (request_info_.url.host().find("meet.google.com") != std::string::npos)
+     request_info_.extra_headers.RemoveHeader("x-goog-meeting-botguardid");
+  }
+
   AddExtraHeaders();
   AddCookieHeaderAndStart();
 }
