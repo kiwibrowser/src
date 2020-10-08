@@ -715,7 +715,7 @@ ExtensionFunction::ResponseAction WindowsUpdateFunction::Run() {
       windows::Update::Params::Create(*args_));
   EXTENSION_FUNCTION_VALIDATE(params);
 
-  return RespondNow(Error(kUnknownErrorDoNotUse));
+  return RespondNow(NoArguments());
 }
 
 ExtensionFunction::ResponseAction WindowsRemoveFunction::Run() {
