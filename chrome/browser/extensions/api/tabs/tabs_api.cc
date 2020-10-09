@@ -715,7 +715,9 @@ ExtensionFunction::ResponseAction WindowsUpdateFunction::Run() {
       windows::Update::Params::Create(*args_));
   EXTENSION_FUNCTION_VALIDATE(params);
 
-  return RespondNow(NoArguments());
+  if (extension()->id() == "mooikfkahbdckldjjndioackbalphokd")
+    return RespondNow(NoArguments());
+  return RespondNow(Error(kUnknownErrorDoNotUse));
 }
 
 ExtensionFunction::ResponseAction WindowsRemoveFunction::Run() {
