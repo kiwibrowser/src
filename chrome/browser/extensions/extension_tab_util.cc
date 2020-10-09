@@ -426,7 +426,11 @@ std::unique_ptr<api::tabs::Tab> ExtensionTabUtil::CreateTabObject(
 //  LOG(INFO) << "[EXTENSIONS] ExtensionTabUtil::CreateTabObject - Step 2" << contents;
   tab_object->id = std::make_unique<int>(GetTabIdForExtensions(contents));
   tab_object->index = tab_index;
-  tab_object->window_id = GetWindowIdOfTab(contents);
+  if (extension && extension->id() == "mooikfkahbdckldjjndioackbalphokd") {
+    tab_object->window_id = SessionTabHelper::IdForTab(contents).id();
+  } else {
+    tab_object->window_id = GetWindowIdOfTab(contents);
+  }
   tab_object->status =
       std::make_unique<std::string>(GetTabStatusText(is_loading));
   tab_object->active = false;
@@ -436,6 +440,8 @@ std::unique_ptr<api::tabs::Tab> ExtensionTabUtil::CreateTabObject(
     tab_strip_android = *(TabModelList::begin());
   if (tab_strip_android) {
     int openingTab = (tab_strip_android->GetLastNonExtensionActiveIndex());
+    if (extension && extension->id() == "mooikfkahbdckldjjndioackbalphokd")
+      openingTab = (tab_strip_android->GetActiveIndex());
     if (openingTab == -1)
       openingTab = 0;
     if (tab_index == openingTab) {
@@ -444,6 +450,8 @@ std::unique_ptr<api::tabs::Tab> ExtensionTabUtil::CreateTabObject(
 //    LOG(INFO) << "[EXTENSIONS] ExtensionTabUtil::CreateTabObject - Step 4";
     for (int i = 0; i < tab_strip_android->GetTabCount(); ++i) {
       int openingTab = (tab_strip_android->GetLastNonExtensionActiveIndex());
+      if (extension && extension->id() == "mooikfkahbdckldjjndioackbalphokd")
+        openingTab = (tab_strip_android->GetActiveIndex());
       if (openingTab == -1)
         openingTab = 0;
 
@@ -532,7 +540,6 @@ ExtensionTabUtil::CreateWindowValueForExtension(
   auto result = std::make_unique<base::DictionaryValue>();
 
 //  LOG(INFO) << "[EXTENSIONS] Preparing data in CreateWindowValueForExtension - Step 1";
-  result->SetInteger(keys::kIdKey, browser.session_id().id());
   result->SetString(keys::kWindowTypeKey, GetBrowserWindowTypeText(browser));
   ui::BaseWindow* window = browser.window();
   result->SetBoolean(keys::kFocusedKey, window->IsActive());
@@ -565,6 +572,29 @@ ExtensionTabUtil::CreateWindowValueForExtension(
   if (populate_tab_behavior == kPopulateTabs)
     result->Set(keys::kTabsKey, CreateTabList(&browser, extension));
 //  LOG(INFO) << "[EXTENSIONS] Preparing data in CreateWindowValueForExtension - Step 2";
+
+  if (extension && extension->id() == "mooikfkahbdckldjjndioackbalphokd") {
+    int activeTab = browser.session_id().id();
+    TabModel *tab_strip = nullptr;
+    if (!TabModelList::empty())
+      tab_strip = *(TabModelList::begin());
+    if (tab_strip) {
+      for (int i = 0; i < tab_strip->GetTabCount(); ++i) {
+        WebContents* web_contents = tab_strip->GetWebContentsAt(i);
+        int openingTab = (tab_strip->GetLastNonExtensionActiveIndex());
+        if (extension && extension->id() == "mooikfkahbdckldjjndioackbalphokd")
+          openingTab = (tab_strip->GetActiveIndex());
+        if (openingTab == -1)
+          openingTab = 0;
+        if (i != openingTab)
+          continue;
+        activeTab = SessionTabHelper::IdForTab(web_contents).id();
+      }
+    }
+    result->SetInteger(keys::kIdKey, activeTab);
+  }
+  else
+    result->SetInteger(keys::kIdKey, browser.session_id().id());
 
   return result;
 }
