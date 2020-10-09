@@ -219,6 +219,9 @@ class CORE_EXPORT Element : public ContainerNode {
                       const AtomicString& value,
                       ExceptionState&);
 
+  bool toggleAttribute(const AtomicString&, ExceptionState&);
+  bool toggleAttribute(const AtomicString&, bool force, ExceptionState&);
+  
   const AtomicString& GetIdAttribute() const;
   void SetIdAttribute(const AtomicString&);
 
