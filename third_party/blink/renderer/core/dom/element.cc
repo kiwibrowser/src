@@ -1433,7 +1433,7 @@ bool Element::toggleAttribute(const AtomicString& qualified_name,
   // an "InvalidCharacterError" DOMException.
   if (!Document::IsValidName(qualified_name)) {
     exception_state.ThrowDOMException(
-        DOMExceptionCode::kInvalidCharacterError,
+        kInvalidCharacterError,
         "'" + qualified_name + "' is not a valid attribute name.");
     return false;
   }
@@ -1466,7 +1466,7 @@ bool Element::toggleAttribute(const AtomicString& qualified_name,
   // an "InvalidCharacterError" DOMException.
   if (!Document::IsValidName(qualified_name)) {
     exception_state.ThrowDOMException(
-        DOMExceptionCode::kInvalidCharacterError,
+        kInvalidCharacterError,
         "'" + qualified_name + "' is not a valid attribute name.");
     return false;
   }
