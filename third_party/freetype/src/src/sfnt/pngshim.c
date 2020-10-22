@@ -327,6 +327,12 @@
 
     if ( populate_map_and_metrics )
     {
+      /* reject too large bitmaps similarly to the rasterizer */
+      if ( imgHeight > 0x7FFF || imgWidth > 0x7FFF )
+      {
+        error = FT_THROW( Array_Too_Large );
+        goto DestroyExit;
+      }
       metrics->width  = (FT_UShort)imgWidth;
       metrics->height = (FT_UShort)imgHeight;
 
