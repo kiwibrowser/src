@@ -443,6 +443,7 @@ LayoutObject* LayoutObject::CreateObject(Element* element,
      || element->getAttribute(HTMLNames::classAttr).Contains("inlineOverlay")
      || element->getAttribute(HTMLNames::classAttr).Contains("inlinePopup")
      || element->getAttribute(HTMLNames::classAttr).Contains("popup_tosEdition")
+     || element->getAttribute(HTMLNames::classAttr).Contains("upsell-dialog-lightbox")
      || element->nodeName() == "ytm-companion-slot"
      || element->nodeName() == "ytd-companion-slot-renderer"
      || element->nodeName() == "ytd-promoted-sparkles-web-renderer"
