@@ -337,6 +337,10 @@ BaseFetchContext::CanRequestInternal(
      return base::nullopt;
   }
 
+  if (url.Host().Contains("translate.googleapis.com")) {
+     return base::nullopt;
+  }
+
   if (url.Host().Contains("www.google-analytics.com")) {
      return base::nullopt;
   }
