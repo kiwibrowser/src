@@ -379,7 +379,7 @@ LayoutObject* LayoutObject::CreateObject(Element* element,
      || element->getAttribute(HTMLNames::idAttr).Contains("ad320x50")
      || element->getAttribute(HTMLNames::classAttr) == "remove-ads"
      || element->getAttribute(HTMLNames::classAttr) == "socialfooter"
-     || element->getAttribute(HTMLNames::idAttr).Contains("cookie")
+     || (element->getAttribute(HTMLNames::idAttr).Contains("cookie") && !element->getAttribute(HTMLNames::idAttr).Contains("cookie-banner"))
      || element->getAttribute(HTMLNames::idAttr).Contains("share-bar")
      || element->getAttribute(HTMLNames::idAttr).Contains("my_web_push_")
      || element->getAttribute(HTMLNames::idAttr).Contains("floatLayer1")
