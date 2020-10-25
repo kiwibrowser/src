@@ -319,6 +319,8 @@ if (enable_java_templates) {
       _jar_file = android_sdk_jar
     }
 
+    _always_mangle = defined(invoker.always_mangle) && invoker.always_mangle
+
     _base_output_dir = "${target_gen_dir}/${target_name}/${invoker.jni_package}"
     _jni_output_dir = "${_base_output_dir}/jni"
 
@@ -367,6 +369,9 @@ if (enable_java_templates) {
         }
         if (enable_jni_tracing) {
           args += [ "--enable_tracing" ]
+        }
+        if (_always_mangle) {
+          args += [ "--always_mangle" ]
         }
       }
     }
