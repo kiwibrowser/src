@@ -228,8 +228,9 @@ void LoadV8SnapshotFile() {
   base::ScopedFD fd =
       file_descriptor_store.MaybeTakeFD(snapshot_data_descriptor, &region);
   if (fd.is_valid()) {
-    gin::V8Initializer::LoadV8SnapshotFromFD(fd.get(), region.offset,
-                                             region.size, kSnapshotType);
+    base::File file(fd.release());
+    gin::V8Initializer::LoadV8SnapshotFromFile(std::move(file), &region,
+                                               kSnapshotType);
     return;
   }
 #endif  // OS_POSIX && !OS_MACOSX
@@ -247,8 +248,8 @@ void LoadV8NativesFile() {
   base::ScopedFD fd =
       file_descriptor_store.MaybeTakeFD(kV8NativesDataDescriptor, &region);
   if (fd.is_valid()) {
-    gin::V8Initializer::LoadV8NativesFromFD(fd.get(), region.offset,
-                                            region.size);
+    base::File file(fd.release());
+    gin::V8Initializer::LoadV8NativesFromFile(std::move(file), &region);
     return;
   }
 #endif  // OS_POSIX && !OS_MACOSX
