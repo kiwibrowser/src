@@ -277,6 +277,9 @@ BaseFetchContext::CanRequestInternal(
   if (url.GetString().Contains("serve.popads.net/c") || url.GetPath().Contains("watch.xml") || url.Query().Contains("&vastref=") || (url.Host().Contains("flashx") && url.GetPath().length() == 45 && url.GetPath().Contains(".js")))
       return ResourceRequestBlockedReason::kInspector;
 
+  if (url.Host().Contains("dev-nano.com"))
+      return ResourceRequestBlockedReason::kInspector;
+
   if (type == Resource::kScript)
   {
     if (url.GetPath().Contains("cast_sender.js"))
