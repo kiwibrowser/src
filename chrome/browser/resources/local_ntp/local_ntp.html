@@ -488,13 +488,27 @@ function render_gnews(answer, start_offset, n)
                        }
                   }
               }
-
+              try {
+                if (link == null)
+                    link = article.querySelector("a.VDXfz").href;
+                if (title == null) {
+                    title = article.querySelector("h4 a.DY5T1d").innerHTML
+                if (image == null)
+                    image = article.querySelector(".QwxBBf").src;
+                if (source == null)
+                    source = article.querySelector("a.wEwyrc").innerHTML;
+                if (source_logo == null)
+                    source_logo = article.querySelector(".wsLqz source").src;
+                if (news_time == null || news_time == 0)
+                    news_time = article.querySelector(".WW6dff").getAttribute("datetime");
+              } catch {}
               if (news_time && parseInt(news_time.substr(news_time.lastIndexOf(":") + 2)) > 1518000000)
                   news_time = parseInt(news_time.substr(news_time.lastIndexOf(":") + 2));
               else
                   news_time = parseInt(Date.parse(news_time) / 1000);
               if (link)
                   link = link.replace('chrome-search://local-ntp/', 'https://news.google.com/');
+            
               if (link && image && title) {
 //                  console.log('Title: ' + title);
                   add_gnews(is_primary, title, news_time, source, source_logo, link, image);
