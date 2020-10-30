@@ -118,8 +118,8 @@ guide](https://google.github.io/styleguide/htmlcssguide.html).
     * Do not add JS to element event handlers.
 
 <div class="note">
-Polymer event handlers like <code>on-tap</code> are allowed and often reduce the
-amount of addressing (adding an ID just to wire up event handling).
+Polymer event handlers like <code>on-click</code> are allowed and often reduce
+the amount of addressing (adding an ID just to wire up event handling).
 </div>
 
 ### Body
@@ -186,7 +186,7 @@ compatibility issues are less relevant for Chrome-only code).
 .raw-button:hover,
 .raw-button:active {
   --sky-color: blue;
-  -webkit-margin-start: 0;
+  -webkit-margin-collapse: discard;
   background-color: rgb(253, 123, 42);
   background-repeat: no-repeat;
   border: none;
@@ -207,8 +207,7 @@ compatibility issues are less relevant for Chrome-only code).
 
 * Alphabetize properties.
     * `-webkit` properties should be listed at the top, sorted alphabetically.
-    * `--variables` and `--mixins: {}` should be alphabetically declared when
-      possible.
+    * `--variables` should be alphabetically declared when possible.
 
 * Insert a space after the colon separating property and value.
 
@@ -241,10 +240,16 @@ compatibility issues are less relevant for Chrome-only code).
 * Use scalable `font-size` units like `%` or `em` to respect users' default font
   size
 
-* Use `*-top/bottom` instead of `-webkit-*-before/after`
-    * `-top/bottom` are easier to understand (`before/after` is confusingly
-      similar to `start/end`)
-    * `-webkit-*-before/after` has far less advantage than `-webkit-*-start/end`
+* Don't use CSS Mixins (`--mixin: {}` or `@apply --mixin;`) in new code. [We're
+  removing them.](https://crbug.com/973674)
+    * Mixins were [dropped from CSS](https://www.xanthir.com/b4o00) in favor of
+      [CSS Shadow Parts](https://drafts.csswg.org/css-shadow-parts/).
+    * Instead, replace CSS mixin usage with one of these natively supported
+      alternatives:
+        * CSS Shadow Parts or CSS variables for styling of DOM nodes residing in
+          the Shadow DOM of a child node.
+        * Plain CSS classes, for grouping a set of styles together for easy
+          reuse.
 
 ### Color
 
@@ -252,7 +257,7 @@ compatibility issues are less relevant for Chrome-only code).
   readability.
 
 * Prefer `rgb()` or `rgba()` with decimal values instead of hex notation
-  (`#rrggbb`) because alpha can be more easily added.
+  (`#rrggbb`).
     * Exception: shades of gray (i.e. `#333`)
 
 * If the hex value is `#rrggbb`, use the shorthand notation `#rgb`.
@@ -277,7 +282,7 @@ if `flattenhtml="true"` is specified in your .grd file.
 
 ```css
 .suboption {
-  -webkit-margin-start: 16px;
+  margin-inline-start: 16px;
 }
 
 #save-button {
@@ -292,8 +297,8 @@ html[dir='rtl'] #save-button {
 
 Use RTL-friendly versions of things like `margin` or `padding` where possible:
 
-* `margin-left` -> `-webkit-margin-start`
-* `padding-right` -> `-webkit-padding-end`
+* `margin-left` -> `margin-inline-start`
+* `padding-right` -> `padding-inline-end`
 * `text-align: left` -> `text-align: start`
 * `text-align: right` -> `text-align: end`
 * set both `left` for `[dir='ltr']` and `right` for `[dir='rtl']`
@@ -306,14 +311,13 @@ For properties that don't have an RTL-friendly alternatives, use
 ### Style
 
 See the [Google JavaScript Style
-Guide](https://google.github.io/styleguide/jsguide.html).
+Guide](https://google.github.io/styleguide/jsguide.html) as well as
+[ECMAScript Features in Chromium](es.md).
 
 * Use `$('element-id')` instead of `document.getElementById`
 
 * Use single-quotes instead of double-quotes for all strings.
     * `clang-format` now handles this automatically.
-
-* Omit curly braces for single-line if statements.
 
 * Use ES5 getters and setters
     * Use `@type` (instead of `@return` or `@param`) for JSDoc annotations on
@@ -331,11 +335,11 @@ Guide](https://google.github.io/styleguide/jsguide.html).
   compiler](https://chromium.googlesource.com/chromium/src/+/master/docs/closure_compilation.md)
   to identify JS type errors and enforce correct JSDoc annotations.
 
-* Add a `compiled_resources2.gyp` file to any new web UI code directory.
+* Add a `BUILD.gn` file to any new web UI code directory.
 
-* Ensure that your `compiled_resources2.gyp` file is included in
-  `third_party/closure_compiler/compiled_resources2.gyp` (or somewhere in its
-  include hierarchy) so that your code is typechecked in an automated way.
+* Ensure that your `BUILD.gn` file is included in
+  `src/BUILD.gn:webui_closure_compile` (or somewhere in its
+  deps hierarchy) so that your code is typechecked in an automated way.
 
 * Type Polymer elements by appending 'Element' to the element name, e.g.
   `/** @type {IronIconElement} */`
@@ -356,17 +360,13 @@ Guide](https://google.github.io/styleguide/jsguide.html).
     * DO: `Object<T>`
     * DON'T: `Object<string, T>`
 
-### Events
+* Use template types for any class that supports them, for example:
+    * `Array`
+    * `CustomEvent`
+    * `Map`
+    * `Promise`
+    * `Set`
 
-* Use Polymer's `on-tap` for click events instead of `on-click`
-    * `on-tap` handlers should use `stopPropagation()` to prevent parents from
-      handling the event where appropriate.
-
-<div class="note">
-Calling <code>stopPropagation()</code> from an <code>on-tap</code> handler will
-not prevent on-click event handlers, so make sure that <i>on-tap</i> is used
-consistently throughout the page.
-</div>
 
 ## Polymer
 
@@ -381,8 +381,8 @@ Also see the [Google Polymer Style Guide](http://go/polymer-style).
     * `created`, `ready`, `attached`, `detached`
     * public methods
     * event handlers, computed functions, and private methods
- 
-* Use camelCase for element IDs to simplify local DOM accessors (i.e. 
+
+* Use camelCase for element IDs to simplify local DOM accessors (i.e.
   `this.$.camelCase` instead of `this.$[‘dash-case’]`).
 
 * Use `this.foo` instead of `newFoo` arguments in observers when possible.
@@ -400,6 +400,10 @@ fooChanged_: function() {
 },
 ```
 
+* Use native `on-click` for click events instead of `on-tap`. 'tap' is a
+  synthetic event provided by Polymer for backward compatibility with some
+  browsers and is not needed by Chrome.
+
 * Make good use of the  [`dom-if` template](
 https://www.polymer-project.org/2.0/docs/devguide/templates#dom-if):
   * Consider using `dom-if` to lazily render parts of the DOM that are hidden by
@@ -415,6 +419,13 @@ https://www.polymer-project.org/2.0/docs/devguide/templates#dom-if):
     For trivial DOM subtrees using the HTML [`hidden` attribute](
     https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/hidden)
     yields better performance, than adding a custom `dom-if` element.
+
+* Do not add iron-icons dependency to third_party/polymer/.
+  * Polymer provides icons via the `iron-icons` library, but importing each of the iconsets means importing hundreds of SVGs, which is unnecessary because Chrome uses only a small subset.
+  * Alternatives:
+    * Include the SVG in a WebUI page-specific icon file. e.g. `chrome/browser/resources/settings/icons.html`.
+    * If reused across multiple WebUI pages, include the SVG in `ui/webui/resources/cr_elements/icons.html` .
+  * You may copy the SVG code from [iron-icons files](https://github.com/PolymerElements/iron-icons/blob/master/iron-icons.html).
 
 ## Grit processing
 
@@ -449,15 +460,10 @@ function isWindows() {
 ```
 
 `<include src="[path]">` reads the file at `path` and replaces the `<include>`
-tag with the file contents of `[path]`.
-
-Don't use `</include>` to close these tags; they're not needed nor supported.
-
-<div class="note">
-Using <code>&lt;include&gt;</code> simply pastes the entire contents of a file,
-which can lead to duplication.  If you simply want to ensure some code is loaded
-(and usually you do), you should use HTML Imports instead.
-</div>
+tag with the file contents of `[path]`. Don't use `<include>` in new JS code;
+[it is being removed.](https://docs.google.com/document/d/1Z18WTNv28z5FW3smNEm_GtsfVD2IL-CmmAikwjw3ryo/edit?usp=sharing#heading=h.66ycuu6hfi9n)
+Instead, use JS imports in new pages and pages that use JS modules. Use HTML
+imports in existing pages that are still using HTML imports/Polymer 2.
 
 Grit can read and inline resources when enabled via `flattenhtml="true"`.
 

@@ -45,3 +45,8 @@ most of the file is Objective-C.
 mostly testing Objective-C objects and methods, the test should be written using
 C++ style.
 
+## #import and #include in the `ios/` directory
+
+#import directive can be used to import C++ and Objective-C headers for all
+source code in the `ios/` directory. This differs from Google Objective-C Style
+Guide, which requires using #include directive for C++ headers.
