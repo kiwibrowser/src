@@ -15,9 +15,9 @@
 #ifndef DAWNNATIVE_VULKAN_RENDERPASSCACHE_H_
 #define DAWNNATIVE_VULKAN_RENDERPASSCACHE_H_
 
-#include "common/vulkan_platform.h"
-
 #include "common/Constants.h"
+#include "common/vulkan_platform.h"
+#include "dawn_native/Error.h"
 #include "dawn_native/dawn_platform.h"
 
 #include <array>
@@ -35,23 +35,23 @@ namespace dawn_native { namespace vulkan {
         // Use these helpers to build the query, they make sure all relevant data is initialized and
         // masks set.
         void SetColor(uint32_t index,
-                      dawn::TextureFormat format,
-                      dawn::LoadOp loadOp,
+                      wgpu::TextureFormat format,
+                      wgpu::LoadOp loadOp,
                       bool hasResolveTarget);
-        void SetDepthStencil(dawn::TextureFormat format,
-                             dawn::LoadOp depthLoadOp,
-                             dawn::LoadOp stencilLoadOp);
+        void SetDepthStencil(wgpu::TextureFormat format,
+                             wgpu::LoadOp depthLoadOp,
+                             wgpu::LoadOp stencilLoadOp);
         void SetSampleCount(uint32_t sampleCount);
 
         std::bitset<kMaxColorAttachments> colorMask;
         std::bitset<kMaxColorAttachments> resolveTargetMask;
-        std::array<dawn::TextureFormat, kMaxColorAttachments> colorFormats;
-        std::array<dawn::LoadOp, kMaxColorAttachments> colorLoadOp;
+        std::array<wgpu::TextureFormat, kMaxColorAttachments> colorFormats;
+        std::array<wgpu::LoadOp, kMaxColorAttachments> colorLoadOp;
 
         bool hasDepthStencil = false;
-        dawn::TextureFormat depthStencilFormat;
-        dawn::LoadOp depthLoadOp;
-        dawn::LoadOp stencilLoadOp;
+        wgpu::TextureFormat depthStencilFormat;
+        wgpu::LoadOp depthLoadOp;
+        wgpu::LoadOp stencilLoadOp;
 
         uint32_t sampleCount;
     };
@@ -66,11 +66,12 @@ namespace dawn_native { namespace vulkan {
         RenderPassCache(Device* device);
         ~RenderPassCache();
 
-        VkRenderPass GetRenderPass(const RenderPassCacheQuery& query);
+        ResultOrError<VkRenderPass> GetRenderPass(const RenderPassCacheQuery& query);
 
       private:
         // Does the actual VkRenderPass creation on a cache miss.
-        VkRenderPass CreateRenderPassForQuery(const RenderPassCacheQuery& query) const;
+        ResultOrError<VkRenderPass> CreateRenderPassForQuery(
+            const RenderPassCacheQuery& query) const;
 
         // Implements the functors necessary for to use RenderPassCacheQueries as unordered_map
         // keys.

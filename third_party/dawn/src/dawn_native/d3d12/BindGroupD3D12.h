@@ -15,37 +15,46 @@
 #ifndef DAWNNATIVE_D3D12_BINDGROUPD3D12_H_
 #define DAWNNATIVE_D3D12_BINDGROUPD3D12_H_
 
+#include "common/PlacementAllocated.h"
+#include "common/Serial.h"
 #include "dawn_native/BindGroup.h"
-
-#include "dawn_native/d3d12/d3d12_platform.h"
-
-#include "dawn_native/d3d12/DescriptorHeapAllocator.h"
+#include "dawn_native/d3d12/CPUDescriptorHeapAllocationD3D12.h"
+#include "dawn_native/d3d12/GPUDescriptorHeapAllocationD3D12.h"
 
 namespace dawn_native { namespace d3d12 {
 
     class Device;
+    class SamplerHeapCacheEntry;
+    class ShaderVisibleDescriptorAllocator;
+    class StagingDescriptorAllocator;
 
-    class BindGroup : public BindGroupBase {
+    class BindGroup final : public BindGroupBase, public PlacementAllocated {
       public:
-        BindGroup(Device* device, const BindGroupDescriptor* descriptor);
+        static ResultOrError<BindGroup*> Create(Device* device,
+                                                const BindGroupDescriptor* descriptor);
 
-        void AllocateDescriptors(const DescriptorHeapHandle& cbvSrvUavHeapStart,
-                                 uint32_t* cbvUavSrvHeapOffset,
-                                 const DescriptorHeapHandle& samplerHeapStart,
-                                 uint32_t* samplerHeapOffset);
-        uint32_t GetCbvUavSrvHeapOffset() const;
-        uint32_t GetSamplerHeapOffset() const;
+        BindGroup(Device* device,
+                  const BindGroupDescriptor* descriptor,
+                  uint32_t viewSizeIncrement,
+                  const CPUDescriptorHeapAllocation& viewAllocation);
 
-        bool TestAndSetCounted(uint64_t heapSerial, uint32_t indexInSubmit);
+        // Returns true if the BindGroup was successfully populated.
+        bool PopulateViews(ShaderVisibleDescriptorAllocator* viewAllocator);
+        bool PopulateSamplers(Device* device, ShaderVisibleDescriptorAllocator* samplerAllocator);
+
+        D3D12_GPU_DESCRIPTOR_HANDLE GetBaseViewDescriptor() const;
+        D3D12_GPU_DESCRIPTOR_HANDLE GetBaseSamplerDescriptor() const;
+
+        void SetSamplerAllocationEntry(Ref<SamplerHeapCacheEntry> entry);
 
       private:
-        uint32_t mCbvUavSrvHeapOffset;
-        uint32_t mSamplerHeapOffset;
+        ~BindGroup() override;
 
-        uint64_t mHeapSerial = 0;
-        uint32_t mIndexInSubmit = 0;
+        Ref<SamplerHeapCacheEntry> mSamplerAllocationEntry;
+
+        GPUDescriptorHeapAllocation mGPUViewAllocation;
+        CPUDescriptorHeapAllocation mCPUViewAllocation;
     };
-
 }}  // namespace dawn_native::d3d12
 
 #endif  // DAWNNATIVE_D3D12_BINDGROUPD3D12_H_

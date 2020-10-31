@@ -22,12 +22,17 @@ namespace dawn_native { namespace metal {
     class CommandBuffer;
     class Device;
 
-    class Queue : public QueueBase {
+    class Queue final : public QueueBase {
       public:
         Queue(Device* device);
 
       private:
-        void SubmitImpl(uint32_t commandCount, CommandBufferBase* const* commands) override;
+        MaybeError SubmitImpl(uint32_t commandCount, CommandBufferBase* const* commands) override;
+        MaybeError WriteTextureImpl(const TextureCopyView* destination,
+                                    const void* data,
+                                    size_t dataSize,
+                                    const TextureDataLayout* dataLayout,
+                                    const Extent3D* writeSize) override;
     };
 
 }}  // namespace dawn_native::metal

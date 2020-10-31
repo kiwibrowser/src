@@ -15,27 +15,39 @@
 #ifndef DAWNNATIVE_D3D12_PIPELINELAYOUTD3D12_H_
 #define DAWNNATIVE_D3D12_PIPELINELAYOUTD3D12_H_
 
+#include "common/ityp_array.h"
+#include "dawn_native/BindingInfo.h"
 #include "dawn_native/PipelineLayout.h"
-
 #include "dawn_native/d3d12/d3d12_platform.h"
 
 namespace dawn_native { namespace d3d12 {
 
     class Device;
 
-    class PipelineLayout : public PipelineLayoutBase {
+    class PipelineLayout final : public PipelineLayoutBase {
       public:
-        PipelineLayout(Device* device, const PipelineLayoutDescriptor* descriptor);
+        static ResultOrError<PipelineLayout*> Create(Device* device,
+                                                     const PipelineLayoutDescriptor* descriptor);
 
-        uint32_t GetCbvUavSrvRootParameterIndex(uint32_t group) const;
-        uint32_t GetSamplerRootParameterIndex(uint32_t group) const;
+        uint32_t GetCbvUavSrvRootParameterIndex(BindGroupIndex group) const;
+        uint32_t GetSamplerRootParameterIndex(BindGroupIndex group) const;
 
-        ComPtr<ID3D12RootSignature> GetRootSignature();
+        // Returns the index of the root parameter reserved for a dynamic buffer binding
+        uint32_t GetDynamicRootParameterIndex(BindGroupIndex group,
+                                              BindingIndex bindingIndex) const;
+
+        ID3D12RootSignature* GetRootSignature() const;
 
       private:
-        std::array<uint32_t, kMaxBindGroups> mCbvUavSrvRootParameterInfo;
-        std::array<uint32_t, kMaxBindGroups> mSamplerRootParameterInfo;
-
+        ~PipelineLayout() override = default;
+        using PipelineLayoutBase::PipelineLayoutBase;
+        MaybeError Initialize();
+        ityp::array<BindGroupIndex, uint32_t, kMaxBindGroups> mCbvUavSrvRootParameterInfo;
+        ityp::array<BindGroupIndex, uint32_t, kMaxBindGroups> mSamplerRootParameterInfo;
+        ityp::array<BindGroupIndex,
+                    ityp::array<BindingIndex, uint32_t, kMaxDynamicBuffersPerPipelineLayout>,
+                    kMaxBindGroups>
+            mDynamicRootParameterIndices;
         ComPtr<ID3D12RootSignature> mRootSignature;
     };
 

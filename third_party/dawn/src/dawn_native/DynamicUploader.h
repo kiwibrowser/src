@@ -16,36 +16,40 @@
 #define DAWNNATIVE_DYNAMICUPLOADER_H_
 
 #include "dawn_native/Forward.h"
-#include "dawn_native/RingBuffer.h"
+#include "dawn_native/RingBufferAllocator.h"
+#include "dawn_native/StagingBuffer.h"
 
 // DynamicUploader is the front-end implementation used to manage multiple ring buffers for upload
 // usage.
 namespace dawn_native {
+
+    struct UploadHandle {
+        uint8_t* mappedBuffer = nullptr;
+        uint64_t startOffset = 0;
+        StagingBufferBase* stagingBuffer = nullptr;
+    };
 
     class DynamicUploader {
       public:
         DynamicUploader(DeviceBase* device);
         ~DynamicUploader() = default;
 
-        // We add functions to Create/Release StagingBuffers to the DynamicUploader as there's
+        // We add functions to Release StagingBuffers to the DynamicUploader as there's
         // currently no place to track the allocated staging buffers such that they're freed after
-        // pending coommands are finished. This should be changed when better resource allocation is
+        // pending commands are finished. This should be changed when better resource allocation is
         // implemented.
-        ResultOrError<std::unique_ptr<StagingBufferBase>> CreateStagingBuffer(size_t size);
         void ReleaseStagingBuffer(std::unique_ptr<StagingBufferBase> stagingBuffer);
 
-        ResultOrError<UploadHandle> Allocate(uint32_t requiredSize, uint32_t alignment);
-        void Tick(Serial lastCompletedSerial);
-
-        RingBuffer* GetLargestBuffer();
-
-        MaybeError CreateAndAppendBuffer(size_t size = kBaseUploadBufferSize);
-
-        bool IsEmpty() const;
+        ResultOrError<UploadHandle> Allocate(uint64_t allocationSize, Serial serial);
+        void Deallocate(Serial lastCompletedSerial);
 
       private:
-        // TODO(bryan.bernhart@intel.com): Figure out this value.
-        static constexpr size_t kBaseUploadBufferSize = 64000;
+        static constexpr uint64_t kRingBufferSize = 4 * 1024 * 1024;
+
+        struct RingBuffer {
+            std::unique_ptr<StagingBufferBase> mStagingBuffer;
+            RingBufferAllocator mAllocator;
+        };
 
         std::vector<std::unique_ptr<RingBuffer>> mRingBuffers;
         SerialQueue<std::unique_ptr<StagingBufferBase>> mReleasedStagingBuffers;

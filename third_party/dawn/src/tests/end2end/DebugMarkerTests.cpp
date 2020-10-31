@@ -14,7 +14,7 @@
 
 #include "tests/DawnTest.h"
 
-#include "utils/DawnHelpers.h"
+#include "utils/WGPUHelpers.h"
 
 class DebugMarkerTests : public DawnTest {};
 
@@ -22,17 +22,28 @@ class DebugMarkerTests : public DawnTest {};
 TEST_P(DebugMarkerTests, NoFailureWithoutDebugToolAttached) {
     utils::BasicRenderPass renderPass = utils::CreateBasicRenderPass(device, 4, 4);
 
-    dawn::CommandEncoder encoder = device.CreateCommandEncoder();
+    wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
     {
-        dawn::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass.renderPassInfo);
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass.renderPassInfo);
+        pass.PushDebugGroup("Event Start");
+        pass.InsertDebugMarker("Marker");
+        pass.PopDebugGroup();
+        pass.EndPass();
+    }
+    {
+        wgpu::ComputePassEncoder pass = encoder.BeginComputePass();
         pass.PushDebugGroup("Event Start");
         pass.InsertDebugMarker("Marker");
         pass.PopDebugGroup();
         pass.EndPass();
     }
 
-    dawn::CommandBuffer commands = encoder.Finish();
+    wgpu::CommandBuffer commands = encoder.Finish();
     queue.Submit(1, &commands);
 }
 
-DAWN_INSTANTIATE_TEST(DebugMarkerTests, D3D12Backend, MetalBackend, OpenGLBackend, VulkanBackend);
+DAWN_INSTANTIATE_TEST(DebugMarkerTests,
+                      D3D12Backend(),
+                      MetalBackend(),
+                      OpenGLBackend(),
+                      VulkanBackend());

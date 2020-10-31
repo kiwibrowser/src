@@ -19,3 +19,6 @@ again.
 
 All submissions, including submissions by project members, require review. We
 use [Dawn's Gerrit](https://dawn-review.googlesource.com) for this purpose.
+
+Dawn doesn't have a formal coding style yet, except what's defined by our clang format style.
+Overall try to use the same style and convention as code around your change.

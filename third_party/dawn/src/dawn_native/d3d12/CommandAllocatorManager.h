@@ -18,6 +18,7 @@
 #include "dawn_native/d3d12/d3d12_platform.h"
 
 #include "common/SerialQueue.h"
+#include "dawn_native/Error.h"
 
 #include <bitset>
 
@@ -31,8 +32,8 @@ namespace dawn_native { namespace d3d12 {
 
         // A CommandAllocator that is reserved must be used on the next ExecuteCommandLists
         // otherwise its commands may be reset before execution has completed on the GPU
-        ComPtr<ID3D12CommandAllocator> ReserveCommandAllocator();
-        void Tick(uint64_t lastCompletedSerial);
+        ResultOrError<ID3D12CommandAllocator*> ReserveCommandAllocator();
+        MaybeError Tick(uint64_t lastCompletedSerial);
 
       private:
         Device* device;

@@ -14,49 +14,47 @@
 
 #include "utils/ComboRenderPipelineDescriptor.h"
 
-#include "utils/DawnHelpers.h"
+#include "utils/WGPUHelpers.h"
 
 namespace utils {
 
-    ComboVertexInputDescriptor::ComboVertexInputDescriptor() {
-        dawn::VertexInputDescriptor* descriptor = this;
+    ComboVertexStateDescriptor::ComboVertexStateDescriptor() {
+        wgpu::VertexStateDescriptor* descriptor = this;
 
-        descriptor->indexFormat = dawn::IndexFormat::Uint32;
-        descriptor->bufferCount = 0;
+        descriptor->indexFormat = wgpu::IndexFormat::Uint32;
+        descriptor->vertexBufferCount = 0;
 
         // Fill the default values for vertexBuffers and vertexAttributes in buffers.
-        dawn::VertexAttributeDescriptor vertexAttribute;
+        wgpu::VertexAttributeDescriptor vertexAttribute;
         vertexAttribute.shaderLocation = 0;
         vertexAttribute.offset = 0;
-        vertexAttribute.format = dawn::VertexFormat::Float;
+        vertexAttribute.format = wgpu::VertexFormat::Float;
         for (uint32_t i = 0; i < kMaxVertexAttributes; ++i) {
             cAttributes[i] = vertexAttribute;
         }
         for (uint32_t i = 0; i < kMaxVertexBuffers; ++i) {
-            cBuffers[i].stride = 0;
-            cBuffers[i].stepMode = dawn::InputStepMode::Vertex;
-            cBuffers[i].attributeCount = 0;
-            cBuffers[i].attributes = nullptr;
+            cVertexBuffers[i].arrayStride = 0;
+            cVertexBuffers[i].stepMode = wgpu::InputStepMode::Vertex;
+            cVertexBuffers[i].attributeCount = 0;
+            cVertexBuffers[i].attributes = nullptr;
         }
-        // cBuffers[i].attributes points to somewhere in cAttributes. cBuffers[0].attributes
-        // points to &cAttributes[0] by default. Assuming cBuffers[0] has two attributes, then
-        // cBuffers[1].attributes should point to &cAttributes[2]. Likewise, if cBuffers[1]
-        // has 3 attributes, then cBuffers[2].attributes should point to &cAttributes[5].
-        cBuffers[0].attributes = &cAttributes[0];
-        descriptor->buffers = &cBuffers[0];
+        // cVertexBuffers[i].attributes points to somewhere in cAttributes.
+        // cVertexBuffers[0].attributes points to &cAttributes[0] by default. Assuming
+        // cVertexBuffers[0] has two attributes, then cVertexBuffers[1].attributes should point to
+        // &cAttributes[2]. Likewise, if cVertexBuffers[1] has 3 attributes, then
+        // cVertexBuffers[2].attributes should point to &cAttributes[5].
+        cVertexBuffers[0].attributes = &cAttributes[0];
+        descriptor->vertexBuffers = &cVertexBuffers[0];
     }
 
-    ComboRenderPipelineDescriptor::ComboRenderPipelineDescriptor(const dawn::Device& device) {
-        dawn::RenderPipelineDescriptor* descriptor = this;
+    ComboRenderPipelineDescriptor::ComboRenderPipelineDescriptor(const wgpu::Device& device) {
+        wgpu::RenderPipelineDescriptor* descriptor = this;
 
-        descriptor->primitiveTopology = dawn::PrimitiveTopology::TriangleList;
+        descriptor->primitiveTopology = wgpu::PrimitiveTopology::TriangleList;
         descriptor->sampleCount = 1;
 
         // Set defaults for the vertex stage descriptor.
-        {
-            descriptor->vertexStage = &cVertexStage;
-            cVertexStage.entryPoint = "main";
-        }
+        { vertexStage.entryPoint = "main"; }
 
         // Set defaults for the fragment stage desriptor.
         {
@@ -65,12 +63,12 @@ namespace utils {
         }
 
         // Set defaults for the input state descriptors.
-        descriptor->vertexInput = &cVertexInput;
+        descriptor->vertexState = &cVertexState;
 
         // Set defaults for the rasterization state descriptor.
         {
-            cRasterizationState.frontFace = dawn::FrontFace::CCW;
-            cRasterizationState.cullMode = dawn::CullMode::None;
+            cRasterizationState.frontFace = wgpu::FrontFace::CCW;
+            cRasterizationState.cullMode = wgpu::CullMode::None;
 
             cRasterizationState.depthBias = 0;
             cRasterizationState.depthBiasSlopeScale = 0.0;
@@ -81,42 +79,39 @@ namespace utils {
         // Set defaults for the color state descriptors.
         {
             descriptor->colorStateCount = 1;
-            descriptor->colorStates = &cColorStates[0];
+            descriptor->colorStates = cColorStates.data();
 
-            dawn::BlendDescriptor blend;
-            blend.operation = dawn::BlendOperation::Add;
-            blend.srcFactor = dawn::BlendFactor::One;
-            blend.dstFactor = dawn::BlendFactor::Zero;
-            dawn::ColorStateDescriptor colorStateDescriptor;
-            colorStateDescriptor.format = dawn::TextureFormat::R8G8B8A8Unorm;
+            wgpu::BlendDescriptor blend;
+            blend.operation = wgpu::BlendOperation::Add;
+            blend.srcFactor = wgpu::BlendFactor::One;
+            blend.dstFactor = wgpu::BlendFactor::Zero;
+            wgpu::ColorStateDescriptor colorStateDescriptor;
+            colorStateDescriptor.format = wgpu::TextureFormat::RGBA8Unorm;
             colorStateDescriptor.alphaBlend = blend;
             colorStateDescriptor.colorBlend = blend;
-            colorStateDescriptor.writeMask = dawn::ColorWriteMask::All;
+            colorStateDescriptor.writeMask = wgpu::ColorWriteMask::All;
             for (uint32_t i = 0; i < kMaxColorAttachments; ++i) {
-                mColorStates[i] = colorStateDescriptor;
-                cColorStates[i] = &mColorStates[i];
+                cColorStates[i] = colorStateDescriptor;
             }
         }
 
         // Set defaults for the depth stencil state descriptors.
         {
-            dawn::StencilStateFaceDescriptor stencilFace;
-            stencilFace.compare = dawn::CompareFunction::Always;
-            stencilFace.failOp = dawn::StencilOperation::Keep;
-            stencilFace.depthFailOp = dawn::StencilOperation::Keep;
-            stencilFace.passOp = dawn::StencilOperation::Keep;
+            wgpu::StencilStateFaceDescriptor stencilFace;
+            stencilFace.compare = wgpu::CompareFunction::Always;
+            stencilFace.failOp = wgpu::StencilOperation::Keep;
+            stencilFace.depthFailOp = wgpu::StencilOperation::Keep;
+            stencilFace.passOp = wgpu::StencilOperation::Keep;
 
-            cDepthStencilState.format = dawn::TextureFormat::D32FloatS8Uint;
+            cDepthStencilState.format = wgpu::TextureFormat::Depth24PlusStencil8;
             cDepthStencilState.depthWriteEnabled = false;
-            cDepthStencilState.depthCompare = dawn::CompareFunction::Always;
+            cDepthStencilState.depthCompare = wgpu::CompareFunction::Always;
             cDepthStencilState.stencilBack = stencilFace;
             cDepthStencilState.stencilFront = stencilFace;
             cDepthStencilState.stencilReadMask = 0xff;
             cDepthStencilState.stencilWriteMask = 0xff;
             descriptor->depthStencilState = nullptr;
         }
-
-        descriptor->layout = utils::MakeBasicPipelineLayout(device, nullptr);
     }
 
 }  // namespace utils

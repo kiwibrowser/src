@@ -18,6 +18,7 @@
 #include "dawn_native/CommandEncoder.h"
 #include "dawn_native/Error.h"
 #include "dawn_native/ObjectBase.h"
+#include "dawn_native/PassResourceUsageTracker.h"
 
 #include "dawn_native/dawn_platform.h"
 
@@ -30,10 +31,8 @@ namespace dawn_native {
     class ProgrammablePassEncoder : public ObjectBase {
       public:
         ProgrammablePassEncoder(DeviceBase* device,
-                                CommandEncoderBase* topLevelEncoder,
-                                CommandAllocator* allocator);
-
-        void EndPass();
+                                EncodingContext* encodingContext,
+                                PassType passType);
 
         void InsertDebugMarker(const char* groupLabel);
         void PopDebugGroup();
@@ -42,21 +41,17 @@ namespace dawn_native {
         void SetBindGroup(uint32_t groupIndex,
                           BindGroupBase* group,
                           uint32_t dynamicOffsetCount,
-                          const uint64_t* dynamicOffsets);
+                          const uint32_t* dynamicOffsets);
 
       protected:
         // Construct an "error" programmable pass encoder.
         ProgrammablePassEncoder(DeviceBase* device,
-                                CommandEncoderBase* topLevelEncoder,
-                                ErrorTag errorTag);
+                                EncodingContext* encodingContext,
+                                ErrorTag errorTag,
+                                PassType passType);
 
-        MaybeError ValidateCanRecordCommands() const;
-
-        // The allocator is borrowed from the top level encoder. Keep a reference to the encoder
-        // to make sure the allocator isn't freed.
-        Ref<CommandEncoderBase> mTopLevelEncoder = nullptr;
-        // mAllocator is cleared at the end of the pass so it acts as a tag that EndPass was called
-        CommandAllocator* mAllocator = nullptr;
+        EncodingContext* mEncodingContext = nullptr;
+        PassResourceUsageTracker mUsageTracker;
     };
 
 }  // namespace dawn_native

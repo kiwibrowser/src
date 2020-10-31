@@ -17,6 +17,9 @@
 
 #include <cstdint>
 
+template <typename T>
+class Ref;
+
 namespace dawn_native {
 
     class AdapterBase;
@@ -25,29 +28,35 @@ namespace dawn_native {
     class BufferBase;
     class ComputePipelineBase;
     class CommandBufferBase;
-    class CommandEncoderBase;
-    class ComputePassEncoderBase;
-    class FenceBase;
+    class CommandEncoder;
+    class ComputePassEncoder;
+    class Fence;
     class InstanceBase;
     class PipelineBase;
     class PipelineLayoutBase;
+    class QuerySetBase;
     class QueueBase;
-    class RenderPassEncoderBase;
+    class RenderBundleBase;
+    class RenderBundleEncoder;
+    class RenderPassEncoder;
     class RenderPipelineBase;
+    class ResourceHeapBase;
     class SamplerBase;
+    class Surface;
     class ShaderModuleBase;
     class StagingBufferBase;
     class SwapChainBase;
+    class NewSwapChainBase;
     class TextureBase;
     class TextureViewBase;
 
     class DeviceBase;
 
     template <typename T>
-    class Ref;
-
-    template <typename T>
     class PerStage;
+
+    struct Format;
+
 }  // namespace dawn_native
 
 #endif  // DAWNNATIVE_FORWARD_H_

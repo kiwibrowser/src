@@ -23,7 +23,7 @@
 namespace dawn_native { namespace opengl {
 
     SwapChain::SwapChain(Device* device, const SwapChainDescriptor* descriptor)
-        : SwapChainBase(device, descriptor) {
+        : OldSwapChainBase(device, descriptor) {
         const auto& im = GetImplementation();
         im.Init(im.userData, nullptr);
     }
@@ -36,7 +36,7 @@ namespace dawn_native { namespace opengl {
         DawnSwapChainNextTexture next = {};
         DawnSwapChainError error = im.GetNextTexture(im.userData, &next);
         if (error) {
-            GetDevice()->HandleError(error);
+            GetDevice()->HandleError(InternalErrorType::Internal, error);
             return nullptr;
         }
         GLuint nativeTexture = next.texture.u32;
@@ -44,7 +44,8 @@ namespace dawn_native { namespace opengl {
                            TextureBase::TextureState::OwnedExternal);
     }
 
-    void SwapChain::OnBeforePresent(TextureBase*) {
+    MaybeError SwapChain::OnBeforePresent(TextureViewBase*) {
+        return {};
     }
 
 }}  // namespace dawn_native::opengl

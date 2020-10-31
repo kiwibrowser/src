@@ -15,9 +15,9 @@
 #include "dawn_native/Instance.h"
 
 #include "common/Assert.h"
+#include "common/Log.h"
 #include "dawn_native/ErrorData.h"
-
-#include <iostream>
+#include "dawn_native/Surface.h"
 
 namespace dawn_native {
 
@@ -45,52 +45,24 @@ namespace dawn_native {
 #endif  // defined(DAWN_ENABLE_BACKEND_OPENGL)
 #if defined(DAWN_ENABLE_BACKEND_VULKAN)
     namespace vulkan {
-        BackendConnection* Connect(InstanceBase* instance);
+        BackendConnection* Connect(InstanceBase* instance, bool useSwiftshader);
     }
 #endif  // defined(DAWN_ENABLE_BACKEND_VULKAN)
 
-    namespace {
-
-        struct ToggleEnumAndInfo {
-            Toggle toggle;
-            ToggleInfo info;
-        };
-
-        using ToggleEnumAndInfoList =
-            std::array<ToggleEnumAndInfo, static_cast<size_t>(Toggle::EnumCount)>;
-
-        static constexpr ToggleEnumAndInfoList kToggleNameAndInfoList = {
-            {{Toggle::EmulateStoreAndMSAAResolve,
-              {"emulate_store_and_msaa_resolve",
-               "Emulate storing into multisampled color attachments and doing MSAA resolve "
-               "simultaneously. This workaround is enabled by default on the Metal drivers that do "
-               "not support MTLStoreActionStoreAndMultisampleResolve. To support StoreOp::Store on "
-               "those platforms, we should do MSAA resolve in another render pass after ending the "
-               "previous one.",
-               "https://bugs.chromium.org/p/dawn/issues/detail?id=56"}},
-             {Toggle::NonzeroClearResourcesOnCreationForTesting,
-              {"nonzero_clear_resources_on_creation_for_testing",
-               "Clears texture to full 1 bits as soon as they are created, but doesn't update "
-               "the tracking state of the texture. This way we can test the logic of clearing "
-               "textures that use recycled memory.",
-               "https://bugs.chromium.org/p/dawn/issues/detail?id=145"}},
-             {Toggle::AlwaysResolveIntoZeroLevelAndLayer,
-              {"always_resolve_into_zero_level_and_layer",
-               "When the resolve target is a texture view that is created on the non-zero level or "
-               "layer of a texture, we first resolve into a temporarily 2D texture with only one "
-               "mipmap level and one array layer, and copy the result of MSAA resolve into the "
-               "true resolve target. This workaround is enabled by default on the Metal drivers "
-               "that have bugs when setting non-zero resolveLevel or resolveSlice.",
-               "https://bugs.chromium.org/p/dawn/issues/detail?id=56"}},
-             {Toggle::LazyClearResourceOnFirstUse,
-              {"lazy_clear_resource_on_first_use",
-               "Clears resource to zero on first usage. This initializes the resource "
-               "so that no dirty bits from recycled memory is present in the new resource.",
-               "https://bugs.chromium.org/p/dawn/issues/detail?id=145"}}}};
-
-    }  // anonymous namespace
-
     // InstanceBase
+
+    // static
+    InstanceBase* InstanceBase::Create(const InstanceDescriptor* descriptor) {
+        Ref<InstanceBase> instance = AcquireRef(new InstanceBase);
+        if (!instance->Initialize(descriptor)) {
+            return nullptr;
+        }
+        return instance.Detach();
+    }
+
+    bool InstanceBase::Initialize(const InstanceDescriptor*) {
+        return true;
+    }
 
     void InstanceBase::DiscoverDefaultAdapters() {
         EnsureBackendConnections();
@@ -119,51 +91,25 @@ namespace dawn_native {
         return !ConsumedError(DiscoverAdaptersInternal(options));
     }
 
-    const char* InstanceBase::ToggleEnumToName(Toggle toggle) {
-        ASSERT(toggle != Toggle::InvalidEnum);
-
-        const ToggleEnumAndInfo& toggleNameAndInfo =
-            kToggleNameAndInfoList[static_cast<size_t>(toggle)];
-        ASSERT(toggleNameAndInfo.toggle == toggle);
-        return toggleNameAndInfo.info.name;
-    }
-
     const ToggleInfo* InstanceBase::GetToggleInfo(const char* toggleName) {
-        ASSERT(toggleName);
-
-        EnsureToggleNameToEnumMapInitialized();
-
-        const auto& iter = mToggleNameToEnumMap.find(toggleName);
-        if (iter != mToggleNameToEnumMap.cend()) {
-            return &kToggleNameAndInfoList[static_cast<size_t>(iter->second)].info;
-        }
-        return nullptr;
+        return mTogglesInfo.GetToggleInfo(toggleName);
     }
 
     Toggle InstanceBase::ToggleNameToEnum(const char* toggleName) {
-        ASSERT(toggleName);
-
-        EnsureToggleNameToEnumMapInitialized();
-
-        const auto& iter = mToggleNameToEnumMap.find(toggleName);
-        if (iter != mToggleNameToEnumMap.cend()) {
-            return kToggleNameAndInfoList[static_cast<size_t>(iter->second)].toggle;
-        }
-        return Toggle::InvalidEnum;
+        return mTogglesInfo.ToggleNameToEnum(toggleName);
     }
 
-    void InstanceBase::EnsureToggleNameToEnumMapInitialized() {
-        if (mToggleNameToEnumMapInitialized) {
-            return;
-        }
+    const ExtensionInfo* InstanceBase::GetExtensionInfo(const char* extensionName) {
+        return mExtensionsInfo.GetExtensionInfo(extensionName);
+    }
 
-        for (size_t index = 0; index < kToggleNameAndInfoList.size(); ++index) {
-            const ToggleEnumAndInfo& toggleNameAndInfo = kToggleNameAndInfoList[index];
-            ASSERT(index == static_cast<size_t>(toggleNameAndInfo.toggle));
-            mToggleNameToEnumMap[toggleNameAndInfo.info.name] = toggleNameAndInfo.toggle;
-        }
+    Extension InstanceBase::ExtensionNameToEnum(const char* extensionName) {
+        return mExtensionsInfo.ExtensionNameToEnum(extensionName);
+    }
 
-        mToggleNameToEnumMapInitialized = true;
+    ExtensionsSet InstanceBase::ExtensionNamesToExtensionsSet(
+        const std::vector<const char*>& requiredExtensions) {
+        return mExtensionsInfo.ExtensionNamesToExtensionsSet(requiredExtensions);
     }
 
     const std::vector<std::unique_ptr<AdapterBase>>& InstanceBase::GetAdapters() const {
@@ -175,7 +121,7 @@ namespace dawn_native {
             return;
         }
 
-        auto Register = [this](BackendConnection* connection, BackendType expectedType) {
+        auto Register = [this](BackendConnection* connection, wgpu::BackendType expectedType) {
             if (connection != nullptr) {
                 ASSERT(connection->GetType() == expectedType);
                 ASSERT(connection->GetInstance() == this);
@@ -184,59 +130,64 @@ namespace dawn_native {
         };
 
 #if defined(DAWN_ENABLE_BACKEND_D3D12)
-        Register(d3d12::Connect(this), BackendType::D3D12);
+        Register(d3d12::Connect(this), wgpu::BackendType::D3D12);
 #endif  // defined(DAWN_ENABLE_BACKEND_D3D12)
 #if defined(DAWN_ENABLE_BACKEND_METAL)
-        Register(metal::Connect(this), BackendType::Metal);
+        Register(metal::Connect(this), wgpu::BackendType::Metal);
 #endif  // defined(DAWN_ENABLE_BACKEND_METAL)
 #if defined(DAWN_ENABLE_BACKEND_VULKAN)
-        Register(vulkan::Connect(this), BackendType::Vulkan);
-#endif  // defined(DAWN_ENABLE_BACKEND_VULKAN)
+        // TODO(https://github.com/KhronosGroup/Vulkan-Loader/issues/287):
+        // When we can load SwiftShader in parallel with the system driver, we should create the
+        // backend only once and expose SwiftShader as an additional adapter. For now, we create two
+        // VkInstances, one from SwiftShader, and one from the system. Note: If the Vulkan driver
+        // *is* SwiftShader, then this would load SwiftShader twice.
+        Register(vulkan::Connect(this, false), wgpu::BackendType::Vulkan);
+#    if defined(DAWN_ENABLE_SWIFTSHADER)
+        Register(vulkan::Connect(this, true), wgpu::BackendType::Vulkan);
+#    endif  // defined(DAWN_ENABLE_SWIFTSHADER)
+#endif      // defined(DAWN_ENABLE_BACKEND_VULKAN)
 #if defined(DAWN_ENABLE_BACKEND_OPENGL)
-        Register(opengl::Connect(this), BackendType::OpenGL);
+        Register(opengl::Connect(this), wgpu::BackendType::OpenGL);
 #endif  // defined(DAWN_ENABLE_BACKEND_OPENGL)
 #if defined(DAWN_ENABLE_BACKEND_NULL)
-        Register(null::Connect(this), BackendType::Null);
+        Register(null::Connect(this), wgpu::BackendType::Null);
 #endif  // defined(DAWN_ENABLE_BACKEND_NULL)
 
         mBackendsConnected = true;
     }
 
-    ResultOrError<BackendConnection*> InstanceBase::FindBackend(BackendType type) {
-        for (std::unique_ptr<BackendConnection>& backend : mBackends) {
-            if (backend->GetType() == type) {
-                return backend.get();
-            }
-        }
-
-        return DAWN_VALIDATION_ERROR("Backend isn't present.");
-    }
-
     MaybeError InstanceBase::DiscoverAdaptersInternal(const AdapterDiscoveryOptionsBase* options) {
         EnsureBackendConnections();
 
-        BackendConnection* backend;
-        DAWN_TRY_ASSIGN(backend, FindBackend(options->backendType));
+        bool foundBackend = false;
+        for (std::unique_ptr<BackendConnection>& backend : mBackends) {
+            if (backend->GetType() != static_cast<wgpu::BackendType>(options->backendType)) {
+                continue;
+            }
+            foundBackend = true;
 
-        std::vector<std::unique_ptr<AdapterBase>> newAdapters;
-        DAWN_TRY_ASSIGN(newAdapters, backend->DiscoverAdapters(options));
+            std::vector<std::unique_ptr<AdapterBase>> newAdapters;
+            DAWN_TRY_ASSIGN(newAdapters, backend->DiscoverAdapters(options));
 
-        for (std::unique_ptr<AdapterBase>& adapter : newAdapters) {
-            ASSERT(adapter->GetBackendType() == backend->GetType());
-            ASSERT(adapter->GetInstance() == this);
-            mAdapters.push_back(std::move(adapter));
+            for (std::unique_ptr<AdapterBase>& adapter : newAdapters) {
+                ASSERT(adapter->GetBackendType() == backend->GetType());
+                ASSERT(adapter->GetInstance() == this);
+                mAdapters.push_back(std::move(adapter));
+            }
         }
 
+        if (!foundBackend) {
+            return DAWN_VALIDATION_ERROR("Backend isn't present.");
+        }
         return {};
     }
 
     bool InstanceBase::ConsumedError(MaybeError maybeError) {
         if (maybeError.IsError()) {
-            ErrorData* error = maybeError.AcquireError();
+            std::unique_ptr<ErrorData> error = maybeError.AcquireError();
 
             ASSERT(error != nullptr);
-            std::cout << error->GetMessage() << std::endl;
-            delete error;
+            dawn::InfoLog() << error->GetMessage();
 
             return true;
         }
@@ -247,8 +198,32 @@ namespace dawn_native {
         mEnableBackendValidation = enableBackendValidation;
     }
 
-    bool InstanceBase::IsBackendValidationEnabled() {
+    bool InstanceBase::IsBackendValidationEnabled() const {
         return mEnableBackendValidation;
+    }
+
+    void InstanceBase::EnableBeginCaptureOnStartup(bool beginCaptureOnStartup) {
+        mBeginCaptureOnStartup = beginCaptureOnStartup;
+    }
+
+    bool InstanceBase::IsBeginCaptureOnStartupEnabled() const {
+        return mBeginCaptureOnStartup;
+    }
+
+    void InstanceBase::SetPlatform(dawn_platform::Platform* platform) {
+        mPlatform = platform;
+    }
+
+    dawn_platform::Platform* InstanceBase::GetPlatform() const {
+        return mPlatform;
+    }
+
+    Surface* InstanceBase::CreateSurface(const SurfaceDescriptor* descriptor) {
+        if (ConsumedError(ValidateSurfaceDescriptor(this, descriptor))) {
+            return nullptr;
+        }
+
+        return new Surface(this, descriptor);
     }
 
 }  // namespace dawn_native

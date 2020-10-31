@@ -16,16 +16,18 @@
 #define DAWNNATIVE_STAGINGBUFFERD3D12_H_
 
 #include "dawn_native/StagingBuffer.h"
+#include "dawn_native/d3d12/ResourceHeapAllocationD3D12.h"
 #include "dawn_native/d3d12/d3d12_platform.h"
 
 namespace dawn_native { namespace d3d12 {
 
+    class CommandRecordingContext;
     class Device;
 
     class StagingBuffer : public StagingBufferBase {
       public:
         StagingBuffer(size_t size, Device* device);
-        ~StagingBuffer();
+        ~StagingBuffer() override;
 
         ID3D12Resource* GetResource() const;
 
@@ -33,7 +35,7 @@ namespace dawn_native { namespace d3d12 {
 
       private:
         Device* mDevice;
-        ComPtr<ID3D12Resource> mUploadHeap;
+        ResourceHeapAllocation mUploadHeap;
     };
 }}  // namespace dawn_native::d3d12
 

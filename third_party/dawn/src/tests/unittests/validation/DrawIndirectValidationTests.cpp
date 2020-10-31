@@ -16,22 +16,22 @@
 #include <limits>
 #include "tests/unittests/validation/ValidationTest.h"
 #include "utils/ComboRenderPipelineDescriptor.h"
-#include "utils/DawnHelpers.h"
+#include "utils/WGPUHelpers.h"
 
 class DrawIndirectValidationTest : public ValidationTest {
   protected:
     void SetUp() override {
         ValidationTest::SetUp();
 
-        dawn::ShaderModule vsModule =
-            utils::CreateShaderModule(device, dawn::ShaderStage::Vertex, R"(
+        wgpu::ShaderModule vsModule =
+            utils::CreateShaderModule(device, utils::SingleShaderStage::Vertex, R"(
             #version 450
             void main() {
                 gl_Position = vec4(0.0);
             })");
 
-        dawn::ShaderModule fsModule =
-            utils::CreateShaderModule(device, dawn::ShaderStage::Fragment, R"(
+        wgpu::ShaderModule fsModule =
+            utils::CreateShaderModule(device, utils::SingleShaderStage::Fragment, R"(
             #version 450
             layout(location = 0) out vec4 fragColor;
             void main() {
@@ -39,17 +39,17 @@ class DrawIndirectValidationTest : public ValidationTest {
             })");
 
         // Set up render pipeline
-        dawn::PipelineLayout pipelineLayout = utils::MakeBasicPipelineLayout(device, nullptr);
+        wgpu::PipelineLayout pipelineLayout = utils::MakeBasicPipelineLayout(device, nullptr);
 
         utils::ComboRenderPipelineDescriptor descriptor(device);
         descriptor.layout = pipelineLayout;
-        descriptor.cVertexStage.module = vsModule;
+        descriptor.vertexStage.module = vsModule;
         descriptor.cFragmentStage.module = fsModule;
 
         pipeline = device.CreateRenderPipeline(&descriptor);
     }
 
-    void ValidateExpectation(dawn::CommandEncoder encoder, utils::Expectation expectation) {
+    void ValidateExpectation(wgpu::CommandEncoder encoder, utils::Expectation expectation) {
         if (expectation == utils::Expectation::Success) {
             encoder.Finish();
         } else {
@@ -73,18 +73,18 @@ class DrawIndirectValidationTest : public ValidationTest {
                             std::initializer_list<uint32_t> bufferList,
                             uint64_t indirectOffset,
                             bool indexed) {
-        dawn::Buffer indirectBuffer = utils::CreateBufferFromData<uint32_t>(
-            device, dawn::BufferUsageBit::Indirect, bufferList);
+        wgpu::Buffer indirectBuffer =
+            utils::CreateBufferFromData<uint32_t>(device, wgpu::BufferUsage::Indirect, bufferList);
 
         DummyRenderPass renderPass(device);
-        dawn::CommandEncoder encoder = device.CreateCommandEncoder();
-        dawn::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
         pass.SetPipeline(pipeline);
         if (indexed) {
             uint32_t zeros[100] = {};
-            dawn::Buffer indexBuffer = utils::CreateBufferFromData(device, zeros, sizeof(zeros),
-                                                                   dawn::BufferUsageBit::Index);
-            pass.SetIndexBuffer(indexBuffer, 0);
+            wgpu::Buffer indexBuffer =
+                utils::CreateBufferFromData(device, zeros, sizeof(zeros), wgpu::BufferUsage::Index);
+            pass.SetIndexBuffer(indexBuffer);
             pass.DrawIndexedIndirect(indirectBuffer, indirectOffset);
         } else {
             pass.DrawIndirect(indirectBuffer, indirectOffset);
@@ -94,7 +94,7 @@ class DrawIndirectValidationTest : public ValidationTest {
         ValidateExpectation(encoder, expectation);
     }
 
-    dawn::RenderPipeline pipeline;
+    wgpu::RenderPipeline pipeline;
 };
 
 // Verify out of bounds indirect draw calls are caught early

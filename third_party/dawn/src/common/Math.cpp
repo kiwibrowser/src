@@ -15,8 +15,11 @@
 #include "common/Math.h"
 
 #include "common/Assert.h"
+#include "common/Platform.h"
 
 #include <algorithm>
+#include <cmath>
+#include <limits>
 
 #if defined(DAWN_COMPILER_MSVC)
 #    include <intrin.h>
@@ -46,7 +49,37 @@ uint32_t Log2(uint32_t value) {
 #endif
 }
 
-bool IsPowerOfTwo(size_t n) {
+uint32_t Log2(uint64_t value) {
+    ASSERT(value != 0);
+#if defined(DAWN_COMPILER_MSVC)
+#    if defined(DAWN_PLATFORM_64_BIT)
+    unsigned long firstBitIndex = 0ul;
+    unsigned char ret = _BitScanReverse64(&firstBitIndex, value);
+    ASSERT(ret != 0);
+    return firstBitIndex;
+#    else   // defined(DAWN_PLATFORM_64_BIT)
+    unsigned long firstBitIndex = 0ul;
+    if (_BitScanReverse(&firstBitIndex, value >> 32)) {
+        return firstBitIndex + 32;
+    }
+    unsigned char ret = _BitScanReverse(&firstBitIndex, value & 0xFFFFFFFF);
+    ASSERT(ret != 0);
+    return firstBitIndex;
+#    endif  // defined(DAWN_PLATFORM_64_BIT)
+#else       // defined(DAWN_COMPILER_MSVC)
+    return 63 - static_cast<uint32_t>(__builtin_clzll(value));
+#endif      // defined(DAWN_COMPILER_MSVC)
+}
+
+uint64_t NextPowerOfTwo(uint64_t n) {
+    if (n <= 1) {
+        return 1;
+    }
+
+    return 1ull << (Log2(n - 1) + 1);
+}
+
+bool IsPowerOfTwo(uint64_t n) {
     ASSERT(n != 0);
     return (n & (n - 1)) == 0;
 }
@@ -55,13 +88,6 @@ bool IsPtrAligned(const void* ptr, size_t alignment) {
     ASSERT(IsPowerOfTwo(alignment));
     ASSERT(alignment != 0);
     return (reinterpret_cast<size_t>(ptr) & (alignment - 1)) == 0;
-}
-
-void* AlignVoidPtr(void* ptr, size_t alignment) {
-    ASSERT(IsPowerOfTwo(alignment));
-    ASSERT(alignment != 0);
-    return reinterpret_cast<void*>((reinterpret_cast<size_t>(ptr) + (alignment - 1)) &
-                                   ~(alignment - 1));
 }
 
 bool IsAligned(uint32_t value, size_t alignment) {
@@ -85,8 +111,10 @@ uint16_t Float32ToFloat16(float fp32) {
     uint32_t sign16 = (fp32i & 0x80000000) >> 16;
     uint32_t mantissaAndExponent = fp32i & 0x7FFFFFFF;
 
-    if (mantissaAndExponent > 0x47FFEFFF) {  // Infinity
-        return static_cast<uint16_t>(sign16 | 0x7FFF);
+    if (mantissaAndExponent > 0x7F800000) {  // NaN
+        return 0x7FFF;
+    } else if (mantissaAndExponent > 0x47FFEFFF) {  // Infinity
+        return static_cast<uint16_t>(sign16 | 0x7C00);
     } else if (mantissaAndExponent < 0x38800000) {  // Denormal
         uint32_t mantissa = (mantissaAndExponent & 0x007FFFFF) | 0x00800000;
         int32_t exponent = 113 - (mantissaAndExponent >> 23);
@@ -104,4 +132,31 @@ uint16_t Float32ToFloat16(float fp32) {
                                                ((mantissaAndExponent >> 13) & 1)) >>
                                                   13);
     }
+}
+
+bool IsFloat16NaN(uint16_t fp16) {
+    return (fp16 & 0x7FFF) > 0x7C00;
+}
+
+// Based on the Khronos Data Format Specification 1.2 Section 13.3 sRGB transfer functions
+float SRGBToLinear(float srgb) {
+    // sRGB is always used in unsigned normalized formats so clamp to [0.0, 1.0]
+    if (srgb <= 0.0f) {
+        return 0.0f;
+    } else if (srgb > 1.0f) {
+        return 1.0f;
+    }
+
+    if (srgb < 0.04045f) {
+        return srgb / 12.92f;
+    } else {
+        return std::pow((srgb + 0.055f) / 1.055f, 2.4f);
+    }
+}
+
+uint64_t RoundUp(uint64_t n, uint64_t m) {
+    ASSERT(m > 0);
+    ASSERT(n > 0);
+    ASSERT(m <= std::numeric_limits<uint64_t>::max() - n);
+    return ((n + m - 1) / m) * m;
 }

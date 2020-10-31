@@ -14,76 +14,58 @@
 
 #include "dawn_native/metal/BackendMTL.h"
 
+#include "common/GPUInfo.h"
+#include "common/Platform.h"
 #include "dawn_native/Instance.h"
 #include "dawn_native/MetalBackend.h"
 #include "dawn_native/metal/DeviceMTL.h"
 
-#include <IOKit/graphics/IOGraphicsLib.h>
+#if defined(DAWN_PLATFORM_MACOS)
+#    import <IOKit/IOKitLib.h>
+#endif
 
 namespace dawn_native { namespace metal {
 
     namespace {
-        // Since CGDisplayIOServicePort was deprecated in macOS 10.9, we need create
-        // an alternative function for getting I/O service port from current display.
-        io_service_t GetDisplayIOServicePort() {
-            // The matching service port (or 0 if none can be found)
-            io_service_t servicePort = 0;
 
-            // Create matching dictionary for display service
-            CFMutableDictionaryRef matchingDict = IOServiceMatching("IODisplayConnect");
-            if (matchingDict == nullptr) {
-                return 0;
-            }
+        struct PCIIDs {
+            uint32_t vendorId;
+            uint32_t deviceId;
+        };
 
-            io_iterator_t iter;
-            // IOServiceGetMatchingServices look up the default master ports that match a
-            // matching dictionary, and will consume the reference on the matching dictionary,
-            // so we don't need to release the dictionary, but the iterator handle should
-            // be released when its iteration is finished.
-            if (IOServiceGetMatchingServices(kIOMasterPortDefault, matchingDict, &iter) !=
-                kIOReturnSuccess) {
-                return 0;
-            }
+        struct Vendor {
+            const char* trademark;
+            uint32_t vendorId;
+        };
 
-            // Vendor number and product number of current main display
-            const uint32_t displayVendorNumber = CGDisplayVendorNumber(kCGDirectMainDisplay);
-            const uint32_t displayProductNumber = CGDisplayModelNumber(kCGDirectMainDisplay);
+#if defined(DAWN_PLATFORM_MACOS)
+        const Vendor kVendors[] = {{"AMD", gpu_info::kVendorID_AMD},
+                                   {"Radeon", gpu_info::kVendorID_AMD},
+                                   {"Intel", gpu_info::kVendorID_Intel},
+                                   {"Geforce", gpu_info::kVendorID_Nvidia},
+                                   {"Quadro", gpu_info::kVendorID_Nvidia}};
 
-            io_service_t serv;
-            while ((serv = IOIteratorNext(iter)) != IO_OBJECT_NULL) {
-                CFDictionaryRef displayInfo =
-                    IODisplayCreateInfoDictionary(serv, kIODisplayOnlyPreferredName);
-
-                CFNumberRef vendorIDRef, productIDRef;
-                Boolean success;
-                // The ownership of CF object follows the 'Get Rule', we don't need to
-                // release these values
-                success = CFDictionaryGetValueIfPresent(displayInfo, CFSTR(kDisplayVendorID),
-                                                        (const void**)&vendorIDRef);
-                success &= CFDictionaryGetValueIfPresent(displayInfo, CFSTR(kDisplayProductID),
-                                                         (const void**)&productIDRef);
-                if (success) {
-                    CFIndex vendorID = 0, productID = 0;
-                    CFNumberGetValue(vendorIDRef, kCFNumberSInt32Type, &vendorID);
-                    CFNumberGetValue(productIDRef, kCFNumberSInt32Type, &productID);
-
-                    if (vendorID == displayVendorNumber && productID == displayProductNumber) {
-                        // Check if vendor id and product id match with current display's
-                        // If it does, we find the desired service port
-                        servicePort = serv;
-                        CFRelease(displayInfo);
-                        break;
-                    }
+        // Find vendor ID from MTLDevice name.
+        MaybeError GetVendorIdFromVendors(id<MTLDevice> device, PCIIDs* ids) {
+            uint32_t vendorId = 0;
+            const char* deviceName = [device.name UTF8String];
+            for (const auto& it : kVendors) {
+                if (strstr(deviceName, it.trademark) != nullptr) {
+                    vendorId = it.vendorId;
+                    break;
                 }
-
-                CFRelease(displayInfo);
-                IOObjectRelease(serv);
             }
-            IOObjectRelease(iter);
-            return servicePort;
+
+            if (vendorId == 0) {
+                return DAWN_INTERNAL_ERROR("Failed to find vendor id with the device");
+            }
+
+            // Set vendor id with 0
+            *ids = PCIIDs{vendorId, 0};
+            return {};
         }
 
-        // Get integer property from registry entry.
+        // Extracts an integer property from a registry entry.
         uint32_t GetEntryProperty(io_registry_entry_t entry, CFStringRef name) {
             uint32_t value = 0;
 
@@ -93,17 +75,80 @@ namespace dawn_native { namespace metal {
                 entry, kIOServicePlane, name, kCFAllocatorDefault,
                 kIORegistryIterateRecursively | kIORegistryIterateParents));
 
-            if (data != nullptr) {
-                const uint32_t* valuePtr =
-                    reinterpret_cast<const uint32_t*>(CFDataGetBytePtr(data));
-                if (valuePtr) {
-                    value = *valuePtr;
-                }
-
-                CFRelease(data);
+            if (data == nullptr) {
+                return value;
             }
 
+            // CFDataGetBytePtr() is guaranteed to return a read-only pointer
+            value = *reinterpret_cast<const uint32_t*>(CFDataGetBytePtr(data));
+
+            CFRelease(data);
             return value;
+        }
+
+        // Queries the IO Registry to find the PCI device and vendor IDs of the MTLDevice.
+        // The registry entry correponding to [device registryID] doesn't contain the exact PCI ids
+        // because it corresponds to a driver. However its parent entry corresponds to the device
+        // itself and has uint32_t "device-id" and "registry-id" keys. For example on a dual-GPU
+        // MacBook Pro 2017 the IORegistry explorer shows the following tree (simplified here):
+        //
+        //  - PCI0@0
+        //  | - AppleACPIPCI
+        //  | | - IGPU@2 (type IOPCIDevice)
+        //  | | | - IntelAccelerator (type IOGraphicsAccelerator2)
+        //  | | - PEG0@1
+        //  | | | - IOPP
+        //  | | | | - GFX0@0 (type IOPCIDevice)
+        //  | | | | | - AMDRadeonX4000_AMDBaffinGraphicsAccelerator (type IOGraphicsAccelerator2)
+        //
+        // [device registryID] is the ID for one of the IOGraphicsAccelerator2 and we can see that
+        // their parent always is an IOPCIDevice that has properties for the device and vendor IDs.
+        MaybeError API_AVAILABLE(macos(10.13))
+            GetDeviceIORegistryPCIInfo(id<MTLDevice> device, PCIIDs* ids) {
+            // Get a matching dictionary for the IOGraphicsAccelerator2
+            CFMutableDictionaryRef matchingDict = IORegistryEntryIDMatching([device registryID]);
+            if (matchingDict == nullptr) {
+                return DAWN_INTERNAL_ERROR("Failed to create the matching dict for the device");
+            }
+
+            // IOServiceGetMatchingService will consume the reference on the matching dictionary,
+            // so we don't need to release the dictionary.
+            io_registry_entry_t acceleratorEntry =
+                IOServiceGetMatchingService(kIOMasterPortDefault, matchingDict);
+            if (acceleratorEntry == IO_OBJECT_NULL) {
+                return DAWN_INTERNAL_ERROR(
+                    "Failed to get the IO registry entry for the accelerator");
+            }
+
+            // Get the parent entry that will be the IOPCIDevice
+            io_registry_entry_t deviceEntry = IO_OBJECT_NULL;
+            if (IORegistryEntryGetParentEntry(acceleratorEntry, kIOServicePlane, &deviceEntry) !=
+                kIOReturnSuccess) {
+                IOObjectRelease(acceleratorEntry);
+                return DAWN_INTERNAL_ERROR("Failed to get the IO registry entry for the device");
+            }
+
+            ASSERT(deviceEntry != IO_OBJECT_NULL);
+            IOObjectRelease(acceleratorEntry);
+
+            uint32_t vendorId = GetEntryProperty(deviceEntry, CFSTR("vendor-id"));
+            uint32_t deviceId = GetEntryProperty(deviceEntry, CFSTR("device-id"));
+
+            *ids = PCIIDs{vendorId, deviceId};
+
+            IOObjectRelease(deviceEntry);
+
+            return {};
+        }
+
+        MaybeError GetDevicePCIInfo(id<MTLDevice> device, PCIIDs* ids) {
+            // [device registryID] is introduced on macOS 10.13+, otherwise workaround to get vendor
+            // id by vendor name on old macOS
+            if (@available(macos 10.13, *)) {
+                return GetDeviceIORegistryPCIInfo(device, ids);
+            } else {
+                return GetVendorIdFromVendors(device, ids);
+            }
         }
 
         bool IsMetalSupported() {
@@ -111,6 +156,19 @@ namespace dawn_native { namespace metal {
             NSOperatingSystemVersion macOS10_11 = {10, 11, 0};
             return [NSProcessInfo.processInfo isOperatingSystemAtLeastVersion:macOS10_11];
         }
+#elif defined(DAWN_PLATFORM_IOS)
+        MaybeError GetDevicePCIInfo(id<MTLDevice> device, PCIIDs* ids) {
+            DAWN_UNUSED(device);
+            *ids = PCIIDs{0, 0};
+            return {};
+        }
+
+        bool IsMetalSupported() {
+            return true;
+        }
+#else
+#    error "Unsupported Apple platform."
+#endif
     }  // anonymous namespace
 
     // The Metal backend's Adapter.
@@ -118,24 +176,28 @@ namespace dawn_native { namespace metal {
     class Adapter : public AdapterBase {
       public:
         Adapter(InstanceBase* instance, id<MTLDevice> device)
-            : AdapterBase(instance, BackendType::Metal), mDevice([device retain]) {
+            : AdapterBase(instance, wgpu::BackendType::Metal), mDevice([device retain]) {
             mPCIInfo.name = std::string([mDevice.name UTF8String]);
-            // Gather the PCI device and vendor IDs based on which device is rendering to the
-            // main display. This is obviously wrong for systems with multiple devices.
-            // TODO(cwallez@chromium.org): Once Chromium has the macOS 10.13 SDK rolled, we
-            // should use MTLDevice.registryID to gather the information.
-            io_registry_entry_t entry = GetDisplayIOServicePort();
-            if (entry != IO_OBJECT_NULL) {
-                mPCIInfo.vendorId = GetEntryProperty(entry, CFSTR("vendor-id"));
-                mPCIInfo.deviceId = GetEntryProperty(entry, CFSTR("device-id"));
-                IOObjectRelease(entry);
+
+            PCIIDs ids;
+            if (!instance->ConsumedError(GetDevicePCIInfo(device, &ids))) {
+                mPCIInfo.vendorId = ids.vendorId;
+                mPCIInfo.deviceId = ids.deviceId;
             }
 
+#if defined(DAWN_PLATFORM_IOS)
+            mAdapterType = wgpu::AdapterType::IntegratedGPU;
+#elif defined(DAWN_PLATFORM_MACOS)
             if ([device isLowPower]) {
-                mDeviceType = DeviceType::IntegratedGPU;
+                mAdapterType = wgpu::AdapterType::IntegratedGPU;
             } else {
-                mDeviceType = DeviceType::DiscreteGPU;
+                mAdapterType = wgpu::AdapterType::DiscreteGPU;
             }
+#else
+#    error "Unsupported Apple platform."
+#endif
+
+            InitializeSupportedExtensions();
         }
 
         ~Adapter() override {
@@ -144,7 +206,22 @@ namespace dawn_native { namespace metal {
 
       private:
         ResultOrError<DeviceBase*> CreateDeviceImpl(const DeviceDescriptor* descriptor) override {
-            return {new Device(this, mDevice, descriptor)};
+            return Device::Create(this, mDevice, descriptor);
+        }
+
+        void InitializeSupportedExtensions() {
+#if defined(DAWN_PLATFORM_MACOS)
+            if ([mDevice supportsFeatureSet:MTLFeatureSet_macOS_GPUFamily1_v1]) {
+                mSupportedExtensions.EnableExtension(Extension::TextureCompressionBC);
+            }
+
+            if (@available(macOS 10.15, *)) {
+                mSupportedExtensions.EnableExtension(Extension::PipelineStatisticsQuery);
+                mSupportedExtensions.EnableExtension(Extension::TimestampQuery);
+            }
+#endif
+
+            mSupportedExtensions.EnableExtension(Extension::ShaderFloat16);
         }
 
         id<MTLDevice> mDevice = nil;
@@ -152,21 +229,40 @@ namespace dawn_native { namespace metal {
 
     // Implementation of the Metal backend's BackendConnection
 
-    Backend::Backend(InstanceBase* instance) : BackendConnection(instance, BackendType::Metal) {
+    Backend::Backend(InstanceBase* instance)
+        : BackendConnection(instance, wgpu::BackendType::Metal) {
         if (GetInstance()->IsBackendValidationEnabled()) {
             setenv("METAL_DEVICE_WRAPPER_TYPE", "1", 1);
         }
     }
 
     std::vector<std::unique_ptr<AdapterBase>> Backend::DiscoverDefaultAdapters() {
-        NSArray<id<MTLDevice>>* devices = MTLCopyAllDevices();
-
         std::vector<std::unique_ptr<AdapterBase>> adapters;
-        for (id<MTLDevice> device in devices) {
-            adapters.push_back(std::make_unique<Adapter>(GetInstance(), device));
-        }
+        BOOL supportedVersion = NO;
+#if defined(DAWN_PLATFORM_MACOS)
+        if (@available(macOS 10.11, *)) {
+            supportedVersion = YES;
+            NSArray<id<MTLDevice>>* devices = MTLCopyAllDevices();
 
-        [devices release];
+            for (id<MTLDevice> device in devices) {
+                adapters.push_back(std::make_unique<Adapter>(GetInstance(), device));
+            }
+
+            [devices release];
+        }
+#endif
+
+#if defined(DAWN_PLATFORM_IOS)
+        if (@available(iOS 8.0, *)) {
+            supportedVersion = YES;
+            // iOS only has a single device so MTLCopyAllDevices doesn't exist there.
+            adapters.push_back(
+                std::make_unique<Adapter>(GetInstance(), MTLCreateSystemDefaultDevice()));
+        }
+#endif
+        if (!supportedVersion) {
+            UNREACHABLE();
+        }
         return adapters;
     }
 

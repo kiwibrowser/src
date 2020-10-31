@@ -14,6 +14,7 @@
 
 #include "tests/unittests/wire/WireTest.h"
 
+#include "dawn/dawn_proc.h"
 #include "dawn_wire/WireClient.h"
 #include "dawn_wire/WireServer.h"
 #include "utils/TerribleCommandBuffer.h"
@@ -27,33 +28,58 @@ WireTest::WireTest() {
 WireTest::~WireTest() {
 }
 
+client::MemoryTransferService* WireTest::GetClientMemoryTransferService() {
+    return nullptr;
+}
+
+server::MemoryTransferService* WireTest::GetServerMemoryTransferService() {
+    return nullptr;
+}
+
 void WireTest::SetUp() {
     DawnProcTable mockProcs;
-    DawnDevice mockDevice;
+    WGPUDevice mockDevice;
     api.GetProcTableAndDevice(&mockProcs, &mockDevice);
 
     // This SetCallback call cannot be ignored because it is done as soon as we start the server
-    EXPECT_CALL(api, OnDeviceSetErrorCallback(_, _, _)).Times(Exactly(1));
+    EXPECT_CALL(api, OnDeviceSetUncapturedErrorCallback(_, _, _)).Times(Exactly(1));
+    EXPECT_CALL(api, OnDeviceSetDeviceLostCallback(_, _, _)).Times(Exactly(1));
     SetupIgnoredCallExpectations();
 
     mS2cBuf = std::make_unique<utils::TerribleCommandBuffer>();
     mC2sBuf = std::make_unique<utils::TerribleCommandBuffer>(mWireServer.get());
 
-    mWireServer.reset(new WireServer(mockDevice, mockProcs, mS2cBuf.get()));
+    WireServerDescriptor serverDesc = {};
+    serverDesc.device = mockDevice;
+    serverDesc.procs = &mockProcs;
+    serverDesc.serializer = mS2cBuf.get();
+    serverDesc.memoryTransferService = GetServerMemoryTransferService();
+
+    mWireServer.reset(new WireServer(serverDesc));
     mC2sBuf->SetHandler(mWireServer.get());
 
-    mWireClient.reset(new WireClient(mC2sBuf.get()));
+    WireClientDescriptor clientDesc = {};
+    clientDesc.serializer = mC2sBuf.get();
+    clientDesc.memoryTransferService = GetClientMemoryTransferService();
+
+    mWireClient.reset(new WireClient(clientDesc));
     mS2cBuf->SetHandler(mWireClient.get());
 
     device = mWireClient->GetDevice();
-    DawnProcTable clientProcs = mWireClient->GetProcs();
-    dawnSetProcs(&clientProcs);
+    DawnProcTable clientProcs = dawn_wire::WireClient::GetProcs();
+    dawnProcSetProcs(&clientProcs);
 
     apiDevice = mockDevice;
+
+    // The GetDefaultQueue is done on WireClient startup so we expect it now.
+    queue = wgpuDeviceGetDefaultQueue(device);
+    apiQueue = api.GetNewQueue();
+    EXPECT_CALL(api, DeviceGetDefaultQueue(apiDevice)).WillOnce(Return(apiQueue));
+    FlushClient();
 }
 
 void WireTest::TearDown() {
-    dawnSetProcs(nullptr);
+    dawnProcSetProcs(nullptr);
 
     // Derived classes should call the base TearDown() first. The client must
     // be reset before any mocks are deleted.
@@ -61,17 +87,18 @@ void WireTest::TearDown() {
     // cannot be null.
     api.IgnoreAllReleaseCalls();
     mWireClient = nullptr;
+    mWireServer = nullptr;
 }
 
-void WireTest::FlushClient() {
-    ASSERT_TRUE(mC2sBuf->Flush());
+void WireTest::FlushClient(bool success) {
+    ASSERT_EQ(mC2sBuf->Flush(), success);
 
     Mock::VerifyAndClearExpectations(&api);
     SetupIgnoredCallExpectations();
 }
 
-void WireTest::FlushServer() {
-    ASSERT_TRUE(mS2cBuf->Flush());
+void WireTest::FlushServer(bool success) {
+    ASSERT_EQ(mS2cBuf->Flush(), success);
 }
 
 dawn_wire::WireServer* WireTest::GetWireServer() {
@@ -83,6 +110,7 @@ dawn_wire::WireClient* WireTest::GetWireClient() {
 }
 
 void WireTest::DeleteServer() {
+    EXPECT_CALL(api, QueueRelease(apiQueue)).Times(1);
     mWireServer = nullptr;
 }
 

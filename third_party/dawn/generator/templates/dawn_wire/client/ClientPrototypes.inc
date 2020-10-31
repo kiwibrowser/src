@@ -14,7 +14,7 @@
 
 //* Return command handlers
 {% for command in cmd_records["return command"] %}
-    bool Handle{{command.name.CamelCase()}}(const char** commands, size_t* size);
+    bool Handle{{command.name.CamelCase()}}(const volatile char** commands, size_t* size);
 {% endfor %}
 
 //* Return command doers
@@ -22,9 +22,9 @@
     bool Do{{command.name.CamelCase()}}(
         {%- for member in command.members -%}
             {%- if member.handle_type -%}
-                {{as_cppType(member.handle_type.name)}}* {{as_varName(member.name)}}
+                {{as_wireType(member.handle_type)}} {{as_varName(member.name)}}
             {%- else -%}
-                {{as_annotated_cppType(member)}}
+                {{as_annotated_wireType(member)}}
             {%- endif -%}
             {%- if not loop.last -%}, {% endif %}
         {%- endfor -%}

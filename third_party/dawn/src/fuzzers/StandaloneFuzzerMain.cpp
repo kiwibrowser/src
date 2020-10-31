@@ -17,11 +17,17 @@
 #include <iostream>
 #include <vector>
 
+extern "C" int LLVMFuzzerInitialize(int* argc, char*** argv);
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size);
 
 int main(int argc, char** argv) {
+    if (LLVMFuzzerInitialize(&argc, &argv)) {
+        std::cerr << "Failed to initialize fuzzer target" << std::endl;
+        return 1;
+    }
+
     if (argc != 2) {
-        std::cout << "Usage: <standalone reproducer> [FILE]" << std::endl;
+        std::cout << "Usage: <standalone reproducer> [options] FILE" << std::endl;
         return 1;
     }
 

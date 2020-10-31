@@ -13,34 +13,44 @@
 // limitations under the License.
 
 #include "dawn_wire/server/Server.h"
+#include "dawn_wire/WireServer.h"
 
 namespace dawn_wire { namespace server {
 
-    Server::Server(DawnDevice device, const DawnProcTable& procs, CommandSerializer* serializer)
-        : mSerializer(serializer), mProcs(procs) {
+    Server::Server(WGPUDevice device,
+                   const DawnProcTable& procs,
+                   CommandSerializer* serializer,
+                   MemoryTransferService* memoryTransferService)
+        : mSerializer(serializer), mProcs(procs), mMemoryTransferService(memoryTransferService) {
+        if (mMemoryTransferService == nullptr) {
+            // If a MemoryTransferService is not provided, fallback to inline memory.
+            mOwnedMemoryTransferService = CreateInlineMemoryTransferService();
+            mMemoryTransferService = mOwnedMemoryTransferService.get();
+        }
         // The client-server knowledge is bootstrapped with device 1.
         auto* deviceData = DeviceObjects().Allocate(1);
         deviceData->handle = device;
 
-        mProcs.deviceSetErrorCallback(device, ForwardDeviceError, this);
+        mProcs.deviceSetUncapturedErrorCallback(device, ForwardUncapturedError, this);
+        mProcs.deviceSetDeviceLostCallback(device, ForwardDeviceLost, this);
     }
 
     Server::~Server() {
         DestroyAllObjects(mProcs);
     }
 
-    void* Server::GetCmdSpace(size_t size) {
-        return mSerializer->GetCmdSpace(size);
+    char* Server::GetCmdSpace(size_t size) {
+        return static_cast<char*>(mSerializer->GetCmdSpace(size));
     }
 
-    bool Server::InjectTexture(DawnTexture texture, uint32_t id, uint32_t generation) {
-        ObjectData<DawnTexture>* data = TextureObjects().Allocate(id);
+    bool Server::InjectTexture(WGPUTexture texture, uint32_t id, uint32_t generation) {
+        ObjectData<WGPUTexture>* data = TextureObjects().Allocate(id);
         if (data == nullptr) {
             return false;
         }
 
         data->handle = texture;
-        data->serial = generation;
+        data->generation = generation;
         data->allocated = true;
 
         // The texture is externally owned so it shouldn't be destroyed when we receive a destroy

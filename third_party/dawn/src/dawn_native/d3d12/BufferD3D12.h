@@ -18,61 +18,67 @@
 #include "common/SerialQueue.h"
 #include "dawn_native/Buffer.h"
 
+#include "dawn_native/d3d12/ResourceHeapAllocationD3D12.h"
 #include "dawn_native/d3d12/d3d12_platform.h"
 
 namespace dawn_native { namespace d3d12 {
 
+    class CommandRecordingContext;
     class Device;
 
-    class Buffer : public BufferBase {
+    class Buffer final : public BufferBase {
       public:
         Buffer(Device* device, const BufferDescriptor* descriptor);
-        ~Buffer();
 
-        bool CreateD3D12ResourceBarrierIfNeeded(D3D12_RESOURCE_BARRIER* barrier,
-                                                dawn::BufferUsageBit newUsage) const;
-        uint32_t GetD3D12Size() const;
-        ComPtr<ID3D12Resource> GetD3D12Resource();
+        MaybeError Initialize();
+
+        ID3D12Resource* GetD3D12Resource() const;
         D3D12_GPU_VIRTUAL_ADDRESS GetVA() const;
-        void OnMapCommandSerialFinished(uint32_t mapSerial, void* data, bool isWrite);
-        void SetUsage(dawn::BufferUsageBit newUsage);
-        void TransitionUsageNow(ComPtr<ID3D12GraphicsCommandList> commandList,
-                                dawn::BufferUsageBit usage);
+
+        bool TrackUsageAndGetResourceBarrier(CommandRecordingContext* commandContext,
+                                             D3D12_RESOURCE_BARRIER* barrier,
+                                             wgpu::BufferUsage newUsage);
+        void TrackUsageAndTransitionNow(CommandRecordingContext* commandContext,
+                                        wgpu::BufferUsage newUsage);
+
+        bool CheckAllocationMethodForTesting(AllocationMethod allocationMethod) const;
+        bool CheckIsResidentForTesting() const;
+
+        MaybeError EnsureDataInitialized(CommandRecordingContext* commandContext);
+        MaybeError EnsureDataInitializedAsDestination(CommandRecordingContext* commandContext,
+                                                      uint64_t offset,
+                                                      uint64_t size);
+        MaybeError EnsureDataInitializedAsDestination(CommandRecordingContext* commandContext,
+                                                      const CopyTextureToBufferCmd* copy);
 
       private:
+        ~Buffer() override;
         // Dawn API
-        void MapReadAsyncImpl(uint32_t serial) override;
-        void MapWriteAsyncImpl(uint32_t serial) override;
+        MaybeError MapReadAsyncImpl() override;
+        MaybeError MapWriteAsyncImpl() override;
+        MaybeError MapAsyncImpl(wgpu::MapMode mode, size_t offset, size_t size) override;
         void UnmapImpl() override;
         void DestroyImpl() override;
 
-        bool IsMapWritable() const override;
-        virtual MaybeError MapAtCreationImpl(uint8_t** mappedPointer) override;
+        bool IsMappableAtCreation() const override;
+        virtual MaybeError MapAtCreationImpl() override;
+        void* GetMappedPointerImpl() override;
+        MaybeError MapInternal(bool isWrite, size_t start, size_t end, const char* contextInfo);
 
-        ComPtr<ID3D12Resource> mResource;
+        bool TransitionUsageAndGetResourceBarrier(CommandRecordingContext* commandContext,
+                                                  D3D12_RESOURCE_BARRIER* barrier,
+                                                  wgpu::BufferUsage newUsage);
+
+        MaybeError InitializeToZero(CommandRecordingContext* commandContext);
+        MaybeError ClearBuffer(CommandRecordingContext* commandContext, uint8_t clearValue);
+
+        ResourceHeapAllocation mResourceAllocation;
         bool mFixedResourceState = false;
-        dawn::BufferUsageBit mLastUsage = dawn::BufferUsageBit::None;
-        D3D12_RANGE mWrittenMappedRange;
-    };
+        wgpu::BufferUsage mLastUsage = wgpu::BufferUsage::None;
+        Serial mLastUsedSerial = UINT64_MAX;
 
-    class MapRequestTracker {
-      public:
-        MapRequestTracker(Device* device);
-        ~MapRequestTracker();
-
-        void Track(Buffer* buffer, uint32_t mapSerial, void* data, bool isWrite);
-        void Tick(Serial finishedSerial);
-
-      private:
-        Device* mDevice;
-
-        struct Request {
-            Ref<Buffer> buffer;
-            uint32_t mapSerial;
-            void* data;
-            bool isWrite;
-        };
-        SerialQueue<Request> mInflightRequests;
+        D3D12_RANGE mWrittenMappedRange = {0, 0};
+        void* mMappedData = nullptr;
     };
 
 }}  // namespace dawn_native::d3d12

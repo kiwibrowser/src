@@ -17,185 +17,169 @@
 #include "common/Constants.h"
 #include "dawn_native/Buffer.h"
 #include "dawn_native/CommandEncoder.h"
+#include "dawn_native/CommandValidation.h"
 #include "dawn_native/Commands.h"
 #include "dawn_native/Device.h"
+#include "dawn_native/QuerySet.h"
+#include "dawn_native/RenderBundle.h"
 #include "dawn_native/RenderPipeline.h"
 
-#include <string.h>
+#include <math.h>
+#include <cstring>
 
 namespace dawn_native {
 
-    RenderPassEncoderBase::RenderPassEncoderBase(DeviceBase* device,
-                                                 CommandEncoderBase* topLevelEncoder,
-                                                 CommandAllocator* allocator)
-        : ProgrammablePassEncoder(device, topLevelEncoder, allocator) {
+    // The usage tracker is passed in here, because it is prepopulated with usages from the
+    // BeginRenderPassCmd. If we had RenderPassEncoder responsible for recording the
+    // command, then this wouldn't be necessary.
+    RenderPassEncoder::RenderPassEncoder(DeviceBase* device,
+                                         CommandEncoder* commandEncoder,
+                                         EncodingContext* encodingContext,
+                                         PassResourceUsageTracker usageTracker)
+        : RenderEncoderBase(device, encodingContext), mCommandEncoder(commandEncoder) {
+        mUsageTracker = std::move(usageTracker);
     }
 
-    RenderPassEncoderBase::RenderPassEncoderBase(DeviceBase* device,
-                                                 CommandEncoderBase* topLevelEncoder,
-                                                 ErrorTag errorTag)
-        : ProgrammablePassEncoder(device, topLevelEncoder, errorTag) {
+    RenderPassEncoder::RenderPassEncoder(DeviceBase* device,
+                                         CommandEncoder* commandEncoder,
+                                         EncodingContext* encodingContext,
+                                         ErrorTag errorTag)
+        : RenderEncoderBase(device, encodingContext, errorTag), mCommandEncoder(commandEncoder) {
     }
 
-    RenderPassEncoderBase* RenderPassEncoderBase::MakeError(DeviceBase* device,
-                                                            CommandEncoderBase* topLevelEncoder) {
-        return new RenderPassEncoderBase(device, topLevelEncoder, ObjectBase::kError);
+    RenderPassEncoder* RenderPassEncoder::MakeError(DeviceBase* device,
+                                                    CommandEncoder* commandEncoder,
+                                                    EncodingContext* encodingContext) {
+        return new RenderPassEncoder(device, commandEncoder, encodingContext, ObjectBase::kError);
     }
 
-    void RenderPassEncoderBase::Draw(uint32_t vertexCount,
-                                     uint32_t instanceCount,
-                                     uint32_t firstVertex,
-                                     uint32_t firstInstance) {
-        if (mTopLevelEncoder->ConsumedError(ValidateCanRecordCommands())) {
-            return;
-        }
+    void RenderPassEncoder::EndPass() {
+        if (mEncodingContext->TryEncode(this, [&](CommandAllocator* allocator) -> MaybeError {
+                allocator->Allocate<EndRenderPassCmd>(Command::EndRenderPass);
 
-        DrawCmd* draw = mAllocator->Allocate<DrawCmd>(Command::Draw);
-        draw->vertexCount = vertexCount;
-        draw->instanceCount = instanceCount;
-        draw->firstVertex = firstVertex;
-        draw->firstInstance = firstInstance;
+                return {};
+            })) {
+            mEncodingContext->ExitPass(this, mUsageTracker.AcquireResourceUsage());
+        }
     }
 
-    void RenderPassEncoderBase::DrawIndexed(uint32_t indexCount,
-                                            uint32_t instanceCount,
-                                            uint32_t firstIndex,
-                                            int32_t baseVertex,
-                                            uint32_t firstInstance) {
-        if (mTopLevelEncoder->ConsumedError(ValidateCanRecordCommands())) {
-            return;
-        }
+    void RenderPassEncoder::SetStencilReference(uint32_t reference) {
+        mEncodingContext->TryEncode(this, [&](CommandAllocator* allocator) -> MaybeError {
+            SetStencilReferenceCmd* cmd =
+                allocator->Allocate<SetStencilReferenceCmd>(Command::SetStencilReference);
+            cmd->reference = reference;
 
-        DrawIndexedCmd* draw = mAllocator->Allocate<DrawIndexedCmd>(Command::DrawIndexed);
-        draw->indexCount = indexCount;
-        draw->instanceCount = instanceCount;
-        draw->firstIndex = firstIndex;
-        draw->baseVertex = baseVertex;
-        draw->firstInstance = firstInstance;
+            return {};
+        });
     }
 
-    void RenderPassEncoderBase::DrawIndirect(BufferBase* indirectBuffer, uint64_t indirectOffset) {
-        if (mTopLevelEncoder->ConsumedError(ValidateCanRecordCommands()) ||
-            mTopLevelEncoder->ConsumedError(GetDevice()->ValidateObject(indirectBuffer))) {
-            return;
-        }
+    void RenderPassEncoder::SetBlendColor(const Color* color) {
+        mEncodingContext->TryEncode(this, [&](CommandAllocator* allocator) -> MaybeError {
+            SetBlendColorCmd* cmd = allocator->Allocate<SetBlendColorCmd>(Command::SetBlendColor);
+            cmd->color = *color;
 
-        if (indirectOffset >= indirectBuffer->GetSize() ||
-            indirectOffset + kDrawIndirectSize > indirectBuffer->GetSize()) {
-            mTopLevelEncoder->HandleError("Indirect offset out of bounds");
-            return;
-        }
-
-        DrawIndirectCmd* cmd = mAllocator->Allocate<DrawIndirectCmd>(Command::DrawIndirect);
-        cmd->indirectBuffer = indirectBuffer;
-        cmd->indirectOffset = indirectOffset;
+            return {};
+        });
     }
 
-    void RenderPassEncoderBase::DrawIndexedIndirect(BufferBase* indirectBuffer,
-                                                    uint64_t indirectOffset) {
-        if (mTopLevelEncoder->ConsumedError(ValidateCanRecordCommands()) ||
-            mTopLevelEncoder->ConsumedError(GetDevice()->ValidateObject(indirectBuffer))) {
-            return;
-        }
-
-        if (indirectOffset >= indirectBuffer->GetSize() ||
-            indirectOffset + kDrawIndexedIndirectSize > indirectBuffer->GetSize()) {
-            mTopLevelEncoder->HandleError("Indirect offset out of bounds");
-            return;
-        }
-
-        DrawIndexedIndirectCmd* cmd =
-            mAllocator->Allocate<DrawIndexedIndirectCmd>(Command::DrawIndexedIndirect);
-        cmd->indirectBuffer = indirectBuffer;
-        cmd->indirectOffset = indirectOffset;
-    }
-
-    void RenderPassEncoderBase::SetPipeline(RenderPipelineBase* pipeline) {
-        if (mTopLevelEncoder->ConsumedError(ValidateCanRecordCommands()) ||
-            mTopLevelEncoder->ConsumedError(GetDevice()->ValidateObject(pipeline))) {
-            return;
-        }
-
-        SetRenderPipelineCmd* cmd =
-            mAllocator->Allocate<SetRenderPipelineCmd>(Command::SetRenderPipeline);
-        cmd->pipeline = pipeline;
-    }
-
-    void RenderPassEncoderBase::SetStencilReference(uint32_t reference) {
-        if (mTopLevelEncoder->ConsumedError(ValidateCanRecordCommands())) {
-            return;
-        }
-
-        SetStencilReferenceCmd* cmd =
-            mAllocator->Allocate<SetStencilReferenceCmd>(Command::SetStencilReference);
-        cmd->reference = reference;
-    }
-
-    void RenderPassEncoderBase::SetBlendColor(const Color* color) {
-        if (mTopLevelEncoder->ConsumedError(ValidateCanRecordCommands())) {
-            return;
-        }
-
-        SetBlendColorCmd* cmd = mAllocator->Allocate<SetBlendColorCmd>(Command::SetBlendColor);
-        cmd->color = *color;
-    }
-
-    void RenderPassEncoderBase::SetScissorRect(uint32_t x,
-                                               uint32_t y,
-                                               uint32_t width,
-                                               uint32_t height) {
-        if (mTopLevelEncoder->ConsumedError(ValidateCanRecordCommands())) {
-            return;
-        }
-        if (width == 0 || height == 0) {
-            mTopLevelEncoder->HandleError("Width and height must be greater than 0.");
-            return;
-        }
-
-        SetScissorRectCmd* cmd = mAllocator->Allocate<SetScissorRectCmd>(Command::SetScissorRect);
-        cmd->x = x;
-        cmd->y = y;
-        cmd->width = width;
-        cmd->height = height;
-    }
-
-    void RenderPassEncoderBase::SetIndexBuffer(BufferBase* buffer, uint64_t offset) {
-        if (mTopLevelEncoder->ConsumedError(ValidateCanRecordCommands()) ||
-            mTopLevelEncoder->ConsumedError(GetDevice()->ValidateObject(buffer))) {
-            return;
-        }
-
-        SetIndexBufferCmd* cmd = mAllocator->Allocate<SetIndexBufferCmd>(Command::SetIndexBuffer);
-        cmd->buffer = buffer;
-        cmd->offset = offset;
-    }
-
-    void RenderPassEncoderBase::SetVertexBuffers(uint32_t startSlot,
-                                                 uint32_t count,
-                                                 BufferBase* const* buffers,
-                                                 uint64_t const* offsets) {
-        if (mTopLevelEncoder->ConsumedError(ValidateCanRecordCommands())) {
-            return;
-        }
-
-        for (size_t i = 0; i < count; ++i) {
-            if (mTopLevelEncoder->ConsumedError(GetDevice()->ValidateObject(buffers[i]))) {
-                return;
+    void RenderPassEncoder::SetViewport(float x,
+                                        float y,
+                                        float width,
+                                        float height,
+                                        float minDepth,
+                                        float maxDepth) {
+        mEncodingContext->TryEncode(this, [&](CommandAllocator* allocator) -> MaybeError {
+            if ((isnan(x) || isnan(y) || isnan(width) || isnan(height) || isnan(minDepth) ||
+                 isnan(maxDepth))) {
+                return DAWN_VALIDATION_ERROR("NaN is not allowed.");
             }
-        }
 
-        SetVertexBuffersCmd* cmd =
-            mAllocator->Allocate<SetVertexBuffersCmd>(Command::SetVertexBuffers);
-        cmd->startSlot = startSlot;
-        cmd->count = count;
+            // TODO(yunchao.he@intel.com): there are more restrictions for x, y, width and height in
+            // Vulkan, and height can be a negative value in Vulkan 1.1. Revisit this part later
+            // (say, for WebGPU v1).
+            if (width <= 0 || height <= 0) {
+                return DAWN_VALIDATION_ERROR("Width and height must be greater than 0.");
+            }
 
-        Ref<BufferBase>* cmdBuffers = mAllocator->AllocateData<Ref<BufferBase>>(count);
-        for (size_t i = 0; i < count; ++i) {
-            cmdBuffers[i] = buffers[i];
-        }
+            if (minDepth < 0 || minDepth > 1 || maxDepth < 0 || maxDepth > 1) {
+                return DAWN_VALIDATION_ERROR("minDepth and maxDepth must be in [0, 1].");
+            }
 
-        uint64_t* cmdOffsets = mAllocator->AllocateData<uint64_t>(count);
-        memcpy(cmdOffsets, offsets, count * sizeof(uint64_t));
+            SetViewportCmd* cmd = allocator->Allocate<SetViewportCmd>(Command::SetViewport);
+            cmd->x = x;
+            cmd->y = y;
+            cmd->width = width;
+            cmd->height = height;
+            cmd->minDepth = minDepth;
+            cmd->maxDepth = maxDepth;
+
+            return {};
+        });
+    }
+
+    void RenderPassEncoder::SetScissorRect(uint32_t x,
+                                           uint32_t y,
+                                           uint32_t width,
+                                           uint32_t height) {
+        mEncodingContext->TryEncode(this, [&](CommandAllocator* allocator) -> MaybeError {
+            if (width == 0 || height == 0) {
+                return DAWN_VALIDATION_ERROR("Width and height must be greater than 0.");
+            }
+
+            SetScissorRectCmd* cmd =
+                allocator->Allocate<SetScissorRectCmd>(Command::SetScissorRect);
+            cmd->x = x;
+            cmd->y = y;
+            cmd->width = width;
+            cmd->height = height;
+
+            return {};
+        });
+    }
+
+    void RenderPassEncoder::ExecuteBundles(uint32_t count, RenderBundleBase* const* renderBundles) {
+        mEncodingContext->TryEncode(this, [&](CommandAllocator* allocator) -> MaybeError {
+            for (uint32_t i = 0; i < count; ++i) {
+                DAWN_TRY(GetDevice()->ValidateObject(renderBundles[i]));
+            }
+
+            ExecuteBundlesCmd* cmd =
+                allocator->Allocate<ExecuteBundlesCmd>(Command::ExecuteBundles);
+            cmd->count = count;
+
+            Ref<RenderBundleBase>* bundles = allocator->AllocateData<Ref<RenderBundleBase>>(count);
+            for (uint32_t i = 0; i < count; ++i) {
+                bundles[i] = renderBundles[i];
+
+                const PassResourceUsage& usages = bundles[i]->GetResourceUsage();
+                for (uint32_t i = 0; i < usages.buffers.size(); ++i) {
+                    mUsageTracker.BufferUsedAs(usages.buffers[i], usages.bufferUsages[i]);
+                }
+
+                for (uint32_t i = 0; i < usages.textures.size(); ++i) {
+                    mUsageTracker.AddTextureUsage(usages.textures[i], usages.textureUsages[i]);
+                }
+            }
+
+            return {};
+        });
+    }
+
+    void RenderPassEncoder::WriteTimestamp(QuerySetBase* querySet, uint32_t queryIndex) {
+        mEncodingContext->TryEncode(this, [&](CommandAllocator* allocator) -> MaybeError {
+            if (GetDevice()->IsValidationEnabled()) {
+                DAWN_TRY(GetDevice()->ValidateObject(querySet));
+                DAWN_TRY(ValidateTimestampQuery(querySet, queryIndex));
+                mCommandEncoder->TrackUsedQuerySet(querySet);
+            }
+
+            WriteTimestampCmd* cmd =
+                allocator->Allocate<WriteTimestampCmd>(Command::WriteTimestamp);
+            cmd->querySet = querySet;
+            cmd->queryIndex = queryIndex;
+
+            return {};
+        });
     }
 
 }  // namespace dawn_native

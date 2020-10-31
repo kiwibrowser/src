@@ -16,10 +16,24 @@
 #define DAWNWIRE_CLIENT_APIOBJECTS_AUTOGEN_H_
 
 namespace dawn_wire { namespace client {
-    {% for type in by_category["object"] if not type.name.CamelCase() in client_special_objects %}
-        struct {{type.name.CamelCase()}} : ObjectBase {
-            using ObjectBase::ObjectBase;
-        };
+
+    {% for type in by_category["object"] %}
+        {% set Type = type.name.CamelCase() %}
+        {% if type.name.CamelCase() in client_special_objects %}
+            class {{Type}};
+        {% else %}
+            struct {{type.name.CamelCase()}} : ObjectBase {
+                using ObjectBase::ObjectBase;
+            };
+        {% endif %}
+
+        inline {{Type}}* FromAPI(WGPU{{Type}} obj) {
+            return reinterpret_cast<{{Type}}*>(obj);
+        }
+        inline WGPU{{Type}} ToAPI({{Type}}* obj) {
+            return reinterpret_cast<WGPU{{Type}}>(obj);
+        }
+
     {% endfor %}
 }}  // namespace dawn_wire::client
 

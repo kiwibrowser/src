@@ -23,17 +23,23 @@ namespace dawn_native { namespace metal {
 
     class Device;
 
-    class ComputePipeline : public ComputePipelineBase {
+    class ComputePipeline final : public ComputePipelineBase {
       public:
-        ComputePipeline(Device* device, const ComputePipelineDescriptor* descriptor);
-        ~ComputePipeline();
+        static ResultOrError<ComputePipeline*> Create(Device* device,
+                                                      const ComputePipelineDescriptor* descriptor);
 
         void Encode(id<MTLComputeCommandEncoder> encoder);
         MTLSize GetLocalWorkGroupSize() const;
+        bool RequiresStorageBufferLength() const;
 
       private:
+        ~ComputePipeline() override;
+        using ComputePipelineBase::ComputePipelineBase;
+        MaybeError Initialize(const ComputePipelineDescriptor* descriptor);
+
         id<MTLComputePipelineState> mMtlComputePipelineState = nil;
         MTLSize mLocalWorkgroupSize;
+        bool mRequiresStorageBufferLength;
     };
 
 }}  // namespace dawn_native::metal

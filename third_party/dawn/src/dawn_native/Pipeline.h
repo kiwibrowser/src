@@ -15,8 +15,8 @@
 #ifndef DAWNNATIVE_PIPELINE_H_
 #define DAWNNATIVE_PIPELINE_H_
 
+#include "dawn_native/CachedObject.h"
 #include "dawn_native/Forward.h"
-#include "dawn_native/ObjectBase.h"
 #include "dawn_native/PerStage.h"
 #include "dawn_native/PipelineLayout.h"
 #include "dawn_native/ShaderModule.h"
@@ -28,24 +28,32 @@
 
 namespace dawn_native {
 
-    MaybeError ValidatePipelineStageDescriptor(DeviceBase* device,
-                                               const PipelineStageDescriptor* descriptor,
-                                               const PipelineLayoutBase* layout,
-                                               dawn::ShaderStage stage);
+    MaybeError ValidateProgrammableStageDescriptor(const DeviceBase* device,
+                                                   const ProgrammableStageDescriptor* descriptor,
+                                                   const PipelineLayoutBase* layout,
+                                                   SingleShaderStage stage);
 
-    class PipelineBase : public ObjectBase {
+    class PipelineBase : public CachedObject {
       public:
-        dawn::ShaderStageBit GetStageMask() const;
+        wgpu::ShaderStage GetStageMask() const;
         PipelineLayoutBase* GetLayout();
         const PipelineLayoutBase* GetLayout() const;
+        BindGroupLayoutBase* GetBindGroupLayout(uint32_t groupIndex);
+        const RequiredBufferSizes& GetMinimumBufferSizes() const;
 
       protected:
-        PipelineBase(DeviceBase* device, PipelineLayoutBase* layout, dawn::ShaderStageBit stages);
+        PipelineBase(DeviceBase* device,
+                     PipelineLayoutBase* layout,
+                     wgpu::ShaderStage stages,
+                     RequiredBufferSizes bufferSizes);
         PipelineBase(DeviceBase* device, ObjectBase::ErrorTag tag);
 
       private:
-        dawn::ShaderStageBit mStageMask;
+        MaybeError ValidateGetBindGroupLayout(uint32_t group);
+
+        wgpu::ShaderStage mStageMask;
         Ref<PipelineLayoutBase> mLayout;
+        RequiredBufferSizes mMinimumBufferSizes;
     };
 
 }  // namespace dawn_native

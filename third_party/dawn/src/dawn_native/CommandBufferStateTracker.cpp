@@ -24,6 +24,21 @@
 
 namespace dawn_native {
 
+    namespace {
+        bool BufferSizesAtLeastAsBig(const ityp::span<uint32_t, uint64_t> unverifiedBufferSizes,
+                                     const std::vector<uint64_t>& pipelineMinimumBufferSizes) {
+            ASSERT(unverifiedBufferSizes.size() == pipelineMinimumBufferSizes.size());
+
+            for (uint32_t i = 0; i < unverifiedBufferSizes.size(); ++i) {
+                if (unverifiedBufferSizes[i] < pipelineMinimumBufferSizes[i]) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+    }  // namespace
+
     enum ValidationAspect {
         VALIDATION_ASPECT_PIPELINE,
         VALIDATION_ASPECT_BIND_GROUPS,
@@ -69,16 +84,11 @@ namespace dawn_native {
 
         // Generate an error immediately if a non-lazy aspect is missing as computing lazy aspects
         // requires the pipeline to be set.
-        if ((missingAspects & ~kLazyAspects).any()) {
-            return GenerateAspectError(missingAspects);
-        }
+        DAWN_TRY(CheckMissingAspects(missingAspects & ~kLazyAspects));
 
         RecomputeLazyAspects(missingAspects);
 
-        missingAspects = requiredAspects & ~mAspects;
-        if (missingAspects.any()) {
-            return GenerateAspectError(missingAspects);
-        }
+        DAWN_TRY(CheckMissingAspects(requiredAspects & ~mAspects));
 
         return {};
     }
@@ -90,9 +100,11 @@ namespace dawn_native {
         if (aspects[VALIDATION_ASPECT_BIND_GROUPS]) {
             bool matches = true;
 
-            for (uint32_t i : IterateBitSet(mLastPipelineLayout->GetBindGroupLayoutsMask())) {
+            for (BindGroupIndex i : IterateBitSet(mLastPipelineLayout->GetBindGroupLayoutsMask())) {
                 if (mBindgroups[i] == nullptr ||
-                    mLastPipelineLayout->GetBindGroupLayout(i) != mBindgroups[i]->GetLayout()) {
+                    mLastPipelineLayout->GetBindGroupLayout(i) != mBindgroups[i]->GetLayout() ||
+                    !BufferSizesAtLeastAsBig(mBindgroups[i]->GetUnverifiedBufferSizes(),
+                                             (*mMinimumBufferSizes)[i])) {
                     matches = false;
                     break;
                 }
@@ -106,15 +118,18 @@ namespace dawn_native {
         if (aspects[VALIDATION_ASPECT_VERTEX_BUFFERS]) {
             ASSERT(mLastRenderPipeline != nullptr);
 
-            auto requiredInputs = mLastRenderPipeline->GetInputsSetMask();
-            if ((mInputsSet & requiredInputs) == requiredInputs) {
+            const std::bitset<kMaxVertexBuffers>& requiredVertexBuffers =
+                mLastRenderPipeline->GetVertexBufferSlotsUsed();
+            if ((mVertexBufferSlotsUsed & requiredVertexBuffers) == requiredVertexBuffers) {
                 mAspects.set(VALIDATION_ASPECT_VERTEX_BUFFERS);
             }
         }
     }
 
-    MaybeError CommandBufferStateTracker::GenerateAspectError(ValidationAspects aspects) {
-        ASSERT(aspects.any());
+    MaybeError CommandBufferStateTracker::CheckMissingAspects(ValidationAspects aspects) {
+        if (!aspects.any()) {
+            return {};
+        }
 
         if (aspects[VALIDATION_ASPECT_INDEX_BUFFER]) {
             return DAWN_VALIDATION_ERROR("Missing index buffer");
@@ -125,7 +140,28 @@ namespace dawn_native {
         }
 
         if (aspects[VALIDATION_ASPECT_BIND_GROUPS]) {
-            return DAWN_VALIDATION_ERROR("Missing bind group");
+            for (BindGroupIndex i : IterateBitSet(mLastPipelineLayout->GetBindGroupLayoutsMask())) {
+                if (mBindgroups[i] == nullptr) {
+                    return DAWN_VALIDATION_ERROR("Missing bind group " +
+                                                 std::to_string(static_cast<uint32_t>(i)));
+                } else if (mLastPipelineLayout->GetBindGroupLayout(i) !=
+                           mBindgroups[i]->GetLayout()) {
+                    return DAWN_VALIDATION_ERROR(
+                        "Pipeline and bind group layout doesn't match for bind group " +
+                        std::to_string(static_cast<uint32_t>(i)));
+                } else if (!BufferSizesAtLeastAsBig(mBindgroups[i]->GetUnverifiedBufferSizes(),
+                                                    (*mMinimumBufferSizes)[i])) {
+                    return DAWN_VALIDATION_ERROR("Binding sizes too small for bind group " +
+                                                 std::to_string(static_cast<uint32_t>(i)));
+                }
+            }
+
+            // The chunk of code above should be similar to the one in |RecomputeLazyAspects|.
+            // It returns the first invalid state found. We shouldn't be able to reach this line
+            // because to have invalid aspects one of the above conditions must have failed earlier.
+            // If this is reached, make sure lazy aspects and the error checks above are consistent.
+            UNREACHABLE();
+            return DAWN_VALIDATION_ERROR("Bind groups invalid");
         }
 
         if (aspects[VALIDATION_ASPECT_PIPELINE]) {
@@ -144,22 +180,22 @@ namespace dawn_native {
         SetPipelineCommon(pipeline);
     }
 
-    void CommandBufferStateTracker::SetBindGroup(uint32_t index, BindGroupBase* bindgroup) {
+    void CommandBufferStateTracker::SetBindGroup(BindGroupIndex index, BindGroupBase* bindgroup) {
         mBindgroups[index] = bindgroup;
+        mAspects.reset(VALIDATION_ASPECT_BIND_GROUPS);
     }
 
     void CommandBufferStateTracker::SetIndexBuffer() {
         mAspects.set(VALIDATION_ASPECT_INDEX_BUFFER);
     }
 
-    void CommandBufferStateTracker::SetVertexBuffer(uint32_t start, uint32_t count) {
-        for (uint32_t i = 0; i < count; ++i) {
-            mInputsSet.set(start + i);
-        }
+    void CommandBufferStateTracker::SetVertexBuffer(uint32_t slot) {
+        mVertexBufferSlotsUsed.set(slot);
     }
 
     void CommandBufferStateTracker::SetPipelineCommon(PipelineBase* pipeline) {
         mLastPipelineLayout = pipeline->GetLayout();
+        mMinimumBufferSizes = &pipeline->GetMinimumBufferSizes();
 
         mAspects.set(VALIDATION_ASPECT_PIPELINE);
 

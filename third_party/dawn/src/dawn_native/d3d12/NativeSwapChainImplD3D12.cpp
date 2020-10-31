@@ -21,15 +21,15 @@
 namespace dawn_native { namespace d3d12 {
 
     namespace {
-        DXGI_USAGE D3D12SwapChainBufferUsage(DawnTextureUsageBit allowedUsages) {
+        DXGI_USAGE D3D12SwapChainBufferUsage(WGPUTextureUsage allowedUsages) {
             DXGI_USAGE usage = DXGI_CPU_ACCESS_NONE;
-            if (allowedUsages & DAWN_TEXTURE_USAGE_BIT_SAMPLED) {
+            if (allowedUsages & WGPUTextureUsage_Sampled) {
                 usage |= DXGI_USAGE_SHADER_INPUT;
             }
-            if (allowedUsages & DAWN_TEXTURE_USAGE_BIT_STORAGE) {
+            if (allowedUsages & WGPUTextureUsage_Storage) {
                 usage |= DXGI_USAGE_UNORDERED_ACCESS;
             }
-            if (allowedUsages & DAWN_TEXTURE_USAGE_BIT_OUTPUT_ATTACHMENT) {
+            if (allowedUsages & WGPUTextureUsage_OutputAttachment) {
                 usage |= DXGI_USAGE_RENDER_TARGET_OUTPUT;
             }
             return usage;
@@ -39,7 +39,7 @@ namespace dawn_native { namespace d3d12 {
     }  // anonymous namespace
 
     NativeSwapChainImpl::NativeSwapChainImpl(Device* device, HWND window)
-        : mWindow(window), mDevice(device) {
+        : mWindow(window), mDevice(device), mInterval(1) {
     }
 
     NativeSwapChainImpl::~NativeSwapChainImpl() {
@@ -48,16 +48,18 @@ namespace dawn_native { namespace d3d12 {
     void NativeSwapChainImpl::Init(DawnWSIContextD3D12* /*context*/) {
     }
 
-    DawnSwapChainError NativeSwapChainImpl::Configure(DawnTextureFormat format,
-                                                      DawnTextureUsageBit usage,
+    DawnSwapChainError NativeSwapChainImpl::Configure(WGPUTextureFormat format,
+                                                      WGPUTextureUsage usage,
                                                       uint32_t width,
                                                       uint32_t height) {
         ASSERT(width > 0);
         ASSERT(height > 0);
-        ASSERT(format == static_cast<DawnTextureFormat>(GetPreferredFormat()));
+        ASSERT(format == static_cast<WGPUTextureFormat>(GetPreferredFormat()));
 
         ComPtr<IDXGIFactory4> factory = mDevice->GetFactory();
         ComPtr<ID3D12CommandQueue> queue = mDevice->GetCommandQueue();
+
+        mInterval = mDevice->IsToggleEnabled(Toggle::TurnOffVsync) == true ? 0 : 1;
 
         // Create the D3D12 swapchain, assuming only two buffers for now
         DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
@@ -95,7 +97,7 @@ namespace dawn_native { namespace d3d12 {
 
         // TODO(cwallez@chromium.org) Currently we force the CPU to wait for the GPU to be finished
         // with the buffer. Ideally the synchronization should be all done on the GPU.
-        mDevice->WaitForSerial(mBufferSerials[mCurrentBuffer]);
+        ASSERT(mDevice->WaitForSerial(mBufferSerials[mCurrentBuffer]).IsSuccess());
 
         return DAWN_SWAP_CHAIN_NO_ERROR;
     }
@@ -103,16 +105,16 @@ namespace dawn_native { namespace d3d12 {
     DawnSwapChainError NativeSwapChainImpl::Present() {
         // This assumes the texture has already been transition to the PRESENT state.
 
-        ASSERT_SUCCESS(mSwapChain->Present(1, 0));
+        ASSERT_SUCCESS(mSwapChain->Present(mInterval, 0));
         // TODO(cwallez@chromium.org): Make the serial ticking implicit.
-        mDevice->NextSerial();
+        ASSERT(mDevice->NextSerial().IsSuccess());
 
         mBufferSerials[mCurrentBuffer] = mDevice->GetPendingCommandSerial();
         return DAWN_SWAP_CHAIN_NO_ERROR;
     }
 
-    dawn::TextureFormat NativeSwapChainImpl::GetPreferredFormat() const {
-        return dawn::TextureFormat::R8G8B8A8Unorm;
+    wgpu::TextureFormat NativeSwapChainImpl::GetPreferredFormat() const {
+        return wgpu::TextureFormat::RGBA8Unorm;
     }
 
 }}  // namespace dawn_native::d3d12

@@ -1,4 +1,4 @@
-# Copyright 2017 The Dawn Authors
+# Copyright 2020 The Dawn Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,140 +12,86 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# GLFW, only build the library
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
-add_subdirectory(glfw)
-DawnExternalTarget("third_party" glfw)
+if (NOT TARGET SPIRV-Headers)
+    set(SPIRV_HEADERS_SKIP_EXAMPLES ON CACHE BOOL "" FORCE)
+    set(SPIRV_HEADERS_SKIP_INSTALL ON CACHE BOOL "" FORCE)
 
-# GoogleTest
-set(GTEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/googletest/googletest)
-set(GMOCK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/googletest/googlemock)
-add_library(gtest STATIC ${GTEST_DIR}/src/gtest-all.cc ${GMOCK_DIR}/src/gmock-all.cc)
-target_include_directories(gtest SYSTEM PUBLIC ${GTEST_DIR}/include ${GMOCK_DIR}/include)
-target_include_directories(gtest SYSTEM PRIVATE ${GTEST_DIR} ${GMOCK_DIR})
-find_package(Threads)
-target_link_libraries(gtest ${CMAKE_THREAD_LIBS_INIT})
-DawnExternalTarget("third_party" gtest)
-
-# Glad
-add_library(glad STATIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/glad/src/glad.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/glad/include/glad/glad.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/glad/include/KHR/khrplatform.h
-)
-set(GLAD_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/glad/include)
-set(GLAD_INCLUDE_DIR ${GLAD_INCLUDE_DIR} PARENT_SCOPE)
-target_include_directories(glad SYSTEM PUBLIC ${GLAD_INCLUDE_DIR})
-DawnExternalTarget("third_party" glad)
-
-# SPIRV-Tools
-set(SPIRV_TOOLS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/spirv-tools/include PARENT_SCOPE)
-
-# ShaderC
-# Prevent SPIRV-Tools from using Werror as it has a warning on MSVC
-set(SPIRV_WERROR OFF CACHE BOOL "" FORCE)
-# Don't add unnecessary shaderc targets
-set(SHADERC_SKIP_TESTS ON)
-set(SHADERC_SKIP_INSTALL ON)
-# Remove unused glslang and spirv-tools parts
-# set(ENABLE_HLSL OFF CACHE BOOL "")
-set(ENABLE_OPT OFF CACHE BOOL "")
-set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "")
-set(SKIP_GLSLANG_INSTALL ON CACHE BOOL "")
-set(SKIP_SPIRV_TOOLS_INSTALL ON CACHE BOOL "")
-set(SPIRV_SKIP_EXECUTABLES ON CACHE BOOL "")
-# Help shaderc find the non-standard paths for its dependencies
-set(SHADERC_GOOGLE_TEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/googletest CACHE STRING "Location of googletest source")
-set(SHADERC_GLSLANG_DIR "${CMAKE_CURRENT_SOURCE_DIR}/glslang" CACHE STRING "Location of glslang source")
-set(SHADERC_SPIRV_TOOLS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/spirv-tools CACHE STRING "Location of spirv-tools source")
-# Help shaderc find the python executable when run inside VS.
-find_package(PythonInterp REQUIRED)
-set(PYTHON_EXE ${PYTHON_EXECUTABLE})
-# Need to include this for spirv-tools to find it
-add_subdirectory(spirv-headers)
-add_subdirectory(shaderc)
-# Namespace the shaderc targets in a folder to avoid cluttering the
-# Visual Studio solution explorer
-set_target_properties(
-    add-copyright
-    build-version
-    check-copyright
-    glslc
-    glslc_exe
-    install-headers
-    shaderc
-    shaderc_shared
-    shaderc_util
-    shaderc_combined_genfile
-    shaderc-online-compile testdata
-    SPIRV-Headers-example
-    SPIRV-Headers-example-1.1
-    PROPERTIES FOLDER "third_party/shaderc"
-)
-# Remove a bunch of targets we don't need that are pulled by shaderc and glslang
-set_target_properties(
-    SPIRV-Headers-example-1.1
-    SPIRV-Headers-example
-    glslc_exe
-    SPIRV-Tools-link
-    SPVRemapper
-    shaderc
-    shaderc-online-compile
-    shaderc_combined_genfile
-    PROPERTIES EXCLUDE_FROM_ALL true
-)
-
-# SPIRV-Cross
-set(SPIRV_CROSS_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/spirv-cross/GLSL.std.450.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/spirv-cross/spirv_common.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/spirv-cross/spirv_cfg.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/spirv-cross/spirv_cfg.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/spirv-cross/spirv_cross.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/spirv-cross/spirv_cross.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/spirv-cross/spirv.hpp
-)
-
-set(NEED_SPIRV_CROSS_GLSL OFF)
-if (DAWN_ENABLE_D3D12)
-    list(APPEND SPIRV_CROSS_SOURCES
-        ${CMAKE_CURRENT_SOURCE_DIR}/spirv-cross/spirv_hlsl.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/spirv-cross/spirv_hlsl.hpp
-    )
-    set(NEED_SPIRV_CROSS_GLSL ON)
+    message(STATUS "Dawn: using SPIRV-Headers at ${DAWN_SPIRV_HEADERS_DIR}")
+    add_subdirectory(${DAWN_SPIRV_HEADERS_DIR})
 endif()
 
-if (DAWN_ENABLE_METAL)
-    list(APPEND SPIRV_CROSS_SOURCES
-        ${CMAKE_CURRENT_SOURCE_DIR}/spirv-cross/spirv_msl.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/spirv-cross/spirv_msl.hpp
-    )
-    set(NEED_SPIRV_CROSS_GLSL ON)
+if (NOT TARGET SPIRV-Tools)
+    set(SPIRV_SKIP_TESTS ON CACHE BOOL "" FORCE)
+    set(SPIRV_SKIP_EXECUTABLES ON CACHE BOOL "" FORCE)
+    set(SKIP_SPIRV_TOOLS_INSTALL ON CACHE BOOL "" FORCE)
+
+    message(STATUS "Dawn: using SPIRV-Tools at ${DAWN_SPIRV_TOOLS_DIR}")
+    add_subdirectory(${DAWN_SPIRV_TOOLS_DIR})
 endif()
 
-if (DAWN_ENABLE_OPENGL OR NEED_SPIRV_CROSS_GLSL)
-    list(APPEND SPIRV_CROSS_SOURCES
-        ${CMAKE_CURRENT_SOURCE_DIR}/spirv-cross/spirv_glsl.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/spirv-cross/spirv_glsl.hpp
-    )
+if (NOT TARGET glslang)
+    set(SKIP_GLSLANG_INSTALL ON CACHE BOOL "" FORCE)
+    set(ENABLE_SPVREMAPPER OFF CACHE BOOL "" FORCE)
+    set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "" FORCE)
+    set(ENABLE_CTEST OFF CACHE BOOL "" FORCE)
+
+    message(STATUS "Dawn: using GLSLang at ${DAWN_GLSLANG_DIR}")
+    add_subdirectory(${DAWN_GLSLANG_DIR})
 endif()
 
-add_library(spirv_cross STATIC ${SPIRV_CROSS_SOURCES})
-target_compile_definitions(spirv_cross PUBLIC SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS)
-set(SPIRV_CROSS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
-DawnExternalTarget("third_party" spirv_cross)
+if (TARGET shaderc)
+    if (NOT TARGET shaderc_spvc)
+        message(FATAL_ERROR "Dawn: If shaderc is configured before Dawn, it must include SPVC")
+    endif()
+else()
+    set(SHADERC_SKIP_TESTS ON CACHE BOOL "" FORCE)
+    set(SHADERC_SKIP_INSTALL ON CACHE BOOL "" FORCE)
+    set(SHADERC_ENABLE_SPVC ON CACHE BOOL "" FORCE)
 
-# STB, used for stb_image
-set(STB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stb PARENT_SCOPE)
+    # Change the default value of SHADERC_ENABLE_SHARED_CRT to ON as that's what matches the
+    # CMake defaults better.
+    if(MSVC)
+        option(SHADERC_ENABLE_SHARED_CRT "Use the shared CRT instead of the static CRT" ON CACHE BOOL "" FORCE)
+    endif()
 
-# glm matrix math library
-set(GLM_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/glm PARENT_SCOPE)
+    # Let SPVC's CMakeLists.txt deal with configuring SPIRV-Cross
+    set(SPIRV_CROSS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+    set(SHADERC_SPIRV_CROSS_DIR "${DAWN_SPIRV_CROSS_DIR}" CACHE BOOL "" FORCE)
 
-# Tiny glTF loader library
-set(TINYGLTFLOADER_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
+    message(STATUS "Dawn: using shaderc[_spvc] at ${DAWN_SHADERC_DIR}")
+    message(STATUS "Dawn:  - with SPIRV-Cross at ${DAWN_SPIRV_CROSS_DIR}")
+    add_subdirectory(${DAWN_SHADERC_DIR})
+endif()
 
-# Vulkan headers
-set(VULKAN_HEADERS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
+if (DAWN_BUILD_EXAMPLES)
+    if (NOT TARGET glfw)
+        set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+        set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+        set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+
+        message(STATUS "Dawn: using GLFW at ${DAWN_GLFW_DIR}")
+        add_subdirectory(${DAWN_GLFW_DIR})
+    endif()
+
+    if (NOT TARGET glm)
+        message(STATUS "Dawn: using GLM at ${DAWN_GLM_DIR}")
+        add_subdirectory(${DAWN_GLM_DIR})
+    endif()
+endif()
+
+# Header-only library for khrplatform.h
+add_library(dawn_khronos_platform INTERFACE)
+target_sources(dawn_khronos_platform INTERFACE "${DAWN_THIRD_PARTY_DIR}/khronos/KHR/khrplatform.h")
+target_include_directories(dawn_khronos_platform INTERFACE "${DAWN_THIRD_PARTY_DIR}/khronos")
+
+# Header-only library for Vulkan headers
+add_library(dawn_vulkan_headers INTERFACE)
+target_sources(dawn_vulkan_headers INTERFACE
+    "${DAWN_THIRD_PARTY_DIR}/khronos/vulkan/vk_icd.h"
+    "${DAWN_THIRD_PARTY_DIR}/khronos/vulkan/vk_layer.h"
+    "${DAWN_THIRD_PARTY_DIR}/khronos/vulkan/vk_platform.h"
+    "${DAWN_THIRD_PARTY_DIR}/khronos/vulkan/vk_sdk_platform.h"
+    "${DAWN_THIRD_PARTY_DIR}/khronos/vulkan/vulkan.h"
+    "${DAWN_THIRD_PARTY_DIR}/khronos/vulkan/vulkan_core.h"
+)
+target_include_directories(dawn_vulkan_headers INTERFACE "${DAWN_THIRD_PARTY_DIR}/khronos")

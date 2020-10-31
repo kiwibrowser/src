@@ -14,22 +14,30 @@
 
 #include "dawn_native/vulkan/PipelineLayoutVk.h"
 
+#include "common/BitSetIterator.h"
 #include "dawn_native/vulkan/BindGroupLayoutVk.h"
 #include "dawn_native/vulkan/DeviceVk.h"
 #include "dawn_native/vulkan/FencedDeleter.h"
-
-#include "common/BitSetIterator.h"
+#include "dawn_native/vulkan/VulkanError.h"
 
 namespace dawn_native { namespace vulkan {
 
-    PipelineLayout::PipelineLayout(Device* device, const PipelineLayoutDescriptor* descriptor)
-        : PipelineLayoutBase(device, descriptor) {
+    // static
+    ResultOrError<PipelineLayout*> PipelineLayout::Create(
+        Device* device,
+        const PipelineLayoutDescriptor* descriptor) {
+        Ref<PipelineLayout> layout = AcquireRef(new PipelineLayout(device, descriptor));
+        DAWN_TRY(layout->Initialize());
+        return layout.Detach();
+    }
+
+    MaybeError PipelineLayout::Initialize() {
         // Compute the array of VkDescriptorSetLayouts that will be chained in the create info.
         // TODO(cwallez@chromium.org) Vulkan doesn't allow holes in this array, should we expose
         // this constraints at the Dawn level?
         uint32_t numSetLayouts = 0;
         std::array<VkDescriptorSetLayout, kMaxBindGroups> setLayouts;
-        for (uint32_t setIndex : IterateBitSet(GetBindGroupLayoutsMask())) {
+        for (BindGroupIndex setIndex : IterateBitSet(GetBindGroupLayoutsMask())) {
             setLayouts[numSetLayouts] = ToBackend(GetBindGroupLayout(setIndex))->GetHandle();
             numSetLayouts++;
         }
@@ -39,14 +47,14 @@ namespace dawn_native { namespace vulkan {
         createInfo.pNext = nullptr;
         createInfo.flags = 0;
         createInfo.setLayoutCount = numSetLayouts;
-        createInfo.pSetLayouts = setLayouts.data();
+        createInfo.pSetLayouts = AsVkArray(setLayouts.data());
         createInfo.pushConstantRangeCount = 0;
         createInfo.pPushConstantRanges = nullptr;
 
-        if (device->fn.CreatePipelineLayout(device->GetVkDevice(), &createInfo, nullptr,
-                                            &mHandle) != VK_SUCCESS) {
-            ASSERT(false);
-        }
+        Device* device = ToBackend(GetDevice());
+        return CheckVkSuccess(
+            device->fn.CreatePipelineLayout(device->GetVkDevice(), &createInfo, nullptr, &*mHandle),
+            "CreatePipelineLayout");
     }
 
     PipelineLayout::~PipelineLayout() {

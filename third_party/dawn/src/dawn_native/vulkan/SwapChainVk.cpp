@@ -19,14 +19,19 @@
 
 namespace dawn_native { namespace vulkan {
 
+    // static
+    SwapChain* SwapChain::Create(Device* device, const SwapChainDescriptor* descriptor) {
+        return new SwapChain(device, descriptor);
+    }
+
     SwapChain::SwapChain(Device* device, const SwapChainDescriptor* descriptor)
-        : SwapChainBase(device, descriptor) {
+        : OldSwapChainBase(device, descriptor) {
         const auto& im = GetImplementation();
         DawnWSIContextVulkan wsiContext = {};
         im.Init(im.userData, &wsiContext);
 
-        ASSERT(im.textureUsage != DAWN_TEXTURE_USAGE_BIT_NONE);
-        mTextureUsage = static_cast<dawn::TextureUsageBit>(im.textureUsage);
+        ASSERT(im.textureUsage != WGPUTextureUsage_None);
+        mTextureUsage = static_cast<wgpu::TextureUsage>(im.textureUsage);
     }
 
     SwapChain::~SwapChain() {
@@ -38,23 +43,28 @@ namespace dawn_native { namespace vulkan {
         DawnSwapChainError error = im.GetNextTexture(im.userData, &next);
 
         if (error) {
-            GetDevice()->HandleError(error);
+            GetDevice()->HandleError(InternalErrorType::Internal, error);
             return nullptr;
         }
 
-        VkImage nativeTexture = VkImage::CreateFromU64(next.texture.u64);
-        return new Texture(ToBackend(GetDevice()), descriptor, nativeTexture);
+        ::VkImage image = NativeNonDispatachableHandleFromU64<::VkImage>(next.texture.u64);
+        VkImage nativeTexture = VkImage::CreateFromHandle(image);
+        return Texture::CreateForSwapChain(ToBackend(GetDevice()), descriptor, nativeTexture)
+            .Detach();
     }
 
-    void SwapChain::OnBeforePresent(TextureBase* texture) {
+    MaybeError SwapChain::OnBeforePresent(TextureViewBase* view) {
         Device* device = ToBackend(GetDevice());
 
         // Perform the necessary pipeline barriers for the texture to be used with the usage
         // requested by the implementation.
-        VkCommandBuffer commands = device->GetPendingCommandBuffer();
-        ToBackend(texture)->TransitionUsageNow(commands, mTextureUsage);
+        CommandRecordingContext* recordingContext = device->GetPendingRecordingContext();
+        ToBackend(view->GetTexture())
+            ->TransitionUsageNow(recordingContext, mTextureUsage, view->GetSubresourceRange());
 
-        device->SubmitPendingCommands();
+        DAWN_TRY(device->SubmitPendingCommands());
+
+        return {};
     }
 
 }}  // namespace dawn_native::vulkan

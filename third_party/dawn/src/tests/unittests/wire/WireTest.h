@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "dawn/mock_webgpu.h"
 #include "gtest/gtest.h"
-#include "mock/mock_dawn.h"
 
 #include <memory>
 
@@ -66,9 +66,46 @@ inline testing::Matcher<MatcherLambdaArgument<Lambda>> MatchesLambda(Lambda lamb
     return MakeMatcher(new LambdaMatcherImpl<Lambda, MatcherLambdaArgument<Lambda>>(lambda));
 }
 
+class StringMessageMatcher : public testing::MatcherInterface<const char*> {
+  public:
+    explicit StringMessageMatcher() {
+    }
+
+    bool MatchAndExplain(const char* message,
+                         testing::MatchResultListener* listener) const override {
+        if (message == nullptr) {
+            *listener << "missing error message";
+            return false;
+        }
+        if (std::strlen(message) <= 1) {
+            *listener << "message is truncated";
+            return false;
+        }
+        return true;
+    }
+
+    void DescribeTo(std::ostream* os) const override {
+        *os << "valid error message";
+    }
+
+    void DescribeNegationTo(std::ostream* os) const override {
+        *os << "invalid error message";
+    }
+};
+
+inline testing::Matcher<const char*> ValidStringMessage() {
+    return MakeMatcher(new StringMessageMatcher());
+}
+
 namespace dawn_wire {
     class WireClient;
     class WireServer;
+    namespace client {
+        class MemoryTransferService;
+    }  // namespace client
+    namespace server {
+        class MemoryTransferService;
+    }  // namespace server
 }  // namespace dawn_wire
 
 namespace utils {
@@ -82,12 +119,15 @@ class WireTest : public testing::Test {
 
     void SetUp() override;
     void TearDown() override;
-    void FlushClient();
-    void FlushServer();
+
+    void FlushClient(bool success = true);
+    void FlushServer(bool success = true);
 
     testing::StrictMock<MockProcTable> api;
-    DawnDevice apiDevice;
-    DawnDevice device;
+    WGPUDevice apiDevice;
+    WGPUQueue apiQueue;
+    WGPUDevice device;
+    WGPUQueue queue;
 
     dawn_wire::WireServer* GetWireServer();
     dawn_wire::WireClient* GetWireClient();
@@ -96,6 +136,9 @@ class WireTest : public testing::Test {
 
   private:
     void SetupIgnoredCallExpectations();
+
+    virtual dawn_wire::client::MemoryTransferService* GetClientMemoryTransferService();
+    virtual dawn_wire::server::MemoryTransferService* GetServerMemoryTransferService();
 
     std::unique_ptr<dawn_wire::WireServer> mWireServer;
     std::unique_ptr<dawn_wire::WireClient> mWireClient;

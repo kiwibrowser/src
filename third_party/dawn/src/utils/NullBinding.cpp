@@ -23,7 +23,7 @@ namespace utils {
 
     class NullBinding : public BackendBinding {
       public:
-        NullBinding(GLFWwindow* window, DawnDevice device) : BackendBinding(window, device) {
+        NullBinding(GLFWwindow* window, WGPUDevice device) : BackendBinding(window, device) {
         }
 
         uint64_t GetSwapChainImplementation() override {
@@ -32,15 +32,15 @@ namespace utils {
             }
             return reinterpret_cast<uint64_t>(&mSwapchainImpl);
         }
-        DawnTextureFormat GetPreferredSwapChainTextureFormat() override {
-            return DAWN_TEXTURE_FORMAT_R8_G8_B8_A8_UNORM;
+        WGPUTextureFormat GetPreferredSwapChainTextureFormat() override {
+            return WGPUTextureFormat_RGBA8Unorm;
         }
 
       private:
         DawnSwapChainImplementation mSwapchainImpl = {};
     };
 
-    BackendBinding* CreateNullBinding(GLFWwindow* window, DawnDevice device) {
+    BackendBinding* CreateNullBinding(GLFWwindow* window, WGPUDevice device) {
         return new NullBinding(window, device);
     }
 

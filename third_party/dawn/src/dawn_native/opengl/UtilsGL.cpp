@@ -18,27 +18,35 @@
 
 namespace dawn_native { namespace opengl {
 
-    GLuint ToOpenGLCompareFunction(dawn::CompareFunction compareFunction) {
+    GLuint ToOpenGLCompareFunction(wgpu::CompareFunction compareFunction) {
         switch (compareFunction) {
-            case dawn::CompareFunction::Never:
+            case wgpu::CompareFunction::Never:
                 return GL_NEVER;
-            case dawn::CompareFunction::Less:
+            case wgpu::CompareFunction::Less:
                 return GL_LESS;
-            case dawn::CompareFunction::LessEqual:
+            case wgpu::CompareFunction::LessEqual:
                 return GL_LEQUAL;
-            case dawn::CompareFunction::Greater:
+            case wgpu::CompareFunction::Greater:
                 return GL_GREATER;
-            case dawn::CompareFunction::GreaterEqual:
+            case wgpu::CompareFunction::GreaterEqual:
                 return GL_GEQUAL;
-            case dawn::CompareFunction::NotEqual:
+            case wgpu::CompareFunction::NotEqual:
                 return GL_NOTEQUAL;
-            case dawn::CompareFunction::Equal:
+            case wgpu::CompareFunction::Equal:
                 return GL_EQUAL;
-            case dawn::CompareFunction::Always:
+            case wgpu::CompareFunction::Always:
                 return GL_ALWAYS;
             default:
                 UNREACHABLE();
         }
     }
 
+    GLint GetStencilMaskFromStencilFormat(wgpu::TextureFormat depthStencilFormat) {
+        switch (depthStencilFormat) {
+            case wgpu::TextureFormat::Depth24PlusStencil8:
+                return 0xFF;
+            default:
+                UNREACHABLE();
+        }
+    }
 }}  // namespace dawn_native::opengl

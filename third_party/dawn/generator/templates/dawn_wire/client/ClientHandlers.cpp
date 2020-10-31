@@ -19,7 +19,7 @@
 
 namespace dawn_wire { namespace client {
     {% for command in cmd_records["return command"] %}
-        bool Client::Handle{{command.name.CamelCase()}}(const char** commands, size_t* size) {
+        bool Client::Handle{{command.name.CamelCase()}}(const volatile char** commands, size_t* size) {
             Return{{command.name.CamelCase()}}Cmd cmd;
             DeserializeResult deserializeResult = cmd.Deserialize(commands, size, &mAllocator);
 
@@ -33,8 +33,8 @@ namespace dawn_wire { namespace client {
 
                 {% if member.type.dict_name == "ObjectHandle" %}
                     {{Type}}* {{name}} = {{Type}}Allocator().GetObject(cmd.{{name}}.id);
-                    uint32_t {{name}}Serial = {{Type}}Allocator().GetSerial(cmd.{{name}}.id);
-                    if ({{name}}Serial != cmd.{{name}}.serial) {
+                    uint32_t {{name}}Generation = {{Type}}Allocator().GetGeneration(cmd.{{name}}.id);
+                    if ({{name}}Generation != cmd.{{name}}.generation) {
                         {{name}} = nullptr;
                     }
                 {% endif %}
@@ -53,9 +53,9 @@ namespace dawn_wire { namespace client {
         }
     {% endfor %}
 
-    const char* Client::HandleCommands(const char* commands, size_t size) {
+    const volatile char* Client::HandleCommands(const volatile char* commands, size_t size) {
         while (size >= sizeof(ReturnWireCmd)) {
-            ReturnWireCmd cmdId = *reinterpret_cast<const ReturnWireCmd*>(commands);
+            ReturnWireCmd cmdId = *reinterpret_cast<const volatile ReturnWireCmd*>(commands);
 
             bool success = false;
             switch (cmdId) {

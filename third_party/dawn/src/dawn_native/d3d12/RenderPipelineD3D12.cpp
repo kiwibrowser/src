@@ -15,6 +15,8 @@
 #include "dawn_native/d3d12/RenderPipelineD3D12.h"
 
 #include "common/Assert.h"
+#include "common/Log.h"
+#include "dawn_native/d3d12/D3D12Error.h"
 #include "dawn_native/d3d12/DeviceD3D12.h"
 #include "dawn_native/d3d12/PipelineLayoutD3D12.h"
 #include "dawn_native/d3d12/PlatformFunctions.h"
@@ -27,95 +29,95 @@
 namespace dawn_native { namespace d3d12 {
 
     namespace {
-        DXGI_FORMAT VertexFormatType(dawn::VertexFormat format) {
+        DXGI_FORMAT VertexFormatType(wgpu::VertexFormat format) {
             switch (format) {
-                case dawn::VertexFormat::UChar2:
+                case wgpu::VertexFormat::UChar2:
                     return DXGI_FORMAT_R8G8_UINT;
-                case dawn::VertexFormat::UChar4:
+                case wgpu::VertexFormat::UChar4:
                     return DXGI_FORMAT_R8G8B8A8_UINT;
-                case dawn::VertexFormat::Char2:
+                case wgpu::VertexFormat::Char2:
                     return DXGI_FORMAT_R8G8_SINT;
-                case dawn::VertexFormat::Char4:
+                case wgpu::VertexFormat::Char4:
                     return DXGI_FORMAT_R8G8B8A8_SINT;
-                case dawn::VertexFormat::UChar2Norm:
+                case wgpu::VertexFormat::UChar2Norm:
                     return DXGI_FORMAT_R8G8_UNORM;
-                case dawn::VertexFormat::UChar4Norm:
+                case wgpu::VertexFormat::UChar4Norm:
                     return DXGI_FORMAT_R8G8B8A8_UNORM;
-                case dawn::VertexFormat::Char2Norm:
+                case wgpu::VertexFormat::Char2Norm:
                     return DXGI_FORMAT_R8G8_SNORM;
-                case dawn::VertexFormat::Char4Norm:
+                case wgpu::VertexFormat::Char4Norm:
                     return DXGI_FORMAT_R8G8B8A8_SNORM;
-                case dawn::VertexFormat::UShort2:
+                case wgpu::VertexFormat::UShort2:
                     return DXGI_FORMAT_R16G16_UINT;
-                case dawn::VertexFormat::UShort4:
+                case wgpu::VertexFormat::UShort4:
                     return DXGI_FORMAT_R16G16B16A16_UINT;
-                case dawn::VertexFormat::Short2:
+                case wgpu::VertexFormat::Short2:
                     return DXGI_FORMAT_R16G16_SINT;
-                case dawn::VertexFormat::Short4:
+                case wgpu::VertexFormat::Short4:
                     return DXGI_FORMAT_R16G16B16A16_SINT;
-                case dawn::VertexFormat::UShort2Norm:
+                case wgpu::VertexFormat::UShort2Norm:
                     return DXGI_FORMAT_R16G16_UNORM;
-                case dawn::VertexFormat::UShort4Norm:
+                case wgpu::VertexFormat::UShort4Norm:
                     return DXGI_FORMAT_R16G16B16A16_UNORM;
-                case dawn::VertexFormat::Short2Norm:
+                case wgpu::VertexFormat::Short2Norm:
                     return DXGI_FORMAT_R16G16_SNORM;
-                case dawn::VertexFormat::Short4Norm:
+                case wgpu::VertexFormat::Short4Norm:
                     return DXGI_FORMAT_R16G16B16A16_SNORM;
-                case dawn::VertexFormat::Half2:
+                case wgpu::VertexFormat::Half2:
                     return DXGI_FORMAT_R16G16_FLOAT;
-                case dawn::VertexFormat::Half4:
+                case wgpu::VertexFormat::Half4:
                     return DXGI_FORMAT_R16G16B16A16_FLOAT;
-                case dawn::VertexFormat::Float:
+                case wgpu::VertexFormat::Float:
                     return DXGI_FORMAT_R32_FLOAT;
-                case dawn::VertexFormat::Float2:
+                case wgpu::VertexFormat::Float2:
                     return DXGI_FORMAT_R32G32_FLOAT;
-                case dawn::VertexFormat::Float3:
+                case wgpu::VertexFormat::Float3:
                     return DXGI_FORMAT_R32G32B32_FLOAT;
-                case dawn::VertexFormat::Float4:
+                case wgpu::VertexFormat::Float4:
                     return DXGI_FORMAT_R32G32B32A32_FLOAT;
-                case dawn::VertexFormat::UInt:
+                case wgpu::VertexFormat::UInt:
                     return DXGI_FORMAT_R32_UINT;
-                case dawn::VertexFormat::UInt2:
+                case wgpu::VertexFormat::UInt2:
                     return DXGI_FORMAT_R32G32_UINT;
-                case dawn::VertexFormat::UInt3:
+                case wgpu::VertexFormat::UInt3:
                     return DXGI_FORMAT_R32G32B32_UINT;
-                case dawn::VertexFormat::UInt4:
+                case wgpu::VertexFormat::UInt4:
                     return DXGI_FORMAT_R32G32B32A32_UINT;
-                case dawn::VertexFormat::Int:
+                case wgpu::VertexFormat::Int:
                     return DXGI_FORMAT_R32_SINT;
-                case dawn::VertexFormat::Int2:
+                case wgpu::VertexFormat::Int2:
                     return DXGI_FORMAT_R32G32_SINT;
-                case dawn::VertexFormat::Int3:
+                case wgpu::VertexFormat::Int3:
                     return DXGI_FORMAT_R32G32B32_SINT;
-                case dawn::VertexFormat::Int4:
+                case wgpu::VertexFormat::Int4:
                     return DXGI_FORMAT_R32G32B32A32_SINT;
                 default:
                     UNREACHABLE();
             }
         }
 
-        D3D12_INPUT_CLASSIFICATION InputStepModeFunction(dawn::InputStepMode mode) {
+        D3D12_INPUT_CLASSIFICATION InputStepModeFunction(wgpu::InputStepMode mode) {
             switch (mode) {
-                case dawn::InputStepMode::Vertex:
+                case wgpu::InputStepMode::Vertex:
                     return D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-                case dawn::InputStepMode::Instance:
+                case wgpu::InputStepMode::Instance:
                     return D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA;
                 default:
                     UNREACHABLE();
             }
         }
 
-        D3D12_PRIMITIVE_TOPOLOGY D3D12PrimitiveTopology(dawn::PrimitiveTopology primitiveTopology) {
+        D3D12_PRIMITIVE_TOPOLOGY D3D12PrimitiveTopology(wgpu::PrimitiveTopology primitiveTopology) {
             switch (primitiveTopology) {
-                case dawn::PrimitiveTopology::PointList:
+                case wgpu::PrimitiveTopology::PointList:
                     return D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
-                case dawn::PrimitiveTopology::LineList:
+                case wgpu::PrimitiveTopology::LineList:
                     return D3D_PRIMITIVE_TOPOLOGY_LINELIST;
-                case dawn::PrimitiveTopology::LineStrip:
+                case wgpu::PrimitiveTopology::LineStrip:
                     return D3D_PRIMITIVE_TOPOLOGY_LINESTRIP;
-                case dawn::PrimitiveTopology::TriangleList:
+                case wgpu::PrimitiveTopology::TriangleList:
                     return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-                case dawn::PrimitiveTopology::TriangleStrip:
+                case wgpu::PrimitiveTopology::TriangleStrip:
                     return D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
                 default:
                     UNREACHABLE();
@@ -123,82 +125,95 @@ namespace dawn_native { namespace d3d12 {
         }
 
         D3D12_PRIMITIVE_TOPOLOGY_TYPE D3D12PrimitiveTopologyType(
-            dawn::PrimitiveTopology primitiveTopology) {
+            wgpu::PrimitiveTopology primitiveTopology) {
             switch (primitiveTopology) {
-                case dawn::PrimitiveTopology::PointList:
+                case wgpu::PrimitiveTopology::PointList:
                     return D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
-                case dawn::PrimitiveTopology::LineList:
-                case dawn::PrimitiveTopology::LineStrip:
+                case wgpu::PrimitiveTopology::LineList:
+                case wgpu::PrimitiveTopology::LineStrip:
                     return D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
-                case dawn::PrimitiveTopology::TriangleList:
-                case dawn::PrimitiveTopology::TriangleStrip:
+                case wgpu::PrimitiveTopology::TriangleList:
+                case wgpu::PrimitiveTopology::TriangleStrip:
                     return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
                 default:
                     UNREACHABLE();
             }
         }
 
-        D3D12_BLEND D3D12Blend(dawn::BlendFactor factor) {
+        D3D12_CULL_MODE D3D12CullMode(wgpu::CullMode mode) {
+            switch (mode) {
+                case wgpu::CullMode::None:
+                    return D3D12_CULL_MODE_NONE;
+                case wgpu::CullMode::Front:
+                    return D3D12_CULL_MODE_FRONT;
+                case wgpu::CullMode::Back:
+                    return D3D12_CULL_MODE_BACK;
+                default:
+                    UNREACHABLE();
+            }
+        }
+
+        D3D12_BLEND D3D12Blend(wgpu::BlendFactor factor) {
             switch (factor) {
-                case dawn::BlendFactor::Zero:
+                case wgpu::BlendFactor::Zero:
                     return D3D12_BLEND_ZERO;
-                case dawn::BlendFactor::One:
+                case wgpu::BlendFactor::One:
                     return D3D12_BLEND_ONE;
-                case dawn::BlendFactor::SrcColor:
+                case wgpu::BlendFactor::SrcColor:
                     return D3D12_BLEND_SRC_COLOR;
-                case dawn::BlendFactor::OneMinusSrcColor:
+                case wgpu::BlendFactor::OneMinusSrcColor:
                     return D3D12_BLEND_INV_SRC_COLOR;
-                case dawn::BlendFactor::SrcAlpha:
+                case wgpu::BlendFactor::SrcAlpha:
                     return D3D12_BLEND_SRC_ALPHA;
-                case dawn::BlendFactor::OneMinusSrcAlpha:
+                case wgpu::BlendFactor::OneMinusSrcAlpha:
                     return D3D12_BLEND_INV_SRC_ALPHA;
-                case dawn::BlendFactor::DstColor:
+                case wgpu::BlendFactor::DstColor:
                     return D3D12_BLEND_DEST_COLOR;
-                case dawn::BlendFactor::OneMinusDstColor:
+                case wgpu::BlendFactor::OneMinusDstColor:
                     return D3D12_BLEND_INV_DEST_COLOR;
-                case dawn::BlendFactor::DstAlpha:
+                case wgpu::BlendFactor::DstAlpha:
                     return D3D12_BLEND_DEST_ALPHA;
-                case dawn::BlendFactor::OneMinusDstAlpha:
+                case wgpu::BlendFactor::OneMinusDstAlpha:
                     return D3D12_BLEND_INV_DEST_ALPHA;
-                case dawn::BlendFactor::SrcAlphaSaturated:
+                case wgpu::BlendFactor::SrcAlphaSaturated:
                     return D3D12_BLEND_SRC_ALPHA_SAT;
-                case dawn::BlendFactor::BlendColor:
+                case wgpu::BlendFactor::BlendColor:
                     return D3D12_BLEND_BLEND_FACTOR;
-                case dawn::BlendFactor::OneMinusBlendColor:
+                case wgpu::BlendFactor::OneMinusBlendColor:
                     return D3D12_BLEND_INV_BLEND_FACTOR;
                 default:
                     UNREACHABLE();
             }
         }
 
-        D3D12_BLEND_OP D3D12BlendOperation(dawn::BlendOperation operation) {
+        D3D12_BLEND_OP D3D12BlendOperation(wgpu::BlendOperation operation) {
             switch (operation) {
-                case dawn::BlendOperation::Add:
+                case wgpu::BlendOperation::Add:
                     return D3D12_BLEND_OP_ADD;
-                case dawn::BlendOperation::Subtract:
+                case wgpu::BlendOperation::Subtract:
                     return D3D12_BLEND_OP_SUBTRACT;
-                case dawn::BlendOperation::ReverseSubtract:
+                case wgpu::BlendOperation::ReverseSubtract:
                     return D3D12_BLEND_OP_REV_SUBTRACT;
-                case dawn::BlendOperation::Min:
+                case wgpu::BlendOperation::Min:
                     return D3D12_BLEND_OP_MIN;
-                case dawn::BlendOperation::Max:
+                case wgpu::BlendOperation::Max:
                     return D3D12_BLEND_OP_MAX;
                 default:
                     UNREACHABLE();
             }
         }
 
-        uint8_t D3D12RenderTargetWriteMask(dawn::ColorWriteMask writeMask) {
-            static_assert(static_cast<D3D12_COLOR_WRITE_ENABLE>(dawn::ColorWriteMask::Red) ==
+        uint8_t D3D12RenderTargetWriteMask(wgpu::ColorWriteMask writeMask) {
+            static_assert(static_cast<D3D12_COLOR_WRITE_ENABLE>(wgpu::ColorWriteMask::Red) ==
                               D3D12_COLOR_WRITE_ENABLE_RED,
                           "ColorWriteMask values must match");
-            static_assert(static_cast<D3D12_COLOR_WRITE_ENABLE>(dawn::ColorWriteMask::Green) ==
+            static_assert(static_cast<D3D12_COLOR_WRITE_ENABLE>(wgpu::ColorWriteMask::Green) ==
                               D3D12_COLOR_WRITE_ENABLE_GREEN,
                           "ColorWriteMask values must match");
-            static_assert(static_cast<D3D12_COLOR_WRITE_ENABLE>(dawn::ColorWriteMask::Blue) ==
+            static_assert(static_cast<D3D12_COLOR_WRITE_ENABLE>(wgpu::ColorWriteMask::Blue) ==
                               D3D12_COLOR_WRITE_ENABLE_BLUE,
                           "ColorWriteMask values must match");
-            static_assert(static_cast<D3D12_COLOR_WRITE_ENABLE>(dawn::ColorWriteMask::Alpha) ==
+            static_assert(static_cast<D3D12_COLOR_WRITE_ENABLE>(wgpu::ColorWriteMask::Alpha) ==
                               D3D12_COLOR_WRITE_ENABLE_ALPHA,
                           "ColorWriteMask values must match");
             return static_cast<uint8_t>(writeMask);
@@ -219,23 +234,23 @@ namespace dawn_native { namespace d3d12 {
             return blendDesc;
         }
 
-        D3D12_STENCIL_OP StencilOp(dawn::StencilOperation op) {
+        D3D12_STENCIL_OP StencilOp(wgpu::StencilOperation op) {
             switch (op) {
-                case dawn::StencilOperation::Keep:
+                case wgpu::StencilOperation::Keep:
                     return D3D12_STENCIL_OP_KEEP;
-                case dawn::StencilOperation::Zero:
+                case wgpu::StencilOperation::Zero:
                     return D3D12_STENCIL_OP_ZERO;
-                case dawn::StencilOperation::Replace:
+                case wgpu::StencilOperation::Replace:
                     return D3D12_STENCIL_OP_REPLACE;
-                case dawn::StencilOperation::IncrementClamp:
+                case wgpu::StencilOperation::IncrementClamp:
                     return D3D12_STENCIL_OP_INCR_SAT;
-                case dawn::StencilOperation::DecrementClamp:
+                case wgpu::StencilOperation::DecrementClamp:
                     return D3D12_STENCIL_OP_DECR_SAT;
-                case dawn::StencilOperation::Invert:
+                case wgpu::StencilOperation::Invert:
                     return D3D12_STENCIL_OP_INVERT;
-                case dawn::StencilOperation::IncrementWrap:
+                case wgpu::StencilOperation::IncrementWrap:
                     return D3D12_STENCIL_OP_INCR;
-                case dawn::StencilOperation::DecrementWrap:
+                case wgpu::StencilOperation::DecrementWrap:
                     return D3D12_STENCIL_OP_DECR;
                 default:
                     UNREACHABLE();
@@ -275,9 +290,16 @@ namespace dawn_native { namespace d3d12 {
 
     }  // anonymous namespace
 
-    RenderPipeline::RenderPipeline(Device* device, const RenderPipelineDescriptor* descriptor)
-        : RenderPipelineBase(device, descriptor),
-          mD3d12PrimitiveTopology(D3D12PrimitiveTopology(GetPrimitiveTopology())) {
+    ResultOrError<RenderPipeline*> RenderPipeline::Create(
+        Device* device,
+        const RenderPipelineDescriptor* descriptor) {
+        Ref<RenderPipeline> pipeline = AcquireRef(new RenderPipeline(device, descriptor));
+        DAWN_TRY(pipeline->Initialize(descriptor));
+        return pipeline.Detach();
+    }
+
+    MaybeError RenderPipeline::Initialize(const RenderPipelineDescriptor* descriptor) {
+        Device* device = ToBackend(GetDevice());
         uint32_t compileFlags = 0;
 #if defined(_DEBUG)
         // Enable better shader debugging with the graphics debugging tools.
@@ -288,63 +310,57 @@ namespace dawn_native { namespace d3d12 {
 
         D3D12_GRAPHICS_PIPELINE_STATE_DESC descriptorD3D12 = {};
 
-        PerStage<ComPtr<ID3DBlob>> compiledShader;
-        ComPtr<ID3DBlob> errors;
+        PerStage<const char*> entryPoints;
+        entryPoints[SingleShaderStage::Vertex] = descriptor->vertexStage.entryPoint;
+        entryPoints[SingleShaderStage::Fragment] = descriptor->fragmentStage->entryPoint;
 
-        dawn::ShaderStageBit renderStages =
-            dawn::ShaderStageBit::Vertex | dawn::ShaderStageBit::Fragment;
+        PerStage<ShaderModule*> modules;
+        modules[SingleShaderStage::Vertex] = ToBackend(descriptor->vertexStage.module);
+        modules[SingleShaderStage::Fragment] = ToBackend(descriptor->fragmentStage->module);
+
+        PerStage<D3D12_SHADER_BYTECODE*> shaders;
+        shaders[SingleShaderStage::Vertex] = &descriptorD3D12.VS;
+        shaders[SingleShaderStage::Fragment] = &descriptorD3D12.PS;
+
+        PerStage<ComPtr<ID3DBlob>> compiledFXCShader;
+        PerStage<ComPtr<IDxcBlob>> compiledDXCShader;
+
+        wgpu::ShaderStage renderStages = wgpu::ShaderStage::Vertex | wgpu::ShaderStage::Fragment;
         for (auto stage : IterateStages(renderStages)) {
-            const ShaderModule* module = nullptr;
-            const char* entryPoint = nullptr;
-            const char* compileTarget = nullptr;
-            D3D12_SHADER_BYTECODE* shader = nullptr;
-            switch (stage) {
-                case dawn::ShaderStage::Vertex:
-                    module = ToBackend(descriptor->vertexStage->module);
-                    entryPoint = descriptor->vertexStage->entryPoint;
-                    shader = &descriptorD3D12.VS;
-                    compileTarget = "vs_5_1";
-                    break;
-                case dawn::ShaderStage::Fragment:
-                    module = ToBackend(descriptor->fragmentStage->module);
-                    entryPoint = descriptor->fragmentStage->entryPoint;
-                    shader = &descriptorD3D12.PS;
-                    compileTarget = "ps_5_1";
-                    break;
-                default:
-                    UNREACHABLE();
-                    break;
-            }
+            std::string hlslSource;
+            DAWN_TRY_ASSIGN(hlslSource, modules[stage]->GetHLSLSource(ToBackend(GetLayout())));
 
-            const std::string hlslSource = module->GetHLSLSource(ToBackend(GetLayout()));
+            if (device->IsToggleEnabled(Toggle::UseDXC)) {
+                DAWN_TRY_ASSIGN(compiledDXCShader[stage],
+                                modules[stage]->CompileShaderDXC(stage, hlslSource,
+                                                                 entryPoints[stage], compileFlags));
 
-            const PlatformFunctions* functions = device->GetFunctions();
-            if (FAILED(functions->d3dCompile(hlslSource.c_str(), hlslSource.length(), nullptr,
-                                             nullptr, nullptr, entryPoint, compileTarget,
-                                             compileFlags, 0, &compiledShader[stage], &errors))) {
-                printf("%s\n", reinterpret_cast<char*>(errors->GetBufferPointer()));
-                ASSERT(false);
-            }
+                shaders[stage]->pShaderBytecode = compiledDXCShader[stage]->GetBufferPointer();
+                shaders[stage]->BytecodeLength = compiledDXCShader[stage]->GetBufferSize();
+            } else {
+                DAWN_TRY_ASSIGN(compiledFXCShader[stage],
+                                modules[stage]->CompileShaderFXC(stage, hlslSource,
+                                                                 entryPoints[stage], compileFlags));
 
-            if (shader != nullptr) {
-                shader->pShaderBytecode = compiledShader[stage]->GetBufferPointer();
-                shader->BytecodeLength = compiledShader[stage]->GetBufferSize();
+                shaders[stage]->pShaderBytecode = compiledFXCShader[stage]->GetBufferPointer();
+                shaders[stage]->BytecodeLength = compiledFXCShader[stage]->GetBufferSize();
             }
         }
 
         PipelineLayout* layout = ToBackend(GetLayout());
 
-        descriptorD3D12.pRootSignature = layout->GetRootSignature().Get();
+        descriptorD3D12.pRootSignature = layout->GetRootSignature();
 
         // D3D12 logs warnings if any empty input state is used
         std::array<D3D12_INPUT_ELEMENT_DESC, kMaxVertexAttributes> inputElementDescriptors;
-        if (GetAttributesSetMask().any()) {
+        if (GetAttributeLocationsUsed().any()) {
             descriptorD3D12.InputLayout = ComputeInputLayout(&inputElementDescriptors);
         }
 
         descriptorD3D12.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
-        descriptorD3D12.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-        descriptorD3D12.RasterizerState.FrontCounterClockwise = FALSE;
+        descriptorD3D12.RasterizerState.CullMode = D3D12CullMode(GetCullMode());
+        descriptorD3D12.RasterizerState.FrontCounterClockwise =
+            (GetFrontFace() == wgpu::FrontFace::CCW) ? TRUE : FALSE;
         descriptorD3D12.RasterizerState.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
         descriptorD3D12.RasterizerState.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
         descriptorD3D12.RasterizerState.SlopeScaledDepthBias =
@@ -373,13 +389,17 @@ namespace dawn_native { namespace d3d12 {
         descriptorD3D12.DepthStencilState =
             ComputeDepthStencilDesc(GetDepthStencilStateDescriptor());
 
-        descriptorD3D12.SampleMask = UINT_MAX;
+        descriptorD3D12.SampleMask = GetSampleMask();
         descriptorD3D12.PrimitiveTopologyType = D3D12PrimitiveTopologyType(GetPrimitiveTopology());
         descriptorD3D12.SampleDesc.Count = GetSampleCount();
         descriptorD3D12.SampleDesc.Quality = 0;
 
-        ASSERT_SUCCESS(device->GetD3D12Device()->CreateGraphicsPipelineState(
-            &descriptorD3D12, IID_PPV_ARGS(&mPipelineState)));
+        mD3d12PrimitiveTopology = D3D12PrimitiveTopology(GetPrimitiveTopology());
+
+        DAWN_TRY(CheckHRESULT(device->GetD3D12Device()->CreateGraphicsPipelineState(
+                                  &descriptorD3D12, IID_PPV_ARGS(&mPipelineState)),
+                              "D3D12 create graphics pipeline state"));
+        return {};
     }
 
     RenderPipeline::~RenderPipeline() {
@@ -390,14 +410,14 @@ namespace dawn_native { namespace d3d12 {
         return mD3d12PrimitiveTopology;
     }
 
-    ComPtr<ID3D12PipelineState> RenderPipeline::GetPipelineState() {
-        return mPipelineState;
+    ID3D12PipelineState* RenderPipeline::GetPipelineState() const {
+        return mPipelineState.Get();
     }
 
     D3D12_INPUT_LAYOUT_DESC RenderPipeline::ComputeInputLayout(
         std::array<D3D12_INPUT_ELEMENT_DESC, kMaxVertexAttributes>* inputElementDescriptors) {
         unsigned int count = 0;
-        for (auto i : IterateBitSet(GetAttributesSetMask())) {
+        for (auto i : IterateBitSet(GetAttributeLocationsUsed())) {
             D3D12_INPUT_ELEMENT_DESC& inputElementDescriptor = (*inputElementDescriptors)[count++];
 
             const VertexAttributeInfo& attribute = GetAttribute(i);
@@ -407,9 +427,9 @@ namespace dawn_native { namespace d3d12 {
             inputElementDescriptor.SemanticName = "TEXCOORD";
             inputElementDescriptor.SemanticIndex = static_cast<uint32_t>(i);
             inputElementDescriptor.Format = VertexFormatType(attribute.format);
-            inputElementDescriptor.InputSlot = attribute.inputSlot;
+            inputElementDescriptor.InputSlot = attribute.vertexBufferSlot;
 
-            const VertexBufferInfo& input = GetInput(attribute.inputSlot);
+            const VertexBufferInfo& input = GetVertexBuffer(attribute.vertexBufferSlot);
 
             inputElementDescriptor.AlignedByteOffset = attribute.offset;
             inputElementDescriptor.InputSlotClass = InputStepModeFunction(input.stepMode);

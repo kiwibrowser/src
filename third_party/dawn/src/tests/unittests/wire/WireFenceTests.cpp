@@ -19,24 +19,13 @@ using namespace dawn_wire;
 
 namespace {
 
-    // Mock classes to add expectations on the wire calling callbacks
-    class MockDeviceErrorCallback {
-      public:
-        MOCK_METHOD2(Call, void(const char* message, void* userdata));
-    };
-
-    std::unique_ptr<StrictMock<MockDeviceErrorCallback>> mockDeviceErrorCallback;
-    void ToMockDeviceErrorCallback(const char* message, void* userdata) {
-        mockDeviceErrorCallback->Call(message, userdata);
-    }
-
     class MockFenceOnCompletionCallback {
       public:
-        MOCK_METHOD2(Call, void(DawnFenceCompletionStatus status, void* userdata));
+        MOCK_METHOD(void, Call, (WGPUFenceCompletionStatus status, void* userdata));
     };
 
     std::unique_ptr<StrictMock<MockFenceOnCompletionCallback>> mockFenceOnCompletionCallback;
-    void ToMockFenceOnCompletionCallback(DawnFenceCompletionStatus status, void* userdata) {
+    void ToMockFenceOnCompletionCallback(WGPUFenceCompletionStatus status, void* userdata) {
         mockFenceOnCompletionCallback->Call(status, userdata);
     }
 
@@ -51,23 +40,15 @@ class WireFenceTests : public WireTest {
     void SetUp() override {
         WireTest::SetUp();
 
-        mockDeviceErrorCallback = std::make_unique<StrictMock<MockDeviceErrorCallback>>();
         mockFenceOnCompletionCallback =
             std::make_unique<StrictMock<MockFenceOnCompletionCallback>>();
 
         {
-            queue = dawnDeviceCreateQueue(device);
-            apiQueue = api.GetNewQueue();
-            EXPECT_CALL(api, DeviceCreateQueue(apiDevice)).WillOnce(Return(apiQueue));
-            FlushClient();
-        }
-        {
-            DawnFenceDescriptor descriptor;
+            WGPUFenceDescriptor descriptor = {};
             descriptor.initialValue = 1;
-            descriptor.nextInChain = nullptr;
 
             apiFence = api.GetNewFence();
-            fence = dawnQueueCreateFence(queue, &descriptor);
+            fence = wgpuQueueCreateFence(queue, &descriptor);
 
             EXPECT_CALL(api, QueueCreateFence(apiQueue, _)).WillOnce(Return(apiFence));
             FlushClient();
@@ -77,36 +58,31 @@ class WireFenceTests : public WireTest {
     void TearDown() override {
         WireTest::TearDown();
 
-        mockDeviceErrorCallback = nullptr;
         mockFenceOnCompletionCallback = nullptr;
     }
 
     void FlushServer() {
         WireTest::FlushServer();
 
-        Mock::VerifyAndClearExpectations(&mockDeviceErrorCallback);
         Mock::VerifyAndClearExpectations(&mockFenceOnCompletionCallback);
     }
 
   protected:
     void DoQueueSignal(uint64_t signalValue) {
-        dawnQueueSignal(queue, fence, signalValue);
+        wgpuQueueSignal(queue, fence, signalValue);
         EXPECT_CALL(api, QueueSignal(apiQueue, apiFence, signalValue)).Times(1);
 
         // This callback is generated to update the completedValue of the fence
         // on the client
         EXPECT_CALL(api, OnFenceOnCompletionCallback(apiFence, signalValue, _, _))
             .WillOnce(InvokeWithoutArgs([&]() {
-                api.CallFenceOnCompletionCallback(apiFence, DAWN_FENCE_COMPLETION_STATUS_SUCCESS);
+                api.CallFenceOnCompletionCallback(apiFence, WGPUFenceCompletionStatus_Success);
             }));
     }
 
     // A successfully created fence
-    DawnFence fence;
-    DawnFence apiFence;
-
-    DawnQueue queue;
-    DawnQueue apiQueue;
+    WGPUFence fence;
+    WGPUFence apiFence;
 };
 
 // Check that signaling a fence succeeds
@@ -117,53 +93,42 @@ TEST_F(WireFenceTests, QueueSignalSuccess) {
     FlushServer();
 }
 
-// Without any flushes, it is valid to signal a value greater than the current
-// signaled value
-TEST_F(WireFenceTests, QueueSignalSynchronousValidationSuccess) {
-    dawnDeviceSetErrorCallback(device, ToMockDeviceErrorCallback, nullptr);
-    EXPECT_CALL(*mockDeviceErrorCallback, Call(_, _)).Times(0);
-
-    dawnQueueSignal(queue, fence, 2u);
-    dawnQueueSignal(queue, fence, 4u);
-    dawnQueueSignal(queue, fence, 5u);
-}
-
-// Without any flushes, errors should be generated when signaling a value less
+// Errors should be generated when signaling a value less
 // than or equal to the current signaled value
-TEST_F(WireFenceTests, QueueSignalSynchronousValidationError) {
-    dawnDeviceSetErrorCallback(device, ToMockDeviceErrorCallback, nullptr);
+TEST_F(WireFenceTests, QueueSignalValidationError) {
+    wgpuQueueSignal(queue, fence, 0u);  // Error
+    EXPECT_CALL(api, DeviceInjectError(apiDevice, WGPUErrorType_Validation, ValidStringMessage()))
+        .Times(1);
+    FlushClient();
 
-    EXPECT_CALL(*mockDeviceErrorCallback, Call(_, _)).Times(1);
-    dawnQueueSignal(queue, fence, 0u);  // Error
-    EXPECT_TRUE(Mock::VerifyAndClear(mockDeviceErrorCallback.get()));
+    wgpuQueueSignal(queue, fence, 1u);  // Error
+    EXPECT_CALL(api, DeviceInjectError(apiDevice, WGPUErrorType_Validation, ValidStringMessage()))
+        .Times(1);
+    FlushClient();
 
-    EXPECT_CALL(*mockDeviceErrorCallback, Call(_, _)).Times(1);
-    dawnQueueSignal(queue, fence, 1u);  // Error
-    EXPECT_TRUE(Mock::VerifyAndClear(mockDeviceErrorCallback.get()));
+    DoQueueSignal(4u);  // Success
+    FlushClient();
 
-    EXPECT_CALL(*mockDeviceErrorCallback, Call(_, _)).Times(0);
-    dawnQueueSignal(queue, fence, 4u);  // Success
-    EXPECT_TRUE(Mock::VerifyAndClear(mockDeviceErrorCallback.get()));
-
-    EXPECT_CALL(*mockDeviceErrorCallback, Call(_, _)).Times(1);
-    dawnQueueSignal(queue, fence, 3u);  // Error
-    EXPECT_TRUE(Mock::VerifyAndClear(mockDeviceErrorCallback.get()));
+    wgpuQueueSignal(queue, fence, 3u);  // Error
+    EXPECT_CALL(api, DeviceInjectError(apiDevice, WGPUErrorType_Validation, ValidStringMessage()))
+        .Times(1);
+    FlushClient();
 }
 
 // Check that callbacks are immediately called if the fence is already finished
 TEST_F(WireFenceTests, OnCompletionImmediate) {
     // Can call on value < (initial) signaled value happens immediately
     {
-        EXPECT_CALL(*mockFenceOnCompletionCallback, Call(DAWN_FENCE_COMPLETION_STATUS_SUCCESS, _))
+        EXPECT_CALL(*mockFenceOnCompletionCallback, Call(WGPUFenceCompletionStatus_Success, _))
             .Times(1);
-        dawnFenceOnCompletion(fence, 0, ToMockFenceOnCompletionCallback, nullptr);
+        wgpuFenceOnCompletion(fence, 0, ToMockFenceOnCompletionCallback, nullptr);
     }
 
     // Can call on value == (initial) signaled value happens immediately
     {
-        EXPECT_CALL(*mockFenceOnCompletionCallback, Call(DAWN_FENCE_COMPLETION_STATUS_SUCCESS, _))
+        EXPECT_CALL(*mockFenceOnCompletionCallback, Call(WGPUFenceCompletionStatus_Success, _))
             .Times(1);
-        dawnFenceOnCompletion(fence, 1, ToMockFenceOnCompletionCallback, nullptr);
+        wgpuFenceOnCompletion(fence, 1, ToMockFenceOnCompletionCallback, nullptr);
     }
 }
 
@@ -175,26 +140,22 @@ TEST_F(WireFenceTests, OnCompletionMultiple) {
     // Add callbacks in a non-monotonic order. They should still be called
     // in order of increasing fence value.
     // Add multiple callbacks for the same value.
-    dawnFenceOnCompletion(fence, 6, ToMockFenceOnCompletionCallback, this + 0);
-    dawnFenceOnCompletion(fence, 2, ToMockFenceOnCompletionCallback, this + 1);
-    dawnFenceOnCompletion(fence, 3, ToMockFenceOnCompletionCallback, this + 2);
-    dawnFenceOnCompletion(fence, 2, ToMockFenceOnCompletionCallback, this + 3);
+    wgpuFenceOnCompletion(fence, 6, ToMockFenceOnCompletionCallback, this + 0);
+    wgpuFenceOnCompletion(fence, 2, ToMockFenceOnCompletionCallback, this + 1);
+    wgpuFenceOnCompletion(fence, 3, ToMockFenceOnCompletionCallback, this + 2);
+    wgpuFenceOnCompletion(fence, 2, ToMockFenceOnCompletionCallback, this + 3);
 
     Sequence s1, s2;
-    EXPECT_CALL(*mockFenceOnCompletionCallback,
-                Call(DAWN_FENCE_COMPLETION_STATUS_SUCCESS, this + 1))
+    EXPECT_CALL(*mockFenceOnCompletionCallback, Call(WGPUFenceCompletionStatus_Success, this + 1))
         .Times(1)
         .InSequence(s1);
-    EXPECT_CALL(*mockFenceOnCompletionCallback,
-                Call(DAWN_FENCE_COMPLETION_STATUS_SUCCESS, this + 3))
+    EXPECT_CALL(*mockFenceOnCompletionCallback, Call(WGPUFenceCompletionStatus_Success, this + 3))
         .Times(1)
         .InSequence(s2);
-    EXPECT_CALL(*mockFenceOnCompletionCallback,
-                Call(DAWN_FENCE_COMPLETION_STATUS_SUCCESS, this + 2))
+    EXPECT_CALL(*mockFenceOnCompletionCallback, Call(WGPUFenceCompletionStatus_Success, this + 2))
         .Times(1)
         .InSequence(s1, s2);
-    EXPECT_CALL(*mockFenceOnCompletionCallback,
-                Call(DAWN_FENCE_COMPLETION_STATUS_SUCCESS, this + 0))
+    EXPECT_CALL(*mockFenceOnCompletionCallback, Call(WGPUFenceCompletionStatus_Success, this + 0))
         .Times(1)
         .InSequence(s1, s2);
 
@@ -205,30 +166,31 @@ TEST_F(WireFenceTests, OnCompletionMultiple) {
 // Without any flushes, it is valid to wait on a value less than or equal to
 // the last signaled value
 TEST_F(WireFenceTests, OnCompletionSynchronousValidationSuccess) {
-    dawnQueueSignal(queue, fence, 4u);
-    dawnFenceOnCompletion(fence, 2u, ToMockFenceOnCompletionCallback, 0);
-    dawnFenceOnCompletion(fence, 3u, ToMockFenceOnCompletionCallback, 0);
-    dawnFenceOnCompletion(fence, 4u, ToMockFenceOnCompletionCallback, 0);
+    wgpuQueueSignal(queue, fence, 4u);
+    wgpuFenceOnCompletion(fence, 2u, ToMockFenceOnCompletionCallback, 0);
+    wgpuFenceOnCompletion(fence, 3u, ToMockFenceOnCompletionCallback, 0);
+    wgpuFenceOnCompletion(fence, 4u, ToMockFenceOnCompletionCallback, 0);
 
-    EXPECT_CALL(*mockFenceOnCompletionCallback, Call(DAWN_FENCE_COMPLETION_STATUS_UNKNOWN, _))
+    EXPECT_CALL(*mockFenceOnCompletionCallback, Call(WGPUFenceCompletionStatus_Unknown, _))
         .Times(3);
 }
 
-// Without any flushes, errors should be generated when waiting on a value greater
+// Errors should be generated when waiting on a value greater
 // than the last signaled value
-TEST_F(WireFenceTests, OnCompletionSynchronousValidationError) {
-    dawnDeviceSetErrorCallback(device, ToMockDeviceErrorCallback, this + 1);
-
-    EXPECT_CALL(*mockFenceOnCompletionCallback, Call(DAWN_FENCE_COMPLETION_STATUS_ERROR, this + 0))
+TEST_F(WireFenceTests, OnCompletionValidationError) {
+    EXPECT_CALL(*mockFenceOnCompletionCallback, Call(WGPUFenceCompletionStatus_Error, this + 0))
         .Times(1);
-    EXPECT_CALL(*mockDeviceErrorCallback, Call(_, this + 1)).Times(1);
 
-    dawnFenceOnCompletion(fence, 2u, ToMockFenceOnCompletionCallback, this + 0);
+    wgpuFenceOnCompletion(fence, 2u, ToMockFenceOnCompletionCallback, this + 0);
+
+    EXPECT_CALL(api, DeviceInjectError(apiDevice, WGPUErrorType_Validation, ValidStringMessage()))
+        .Times(1);
+    FlushClient();
 }
 
 // Check that the fence completed value is initialized
 TEST_F(WireFenceTests, GetCompletedValueInitialization) {
-    EXPECT_EQ(dawnFenceGetCompletedValue(fence), 1u);
+    EXPECT_EQ(wgpuFenceGetCompletedValue(fence), 1u);
 }
 
 // Check that the fence completed value updates after signaling the fence
@@ -237,55 +199,59 @@ TEST_F(WireFenceTests, GetCompletedValueUpdate) {
     FlushClient();
     FlushServer();
 
-    EXPECT_EQ(dawnFenceGetCompletedValue(fence), 3u);
+    EXPECT_EQ(wgpuFenceGetCompletedValue(fence), 3u);
 }
 
 // Check that the fence completed value does not update without a flush
 TEST_F(WireFenceTests, GetCompletedValueNoUpdate) {
-    dawnQueueSignal(queue, fence, 3u);
-    EXPECT_EQ(dawnFenceGetCompletedValue(fence), 1u);
+    wgpuQueueSignal(queue, fence, 3u);
+    EXPECT_EQ(wgpuFenceGetCompletedValue(fence), 1u);
 }
 
 // Check that the callback is called with UNKNOWN when the fence is destroyed
 // before the completed value is updated
 TEST_F(WireFenceTests, DestroyBeforeOnCompletionEnd) {
-    dawnQueueSignal(queue, fence, 3u);
-    dawnFenceOnCompletion(fence, 2u, ToMockFenceOnCompletionCallback, nullptr);
-    EXPECT_CALL(*mockFenceOnCompletionCallback, Call(DAWN_FENCE_COMPLETION_STATUS_UNKNOWN, _))
+    wgpuQueueSignal(queue, fence, 3u);
+    wgpuFenceOnCompletion(fence, 2u, ToMockFenceOnCompletionCallback, nullptr);
+    EXPECT_CALL(*mockFenceOnCompletionCallback, Call(WGPUFenceCompletionStatus_Unknown, _))
         .Times(1);
 }
 
 // Test that signaling a fence on a wrong queue is invalid
-TEST_F(WireFenceTests, SignalWrongQueue) {
-    DawnQueue queue2 = dawnDeviceCreateQueue(device);
-    DawnQueue apiQueue2 = api.GetNewQueue();
-    EXPECT_CALL(api, DeviceCreateQueue(apiDevice)).WillOnce(Return(apiQueue2));
+// DISABLED until we have support for multiple queues.
+TEST_F(WireFenceTests, DISABLED_SignalWrongQueue) {
+    WGPUQueue queue2 = wgpuDeviceGetDefaultQueue(device);
+    WGPUQueue apiQueue2 = api.GetNewQueue();
+    EXPECT_CALL(api, DeviceGetDefaultQueue(apiDevice)).WillOnce(Return(apiQueue2));
     FlushClient();
 
-    dawnDeviceSetErrorCallback(device, ToMockDeviceErrorCallback, nullptr);
-    EXPECT_CALL(*mockDeviceErrorCallback, Call(_, _)).Times(1);
-    dawnQueueSignal(queue2, fence, 2u);  // error
+    wgpuQueueSignal(queue2, fence, 2u);  // error
+    EXPECT_CALL(api, DeviceInjectError(apiDevice, WGPUErrorType_Validation, ValidStringMessage()))
+        .Times(1);
+    FlushClient();
 }
 
 // Test that signaling a fence on a wrong queue does not update fence signaled value
-TEST_F(WireFenceTests, SignalWrongQueueDoesNotUpdateValue) {
-    DawnQueue queue2 = dawnDeviceCreateQueue(device);
-    DawnQueue apiQueue2 = api.GetNewQueue();
-    EXPECT_CALL(api, DeviceCreateQueue(apiDevice)).WillOnce(Return(apiQueue2));
+// DISABLED until we have support for multiple queues.
+TEST_F(WireFenceTests, DISABLED_SignalWrongQueueDoesNotUpdateValue) {
+    WGPUQueue queue2 = wgpuDeviceGetDefaultQueue(device);
+    WGPUQueue apiQueue2 = api.GetNewQueue();
+    EXPECT_CALL(api, DeviceGetDefaultQueue(apiDevice)).WillOnce(Return(apiQueue2));
     FlushClient();
 
-    dawnDeviceSetErrorCallback(device, ToMockDeviceErrorCallback, nullptr);
-    EXPECT_CALL(*mockDeviceErrorCallback, Call(_, _)).Times(1);
-    dawnQueueSignal(queue2, fence, 2u);  // error
+    wgpuQueueSignal(queue2, fence, 2u);  // error
+    EXPECT_CALL(api, DeviceInjectError(apiDevice, WGPUErrorType_Validation, ValidStringMessage()))
+        .Times(1);
+    FlushClient();
 
     // Fence value should be unchanged.
     FlushClient();
     FlushServer();
-    EXPECT_EQ(dawnFenceGetCompletedValue(fence), 1u);
+    EXPECT_EQ(wgpuFenceGetCompletedValue(fence), 1u);
 
     // Signaling with 2 on the correct queue should succeed
     DoQueueSignal(2u);  // success
     FlushClient();
     FlushServer();
-    EXPECT_EQ(dawnFenceGetCompletedValue(fence), 2u);
+    EXPECT_EQ(wgpuFenceGetCompletedValue(fence), 2u);
 }

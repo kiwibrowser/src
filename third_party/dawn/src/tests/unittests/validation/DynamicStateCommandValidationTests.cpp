@@ -14,16 +14,224 @@
 
 #include "tests/unittests/validation/ValidationTest.h"
 
-class SetScissorRectTest : public ValidationTest {
-};
+#include <cmath>
+
+class SetViewportTest : public ValidationTest {};
+
+// Test to check basic use of SetViewport
+TEST_F(SetViewportTest, Success) {
+    DummyRenderPass renderPass(device);
+
+    wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+    {
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        pass.SetViewport(0.0, 0.0, 1.0, 1.0, 0.0, 1.0);
+        pass.EndPass();
+    }
+    encoder.Finish();
+}
+
+// Test to check that NaN in viewport parameters is not allowed
+TEST_F(SetViewportTest, ViewportParameterNaN) {
+    DummyRenderPass renderPass(device);
+
+    // x or y is NaN.
+    {
+        wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        pass.SetViewport(NAN, 0.0, 1.0, 1.0, 0.0, 1.0);
+        pass.EndPass();
+        ASSERT_DEVICE_ERROR(encoder.Finish());
+    }
+
+    // width or height is NaN.
+    {
+        wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        pass.SetViewport(0.0, 0.0, NAN, 1.0, 0.0, 1.0);
+        pass.EndPass();
+        ASSERT_DEVICE_ERROR(encoder.Finish());
+    }
+
+    // minDepth or maxDepth is NaN.
+    {
+        wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        pass.SetViewport(0.0, 0.0, 1.0, 1.0, NAN, 1.0);
+        pass.EndPass();
+        ASSERT_DEVICE_ERROR(encoder.Finish());
+    }
+}
+
+// Test to check that an empty viewport is not allowed
+TEST_F(SetViewportTest, EmptyViewport) {
+    DummyRenderPass renderPass(device);
+
+    // Width of viewport is zero.
+    {
+        wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        pass.SetViewport(0.0, 0.0, 0.0, 1.0, 0.0, 1.0);
+        pass.EndPass();
+        ASSERT_DEVICE_ERROR(encoder.Finish());
+    }
+
+    // Height of viewport is zero.
+    {
+        wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        pass.SetViewport(0.0, 0.0, 1.0, 0.0, 0.0, 1.0);
+        pass.EndPass();
+        ASSERT_DEVICE_ERROR(encoder.Finish());
+    }
+
+    // Both width and height of viewport are zero.
+    {
+        wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        pass.SetViewport(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+        pass.EndPass();
+        ASSERT_DEVICE_ERROR(encoder.Finish());
+    }
+}
+
+// Test to check that viewport larger than the framebuffer is allowed
+TEST_F(SetViewportTest, ViewportLargerThanFramebuffer) {
+    DummyRenderPass renderPass(device);
+
+    wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+    {
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        pass.SetViewport(0.0, 0.0, renderPass.width + 1, renderPass.height + 1, 0.0, 1.0);
+        pass.EndPass();
+    }
+    encoder.Finish();
+}
+
+// Test to check that negative x in viewport is allowed
+TEST_F(SetViewportTest, NegativeX) {
+    DummyRenderPass renderPass(device);
+
+    wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+    {
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        pass.SetViewport(-1.0, 0.0, 1.0, 1.0, 0.0, 1.0);
+        pass.EndPass();
+    }
+    encoder.Finish();
+}
+
+// Test to check that negative y in viewport is allowed
+TEST_F(SetViewportTest, NegativeY) {
+    DummyRenderPass renderPass(device);
+
+    wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+    {
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        pass.SetViewport(0.0, -1.0, 1.0, 1.0, 0.0, 1.0);
+        pass.EndPass();
+    }
+    encoder.Finish();
+}
+
+// Test to check that negative width in viewport is not allowed
+TEST_F(SetViewportTest, NegativeWidth) {
+    DummyRenderPass renderPass(device);
+
+    wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+    {
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        pass.SetViewport(0.0, 0.0, -1.0, 1.0, 0.0, 1.0);
+        pass.EndPass();
+        ASSERT_DEVICE_ERROR(encoder.Finish());
+    }
+}
+
+// Test to check that negative height in viewport is not allowed
+TEST_F(SetViewportTest, NegativeHeight) {
+    DummyRenderPass renderPass(device);
+
+    wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+    {
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        pass.SetViewport(0.0, 0.0, 0.0, -1.0, 0.0, 1.0);
+        pass.EndPass();
+        ASSERT_DEVICE_ERROR(encoder.Finish());
+    }
+}
+
+// Test to check that minDepth out of range [0, 1] is not allowed
+TEST_F(SetViewportTest, MinDepthOutOfRange) {
+    DummyRenderPass renderPass(device);
+
+    {
+        wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        pass.SetViewport(0.0, 0.0, 1.0, 1.0, -1.0, 1.0);
+        pass.EndPass();
+        ASSERT_DEVICE_ERROR(encoder.Finish());
+    }
+
+    {
+        wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        pass.SetViewport(0.0, 0.0, 1.0, 1.0, 2.0, 1.0);
+        pass.EndPass();
+        ASSERT_DEVICE_ERROR(encoder.Finish());
+    }
+}
+
+// Test to check that maxDepth out of range [0, 1] is not allowed
+TEST_F(SetViewportTest, MaxDepthOutOfRange) {
+    DummyRenderPass renderPass(device);
+
+    {
+        wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        pass.SetViewport(0.0, 0.0, 1.0, 1.0, 0.0, -1.0);
+        pass.EndPass();
+        ASSERT_DEVICE_ERROR(encoder.Finish());
+    }
+
+    {
+        wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        pass.SetViewport(0.0, 0.0, 1.0, 1.0, 0.0, 2.0);
+        pass.EndPass();
+        ASSERT_DEVICE_ERROR(encoder.Finish());
+    }
+}
+
+// Test to check that minDepth equal or greater than maxDepth is allowed
+TEST_F(SetViewportTest, MinDepthEqualOrGreaterThanMaxDepth) {
+    DummyRenderPass renderPass(device);
+
+    {
+        wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        pass.SetViewport(0.0, 0.0, 1.0, 1.0, 0.5, 0.5);
+        pass.EndPass();
+        encoder.Finish();
+    }
+
+    {
+        wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        pass.SetViewport(0.0, 0.0, 1.0, 1.0, 0.8, 0.5);
+        pass.EndPass();
+        encoder.Finish();
+    }
+}
+
+class SetScissorRectTest : public ValidationTest {};
 
 // Test to check basic use of SetScissor
 TEST_F(SetScissorRectTest, Success) {
     DummyRenderPass renderPass(device);
 
-    dawn::CommandEncoder encoder = device.CreateCommandEncoder();
+    wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
     {
-        dawn::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
         pass.SetScissorRect(0, 0, 1, 1);
         pass.EndPass();
     }
@@ -36,8 +244,8 @@ TEST_F(SetScissorRectTest, EmptyScissor) {
 
     // Width of scissor rect is zero.
     {
-        dawn::CommandEncoder encoder = device.CreateCommandEncoder();
-        dawn::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
         pass.SetScissorRect(0, 0, 0, 1);
         pass.EndPass();
         ASSERT_DEVICE_ERROR(encoder.Finish());
@@ -45,8 +253,8 @@ TEST_F(SetScissorRectTest, EmptyScissor) {
 
     // Height of scissor rect is zero.
     {
-        dawn::CommandEncoder encoder = device.CreateCommandEncoder();
-        dawn::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
         pass.SetScissorRect(0, 0, 1, 0);
         pass.EndPass();
         ASSERT_DEVICE_ERROR(encoder.Finish());
@@ -54,8 +262,8 @@ TEST_F(SetScissorRectTest, EmptyScissor) {
 
     // Both width and height of scissor rect are zero.
     {
-        dawn::CommandEncoder encoder = device.CreateCommandEncoder();
-        dawn::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
         pass.SetScissorRect(0, 0, 0, 0);
         pass.EndPass();
         ASSERT_DEVICE_ERROR(encoder.Finish());
@@ -66,26 +274,25 @@ TEST_F(SetScissorRectTest, EmptyScissor) {
 TEST_F(SetScissorRectTest, ScissorLargerThanFramebuffer) {
     DummyRenderPass renderPass(device);
 
-    dawn::CommandEncoder encoder = device.CreateCommandEncoder();
+    wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
     {
-        dawn::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
         pass.SetScissorRect(0, 0, renderPass.width + 1, renderPass.height + 1);
         pass.EndPass();
     }
     encoder.Finish();
 }
 
-class SetBlendColorTest : public ValidationTest {
-};
+class SetBlendColorTest : public ValidationTest {};
 
 // Test to check basic use of SetBlendColor
 TEST_F(SetBlendColorTest, Success) {
     DummyRenderPass renderPass(device);
 
-    dawn::CommandEncoder encoder = device.CreateCommandEncoder();
+    wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
     {
-        dawn::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
-        constexpr dawn::Color kTransparentBlack{0.0f, 0.0f, 0.0f, 0.0f};
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        constexpr wgpu::Color kTransparentBlack{0.0f, 0.0f, 0.0f, 0.0f};
         pass.SetBlendColor(&kTransparentBlack);
         pass.EndPass();
     }
@@ -96,26 +303,25 @@ TEST_F(SetBlendColorTest, Success) {
 TEST_F(SetBlendColorTest, AnyValueAllowed) {
     DummyRenderPass renderPass(device);
 
-    dawn::CommandEncoder encoder = device.CreateCommandEncoder();
+    wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
     {
-        dawn::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
-        constexpr dawn::Color kAnyColorValue{-1.0f, 42.0f, -0.0f, 0.0f};
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        constexpr wgpu::Color kAnyColorValue{-1.0f, 42.0f, -0.0f, 0.0f};
         pass.SetBlendColor(&kAnyColorValue);
         pass.EndPass();
     }
     encoder.Finish();
 }
 
-class SetStencilReferenceTest : public ValidationTest {
-};
+class SetStencilReferenceTest : public ValidationTest {};
 
 // Test to check basic use of SetStencilReferenceTest
 TEST_F(SetStencilReferenceTest, Success) {
     DummyRenderPass renderPass(device);
 
-    dawn::CommandEncoder encoder = device.CreateCommandEncoder();
+    wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
     {
-        dawn::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
         pass.SetStencilReference(0);
         pass.EndPass();
     }
@@ -126,9 +332,9 @@ TEST_F(SetStencilReferenceTest, Success) {
 TEST_F(SetStencilReferenceTest, AllBitsAllowed) {
     DummyRenderPass renderPass(device);
 
-    dawn::CommandEncoder encoder = device.CreateCommandEncoder();
+    wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
     {
-        dawn::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
         pass.SetStencilReference(0xFFFFFFFF);
         pass.EndPass();
     }

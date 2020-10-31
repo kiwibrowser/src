@@ -13,8 +13,7 @@
 //* limitations under the License.
 
 #include "dawn_native/Error.h"
-
-#include <glad/glad.h>
+#include "dawn_native/opengl/opengl_platform.h"
 
 namespace dawn_native { namespace opengl {
     using GetProcAddress = void* (*) (const char*);
@@ -24,7 +23,7 @@ namespace dawn_native { namespace opengl {
         {% for block in header_blocks %}
             // {{block.description}}
             {% for proc in block.procs %}
-                {{proc.PFNPROCNAME()}} {{proc.ProcName()}} = nullptr;
+                {{proc.PFNGLPROCNAME()}} {{proc.ProcName()}} = nullptr;
             {% endfor %}
 
         {% endfor%}

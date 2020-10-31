@@ -33,22 +33,28 @@ typedef __IOSurface* IOSurfaceRef;
 #endif  //__OBJC__
 
 namespace dawn_native { namespace metal {
-    DAWN_NATIVE_EXPORT DawnTexture WrapIOSurface(DawnDevice device,
-                                                 const DawnTextureDescriptor* descriptor,
-                                                 IOSurfaceRef ioSurface,
-                                                 uint32_t plane);
+    struct DAWN_NATIVE_EXPORT ExternalImageDescriptorIOSurface : ExternalImageDescriptor {
+      public:
+        ExternalImageDescriptorIOSurface();
+
+        IOSurfaceRef ioSurface;
+        uint32_t plane;
+    };
+
+    DAWN_NATIVE_EXPORT WGPUTexture
+    WrapIOSurface(WGPUDevice device, const ExternalImageDescriptorIOSurface* descriptor);
 
     // When making Metal interop with other APIs, we need to be careful that QueueSubmit doesn't
     // mean that the operations will be visible to other APIs/Metal devices right away. macOS
     // does have a global queue of graphics operations, but the command buffers are inserted there
     // when they are "scheduled". Submitting other operations before the command buffer is
     // scheduled could lead to races in who gets scheduled first and incorrect rendering.
-    DAWN_NATIVE_EXPORT void WaitForCommandsToBeScheduled(DawnDevice device);
+    DAWN_NATIVE_EXPORT void WaitForCommandsToBeScheduled(WGPUDevice device);
 }}  // namespace dawn_native::metal
 
 #ifdef __OBJC__
 namespace dawn_native { namespace metal {
-    DAWN_NATIVE_EXPORT id<MTLDevice> GetMetalDevice(DawnDevice device);
+    DAWN_NATIVE_EXPORT id<MTLDevice> GetMetalDevice(WGPUDevice device);
 }}      // namespace dawn_native::metal
 #endif  // __OBJC__
 

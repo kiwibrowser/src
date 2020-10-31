@@ -25,44 +25,138 @@
 namespace dawn_native {
 
     MaybeError ValidateSwapChainDescriptor(const DeviceBase* device,
+                                           const Surface* surface,
                                            const SwapChainDescriptor* descriptor);
+
+    TextureDescriptor GetSwapChainBaseTextureDescriptor(NewSwapChainBase* swapChain);
 
     class SwapChainBase : public ObjectBase {
       public:
-        SwapChainBase(DeviceBase* device, const SwapChainDescriptor* descriptor);
-        ~SwapChainBase();
+        SwapChainBase(DeviceBase* device);
 
         static SwapChainBase* MakeError(DeviceBase* device);
 
         // Dawn API
-        void Configure(dawn::TextureFormat format,
-                       dawn::TextureUsageBit allowedUsage,
-                       uint32_t width,
-                       uint32_t height);
-        TextureBase* GetNextTexture();
-        void Present(TextureBase* texture);
+        virtual void Configure(wgpu::TextureFormat format,
+                               wgpu::TextureUsage allowedUsage,
+                               uint32_t width,
+                               uint32_t height) = 0;
+        virtual TextureViewBase* GetCurrentTextureView() = 0;
+        virtual void Present() = 0;
 
       protected:
         SwapChainBase(DeviceBase* device, ObjectBase::ErrorTag tag);
+        ~SwapChainBase() override;
+    };
 
+    // The base class for implementation-based SwapChains that are deprecated.
+    class OldSwapChainBase : public SwapChainBase {
+      public:
+        OldSwapChainBase(DeviceBase* device, const SwapChainDescriptor* descriptor);
+
+        static SwapChainBase* MakeError(DeviceBase* device);
+
+        // Dawn API
+        void Configure(wgpu::TextureFormat format,
+                       wgpu::TextureUsage allowedUsage,
+                       uint32_t width,
+                       uint32_t height) override;
+        TextureViewBase* GetCurrentTextureView() override;
+        void Present() override;
+
+      protected:
+        ~OldSwapChainBase() override;
         const DawnSwapChainImplementation& GetImplementation();
         virtual TextureBase* GetNextTextureImpl(const TextureDescriptor*) = 0;
-        virtual void OnBeforePresent(TextureBase* texture) = 0;
+        virtual MaybeError OnBeforePresent(TextureViewBase* view) = 0;
 
       private:
-        MaybeError ValidateConfigure(dawn::TextureFormat format,
-                                     dawn::TextureUsageBit allowedUsage,
+        MaybeError ValidateConfigure(wgpu::TextureFormat format,
+                                     wgpu::TextureUsage allowedUsage,
                                      uint32_t width,
                                      uint32_t height) const;
-        MaybeError ValidateGetNextTexture() const;
-        MaybeError ValidatePresent(TextureBase* texture) const;
+        MaybeError ValidateGetCurrentTextureView() const;
+        MaybeError ValidatePresent() const;
 
         DawnSwapChainImplementation mImplementation = {};
-        dawn::TextureFormat mFormat = {};
-        dawn::TextureUsageBit mAllowedUsage;
+        wgpu::TextureFormat mFormat = {};
+        wgpu::TextureUsage mAllowedUsage;
         uint32_t mWidth = 0;
         uint32_t mHeight = 0;
-        TextureBase* mLastNextTexture = nullptr;
+        Ref<TextureBase> mCurrentTexture;
+        Ref<TextureViewBase> mCurrentTextureView;
+    };
+
+    // The base class for surface-based SwapChains that aren't ready yet.
+    class NewSwapChainBase : public SwapChainBase {
+      public:
+        NewSwapChainBase(DeviceBase* device,
+                         Surface* surface,
+                         const SwapChainDescriptor* descriptor);
+
+        // This is called when the swapchain is detached for any reason:
+        //
+        //  - The swapchain is being destroyed.
+        //  - The surface it is attached to is being destroyed.
+        //  - The swapchain is being replaced by another one on the surface.
+        //
+        // The call for the old swapchain being replaced should be called inside the backend
+        // implementation of SwapChains. This is to allow them to acquire any resources before
+        // calling detach to make a seamless transition from the previous swapchain.
+        //
+        // Likewise the call for the swapchain being destroyed must be done in the backend's
+        // swapchain's destructor since C++ says it is UB to call virtual methods in the base class
+        // destructor.
+        void DetachFromSurface();
+
+        // Dawn API
+        void Configure(wgpu::TextureFormat format,
+                       wgpu::TextureUsage allowedUsage,
+                       uint32_t width,
+                       uint32_t height) override;
+        TextureViewBase* GetCurrentTextureView() override;
+        void Present() override;
+
+        uint32_t GetWidth() const;
+        uint32_t GetHeight() const;
+        wgpu::TextureFormat GetFormat() const;
+        wgpu::TextureUsage GetUsage() const;
+        wgpu::PresentMode GetPresentMode() const;
+        Surface* GetSurface() const;
+        bool IsAttached() const;
+        wgpu::BackendType GetBackendType() const;
+
+      protected:
+        ~NewSwapChainBase() override;
+
+      private:
+        bool mAttached;
+        uint32_t mWidth;
+        uint32_t mHeight;
+        wgpu::TextureFormat mFormat;
+        wgpu::TextureUsage mUsage;
+        wgpu::PresentMode mPresentMode;
+
+        // This is a weak reference to the surface. If the surface is destroyed it will call
+        // DetachFromSurface and mSurface will be updated to nullptr.
+        Surface* mSurface = nullptr;
+        Ref<TextureViewBase> mCurrentTextureView;
+
+        MaybeError ValidatePresent() const;
+        MaybeError ValidateGetCurrentTextureView() const;
+
+        // GetCurrentTextureViewImpl and PresentImpl are guaranteed to be called in an interleaved
+        // manner, starting with GetCurrentTextureViewImpl.
+
+        // The returned texture view must match the swapchain descriptor exactly.
+        virtual ResultOrError<TextureViewBase*> GetCurrentTextureViewImpl() = 0;
+        // The call to present must destroy the current view's texture so further access to it are
+        // invalid.
+        virtual MaybeError PresentImpl() = 0;
+
+        // Guaranteed to be called exactly once during the lifetime of the SwapChain. After it is
+        // called no other virtual method can be called.
+        virtual void DetachFromSurfaceImpl() = 0;
     };
 
 }  // namespace dawn_native

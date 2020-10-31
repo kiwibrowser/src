@@ -16,7 +16,10 @@
 #define COMMON_HASHUTILS_H_
 
 #include "common/Platform.h"
+#include "common/TypedInteger.h"
+#include "common/ityp_bitset.h"
 
+#include <bitset>
 #include <functional>
 
 // Wrapper around std::hash to make it a templated function instead of a functor. It is marginally
@@ -24,6 +27,12 @@
 template <typename T>
 size_t Hash(const T& value) {
     return std::hash<T>()(value);
+}
+
+// Add hashing of TypedIntegers
+template <typename Tag, typename T>
+size_t Hash(const TypedInteger<Tag, T>& value) {
+    return Hash(static_cast<T>(value));
 }
 
 // When hashing sparse structures we want to iteratively build a hash value with only parts of the
@@ -78,5 +87,15 @@ size_t Hash(const std::bitset<N>& value) {
     return hash;
 }
 #endif
+
+namespace std {
+    template <typename Index, size_t N>
+    struct hash<ityp::bitset<Index, N>> {
+      public:
+        size_t operator()(const ityp::bitset<Index, N>& value) const {
+            return Hash(static_cast<const std::bitset<N>&>(value));
+        }
+    };
+}  // namespace std
 
 #endif  // COMMON_HASHUTILS_H_

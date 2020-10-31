@@ -39,14 +39,14 @@ namespace utils {
 
         void Init(DawnWSIContextMetal* ctx) {
             mMtlDevice = ctx->device;
-            mCommandQueue = [mMtlDevice newCommandQueue];
+            mCommandQueue = ctx->queue;
         }
 
-        DawnSwapChainError Configure(DawnTextureFormat format,
-                                     DawnTextureUsageBit usage,
+        DawnSwapChainError Configure(WGPUTextureFormat format,
+                                     WGPUTextureUsage usage,
                                      uint32_t width,
                                      uint32_t height) {
-            if (format != DAWN_TEXTURE_FORMAT_B8_G8_R8_A8_UNORM) {
+            if (format != WGPUTextureFormat_BGRA8Unorm) {
                 return "unsupported format";
             }
             ASSERT(width > 0);
@@ -65,7 +65,7 @@ namespace utils {
             [mLayer setDrawableSize:size];
 
             constexpr uint32_t kFramebufferOnlyTextureUsages =
-                DAWN_TEXTURE_USAGE_BIT_OUTPUT_ATTACHMENT | DAWN_TEXTURE_USAGE_BIT_PRESENT;
+                WGPUTextureUsage_OutputAttachment | WGPUTextureUsage_Present;
             bool hasOnlyFramebufferUsages = !(usage & (~kFramebufferOnlyTextureUsages));
             if (hasOnlyFramebufferUsages) {
                 [mLayer setFramebufferOnly:YES];
@@ -110,7 +110,7 @@ namespace utils {
 
     class MetalBinding : public BackendBinding {
       public:
-        MetalBinding(GLFWwindow* window, DawnDevice device) : BackendBinding(window, device) {
+        MetalBinding(GLFWwindow* window, WGPUDevice device) : BackendBinding(window, device) {
         }
 
         uint64_t GetSwapChainImplementation() override {
@@ -121,15 +121,15 @@ namespace utils {
             return reinterpret_cast<uint64_t>(&mSwapchainImpl);
         }
 
-        DawnTextureFormat GetPreferredSwapChainTextureFormat() override {
-            return DAWN_TEXTURE_FORMAT_B8_G8_R8_A8_UNORM;
+        WGPUTextureFormat GetPreferredSwapChainTextureFormat() override {
+            return WGPUTextureFormat_BGRA8Unorm;
         }
 
       private:
         DawnSwapChainImplementation mSwapchainImpl = {};
     };
 
-    BackendBinding* CreateMetalBinding(GLFWwindow* window, DawnDevice device) {
+    BackendBinding* CreateMetalBinding(GLFWwindow* window, WGPUDevice device) {
         return new MetalBinding(window, device);
     }
 }

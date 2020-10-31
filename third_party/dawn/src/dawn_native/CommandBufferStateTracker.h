@@ -16,10 +16,11 @@
 #define DAWNNATIVE_COMMANDBUFFERSTATETRACKER_H
 
 #include "common/Constants.h"
+#include "common/ityp_array.h"
+#include "dawn_native/BindingInfo.h"
 #include "dawn_native/Error.h"
 #include "dawn_native/Forward.h"
 
-#include <array>
 #include <bitset>
 #include <map>
 #include <set>
@@ -36,9 +37,9 @@ namespace dawn_native {
         // State-modifying methods
         void SetComputePipeline(ComputePipelineBase* pipeline);
         void SetRenderPipeline(RenderPipelineBase* pipeline);
-        void SetBindGroup(uint32_t index, BindGroupBase* bindgroup);
+        void SetBindGroup(BindGroupIndex index, BindGroupBase* bindgroup);
         void SetIndexBuffer();
-        void SetVertexBuffer(uint32_t start, uint32_t count);
+        void SetVertexBuffer(uint32_t slot);
 
         static constexpr size_t kNumAspects = 4;
         using ValidationAspects = std::bitset<kNumAspects>;
@@ -46,17 +47,19 @@ namespace dawn_native {
       private:
         MaybeError ValidateOperation(ValidationAspects requiredAspects);
         void RecomputeLazyAspects(ValidationAspects aspects);
-        MaybeError GenerateAspectError(ValidationAspects aspects);
+        MaybeError CheckMissingAspects(ValidationAspects aspects);
 
         void SetPipelineCommon(PipelineBase* pipeline);
 
         ValidationAspects mAspects;
 
-        std::array<BindGroupBase*, kMaxBindGroups> mBindgroups = {};
-        std::bitset<kMaxVertexBuffers> mInputsSet;
+        ityp::array<BindGroupIndex, BindGroupBase*, kMaxBindGroups> mBindgroups = {};
+        std::bitset<kMaxVertexBuffers> mVertexBufferSlotsUsed;
 
         PipelineLayoutBase* mLastPipelineLayout = nullptr;
         RenderPipelineBase* mLastRenderPipeline = nullptr;
+
+        const RequiredBufferSizes* mMinimumBufferSizes = nullptr;
     };
 
 }  // namespace dawn_native

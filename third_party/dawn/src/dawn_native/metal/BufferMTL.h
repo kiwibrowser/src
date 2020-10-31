@@ -22,47 +22,41 @@
 
 namespace dawn_native { namespace metal {
 
+    class CommandRecordingContext;
     class Device;
 
     class Buffer : public BufferBase {
       public:
-        Buffer(Device* device, const BufferDescriptor* descriptor);
-        ~Buffer();
+        static ResultOrError<Ref<Buffer>> Create(Device* device,
+                                                 const BufferDescriptor* descriptor);
+        id<MTLBuffer> GetMTLBuffer() const;
 
-        id<MTLBuffer> GetMTLBuffer();
-
-        void OnMapCommandSerialFinished(uint32_t mapSerial, bool isWrite);
+        void EnsureDataInitialized(CommandRecordingContext* commandContext);
+        void EnsureDataInitializedAsDestination(CommandRecordingContext* commandContext,
+                                                uint64_t offset,
+                                                uint64_t size);
+        void EnsureDataInitializedAsDestination(CommandRecordingContext* commandContext,
+                                                const CopyTextureToBufferCmd* copy);
 
       private:
+        using BufferBase::BufferBase;
+        MaybeError Initialize();
+        ~Buffer() override;
         // Dawn API
-        void MapReadAsyncImpl(uint32_t serial) override;
-        void MapWriteAsyncImpl(uint32_t serial) override;
+        MaybeError MapReadAsyncImpl() override;
+        MaybeError MapWriteAsyncImpl() override;
+        MaybeError MapAsyncImpl(wgpu::MapMode mode, size_t offset, size_t size) override;
         void UnmapImpl() override;
         void DestroyImpl() override;
+        void* GetMappedPointerImpl() override;
 
-        bool IsMapWritable() const override;
-        MaybeError MapAtCreationImpl(uint8_t** mappedPointer) override;
+        bool IsMappableAtCreation() const override;
+        MaybeError MapAtCreationImpl() override;
+
+        void InitializeToZero(CommandRecordingContext* commandContext);
+        void ClearBuffer(CommandRecordingContext* commandContext, uint8_t clearValue);
 
         id<MTLBuffer> mMtlBuffer = nil;
-    };
-
-    class MapRequestTracker {
-      public:
-        MapRequestTracker(Device* device);
-        ~MapRequestTracker();
-
-        void Track(Buffer* buffer, uint32_t mapSerial, bool isWrite);
-        void Tick(Serial finishedSerial);
-
-      private:
-        Device* mDevice;
-
-        struct Request {
-            Ref<Buffer> buffer;
-            uint32_t mapSerial;
-            bool isWrite;
-        };
-        SerialQueue<Request> mInflightRequests;
     };
 
 }}  // namespace dawn_native::metal

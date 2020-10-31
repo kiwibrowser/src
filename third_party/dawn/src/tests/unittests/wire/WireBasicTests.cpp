@@ -26,10 +26,10 @@ class WireBasicTests : public WireTest {
 
 // One call gets forwarded correctly.
 TEST_F(WireBasicTests, CallForwarded) {
-    dawnDeviceCreateCommandEncoder(device);
+    wgpuDeviceCreateCommandEncoder(device, nullptr);
 
-    DawnCommandEncoder apiCmdBufEncoder = api.GetNewCommandEncoder();
-    EXPECT_CALL(api, DeviceCreateCommandEncoder(apiDevice))
+    WGPUCommandEncoder apiCmdBufEncoder = api.GetNewCommandEncoder();
+    EXPECT_CALL(api, DeviceCreateCommandEncoder(apiDevice, nullptr))
         .WillOnce(Return(apiCmdBufEncoder));
 
     FlushClient();
@@ -37,28 +37,28 @@ TEST_F(WireBasicTests, CallForwarded) {
 
 // Test that calling methods on a new object works as expected.
 TEST_F(WireBasicTests, CreateThenCall) {
-    DawnCommandEncoder encoder = dawnDeviceCreateCommandEncoder(device);
-    dawnCommandEncoderFinish(encoder);
+    WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device, nullptr);
+    wgpuCommandEncoderFinish(encoder, nullptr);
 
-    DawnCommandEncoder apiCmdBufEncoder = api.GetNewCommandEncoder();
-    EXPECT_CALL(api, DeviceCreateCommandEncoder(apiDevice))
+    WGPUCommandEncoder apiCmdBufEncoder = api.GetNewCommandEncoder();
+    EXPECT_CALL(api, DeviceCreateCommandEncoder(apiDevice, nullptr))
         .WillOnce(Return(apiCmdBufEncoder));
 
-    DawnCommandBuffer apiCmdBuf = api.GetNewCommandBuffer();
-    EXPECT_CALL(api, CommandEncoderFinish(apiCmdBufEncoder)).WillOnce(Return(apiCmdBuf));
+    WGPUCommandBuffer apiCmdBuf = api.GetNewCommandBuffer();
+    EXPECT_CALL(api, CommandEncoderFinish(apiCmdBufEncoder, nullptr)).WillOnce(Return(apiCmdBuf));
 
     FlushClient();
 }
 
 // Test that client reference/release do not call the backend API.
 TEST_F(WireBasicTests, RefCountKeptInClient) {
-    DawnCommandEncoder encoder = dawnDeviceCreateCommandEncoder(device);
+    WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device, nullptr);
 
-    dawnCommandEncoderReference(encoder);
-    dawnCommandEncoderRelease(encoder);
+    wgpuCommandEncoderReference(encoder);
+    wgpuCommandEncoderRelease(encoder);
 
-    DawnCommandEncoder apiCmdBufEncoder = api.GetNewCommandEncoder();
-    EXPECT_CALL(api, DeviceCreateCommandEncoder(apiDevice))
+    WGPUCommandEncoder apiCmdBufEncoder = api.GetNewCommandEncoder();
+    EXPECT_CALL(api, DeviceCreateCommandEncoder(apiDevice, nullptr))
         .WillOnce(Return(apiCmdBufEncoder));
 
     FlushClient();
@@ -66,12 +66,12 @@ TEST_F(WireBasicTests, RefCountKeptInClient) {
 
 // Test that client reference/release do not call the backend API.
 TEST_F(WireBasicTests, ReleaseCalledOnRefCount0) {
-    DawnCommandEncoder encoder = dawnDeviceCreateCommandEncoder(device);
+    WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device, nullptr);
 
-    dawnCommandEncoderRelease(encoder);
+    wgpuCommandEncoderRelease(encoder);
 
-    DawnCommandEncoder apiCmdBufEncoder = api.GetNewCommandEncoder();
-    EXPECT_CALL(api, DeviceCreateCommandEncoder(apiDevice))
+    WGPUCommandEncoder apiCmdBufEncoder = api.GetNewCommandEncoder();
+    EXPECT_CALL(api, DeviceCreateCommandEncoder(apiDevice, nullptr))
         .WillOnce(Return(apiCmdBufEncoder));
 
     EXPECT_CALL(api, CommandEncoderRelease(apiCmdBufEncoder));

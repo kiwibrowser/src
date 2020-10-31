@@ -15,8 +15,9 @@
 #ifndef DAWNNATIVE_STAGINGBUFFERVK_H_
 #define DAWNNATIVE_STAGINGBUFFERVK_H_
 
+#include "common/vulkan_platform.h"
+#include "dawn_native/ResourceMemoryAllocation.h"
 #include "dawn_native/StagingBuffer.h"
-#include "dawn_native/vulkan/MemoryAllocator.h"
 
 namespace dawn_native { namespace vulkan {
 
@@ -25,7 +26,7 @@ namespace dawn_native { namespace vulkan {
     class StagingBuffer : public StagingBufferBase {
       public:
         StagingBuffer(size_t size, Device* device);
-        ~StagingBuffer();
+        ~StagingBuffer() override;
 
         VkBuffer GetBufferHandle() const;
 
@@ -34,7 +35,7 @@ namespace dawn_native { namespace vulkan {
       private:
         Device* mDevice;
         VkBuffer mBuffer;
-        DeviceMemoryAllocation mAllocation;
+        ResourceMemoryAllocation mAllocation;
     };
 }}  // namespace dawn_native::vulkan
 

@@ -15,18 +15,23 @@
 #ifndef DAWNNATIVE_D3D12_D3D12PLATFORM_H_
 #define DAWNNATIVE_D3D12_D3D12PLATFORM_H_
 
+// Pre-emptively include windows.h but remove its macros so that they aren't set when declaring the
+// COM interfaces. Otherwise ID3D12InfoQueue::GetMessage would be either GetMessageA or GetMessageW
+// which causes compilation errors.
+#include "common/windows_with_undefs.h"
+
+#include <d3d11_2.h>
+#include <d3d11on12.h>
 #include <d3d12.h>
+#include <dxcapi.h>
 #include <dxgi1_4.h>
 #include <wrl.h>
 
+// DXProgrammableCapture.h takes a dependency on other platform header
+// files, so it must be defined after them.
+#include <DXProgrammableCapture.h>
 #include <dxgidebug.h>
 
 using Microsoft::WRL::ComPtr;
-
-// Remove windows.h macros after d3d12's include of windows.h
-#include "common/Platform.h"
-#if defined(DAWN_PLATFORM_WINDOWS)
-#    include "common/windows_with_undefs.h"
-#endif
 
 #endif  // DAWNNATIVE_D3D12_D3D12PLATFORM_H_

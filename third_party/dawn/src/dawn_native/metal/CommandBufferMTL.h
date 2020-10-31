@@ -17,37 +17,37 @@
 
 #include "dawn_native/CommandAllocator.h"
 #include "dawn_native/CommandBuffer.h"
+#include "dawn_native/Error.h"
 
 #import <Metal/Metal.h>
 
 namespace dawn_native {
-    class CommandEncoderBase;
+    class CommandEncoder;
 }
 
 namespace dawn_native { namespace metal {
 
+    class CommandRecordingContext;
     class Device;
-    struct GlobalEncoders;
 
-    class CommandBuffer : public CommandBufferBase {
+    class CommandBuffer final : public CommandBufferBase {
       public:
-        CommandBuffer(Device* device, CommandEncoderBase* encoder);
-        ~CommandBuffer();
+        CommandBuffer(CommandEncoder* encoder, const CommandBufferDescriptor* descriptor);
 
-        void FillCommands(id<MTLCommandBuffer> commandBuffer);
+        MaybeError FillCommands(CommandRecordingContext* commandContext);
 
       private:
-        void EncodeComputePass(id<MTLCommandBuffer> commandBuffer);
-        void EncodeRenderPass(id<MTLCommandBuffer> commandBuffer,
-                              MTLRenderPassDescriptor* mtlRenderPass,
-                              GlobalEncoders* globalEncoders,
-                              uint32_t width,
-                              uint32_t height);
+        ~CommandBuffer() override;
+        MaybeError EncodeComputePass(CommandRecordingContext* commandContext);
+        MaybeError EncodeRenderPass(CommandRecordingContext* commandContext,
+                                    MTLRenderPassDescriptor* mtlRenderPass,
+                                    uint32_t width,
+                                    uint32_t height);
 
-        void EncodeRenderPassInternal(id<MTLCommandBuffer> commandBuffer,
-                                      MTLRenderPassDescriptor* mtlRenderPass,
-                                      uint32_t width,
-                                      uint32_t height);
+        MaybeError EncodeRenderPassInternal(CommandRecordingContext* commandContext,
+                                            MTLRenderPassDescriptor* mtlRenderPass,
+                                            uint32_t width,
+                                            uint32_t height);
 
         CommandIterator mCommands;
     };

@@ -15,7 +15,7 @@
 #ifndef UTILS_COMBORENDERPIPELINEDESCRIPTOR_H_
 #define UTILS_COMBORENDERPIPELINEDESCRIPTOR_H_
 
-#include <dawn/dawncpp.h>
+#include <dawn/webgpu_cpp.h>
 
 #include "common/Constants.h"
 
@@ -23,28 +23,29 @@
 
 namespace utils {
 
-    class ComboVertexInputDescriptor : public dawn::VertexInputDescriptor {
+    class ComboVertexStateDescriptor : public wgpu::VertexStateDescriptor {
       public:
-        ComboVertexInputDescriptor();
+        ComboVertexStateDescriptor();
 
-        std::array<dawn::VertexBufferDescriptor, kMaxVertexBuffers> cBuffers;
-        std::array<dawn::VertexAttributeDescriptor, kMaxVertexAttributes> cAttributes;
+        std::array<wgpu::VertexBufferLayoutDescriptor, kMaxVertexBuffers> cVertexBuffers;
+        std::array<wgpu::VertexAttributeDescriptor, kMaxVertexAttributes> cAttributes;
     };
 
-    class ComboRenderPipelineDescriptor : public dawn::RenderPipelineDescriptor {
+    class ComboRenderPipelineDescriptor : public wgpu::RenderPipelineDescriptor {
       public:
-        ComboRenderPipelineDescriptor(const dawn::Device& device);
+        ComboRenderPipelineDescriptor(const wgpu::Device& device);
 
-        dawn::PipelineStageDescriptor cVertexStage;
-        dawn::PipelineStageDescriptor cFragmentStage;
+        ComboRenderPipelineDescriptor(const ComboRenderPipelineDescriptor&) = delete;
+        ComboRenderPipelineDescriptor& operator=(const ComboRenderPipelineDescriptor&) = delete;
+        ComboRenderPipelineDescriptor(ComboRenderPipelineDescriptor&&) = delete;
+        ComboRenderPipelineDescriptor& operator=(ComboRenderPipelineDescriptor&&) = delete;
 
-        ComboVertexInputDescriptor cVertexInput;
-        dawn::RasterizationStateDescriptor cRasterizationState;
-        std::array<dawn::ColorStateDescriptor*, kMaxColorAttachments> cColorStates;
-        dawn::DepthStencilStateDescriptor cDepthStencilState;
+        wgpu::ProgrammableStageDescriptor cFragmentStage;
 
-      private:
-        dawn::ColorStateDescriptor mColorStates[kMaxColorAttachments];
+        ComboVertexStateDescriptor cVertexState;
+        wgpu::RasterizationStateDescriptor cRasterizationState;
+        std::array<wgpu::ColorStateDescriptor, kMaxColorAttachments> cColorStates;
+        wgpu::DepthStencilStateDescriptor cDepthStencilState;
     };
 
 }  // namespace utils

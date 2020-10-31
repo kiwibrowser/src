@@ -14,28 +14,26 @@
 
 #include <gtest/gtest.h>
 
-#include "dawn_native/RefCounted.h"
+#include "common/RefCounted.h"
 #include "dawn_native/ToBackend.h"
 
 #include <type_traits>
 
 // Make our own Base - Backend object pair, reusing the CommandBuffer name
 namespace dawn_native {
-    class CommandBufferBase : public RefCounted {
-    };
-}
+    class CommandBufferBase : public RefCounted {};
+}  // namespace dawn_native
 
 using namespace dawn_native;
 
-class MyCommandBuffer : public CommandBufferBase {
-};
+class MyCommandBuffer : public CommandBufferBase {};
 
 struct MyBackendTraits {
     using CommandBufferType = MyCommandBuffer;
 };
 
 // Instanciate ToBackend for our "backend"
-template<typename T>
+template <typename T>
 auto ToBackend(T&& common) -> decltype(ToBackendBase<MyBackendTraits>(common)) {
     return ToBackendBase<MyBackendTraits>(common);
 }
@@ -71,7 +69,8 @@ TEST(ToBackend, Ref) {
         const Ref<CommandBufferBase> base(cmdBuf);
 
         const auto& backendCmdBuf = ToBackend(base);
-        static_assert(std::is_same<decltype(ToBackend(base)), const Ref<MyCommandBuffer>&>::value, "");
+        static_assert(std::is_same<decltype(ToBackend(base)), const Ref<MyCommandBuffer>&>::value,
+                      "");
         ASSERT_EQ(cmdBuf, backendCmdBuf.Get());
 
         cmdBuf->Release();

@@ -15,8 +15,8 @@
 #ifndef DAWNNATIVE_SAMPLER_H_
 #define DAWNNATIVE_SAMPLER_H_
 
+#include "dawn_native/CachedObject.h"
 #include "dawn_native/Error.h"
-#include "dawn_native/ObjectBase.h"
 
 #include "dawn_native/dawn_platform.h"
 
@@ -26,14 +26,14 @@ namespace dawn_native {
 
     MaybeError ValidateSamplerDescriptor(DeviceBase* device, const SamplerDescriptor* descriptor);
 
-    class SamplerBase : public ObjectBase {
+    class SamplerBase : public CachedObject {
       public:
-        SamplerBase(DeviceBase* device,
-                    const SamplerDescriptor* descriptor,
-                    bool blueprint = false);
+        SamplerBase(DeviceBase* device, const SamplerDescriptor* descriptor);
         ~SamplerBase() override;
 
         static SamplerBase* MakeError(DeviceBase* device);
+
+        bool HasCompareFunction() const;
 
         // Functors necessary for the unordered_set<SamplerBase*>-based cache.
         struct HashFunc {
@@ -47,16 +47,15 @@ namespace dawn_native {
         SamplerBase(DeviceBase* device, ObjectBase::ErrorTag tag);
 
         // TODO(cwallez@chromium.org): Store a crypto hash of the items instead?
-        dawn::AddressMode mAddressModeU;
-        dawn::AddressMode mAddressModeV;
-        dawn::AddressMode mAddressModeW;
-        dawn::FilterMode mMagFilter;
-        dawn::FilterMode mMinFilter;
-        dawn::FilterMode mMipmapFilter;
+        wgpu::AddressMode mAddressModeU;
+        wgpu::AddressMode mAddressModeV;
+        wgpu::AddressMode mAddressModeW;
+        wgpu::FilterMode mMagFilter;
+        wgpu::FilterMode mMinFilter;
+        wgpu::FilterMode mMipmapFilter;
         float mLodMinClamp;
         float mLodMaxClamp;
-        dawn::CompareFunction mCompareFunction;
-        bool mIsBlueprint = false;
+        wgpu::CompareFunction mCompareFunction;
     };
 
 }  // namespace dawn_native

@@ -20,7 +20,7 @@ template<typename T>
 MaybeError OpenGLFunctionsBase::LoadProc(GetProcAddress getProc, T* memberProc, const char* name) {
     *memberProc = reinterpret_cast<T>(getProc(name));
     if (DAWN_UNLIKELY(memberProc == nullptr)) {
-        return DAWN_CONTEXT_LOST_ERROR(std::string("Couldn't load GL proc: ") + name);
+        return DAWN_INTERNAL_ERROR(std::string("Couldn't load GL proc: ") + name);
     }
     return {};
 }

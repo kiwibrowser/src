@@ -19,7 +19,9 @@
 
 #include "common/Platform.h"
 #include "dawn_native/Device.h"
+#include "dawn_native/QuerySet.h"
 #include "dawn_native/opengl/Forward.h"
+#include "dawn_native/opengl/GLFormat.h"
 #include "dawn_native/opengl/OpenGLFunctions.h"
 
 #include <queue>
@@ -33,23 +35,25 @@ namespace dawn_native { namespace opengl {
 
     class Device : public DeviceBase {
       public:
-        Device(AdapterBase* adapter,
-               const DeviceDescriptor* descriptor,
-               const OpenGLFunctions& functions);
-        ~Device();
+        static ResultOrError<Device*> Create(AdapterBase* adapter,
+                                             const DeviceDescriptor* descriptor,
+                                             const OpenGLFunctions& functions);
+        ~Device() override;
+
+        MaybeError Initialize();
 
         // Contains all the OpenGL entry points, glDoFoo is called via device->gl.DoFoo.
         const OpenGLFunctions gl;
 
+        const GLFormat& GetGLFormat(const Format& format);
+
         void SubmitFenceSync();
 
         // Dawn API
-        CommandBufferBase* CreateCommandBuffer(CommandEncoderBase* encoder) override;
+        CommandBufferBase* CreateCommandBuffer(CommandEncoder* encoder,
+                                               const CommandBufferDescriptor* descriptor) override;
 
-        Serial GetCompletedCommandSerial() const final override;
-        Serial GetLastSubmittedCommandSerial() const final override;
-        Serial GetPendingCommandSerial() const override;
-        void TickImpl() override;
+        MaybeError TickImpl() override;
 
         ResultOrError<std::unique_ptr<StagingBufferBase>> CreateStagingBuffer(size_t size) override;
         MaybeError CopyFromStagingToBuffer(StagingBufferBase* source,
@@ -59,16 +63,22 @@ namespace dawn_native { namespace opengl {
                                            uint64_t size) override;
 
       private:
+        Device(AdapterBase* adapter,
+               const DeviceDescriptor* descriptor,
+               const OpenGLFunctions& functions);
+
         ResultOrError<BindGroupBase*> CreateBindGroupImpl(
             const BindGroupDescriptor* descriptor) override;
         ResultOrError<BindGroupLayoutBase*> CreateBindGroupLayoutImpl(
             const BindGroupLayoutDescriptor* descriptor) override;
-        ResultOrError<BufferBase*> CreateBufferImpl(const BufferDescriptor* descriptor) override;
+        ResultOrError<Ref<BufferBase>> CreateBufferImpl(
+            const BufferDescriptor* descriptor) override;
         ResultOrError<ComputePipelineBase*> CreateComputePipelineImpl(
             const ComputePipelineDescriptor* descriptor) override;
         ResultOrError<PipelineLayoutBase*> CreatePipelineLayoutImpl(
             const PipelineLayoutDescriptor* descriptor) override;
-        ResultOrError<QueueBase*> CreateQueueImpl() override;
+        ResultOrError<QuerySetBase*> CreateQuerySetImpl(
+            const QuerySetDescriptor* descriptor) override;
         ResultOrError<RenderPipelineBase*> CreateRenderPipelineImpl(
             const RenderPipelineDescriptor* descriptor) override;
         ResultOrError<SamplerBase*> CreateSamplerImpl(const SamplerDescriptor* descriptor) override;
@@ -76,16 +86,24 @@ namespace dawn_native { namespace opengl {
             const ShaderModuleDescriptor* descriptor) override;
         ResultOrError<SwapChainBase*> CreateSwapChainImpl(
             const SwapChainDescriptor* descriptor) override;
-        ResultOrError<TextureBase*> CreateTextureImpl(const TextureDescriptor* descriptor) override;
+        ResultOrError<NewSwapChainBase*> CreateSwapChainImpl(
+            Surface* surface,
+            NewSwapChainBase* previousSwapChain,
+            const SwapChainDescriptor* descriptor) override;
+        ResultOrError<Ref<TextureBase>> CreateTextureImpl(
+            const TextureDescriptor* descriptor) override;
         ResultOrError<TextureViewBase*> CreateTextureViewImpl(
             TextureBase* texture,
             const TextureViewDescriptor* descriptor) override;
 
-        void CheckPassedFences();
+        void InitTogglesFromDriver();
+        Serial CheckAndUpdateCompletedSerials() override;
+        void ShutDownImpl() override;
+        MaybeError WaitForIdleForDestruction() override;
 
-        Serial mCompletedSerial = 0;
-        Serial mLastSubmittedSerial = 0;
         std::queue<std::pair<GLsync, Serial>> mFencesInFlight;
+
+        GLFormatTable mFormatTable;
     };
 
 }}  // namespace dawn_native::opengl

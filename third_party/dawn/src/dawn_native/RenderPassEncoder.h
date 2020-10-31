@@ -16,60 +16,48 @@
 #define DAWNNATIVE_RENDERPASSENCODER_H_
 
 #include "dawn_native/Error.h"
-#include "dawn_native/ProgrammablePassEncoder.h"
+#include "dawn_native/RenderEncoderBase.h"
 
 namespace dawn_native {
 
-    // This is called RenderPassEncoderBase to match the code generator expectations. Note that it
-    // is a pure frontend type to record in its parent CommandEncoder and never has a backend
-    // implementation.
-    // TODO(cwallez@chromium.org): Remove that generator limitation and rename to ComputePassEncoder
-    class RenderPassEncoderBase : public ProgrammablePassEncoder {
+    class RenderBundleBase;
+
+    class RenderPassEncoder final : public RenderEncoderBase {
       public:
-        RenderPassEncoderBase(DeviceBase* device,
-                              CommandEncoderBase* topLevelEncoder,
-                              CommandAllocator* allocator);
+        RenderPassEncoder(DeviceBase* device,
+                          CommandEncoder* commandEncoder,
+                          EncodingContext* encodingContext,
+                          PassResourceUsageTracker usageTracker);
 
-        static RenderPassEncoderBase* MakeError(DeviceBase* device,
-                                                CommandEncoderBase* topLevelEncoder);
+        static RenderPassEncoder* MakeError(DeviceBase* device,
+                                            CommandEncoder* commandEncoder,
+                                            EncodingContext* encodingContext);
 
-        void Draw(uint32_t vertexCount,
-                  uint32_t instanceCount,
-                  uint32_t firstVertex,
-                  uint32_t firstInstance);
-        void DrawIndexed(uint32_t vertexCount,
-                         uint32_t instanceCount,
-                         uint32_t firstIndex,
-                         int32_t baseVertex,
-                         uint32_t firstInstance);
-
-        void DrawIndirect(BufferBase* indirectBuffer, uint64_t indirectOffset);
-        void DrawIndexedIndirect(BufferBase* indirectBuffer, uint64_t indirectOffset);
-
-        void SetPipeline(RenderPipelineBase* pipeline);
+        void EndPass();
 
         void SetStencilReference(uint32_t reference);
         void SetBlendColor(const Color* color);
+        void SetViewport(float x,
+                         float y,
+                         float width,
+                         float height,
+                         float minDepth,
+                         float maxDepth);
         void SetScissorRect(uint32_t x, uint32_t y, uint32_t width, uint32_t height);
+        void ExecuteBundles(uint32_t count, RenderBundleBase* const* renderBundles);
 
-        template <typename T>
-        void SetVertexBuffers(uint32_t startSlot,
-                              uint32_t count,
-                              T* const* buffers,
-                              uint64_t const* offsets) {
-            static_assert(std::is_base_of<BufferBase, T>::value, "");
-            SetVertexBuffers(startSlot, count, buffers, offsets);
-        }
-        void SetVertexBuffers(uint32_t startSlot,
-                              uint32_t count,
-                              BufferBase* const* buffers,
-                              uint64_t const* offsets);
-        void SetIndexBuffer(BufferBase* buffer, uint64_t offset);
+        void WriteTimestamp(QuerySetBase* querySet, uint32_t queryIndex);
 
       protected:
-        RenderPassEncoderBase(DeviceBase* device,
-                              CommandEncoderBase* topLevelEncoder,
-                              ErrorTag errorTag);
+        RenderPassEncoder(DeviceBase* device,
+                          CommandEncoder* commandEncoder,
+                          EncodingContext* encodingContext,
+                          ErrorTag errorTag);
+
+      private:
+        // For render and compute passes, the encoding context is borrowed from the command encoder.
+        // Keep a reference to the encoder to make sure the context isn't freed.
+        Ref<CommandEncoder> mCommandEncoder;
     };
 
 }  // namespace dawn_native

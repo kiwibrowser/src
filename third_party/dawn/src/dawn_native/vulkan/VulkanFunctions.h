@@ -23,15 +23,15 @@ class DynamicLib;
 
 namespace dawn_native { namespace vulkan {
 
-    struct VulkanGlobalKnobs;
-    struct VulkanDeviceKnobs;
+    struct VulkanGlobalInfo;
+    struct VulkanDeviceInfo;
 
     // Stores the Vulkan entry points. Also loads them from the dynamic library
     // and the vkGet*ProcAddress entry points.
     struct VulkanFunctions {
         MaybeError LoadGlobalProcs(const DynamicLib& vulkanLib);
-        MaybeError LoadInstanceProcs(VkInstance instance, const VulkanGlobalKnobs& usedGlobals);
-        MaybeError LoadDeviceProcs(VkDevice device, const VulkanDeviceKnobs& usedKnobs);
+        MaybeError LoadInstanceProcs(VkInstance instance, const VulkanGlobalInfo& globalInfo);
+        MaybeError LoadDeviceProcs(VkDevice device, const VulkanDeviceInfo& deviceInfo);
 
         // ---------- Global procs
 
@@ -44,6 +44,9 @@ namespace dawn_native { namespace vulkan {
         // DestroyInstance isn't technically a global proc but we want to be able to use it
         // before querying the instance procs in case we need to error out during initialization.
         PFN_vkDestroyInstance DestroyInstance = nullptr;
+
+        // Core Vulkan 1.1
+        PFN_vkEnumerateInstanceVersion EnumerateInstanceVersion = nullptr;
 
         // ---------- Instance procs
 
@@ -80,6 +83,53 @@ namespace dawn_native { namespace vulkan {
         PFN_vkGetPhysicalDeviceSurfaceFormatsKHR GetPhysicalDeviceSurfaceFormatsKHR = nullptr;
         PFN_vkGetPhysicalDeviceSurfacePresentModesKHR GetPhysicalDeviceSurfacePresentModesKHR =
             nullptr;
+
+        // Core Vulkan 1.1 promoted extensions, set if either the core version or the extension is
+        // present.
+
+        // VK_KHR_external_memory_capabilities
+        PFN_vkGetPhysicalDeviceExternalBufferProperties GetPhysicalDeviceExternalBufferProperties =
+            nullptr;
+
+        // VK_KHR_external_semaphore_capabilities
+        PFN_vkGetPhysicalDeviceExternalSemaphoreProperties
+            GetPhysicalDeviceExternalSemaphoreProperties = nullptr;
+
+        // VK_KHR_get_physical_device_properties2
+        PFN_vkGetPhysicalDeviceFeatures2 GetPhysicalDeviceFeatures2 = nullptr;
+        PFN_vkGetPhysicalDeviceProperties2 GetPhysicalDeviceProperties2 = nullptr;
+        PFN_vkGetPhysicalDeviceFormatProperties2 GetPhysicalDeviceFormatProperties2 = nullptr;
+        PFN_vkGetPhysicalDeviceImageFormatProperties2 GetPhysicalDeviceImageFormatProperties2 =
+            nullptr;
+        PFN_vkGetPhysicalDeviceQueueFamilyProperties2 GetPhysicalDeviceQueueFamilyProperties2 =
+            nullptr;
+        PFN_vkGetPhysicalDeviceMemoryProperties2 GetPhysicalDeviceMemoryProperties2 = nullptr;
+        PFN_vkGetPhysicalDeviceSparseImageFormatProperties2
+            GetPhysicalDeviceSparseImageFormatProperties2 = nullptr;
+
+#if defined(VK_USE_PLATFORM_FUCHSIA)
+        // FUCHSIA_image_pipe_surface
+        PFN_vkCreateImagePipeSurfaceFUCHSIA CreateImagePipeSurfaceFUCHSIA = nullptr;
+#endif  // defined(VK_USE_PLATFORM_FUCHSIA)
+
+#if defined(DAWN_ENABLE_BACKEND_METAL)
+        // EXT_metal_surface
+        PFN_vkCreateMetalSurfaceEXT CreateMetalSurfaceEXT = nullptr;
+#endif  // defined(DAWN_ENABLE_BACKEND_METAL)
+
+#if defined(DAWN_PLATFORM_WINDOWS)
+        // KHR_win32_surface
+        PFN_vkCreateWin32SurfaceKHR CreateWin32SurfaceKHR = nullptr;
+        PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR
+            GetPhysicalDeviceWin32PresentationSupportKHR = nullptr;
+#endif  // defined(DAWN_PLATFORM_WINDOWS)
+
+#if defined(DAWN_USE_X11)
+        // KHR_xlib_surface
+        PFN_vkCreateXlibSurfaceKHR CreateXlibSurfaceKHR = nullptr;
+        PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR
+            GetPhysicalDeviceXlibPresentationSupportKHR = nullptr;
+#endif  // defined(DAWN_USE_X11)
 
         // ---------- Device procs
 
@@ -215,6 +265,47 @@ namespace dawn_native { namespace vulkan {
         PFN_vkGetSwapchainImagesKHR GetSwapchainImagesKHR = nullptr;
         PFN_vkAcquireNextImageKHR AcquireNextImageKHR = nullptr;
         PFN_vkQueuePresentKHR QueuePresentKHR = nullptr;
+
+        // VK_KHR_external_memory_fd
+        PFN_vkGetMemoryFdKHR GetMemoryFdKHR = nullptr;
+        PFN_vkGetMemoryFdPropertiesKHR GetMemoryFdPropertiesKHR = nullptr;
+
+        // VK_KHR_external_semaphore_fd
+        PFN_vkImportSemaphoreFdKHR ImportSemaphoreFdKHR = nullptr;
+        PFN_vkGetSemaphoreFdKHR GetSemaphoreFdKHR = nullptr;
+
+#if VK_USE_PLATFORM_FUCHSIA
+        // VK_FUCHSIA_external_memory
+        PFN_vkGetMemoryZirconHandleFUCHSIA GetMemoryZirconHandleFUCHSIA = nullptr;
+        PFN_vkGetMemoryZirconHandlePropertiesFUCHSIA GetMemoryZirconHandlePropertiesFUCHSIA =
+            nullptr;
+
+        // VK_FUCHSIA_external_semaphore
+        PFN_vkImportSemaphoreZirconHandleFUCHSIA ImportSemaphoreZirconHandleFUCHSIA = nullptr;
+        PFN_vkGetSemaphoreZirconHandleFUCHSIA GetSemaphoreZirconHandleFUCHSIA = nullptr;
+#endif
+    };
+
+    // Create a wrapper around VkResult in the dawn_native::vulkan namespace. This shadows the
+    // default VkResult (::VkResult). This ensures that assigning or creating a VkResult from a raw
+    // ::VkResult uses WrapUnsafe. This makes it clear that users of VkResult must be intentional
+    // about handling error cases.
+    class VkResult {
+      public:
+        constexpr static VkResult WrapUnsafe(::VkResult value) {
+            return VkResult(value);
+        }
+
+        constexpr operator ::VkResult() const {
+            return mValue;
+        }
+
+      private:
+        // Private. Use VkResult::WrapUnsafe instead.
+        constexpr VkResult(::VkResult value) : mValue(value) {
+        }
+
+        ::VkResult mValue;
     };
 
 }}  // namespace dawn_native::vulkan

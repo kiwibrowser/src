@@ -34,7 +34,11 @@ namespace utils {
       private:
         dawn_wire::CommandHandler* mHandler = nullptr;
         size_t mOffset = 0;
-        char mBuffer[10000000];
+        // Cannot have commands in mBuffer and mLargeBuffer
+        // at the same time to ensure commands order.
+        char mBuffer[1000000];
+        std::vector<char> mLargeBuffer;
+        size_t mLargeBufferCmdSize = 0;
     };
 
 }  // namespace utils

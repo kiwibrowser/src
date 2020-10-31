@@ -20,23 +20,56 @@
 #include "common/SwapChainUtils.h"
 #include "dawn_native/d3d12/DeviceD3D12.h"
 #include "dawn_native/d3d12/NativeSwapChainImplD3D12.h"
+#include "dawn_native/d3d12/ResidencyManagerD3D12.h"
+#include "dawn_native/d3d12/TextureD3D12.h"
 
 namespace dawn_native { namespace d3d12 {
 
-    DawnSwapChainImplementation CreateNativeSwapChainImpl(DawnDevice device, HWND window) {
+    ComPtr<ID3D12Device> GetD3D12Device(WGPUDevice device) {
+        Device* backendDevice = reinterpret_cast<Device*>(device);
+
+        return backendDevice->GetD3D12Device();
+    }
+
+    DawnSwapChainImplementation CreateNativeSwapChainImpl(WGPUDevice device, HWND window) {
         Device* backendDevice = reinterpret_cast<Device*>(device);
 
         DawnSwapChainImplementation impl;
         impl = CreateSwapChainImplementation(new NativeSwapChainImpl(backendDevice, window));
-        impl.textureUsage = DAWN_TEXTURE_USAGE_BIT_PRESENT;
+        impl.textureUsage = WGPUTextureUsage_Present;
 
         return impl;
     }
 
-    DawnTextureFormat GetNativeSwapChainPreferredFormat(
+    WGPUTextureFormat GetNativeSwapChainPreferredFormat(
         const DawnSwapChainImplementation* swapChain) {
         NativeSwapChainImpl* impl = reinterpret_cast<NativeSwapChainImpl*>(swapChain->userData);
-        return static_cast<DawnTextureFormat>(impl->GetPreferredFormat());
+        return static_cast<WGPUTextureFormat>(impl->GetPreferredFormat());
     }
 
+    ExternalImageDescriptorDXGISharedHandle::ExternalImageDescriptorDXGISharedHandle()
+        : ExternalImageDescriptor(ExternalImageDescriptorType::DXGISharedHandle) {
+    }
+
+    uint64_t SetExternalMemoryReservation(WGPUDevice device,
+                                          uint64_t requestedReservationSize,
+                                          MemorySegment memorySegment) {
+        Device* backendDevice = reinterpret_cast<Device*>(device);
+
+        return backendDevice->GetResidencyManager()->SetExternalMemoryReservation(
+            memorySegment, requestedReservationSize);
+    }
+
+    WGPUTexture WrapSharedHandle(WGPUDevice device,
+                                 const ExternalImageDescriptorDXGISharedHandle* descriptor) {
+        Device* backendDevice = reinterpret_cast<Device*>(device);
+        Ref<TextureBase> texture = backendDevice->WrapSharedHandle(
+            descriptor, descriptor->sharedHandle, descriptor->acquireMutexKey,
+            descriptor->isSwapChainTexture);
+        return reinterpret_cast<WGPUTexture>(texture.Detach());
+    }
+
+    AdapterDiscoveryOptions::AdapterDiscoveryOptions(ComPtr<IDXGIAdapter> adapter)
+        : AdapterDiscoveryOptionsBase(WGPUBackendType_D3D12), dxgiAdapter(std::move(adapter)) {
+    }
 }}  // namespace dawn_native::d3d12

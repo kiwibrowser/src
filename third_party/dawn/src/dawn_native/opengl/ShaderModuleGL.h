@@ -17,17 +17,17 @@
 
 #include "dawn_native/ShaderModule.h"
 
-#include "glad/glad.h"
+#include "dawn_native/opengl/opengl_platform.h"
 
 namespace dawn_native { namespace opengl {
 
     class Device;
 
-    std::string GetBindingName(uint32_t group, uint32_t binding);
+    std::string GetBindingName(BindGroupIndex group, BindingNumber bindingNumber);
 
     struct BindingLocation {
-        uint32_t group;
-        uint32_t binding;
+        BindGroupIndex group;
+        BindingNumber binding;
     };
     bool operator<(const BindingLocation& a, const BindingLocation& b);
 
@@ -38,9 +38,10 @@ namespace dawn_native { namespace opengl {
     };
     bool operator<(const CombinedSampler& a, const CombinedSampler& b);
 
-    class ShaderModule : public ShaderModuleBase {
+    class ShaderModule final : public ShaderModuleBase {
       public:
-        ShaderModule(Device* device, const ShaderModuleDescriptor* descriptor);
+        static ResultOrError<ShaderModule*> Create(Device* device,
+                                                   const ShaderModuleDescriptor* descriptor);
 
         using CombinedSamplerInfo = std::vector<CombinedSampler>;
 
@@ -48,6 +49,10 @@ namespace dawn_native { namespace opengl {
         const CombinedSamplerInfo& GetCombinedSamplerInfo() const;
 
       private:
+        ShaderModule(Device* device, const ShaderModuleDescriptor* descriptor);
+        ~ShaderModule() override = default;
+        MaybeError Initialize();
+
         CombinedSamplerInfo mCombinedInfo;
         std::string mGlslSource;
     };

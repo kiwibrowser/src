@@ -25,7 +25,7 @@ namespace dawn_native { namespace null {
     DawnSwapChainImplementation CreateNativeSwapChainImpl() {
         DawnSwapChainImplementation impl;
         impl = CreateSwapChainImplementation(new NativeSwapChainImpl());
-        impl.textureUsage = DAWN_TEXTURE_USAGE_BIT_PRESENT;
+        impl.textureUsage = WGPUTextureUsage_Present;
         return impl;
     }
 

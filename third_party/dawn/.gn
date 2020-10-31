@@ -16,6 +16,13 @@ buildconfig = "//build/config/BUILDCONFIG.gn"
 
 default_args = {
   clang_use_chrome_plugins = false
+
+  # Override the mac version so standalone Dawn compiles with at least 10.11
+  # which allows us to not skip the -Wunguarded-availability warning and get
+  # proper warnings for use of APIs that are 10.12 and above (even if
+  # Chromium is still on 10.10).
+  mac_deployment_target = "10.11.0"
+  mac_min_system_version = "10.11.0"
 }
 
 check_targets = [

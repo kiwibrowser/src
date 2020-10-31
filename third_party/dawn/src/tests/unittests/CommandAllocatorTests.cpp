@@ -121,7 +121,8 @@ TEST(CommandAllocator, BasicWithData) {
     uint32_t myValues[5] = {6, 42, 0xFFFFFFFF, 0, 54};
 
     {
-        CommandPushConstants* pushConstants = allocator.Allocate<CommandPushConstants>(CommandType::PushConstants);
+        CommandPushConstants* pushConstants =
+            allocator.Allocate<CommandPushConstants>(CommandType::PushConstants);
         pushConstants->size = mySize;
         pushConstants->offset = myOffset;
 
@@ -209,7 +210,7 @@ TEST(CommandAllocator, LargeCommands) {
     for (int i = 0; i < kCommandCount; i++) {
         CommandBig* big = allocator.Allocate<CommandBig>(CommandType::Big);
         for (int j = 0; j < kBigBufferSize; j++) {
-            big->buffer[j] = count ++;
+            big->buffer[j] = count++;
         }
     }
 
@@ -223,9 +224,9 @@ TEST(CommandAllocator, LargeCommands) {
         CommandBig* big = iterator.NextCommand<CommandBig>();
         for (int i = 0; i < kBigBufferSize; i++) {
             ASSERT_EQ(big->buffer[i], count);
-            count ++;
+            count++;
         }
-        numCommands ++;
+        numCommands++;
     }
     ASSERT_EQ(numCommands, kCommandCount);
 
@@ -242,7 +243,7 @@ TEST(CommandAllocator, ManySmallCommands) {
     uint16_t count = 0;
     for (int i = 0; i < kCommandCount; i++) {
         CommandSmall* small = allocator.Allocate<CommandSmall>(CommandType::Small);
-        small->data = count ++;
+        small->data = count++;
     }
 
     CommandIterator iterator(std::move(allocator));
@@ -254,8 +255,8 @@ TEST(CommandAllocator, ManySmallCommands) {
 
         CommandSmall* small = iterator.NextCommand<CommandSmall>();
         ASSERT_EQ(small->data, count);
-        count ++;
-        numCommands ++;
+        count++;
+        numCommands++;
     }
     ASSERT_EQ(numCommands, kCommandCount);
 

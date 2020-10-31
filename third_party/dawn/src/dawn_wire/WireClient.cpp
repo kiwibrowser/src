@@ -17,27 +17,51 @@
 
 namespace dawn_wire {
 
-    WireClient::WireClient(CommandSerializer* serializer) : mImpl(new client::Client(serializer)) {
+    WireClient::WireClient(const WireClientDescriptor& descriptor)
+        : mImpl(new client::Client(descriptor.serializer, descriptor.memoryTransferService)) {
     }
 
     WireClient::~WireClient() {
         mImpl.reset();
     }
 
-    DawnDevice WireClient::GetDevice() const {
-        return mImpl->GetDevice();
-    }
-
-    DawnProcTable WireClient::GetProcs() const {
+    // static
+    DawnProcTable WireClient::GetProcs() {
         return client::GetProcs();
     }
 
-    const char* WireClient::HandleCommands(const char* commands, size_t size) {
+    WGPUDevice WireClient::GetDevice() const {
+        return mImpl->GetDevice();
+    }
+
+    const volatile char* WireClient::HandleCommands(const volatile char* commands, size_t size) {
         return mImpl->HandleCommands(commands, size);
     }
 
-    ReservedTexture WireClient::ReserveTexture(DawnDevice device) {
+    ReservedTexture WireClient::ReserveTexture(WGPUDevice device) {
         return mImpl->ReserveTexture(device);
     }
+
+    void WireClient::Disconnect() {
+        mImpl->Disconnect();
+    }
+
+    namespace client {
+        MemoryTransferService::~MemoryTransferService() = default;
+
+        MemoryTransferService::ReadHandle*
+        MemoryTransferService::CreateReadHandle(WGPUBuffer buffer, uint64_t offset, size_t size) {
+            return CreateReadHandle(size);
+        }
+
+        MemoryTransferService::WriteHandle*
+        MemoryTransferService::CreateWriteHandle(WGPUBuffer buffer, uint64_t offset, size_t size) {
+            return CreateWriteHandle(size);
+        }
+
+        MemoryTransferService::ReadHandle::~ReadHandle() = default;
+
+        MemoryTransferService::WriteHandle::~WriteHandle() = default;
+    }  // namespace client
 
 }  // namespace dawn_wire

@@ -26,11 +26,11 @@ namespace dawn_native { namespace d3d12 {
 
     class Adapter : public AdapterBase {
       public:
-        Adapter(Backend* backend, ComPtr<IDXGIAdapter1> hardwareAdapter);
-        virtual ~Adapter() = default;
+        Adapter(Backend* backend, ComPtr<IDXGIAdapter3> hardwareAdapter);
+        ~Adapter() override;
 
         const D3D12DeviceInfo& GetDeviceInfo() const;
-        IDXGIAdapter1* GetHardwareAdapter() const;
+        IDXGIAdapter3* GetHardwareAdapter() const;
         Backend* GetBackend() const;
         ComPtr<ID3D12Device> GetDevice() const;
 
@@ -38,8 +38,11 @@ namespace dawn_native { namespace d3d12 {
 
       private:
         ResultOrError<DeviceBase*> CreateDeviceImpl(const DeviceDescriptor* descriptor) override;
+        void InitializeSupportedExtensions();
+        MaybeError InitializeDebugLayerFilters();
+        void CleanUpDebugLayerFilters();
 
-        ComPtr<IDXGIAdapter1> mHardwareAdapter;
+        ComPtr<IDXGIAdapter3> mHardwareAdapter;
         ComPtr<ID3D12Device> mD3d12Device;
 
         Backend* mBackend;

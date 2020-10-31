@@ -15,7 +15,7 @@
 #ifndef UTILS_BACKENDBINDING_H_
 #define UTILS_BACKENDBINDING_H_
 
-#include "dawn/dawncpp.h"
+#include "dawn/webgpu_cpp.h"
 #include "dawn_native/DawnNative.h"
 
 struct GLFWwindow;
@@ -27,22 +27,19 @@ namespace utils {
         virtual ~BackendBinding() = default;
 
         virtual uint64_t GetSwapChainImplementation() = 0;
-        virtual DawnTextureFormat GetPreferredSwapChainTextureFormat() = 0;
+        virtual WGPUTextureFormat GetPreferredSwapChainTextureFormat() = 0;
 
       protected:
-        BackendBinding(GLFWwindow* window, DawnDevice device);
+        BackendBinding(GLFWwindow* window, WGPUDevice device);
 
         GLFWwindow* mWindow = nullptr;
-        DawnDevice mDevice = nullptr;
+        WGPUDevice mDevice = nullptr;
     };
 
-    void SetupGLFWWindowHintsForBackend(dawn_native::BackendType type);
     void DiscoverAdapter(dawn_native::Instance* instance,
                          GLFWwindow* window,
-                         dawn_native::BackendType type);
-    BackendBinding* CreateBinding(dawn_native::BackendType type,
-                                  GLFWwindow* window,
-                                  DawnDevice device);
+                         wgpu::BackendType type);
+    BackendBinding* CreateBinding(wgpu::BackendType type, GLFWwindow* window, WGPUDevice device);
 
 }  // namespace utils
 

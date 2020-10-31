@@ -14,103 +14,99 @@
 
 #include "dawn_native/vulkan/BindGroupVk.h"
 
+#include "common/BitSetIterator.h"
+#include "common/ityp_stack_vec.h"
 #include "dawn_native/vulkan/BindGroupLayoutVk.h"
 #include "dawn_native/vulkan/BufferVk.h"
 #include "dawn_native/vulkan/DeviceVk.h"
 #include "dawn_native/vulkan/FencedDeleter.h"
 #include "dawn_native/vulkan/SamplerVk.h"
 #include "dawn_native/vulkan/TextureVk.h"
-
-#include "common/BitSetIterator.h"
+#include "dawn_native/vulkan/VulkanError.h"
 
 namespace dawn_native { namespace vulkan {
 
-    BindGroup::BindGroup(Device* device, const BindGroupDescriptor* descriptor)
-        : BindGroupBase(device, descriptor) {
-        // Create a pool to hold our descriptor set.
-        // TODO(cwallez@chromium.org): This horribly inefficient, find a way to be better, for
-        // example by having one pool per bind group layout instead.
-        uint32_t numPoolSizes = 0;
-        auto poolSizes = ToBackend(GetLayout())->ComputePoolSizes(&numPoolSizes);
+    // static
+    ResultOrError<BindGroup*> BindGroup::Create(Device* device,
+                                                const BindGroupDescriptor* descriptor) {
+        return ToBackend(descriptor->layout)->AllocateBindGroup(device, descriptor);
+    }
 
-        VkDescriptorPoolCreateInfo createInfo;
-        createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        createInfo.pNext = nullptr;
-        createInfo.flags = 0;
-        createInfo.maxSets = 1;
-        createInfo.poolSizeCount = numPoolSizes;
-        createInfo.pPoolSizes = poolSizes.data();
-
-        if (device->fn.CreateDescriptorPool(device->GetVkDevice(), &createInfo, nullptr, &mPool) !=
-            VK_SUCCESS) {
-            ASSERT(false);
-        }
-
-        // Now do the allocation of one descriptor set, this is very suboptimal too.
-        VkDescriptorSetLayout vkLayout = ToBackend(GetLayout())->GetHandle();
-
-        VkDescriptorSetAllocateInfo allocateInfo;
-        allocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocateInfo.pNext = nullptr;
-        allocateInfo.descriptorPool = mPool;
-        allocateInfo.descriptorSetCount = 1;
-        allocateInfo.pSetLayouts = &vkLayout;
-
-        if (device->fn.AllocateDescriptorSets(device->GetVkDevice(), &allocateInfo, &mHandle) !=
-            VK_SUCCESS) {
-            ASSERT(false);
-        }
-
+    BindGroup::BindGroup(Device* device,
+                         const BindGroupDescriptor* descriptor,
+                         DescriptorSetAllocation descriptorSetAllocation)
+        : BindGroupBase(this, device, descriptor),
+          mDescriptorSetAllocation(descriptorSetAllocation) {
         // Now do a write of a single descriptor set with all possible chained data allocated on the
         // stack.
-        uint32_t numWrites = 0;
-        std::array<VkWriteDescriptorSet, kMaxBindingsPerGroup> writes;
-        std::array<VkDescriptorBufferInfo, kMaxBindingsPerGroup> writeBufferInfo;
-        std::array<VkDescriptorImageInfo, kMaxBindingsPerGroup> writeImageInfo;
+        const uint32_t bindingCount = static_cast<uint32_t>((GetLayout()->GetBindingCount()));
+        ityp::stack_vec<uint32_t, VkWriteDescriptorSet, kMaxOptimalBindingsPerGroup> writes(
+            bindingCount);
+        ityp::stack_vec<uint32_t, VkDescriptorBufferInfo, kMaxOptimalBindingsPerGroup>
+            writeBufferInfo(bindingCount);
+        ityp::stack_vec<uint32_t, VkDescriptorImageInfo, kMaxOptimalBindingsPerGroup>
+            writeImageInfo(bindingCount);
 
-        const auto& layoutInfo = GetLayout()->GetBindingInfo();
-        for (uint32_t bindingIndex : IterateBitSet(layoutInfo.mask)) {
+        uint32_t numWrites = 0;
+        for (const auto& it : GetLayout()->GetBindingMap()) {
+            BindingNumber bindingNumber = it.first;
+            BindingIndex bindingIndex = it.second;
+            const BindingInfo& bindingInfo = GetLayout()->GetBindingInfo(bindingIndex);
+
             auto& write = writes[numWrites];
             write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             write.pNext = nullptr;
-            write.dstSet = mHandle;
-            write.dstBinding = bindingIndex;
+            write.dstSet = GetHandle();
+            write.dstBinding = static_cast<uint32_t>(bindingNumber);
             write.dstArrayElement = 0;
             write.descriptorCount = 1;
-            write.descriptorType = VulkanDescriptorType(layoutInfo.types[bindingIndex]);
+            write.descriptorType =
+                VulkanDescriptorType(bindingInfo.type, bindingInfo.hasDynamicOffset);
 
-            switch (layoutInfo.types[bindingIndex]) {
-                case dawn::BindingType::UniformBuffer:
-                case dawn::BindingType::StorageBuffer:
-                case dawn::BindingType::DynamicUniformBuffer:
-                case dawn::BindingType::DynamicStorageBuffer: {
+            switch (bindingInfo.type) {
+                case wgpu::BindingType::UniformBuffer:
+                case wgpu::BindingType::StorageBuffer:
+                case wgpu::BindingType::ReadonlyStorageBuffer: {
                     BufferBinding binding = GetBindingAsBufferBinding(bindingIndex);
 
                     writeBufferInfo[numWrites].buffer = ToBackend(binding.buffer)->GetHandle();
                     writeBufferInfo[numWrites].offset = binding.offset;
                     writeBufferInfo[numWrites].range = binding.size;
-
                     write.pBufferInfo = &writeBufferInfo[numWrites];
-                } break;
+                    break;
+                }
 
-                case dawn::BindingType::Sampler: {
+                case wgpu::BindingType::Sampler:
+                case wgpu::BindingType::ComparisonSampler: {
                     Sampler* sampler = ToBackend(GetBindingAsSampler(bindingIndex));
                     writeImageInfo[numWrites].sampler = sampler->GetHandle();
                     write.pImageInfo = &writeImageInfo[numWrites];
-                } break;
+                    break;
+                }
 
-                case dawn::BindingType::SampledTexture: {
+                case wgpu::BindingType::SampledTexture: {
                     TextureView* view = ToBackend(GetBindingAsTextureView(bindingIndex));
 
                     writeImageInfo[numWrites].imageView = view->GetHandle();
-                    // TODO(cwallez@chromium.org): This isn't true in general: if the image can has
+                    // TODO(cwallez@chromium.org): This isn't true in general: if the image has
                     // two read-only usages one of which is Sampled. Works for now though :)
                     writeImageInfo[numWrites].imageLayout =
                         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
                     write.pImageInfo = &writeImageInfo[numWrites];
-                } break;
+                    break;
+                }
 
+                case wgpu::BindingType::ReadonlyStorageTexture:
+                case wgpu::BindingType::WriteonlyStorageTexture: {
+                    TextureView* view = ToBackend(GetBindingAsTextureView(bindingIndex));
+
+                    writeImageInfo[numWrites].imageView = view->GetHandle();
+                    writeImageInfo[numWrites].imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+                    write.pImageInfo = &writeImageInfo[numWrites];
+                    break;
+                }
                 default:
                     UNREACHABLE();
             }
@@ -118,23 +114,17 @@ namespace dawn_native { namespace vulkan {
             numWrites++;
         }
 
+        // TODO(cwallez@chromium.org): Batch these updates
         device->fn.UpdateDescriptorSets(device->GetVkDevice(), numWrites, writes.data(), 0,
                                         nullptr);
     }
 
     BindGroup::~BindGroup() {
-        // The descriptor set doesn't need to be delete because it's done implicitly when the
-        // descriptor pool is destroyed.
-        mHandle = VK_NULL_HANDLE;
-
-        if (mPool != VK_NULL_HANDLE) {
-            ToBackend(GetDevice())->GetFencedDeleter()->DeleteWhenUnused(mPool);
-            mPool = VK_NULL_HANDLE;
-        }
+        ToBackend(GetLayout())->DeallocateBindGroup(this, &mDescriptorSetAllocation);
     }
 
     VkDescriptorSet BindGroup::GetHandle() const {
-        return mHandle;
+        return mDescriptorSetAllocation.set;
     }
 
 }}  // namespace dawn_native::vulkan

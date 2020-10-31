@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <dawn/dawncpp.h>
 #include <dawn/dawn_wsi.h>
+#include <dawn/webgpu_cpp.h>
 
 bool InitSample(int argc, const char** argv);
 void DoFlush();
@@ -22,8 +22,8 @@ bool ShouldQuit();
 struct GLFWwindow;
 struct GLFWwindow* GetGLFWWindow();
 
-dawn::Device CreateCppDawnDevice();
+wgpu::Device CreateCppDawnDevice();
 uint64_t GetSwapChainImplementation();
-dawn::TextureFormat GetPreferredSwapChainTextureFormat();
-dawn::SwapChain GetSwapChain(const dawn::Device& device);
-dawn::TextureView CreateDefaultDepthStencilView(const dawn::Device& device);
+wgpu::TextureFormat GetPreferredSwapChainTextureFormat();
+wgpu::SwapChain GetSwapChain(const wgpu::Device& device);
+wgpu::TextureView CreateDefaultDepthStencilView(const wgpu::Device& device);

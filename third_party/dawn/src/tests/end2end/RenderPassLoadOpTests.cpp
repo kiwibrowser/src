@@ -15,73 +15,68 @@
 #include "tests/DawnTest.h"
 
 #include "utils/ComboRenderPipelineDescriptor.h"
-#include "utils/DawnHelpers.h"
+#include "utils/WGPUHelpers.h"
 
 #include <array>
 
 constexpr static unsigned int kRTSize = 16;
 
 class DrawQuad {
-    public:
-        DrawQuad() {}
-        DrawQuad(dawn::Device device, const char* vsSource, const char* fsSource)
-            : device(device) {
-                vsModule = utils::CreateShaderModule(device, dawn::ShaderStage::Vertex, vsSource);
-                fsModule = utils::CreateShaderModule(device, dawn::ShaderStage::Fragment, fsSource);
+  public:
+    DrawQuad() {
+    }
+    DrawQuad(wgpu::Device device, const char* vsSource, const char* fsSource) : device(device) {
+        vsModule = utils::CreateShaderModule(device, utils::SingleShaderStage::Vertex, vsSource);
+        fsModule = utils::CreateShaderModule(device, utils::SingleShaderStage::Fragment, fsSource);
 
-                pipelineLayout = utils::MakeBasicPipelineLayout(device, nullptr);
-            }
+        pipelineLayout = utils::MakeBasicPipelineLayout(device, nullptr);
+    }
 
-        void Draw(dawn::RenderPassEncoder* pass) {
+    void Draw(wgpu::RenderPassEncoder* pass) {
+        utils::ComboRenderPipelineDescriptor descriptor(device);
+        descriptor.layout = pipelineLayout;
+        descriptor.vertexStage.module = vsModule;
+        descriptor.cFragmentStage.module = fsModule;
 
-            utils::ComboRenderPipelineDescriptor descriptor(device);
-            descriptor.layout = pipelineLayout;
-            descriptor.cVertexStage.module = vsModule;
-            descriptor.cFragmentStage.module = fsModule;
+        auto renderPipeline = device.CreateRenderPipeline(&descriptor);
 
-            auto renderPipeline = device.CreateRenderPipeline(&descriptor);
+        pass->SetPipeline(renderPipeline);
+        pass->Draw(6, 1, 0, 0);
+    }
 
-            pass->SetPipeline(renderPipeline);
-            pass->Draw(6, 1, 0, 0);
-        }
-
-    private:
-        dawn::Device device;
-        dawn::ShaderModule vsModule = {};
-        dawn::ShaderModule fsModule = {};
-        dawn::PipelineLayout pipelineLayout = {};
+  private:
+    wgpu::Device device;
+    wgpu::ShaderModule vsModule = {};
+    wgpu::ShaderModule fsModule = {};
+    wgpu::PipelineLayout pipelineLayout = {};
 };
 
 class RenderPassLoadOpTests : public DawnTest {
-    protected:
-        void SetUp() override {
-            DawnTest::SetUp();
+  protected:
+    void SetUp() override {
+        DawnTest::SetUp();
 
-            dawn::TextureDescriptor descriptor;
-            descriptor.dimension = dawn::TextureDimension::e2D;
-            descriptor.size.width = kRTSize;
-            descriptor.size.height = kRTSize;
-            descriptor.size.depth = 1;
-            descriptor.arrayLayerCount = 1;
-            descriptor.sampleCount = 1;
-            descriptor.format = dawn::TextureFormat::R8G8B8A8Unorm;
-            descriptor.mipLevelCount = 1;
-            descriptor.usage = dawn::TextureUsageBit::OutputAttachment | dawn::TextureUsageBit::TransferSrc;
-            renderTarget = device.CreateTexture(&descriptor);
+        wgpu::TextureDescriptor descriptor;
+        descriptor.dimension = wgpu::TextureDimension::e2D;
+        descriptor.size.width = kRTSize;
+        descriptor.size.height = kRTSize;
+        descriptor.size.depth = 1;
+        descriptor.sampleCount = 1;
+        descriptor.format = wgpu::TextureFormat::RGBA8Unorm;
+        descriptor.mipLevelCount = 1;
+        descriptor.usage = wgpu::TextureUsage::OutputAttachment | wgpu::TextureUsage::CopySrc;
+        renderTarget = device.CreateTexture(&descriptor);
 
-            renderTargetView = renderTarget.CreateDefaultView();
+        renderTargetView = renderTarget.CreateView();
 
-            RGBA8 zero(0, 0, 0, 0);
-            std::fill(expectZero.begin(), expectZero.end(), zero);
+        std::fill(expectZero.begin(), expectZero.end(), RGBA8::kZero);
 
-            RGBA8 green(0, 255, 0, 255);
-            std::fill(expectGreen.begin(), expectGreen.end(), green);
+        std::fill(expectGreen.begin(), expectGreen.end(), RGBA8::kGreen);
 
-            RGBA8 blue(0, 0, 255, 255);
-            std::fill(expectBlue.begin(), expectBlue.end(), blue);
+        std::fill(expectBlue.begin(), expectBlue.end(), RGBA8::kBlue);
 
-            // draws a blue quad on the right half of the screen
-            const char* vsSource = R"(
+        // draws a blue quad on the right half of the screen
+        const char* vsSource = R"(
                 #version 450
                 void main() {
                     const vec2 pos[6] = vec2[6](
@@ -90,24 +85,24 @@ class RenderPassLoadOpTests : public DawnTest {
                     gl_Position = vec4(pos[gl_VertexIndex], 0.f, 1.f);
                 }
                 )";
-            const char* fsSource = R"(
+        const char* fsSource = R"(
                 #version 450
                 layout(location = 0) out vec4 color;
                 void main() {
                     color = vec4(0.f, 0.f, 1.f, 1.f);
                 }
                 )";
-            blueQuad = DrawQuad(device, vsSource, fsSource);
-        }
+        blueQuad = DrawQuad(device, vsSource, fsSource);
+    }
 
-        dawn::Texture renderTarget;
-        dawn::TextureView renderTargetView;
+    wgpu::Texture renderTarget;
+    wgpu::TextureView renderTargetView;
 
-        std::array<RGBA8, kRTSize * kRTSize> expectZero;
-        std::array<RGBA8, kRTSize * kRTSize> expectGreen;
-        std::array<RGBA8, kRTSize * kRTSize> expectBlue;
+    std::array<RGBA8, kRTSize * kRTSize> expectZero;
+    std::array<RGBA8, kRTSize * kRTSize> expectGreen;
+    std::array<RGBA8, kRTSize * kRTSize> expectBlue;
 
-        DrawQuad blueQuad = {};
+    DrawQuad blueQuad = {};
 };
 
 // Tests clearing, loading, and drawing into color attachments
@@ -120,7 +115,7 @@ TEST_P(RenderPassLoadOpTests, ColorClearThenLoadAndDraw) {
     auto commandsClearZero = commandsClearZeroEncoder.Finish();
 
     utils::ComboRenderPassDescriptor renderPassClearGreen({renderTargetView});
-    renderPassClearGreen.cColorAttachmentsInfoPtr[0]->clearColor = {0.0f, 1.0f, 0.0f, 1.0f};
+    renderPassClearGreen.cColorAttachments[0].clearColor = {0.0f, 1.0f, 0.0f, 1.0f};
     auto commandsClearGreenEncoder = device.CreateCommandEncoder();
     auto clearGreenPass = commandsClearGreenEncoder.BeginRenderPass(&renderPassClearGreen);
     clearGreenPass.EndPass();
@@ -134,8 +129,8 @@ TEST_P(RenderPassLoadOpTests, ColorClearThenLoadAndDraw) {
 
     // Part 2: draw a blue quad into the right half of the render target, and check result
     utils::ComboRenderPassDescriptor renderPassLoad({renderTargetView});
-    renderPassLoad.cColorAttachmentsInfoPtr[0]->loadOp = dawn::LoadOp::Load;
-    dawn::CommandBuffer commandsLoad;
+    renderPassLoad.cColorAttachments[0].loadOp = wgpu::LoadOp::Load;
+    wgpu::CommandBuffer commandsLoad;
     {
         auto encoder = device.CreateCommandEncoder();
         auto pass = encoder.BeginRenderPass(&renderPassLoad);
@@ -148,7 +143,12 @@ TEST_P(RenderPassLoadOpTests, ColorClearThenLoadAndDraw) {
     // Left half should still be green
     EXPECT_TEXTURE_RGBA8_EQ(expectGreen.data(), renderTarget, 0, 0, kRTSize / 2, kRTSize, 0, 0);
     // Right half should now be blue
-    EXPECT_TEXTURE_RGBA8_EQ(expectBlue.data(), renderTarget, kRTSize / 2, 0, kRTSize / 2, kRTSize, 0, 0);
+    EXPECT_TEXTURE_RGBA8_EQ(expectBlue.data(), renderTarget, kRTSize / 2, 0, kRTSize / 2, kRTSize,
+                            0, 0);
 }
 
-DAWN_INSTANTIATE_TEST(RenderPassLoadOpTests, D3D12Backend, MetalBackend, OpenGLBackend, VulkanBackend);
+DAWN_INSTANTIATE_TEST(RenderPassLoadOpTests,
+                      D3D12Backend(),
+                      MetalBackend(),
+                      OpenGLBackend(),
+                      VulkanBackend());

@@ -17,22 +17,18 @@
 
 #include "dawn_native/ToBackend.h"
 
-namespace {
-    class BindGroupBase;
-    class BindGroup;
-}  // namespace
-
 namespace dawn_native { namespace metal {
 
     class Adapter;
-    using BindGroup = BindGroupBase;
-    using BindGroupLayout = BindGroupLayoutBase;
+    class BindGroup;
+    class BindGroupLayout;
     class Buffer;
     class CommandBuffer;
     class ComputePipeline;
     class Device;
     class Framebuffer;
     class PipelineLayout;
+    class QuerySet;
     class Queue;
     class RenderPipeline;
     class Sampler;
@@ -51,6 +47,7 @@ namespace dawn_native { namespace metal {
         using ComputePipelineType = ComputePipeline;
         using DeviceType = Device;
         using PipelineLayoutType = PipelineLayout;
+        using QuerySetType = QuerySet;
         using QueueType = Queue;
         using RenderPipelineType = RenderPipeline;
         using SamplerType = Sampler;

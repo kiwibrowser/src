@@ -1,0 +1,50 @@
+//* Copyright 2020 The Dawn Authors
+//*
+//* Licensed under the Apache License, Version 2.0 (the "License");
+//* you may not use this file except in compliance with the License.
+//* You may obtain a copy of the License at
+//*
+//*     http://www.apache.org/licenses/LICENSE-2.0
+//*
+//* Unless required by applicable law or agreed to in writing, software
+//* distributed under the License is distributed on an "AS IS" BASIS,
+//* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//* See the License for the specific language governing permissions and
+//* limitations under the License.
+//*
+//*
+//* This generator is used to produce part of Emscripten's struct_info.json,
+//* which is a list of struct fields that it uses to generate field offset
+//* information for its own code generators.
+//* https://github.com/emscripten-core/emscripten/blob/master/src/struct_info.json
+//*
+    {
+        "file": "webgpu/webgpu.h",
+        "defines": [],
+        "structs": {
+            "WGPUChainedStruct": [
+                "next",
+                "sType"
+            ],
+            {% for type in by_category["structure"] if type.javascript %}
+                "{{as_cType(type.name)}}": [
+                    {% if type.chained %}
+                        "chain"
+                    {%- elif type.extensible %}
+                        "nextInChain"
+                    {%- endif %}
+                    {% for member in type.members -%}
+                        {%- if (type.chained or type.extensible) or not loop.first -%}
+                            ,
+                        {% endif %}
+                        "{{as_varName(member.name)}}"
+                    {%- endfor %}
+
+                ]
+                {%- if not loop.last -%}
+                    ,
+                {% endif %}
+            {% endfor %}
+
+        }
+    }

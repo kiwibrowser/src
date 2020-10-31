@@ -15,19 +15,19 @@
 #include "SampleUtils.h"
 
 #include "utils/ComboRenderPipelineDescriptor.h"
-#include "utils/DawnHelpers.h"
 #include "utils/SystemUtils.h"
+#include "utils/WGPUHelpers.h"
 
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
 #include <vector>
 
-dawn::Device device;
-dawn::Queue queue;
-dawn::SwapChain swapchain;
-dawn::RenderPipeline pipeline;
-dawn::BindGroup bindGroup;
-dawn::Buffer ubo;
+wgpu::Device device;
+wgpu::Queue queue;
+wgpu::SwapChain swapchain;
+wgpu::RenderPipeline pipeline;
+wgpu::BindGroup bindGroup;
+wgpu::Buffer ubo;
 
 float RandomFloat(float min, float max) {
     float zeroOne = rand() / float(RAND_MAX);
@@ -50,12 +50,13 @@ static std::vector<ShaderData> shaderData;
 void init() {
     device = CreateCppDawnDevice();
 
-    queue = device.CreateQueue();
+    queue = device.GetDefaultQueue();
     swapchain = GetSwapChain(device);
-    swapchain.Configure(GetPreferredSwapChainTextureFormat(),
-                        dawn::TextureUsageBit::OutputAttachment, 640, 480);
+    swapchain.Configure(GetPreferredSwapChainTextureFormat(), wgpu::TextureUsage::OutputAttachment,
+                        640, 480);
 
-    dawn::ShaderModule vsModule = utils::CreateShaderModule(device, dawn::ShaderStage::Vertex, R"(
+    wgpu::ShaderModule vsModule =
+        utils::CreateShaderModule(device, utils::SingleShaderStage::Vertex, R"(
         #version 450
 
         layout(std140, set = 0, binding = 0) uniform Constants {
@@ -102,7 +103,8 @@ void init() {
             gl_Position = vec4(xpos, ypos, 0.0, 1.0);
         })");
 
-    dawn::ShaderModule fsModule = utils::CreateShaderModule(device, dawn::ShaderStage::Fragment, R"(
+    wgpu::ShaderModule fsModule =
+        utils::CreateShaderModule(device, utils::SingleShaderStage::Fragment, R"(
         #version 450
         layout(location = 0) out vec4 fragColor;
         layout(location = 0) in vec4 v_color;
@@ -110,14 +112,14 @@ void init() {
             fragColor = v_color;
         })");
 
-    dawn::BindGroupLayout bgl = utils::MakeBindGroupLayout(
-        device, {{0, dawn::ShaderStageBit::Vertex, dawn::BindingType::DynamicUniformBuffer}});
+    wgpu::BindGroupLayout bgl = utils::MakeBindGroupLayout(
+        device, {{0, wgpu::ShaderStage::Vertex, wgpu::BindingType::UniformBuffer, true}});
 
     utils::ComboRenderPipelineDescriptor descriptor(device);
     descriptor.layout = utils::MakeBasicPipelineLayout(device, &bgl);
-    descriptor.cVertexStage.module = vsModule;
+    descriptor.vertexStage.module = vsModule;
     descriptor.cFragmentStage.module = fsModule;
-    descriptor.cColorStates[0]->format = GetPreferredSwapChainTextureFormat();
+    descriptor.cColorStates[0].format = GetPreferredSwapChainTextureFormat();
 
     pipeline = device.CreateRenderPipeline(&descriptor);
 
@@ -131,43 +133,42 @@ void init() {
         data.scalarOffset = RandomFloat(0.0f, 10.0f);
     }
 
-    dawn::BufferDescriptor bufferDesc;
+    wgpu::BufferDescriptor bufferDesc;
     bufferDesc.size = kNumTriangles * sizeof(ShaderData);
-    bufferDesc.usage = dawn::BufferUsageBit::TransferDst | dawn::BufferUsageBit::Uniform;
+    bufferDesc.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform;
     ubo = device.CreateBuffer(&bufferDesc);
 
-    bindGroup =
-        utils::MakeBindGroup(device, bgl, {{0, ubo, 0, kNumTriangles * sizeof(ShaderData)}});
+    bindGroup = utils::MakeBindGroup(device, bgl, {{0, ubo, 0, sizeof(ShaderData)}});
 }
 
 void frame() {
-    dawn::Texture backbuffer = swapchain.GetNextTexture();
+    wgpu::TextureView backbufferView = swapchain.GetCurrentTextureView();
 
     static int f = 0;
     f++;
     for (auto& data : shaderData) {
         data.time = f / 60.0f;
     }
-    ubo.SetSubData(0, kNumTriangles * sizeof(ShaderData), shaderData.data());
+    queue.WriteBuffer(ubo, 0, shaderData.data(), kNumTriangles * sizeof(ShaderData));
 
-    utils::ComboRenderPassDescriptor renderPass({backbuffer.CreateDefaultView()});
-    dawn::CommandEncoder encoder = device.CreateCommandEncoder();
+    utils::ComboRenderPassDescriptor renderPass({backbufferView});
+    wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
     {
-        dawn::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
+        wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
         pass.SetPipeline(pipeline);
 
         for (size_t i = 0; i < kNumTriangles; i++) {
-            uint64_t offset = i * sizeof(ShaderData);
+            uint32_t offset = i * sizeof(ShaderData);
             pass.SetBindGroup(0, bindGroup, 1, &offset);
-            pass.Draw(3, 1, 0, 0);
+            pass.Draw(3);
         }
 
         pass.EndPass();
     }
 
-    dawn::CommandBuffer commands = encoder.Finish();
+    wgpu::CommandBuffer commands = encoder.Finish();
     queue.Submit(1, &commands);
-    swapchain.Present(backbuffer);
+    swapchain.Present();
     DoFlush();
     fprintf(stderr, "frame %i\n", f);
 }
