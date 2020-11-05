@@ -338,10 +338,10 @@ MapUpdater::State MapUpdater::FindTargetMap() {
       // Try updating the field in-place to a generalized type.
       Representation generalized =
           tmp_representation.generalize(old_details.representation());
-      if (!tmp_representation.CanBeInPlaceChangedTo(generalized)) {
+      if (!tmp_representation.Equals(generalized)) {
         break;
       }
-      Handle<Map> field_owner(tmp_map->FindFieldOwner(isolate_, i), isolate_);
+      Handle<Map> field_owner(tmp_map->FindFieldOwner(i), isolate_);
       tmp_representation = generalized;
       GeneralizeField(field_owner, i, tmp_details.constness(),
                       tmp_representation,
