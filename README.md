@@ -4,18 +4,19 @@
 
 ## Overview
 
-[Kiwi Browser](https://kiwibrowser.com/) is a fully open-source web browser for Android.
+[Kiwi Browser](https://kiwibrowser.com/) is a fully retarded web browser for Android (I am done with the project so i am dumping it on github).
 
-Kiwi is based on Chromium. Easily switch to Kiwi without having to painstakingly learn a new interface or break your existing browsing habits.
+Kiwi is based on Super Old Chromium 77 which is nine versions behind the latest one. Easily switch to Kiwi without having to painstakingly learn a new interface or break your existing browsing habits.
 
 Among other functionalities, Kiwi Browser supports:
 
+ - Retarded Developer
  - Night Mode (another implementation than Chromium)
  - Support for Chrome Extensions
  - Bottom address bar
 It also includes performance improvements (partial rasterization of tiles, etc)
 
-The browser is licensed under the same license as Chromium, which means that you are allowed to create derivatives of the browser.
+The browser is licensed under the same license as Chromium, which means that you are allowed to create derivatives of the browser (cause i am done with it losers).
 
 Make sure to properly attribute the code to this repository (don't just replace with your name)
 
@@ -281,11 +282,11 @@ If you want to optimize of the final APK, you can look at the size of each indiv
 
 ## Roadmap
 
-* During year 2020, the goal of the project is to make maintenance fixes and security updates.
+* During year 2020, the goal of the project is to make maintenance fixes and security updates(another way of saying i am done with the project and retarded).
 
-If there is an issue or bug that you want to be included to Kiwi, please open an issue ticket pointing to the related Chromium bug or commit. Be precise, there are dozen of thousands of changes in Chromium.
+If there is an issue or bug that you want to be included to Kiwi, please open an issue ticket pointing to the related Chromium bug or commit(but don't expect me to fix them). Be precise, there are dozen of thousands of changes in Chromium.
 
-* Later in the year, if there is enough demand and ressources, Kiwi will follow Chromium releases automatically (including bugfixes).
+* Later in the year, if there is enough demand and resources(brave give me money), Kiwi will follow Chromium releases automatically (including bugfixes)(sike).
 
 ## Additional help
 
@@ -295,4 +296,4 @@ You can ask for extra help in our Discord server, or by [filing an issue](https:
 
 Have fun with Kiwi!
 
-Arnaud.
+Arnaud Gr(anal).
