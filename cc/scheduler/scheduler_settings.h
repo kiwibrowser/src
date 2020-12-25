@@ -30,7 +30,7 @@ class CC_EXPORT SchedulerSettings {
   bool main_frame_before_activation_enabled = false;
   bool commit_to_active_tree = false;
   bool timeout_and_draw_when_animation_checkerboards = true;
-  bool using_synchronous_renderer_compositor = true;
+  bool using_synchronous_renderer_compositor = false;
   bool enable_latency_recovery = true;
   bool wait_for_all_pipeline_stages_before_draw = false;
   bool enable_surface_synchronization = false;
