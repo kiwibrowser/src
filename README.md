@@ -4,18 +4,19 @@
 
 ## Overview
 
-[Kiwi Browser](https://kiwibrowser.com/) is a fully open-source web browser for Android.
+[Kiwi Browser](https://kiwibrowser.com/) is a fully open-source and retarded web browser for Android(I am done with the project so i am dumping it on all hubs including github).
 
-Kiwi is based on Chromium. Easily switch to Kiwi without having to painstakingly learn a new interface or break your existing browsing habits.
+Kiwi is based on super old Chromium 77. Easily switch to Kiwi without having to painstakingly learn a new interface or break your existing browsing habits.
 
 Among other functionalities, Kiwi Browser supports:
 
  - Night Mode (another implementation than Chromium)
  - Support for Chrome Extensions
  - Bottom address bar
-It also includes performance improvements (partial rasterization of tiles, etc)
+ - It also includes performance improvements (partial rasterization of tiles, etc)
+ - Retarded Developer
 
-The browser is licensed under the same license as Chromium, which means that you are allowed to create derivatives of the browser.
+The browser is licensed under the same license as Chromium, which means that you are allowed to create derivatives of the browser(cause i am done with it losers).
 
 Make sure to properly attribute the code to this repository (don't just replace with your name)
 
@@ -43,18 +44,18 @@ Make sure to properly attribute the code to this repository (don't just replace 
 
 - 15 April 2019 - Kiwi Browser gets support for Chrome Extensions.
 
-- 17 April 2020 - Kiwi Browser goes fully open-source.
+- 17 April 2020 - Kiwi Browser is finally dumped on github and abandoned.
 
 
 This code is up-to-date and is matching the build on the Play Store.
 
-The new builds are done from the open-source edition directly to the [Play Store](https://play.google.com/store/apps/details?id=com.kiwibrowser.browser).
+The new builds(if there are any) are done from the open-source edition directly to the [Play Store](https://play.google.com/store/apps/details?id=com.kiwibrowser.browser).
 
-There are thousands of hours of work in this repository and thousands of files changed.
+There are thousands of hours of work in this repository and thousands of files changed which costed my sanity, I cried multiple times to rebase to newer chromium versions and i finally gave up, dumped it on github.
 
 ## Contributing
 
-Contributions are welcome and encouraged.
+Contributions are welcome and encouraged(i am really done with this project, help me people).
 
 If you want your code to be integrated into Kiwi, open a merge request, I (and/or a member of the community) can review the code with you and push it to the Play Store.
 
@@ -281,18 +282,18 @@ If you want to optimize of the final APK, you can look at the size of each indiv
 
 ## Roadmap
 
-* During year 2020, the goal of the project is to make maintenance fixes and security updates.
+* During year 2020, the goal of the project is to relax and wait for smart people to give pull request.
 
-If there is an issue or bug that you want to be included to Kiwi, please open an issue ticket pointing to the related Chromium bug or commit. Be precise, there are dozen of thousands of changes in Chromium.
+If there is an issue or bug that you want to be included to Kiwi, please open an issue ticket pointing to the related Chromium bug or commit(but don't expect me to fix them). Be precise, there are dozen of thousands of changes in Chromium.
 
-* Later in the year, if there is enough demand and ressources, Kiwi will follow Chromium releases automatically (including bugfixes).
+* Later in the year, if there is enough demand and resources, Kiwi will follow Chromium releases automatically (including bugfixes).Sike!
 
 ## Additional help
 
-You can ask for extra help in our Discord server, or by [filing an issue](https://github.com/kiwibrowser/src/issues).
+You can ask for extra help in our Discord server which is retarded and no one helps there, we troll newcomers, or by [filing an issue](https://github.com/kiwibrowser/src/issues).
 
 <a href="https://discord.gg/XyMppQq"> <img src="https://discordapp.com/assets/e4923594e694a21542a489471ecffa50.svg" height="50"></a>
 
 Have fun with Kiwi!
 
-Arnaud.
+Arnaud Gr(anal).
