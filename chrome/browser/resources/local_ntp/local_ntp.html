@@ -925,6 +925,9 @@ function create_new_item()
 <script>
 if (window.chrome.embeddedSearch.newTabPage.isIncognito || typeof localStorage.hideExplore != "undefined") {
   document.getElementById('explore-section').style.display='none';
+} else {
+  if (document.getElementById('close-explore-button'))
+    document.getElementById('close-explore-button').addEventListener('click', close_explore);
 }
 if (window.chrome.embeddedSearch.newTabPage.isIncognito || typeof localStorage.hideNews != "undefined") {
   document.getElementById('news').style.display='none';
@@ -937,10 +940,12 @@ if (window.chrome.embeddedSearch.newTabPage.isIncognito || typeof localStorage.h
   } else if (localStorage.newsLocale != '') {
       document.getElementById('locale').innerHTML = locale_to_readabletext(localStorage.newsLocale);
   }
-  document.getElementById('configure-button').addEventListener('click', configure_news);
-  document.getElementById('close-button').addEventListener('click', close_news);
-  document.getElementById('close-explore-button').addEventListener('click', close_explore);
-  document.getElementById('newsMore').addEventListener('click', load_more_news);
+  if (document.getElementById('configure-button'))
+    document.getElementById('configure-button').addEventListener('click', configure_news);
+  if (document.getElementById('close-button'))
+    document.getElementById('close-button').addEventListener('click', close_news);
+  if (document.getElementById('newsMore'))
+    document.getElementById('newsMore').addEventListener('click', load_more_news);
   preconnectTo('https://news.google.com');
 }
 
