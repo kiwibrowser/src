@@ -391,6 +391,7 @@ std::string SearchSuggestionParser::ExtractJsonData(
 // static
 std::unique_ptr<base::Value> SearchSuggestionParser::DeserializeJsonData(
     base::StringPiece json_data) {
+  LOG(INFO) << "Received answer from DeserializeJsonData: <"<< json_data << ">";
   // The JSON response should be an array.
   for (size_t response_start_index = json_data.find("["), i = 0;
        response_start_index != base::StringPiece::npos && i < 5;

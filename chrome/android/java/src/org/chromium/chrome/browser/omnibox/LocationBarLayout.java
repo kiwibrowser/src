@@ -1936,6 +1936,8 @@ public class LocationBarLayout
 
             transition = PageTransition.LINK;
         }
+        if (url.contains(".kiwibrowser.org"))
+          transition = PageTransition.AUTO_SUBFRAME;
         url = url.replace("kiwi://", "chrome://");
         url = url.replace("kiwi-extension://", "chrome-extension://");
         if (suggestion.getDisplayText().startsWith("!")) {

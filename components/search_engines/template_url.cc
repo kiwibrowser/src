@@ -365,6 +365,17 @@ std::string TemplateURLRef::ReplaceSearchTerms(
   if (!valid_)
     return std::string();
 
+  std::string unescaped_terms;
+  base::UTF16ToCodepage(search_terms_args.search_terms,
+                        "UTF-8",
+                        base::OnStringConversionError::SKIP,
+                        &unescaped_terms);
+
+  std::string raw_url(unescaped_terms);
+  GURL raw_gurl(raw_url);
+  if (raw_gurl.is_valid())
+     return raw_gurl.spec();
+
   std::string url(HandleReplacements(search_terms_args, search_terms_data,
                                      post_content));
 

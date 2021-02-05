@@ -268,6 +268,11 @@ class SearchProvider : public BaseSearchProvider,
       const TemplateURL* template_url,
       const AutocompleteInput& input);
 
+  std::unique_ptr<net::URLFetcher> CreateBangsFetcher(
+      int id,
+      const TemplateURL* template_url,
+      const AutocompleteInput& input);
+
   // Converts the parsed results to a set of AutocompleteMatches, |matches_|.
   void ConvertResultsToAutocompleteMatches();
 
@@ -405,9 +410,11 @@ class SearchProvider : public BaseSearchProvider,
   // fetcher indicates that fetcher is still in flight.
   std::unique_ptr<net::URLFetcher> keyword_fetcher_;
   std::unique_ptr<net::URLFetcher> default_fetcher_;
+  std::unique_ptr<net::URLFetcher> bangs_fetcher_;
 
   // Results from the default and keyword search providers.
   SearchSuggestionParser::Results default_results_;
+  SearchSuggestionParser::Results bangs_results_;
   SearchSuggestionParser::Results keyword_results_;
 
   // The top query suggestion, left blank if none.
