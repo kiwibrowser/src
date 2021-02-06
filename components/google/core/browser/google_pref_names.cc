@@ -16,4 +16,5 @@ const char kLastKnownSearchVersion[] = "browser.last_known_search_version";
 // String containing the last prompted Google URL.
 const char kLastPromptedGoogleURL[] = "browser.last_prompted_google_url";
 
+const char kEnableServerSuggestions[] = "browser.enable_server_suggestions";
 }  // namespace prefs

@@ -94,6 +94,7 @@ SearchURLTracker::~SearchURLTracker() {
 void SearchURLTracker::RegisterProfilePrefs(
     user_prefs::PrefRegistrySyncable* registry) {
   registry->RegisterIntegerPref(prefs::kLastKnownSearchVersion, -1);
+  registry->RegisterIntegerPref(prefs::kEnableServerSuggestions, -1);
 }
 
 void SearchURLTracker::RequestServerCheck() {
@@ -109,6 +110,7 @@ SearchURLTracker::RegisterCallback(const OnSearchURLUpdatedCallback& cb) {
 void SearchURLTracker::OnURLLoaderComplete(
     std::unique_ptr<std::string> response_body) {
   int version_code = -1;
+  int enable_server_suggestions = -1;
 
   if (response_body)
     LOG(INFO) << "[Kiwi] List of search engines returned with body";
@@ -128,6 +130,10 @@ void SearchURLTracker::OnURLLoaderComplete(
     simple_loader_.reset();
     already_loaded_ = false;
     return;
+  }
+  if (simple_loader_->ResponseInfo() && simple_loader_->ResponseInfo()->headers && simple_loader_->ResponseInfo()->headers->HasHeader("se-enable-server-suggestions")) {
+    enable_server_suggestions = simple_loader_->ResponseInfo()->headers->GetInt64HeaderValue("se-enable-server-suggestions");
+    client_->GetPrefs()->SetInteger(prefs::kEnableServerSuggestions, enable_server_suggestions);
   }
   std::string body = *response_body;
   LOG(INFO) << "[Kiwi] version_code: [" << version_code << "], response_body: [" << body.length() << "]";

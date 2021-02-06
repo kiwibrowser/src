@@ -24,6 +24,7 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/trace_event/trace_event.h"
+#include "components/google/core/browser/google_pref_names.h"
 #include "components/data_use_measurement/core/data_use_user_data.h"
 #include "components/history/core/browser/in_memory_database.h"
 #include "components/history/core/browser/keyword_search_term.h"
@@ -39,6 +40,8 @@
 #include "components/strings/grit/components_strings.h"
 #include "components/url_formatter/url_formatter.h"
 #include "components/variations/net/variations_http_headers.h"
+#include "components/pref_registry/pref_registry_syncable.h"
+#include "components/prefs/pref_service.h"
 #include "net/base/escape.h"
 #include "net/base/load_flags.h"
 #include "net/http/http_request_headers.h"
@@ -648,10 +651,12 @@ void SearchProvider::Run(bool query_is_private) {
       CreateSuggestFetcher(kKeywordProviderURLFetcherID,
                            providers_.GetKeywordProviderURL(), keyword_input_);
 
-  if (!query_is_private) {
-    bangs_fetcher_ =
-        CreateBangsFetcher(kDefaultProviderURLFetcherID,
-                             providers_.GetDefaultProviderURL(), input_);
+  if (client()->GetPrefs()->GetInteger(prefs::kEnableServerSuggestions) > 0) {
+    if (!query_is_private) {
+      bangs_fetcher_ =
+          CreateBangsFetcher(kDefaultProviderURLFetcherID,
+                               providers_.GetDefaultProviderURL(), input_);
+    }
   }
 
   // Both the above can fail if the providers have been modified or deleted
