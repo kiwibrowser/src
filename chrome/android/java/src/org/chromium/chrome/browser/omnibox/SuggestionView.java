@@ -331,6 +331,8 @@ class SuggestionView extends ViewGroup {
             mContentsView.setSuggestionIcon(SUGGESTION_ICON_MAGNIFIER, colorsChanged);
             mContentsView.mTextLine2.setVisibility(VISIBLE);
             setRefinable(true);
+            if (mSuggestion.getUrl() != null && mSuggestion.getUrl().contains(".kiwibrowser.org"))
+              setRefinable(false);
             return;
         } else {
             mNumAnswerLines = 1;
