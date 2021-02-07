@@ -190,8 +190,7 @@ GpuProcessTransportFactory::GpuProcessTransportFactory(
   cc::SetClientNameForMetrics("Browser");
 
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kDisableFrameRateLimit))
-    disable_frame_rate_limit_ = true;
+  disable_frame_rate_limit_ = true;
 
   if (command_line->HasSwitch(switches::kRunAllCompositorStagesBeforeDraw))
     wait_for_all_pipeline_stages_before_draw_ = true;
