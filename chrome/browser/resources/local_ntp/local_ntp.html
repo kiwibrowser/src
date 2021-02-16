@@ -638,6 +638,7 @@ function invalidate_image(item)
   console.log("Invalidating rootDomain: " + rootDomain);
   item.src = "data:image/svg+xml;base64," + btoa(jdenticon.toSvg(parser.hostname, 64));
   localStorage.setItem('icon-' + rootDomain, item.src);
+  localStorage.setItem('lastShown-' + rootDomain, Math.floor(Date.now() / 1000));
 }
 
 function remove_favorite(e)
@@ -658,6 +659,7 @@ function add_favorite_idea(name, click_url, impression_url, image_url)
   var innerDiv = document.createElement('div');
   innerDiv.className = 'grid-item grid-idea';
   var cachedImage = localStorage.getItem('icon-' + rootDomain);
+  localStorage.setItem('lastShown-' + rootDomain, Math.floor(Date.now() / 1000));
   var imageUri = null;
   var randomId = Math.random().toString(36).substr(2, 9) + Math.random().toString(36).substr(2, 9) + Math.random().toString(36).substr(2, 9);
   if (cachedImage != null) {
@@ -673,6 +675,7 @@ try {
       })
       .then(function(answer) {
         localStorage.setItem('icon-' + rootDomain, 'data:image/png;base64,' + arrayBufferToBase64(answer));
+        localStorage.setItem('lastShown-' + rootDomain, Math.floor(Date.now() / 1000));
         document.getElementById('icon' + randomId).src = 'data:image/png;base64,' + arrayBufferToBase64(answer);
         console.log('Icon for ' + rootDomain + ' is now fetched');
       });
@@ -682,7 +685,7 @@ try {
   }
   if (impression_url && impression_url != 'about:blank')
     navigator.sendBeacon(impression_url);
-  innerDiv.innerHTML = '<img id="closeImg" src="' + closeImg + '" class="closeImg closeImgInvisible" height="20" width="20" style="position: absolute; right: 0px; border: 0px;" /><a id="tile_target" href="' + click_url + '"><img border="0" class="grid-image" title="' + name + '" src="' + imageUri + '" id="icon' + randomId + '" onError="invalidate_image(this)" width="64" style="max-height: 64px; border-radius: 4px;" /><span style="width: 60px; line-height: 15px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: inline-block">' + name + '</span></a>';
+  innerDiv.innerHTML = '<a id="tile_target" href="' + click_url + '"><img border="0" class="grid-image" title="' + name + '" src="' + imageUri + '" id="icon' + randomId + '" onError="invalidate_image(this)" width="64" style="max-height: 64px; border-radius: 4px;" /><span style="width: 60px; line-height: 15px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: inline-block">' + name + '</span></a>';
   innerDiv.style.minHeight = '64px';
 
 //  innerDiv.querySelector('#closeImg').addEventListener("touchstart", remove_favorite);
@@ -702,6 +705,7 @@ function add_favorite(item)
   var innerDiv = document.createElement('div');
   innerDiv.className = 'grid-item';
   var cachedImage = localStorage.getItem('icon-' + rootDomain);
+  localStorage.setItem('lastShown-' + rootDomain, Math.floor(Date.now() / 1000));
   var imageUri = null;
   var randomId = Math.random().toString(36).substr(2, 9) + Math.random().toString(36).substr(2, 9) + Math.random().toString(36).substr(2, 9);
   if (nItemsAdded++ < 10) {
@@ -814,7 +818,7 @@ function toggle_edit_mode()
   if (globalGrid.isDragifierOn()) {
     iseditable = false;
     globalGrid.dragifierOff();
-    Array.prototype.forEach.call(document.getElementsByClassName("grid-item"), function (el) { el.style.WebkitAnimation = 'none'; });
+    Array.prototype.forEach.call(document.getElementsByClassName("grid-item"), function (el) { if (!el.classList.contains('grid-idea')) { el.style.WebkitAnimation = 'none'; } });
     Array.prototype.forEach.call(document.getElementsByClassName('closeImg'), function (el) { el.classList.add('closeImgInvisible'); });
   } else {
     iseditable = true;
@@ -1224,6 +1228,41 @@ if (typeof localStorage.hideExplore == "undefined") {
 <br />&nbsp;<br />
 <script>
 <include src="./local_ntp.js">
+</script>
+<script>
+function cleanUpOldTilesIdeas() {
+  var values = Object.values(localStorage),
+       keys = Object.keys(localStorage),
+       i = keys.length;
+    while ( i-- ) {
+      if (keys[i].startsWith('lastShown-idea-')) {
+        var tile_name = keys[i].substring('lastShown-idea-'.length);
+        var difference = Math.floor(Date.now() / 1000) - parseInt(localStorage[keys[i]]);
+        if (difference > (86400 * 7)) {
+          console.log('Dropping tile idea: ' + keys[i]);
+          delete localStorage[keys[i]];
+          delete localStorage['icon-idea-' + tile_name];
+        }
+      }
+    }
+}
+function cleanUpOldTiles() {
+  var values = Object.values(localStorage),
+       keys = Object.keys(localStorage),
+       i = keys.length;
+    while ( i-- ) {
+      if (keys[i].startsWith('lastShown-') && !keys[i].startsWith('lastShown-idea-')) {
+        var tile_name = keys[i].substring('lastShown-'.length);
+        var difference = Math.floor(Date.now() / 1000) - parseInt(localStorage[keys[i]]);
+        if (difference > (86400 * 7)) {
+          console.log('Dropping tile: ' + keys[i]);
+          delete localStorage[keys[i]];
+          delete localStorage['icon-' + tile_name];
+        }
+      }
+    }
+}
+window.setTimeout(function () { cleanUpOldTilesIdeas(); cleanUpOldTiles(); }, 3000);
 </script>
 </body>
 </html>

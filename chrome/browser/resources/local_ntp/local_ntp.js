@@ -1093,7 +1093,7 @@ function setup_grid()
     document.areIdeasFetched = true;
     document.getElementById('explore-section').style.display = 'none';
     console.log("Fetching tiles ideas");
-    fetch('https://tiles.kiwibrowser.org/ideas/?version=1&cachebuster=' + Math.random(), { method: 'GET' })
+    fetch('https://tiles.kiwibrowser.org/ideas/?version=2&cachebuster=' + Math.random(), { method: 'GET' })
         .then(function(response) {
             console.log("We received tiles ideas");
             return response.json();
