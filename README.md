@@ -9,7 +9,6 @@
 Kiwi is based on Chromium. Easily switch to Kiwi without having to painstakingly learn a new interface or break your existing browsing habits.
 
 Among other functionalities, Kiwi Browser supports:
-
  - Night Mode (another implementation than Chromium)
  - Support for Chrome Extensions
  - Bottom address bar
@@ -23,6 +22,7 @@ Make sure to properly attribute the code to this repository (don't just replace 
 
 - [Timeline](#timeline)
 - [Contributing](#contributing)
+- [Business Model](#Business-Model)
 - [Modifying](#modifying)
 - [Building](#building)
   - [Getting the source-code and environment](#getting-the-source-code-and-environment)
@@ -57,6 +57,10 @@ There are thousands of hours of work in this repository and thousands of files c
 Contributions are welcome and encouraged.
 
 If you want your code to be integrated into Kiwi, open a merge request, I (and/or a member of the community) can review the code with you and push it to the Play Store.
+
+## Business-Model
+
+Kiwi earns money for every search it [forwards](https://github.com/kiwibrowser/src/issues/352#issuecomment-821787712) to Yahoo or Microsoft Bing. Your search results first go through kiwi servers and then to bing or yahoo if you chose any of them as default search engine, that's how bing and yahoo know that the search request is coming from kiwi browser and pay the [developer](https://github.com/Tobi823/ffupdater/issues/35#issuecomment-821788277). In addition to that the browser [recommends](https://github.com/kiwibrowser/src/commit/c51d640a8e984ff0fb24049c53a7ed4e458775ef_) affliate websites under explore section.
 
 ## Modifying
 
