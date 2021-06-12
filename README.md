@@ -9,6 +9,7 @@
 Kiwi is based on Chromium. Easily switch to Kiwi without having to painstakingly learn a new interface or break your existing browsing habits.
 
 Among other functionalities, Kiwi Browser supports:
+
  - Night Mode (another implementation than Chromium)
  - Support for Chrome Extensions
  - Bottom address bar
@@ -20,22 +21,28 @@ Make sure to properly attribute the code to this repository (don't just replace 
 
 ## Table of contents
 
-- [Timeline](#timeline)
-- [Contributing](#contributing)
-- [Business Model](#Business-Model)
-- [Modifying](#modifying)
-- [Building](#building)
-  - [Getting the source-code and environment](#getting-the-source-code-and-environment)
-  - [Setting-up dependencies](#setting-up-dependencies)
-  - [Preparing a signing key](#preparing-a-signing-key)
-  - [Configuring the build type and platform](#configuring-the-build-type-and-platform)
-  - [Preparing the first build](#preparing-the-first-build)
-  - [Compiling Kiwi Browser](#compiling-kiwi-browser)
-  - [Investigating crashes](#investigating-crashes)
-  - [Remote debugging](#remote-debugging)
-  - [Optimizing binary size](#optimizing-binary-size)
-- [Roadmap](#roadmap)
-- [Additional help](#additional-help)
+  - [Timeline](#timeline)
+  - 
+  - [Contributing](#contributing)
+  - 
+  - [Business Model](#Business-Model)
+  - 
+  - [Modifying](#modifying)
+  - 
+  - [Building](#building)
+    - [Getting the source-code and environment](#getting-the-source-code-and-environment)
+    - [Setting-up dependencies](#setting-up-dependencies)
+    - [Preparing a signing key](#preparing-a-signing-key)
+    - [Configuring the build type and platform](#configuring-the-build-type-and-platform)
+    - [Preparing the first build](#preparing-the-first-build)
+    - [Compiling Kiwi Browser](#compiling-kiwi-browser)
+    - [Investigating crashes](#investigating-crashes)
+    - [Remote debugging](#remote-debugging)
+    - [Optimizing binary size](#optimizing-binary-size)
+    - 
+  - [Roadmap](#roadmap)
+  - 
+  - [Additional help](#additional-help)
 
 ## Timeline
 
