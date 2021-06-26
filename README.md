@@ -279,13 +279,24 @@ If you want to optimize of the final APK, you can look at the size of each indiv
 
 <a href="https://play.google.com/store/apps/details?id=com.kiwibrowser.browser"> <img src="https://camo.githubusercontent.com/59c5c810fc8363f8488c3a36fc78f89990d13e99/68747470733a2f2f706c61792e676f6f676c652e636f6d2f696e746c2f656e5f75732f6261646765732f696d616765732f67656e657269632f656e5f62616467655f7765625f67656e657269632e706e67" height="55">
 
+## Business model
+
+The browser is getting paid by search engines for every search done using Kiwi Browser.
+
+Depending on the search engine choice, requests may go via Kiwibrowser / Kiwisearchservices servers.
+This is for invoicing our search partners and provide alternative search results (e.g. bangs aka "shortcuts").
+
+In some countries, the browser displays sponsored tiles or news on the homepage.
+
+User data (browsing, navigation, passwords, accounts) is not collected because we have no interest to know what you do in the browser. Our main goal is to convince you to use a search engine partner, and this search engine makes money / new partnerships and shares revenue with us.
+
 ## Roadmap
 
 * During year 2020, the goal of the project is to make maintenance fixes and security updates.
 
 If there is an issue or bug that you want to be included to Kiwi, please open an issue ticket pointing to the related Chromium bug or commit. Be precise, there are dozen of thousands of changes in Chromium.
 
-* Later in the year, if there is enough demand and ressources, Kiwi will follow Chromium releases automatically (including bugfixes).
+* During 2021, Kiwi Browser will switch to a new branch called Kiwi Browser Next with a quite automated Chromium rebasing system.
 
 ## Additional help
 
