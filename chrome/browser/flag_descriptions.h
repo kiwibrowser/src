@@ -1453,6 +1453,9 @@ extern const char kSimplifiedNtpDescription[];
 extern const char kSiteExplorationUiName[];
 extern const char kSiteExplorationUiDescription[];
 
+extern const char kUseClientCertName[];
+extern const char kUseClientCertDescription[];
+
 extern const char kSpannableInlineAutocompleteName[];
 extern const char kSpannableInlineAutocompleteDescription[];
 

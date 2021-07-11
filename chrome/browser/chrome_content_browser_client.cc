@@ -316,6 +316,7 @@
 #include "base/android/application_status_listener.h"
 #include "chrome/browser/android/app_hooks.h"
 #include "chrome/browser/android/chrome_context_util.h"
+#include "chrome/browser/android/chrome_feature_list.h"
 #include "chrome/browser/android/devtools_manager_delegate_android.h"
 #include "chrome/browser/android/download/intercept_oma_download_navigation_throttle.h"
 #include "chrome/browser/android/ntp/new_tab_page_url_handler.h"
@@ -2577,14 +2578,17 @@ void ChromeContentBrowserClient::SelectClientCertificate(
         prerender::FINAL_STATUS_SSL_CLIENT_CERTIFICATE_REQUESTED);
     return;
   }
-  if (true) {
-    LOG(WARNING) << "No client cert matched by policy and user selection is "
-                    "not allowed.";
-    // Continue without client certificate. We do this to mimic the case of no
-    // client certificate being present in the profile's certificate store.
-    delegate->ContinueWithCertificate(nullptr, nullptr);
-    return;
+
+#if defined(OS_ANDROID)
+  if (!base::FeatureList::IsEnabled(chrome::android::kUseClientCert)) {
+	  LOG(WARNING) << "No client cert matched by policy and user selection is "
+	                      "not allowed.";
+	  // Continue without client certificate. We do this to mimic the case of no
+	  // client certificate being present in the profile's certificate store.
+	  delegate->ContinueWithCertificate(nullptr, nullptr);
+	  return;
   }
+#endif
 
   GURL requesting_url("https://" + cert_request_info->host_and_port.ToString());
   DCHECK(requesting_url.is_valid())

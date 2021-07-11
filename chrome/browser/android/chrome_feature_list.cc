@@ -353,6 +353,9 @@ const base::Feature kTabReparenting{"TabReparenting",
 const base::Feature kTrustedWebActivity{"TrustedWebActivity",
                                         base::FEATURE_ENABLED_BY_DEFAULT};
 
+const base::Feature kUseClientCert{"UseClientCertificates",
+                                             base::FEATURE_DISABLED_BY_DEFAULT};
+
 const base::Feature kUserMediaScreenCapturing{
     "UserMediaScreenCapturing", base::FEATURE_DISABLED_BY_DEFAULT};
 

@@ -3895,7 +3895,13 @@ const FeatureEntry kFeatureEntries[] = {
      flag_descriptions::kLongPressBackForHistoryName,
      flag_descriptions::kLongPressBackForHistoryDescription, kOsAndroid,
      FEATURE_VALUE_TYPE(chrome::android::kLongPressBackForHistory)},
+
+	{"use-client-cert",
+	 flag_descriptions::kUseClientCertName,
+	 flag_descriptions::kUseClientCertDescription, kOsAndroid,
+	 FEATURE_VALUE_TYPE(chrome::android::kUseClientCert)},
 #endif
+
     // NOTE: Adding a new flag requires adding a corresponding entry to enum
     // "LoginCustomFlags" in tools/metrics/histograms/enums.xml. See "Flag
     // Histograms" in tools/metrics/histograms/README.md (run the
