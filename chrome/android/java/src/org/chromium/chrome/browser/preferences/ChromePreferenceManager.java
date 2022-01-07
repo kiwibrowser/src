@@ -77,6 +77,8 @@ public class ChromePreferenceManager {
     private static final String VERIFIED_DIGITAL_ASSET_LINKS =
             "verified_digital_asset_links";
 
+    private static final String MISES_USER_INFO = "mises_user_info";
+
     /*
      * Whether the simplified tab switcher is enabled when accessibility mode is enabled. Keep in
      * sync with accessibility_preferences.xml.
@@ -100,6 +102,20 @@ public class ChromePreferenceManager {
      */
     public static ChromePreferenceManager getInstance() {
         return LazyHolder.INSTANCE;
+    }
+
+    public String getMisesUserInfo() {
+        // Convention to keep all the key in preference lower case.
+        return mSharedPreferences.getString(MISES_USER_INFO, "");
+    }
+
+    public void setMisesUserInfo(String userinfo) {
+        SharedPreferences.Editor sharedPreferencesEditor;
+
+        sharedPreferencesEditor = mSharedPreferences.edit();
+        // Convention to keep all the key in preference lower case.
+        sharedPreferencesEditor.putString(MISES_USER_INFO, userinfo);
+        sharedPreferencesEditor.apply();
     }
 
     /**
