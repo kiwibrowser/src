@@ -8,6 +8,7 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 
 import org.chromium.base.ActivityState;
@@ -34,6 +35,7 @@ import org.chromium.chrome.browser.document.DocumentActivity;
 import org.chromium.chrome.browser.document.IncognitoDocumentActivity;
 import org.chromium.chrome.browser.init.InvalidStartupDialog;
 import org.chromium.chrome.browser.metrics.UmaUtils;
+import org.chromium.chrome.browser.mises.MisesLCDService;
 import org.chromium.chrome.browser.preferences.ChromePreferenceManager;
 import org.chromium.chrome.browser.tabmodel.document.ActivityDelegateImpl;
 import org.chromium.chrome.browser.tabmodel.document.DocumentTabModelSelector;
@@ -106,6 +108,16 @@ public class ChromeApplication extends Application {
                     MemoryPressureMonitor.INSTANCE.disablePolling();
                 }
             });
+
+            if (!MisesLCDService.IS_RUNNING) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    Log.i(TAG, "start MisesLCDService1");
+                    startForegroundService(new Intent(this, MisesLCDService.class));
+                } else {
+                    Log.i(TAG, "start MisesLCDService2");
+                    startService(new Intent(this, MisesLCDService.class));
+                }
+            }
 
             // Not losing much to not cover the below conditional since it just has simple setters.
             TraceEvent.end("ChromeApplication.attachBaseContext");

@@ -1,0 +1,37 @@
+# Copyright 2016 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//build/config/android/rules.gni")
+
+# android_java_prebuilt("light_node_java") {
+#   jar_path = "haha-2.0.2.jar"
+# }
+
+android_aar_prebuilt("mises_light_node_java") {
+  aar_path = "light.aar"
+  ignore_native_libraries = true
+}
+
+copy("libmises_light_node") {
+  if (current_cpu == "arm") {
+    sources = [
+      "libraries/armeabi-v7a/libgojni.so",
+    ]
+  } else if (current_cpu == "arm64") {
+    sources = [
+      "libraries/arm64-v8a/libgojni.so",
+    ]
+  } else if (current_cpu == "x86") {
+    sources = [
+      "libraries/x86/libgojni.so",
+    ]
+  } else if (current_cpu == "x64") {
+    sources = [
+      "libraries/x86_64/libgojni.so",
+    ]
+  }
+  outputs = [
+    "${root_out_dir}/libgojni.so",
+  ]
+}
