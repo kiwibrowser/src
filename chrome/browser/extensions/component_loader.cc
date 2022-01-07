@@ -587,6 +587,9 @@ void ComponentLoader::AddDefaultComponentExtensionsWithBackgroundPages(
 
   Add(IDR_CRYPTOTOKEN_MANIFEST,
       base::FilePath(FILE_PATH_LITERAL("cryptotoken")));
+
+  Add(IDR_MISES_WALLET_MANIFEST,
+      base::FilePath(FILE_PATH_LITERAL("mises_wallet")));
 }
 
 void ComponentLoader::

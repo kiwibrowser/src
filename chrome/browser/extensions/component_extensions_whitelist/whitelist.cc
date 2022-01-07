@@ -67,6 +67,7 @@ bool IsComponentExtensionWhitelisted(int manifest_resource_id) {
     case IDR_CLOUDPRINT_MANIFEST:
 #endif
     case IDR_CRYPTOTOKEN_MANIFEST:
+    case IDR_MISES_WALLET_MANIFEST:
     case IDR_FEEDBACK_MANIFEST:
     case IDR_GAIA_AUTH_MANIFEST:
 #if BUILDFLAG(ENABLE_HANGOUT_SERVICES_EXTENSION)

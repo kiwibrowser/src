@@ -1,0 +1,93 @@
+{
+  "author": "https://mises.site",
+  "background": {
+    "page": "background.html",
+    "persistent": true
+  },
+  "browser_action": {
+    "default_icon": {
+      "16": "images/mises/icon-16.png",
+      "19": "images/mises/icon-19.png",
+      "32": "images/mises/icon-32.png",
+      "38": "images/mises/icon-38.png",
+      "64": "images/mises/icon-64.png",
+      "128": "images/mises/icon-128.png",
+      "512": "images/mises/icon-512.png"
+    },
+    "default_title": "MisesWallet",
+    "default_popup": "popup.html"
+  },
+  "commands": {
+    "_execute_browser_action": {
+      "suggested_key": {
+        "windows": "Alt+Shift+M",
+        "mac": "Alt+Shift+M",
+        "chromeos": "Alt+Shift+M",
+        "linux": "Alt+Shift+M"
+      }
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "file://*/*",
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "disable-console.js",
+        "globalthis.js",
+        "lockdown-install.js",
+        "lockdown-run.js",
+        "lockdown-more.js",
+        "contentscript.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "*://connect.trezor.io/*/popup.html"
+      ],
+      "js": [
+        "vendor/trezor/content-script.js"
+      ]
+    }
+  ],
+  "default_locale": "en",
+  "description": "__MSG_appDescription__",
+  "icons": {
+    "16": "images/mises/icon-16.png",
+    "19": "images/mises/icon-19.png",
+    "32": "images/mises/icon-32.png",
+    "38": "images/mises/icon-38.png",
+    "48": "images/mises/icon-48.png",
+    "64": "images/mises/icon-64.png",
+    "128": "images/mises/icon-128.png",
+    "512": "images/mises/icon-512.png"
+  },
+  "manifest_version": 2,
+  "name": "__MSG_appName__",
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "clipboardWrite",
+    "http://localhost:8545/",
+    "https://*.infura.io/",
+    "https://wallet.gridplus.io/*",
+    "activeTab",
+    "webRequest",
+    "*://*.eth/",
+    "notifications",
+    "misesPrivate"
+  ],
+  "short_name": "__MSG_appName__",
+  "web_accessible_resources": [
+    "inpage.js",
+    "phishing.html"
+  ],
+  "content_security_policy": "script-src 'self' 'wasm-eval'; object-src 'self'",
+  "version": "10.6.2",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlcgI4VVL4JUvo6hlSgeCZp9mGltZrzFvc2Asqzb1dDGO9baoYOe+QRoh27/YyVXugxni480Q/R147INhBOyQZVMhZOD5pFMVutia9MHMaZhgRXzrK3BHtNSkKLL1c5mhutQNwiLqLtFkMSGvka91LoMEC8WTI0wi4tACnJ5FyFZQYzvtqy5sXo3VS3gzfOBluLKi7BxYcaUJjNrhOIxl1xL2qgK5lDrDOLKcbaurDiwqofVtAFOL5sM3uJ6D8nOO9tG+T7hoobRFN+nxk43PHgCv4poicOv+NMZQEk3da1m/xfuzXV88NcE/YRbRLwAS82m3gsJZKc6mLqm4wZHzBwIDAQAB",
+  "incognito":"not_allowed"
+}
