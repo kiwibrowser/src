@@ -19,6 +19,7 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task_scheduler/post_task.h"
+#include "base/threading/thread_restrictions.h"
 #include "base/android/jni_android.h"
 #include "base/android/jni_string.h"
 #include "chrome/browser/devtools/devtools_window.h"
@@ -1104,6 +1105,7 @@ ExtensionFunction::ResponseAction DeveloperPrivateLoadUnpackedFunction::Run() {
 
 void DeveloperPrivateLoadUnpackedFunction::FileSelected(
     const base::FilePath& path) {
+  base::ThreadRestrictions::SetIOAllowed(true);
   base::FilePath new_path = path;
   LOG(INFO) << "[EXTENSIONS] Selected file: " << new_path << " with extension: " << path.Extension();
   if (new_path.IsContentUri()) {
