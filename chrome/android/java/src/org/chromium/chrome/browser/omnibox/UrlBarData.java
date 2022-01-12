@@ -37,7 +37,7 @@ public class UrlBarData {
             ContentUrlConstants.ABOUT_SCHEME, UrlConstants.DATA_SCHEME, UrlConstants.FILE_SCHEME,
             UrlConstants.FTP_SCHEME, UrlConstants.HTTP_SCHEME, UrlConstants.HTTPS_SCHEME,
             UrlConstants.INLINE_SCHEME, UrlConstants.JAVASCRIPT_SCHEME, UrlConstants.CHROME_SCHEME,
-            "kiwi");
+            "mises");
     // Unicode "Left-To-Right Mark" (LRM) character.
     private static final char LRM = '\u200E';
 
@@ -63,10 +63,10 @@ public class UrlBarData {
         int pathSearchOffset = 0;
         String originalScheme = Uri.parse(displayText).getScheme();
         if (!TextUtils.isEmpty(originalScheme) && (originalScheme.equals("chrome") || originalScheme.equals("chrome-extension"))) {
-          displayText = displayText.replace("chrome://", "kiwi://");
-          url = url.replace("chrome://", "kiwi://");
-          displayText = displayText.replace("chrome-extension://", "kiwi-extension://");
-          url = url.replace("chrome-extension://", "kiwi-extension://");
+          displayText = displayText.replace("chrome://", "mises://");
+          url = url.replace("chrome://", "mises://");
+          displayText = displayText.replace("chrome-extension://", "mises-extension://");
+          url = url.replace("chrome-extension://", "mises-extension://");
         }
         String scheme = Uri.parse(displayText).getScheme();
 

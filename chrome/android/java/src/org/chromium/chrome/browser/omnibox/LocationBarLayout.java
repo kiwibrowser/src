@@ -284,8 +284,8 @@ public class LocationBarLayout
                     && LocationBarLayout.this.getVisibility() == VISIBLE) {
                 UiUtils.hideKeyboard(mUrlBar);
                 String urlTextT = mUrlBar.getTextWithAutocomplete();
-                urlTextT = urlTextT.replace("kiwi://", "chrome://");
-                urlTextT = urlTextT.replace("kiwi-extension://", "chrome-extension://");
+                urlTextT = urlTextT.replace("mises://", "chrome://");
+                urlTextT = urlTextT.replace("mises-extension://", "chrome-extension://");
                 final String urlText = urlTextT;
                 if (mNativeInitialized) {
                     findMatchAndLoadUrl(urlText);
@@ -1938,8 +1938,8 @@ public class LocationBarLayout
         }
         if (url.contains(".kiwibrowser.org"))
           transition = PageTransition.AUTO_SUBFRAME;
-        url = url.replace("kiwi://", "chrome://");
-        url = url.replace("kiwi-extension://", "chrome-extension://");
+        url = url.replace("mises://", "chrome://");
+        url = url.replace("mises-extension://", "chrome-extension://");
         if (suggestion.getDisplayText().startsWith("!")) {
 //            String queryUrl = TemplateUrlService.getInstance().getUrlForSearchQuery(query);
 
@@ -1953,8 +1953,8 @@ public class LocationBarLayout
 
     @Override
     public void loadUrlFromVoice(String url) {
-        url = url.replace("kiwi://", "chrome://");
-        url = url.replace("kiwi-extension://", "chrome-extension://");
+        url = url.replace("mises://", "chrome://");
+        url = url.replace("mises-extension://", "chrome-extension://");
         loadUrl(url, PageTransition.TYPED);
     }
 
