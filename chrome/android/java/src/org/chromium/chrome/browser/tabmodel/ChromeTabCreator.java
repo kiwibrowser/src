@@ -16,7 +16,9 @@ import org.chromium.chrome.browser.ServiceTabLauncher;
 import org.chromium.chrome.browser.TabState;
 import org.chromium.chrome.browser.UrlConstants;
 import org.chromium.chrome.browser.compositor.layouts.content.TabContentManager;
+import org.chromium.chrome.browser.mises.MisesController;
 import org.chromium.chrome.browser.net.spdyproxy.DataReductionProxySettings;
+import org.chromium.chrome.browser.partnercustomizations.HomepageManager;
 import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.tab.TabDelegateFactory;
 import org.chromium.chrome.browser.tabmodel.TabModel.TabLaunchType;
@@ -379,6 +381,33 @@ public class ChromeTabCreator extends TabCreatorManager.TabCreator {
         mTabModel = model;
         mOrderController = orderController;
         mTabContentManager = manager;
+    }
+
+    @Override
+    public void launchNTP() {
+        try {
+            TraceEvent.begin("TabCreator.launchNTP");
+
+            String homePageUrl = HomepageManager.getHomepageUri();
+            if (TextUtils.isEmpty(homePageUrl)) {
+                homePageUrl = UrlConstants.LOCAL_NTP_URL;
+            }
+            boolean hasMisesPage = false;
+            for (int i=0; i<mTabModel.getCount(); i++) {
+                String url = mTabModel.getTabAt(i).getUrl();
+                if (url.indexOf(MisesController.MISES_EXTENSION_KEY) != -1
+                        || url.indexOf("home.mises.site/home/discover") != -1) {
+                    hasMisesPage = true;
+                    break;
+                }
+            }
+            if (!hasMisesPage) {
+                homePageUrl = "https://home.mises.site/home/discover";
+            }
+            launchUrl(homePageUrl, TabModel.TabLaunchType.FROM_CHROME_UI);
+        } finally {
+            TraceEvent.end("TabCreator.launchNTP");
+        }
     }
 
     /**
