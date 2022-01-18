@@ -39,7 +39,7 @@ public class MisesUserInfoMenu extends PopupWindow {
         if (isLogin) {
             view_user_info.setVisibility(View.VISIBLE);
             view_login.setVisibility(View.GONE);
-            tvUsername.setText(name);
+            tvUsername.setText(name.isEmpty() ? id.substring(0,Math.min(id.length(), 8)) : name);
             tvId.setText(id);
             if (!avatar.isEmpty())
                 Glide.with(mContext).load(avatar).apply(RequestOptions.bitmapTransform(new CircleCrop()))

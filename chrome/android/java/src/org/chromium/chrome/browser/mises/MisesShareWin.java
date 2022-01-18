@@ -34,7 +34,18 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLEncoder;
+
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.load.resource.bitmap.CircleCrop;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.RequestOptions;
+import com.bumptech.glide.request.target.Target;
+
+import java.io.ByteArrayOutputStream;
+
+import javax.annotation.Nullable;
 
 public class MisesShareWin extends PopupWindow {
 
@@ -51,67 +62,11 @@ public class MisesShareWin extends PopupWindow {
     private ImageResult mImageResult;
     private EditText comment;
     private LoadingView mLoadingView;
-    private View pop_layout;
-    private Handler mHandler = new Handler();
     private static final int THREAD_ID = 10000;
 
     private class ImageResult {
         public String mContentType = "image/png";
         public byte[] mImageData;
-    }
-    private class FetchImageTask extends AsyncTask<String, Void, ImageResult> {
-        public FetchImageTask() {
-
-        }
-
-        @Override
-        protected ImageResult doInBackground(String... strings) {
-            if (strings.length == 0 || strings[0] == null || strings[0].isEmpty())
-                return null;
-            HttpURLConnection urlConnection = null;
-            try {
-                URL url = new URL(strings[0]);
-                urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setConnectTimeout(20000);
-                urlConnection.setRequestMethod("GET");
-                if (urlConnection.getResponseCode() == 200) {
-                    Log.i(TAG, "get icon data ok");
-                    InputStream is = urlConnection.getInputStream();
-                    ByteArrayOutputStream bo = new ByteArrayOutputStream();
-                    int i = is.read();
-                    while (i != -1) {
-                        bo.write(i);
-                        i = is.read();
-                    }
-                    String contentType = urlConnection.getHeaderField("Content-Type");
-                    ImageResult result = new ImageResult();
-                    if (contentType != null && !contentType.isEmpty())
-                        result.mContentType = contentType;
-                    result.mImageData = bo.toByteArray();
-                    return result;
-                }
-            } catch (MalformedURLException e) {
-                Log.w(TAG, "fetch image error " + e.toString());
-            } catch (IOException e) {
-                Log.w(TAG, "fetch image error " + e.toString());
-            } catch (IllegalStateException e) {
-                Log.w(TAG, "fetch image error " + e.toString());
-            } finally {
-                if (urlConnection != null) urlConnection.disconnect();
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(ImageResult result) {
-            if (result != null && result.mImageData != null && result.mImageData.length > 0) {
-                mImageResult = result;
-                Bitmap bitmap = BitmapFactory.decodeByteArray(mImageResult.mImageData, 0, mImageResult.mImageData.length);
-                if (bitmap != null)
-                    image.setImageBitmap(bitmap);
-            }
-            mLoadingView.hideLoadingUI();
-        }
     }
 
     private class MisesShareTask extends AsyncTask<ImageResult, Void, Integer> {
@@ -320,7 +275,6 @@ public class MisesShareWin extends PopupWindow {
         mUrl = url;
         mContext = context;
         this.view = (FrameLayout) LayoutInflater.from(mContext).inflate(R.layout.mises_share_dialog, null);
-        pop_layout = view.findViewById(R.id.pop_layout);
         image = view.findViewById(R.id.icon);
         tv_title = view.findViewById(R.id.title);
         tv_url = view.findViewById(R.id.url);
@@ -360,36 +314,34 @@ public class MisesShareWin extends PopupWindow {
         // 设置弹出窗体可点击
         this.setFocusable(true);
 
-//        view.setOnTouchListener(new View.OnTouchListener() {
-//            @Override
-//            public boolean onTouch(View v, MotionEvent event) {
-//                int x = (int) event.getX();
-//                int y = (int) event.getY();
-//                if (event.getAction() == MotionEvent.ACTION_UP) {
-//                    if (x < pop_layout.getLeft() || x > pop_layout.getRight()
-//                            || y < pop_layout.getTop() || y > pop_layout.getBottom()) {
-//                        dismiss();
-//                    }
-//                }
-//                return true;
-//            }
-//        });
         mLoadingView = new LoadingView(mContext);
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
         lp.gravity = Gravity.CENTER;
         mLoadingView.setLayoutParams(lp);
         mLoadingView.setVisibility(View.GONE);
         view.addView(mLoadingView);
+        mLoadingView.showLoadingUI();
+        Glide.with(mContext).asBitmap().load(mIcon)
+                .listener(new RequestListener<Bitmap>() {
+                    @Override
+                    public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Bitmap> target, boolean isFirstResource) {
+                        Log.e("mises", " MisesShareWin load pic failed" + e.toString() );
+                        mLoadingView.hideLoadingUI();
+                        return false;
+                    }
 
-        TrafficStats.setThreadStatsTag(THREAD_ID);
-
-        mHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                mLoadingView.showLoadingUI();
-                FetchImageTask fetchImageTask = new FetchImageTask();
-                fetchImageTask.execute(mIcon);
-            }
-        }, 500);
+                    @Override
+                    public boolean onResourceReady(Bitmap resource, Object model, Target<Bitmap> target, DataSource dataSource, boolean isFirstResource) {
+                        mLoadingView.hideLoadingUI();
+                        if (resource != null) {
+                            ByteArrayOutputStream obs = new ByteArrayOutputStream();
+                            resource.compress(Bitmap.CompressFormat.PNG, 50, obs);
+                            mImageResult = new ImageResult();
+                            mImageResult.mImageData = obs.toByteArray();
+                        }
+                        return false;
+                    }
+                })
+                .into(image);
     }
 } 
