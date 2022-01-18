@@ -37,8 +37,8 @@ public class MisesController {
                     if (jsonMessage.has("token")) {
                         sInstance.mMisesToken = jsonMessage.getString("token");
                     }
-                    if (jsonMessage.has("username")) {
-                        sInstance.mMisesNickname = jsonMessage.getString("username");
+                    if (jsonMessage.has("nickname")) {
+                        sInstance.mMisesNickname = jsonMessage.getString("nickname");
                     }
                     if (jsonMessage.has("avatar")) {
                         sInstance.mMisesAvatar = jsonMessage.getString("avatar");
@@ -69,8 +69,8 @@ public class MisesController {
                 if (jsonMessage.has("token")) {
                     instance.mMisesToken = jsonMessage.getString("token");
                 }
-                if (jsonMessage.has("username")) {
-                    instance.mMisesNickname = jsonMessage.getString("username");
+                if (jsonMessage.has("nickname")) {
+                    instance.mMisesNickname = jsonMessage.getString("nickname");
                 }
                 if (jsonMessage.has("avatar")) {
                     instance.mMisesAvatar = jsonMessage.getString("avatar");

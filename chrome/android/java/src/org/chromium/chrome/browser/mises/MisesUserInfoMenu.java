@@ -11,6 +11,10 @@ import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.bitmap.CircleCrop;
+import com.bumptech.glide.request.RequestOptions;
+
 import org.chromium.chrome.R;
 
 public class MisesUserInfoMenu extends PopupWindow {
@@ -37,6 +41,9 @@ public class MisesUserInfoMenu extends PopupWindow {
             view_login.setVisibility(View.GONE);
             tvUsername.setText(name);
             tvId.setText(id);
+            if (!avatar.isEmpty())
+                Glide.with(mContext).load(avatar).apply(RequestOptions.bitmapTransform(new CircleCrop()))
+                        .error(R.mipmap.head).placeholder(R.mipmap.head).into(ivAvatar);
         } else {
             view_user_info.setVisibility(View.GONE);
             view_login.setVisibility(View.VISIBLE);
