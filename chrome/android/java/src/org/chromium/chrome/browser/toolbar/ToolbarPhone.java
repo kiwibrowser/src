@@ -666,7 +666,9 @@ public class ToolbarPhone extends ToolbarLayout
                         tabCreator = chromeTabbedActivity.getTabCreator(false);
                     }
                     if (v.getId() == R.id.tv_my_data) {
-
+                        if (tabCreator != null) {
+                            tabCreator.launchUrl("https://home.mises.site/home/me", TabModel.TabLaunchType.FROM_CHROME_UI);
+                        }
                     } else  if (v.getId() == R.id.tv_mises_discover) {
                         if (tabCreator != null) {
                             tabCreator.launchUrl("https://home.mises.site/home/discover", TabModel.TabLaunchType.FROM_CHROME_UI);
@@ -676,7 +678,9 @@ public class ToolbarPhone extends ToolbarLayout
                             tabCreator.launchUrl("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#", TabModel.TabLaunchType.FROM_CHROME_UI);
                         }
                     } else  if (v.getId() == R.id.tv_nft) {
-
+                        if (tabCreator != null) {
+                            tabCreator.launchUrl("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#", TabModel.TabLaunchType.FROM_CHROME_UI);
+                        }
                     } else  if (v.getId() == R.id.btn_switch) {
                         if (tabCreator != null) {
                             tabCreator.launchUrl("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#", TabModel.TabLaunchType.FROM_CHROME_UI);
@@ -1400,14 +1404,6 @@ public class ToolbarPhone extends ToolbarLayout
             mHomeButton.setAlpha(previousAlpha);
         }
 
-        if (mMisesMainButton != null && mMisesMainButton.getVisibility() != View.GONE) {
-            // Draw the New Tab button used in the URL view.
-            previousAlpha = mMisesMainButton.getAlpha();
-            mMisesMainButton.setAlpha(previousAlpha * floatAlpha);
-            drawChild(canvas, mMisesMainButton, SystemClock.uptimeMillis());
-            mMisesMainButton.setAlpha(previousAlpha);
-        }
-
         // Draw the location/URL bar.
         previousAlpha = mLocationBar.getAlpha();
         mLocationBar.setAlpha(previousAlpha * floatAlpha);
@@ -1466,10 +1462,6 @@ public class ToolbarPhone extends ToolbarLayout
                             / 2;
             backgroundTop += mMisesShareButton.getPaddingTop();
             canvas.translate(backgroundLeft, backgroundTop);
-            int color = mUseLightDrawablesForTextureCapture
-                    ? mLightModeDefaultColor
-                    : mDarkModeDefaultColor;
-            misesShareButton.setColorFilter(color, PorterDuff.Mode.SRC_IN);
             misesShareButton.setAlpha(rgbAlpha);
             misesShareButton.draw(canvas);
 
@@ -1857,15 +1849,6 @@ public class ToolbarPhone extends ToolbarLayout
 
     @Override
     public void updateButtonVisibility() {
-//        if (mMisesMainButton != null) {
-//            mMisesMainButton.setTint(mUseLightToolbarDrawables ? mLightModeTint : mDarkModeTint);
-//        }
-//
-//        if (mMisesShareButton != null) {
-//            Log.d("luobo11", mUseLightToolbarDrawables ? "light" : "dark");
-//            mMisesShareButton.setTint(mUseLightToolbarDrawables ? mLightModeTint : mDarkModeTint);
-//        }
-
         if (mHomeButton == null) return;
 
         boolean isNTP = getToolbarDataProvider().getNewTabPageForCurrentTab() != null;
@@ -1896,7 +1879,6 @@ public class ToolbarPhone extends ToolbarLayout
     protected void updateReloadButtonVisibility(boolean isReloading) {
         //mIcon = isReloading ? mStopIcon : mRefreshIcon;
         //mUrlBar.setCompoundDrawables(null, null, mIcon, null);
-        Log.d("luobo11", isReloading ? "1" : "0");
         mMisesShareButton.setEnabled(!isReloading);
     }
 
