@@ -10,7 +10,6 @@
 #include <memory>
 #include <string>
 
-#include "base/logging.h"
 #include "base/command_line.h"
 #include "base/compiler_specific.h"
 #include "base/files/file_util.h"
@@ -700,11 +699,8 @@ std::string GetStringUTF8(int message_id) {
 base::string16 GetStringUTF16(int message_id) {
   ui::ResourceBundle& rb = ui::ResourceBundle::GetSharedInstance();
   base::string16 str = rb.GetLocalizedString(message_id);
-  LOG(INFO) << "luobo0:" << str;
   base::ReplaceSubstringsAfterOffset(&str, 0, base::UTF8ToUTF16("kiwi").c_str(), base::UTF8ToUTF16("mises"));
-  LOG(INFO) << "luobo1:" << str;
   base::ReplaceSubstringsAfterOffset(&str, 0, base::UTF8ToUTF16("Kiwi").c_str(), base::UTF8ToUTF16("Mises"));
-  LOG(INFO) << "luobo2:" << str;
   AdjustParagraphDirectionality(&str);
 
   return str;
