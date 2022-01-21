@@ -519,7 +519,7 @@ public class ChromeTabbedActivity
                 if (url != null && !url.isEmpty()) {
                     url = UrlFormatter.fixupUrl(url);
                     Intent newintent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                    intent.setPackage(getPackageName());
+                    newintent.setPackage(getPackageName());
                     startActivity(newintent);
                 }
             }
