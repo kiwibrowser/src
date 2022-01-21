@@ -16,6 +16,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ShortcutManager;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -136,6 +137,7 @@ import org.chromium.chrome.browser.widget.emptybackground.EmptyBackgroundViewWra
 import org.chromium.components.feature_engagement.EventConstants;
 import org.chromium.components.feature_engagement.FeatureConstants;
 import org.chromium.components.feature_engagement.Tracker;
+import org.chromium.components.url_formatter.UrlFormatter;
 import org.chromium.content_public.browser.ContentVideoView;
 import org.chromium.content_public.browser.LoadUrlParams;
 import org.chromium.content_public.browser.WebContents;
@@ -511,6 +513,17 @@ public class ChromeTabbedActivity
 
     @Override
     public void onNewIntent(Intent intent) {
+        if (intent != null) {
+            if (intent.getAction().equals(Intent.ACTION_MAIN)) {
+                String url = intent.getStringExtra("mises_url");
+                if (url != null && !url.isEmpty()) {
+                    url = UrlFormatter.fixupUrl(url);
+                    Intent newintent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                    intent.setPackage(getPackageName());
+                    startActivity(newintent);
+                }
+            }
+        }
         // The intent to use in maybeDispatchExplicitMainViewIntent(). We're explicitly
         // adding NEW_TASK flag to make sure backing from CCT brings up the caller activity,
         // and not Chrome

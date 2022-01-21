@@ -25,6 +25,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.support.v4.graphics.drawable.DrawableCompat;
@@ -110,6 +111,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import com.google.firebase.analytics.FirebaseAnalytics;
 
 /**
  * Phone specific toolbar implementation.
@@ -687,15 +689,11 @@ public class ToolbarPhone extends ToolbarLayout
                         }
                     } else  if (v.getId() == R.id.tv_login) {
                         if (tabCreator != null) {
-                            tabCreator.launchUrl("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#initialize/select-action", TabModel.TabLaunchType.FROM_CHROME_UI);
+                            tabCreator.launchUrl("https://home.mises.site/home/me", TabModel.TabLaunchType.FROM_CHROME_UI);
                         }
                     } else  if (v.getId() == R.id.tv_create_mises) {
                         if (tabCreator != null) {
-                            tabCreator.launchUrl("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#initialize/create-password", TabModel.TabLaunchType.FROM_CHROME_UI);
-                        }
-                    } else  if (v.getId() == R.id.tv_restore_mises) {
-                        if (tabCreator != null) {
-                            tabCreator.launchUrl("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#initialize/create-password/import-with-seed-phrase", TabModel.TabLaunchType.FROM_CHROME_UI);
+                            tabCreator.launchUrl("https://home.mises.site/home/me", TabModel.TabLaunchType.FROM_CHROME_UI);
                         }
                     }
                     misesUserInfoMenu.dismiss();
@@ -703,6 +701,7 @@ public class ToolbarPhone extends ToolbarLayout
             });
             misesUserInfoMenu.showAtLocation(mMisesMainButton, Gravity.START | Gravity.TOP, 0, 0);
         } else if (mMisesShareButton != null && mMisesShareButton == v) {
+            FirebaseAnalytics.getInstance(getContext()).logEvent("share", new Bundle());
             String SCRIPT = "window.misesModule.getWindowInformation()";
             Context context = getContext();
             if (!(context instanceof ChromeTabbedActivity))
