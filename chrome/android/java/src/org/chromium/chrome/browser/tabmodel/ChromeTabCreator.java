@@ -334,6 +334,24 @@ public class ChromeTabCreator extends TabCreatorManager.TabCreator {
         return tab;
     }
 
+    @Override
+    public void openSinglePage(String url) {
+        try {
+            TraceEvent.begin("TabCreator.openSinglePage");
+
+            for (int i=0; i<mTabModel.getCount(); i++) {
+                String pageurl = mTabModel.getTabAt(i).getUrl();
+                if (pageurl.indexOf(url) != -1) {
+                    mTabModel.setIndex(i, TabSelectionType.FROM_USER);
+                    return;
+                }
+            }
+            launchUrl(url, TabModel.TabLaunchType.FROM_CHROME_UI);
+        } finally {
+            TraceEvent.end("TabCreator.openSinglePage");
+        }
+    }
+
     /**
      * @param type Type of the tab launch.
      * @param intent The intent causing the tab launch.
@@ -381,33 +399,6 @@ public class ChromeTabCreator extends TabCreatorManager.TabCreator {
         mTabModel = model;
         mOrderController = orderController;
         mTabContentManager = manager;
-    }
-
-    @Override
-    public void launchNTP() {
-        try {
-            TraceEvent.begin("TabCreator.launchNTP");
-
-            String homePageUrl = HomepageManager.getHomepageUri();
-            if (TextUtils.isEmpty(homePageUrl)) {
-                homePageUrl = UrlConstants.LOCAL_NTP_URL;
-            }
-            boolean hasMisesPage = false;
-            for (int i=0; i<mTabModel.getCount(); i++) {
-                String url = mTabModel.getTabAt(i).getUrl();
-                if (url.indexOf(MisesController.MISES_EXTENSION_KEY) != -1
-                        || url.indexOf("home.mises.site/home/discover") != -1) {
-                    hasMisesPage = true;
-                    break;
-                }
-            }
-            if (!hasMisesPage) {
-                homePageUrl = "https://home.mises.site/home/discover";
-            }
-            launchUrl(homePageUrl, TabModel.TabLaunchType.FROM_CHROME_UI);
-        } finally {
-            TraceEvent.end("TabCreator.launchNTP");
-        }
     }
 
     /**

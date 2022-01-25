@@ -95,7 +95,7 @@ public interface TabCreatorManager {
         /**
          * Creates a new tab and loads the NTP.
          */
-        public void launchNTP() {
+        public final void launchNTP() {
             try {
                 TraceEvent.begin("TabCreator.launchNTP");
 
@@ -106,6 +106,14 @@ public interface TabCreatorManager {
                 launchUrl(homePageUrl, TabModel.TabLaunchType.FROM_CHROME_UI);
             } finally {
                 TraceEvent.end("TabCreator.launchNTP");
+            }
+        }
+
+        public void openSinglePage(String url) {
+            try {
+                launchUrl(url, TabModel.TabLaunchType.FROM_CHROME_UI);
+            } finally {
+                TraceEvent.end("TabCreator.openSinglePage");
             }
         }
     }

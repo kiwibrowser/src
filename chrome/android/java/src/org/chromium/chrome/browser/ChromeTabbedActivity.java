@@ -1116,22 +1116,21 @@ public class ChromeTabbedActivity
      * Create an initial tab for cold start without restored tabs.
      */
     private void createInitialTab() {
-//        String url = HomepageManager.getHomepageUri();
-//        Log.i(TAG, "Kiwi: Creating initial NTP tab: %s", url);
-//        if (TextUtils.isEmpty(url)) {
-//            url = UrlConstants.LOCAL_NTP_URL;
-//        } else {
-//            boolean startupHomepageIsNtp = false;
-//            // Migrate legacy NTP URLs (chrome://newtab) to the newer format
-//            // (chrome-native://newtab)
-//            if (NewTabPage.isNTPUrl(url)) {
-//                url = UrlConstants.NTP_URL;
-//                startupHomepageIsNtp = true;
-//            }
-//            RecordHistogram.recordBooleanHistogram(
-//                    "MobileStartup.LoadedHomepageOnColdStart", startupHomepageIsNtp);
-//        }
-        String url = "https://home.mises.site";
+        String url = HomepageManager.getHomepageUri();
+        Log.i(TAG, "Kiwi: Creating initial NTP tab: %s", url);
+        if (TextUtils.isEmpty(url)) {
+            url = UrlConstants.LOCAL_NTP_URL;
+        } else {
+            boolean startupHomepageIsNtp = false;
+            // Migrate legacy NTP URLs (chrome://newtab) to the newer format
+            // (chrome-native://newtab)
+            if (NewTabPage.isNTPUrl(url)) {
+                url = UrlConstants.NTP_URL;
+                startupHomepageIsNtp = true;
+            }
+            RecordHistogram.recordBooleanHistogram(
+                    "MobileStartup.LoadedHomepageOnColdStart", startupHomepageIsNtp);
+        }
 
         getTabCreator(false).launchUrl(url, TabLaunchType.FROM_CHROME_UI);
     }

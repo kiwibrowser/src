@@ -669,31 +669,31 @@ public class ToolbarPhone extends ToolbarLayout
                     }
                     if (v.getId() == R.id.tv_my_data) {
                         if (tabCreator != null) {
-                            tabCreator.launchUrl("https://home.mises.site/home/me", TabModel.TabLaunchType.FROM_CHROME_UI);
+                            tabCreator.openSinglePage("https://home.mises.site/home/me");
                         }
                     } else  if (v.getId() == R.id.tv_mises_discover) {
                         if (tabCreator != null) {
-                            tabCreator.launchUrl("https://home.mises.site/home/discover", TabModel.TabLaunchType.FROM_CHROME_UI);
+                            tabCreator.openSinglePage("https://home.mises.site/home/discover");
                         }
                     } else  if (v.getId() == R.id.tv_wallet) {
                         if (tabCreator != null) {
-                            tabCreator.launchUrl("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#", TabModel.TabLaunchType.FROM_CHROME_UI);
+                            tabCreator.openSinglePage("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html");
                         }
                     } else  if (v.getId() == R.id.tv_nft) {
                         if (tabCreator != null) {
-                            tabCreator.launchUrl("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#", TabModel.TabLaunchType.FROM_CHROME_UI);
+                            tabCreator.openSinglePage("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html");
                         }
                     } else  if (v.getId() == R.id.btn_switch) {
                         if (tabCreator != null) {
-                            tabCreator.launchUrl("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#", TabModel.TabLaunchType.FROM_CHROME_UI);
+                            tabCreator.openSinglePage("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html");
                         }
                     } else  if (v.getId() == R.id.tv_login) {
                         if (tabCreator != null) {
-                            tabCreator.launchUrl("https://home.mises.site/home/me", TabModel.TabLaunchType.FROM_CHROME_UI);
+                            tabCreator.openSinglePage("https://home.mises.site/home/me");
                         }
                     } else  if (v.getId() == R.id.tv_create_mises) {
                         if (tabCreator != null) {
-                            tabCreator.launchUrl("https://home.mises.site/home/me", TabModel.TabLaunchType.FROM_CHROME_UI);
+                            tabCreator.openSinglePage("https://home.mises.site/home/me");
                         }
                     }
                     misesUserInfoMenu.dismiss();
