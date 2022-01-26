@@ -223,10 +223,6 @@ void InstantService::OnURLsAvailable(
   // Use only personalized tiles for instant service.
   const ntp_tiles::NTPTilesVector& tiles =
       sections.at(ntp_tiles::SectionType::PERSONALIZED);
-  InstantMostVisitedItem item;
-  item.url = GURL("https://home.mises.site/home/discover");
-  item.title = base::UTF8ToUTF16("Mises");
-  most_visited_items_.push_back(item);
   for (const ntp_tiles::NTPTile& tile : tiles) {
     InstantMostVisitedItem item;
     item.url = tile.url;
