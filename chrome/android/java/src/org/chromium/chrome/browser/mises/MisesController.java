@@ -8,6 +8,8 @@ import org.chromium.chrome.browser.profiles.Profile;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+
 public class MisesController {
     private static final String TAG = "MisesController";
     public static final String MISES_EXTENSION_KEY = "nkbihfbeogaeaoehlefnkodbefgpgknn";
@@ -17,6 +19,20 @@ public class MisesController {
 	private String mMisesAvatar = "";
 
 	private static MisesController sInstance;
+
+	public interface MisesControllerObserver {
+	    void OnMisesUserInfoChanged();
+    }
+
+    ArrayList<MisesControllerObserver> observers_ = new ArrayList<>();
+
+	public void AddObserver(MisesControllerObserver observer) {
+	    observers_.add(observer);
+    }
+
+    public void RemoveObserver(MisesControllerObserver observer) {
+	    observers_.remove(observer);
+    }
 
     public static MisesController getInstance() {
         ThreadUtils.assertOnUiThread();
@@ -79,6 +95,10 @@ public class MisesController {
             } catch (JSONException e) {
                 Log.e(TAG, "setMisesUserInfo from plugin %s error", json);
             }
+        }
+
+    	for (MisesControllerObserver observer : instance.observers_) {
+    	    observer.OnMisesUserInfoChanged();
         }
     }
 

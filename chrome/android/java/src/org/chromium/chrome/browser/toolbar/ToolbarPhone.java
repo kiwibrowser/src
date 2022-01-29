@@ -112,13 +112,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import com.google.firebase.analytics.FirebaseAnalytics;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.bitmap.CircleCrop;
+import com.bumptech.glide.request.RequestOptions;
 
 /**
  * Phone specific toolbar implementation.
  */
 public class ToolbarPhone extends ToolbarLayout
         implements Invalidator.Client, OnClickListener, OnLongClickListener,
-                NewTabPage.OnSearchBoxScrollListener {
+                NewTabPage.OnSearchBoxScrollListener, MisesController.MisesControllerObserver {
 
     /** The amount of time transitioning from one theme color to another should take in ms. */
     public static final long THEME_COLOR_TRANSITION_DURATION = 250;
@@ -393,6 +396,22 @@ public class ToolbarPhone extends ToolbarLayout
         mNativeReady = false;
     }
 
+    public void updateAvatarBtn() {
+        if (mMisesMainButton == null)
+            return;
+        if (!MisesController.getInstance().getMisesAvatar().isEmpty()) {
+            Glide.with(getContext()).load(MisesController.getInstance().getMisesAvatar()).apply(RequestOptions.bitmapTransform(new CircleCrop()))
+                    .error(R.mipmap.head_small).placeholder(R.mipmap.head_small).into(mMisesMainButton);
+        } else {
+            mMisesMainButton.setImageResource(R.mipmap.head_small);
+        }
+    }
+
+    @Override
+    public void OnMisesUserInfoChanged() {
+        updateAvatarBtn();
+    }
+
     @Override
     public void onFinishInflate() {
         super.onFinishInflate();
@@ -409,6 +428,8 @@ public class ToolbarPhone extends ToolbarLayout
         if (FeatureUtilities.isNewTabPageButtonEnabled()) changeIconToNTPIcon(mHomeButton);
 
         mMisesMainButton =  (ImageButton) findViewById(R.id.mises_main_button);
+        updateAvatarBtn();
+        MisesController.getInstance().AddObserver(this);
         mBrowsingModeViews.add(mMisesMainButton);
 
         mMisesShareButton =  (TintedImageButton) findViewById(R.id.mises_share_button);
@@ -676,14 +697,6 @@ public class ToolbarPhone extends ToolbarLayout
                             tabCreator.openSinglePage("https://home.mises.site/home/discover");
                         }
                     } else  if (v.getId() == R.id.tv_wallet) {
-                        if (tabCreator != null) {
-                            tabCreator.openSinglePage("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html");
-                        }
-                    } else  if (v.getId() == R.id.tv_nft) {
-                        if (tabCreator != null) {
-                            tabCreator.openSinglePage("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html");
-                        }
-                    } else  if (v.getId() == R.id.btn_switch) {
                         if (tabCreator != null) {
                             tabCreator.openSinglePage("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html");
                         }
