@@ -93,6 +93,8 @@ public class MisesController {
                 }
                 if (jsonMessage.has("avatar")) {
                     instance.mMisesAvatar = jsonMessage.getString("avatar");
+                } else {
+                    instance.mMisesAvatar = "";
                 }
                 ChromePreferenceManager.getInstance().setMisesUserInfo(json);
             } catch (JSONException e) {
