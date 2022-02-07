@@ -21,7 +21,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import org.chromium.chrome.R;
+import org.chromium.chrome.browser.ChromeTabbedActivity;
 import org.chromium.chrome.browser.content.ContentUtils;
+import org.chromium.chrome.browser.tabmodel.TabCreatorManager;
+import org.chromium.chrome.browser.tabmodel.TabModel;
 import org.chromium.chrome.browser.widget.LoadingView;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -72,14 +75,16 @@ public class MisesShareWin extends PopupWindow {
     private class MisesShareTask extends AsyncTask<ImageResult, Void, Integer> {
         private String mToken;
         private String mText;
+        private String mMisesImageUrl = "";
         public MisesShareTask(String token, String text) {
             mToken = token;
             mText = text;
         }
 
-        private String uploadImageToMises(ImageResult imageResult) {
+        private int uploadImageToMises(ImageResult imageResult) {
+            int resCode = -1;
             if (imageResult == null || imageResult.mImageData == null || imageResult.mImageData.length == 0)
-                return "";
+                return resCode;
             String end = "\r\n";
             String twoHyphens = "--";
             String boundary = "MyBoundary" + System.currentTimeMillis();
@@ -118,7 +123,7 @@ public class MisesShareWin extends PopupWindow {
                 String endStr = twoHyphens + boundary + twoHyphens + end;
                 dos.write(endStr.getBytes());
 
-                int resCode = urlConnection.getResponseCode();
+                resCode = urlConnection.getResponseCode();
                 Log.d(TAG, "upload image to mises " + resCode);
 
                 if (resCode == 200) {
@@ -140,7 +145,7 @@ public class MisesShareWin extends PopupWindow {
                         if (resJsonObject.has("data")) {
                             JSONObject dataObj = resJsonObject.getJSONObject("data");
                             if (dataObj.has("path"))
-                                return dataObj.getString("path");
+                                mMisesImageUrl = dataObj.getString("path");
                         }
                     }
                 } else {
@@ -165,12 +170,13 @@ public class MisesShareWin extends PopupWindow {
             } finally {
                 if (urlConnection != null) urlConnection.disconnect();
             }
-            return "";
+            return resCode;
         }
 
         private int PostToMises(String attachUrl) {
+            int resCode = -1;
             if (attachUrl == null || attachUrl.isEmpty())
-                return -1;
+                return resCode;
             HttpURLConnection urlConnection = null;
             try {
                 URL url = new URL("https://apiv2.mises.site/api/v1/status");
@@ -203,7 +209,7 @@ public class MisesShareWin extends PopupWindow {
                 param = param.replace("\\", "");
                 outputStream.write(param.getBytes());
 
-                int resCode = urlConnection.getResponseCode();
+                resCode = urlConnection.getResponseCode();
                 Log.d(TAG, "Share to mises " + resCode);
                 if (resCode == 200) {
                     InputStream is = urlConnection.getInputStream();
@@ -242,16 +248,18 @@ public class MisesShareWin extends PopupWindow {
             } finally {
                 if (urlConnection != null) urlConnection.disconnect();
             }
-            return -1;
+            return resCode;
         }
 
         @Override
         protected Integer doInBackground(ImageResult... imageResults) {
+            int res = -1;
             if (imageResults != null && imageResults.length > 0) {
-                String attachUrl = uploadImageToMises(imageResults[0]);
-                return PostToMises(attachUrl);
+                res = uploadImageToMises(imageResults[0]);
+                if (res == 200 && !mMisesImageUrl.isEmpty())
+                    res =  PostToMises(mMisesImageUrl);
             }
-            return -1;
+            return res;
         }
 
         @Override
@@ -262,7 +270,20 @@ public class MisesShareWin extends PopupWindow {
                 dismiss();
                 Toast.makeText(mContext, "Share success", Toast.LENGTH_SHORT).show();
             } else if (res == 403) {
-                Toast.makeText(mContext, "Share failed, token expired.", Toast.LENGTH_SHORT).show();
+                MisesController.getInstance().setLastShareInfo(mIcon, mTitle, mUrl);
+                dismiss();
+                MisesUtil.showAlertDialog(mContext, mContext.getString(R.string.lbl_auth_tip), new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (!(mContext instanceof ChromeTabbedActivity))
+                            return;
+                        ChromeTabbedActivity chromeTabbedActivity = (ChromeTabbedActivity) mContext;
+                        TabCreatorManager.TabCreator tabCreator = chromeTabbedActivity.getTabCreator(false);
+                        if (tabCreator != null) {
+                            tabCreator.openSinglePage("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/popup.html");
+                        }
+                    }
+                });
             } else {
                 Toast.makeText(mContext, "Share failed", Toast.LENGTH_SHORT).show();
             }
@@ -326,6 +347,7 @@ public class MisesShareWin extends PopupWindow {
                     @Override
                     public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Bitmap> target, boolean isFirstResource) {
                         Log.e("mises", " MisesShareWin load pic failed" + e.toString() );
+                        Toast.makeText(mContext, "Network error", Toast.LENGTH_SHORT).show();
                         mLoadingView.hideLoadingUI();
                         return false;
                     }

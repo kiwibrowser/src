@@ -409,7 +409,16 @@ public class ToolbarPhone extends ToolbarLayout
 
     @Override
     public void OnMisesUserInfoChanged() {
+        if (mMisesMainButton == null)
+            return;
         updateAvatarBtn();
+        if (!MisesController.getInstance().getLastShareUrl().isEmpty()) {
+            MisesShareWin shareWin = new MisesShareWin(getContext(), MisesController.getInstance().getLastShareIcon(),
+                    MisesController.getInstance().getLastShareTitle(),
+                    MisesController.getInstance().getLastShareUrl());
+            MisesController.getInstance().clearLastShareInfo();
+            shareWin.showAtLocation(mMisesShareButton, Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL, 0, 0);
+        }
     }
 
     @Override
@@ -698,7 +707,7 @@ public class ToolbarPhone extends ToolbarLayout
                         }
                     } else  if (v.getId() == R.id.tv_wallet) {
                         if (tabCreator != null) {
-                            tabCreator.openSinglePage("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html");
+                            tabCreator.openSinglePage("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/popup.html");
                         }
                     } else  if (v.getId() == R.id.tv_login) {
                         if (tabCreator != null) {
@@ -740,7 +749,7 @@ public class ToolbarPhone extends ToolbarLayout
                             MisesUtil.showAlertDialog(context, context.getString(R.string.lbl_login_tip), v1 -> {
                                 TabCreatorManager.TabCreator tabCreator = chromeTabbedActivity.getTabCreator(false);
                                 if (tabCreator != null) {
-                                    tabCreator.launchUrl("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#initialize/select-action", TabModel.TabLaunchType.FROM_CHROME_UI);
+                                    tabCreator.openSinglePage("https://home.mises.site/home/me");
                                 }
                             });
                             return;

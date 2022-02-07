@@ -18,6 +18,7 @@ import lcd.Lcd;
 
 import org.chromium.base.Log;
 import org.chromium.chrome.R;
+import org.chromium.chrome.browser.ChromeTabbedActivity;
 
 public class MisesLCDService extends Service {
     private static final String CHANNEL_ID = "1001";
@@ -60,7 +61,9 @@ public class MisesLCDService extends Service {
     }
 
     private void openAppHomePage(String keydata) {
-
+        Intent newintent = new Intent(this, ChromeTabbedActivity.class);
+        newintent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK );
+        startActivity(newintent);
     }
 
     private void startForegroundService() {

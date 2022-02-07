@@ -17,6 +17,9 @@ public class MisesController {
 	private String mMisesToken = "";
 	private String mMisesNickname = "";
 	private String mMisesAvatar = "";
+	private String mLastShareIcon = "";
+	private String mLastShareTitle = "";
+	private String mLastShareUrl = "";
 
 	private static MisesController sInstance;
 
@@ -122,5 +125,27 @@ public class MisesController {
         return mMisesAvatar;
     }
 
-    // private native long nativeInit(Profile profile);
+    public void setLastShareInfo(String icon, String title, String url) {
+	    mLastShareIcon = icon;
+	    mLastShareTitle = title;
+	    mLastShareUrl = url;
+    }
+
+    public String getLastShareIcon() {
+        return mLastShareIcon;
+    }
+
+    public String getLastShareTitle() {
+        return mLastShareTitle;
+    }
+
+    public String getLastShareUrl() {
+        return mLastShareUrl;
+    }
+
+    public void clearLastShareInfo() {
+	    mLastShareUrl = "";
+	    mLastShareTitle = "";
+	    mLastShareIcon = "";
+    }
 }

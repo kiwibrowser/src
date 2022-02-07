@@ -514,7 +514,7 @@ public class ChromeTabbedActivity
     @Override
     public void onNewIntent(Intent intent) {
         if (intent != null) {
-            if (intent.getAction().equals(Intent.ACTION_MAIN)) {
+            if (intent.getAction() != null && intent.getAction().equals(Intent.ACTION_MAIN)) {
                 String url = intent.getStringExtra("mises_url");
                 if (url != null && !url.isEmpty()) {
                     url = UrlFormatter.fixupUrl(url);
