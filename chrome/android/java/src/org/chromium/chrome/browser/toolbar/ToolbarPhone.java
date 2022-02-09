@@ -699,7 +699,7 @@ public class ToolbarPhone extends ToolbarLayout
                     }
                     if (v.getId() == R.id.tv_my_data) {
                         if (tabCreator != null) {
-                            tabCreator.openSinglePage("https://home.mises.site/home/me");
+                            tabCreator.openSinglePage("https://home.mises.site/userInfo");
                         }
                     } else  if (v.getId() == R.id.tv_mises_discover) {
                         if (tabCreator != null) {
