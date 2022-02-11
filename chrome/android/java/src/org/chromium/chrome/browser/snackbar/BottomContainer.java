@@ -77,7 +77,11 @@ public class BottomContainer extends FrameLayout implements FullscreenListener {
 
         // Sit on top of either the bottom sheet or the bottom toolbar depending on which is larger
         // (offsets are negative).
-        super.setTranslationY(mBaseYOffset + Math.min(offsetFromControls, mOffsetFromSheet));
+        y = mBaseYOffset + Math.min(offsetFromControls, mOffsetFromSheet);
+        if (Float.isNaN(y)) {
+            y = 0;
+        }
+        super.setTranslationY(y);
     }
 
     @Override
