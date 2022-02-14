@@ -86,6 +86,14 @@ void TabModelObserverJniBridge::DidSelectTab(JNIEnv* env,
   TabModel::TabSelectionType type = GetTabSelectionType(env, jtype);
   for (auto& observer : observers_)
     observer.DidSelectTab(tab, type);
+
+  Profile *profile = profile_;
+  if (profile) {
+    extensions::TabsWindowsAPI* tabs_window_api = extensions::TabsWindowsAPI::Get(profile);
+    if (tabs_window_api) {
+      tabs_window_api->tabs_event_router()->ActiveTabChanged(nullptr, tab->web_contents(), 0, 0);
+    }
+  }
 }
 
 void TabModelObserverJniBridge::WillCloseTab(JNIEnv* env,
