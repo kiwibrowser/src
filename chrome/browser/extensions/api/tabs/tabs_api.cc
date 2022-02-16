@@ -873,7 +873,7 @@ ExtensionFunction::ResponseAction TabsQueryFunction::Run() {
       // To Selenium IDE we show the current active window even if it's an extension window
       // when they try to access a specific window because it means
       // that it Selenium is looking for its own IDE
-       if (extension() && extension()->id() == "mooikfkahbdckldjjndioackbalphokd")
+       if (extension() && (extension()->id() == "mooikfkahbdckldjjndioackbalphokd" || extension()->id() == "nkbihfbeogaeaoehlefnkodbefgpgknn"))
          openingTab = (tab_strip->GetActiveIndex());
        if (openingTab == -1)
         openingTab = 0;
