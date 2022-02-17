@@ -1187,6 +1187,14 @@ bool TabsUpdateFunction::RunAsync() {
   if (params->update_properties.active.get())
     active = *params->update_properties.active;
 
+  if (active) {
+    if (!TabModelList::empty())
+      tab_strip = *(TabModelList::begin());
+    if (tab_strip && tab_strip->GetActiveIndex() != tab_index) {
+      tab_strip->SetActiveIndex(tab_index);
+    }
+  }
+
   if (params->update_properties.muted.get()) {
     TabMutedResult tab_muted_result = chrome::SetTabAudioMuted(
         contents, *params->update_properties.muted,
