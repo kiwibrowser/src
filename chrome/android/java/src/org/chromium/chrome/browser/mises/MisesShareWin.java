@@ -5,12 +5,17 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.TrafficStats;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.NonNull;
+import android.support.v4.app.DialogFragment;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -50,7 +55,7 @@ import java.io.ByteArrayOutputStream;
 
 import javax.annotation.Nullable;
 
-public class MisesShareWin extends PopupWindow {
+public class MisesShareWin extends DialogFragment {
 
     private static final String TAG = "MisesShareWin";
 
@@ -290,20 +295,39 @@ public class MisesShareWin extends PopupWindow {
         }
     }
 
-    public MisesShareWin(Context context, String icon, String title, String url) {
-        mIcon = icon;
-        mTitle = title;
-        mUrl = url;
-        mContext = context;
-        this.view = (FrameLayout) LayoutInflater.from(mContext).inflate(R.layout.mises_share_dialog, null);
+    public MisesShareWin() {
+    }
+
+    public static MisesShareWin newInstance(String icon, String title, String url) {
+        MisesShareWin f = new MisesShareWin();
+
+        // Supply num input as an argument.
+        Bundle args = new Bundle();
+        args.putString("icon", icon);
+        args.putString("title", title);
+        args.putString("url", url);
+        f.setArguments(args);
+
+        return f;
+    }
+
+    @android.support.annotation.Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @android.support.annotation.Nullable ViewGroup container, @android.support.annotation.Nullable Bundle savedInstanceState) {
+        this.view = (FrameLayout) inflater.inflate(R.layout.mises_share_dialog, container, false);
         image = view.findViewById(R.id.icon);
         tv_title = view.findViewById(R.id.title);
         tv_url = view.findViewById(R.id.url);
         btn_share = (Button) view.findViewById(R.id.btn_share);
         btn_cancel = (Button) view.findViewById(R.id.btn_cancel);
         comment = (EditText) view.findViewById(R.id.comment);
-        tv_title.setText(title);
-        tv_url.setText(url);
+        mContext = getContext();
+
+        mIcon = getArguments().getString("icon");
+        mTitle = getArguments().getString("title");
+        mUrl = getArguments().getString("url");
+        tv_title.setText(mTitle);
+        tv_url.setText(mUrl);
         // 取消按钮
         btn_cancel.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -313,6 +337,7 @@ public class MisesShareWin extends PopupWindow {
             }
         });
         // 设置按钮监听
+        btn_share.setEnabled(false);
         btn_share.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -321,19 +346,6 @@ public class MisesShareWin extends PopupWindow {
                 task.execute(mImageResult);
             }
         });
-
-        // 设置外部可点击
-        this.setOutsideTouchable(false);
-
-        /* 设置弹出窗口特征 */
-        // 设置视图
-        this.setContentView(this.view);
-        // 设置弹出窗体的宽和高
-        this.setHeight(RelativeLayout.LayoutParams.MATCH_PARENT);
-        this.setWidth(RelativeLayout.LayoutParams.MATCH_PARENT);
-
-        // 设置弹出窗体可点击
-        this.setFocusable(true);
 
         mLoadingView = new LoadingView(mContext);
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
@@ -360,10 +372,20 @@ public class MisesShareWin extends PopupWindow {
                             resource.compress(Bitmap.CompressFormat.PNG, 50, obs);
                             mImageResult = new ImageResult();
                             mImageResult.mImageData = obs.toByteArray();
+                            btn_share.setEnabled(true);
                         }
                         return false;
                     }
                 })
                 .into(image);
+        return view;
     }
-} 
+
+    @Override
+    public void onStart() {
+        WindowManager.LayoutParams params = getDialog().getWindow().getAttributes();
+        params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+        getDialog().getWindow().setAttributes((WindowManager.LayoutParams) params);
+        super.onStart();
+    }
+}

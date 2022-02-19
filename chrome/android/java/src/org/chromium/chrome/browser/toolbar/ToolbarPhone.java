@@ -411,13 +411,17 @@ public class ToolbarPhone extends ToolbarLayout
     public void OnMisesUserInfoChanged() {
         if (mMisesMainButton == null)
             return;
+        Context context = getContext();
+        if (!(context instanceof ChromeTabbedActivity))
+            return;
+        ChromeTabbedActivity chromeTabbedActivity = (ChromeTabbedActivity) context;
         updateAvatarBtn();
         if (!MisesController.getInstance().getLastShareUrl().isEmpty()) {
-            MisesShareWin shareWin = new MisesShareWin(getContext(), MisesController.getInstance().getLastShareIcon(),
+            MisesShareWin shareWin = MisesShareWin.newInstance(MisesController.getInstance().getLastShareIcon(),
                     MisesController.getInstance().getLastShareTitle(),
                     MisesController.getInstance().getLastShareUrl());
             MisesController.getInstance().clearLastShareInfo();
-            shareWin.showAtLocation(mMisesShareButton, Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL, 0, 0);
+            shareWin.show(chromeTabbedActivity.getSupportFragmentManager(), "MisesShareWin");
         }
     }
 
@@ -754,8 +758,8 @@ public class ToolbarPhone extends ToolbarLayout
                             });
                             return;
                         }
-                        MisesShareWin shareWin = new MisesShareWin(context, icon, title, url);
-                        shareWin.showAtLocation(mMisesShareButton, Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL, 0, 0);
+                        MisesShareWin shareWin = MisesShareWin.newInstance(icon, title, url);
+                        shareWin.show(chromeTabbedActivity.getSupportFragmentManager(), "MisesShareWin");
                     } catch (JSONException e) {
                         Toast.makeText(getContext(), getContext().getString(R.string.lbl_can_not_share_tip), Toast.LENGTH_SHORT).show();
                         e.printStackTrace();
