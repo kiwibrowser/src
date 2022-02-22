@@ -620,6 +620,8 @@ SharedFunctionInfo::SideEffectState BuiltinGetSideEffectState(
     case Builtins::kArrayPrototypeEntries:
     case Builtins::kArrayPrototypeFind:
     case Builtins::kArrayPrototypeFindIndex:
+    case Builtins::kArrayPrototypeFlatten:
+    case Builtins::kArrayPrototypeFlatMap:
     case Builtins::kArrayPrototypeKeys:
     case Builtins::kArrayPrototypeSlice:
     case Builtins::kArrayForEach:
@@ -808,6 +810,7 @@ SharedFunctionInfo::SideEffectState BuiltinGetSideEffectState(
     case Builtins::kStringPrototypeItalics:
     case Builtins::kStringPrototypeLastIndexOf:
     case Builtins::kStringPrototypeLink:
+    case Builtins::kStringPrototypeMatchAll:
     case Builtins::kStringPrototypePadEnd:
     case Builtins::kStringPrototypePadStart:
     case Builtins::kStringPrototypeRepeat:

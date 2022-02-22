@@ -1788,7 +1788,7 @@ TF_BUILTIN(ResolvePromise, PromiseBuiltinsAssembler) {
 
 Node* PromiseBuiltinsAssembler::PerformPromiseAll(
     Node* context, Node* constructor, Node* capability,
-    const IteratorRecord& iterator, Label* if_exception,
+    const IteratorBuiltinsFromDSLAssembler::IteratorRecord& iterator, Label* if_exception,
     Variable* var_exception) {
   IteratorBuiltinsAssembler iter_assembler(state());
 
@@ -1993,7 +1993,7 @@ TF_BUILTIN(PromiseAll, PromiseBuiltinsAssembler) {
   // Let iterator be GetIterator(iterable).
   // IfAbruptRejectPromise(iterator, promiseCapability).
   Node* const iterable = Parameter(Descriptor::kIterable);
-  IteratorRecord iterator = iter_assembler.GetIterator(
+  IteratorBuiltinsFromDSLAssembler::IteratorRecord iterator = iter_assembler.GetIterator(
       context, iterable, &reject_promise, &var_exception);
 
   // Let result be PerformPromiseAll(iteratorRecord, C, promiseCapability).
@@ -2167,7 +2167,7 @@ TF_BUILTIN(PromiseRace, PromiseBuiltinsAssembler) {
   // Let iterator be GetIterator(iterable).
   // IfAbruptRejectPromise(iterator, promiseCapability).
   Node* const iterable = Parameter(Descriptor::kIterable);
-  IteratorRecord iterator = iter_assembler.GetIterator(
+  IteratorBuiltinsFromDSLAssembler::IteratorRecord iterator = iter_assembler.GetIterator(
       context, iterable, &reject_promise, &var_exception);
 
   // Let result be PerformPromiseRace(iteratorRecord, C, promiseCapability).

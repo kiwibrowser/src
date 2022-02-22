@@ -1735,7 +1735,7 @@ TF_BUILTIN(IterableToList, TypedArrayBuiltinsAssembler) {
     IteratorBuiltinsAssembler iterator_assembler(state());
 
     // 1. Let iteratorRecord be ? GetIterator(items, method).
-    IteratorRecord iterator_record =
+    IteratorBuiltinsFromDSLAssembler::IteratorRecord iterator_record =
         iterator_assembler.GetIterator(context, iterable, iterator_fn);
 
     // 2. Let values be a new empty List.

@@ -113,9 +113,9 @@ CodeAssembler::~CodeAssembler() {}
 void CodeAssemblerState::PrintCurrentBlock(std::ostream& os) {
   raw_assembler_->PrintCurrentBlock(os);
 }
+#endif
 
 bool CodeAssemblerState::InsideBlock() { return raw_assembler_->InsideBlock(); }
-#endif
 
 void CodeAssemblerState::SetInitialDebugInformation(const char* msg,
                                                     const char* file,
@@ -1682,6 +1682,98 @@ void CodeAssemblerLabel::UpdateVariablesAfterBind() {
   }
 
   bound_ = true;
+}
+
+void CodeAssemblerParameterizedLabelBase::AddInputs(std::vector<Node*> inputs) {
+  if (!phi_nodes_.empty()) {
+    DCHECK_EQ(inputs.size(), phi_nodes_.size());
+    for (size_t i = 0; i < inputs.size(); ++i) {
+      state_->raw_assembler_->AppendPhiInput(phi_nodes_[i], inputs[i]);
+    }
+  } else {
+    DCHECK_EQ(inputs.size(), phi_inputs_.size());
+    for (size_t i = 0; i < inputs.size(); ++i) {
+      phi_inputs_[i].push_back(inputs[i]);
+    }
+  }
+}
+
+Node* CodeAssemblerParameterizedLabelBase::CreatePhi(
+    MachineRepresentation rep, const std::vector<Node*>& inputs) {
+  for (Node* input : inputs) {
+    // We use {nullptr} as a sentinel for an uninitialized value. We must not
+    // create phi nodes for these.
+    if (input == nullptr) return nullptr;
+  }
+  return state_->raw_assembler_->Phi(rep, static_cast<int>(inputs.size()),
+                                     &inputs.front());
+}
+
+const std::vector<Node*>& CodeAssemblerParameterizedLabelBase::CreatePhis(
+    std::vector<MachineRepresentation> representations) {
+  DCHECK(is_used());
+  DCHECK(phi_nodes_.empty());
+  phi_nodes_.reserve(phi_inputs_.size());
+  DCHECK_EQ(representations.size(), phi_inputs_.size());
+  for (size_t i = 0; i < phi_inputs_.size(); ++i) {
+    phi_nodes_.push_back(CreatePhi(representations[i], phi_inputs_[i]));
+  }
+  return phi_nodes_;
+}
+
+
+void CodeAssemblerState::PushExceptionHandler(
+		    CodeAssemblerExceptionHandlerLabel* label) {
+	  exception_handler_labels_.push_back(label);
+}
+
+void CodeAssemblerState::PopExceptionHandler() {
+	  exception_handler_labels_.pop_back();
+}
+
+CodeAssemblerScopedExceptionHandler::CodeAssemblerScopedExceptionHandler(
+    CodeAssembler* assembler, CodeAssemblerExceptionHandlerLabel* label)
+    : has_handler_(label != nullptr),
+      assembler_(assembler),
+      compatibility_label_(nullptr),
+      exception_(nullptr) {
+  if (has_handler_) {
+    assembler_->state()->PushExceptionHandler(label);
+  }
+}
+
+CodeAssemblerScopedExceptionHandler::CodeAssemblerScopedExceptionHandler(
+    CodeAssembler* assembler, CodeAssemblerLabel* label,
+    TypedCodeAssemblerVariable<Object>* exception)
+    : has_handler_(label != nullptr),
+      assembler_(assembler),
+      compatibility_label_(label),
+      exception_(exception) {
+  if (has_handler_) {
+    label_ = base::make_unique<CodeAssemblerExceptionHandlerLabel>(
+        assembler, CodeAssemblerLabel::kDeferred);
+    assembler_->state()->PushExceptionHandler(label_.get());
+  }
+}
+
+CodeAssemblerScopedExceptionHandler::~CodeAssemblerScopedExceptionHandler() {
+  if (has_handler_) {
+    assembler_->state()->PopExceptionHandler();
+  }
+  if (label_ && label_->is_used()) {
+    CodeAssembler::Label skip(assembler_);
+    bool inside_block = assembler_->state()->InsideBlock();
+    if (inside_block) {
+      assembler_->Goto(&skip);
+    }
+    TNode<Object> e;
+    assembler_->Bind(label_.get(), &e);
+    *exception_ = e;
+    assembler_->Goto(compatibility_label_);
+    if (inside_block) {
+      assembler_->Bind(&skip);
+    }
+  }
 }
 
 }  // namespace compiler

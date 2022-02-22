@@ -296,7 +296,7 @@ void BaseCollectionsAssembler::AddConstructorEntriesFromIterable(
 
   TNode<Object> add_func = GetAddFunction(variant, context, collection);
   IteratorBuiltinsAssembler iterator_assembler(this->state());
-  IteratorRecord iterator = iterator_assembler.GetIterator(context, iterable);
+  IteratorBuiltinsFromDSLAssembler::IteratorRecord iterator = iterator_assembler.GetIterator(context, iterable);
 
   CSA_ASSERT(this, Word32BinaryNot(IsUndefined(iterator.object)));
 
@@ -318,7 +318,7 @@ void BaseCollectionsAssembler::AddConstructorEntriesFromIterable(
   BIND(&if_exception);
   {
     iterator_assembler.IteratorCloseOnException(context, iterator,
-                                                &var_exception);
+                                                var_exception.value());
   }
   BIND(&exit);
 }

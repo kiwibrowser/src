@@ -9,6 +9,8 @@
 namespace v8 {
 namespace internal {
 
+typedef IteratorBuiltinsFromDSLAssembler::IteratorRecord IteratorRecord;
+
 using compiler::Node;
 
 Node* IteratorBuiltinsAssembler::GetIteratorMethod(Node* context,
@@ -185,12 +187,13 @@ void IteratorBuiltinsAssembler::IteratorCloseOnException(
 }
 
 void IteratorBuiltinsAssembler::IteratorCloseOnException(
-    Node* context, const IteratorRecord& iterator, Variable* exception) {
+    Node* context, const IteratorRecord& iterator, TNode<Object>  exception) {
   Label rethrow(this, Label::kDeferred);
-  IteratorCloseOnException(context, iterator, &rethrow, exception);
+  TVARIABLE(Object, exception_variable, exception);
+  IteratorCloseOnException(context, iterator, &rethrow, &exception_variable);
 
   BIND(&rethrow);
-  CallRuntime(Runtime::kReThrow, context, exception->value());
+  CallRuntime(Runtime::kReThrow, context, exception_variable.value());
   Unreachable();
 }
 

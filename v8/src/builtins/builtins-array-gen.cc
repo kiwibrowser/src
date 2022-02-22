@@ -20,7 +20,7 @@ using Node = compiler::Node;
 
 ArrayBuiltinsAssembler::ArrayBuiltinsAssembler(
     compiler::CodeAssemblerState* state)
-    : BaseBuiltinsFromDSLAssembler(state),
+    : CodeStubAssembler(state),
       k_(this, MachineRepresentation::kTagged),
       a_(this, MachineRepresentation::kTagged),
       to_(this, MachineRepresentation::kTagged, SmiConstant(0)),
@@ -595,7 +595,7 @@ Node* ArrayBuiltinsAssembler::FindProcessor(Node* k_value, Node* k) {
         // b. Let kPresent be HasProperty(O, Pk).
         // c. ReturnIfAbrupt(kPresent).
         TNode<Oddball> k_present =
-            HasProperty(o(), k(), context(), kHasProperty);
+            HasProperty(context(), o(), k(), kHasProperty);
 
         // d. If kPresent is true, then
         GotoIf(IsFalse(k_present), &done_element);
@@ -1276,7 +1276,7 @@ class ArrayPrototypeSliceCodeStubAssembler : public CodeStubAssembler {
                       Variable& n) {
     // b. Let kPresent be HasProperty(O, Pk).
     // c. ReturnIfAbrupt(kPresent).
-    TNode<Oddball> k_present = HasProperty(o, p_k, context, kHasProperty);
+    TNode<Oddball> k_present = HasProperty(context, o, p_k, kHasProperty);
 
     // d. If kPresent is true, then
     Label done_element(this);
@@ -2053,7 +2053,7 @@ TF_BUILTIN(ArrayFrom, ArrayPopulatorAssembler) {
 
     // Actually get the iterator and throw if the iterator method does not yield
     // one.
-    IteratorRecord iterator_record =
+    IteratorBuiltinsFromDSLAssembler::IteratorRecord iterator_record =
         iterator_assembler.GetIterator(context, items, iterator_method);
 
     TNode<Context> native_context = LoadNativeContext(context);
@@ -2121,7 +2121,7 @@ TF_BUILTIN(ArrayFrom, ArrayPopulatorAssembler) {
       // Close the iterator, rethrowing either the passed exception or
       // exceptions thrown during the close.
       iterator_assembler.IteratorCloseOnException(context, iterator_record,
-                                                  &var_exception);
+                                                  var_exception.value());
     }
   }
 
@@ -3789,7 +3789,7 @@ class ArrayFlattenAssembler : public CodeStubAssembler {
       CSA_ASSERT(this,
                  SmiGreaterThanOrEqual(CAST(source_index), SmiConstant(0)));
       Node* const exists =
-          HasProperty(source, source_index, context, kHasProperty);
+          HasProperty(context, source, source_index, kHasProperty);
 
       // c. If exists is true, then
       Label next(this);

@@ -15,10 +15,10 @@ namespace internal {
 #define DEFINE_TFJ_INTERFACE_DESCRIPTOR(Name, Argc, ...) \
   struct Builtin_##Name##_InterfaceDescriptor {          \
     enum ParameterIndices {                              \
-      kReceiver,                                         \
+      kJSTarget = -1,                                         \
       ##__VA_ARGS__,                                     \
       kNewTarget,                                        \
-      kActualArgumentsCount,                             \
+      kJSActualArgumentsCount,                             \
       kContext,                                          \
       kParameterCount,                                   \
     };                                                   \

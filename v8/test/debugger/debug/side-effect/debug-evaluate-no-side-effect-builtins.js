@@ -43,6 +43,8 @@ function listener(event, exec_state, event_data, data) {
     success(false, `Object.isFrozen({})`);
     success(false, `Object.isSealed({})`);
     success([1, 2], `Object.values({a:1, b:2})`);
+   // success(["a", 1, "b", 2], `Object.entries({a:1, b:2}).flat()`);
+    //success(["a", "b"], `Object.keys({a:1, b:2})`);
 
     fail(`Object.assign({}, {})`);
     fail(`Object.defineProperties({}, [{p:{value:3}}])`);
@@ -68,7 +70,7 @@ function listener(event, exec_state, event_data, data) {
     fail(`Array.from([1, 2, 3])`);
     fail(`Array.of(1, 2, 3)`);
     var function_param = [
-      "forEach", "every", "some", "reduce", "reduceRight", "find", "filter",
+      "flatMap", "forEach", "every", "some", "reduce", "reduceRight", "find", "filter",
       "map", "findIndex"
     ];
     var fails = ["toString", "join", "toLocaleString", "pop", "push", "reverse",
@@ -180,7 +182,8 @@ function listener(event, exec_state, event_data, data) {
         }
         if (f == "normalize") continue;
         if (f == "match") continue;
-        if (f == "search") continue;
+        if (f == "matchAll") continue;
+	if (f == "search") continue;
         if (f == "split" || f == "replace") {
           fail(`'abcd'.${f}(2)`);
           continue;

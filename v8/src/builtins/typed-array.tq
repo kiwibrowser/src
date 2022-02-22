@@ -1,20 +1,21 @@
 // Copyright 2018 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+#include 'src/builtins/builtins-typed-array-gen.h'
 
-module typed_array {
+namespace typed_array {
   extern runtime TypedArraySortFast(Context, Object): JSTypedArray;
 
-  type MethodName;
-  const kTypedArrayProtoSort: MethodName = '\"%TypedArray%.prototype.sort\"';
-  extern macro ValidateTypedArray(Context, Object, MethodName): JSTypedArray;
+  type MethodName constexpr 'MethodName';
+  const kTypedArrayProtoSort: constexpr MethodName generates  '\"%TypedArray%.prototype.sort\"';
+  extern macro TypedArrayBuiltinsAssembler::ValidateTypedArray(Context, Object, constexpr MethodName): JSTypedArray;
 
   extern builtin TypedArrayLoadElementAsTagged(
       Context, JSTypedArray, Smi, Smi): Object;
   extern builtin TypedArrayStoreElementFromTagged(
       Context, JSTypedArray, Smi, Smi, Object);
 
-  extern macro NumberIsNaN(Number): bool;
+  extern macro TypedArrayBuiltinsAssembler::NumberIsNaN(Number): bool;
 
   macro CallCompareWithDetachedCheck(
       context: Context, array: JSTypedArray, comparefn: Callable, a: Object,
@@ -57,11 +58,11 @@ module typed_array {
 
   // InsertionSort is used for smaller arrays.
   macro TypedArrayInsertionSort(
-      context: Context, array: JSTypedArray, kind: Smi, from_arg: Smi,
-      to_arg: Smi, comparefn: Callable)
+      context: Context, array: JSTypedArray, kind: Smi, fromArg: Smi,
+      toArg: Smi, comparefn: Callable)
   labels Detached {
-    let from: Smi = from_arg;
-    let to: Smi = to_arg;
+    let from: Smi = fromArg;
+    let to: Smi = toArg;
 
     if (IsDetachedBuffer(array.buffer)) goto Detached;
 
@@ -83,11 +84,11 @@ module typed_array {
   }
 
   macro TypedArrayQuickSortImpl(
-      context: Context, array: JSTypedArray, kind: Smi, from_arg: Smi,
-      to_arg: Smi, comparefn: Callable)
+      context: Context, array: JSTypedArray, kind: Smi, fromArg: Smi,
+      toArg: Smi, comparefn: Callable)
   labels Detached {
-    let from: Smi = from_arg;
-    let to: Smi = to_arg;
+    let from: Smi = fromArg;
+    let to: Smi = toArg;
 
     while (to - from > 1) {
       if (to - from <= 10) {
@@ -101,14 +102,14 @@ module typed_array {
 
       // TODO(szuend): Check if a more involved third_index calculation is
       //               worth it for very large arrays.
-      let third_index: Smi = from + ((to - from) >>> 1);
+      let thirdIndex: Smi = from + ((to - from) >>> 1);
 
       if (IsDetachedBuffer(array.buffer)) goto Detached;
 
       // Find a pivot as the median of first, last and middle element.
       let v0: Object = Load(context, array, kind, from);
       let v1: Object = Load(context, array, kind, to - 1);
-      let v2: Object = Load(context, array, kind, third_index);
+      let v2: Object = Load(context, array, kind, thirdIndex);
 
       let c01: Number = CallCompareWithDetachedCheck(
           context, array, comparefn, v0, v1) otherwise Detached;
@@ -144,65 +145,65 @@ module typed_array {
       Store(context, array, kind, to - 1, v2);
 
       let pivot: Object = v1;
-      let low_end: Smi = from + 1;   // Upper bound of elems lower than pivot.
-      let high_start: Smi = to - 1;  // Lower bound of elems greater than pivot.
+      let lowEnd: Smi = from + 1;   // Upper bound of elems lower than pivot.
+      let highStart: Smi = to - 1;  // Lower bound of elems greater than pivot.
 
-      let low_end_value: Object = Load(context, array, kind, low_end);
-      Store(context, array, kind, third_index, low_end_value);
-      Store(context, array, kind, low_end, pivot);
+      let lowEndValue: Object = Load(context, array, kind, lowEnd);
+      Store(context, array, kind, thirdIndex, lowEndValue);
+      Store(context, array, kind, lowEnd, pivot);
 
       // From low_end to idx are elements equal to pivot.
       // From idx to high_start are elements that haven"t been compared yet.
-      for (let idx: Smi = low_end + 1; idx < high_start; idx++) {
+      for (let idx: Smi = lowEnd + 1; idx < highStart; idx++) {
         let element: Object = Load(context, array, kind, idx);
         let order: Number = CallCompareWithDetachedCheck(
             context, array, comparefn, element, pivot) otherwise Detached;
 
         if (order < 0) {
-          low_end_value = Load(context, array, kind, low_end);
-          Store(context, array, kind, idx, low_end_value);
-          Store(context, array, kind, low_end, element);
-          low_end++;
+          lowEndValue = Load(context, array, kind, lowEnd);
+          Store(context, array, kind, idx, lowEndValue);
+          Store(context, array, kind, lowEnd, element);
+          lowEnd++;
         } else if (order > 0) {
-          let break_for: bool = false;
+          let breakFor: bool = false;
 
           while (order > 0) {
-            high_start--;
-            if (high_start == idx) {
-              break_for = true;
+            highStart--;
+            if (highStart == idx) {
+              breakFor = true;
               break;
             }
 
-            let top_elem: Object = Load(context, array, kind, high_start);
+            let topElem: Object = Load(context, array, kind, highStart);
             order = CallCompareWithDetachedCheck(
-                context, array, comparefn, top_elem, pivot) otherwise Detached;
+                context, array, comparefn, topElem, pivot) otherwise Detached;
           }
 
-          if (break_for) {
+          if (breakFor) {
             break;
           }
 
-          let high_start_value: Object = Load(context, array, kind, high_start);
-          Store(context, array, kind, idx, high_start_value);
-          Store(context, array, kind, high_start, element);
+          let highStartValue: Object = Load(context, array, kind, highStart);
+          Store(context, array, kind, idx, highStartValue);
+          Store(context, array, kind, highStart, element);
 
           if (order < 0) {
             element = Load(context, array, kind, idx);
 
-            low_end_value = Load(context, array, kind, low_end);
-            Store(context, array, kind, idx, low_end_value);
-            Store(context, array, kind, low_end, element);
-            low_end++;
+            lowEndValue = Load(context, array, kind, lowEnd);
+            Store(context, array, kind, idx, lowEndValue);
+            Store(context, array, kind, lowEnd, element);
+            lowEnd++;
           }
         }
       }
 
-      if ((to - high_start) < (low_end - from)) {
-        TypedArrayQuickSort(context, array, kind, high_start, to, comparefn);
-        to = low_end;
+      if ((to - highStart) < (lowEnd - from)) {
+        TypedArrayQuickSort(context, array, kind, highStart, to, comparefn);
+        to = lowEnd;
       } else {
-        TypedArrayQuickSort(context, array, kind, from, low_end, comparefn);
-        from = high_start;
+        TypedArrayQuickSort(context, array, kind, from, lowEnd, comparefn);
+        from = highStart;
       }
     }
   }
@@ -226,9 +227,9 @@ module typed_array {
       context: Context, receiver: Object, ...arguments): JSTypedArray {
     // 1. If comparefn is not undefined and IsCallable(comparefn) is false,
     //    throw a TypeError exception.
-    let comparefn_obj: Object = arguments.length > 0 ? arguments[0] : Undefined;
-    if (comparefn_obj != Undefined && !TaggedIsCallable(comparefn_obj)) {
-      ThrowTypeError(context, kBadSortComparisonFunction, comparefn_obj);
+    let comparefnObj: Object = arguments.length > 0 ? arguments[0] : Undefined;
+    if (comparefnObj != Undefined && !TaggedIsCallable(comparefnObj)) {
+      ThrowTypeError(context, kBadSortComparisonFunction, comparefnObj);
     }
 
     // 2. Let obj be the this value.
@@ -240,7 +241,7 @@ module typed_array {
         ValidateTypedArray(context, obj, kTypedArrayProtoSort);
 
     // Default sorting is done in C++ using std::sort
-    if (comparefn_obj == Undefined) {
+    if (comparefnObj == Undefined) {
       return TypedArraySortFast(context, obj);
     }
 
@@ -249,9 +250,9 @@ module typed_array {
 
     try {
       let comparefn: Callable =
-          cast<Callable>(comparefn_obj) otherwise CastError;
-      let elements_kind: Smi = convert<Smi>(array.elements_kind);
-      TypedArrayQuickSort(context, array, elements_kind, 0, len, comparefn);
+          Cast<Callable>(comparefnObj) otherwise CastError;
+      let elementsKind: Smi = Convert<Smi, ElementsKind>(array.elements_kind);
+      TypedArrayQuickSort(context, array, elementsKind, 0, len, comparefn);
     }
     label CastError {
       unreachable;

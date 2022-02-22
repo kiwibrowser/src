@@ -11,6 +11,7 @@
 #include "src/compiler/code-assembler.h"
 #include "src/globals.h"
 #include "src/objects.h"
+#include "src/objects/shared-function-info.h"
 
 namespace v8 {
 namespace internal {
@@ -76,14 +77,14 @@ enum class PrimitiveType { kBoolean, kNumber, kString, kSymbol };
 
 // Returned from IteratorBuiltinsAssembler::GetIterator(). Struct is declared
 // here to simplify use in other generated builtins.
-struct IteratorRecord {
- public:
+//struct IteratorRecord {
+// public:
   // iteratorRecord.[[Iterator]]
-  compiler::TNode<JSReceiver> object;
+//  compiler::TNode<JSReceiver> object;
 
   // iteratorRecord.[[NextMethod]]
-  compiler::TNode<Object> next;
-};
+//  compiler::TNode<Object> next;
+//};
 
 // Provides JavaScript-specific "macro-assembler" functionality on top of the
 // CodeAssembler. By factoring the JavaScript-isms out of the CodeAssembler,
@@ -396,6 +397,13 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
              Node* extra_node4 = nullptr, const char* extra_node4_name = "",
              Node* extra_node5 = nullptr, const char* extra_node5_name = "");
 
+  void FailAssert(
+		        const char* message = nullptr, const char* file = nullptr, int line = 0,
+			      Node* extra_node1 = nullptr, const char* extra_node1_name = "",
+			            Node* extra_node2 = nullptr, const char* extra_node2_name = "",
+				          Node* extra_node3 = nullptr, const char* extra_node3_name = "",
+					        Node* extra_node4 = nullptr, const char* extra_node4_name = "",
+						      Node* extra_node5 = nullptr, const char* extra_node5_name = "");
   // The following Call wrappers call an object according to the semantics that
   // one finds in the EcmaScript spec, operating on an Callable (e.g. a
   // JSFunction or proxy) rather than a Code object.
@@ -473,6 +481,12 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
 #else
   void Bind(Label* label);
 #endif  // DEBUG
+  
+  template <class... T>
+	    void Bind(compiler::CodeAssemblerParameterizedLabel<T...>* label,
+			                TNode<T>*... phis) {
+		        CodeAssembler::Bind(label, phis...);
+			  }
 
   void BranchIfSmiEqual(TNode<Smi> a, TNode<Smi> b, Label* if_true,
                         Label* if_false) {
@@ -798,9 +812,12 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   // Load Float64 value by |base| + |offset| address. If the value is a double
   // hole then jump to |if_hole|. If |machine_type| is None then only the hole
   // check is generated.
-  Node* LoadDoubleWithHoleCheck(
-      Node* base, Node* offset, Label* if_hole,
-      MachineType machine_type = MachineType::Float64());
+  TNode<Float64T> LoadDoubleWithHoleCheck(
+		        SloppyTNode<Object> base, SloppyTNode<IntPtrT> offset, Label* if_hole,
+			      MachineType machine_type = MachineType::Float64());
+  //Node* LoadDoubleWithHoleCheck(
+  //    Node* base, Node* offset, Label* if_hole,
+  //    MachineType machine_type = MachineType::Float64());
   TNode<RawPtrT> LoadFixedTypedArrayBackingStore(
       TNode<FixedTypedArrayBase> typed_array);
   Node* LoadFixedTypedArrayElementAsTagged(
@@ -1183,6 +1200,30 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
     return UncheckedCast<FixedDoubleArray>(base);
   }
 
+  TNode<FixedArray> HeapObjectToFixedArray(TNode<HeapObject> base,
+		                                             Label* cast_fail);
+
+    TNode<FixedDoubleArray> HeapObjectToFixedDoubleArray(TNode<HeapObject> base,
+		                                                           Label* cast_fail) {
+	        GotoIf(
+				        WordNotEqual(LoadMap(base), LoadRoot(Heap::kFixedDoubleArrayMapRootIndex)),
+					        cast_fail);
+		    return UncheckedCast<FixedDoubleArray>(base);
+		      }
+  TNode<JSArray> HeapObjectToJSArray(TNode<HeapObject> heap_object,
+		                                       Label* fail) {
+	      GotoIfNot(IsJSArray(heap_object), fail);
+	          return UncheckedCast<JSArray>(heap_object);
+		    }
+   TNode<JSReceiver> HeapObjectToCallable(TNode<HeapObject> heap_object,
+		                                         Label* fail) {
+	    GotoIfNot(IsCallable(heap_object), fail);
+	        return CAST(heap_object);
+		  }
+  TNode<Number> TaggedToNumber(TNode<Object> value, Label* fail) {
+	      GotoIfNot(IsNumber(value), fail);
+	          return UncheckedCast<Number>(value);
+		    }
   enum class ExtractFixedArrayFlag {
     kFixedArrays = 1,
     kFixedDoubleArrays = 2,
@@ -1333,6 +1374,13 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
                                    Variable* var_feedback);
 
   Node* TimesPointerSize(Node* value);
+  TNode<WordT> TimesTaggedSize(SloppyTNode<WordT> value);
+    TNode<IntPtrT> TimesTaggedSize(TNode<IntPtrT> value) {
+	        return Signed(TimesTaggedSize(implicit_cast<TNode<WordT>>(value)));
+		  }
+      TNode<UintPtrT> TimesTaggedSize(TNode<UintPtrT> value) {
+	          return Unsigned(TimesTaggedSize(implicit_cast<TNode<WordT>>(value)));
+		    }
 
   // Type conversions.
   // Throws a TypeError for {method_name} if {value} is not coercible to Object,
@@ -1373,6 +1421,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   TNode<BoolT> IsAllocationSite(SloppyTNode<HeapObject> object);
   TNode<BoolT> IsAnyHeapNumber(SloppyTNode<HeapObject> object);
   TNode<BoolT> IsNoElementsProtectorCellInvalid();
+  TNode<BoolT> IsArrayIteratorProtectorCellInvalid();
   TNode<BoolT> IsBigIntInstanceType(SloppyTNode<Int32T> instance_type);
   TNode<BoolT> IsBigInt(SloppyTNode<HeapObject> object);
   TNode<BoolT> IsBoolean(SloppyTNode<HeapObject> object);
@@ -1499,6 +1548,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
       ParameterMode mode = INTPTR_PARAMETERS);
 
   // ElementsKind helpers:
+  bool ElementsKindEqual(ElementsKind a, ElementsKind b) { return a == b; }
   Node* IsFastElementsKind(Node* elements_kind);
   bool IsFastElementsKind(ElementsKind kind) {
     return v8::internal::IsFastElementsKind(kind);
@@ -2221,6 +2271,17 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
 
   void BranchIfNumberRelationalComparison(Operation op, Node* left, Node* right,
                                           Label* if_true, Label* if_false);
+  
+  void BranchIfNumberEqual(TNode<Number> left, TNode<Number> right,
+		                             Label* if_true, Label* if_false) {
+	      BranchIfNumberRelationalComparison(Operation::kEqual, left, right, if_true,
+			                                             if_false);
+	        }
+
+    void BranchIfNumberNotEqual(TNode<Number> left, TNode<Number> right,
+		                                  Label* if_true, Label* if_false) {
+	        BranchIfNumberEqual(left, right, if_false, if_true);
+		  }
 
   void BranchIfNumberLessThan(Node* left, Node* right, Label* if_true,
                               Label* if_false) {
@@ -2267,10 +2328,17 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
 
   enum HasPropertyLookupMode { kHasProperty, kForInHasProperty };
 
-  TNode<Oddball> HasProperty(SloppyTNode<HeapObject> object,
-                             SloppyTNode<Object> key,
-                             SloppyTNode<Context> context,
-                             HasPropertyLookupMode mode);
+  TNode<Oddball> HasProperty(SloppyTNode<Context> context,
+		             SloppyTNode<HeapObject> object,
+	                     SloppyTNode<Object> key,
+			     HasPropertyLookupMode mode);
+  // Due to naming conflict with the builtin function namespace.
+  TNode<Oddball> HasProperty_Inline(SloppyTNode<Context> context,
+                                    SloppyTNode<HeapObject> object,
+                                    SloppyTNode<Object> key) {
+    return HasProperty(context, object, key,
+                       HasPropertyLookupMode::kHasProperty);
+  }
 
   Node* Typeof(Node* value);
 
@@ -2288,6 +2356,16 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
 
   // TypedArray/ArrayBuffer helpers
   Node* IsDetachedBuffer(Node* buffer);
+
+  TNode<Word32T> LoadElementsKind(TNode<JSTypedArray> typed_array);
+  TNode<Smi> LoadTypedArrayLength(TNode<JSTypedArray> typed_array) {
+	      return LoadObjectField<Smi>(typed_array, JSTypedArray::kLengthOffset);
+	        }
+
+  TNode<JSArrayBuffer> LoadTypedArrayBuffer(TNode<JSTypedArray> typed_array) {
+	      return LoadObjectField<JSArrayBuffer>(typed_array,
+			                                                JSTypedArray::kBufferOffset);
+	        }
 
   TNode<IntPtrT> ElementOffsetFromIndex(Node* index, ElementsKind kind,
                                         ParameterMode mode, int base_size = 0);
@@ -2687,11 +2765,11 @@ class ToDirectStringAssembler : public CodeStubAssembler {
   (csa)->Assert(                                                         \
       [&]() -> compiler::Node* {                                         \
         compiler::Node* const argc =                                     \
-            (csa)->Parameter(Descriptor::kActualArgumentsCount);         \
+            (csa)->Parameter(Descriptor::kJSActualArgumentsCount);         \
         return (csa)->Op(argc, (csa)->Int32Constant(expected));          \
       },                                                                 \
       "argc " #op " " #expected, __FILE__, __LINE__,                     \
-      SmiFromInt32((csa)->Parameter(Descriptor::kActualArgumentsCount)), \
+      SmiFromInt32((csa)->Parameter(Descriptor::kJSActualArgumentsCount)), \
       "argc")
 
 #define CSA_ASSERT_JS_ARGC_EQ(csa, expected) \

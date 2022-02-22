@@ -1,21 +1,62 @@
 // Copyright 2018 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+#include 'src/builtins/builtins-array-gen.h'
 
-module array {
+namespace array {
+    macro LoadElementOrUndefined(a: FixedArray, i: Smi): Object {
+    const e: Object = a[i];
+    return e == Hole ? Undefined : e;
+  }
+
+  macro LoadElementOrUndefined(a: FixedArray, i: intptr): Object {
+    const e: Object = a[i];
+    return e == Hole ? Undefined : e;
+  }
+
+  macro LoadElementOrUndefined(a: FixedArray, i: constexpr int31): Object {
+    return LoadElementOrUndefined(a, Convert<intptr>(i));
+  }
+
+  macro LoadElementOrUndefined(a: FixedDoubleArray, i: Smi): NumberOrUndefined {
+    try {
+      const f: float64 = LoadDoubleWithHoleCheck(a, i) otherwise IfHole;
+      return AllocateHeapNumberWithValue(f);
+    }
+    label IfHole {
+      return Undefined;
+    }
+  }
+
+  macro LoadElementOrUndefined(a: FixedDoubleArray, i: intptr):
+      NumberOrUndefined {
+    try {
+      const f: float64 = LoadDoubleWithHoleCheck(a, i) otherwise IfHole;
+      return AllocateHeapNumberWithValue(f);
+    }
+    label IfHole {
+      return Undefined;
+    }
+  }
+
+  macro LoadElementOrUndefined(a: FixedDoubleArray, i: constexpr int31):
+      NumberOrUndefined {
+    return LoadElementOrUndefined(a, Convert<intptr>(i));
+  }
+
   macro FastArraySplice(
-      context: Context, args: Arguments, o: Object,
+      context: Context, args: constexpr Arguments, o: Object,
       originalLengthNumber: Number, actualStartNumber: Number, insertCount: Smi,
       actualDeleteCountNumber: Number): Object
   labels Bailout {
-    let originalLength: Smi = cast<Smi>(originalLengthNumber) otherwise Bailout;
-    let actualStart: Smi = cast<Smi>(actualStartNumber) otherwise Bailout;
+    let originalLength: Smi = Cast<Smi>(originalLengthNumber) otherwise Bailout;
+    let actualStart: Smi = Cast<Smi>(actualStartNumber) otherwise Bailout;
     let actualDeleteCount: Smi =
-        cast<Smi>(actualDeleteCountNumber) otherwise Bailout;
+        Cast<Smi>(actualDeleteCountNumber) otherwise Bailout;
     let lengthDelta: Smi = insertCount - actualDeleteCount;
     let newLength: Smi = originalLength + lengthDelta;
 
-    let a: JSArray = cast<JSArray>(o) otherwise Bailout;
+    let a: JSArray = Cast<JSArray>(o) otherwise Bailout;
 
     let map: Map = a.map;
     if (!IsPrototypeInitialArrayPrototype(context, map)) goto Bailout;
@@ -31,12 +72,12 @@ module array {
 
     if (IsFastSmiElementsKind(elementsKind)) {
       for (let e: Object of args [2: ]) {
-        if (TaggedIsNotSmi(e)) goto Bailout;
-      }
+         if (TaggedIsNotSmi(e)) goto Bailout;
+      }    
     }
 
     // Make sure that the length hasn't been changed by side-effect.
-    let length: Smi = cast<Smi>(a.length) otherwise Bailout;
+    let length: Smi = Cast<Smi>(a.length) otherwise Bailout;
     if (originalLength != length) goto Bailout;
 
     let deletedResult: JSArray =
@@ -44,11 +85,11 @@ module array {
 
     if (newLength == 0) {
       a.elements = kEmptyFixedArray;
-      a.length = 0;
+      a.length = newLength;
       return deletedResult;
     }
 
-    let elements: FixedArray = cast<FixedArray>(a.elements) otherwise Bailout;
+    let elements: FixedArray = Cast<FixedArray>(a.elements) otherwise Bailout;
     let elementsMap: Map = elements.map;
 
     // If the source is a COW array or the spliced array is larger then the
@@ -104,7 +145,7 @@ module array {
 
     // 2. Let len be ? ToLength(? Get(O, "length")).
     let len: Number =
-        ToLength_Inline(context, GetProperty(context, o, 'length'));
+        ToLength_Inline(context, GetProperty(context, o, kLengthString));
 
     // 3. Let relativeStart be ? ToInteger(start).
     let start: Object = arguments[0];
@@ -134,7 +175,7 @@ module array {
       // 7. Else,
     } else {
       // a. Let insertCount be the Number of actual arguments minus 2.
-      insertCount = convert<Smi>(arguments.length) - 2;
+      insertCount = Convert<Smi>(arguments.length) - 2;
       // b. Let dc be ? ToInteger(deleteCount).
       let deleteCount: Object = arguments[1];
       let dc: Number = ToInteger_Inline(context, deleteCount);
@@ -170,7 +211,7 @@ module array {
 
       // b. Let fromPresent be ? HasProperty(O, from).
       let fromPresent: Oddball =
-          HasPropertyObject(o, from, context, kHasProperty);
+          HasPropertyInline(context, o, from);
 
       // c. If fromPresent is true, then
       if (fromPresent == True) {
@@ -186,7 +227,7 @@ module array {
     }
 
     // 12. Perform ? Set(A, "length", actualDeleteCount, true).
-    SetProperty(context, a, 'length', actualDeleteCount, strict);
+    SetProperty(context, a, kLengthString, actualDeleteCount, strict);
 
     // 13. Let items be a List whose elements are, in left-to-right order,
     //     the portion of the actual argument list starting with the third
@@ -209,7 +250,7 @@ module array {
 
         // iii. Let fromPresent be ? HasProperty(O, from).
         let fromPresent: Oddball =
-            HasPropertyObject(o, from, context, kHasProperty);
+            HasPropertyInline(context,o, from);
 
         // iv. If fromPresent is true, then
         if (fromPresent == True) {
@@ -253,7 +294,7 @@ module array {
 
         // iii. Let fromPresent be ? HasProperty(O, from).
         let fromPresent: Oddball =
-            HasPropertyObject(o, from, context, kHasProperty);
+            HasPropertyInline(context,o, from);
 
         // iv. If fromPresent is true, then
         if (fromPresent == True) {
@@ -293,22 +334,22 @@ module array {
     // 19. Perform ? Set(O, "length", len - actualDeleteCount + itemCount,
     // true).
     SetProperty(
-        context, o, 'length', len - actualDeleteCount + itemCount, strict);
+        context, o, kLengthString, len - actualDeleteCount + itemCount, strict);
 
     return a;
   }
 
   macro ArrayForEachTorqueContinuation(
       context: Context, o: Object, len: Number, callbackfn: Callable,
-      thisArg: Object, initial_k: Smi): Object {
+      thisArg: Object, initialK: Smi): Object {
     // 5. Let k be 0.
     // 6. Repeat, while k < len
-    for (let k: Smi = initial_k; k < len; k = k + 1) {
+    for (let k: Smi = initialK; k < len; k = k + 1) {
       // 6a. Let Pk be ! ToString(k).
       let pK: String = ToString_Inline(context, k);
 
       // 6b. Let kPresent be ? HasProperty(O, Pk).
-      let kPresent: Oddball = HasPropertyObject(o, pK, context, kHasProperty);
+      let kPresent: Oddball = HasPropertyInline(context, o, pK);
 
       // 6c. If kPresent is true, then
       if (kPresent == True) {
@@ -345,12 +386,12 @@ module array {
       array: Object, object: Object, initialK: Object, length: Object,
       to: Object): Object {
     try {
-      let callbackfn: Callable = cast<Callable>(callback) otherwise Unexpected;
-      let k: Smi = cast<Smi>(initialK) otherwise Unexpected;
-      let number_length: Number = cast<Number>(length) otherwise Unexpected;
+      let callbackfn: Callable = Cast<Callable>(callback) otherwise Unexpected;
+      let k: Smi = Cast<Smi>(initialK) otherwise Unexpected;
+      let numberLength: Number = Cast<Number>(length) otherwise Unexpected;
 
       return ArrayForEachTorqueContinuation(
-          context, object, number_length, callbackfn, thisArg, k);
+          context, object, numberLength, callbackfn, thisArg, k);
     }
     label Unexpected {
       unreachable;
@@ -397,8 +438,8 @@ module array {
   Bailout(Smi) {
     let k: Smi = 0;
     try {
-      let smi_len: Smi = cast<Smi>(len) otherwise Slow;
-      let a: JSArray = cast<JSArray>(o) otherwise Slow;
+      let smiLen: Smi = Cast<Smi>(len) otherwise Slow;
+      let a: JSArray = Cast<JSArray>(o) otherwise Slow;
       let map: Map = a.map;
 
       if (!IsPrototypeInitialArrayPrototype(context, map)) goto Slow;
@@ -407,10 +448,10 @@ module array {
 
       if (IsElementsKindGreaterThan(elementsKind, HOLEY_ELEMENTS)) {
         VisitAllElements<FixedDoubleArray>(
-            context, a, smi_len, callbackfn, thisArg)
+            context, a, smiLen, callbackfn, thisArg)
         otherwise Bailout;
       } else {
-        VisitAllElements<FixedArray>(context, a, smi_len, callbackfn, thisArg)
+        VisitAllElements<FixedArray>(context, a, smiLen, callbackfn, thisArg)
         otherwise Bailout;
       }
     }
@@ -433,14 +474,14 @@ module array {
 
       // 2. Let len be ? ToLength(? Get(O, "length")).
       let len: Number =
-          ToLength_Inline(context, GetProperty(context, o, 'length'));
+          ToLength_Inline(context, GetProperty(context, o, kLengthString));
 
       // 3. If IsCallable(callbackfn) is false, throw a TypeError exception.
       if (arguments.length == 0) {
         goto TypeError;
       }
       let callbackfn: Callable =
-          cast<Callable>(arguments[0]) otherwise TypeError;
+          Cast<Callable>(arguments[0]) otherwise TypeError;
 
       // 4. If thisArg is present, let T be thisArg; else let T be undefined.
       let thisArg: Object = arguments.length > 1 ? arguments[1] : Undefined;
@@ -451,8 +492,8 @@ module array {
         return FastArrayForEach(context, o, len, callbackfn, thisArg)
         otherwise Bailout;
       }
-      label Bailout(k_value: Smi) {
-        k = k_value;
+      label Bailout(kValue: Smi) {
+        k = kValue;
       }
 
       return ArrayForEachTorqueContinuation(
@@ -463,7 +504,7 @@ module array {
     }
     label NullOrUndefinedError {
       ThrowTypeError(
-          context, kCalledOnNullOrUndefined, 'Array.prototype.forEach');
+          context, kCalledOnNullOrUndefined, arguments[0]);
     }
   }
 }

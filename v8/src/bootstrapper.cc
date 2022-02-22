@@ -1486,6 +1486,10 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
     Handle<JSFunction> object_keys = SimpleInstallFunction(
         object_function, "keys", Builtins::kObjectKeys, 1, true);
     native_context()->set_object_keys(*object_keys);
+    
+    SimpleInstallFunction(object_function, "fromEntries",
+		          Builtins::kObjectFromEntries, 1, false);
+    
     SimpleInstallFunction(object_function, factory->entries_string(),
                           Builtins::kObjectEntries, 1, true);
     SimpleInstallFunction(object_function, factory->values_string(),
@@ -2609,6 +2613,13 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
 
   // Initialize the embedder data slot.
   native_context()->set_embedder_data(*factory->empty_fixed_array());
+
+  {  // -- g l o b a l T h i s
+    Handle<String> name = factory->InternalizeUtf8String("globalThis");
+    Handle<JSGlobalProxy> global_proxy(JSGlobalProxy::cast(native_context()->global_proxy()));
+    JSObject::AddProperty(global, name,
+                          global_proxy, DONT_ENUM);
+  }
 
   {  // -- J S O N
     Handle<String> name = factory->InternalizeUtf8String("JSON");
@@ -4181,7 +4192,7 @@ EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_class_fields)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_dynamic_import)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_import_meta)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_optional_catch_binding)
-EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_numeric_separator)
+//EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_numeric_separator)
 
 #undef EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE
 
@@ -4197,7 +4208,6 @@ void InstallPublicSymbol(Factory* factory, Handle<Context> native_context,
       static_cast<PropertyAttributes>(DONT_ENUM | DONT_DELETE | READ_ONLY);
   JSObject::AddProperty(symbol, name_string, value, attributes);
 }
-
 void Genesis::InitializeGlobal_harmony_sharedarraybuffer() {
   if (!FLAG_harmony_sharedarraybuffer) return;
 
@@ -4277,18 +4287,22 @@ void Genesis::InitializeGlobal_harmony_array_prototype_values() {
 }
 
 void Genesis::InitializeGlobal_harmony_array_flatten() {
-  if (!FLAG_harmony_array_flatten) return;
+  //if (!FLAG_harmony_array_flatten) return;
   Handle<JSFunction> array_constructor(native_context()->array_function());
   Handle<JSObject> array_prototype(
       JSObject::cast(array_constructor->instance_prototype()));
-  SimpleInstallFunction(array_prototype, "flatten",
+  SimpleInstallFunction(array_prototype, "flat",
                         Builtins::kArrayPrototypeFlatten, 0, false, DONT_ENUM);
   SimpleInstallFunction(array_prototype, "flatMap",
                         Builtins::kArrayPrototypeFlatMap, 1, false, DONT_ENUM);
 }
 
+void Genesis::InitializeGlobal_harmony_numeric_separator() {
+  FLAG_harmony_numeric_separator = true;
+}
+
 void Genesis::InitializeGlobal_harmony_string_matchall() {
-  if (!FLAG_harmony_string_matchall) return;
+  //if (!FLAG_harmony_string_matchall) return;
 
   {  // String.prototype.matchAll
     Handle<JSFunction> string_fun(native_context()->string_function());

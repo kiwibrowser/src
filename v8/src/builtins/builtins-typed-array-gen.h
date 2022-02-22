@@ -4,12 +4,12 @@
 
 #ifndef V8_BUILTINS_BUILTINS_TYPED_ARRAY_GEN_H_
 #define V8_BUILTINS_BUILTINS_TYPED_ARRAY_GEN_H_
-
+#include "src/builtins/builtins-utils-gen.h"
 #include "src/code-stub-assembler.h"
 
 namespace v8 {
 namespace internal {
-
+class TypedArrayBuiltinsFromDSLAssembler;
 class TypedArrayBuiltinsAssembler : public CodeStubAssembler {
  public:
   explicit TypedArrayBuiltinsAssembler(compiler::CodeAssemblerState* state)
@@ -141,6 +141,8 @@ class TypedArrayBuiltinsAssembler : public CodeStubAssembler {
   // Returns true iff number is NaN.
   // TOOD(szuend): Remove when UncheckedCasts are supported in Torque.
   TNode<BoolT> NumberIsNaN(TNode<Number> number);
+  friend class TypedArrayBuiltinsFromDSLAssembler;
+  friend class TypedArrayPrototypeSortAssembler;
 };
 
 }  // namespace internal

@@ -29,13 +29,18 @@ namespace {
 
 typedef CodeAssemblerLabel Label;
 typedef CodeAssemblerVariable Variable;
-
+class TestTorqueAssembler : public CodeStubAssembler,
+                            public TestBuiltinsFromDSLAssembler {
+ public:
+  explicit TestTorqueAssembler(CodeAssemblerState* state)
+      : CodeStubAssembler(state), TestBuiltinsFromDSLAssembler(state) {}
+};
 }  // namespace
 
 TEST(TestConstexpr1) {
   Isolate* isolate(CcTest::InitIsolateOnce());
   CodeAssemblerTester asm_tester(isolate, 0);
-  TestBuiltinsFromDSLAssembler m(asm_tester.state());
+  TestTorqueAssembler m(asm_tester.state());
   {
     m.TestConstexpr1();
     m.Return(m.UndefinedConstant());
@@ -47,7 +52,7 @@ TEST(TestConstexpr1) {
 TEST(TestConstexprIf) {
   Isolate* isolate(CcTest::InitIsolateOnce());
   CodeAssemblerTester asm_tester(isolate, 0);
-  TestBuiltinsFromDSLAssembler m(asm_tester.state());
+  TestTorqueAssembler m(asm_tester.state());
   {
     m.TestConstexprIf();
     m.Return(m.UndefinedConstant());
@@ -59,7 +64,7 @@ TEST(TestConstexprIf) {
 TEST(TestConstexprReturn) {
   Isolate* isolate(CcTest::InitIsolateOnce());
   CodeAssemblerTester asm_tester(isolate, 0);
-  TestBuiltinsFromDSLAssembler m(asm_tester.state());
+  TestTorqueAssembler m(asm_tester.state());
   {
     m.TestConstexprReturn();
     m.Return(m.UndefinedConstant());
@@ -71,7 +76,7 @@ TEST(TestConstexprReturn) {
 TEST(TestGotoLabel) {
   Isolate* isolate(CcTest::InitIsolateOnce());
   CodeAssemblerTester asm_tester(isolate, 0);
-  TestBuiltinsFromDSLAssembler m(asm_tester.state());
+  TestTorqueAssembler m(asm_tester.state());
   { m.Return(m.TestGotoLabel()); }
   FunctionTester ft(asm_tester.GenerateCode(), 0);
   ft.CheckCall(ft.true_value());
@@ -80,7 +85,7 @@ TEST(TestGotoLabel) {
 TEST(TestGotoLabelWithOneParameter) {
   Isolate* isolate(CcTest::InitIsolateOnce());
   CodeAssemblerTester asm_tester(isolate, 0);
-  TestBuiltinsFromDSLAssembler m(asm_tester.state());
+  TestTorqueAssembler m(asm_tester.state());
   { m.Return(m.TestGotoLabelWithOneParameter()); }
   FunctionTester ft(asm_tester.GenerateCode(), 0);
   ft.CheckCall(ft.true_value());
@@ -89,7 +94,7 @@ TEST(TestGotoLabelWithOneParameter) {
 TEST(TestGotoLabelWithTwoParameters) {
   Isolate* isolate(CcTest::InitIsolateOnce());
   CodeAssemblerTester asm_tester(isolate, 0);
-  TestBuiltinsFromDSLAssembler m(asm_tester.state());
+  TestTorqueAssembler m(asm_tester.state());
   { m.Return(m.TestGotoLabelWithTwoParameters()); }
   FunctionTester ft(asm_tester.GenerateCode(), 0);
   ft.CheckCall(ft.true_value());
@@ -98,7 +103,7 @@ TEST(TestGotoLabelWithTwoParameters) {
 TEST(TestPartiallyUnusedLabel) {
   Isolate* isolate(CcTest::InitIsolateOnce());
   CodeAssemblerTester asm_tester(isolate, 0);
-  TestBuiltinsFromDSLAssembler m(asm_tester.state());
+  TestTorqueAssembler m(asm_tester.state());
   { m.Return(m.TestPartiallyUnusedLabel()); }
   FunctionTester ft(asm_tester.GenerateCode(), 0);
   ft.CheckCall(ft.true_value());
@@ -107,7 +112,7 @@ TEST(TestPartiallyUnusedLabel) {
 TEST(TestBuiltinSpecialization) {
   Isolate* isolate(CcTest::InitIsolateOnce());
   CodeAssemblerTester asm_tester(isolate, 0);
-  TestBuiltinsFromDSLAssembler m(asm_tester.state());
+  TestTorqueAssembler m(asm_tester.state());
   {
     Node* temp = m.SmiConstant(0);
     m.TestBuiltinSpecialization(m.UncheckedCast<Context>(temp));
@@ -120,7 +125,7 @@ TEST(TestBuiltinSpecialization) {
 TEST(TestMacroSpecialization) {
   Isolate* isolate(CcTest::InitIsolateOnce());
   CodeAssemblerTester asm_tester(isolate, 0);
-  TestBuiltinsFromDSLAssembler m(asm_tester.state());
+  TestTorqueAssembler m(asm_tester.state());
   {
     m.TestMacroSpecialization();
     m.Return(m.UndefinedConstant());
@@ -133,7 +138,7 @@ TEST(TestFunctionPointers) {
   Isolate* isolate(CcTest::InitIsolateOnce());
   const int kNumParams = 0;
   CodeAssemblerTester asm_tester(isolate, kNumParams);
-  TestBuiltinsFromDSLAssembler m(asm_tester.state());
+  TestTorqueAssembler m(asm_tester.state());
   {
     TNode<Context> context =
         m.UncheckedCast<Context>(m.Parameter(kNumParams + 2));
@@ -146,7 +151,7 @@ TEST(TestFunctionPointers) {
 TEST(TestFunctionPointerToGeneric) {
   Isolate* isolate(CcTest::InitIsolateOnce());
   CodeAssemblerTester asm_tester(isolate, 0);
-  TestBuiltinsFromDSLAssembler m(asm_tester.state());
+  TestTorqueAssembler m(asm_tester.state());
   {
     Node* temp = m.SmiConstant(0);
     m.TestFunctionPointerToGeneric(m.UncheckedCast<Context>(temp));

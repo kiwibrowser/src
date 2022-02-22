@@ -156,6 +156,38 @@ void CodeStubAssembler::Check(const NodeGenerator& condition_body,
         extra_node4_name, extra_node5, extra_node5_name);
 }
 
+
+
+void CodeStubAssembler::FailAssert(
+    const char* message, const char* file, int line, Node* extra_node1,
+    const char* extra_node1_name, Node* extra_node2,
+    const char* extra_node2_name, Node* extra_node3,
+    const char* extra_node3_name, Node* extra_node4,
+    const char* extra_node4_name, Node* extra_node5,
+    const char* extra_node5_name) {
+  DCHECK_NOT_NULL(message);
+  char chars[1024];
+  Vector<char> buffer(chars);
+  if (file != nullptr) {
+    SNPrintF(buffer, "CSA_ASSERT failed: %s [%s:%d]\n", message, file, line);
+  } else {
+    SNPrintF(buffer, "CSA_ASSERT failed: %s\n", message);
+  }
+  Node* message_node = StringConstant(&(buffer[0]));
+
+#ifdef DEBUG
+  // Only print the extra nodes in debug builds.
+  MaybePrintNodeWithName(this, extra_node1, extra_node1_name);
+  MaybePrintNodeWithName(this, extra_node2, extra_node2_name);
+  MaybePrintNodeWithName(this, extra_node3, extra_node3_name);
+  MaybePrintNodeWithName(this, extra_node4, extra_node4_name);
+  MaybePrintNodeWithName(this, extra_node5, extra_node5_name);
+#endif
+
+  DebugAbort(message_node);
+  Unreachable();
+}
+
 Node* CodeStubAssembler::SelectImpl(TNode<BoolT> condition,
                                     const NodeGenerator& true_body,
                                     const NodeGenerator& false_body,
@@ -2206,9 +2238,12 @@ Node* CodeStubAssembler::LoadFixedDoubleArrayElement(
   return LoadDoubleWithHoleCheck(object, offset, if_hole, machine_type);
 }
 
-Node* CodeStubAssembler::LoadDoubleWithHoleCheck(Node* base, Node* offset,
-                                                 Label* if_hole,
-                                                 MachineType machine_type) {
+//Node* CodeStubAssembler::LoadDoubleWithHoleCheck(Node* base, Node* offset,
+//                                                 Label* if_hole,
+//                                                 MachineType machine_type) {
+TNode<Float64T> CodeStubAssembler::LoadDoubleWithHoleCheck(
+		    SloppyTNode<Object> base, SloppyTNode<IntPtrT> offset, Label* if_hole,
+		        MachineType machine_type) {
   if (if_hole) {
     // TODO(ishell): Compare only the upper part for the hole once the
     // compiler is able to fold addition of already complex |offset| with
@@ -2226,9 +2261,9 @@ Node* CodeStubAssembler::LoadDoubleWithHoleCheck(Node* base, Node* offset,
   }
   if (machine_type.IsNone()) {
     // This means the actual value is not needed.
-    return nullptr;
+    return TNode<Float64T>();;
   }
-  return Load(machine_type, base, offset);
+  return UncheckedCast<Float64T>(Load(machine_type, base, offset));
 }
 
 TNode<Object> CodeStubAssembler::LoadContextElement(
@@ -3986,6 +4021,17 @@ TNode<FixedArray> CodeStubAssembler::ConvertFixedArrayBaseToFixedArray(
   return UncheckedCast<FixedArray>(base);
 }
 
+TNode<FixedArray> CodeStubAssembler::HeapObjectToFixedArray(
+		    TNode<HeapObject> base, Label* cast_fail) {
+	  Label fixed_array(this);
+	    TNode<Map> map = LoadMap(base);
+	      GotoIf(WordEqual(map, LoadRoot(Heap::kFixedArrayMapRootIndex)), &fixed_array);
+	        GotoIf(WordNotEqual(map, LoadRoot(Heap::kFixedCOWArrayMapRootIndex)), cast_fail);
+		  Goto(&fixed_array);
+		    BIND(&fixed_array);
+		      return UncheckedCast<FixedArray>(base);
+}
+
 void CodeStubAssembler::CopyPropertyArrayValues(Node* from_array,
                                                 Node* to_array,
                                                 Node* property_count,
@@ -4588,6 +4634,10 @@ Node* CodeStubAssembler::TimesPointerSize(Node* value) {
   return WordShl(value, IntPtrConstant(kPointerSizeLog2));
 }
 
+TNode<WordT> CodeStubAssembler::TimesTaggedSize(SloppyTNode<WordT> value) {
+	  return WordShl(value, kTaggedSizeLog2);
+}
+
 Node* CodeStubAssembler::ToThisValue(Node* context, Node* value,
                                      PrimitiveType primitive_type,
                                      char const* method_name) {
@@ -4798,6 +4848,13 @@ TNode<BoolT> CodeStubAssembler::IsNoElementsProtectorCellInvalid() {
   Node* cell = LoadRoot(Heap::kNoElementsProtectorRootIndex);
   Node* cell_value = LoadObjectField(cell, PropertyCell::kValueOffset);
   return WordEqual(cell_value, invalid);
+}
+
+TNode<BoolT> CodeStubAssembler::IsArrayIteratorProtectorCellInvalid() {
+	  Node* invalid = SmiConstant(Isolate::kProtectorInvalid);
+	    Node* cell = LoadRoot(Heap::kArrayIteratorProtectorRootIndex);
+	      Node* cell_value = LoadObjectField(cell, PropertyCell::kValueOffset);
+	        return WordEqual(cell_value, invalid);
 }
 
 TNode<BoolT> CodeStubAssembler::IsPromiseResolveProtectorCellInvalid() {
@@ -9233,6 +9290,12 @@ Node* CodeStubAssembler::CreateWeakCellInFeedbackVector(Node* feedback_vector,
   return cell;
 }
 
+
+TNode<Word32T> CodeStubAssembler::LoadElementsKind(
+		    TNode<JSTypedArray> typed_array) {
+	  return LoadMapElementsKind(LoadMap(typed_array));
+}
+
 Node* CodeStubAssembler::BuildFastLoop(
     const CodeStubAssembler::VariableList& vars, Node* start_index,
     Node* end_index, const FastLoopBody& body, int increment,
@@ -10754,9 +10817,9 @@ void CodeStubAssembler::BranchIfSameValue(Node* lhs, Node* rhs, Label* if_true,
   }
 }
 
-TNode<Oddball> CodeStubAssembler::HasProperty(SloppyTNode<HeapObject> object,
+TNode<Oddball> CodeStubAssembler::HasProperty(SloppyTNode<Context> context,
+                                              SloppyTNode<HeapObject> object,
                                               SloppyTNode<Object> key,
-                                              SloppyTNode<Context> context,
                                               HasPropertyLookupMode mode) {
   Label call_runtime(this, Label::kDeferred), return_true(this),
       return_false(this), end(this), if_proxy(this, Label::kDeferred);

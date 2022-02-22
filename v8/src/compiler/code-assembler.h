@@ -210,6 +210,24 @@ struct UnionT {
 using Number = UnionT<Smi, HeapNumber>;
 using Numeric = UnionT<Number, BigInt>;
 
+class int31_t {
+	 public:
+		   int31_t() : value_(0) {}
+		     int31_t(int value) : value_(value) {  // NOLINT(runtime/explicit)
+			         DCHECK_EQ((value & 0x80000000) != 0, (value & 0x40000000) != 0);
+				   }
+		       int31_t& operator=(int value) {
+			           DCHECK_EQ((value & 0x80000000) != 0, (value & 0x40000000) != 0);
+				       value_ = value;
+				           return *this;
+					     }
+		         int32_t value() const { return value_; }
+			   operator int32_t() const { return value_; }
+
+			    private:
+			     int32_t value_;
+};
+
 #define ENUM_ELEMENT(Name) k##Name,
 #define ENUM_STRUCT_ELEMENT(NAME, Name, name) k##Name,
 enum class ObjectType {
@@ -410,6 +428,9 @@ class SloppyTNode : public TNode<T> {
   SloppyTNode(const TNode<U>& other)  // NOLINT(runtime/explicit)
       : TNode<T>(other) {}
 };
+
+template <class... Types>
+class CodeAssemblerParameterizedLabel;
 
 // This macro alias allows to use PairT<T1, T2> as a macro argument.
 #define PAIR_TYPE(T1, T2) PairT<T1, T2>
@@ -650,12 +671,12 @@ class V8_EXPORT_PRIVATE CodeAssembler {
     return TNode<T>::UncheckedCast(value);
   }
 
-  CheckedNode<Object, false> Cast(Node* value, const char* location) {
+  CheckedNode<Object, false> Cast(Node* value, const char* location = "") {
     return {value, this, location};
   }
 
   template <class T>
-  CheckedNode<T, true> Cast(TNode<T> value, const char* location) {
+  CheckedNode<T, true> Cast(TNode<T> value, const char* location = "") {
     return {value, this, location};
   }
 
@@ -664,8 +685,11 @@ class V8_EXPORT_PRIVATE CodeAssembler {
 #define TO_STRING_LITERAL(x) STRINGIFY(x)
 #define CAST(x) \
   Cast(x, "CAST(" #x ") at " __FILE__ ":" TO_STRING_LITERAL(__LINE__))
+#define TORQUE_CAST(x) \
+    ca_.Cast(x, "CAST(" #x ") at " __FILE__ ":" TO_STRING_LITERAL(__LINE__))
 #else
 #define CAST(x) Cast(x, "")
+#define TORQUE_CAST(x) ca_.Cast(x)
 #endif
 
 #ifdef V8_EMBEDDED_BUILTINS
@@ -679,6 +703,9 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   TNode<IntPtrT> IntPtrConstant(intptr_t value);
   TNode<Number> NumberConstant(double value);
   TNode<Smi> SmiConstant(Smi* value);
+  TNode<Smi> SmiConstant(Smi& value) {
+      return SmiConstant(Smi::FromInt(value.value()));
+  }
   TNode<Smi> SmiConstant(int value);
   template <typename E,
             typename = typename std::enable_if<std::is_enum<E>::value>::type>
@@ -745,6 +772,32 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   void GotoIfNot(SloppyTNode<IntegralT> condition, Label* false_label);
   void Branch(SloppyTNode<IntegralT> condition, Label* true_label,
               Label* false_label);
+  
+  template <class T>
+	    TNode<T> Uninitialized() {
+		        return {};
+			  }
+
+
+  template <class... T>
+  void Bind(CodeAssemblerParameterizedLabel<T...>* label, TNode<T>*... phis) {
+    Bind(label->plain_label());
+    label->CreatePhis(phis...);
+  }
+  template <class... T, class... Args>
+  void Branch(TNode<BoolT> condition,
+              CodeAssemblerParameterizedLabel<T...>* if_true,
+              CodeAssemblerParameterizedLabel<T...>* if_false, Args... args) {
+    if_true->AddInputs(args...);
+    if_false->AddInputs(args...);
+    Branch(condition, if_true->plain_label(), if_false->plain_label());
+  }
+
+  template <class... T, class... Args>
+  void Goto(CodeAssemblerParameterizedLabel<T...>* label, Args... args) {
+    label->AddInputs(args...);
+    Goto(label->plain_label());
+  }
 
   void Switch(Node* index, Label* default_label, const int32_t* case_values,
               Label** case_labels, size_t case_count);
@@ -1268,6 +1321,64 @@ class CodeAssemblerLabel {
   std::map<CodeAssemblerVariable::Impl*, std::vector<Node*>> variable_merges_;
 };
 
+
+class CodeAssemblerParameterizedLabelBase {
+ public:
+  bool is_used() const { return plain_label_.is_used(); }
+  explicit CodeAssemblerParameterizedLabelBase(CodeAssembler* assembler,
+                                               size_t arity,
+                                               CodeAssemblerLabel::Type type)
+      : state_(assembler->state()),
+        phi_inputs_(arity),
+        plain_label_(assembler, type) {}
+
+ protected:
+  CodeAssemblerLabel* plain_label() { return &plain_label_; }
+  void AddInputs(std::vector<Node*> inputs);
+  Node* CreatePhi(MachineRepresentation rep, const std::vector<Node*>& inputs);
+  const std::vector<Node*>& CreatePhis(
+      std::vector<MachineRepresentation> representations);
+
+ private:
+  CodeAssemblerState* state_;
+  std::vector<std::vector<Node*>> phi_inputs_;
+  std::vector<Node*> phi_nodes_;
+  CodeAssemblerLabel plain_label_;
+};
+
+template <class... Types>
+class CodeAssemblerParameterizedLabel
+    : public CodeAssemblerParameterizedLabelBase {
+ public:
+  static constexpr size_t kArity = sizeof...(Types);
+  explicit CodeAssemblerParameterizedLabel(CodeAssembler* assembler,
+                                           CodeAssemblerLabel::Type type)
+      : CodeAssemblerParameterizedLabelBase(assembler, kArity, type) {}
+
+ private:
+  friend class CodeAssembler;
+
+  void AddInputs(TNode<Types>... inputs) {
+    CodeAssemblerParameterizedLabelBase::AddInputs(
+        std::vector<Node*>{inputs...});
+  }
+  void CreatePhis(TNode<Types>*... results) {
+    const std::vector<Node*>& phi_nodes =
+        CodeAssemblerParameterizedLabelBase::CreatePhis(
+            {MachineRepresentationOf<Types>::value...});
+    auto it = phi_nodes.begin();
+    USE(it);
+    ITERATE_PACK(AssignPhi(results, *(it++)));
+  }
+  template <class T>
+  static void AssignPhi(TNode<T>* result, Node* phi) {
+    if (phi != nullptr) *result = TNode<T>::UncheckedCast(phi);
+  }
+};
+
+typedef CodeAssemblerParameterizedLabel<Object>
+    CodeAssemblerExceptionHandlerLabel;
+
 class V8_EXPORT_PRIVATE CodeAssemblerState {
  public:
   // Create with CallStub linkage.
@@ -1292,20 +1403,25 @@ class V8_EXPORT_PRIVATE CodeAssemblerState {
 
 #if DEBUG
   void PrintCurrentBlock(std::ostream& os);
-  bool InsideBlock();
 #endif  // DEBUG
+  bool InsideBlock();
   void SetInitialDebugInformation(const char* msg, const char* file, int line);
 
  private:
   friend class CodeAssembler;
   friend class CodeAssemblerLabel;
   friend class CodeAssemblerVariable;
-  friend class CodeAssemblerTester;
+  friend class CodeAssemblerTester;  
+  friend class CodeAssemblerParameterizedLabelBase;
+  friend class CodeAssemblerScopedExceptionHandler;
 
   CodeAssemblerState(Isolate* isolate, Zone* zone,
                      CallDescriptor* call_descriptor, Code::Kind kind,
                      const char* name, PoisoningMitigationLevel poisoning_level,
                      uint32_t stub_key, int32_t builtin_index);
+
+  void PushExceptionHandler(CodeAssemblerExceptionHandlerLabel* label);
+  void PopExceptionHandler();
 
   std::unique_ptr<RawMachineAssembler> raw_assembler_;
   Code::Kind kind_;
@@ -1316,8 +1432,35 @@ class V8_EXPORT_PRIVATE CodeAssemblerState {
   ZoneSet<CodeAssemblerVariable::Impl*> variables_;
   CodeAssemblerCallback call_prologue_;
   CodeAssemblerCallback call_epilogue_;
+  
+  std::vector<CodeAssemblerExceptionHandlerLabel*> exception_handler_labels_;
+  typedef uint32_t VariableId;
+  VariableId next_variable_id_ = 0;
+
+  VariableId NextVariableId() { return next_variable_id_++; }
 
   DISALLOW_COPY_AND_ASSIGN(CodeAssemblerState);
+};
+
+class CodeAssemblerScopedExceptionHandler {
+ public:
+  CodeAssemblerScopedExceptionHandler(
+      CodeAssembler* assembler, CodeAssemblerExceptionHandlerLabel* label);
+
+  // Use this constructor for compatability/ports of old CSA code only. New code
+  // should use the CodeAssemblerExceptionHandlerLabel version.
+  CodeAssemblerScopedExceptionHandler(
+      CodeAssembler* assembler, CodeAssemblerLabel* label,
+      TypedCodeAssemblerVariable<Object>* exception);
+
+  ~CodeAssemblerScopedExceptionHandler();
+
+ private:
+  bool has_handler_;
+  CodeAssembler* assembler_;
+  CodeAssemblerLabel* compatibility_label_;
+  std::unique_ptr<CodeAssemblerExceptionHandlerLabel> label_;
+  TypedCodeAssemblerVariable<Object>* exception_;
 };
 
 }  // namespace compiler

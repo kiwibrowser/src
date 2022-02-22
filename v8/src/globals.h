@@ -253,6 +253,10 @@ constexpr int kMaxRegularHeapObjectSize = 507136;
 
 STATIC_ASSERT(kPointerSize == (1 << kPointerSizeLog2));
 
+constexpr int kTaggedSize = kPointerSize;
+constexpr int kTaggedSizeLog2 = kPointerSizeLog2;
+STATIC_ASSERT(kTaggedSize == (1 << kTaggedSizeLog2));
+
 constexpr int kBitsPerByte = 8;
 constexpr int kBitsPerByteLog2 = 3;
 constexpr int kBitsPerPointer = kPointerSize * kBitsPerByte;
