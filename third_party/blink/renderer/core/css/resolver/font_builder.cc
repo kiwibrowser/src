@@ -344,7 +344,7 @@ void FontBuilder::UpdateAdjustedSize(FontDescription& font_description,
       font_description, style.EffectiveZoom(), adjusted_size);
 
   adjusted_size = TextAutosizer::ComputeAutosizedFontSize(
-      adjusted_size, style.TextAutosizingMultiplier());
+      adjusted_size, style.TextAutosizingMultiplier(), style.EffectiveZoom());
   font_description.SetAdjustedSize(adjusted_size);
 }
 
@@ -354,7 +354,7 @@ void FontBuilder::UpdateComputedSize(FontDescription& font_description,
       GetComputedSizeFromSpecifiedSize(font_description, style.EffectiveZoom(),
                                        font_description.SpecifiedSize());
   computed_size = TextAutosizer::ComputeAutosizedFontSize(
-      computed_size, style.TextAutosizingMultiplier());
+      computed_size, style.TextAutosizingMultiplier(), style.EffectiveZoom());
   font_description.SetComputedSize(computed_size);
 }
 

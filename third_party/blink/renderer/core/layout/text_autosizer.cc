@@ -34,6 +34,8 @@
 #include <memory>
 #include <utility>
 
+//#include <android/log.h>
+
 #include "base/memory/ptr_util.h"
 #include "third_party/blink/renderer/core/dom/document.h"
 #include "third_party/blink/renderer/core/frame/local_frame.h"
@@ -161,6 +163,22 @@ static bool BlockIsRowOfLinks(const LayoutBlock* block) {
 }
 
 static bool BlockHeightConstrained(const LayoutBlock* block) {
+  for (; block; block = block->ContainingBlock()) {
+    const ComputedStyle& style = block->StyleRef();
+    if (style.OverflowY() != EOverflow::kVisible
+        && style.OverflowY() != EOverflow::kHidden)
+      return false;
+    if (style.Height().IsSpecified() || style.MaxHeight().IsSpecified() ||
+        block->IsOutOfFlowPositioned()) {
+      // Some sites (e.g. wikipedia) set their html and/or body elements to
+      // height:100%, without intending to constrain the height of the content
+      // within them.
+      return !block->IsDocumentElement() && !block->IsBody() &&
+             !block->IsLayoutView();
+    }
+    if (block->IsFloating())
+      return false;
+  }
   return false;
 }
 
@@ -553,8 +571,9 @@ void TextAutosizer::UpdatePageInfo() {
     LocalFrame& main_frame = ToLocalFrame(frame);
     IntSize frame_size =
         document_->GetSettings()->TextAutosizingWindowSizeOverride();
-    if (frame_size.IsEmpty())
-      frame_size = WindowSize();
+    if (frame_size.IsEmpty()) {
+	frame_size = WindowSize();
+    }
 
     page_info_.frame_width_ =
         horizontal_writing_mode ? frame_size.Width() : frame_size.Height();
@@ -589,6 +608,10 @@ void TextAutosizer::UpdatePageInfo() {
              (static_cast<float>(page_info_.layout_width_) /
               page_info_.frame_width_) >
          1.0f);
+   //Page* page = document_->GetPage();
+    //VisualViewport& vp = page->GetVisualViewport();
+    //__android_log_print(ANDROID_LOG_ERROR, "BLINK", "page_needs_autosizing %d,%f,%f,%d,%d",page_info_.page_needs_autosizing_,page_info_.device_scale_adjustment_,page_info_.accessibility_font_scale_factor_,page_info_.layout_width_,page_info_.frame_width_);
+    //__android_log_print(ANDROID_LOG_ERROR, "BLINK", "visible_port %f,%f,%f, %f",vp.Scale(), vp.VisibleSize().Width(), vp.VisibleSize().Height(), page->DeviceScaleFactorDeprecated());
   }
 
   if (page_info_.page_needs_autosizing_) {
@@ -1323,11 +1346,12 @@ TextAutosizer::DeferUpdatePageInfo::~DeferUpdatePageInfo() {
 }
 
 float TextAutosizer::ComputeAutosizedFontSize(float specified_size,
-                                              float multiplier) {
+                                              float multiplier, 
+					      float effective_zoom) {
   DCHECK_GE(multiplier, 0);
 
   // Somewhat arbitrary "pleasant" font size.
-  const float kPleasantSize = 16;
+  const float kPleasantSize = 16 * effective_zoom;
 
   // Multiply fonts that the page author has specified to be larger than
   // pleasantSize by less and less, until huge fonts are not increased at all.
@@ -1353,6 +1377,10 @@ float TextAutosizer::ComputeAutosizedFontSize(float specified_size,
     if (computed_size < specified_size)
       computed_size = specified_size;
   }
+  //if (specified_size != computed_size) {
+  
+  	//__android_log_print(ANDROID_LOG_ERROR, "BLINK", "ComputeAutosizedFontSize %f, %f, %f, %f", specified_size, multiplier,effective_zoom, computed_size);
+  //}
   return computed_size;
 }
 
