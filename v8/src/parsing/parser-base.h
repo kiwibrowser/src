@@ -1154,7 +1154,10 @@ class ParserBase {
   ExpressionT ParseAssignmentExpression(bool accept_IN, bool* ok);
   ExpressionT ParseYieldExpression(bool accept_IN, bool* ok);
   ExpressionT ParseConditionalExpression(bool accept_IN, bool* ok);
+  ExpressionT ParseLogicalExpression(bool accept_IN, bool* ok);
+  ExpressionT ParseCoalesceExpression(ExpressionT expression,bool accept_IN, bool* ok);
   ExpressionT ParseBinaryExpression(int prec, bool accept_IN, bool* ok);
+  ExpressionT ParseBinaryContinuation(ExpressionT x, int prec, int prec1, bool accept_IN, bool* ok);
   ExpressionT ParseUnaryExpression(bool* ok);
   ExpressionT ParsePostfixExpression(bool* ok);
   ExpressionT ParseLeftHandSideExpression(bool* ok);
@@ -3113,9 +3116,13 @@ ParserBase<Impl>::ParseConditionalExpression(bool accept_IN,
 
   SourceRange then_range, else_range;
   int pos = peek_position();
+  ExpressionT expression = ParseLogicalExpression(accept_IN, CHECK_OK);
+  if (peek() != Token::CONDITIONAL) {
+    return expression;
+  }
   // We start using the binary expression parser for prec >= 4 only!
-  ExpressionT expression = ParseBinaryExpression(4, accept_IN, CHECK_OK);
-  if (peek() != Token::CONDITIONAL) return expression;
+  //ExpressionT expression = ParseBinaryExpression(4, accept_IN, CHECK_OK);
+  //if (peek() != Token::CONDITIONAL) return expression;
   ValidateExpression(CHECK_OK);
   BindingPatternUnexpectedToken();
   ArrowFormalParametersUnexpectedToken();
@@ -3147,16 +3154,80 @@ ParserBase<Impl>::ParseConditionalExpression(bool accept_IN,
 }
 
 
+template <typename Impl>
+typename ParserBase<Impl>::ExpressionT
+ParserBase<Impl>::ParseLogicalExpression(bool accept_IN, bool* ok) {
+  // LogicalExpression ::
+  //   LogicalORExpression
+  //   CoalesceExpression
+
+  // Both LogicalORExpression and CoalesceExpression start with BitwiseOR.
+  // Parse for binary expressions >= 6 (BitwiseOR);
+  ExpressionT expression = ParseBinaryExpression(6, accept_IN,  CHECK_OK);
+  if (peek() == Token::AND || peek() == Token::OR) {
+    // LogicalORExpression, pickup parsing where we left off.
+    int prec1 = Precedence(peek(), accept_IN);
+    expression = ParseBinaryContinuation(expression, 4, prec1,accept_IN, CHECK_OK);
+  } else if (V8_UNLIKELY(peek() == Token::NULLISH)) {
+    expression = ParseCoalesceExpression(expression, accept_IN, CHECK_OK);
+  }
+  return expression;
+}
+
+template <typename Impl>
+typename ParserBase<Impl>::ExpressionT
+ParserBase<Impl>::ParseCoalesceExpression(ExpressionT expression, bool accept_IN, bool* ok) {
+  // CoalesceExpression ::
+  //   CoalesceExpressionHead ?? BitwiseORExpression
+  //
+  //   CoalesceExpressionHead ::
+  //     CoalesceExpression
+  //     BitwiseORExpression
+
+  // We create a binary operation for the first nullish, otherwise collapse
+  // into an nary expresion.
+  bool first_nullish = true;
+  while (peek() == Token::NULLISH) {
+    SourceRange right_range;
+    SourceRangeScope right_range_scope(scanner(), &right_range);
+    Consume(Token::NULLISH);
+    int pos = peek_position();
+
+    // Parse BitwiseOR or higher.
+    ExpressionT y = ParseBinaryExpression(6,accept_IN, CHECK_OK);
+    if (first_nullish) {
+      expression =
+          factory()->NewBinaryOperation(Token::NULLISH, expression, y, pos);
+      impl()->RecordBinaryOperationSourceRange(expression, right_range);
+      first_nullish = false;
+    } else {
+      impl()->CollapseNaryExpression(&expression, y, Token::NULLISH, pos,
+                                     right_range);
+    }
+  }
+  return expression;
+}
+
 // Precedence >= 4
 template <typename Impl>
 typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseBinaryExpression(
     int prec, bool accept_IN, bool* ok) {
   DCHECK_GE(prec, 4);
-  SourceRange right_range;
   ExpressionT x = ParseUnaryExpression(CHECK_OK);
-  for (int prec1 = Precedence(peek(), accept_IN); prec1 >= prec; prec1--) {
-    // prec1 >= 4
+  int prec1 = Precedence(peek(), accept_IN);
+  if (prec1 >= prec) {
+    return ParseBinaryContinuation(x, prec, prec1, accept_IN, CHECK_OK);
+  }
+  return x;
+}
+
+// Precedence >= 4
+template <typename Impl>
+typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseBinaryContinuation(
+  ExpressionT x,   int prec, int prec1,bool accept_IN, bool* ok) {
+  do{   // prec1 >= 4
     while (Precedence(peek(), accept_IN) == prec1) {
+      SourceRange right_range;
       ValidateExpression(CHECK_OK);
       BindingPatternUnexpectedToken();
       ArrowFormalParametersUnexpectedToken();
@@ -3201,7 +3272,8 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseBinaryExpression(
         }
       }
     }
-  }
+    --prec1;
+  } while(prec1 >= prec);
   return x;
 }
 
@@ -3337,9 +3409,30 @@ ParserBase<Impl>::ParseLeftHandSideExpression(bool* ok) {
   bool is_async = false;
   ExpressionT result =
       ParseMemberWithNewPrefixesExpression(&is_async, CHECK_OK);
-
-  while (true) {
+  if (!Token::IsPropertyOrCall(peek())) return result; 
+  bool optional_chaining = false;
+  bool is_optional = false;
+  do {
     switch (peek()) {
+      case Token::QUESTION_PERIOD: {
+        if (is_optional) {
+          ReportUnexpectedToken(peek());
+	  *ok = false;
+          return impl()->NullExpression();
+        }
+        ValidateExpression(CHECK_OK);
+        BindingPatternUnexpectedToken();
+        ArrowFormalParametersUnexpectedToken();
+
+        Consume(Token::QUESTION_PERIOD);
+        is_optional = true;
+        optional_chaining = true;
+        if (Token::IsPropertyOrCall(peek())) continue;
+        int pos = position();
+        ExpressionT key = ParseIdentifierNameOrPrivateName(CHECK_OK);
+        result = factory()->NewProperty(result, key, pos, is_optional);
+        break;
+     }      
       case Token::LBRACK: {
         ValidateExpression(CHECK_OK);
         BindingPatternUnexpectedToken();
@@ -3348,7 +3441,7 @@ ParserBase<Impl>::ParseLeftHandSideExpression(bool* ok) {
         int pos = position();
         ExpressionT index = ParseExpressionCoverGrammar(true, CHECK_OK);
         ValidateExpression(CHECK_OK);
-        result = factory()->NewProperty(result, index, pos);
+        result = factory()->NewProperty(result, index, pos, is_optional);
         Expect(Token::RBRACK, CHECK_OK);
         break;
       }
@@ -3425,9 +3518,9 @@ ParserBase<Impl>::ParseLeftHandSideExpression(bool* ok) {
             CheckPossibleEvalCall(result, scope());
 
         if (spread_pos.IsValid()) {
-          result = impl()->SpreadCall(result, args, pos, is_possibly_eval);
+          result = impl()->SpreadCall(result, args, pos, is_possibly_eval, is_optional);
         } else {
-          result = factory()->NewCall(result, args, pos, is_possibly_eval);
+          result = factory()->NewCall(result, args, pos, is_possibly_eval, is_optional);
         }
 
         if (fni_ != nullptr) fni_->RemoveLastFunction();
@@ -3435,29 +3528,59 @@ ParserBase<Impl>::ParseLeftHandSideExpression(bool* ok) {
       }
 
       case Token::PERIOD: {
+        if (is_optional) {
+          ReportUnexpectedToken(Next());
+	  *ok = false;
+          return impl()->NullExpression();
+        }
         ValidateExpression(CHECK_OK);
         BindingPatternUnexpectedToken();
         ArrowFormalParametersUnexpectedToken();
         Consume(Token::PERIOD);
         int pos = position();
         ExpressionT key = ParseIdentifierNameOrPrivateName(CHECK_OK);
-        result = factory()->NewProperty(result, key, pos);
+        result = factory()->NewProperty(result, key, pos, is_optional);
         break;
       }
 
-      case Token::TEMPLATE_SPAN:
-      case Token::TEMPLATE_TAIL: {
-        ValidateExpression(CHECK_OK);
-        BindingPatternUnexpectedToken();
-        ArrowFormalParametersUnexpectedToken();
-        result = ParseTemplateLiteral(result, position(), true, CHECK_OK);
-        break;
-      }
+      //case Token::TEMPLATE_SPAN:
+      //case Token::TEMPLATE_TAIL: {
+       // ValidateExpression(CHECK_OK);
+       // BindingPatternUnexpectedToken();
+       // ArrowFormalParametersUnexpectedToken();
+       // result = ParseTemplateLiteral(result, position(), true, CHECK_OK);
+       // break;
+      //}
 
       default:
-        return result;
+               /* Optional Property */
+        if (is_optional) {
+          DCHECK_EQ(scanner()->current_token(), Token::QUESTION_PERIOD);
+          int pos = position();
+          ExpressionT key = ParseIdentifierNameOrPrivateName(CHECK_OK);
+          result = factory()->NewProperty(result, key, pos, is_optional);
+          break;
+        }
+        if (optional_chaining) {
+          impl()->ReportMessageAt(scanner()->peek_location(),
+                                  MessageTemplate::kOptionalChainingNoTemplate);
+	  *ok = false;
+          return impl()->NullExpression();
+        }
+        /* Tagged Template */
+        DCHECK(Token::IsTemplate(peek()));
+
+	ValidateExpression(CHECK_OK);
+        BindingPatternUnexpectedToken();
+        ArrowFormalParametersUnexpectedToken();
+        result = ParseTemplateLiteral(result, position(), true,  CHECK_OK);
+        //result = ParseTemplateLiteral(result, position(), true,  CHECK_OK);
     }
-  }
+   is_optional = false;
+  } while (Token::IsPropertyOrCall(peek()));
+
+  if (optional_chaining) return factory()->NewOptionalChain(result);
+  return result;
 }
 
 template <typename Impl>
@@ -3520,6 +3643,12 @@ ParserBase<Impl>::ParseMemberWithNewPrefixesExpression(bool* is_async,
       // The expression can still continue with . or [ after the arguments.
       result = ParseMemberExpressionContinuation(result, is_async, CHECK_OK);
       return result;
+    }
+    if (peek() == Token::QUESTION_PERIOD) {
+      impl()->ReportMessageAt(scanner()->peek_location(),
+                            MessageTemplate::kOptionalChainingNoNew);
+      *ok = false;
+      return impl()->NullExpression();
     }
     // NewExpression without arguments.
     return factory()->NewCallNew(result, impl()->NewExpressionList(0), new_pos);
@@ -3638,6 +3767,14 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseSuperExpression(
   FunctionKind kind = scope->function_kind();
   if (IsConciseMethod(kind) || IsAccessorFunction(kind) ||
       IsClassConstructor(kind)) {
+    if (Token::IsProperty(peek())) {
+      if (peek() == Token::QUESTION_PERIOD) {
+        Consume(Token::QUESTION_PERIOD);
+        impl()->ReportMessage(MessageTemplate::kOptionalChainingNoSuper);
+        *ok = false;
+	return impl()->NullExpression();
+      }
+    }
     if (peek() == Token::PERIOD || peek() == Token::LBRACK) {
       scope->RecordSuperPropertyUsage();
       return impl()->NewSuperPropertyReference(pos);

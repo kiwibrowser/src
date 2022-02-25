@@ -623,9 +623,13 @@ class PreParserFactory {
   PreParserExpression NewVariableProxy(void* variable) {
     return PreParserExpression::Default();
   }
+  
+  PreParserExpression NewOptionalChain(const PreParserExpression& expr) {
+    return PreParserExpression::Default();
+  }
 
   PreParserExpression NewProperty(const PreParserExpression& obj,
-                                  const PreParserExpression& key, int pos) {
+                                  const PreParserExpression& key, int pos, bool optional_chain = false) {
     if (key.IsIdentifier() && key.AsIdentifier().IsPrivateName()) {
       if (obj.IsThis()) {
         return PreParserExpression::ThisPropertyWithPrivateFieldKey();
@@ -690,7 +694,7 @@ class PreParserFactory {
   }
   PreParserExpression NewCall(
       PreParserExpression expression, const PreParserExpressionList& arguments,
-      int pos, Call::PossiblyEval possibly_eval = Call::NOT_EVAL) {
+      int pos, Call::PossiblyEval possibly_eval = Call::NOT_EVAL,bool optional_chain = false) {
     if (possibly_eval == Call::IS_POSSIBLY_EVAL) {
       DCHECK(expression.IsIdentifier() && expression.AsIdentifier().IsEval());
       return PreParserExpression::CallEval();
@@ -1049,7 +1053,7 @@ class PreParser : public ParserBase<PreParser> {
   V8_INLINE PreParserExpression SpreadCall(const PreParserExpression& function,
                                            const PreParserExpressionList& args,
                                            int pos,
-                                           Call::PossiblyEval possibly_eval);
+                                           Call::PossiblyEval possibly_eval, bool optional_chain);
   V8_INLINE PreParserExpression
   SpreadCallNew(const PreParserExpression& function,
                 const PreParserExpressionList& args, int pos);
@@ -1752,8 +1756,8 @@ class PreParser : public ParserBase<PreParser> {
 PreParserExpression PreParser::SpreadCall(const PreParserExpression& function,
                                           const PreParserExpressionList& args,
                                           int pos,
-                                          Call::PossiblyEval possibly_eval) {
-  return factory()->NewCall(function, args, pos, possibly_eval);
+                                          Call::PossiblyEval possibly_eval,bool optional_chain) {
+  return factory()->NewCall(function, args, pos, possibly_eval,optional_chain);
 }
 
 PreParserExpression PreParser::SpreadCallNew(

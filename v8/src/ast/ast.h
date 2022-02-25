@@ -93,6 +93,7 @@ namespace internal {
   V(ImportCallExpression)       \
   V(Literal)                    \
   V(NativeFunctionLiteral)      \
+  V(OptionalChain)              \
   V(Property)                   \
   V(ResolvedProperty)           \
   V(RewritableExpression)       \
@@ -202,6 +203,7 @@ class Expression : public AstNode {
 
   // True iff the expression is a valid reference expression.
   bool IsValidReferenceExpression() const;
+  bool IsPrivateName() const;
 
   // Helpers for ToBoolean conversion.
   bool ToBooleanIsTrue() const;
@@ -240,6 +242,14 @@ class Expression : public AstNode {
   // True if we can prove that the expression is the undefined literal. Note
   // that this also checks for loads of the global "undefined" variable.
   bool IsUndefinedLiteral() const;
+  
+ // True if either null literal or undefined literal.
+  inline bool IsNullOrUndefinedLiteral() const {
+    return IsNullLiteral() || IsUndefinedLiteral();
+  }
+
+  // True if a literal and not null or undefined.
+  bool IsLiteralButNotNullOrUndefined() const;
 
  protected:
   Expression(int pos, NodeType type) : AstNode(pos, type) {}
@@ -1570,6 +1580,20 @@ class VariableProxy final : public Expression {
   VariableProxy* next_unresolved_;
 };
 
+// Wraps an optional chain to provide a wrapper for jump labels.
+class OptionalChain final : public Expression {
+ public:
+  Expression* expression() const { return expression_; }
+
+ private:
+  friend class AstNodeFactory;
+
+  explicit OptionalChain(Expression* expression)
+      : Expression(0, kOptionalChain), expression_(expression) {}
+
+  Expression* expression_;
+};
+
 
 // Left-hand side can only be a property, a global or a (parameter or local)
 // slot.
@@ -1583,12 +1607,16 @@ enum LhsKind {
 
 class Property final : public Expression {
  public:
+  bool is_optional_chain_link() const {
+    return IsOptionalChainLinkField::decode(bit_field_);
+  }
   bool IsValidReferenceExpression() const { return true; }
 
   Expression* obj() const { return obj_; }
   Expression* key() const { return key_; }
 
   bool IsSuperAccess() { return obj()->IsSuperPropertyReference(); }
+  bool IsPrivateReference() const { return key()->IsPrivateName(); }
 
   // Returns the properties assign type.
   static LhsKind GetAssignType(Property* property) {
@@ -1602,9 +1630,11 @@ class Property final : public Expression {
  private:
   friend class AstNodeFactory;
 
-  Property(Expression* obj, Expression* key, int pos)
+  Property(Expression* obj, Expression* key, int pos, bool optional_chain)
       : Expression(pos, kProperty), obj_(obj), key_(key) {
+    bit_field_ |= IsOptionalChainLinkField::encode(optional_chain);
   }
+   class IsOptionalChainLinkField :public BitField<bool,  Expression::kNextBitFieldIndex, 1>{};
 
   Expression* obj_;
   Expression* key_;
@@ -1643,6 +1673,10 @@ class Call final : public Expression {
     return IsTaggedTemplateField::decode(bit_field_);
   }
 
+  bool is_optional_chain_link() const {
+    return IsOptionalChainLinkField::decode(bit_field_);
+  }
+
   bool only_last_arg_is_spread() {
     return !arguments_->is_empty() && arguments_->last()->IsSpread();
   }
@@ -1673,26 +1707,28 @@ class Call final : public Expression {
   friend class AstNodeFactory;
 
   Call(Expression* expression, ZoneList<Expression*>* arguments, int pos,
-       PossiblyEval possibly_eval)
+       PossiblyEval possibly_eval, bool optional_chain)
       : Expression(pos, kCall),
         expression_(expression),
         arguments_(arguments) {
     bit_field_ |=
         IsPossiblyEvalField::encode(possibly_eval == IS_POSSIBLY_EVAL) |
-        IsTaggedTemplateField::encode(false);
+        IsTaggedTemplateField::encode(false) | IsOptionalChainLinkField::encode(optional_chain);
   }
 
   Call(Expression* expression, ZoneList<Expression*>* arguments, int pos,
        TaggedTemplateTag tag)
       : Expression(pos, kCall), expression_(expression), arguments_(arguments) {
     bit_field_ |= IsPossiblyEvalField::encode(false) |
-                  IsTaggedTemplateField::encode(true);
+                  IsTaggedTemplateField::encode(true) | IsOptionalChainLinkField::encode(false);
   }
 
   class IsPossiblyEvalField
       : public BitField<bool, Expression::kNextBitFieldIndex, 1> {};
   class IsTaggedTemplateField
       : public BitField<bool, IsPossiblyEvalField::kNext, 1> {};
+  class IsOptionalChainLinkField :public BitField<bool,  IsTaggedTemplateField::kNext, 1>{};
+
 
   Expression* expression_;
   ZoneList<Expression*>* arguments_;
@@ -3016,9 +3052,13 @@ class AstNodeFactory final BASE_EMBEDDED {
   Variable* CopyVariable(Variable* variable) {
     return new (zone_) Variable(variable);
   }
+  
+  OptionalChain* NewOptionalChain(Expression* expression) {
+    return new (zone_) OptionalChain(expression);
+  }
 
-  Property* NewProperty(Expression* obj, Expression* key, int pos) {
-    return new (zone_) Property(obj, key, pos);
+  Property* NewProperty(Expression* obj, Expression* key, int pos, bool optional_chain = false) {
+    return new (zone_) Property(obj, key, pos, optional_chain);
   }
 
   ResolvedProperty* NewResolvedProperty(VariableProxy* obj,
@@ -3028,8 +3068,8 @@ class AstNodeFactory final BASE_EMBEDDED {
   }
 
   Call* NewCall(Expression* expression, ZoneList<Expression*>* arguments,
-                int pos, Call::PossiblyEval possibly_eval = Call::NOT_EVAL) {
-    return new (zone_) Call(expression, arguments, pos, possibly_eval);
+                int pos, Call::PossiblyEval possibly_eval = Call::NOT_EVAL, bool optional_chain = false) {
+    return new (zone_) Call(expression, arguments, pos, possibly_eval, optional_chain);
   }
 
   Call* NewTaggedTemplate(Expression* expression,

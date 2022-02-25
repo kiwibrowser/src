@@ -256,6 +256,8 @@ Bytecode GetJumpWithConstantOperand(Bytecode jump_bytecode) {
       return Bytecode::kJumpIfUndefinedConstant;
     case Bytecode::kJumpIfNotUndefined:
       return Bytecode::kJumpIfNotUndefinedConstant;
+    case Bytecode::kJumpIfUndefinedOrNull:
+      return Bytecode::kJumpIfUndefinedOrNullConstant;
     case Bytecode::kJumpIfJSReceiver:
       return Bytecode::kJumpIfJSReceiverConstant;
     default:

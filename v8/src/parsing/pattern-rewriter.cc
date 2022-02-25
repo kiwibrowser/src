@@ -744,6 +744,7 @@ void PatternRewriter::VisitProperty(v8::internal::Property* node) {
 
 
 // =============== UNREACHABLE =============================
+void PatternRewriter::VisitOptionalChain(v8::internal::OptionalChain*){ UNREACHABLE(); };
 
 #define NOT_A_PATTERN(Node) \
   void PatternRewriter::Visit##Node(v8::internal::Node*) { UNREACHABLE(); }

@@ -116,7 +116,7 @@ class PromiseBuiltinsAssembler : public CodeStubAssembler {
   Node* CreatePromiseAllResolveElementContext(Node* promise_capability,
                                               Node* native_context);
   Node* CreatePromiseAllResolveElementFunction(Node* context, TNode<Smi> index,
-                                               Node* native_context);
+                                               Node* native_context, int slot_index);
 
   Node* CreatePromiseResolvingFunctionsContext(Node* promise, Node* debug_event,
                                                Node* native_context);
@@ -179,8 +179,15 @@ class PromiseBuiltinsAssembler : public CodeStubAssembler {
 
   Node* CreateThrowerFunction(Node* reason, Node* native_context);
 
+ typedef std::function<TNode<Object>(TNode<Context> context, TNode<Smi> index,
+                                      TNode<Context> native_context,
+                                      TNode<Object> capability)>
+      PromiseAllResolvingElementFunction;
   Node* PerformPromiseAll(Node* context, Node* constructor, Node* capability,
-                          const IteratorBuiltinsFromDSLAssembler::IteratorRecord& record, Label* if_exception,
+                          const IteratorBuiltinsFromDSLAssembler::IteratorRecord& record, 
+			  const PromiseAllResolvingElementFunction& create_resolve_element_function,
+	                  const PromiseAllResolvingElementFunction& create_reject_element_function,
+			  Label* if_exception,
                           Variable* var_exception);
 
   void SetForwardingHandlerIfTrue(Node* context, Node* condition,
@@ -203,6 +210,18 @@ class PromiseBuiltinsAssembler : public CodeStubAssembler {
   void PromiseSetStatus(Node* promise, v8::Promise::PromiseState status);
 
   Node* AllocateJSPromise(Node* context);
+void Generate_PromiseAll(
+      TNode<Context> context, TNode<Object> receiver, TNode<Object> iterable,
+      const PromiseAllResolvingElementFunction& create_resolve_element_function,
+      const PromiseAllResolvingElementFunction& create_reject_element_function);
+  typedef std::function<TNode<Object>(TNode<Context> context,
+                                      TNode<Context> native_context,
+                                      TNode<Object> value)>
+      CreatePromiseAllResolveElementFunctionValue;
+
+  void Generate_PromiseAllResolveElementClosure(
+      TNode<Context> context, TNode<Object> value, TNode<Object> function,
+      const CreatePromiseAllResolveElementFunctionValue& callback);
 };
 
 }  // namespace internal

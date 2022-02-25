@@ -276,7 +276,7 @@ TEST_F(BytecodeArrayBuilderTest, AllBytecodesGenerated) {
   {
     BytecodeLabel start, after_jump1, after_jump2, after_jump3, after_jump4,
         after_jump5, after_jump6, after_jump7, after_jump8, after_jump9,
-        after_jump10;
+        after_jump10, after_jump11;
     builder.Bind(&start)
         .Jump(&after_jump1)
         .Bind(&after_jump1)
@@ -288,21 +288,23 @@ TEST_F(BytecodeArrayBuilderTest, AllBytecodesGenerated) {
         .Bind(&after_jump4)
         .JumpIfNotUndefined(&after_jump5)
         .Bind(&after_jump5)
-        .JumpIfJSReceiver(&after_jump6)
-        .Bind(&after_jump6)
-        .JumpIfTrue(ToBooleanMode::kConvertToBoolean, &after_jump7)
+	.JumpIfUndefinedOrNull(&after_jump6)
+	.Bind(&after_jump6)
+        .JumpIfJSReceiver(&after_jump7)
         .Bind(&after_jump7)
-        .JumpIfTrue(ToBooleanMode::kAlreadyBoolean, &after_jump8)
+        .JumpIfTrue(ToBooleanMode::kConvertToBoolean, &after_jump8)
         .Bind(&after_jump8)
-        .JumpIfFalse(ToBooleanMode::kConvertToBoolean, &after_jump9)
+        .JumpIfTrue(ToBooleanMode::kAlreadyBoolean, &after_jump9)
         .Bind(&after_jump9)
-        .JumpIfFalse(ToBooleanMode::kAlreadyBoolean, &after_jump10)
+        .JumpIfFalse(ToBooleanMode::kConvertToBoolean, &after_jump10)
         .Bind(&after_jump10)
+        .JumpIfFalse(ToBooleanMode::kAlreadyBoolean, &after_jump11)
+        .Bind(&after_jump11)
         .JumpLoop(&start, 0);
   }
 
   // Longer jumps with constant operands
-  BytecodeLabel end[10];
+  BytecodeLabel end[11];
   {
     BytecodeLabel after_jump;
     builder.Jump(&end[0])
@@ -315,8 +317,9 @@ TEST_F(BytecodeArrayBuilderTest, AllBytecodesGenerated) {
         .JumpIfNotNull(&end[6])
         .JumpIfUndefined(&end[7])
         .JumpIfNotUndefined(&end[8])
+	.JumpIfUndefinedOrNull(&end[9])
         .LoadLiteral(ast_factory.prototype_string())
-        .JumpIfJSReceiver(&end[9]);
+        .JumpIfJSReceiver(&end[10]);
   }
 
   // Emit Smi table switch bytecode.

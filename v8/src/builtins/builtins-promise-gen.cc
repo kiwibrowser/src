@@ -221,7 +221,7 @@ Node* PromiseBuiltinsAssembler::CreatePromiseAllResolveElementContext(
 }
 
 Node* PromiseBuiltinsAssembler::CreatePromiseAllResolveElementFunction(
-    Node* context, TNode<Smi> index, Node* native_context) {
+    Node* context, TNode<Smi> index, Node* native_context, int slot_index) {
   CSA_ASSERT(this, SmiGreaterThan(index, SmiConstant(0)));
   CSA_ASSERT(this, SmiLessThanOrEqual(
                        index, SmiConstant(PropertyArray::HashField::kMax)));
@@ -230,7 +230,7 @@ Node* PromiseBuiltinsAssembler::CreatePromiseAllResolveElementFunction(
   Node* const map = LoadContextElement(
       native_context, Context::STRICT_FUNCTION_WITHOUT_PROTOTYPE_MAP_INDEX);
   Node* const resolve_info = LoadContextElement(
-      native_context, Context::PROMISE_ALL_RESOLVE_ELEMENT_SHARED_FUN);
+      native_context, slot_index);
   Node* const resolve =
       AllocateFunctionWithMapAndContext(map, resolve_info, context);
 
@@ -1788,7 +1788,10 @@ TF_BUILTIN(ResolvePromise, PromiseBuiltinsAssembler) {
 
 Node* PromiseBuiltinsAssembler::PerformPromiseAll(
     Node* context, Node* constructor, Node* capability,
-    const IteratorBuiltinsFromDSLAssembler::IteratorRecord& iterator, Label* if_exception,
+    const IteratorBuiltinsFromDSLAssembler::IteratorRecord& iterator, 
+    const PromiseAllResolvingElementFunction& create_resolve_element_function,
+    const PromiseAllResolvingElementFunction& create_reject_element_function,
+    Label* if_exception,
     Variable* var_exception) {
   IteratorBuiltinsAssembler iter_assembler(state());
 
@@ -1857,8 +1860,10 @@ Node* PromiseBuiltinsAssembler::PerformPromiseAll(
     // Set resolveElement.[[Values]] to values.
     // Set resolveElement.[[Capability]] to resultCapability.
     // Set resolveElement.[[RemainingElements]] to remainingElementsCount.
-    Node* const resolve_element_fun = CreatePromiseAllResolveElementFunction(
-        resolve_element_context, index, native_context);
+    Node* const resolve_element_fun = create_resolve_element_function(
+        Cast(resolve_element_context), index, Cast(native_context), Cast(capability));
+   Node* const reject_element_fun = create_reject_element_function(
+        Cast(resolve_element_context), index, Cast(native_context), Cast(capability));
 
     // Perform ? Invoke(nextPromise, "then", « resolveElement,
     //                  resultCapability.[[Reject]] »).
@@ -1869,7 +1874,7 @@ Node* PromiseBuiltinsAssembler::PerformPromiseAll(
     Node* const then_call = CallJS(
         CodeFactory::Call(isolate(), ConvertReceiverMode::kNotNullOrUndefined),
         native_context, then, next_promise, resolve_element_fun,
-        LoadObjectField(capability, PromiseCapability::kRejectOffset));
+        reject_element_fun);
     GotoIfException(then_call, &close_iterator, var_exception);
 
     // For catch prediction, mark that rejections here are semantically
@@ -1970,13 +1975,14 @@ Node* PromiseBuiltinsAssembler::PerformPromiseAll(
 
 // ES#sec-promise.all
 // Promise.all ( iterable )
-TF_BUILTIN(PromiseAll, PromiseBuiltinsAssembler) {
+void PromiseBuiltinsAssembler::Generate_PromiseAll(
+    TNode<Context> context, TNode<Object> receiver, TNode<Object> iterable,
+    const PromiseAllResolvingElementFunction& create_resolve_element_function,
+    const PromiseAllResolvingElementFunction& create_reject_element_function) {
   IteratorBuiltinsAssembler iter_assembler(state());
 
   // Let C be the this value.
   // If Type(C) is not Object, throw a TypeError exception.
-  Node* const receiver = Parameter(Descriptor::kReceiver);
-  Node* const context = Parameter(Descriptor::kContext);
   ThrowIfNotJSReceiver(context, receiver, MessageTemplate::kCalledOnNonObject,
                        "Promise.all");
 
@@ -1992,7 +1998,6 @@ TF_BUILTIN(PromiseAll, PromiseBuiltinsAssembler) {
 
   // Let iterator be GetIterator(iterable).
   // IfAbruptRejectPromise(iterator, promiseCapability).
-  Node* const iterable = Parameter(Descriptor::kIterable);
   IteratorBuiltinsFromDSLAssembler::IteratorRecord iterator = iter_assembler.GetIterator(
       context, iterable, &reject_promise, &var_exception);
 
@@ -2002,7 +2007,8 @@ TF_BUILTIN(PromiseAll, PromiseBuiltinsAssembler) {
   //       IteratorClose(iterator, result).
   //    IfAbruptRejectPromise(result, promiseCapability).
   Node* const result = PerformPromiseAll(
-      context, receiver, capability, iterator, &reject_promise, &var_exception);
+      context, receiver, capability, iterator,create_resolve_element_function,
+      create_reject_element_function, &reject_promise, &var_exception);
 
   Return(result);
 
@@ -2021,10 +2027,55 @@ TF_BUILTIN(PromiseAll, PromiseBuiltinsAssembler) {
   }
 }
 
-TF_BUILTIN(PromiseAllResolveElementClosure, PromiseBuiltinsAssembler) {
-  Node* const value = Parameter(Descriptor::kValue);
-  Node* const context = Parameter(Descriptor::kContext);
-  Node* const function = LoadFromFrame(StandardFrameConstants::kFunctionOffset);
+// ES#sec-promise.all
+// Promise.all ( iterable )
+TF_BUILTIN(PromiseAll, PromiseBuiltinsAssembler) {
+  TNode<Object> receiver = Cast(Parameter(Descriptor::kReceiver));
+  TNode<Context> context = Cast(Parameter(Descriptor::kContext));
+  TNode<Object> iterable = Cast(Parameter(Descriptor::kIterable));
+  Generate_PromiseAll(
+      context, receiver, iterable,
+      [this](TNode<Context> context, TNode<Smi> index,
+             TNode<Context> native_context,
+             TNode<Object> capability) {
+        return Cast(CreatePromiseAllResolveElementFunction(
+            context, index, native_context,
+            Context::PROMISE_ALL_RESOLVE_ELEMENT_SHARED_FUN));
+      },
+      [this](TNode<Context> context, TNode<Smi> index,
+             TNode<Context> native_context,
+             TNode<Object> capability) {
+        return LoadObjectField(Cast(capability), PromiseCapability::kRejectOffset);
+      });
+}
+
+// ES#sec-promise.allsettled
+// Promise.allSettled ( iterable )
+TF_BUILTIN(PromiseAllSettled, PromiseBuiltinsAssembler) {
+  TNode<Object> receiver = Cast(Parameter(Descriptor::kReceiver));
+  TNode<Context> context = Cast(Parameter(Descriptor::kContext));
+  TNode<Object> iterable = Cast(Parameter(Descriptor::kIterable));
+  Generate_PromiseAll(
+      context, receiver, iterable,
+      [this](TNode<Context> context, TNode<Smi> index,
+             TNode<Context> native_context,
+             TNode<Object> capability) {
+        return Cast(CreatePromiseAllResolveElementFunction(
+            context, index, native_context,
+            Context::PROMISE_ALL_SETTLED_RESOLVE_ELEMENT_SHARED_FUN));
+      },
+      [this](TNode<Context> context, TNode<Smi> index,
+             TNode<Context> native_context,
+             TNode<Object> capability) {
+        return Cast(CreatePromiseAllResolveElementFunction(
+            context, index, native_context,
+            Context::PROMISE_ALL_SETTLED_REJECT_ELEMENT_SHARED_FUN));
+      });
+}
+
+void PromiseBuiltinsAssembler::Generate_PromiseAllResolveElementClosure(
+		    TNode<Context> context, TNode<Object> value, TNode<Object> function,
+		        const CreatePromiseAllResolveElementFunctionValue& callback) {
 
   Label already_called(this, Label::kDeferred), resolve_promise(this);
 
@@ -2038,6 +2089,10 @@ TF_BUILTIN(PromiseAllResolveElementClosure, PromiseBuiltinsAssembler) {
                             SmiConstant(kPromiseAllResolveElementLength)));
   Node* const native_context = LoadNativeContext(context);
   StoreObjectField(function, JSFunction::kContextOffset, native_context);
+
+   // Update the value depending on whether Promise.all or
+  // Promise.allSettled is called.
+  value = callback(context, Cast(native_context), value);
 
   // Determine the index from the {function}.
   Label unreachable(this, Label::kDeferred);
@@ -2130,6 +2185,80 @@ TF_BUILTIN(PromiseAllResolveElementClosure, PromiseBuiltinsAssembler) {
 
   BIND(&unreachable);
   Unreachable();
+}
+
+TF_BUILTIN(PromiseAllResolveElementClosure, PromiseBuiltinsAssembler) {
+  TNode<Object> value = CAST(Parameter(Descriptor::kValue));
+  TNode<Context> context = CAST(Parameter(Descriptor::kContext));
+  TNode<Object> function = CAST(LoadFromFrame(StandardFrameConstants::kFunctionOffset));
+
+  Generate_PromiseAllResolveElementClosure(
+      context, value, function,
+      [](TNode<Context>, TNode<Context>, TNode<Object> value) {
+        return value;
+      });
+}
+
+TF_BUILTIN(PromiseAllSettledResolveElementClosure, PromiseBuiltinsAssembler) {
+  TNode<Object> value = CAST(Parameter(Descriptor::kValue));
+  TNode<Context> context = CAST(Parameter(Descriptor::kContext));
+  TNode<Object> function = CAST(LoadFromFrame(StandardFrameConstants::kFunctionOffset));
+
+  Generate_PromiseAllResolveElementClosure(
+      context, value, function,
+      [this](TNode<Context> context, TNode<Context> native_context,
+             TNode<Object> value) {
+        // TODO(gsathya): Optimize the creation using a cached map to
+        // prevent transitions here.
+        // 9. Let obj be ! ObjectCreate(%ObjectPrototype%).
+        TNode<HeapObject> object_function = Cast(
+            LoadContextElement(native_context, Context::OBJECT_FUNCTION_INDEX));
+        TNode<Map> object_function_map = Cast(LoadObjectField(
+            object_function, JSFunction::kPrototypeOrInitialMapOffset));
+        TNode<JSObject> obj =
+            Cast(AllocateJSObjectFromMap(object_function_map));
+
+        // 10. Perform ! CreateDataProperty(obj, "status", "fulfilled").
+        CallRuntime(Runtime::kSetProperty, context, obj,
+                    StringConstant("status"), StringConstant("fulfilled"), SmiConstant(LanguageMode::kStrict));
+
+        // 11. Perform ! CreateDataProperty(obj, "value", x).
+       CallRuntime(Runtime::kSetProperty, context, obj,
+                    StringConstant("value"), value, SmiConstant(LanguageMode::kStrict));
+
+        return obj;
+      });
+}
+
+TF_BUILTIN(PromiseAllSettledRejectElementClosure, PromiseBuiltinsAssembler) {
+  TNode<Object> value = CAST(Parameter(Descriptor::kValue));
+  TNode<Context> context = CAST(Parameter(Descriptor::kContext));
+  TNode<Object> function = CAST(LoadFromFrame(StandardFrameConstants::kFunctionOffset));
+
+  Generate_PromiseAllResolveElementClosure(
+      context, value, function,
+      [this](TNode<Context> context, TNode<Context> native_context,
+             TNode<Object> value) {
+        // TODO(gsathya): Optimize the creation using a cached map to
+        // prevent transitions here.
+        // 9. Let obj be ! ObjectCreate(%ObjectPrototype%).
+        TNode<HeapObject> object_function = Cast(
+            LoadContextElement(native_context, Context::OBJECT_FUNCTION_INDEX));
+        TNode<Map> object_function_map = Cast(LoadObjectField(
+            object_function, JSFunction::kPrototypeOrInitialMapOffset));
+        TNode<JSObject> obj =
+            Cast(AllocateJSObjectFromMap(object_function_map));
+
+        // 10. Perform ! CreateDataProperty(obj, "status", "rejected").
+        CallRuntime(Runtime::kSetProperty, context, obj,
+                    StringConstant("status"), StringConstant("rejected"), SmiConstant(LanguageMode::kStrict));
+
+        // 11. Perform ! CreateDataProperty(obj, "reason", x).
+        CallRuntime(Runtime::kSetProperty, context, obj,
+                    StringConstant("reason"), value, SmiConstant(LanguageMode::kStrict));
+
+        return obj;
+      });
 }
 
 // ES#sec-promise.race

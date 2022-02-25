@@ -308,7 +308,7 @@ static const byte one_char_tokens[] = {
   Token::ILLEGAL,
   Token::ILLEGAL,
   Token::ILLEGAL,
-  Token::CONDITIONAL,  // 0x3F
+  Token::ILLEGAL,//Token::CONDITIONAL,  // 0x3F
   Token::ILLEGAL,
   Token::ILLEGAL,
   Token::ILLEGAL,
@@ -850,7 +850,19 @@ void Scanner::Scan() {
         break;
 
       case '?':
-        token = Select(Token::CONDITIONAL);
+	Advance();
+	if (c0_ == '.') {
+	  Advance();
+	  if (!IsDecimalDigit(c0_))  {
+	    token = Token::QUESTION_PERIOD;
+	    break;
+	  }
+	  PushBack('.');
+	} else if (c0_ == '?') {
+	  token = Select(Token::NULLISH);
+	  break;
+	}
+        token = Token::CONDITIONAL;
         break;
 
       case '~':

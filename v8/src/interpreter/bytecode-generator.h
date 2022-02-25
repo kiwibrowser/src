@@ -63,6 +63,7 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   class RegisterAllocationScope;
   class TestResultScope;
   class ValueResultScope;
+   class OptionalChainNullLabelScope;
 
   using ToBooleanMode = BytecodeArrayBuilder::ToBooleanMode;
 
@@ -79,12 +80,14 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   void VisitCommaExpression(BinaryOperation* binop);
   void VisitLogicalOrExpression(BinaryOperation* binop);
   void VisitLogicalAndExpression(BinaryOperation* binop);
+  void VisitNullishExpression(BinaryOperation* binop);
 
   // Dispatched from VisitNaryOperation.
   void VisitNaryArithmeticExpression(NaryOperation* expr);
   void VisitNaryCommaExpression(NaryOperation* expr);
   void VisitNaryLogicalOrExpression(NaryOperation* expr);
   void VisitNaryLogicalAndExpression(NaryOperation* expr);
+  void VisitNaryNullishExpression(NaryOperation* expr);
 
   // Dispatched from VisitUnaryOperation.
   void VisitVoid(UnaryOperation* expr);
@@ -220,7 +223,9 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   bool VisitLogicalAndSubExpression(Expression* expr,
                                     BytecodeLabels* end_labels,
                                     int coverage_slot);
-
+   // Helper for binary and nary nullish op value expressions.
+  bool VisitNullishSubExpression(Expression* expr, BytecodeLabels* end_labels,
+                                 int coverage_slot);
   // Visit the body of a loop iteration.
   void VisitIterationBody(IterationStatement* stmt, LoopBuilder* loop_builder);
 
@@ -252,7 +257,9 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   void VisitForEffect(Expression* expr);
   void VisitForTest(Expression* expr, BytecodeLabels* then_labels,
                     BytecodeLabels* else_labels, TestFallthrough fallthrough);
-
+  void VisitForNullishTest(Expression* expr, BytecodeLabels* then_labels,
+                           BytecodeLabels* test_next_labels,
+                           BytecodeLabels* else_labels);
   void VisitInSameTestExecutionScope(Expression* expr);
 
   Register GetRegisterForLocalVariable(Variable* variable);
@@ -359,7 +366,7 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   ExpressionResultScope* execution_result_;
 
   Register incoming_new_target_or_generator_;
-
+ BytecodeLabels* optional_chaining_null_labels_;
   // Dummy feedback slot for compare operations, where we don't care about
   // feedback
   FeedbackSlot dummy_feedback_slot_;

@@ -754,7 +754,11 @@ class ErrorUtils : public AllStatic {
   T(DataCloneDeserializationError, "Unable to deserialize cloned data.")       \
   T(DataCloneDeserializationVersionError,                                      \
     "Unable to deserialize cloned data due to invalid or unsupported "         \
-    "version.")
+    "version.") \
+  T(OptionalChainingNoNew, "Invalid optional chain from new expression")       \
+  T(OptionalChainingNoSuper, "Invalid optional chain from super property")     \
+  T(OptionalChainingNoTemplate, "Invalid tagged template on optional chain")
+
 
 class MessageTemplate {
  public:

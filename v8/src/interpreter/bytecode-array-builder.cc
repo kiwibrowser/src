@@ -1100,6 +1100,13 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::JumpIfUndefined(
   return *this;
 }
 
+BytecodeArrayBuilder& BytecodeArrayBuilder::JumpIfUndefinedOrNull(
+    BytecodeLabel* label) {
+  DCHECK(!label->is_bound());
+  OutputJumpIfUndefinedOrNull(label, 0);
+  return *this;
+}
+
 BytecodeArrayBuilder& BytecodeArrayBuilder::JumpIfNotUndefined(
     BytecodeLabel* label) {
   DCHECK(!label->is_bound());

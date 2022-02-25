@@ -2637,6 +2637,16 @@ void BytecodeGraphBuilder::VisitJumpIfNotUndefinedConstant() {
 
 void BytecodeGraphBuilder::VisitJumpLoop() { BuildJump(); }
 
+void BytecodeGraphBuilder::VisitJumpIfUndefinedOrNull() {
+  BuildJumpIfEqual(jsgraph()->UndefinedConstant());
+  BuildJumpIfEqual(jsgraph()->NullConstant());
+}
+
+void BytecodeGraphBuilder::VisitJumpIfUndefinedOrNullConstant() {
+  BuildJumpIfEqual(jsgraph()->UndefinedConstant());
+  BuildJumpIfEqual(jsgraph()->NullConstant());
+}
+
 void BytecodeGraphBuilder::BuildSwitchOnSmi(Node* condition) {
   interpreter::JumpTableTargetOffsets offsets =
       bytecode_iterator().GetJumpTableTargetOffsets();

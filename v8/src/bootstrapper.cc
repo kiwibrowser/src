@@ -2300,6 +2300,8 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
 
     SimpleInstallFunction(promise_fun, "reject", Builtins::kPromiseReject, 1,
                           true);
+    SimpleInstallFunction(promise_fun, "allSettled",
+		                            Builtins::kPromiseAllSettled, 1, false);
 
     // Setup %PromisePrototype%.
     Handle<JSObject> prototype(
@@ -4356,6 +4358,23 @@ void Genesis::InitializeGlobal_harmony_string_matchall() {
     Handle<JSFunction> symbol_fun(native_context()->symbol_function());
     InstallConstant(isolate(), symbol_fun, "matchAll",
                     factory()->match_all_symbol());
+  }
+}
+
+
+void Genesis::InitializeGlobal_harmony_promise_all_settled() {
+  {
+    Handle<SharedFunctionInfo> info = SimpleCreateSharedFunctionInfo(
+        isolate(), Builtins::kPromiseAllSettledResolveElementClosure,
+        factory()->empty_string(), 1);
+    native_context()->set_promise_all_settled_resolve_element_shared_fun(*info);
+  }
+
+  {
+    Handle<SharedFunctionInfo> info = SimpleCreateSharedFunctionInfo(
+        isolate(), Builtins::kPromiseAllSettledRejectElementClosure,
+        factory()->empty_string(), 1);
+    native_context()->set_promise_all_settled_reject_element_shared_fun(*info);
   }
 }
 

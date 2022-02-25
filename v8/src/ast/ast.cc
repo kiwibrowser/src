@@ -126,12 +126,20 @@ bool Expression::IsUndefinedLiteral() const {
          var_proxy->raw_name()->IsOneByteEqualTo("undefined");
 }
 
+bool Expression::IsLiteralButNotNullOrUndefined() const {
+  return IsLiteral() && !IsNullOrUndefinedLiteral();
+}
+
 bool Expression::ToBooleanIsTrue() const {
   return IsLiteral() && AsLiteral()->ToBooleanIsTrue();
 }
 
 bool Expression::ToBooleanIsFalse() const {
   return IsLiteral() && AsLiteral()->ToBooleanIsFalse();
+}
+
+bool Expression::IsPrivateName() const {
+	  return IsVariableProxy() && AsVariableProxy()->IsPrivateName();
 }
 
 bool Expression::IsValidReferenceExpression() const {

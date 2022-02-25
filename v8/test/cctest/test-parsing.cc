@@ -1557,6 +1557,36 @@ TEST(NumericSeparatorUnicodeEscapeSequencesErrors) {
   RunParserSyncTest(context_data, statement_data, kError);
 }
 
+TEST(OptionalChaining) {
+  v8::HandleScope handles(CcTest::isolate());
+  v8::Local<v8::Context> context = v8::Context::New(CcTest::isolate());
+  v8::Context::Scope context_scope(context);
+
+  const char* context_data[][2] = {
+      {"", ""}, {"'use strict';", ""}, {nullptr, nullptr}};
+  const char* statement_data[] = {"a?.b", "a?.['b']", "a?.()", nullptr};
+
+  static const ParserFlag flags[] = {};
+  RunParserSyncTest(context_data, statement_data, kSuccess, nullptr, 0, flags,
+                    1, nullptr, 0, false, true, true);
+  RunParserSyncTest(context_data, statement_data, kSuccess);
+}
+
+TEST(OptionalChainingTaggedError) {
+  v8::HandleScope handles(CcTest::isolate());
+  v8::Local<v8::Context> context = v8::Context::New(CcTest::isolate());
+  v8::Context::Scope context_scope(context);
+
+  const char* context_data[][2] = {
+      {"", ""}, {"'use strict';", ""}, {nullptr, nullptr}};
+  const char* statement_data[] = {"a?.b``", "a?.['b']``", "a?.()``", nullptr};
+
+  static const ParserFlag flags[] = {};
+  RunParserSyncTest(context_data, statement_data, kError, nullptr, 9, flags, 1,
+                    nullptr, 0, false, true, true);
+  RunParserSyncTest(context_data, statement_data, kError);
+}
+
 TEST(ErrorsEvalAndArguments) {
   // Tests that both preparsing and parsing produce the right kind of errors for
   // using "eval" and "arguments" as identifiers. Without the strict mode, it's

@@ -37,21 +37,34 @@ namespace internal {
   T(EOS, "EOS", 0)                                                 \
                                                                    \
   /* Punctuators (ECMA-262, section 7.7, page 15). */              \
-  T(LPAREN, "(", 0)                                                \
-  T(RPAREN, ")", 0)                                                \
+  /* BEGIN PropertyOrCall */                                       \
+  /* BEGIN Member */                                               \
+  /* BEGIN Template */                                             \
+  /* ES6 Template Literals */                                      \
+  T(TEMPLATE_SPAN, nullptr, 0)                                     \
+  T(TEMPLATE_TAIL, nullptr, 0)                                     \
+  /* END Template */                                               \
+                                                                   \
+  /* Punctuators (ECMA-262, section 7.7, page 15). */              \
+  /* BEGIN Property */                                             \
+  T(PERIOD, ".", 0)                                                \
   T(LBRACK, "[", 0)                                                \
+  /* END Property */                                               \
+  /* END Member */                                                 \
+  T(QUESTION_PERIOD, "?.", 0)                                      \
+  T(LPAREN, "(", 0)                                                \
+  /* END PropertyOrCall */      \
+  T(RPAREN, ")", 0)                                                \
   T(RBRACK, "]", 0)                                                \
   T(LBRACE, "{", 0)                                                \
   T(RBRACE, "}", 0)                                                \
   T(COLON, ":", 0)                                                 \
   T(SEMICOLON, ";", 0)                                             \
-  T(PERIOD, ".", 0)                                                \
   T(ELLIPSIS, "...", 0)                                            \
   T(CONDITIONAL, "?", 3)                                           \
   T(INC, "++", 0)                                                  \
   T(DEC, "--", 0)                                                  \
   T(ARROW, "=>", 0)                                                \
-                                                                   \
   /* Assignment operators. */                                      \
   /* IsAssignmentOp() relies on this block of enum values being */ \
   /* contiguous and sorted in the same order! */                   \
@@ -74,6 +87,7 @@ namespace internal {
   /* IsBinaryOp() relies on this block of enum values */           \
   /* being contiguous and sorted in the same order! */             \
   T(COMMA, ",", 1)                                                 \
+  T(NULLISH, "??", 3)                                              \
   T(OR, "||", 4)                                                   \
   T(AND, "&&", 5)                                                  \
   T(BIT_OR, "|", 6)                                                \
@@ -179,9 +193,6 @@ namespace internal {
   T(UNINITIALIZED, nullptr, 0)                                     \
   T(REGEXP_LITERAL, nullptr, 0)                                    \
                                                                    \
-  /* ES6 Template Literals */                                      \
-  T(TEMPLATE_SPAN, nullptr, 0)                                     \
-  T(TEMPLATE_TAIL, nullptr, 0)                                     \
                                                                    \
   /* Contextual keyword tokens */                                  \
   C(GET, "get", 0)                                                 \
@@ -240,6 +251,17 @@ class Token {
         return false;
     }
     UNREACHABLE();
+  }
+
+  static bool IsTemplate(Value token) {
+    return TEMPLATE_SPAN <= token && token <=  TEMPLATE_TAIL;
+  }
+  static bool IsProperty(Value token) {
+    return PERIOD <=token && token <= LBRACK;
+  }
+
+  static bool IsPropertyOrCall(Value token) {
+    return TEMPLATE_SPAN <= token && token <=  LPAREN;
   }
 
   static bool IsAssignmentOp(Value tok) {

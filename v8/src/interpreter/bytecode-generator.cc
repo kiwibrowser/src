@@ -869,6 +869,28 @@ class BytecodeGenerator::IteratorRecord final {
   Register next_;
 };
 
+class BytecodeGenerator::OptionalChainNullLabelScope final {
+ public:
+  explicit OptionalChainNullLabelScope(BytecodeGenerator* bytecode_generator)
+      : bytecode_generator_(bytecode_generator),
+        labels_(bytecode_generator->zone()) {
+    prev_ = bytecode_generator_->optional_chaining_null_labels_;
+    bytecode_generator_->optional_chaining_null_labels_ = &labels_;
+  }
+
+  ~OptionalChainNullLabelScope() {
+    bytecode_generator_->optional_chaining_null_labels_ = prev_;
+  }
+
+  BytecodeLabels* labels() { return &labels_; }
+
+ private:
+  BytecodeGenerator* bytecode_generator_;
+  BytecodeLabels labels_;
+  BytecodeLabels* prev_;
+};
+
+
 #ifdef DEBUG
 
 static bool IsInEagerLiterals(
@@ -909,6 +931,7 @@ BytecodeGenerator::BytecodeGenerator(
       execution_context_(nullptr),
       execution_result_(nullptr),
       incoming_new_target_or_generator_(),
+      optional_chaining_null_labels_(nullptr),
       dummy_feedback_slot_(),
       generator_jump_table_(nullptr),
       suspend_count_(0),
@@ -3333,6 +3356,14 @@ void BytecodeGenerator::VisitThrow(Throw* expr) {
 }
 
 void BytecodeGenerator::VisitPropertyLoad(Register obj, Property* property) {
+   if (property->is_optional_chain_link()) {
+    DCHECK_NOT_NULL(optional_chaining_null_labels_);
+    // TODO(ignition): Add a single opcode for JumpIfNullOrUndefined
+    builder()
+        ->LoadAccumulatorWithRegister(obj)
+        .JumpIfUndefined(optional_chaining_null_labels_->New())
+        .JumpIfNull(optional_chaining_null_labels_->New());
+  } 
   LhsKind property_kind = Property::GetAssignType(property);
   switch (property_kind) {
     case VARIABLE:
@@ -3406,6 +3437,16 @@ void BytecodeGenerator::VisitKeyedSuperPropertyLoad(Property* property,
   if (opt_receiver_out.is_valid()) {
     builder()->MoveRegister(args[0], opt_receiver_out);
   }
+}
+
+void BytecodeGenerator::VisitOptionalChain(OptionalChain* expr) {
+  BytecodeLabel done;
+  OptionalChainNullLabelScope label_scope(this);
+  VisitForAccumulatorValue(expr->expression());
+  builder()->Jump(&done);
+  label_scope.labels()->Bind(builder());
+  builder()->LoadUndefined();
+  builder()->Bind(&done);
 }
 
 void BytecodeGenerator::VisitProperty(Property* expr) {
@@ -3538,6 +3579,15 @@ void BytecodeGenerator::VisitCall(Call* expr) {
     case Call::SUPER_CALL:
       UNREACHABLE();
       break;
+  }
+
+  if (expr->is_optional_chain_link()) {
+    DCHECK_NOT_NULL(optional_chaining_null_labels_);
+    // TODO(ignition): Add a single opcode for JumpIfNullOrUndefined
+    builder()
+        ->LoadAccumulatorWithRegister(callee)
+        .JumpIfUndefined(optional_chaining_null_labels_->New())
+        .JumpIfNull(optional_chaining_null_labels_->New());
   }
 
   // Evaluate all arguments to the function call and store in sequential args
@@ -3785,19 +3835,47 @@ void BytecodeGenerator::VisitUnaryOperation(UnaryOperation* expr) {
   }
 }
 
-void BytecodeGenerator::VisitDelete(UnaryOperation* expr) {
-  if (expr->expression()->IsProperty()) {
+void BytecodeGenerator::VisitDelete(UnaryOperation* unary) {
+  Expression* expr = unary->expression();
+  if (expr->IsProperty()) {
     // Delete of an object property is allowed both in sloppy
     // and strict modes.
-    Property* property = expr->expression()->AsProperty();
+    Property* property = expr->AsProperty();
     Register object = VisitForRegisterValue(property->obj());
     VisitForAccumulatorValue(property->key());
     builder()->Delete(object, language_mode());
-  } else if (expr->expression()->IsVariableProxy()) {
+  } else if (expr->IsOptionalChain()) {
+    Expression* expr_inner = expr->AsOptionalChain()->expression();
+    if (expr_inner->IsProperty()) {
+      Property* property = expr_inner->AsProperty();
+      DCHECK(!property->IsPrivateReference());
+      BytecodeLabel done;
+      OptionalChainNullLabelScope label_scope(this);
+      VisitForAccumulatorValue(property->obj());
+      if (property->is_optional_chain_link()) {
+	  int right_range = AllocateBlockCoverageSlotIfEnabled(
+			              property, SourceRangeKind::kRight);
+          builder()->JumpIfUndefined(label_scope.labels()->New())
+			              .JumpIfNull(label_scope.labels()->New());
+	  BuildIncrementBlockCoverageCounterIfEnabled(right_range);
+      }
+      Register object = register_allocator()->NewRegister();
+      builder()->StoreAccumulatorInRegister(object);
+      VisitForAccumulatorValue(property->key());
+      builder()->Delete(object, language_mode());
+      builder()->Jump(&done);
+      label_scope.labels()->Bind(builder());
+      builder()->LoadTrue();
+      builder()->Bind(&done);
+    } else {
+      VisitForEffect(expr);
+      builder()->LoadTrue();
+    }
+  } else if (expr->IsVariableProxy()) {
     // Delete of an unqualified identifier is allowed in sloppy mode but is
     // not allowed in strict mode. Deleting 'this' and 'new.target' is allowed
     // in both modes.
-    VariableProxy* proxy = expr->expression()->AsVariableProxy();
+    VariableProxy* proxy = expr->AsVariableProxy();
     DCHECK(is_sloppy(language_mode()) || proxy->is_this() ||
            proxy->is_new_target());
     if (proxy->is_this() || proxy->is_new_target()) {
@@ -3834,7 +3912,7 @@ void BytecodeGenerator::VisitDelete(UnaryOperation* expr) {
     }
   } else {
     // Delete of an unresolvable reference returns true.
-    VisitForEffect(expr->expression());
+    VisitForEffect(expr);
     builder()->LoadTrue();
   }
 }
@@ -3986,6 +4064,9 @@ void BytecodeGenerator::VisitBinaryOperation(BinaryOperation* binop) {
     case Token::AND:
       VisitLogicalAndExpression(binop);
       break;
+    case Token::NULLISH:
+      VisitNullishExpression(binop);
+      break;
     default:
       VisitArithmeticExpression(binop);
       break;
@@ -4002,6 +4083,9 @@ void BytecodeGenerator::VisitNaryOperation(NaryOperation* expr) {
       break;
     case Token::AND:
       VisitNaryLogicalAndExpression(expr);
+      break;
+    case Token::NULLISH:
+      VisitNaryNullishExpression(expr);
       break;
     default:
       VisitNaryArithmeticExpression(expr);
@@ -4387,14 +4471,17 @@ void BytecodeGenerator::VisitNaryCommaExpression(NaryOperation* expr) {
 void BytecodeGenerator::VisitLogicalTestSubExpression(
     Token::Value token, Expression* expr, BytecodeLabels* then_labels,
     BytecodeLabels* else_labels, int coverage_slot) {
-  DCHECK(token == Token::OR || token == Token::AND);
+  DCHECK(token == Token::OR || token == Token::AND || token == Token::NULLISH);
 
   BytecodeLabels test_next(zone());
   if (token == Token::OR) {
     VisitForTest(expr, then_labels, &test_next, TestFallthrough::kElse);
-  } else {
+  }  else if (token == Token::AND) {
     DCHECK_EQ(Token::AND, token);
     VisitForTest(expr, &test_next, else_labels, TestFallthrough::kThen);
+  } else {
+  DCHECK_EQ(Token::NULLISH, token);
+    VisitForNullishTest(expr, then_labels, &test_next, else_labels);  
   }
   test_next.Bind(builder());
 
@@ -4404,7 +4491,7 @@ void BytecodeGenerator::VisitLogicalTestSubExpression(
 void BytecodeGenerator::VisitLogicalTest(Token::Value token, Expression* left,
                                          Expression* right,
                                          int right_coverage_slot) {
-  DCHECK(token == Token::OR || token == Token::AND);
+  DCHECK(token == Token::OR || token == Token::AND || token == Token::NULLISH);
   TestResultScope* test_result = execution_result()->AsTest();
   BytecodeLabels* then_labels = test_result->then_labels();
   BytecodeLabels* else_labels = test_result->else_labels();
@@ -4419,7 +4506,7 @@ void BytecodeGenerator::VisitLogicalTest(Token::Value token, Expression* left,
 void BytecodeGenerator::VisitNaryLogicalTest(
     Token::Value token, NaryOperation* expr,
     const NaryCodeCoverageSlots* coverage_slots) {
-  DCHECK(token == Token::OR || token == Token::AND);
+  DCHECK(token == Token::OR || token == Token::AND || token == Token::NULLISH);
   DCHECK_GT(expr->subsequent_length(), 0);
 
   TestResultScope* test_result = execution_result()->AsTest();
@@ -4468,6 +4555,27 @@ bool BytecodeGenerator::VisitLogicalAndSubExpression(Expression* expr,
     TypeHint type_hint = VisitForAccumulatorValue(expr);
     builder()->JumpIfFalse(ToBooleanModeFromTypeHint(type_hint),
                            end_labels->New());
+  }
+
+  BuildIncrementBlockCoverageCounterIfEnabled(coverage_slot);
+
+  return false;
+}
+
+bool BytecodeGenerator::VisitNullishSubExpression(Expression* expr,
+                                                  BytecodeLabels* end_labels,
+                                                  int coverage_slot) {
+  if (expr->IsLiteralButNotNullOrUndefined()) {
+    VisitForAccumulatorValue(expr);
+    end_labels->Bind(builder());
+    return true;
+  } else if (!expr->IsNullOrUndefinedLiteral()) {
+    VisitForAccumulatorValue(expr);
+    BytecodeLabel is_null_or_undefined;
+    builder()
+        ->JumpIfUndefinedOrNull(&is_null_or_undefined)
+        .Jump(end_labels->New());
+    builder()->Bind(&is_null_or_undefined);
   }
 
   BuildIncrementBlockCoverageCounterIfEnabled(coverage_slot);
@@ -4591,6 +4699,69 @@ void BytecodeGenerator::VisitNaryLogicalAndExpression(NaryOperation* expr) {
       }
     }
     // We have to visit the last value even if it's false, because we need its
+    // actual value.
+    VisitForAccumulatorValue(expr->subsequent(expr->subsequent_length() - 1));
+    end_labels.Bind(builder());
+  }
+}
+
+
+void BytecodeGenerator::VisitNullishExpression(BinaryOperation* binop) {
+  Expression* left = binop->left();
+  Expression* right = binop->right();
+
+  int right_coverage_slot =
+      AllocateBlockCoverageSlotIfEnabled(binop, SourceRangeKind::kRight);
+
+  if (execution_result()->IsTest()) {
+    TestResultScope* test_result = execution_result()->AsTest();
+    if (left->IsLiteralButNotNullOrUndefined() && left->ToBooleanIsTrue()) {
+      builder()->Jump(test_result->NewThenLabel());
+    } else if (left->IsNullOrUndefinedLiteral() &&
+               right->IsNullOrUndefinedLiteral()) {
+      BuildIncrementBlockCoverageCounterIfEnabled(right_coverage_slot);
+      builder()->Jump(test_result->NewElseLabel());
+    } else {
+      VisitLogicalTest(Token::NULLISH, left, right, right_coverage_slot);
+    }
+    test_result->SetResultConsumedByTest();
+  } else {
+    BytecodeLabels end_labels(zone());
+    if (VisitNullishSubExpression(left, &end_labels, right_coverage_slot)) {
+      return;
+    }
+    VisitForAccumulatorValue(right);
+    end_labels.Bind(builder());
+  }
+}
+
+void BytecodeGenerator::VisitNaryNullishExpression(NaryOperation* expr) {
+  Expression* first = expr->first();
+  DCHECK_GT(expr->subsequent_length(), 0);
+
+  NaryCodeCoverageSlots coverage_slots(this, expr);
+
+  if (execution_result()->IsTest()) {
+    TestResultScope* test_result = execution_result()->AsTest();
+    if (first->IsLiteralButNotNullOrUndefined() && first->ToBooleanIsTrue()) {
+      builder()->Jump(test_result->NewThenLabel());
+    } else {
+      VisitNaryLogicalTest(Token::NULLISH, expr, &coverage_slots);
+    }
+    test_result->SetResultConsumedByTest();
+  } else {
+    BytecodeLabels end_labels(zone());
+    if (VisitNullishSubExpression(first, &end_labels,
+                                  coverage_slots.GetSlotFor(0))) {
+      return;
+    }
+    for (size_t i = 0; i < expr->subsequent_length() - 1; ++i) {
+      if (VisitNullishSubExpression(expr->subsequent(i), &end_labels,
+                                    coverage_slots.GetSlotFor(i + 1))) {
+        return;
+      }
+    }
+    // We have to visit the last value even if it's nullish, because we need its
     // actual value.
     VisitForAccumulatorValue(expr->subsequent(expr->subsequent_length() - 1));
     end_labels.Bind(builder());
@@ -4940,6 +5111,25 @@ void BytecodeGenerator::VisitForTest(Expression* expr,
     BuildTest(ToBooleanModeFromTypeHint(type_hint), then_labels, else_labels,
               fallthrough);
   }
+}
+
+// Visits the expression |expr| for testing its nullish value and jumping to the
+// |then| or |other| label depending on value and short-circuit semantics
+void BytecodeGenerator::VisitForNullishTest(Expression* expr,
+                                            BytecodeLabels* then_labels,
+                                            BytecodeLabels* test_next_labels,
+                                            BytecodeLabels* else_labels) {
+  // Nullish short circuits on undefined or null, otherwise we fall back to
+  // BuildTest with no fallthrough.
+  // TODO(joshualitt): We should do this in a TestResultScope.
+  TypeHint type_hint = VisitForAccumulatorValue(expr);
+  ToBooleanMode mode = ToBooleanModeFromTypeHint(type_hint);
+
+  // Skip the nullish shortcircuit if we already have a boolean.
+  if (mode != ToBooleanMode::kAlreadyBoolean) {
+    builder()->JumpIfUndefinedOrNull(test_next_labels->New());
+  }
+  BuildTest(mode, then_labels, else_labels, TestFallthrough::kNone);
 }
 
 void BytecodeGenerator::VisitInSameTestExecutionScope(Expression* expr) {

@@ -443,6 +443,12 @@ CastHeapObject<JSReceiver>(implicit context: Context)(o: HeapObject): JSReceiver
   if (IsJSReceiver(o)) return %RawObjectCast<JSReceiver>(o);
   goto CastError;
 }
+extern macro IsJSFunction(HeapObject): bool;
+CastHeapObject<JSFunction>(implicit context: Context)(o: HeapObject): JSFunction
+    labels CastError {
+  if (IsJSFunction(o)) return %RawObjectCast<JSFunction>(o);
+  goto CastError;
+}
 macro Cast<A: type>(implicit context: Context)(o: Object): A
     labels CastError {
   return CastHeapObject<A>(TaggedToHeapObject(o) otherwise CastError)

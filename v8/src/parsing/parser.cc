@@ -3541,10 +3541,10 @@ ArrayLiteral* Parser::ArrayLiteralFromListWithSpread(
 
 Expression* Parser::SpreadCall(Expression* function,
                                ZoneList<Expression*>* args_list, int pos,
-                               Call::PossiblyEval is_possibly_eval) {
+                               Call::PossiblyEval is_possibly_eval, bool optional_chain) {
   // Handle this case in BytecodeGenerator.
   if (OnlyLastArgIsSpread(args_list) || function->IsSuperCallReference()) {
-    return factory()->NewCall(function, args_list, pos);
+    return factory()->NewCall(function, args_list, pos, Call::NOT_EVAL, optional_chain);
   }
 
   ZoneList<Expression*>* args = new (zone()) ZoneList<Expression*>(3, zone());
@@ -3560,7 +3560,7 @@ Expression* Parser::SpreadCall(Expression* function,
       Assignment* assign_obj = factory()->NewAssignment(
           Token::ASSIGN, obj, function->AsProperty()->obj(), kNoSourcePosition);
       function = factory()->NewProperty(
-          assign_obj, function->AsProperty()->key(), kNoSourcePosition);
+          assign_obj, function->AsProperty()->key(), kNoSourcePosition, optional_chain);
       args->Add(function, zone());
       obj = factory()->NewVariableProxy(temp);
       args->Add(obj, zone());
