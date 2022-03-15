@@ -78,6 +78,7 @@ public class ChromePreferenceManager {
             "verified_digital_asset_links";
 
     private static final String MISES_USER_INFO = "mises_user_info";
+    private static final String MISES_DEFAULT_BROWSER_TIP = "mises_default_browser_tip";
 
     /*
      * Whether the simplified tab switcher is enabled when accessibility mode is enabled. Keep in
@@ -111,10 +112,19 @@ public class ChromePreferenceManager {
 
     public void setMisesUserInfo(String userinfo) {
         SharedPreferences.Editor sharedPreferencesEditor;
-
         sharedPreferencesEditor = mSharedPreferences.edit();
-        // Convention to keep all the key in preference lower case.
         sharedPreferencesEditor.putString(MISES_USER_INFO, userinfo);
+        sharedPreferencesEditor.apply();
+    }
+
+    public boolean hasShowDefaultBrowserTip() {
+        return mSharedPreferences.getBoolean(MISES_DEFAULT_BROWSER_TIP, false);
+    }
+
+    public void setShowDefaultBrowserTip(boolean show) {
+        SharedPreferences.Editor sharedPreferencesEditor;
+        sharedPreferencesEditor = mSharedPreferences.edit();
+        sharedPreferencesEditor.putBoolean(MISES_DEFAULT_BROWSER_TIP, show);
         sharedPreferencesEditor.apply();
     }
 
