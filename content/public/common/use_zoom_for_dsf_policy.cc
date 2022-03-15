@@ -8,7 +8,7 @@
 #include "build/build_config.h"
 #include "content/public/common/content_switches.h"
 
-#if defined(OS_WIN)
+#if defined(OS_WIN) || defined(OS_ANDROID)
 #include "base/feature_list.h"
 #endif
 
@@ -19,10 +19,16 @@ const base::Feature kUseZoomForDsfEnabledByDefault{
     "use-zoom-for-dsf enabled by default", base::FEATURE_ENABLED_BY_DEFAULT};
 #endif
 
+#if defined(OS_ANDROID)
+const base::Feature kUseZoomForDsfEnabledByDefault{
+	    "use-zoom-for-dsf enabled by default", base::FEATURE_DISABLED_BY_DEFAULT};
+#endif
+
+
 bool IsUseZoomForDSFEnabledByDefault() {
 #if defined(OS_LINUX) || defined(OS_FUCHSIA)
   return true;
-#elif defined(OS_WIN)
+#elif defined(OS_WIN)  || defined(OS_ANDROID)
   return base::FeatureList::IsEnabled(kUseZoomForDsfEnabledByDefault);
 #else
   return false;

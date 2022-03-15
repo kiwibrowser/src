@@ -95,7 +95,7 @@ if ! which lsb_release > /dev/null; then
 fi
 distro_codename=$(lsb_release --codename --short)
 distro_id=$(lsb_release --id --short)
-supported_codenames="(trusty|xenial|bionic|disco|eoan)"
+supported_codenames="(trusty|xenial|bionic|disco|eoan|focal)"
 supported_ids="(Debian)"
 if [ 0 -eq "${do_unsupported-0}" ] && [ 0 -eq "${do_quick_check-0}" ] ; then
   if [[ ! $distro_codename =~ $supported_codenames &&
