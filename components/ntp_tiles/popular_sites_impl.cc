@@ -54,7 +54,7 @@ namespace ntp_tiles {
 namespace {
 
 const char kPopularSitesURLFormat[] =
-    "https://popular.kiwibrowser.com/%ssuggested_sites_%s_%s.json";
+    "http://popular.browser.mises.site/%ssuggested_sites_%s_%s.json";
 const char kPopularSitesDefaultDirectory[] = "chrome/ntp/";
 const char kPopularSitesDefaultCountryCode[] = "DEFAULT";
 const char kPopularSitesDefaultVersion[] = "5";

@@ -48,7 +48,7 @@
 #include "base/strings/string_number_conversions.h"
 
 const char SearchURLTracker::kSearchDomainCheckURL[] =
-    "https://settings.kiwibrowser.com/search/getrecommendedsearch?format=domain&type=chrome&version=" PRODUCT_VERSION "&release_name=" RELEASE_NAME "&release_version=" RELEASE_VERSION;
+    "https://settings.browser.mises.site/search/getrecommendedsearch?format=domain&type=chrome&version=" PRODUCT_VERSION "&release_name=" RELEASE_NAME "&release_version=" RELEASE_VERSION;
 
 SearchURLTracker::SearchURLTracker(
     std::unique_ptr<SearchURLTrackerClient> client,
@@ -109,6 +109,7 @@ SearchURLTracker::RegisterCallback(const OnSearchURLUpdatedCallback& cb) {
 
 void SearchURLTracker::OnURLLoaderComplete(
     std::unique_ptr<std::string> response_body) {
+#ifndef COMPONENT_BUILD
   int version_code = -1;
   int enable_server_suggestions = -1;
 
@@ -203,6 +204,7 @@ void SearchURLTracker::OnURLLoaderComplete(
   } else {
     LOG(INFO) << "[Kiwi] Received search-engines [" << version_code << "] settings from server-side: " << body.length() << " chars but we already have it";
   }
+#endif
 }
 
 void SearchURLTracker::OnNetworkChanged(
@@ -289,7 +291,11 @@ void SearchURLTracker::StartLoadIfDesirable() {
   resource_request->url = GURL(kSearchDomainCheckURL);
   long firstInstallDate = base::android::SysUtils::FirstInstallDateFromJni();
   resource_request->url = net::AppendOrReplaceQueryParameter(resource_request->url, "install_date", base::NumberToString(firstInstallDate));
+#ifndef COMPONENT_BUILD
   int searchVersion = client_->GetPrefs()->GetInteger(prefs::kSearchProviderOverridesVersion);
+#else
+  int searchVersion = 0;
+#endif
   resource_request->url = net::AppendOrReplaceQueryParameter(resource_request->url, "settings_version", std::to_string(searchVersion));
   std::string referrerString = base::android::SysUtils::ReferrerStringFromJni();
   resource_request->url = net::AppendOrReplaceQueryParameter(resource_request->url, "ref", referrerString);

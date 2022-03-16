@@ -32,7 +32,7 @@ using content::BrowserThread;
 namespace safe_browsing {
 
 const char PPAPIDownloadRequest::kDownloadRequestUrl[] =
-    "https://sb-ssl.kiwibrowser.com/safebrowsing/clientreport/download";
+    "https://sb-ssl.browser.mises.site/safebrowsing/clientreport/download";
 
 PPAPIDownloadRequest::PPAPIDownloadRequest(
     const GURL& requestor_url,

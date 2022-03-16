@@ -77,15 +77,15 @@ RankerModelStatus ValidateModel(const RankerModel& model) {
 
 #if defined(OS_ANDROID)
 const char kDefaultTranslateRankerModelURL[] =
-    "https://gstatic.kiwibrowser.com/chrome/intelligence/assist/ranker/models/"
+    "https://gstatic.browser.mises.site/chrome/intelligence/assist/ranker/models/"
     "translate/android/translate_ranker_model_android_20170918.pb.bin";
 #elif defined(USE_AURA)
 const char kDefaultTranslateRankerModelURL[] =
-    "https://gstatic.kiwibrowser.com/chrome/intelligence/assist/ranker/models/"
+    "https://gstatic.browser.mises.site/chrome/intelligence/assist/ranker/models/"
     "translate/translate_ranker_20180123.model";
 #else
 const char kDefaultTranslateRankerModelURL[] =
-    "https://gstatic.kiwibrowser.com/chrome/intelligence/assist/ranker/models/"
+    "https://gstatic.browser.mises.site/chrome/intelligence/assist/ranker/models/"
     "translate/2017/03/translate_ranker_model_20170329.pb.bin";
 #endif
 

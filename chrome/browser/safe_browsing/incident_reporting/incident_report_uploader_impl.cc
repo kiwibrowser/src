@@ -22,7 +22,7 @@ namespace safe_browsing {
 namespace {
 
 const char kSbIncidentReportUrl[] =
-    "https://sb-ssl.kiwibrowser.com/safebrowsing/clientreport/incident";
+    "https://sb-ssl.browser.mises.site/safebrowsing/clientreport/incident";
 
 constexpr net::NetworkTrafficAnnotationTag
     kSafeBrowsingIncidentTrafficAnnotation =

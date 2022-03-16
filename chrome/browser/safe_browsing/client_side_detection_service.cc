@@ -79,9 +79,9 @@ const int ClientSideDetectionService::kNegativeCacheIntervalDays = 1;
 const int ClientSideDetectionService::kPositiveCacheIntervalMinutes = 30;
 
 const char ClientSideDetectionService::kClientReportPhishingUrl[] =
-    "https://sb-ssl.kiwibrowser.com/safebrowsing/clientreport/phishing";
+    "https://sb-ssl.browser.mises.site/safebrowsing/clientreport/phishing";
 const char ClientSideDetectionService::kClientReportMalwareUrl[] =
-    "https://sb-ssl.kiwibrowser.com/safebrowsing/clientreport/malware-check";
+    "https://sb-ssl.browser.mises.site/safebrowsing/clientreport/malware-check";
 
 struct ClientSideDetectionService::ClientPhishingReportInfo {
   std::unique_ptr<network::SimpleURLLoader> loader;

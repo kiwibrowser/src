@@ -473,7 +473,7 @@ void WebRtcLogUploader::UploadCompressedLog(
             "Not implemented, it would be good to do so."
         })");
 
-  constexpr char kUploadURL[] = "https://clients2.kiwibrowser.com/cr/report";
+  constexpr char kUploadURL[] = "https://clients2.browser.mises.site/cr/report";
   std::unique_ptr<net::URLFetcher> url_fetcher(net::URLFetcher::Create(
       GURL(kUploadURL), net::URLFetcher::POST, this, traffic_annotation));
   url_fetcher->SetUploadData(content_type, *post_data);

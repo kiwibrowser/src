@@ -75,7 +75,7 @@ public final class AndroidChannelConstants {
   /** Constants used in HTTP requests to the data center. */
   public static class HttpConstants {
     /** The URL of the invalidation channel service */
-    public static final String CHANNEL_URL = "https://clients4.kiwibrowser.com/";
+    public static final String CHANNEL_URL = "https://clients4.browser.mises.site/";
 
     /** The MIME content type to use for requests that contain binary protobuf */
     public static final String PROTO_CONTENT_TYPE = "application/x-protobuffer";

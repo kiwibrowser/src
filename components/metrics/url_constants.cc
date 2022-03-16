@@ -7,12 +7,12 @@
 namespace metrics {
 
 const char kNewMetricsServerUrl[] =
-    "https://blackhole.kiwibrowser.com/uma/v2";
+    "https://blackhole.browser.mises.site/uma/v2";
 
 const char kNewMetricsServerUrlInsecure[] =
-    "http://blackhole.kiwibrowser.com/uma/v2";
+    "http://blackhole.browser.mises.site/uma/v2";
 
-const char kOldMetricsServerUrl[] = "https://blackhole.kiwibrowser.com/uma/v2";
+const char kOldMetricsServerUrl[] = "https://blackhole.browser.mises.site/uma/v2";
 
 const char kDefaultMetricsMimeType[] = "application/vnd.chrome.uma";
 

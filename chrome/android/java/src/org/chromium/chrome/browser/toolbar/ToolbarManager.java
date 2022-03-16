@@ -377,14 +377,10 @@ public class ToolbarManager implements ToolbarTabController, UrlFocusChangeListe
 
                 // If we made some progress, fast-forward to complete, otherwise just dismiss any
                 // MINIMUM_LOAD_PROGRESS that had been set.
-                if (tab.getUrl().contains("https://search.kiwibrowser.org/") || tab.getUrl().contains("https://bsearch.kiwibrowser.org/") || tab.getUrl().contains("https://ysearch.kiwibrowser.org/") || tab.getUrl().contains("https://kiwisearchservices.com/") || tab.getUrl().contains("https://www.kiwisearchservices.com/") || tab.getUrl().contains("https://kiwisearchservices.net/") || tab.getUrl().contains("https://www.kiwisearchservices.net/")) {
-                  finishLoadProgress(false);
-                } else {
                   if (tab.getProgress() > MINIMUM_LOAD_PROGRESS && tab.getProgress() < 100) {
                       updateLoadProgress(100);
                   }
                   finishLoadProgress(true);
-               }
             }
 
             @Override
@@ -392,15 +388,6 @@ public class ToolbarManager implements ToolbarTabController, UrlFocusChangeListe
                 if (NativePageFactory.isNativePageUrl(tab.getUrl(), tab.isIncognito())
                  || tab.getUrl().contains("chrome-search://")
                  ) return;
-
-                if ((tab.getUrl().contains("https://search.kiwibrowser.org/") && progress >= MINIMUM_LOAD_PROGRESS)
-                 || (tab.getUrl().contains("https://bsearch.kiwibrowser.org/") && progress >= MINIMUM_LOAD_PROGRESS)
-                 || (tab.getUrl().contains("https://ysearch.kiwibrowser.org/") && progress >= MINIMUM_LOAD_PROGRESS)
-                 || (tab.getUrl().contains("https://kiwisearchservices.com/") && progress >= MINIMUM_LOAD_PROGRESS)
-                 || (tab.getUrl().contains("https://www.kiwisearchservices.com/") && progress >= MINIMUM_LOAD_PROGRESS)
-                 || (tab.getUrl().contains("https://kiwisearchservices.net/") && progress >= MINIMUM_LOAD_PROGRESS)
-                 || (tab.getUrl().contains("https://www.kiwisearchservices.net/") && progress >= MINIMUM_LOAD_PROGRESS))
-                    progress = MINIMUM_LOAD_PROGRESS;
 
                 // TODO(kkimlabs): Investigate using float progress all the way up to Blink.
                 updateLoadProgress(progress);
@@ -1473,16 +1460,7 @@ public class ToolbarManager implements ToolbarTabController, UrlFocusChangeListe
             return;
         }
 
-        if ((tab.getUrl().contains("https://search.kiwibrowser.org/") && progress >= MINIMUM_LOAD_PROGRESS)
-             || (tab.getUrl().contains("https://bsearch.kiwibrowser.org/") && progress >= MINIMUM_LOAD_PROGRESS)
-             || (tab.getUrl().contains("https://ysearch.kiwibrowser.org/") && progress >= MINIMUM_LOAD_PROGRESS)
-             || (tab.getUrl().contains("https://kiwisearchservices.com/") && progress >= MINIMUM_LOAD_PROGRESS)
-             || (tab.getUrl().contains("https://www.kiwisearchservices.com/") && progress >= MINIMUM_LOAD_PROGRESS)
-             || (tab.getUrl().contains("https://kiwisearchservices.net/") && progress >= MINIMUM_LOAD_PROGRESS)
-             || (tab.getUrl().contains("https://www.kiwisearchservices.net/") && progress >= MINIMUM_LOAD_PROGRESS))
-          progress = MINIMUM_LOAD_PROGRESS;
-        else
-          progress = Math.max(progress, MINIMUM_LOAD_PROGRESS);
+        progress = Math.max(progress, MINIMUM_LOAD_PROGRESS);
         mToolbar.setLoadProgress(progress / 100f);
         if (progress == 100) finishLoadProgress(true);
     }

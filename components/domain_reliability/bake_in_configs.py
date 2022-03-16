@@ -21,9 +21,9 @@ import sys
 # Chrome, to ensure incorrect ones are not added accidentally. Subdomains of
 # whitelist entries are also allowed (e.g. maps.google.com, ssl.gstatic.com).
 DOMAIN_WHITELIST = (
-  'ssl.kiwibrowser.com',
-  'gcp.kiwibrowser.com',
-  'kiwibrowser.com',
+  'ssl.browser.mises.site',
+  'gcp.browser.mises.site',
+  'browser.mises.site',
   '2mdn.net',
   'admob.biz',
   'admob.co.in',

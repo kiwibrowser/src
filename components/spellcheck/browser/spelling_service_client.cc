@@ -34,7 +34,7 @@
 namespace {
 
 // The URL for requesting spell checking and sending user feedback.
-const char kSpellingServiceURL[] = "https://spell.kiwibrowser.com/rpc";
+const char kSpellingServiceURL[] = "https://spell.browser.mises.site/rpc";
 
 // The location of spellcheck suggestions in JSON response from spelling
 // service.

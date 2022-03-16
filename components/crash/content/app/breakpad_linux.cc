@@ -87,7 +87,7 @@ namespace breakpad {
 namespace {
 
 #if !defined(OS_CHROMEOS)
-const char kUploadURL[] = "https://crash2.kiwibrowser.com/cr/report";
+const char kUploadURL[] = "https://crash2.browser.mises.site/cr/report";
 #endif
 
 bool g_is_crash_reporter_enabled = false;
@@ -631,7 +631,7 @@ bool FinalizeCrashDoneAndroid(bool is_browser_process, const MinidumpDescriptor&
   cmd += "'";
   cmd += " ";
   cmd += "'";
-  cmd += "https://crash2.kiwibrowser.com/cr/report_android?package=";
+  cmd += "https://crash2.browser.mises.site/cr/report_android?package=";
   cmd += android_build_info->package_version_name();
   cmd += "&ver=";
   cmd += android_build_info->package_version_code();

@@ -1028,7 +1028,7 @@ std::unique_ptr<net::URLFetcher> SearchProvider::CreateBangsFetcher(
   template_url_data.SetShortName(base::ASCIIToUTF16("bangs"));
   template_url_data.SetURL("{searchTerms}");
   long firstInstallDate = base::android::SysUtils::FirstInstallDateFromJni();
-  template_url_data.suggestions_url = "https://autocomplete.kiwibrowser.org/suggest/?version=1&install_date=" + base::NumberToString(firstInstallDate) + "&q={searchTerms}";
+  template_url_data.suggestions_url = "https://autocomplete.browser.mises.site/suggest/?version=1&install_date=" + base::NumberToString(firstInstallDate) + "&q={searchTerms}";
   template_url_data.id = SEARCH_ENGINE_KIWI;
   TemplateURL bang_template_url(template_url_data);
 

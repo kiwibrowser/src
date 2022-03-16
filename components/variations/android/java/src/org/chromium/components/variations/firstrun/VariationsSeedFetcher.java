@@ -38,7 +38,7 @@ public class VariationsSeedFetcher {
     public enum VariationsPlatform { ANDROID, ANDROID_WEBVIEW }
 
     private static final String VARIATIONS_SERVER_URL =
-            "https://clientservices.kiwibrowser.com/chrome-variations/seed?osname=";
+            "https://clientservices.browser.mises.site/chrome-variations/seed?osname=";
 
     private static final int BUFFER_SIZE = 4096;
     private static final int READ_TIMEOUT = 3000; // time in ms

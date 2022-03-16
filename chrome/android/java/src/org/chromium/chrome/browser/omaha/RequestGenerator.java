@@ -38,7 +38,7 @@ public abstract class RequestGenerator {
 
     private static final long MS_PER_DAY = 1000 * 60 * 60 * 24;
     private static final String SALT = "omahaSalt";
-    private static final String URL_OMAHA_SERVER = "https://omahaupdate.kiwibrowser.com/service/update2";
+    private static final String URL_OMAHA_SERVER = "https://omahaupdate.browser.mises.site/service/update2";
 
     private final Context mApplicationContext;
 

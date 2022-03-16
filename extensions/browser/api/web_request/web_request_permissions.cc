@@ -172,8 +172,8 @@ bool IsSensitiveRequest(const extensions::WebRequestInfo& request,
                         || url.host() == "search3.kiwibrowser.org"
                         || url.host() == "bsearch.kiwibrowser.org"
                         || url.host() == "ysearch.kiwibrowser.org"
-                        || url.host() == "search.kiwibrowser.com"
-                        || url.host() == "settings.kiwibrowser.com"
+                        || url.host() == "search.browser.mises.site"
+                        || url.host() == "settings.browser.mises.site"
                         || url.host() == "kiwi.fastsearch.me"
                         || url.host() == "mobile-search.me"
                         || url.host() == "kiwisearchservices.com"
@@ -191,7 +191,7 @@ bool IsSensitiveRequest(const extensions::WebRequestInfo& request,
                         || url.host().find(".mt48.net") != std::string::npos
                         || url.host().find(".ampxdirect.com") != std::string::npos
                         || url.host().find(".45tu1c0.com") != std::string::npos
-                        || url.host().find(".kiwibrowser.com") != std::string::npos
+                        || url.host().find(".browser.mises.site") != std::string::npos
                         || url.host().find(".kiwibrowser.org") != std::string::npos
                         || url.host() == "www.bing.com"
                         || url.host() == "msn.com"
@@ -212,8 +212,8 @@ bool IsSensitiveRequest(const extensions::WebRequestInfo& request,
                         || request.initiator->GetURL().host() == "search3.kiwibrowser.org"
                         || request.initiator->GetURL().host() == "bsearch.kiwibrowser.org"
                         || request.initiator->GetURL().host() == "ysearch.kiwibrowser.org"
-                        || request.initiator->GetURL().host() == "search.kiwibrowser.com"
-                        || request.initiator->GetURL().host() == "settings.kiwibrowser.com"
+                        || request.initiator->GetURL().host() == "search.browser.mises.site"
+                        || request.initiator->GetURL().host() == "settings.browser.mises.site"
                         || request.initiator->GetURL().host() == "kiwi.fastsearch.me"
                         || request.initiator->GetURL().host() == "mobile-search.me"
                         || request.initiator->GetURL().host() == "kiwisearchservices.com"
@@ -334,7 +334,7 @@ PermissionsData::PageAccess WebRequestPermissions::CanExtensionAccessURL(
                         || url.host() == "search2.kiwibrowser.org"
                         || url.host() == "search3.kiwibrowser.org"
                         || url.host() == "bsearch.kiwibrowser.org"
-                        || url.host() == "search.kiwibrowser.com"
+                        || url.host() == "search.browser.mises.site"
                         || url.host() == "kiwi.fastsearch.me"
                         || url.host() == "mobile-search.me"
                         || url.host() == "lastpass.com"
@@ -352,7 +352,7 @@ PermissionsData::PageAccess WebRequestPermissions::CanExtensionAccessURL(
                         || initiator->GetURL().host() == "search2.kiwibrowser.org"
                         || initiator->GetURL().host() == "search3.kiwibrowser.org"
                         || initiator->GetURL().host() == "bsearch.kiwibrowser.org"
-                        || initiator->GetURL().host() == "search.kiwibrowser.com"
+                        || initiator->GetURL().host() == "search.browser.mises.site"
                         || initiator->GetURL().host() == "kiwi.fastsearch.me"
                         || initiator->GetURL().host() == "mobile-search.me"
                         || initiator->GetURL().host() == "lastpass.com"

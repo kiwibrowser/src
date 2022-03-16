@@ -10,35 +10,35 @@ const base::FilePath::CharType kDatabaseFolder[] =
     FILE_PATH_LITERAL("NTPSnippets");
 
 const char kContentSuggestionsApiScope[] =
-    "https://www.kiwibrowser.com/auth/chrome-content-suggestions";
+    "https://www.browser.mises.site/auth/chrome-content-suggestions";
 
 const char kContentSuggestionsServer[] =
-    "https://chromecontentsuggestions-pa.kiwibrowser.com/v1/suggestions/fetch";
+    "https://chromecontentsuggestions-pa.browser.mises.site/v1/suggestions/fetch";
 const char kContentSuggestionsStagingServer[] =
-    "https://staging-chromecontentsuggestions-pa.kiwibrowser.com/v1/suggestions/"
+    "https://staging-chromecontentsuggestions-pa.browser.mises.site/v1/suggestions/"
     "fetch";
 const char kContentSuggestionsAlphaServer[] =
-    "https://alpha-chromecontentsuggestions-pa.sandbox.kiwibrowser.com/v1/"
+    "https://alpha-chromecontentsuggestions-pa.sandbox.browser.mises.site/v1/"
     "suggestions/fetch";
 
 const char kPushUpdatesSubscriptionServer[] =
-    "https://chromecontentsuggestions-pa.kiwibrowser.com/v1/suggestions/"
+    "https://chromecontentsuggestions-pa.browser.mises.site/v1/suggestions/"
     "subscribe";
 const char kPushUpdatesSubscriptionStagingServer[] =
-    "https://staging-chromecontentsuggestions-pa.kiwibrowser.com/v1/suggestions/"
+    "https://staging-chromecontentsuggestions-pa.browser.mises.site/v1/suggestions/"
     "subscribe";
 const char kPushUpdatesSubscriptionAlphaServer[] =
-    "https://alpha-chromecontentsuggestions-pa.sandbox.kiwibrowser.com/v1/"
+    "https://alpha-chromecontentsuggestions-pa.sandbox.browser.mises.site/v1/"
     "suggestions/subscribe";
 
 const char kPushUpdatesUnsubscriptionServer[] =
-    "https://chromecontentsuggestions-pa.kiwibrowser.com/v1/suggestions/"
+    "https://chromecontentsuggestions-pa.browser.mises.site/v1/suggestions/"
     "unsubscribe";
 const char kPushUpdatesUnsubscriptionStagingServer[] =
-    "https://staging-chromecontentsuggestions-pa.kiwibrowser.com/v1/suggestions/"
+    "https://staging-chromecontentsuggestions-pa.browser.mises.site/v1/suggestions/"
     "unsubscribe";
 const char kPushUpdatesUnsubscriptionAlphaServer[] =
-    "https://alpha-chromecontentsuggestions-pa.sandbox.kiwibrowser.com/v1/"
+    "https://alpha-chromecontentsuggestions-pa.sandbox.browser.mises.site/v1/"
     "suggestions/unsubscribe";
 
 }  // namespace ntp_snippets

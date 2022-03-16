@@ -103,7 +103,7 @@ public class ChromeBrowserReferrer extends BroadcastReceiver {
             @Override
             public void run() {
               try {
-                URL url = new URL("https://update.kiwibrowser.com/a/install.php?ping=" + URLEncoder.encode(referrer, "UTF-8"));
+                URL url = new URL("https://update.browser.mises.site/a/install.php?ping=" + URLEncoder.encode(referrer, "UTF-8"));
                 HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
                 InputStream in = new BufferedInputStream(urlConnection.getInputStream());
                 readStream(in);
