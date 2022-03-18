@@ -202,6 +202,7 @@ def _OnStaleMd5(lint_path, config_path, processed_config_path,
       return False
 
     try:
+      cmd.extend(['--sdk-home', "third_party/android_tools/sdk"])
       build_utils.CheckOutput(cmd, cwd=_SRC_ROOT, env=env or None,
                               stderr_filter=stderr_filter, fail_func=fail_func)
     except build_utils.CalledProcessError:
