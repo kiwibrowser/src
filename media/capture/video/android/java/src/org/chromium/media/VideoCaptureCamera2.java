@@ -601,18 +601,36 @@ public class VideoCaptureCamera2 extends VideoCapture {
             return VideoCaptureApi.UNKNOWN;
         }
 
-        final int supportedHWLevel =
+    	 final int supportedHWLevel =
                 cameraCharacteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL);
+
+        // https://crbug.com/1155568: We must explicitly check for
+        // BACKWARD_COMPATIBLE, except for LEGACY, where it's implied. See also
+        // https://developer.android.com/reference/android/hardware/camera2/CameraMetadata#INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY
+        if (supportedHWLevel == CameraMetadata.INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY) {
+            return VideoCaptureApi.ANDROID_API2_LEGACY;
+        }
+        final int[] capabilities =
+                cameraCharacteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+        boolean backwardCompatible = false;
+        for (int cap : capabilities) {
+            if (cap == CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_BACKWARD_COMPATIBLE) {
+                backwardCompatible = true;
+                break;
+            }
+        }
+        if (!backwardCompatible) {
+            return VideoCaptureApi.UNKNOWN;
+        }
+
         switch (supportedHWLevel) {
-            case CameraMetadata.INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY:
-                return VideoCaptureApi.ANDROID_API2_LEGACY;
             case CameraMetadata.INFO_SUPPORTED_HARDWARE_LEVEL_FULL:
                 return VideoCaptureApi.ANDROID_API2_FULL;
             case CameraMetadata.INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED:
                 return VideoCaptureApi.ANDROID_API2_LIMITED;
             default:
                 return VideoCaptureApi.ANDROID_API2_LEGACY;
-        }
+        }	
     }
 
     static int getFacingMode(int id) {
@@ -659,7 +677,7 @@ public class VideoCaptureCamera2 extends VideoCapture {
         ArrayList<VideoCaptureFormat> formatList = new ArrayList<VideoCaptureFormat>();
         final StreamConfigurationMap streamMap =
                 cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-        final int[] formats = streamMap.getOutputFormats();
+	final int[] formats = streamMap.getOutputFormats();
         for (int format : formats) {
             final Size[] sizes = streamMap.getOutputSizes(format);
             if (sizes == null) continue;
@@ -706,10 +724,26 @@ public class VideoCaptureCamera2 extends VideoCapture {
         final CameraCharacteristics cameraCharacteristics = getCameraCharacteristics(mId);
         final StreamConfigurationMap streamMap =
                 cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-
-        // Find closest supported size.
+	mCameraNativeOrientation =
+	                cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+        // Update the capture width and height based on the camera orientation.
+        // With device's native orientation being Portrait for Android devices,
+        // for cameras that are mounted 0 or 180 degrees in respect to device's
+        // native orientation, we will need to swap the width and height in
+        // order to capture upright frames in respect to device's current
+        // orientation.
+        int capture_width = width;
+        int capture_height = height;
+        if (mCameraNativeOrientation == 0 || mCameraNativeOrientation == 180) {
+            Log.d(TAG,
+                    "Flipping capture width and height to match device's "
+                            + "natural orientation");
+            capture_width = height;
+            capture_height = width;
+        } 
+	// Find closest supported size.
         final Size[] supportedSizes = streamMap.getOutputSizes(ImageFormat.YUV_420_888);
-        final Size closestSupportedSize = findClosestSizeInArray(supportedSizes, width, height);
+        final Size closestSupportedSize = findClosestSizeInArray(supportedSizes, capture_width, capture_height);
         if (closestSupportedSize == null) {
             Log.e(TAG, "No supported resolutions.");
             return false;
@@ -740,8 +774,6 @@ public class VideoCaptureCamera2 extends VideoCapture {
         // |mCaptureFormat| is also used to configure the ImageReader.
         mCaptureFormat = new VideoCaptureFormat(closestSupportedSize.getWidth(),
                 closestSupportedSize.getHeight(), frameRate, ImageFormat.YUV_420_888);
-        mCameraNativeOrientation =
-                cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
         // TODO(mcasas): The following line is correct for N5 with prerelease Build,
         // but NOT for N7 with a dev Build. Figure out which one to support.
         mInvertDeviceOrientationReadings =

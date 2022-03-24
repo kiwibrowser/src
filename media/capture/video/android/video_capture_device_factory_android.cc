@@ -70,6 +70,8 @@ void VideoCaptureDeviceFactoryAndroid::GetDeviceDescriptors(
 
     const int capture_api_type =
         Java_VideoCaptureFactory_getCaptureApiType(env, camera_id);
+    if (static_cast<VideoCaptureApi>(capture_api_type) == VideoCaptureApi::UNKNOWN)
+	continue;
     const int facing_mode =
         Java_VideoCaptureFactory_getFacingMode(env, camera_id);
     const std::string display_name =
