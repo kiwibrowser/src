@@ -80,6 +80,7 @@ import org.chromium.chrome.browser.partnercustomizations.HomepageManager;
 import org.chromium.chrome.browser.partnercustomizations.PartnerBrowserCustomizations;
 import org.chromium.chrome.browser.profiles.Profile;
 import org.chromium.chrome.browser.tab.Tab;
+import org.chromium.chrome.browser.tabmodel.TabModel.TabLaunchType;
 import org.chromium.chrome.browser.tabmodel.TabCreatorManager;
 import org.chromium.chrome.browser.tabmodel.TabModel;
 import org.chromium.chrome.browser.tabmodel.TabModelSelector;
@@ -720,6 +721,10 @@ public class ToolbarPhone extends ToolbarLayout
                     } else  if (v.getId() == R.id.tv_create_mises) {
                         if (tabCreator != null) {
                             tabCreator.openSinglePage("https://home.mises.site/home/me");
+                        }
+                    } else  if (v.getId() == R.id.tv_website || v.getId() == R.id.tv_website1) {
+                        if (tabCreator != null) {
+                            tabCreator.launchUrl("https://www.mises.site", TabLaunchType.FROM_CHROME_UI);
                         }
                     }
                     misesUserInfoMenu.dismiss();

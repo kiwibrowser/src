@@ -89,5 +89,7 @@ public class MisesUserInfoMenu extends PopupWindow {
         view.findViewById(R.id.tv_wallet).setOnClickListener(itemsOnClick);
         view.findViewById(R.id.tv_login).setOnClickListener(itemsOnClick);
         view.findViewById(R.id.tv_create_mises).setOnClickListener(itemsOnClick);
+        view.findViewById(R.id.tv_website).setOnClickListener(itemsOnClick);
+        view.findViewById(R.id.tv_website1).setOnClickListener(itemsOnClick);
     }
 } 
