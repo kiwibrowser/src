@@ -728,7 +728,7 @@ public class ToolbarPhone extends ToolbarLayout
             misesUserInfoMenu.showAtLocation(mMisesMainButton, Gravity.START | Gravity.TOP, 0, 0);
         } else if (mMisesShareButton != null && mMisesShareButton == v) {
             FirebaseAnalytics.getInstance(getContext()).logEvent("share", new Bundle());
-            String SCRIPT = "window.misesModule.getWindowInformation()";
+            String SCRIPT = "if(window.misesModule && window.misesModule.getWindowInformation){window.misesModule.getWindowInformation()}";
             Context context = getContext();
             if (!(context instanceof ChromeTabbedActivity))
                 return;
