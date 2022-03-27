@@ -129,7 +129,7 @@ public class MisesShareWin extends DialogFragment {
                 dos.write(endStr.getBytes());
 
                 resCode = urlConnection.getResponseCode();
-                Log.d(TAG, "upload image to mises " + resCode);
+                Log.e(TAG, "upload image to mises " + resCode);
 
                 if (resCode == 200) {
                     InputStream is = urlConnection.getInputStream();
@@ -140,7 +140,7 @@ public class MisesShareWin extends DialogFragment {
                         i = is.read();
                     }
                     String resJson = bo.toString();
-                    Log.d(TAG, "upload image to mises " + resJson);
+                    Log.e(TAG, "upload image to mises " + resJson);
                     JSONObject resJsonObject = new JSONObject(resJson);
                     int code = -1;
                     if (resJsonObject.has("code")) {
@@ -165,13 +165,13 @@ public class MisesShareWin extends DialogFragment {
                     Log.e(TAG, "upload image to mises " + err);
                 }
             } catch (JSONException e) {
-                Log.w(TAG, "Upload image error " + e.toString());
+                Log.e(TAG, "Upload image error " + e.toString());
             } catch (MalformedURLException e) {
-                Log.w(TAG, "Upload image error " + e.toString());
+                Log.e(TAG, "Upload image error " + e.toString());
             } catch (IOException e) {
-                Log.w(TAG, "Upload image error " + e.toString());
+                Log.e(TAG, "Upload image error " + e.toString());
             } catch (IllegalStateException e) {
-                Log.w(TAG, "Upload image error " + e.toString());
+                Log.e(TAG, "Upload image error " + e.toString());
             } finally {
                 if (urlConnection != null) urlConnection.disconnect();
             }
@@ -180,8 +180,8 @@ public class MisesShareWin extends DialogFragment {
 
         private int PostToMises(String attachUrl) {
             int resCode = -1;
-            if (attachUrl == null || attachUrl.isEmpty())
-                return resCode;
+            // if (attachUrl == null || attachUrl.isEmpty())
+            //     return resCode;
             HttpURLConnection urlConnection = null;
             try {
                 URL url = new URL("https://apiv2.mises.site/api/v1/status");
@@ -196,7 +196,7 @@ public class MisesShareWin extends DialogFragment {
                 urlConnection.setRequestProperty("Authorization", "Bearer " + mToken);
                 urlConnection.setRequestProperty("Connection", "Keep-alive");
                 urlConnection.setRequestProperty("Charset", "UTF-8");
-                urlConnection.setRequestProperty("Content-Type", "application/json");
+                urlConnection.setRequestProperty("Content-Type", "application/json;charset = utf-8");
 
                 OutputStream outputStream = urlConnection.getOutputStream();
                 JSONObject root = new JSONObject();
@@ -211,11 +211,12 @@ public class MisesShareWin extends DialogFragment {
                 linkObject.put("attachment_path", attachUrl);
                 root.put("link_meta", linkObject);
                 String param = root.toString();
-                param = param.replace("\\", "");
-                outputStream.write(param.getBytes());
+                Log.e("mises", "share post to mises : " + param);
+                // param = param.replace("\\", "");
+                outputStream.write(param.getBytes("UTF-8"));
 
                 resCode = urlConnection.getResponseCode();
-                Log.d(TAG, "Share to mises " + resCode);
+                Log.e(TAG, "Share to mises " + resCode);
                 if (resCode == 200) {
                     InputStream is = urlConnection.getInputStream();
                     ByteArrayOutputStream bo = new ByteArrayOutputStream();
@@ -263,13 +264,16 @@ public class MisesShareWin extends DialogFragment {
                 res = uploadImageToMises(imageResults[0]);
                 if (res == 200 && !mMisesImageUrl.isEmpty())
                     res =  PostToMises(mMisesImageUrl);
+            } else {
+                Log.e("mises", "share image is null");
+                res =  PostToMises("");   
             }
             return res;
         }
 
         @Override
         protected void onPostExecute(Integer res) {
-            Log.d(TAG, "mises share action " + res.toString());
+            Log.e(TAG, "mises share action " + res.toString());
             mLoadingView.hideLoadingUI();
             if (res == 0) {
                 dismiss();

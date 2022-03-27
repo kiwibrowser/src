@@ -80,6 +80,7 @@ import org.chromium.chrome.browser.partnercustomizations.HomepageManager;
 import org.chromium.chrome.browser.partnercustomizations.PartnerBrowserCustomizations;
 import org.chromium.chrome.browser.profiles.Profile;
 import org.chromium.chrome.browser.tab.Tab;
+import org.chromium.chrome.browser.tabmodel.TabModel.TabLaunchType;
 import org.chromium.chrome.browser.tabmodel.TabCreatorManager;
 import org.chromium.chrome.browser.tabmodel.TabModel;
 import org.chromium.chrome.browser.tabmodel.TabModelSelector;
@@ -721,6 +722,10 @@ public class ToolbarPhone extends ToolbarLayout
                         if (tabCreator != null) {
                             tabCreator.openSinglePage("https://home.mises.site/home/me");
                         }
+                    } else  if (v.getId() == R.id.tv_website || v.getId() == R.id.tv_website1) {
+                        if (tabCreator != null) {
+                            tabCreator.launchUrl("https://www.mises.site", TabLaunchType.FROM_CHROME_UI);
+                        }
                     }
                     misesUserInfoMenu.dismiss();
                 }
@@ -728,7 +733,7 @@ public class ToolbarPhone extends ToolbarLayout
             misesUserInfoMenu.showAtLocation(mMisesMainButton, Gravity.START | Gravity.TOP, 0, 0);
         } else if (mMisesShareButton != null && mMisesShareButton == v) {
             FirebaseAnalytics.getInstance(getContext()).logEvent("share", new Bundle());
-            String SCRIPT = "window.misesModule.getWindowInformation()";
+            String SCRIPT = "if(window.misesModule && window.misesModule.getWindowInformation){window.misesModule.getWindowInformation()} else {console.log('window.misesModule or window.misesModule.getWindowInformation is null')}";
             Context context = getContext();
             if (!(context instanceof ChromeTabbedActivity))
                 return;
@@ -738,11 +743,12 @@ public class ToolbarPhone extends ToolbarLayout
                 return;
             if (currentTab.isNativePage() || currentTab.isClosing()
                     || currentTab.isShowingErrorPage() || currentTab.isShowingSadTab()) {
+                Log.e("mises","share currentTab.isNativePage() || currentTab.isClosing() || currentTab.isShowingErrorPage() || currentTab.isShowingSadTab()");
                 Toast.makeText(getContext(), getContext().getString(R.string.lbl_can_not_share_tip), Toast.LENGTH_SHORT).show();
                 return;
             }
             currentTab.getWebContents().evaluateJavaScript(SCRIPT, jsonResult -> {
-                Log.d("luobo share msg : ", jsonResult);
+                Log.e("mises share msg : ", jsonResult);
                 if (jsonResult != null && !jsonResult.isEmpty()) {
                     try {
                         JSONObject ob = new JSONObject(jsonResult);
@@ -761,10 +767,12 @@ public class ToolbarPhone extends ToolbarLayout
                         MisesShareWin shareWin = MisesShareWin.newInstance(icon, title, url);
                         shareWin.show(chromeTabbedActivity.getSupportFragmentManager(), "MisesShareWin");
                     } catch (JSONException e) {
+                        Log.e("mises", "share is not json" + e.toString());
                         Toast.makeText(getContext(), getContext().getString(R.string.lbl_can_not_share_tip), Toast.LENGTH_SHORT).show();
                         e.printStackTrace();
                     }
                 } else {
+                    Log.e("mises", "share json is null");
                     Toast.makeText(getContext(), getContext().getString(R.string.lbl_can_not_share_tip), Toast.LENGTH_SHORT).show();
                 }
             });
