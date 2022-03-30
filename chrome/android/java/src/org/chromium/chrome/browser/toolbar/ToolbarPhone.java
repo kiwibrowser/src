@@ -1437,6 +1437,14 @@ public class ToolbarPhone extends ToolbarLayout
             mHomeButton.setAlpha(previousAlpha);
         }
 
+        if (mMisesMainButton != null && mMisesMainButton.getVisibility() != View.GONE) {
+            // Draw the New Tab button used in the URL view.
+            previousAlpha = mMisesMainButton.getAlpha();
+            mMisesMainButton.setAlpha(previousAlpha * floatAlpha);
+            drawChild(canvas, mMisesMainButton, SystemClock.uptimeMillis());
+            mMisesMainButton.setAlpha(previousAlpha);
+        }
+
         // Draw the location/URL bar.
         previousAlpha = mLocationBar.getAlpha();
         mLocationBar.setAlpha(previousAlpha * floatAlpha);
