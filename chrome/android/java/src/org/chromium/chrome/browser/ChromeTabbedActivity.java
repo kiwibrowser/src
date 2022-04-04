@@ -51,6 +51,7 @@ import org.chromium.base.metrics.CachedMetrics.EnumeratedHistogramSample;
 import org.chromium.base.metrics.RecordHistogram;
 import org.chromium.base.metrics.RecordUserAction;
 import org.chromium.chrome.R;
+import org.chromium.chrome.browser.init.ChromeBrowserReferrer;
 import org.chromium.chrome.browser.IntentHandler.IntentHandlerDelegate;
 import org.chromium.chrome.browser.IntentHandler.TabOpenType;
 import org.chromium.chrome.browser.appmenu.AppMenu;
@@ -522,6 +523,7 @@ public class ChromeTabbedActivity
                     newintent.setPackage(getPackageName());
                     startActivity(newintent);
                 }
+		
             }
         }
         // The intent to use in maybeDispatchExplicitMainViewIntent(). We're explicitly
@@ -597,7 +599,8 @@ public class ChromeTabbedActivity
             if (!isShowingPromo && isShowingPromo == true) {
                 ToolbarButtonInProductHelpController.maybeShowColdStartIPH(this);
             }
-
+            
+	    ChromeBrowserReferrer.handleInstallReferrer(this);
             super.finishNativeInitialization();
         } finally {
             TraceEvent.end("ChromeTabbedActivity.finishNativeInitialization");

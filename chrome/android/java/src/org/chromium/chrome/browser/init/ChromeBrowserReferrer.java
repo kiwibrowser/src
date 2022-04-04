@@ -65,6 +65,13 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.io.UnsupportedEncodingException;
 
+import android.os.RemoteException;
+
+import com.android.installreferrer.api.InstallReferrerClient;
+import com.android.installreferrer.api.InstallReferrerClient.InstallReferrerResponse;
+import com.android.installreferrer.api.InstallReferrerStateListener;
+import com.android.installreferrer.api.ReferrerDetails;
+
 /**
  * Application level delegate that handles start up tasks.
  * {@link AsyncInitializationActivity} classes should override the {@link BrowserParts}
@@ -119,5 +126,49 @@ public class ChromeBrowserReferrer extends BroadcastReceiver {
       });
 
       thread.start();
+  }
+  public static void handleInstallReferrer(final Context context){
+    final InstallReferrerClient referrerClient = InstallReferrerClient.newBuilder(context).build();
+    referrerClient.startConnection(new InstallReferrerStateListener() {
+      @Override
+      public void onInstallReferrerSetupFinished(int responseCode) {
+        switch (responseCode) {
+            case InstallReferrerResponse.OK:
+                // Connection established.
+                try {
+			ReferrerDetails response = referrerClient.getInstallReferrer();
+                    	String referrer = response.getInstallReferrer();
+			if (referrer == null || referrer.length() == 0 || referrer.equals("")) {
+			  Log.i("Kiwi", "Received ChromeBrowserReferrer: []");
+        		  break;
+      			}
+
+      			Log.i("Kiwi", "Received ChromeBrowserReferrer: [" + referrer + "]");
+
+      			SharedPreferences.Editor sharedPreferencesEditor = ContextUtils.getAppSharedPreferences().edit();
+      			sharedPreferencesEditor.putString("install_referrer", (String)referrer);
+      			sharedPreferencesEditor.apply();
+		        referrerClient.endConnection();
+ 		} catch (RemoteException e) {
+                    Log.e("Kiwi", "Could not get ChromeBrowserReferrer: " + e.getMessage());
+                }
+		break;
+            case InstallReferrerResponse.FEATURE_NOT_SUPPORTED:
+                // API not available on the current Play Store app.
+		Log.e("Kiwi", "Could not get ChromeBrowserReferrer: FEATURE_NOT_SUPPORTED" );
+                break;
+            case InstallReferrerResponse.SERVICE_UNAVAILABLE:
+                // Connection couldn't be established.
+		Log.e("Kiwi", "Could not get ChromeBrowserReferrer: SERVICE_UNAVAILABLE" );
+                break;
+        }
+     }
+
+     @Override
+     public void onInstallReferrerServiceDisconnected() {
+        // Try to restart the connection on the next request to
+        // Google Play by calling the startConnection() method.
+     }
+   });
   }
 }

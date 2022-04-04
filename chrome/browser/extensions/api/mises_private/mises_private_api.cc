@@ -4,6 +4,7 @@
 #include "extensions/common/extension.h"
 #include "base/logging.h"
 #include "chrome/browser/android/mises/mises_controller.h"
+#include "base/android/sys_utils.h"
 
 namespace extensions {
 MisesPrivateSetMisesIdFunction::~MisesPrivateSetMisesIdFunction() {}
@@ -17,5 +18,12 @@ bool MisesPrivateSetMisesIdFunction::RunAsync() {
   SendResponse(true);
   return true;
 }
- 
+
+MisesPrivateGetInstallReferrerFunction::~MisesPrivateGetInstallReferrerFunction() {}
+ExtensionFunction::ResponseAction MisesPrivateGetInstallReferrerFunction::Run() {
+  std::string referrerString = base::android::SysUtils::ReferrerStringFromJni();
+  return RespondNow(ArgumentList(
+    api::mises_private::GetInstallReferrer::Results::Create(referrerString)));
+}
+
 }  // namespace extensions

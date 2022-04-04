@@ -13,7 +13,8 @@
 #include "chrome/browser/extensions/chrome_extension_function.h"
 #include "chrome/common/extensions/api/mises_private.h"
 #include "extensions/browser/extension_event_histogram_value.h"
- 
+#include "extensions/browser/extension_function.h"
+
 namespace extensions {
 	
 class MisesPrivateSetMisesIdFunction : public ChromeAsyncExtensionFunction
@@ -26,6 +27,18 @@ protected:
   ~MisesPrivateSetMisesIdFunction() override;
 
   bool RunAsync() override;
+};
+
+class MisesPrivateGetInstallReferrerFunction : public UIThreadExtensionFunction
+{
+public:
+  ExtensionFunction::ResponseAction Run() override;
+  DECLARE_EXTENSION_FUNCTION("misesPrivate.getInstallReferrer",
+                             MISESPRIVATE_GETINSTALLREFERRER)
+
+protected:
+  ~MisesPrivateGetInstallReferrerFunction() override;
+
 };
  
 }  // namespace extensions
