@@ -18,12 +18,17 @@ import com.google.android.play.core.install.model.InstallStatus;
 import com.google.android.play.core.install.model.UpdateAvailability;
 import com.google.android.play.core.tasks.Task;
 
+import org.chromium.chrome.browser.mises.MisesUtil;
+
+import org.chromium.chrome.R;
 
 public class InAppUpdater {
     final static String TAG = "InAppUpdate";
     final static int MISES_INAPP_UPDATE_REQUEST_CODE = 8001;
+    final static int DAYS_FOR_FLEXIBLE_UPDATE = 7;
     private AppUpdateManager appUpdateManager;
     private InstallStateUpdatedListener listener;
+    private int updateType = -1;
     public InAppUpdater() {
 
     }
@@ -40,8 +45,15 @@ public class InAppUpdater {
                     // Request the update.
                     this.startDownload(appUpdateInfo, act);
 
-                } else {
-                    Log.i(TAG,"no update");
+                } else if (appUpdateInfo.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS){
+		    Log.i(TAG,"update was in progress");
+                    if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
+			popupCompleteUpdate(act);
+		    } else {
+		        this.startDownload(appUpdateInfo, act);
+		    }
+		} else {
+                    Log.i(TAG,"no update " + String.valueOf(appUpdateInfo.updateAvailability()) );
                 }
             }).addOnCompleteListener(appUpdateInfo -> {
                 Log.i(TAG,"complete");
@@ -63,8 +75,11 @@ public class InAppUpdater {
                     option = AppUpdateOptions.newBuilder(AppUpdateType.IMMEDIATE)
                             .setAllowAssetPackDeletion(true)
                             .build();
+		    updateType = AppUpdateType.IMMEDIATE;
                     Log.i(TAG,"update IMMEDIATE");
-                } else if (appUpdateInfo.updatePriority() >= 2
+                } else if (appUpdateInfo.updatePriority() >= 2 
+			//&& appUpdateInfo.clientVersionStalenessDays() != null
+		        //&& appUpdateInfo.clientVersionStalenessDays() >= DAYS_FOR_FLEXIBLE_UPDATE
                         && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)) {
                     option = AppUpdateOptions.newBuilder(AppUpdateType.FLEXIBLE)
                             .setAllowAssetPackDeletion(true)
@@ -81,7 +96,7 @@ public class InAppUpdater {
                         if (state.installStatus() == InstallStatus.DOWNLOADED) {
                             // After the update is downloaded, show a notification
                             // and request user confirmation to restart the app.
-                            popupCompleteUpdate();
+                            popupCompleteUpdate(act);
                             if (listener != null && appUpdateManager != null) {
                                 appUpdateManager.unregisterListener(listener);
                                 listener = null;
@@ -90,6 +105,7 @@ public class InAppUpdater {
                         // Log state or install the update.
                     };
                     appUpdateManager.registerListener(listener);
+		    updateType = AppUpdateType.FLEXIBLE;
                     Log.i(TAG,"update FLEXIBLE");
                 } else {
                     Log.i(TAG,"update SKIPPED");
@@ -119,13 +135,13 @@ public class InAppUpdater {
         }
     }
     public void onResume(final Activity act) {
-        if (appUpdateManager != null) {
+        if (appUpdateManager != null && updateType != -1) {
 
             appUpdateManager
                     .getAppUpdateInfo()
                     .addOnSuccessListener(
                             appUpdateInfo -> {
-                                if (appUpdateInfo.updateAvailability()
+                                if (updateType == AppUpdateType.IMMEDIATE && appUpdateInfo.updateAvailability()
                                         == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS) {
                                     // If an in-app update is already running, resume the update.
                                     Log.i(TAG,"resume update");
@@ -142,8 +158,8 @@ public class InAppUpdater {
                                         Log.e(TAG,"Update flow failed! exception: " + ex.toString());
                                     }
                                 }
-                                if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
-                                    popupCompleteUpdate();
+                                if (updateType == AppUpdateType.FLEXIBLE && appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
+                                    popupCompleteUpdate(act);
                                 }
                             });
         }
@@ -152,11 +168,13 @@ public class InAppUpdater {
     }
 
     // Displays the snackbar notification and call to action.
-    private void popupCompleteUpdate() {
+    private void popupCompleteUpdate(final Activity act) {
         Log.i(TAG,"popupCompleteUpdate");
-        if (appUpdateManager != null) {
-            appUpdateManager.completeUpdate();
-        }
+	MisesUtil.showAlertDialog(act, act.getString(R.string.lbl_update_download_complete_tip), v1 -> {
+                if (appUpdateManager != null) {
+            		appUpdateManager.completeUpdate();
+        	}
+	});
 
     }
 }
