@@ -95,7 +95,7 @@ public class MisesShareWin extends DialogFragment {
             String boundary = "MyBoundary" + System.currentTimeMillis();
             HttpURLConnection urlConnection = null;
             try {
-                URL url = new URL("https://apiv2.mises.site/api/v1/upload");
+                URL url = new URL("https://api.alb.mises.site/api/v1/upload");
                 urlConnection = (HttpURLConnection) url.openConnection();
                 urlConnection.setConnectTimeout(20000);
                 urlConnection.setDoOutput(true);
@@ -184,7 +184,7 @@ public class MisesShareWin extends DialogFragment {
             //     return resCode;
             HttpURLConnection urlConnection = null;
             try {
-                URL url = new URL("https://apiv2.mises.site/api/v1/status");
+                URL url = new URL("https://api.alb.mises.site/api/v1/status");
                 urlConnection = (HttpURLConnection) url.openConnection();
                 urlConnection.setConnectTimeout(20000);
                 urlConnection.setDoOutput(true);

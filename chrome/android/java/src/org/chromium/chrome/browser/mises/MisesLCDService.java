@@ -293,7 +293,7 @@ public class MisesLCDService extends Service {
         JSONObject result = null;
         HttpURLConnection urlConnection = null;
         try {
-            URL url = new URL("https://apiv2.mises.site/api/v1/" + path);
+            URL url = new URL("https://api.alb.mises.site/api/v1/" + path);
             urlConnection = (HttpURLConnection) url.openConnection();
             urlConnection.setConnectTimeout(20000);
             urlConnection.setDoOutput(false);
