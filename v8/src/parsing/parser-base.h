@@ -2539,6 +2539,10 @@ ParserBase<Impl>::ParseObjectPropertyDefinition(ObjectLiteralChecker* checker,
 
   IdentifierT name = impl()->NullIdentifier();
   Token::Value name_token = peek();
+  if (name_token == Token::PRIVATE_NAME) {
+    ReportUnexpectedToken(Next());
+    return impl()->NullLiteralProperty();
+  }
   int next_beg_pos = scanner()->peek_location().beg_pos;
   int next_end_pos = scanner()->peek_location().end_pos;
 
