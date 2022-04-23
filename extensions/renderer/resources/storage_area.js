@@ -5,6 +5,7 @@
 var normalizeArgumentsAndValidate =
     require('schemaUtils').normalizeArgumentsAndValidate
 var sendRequest = require('sendRequest').sendRequest;
+var jsEvent = require('event_bindings').Event;
 
 function extendSchema(schema) {
   var extendedSchema = $Array.slice(schema);
@@ -42,6 +43,8 @@ function StorageArea(namespace, schema) {
   }
   var apiFunctions = ['get', 'set', 'remove', 'clear', 'getBytesInUse'];
   $Array.forEach(apiFunctions, bindApiFunction);
+
+  this.onChanged = new jsEvent('storage.' + namespace + '.onChanged');
 }
 
 exports.$set('StorageArea', StorageArea);

@@ -162,7 +162,7 @@ public class AccessibilityPreferences extends PreferenceFragment
 
         mShowExtensionsFirst = (ChromeBaseCheckBoxPreference) findPreference("show_extensions_first");
         mShowExtensionsFirst.setOnPreferenceChangeListener(this);
-        mShowExtensionsFirst.setChecked(ContextUtils.getAppSharedPreferences().getBoolean("show_extensions_first", false));
+        mShowExtensionsFirst.setChecked(ContextUtils.getAppSharedPreferences().getBoolean("show_extensions_first", true));
 
         mDesktopMode = (ChromeBaseCheckBoxPreference) findPreference("desktop_mode");
         mDesktopMode.setOnPreferenceChangeListener(this);

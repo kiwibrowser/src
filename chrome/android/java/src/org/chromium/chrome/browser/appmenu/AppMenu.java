@@ -272,7 +272,7 @@ public class AppMenu implements OnItemClickListener, OnKeyListener {
         int numItemsBase = mMenu.size();
         List<MenuItem> menuItems = new ArrayList<MenuItem>();
         // Show all menuitems first, then extensions
-        if (!ContextUtils.getAppSharedPreferences().getBoolean("show_extensions_first", false)) {
+        if (!ContextUtils.getAppSharedPreferences().getBoolean("show_extensions_first", true)) {
           for (int i = 0; i < numItems; ++i) {
               MenuItem item = mMenu.getItem(i);
               if (item.isVisible()) {
@@ -330,7 +330,7 @@ public class AppMenu implements OnItemClickListener, OnKeyListener {
           }
         }
 
-        if (ContextUtils.getAppSharedPreferences().getBoolean("show_extensions_first", false)) {
+        if (ContextUtils.getAppSharedPreferences().getBoolean("show_extensions_first", true)) {
           for (int i = 1; i < numItemsBase; ++i) {
               MenuItem item = mMenu.getItem(i);
               if (item.isVisible()) {

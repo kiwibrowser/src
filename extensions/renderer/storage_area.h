@@ -30,6 +30,7 @@ class BindingAccessChecker;
 class StorageArea {
  public:
   StorageArea(APIRequestHandler* request_handler,
+              APIEventHandler* event_handler,
               const APITypeReferenceMap* type_refs,
               const std::string& name,
               const BindingAccessChecker* access_checker);
@@ -47,9 +48,14 @@ class StorageArea {
 
   void HandleFunctionCall(const std::string& method_name,
                           gin::Arguments* arguments);
+  v8::Local<v8::Value> GetOnChangedEvent(v8::Isolate* isolate,
+                                         v8::Local<v8::Context> context,
+                                         v8::Local<v8::Object> wrapper);
 
  private:
   APIRequestHandler* request_handler_;
+
+  APIEventHandler* event_handler_;
 
   const APITypeReferenceMap* type_refs_;
 
