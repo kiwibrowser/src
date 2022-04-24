@@ -61,6 +61,7 @@ enum class PrimitiveType { kBoolean, kNumber, kString, kSymbol };
   V(PromiseSpeciesProtector, promise_species_protector,                     \
     PromiseSpeciesProtector)                                                \
   V(prototype_string, prototype_string, PrototypeString)                    \
+V(replace_symbol, replace_symbol, ReplaceSymbol)                           \
   V(SharedFunctionInfoMap, shared_function_info_map, SharedFunctionInfoMap) \
   V(StoreHandler0Map, store_handler0_map, StoreHandler0Map)                 \
   V(SymbolMap, symbol_map, SymbolMap)                                       \
@@ -164,6 +165,8 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
     return UncheckedCast<Smi>(value);
   }
 
+  TNode<String> TaggedToDirectString(TNode<Object> value, Label* fail);
+
   TNode<HeapObject> TaggedToHeapObject(TNode<Object> value, Label* fail) {
     GotoIf(TaggedIsSmi(value), fail);
     return UncheckedCast<HeapObject>(value);
@@ -207,6 +210,11 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   PARAMETER_BINOP(UintPtrOrSmiGreaterThanOrEqual, UintPtrGreaterThanOrEqual,
                   SmiAboveOrEqual)
 #undef PARAMETER_BINOP
+
+  TNode<BoolT> TaggedEqual(TNode<Object> a, TNode<Object> b) {
+      return WordEqual(ReinterpretCast<WordT>(a), ReinterpretCast<WordT>(b));
+  }
+
 
   Node* NoContextConstant();
 #define HEAP_CONSTANT_ACCESSOR(rootIndexName, rootAccessorName, name) \
@@ -1570,7 +1578,10 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   // [from,to[ of string.  |from| and |to| are expected to be tagged.
   TNode<String> SubString(TNode<String> string, TNode<IntPtrT> from,
                           TNode<IntPtrT> to);
-
+  TNode<String> SubString(TNode<String> string, TNode<UintPtrT> from,
+		                           TNode<UintPtrT> to) {
+	     return SubString(string, Signed(from), Signed(to));
+	       }
   // Return a new string object produced by concatenating |first| with |second|.
   TNode<String> StringAdd(Node* context, TNode<String> first,
                           TNode<String> second, AllocationFlags flags = kNone);

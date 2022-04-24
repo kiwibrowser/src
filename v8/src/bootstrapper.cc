@@ -4374,6 +4374,17 @@ void Genesis::InitializeGlobal_harmony_promise_all_settled() {
   }
 }
 
+void Genesis::InitializeGlobal_harmony_string_replaceall() {
+  if (!FLAG_harmony_string_replaceall) return;
+
+  Handle<JSFunction> string_fun(native_context()->string_function(), isolate());
+  Handle<JSObject> string_prototype(
+      JSObject::cast(string_fun->instance_prototype()), isolate());
+
+  SimpleInstallFunction(string_prototype, "replaceAll",
+                        Builtins::kStringPrototypeReplaceAll, 2, true);
+}
+
 void Genesis::InitializeGlobal_harmony_promise_finally() {
   if (!FLAG_harmony_promise_finally) return;
 

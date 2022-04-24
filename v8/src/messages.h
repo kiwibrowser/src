@@ -489,6 +489,8 @@ class ErrorUtils : public AllStatic {
     "Cannot supply flags when constructing one RegExp from another")           \
   T(RegExpNonObject, "% getter called on non-object %")                        \
   T(RegExpNonRegExp, "% getter called on non-RegExp object")                   \
+T(RegExpGlobalInvokedOnNonGlobal,                                            \
+		    "% called with a non-global RegExp argument")                              \
   T(ResolverNotAFunction, "Promise resolver % is not a function")              \
   T(ReturnMethodNotCallable, "The iterator's 'return' method is not callable") \
   T(SharedArrayBufferTooShort,                                                 \

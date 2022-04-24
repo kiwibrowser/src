@@ -32,7 +32,12 @@ class RegExpBuiltinsAssembler : public CodeStubAssembler {
                                  TNode<Object> regexp, TNode<String> string,
                                  TNode<BoolT> is_fast_regexp,
                                  char const* method_name);
-
+  TNode<Int32T> FastFlagGetterGlobal(TNode<JSRegExp> regexp) {
+    return UncheckedCast<Int32T>(FastFlagGetter(regexp, JSRegExp::kGlobal));
+  }
+  TNode<Int32T> IsRegExp0(TNode<Context> p_context, TNode<Object> p_obj) {
+   return UncheckedCast<Int32T>(IsRegExp(p_context,p_obj));
+  }
  protected:
   // Allocate a RegExpResult with the given length (the number of captures,
   // including the match itself), index (the index where the match starts),

@@ -1043,6 +1043,7 @@ namespace internal {
   TFJ(StringPrototypeRepeat, 1, kReceiver, kCount)                                        \
   /* ES6 #sec-string.prototype.replace */                                      \
   TFJ(StringPrototypeReplace, 2, kReceiver, kSearch, kReplace)                            \
+  TFJ(StringPrototypeReplaceAll, 2, kReceiver, kSearchValue, kReplaceValue) \
   /* ES6 #sec-string.prototype.search */                                       \
   TFJ(StringPrototypeSearch, 1, kReceiver, kRegexp)                                       \
   /* ES6 #sec-string.prototype.slice */                                        \

@@ -721,6 +721,28 @@ RUNTIME_FUNCTION(Runtime_StringMaxLength) {
   SealHandleScope shs(isolate);
   return Smi::FromInt(String::kMaxLength);
 }
+RUNTIME_FUNCTION(Runtime_StringCompareSequence) {
+  HandleScope handle_scope(isolate);
+  DCHECK_EQ(3, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(String, string, 0);
+  CONVERT_ARG_HANDLE_CHECKED(String, search_string, 1);
+  CONVERT_NUMBER_CHECKED(int, start, Int32, args[2]);
+
+  // Check if start + searchLength is in bounds.
+  DCHECK_LE(start + search_string->length(), string->length());
+
+  FlatStringReader string_reader(isolate, String::Flatten(string));
+  FlatStringReader search_reader(isolate,
+                                 String::Flatten(search_string));
+
+  for (int i = 0; i < search_string->length(); i++) {
+    if (string_reader.Get(start + i) != search_reader.Get(i)) {
+      return isolate->heap()->false_value();
+    }
+  }
+
+  return isolate->heap()->true_value();
+}
 
 }  // namespace internal
 }  // namespace v8
