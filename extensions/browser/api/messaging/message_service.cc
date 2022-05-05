@@ -81,6 +81,7 @@ struct MessageService::OpenChannelParams {
   std::string source_extension_id;
   std::string target_extension_id;
   GURL source_url;
+  base::Optional<url::Origin> source_origin;
   std::string channel_name;
   bool include_tls_channel_id;
   std::string tls_channel_id;
@@ -96,6 +97,7 @@ struct MessageService::OpenChannelParams {
                     const std::string& source_extension_id,
                     const std::string& target_extension_id,
                     const GURL& source_url,
+		    base::Optional<url::Origin> source_origin,
                     const std::string& channel_name,
                     bool include_tls_channel_id,
                     bool include_guest_process_info)
@@ -107,6 +109,7 @@ struct MessageService::OpenChannelParams {
         source_extension_id(source_extension_id),
         target_extension_id(target_extension_id),
         source_url(source_url),
+	source_origin(source_origin),
         channel_name(channel_name),
         include_tls_channel_id(include_tls_channel_id),
         include_guest_process_info(include_guest_process_info) {
@@ -248,6 +251,10 @@ void MessageService::OpenChannelToExtension(
   std::unique_ptr<base::DictionaryValue> source_tab =
       messaging_delegate_->MaybeGetTabInfo(source_contents);
 
+  base::Optional<url::Origin> source_origin;
+    if (source_render_frame_host)
+	        source_origin = source_render_frame_host->GetLastCommittedOrigin();
+
   if (source_tab.get()) {
     DCHECK(source_render_frame_host);
     source_frame_id =
@@ -266,7 +273,7 @@ void MessageService::OpenChannelToExtension(
   std::unique_ptr<OpenChannelParams> params(new OpenChannelParams(
       source_process_id, source_routing_id, std::move(source_tab),
       source_frame_id, nullptr, receiver_port_id, source_extension_id,
-      target_extension_id, source_url, channel_name, include_tls_channel_id,
+      target_extension_id, source_url, std::move(source_origin), channel_name, include_tls_channel_id,
       include_guest_process_info));
 
   pending_incognito_channels_[params->receiver_port_id.GetChannelId()] =
@@ -454,6 +461,7 @@ void MessageService::OpenChannelToTab(int source_process_id,
       -1,  // If there is no tab, then there is no frame either.
       receiver.release(), receiver_port_id, extension_id, extension_id,
       GURL(),  // Source URL doesn't make sense for opening to tabs.
+      url::Origin(),
       channel_name,
       false,    // Connections to tabs don't get TLS channel IDs.
       false));  // Connections to tabs aren't webview guests.
@@ -517,7 +525,7 @@ void MessageService::OpenChannelImpl(BrowserContext* browser_context,
       params->channel_name, std::move(params->source_tab),
       params->source_frame_id, guest_process_id, guest_render_frame_routing_id,
       params->source_extension_id, params->target_extension_id,
-      params->source_url, params->tls_channel_id);
+      params->source_url, params->source_origin, params->tls_channel_id);
 
   // Report the event to the event router, if the target is an extension.
   //

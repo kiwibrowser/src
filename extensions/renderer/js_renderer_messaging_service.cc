@@ -59,6 +59,11 @@ void JSRendererMessagingService::DispatchOnConnectToListeners(
   v8::Local<v8::Value> tls_channel_id_value = v8::Undefined(isolate);
   v8::Local<v8::Value> guest_process_id = v8::Undefined(isolate);
   v8::Local<v8::Value> guest_render_frame_routing_id = v8::Undefined(isolate);
+  v8::Local<v8::String> source_origin;
+  if (info.source_origin){
+        const	std::string& origin = info.source_origin->Serialize();
+	ToV8String(isolate, origin.c_str(), &source_origin);
+  }
 
   if (extension) {
     if (!source->tab.empty() && !extension->is_platform_app()) {
@@ -114,6 +119,7 @@ void JSRendererMessagingService::DispatchOnConnectToListeners(
       v8_target_extension_id,
       // sourceUrl
       v8_source_url_spec,
+      source_origin, 
       // tlsChannelId
       tls_channel_id_value,
   };

@@ -9,7 +9,9 @@
 #include <string>
 
 #include "base/macros.h"
+#include "base/optional.h"
 #include "base/values.h"
+#include "url/origin.h"
 
 class GURL;
 
@@ -61,6 +63,7 @@ class MessagePort {
       const std::string& source_extension_id,
       const std::string& target_extension_id,
       const GURL& source_url,
+      base::Optional<url::Origin> source_origin,
       const std::string& tls_channel_id);
 
   // Notifies the port that the channel has been closed. If |error_message| is

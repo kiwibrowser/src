@@ -9,6 +9,9 @@
 
 #include <stdint.h>
 
+#include <map>
+#include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -36,6 +39,7 @@
 #include "extensions/common/view_type.h"
 #include "ipc/ipc_message_macros.h"
 #include "url/gurl.h"
+#include "url/origin.h"
 
 #define IPC_MESSAGE_START ExtensionMsgStart
 
@@ -223,6 +227,9 @@ IPC_STRUCT_BEGIN(ExtensionMsg_ExternalConnectionInfo)
 
   // The URL of the frame that initiated the request.
   IPC_STRUCT_MEMBER(GURL, source_url)
+  
+  // The origin of the object that initiated the request.
+  IPC_STRUCT_MEMBER(base::Optional<url::Origin>, source_origin)
 
   // The process ID of the webview that initiated the request.
   IPC_STRUCT_MEMBER(int, guest_process_id)

@@ -5,8 +5,10 @@
 #include "extensions/renderer/native_renderer_messaging_service.h"
 
 #include <map>
+#include <memory>
 #include <string>
-
+#include <utility>
+#include <vector>
 #include "base/supports_user_data.h"
 #include "content/public/common/child_process_host.h"
 #include "content/public/renderer/render_frame.h"
@@ -196,6 +198,8 @@ void NativeRendererMessagingService::DispatchOnConnectToListeners(
     sender_builder.Set("id", info.source_id);
   if (!info.source_url.is_empty())
     sender_builder.Set("url", info.source_url.spec());
+  if (info.source_origin)
+    sender_builder.Set("origin", info.source_origin->Serialize());
   if (source->frame_id >= 0)
     sender_builder.Set("frameId", source->frame_id);
 

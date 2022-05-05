@@ -298,8 +298,9 @@ bool ChromeRuntimeAPIDelegate::GetPlatformInfo(PlatformInfo* info) {
   } else if (strcmp(arch, "mips64el") == 0) {
     info->arch = extensions::api::runtime::PLATFORM_ARCH_MIPS64;
   } else {
-    NOTREACHED();
-    return false;
+    //NOTREACHED();
+    //return false;
+    info->arch = extensions::api::runtime::PLATFORM_ARCH_ARM;
   }
 
   const char* nacl_arch = update_client::UpdateQueryParams::GetNaclArch();
@@ -314,8 +315,9 @@ bool ChromeRuntimeAPIDelegate::GetPlatformInfo(PlatformInfo* info) {
   } else if (strcmp(nacl_arch, "mips64") == 0) {
     info->nacl_arch = extensions::api::runtime::PLATFORM_NACL_ARCH_MIPS64;
   } else {
-    NOTREACHED();
-    return false;
+    //NOTREACHED();
+    //return false;
+    info->nacl_arch = extensions::api::runtime::PLATFORM_NACL_ARCH_ARM;
   }
 
   return true;

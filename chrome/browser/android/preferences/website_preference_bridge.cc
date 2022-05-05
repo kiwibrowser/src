@@ -460,6 +460,18 @@ static void JNI_WebsitePreferenceBridge_SetNotificationSettingForOrigin(
       CONTENT_SETTINGS_TYPE_NOTIFICATIONS, setting);
 }
 
+static void JNI_WebsitePreferenceBridge_SetPopupSettingForOrigin(
+    JNIEnv* env,
+    const JavaParamRef<jclass>& clazz,
+    const JavaParamRef<jstring>& origin,
+    jint value,
+    jboolean is_incognito) {
+	JNI_WebsitePreferenceBridge_SetSettingForOrigin(
+      env, CONTENT_SETTINGS_TYPE_POPUPS, origin, origin,
+      static_cast<ContentSetting>(value), is_incognito);
+}
+
+
 static void JNI_WebsitePreferenceBridge_GetCameraOrigins(
     JNIEnv* env,
     const JavaParamRef<jclass>& clazz,

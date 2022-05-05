@@ -200,6 +200,7 @@ void ExtensionMessagePort::DispatchOnConnect(
     const std::string& source_extension_id,
     const std::string& target_extension_id,
     const GURL& source_url,
+    base::Optional<url::Origin> source_origin,
     const std::string& tls_channel_id) {
   ExtensionMsg_TabConnectionInfo source;
   if (source_tab)
@@ -210,6 +211,7 @@ void ExtensionMessagePort::DispatchOnConnect(
   info.target_id = target_extension_id;
   info.source_id = source_extension_id;
   info.source_url = source_url;
+  info.source_origin = source_origin;
   info.guest_process_id = guest_process_id;
   info.guest_render_frame_routing_id = guest_render_frame_routing_id;
 

@@ -6,11 +6,14 @@
 #define EXTENSIONS_BROWSER_API_MESSAGING_EXTENSION_MESSAGE_PORT_H_
 
 #include <set>
+#include <memory>
 
 #include "base/macros.h"
 #include "base/memory/weak_ptr.h"
+#include "base/optional.h"
 #include "extensions/browser/api/messaging/message_port.h"
 #include "extensions/common/api/messaging/port_id.h"
+#include "url/origin.h"
 
 class GURL;
 
@@ -64,6 +67,7 @@ class ExtensionMessagePort : public MessagePort {
                          const std::string& source_extension_id,
                          const std::string& target_extension_id,
                          const GURL& source_url,
+			 base::Optional<url::Origin> source_origin,
                          const std::string& tls_channel_id) override;
   void DispatchOnDisconnect(const std::string& error_message) override;
   void DispatchOnMessage(const Message& message) override;

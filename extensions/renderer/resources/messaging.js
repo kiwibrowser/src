@@ -271,13 +271,14 @@
                              sourceExtensionId,
                              targetExtensionId,
                              sourceUrl,
+	  		     sourceOrigin,
                              tlsChannelId) {
     var wasPortUsed = dispatchOnConnectImpl(portId, channelName, sourceTab,
                                             sourceFrameId, guestProcessId,
                                             guestRenderFrameRoutingId,
                                             sourceExtensionId,
                                             targetExtensionId, sourceUrl,
-                                            tlsChannelId);
+                                            sourceOrigin, tlsChannelId);
     if (!wasPortUsed) {
       // Since the JS to dispatch the connect event can (in rare cases) be
       // executed asynchronously from when we check if there are associated
@@ -299,6 +300,7 @@
                                  sourceExtensionId,
                                  targetExtensionId,
                                  sourceUrl,
+	  			 sourceOrigin,
                                  tlsChannelId) {
     // Only create a new Port if someone is actually listening for a connection.
     // In addition to being an optimization, this also fixes a bug where if 2
@@ -319,6 +321,8 @@
       sender.id = sourceExtensionId;
     if (sourceUrl)
       sender.url = sourceUrl;
+    if (sourceOrigin)
+      sender.origin = sourceOrigin;
     if (sourceTab)
       sender.tab = sourceTab;
     if (sourceFrameId >= 0)
