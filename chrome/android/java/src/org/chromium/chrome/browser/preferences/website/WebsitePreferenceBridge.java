@@ -260,6 +260,10 @@ public abstract class WebsitePreferenceBridge {
         nativeSetRealAdBlockingActivated(origin, contentSettingsType, isIncognito);
     }
 
+    public static void setPopupSettingForOrigin(String origin, int contentSettingsType, boolean isIncognito) {
+        nativeSetPopupSettingForOrigin(origin, contentSettingsType, isIncognito);
+    }
+
     private static native void nativeGetClipboardOrigins(Object list);
     static native int nativeGetClipboardSettingForOrigin(
             String origin, boolean isIncognito);
@@ -279,6 +283,8 @@ public abstract class WebsitePreferenceBridge {
     static native int nativeGetNotificationSettingForOrigin(
             String origin, boolean isIncognito);
     static native void nativeSetNotificationSettingForOrigin(
+            String origin, int value, boolean isIncognito);
+    static native void nativeSetPopupSettingForOrigin(
             String origin, int value, boolean isIncognito);
     private static native void nativeGetProtectedMediaIdentifierOrigins(Object list);
     static native int nativeGetProtectedMediaIdentifierSettingForOrigin(

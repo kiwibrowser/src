@@ -752,7 +752,9 @@ public class ToolbarPhone extends ToolbarLayout
                 if (jsonResult != null && !jsonResult.isEmpty()) {
                     try {
                         JSONObject ob = new JSONObject(jsonResult);
-                        String icon = ob.getString("icon");
+                        String icon = "";
+			if (ob.has("icon"))
+			    icon = ob.getString("icon");
                         String title = ob.getString("title");
                         String url = ob.getString("url");
                         if (MisesController.getInstance().getMisesToken().isEmpty()) {

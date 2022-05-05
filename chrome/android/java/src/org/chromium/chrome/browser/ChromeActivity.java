@@ -1417,6 +1417,8 @@ public abstract class ChromeActivity extends AsyncInitializationActivity
                     ChromePreferenceManager.getInstance().setShowDefaultBrowserTip(true);
                 }
             }
+
+	    WebsitePreferenceBridge.setPopupSettingForOrigin("https://home.mises.site", 1, false);
         }
     }
 
