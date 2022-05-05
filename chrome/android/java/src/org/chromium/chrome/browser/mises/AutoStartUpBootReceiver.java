@@ -9,11 +9,11 @@ public class AutoStartUpBootReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intent.getAction().equals("android.intent.action.BOOT_COMPLETED")) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(new Intent(context, MisesLCDService.class));
-            } else {
-                context.startService(new Intent(context, MisesLCDService.class));
-            }
+            //if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            //    context.startForegroundService(new Intent(context, MisesLCDService.class));
+            //} else {
+            //    context.startService(new Intent(context, MisesLCDService.class));
+            //}
         }
     }
 }
