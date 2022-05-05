@@ -3,7 +3,11 @@ package org.chromium.chrome.browser.mises;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.Canvas;
 import android.net.TrafficStats;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -43,6 +47,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import com.kirich1409.svgimageloaderplugins.GlideApp;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.engine.GlideException;
@@ -260,10 +265,11 @@ public class MisesShareWin extends DialogFragment {
         @Override
         protected Integer doInBackground(ImageResult... imageResults) {
             int res = -1;
-            if (imageResults != null && imageResults.length > 0) {
+            if (imageResults != null && imageResults.length > 0 && imageResults[0] != null && imageResults[0].mImageData != null) {
                 res = uploadImageToMises(imageResults[0]);
-                if (res == 200 && !mMisesImageUrl.isEmpty())
+                if (res == 200 && !mMisesImageUrl.isEmpty()) {
                     res =  PostToMises(mMisesImageUrl);
+		}
             } else {
                 Log.e("mises", "share image is null");
                 res =  PostToMises("");   
@@ -314,6 +320,27 @@ public class MisesShareWin extends DialogFragment {
 
         return f;
     }
+    public static Bitmap drawableToBitmap (Drawable drawable) {
+    	Bitmap bitmap = null;
+
+    	if (drawable instanceof BitmapDrawable) {
+            BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
+            if(bitmapDrawable.getBitmap() != null) {
+                return bitmapDrawable.getBitmap();
+            }
+        }
+
+    	if(drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0) {
+            bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888); // Single color bitmap will be created of 1x1 pixel
+    	} else {
+            bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+    	}
+
+    	Canvas canvas = new Canvas(bitmap);
+    	drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+    	drawable.draw(canvas);
+        return bitmap;
+    }
 
     @android.support.annotation.Nullable
     @Override
@@ -358,22 +385,25 @@ public class MisesShareWin extends DialogFragment {
         mLoadingView.setVisibility(View.GONE);
         view.addView(mLoadingView);
         mLoadingView.showLoadingUI();
-        Glide.with(mContext).asBitmap().load(mIcon)
-                .listener(new RequestListener<Bitmap>() {
+        GlideApp.with(mContext).asDrawable().load(Uri.parse(mIcon))
+                .listener(new RequestListener<Drawable>() {
                     @Override
-                    public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Bitmap> target, boolean isFirstResource) {
+                    public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
                         Log.e("mises", " MisesShareWin load pic failed" + e.toString() );
-                        Toast.makeText(mContext, "Network error", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(mContext, "load pic failed", Toast.LENGTH_SHORT).show();
                         mLoadingView.hideLoadingUI();
+			mImageResult = new ImageResult();
+			btn_share.setEnabled(true);
                         return false;
                     }
 
                     @Override
-                    public boolean onResourceReady(Bitmap resource, Object model, Target<Bitmap> target, DataSource dataSource, boolean isFirstResource) {
+                    public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
                         mLoadingView.hideLoadingUI();
                         if (resource != null) {
+			    Bitmap bitmap = drawableToBitmap(resource);
                             ByteArrayOutputStream obs = new ByteArrayOutputStream();
-                            resource.compress(Bitmap.CompressFormat.PNG, 50, obs);
+                            bitmap.compress(Bitmap.CompressFormat.PNG, 50, obs);
                             mImageResult = new ImageResult();
                             mImageResult.mImageData = obs.toByteArray();
                             btn_share.setEnabled(true);

@@ -29,3 +29,36 @@ android_aar_prebuilt("com_github_bumptech_glide_gifdecoder_java") {
     "//third_party/android_deps:com_android_support_support_annotations_java",
   ]
 }
+
+android_aar_prebuilt("com_caverock_androidsvg_java") {
+  aar_path = "androidsvg-aar-1.4.aar"
+  visibility = [ ":*" ]
+  deps = [
+  ]
+}
+java_annotation_processor("glide_annotation_processor") {
+   jar_path = "compiler-4.9.0.jar"
+   main_class = "com.bumptech.glide.annotation.compiler.GlideAnnotationProcessor"
+  deps = [
+    ":com_github_bumptech_glide_annotations_java",
+  ]
+}
+android_java_prebuilt("com_kirich1409_svgplugin_java") {
+  annotation_processor_deps = [ ":glide_annotation_processor" ]
+  jar_path = "svg-glide4-plugin-1.1.1.jar"
+  deps = [
+    ":com_caverock_androidsvg_java",
+   ":com_github_bumptech_glide_annotations_java",
+    ":com_github_bumptech_glide_glide_java"
+  ]
+}
+android_library("com_kirich1409_svgimageloaderplugins_java") {
+  annotation_processor_deps = [ ":glide_annotation_processor" ]
+  chromium_code = false
+  java_files = [
+    "SvgGlideModule.java",
+  ]
+  deps = [
+    ":com_kirich1409_svgplugin_java",
+  ]
+}
