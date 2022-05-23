@@ -706,23 +706,27 @@ public class ToolbarPhone extends ToolbarLayout
                         if (tabCreator != null) {
                             tabCreator.openSinglePage("https://home.mises.site/userInfo");
                         }
-                    } else  if (v.getId() == R.id.tv_mises_discover) {
+                    } else if (v.getId() == R.id.tv_mises_discover) {
                         if (tabCreator != null) {
                             tabCreator.openSinglePage("https://home.mises.site/home/discover");
                         }
-                    } else  if (v.getId() == R.id.tv_wallet) {
+                    } else if (v.getId() == R.id.tv_wallet) {
                         if (tabCreator != null) {
                             tabCreator.openSinglePage("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/popup.html");
                         }
-                    } else  if (v.getId() == R.id.tv_login) {
+                    } else if (v.getId() == R.id.tv_nft) {
+                        if (tabCreator != null) {
+                            tabCreator.openSinglePage("https://home.mises.site/nft");
+                        }
+                    } else if (v.getId() == R.id.tv_login) {
                         if (tabCreator != null) {
                             tabCreator.openSinglePage("https://home.mises.site/home/me");
                         }
-                    } else  if (v.getId() == R.id.tv_create_mises) {
+                    } else if (v.getId() == R.id.tv_create_mises) {
                         if (tabCreator != null) {
                             tabCreator.openSinglePage("https://home.mises.site/home/me");
                         }
-                    } else  if (v.getId() == R.id.tv_website || v.getId() == R.id.tv_website1) {
+                    } else if (v.getId() == R.id.tv_website || v.getId() == R.id.tv_website1) {
                         if (tabCreator != null) {
                             tabCreator.launchUrl("https://www.mises.site", TabLaunchType.FROM_CHROME_UI);
                         }

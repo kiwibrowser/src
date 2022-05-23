@@ -41,9 +41,8 @@ public class MisesUserInfoMenu extends PopupWindow {
             view_login.setVisibility(View.GONE);
             tvUsername.setText(name.isEmpty() ? id.substring(0,Math.min(id.length(), 8)) : name);
             tvId.setText(id);
-            if (!avatar.isEmpty())
-                Glide.with(mContext).load(avatar).apply(RequestOptions.bitmapTransform(new CircleCrop()))
-                        .error(R.mipmap.head).placeholder(R.mipmap.head).into(ivAvatar);
+            Glide.with(mContext).load(avatar).apply(RequestOptions.bitmapTransform(new CircleCrop()))
+                        .fallback(R.mipmap.head).error(R.mipmap.head).placeholder(R.mipmap.head).into(ivAvatar);
         } else {
             view_user_info.setVisibility(View.GONE);
             view_login.setVisibility(View.VISIBLE);
@@ -91,5 +90,6 @@ public class MisesUserInfoMenu extends PopupWindow {
         view.findViewById(R.id.tv_create_mises).setOnClickListener(itemsOnClick);
         view.findViewById(R.id.tv_website).setOnClickListener(itemsOnClick);
         view.findViewById(R.id.tv_website1).setOnClickListener(itemsOnClick);
+	view.findViewById(R.id.tv_nft).setOnClickListener(itemsOnClick);
     }
 } 
