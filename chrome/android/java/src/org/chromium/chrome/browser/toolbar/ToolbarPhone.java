@@ -714,7 +714,11 @@ public class ToolbarPhone extends ToolbarLayout
                         if (tabCreator != null) {
                             tabCreator.openSinglePage("chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/popup.html");
                         }
-                    } else if (v.getId() == R.id.tv_nft) {
+                    } else if (v.getId() == R.id.tv_portal) {
+                        if (tabCreator != null) {
+                            tabCreator.openSinglePage("https://portal.mises.site");
+                        }
+                    }  else if (v.getId() == R.id.tv_nft) {
                         if (tabCreator != null) {
                             tabCreator.openSinglePage("https://home.mises.site/nft");
                         }
