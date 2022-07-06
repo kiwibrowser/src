@@ -940,6 +940,7 @@ void Browser::UpdateUIForNavigationInTab(WebContents* contents,
                                          ui::PageTransition transition,
                                          NavigateParams::WindowAction action,
                                          bool user_initiated) {
+  LOG(INFO) << "[EXTENSIONS] Calling Browser::UpdateUIForNavigationInTab";
   tab_strip_model_->TabNavigating(contents, transition);
 
   bool contents_is_selected =
@@ -1492,8 +1493,11 @@ WebContents* Browser::OpenURLFromTab(WebContents* source,
 
 void Browser::NavigationStateChanged(WebContents* source,
                                      content::InvalidateTypes changed_flags) {
-  if (true)
-    return;
+  //if (true)
+  //  return;
+  LOG(INFO) << "[EXTENSIONS] Calling Browser::NavigationStateChanged " << changed_flags;
+  if (!command_controller_)
+	      return;
   // Only update the UI when something visible has changed.
   if (changed_flags)
     ScheduleUIUpdate(source, changed_flags);
@@ -1545,7 +1549,9 @@ void Browser::ActivateContents(WebContents* contents) {
 
 void Browser::LoadingStateChanged(WebContents* source,
                                   bool to_different_document) {
+  LOG(INFO) << "[EXTENSIONS] Calling Browser::LoadingStateChanged " << to_different_document;
   ScheduleUIUpdate(source, content::INVALIDATE_TYPE_LOAD);
+
   UpdateWindowForLoadingStateChanged(source, to_different_document);
 }
 
@@ -2235,6 +2241,7 @@ void Browser::ScheduleUIUpdate(WebContents* source,
 }
 
 void Browser::ProcessPendingUIUpdates() {
+  LOG(INFO) << "[EXTENSIONS] Calling Browser::ProcessPendingUIUpdates ";
 #ifndef NDEBUG
   // Validate that all tabs we have pending updates for exist. This is scary
   // because the pending list must be kept in sync with any detached or

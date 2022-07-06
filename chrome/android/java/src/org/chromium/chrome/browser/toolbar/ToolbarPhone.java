@@ -100,6 +100,7 @@ import org.chromium.content_public.browser.JavaScriptCallback;
 import org.chromium.ui.UiUtils;
 import org.chromium.ui.base.LocalizationUtils;
 import org.chromium.ui.interpolators.BakedBezierInterpolator;
+import org.chromium.ui.base.Clipboard;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -718,9 +719,13 @@ public class ToolbarPhone extends ToolbarLayout
                         if (tabCreator != null) {
                             tabCreator.openSinglePage("https://portal.mises.site");
                         }
-                    }  else if (v.getId() == R.id.tv_nft) {
+                    } else if (v.getId() == R.id.tv_nft) {
                         if (tabCreator != null) {
                             tabCreator.openSinglePage("https://home.mises.site/nft");
+                        }
+                    } else if (v.getId() == R.id.tv_invite) {  
+                        if (tabCreator != null) {
+                            tabCreator.openSinglePage("https://home.mises.site/myInvitation?misesId=" + id);
                         }
                     } else if (v.getId() == R.id.tv_login) {
                         if (tabCreator != null) {
@@ -734,7 +739,11 @@ public class ToolbarPhone extends ToolbarLayout
                         if (tabCreator != null) {
                             tabCreator.launchUrl("https://www.mises.site", TabLaunchType.FROM_CHROME_UI);
                         }
-                    }
+                    } else if (v.getId() == R.id.tv_id) {
+                        Clipboard.getInstance().setText(id);
+			Toast.makeText(getContext(), getContext().getString(R.string.lbl_id_copied_tip), Toast.LENGTH_SHORT).show();
+			return;
+   	            } 
                     misesUserInfoMenu.dismiss();
                 }
             });

@@ -426,6 +426,8 @@ void TabsEventRouter::TabMoved(WebContents* contents,
 
 void TabsEventRouter::TabUpdated(TabEntry* entry,
                                  std::set<std::string> changed_property_names) {
+    LOG(INFO) << "[EXTENSIONS] Calling TabsEventRouter::TabUpdated";
+    
   bool audible = entry->web_contents()->WasRecentlyAudible();
   if (entry->SetAudible(audible)) {
     changed_property_names.insert(tabs_constants::kAudibleKey);

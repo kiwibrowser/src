@@ -524,6 +524,10 @@ public class DownloadManagerService
                             info, result.first, result.second, isSupportedMimeType);
                     broadcastDownloadSuccessful(info);
                 } else {
+		    if (info.getMimeType().equalsIgnoreCase("application/x-chrome-extension")){
+		        mDownloadNotifier.notifyDownloadCanceled(item.getContentId());
+		        return;
+		    }
                     // TODO(cmsy): Use correct FailState.
                     mDownloadNotifier.notifyDownloadFailed(info, FailState.CANNOT_DOWNLOAD);
                     // TODO(qinmin): get the failure message from native.

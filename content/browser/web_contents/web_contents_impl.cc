@@ -1494,6 +1494,22 @@ void WebContentsImpl::NotifyNavigationStateChanged(
   if (changed_flags & INVALIDATE_TYPE_TAB) {
     media_web_contents_observer_->MaybeUpdateAudibleState();
   }
+  if (changed_flags & INVALIDATE_TYPE_LOAD) {
+    std::set<std::string> changed_property_names;
+    changed_property_names.insert("status");
+
+    BrowserContext* browser_context = GetBrowserContext();
+    if (browser_context) {
+      Profile *profile = Profile::FromBrowserContext(browser_context);
+      if (profile) {
+        extensions::TabsWindowsAPI* tabs_window_api = extensions::TabsWindowsAPI::Get(profile);
+        if (tabs_window_api) {
+          tabs_window_api->tabs_event_router()->DispatchTabUpdatedEvent(this, std::move(changed_property_names));
+        }
+      }
+    }
+  }
+
 
   if (delegate_)
     delegate_->NavigationStateChanged(this, changed_flags);
@@ -4615,6 +4631,7 @@ void WebContentsImpl::ResetLoadProgressState() {
 void WebContentsImpl::LoadingStateChanged(bool to_different_document,
                                           bool due_to_interstitial,
                                           LoadNotificationDetails* details) {
+  LOG(INFO) << "[EXTENSIONS] Calling WebContentsImpl::LoadingStateChanged";
   // Do not send notifications about loading changes in the FrameTree while the
   // interstitial page is pausing the throbber.
   if (ShowingInterstitialPage() && interstitial_page_->pause_throbber() &&
@@ -4710,6 +4727,7 @@ void WebContentsImpl::NotifyDisconnected() {
 
 void WebContentsImpl::NotifyNavigationEntryCommitted(
     const LoadCommittedDetails& load_details) {
+   LOG(INFO) << "[EXTENSIONS] Calling WebContentsImpl::NotifyNavigationEntryCommitted";
   for (auto& observer : observers_)
     observer.NavigationEntryCommitted(load_details);
   // Send 'status' of tab change. Expecting 'loading' is fired.
