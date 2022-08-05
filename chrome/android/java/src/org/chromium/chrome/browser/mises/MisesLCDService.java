@@ -205,6 +205,10 @@ public class MisesLCDService extends Service {
                     node.setChainID(chain_id);
                     node.setEndpoints(primary_node, witness_nodes);
                     node.setTrust(block_height, block_hash);
+		    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N_MR1) {
+			// these android version dont support isrg_root_x1 CA, so simply make Ssl skip checking CA
+		        node.setInsecureSsl(true);
+		    }
                     node.serve("tcp://0.0.0.0:26657");
                     Log.d(TAG, "mises light node finish");
                 } catch (Exception e) {
