@@ -213,8 +213,7 @@ DEFINE_IMPLICATION(harmony_class_fields, harmony_private_fields)
 
 #ifdef V8_INTL_SUPPORT
 #define HARMONY_INPROGRESS(V) \
-  HARMONY_INPROGRESS_BASE(V)  \
-  V(harmony_locale, "Intl.Locale")
+  HARMONY_INPROGRESS_BASE(V)  
 #else
 #define HARMONY_INPROGRESS(V) HARMONY_INPROGRESS_BASE(V)
 #endif
@@ -223,7 +222,7 @@ DEFINE_IMPLICATION(harmony_class_fields, harmony_private_fields)
 #define HARMONY_STAGED(V)                                                  
 
 // Features that are shipping (turned on by default, but internal flag remains).
-#define HARMONY_SHIPPING(V)                                                   \
+#define HARMONY_SHIPPING_BASE(V)                                                   \
   V(harmony_string_trimming, "harmony String.prototype.trim{Start,End}")      \
   V(harmony_sharedarraybuffer, "harmony sharedarraybuffer")                   \
   V(harmony_regexp_named_captures, "harmony regexp named captures")           \
@@ -244,6 +243,14 @@ DEFINE_IMPLICATION(harmony_class_fields, harmony_private_fields)
   V(harmony_array_flatten, "harmony Array.prototype.flat{ten,Map}") \
   V(harmony_string_replaceall, "harmony String.prototype.replaceAll") \
   V(harmony_promise_all_settled, "harmony Promise.allSettled")
+
+#ifdef V8_INTL_SUPPORT
+#define HARMONY_SHIPPING(V) \
+		  HARMONY_SHIPPING_BASE(V)  \
+	  V(harmony_locale, "Intl.Locale")
+#else
+#define HARMONY_SHIPPING(V) HARMONY_SHIPPING_BASE(V)
+#endif
 
 // Once a shipping feature has proved stable in the wild, it will be dropped
 // from HARMONY_SHIPPING, all occurrences of the FLAG_ variable are removed,

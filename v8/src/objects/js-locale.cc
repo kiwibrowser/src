@@ -19,6 +19,7 @@
 #include "src/objects-inl.h"
 #include "src/objects/js-locale-inl.h"
 #include "unicode/locid.h"
+#include "unicode/uloc.h"
 #include "unicode/unistr.h"
 #include "unicode/uvernum.h"
 #include "unicode/uversion.h"
@@ -168,10 +169,11 @@ bool PopulateLocaleWithUnicodeTags(Isolate* isolate, const char* icu_locale,
 }
 }  // namespace
 
-bool JSLocale::InitializeLocale(Isolate* isolate,
+MaybeHandle<JSLocale> JSLocale::InitializeLocale(Isolate* isolate,
                                 Handle<JSLocale> locale_holder,
                                 Handle<String> locale,
                                 Handle<JSReceiver> options) {
+  static const char* const kMethod = "Intl.Locale";
   v8::Isolate* v8_isolate = reinterpret_cast<v8::Isolate*>(isolate);
   UErrorCode status = U_ZERO_ERROR;
 
@@ -179,29 +181,59 @@ bool JSLocale::InitializeLocale(Isolate* isolate,
   char icu_result[ULOC_FULLNAME_CAPACITY];
   char icu_canonical[ULOC_FULLNAME_CAPACITY];
 
+  if (locale->length() == 0) {
+    THROW_NEW_ERROR(isolate, NewRangeError(MessageTemplate::kLocaleNotEmpty),
+                    JSLocale);
+  }
+
+
   v8::String::Utf8Value bcp47_locale(v8_isolate, v8::Utils::ToLocal(locale));
-  if (bcp47_locale.length() == 0) return false;
+  if (bcp47_locale.length() == 0) return MaybeHandle<JSLocale>();
 
   int icu_length = uloc_forLanguageTag(
       *bcp47_locale, icu_result, ULOC_FULLNAME_CAPACITY, nullptr, &status);
 
   if (U_FAILURE(status) || status == U_STRING_NOT_TERMINATED_WARNING ||
       icu_length == 0) {
-    return false;
+    THROW_NEW_ERROR(
+        isolate,
+        NewRangeError(MessageTemplate::kLocaleBadParameters,
+                      isolate->factory()->NewStringFromAsciiChecked(kMethod),
+                      locale_holder),
+        JSLocale);
+    return MaybeHandle<JSLocale>();
   }
 
   Maybe<bool> error = InsertOptionsIntoLocale(isolate, options, icu_result);
   if (error.IsNothing() || !error.FromJust()) {
-    return false;
+    THROW_NEW_ERROR(
+        isolate,
+        NewRangeError(MessageTemplate::kLocaleBadParameters,
+                      isolate->factory()->NewStringFromAsciiChecked(kMethod),
+                      locale_holder),
+        JSLocale);
+    return MaybeHandle<JSLocale>();
   }
 
   uloc_canonicalize(icu_result, icu_canonical, ULOC_FULLNAME_CAPACITY, &status);
   if (U_FAILURE(status) || status == U_STRING_NOT_TERMINATED_WARNING) {
-    return false;
+    THROW_NEW_ERROR(
+        isolate,
+        NewRangeError(MessageTemplate::kLocaleBadParameters,
+                      isolate->factory()->NewStringFromAsciiChecked(kMethod),
+                      locale_holder),
+        JSLocale);
+    return MaybeHandle<JSLocale>();
   }
 
   if (!PopulateLocaleWithUnicodeTags(isolate, icu_canonical, locale_holder)) {
-    return false;
+    THROW_NEW_ERROR(
+        isolate,
+        NewRangeError(MessageTemplate::kLocaleBadParameters,
+                      isolate->factory()->NewStringFromAsciiChecked(kMethod),
+                      locale_holder),
+        JSLocale);
+    return MaybeHandle<JSLocale>();
   }
 
   // Extract language, script and region parts.
@@ -215,7 +247,13 @@ bool JSLocale::InitializeLocale(Isolate* isolate,
   uloc_getCountry(icu_canonical, icu_region, ULOC_COUNTRY_CAPACITY, &status);
 
   if (U_FAILURE(status) || status == U_STRING_NOT_TERMINATED_WARNING) {
-    return false;
+    THROW_NEW_ERROR(
+        isolate,
+        NewRangeError(MessageTemplate::kLocaleBadParameters,
+                      isolate->factory()->NewStringFromAsciiChecked(kMethod),
+                      locale_holder),
+        JSLocale);
+    return MaybeHandle<JSLocale>();
   }
 
   Factory* factory = isolate->factory();
@@ -244,7 +282,13 @@ bool JSLocale::InitializeLocale(Isolate* isolate,
   uloc_toLanguageTag(icu_base_name, bcp47_result, ULOC_FULLNAME_CAPACITY, true,
                      &status);
   if (U_FAILURE(status) || status == U_STRING_NOT_TERMINATED_WARNING) {
-    return false;
+    THROW_NEW_ERROR(
+        isolate,
+        NewRangeError(MessageTemplate::kLocaleBadParameters,
+                      isolate->factory()->NewStringFromAsciiChecked(kMethod),
+                      locale_holder),
+        JSLocale);
+    return MaybeHandle<JSLocale>();
   }
   Handle<String> base_name = factory->NewStringFromAsciiChecked(bcp47_result);
   locale_holder->set_base_name(*base_name);
@@ -253,13 +297,48 @@ bool JSLocale::InitializeLocale(Isolate* isolate,
   uloc_toLanguageTag(icu_canonical, bcp47_result, ULOC_FULLNAME_CAPACITY, true,
                      &status);
   if (U_FAILURE(status) || status == U_STRING_NOT_TERMINATED_WARNING) {
-    return false;
+    THROW_NEW_ERROR(
+        isolate,
+        NewRangeError(MessageTemplate::kLocaleBadParameters,
+                      isolate->factory()->NewStringFromAsciiChecked(kMethod),
+                      locale_holder),
+        JSLocale);
+    return MaybeHandle<JSLocale>();
   }
   Handle<String> locale_handle =
       factory->NewStringFromAsciiChecked(bcp47_result);
   locale_holder->set_locale(*locale_handle);
 
-  return true;
+  return locale_holder;
+}
+
+
+namespace {
+
+Handle<String> MorphLocale(Isolate* isolate, String* input,
+                           int32_t (*morph_func)(const char*, char*, int32_t,
+                                                 UErrorCode*)) {
+  Factory* factory = isolate->factory();
+  char localeBuffer[ULOC_FULLNAME_CAPACITY];
+  UErrorCode status = U_ZERO_ERROR;
+  DCHECK_NOT_NULL(morph_func);
+  int32_t length = (*morph_func)(input->ToCString().get(), localeBuffer,
+                                 ULOC_FULLNAME_CAPACITY, &status);
+  DCHECK(U_SUCCESS(status));
+  DCHECK_GT(length, 0);
+  std::string locale(localeBuffer, length);
+  std::replace(locale.begin(), locale.end(), '_', '-');
+  return factory->NewStringFromAsciiChecked(locale.c_str());
+}
+
+}  // namespace
+
+Handle<String> JSLocale::Maximize(Isolate* isolate, String* locale) {
+  return MorphLocale(isolate, locale, uloc_addLikelySubtags);
+}
+
+Handle<String> JSLocale::Minimize(Isolate* isolate, String* locale) {
+  return MorphLocale(isolate, locale, uloc_minimizeSubtags);
 }
 
 }  // namespace internal
