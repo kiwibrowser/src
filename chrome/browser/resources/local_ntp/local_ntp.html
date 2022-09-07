@@ -116,10 +116,25 @@
     .plus-item {
       padding-right: 10px;
     }
+
+    .full-hidden {
+      opacity: 0 !important;
+      position: absolute !important;
+      top: -9999999px;
+      left: -9999999px;
+      z-index: -99999;
+      width: 100vw !important;
+    }
+
+    .closeImgInvisible {
+      display: none;
+    }
   </style>
   <meta charset="utf-8">
   <meta name="google" value="notranslate">
   <script>
+    var nItemsAdded = 0;
+    var loadingImage = '';
     function fetch_tiles_from_most_visited() {
       if ((typeof localStorage.cachedTilesUpdate == "undefined") || ((Date.now() / 1000) - localStorage.cachedTilesUpdate) > 43200) {
         console.log("Fetching tiles from most visited because:");
@@ -185,22 +200,205 @@
           console.log('Fetch failed for: ' + err.message);
         }
       }
-      innerDiv.innerHTML = '<img id="closeImg" src="' + closeImg + '" class="closeImg closeImgInvisible" height="20" width="20" style="position: absolute; right: 0px; border: 0px;" /><a id="tile_target" href="' + item.url + '"><div class="grid-image-box"><img border="0" class="grid-image serverIdea" title="' + item.url + '" src="' + imageUri + '" id="icon' + randomId + '" onError="invalidate_image(this)" width="33" style="max-height: 33px; border-radius: 5px;" /></div><span style="width: 60px; line-height: 15px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: inline-block;padding-top:15px">' + rootDomain + '</span></a>';
+      innerDiv.innerHTML = '<img id="closeImg" src="' + closeImg + '" class="closeImg closeImgInvisible" height="20" width="20" style="position: absolute; right: 0px; border: 0px;" /><a id="tile_target" href="' + item.url + '"><div class="grid-image-box"><img border="0" class="grid-image serverIdea" title="' + item.url + '" src="' + imageUri + '" id="icon' + randomId + '" onError="invalidate_image(this)" width="33" style="max-height: 33px; border-radius: 5px;" /></div><span style="width: 60px; line-height: 15px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: inline-block;padding-top:15px">' + rootDomain + '</span></a>';;
       innerDiv.style.minHeight = '64px';
 
-      // innerDiv.querySelector('#closeImg').addEventListener("touchstart", remove_favorite);
-      // innerDiv.querySelector('#tile_target').addEventListener("touchstart", process_start);
-      // document.body.addEventListener("click", process_body_click);
-      // innerDiv.querySelector('#tile_target').addEventListener("touchend", process_cancel);
+      innerDiv.querySelector('#closeImg').addEventListener("touchstart", remove_favorite);
+      innerDiv.querySelector('#tile_target').addEventListener("touchstart", process_start);
+      document.body.addEventListener("click", process_body_click);
+      innerDiv.querySelector('#tile_target').addEventListener("touchend", process_cancel);
       document.getElementById('bookmarks-grid').appendChild(innerDiv);
+    }
+    function add_favorite_idea(name, click_url, impression_url, image_url) {
+      var rootDomain = 'idea-' + name;
+      var innerDiv = document.createElement('div');
+      innerDiv.className = 'grid-item grid-idea';
+      var cachedImage = localStorage.getItem('icon-' + rootDomain);
+      localStorage.setItem('lastShown-' + rootDomain, Math.floor(Date.now() / 1000));
+      var imageUri = null;
+      var randomId = Math.random().toString(36).substr(2, 9) + Math.random().toString(36).substr(2, 9) + Math.random().toString(36).substr(2, 9);
+      if (cachedImage != null) {
+        imageUri = cachedImage;
+        console.log('Loading icon for ' + rootDomain + ' from cache');
+      } else {
+        console.log('Fetching icon for ' + rootDomain);
+        loadingImage = getLoadingImage();
+        imageUri = loadingImage;
+        try {
+          fetch(image_url).then(function (response) {
+            return response.arrayBuffer();
+          })
+            .then(function (answer) {
+              localStorage.setItem('icon-' + rootDomain, 'data:image/png;base64,' + arrayBufferToBase64(answer));
+              localStorage.setItem('lastShown-' + rootDomain, Math.floor(Date.now() / 1000));
+              document.getElementById('icon' + randomId).src = 'data:image/png;base64,' + arrayBufferToBase64(answer);
+              console.log('Icon for ' + rootDomain + ' is now fetched');
+            });
+        } catch (err) {
+          console.log('Fetch failed for: ' + err.message);
+        }
+      }
+      if (impression_url && impression_url != 'about:blank')
+        navigator.sendBeacon(impression_url);
+      innerDiv.innerHTML = '<a id="tile_target" href="' + click_url + '"><div class="grid-image-box"><img border="0" class="grid-image" title="' + name + '" src="' + imageUri + '" id="icon' + randomId + '" onError="invalidate_image(this)" width="33" style="max-height: 33px; border-radius: 5px;" /></div><span style="width: 60px; line-height: 15px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: inline-block;padding-top:15px">' + name + '</span></a>';
+      innerDiv.style.minHeight = '64px';
+
+      //  innerDiv.querySelector('#closeImg').addEventListener("touchstart", remove_favorite);
+      //  innerDiv.querySelector('#tile_target').addEventListener("touchstart", process_start);
+      document.body.addEventListener("click", process_body_click);
+      //  innerDiv.querySelector('#tile_target').addEventListener("touchend", process_cancel);
+      document.getElementById('ideas-grid').appendChild(innerDiv);
+    }
+    window.onload = () => {
+      if (window.chrome.embeddedSearch.newTabPage.isIncognito) {
+        document.body.style.backgroundColor = 'black';
+        document.getElementById('add-button').style.display = 'none';
+        document.getElementById('private').style.display = 'block';
+        document.getElementById('default-mode').style.display = 'none';
+      } else {
+        // fetch_tiles_from_most_visited();
+        document.getElementById('add-button').addEventListener('click', create_new_item);
+      }
+    }
+    function remove_favorite(e) {
+      console.log("Removing favorite");
+      console.log(e);
+      item = e.target;
+      item = item.parentNode;
+      console.log("Removing item");
+      globalGrid.disconnect(item);
+    }
+    var longpress = false;
+    var presstimer = null;
+    var longtarget = null;
+    var iseditable = false;
+    function process_start(e) {
+      if (iseditable) return;
+      if (e.type === "click" && e.button !== 0) return;
+      longpress = false;
+      this.classList.add("longpress");
+      presstimer = setTimeout(function () {
+        toggle_edit_mode();
+        longpress = true;
+      }, 550);
+
+      return false;
+    };
+    function process_body_click(e) {
+      if (iseditable) {
+        toggle_edit_mode();
+        e.preventDefault();
+      }
+    }
+    function process_cancel(e) {
+      console.log('We received process_cancel');
+      console.log(e);
+      if (iseditable) {
+        e.preventDefault();
+        return;
+      }
+      if (presstimer !== null) {
+        clearTimeout(presstimer);
+        presstimer = null;
+      }
+
+      this.classList.remove("longpress");
+    };
+    function toggle_edit_mode() {
+      if (globalGrid.isDragifierOn()) {
+        iseditable = false;
+        globalGrid.dragifierOff();
+        Array.prototype.forEach.call(document.getElementsByClassName("grid-item"), function (el) { if (!el.classList.contains('grid-idea')) { el.style.WebkitAnimation = 'none'; } });
+        Array.prototype.forEach.call(document.getElementsByClassName('closeImg'), function (el) { el.classList.add('closeImgInvisible'); });
+      } else {
+        iseditable = true;
+        globalGrid.dragifierOn();
+        Array.prototype.forEach.call(document.getElementsByClassName("grid-item"), function (el) { if (!el.classList.contains('grid-idea')) { el.style.WebkitAnimation = 'shadow-inset-center 0.4s cubic-bezier(0.250, 0.460, 0.450, 0.940) both'; } });
+        Array.prototype.forEach.call(document.getElementsByClassName('closeImg'), function (el) { el.classList.remove('closeImgInvisible'); });
+      }
+      window.setTimeout(function () { save_grid_snapshot(); }, 100);
+    }
+    var news_are_already_onscreen = false;
+    var instant_grid_done = false;
+    function instant_grid() {
+      instant_grid_done = true;
+      if (typeof localStorage.cachedGrid != "undefined") {
+        replaceInnerHTML(document.getElementById('fake-bookmarks-grid'), localStorage.cachedGrid);
+        document.getElementById('fake-bookmarks-grid').style.cssText = localStorage.cachedGridStyle;
+        document.getElementById('fake-bookmarks-grid').style.display = 'block';
+      }
     }
     if (window.chrome.embeddedSearch.newTabPage.isIncognito) {
       document.body.style.backgroundColor = 'black';
-      document.getElementById('add-button').style.display = 'none';
-      document.getElementById('private').style.display = 'block';
-      document.getElementById('default-mode').style.display = 'none';
+      document.getElementById('incognito').style.display = 'block';
     } else {
-      fetch_tiles_from_most_visited();
+      try {
+        instant_grid();
+        window.setTimeout(function () { if (!instant_grid_done) instant_grid(); }, 1);
+      }
+      catch (err) {
+        console.log("Instant init failed, retrying later");
+      }
+    }
+    function swap_if_ready() {
+      if (bookmarksGrid.style.cssText.includes("height")) {
+        document.getElementById('fake-bookmarks-grid').style.display = 'none';
+        bookmarksGrid.classList.remove("full-hidden");
+      }
+    }
+    var globalGrid = false;
+    var bookmarksGrid = document.getElementById("bookmarks-grid");
+    var ideasGrid = document.getElementById("ideas-grid");
+
+    function save_grid_snapshot() {
+      if (!document.getElementById('bookmarks-grid').style.cssText)
+        return;
+      // Maximum 1 update per 0.1s (100ms)
+      if ((typeof localStorage.cachedGridUpdate == "undefined") || ((Date.now() / 1000) - localStorage.cachedGridUpdate) >= 0.1) {
+        var parser = document.createElement('span');
+        parser.innerHTML = document.getElementById('bookmarks-grid').innerHTML;
+        var elementsToIgnore = parser.getElementsByClassName('grid-idea');
+        for (var i = 0; i < elementsToIgnore.length; i++)
+          elementsToIgnore[i].remove();
+        localStorage.cachedGrid = parser.innerHTML;
+        localStorage.cachedGridStyle = document.getElementById('bookmarks-grid').style.cssText;
+        //    console.log("Saving grid snapshot and style is " + localStorage.cachedGridStyle);
+        localStorage.cachedGridUpdate = (Date.now() / 1000);
+      }
+    }
+
+    function add_to_storage(el) {
+      var storedItems = JSON.parse(localStorage.storedItems);
+      offset = storedItems.length;
+      var url = el.querySelector('#tile_target').href;
+      storedItems[offset] = { url: url }
+      localStorage.storedItems = JSON.stringify(storedItems);
+      console.log("Add to storage, adding to offset " + offset + " the URL: " + url);
+    }
+    function create_new_item() {
+      preconnectTo('https://logos.kiwibrowser.com');
+      var url = prompt("Enter website address", "http://");
+      url = url.trim();
+      url = url.replace(' ', '.');
+      var parser = document.createElement('a');
+      parser.href = url;
+      // Our intent is buzz.blogspot.com to stay buzz.blogspot.com
+      // and m.wikipedia.org to become wikipedia.org
+      var rootDomain = psl.get(parser.hostname);
+      if (!rootDomain)
+        return;
+      if (typeof localStorage.storedItems == "undefined" || localStorage.storedItems == "")
+        localStorage.storedItems = JSON.stringify([]);
+      var storedItems = JSON.parse(localStorage.storedItems);
+      offset = storedItems.length;
+      storedItems[offset] = { url: url }
+      add_favorite(storedItems[offset]);
+      localStorage.storedItems = JSON.stringify(storedItems);
+      globalGrid.toggle("scaleWithFade");
+      globalGrid.appendNew();
+      window.setTimeout(function () { save_grid_snapshot(); }, 200);
+      window.setTimeout(function () { save_grid_snapshot(); }, 800);
+      localStorage.useCustomTiles = "true";
     }
   </script>
 </head>

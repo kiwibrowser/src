@@ -1091,7 +1091,7 @@ function setup_grid()
 
   if (!document.areIdeasFetched && !window.chrome.embeddedSearch.newTabPage.isIncognito && typeof localStorage.hideExplore == "undefined") {
     document.areIdeasFetched = true;
-    document.getElementById('explore-section').style.display = 'none';
+    // document.getElementById('explore-section').style.display = 'none';
     console.log("Fetching tiles ideas");
     fetch('https://tiles.kiwibrowser.org/ideas/?version=2&cachebuster=' + Math.random(), { method: 'GET' })
         .then(function(response) {
@@ -1102,8 +1102,8 @@ function setup_grid()
             for (var i = 0; i < answer.length; i++) {
               add_favorite_idea(answer[i].name, answer[i].click_url, answer[i].impression_url, answer[i].image_url);
             }
-            if (answer.length > 0)
-              document.getElementById('explore-section').style.display = 'block';
+            // if (answer.length > 0)
+            //   document.getElementById('explore-section').style.display = 'block';
             grid.appendNew();
             swap_if_ready();
             window.setTimeout(function () { swap_if_ready(); }, 10);
