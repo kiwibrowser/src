@@ -161,7 +161,14 @@
         if (typeof localStorage.storedItems != "undefined") { var storedItems = JSON.parse(localStorage.storedItems); for (var i = 0; i < storedItems.length; i++) { add_favorite(storedItems[i]); } }
       }
     }
+    function arrayBufferToBase64(buffer) {
+      var binary = '';
+      var bytes = [].slice.call(new Uint8Array(buffer));
 
+      bytes.forEach((b) => binary += String.fromCharCode(b));
+
+      return window.btoa(binary);
+    };
     function add_favorite(item) {
       var parser = document.createElement('a');
       parser.href = item.url;
