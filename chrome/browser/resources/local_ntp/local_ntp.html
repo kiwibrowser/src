@@ -161,7 +161,14 @@
         if (typeof localStorage.storedItems != "undefined") { var storedItems = JSON.parse(localStorage.storedItems); for (var i = 0; i < storedItems.length; i++) { add_favorite(storedItems[i]); } }
       }
     }
+    function arrayBufferToBase64(buffer) {
+      var binary = '';
+      var bytes = [].slice.call(new Uint8Array(buffer));
 
+      bytes.forEach((b) => binary += String.fromCharCode(b));
+
+      return window.btoa(binary);
+    };
     function add_favorite(item) {
       var parser = document.createElement('a');
       parser.href = item.url;
@@ -342,9 +349,8 @@
     }
     
     var globalGrid = false;
-    var bookmarksGrid = document.getElementById("bookmarks-grid");
-    var ideasGrid = document.getElementById("ideas-grid");
     function swap_if_ready() {
+      var bookmarksGrid = document.getElementById("bookmarks-grid");
       if (bookmarksGrid && bookmarksGrid.style.cssText.includes("height")) {
         document.getElementById('fake-bookmarks-grid').style.display = 'none';
         bookmarksGrid.classList.remove("full-hidden");
