@@ -117,14 +117,14 @@
       padding-right: 10px;
     }
 
-    .full-hidden {
+    /* .full-hidden {
       opacity: 0 !important;
       position: absolute !important;
       top: -9999999px;
       left: -9999999px;
       z-index: -99999;
       width: 100vw !important;
-    }
+    } */
 
     .closeImgInvisible {
       display: none;
@@ -258,6 +258,13 @@
       } else {
         // fetch_tiles_from_most_visited();
         document.getElementById('add-button').addEventListener('click', create_new_item);
+        try {
+          instant_grid();
+          window.setTimeout(function () { if (!instant_grid_done) instant_grid(); }, 1);
+        }
+        catch (err) {
+          console.log("Instant init failed, retrying later");
+        }
       }
     }
     function remove_favorite(e) {
@@ -320,6 +327,11 @@
     }
     var news_are_already_onscreen = false;
     var instant_grid_done = false;
+    function replaceInnerHTML(oldDiv, html) {
+      var newDiv = oldDiv.cloneNode(false);
+      newDiv.innerHTML = html;
+      oldDiv.parentNode.replaceChild(newDiv, oldDiv);
+    };
     function instant_grid() {
       instant_grid_done = true;
       if (typeof localStorage.cachedGrid != "undefined") {
@@ -328,18 +340,7 @@
         document.getElementById('fake-bookmarks-grid').style.display = 'block';
       }
     }
-    if (window.chrome.embeddedSearch.newTabPage.isIncognito) {
-      document.body.style.backgroundColor = 'black';
-      document.getElementById('incognito').style.display = 'block';
-    } else {
-      try {
-        instant_grid();
-        window.setTimeout(function () { if (!instant_grid_done) instant_grid(); }, 1);
-      }
-      catch (err) {
-        console.log("Instant init failed, retrying later");
-      }
-    }
+    
     var globalGrid = false;
     var bookmarksGrid = document.getElementById("bookmarks-grid");
     var ideasGrid = document.getElementById("ideas-grid");
