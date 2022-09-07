@@ -116,11 +116,25 @@
     .plus-item {
       padding-right: 10px;
     }
+
+    .full-hidden {
+      opacity: 0 !important;
+      position: absolute !important;
+      top: -9999999px;
+      left: -9999999px;
+      z-index: -99999;
+      width: 100vw !important;
+    }
+
+    .closeImgInvisible {
+      display: none;
+    }
   </style>
   <meta charset="utf-8">
   <meta name="google" value="notranslate">
   <script>
     var nItemsAdded = 0;
+    var loadingImage = '';
     function fetch_tiles_from_most_visited() {
       if ((typeof localStorage.cachedTilesUpdate == "undefined") || ((Date.now() / 1000) - localStorage.cachedTilesUpdate) > 43200) {
         console.log("Fetching tiles from most visited because:");
@@ -195,6 +209,46 @@
       innerDiv.querySelector('#tile_target').addEventListener("touchend", process_cancel);
       document.getElementById('bookmarks-grid').appendChild(innerDiv);
     }
+    function add_favorite_idea(name, click_url, impression_url, image_url) {
+      var rootDomain = 'idea-' + name;
+      var innerDiv = document.createElement('div');
+      innerDiv.className = 'grid-item grid-idea';
+      var cachedImage = localStorage.getItem('icon-' + rootDomain);
+      localStorage.setItem('lastShown-' + rootDomain, Math.floor(Date.now() / 1000));
+      var imageUri = null;
+      var randomId = Math.random().toString(36).substr(2, 9) + Math.random().toString(36).substr(2, 9) + Math.random().toString(36).substr(2, 9);
+      if (cachedImage != null) {
+        imageUri = cachedImage;
+        console.log('Loading icon for ' + rootDomain + ' from cache');
+      } else {
+        console.log('Fetching icon for ' + rootDomain);
+        loadingImage = getLoadingImage();
+        imageUri = loadingImage;
+        try {
+          fetch(image_url).then(function (response) {
+            return response.arrayBuffer();
+          })
+            .then(function (answer) {
+              localStorage.setItem('icon-' + rootDomain, 'data:image/png;base64,' + arrayBufferToBase64(answer));
+              localStorage.setItem('lastShown-' + rootDomain, Math.floor(Date.now() / 1000));
+              document.getElementById('icon' + randomId).src = 'data:image/png;base64,' + arrayBufferToBase64(answer);
+              console.log('Icon for ' + rootDomain + ' is now fetched');
+            });
+        } catch (err) {
+          console.log('Fetch failed for: ' + err.message);
+        }
+      }
+      if (impression_url && impression_url != 'about:blank')
+        navigator.sendBeacon(impression_url);
+      innerDiv.innerHTML = '<a id="tile_target" href="' + click_url + '"><div class="grid-image-box"><img border="0" class="grid-image" title="' + name + '" src="' + imageUri + '" id="icon' + randomId + '" onError="invalidate_image(this)" width="33" style="max-height: 33px; border-radius: 5px;" /></div><span style="width: 60px; line-height: 15px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: inline-block;padding-top:15px">' + name + '</span></a>';
+      innerDiv.style.minHeight = '64px';
+
+      //  innerDiv.querySelector('#closeImg').addEventListener("touchstart", remove_favorite);
+      //  innerDiv.querySelector('#tile_target').addEventListener("touchstart", process_start);
+      document.body.addEventListener("click", process_body_click);
+      //  innerDiv.querySelector('#tile_target').addEventListener("touchend", process_cancel);
+      document.getElementById('ideas-grid').appendChild(innerDiv);
+    }
     window.onload = () => {
       if (window.chrome.embeddedSearch.newTabPage.isIncognito) {
         document.body.style.backgroundColor = 'black';
@@ -202,7 +256,7 @@
         document.getElementById('private').style.display = 'block';
         document.getElementById('default-mode').style.display = 'none';
       } else {
-        fetch_tiles_from_most_visited();
+        // fetch_tiles_from_most_visited();
         document.getElementById('add-button').addEventListener('click', create_new_item);
       }
     }
@@ -321,7 +375,7 @@
       localStorage.storedItems = JSON.stringify(storedItems);
       console.log("Add to storage, adding to offset " + offset + " the URL: " + url);
     }
-    function create_new_item(){
+    function create_new_item() {
       preconnectTo('https://logos.kiwibrowser.com');
       var url = prompt("Enter website address", "http://");
       url = url.trim();
@@ -332,12 +386,12 @@
       // and m.wikipedia.org to become wikipedia.org
       var rootDomain = psl.get(parser.hostname);
       if (!rootDomain)
-        return ;
+        return;
       if (typeof localStorage.storedItems == "undefined" || localStorage.storedItems == "")
-          localStorage.storedItems = JSON.stringify([]);
+        localStorage.storedItems = JSON.stringify([]);
       var storedItems = JSON.parse(localStorage.storedItems);
       offset = storedItems.length;
-      storedItems[offset] = {url: url}
+      storedItems[offset] = { url: url }
       add_favorite(storedItems[offset]);
       localStorage.storedItems = JSON.stringify(storedItems);
       globalGrid.toggle("scaleWithFade");
