@@ -226,17 +226,14 @@
     fetch('https://api.alb.mises.site/website/recommend.json').then(res=>{
       return res.json()
     }).then(res=>{
+      if(!Array.isArray(res)){
+        return 
+      }
       const items = res.map(val=>{
-        return `<a class="mises-web3-item" href="${val.url}" target="_blank">
-            <img src="${val.logo}" alt="${val.title}">
-            <p>${val.title}</p>
-          </a>`;
+        return '<a class="mises-web3-item" href="'+ val.url+'"><img src="'+val.logo+'" alt="'+val.title+'"/><p>'+val.title+'</p></a>'
       })
       const container = document.getElementById('mises-web3');
-      console.log(container)
-      if(container){
-        container.innerHTML = items.join('');
-      }
+      if(container) container.innerHTML = items.join('');
     })
   }
   var instant_grid_done = false;
