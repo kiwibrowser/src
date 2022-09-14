@@ -10,12 +10,13 @@
   <meta charset="utf-8">
   <meta name="google" value="notranslate">
   <script>
-    <include src="./loadingImage.js" />
-    <include src="./local_ntp.js" />
+    // <include src="./loadingImage.js" />
+    // <include src="./local_ntp.js" />
   </script>
   <script>
     if (window.chrome.embeddedSearch.newTabPage.isIncognito) {
       document.body.style.backgroundColor = 'black';
+      document.body.classList.add('chrome-embedded-search')
     }
   </script>
   <style>
@@ -32,7 +33,7 @@
       display: none;
     }
 
-    .mises-box {
+    /* .mises-box {
       text-align: center;
       display: flex;
       align-items: center;
@@ -70,7 +71,7 @@
       font-size: 15px;
       line-height: 20px;
       margin: 0;
-    }
+    } */
 
     .grid-image-box {
       width: 60px;
@@ -142,18 +143,61 @@
         box-shadow: 0 0 14px 0px rgba(0, 0, 0, 0.5);
       }
     }
+    .mises-web3-container{
+      
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+    }
+    .mises-web3-item{
+      display: block;
+      text-align: center;
+      text-decoration: none;
+      margin-bottom: 20px;
+    }
+    .mises-web3-item img{
+      width: 33px;
+      height: 33px;
+      border-radius: 5px;
+    }
+    .mises-web3-item p{
+      margin-top: 10px;
+      margin-bottom: 0;
+      font-size: 14px;
+      color: #333
+    }
+    .chrome-embedded-search .mises-web3-item p{
+      color: white
+    }
+    .web3-site{
+      padding: 20px 10px;
+    }
+    .web3-site-title{
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      color: #333
+    }
+    .chrome-embedded-search .web3-site-title{
+      color: white
+    }
   </style>
 </head>
 <!-- Remember to update the test HTML files in chrome/test/data/local_ntp/
    whenever making changes to this file.-->
 
 <body>
-  <div class="mises-box">
+  <!-- <div class="mises-box">
     <img src="./mises_logo.png" alt="mises_logo" width="89">
     <p class="welcome-mises">Welcome to Mises!</p>
     <p class="welcome-mises-desc">Mises is a blockchain network which supports
       decentralized ID, storage and social media features. </p>
     <a href="https://home.mises.site/" class="enter-mises">Enter Mises</a>
+  </div> -->
+  <!-- mises web3 site -->
+  <div class="web3-site">
+    <p class="web3-site-title">Web3 Sites</p>
+    <div id="mises-web3" class="mises-web3-container"></div>
   </div>
   <!-- Container for the OneGoogleBar HTML. -->
   <div id="one-google" class="hidden" style="display: none;"></div>
@@ -178,6 +222,23 @@
   </div>
 </body>
 <script>
+  window.onload = ()=>{
+    fetch('https://api.alb.mises.site/website/recommend.json').then(res=>{
+      return res.json()
+    }).then(res=>{
+      const items = res.map(val=>{
+        return `<a class="mises-web3-item" href="${val.url}" target="_blank">
+            <img src="${val.logo}" alt="${val.title}">
+            <p>${val.title}</p>
+          </a>`;
+      })
+      const container = document.getElementById('mises-web3');
+      console.log(container)
+      if(container){
+        container.innerHTML = items.join('');
+      }
+    })
+  }
   var instant_grid_done = false;
   function instant_grid() {
     instant_grid_done = true;
