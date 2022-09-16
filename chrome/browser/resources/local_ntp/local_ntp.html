@@ -102,7 +102,7 @@
       margin-top: 15px;
       margin-bottom: 10px;
     }
-    .mises-web3-item img{
+    .mises-web3-item .website-logo{
       width: 33px;
       height: 33px;
       object-fit: contain;
@@ -213,9 +213,9 @@
   <!-- mises web3 site -->
   <div class="web3-site">
     <div class="mises-site-container" id="mises-sites">
-      <a class="mises-site-item" href="https://portal.mises.site/"><img src="./images/Staking@2x.png" alt="Staking"/><p>Staking</p></a>
-      <a class="mises-site-item" href="https://home.mises.site/"><img src="./images/Discover@2x.png" alt="Discover"/><p>Discover</p></a>
-      <a class="mises-site-item" href="https://home.mises.site/Airdrop"><img src="./images/Airdrop@2x.png" alt="Airdrop"/><p>Airdrop</p></a>
+      <a class="mises-site-item" href="https://portal.mises.site/"><img src="./images/Staking@2x.png" alt="Staking" class="website-logo"/><p>Staking</p></a>
+      <a class="mises-site-item" href="https://home.mises.site/"><img src="./images/Discover@2x.png" alt="Discover"  class="website-logo"/><p>Discover</p></a>
+      <a class="mises-site-item" href="https://home.mises.site/Airdrop"><img src="./images/Airdrop@2x.png" alt="Airdrop"  class="website-logo"/><p>Airdrop</p></a>
     </div>
     <div class="box">
       <p class="web3-site-title-box">
@@ -256,7 +256,7 @@
         return 
       }
       const items = res.map(val=>{
-        return '<a class="mises-web3-item" href="'+ val.url+'"><div class="mises-web3-img-box"><img src="'+val.logo+'" alt="'+val.title+'"/></div><p class="mises-web3-title">'+val.title+'</p></a>'
+        return '<a class="mises-web3-item" href="'+ val.url+'"><div class="mises-web3-img-box"><img src="'+val.logo+'" alt="'+val.title+'" class="website-logo"/></div><p class="mises-web3-title">'+val.title+'</p></a>'
       })
       const container = document.getElementById('mises-web3');
       if(container) container.innerHTML = items.join('');
@@ -305,13 +305,13 @@
     document.head.appendChild(hint);
   }
 
-  if (window.chrome.embeddedSearch.newTabPage.isIncognito) {
-    document.getElementById('add-button').style.display = 'none';
-  }
+  // if (window.chrome.embeddedSearch.newTabPage.isIncognito) {
+  //   document.getElementById('add-button').style.display = 'none';
+  // }
 </script>
 <script>
   
-  document.getElementById('add-button').addEventListener('click', create_new_item);
+  // document.getElementById('add-button').addEventListener('click', create_new_item);
   var longpress = false;
   var presstimer = null;
   var longtarget = null;
@@ -440,7 +440,7 @@
     }
     if (impression_url && impression_url != 'about:blank')
       navigator.sendBeacon(impression_url);
-    innerDiv.innerHTML = '<a id="tile_target" href="' + click_url + '"><div class="grid-image-box"><img border="0" class="grid-image" title="' + name + '" src="' + imageUri + '" id="icon' + randomId + '" onError="invalidate_image(this)" width="33" style="max-height: 33px; border-radius: 5px;" /></div><span class="mises-web3-title">' + name + '</span></a>';
+    innerDiv.innerHTML = '<a id="tile_target" href="' + click_url + '"><div class="grid-image-box"><img border="0" class="grid-image website-logo" title="' + name + '" src="' + imageUri + '" id="icon' + randomId + '" onError="invalidate_image(this)" width="33" style="max-height: 33px; border-radius: 5px;" /></div><span class="mises-web3-title">' + name + '</span></a>';
     innerDiv.style.minHeight = '64px';
 
     //  innerDiv.querySelector('#closeImg').addEventListener("touchstart", remove_favorite);
@@ -488,7 +488,7 @@
         console.log('Fetch failed for: ' + err.message);
       }
     }
-    innerDiv.innerHTML = '<img id="closeImg" src="' + closeImg + '" class="closeImg closeImgInvisible" height="20" width="20" style="position: absolute; right: 0px; border: 0px;" /><a id="tile_target" href="' + item.url + '"><div class="grid-image-box"><img border="0" class="grid-image serverIdea" title="' + item.url + '" src="' + imageUri + '" id="icon' + randomId + '" onError="invalidate_image(this)" width="33" style="max-height: 33px; border-radius: 5px;" /></div><span class="mises-web3-title">' + rootDomain + '</span></a>';
+    innerDiv.innerHTML = '<img id="closeImg" src="' + closeImg + '" class="closeImg closeImgInvisible" height="20" width="20" style="position: absolute; right: 0px; border: 0px;" /><a id="tile_target" href="' + item.url + '"><div class="grid-image-box"><img border="0" class="grid-image serverIdea website-logo" title="' + item.url + '" src="' + imageUri + '" id="icon' + randomId + '" onError="invalidate_image(this)" width="33" style="max-height: 33px; border-radius: 5px;" /></div><span class="mises-web3-title">' + rootDomain + '</span></a>';
     innerDiv.style.minHeight = '64px';
 
     innerDiv.querySelector('#closeImg').addEventListener("touchstart", remove_favorite);
@@ -580,31 +580,31 @@
     }
     window.setTimeout(function () { save_grid_snapshot(); }, 100);
   }
-  function create_new_item() {
-    preconnectTo('https://logos.kiwibrowser.com');
-    var url = prompt("Enter website address", "http://");
-    url = url.trim();
-    url = url.replace(' ', '.');
-    var parser = document.createElement('a');
-    parser.href = url;
-    // Our intent is buzz.blogspot.com to stay buzz.blogspot.com
-    // and m.wikipedia.org to become wikipedia.org
-    var rootDomain = psl.get(parser.hostname);
-    if (!rootDomain)
-      return;
-    if (typeof localStorage.storedItems == "undefined" || localStorage.storedItems == "")
-      localStorage.storedItems = JSON.stringify([]);
-    var storedItems = JSON.parse(localStorage.storedItems);
-    offset = storedItems.length;
-    storedItems[offset] = { url: url }
-    add_favorite(storedItems[offset]);
-    localStorage.storedItems = JSON.stringify(storedItems);
-    globalGrid.toggle("scaleWithFade");
-    globalGrid.appendNew();
-    window.setTimeout(function () { save_grid_snapshot(); }, 200);
-    window.setTimeout(function () { save_grid_snapshot(); }, 800);
-    localStorage.useCustomTiles = "true";
-  }
+  // function create_new_item() {
+  //   preconnectTo('https://logos.kiwibrowser.com');
+  //   var url = prompt("Enter website address", "http://");
+  //   url = url.trim();
+  //   url = url.replace(' ', '.');
+  //   var parser = document.createElement('a');
+  //   parser.href = url;
+  //   // Our intent is buzz.blogspot.com to stay buzz.blogspot.com
+  //   // and m.wikipedia.org to become wikipedia.org
+  //   var rootDomain = psl.get(parser.hostname);
+  //   if (!rootDomain)
+  //     return;
+  //   if (typeof localStorage.storedItems == "undefined" || localStorage.storedItems == "")
+  //     localStorage.storedItems = JSON.stringify([]);
+  //   var storedItems = JSON.parse(localStorage.storedItems);
+  //   offset = storedItems.length;
+  //   storedItems[offset] = { url: url }
+  //   add_favorite(storedItems[offset]);
+  //   localStorage.storedItems = JSON.stringify(storedItems);
+  //   globalGrid.toggle("scaleWithFade");
+  //   globalGrid.appendNew();
+  //   window.setTimeout(function () { save_grid_snapshot(); }, 200);
+  //   window.setTimeout(function () { save_grid_snapshot(); }, 800);
+  //   localStorage.useCustomTiles = "true";
+  // }
 </script>
 <script>
   function cleanUpOldTilesIdeas() {
