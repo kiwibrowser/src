@@ -28,46 +28,9 @@
     .closeImgInvisible {
       display: none;
     }
-
-    /* .mises-box {
-      text-align: center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      border-bottom: 1px solid #F5F5F5;
-      margin: 38px 30px 0;
+    body{
+      background-color:#f8f8f8 ;
     }
-
-    .enter-mises {
-      background: #5D61FF;
-      color: white;
-      font-weight: bold;
-      font-size: 17px;
-      border-radius: 50px;
-      width: 180px;
-      line-height: 50px;
-      text-align: center;
-      margin: 30px auto;
-      text-decoration: none;
-      outline: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .welcome-mises {
-      color: #333333;
-      font-weight: bold;
-      font-size: 25px;
-      margin: 25px auto 20px;
-      line-height: 1;
-    }
-
-    .welcome-mises-desc {
-      color: #333333;
-      font-size: 15px;
-      line-height: 20px;
-      margin: 0;
-    } */
 
     .grid-image-box {
       width: 60px;
@@ -147,7 +110,8 @@
       display: block;
       text-align: center;
       text-decoration: none;
-      margin-bottom: 20px;
+      margin-top: 15px;
+      margin-bottom: 10px;
     }
     .mises-web3-item img{
       width: 33px;
@@ -157,28 +121,83 @@
     .mises-web3-item p{
       margin-top: 10px;
       margin-bottom: 0;
-      font-size: 14px;
-      color: #333
     }
     .chrome-embedded-search .mises-web3-item p{
       color: white
     }
     .web3-site{
-      padding: 20px 10px;
-    }
-    .web3-site-title{
-      margin: 0;
-      font-size: 16px;
-      font-weight: 600;
-      margin-bottom: 15px;
-      color: #333
-    }
-    .chrome-embedded-search .web3-site-title{
-      color: white
+      padding: 20px 15px;
     }
     .mises-site-container{
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
+    }
+    .mises-site-item img{
+      width: 75px;
+      height: 75px;
+    }
+    .mises-site-item{
+      display: block;
+      text-align: center;
+    }
+    .mises-site-item p{
+      margin: 0;
+      font-size: 14px;
+      font-weight: bold;
+      color: #333333;
+    }
+    .box{
+      margin-top: 15px;
+      background: #FFFFFF;
+      border-radius: 15px;
+      padding: 0 15px 10px;
+    }
+    .web3-site-title-box{
+      margin: 0;
+      padding: 18px 0;
+      border-bottom: 1px solid #F1F2F3;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .web3-site-title{
+      font-size: 18px;
+      font-weight: 600;
+      color: #111111;
+    }
+    .chrome-embedded-search .web3-site-title{
+      color: white
+    }
+    .view-all{
+      font-size: 14px;
+      font-weight: 400;
+      color: #666666;
+    }
+    .view-all img{
+      width: 5px;
+    }
+    .mises-web3-img-box{
+      width: 60px;
+      height: 60px;
+      border: 1px solid #F1F2F3;
+      border-radius: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+    }
+    .mises-web3-title{
+      margin:  15px 0 0;
+      font-size: 12px;
+      font-family: SF UI Display;
+      font-weight: 400;
+      color: #666666;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .chrome-embedded-search .web3-site{
+      display: none;
     }
   </style>
 </head>
@@ -199,18 +218,22 @@
   </div> -->
   <!-- mises web3 site -->
   <div class="web3-site">
-    <div class="mises-site-container" id="mises-sites">
+    <div class="mises-site-container" id="mises-sites"></div>
+    <div class="box">
+      <p class="web3-site-title-box">
+        <span class="web3-site-title">Web3 Sites</span>
+        <a class="view-all" href="https://web3.mises.site">View all <img src="./images/more@2x.png" alt="" ></a>
+      </p>
+      <div id="mises-web3" class="mises-web3-container"></div>
     </div>
-    <p class="web3-site-title">Web3 Sites</p>
-    <div id="mises-web3" class="mises-web3-container"></div>
   </div>
   <!-- Container for the OneGoogleBar HTML. -->
   <div id="one-google" class="hidden" style="display: none;"></div>
 
   <div id="ntp-contents">
-    <div style="position: absolute; top: 0px; right: 5px; z-index: 99999999">
+    <!-- <div style="position: absolute; top: 0px; right: 5px; z-index: 99999999">
       <div class="plus-item" role="button" aria-label="Add new tile" title="Add new tile" id="add-button">+</div>
-    </div>
+    </div> -->
     <div id="fake-bookmarks-grid" style="display: none">
     </div>
     <div id="bookmarks-grid" class="full-hidden">
@@ -235,26 +258,26 @@
         return 
       }
       const items = res.map(val=>{
-        return '<a class="mises-web3-item" href="'+ val.url+'"><img src="'+val.logo+'" alt="'+val.title+'"/><p>'+val.title+'</p></a>'
+        return '<a class="mises-web3-item" href="'+ val.url+'"><div class="mises-web3-img-box"><img src="'+val.logo+'" alt="'+val.title+'"/></div><p class="mises-web3-title">'+val.title+'</p></a>'
       })
       const container = document.getElementById('mises-web3');
       if(container) container.innerHTML = items.join('');
     })
     const misesSites = [{
-      logo: 'https://logos.kiwibrowser.com/portal.mises.site',
+      logo: './images/Staking@2x.png',
       title: 'Staking',
       url:'https://portal.mises.site/',
     },{
-      logo: 'https://logos.kiwibrowser.com/home.mises.site',
+      logo: './images/Discover@2x.png',
       title: 'Discover',
       url:'https://home.mises.site/',
     },{
-      logo: 'https://logos.kiwibrowser.com/home.mises.site',
+      logo: './images/Airdrop@2x.png',
       title: 'Airdrop',
       url:'https://home.mises.site/Airdrop',
     }]
     const items = misesSites.map(val=>{
-      return '<a class="mises-web3-item" href="'+ val.url+'"><img src="'+val.logo+'" alt="'+val.title+'"/><p>'+val.title+'</p></a>'
+      return '<a class="mises-site-item" href="'+ val.url+'"><img src="'+val.logo+'" alt="'+val.title+'"/><p>'+val.title+'</p></a>'
     })
     const container = document.getElementById('mises-sites');
     if(container) container.innerHTML = items.join('');
