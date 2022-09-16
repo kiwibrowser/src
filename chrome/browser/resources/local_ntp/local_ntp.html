@@ -95,18 +95,25 @@
       display: grid;
       grid-template-columns: 1fr 1fr 1fr 1fr;
     }
-    .mises-web3-item,.grid-item{
+    .mises-web3-item{
       display: block;
       text-align: center;
       text-decoration: none;
       margin-top: 15px;
       margin-bottom: 10px;
     }
-    .mises-web3-item .website-logo{
+    .mises-web3-item img{
       width: 33px;
       height: 33px;
       object-fit: contain;
       border-radius: 5px;
+    }
+    /* .mises-web3-item p{
+      margin-top: 10px;
+      margin-bottom: 0;
+    } */
+    .chrome-embedded-search .mises-web3-item p{
+      color: white
     }
     .web3-site{
       padding: 20px 15px;
@@ -147,6 +154,9 @@
       font-size: 18px;
       font-weight: 600;
       color: #111111;
+    }
+    .chrome-embedded-search .web3-site-title{
+      color: white
     }
     .view-all{
       font-size: 14px;
@@ -196,16 +206,17 @@
   <!-- mises web3 site -->
   <div class="web3-site">
     <div class="mises-site-container" id="mises-sites">
-      <a class="mises-site-item" href="https://portal.mises.site/"><img src="./images/Staking@2x.png" alt="Staking" class="website-logo"/><p>Staking</p></a>
-      <a class="mises-site-item" href="https://home.mises.site/"><img src="./images/Discover@2x.png" alt="Discover"  class="website-logo"/><p>Discover</p></a>
-      <a class="mises-site-item" href="https://home.mises.site/Airdrop"><img src="./images/Airdrop@2x.png" alt="Airdrop"  class="website-logo"/><p>Airdrop</p></a>
+      <a class="mises-site-item" href="https://portal.mises.site/"><img src="./images/Staking@2x.png" alt="Staking"/><p>Staking</p></a>
+      <a class="mises-site-item" href="https://home.mises.site/"><img src="./images/Discover@2x.png" alt="Discover"/><p>Discover</p></a>
+      <a class="mises-site-item" href="https://home.mises.site/Airdrop"><img src="./images/Airdrop@2x.png" alt="Airdrop"/><p>Airdrop</p></a>
     </div>
     <div class="box">
       <p class="web3-site-title-box">
         <span class="web3-site-title">Web3 Sites</span>
         <a class="view-all" href="https://web3.mises.site">View all <img src="./images/more@2x.png" alt="" ></a>
       </p>
-      <div id="mises-web3" class="mises-web3-container"></div>
+      <div id="mises-web3" class="mises-web3-container">
+      </div>
     </div>
   </div>
   <!-- Container for the OneGoogleBar HTML. -->
@@ -239,7 +250,7 @@
         return 
       }
       const items = res.map(val=>{
-        return '<a class="mises-web3-item" href="'+ val.url+'"><div class="mises-web3-img-box"><img class="website-logo" src="'+val.logo+'" alt="'+val.title+'"/></div><p class="mises-web3-title">'+val.title+'</p></a>'
+        return '<a class="mises-web3-item" href="'+ val.url+'"><div class="mises-web3-img-box"><img src="'+val.logo+'" alt="'+val.title+'"/></div><p class="mises-web3-title">'+val.title+'</p></a>'
       })
       const container = document.getElementById('mises-web3');
       if(container) container.innerHTML = items.join('');
@@ -423,7 +434,7 @@
     }
     if (impression_url && impression_url != 'about:blank')
       navigator.sendBeacon(impression_url);
-    innerDiv.innerHTML = '<a id="tile_target" href="' + click_url + '"><div class="grid-image-box"><img border="0" class="grid-image website-logo" title="' + name + '" src="' + imageUri + '" id="icon' + randomId + '" onError="invalidate_image(this)" width="33" style="max-height: 33px; border-radius: 5px;" /></div><span class="mises-web3-title">' + name + '</span></a>';
+    innerDiv.innerHTML = '<a id="tile_target" href="' + click_url + '"><div class="grid-image-box"><img border="0" class="grid-image" title="' + name + '" src="' + imageUri + '" id="icon' + randomId + '" onError="invalidate_image(this)" width="33" style="max-height: 33px; border-radius: 5px;" /></div><span class="mises-web3-title">' + name + '</span></a>';
     innerDiv.style.minHeight = '64px';
 
     //  innerDiv.querySelector('#closeImg').addEventListener("touchstart", remove_favorite);
@@ -471,7 +482,7 @@
         console.log('Fetch failed for: ' + err.message);
       }
     }
-    innerDiv.innerHTML = '<img id="closeImg" src="' + closeImg + '" class="closeImg closeImgInvisible" height="20" width="20" style="position: absolute; right: 0px; border: 0px;" /><a id="tile_target" href="' + item.url + '"><div class="grid-image-box"><img border="0" class="grid-image serverIdea website-logo" title="' + item.url + '" src="' + imageUri + '" id="icon' + randomId + '" onError="invalidate_image(this)" width="33" style="max-height: 33px; border-radius: 5px;" /></div><span class="mises-web3-title">' + rootDomain + '</span></a>';
+    innerDiv.innerHTML = '<img id="closeImg" src="' + closeImg + '" class="closeImg closeImgInvisible" height="20" width="20" style="position: absolute; right: 0px; border: 0px;" /><a id="tile_target" href="' + item.url + '"><div class="grid-image-box"><img border="0" class="grid-image serverIdea" title="' + item.url + '" src="' + imageUri + '" id="icon' + randomId + '" onError="invalidate_image(this)" width="33" style="max-height: 33px; border-radius: 5px;" /></div><span class="mises-web3-title">' + rootDomain + '</span></a>';
     innerDiv.style.minHeight = '64px';
 
     innerDiv.querySelector('#closeImg').addEventListener("touchstart", remove_favorite);
