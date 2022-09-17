@@ -17,7 +17,7 @@ class MisesController {
   static MisesController* GetInstance();
 
   void setMisesUserInfo(const std::string& info);
-
+  std::string getMisesUserInfo();
  private:
   friend struct base::DefaultSingletonTraits<MisesController>;
 

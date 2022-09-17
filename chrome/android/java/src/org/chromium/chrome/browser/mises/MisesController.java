@@ -71,6 +71,11 @@ public class MisesController {
     }
 
     @CalledByNative
+    public static String getMisesUserInfo() {
+	return ChromePreferenceManager.getInstance().getMisesUserInfo();
+    }
+
+    @CalledByNative
     public static void setMisesUserInfo(String json) {
         MisesController instance = getInstance();
     	if (json == null || json.isEmpty()) {

@@ -22,4 +22,11 @@ void MisesController::setMisesUserInfo(const std::string& info) {
   Java_MisesController_setMisesUserInfo(env, j_mises_json);
 }
 
+std::string MisesController::getMisesUserInfo() {
+  JNIEnv* env = base::android::AttachCurrentThread();
+  base::android::ScopedJavaLocalRef<jstring> j_mises_json = Java_MisesController_getMisesUserInfo(env); 
+  return base::android::ConvertJavaStringToUTF8(env, j_mises_json);
+}
+
+
 } // namespace android
