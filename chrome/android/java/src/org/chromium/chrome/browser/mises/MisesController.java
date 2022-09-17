@@ -13,17 +13,17 @@ import java.util.ArrayList;
 public class MisesController {
     private static final String TAG = "MisesController";
     public static final String MISES_EXTENSION_KEY = "nkbihfbeogaeaoehlefnkodbefgpgknn";
-	private String mMisesId = "";
-	private String mMisesToken = "";
-	private String mMisesNickname = "";
-	private String mMisesAvatar = "";
-	private String mLastShareIcon = "";
-	private String mLastShareTitle = "";
-	private String mLastShareUrl = "";
+    private String mMisesId = "";
+    private String mMisesToken = "";
+    private String mMisesNickname = "";
+    private String mMisesAvatar = "";
+    private String mLastShareIcon = "";
+    private String mLastShareTitle = "";
+    private String mLastShareUrl = "";
+    private String mInfoCache = "";
+    private static MisesController sInstance;
 
-	private static MisesController sInstance;
-
-	public interface MisesControllerObserver {
+    public interface MisesControllerObserver {
 	    void OnMisesUserInfoChanged();
     }
 
@@ -47,6 +47,7 @@ public class MisesController {
                 sInstance.mMisesToken = "";
                 sInstance.mMisesNickname = "";
                 sInstance.mMisesAvatar = "";
+		sInstance.mInfoCache = "";
             } else {
                 try {
                     JSONObject jsonMessage = new JSONObject(json);
@@ -62,8 +63,10 @@ public class MisesController {
                     if (jsonMessage.has("avatar")) {
                         sInstance.mMisesAvatar = jsonMessage.getString("avatar");
                     }
+		    sInstance.mInfoCache = json;
                 } catch (JSONException e) {
                     Log.e(TAG, "setMisesUserInfo from cache %s error", json);
+		    sInstance.mInfoCache = "";
                 }
             }
         }
@@ -72,7 +75,7 @@ public class MisesController {
 
     @CalledByNative
     public static String getMisesUserInfo() {
-	return ChromePreferenceManager.getInstance().getMisesUserInfo();
+	return sInstance.mInfoCache;
     }
 
     @CalledByNative
@@ -102,6 +105,7 @@ public class MisesController {
                     instance.mMisesAvatar = "";
                 }
                 ChromePreferenceManager.getInstance().setMisesUserInfo(json);
+		sInstance.mInfoCache = json;
             } catch (JSONException e) {
                 Log.e(TAG, "setMisesUserInfo from plugin %s error", json);
             }
