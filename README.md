@@ -1,7 +1,3 @@
-# Kiwi Browser
-
-![automatic build of apk](https://github.com/kiwibrowser/src/workflows/automatic%20build%20of%20apk/badge.svg)
-
 ## Overview
 
 Kiwi Browser is a [open-source](https://github.com/kiwibrowser/src) web browser for Android, based on "desktop" Chromium.
@@ -12,7 +8,7 @@ Kiwi Browser supports:
  - Bottom address bar
  - Performance improvements like partial rasterization of tiles
 
-The browser is licensed under the same, very [permissive, license](https://github.com/kiwibrowser/src.next/blob/kiwi/LICENSE) as Chromium, you are free to fork and hack.
+The browser is licensed under the same, very [permissive, license](https://github.com/kiwibrowser/src.next/blob/kiwi/LICENSE) as Chromium, you are free to fork and [hack](#contributing).
 
 ## Table of contents
 
@@ -43,11 +39,13 @@ The browser is licensed under the same, very [permissive, license](https://githu
 
 New builds are done from the [original source](https://github.com/kiwibrowser/src) to the [Play Store](https://play.google.com/store/apps/details?id=com.kiwibrowser.browser).
 
+![automatic build of apk](https://github.com/kiwibrowser/src/workflows/automatic%20build%20of%20apk/badge.svg)
+
 There are thousands of hours of work in this repository and thousands of files changed.
 
 ## Contributing
 
-Contributions are welcome and _encouraged_.
+Contributions are welcome and _encouraged_. For discussion, join https://matrix.to/#/#kiwibrowser-fans-building-it:matrix.org or post a new issue.
 
 For your code to be integrated into KiwiBrowser open a PR and we either merge it or give feedback.
 
@@ -66,21 +64,19 @@ You can use a virtual machine, an AWS VM, or a Google Cloud VM.
 
 ### Getting the source-code and environment
 
-To build Kiwi Browser you can directly clone the repository, as we have packed all dependencies already:
-
-In ~ (your home directory) run:
+To put tools in your path run:
 
 ```
 git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
 ```
 
-and edit the file ~/.bashrc to add at the very end
+then( assuming you have cloned that to your `~`) add following to the end of your `~/.bashrc` file
 
 ```bash
 export PATH=$HOME/depot_tools:$PATH
 ```
 
-Validate the changes by running:
+Apply the change:
 
 ```bash
 source ~/.bashrc
@@ -94,10 +90,10 @@ Create a directory called ~/chromium/, and in ~/chromium/ run:
 git clone https://github.com/kiwibrowser/dependencies.git .cipd
 cp ~/chromium/.cipd/.gclient ~/chromium/
 cp ~/chromium/.cipd/.gclient_entries ~/chromium/
-git clone https://github.com/kiwibrowser/src.git
+git clone https://github.com/Huge/DesktopBrowserWithWeb3wallets.git src
 ```
 
-At this stage, in ~/chromium/ you will have the .cipd folder, and a folder with the Kiwi Browser source-code called src.
+At this stage, in ~/chromium/ you will have the .cipd folder, and a folder with the Kiwi Browser source code `./src`.
 
 ### Setting up dependencies
 
@@ -108,8 +104,16 @@ sudo apt-get update
 sudo apt-get install python openjdk-8-jdk-headless libncurses5
 ```
 
-We want to be sure to use Java 1.8 in order to not get compilation errors (lint and errorprone):
+We want to be sure to __use Java 1.8__ in to avoid compilation errors (lint and errorprone):
 
+[On M1(+) Mac](https://www.yippeecode.com/topics/upgrade-to-openjdk-temurin-using-homebrew/)Books:
+```bash
+brew tap homebrew/cask-versions
+brew install --cask temurin8
+```
+( See https://stackoverflow.com/questions/74008762/homebrew-error-openjdk8-no-bottle-available and https://www.yippeecode.com/topics/upgrade-to-openjdk-temurin-using-homebrew/ for more info. )
+
+On Linux-like OSs:
 ```bash
 sudo update-java-alternatives --set java-1.8.0-openjdk-amd64
 ```
