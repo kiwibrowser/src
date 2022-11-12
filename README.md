@@ -4,20 +4,15 @@
 
 ## Overview
 
-[Kiwi Browser](https://kiwibrowser.com/) is a fully open-source web browser for Android.
+Kiwi Browser is a [open-source](https://github.com/kiwibrowser/src) web browser for Android, based on "desktop" Chromium.
 
-Kiwi is based on Chromium. Easily switch to Kiwi without having to painstakingly learn a new interface or break your existing browsing habits.
-
-Among other functionalities, Kiwi Browser supports:
-
- - Night Mode (another implementation than Chromium)
+Kiwi Browser supports:
+ - Night Mode
  - Support for Chrome Extensions
  - Bottom address bar
-It also includes performance improvements (partial rasterization of tiles, etc)
+ - Performance improvements like partial rasterization of tiles
 
-The browser is licensed under the same license as Chromium, which means that you are allowed to create derivatives of the browser.
-
-Make sure to properly attribute the code to this repository (don't just replace with your name)
+The browser is licensed under the same, very [permissive, license](https://github.com/kiwibrowser/src.next/blob/kiwi/LICENSE) as Chromium, you are free to fork and hack.
 
 ## Table of contents
 
@@ -46,21 +41,19 @@ Make sure to properly attribute the code to this repository (don't just replace 
 - 17 April 2020 - Kiwi Browser goes fully open-source.
 
 
-This code is up-to-date and is matching the build on the Play Store.
-
-The new builds are done from the open-source edition directly to the [Play Store](https://play.google.com/store/apps/details?id=com.kiwibrowser.browser).
+New builds are done from the [original source](https://github.com/kiwibrowser/src) to the [Play Store](https://play.google.com/store/apps/details?id=com.kiwibrowser.browser).
 
 There are thousands of hours of work in this repository and thousands of files changed.
 
 ## Contributing
 
-Contributions are welcome and encouraged.
+Contributions are welcome and _encouraged_.
 
-If you want your code to be integrated into Kiwi, open a merge request, I (and/or a member of the community) can review the code with you and push it to the Play Store.
+For your code to be integrated into KiwiBrowser open a PR and we either merge it or give feedback.
 
 ## Modifying
 
-If you create your own browser or a mod, make sure to change the browser name and icon in `chrome/android/java/res_chromium/values/channel_constants.xml` and translation strings (search and replace Kiwi in all `*.xtb`, all `*.grd` and all `*.grdp` files).
+If you create your own browser or a mod, make sure to _change the browser name and icon_ in `chrome/android/java/res_chromium/values/channel_constants.xml` and translation strings (search and replace Kiwi in all `*.xtb`, all `*.grd` and all `*.grdp` files).
 When replacing the app icon, make sure to add the new icon files in their respective `chrome/android/java/res/mipmap` folders(mdpi, hdpi etc) and also update the AndroidManifest.xml.
 
 ## Building
