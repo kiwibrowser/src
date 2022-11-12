@@ -40,6 +40,7 @@ The browser is licensed under the same, very [permissive, license](https://githu
 - 17 April 2020 - Kiwi Browser goes fully open-source.
 
 - 12 Nov 2022 - [EthBrno<sup>2</sup> hackaton](https://ethbrno.cz/) brings new wind for web3 and crypto-systems usage on mobile!
+  - some mid-work presentation: https://docs.google.com/presentation/d/1dZCYoC79BqI28kqIbswjVsQ-bRV0swFfF4hVLoAFfJY/edit#slide=id.g18bb67c870f_0_12 
 
 New builds are done from the [original source](https://github.com/kiwibrowser/src) to the [Play Store](https://play.google.com/store/apps/details?id=com.kiwibrowser.browser). ![automatic build of apk](https://github.com/kiwibrowser/src/workflows/automatic%20build%20of%20apk/badge.svg)
 
