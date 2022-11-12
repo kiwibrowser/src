@@ -1,23 +1,18 @@
-# Kiwi Browser
-
-![automatic build of apk](https://github.com/kiwibrowser/src/workflows/automatic%20build%20of%20apk/badge.svg)
-
 ## Overview
 
-[Kiwi Browser](https://kiwibrowser.com/) is a fully open-source web browser for Android.
+Kiwi Browser is a [open-source](https://github.com/kiwibrowser/src) web browser for Android, based on "desktop" Chromium.
 
-Kiwi is based on Chromium. Easily switch to Kiwi without having to painstakingly learn a new interface or break your existing browsing habits.
-
-Among other functionalities, Kiwi Browser supports:
-
- - Night Mode (another implementation than Chromium)
- - Support for Chrome Extensions
+Kiwi Browser supports:
+ - Night Mode
+ - Support for all [Chrome Extensions](https://chrome.google.com/webstore/category/extensions) ![extension sources](Screenshot_Extension_sources_20221112_165240.png)   ![setting MetaMask](Screenshot_Metamask_being_set_up_20221112_165715.png)  ![a few more web3 wallets](Screenshot_aFew_wallets_ready_20221112_173104_com.kiwibrowser.browser.jpg)
  - Bottom address bar
-It also includes performance improvements (partial rasterization of tiles, etc)
+ - Performance improvements like partial rasterization of tiles
 
-The browser is licensed under the same license as Chromium, which means that you are allowed to create derivatives of the browser.
+You can __get desktop-like experience using web3__ wallet extensions, which is the focus [here](https://github.com/Huge/DesktopBrowserWithWeb3wallets).
+We shall port/mirror to Gitea and Radicle sooner than later.
 
-Make sure to properly attribute the code to this repository (don't just replace with your name)
+
+The browser is licensed under the same, very [permissive, license](https://github.com/kiwibrowser/src.next/blob/kiwi/LICENSE) as Chromium, you are free to fork and [hack](#contributing).
 
 ## Table of contents
 
@@ -35,7 +30,6 @@ Make sure to properly attribute the code to this repository (don't just replace 
   - [Remote debugging](#remote-debugging)
   - [Optimizing binary size](#optimizing-binary-size)
 - [Roadmap](#roadmap)
-- [Additional help](#additional-help)
 
 ## Timeline
 
@@ -45,22 +39,22 @@ Make sure to properly attribute the code to this repository (don't just replace 
 
 - 17 April 2020 - Kiwi Browser goes fully open-source.
 
+- 12 Nov 2022 - [EthBrno<sup>2</sup> hackaton](https://ethbrno.cz/) brings new wind for web3 and crypto-systems usage on mobile!
+  - some mid-work presentation: https://docs.google.com/presentation/d/1dZCYoC79BqI28kqIbswjVsQ-bRV0swFfF4hVLoAFfJY/edit#slide=id.g18bb67c870f_0_12 
 
-This code is up-to-date and is matching the build on the Play Store.
-
-The new builds are done from the open-source edition directly to the [Play Store](https://play.google.com/store/apps/details?id=com.kiwibrowser.browser).
+New builds are done from the [original source](https://github.com/kiwibrowser/src) to the [Play Store](https://play.google.com/store/apps/details?id=com.kiwibrowser.browser). ![automatic build of apk](https://github.com/kiwibrowser/src/workflows/automatic%20build%20of%20apk/badge.svg)
 
 There are thousands of hours of work in this repository and thousands of files changed.
 
 ## Contributing
 
-Contributions are welcome and encouraged.
+Contributions are welcome and _encouraged_. For discussion, join https://matrix.to/#/#kiwibrowser-fans-building-it:matrix.org or post a new issue.
 
-If you want your code to be integrated into Kiwi, open a merge request, I (and/or a member of the community) can review the code with you and push it to the Play Store.
+For your code to be integrated into KiwiBrowser open a PR and we either merge it or give feedback.
 
 ## Modifying
 
-If you create your own browser or a mod, make sure to change the browser name and icon in `chrome/android/java/res_chromium/values/channel_constants.xml` and translation strings (search and replace Kiwi in all `*.xtb`, all `*.grd` and all `*.grdp` files).
+If you create your own browser or a mod, make sure to _change the browser name and icon_ in `chrome/android/java/res_chromium/values/channel_constants.xml` and translation strings (search and replace Kiwi in all `*.xtb`, all `*.grd` and all `*.grdp` files).
 When replacing the app icon, make sure to add the new icon files in their respective `chrome/android/java/res/mipmap` folders(mdpi, hdpi etc) and also update the AndroidManifest.xml.
 
 ## Building
@@ -73,21 +67,19 @@ You can use a virtual machine, an AWS VM, or a Google Cloud VM.
 
 ### Getting the source-code and environment
 
-To build Kiwi Browser you can directly clone the repository, as we have packed all dependencies already:
-
-In ~ (your home directory) run:
+To put tools in your path run:
 
 ```
 git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
 ```
 
-and edit the file ~/.bashrc to add at the very end
+then( assuming you have cloned that to your `~`) add following to the end of your `~/.bashrc` file
 
 ```bash
 export PATH=$HOME/depot_tools:$PATH
 ```
 
-Validate the changes by running:
+Apply the change:
 
 ```bash
 source ~/.bashrc
@@ -95,36 +87,53 @@ source ~/.bashrc
 
 This will give you access to one utility called gclient (as in "Google client")
 
-Create a directory called ~/chromium/, and in ~/chromium/ run:
+Create a directory called `chromium`, then:
 
 ```bash
+cd chromium
 git clone https://github.com/kiwibrowser/dependencies.git .cipd
-cp ~/chromium/.cipd/.gclient ~/chromium/
-cp ~/chromium/.cipd/.gclient_entries ~/chromium/
-git clone https://github.com/kiwibrowser/src.git
+cd .cipd
+cp .gclient ..
+cp .gclient_entries ..
+git clone https://github.com/Huge/DesktopBrowserWithWeb3wallets.git src
 ```
 
-At this stage, in ~/chromium/ you will have the .cipd folder, and a folder with the Kiwi Browser source-code called src.
+At this stage, in `chromium` you will have the .cipd folder, and a folder with the Kiwi Browser source code `./src`.
 
 ### Setting up dependencies
 
 To be able to build Kiwi Browser, you need python and OpenJDK (OpenJDK to create Java bindings for Android):
 
+On MacOS:
+```bash
+brew install ncurses python
+brew install --cask temurin ## on M1 you can skip this and look at the next step.
+```
+
+Debian-based Linux( like Ubuntu):
 ```bash
 sudo apt-get update
 sudo apt-get install python openjdk-8-jdk-headless libncurses5
 ```
 
-We want to be sure to use Java 1.8 in order to not get compilation errors (lint and errorprone):
+We want to be sure to __use Java 1.8__ in to avoid compilation errors (lint and errorprone):
 
+[On M1(+) Mac](https://www.yippeecode.com/topics/upgrade-to-openjdk-temurin-using-homebrew/)Books:
+```bash
+brew tap homebrew/cask-versions
+brew install --cask temurin8
+```
+( See https://stackoverflow.com/questions/74008762/homebrew-error-openjdk8-no-bottle-available and https://www.yippeecode.com/topics/upgrade-to-openjdk-temurin-using-homebrew/ for more info. )
+
+On Linux-like OSs:
 ```bash
 sudo update-java-alternatives --set java-1.8.0-openjdk-amd64
 ```
 
-then run the following commands in ~/chromium/src:
+then run the following commands in `chromium/src`:
 
 ```bash
-bash install-build-deps.sh --no-chromeos-fonts
+bash install-build-deps.sh --no-chromeos-fonts # Here you get forced to the Ubuntu eco real hard-(
 build/linux/sysroot_scripts/install-sysroot.py --arch=i386
 build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
 ```
@@ -292,18 +301,7 @@ User data (browsing, navigation, passwords, accounts) is not collected because w
 
 ## Roadmap
 
-* During year 2020, the goal of the project is to make maintenance fixes and security updates.
-
-If there is an issue or bug that you want to be included to Kiwi, please open an issue ticket pointing to the related Chromium bug or commit. Be precise, there are dozen of thousands of changes in Chromium.
-
-* During 2021, Kiwi Browser will switch to a new branch called Kiwi Browser Next with a quite automated Chromium rebasing system.
-
-## Additional help
-
-You can ask for extra help in our Discord server, or by [filing an issue](https://github.com/kiwibrowser/src/issues).
-
-<a href="https://discord.gg/XyMppQq"> <img src="https://discordapp.com/assets/e4923594e694a21542a489471ecffa50.svg" height="50"></a>
-
-Have fun with Kiwi!
-
-Arnaud.
+TBD, see the "focus" above for broad idea. 
+ - Perhaps would be good to have tests to run in parallel comparing desktop Chromium behaviour with our mobile app's.
+ - Make/build a Docker image for building the `.apk`, add instruction for using it here
+ 
