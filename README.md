@@ -300,7 +300,7 @@ If there is an issue or bug that you want to be included to Kiwi, please open an
 
 ## Additional help
 
-You can ask for extra help in our Discord server, or by [filing an issue](https://github.com/kiwibrowser/src/issues).
+You can ask for extra help in our Discord server:
 
 <a href="https://discord.gg/XyMppQq"> <img src="https://discordapp.com/assets/e4923594e694a21542a489471ecffa50.svg" height="50"></a>
 
